@@ -87,3 +87,22 @@ against the inventory's `[cleared]` table until the clearance pipeline replaces 
 5. **Sources.** Sources say only whether they are sensitive. Still unspecified: what clearance each requires beyond
    that. A `[cleared]` entry for a source that isn't sensitive is accepted and clears nothing
    (`docs/inventory.md`, "Open design issues").
+
+## When to build it
+Checked against the runner's phases 4–6 (`agents/wip-runner.md`, "Left"), before phase 4 was built. Nothing in the
+runner waits on it:
+- The gate runs once, in `Runner.start`, and reads `Inventory.cleared_for` (`src/chatddx/runner/gate.py:check`). A
+  database grant changes that one call.
+- A run already records what a grant would key on (Open 1): the endpoint's name and URL (`RunStarted.endpoint`) and,
+  through its trial, the engine's digest. If grants are append-only and dated, whether a run was cleared at
+  `RunStarted.at` is a query, so the pipeline adds no field to stored runs.
+- Phase 4 (order, concurrency) doesn't touch clearance, and phase 6's canaries aren't case-derived.
+
+It becomes the next blocker at:
+- tool rounds on a sensitive source (phase 5): the gate refuses them until a tool can be cleared ("Tools"). Until
+  then, the runner's tests can use a source that isn't sensitive, and `plan-web` can't call its tool on vLLM 0.24
+  anyway (`docs/vllm.md`, item 10);
+- judges (the scoring pass), whose engines fall under the hard block, and whose endpoint isn't recorded yet (see
+  "Takes");
+- the first real sensitive source, or the first runs on `pelle` and `malborg` whose clearance should be auditable
+  from the database rather than from the inventory's git history.
