@@ -1,5 +1,5 @@
 import json
-from collections.abc import Iterable
+from collections.abc import Collection, Iterable
 from typing import LiteralString
 from uuid import UUID
 
@@ -218,6 +218,70 @@ class Store:
             ),
         )
 
+    # Newest first, as are the other listings of runs and scores.
+    def started(self, runs: Collection[UUID]) -> list[RunStarted]:
+        return _newest(
+            RunStarted.parse(p)
+            for p in self._payloads(
+                """
+                SELECT payload FROM ledger.run_stage
+                WHERE stage = 'started' AND run = ANY(%s::uuid[])
+                """,
+                list(runs),
+            )
+        )
+
+    def runs_of(self, trial: str) -> list[RunStarted]:
+        return _newest(
+            RunStarted.parse(p)
+            for p in self._payloads(
+                """
+                SELECT payload FROM ledger.run_stage
+                WHERE stage = 'started' AND trial = %s
+                """,
+                trial,
+            )
+        )
+
+    def finished(self, runs: Collection[UUID]) -> set[UUID]:
+        rows = self._conn.execute(
+            """
+            SELECT run FROM ledger.run_stage
+            WHERE stage = 'finished' AND run = ANY(%s::uuid[])
+            """,
+            (list(runs),),
+        ).fetchall()
+        return {UUID(str(run)) for (run,) in rows}
+
+    def scores_of(self, run: UUID) -> list[ScoreStarted]:
+        return _newest(
+            ScoreStarted.parse(p)
+            for p in self._payloads(
+                """
+                SELECT payload FROM ledger.score_stage
+                WHERE stage = 'started' AND run = %s
+                """,
+                run,
+            )
+        )
+
+    # The components of a kind whose closure holds a digest, the digest itself included.
+    def reaching(self, digest: str, kind: str) -> list[str]:
+        rows = self._conn.execute(
+            """
+            WITH RECURSIVE up (digest) AS (
+                SELECT %s::text
+                UNION
+                SELECT r.src FROM factor.component_ref r JOIN up ON r.dst = up.digest
+            )
+            SELECT c.digest FROM factor.component c JOIN up USING (digest)
+            WHERE c.kind = %s
+            ORDER BY c.digest
+            """,
+            (digest, kind),
+        ).fetchall()
+        return [str(d) for (d,) in rows]
+
     def compilations(self, skeleton: str) -> list[Compilation]:
         rows = self._conn.execute(
             """
@@ -232,3 +296,7 @@ class Store:
 
     def _payloads(self, query: LiteralString, key: object) -> list[str]:
         return [str(p) for (p,) in self._conn.execute(query, (key,))]
+
+
+def _newest[S: RunStarted | ScoreStarted](started: Iterable[S]) -> list[S]:
+    return sorted(started, key=lambda s: s.at, reverse=True)

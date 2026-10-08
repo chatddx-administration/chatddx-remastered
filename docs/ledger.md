@@ -421,3 +421,8 @@ Most of the plan is compared with what happened (see "What a record holds"), but
   separate mechanism, as linting is for factors, but nothing is planned or decided.
 
 ## Proposed amendments
+- CHANGE, in "Run", the end of the `tools.unanswered` item, "(`tools.unanswered`)", and the `tools.unanswered` row in
+  "Findings" to match (`src/chatddx/runner/rounds.py:Toolbox.pending`)." to "(`tools.unanswered`);": the
+  amendment's instruction was integrated with its text. And in "Findings", the `tools.unanswered` row's "after its
+  rounds ran out or the run stopped" to "after its rounds ran out, the run stopped, the call had no whole answer, or
+  the response also called the answer tool" (`src/chatddx/runner/rounds.py:Toolbox.pending`).

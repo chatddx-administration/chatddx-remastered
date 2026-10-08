@@ -190,6 +190,10 @@ class Rows:
         ).fetchall()
         return [_binding(r) for r in rows]
 
+    def families(self) -> list[int]:
+        rows = self._conn.execute("SELECT id FROM catalog.family ORDER BY id")
+        return [int(id) for (id,) in rows.fetchall()]
+
     def bindings_in(self, source: str) -> list[Binding]:
         rows = self._conn.execute(
             f"""
@@ -324,6 +328,15 @@ class Catalog:
     def find(self, kind: str, name: str, *, owner: int | None = None) -> list[int]:
         return threads.find(self._rows, kind, name, owner=owner)
 
+    def visible(self, kind: str, person: int) -> list[tuple[Edit, About]]:
+        return threads.visible(self._rows, kind, person)
+
+    def visible_families(self, person: int) -> list[tuple[int, About]]:
+        return families.visible(self._rows, person)
+
+    def expectation_for(self, case: str, person: int, schema: str) -> str | None:
+        return threads.expectation_for(self._rows, case, person, schema)
+
     def forks(self, thread: int) -> list[int]:
         return threads.forks(self._rows, thread)
 
@@ -434,6 +447,9 @@ class Catalog:
 
     def about(self, subject: Subject) -> About:
         return read.about(self._rows, subject)
+
+    def abouts(self, subjects: Collection[Subject]) -> dict[Subject, About]:
+        return read.abouts(self._rows, subjects)
 
     # The subjects whose entries have ever named a person as owner or collaborator; what
     # holds now is `about`'s.

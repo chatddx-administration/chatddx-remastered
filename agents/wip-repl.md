@@ -135,6 +135,11 @@ A case can have several expectation threads, such as the archive's and the user'
 2. otherwise the archive's;
 3. otherwise refuse, naming them.
 
+Built, generalized (`src/chatddx/catalog/threads.py:expectation_for`): the person's own thread, else the one thread
+shared with them, so the archive's counts through init-data's sharing rather than by name. Several to choose from are
+refused, naming the threads; none is no expectation. Only threads whose head is in the scorer's expectation schema
+count. Still a take.
+
 ## How the old pieces map
 | old (504792c) | remastered | notes |
 |---|---|---|
@@ -237,6 +242,22 @@ Built but for what needs a person (`agents/wip-runner.md`, "The scoring pass"): 
 - **Tests**: each sample output shape against its scorer; a changed expectation makes a run outstanding.
 
 ### 3. Reads for a person
+Built but for the `Bench` (the cell, names and completions), which goes with the shell in phase 4. What was built:
+- `Store.started`, `runs_of`, `finished`, `scores_of` and `reaching` (`src/chatddx/store/store.py`);
+- `Catalog.visible`, `visible_families` and `expectation_for`, with the rules in `chatddx.catalog`
+  (`model.py:About.shows`: live, and owned or shared);
+- `src/chatddx/store/reads.py:Reads(conn, person)`: threads and families, a thread by name (whole, then
+  `OWNER/NAME`, since sample names hold slashes), runs (also by id prefix, and those reaching a digest), the scorers
+  that apply to a run, the scoring it would be scored under (D8), and the runs still to score;
+- tests in `src/chatddx/catalog/test/` and `src/chatddx/store/test/test_reads.py`, on the sample as init-data lands
+  it with a giftbag.
+
+"Applies" is the plan's rule: every view of the scorer reaches the run's output schema. A view that picks the whole
+answer reaches any schema, so the sample's `free-text` and `raw` scorers apply to every run; the pattern scorer then
+reads a structured answer as its JSON text. Narrowing that, say to scorers written for the run's output shape, would
+be a decision.
+
+The plan, as written:
 This closes `docs/store.md`'s known gap "Runs and scores can't be found". The store gets:
 - live threads of a kind that the person owns or collaborates on, by name and as `OWNER/NAME`;
 - the visible families with their tags and language;

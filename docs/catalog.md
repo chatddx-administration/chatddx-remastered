@@ -392,3 +392,16 @@ moment can create two families, since nothing makes current bindings unique.
   notice rather than a warning.
 
 ## Proposed amendments
+- ADD, in "Threads and edits", to "Reading": "`Catalog.visible(kind, person)`: the heads of the live threads of a
+  kind that a person owns or collaborates on (`model.py:About.shows`), with what their entries say." and
+  "`Catalog.expectation_for(case, person, schema)`: the expectation a person scores a case against: the head of a
+  thread of their own, else of the one thread shared with them, among the threads they see whose head is in
+  `schema`. Several heads to choose from are refused, naming the threads." (`threads.py:visible`,
+  `threads.py:expectation_for`).
+- ADD, in "Families and repairs": "`Catalog.visible_families(person)`: the live families a person owns or
+  collaborates on." (`families.py:visible`).
+- ADD, in "Deleting", to "skipped": `visible`, `visible_families` and `expectation_for` (`model.py:About.shows`).
+- CHANGE, in "Smaller issues", "**A run's owner isn't recorded, and scorer labels aren't carried to the next scorer
+  edit.** Both wait for the runner and the portal." to "**Scorer labels aren't carried to the next scorer edit.** That
+  waits for the portal." The runner and the scoring pass write the owner of a run and of a score
+  (`src/chatddx/runner/run.py:Runner.start`, `src/chatddx/runner/score.py:score_run`).

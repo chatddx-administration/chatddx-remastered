@@ -114,6 +114,9 @@ class Memory:
     def bindings(self, family: int) -> list[Binding]:
         return [b for b in self._bindings if b.family == family]
 
+    def families(self) -> list[int]:
+        return sorted({b.family for b in self._bindings})
+
     def bindings_in(self, source: str) -> list[Binding]:
         return [b for b in self._bindings if b.vignette.source == source]
 

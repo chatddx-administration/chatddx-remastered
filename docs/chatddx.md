@@ -288,3 +288,5 @@ Each code is described where it's produced: `docs/factors.md`, "Lints"; `docs/le
   The agent's take is (c)
 
 ## Proposed amendments
+- REMOVE, in "Glossary", "**Normalization:** the text-cleanup steps a trial applies to vignettes.", which "Text
+  cleanup" replaced when the last amendments were integrated.

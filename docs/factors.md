@@ -954,3 +954,7 @@ reference, straight from the schema. `RefTo` used to do this, and was stopped be
 Schema plays no part in a component's digest, so adding it back changes no digest.
 
 ## Proposed amendments
+- ADD, in "Smaller issues": "**A scoring's digest depends on the order of its expectations.** `Scoring.expectations`
+  isn't sorted as a trial's cases are, so the same expectations in another order make another scoring. The person
+  reads build them in the trial's case order." (`src/chatddx/factors/scoring.py:Scoring`,
+  `src/chatddx/store/reads.py:Reads.scoring`).

@@ -231,12 +231,8 @@ In `rounds.py`, which `run.py` calls for every item, with tools or without:
 - **Canary calls stream without events**, since `Streamed` carries an item key.
 
 ### Afterwards
-- **What the scoring pass leaves to its caller** (`agents/wip-repl.md`, phase 2):
-  - which expectation a case is scored against when it has several threads (D8), so building the `Scoring`;
-  - which scorers apply to a run: those whose views reach the skeleton's output schema;
-  - which runs are outstanding: a person's runs with no score under the scoring that would be built now.
-
-  They need the reads for a person (`agents/wip-repl.md`, phase 3).
+- **What the scoring pass leaves to its caller** is in the reads for a person (`agents/wip-repl.md`, phase 3):
+  `Reads.scorers`, `Reads.scoring` (D8) and `Reads.outstanding` (`src/chatddx/store/reads.py`).
 - **Judged views**, refused until judges run: the judge calls, recorded as `JudgeCall`s, and the scorer interface's
   next version (`agents/wip-sample-data.md`, "Free-text expectations").
 - **`chatddx samples`** back on the runner.

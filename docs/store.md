@@ -83,3 +83,14 @@ unreachable.
   `docs/factors.md`, "Splitting expectations", already considers a bump of `Scorer.schema_version`.
 
 ## Proposed amendments
+- ADD, in "Code", under `store.py:Store`: "`started(runs)`, `runs_of(trial)`, `finished(runs)` and `scores_of(run)`
+  list runs and scores, newest first; `reaching(digest, kind)` lists the components of a kind whose closure holds a
+  digest, through `factor.component_ref`." (`store.py:Store`).
+- ADD, in "Code": "`reads.py:Reads`: what one person sees. The live threads and families they own or collaborate
+  on; a thread by its name, matched whole and then as `OWNER/NAME`, since names may hold a slash; the runs they own,
+  newest first, by a prefix of the id, or those whose trial reaches a digest; the scorers whose views reach a run's
+  output schema; the scoring a run is scored under; and the runs still to score under it." (`reads.py:Reads`).
+- REMOVE, in "Known gaps", "Runs and scores can't be found: `Store.run` and `Store.score` take an id, and nothing
+  lists the runs of a trial or the scores of a run." (`store.py:Store.runs_of`, `store.py:Store.scores_of`).
+- CHANGE, in "Known gaps", "can't resolve it." (`migrations/0004-t0-ledger.sql`" to "can't resolve it
+  (`migrations/0004-t0-ledger.sql`": a stray quote from an earlier integration.
