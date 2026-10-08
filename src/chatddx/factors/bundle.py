@@ -8,6 +8,7 @@ from .base import (
     Finding,
     Frozen,
     StructuralError,
+    canonical_bytes,
     parse_component,
     sha256_digest,
 )
@@ -27,6 +28,8 @@ class Registry:
         if sha256_digest(raw) != digest:
             raise StructuralError(f"{digest} does not match its bytes")
         component = parse_component(raw)
+        # The stored bytes decide the digest, also where today's code writes them otherwise.
+        vars(component).update(canonical=raw, digest=digest)
         self._raw[digest] = raw
         self._parsed[digest] = component
         return component
@@ -97,7 +100,7 @@ class Bundle(Frozen):
         for digest, text in self.components.items():
             raw = text.encode()
             component = registry.add_raw(digest, raw)
-            if component.canonical != raw:
+            if canonical_bytes(component.canonical_doc()) != raw:
                 findings.append(
                     Finding(
                         code="bundle.recanonicalized",

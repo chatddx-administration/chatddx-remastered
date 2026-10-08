@@ -957,3 +957,19 @@ reference, straight from the schema. `RefTo` used to do this, and was stopped be
 Schema plays no part in a component's digest, so adding it back changes no digest.
 
 ## Proposed amendments
+
+- CHANGE ("Registries and bundles"): "the stored bytes still decide the digest" to "the stored bytes still decide
+  the digest: the loaded component's `canonical` is its stored bytes and its `digest` their hash, so
+  `LocalEngine.served_model_name` and `Judge.fills` follow the stored digest" (`bundle.py:Registry.add_raw`).
+- ADD ("Errors and findings", the `ValidationError` examples): text anywhere in a component holding U+0000, which
+  the store's `jsonb` copy can't hold (`base.py:Component._storable`,
+  `src/chatddx/store/migrations/0001-t0-factor.sql`).
+- CHANGE ("Smaller issues", "NaN and infinity get past validation"): "The stored component then reads back as a
+  different one (with `temperature` unset, under another digest)" to "The stored component then reads back with
+  `temperature` unset, under the same digest, and `Bundle.load` reports `bundle.recanonicalized`"
+  (`bundle.py:Registry.add_raw`, `bundle.py:Bundle.load`).
+- ADD ("Lints", `vllm.grammar_before_reasoning`): when the engine's `argv` sets `--default-chat-template-kwargs`,
+  `reasons=` isn't asked and the model's default counts as unknown, so the finding is an info
+  (`lint.py:_runtime`).
+- ADD ("Lints", `vllm.grammar_before_reasoning`): it isn't reported beside `vllm.tools_refused`, since the request
+  is then refused, or goes out unconstrained (`lint.py:_runtime`).
