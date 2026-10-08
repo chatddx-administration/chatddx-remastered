@@ -1,7 +1,12 @@
-from collections.abc import Callable
+import queue
+import threading
+from collections.abc import Callable, Iterator
+from concurrent.futures import Future, ThreadPoolExecutor
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from uuid import UUID, uuid4
+
+from pydantic import JsonValue
 
 from chatddx.catalog import Entry, EntryField, Subject
 from chatddx.core.rig import rig
@@ -36,6 +41,12 @@ class ItemStarted:
 
 
 @dataclass(frozen=True)
+class Streamed:
+    key: ItemKey
+    delta: Delta
+
+
+@dataclass(frozen=True)
 class ItemEnded:
     item: RunItem
 
@@ -45,7 +56,14 @@ class Noted:
     finding: Finding
 
 
-type Event = ItemStarted | Delta | ItemEnded | Noted
+type Event = ItemStarted | Streamed | ItemEnded | Noted
+
+
+@dataclass(frozen=True)
+class _Prepared:
+    key: ItemKey
+    vignette: Fingerprint
+    body: dict[str, JsonValue]
 
 
 def _now() -> datetime:
@@ -54,6 +72,12 @@ def _now() -> datetime:
 
 def _ignore(_: Event) -> None:
     pass
+
+
+def _streamed(
+    key: ItemKey, emit: Callable[[Streamed], None]
+) -> Callable[[Delta], None]:
+    return lambda delta: emit(Streamed(key, delta))
 
 
 class Runner:
@@ -74,11 +98,15 @@ class Runner:
     ) -> "Running":
         execution = execution or Execution()
         _ = registry.add(trial)
-        if execution.concurrency > 1:
-            raise ValueError("the runner sends one call at a time so far")
         if resolve(registry.get, trial.skeleton, Skeleton).tools:
             raise ValueError("the runner doesn't run tools yet")
         gate.check(self._inventory, registry.get, endpoint, trial)
+        jobs = self._inventory.endpoint(endpoint).max_jobs
+        if execution.concurrency > jobs:
+            raise ValueError(
+                f"endpoint {endpoint!r} takes {jobs} requests at once, the execution "
+                + f"sends {execution.concurrency}"
+            )
         secret = gate.secret(self._inventory, endpoint)
         url = url_of(self._inventory, registry.get, endpoint)
         store = Store(self._conn)
@@ -135,8 +163,17 @@ class Running:
 
     # A KeyboardInterrupt during a call records the call as stopped and is raised
     # again; one raised in `on_event` while a call streams counts as during the call.
+    # Above concurrency 1, it hangs up every call in flight and records them as stopped;
+    # another one while they hang up leaves them out of the log.
     def send(self, on_event: Callable[[Event], None] | None = None) -> None:
         emit: Callable[[Event], None] = on_event or _ignore
+        items = self._prepared(emit)
+        if self._started.execution.concurrency == 1:
+            self._send_serially(items, emit)
+        else:
+            self._send_concurrently(items, emit)
+
+    def _prepared(self, emit: Callable[[Event], None]) -> Iterator[_Prepared]:
         get = self._registry.get
         trial = resolve(get, self._started.trial, Trial)
         skeleton = resolve(get, trial.skeleton, Skeleton)
@@ -173,19 +210,85 @@ class Running:
                 seed=seed,
                 fills=prepared.fills,
             )
+            yield _Prepared(key, prepared.fingerprint, body)
+
+    def _send_serially(
+        self, items: Iterator[_Prepared], emit: Callable[[Event], None]
+    ) -> None:
+        for item in items:
             try:
                 call = sending.send(
                     self._url,
-                    body,
-                    execution=execution,
+                    item.body,
+                    execution=self._started.execution,
                     secret=self._secret,
-                    on_delta=emit,
+                    on_delta=_streamed(item.key, emit),
                 )
             except sending.Stopped as stopped:
                 self._stopping = True
-                self._append(key, prepared.fingerprint, stopped.call, emit)
+                self._append(item.key, item.vignette, stopped.call, emit)
                 raise KeyboardInterrupt from None
-            self._append(key, prepared.fingerprint, call, emit)
+            self._append(item.key, item.vignette, call, emit)
+
+    # Calls go out on worker threads, and everything else stays on the caller's: the
+    # events, the writes, and the stamp of when each item was sent, which keeps the
+    # items in schedule order for `check_execution`.
+    def _send_concurrently(
+        self, items: Iterator[_Prepared], emit: Callable[[Event], None]
+    ) -> None:
+        execution = self._started.execution
+        results: queue.SimpleQueue[Streamed | Future[Call]] = queue.SimpleQueue()
+        halt = threading.Event()
+        in_flight: dict[Future[Call], _Prepared] = {}
+        pool = ThreadPoolExecutor(execution.concurrency, "chatddx-runner")
+
+        def work(item: _Prepared, started_at: datetime) -> Call:
+            try:
+                return sending.send(
+                    self._url,
+                    item.body,
+                    execution=execution,
+                    secret=self._secret,
+                    on_delta=_streamed(item.key, results.put),
+                    halt=halt,
+                    started_at=started_at,
+                )
+            except sending.Stopped as stopped:
+                return stopped.call
+
+        try:
+            more = True
+            while True:
+                while more and len(in_flight) < execution.concurrency:
+                    item = next(items, None)
+                    if item is None:
+                        more = False
+                        break
+                    future = pool.submit(work, item, _now())
+                    in_flight[future] = item
+                    future.add_done_callback(results.put)
+                if not in_flight:
+                    return
+                done = results.get()
+                if isinstance(done, Streamed):
+                    emit(done)
+                    continue
+                item = in_flight.pop(done)
+                self._append(item.key, item.vignette, done.result(), emit)
+        except KeyboardInterrupt:
+            halt.set()
+            self._stopping = True
+            while in_flight:
+                done = results.get()
+                if isinstance(done, Streamed):
+                    continue
+                item = in_flight.pop(done, None)
+                if item is not None and done.exception() is None:
+                    self._append(item.key, item.vignette, done.result(), emit)
+            raise
+        finally:
+            halt.set()
+            pool.shutdown(wait=False)
 
     def finish(self) -> list[Finding]:
         if self._finished:

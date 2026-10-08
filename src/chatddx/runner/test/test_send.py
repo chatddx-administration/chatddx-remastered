@@ -1,5 +1,8 @@
 import socket
+import threading
+import time
 from collections.abc import Iterator
+from datetime import UTC, datetime, timedelta
 from typing import Any, cast
 
 import pytest
@@ -89,6 +92,44 @@ def test_an_interrupt_mid_stream_records_what_came_as_stopped(url: str) -> None:
     assert call.prompt_tokens is not None
     message = choice(call.response)["message"]
     assert message["reasoning"] == "".join(d.text for d in seen)
+
+
+def test_a_halt_hangs_up_mid_stream_and_keeps_what_came(url: str) -> None:
+    halt = threading.Event()
+    seen: list[Delta] = []
+
+    def halting(delta: Delta) -> None:
+        seen.append(delta)
+        if len(seen) == 3:
+            halt.set()
+
+    with pytest.raises(Stopped) as caught:
+        _ = send(url, body(), on_delta=halting, halt=halt)
+    call = caught.value.call
+    assert (call.error, call.status) == (STOPPED, 200)
+    assert call.prompt_tokens is not None
+    assert choice(call.response)["message"]["reasoning"] == "".join(
+        d.text for d in seen
+    )
+
+
+def test_a_halt_ends_the_wait_between_attempts() -> None:
+    with socket.socket() as s:
+        s.bind(("127.0.0.1", 0))
+        closed = at("127.0.0.1", s.getsockname()[1])
+    halt = threading.Event()
+    threading.Timer(0.1, halt.set).start()
+    began = time.monotonic()
+    with pytest.raises(Stopped) as caught:
+        _ = send(closed, body(), execution=Execution(retries=3), backoff=30, halt=halt)
+    assert time.monotonic() - began < 10
+    call = caught.value.call
+    assert (call.error, call.status, call.attempts) == (STOPPED, None, 1)
+
+
+def test_a_call_counts_from_when_the_caller_says_it_was_sent(url: str) -> None:
+    sent = datetime.now(UTC) - timedelta(seconds=1)
+    assert send(url, body(), started_at=sent).started_at == sent
 
 
 def test_only_a_call_that_got_no_answer_is_tried_again(url: str) -> None:

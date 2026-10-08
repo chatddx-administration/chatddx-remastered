@@ -280,3 +280,9 @@ The runner needs the World the person starting a run meant, since that World dec
 - **`max_jobs` isn't read** until the runner sends more than one request at a time.
 
 ## Proposed amendments
+- CHANGE, in "Endpoints", "Nothing reads it yet, because the runner sends one request at a time." to "The runner
+  refuses an execution whose `concurrency` is above it." (`src/chatddx/runner/run.py:Runner.start`).
+- CHANGE, in "Smaller issues", "**`max_jobs` isn't read** until the runner sends more than one request at a time." to
+  "**`max_jobs` holds per run.** Two runs on one endpoint can send twice as many requests between them. vLLM queues
+  what's over `--max-num-seqs`, so nothing fails, but the batching differs from what each run's execution says."
+  (`src/chatddx/runner/run.py:Runner.start`; `agents/wip-runner.md`, "Afterwards").

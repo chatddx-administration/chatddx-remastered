@@ -1,5 +1,6 @@
 import socket
-from collections.abc import Callable, Iterator
+from collections.abc import Callable, Generator, Iterator
+from contextlib import contextmanager
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, cast
@@ -21,9 +22,18 @@ from chatddx.fake_vllm.server import serving
 from chatddx.identity import Person
 from chatddx.inventory import DirectorySource, Inventory, start_up
 from chatddx.ledger import Endpoint, ItemKey, RunFinished
+from chatddx.ledger.call import check_execution
+from chatddx.runner import send as sending
 from chatddx.runner.gate import Refused
-from chatddx.runner.run import Event, ItemEnded, ItemStarted, Noted, Runner
-from chatddx.runner.send import STOPPED, Delta
+from chatddx.runner.run import (
+    Event,
+    ItemEnded,
+    ItemStarted,
+    Noted,
+    Runner,
+    Streamed,
+)
+from chatddx.runner.send import STOPPED
 from chatddx.seed import Plan
 from chatddx.store import Catalog, People, Store
 from chatddx.store.store import Connection
@@ -32,6 +42,8 @@ WORLD = WORLDS / "sample"
 QWEN = "qwen3-8b-awq@fake"
 GPT_OSS = "gpt-oss-20b@fake"
 CASES = ("DutchFall10w", "casesfromedn1")
+# Slow enough that calls sent together overlap: a fake answer is some 40 tokens.
+DELAY = 0.005
 
 
 @pytest.fixture(scope="module")
@@ -68,10 +80,22 @@ def inventory(tmp_path: Path) -> Inventory:
     return world(tmp_path, port)
 
 
+@contextmanager
+def faked(inventory: Inventory, plan: Plan, delay: float = 0.0) -> Generator[None]:
+    startup = start_up(inventory, plan.registry.get, QWEN)
+    with serving([Served.of(startup.argv[0], startup.argv[1:])], delay=delay):
+        yield
+
+
 @pytest.fixture
 def fake(inventory: Inventory, plan: Plan) -> Iterator[None]:
-    startup = start_up(inventory, plan.registry.get, QWEN)
-    with serving([Served.of(startup.argv[0], startup.argv[1:])]):
+    with faked(inventory, plan):
+        yield
+
+
+@pytest.fixture
+def slow(inventory: Inventory, plan: Plan) -> Iterator[None]:
+    with faked(inventory, plan, DELAY):
         yield
 
 
@@ -151,7 +175,10 @@ def test_a_run_sends_each_item_and_writes_its_log(
         f"seed={e.seed} " in reasoning(d)
         for e, d in zip(heard.of(ItemStarted), heard.of(ItemEnded), strict=True)
     ] == [True] * 4
-    assert heard.of(Delta) and not heard.of(Noted)
+    started = [e.key for e in heard.of(ItemStarted)]
+    streamed = [s.key for s in heard.of(Streamed)]
+    assert streamed == sorted(streamed, key=started.index)
+    assert set(streamed) == set(started) and not heard.of(Noted)
     about = Catalog(conn).about(Subject(run=running.run))
     assert about.owner == alice.id
 
@@ -249,7 +276,7 @@ def test_stopping_ends_the_run_after_the_item_under_way(
     running = Runner(conn, inventory, alice).start(trial(plan), plan.registry, QWEN)
 
     def stop(event: Event) -> None:
-        if isinstance(event, Delta):
+        if isinstance(event, Streamed):
             running.stop()
 
     running.send(Heard(then=stop))
@@ -265,10 +292,10 @@ def test_an_interrupt_mid_call_records_the_call_as_stopped(
     conn: Connection, inventory: Inventory, alice: Person, plan: Plan
 ) -> None:
     running = Runner(conn, inventory, alice).start(trial(plan), plan.registry, QWEN)
-    deltas: list[Delta] = []
+    deltas: list[Streamed] = []
 
     def interrupt(event: Event) -> None:
-        if isinstance(event, Delta):
+        if isinstance(event, Streamed):
             deltas.append(event)
             if len(deltas) == 2:
                 raise KeyboardInterrupt
@@ -351,3 +378,157 @@ def test_a_run_is_finished_once_and_sends_nothing_after(
     assert heard.events == []
     with pytest.raises(ValueError, match="is finished"):
         _ = running.finish()
+
+
+ORDERS = [
+    Execution(),
+    Execution(order="replicate_major@1"),
+    Execution(order="shuffled@1", shuffle_seed=3),
+]
+
+
+@pytest.mark.usefixtures("fake")
+@pytest.mark.parametrize("concurrency", [1, 3])
+@pytest.mark.parametrize("order", ORDERS, ids=lambda e: e.order)
+def test_items_are_sent_in_the_execution_s_order(
+    conn: Connection,
+    inventory: Inventory,
+    alice: Person,
+    plan: Plan,
+    order: Execution,
+    concurrency: int,
+) -> None:
+    made = trial(plan)
+    schedules = {tuple(e.schedule(made.cases, 2)) for e in ORDERS}
+    assert len(schedules) == len(ORDERS)
+    execution = order.model_copy(update={"concurrency": concurrency})
+    running = Runner(conn, inventory, alice).start(made, plan.registry, QWEN, execution)
+    heard = Heard()
+    running.send(heard)
+    assert running.finish() == []
+    assert [e.key for e in heard.of(ItemStarted)] == [
+        ItemKey(case=c, replicate=r) for c, r in execution.schedule(made.cases, 2)
+    ]
+    assert Store(conn).run(running.run).started.execution == execution
+
+
+@pytest.mark.usefixtures("slow")
+def test_calls_are_in_flight_together_up_to_the_execution_s_concurrency(
+    conn: Connection, inventory: Inventory, alice: Person, plan: Plan
+) -> None:
+    made = trial(plan)
+    running = Runner(conn, inventory, alice).start(
+        made, plan.registry, QWEN, Execution(concurrency=2)
+    )
+    heard = Heard()
+    running.send(heard)
+    assert running.finish() == []
+    items = Store(conn).run(running.run).items
+    assert all(i.call.error is None and i.call.status == 200 for i in items)
+    calls = [i.call for i in items]
+    sent = {i.key: i.call.started_at for i in items}
+    assert [
+        (f.code, f.message) for f in check_execution(Execution(), made, calls, sent)
+    ] == [("execution.concurrency", "2 calls were in flight at once, declared 1")]
+    assert {e.item.key for e in heard.of(ItemEnded)} == {
+        s.key for s in heard.of(Streamed)
+    }
+
+
+@pytest.mark.usefixtures("fake")
+def test_a_concurrency_above_the_endpoint_s_max_jobs_is_refused(
+    conn: Connection, db: str, inventory: Inventory, alice: Person, plan: Plan
+) -> None:
+    assert inventory.endpoint(QWEN).max_jobs == 4
+    with pytest.raises(
+        ValueError, match="takes 4 requests at once, the execution sends 5"
+    ):
+        _ = Runner(conn, inventory, alice).start(
+            trial(plan), plan.registry, QWEN, Execution(concurrency=5)
+        )
+    assert rows(db, "run_stage") == 0
+
+
+@pytest.mark.usefixtures("slow")
+def test_stopping_a_concurrent_run_ends_it_after_the_calls_in_flight(
+    conn: Connection, inventory: Inventory, alice: Person, plan: Plan
+) -> None:
+    running = Runner(conn, inventory, alice).start(
+        trial(plan), plan.registry, QWEN, Execution(concurrency=2)
+    )
+
+    def stop(event: Event) -> None:
+        if isinstance(event, Streamed):
+            running.stop()
+
+    running.send(Heard(then=stop))
+    findings = running.finish()
+    items = Store(conn).run(running.run).items
+    assert [i.call.error for i in items] == [None, None]
+    assert ("run.incomplete", "2 items missing") in [
+        (f.code, f.message) for f in findings
+    ]
+
+
+@pytest.mark.usefixtures("slow")
+def test_an_interrupt_hangs_up_every_call_in_flight_and_records_them_as_stopped(
+    conn: Connection, inventory: Inventory, alice: Person, plan: Plan
+) -> None:
+    running = Runner(conn, inventory, alice).start(
+        trial(plan), plan.registry, QWEN, Execution(concurrency=2)
+    )
+    deltas: list[Streamed] = []
+
+    def interrupt(event: Event) -> None:
+        if isinstance(event, Streamed):
+            deltas.append(event)
+            if len(deltas) == 2:
+                raise KeyboardInterrupt
+
+    with pytest.raises(KeyboardInterrupt):
+        running.send(Heard(then=interrupt))
+    running.send()
+    _ = running.finish()
+    items = Store(conn).run(running.run).items
+    assert [i.call.error for i in items] == [STOPPED, STOPPED]
+    assert all(i.call.prompt_tokens is not None for i in items)
+
+
+@pytest.mark.usefixtures("slow")
+def test_another_interrupt_while_calls_hang_up_leaves_them_out(
+    conn: Connection, inventory: Inventory, alice: Person, plan: Plan
+) -> None:
+    running = Runner(conn, inventory, alice).start(
+        trial(plan), plan.registry, QWEN, Execution(concurrency=2)
+    )
+
+    def interrupt(event: Event) -> None:
+        if isinstance(event, Streamed | ItemEnded):
+            raise KeyboardInterrupt
+
+    with pytest.raises(KeyboardInterrupt):
+        running.send(Heard(then=interrupt))
+    _ = running.finish()
+    [item] = Store(conn).run(running.run).items
+    assert item.call.error == STOPPED
+
+
+@pytest.mark.usefixtures("fake")
+def test_a_call_that_fails_on_its_thread_fails_the_send(
+    conn: Connection,
+    inventory: Inventory,
+    alice: Person,
+    plan: Plan,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def broken(*_args: object, **_kwargs: object) -> None:
+        raise RuntimeError("broken")
+
+    monkeypatch.setattr(sending, "send", broken)
+    running = Runner(conn, inventory, alice).start(
+        trial(plan), plan.registry, QWEN, Execution(concurrency=2)
+    )
+    with pytest.raises(RuntimeError, match="broken"):
+        running.send()
+    _ = running.finish()
+    assert Store(conn).run(running.run).items == ()

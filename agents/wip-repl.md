@@ -16,7 +16,7 @@ runner (`src/chatddx/runner/`).
 Remastered has every piece a run is built from: `render`, `Trial`, `Execution`, `prepare_case`, the ledger, the
 store, the catalog, the scorers, the facts, the World inventory with `url_of`/`confirm`, and the fake vLLM. The
 runner strings them together. Phase 1 and D1–D4 moved to `agents/wip-runner.md`, where they are decided and built,
-but for concurrency, tool rounds and canaries.
+but for tool rounds and canaries.
 
 So the plan:
 - **Port the UI.** Command table, parsing, completion, prompt, Ctrl-C handling, rendering. These carry over
@@ -202,8 +202,9 @@ A case can have several expectation threads, such as the archive's and the user'
      - send, then append the `RunItem`.
   4. Append `RunFinished` with the findings, then `check_run`.
 - **Events** for a UI: an item starting, reasoning text, content text, a tool call, usage, an item ending (its
-  `RunItem`) and a finding. They're synchronous: `Store` has no async API (`docs/store.md`, "Known gaps"), and a
-  batch's concurrency stays 1.
+  `RunItem`) and a finding. They're synchronous: `Store` has no async API (`docs/store.md`, "Known gaps"). Above
+  concurrency 1, calls go out on threads and the events still come on the caller's (`agents/wip-runner.md`, "Phase
+  4").
 - **Tests** in `src/chatddx/runner/test/`. They:
   - start the fake in a thread on port 0, as `inventory/test/test_serving.py` does;
   - point a temporary World inventory at it;

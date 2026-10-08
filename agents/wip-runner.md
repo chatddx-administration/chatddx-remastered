@@ -13,16 +13,19 @@ one: a portal, a worker and `chatddx samples` (`agents/wip-sample-data.md`, "Lef
 "Decided" means the user said so. "Take" is the agent's recommendation and still open.
 
 ## Start with this
-Phases 0–3 are done (`src/chatddx/runner/`). A trial runs at an endpoint and leaves a finished run log and its owner
-entry, and `check_run` comes back clean.
+Phases 0–4 are done (`src/chatddx/runner/`). A trial runs at an endpoint, in the execution's order and up to its
+concurrency, and leaves a finished run log and its owner entry, and `check_run` comes back clean.
 
-It was checked twice:
+It was checked:
 - by the tests in `src/chatddx/runner/test/`;
 - by hand: the `chatddx fake-vllm --runaway` process, started from `worlds/sample/inventory.toml`'s gpt-oss endpoint,
   ran three cases on `plan (openai/gpt-oss-20b)`. Each call was cut at 100 tokens of whitespace, the fake heard each
   hang-up, and the run recorded its endpoint and cutoff.
+- by hand, for phase 4: the `chatddx fake-vllm --delay 0.01` process, started from the qwen endpoint, ran 4 cases × 2
+  seeds shuffled at concurrency 4. The run took 1.0 s for 3.9 s of calls, and `check_run` came back clean. A SIGINT
+  0.3 s in hung up the 4 calls in flight, the fake heard 4 hang-ups, and the 4 were recorded as stopped.
 
-Next: phase 4, then 5 and 6 (see "Left").
+Next: phase 5, then 6 (see "Left").
 
 **Real engines aren't cleared yet.** `worlds/kompismoln/inventory.toml` has no `[cleared]` table, so the gate refuses
 `pelle` and `malborg` for the sample. Clearing them is a human's statement to make.
@@ -67,7 +70,7 @@ Next: phase 4, then 5 and 6 (see "Left").
   back as nulls.
 
 ### Phase 2: `send.py`
-`send(url, body, execution=, secret=, on_delta=, key=, backoff=)` returns a `Call`:
+`send(url, body, execution=, secret=, on_delta=, key=, backoff=, halt=, started_at=)` returns a `Call`:
 - **The body.** `stream` and `stream_options.include_usage` are added after fingerprinting.
 - **What's kept.** The prompt token ids become a fingerprint and leave the response.
 - **Retries** only where no answer came back: a connection failure, a 429 or a 5xx. Backoff is exponential. An answer
@@ -76,6 +79,7 @@ Next: phase 4, then 5 and 6 (see "Left").
   - after `whitespace_limit` tokens of whitespace in a row;
   - when `timeout_s` has passed since the stream started, with the socket's timeout as a backstop.
 - **A KeyboardInterrupt** hangs up and raises `Stopped`, which carries the call so far, with `error = "stopped"`.
+  So does setting `halt`, for a call on another thread (phase 4).
 - **`Delta` events** carry reasoning, content or tool-call text and the running token count, from each chunk's
   `token_ids`.
 
@@ -91,8 +95,8 @@ goes only into the `Authorization` header; a test checks that no stored row hold
 
 **`Runner(conn, inventory, by)`** refuses a connection that isn't in autocommit mode (R6). `.start(trial, registry,
 endpoint, execution)`:
-1. Refuses `concurrency` above 1 and a skeleton with tools.
-2. Runs the gate.
+1. Refuses a skeleton with tools.
+2. Runs the gate, then refuses a `concurrency` above the endpoint's `max_jobs` (phase 4).
 3. `Store.add`s the trial's closure.
 4. Appends `RunStarted`, with `rig()`, the execution and the endpoint.
 5. Writes the run's owner entry.
@@ -108,15 +112,29 @@ endpoint, execution)`:
 
 **Changed from the plan: events go to a callback** (`on_event`), not to an iterator. A KeyboardInterrupt raised
 while the caller handles an event then lands inside the runner's call, which records it. With a generator, it would
-land in the caller's frame while the runner sat suspended at a `yield`. The events are `ItemStarted`, `Delta`,
-`ItemEnded` and `Noted`.
+land in the caller's frame while the runner sat suspended at a `yield`. The events are `ItemStarted`, `Streamed`
+(a `Delta` with its item's key, since phase 4), `ItemEnded` and `Noted`.
+
+### Phase 4: order and concurrency
+- **Order.** The runner tests run every order at concurrency 1 and 3, and check that items start in
+  `Execution.schedule`'s order and that `check_run` stays quiet.
+- **Concurrency above 1** (`run.py:Running._send_concurrently`). Calls go out on a thread pool of `concurrency`
+  workers. Everything else stays on the caller's thread: preparing each item, the events, the writes, and the stamp
+  of when each item was sent, which `send` takes as `started_at`. A worker's deltas and its finished call come back
+  through a queue. `check_execution` stays quiet for two reasons:
+  - items are stamped in schedule order, so `execution.order` doesn't fire, even when a worker starts late;
+  - an item is sent only once a finished call has come back, so `execution.concurrency` doesn't fire.
+- **Above `max_jobs`**, `Runner.start` refuses before anything is written. It's a `ValueError` like the tools refusal,
+  not a gate `Refused`, which is kept for clearance.
+- **Stopping.** `stop()` lets the calls in flight finish. A KeyboardInterrupt can't reach a worker, so the runner sets
+  `send`'s `halt`. Each call then hangs up at its next chunk or in its backoff, and is recorded as stopped before the
+  interrupt is raised again. Another KeyboardInterrupt while they hang up leaves them out of the log. A worker's
+  unexpected exception is raised on the caller's thread, from its future.
+- **Concurrency 1** keeps the serial path: a KeyboardInterrupt there hangs up at once, even mid-read.
+- **Events carry the item's key** (`Streamed`), since deltas of items in flight interleave. That changed the serial
+  path's events too, so a caller sees one shape whatever the concurrency.
 
 ## Left
-### 4. Execution
-- **Order.** Shuffled and replicate-major order already work, through `Execution.schedule`. They still need a test.
-- **Concurrency above 1.** Threads, with one writer, refused above the endpoint's `max_jobs`.
-- `check_execution` should stay quiet.
-
 ### 5. Tool rounds
 - The `next_request` loop up to `skeleton.max_rounds`, recorded as `Turn` and `ToolRun`.
 - Tools found with `core/rig.py:entry`, and recorded in `RunStarted.tool_code`.
@@ -136,6 +154,12 @@ land in the caller's frame while the runner sat suspended at a `yield`. The even
   that are in.
 - **A summary of failed calls.** `check_run` says nothing about `Call.error`. A run whose every call was cut short
   checks clean, and only the items show it. A UI can count them, or the runner could note them.
+- **`max_jobs` across runs.** Each run is held to its endpoint's `max_jobs`, but two runs on one endpoint can send
+  twice that between them. vLLM queues what's over `--max-num-seqs` rather than refusing it, so the cost is batching
+  that the runs' `execution` doesn't show.
+- **A halted call waits for its next chunk.** An engine that stalls mid-stream, under an execution with no
+  `timeout_s`, keeps its worker waiting after a KeyboardInterrupt, until a second one. Shutting the worker's socket
+  down from the caller's thread would end the wait, but `wire.Stream` doesn't offer that yet.
 
 ## Still open from elsewhere
 - **`return_token_ids` on remote engines** (`agents/manifest-triage.md`, D): a non-vLLM API may refuse it. `render`
