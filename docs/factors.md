@@ -10,7 +10,7 @@ we learn.
 
 Factors are the building blocks of the chatddx rig: an environment that can be rebuilt exactly, and shown to be the
 same, for scientific rigor. This document describes what each factor is for and how factors combine. Names, fields,
-rules and errors are in the API, agents/factors-api.md.
+rules and errors are in the API, docs/factors-api.md.
 
 Factors depend on nothing else in chatddx; the model facts, the catalog, the ledger and the store build on them.
 Principal authors are the roles in docs/identity.md.
@@ -47,11 +47,13 @@ A trial's outputs therefore depend on the trial's pinned factors and on its run'
 runs of the same trial are interchangeable only when those agree too (see "Open design issues").
 
 ### Not factors
-- Records of what happened (runs, scores, calls): docs/ledger.md. They hold the recorded factors and the evidence of the
+- Records of what happened (runs, scores, calls): [docs/ledger.md]. They hold the recorded factors and the evidence of the
   observed ones, but they aren't factors themselves.
-- People, roles, authentication and authorization: docs/identity.md.
-- Names, labels, languages, tags, descriptions, owners, collaborators and version history: docs/catalog.md.
-- Sensitivity and vetting: agents/wip-clearance.md.
+- People, roles, authentication and authorization: [docs/identity.md].
+- Names, labels, languages, tags, descriptions, owners, collaborators and version history: [docs/catalog.md].
+- Sensitivity and vetting: [agents/wip-clearance.md].
+- Facts from model cards: [docs/facts.md].
+- Inventory: [docs/inventory.md].
 - Knowledge about models (reasoning levels, recommended sampling, output caveats, specs): the model facts
   (docs/facts.md). Facts help write chunks and check them, but no digest depends on them.
 - Instruments and provenance: canary sets and compilations are components, but not factors.
@@ -621,11 +623,11 @@ They look at:
 
 Checks against the model facts belong to the facts (docs/facts.md). Other findings come from the steps that observe
 them: drift when preparing a case, a chat template that doesn't match its hash or reads the date, and a component that a
-bundle holds in a form today's code wouldn't write. The API lists every finding (agents/factors-api.md, "Finding
+bundle holds in a form today's code wouldn't write. The API lists every finding (docs/factors-api.md, "Finding
 codes").
 
 ## Open design issues
-These are open questions of design. Where the code falls short of this document, the API says so (agents/factors-api.md,
+These are open questions of design. Where the code falls short of this document, the API says so (docs/factors-api.md,
 "Known gaps").
 
 ### Runs of the same trial aren't interchangeable
