@@ -1,267 +1,204 @@
 # Catalog
 
-Components and records never change. Editing a prompt makes a new component with a new digest, and a run's rows are
+Components and records never change. Editing a prompt makes a new component with a new digest, and a run's records are
 only ever added to. That is what makes the rig reproducible, but it leaves people nothing to hold on to: a digest is
 not a name, and nothing says that one prompt is the next version of another.
 
 The catalog gives people that handle. It names components, families of cases, runs and scores; it keeps the versions
-of a component in order; and it remembers who owns what, what was deleted, which language a text is written in, and
-what a scorer's views are called. None of it changes an output or a score. No component refers to the catalog, so no
-digest depends on it (`docs/factors.md`, "Not factors").
+of a component in order; and it remembers who owns what and who it is shared with, what was deleted, which language a
+text is written in, and what a scorer's views are called. None of it changes an output or a score: no component refers
+to the catalog, so no digest depends on it (docs/factors.md, "Not factors"). This document describes what the catalog
+keeps and why. Names, fields, rules and errors are in the API, docs/catalog-api.md.
 
-The catalog refers to components by digest, to runs and scores by id, and to people by `identity.person(id)`
-(`docs/identity.md`). It holds nothing produced from a vignette, which is the only sensitive data, so
-`chatddx_reader` may read all of it.
+The catalog builds on the factors. It refers to components by digest, to runs and scores by their start records
+(docs/ledger.md), and to people by their identity (docs/identity.md). It holds nothing produced from a vignette, which
+is the only sensitive data, so the reader role may read all of it.
 
-Code paths are relative to `src/chatddx/catalog/` unless they start with `src/` or `docs/`. The package imports no
-other chatddx package than `chatddx.factors`, and holds no SQL. `chatddx.catalog` exports the public names.
+## How the catalog works
 
-## How the catalog is built
+### Append-only, and the latest wins
+Nothing in the catalog is changed or removed. Every change is a new row. For anything that can change (a thread's
+current version, a name, a binding, a language, a label), the latest row is what holds now and the earlier rows are its
+history. "Latest" means written last, in the order the database numbered the rows; the time a row records is only for
+display.
 
-### Append-only, and the latest row wins
-Nothing in the catalog is updated or deleted. Every change is a new row. For anything that can change (a thread's
-current version, a name, a binding, a language, a label), the latest row is what holds now and the earlier rows are
-its history. "Latest" means written last, in the order the database numbered the rows; the time a row records (`at`)
-is only for display. The rule is written once, in `model.py:latest` and `model.py:About.of`.
+Deleting is a row too, which a later row can undo (see "Deleting"). True deletion is refused by the database
+(docs/store.md, "Tiers"); a garbage collector for unreferenced items is on the table (docs/chatddx.md, "On the table").
 
-Deleting is a row too: a `deleted` entry, which a later entry can undo (see "Deleting"). True deletion is refused by
-the database at tier 2 (`docs/store.md`); a garbage collector for unreferenced items is "On the table" in
-`docs/chatddx.md`.
-
-### The package and the store
-The rules live in this package, and the store reads and writes the rows:
-- `read.py:Reader` lists what the rules need to read: components, threads, edits, entries, bindings, languages and
-  labels, as rows in the order they were written. A `Reader` never picks the latest row or decides anything.
-- `src/chatddx/store/catalog.py:Rows` answers `Reader` from the tables. `src/chatddx/store/catalog.py:Catalog` is what
-  callers use: each of its methods reads through `Rows`, calls this package, and writes what was decided in one
-  transaction.
-- `test/memory.py:Memory` answers `Reader` from memory, so the rules are tested without a database (`test/`). The
-  store's tests cover the same behaviour through Postgres (`src/chatddx/store/test/test_catalog.py`).
-
-The dividing line: the store answers which rows exist, and this package decides what they mean. A rule that two
-writers at once could break also needs the database to enforce it, at tier 2 (see "Open design issues").
-
-The modules:
-- `model.py`: the types, the lists of kinds and fields, and "latest wins";
-- `read.py`: `Reader`, and helpers that read and pick the latest in one step (a thread's head, what a subject's
-  entries say, a scorer's labels);
-- `threads.py`: threads, edits, forks, variations, proposals and what has moved on;
-- `families.py`: families of cases and their bindings: adopting, surveying and repairing;
-- `language.py`: languages;
-- `titles.py`: titles.
+### Rules
+The catalog checks its rules against what is stored when it writes, and a change that takes several rows, such as a
+thread with its first version and its owner, a family with its binding, or a repair, is written all at once or not at
+all. The rules that two writers at once could break are repeated by the database at tier 2, with one exception (see
+"Concurrent writers").
 
 ## Threads and edits
-A *thread* is the handle on a component that people edit: the versions of one prompt, one trial, one engine. It has
-a kind, and a sequence of *edits*, each pointing at one stored component of that kind (`model.py:Thread`,
-`model.py:Edit`). The latest edit is the thread's *head*, its current version; the others are its history, in order.
+A *thread* is the handle on a component that people edit: the versions of one prompt, one trial, one engine. It has a
+kind and a sequence of *edits*, each pointing at one stored component of that kind. The latest edit is the thread's
+*head*, its current version; the others are its history, in order.
 
-Every kind of component has threads except two (`model.py:THREAD_KINDS`):
-- `case`: cases are named through families instead (see "Families and repairs");
-- `compilation`: a compilation records how a skeleton was made, and nobody edits it. Skeleton edits point at it (see
+Every kind of component has threads except two:
+- cases, which are named through families instead (see "Families and repairs");
+- compilations, which record how a skeleton was made and which nobody edits. Skeleton edits point at them (see
   "Recipes").
 
 That includes the kinds ops and developers write, such as models, engines, expectation schemas and canary sets. They
 are rarely edited, but threads are where names attach for everything except cases.
 
-The same digest may appear in several threads, and more than once in one: reverting is an edit that points back at
+The same component may appear in several threads, and more than once in one: reverting is an edit that points back at
 an earlier version.
 
-Writing:
-- `Catalog.create(digest, by, compilation=, forked_from=, name=, owner=)` writes a thread, its first edit and its
-  owner entry, plus its name when one is given, in one transaction. The owner is whoever creates the thread, unless
-  `owner` names someone else. It refuses a digest that isn't stored (`LookupError`) and a kind without threads
-  (`ValueError`, `threads.py:check_threadable`).
-- `Catalog.edit(thread, digest, by, compilation=, based_on=)` adds an edit, so the thread moves to `digest`. The
-  database refuses a digest that isn't stored or isn't of the thread's kind.
+A thread is created with its first version and its owner, and its name when one is given. It moves only when someone
+saves an edit, and nothing moves along with it. When a prompt's thread moves on, the skeletons, trials and scorings
+built on the old prompt stay as they are; the catalog tells which of them could be updated (see "What has moved on").
 
-Reading (`threads.py`):
-- `Catalog.thread(id)`, `Catalog.history(thread)` and `Catalog.head(thread)`. They raise `LookupError` for a thread
-  that doesn't exist.
-- `Catalog.heads(kind, deleted=False)`: the heads of the live threads of a kind, or of the deleted ones.
-- `Catalog.find(kind, name, owner=)`: the live threads of a kind whose current name is `name`, owned by `owner` if
-  given. Names aren't unique, so it may return several.
-- `Catalog.forks(thread)`: the threads forked from any edit of a thread.
-- `Catalog.expectations_of(case)`: the expectation threads whose head expects a case.
-- `Catalog.containing(digest)`: every edit, in any thread, that points at a digest.
-- `Catalog.visible(kind, person)`: the heads of the live threads of a kind that a person owns or collaborates on
-  (`model.py:About.shows`), with what their entries say.
-- `Catalog.expectation_for(case, person, schema)`: the expectation a person scores a case against: the head of a
-  thread of their own, else of the one thread shared with them, among the threads they see whose head is in
-  `schema`. Several heads to choose from are refused, naming the threads.
-
-A thread moves only when someone saves an edit, and nothing moves along with it. When a prompt's thread moves on, the
-skeletons, trials and scorings built on the old prompt stay as they are; `behind` tells which of them could be
-updated (see "What has moved on").
+The catalog answers what people need to find:
+- a thread's versions, and its current one;
+- the live threads of a kind, or the deleted ones;
+- the threads of a kind with a given name, owned by a given person if asked;
+- the forks of a thread;
+- the expectation threads of a case;
+- where a given component appears, in any thread;
+- what a person sees (see "Owners");
+- the expectation a person scores a case against, under a given expectation schema: one of their own, else the one
+  shared with them. When there are several to choose from, the catalog says so rather than choose.
 
 ## Configurations and variations
-Researchers refine their configurations by trying variations, keeping what works, and forking new configurations
-from it (`docs/chatddx.md`, "Intended evolution of configurations"). The catalog supports that workflow without having
-objects of its own for it.
+Researchers refine their configurations by trying variations, keeping what works, and forking new configurations from
+it (docs/chatddx.md, "Intended evolution of configurations"). The catalog supports that workflow without having objects
+of its own for it.
 
 A *configuration* is a skeleton thread. A *variation* is a fork, of any kind, together with what it changes from the
-edit it came from. Trying a variation costs nothing in the catalog, since any digest can be run without a thread. A
-variation worth keeping becomes an edit of its thread, or a fork. Configurations are organised by their lineage
-(forks and `based_on`), the recipe parts they use, their entries and their runs, not by their names, which are
-optional.
+version it came from. Trying a variation costs nothing in the catalog, since any component can be run without a thread.
+A variation worth keeping becomes an edit of its thread, or a fork. Configurations are organised by their lineage, the
+recipe parts they use, what is said about them and their runs, not by their names, which are optional.
 
 ### Recipes
 A recipe has no thread of its own; its history is kept on the skeleton thread it compiles to. Each edit of a skeleton
-thread can name the compilation that produced its skeleton (`Edit.compilation`), and the compilation holds the recipe
-(`docs/factors.md`, "Compilation"). The database checks that the compilation is one of that very skeleton, and that
-only skeleton edits name one. A hand-written skeleton has no compilation, so its edits name none.
-`Catalog.recipe(thread)` reads the recipe of a thread's head.
+thread can name the compilation that produced its skeleton, and the compilation holds the recipe (docs/factors.md,
+"Compilation"). The compilation must be one of that very skeleton, and only skeleton edits name one. A hand-written
+skeleton has no compilation, so its edits name none.
 
 ### Forks
-A *fork* is a new thread started from an edit of another thread of the same kind (`Thread.forked_from`). The thread
-it came from is its *origin*.
+A *fork* is a new thread started from a version of another thread of the same kind, its *origin*. A fork is compared
+with its *base*: the version it was forked from, or the origin version its changes were last re-applied onto. What it
+*varies* is what its head changes from the base: the recipe parts it replaced when both are compiled, and otherwise the
+component's own fields.
 
-`Catalog.variation(thread)` (`threads.py:variation`) compares a fork with its *base*: the edit it was forked from, or
-the origin edit it was last re-applied onto (`Edit.based_on`, below). It returns `model.py:Variation`:
-- `varies`: what the fork's head changes from the base. When both have a compilation, that is the recipe parts the
-  fork replaced (`/recipe/output`, …). Otherwise, as for a chunk or a hand-written skeleton, it is the component's
-  top-level fields that differ (`/max_output_tokens`, …);
-- `origin_head`: the origin's head now, and `moved`: whether it has moved on from the base.
+When the origin has moved on, the catalog offers a *proposal*: the origin's head with the fork's changes on top, as a
+recipe to compile or as a component. Nothing is stored until someone accepts it. Accepting is an ordinary edit of the
+fork that records which origin version the changes were re-applied onto, which can't be earlier than the one the fork
+came from. From then on, the fork is compared with that version.
 
-It returns `None` for a thread that isn't a fork.
-
-When the origin has moved on, `Catalog.proposal(thread)` offers the origin's head with the fork's changes on top: a
-recipe to compile when the fork is compared by recipe, a component otherwise. It gives `None` when nothing has moved,
-and when the fork is compared by recipe but the origin's new head has no compilation. Nothing is stored.
-
-Accepting a proposal is an ordinary edit of the fork, with `based_on` naming the origin edit it was re-applied onto.
-`based_on` must be an edit of the origin at or after the one the fork came from (`threads.py:check_based_on`, and at
-tier 2). From then on, `variation` compares the fork with that edit. The old chatddx let a configuration extend
-another and follow it automatically; here a fork follows its origin only when someone accepts a proposal.
+The old chatddx let a configuration extend another and follow it automatically; here a fork follows its origin only
+when someone accepts a proposal.
 
 ### What has moved on
-`Catalog.behind(thread)` (`threads.py:behind`) lists the references of a thread's head that could be updated. It
-looks at:
+For any thread, the catalog lists the references of its head that could be updated. It looks at:
 - the head's own references, such as a trial's skeleton, engine and cases;
-- for a skeleton thread, the references of its recipe (`/recipe/instructions`, …);
-- the appendices of each case the head references (`/cases/0/appendices/0`, or `/case/appendices/0` for an
-  expectation), since cases have no threads of their own.
+- for a configuration, the parts of its recipe;
+- the appendices of each case the head references, since cases have no threads of their own.
 
-A reference is behind when a live thread that held its digest has since moved on to another. Its entry
-(`model.py:Behind`) has the path, the digest and that thread's head. A digest can be held by several threads, so one
-path gets an entry for each thread that moved on: for example, when a chunk was forked and both threads moved on.
-Deleted threads aren't proposed.
+A reference is *behind* when a live thread that held it has since moved on to another version. A component can be held
+by several threads, so a reference can be behind several of them: for example, when a chunk was forked and both threads
+moved on. Deleted threads aren't proposed.
 
-A case is also behind when its family has a newer binding (see "Families and repairs"). That entry has the binding
-instead of a head, and the case that replaces the old one (`Behind.replacement`): the same appendix texts, bound to
-the family's current vignette. Cases without appendices are flagged this way too.
+A case is also behind when its family has a newer binding (see "Families and repairs"). The catalog then offers its
+*replacement*: the same appendix texts, bound to the family's current vignette. Cases without appendices are flagged
+this way too.
 
-`behind` goes one level at a time. A chunk edit makes its skeleton threads behind; saving one of those makes its
-trial threads behind. A fork makes nothing behind until it moves on.
+Moving on goes one level at a time. A chunk edit makes its skeleton threads behind; saving one of those makes its trial
+threads behind. A fork makes nothing behind until it moves on.
 
 ## Entries
-Names, and everything else people say about a subject, are *entries* (`model.py:Entry`, table `catalog.entry`). The
-subject of an entry is exactly one thread, family, run or score (`model.py:Subject`). An entry on a run or a score
-points at its started row, so a run has to have started before anything can be said about it.
+Names, and everything else people say about something, are *entries*. An entry is about exactly one thread, family, run
+or score, its *subject*. A run or a score has to have started before anything can be said about it.
 
-`Catalog.note(subject, entry, by)` writes an entry, and `Catalog.about(subject)` reads what a subject's entries say
-now (`model.py:About`). The latest entry wins for each field, and for tags and collaborators, for each tag and each
-collaborator. A subject without entries gives an empty `About`.
+For each field the latest entry wins, and for tags and collaborators, the latest entry about each tag and each
+collaborator. A subject nothing has been said about has no name, no owner, and nothing else.
 
-| Field | Holds | Removed by | Read by the code |
+| Field | Holds | Removed by | Used for |
 | --- | --- | --- | --- |
-| `name` | a text, not empty | an entry without a value; the title takes over | titles, `find` |
-| `description` | a text | nothing: it can only be replaced | no |
-| `tag` | one tag, not empty; a subject has a set of them | an entry with `present` false | no |
-| `owner` | a person | nothing: it can only be replaced | `find` |
-| `collaborator` | a person; a subject has a set of them | an entry with `present` false | no |
-| `deleted` | a flag, set by the entry | an entry with `present` false, which restores the subject | see "Deleting" |
-| `language` | a language tag, only on a family | nothing: it can only be replaced | see "Languages" |
+| Name | a text, not empty | an entry without a text; the title takes over | titles, and looking threads up |
+| Description | a text | nothing: it can only be replaced | people |
+| Tag | one tag, not empty; a subject has a set of them | an entry withdrawing that tag | people |
+| Owner | a person | nothing: it can only be replaced | what a person sees, and looking threads up |
+| Collaborator | a person; a subject has a set of them | an entry withdrawing that person | what a person sees |
+| Deleted | a flag | an entry restoring the subject | see "Deleting" |
+| Language | a language, only on a family | nothing: it can only be replaced | see "Languages" |
 
-Every field except `language` is accepted on every subject. The code reads some of them; the rest are for people and
-the portal.
+Every field but the language can be said about any subject. The fields the catalog doesn't use itself are for people
+and the portal.
 
 ### Names
 A name is for people. None is required, and names needn't be unique: a thread without one is shown by its title (see
-"Titles"). Names can still be used to look threads up. `Catalog.find` does, and the sample loader uses it to match its
-records on a re-run, by kind, name and owner (`src/chatddx/seed/write.py`).
+"Titles"). Names can still be used to look threads up by kind, name and owner, which is how the sample loader
+recognises its own records when it runs again.
 
 ### Owners
-`Catalog.create` and `Catalog.adopt` record whoever creates the thread or family as its owner, unless they name
-someone else. This is the catalog's owner, which authorization may later use to decide what to show
-(`docs/identity.md`). It is a different thing from the roles' sense of owning, as in "clinicians own the vignettes"
-(`docs/chatddx.md`, "Roles mentioned").
+Whoever creates a thread or a family is its owner, unless they name someone else, and sharing it with someone makes
+them a collaborator. A person sees what they own and what is shared with them, as long as it isn't deleted. Like
+authorization, this decides what is relevant to show, not who may read it (docs/identity.md, "Authorization").
 
-Every row in the catalog records who wrote it and when (`by`, `at`), but `About` keeps only what holds now: the API
-doesn't show who changed what.
+This is the catalog's sense of owning. It is a different thing from the roles' sense, as in "clinicians own the
+vignettes" (docs/chatddx.md, "Roles mentioned").
+
+Every row in the catalog records who wrote it and when. A thread's versions and a family's bindings are shown with
+them; for entries, labels and languages, only what holds now is shown (see "Open design issues").
 
 ### Deleting
+A deleted thread or family is still there, and so are its components. Deleting takes it out of what people pick from
+and of what is proposed to them: the threads of a kind, what a person sees, looking up by name, the expectation a
+person scores against, and what has moved on, which proposes no deleted thread and flags no case of a deleted family.
+Titles turn to deleted threads only when the live ones give them nothing to show.
 
-A deleted thread or family is still there, and so are its digests. What deleting hides depends on the method:
+What answers questions about the past still includes them: a thread's history, its forks, a case's expectations, where
+a component appears, surveys of a source, and repairs, which rebind deleted threads too.
 
-Deleted are skipped by:
-- `heads`
-- `visible`
-- `visible_families`
-- `expectation_for`
-- `find`
-- `behind` (which proposes no deleted thread and flags no case of a deleted family)
-- `title_of` (turns to deleted threads only when the live ones give it nothing to show)
-
-- CHANGE, in "Deleting", "Deleted are skipped by (`model.py:About.shows`):" to "Deleted are skipped by:", and add
-  after the list: "
-`visible`, `visible_families` and `expectation_for` skip them through `model.py:About.shows`; the others read
-`About.deleted`, and `title_of` ranks them last rather than skipping them.
-
-Deleted are included in:
-- `history`
-- `forks`
-- `expectations_of`
-- `containing`
-- `survey`
-- `repair` (which rebinds deleted threads too)
-- `involving(person)` gives the subjects whose entries have ever named a person as owner or collaborator,
-  for `about` to tell what holds now. `chatddx wipe-data` deletes those the person owns and unshares those they
-  collaborate on, writing an entry only where it changes something, and `init-data --giftbag` restores a deleted
-  fork rather than forking anew.
+Deleting is undone by another entry. Wiping a person's data deletes what they own and withdraws them from what is shared
+with them; loading the sample data again restores a deleted fork rather than forking anew.
 
 What the portal hides is open (see "Open design issues").
 
 ## Titles
-Anything without a name is shown by a *title*, built when asked and never stored (`titles.py`).
+Anything without a name is shown by a *title*, built when asked and never stored.
 
-`Catalog.title(thread)` is the thread's name. Without one, a fork is shown by its base's title and what it varies
-(`plan, output: management-plan-shown`), or as `a fork of plan` when it varies nothing; any other thread is shown by
+A thread's title is its name. Without one, a fork is shown by its origin's title and what it varies from its base
+("plan, output: management-plan-shown"), or as "a fork of plan" when it varies nothing; any other thread is shown by
 what its head holds.
 
-`Catalog.title_of(digest)` works for any digest, in a thread or not, so a run of a variation nobody saved can be shown
-too. It prefers, in order:
-1. a live thread whose head is the digest: its name, or else its title;
-2. a live thread with a name that held the digest earlier: `plan (earlier)`;
+Any component can be given a title, in a thread or not, so a run of a variation nobody saved can be shown too. The
+catalog prefers, in order:
+1. a live thread whose head it is: its name, or else its title;
+2. a live thread with a name that held it earlier: "plan (earlier)";
 3. the same two among deleted threads;
-4. what the digest holds.
+4. what it holds.
 
-A case is shown by its family's name, or without one by the family's current place (`registry/c1`), followed by its
-appendices: `chest pain with "Troponin 80 ng/L."`. A case from before a repair says so:
-`chest pain (earlier) with …`. A case without a family is shown by its own source and id.
+A case is shown by its family's name, or without one by the family's current place, followed by the opening words of
+its appendices. A case from before a repair says so: "chest pain (earlier) with …". A case without a family is shown by
+its own source and id.
 
-What a component holds is described according to its kind (`titles.py:describe`):
-- a configuration by its recipe's parts, translations and toolset included:
-  `ddx · case · management-plan · recommended · off`. A judge's recipe starts with `judge:`, and a skeleton
-  without a compilation is shown as `generation skeleton 3f9a1c`;
-- a chunk by its values or the opening words of its text. A translations chunk is shown by its language, when it has
-  one, and its size: `sv translations, 12 texts`;
-- a local engine by its model, server and GPU: `google/gemma-3-12b-it on vllm 0.24.0 (RTX 5090)`; a remote engine by
-  its model and host;
-- a trial by its skeleton, its engine and how many cases and seeds it has; an expectation by its case:
-  `expectation for chest pain with …`;
-- anything else by its kind and the start of its digest.
+What a component holds is described by what tells it apart from others of its kind, and the components it uses are
+shown by their titles in turn:
+- a configuration by its recipe's parts, translations and toolset included: "ddx · case · management-plan ·
+  recommended · off". A judge's recipe says so first. A hand-written skeleton is shown by its purpose and the start of
+  its digest;
+- a chunk by its values or the opening words of its text, and a translations chunk by its language and size: "sv
+  translations, 12 texts";
+- a tool by its name, an appendix by the opening words of its text, and an expectation by its case;
+- a model by its repository, a local engine by its model, server and GPU ("google/gemma-3-12b-it on vllm 0.24.0 (RTX
+  5090)"), and a remote engine by its model and host;
+- a trial by its skeleton, its engine and how many cases and seeds it has, and a judge by its skeleton and engine;
+- a scorer by its code, and a scoring by its scorer and how many expectations it has;
+- an expectation schema by its title or its properties, and a canary set by how many canaries it has;
+- anything with nothing better to go by, such as a compilation, by its kind and the start of its digest.
 
-A thread's title uses the compilation its head names; `title_of` of a skeleton with several compilations uses the
-first by digest.
-
-Titles aren't unique: two unnamed components can be described alike, and names aren't unique either. Titles change
-when the names they're built from change, so an export for publication should freeze the titles it uses.
+Titles aren't unique: two unnamed components can be described alike, and names aren't unique either. Titles change when
+the names they're built from change, so an export for publication should freeze the titles it uses.
 
 ## Scorer labels
-A scorer refers to its views and resources by position (`docs/factors.md`, "Scorer"). Their *labels*
-(`catalog.label`) are keyed by the scorer's digest, the part (`view` or `resource`) and the position, and the latest
-label wins for each (`Catalog.label`, `Catalog.labels`). The position is checked against the scorer, in Python
-(`model.py:check_label`) and at tier 2.
+A scorer refers to its views and resources by position (docs/factors.md, "Scorer"). Their *labels* name them: a label
+is for one scorer, one part (a view or a resource) and one position, the latest label wins, and it must name a view or
+resource the scorer has.
 
 A position only means something within one scorer, so a new scorer edit starts without labels. Copying them over is
 the portal's job, since it knows how the positions moved; no portal exists yet.
@@ -269,74 +206,62 @@ the portal's job, since it knows how the positions moved; no portal exists yet.
 "Label" means only this. A text's language is not called a label (see "Languages").
 
 ## Families and repairs
-A case is a component: a vignette plus its appendices (`docs/factors.md`, "Case"). It has no thread, because changing
-its appendices makes another case, not a new version of the same one. The vignette can also change at its source,
-under the same file name or another. A *family* is the handle that follows one vignette through all of that. Names,
-tags and the rest are entries on the family, and every case of the vignette belongs to it.
+A case is a component: a vignette plus its appendices (docs/factors.md, "Case"). It has no thread, because changing its
+appendices makes another case, not a new version of the same one. The vignette can also change at its source, under
+the same file name or another. A *family* is the handle that follows one vignette through all of that. Names, tags and
+the rest are said about the family, and every case of the vignette belongs to it.
 
-A family's *bindings* record where its vignette is (`catalog.binding`, `model.py:Binding`): the source, the
-vignette's id there (for a directory, the file name) and the fingerprint of its content. The latest binding is the
-current one (`Catalog.bindings(family)`). In the table, the column `fingerprint` holds the fingerprint alone; in
-Python, `Binding.vignette` holds all three.
+A family's *bindings* record where its vignette is: the source, the vignette's id there (for a directory, the file
+name) and the fingerprint of its content. The latest binding is the current one.
 
-A case belongs to the family with a binding, current or earlier, that matches its vignette exactly, and to the latest
-such family when several match (`Catalog.family`, `families.py:family_of`). So cases from before a repair keep their
-family.
+A case belongs to the family with a binding, current or earlier, that matches its vignette exactly. So cases from
+before a repair keep their family.
 
-`Catalog.visible_families(person)` returns the live families a person owns or collaborates on.
-
-`Catalog.adopt(case, by, owner=)` returns the case's family, or creates one, binds it to the case's vignette and
-records its owner. It refuses a case whose vignette would give another family's current binding new content (the
-same id) or a new name (the same content): that calls for a repair, not a new family
-(`families.py:check_adoptable`).
+*Adopting* a case gives its family, or creates one bound to its vignette and owned by whoever adopts it, unless they
+name someone else. A vignette that would give another family's current place new content, or its content a new name,
+isn't adopted: that calls for a repair, not a new family.
 
 ### Noticing changes
-`Catalog.survey(source, listing)` compares a source's listing (id → fingerprint, which can be built from the cases a
-source lists, `src/chatddx/inventory/sources.py:Source.cases`) with the current bindings of that source's families.
-It sorts them into:
+A *survey* compares what a source lists now, each vignette's id and fingerprint, with the current bindings of that
+source's families, and sorts them into:
 - unchanged;
 - changed: the same id with new content;
-- renamed: the same content under an id the listing has, while the old id is gone;
+- renamed: the same content under a new id, while the old id is gone;
 - new, and gone. A vignette whose name and content both changed shows up as gone plus new.
 
-A run notices a changed vignette too, as `case.drift` (`docs/factors.md`, "Preparing a case").
+A run notices a changed vignette too (docs/factors.md, "Preparing a case").
 
 ### Repairing
-`Catalog.repair(family, by, id=…)` or `fingerprint=…` (`families.py:plan_repair`) moves a family to its vignette's
-new place. It changes exactly one half of the binding, the id or the fingerprint, and keeps the source; the half that
-stays the same is what identifies the family. It refuses a place that another family already holds, as `adopt` does.
-Then, in one transaction, it:
-1. appends the new binding;
-2. builds every stored case of the old binding anew: the same appendix texts, bound to the new vignette;
-3. gives each appendix thread whose head belongs to the old binding an edit with its rebound appendix;
-4. for a rename only, gives each expectation thread of those cases an edit that expects the new case. A rename can't
+A *repair* moves a family to its vignette's new place. It changes exactly one half of the binding, the id or the
+content, and keeps the source; the half that stays the same is what identifies the family. A place another family
+already holds is refused, as in adopting. A repair, all at once:
+1. binds the family to the new place;
+2. builds every stored case of the old place anew: the same appendix texts, bound to the new vignette;
+3. moves each appendix thread whose head belongs to the old place to its rebound appendix;
+4. for a rename only, moves each expectation thread of those cases to an expectation of the new case. A rename can't
    change the right answer, but new content can, so after a content change the expectations stay as they are, and
-   `behind` reports their case with its replacement for a clinician to confirm.
+   what has moved on reports their case with its replacement for a clinician to confirm.
 
-It returns what it wrote: the binding, the old and new cases and appendices, and the edits (`model.py:Repair`).
-
-When both the name and the content changed, nothing identifies the family, so there is no repair: the vignette
-becomes a new family through `adopt`, and its names are carried over by hand. At tier 2, consecutive bindings of a
-family must keep the source and either the id or the fingerprint.
+When both the name and the content changed, nothing identifies the family, so there is no repair: the vignette becomes
+a new family by adopting it, and its names are carried over by hand. The database holds a family to its source, and
+each new binding to the previous one's id or content.
 
 ## Languages
 The rig never tells a model which language a request is in; what is sent is simply in a language. The catalog records
-which one, so that lints can check that a trial doesn't mix languages (`docs/factors.md`, "Lints").
+which one, so that lints can check that a trial doesn't mix languages (docs/factors.md, "Lints").
 
-A language is a tag such as `sv` or `pt-BR` (`model.py:LANGUAGE`). It can be replaced but not removed, and the latest
-wins. It is kept in one of two places:
-- A vignette's language is a `language` entry on its family. A `language` entry on anything else is refused
-  (`language.py:check_entry`, and at tier 2).
-- A component's language is kept on its digest (`catalog.language`, `Catalog.language(digest, value, by)`), so it
-  belongs to the text itself: forking a chunk keeps it, and changing one digest's language touches no other. A new
-  edit's digest has no language until someone gives it one; the portal can offer the previous head's.
+A language is a tag such as "sv" or "pt-BR". It can be replaced but not removed, and the latest wins. It is kept in one
+of two places:
+- A vignette's language is said about its family; no other subject takes a language entry.
+- A component's language is kept on the component, so it belongs to the text itself: forking a chunk keeps it, and
+  changing one component's language touches no other. A new version has no language until someone gives it one; the
+  portal can offer the previous version's.
 
-Only the kinds whose language is read from their own digest can have one (`model.py:LANGUAGE_KINDS`): the chunks that
-hold text sent to a model (instructions, few-shot, prompt, output, toolset, and translations, whose language is the
-one they translate into) and skeletons that aren't compiled. Any other kind is refused, and so is a skeleton already
-known to have a compilation, since its language comes from its recipe (`language.py:check_language`, and at tier 2).
+Only components whose language is their own can have one: the chunks that hold text sent to a model (instructions,
+few-shot, prompt, output, toolset, and translations, whose language is the one they translate into) and hand-written
+skeletons. A compiled skeleton's language comes from its recipe.
 
-`Catalog.language_of(digest)` (`language.py:language_of`) works out the language of any component:
+The language of any component can be worked out:
 - a case's is its family's, and an expectation's is its case's;
 - a trial's and a judge's are their skeleton's;
 - a compiled skeleton's comes from its recipes, which vote. A recipe with translations votes for the translations'
@@ -351,104 +276,75 @@ Vignettes are never translated: a case runs in the language it was written in. S
 Swedish case runs under a Swedish-translated configuration), and comparing languages means comparing case sets.
 
 ## Storage
-The catalog is the schema `catalog` (`docs/store.md`), with the tables `thread`, `edit`, `entry`, `label`, `family`,
-`binding` and `language`. It is written by `chatddx_writer` and readable by `chatddx_reader`. Composite foreign keys
-keep an edit on its thread's kind and on a stored component of that kind, a fork on an edit of the same kind, an
-edit's compilation on one of that very skeleton, and a language on a stored component of the kind it records. At
-tier 2, every table refuses updates and deletes, and checks repeat the rules above. The lists of thread kinds, entry
-fields and language kinds are written both in `model.py` and in the migrations, and a test checks that they agree
-(`src/chatddx/store/test/test_catalog.py`).
+The catalog is a schema of its own (docs/store.md; tables in docs/migrations.md, "catalog"), with a table each for
+threads, edits, entries, labels, families, bindings and languages. The writer role writes it and the reader role may
+read all of it. Rows are never changed or deleted.
 
-The catalog's migrations are listed under "catalog" in `docs/migrations.md`": the migrations are squashed into one
-per schema and tier, and the list there stays current as migrations are added.
+The database keeps an edit on its thread's kind and on a stored component of that kind, a fork on a version of the same
+kind, a skeleton edit's compilation on one of that very skeleton, a label on a scorer, and a language on a stored
+component of the kind it records. At tier 2 it repeats the rules above that two writers at once could break.
 
 ## Terms
 
 | Term | Meaning |
 | --- | --- |
-| Catalog | People's handles on components and records: names, versions, owners, deletions, languages and labels. Nothing in it changes an output. |
+| Catalog | People's handles on components and records: names, versions, owners, sharing, deletions, languages and labels. Nothing in it changes an output. |
 | Thread | The versions of one component that people edit, in order. |
-| Edit | One version on a thread: a digest. |
+| Edit | One version on a thread. |
 | Head | A thread's latest edit, its current version. |
-| Fork | A thread started from an edit of another thread of the same kind, its origin. |
-| Base | The edit a fork is compared with: the one it came from, or the one it was last re-applied onto. |
+| Fork | A thread started from a version of another thread of the same kind, its origin. |
+| Base | The version a fork is compared with: the one it came from, or the one its changes were last re-applied onto. |
 | Configuration | A skeleton thread. |
 | Variation | A fork, and what it changes from its base. |
 | Proposal | The origin's head with a fork's changes on top. |
 | Behind | A reference whose thread has moved on, or a case whose family has a newer binding. |
 | Entry | Something said about a thread, a family, a run or a score: a name, description, tag, owner, collaborator, deleted flag or language. |
+| Subject | What an entry is about. |
+| Owner, collaborator | Who a thread or family belongs to, and who it is shared with. Together they decide what a person sees. |
 | Title | How something without a name is shown, built from what it holds. |
 | Label | The name of a scorer's view or resource. |
 | Family | The handle on one vignette through renames and edits at its source. |
 | Binding | Where a family's vignette is: source, id and fingerprint. The latest is current. |
+| Survey | Comparing what a source lists with where its families are bound. |
 | Repair | Moving a family to its vignette's new id or content, and rebinding what depends on it. |
 | Replacement | The case a stale case becomes under its family's current binding. |
 | Latest wins | Of the rows about one thing, the one written last is what holds. |
 
 ## Open design issues
+These are open questions of design. Where the code falls short of this document, the API says so
+(docs/catalog-api.md, "Known gaps").
 
 ### Concurrent writers
-The rules are checked in Python, on rows read inside the transaction that writes. That holds with one writer at a
-time; with two, only what tier 2 enforces is sure to hold. For example, two `adopt` calls for one vignette at the same
-moment can create two families, since nothing makes current bindings unique.
+The rules are checked against what is stored when a row is written. That holds with one writer at a time; with two,
+only what the database enforces is sure to hold. It repeats every such rule but one: that no two families are bound to
+the same vignette, by id or by content, at once. So two people adopting the same vignette at the same moment can create
+two families.
 
 ### Smaller issues
-- **Identical vignettes.** Two vignettes with the same content under different ids in one source look like a rename
-  to `adopt`, which refuses the second.
-- **Several matching families.** When bindings of several families match a case, `family_of` takes the latest.
-- **Current bindings are read per source.** Surveys and the checks in `adopt` and `repair` read one source's
-  bindings, which relies on a family never changing source. Tier 2 enforces that, and the Python never does it.
-- **A thread without edits** is possible in SQL; `Catalog.create` writes both in one transaction. A deferred
-  constraint trigger could rule it out at tier 2.
+- **Identical vignettes.** Two vignettes with the same content under different ids in one source look like a rename:
+  adopting refuses the second, and a survey reports both ids as renames of the same family.
+- **Several matching families.** When bindings of several families match a case, the latest matching binding decides,
+  which needn't be the latest family's.
+- **Current bindings are compared within a source.** Surveys, adopting and repairing compare a vignette only with the
+  families of its own source, which relies on a family never changing source. The database enforces that, and nothing
+  in the catalog changes a source.
+- **A thread without versions** is possible in the database, and so is a family without bindings; the catalog writes
+  each together with its first. A deferred constraint could rule them out at tier 2.
 - **A skeleton edit may leave out its compilation** even when one exists, and nothing can require it.
-- **A language on a skeleton that is compiled later** is ignored from then on, since the skeleton's language comes
-  from its recipe.
-- **A late case has no stored replacement.** A case stored at a vignette's old place after a repair gets a
-  replacement from `behind` that nothing has stored; the portal would have to build it.
+- **A language on a skeleton that is compiled later** is ignored from then on, since the skeleton's language comes from
+  its recipe.
+- **A late case has no stored replacement.** A case stored at a vignette's old place after a repair is offered a
+  replacement that nothing has stored; the portal would have to build it.
 - **What deleting hides in the portal**: everywhere, or only in pickers, while the runs that used it stay visible.
-- **Who changed what isn't exposed.** Every row records who wrote it and when, but the API only returns what holds
-  now.
-- **Why an edit was made isn't stored.** It can be worked out by comparing consecutive edits' references.
+- **Who changed an entry, a label or a language isn't shown.** Every row records who wrote it and when, but for these
+  only what holds now is shown.
+- **Why an edit was made isn't stored.** It can be worked out by comparing consecutive versions' references.
 - **Titles take a query for every reference they visit,** are rebuilt from names that change, and aren't unique.
+- **An unnamed fork's title can pair two versions.** When the origin has no name and has moved on, the title describes
+  the origin's current head, while what the fork varies is measured from the base.
 - **Scorer labels aren't carried to the next scorer edit.** That waits for the portal.
-- **Judges aren't checked for language.** A judge's language could be compared with the cases its scoring grades,
-  the way `language.mixed` checks a trial. An English judge grading Swedish answers may be intended, so it would be a
-  notice rather than a warning.
+- **Judges aren't checked for language.** A judge's language could be compared with the cases its scoring grades, the
+  way lints check a trial's. An English judge grading Swedish answers may be intended, so it would be a notice rather
+  than a warning.
 
 ## Proposed amendments
-
-- CHANGE, in "Entries", the "Read by the code" cell of `owner` from "`find`" to "`find`, and `visible`,
-  `visible_families` and `expectation_for` through `About.shows`", and that of `collaborator` from "no" to "`visible`,
-  `visible_families` and `expectation_for`, through `About.shows`". In "Owners", CHANGE "which authorization may later
-  use to decide what to show" to "which `visible`, `visible_families` and `expectation_for` already use to decide what
-  to show, and authorization may use later" (`src/chatddx/catalog/model.py:245`,
-  `src/chatddx/catalog/threads.py:104`).
-- CHANGE, in "Titles", the last item of the list under "What a component holds is described according to its kind",
-  "anything else by its kind and the start of its digest." to "
-  - a tool by its name, and an appendix by the opening words of its text;
-  - a judge by its skeleton and engine, a scorer by its code's distribution and version, and a scoring by its scorer
-    and how many expectations it has;
-  - a model by its repo, an expectation schema by its title or its properties, and a canary set by how many canaries
-    it has;
-  - a compilation by its kind and the start of its digest." (`src/chatddx/catalog/titles.py:156`-`195`).
-- CHANGE, in "Append-only, and the latest row wins", "The rule is written once, in `model.py:latest` and
-  `model.py:About.of`." to "The rule is written in `model.py:latest` and `model.py:About.of`, and elsewhere as the
-  last of the rows a `Reader` returns." (`src/chatddx/catalog/threads.py:54`, `src/chatddx/catalog/threads.py:167`,
-  `src/chatddx/catalog/families.py:35`, `src/chatddx/catalog/families.py:118`, `src/chatddx/catalog/families.py:172`,
-  `src/chatddx/catalog/titles.py:236`).
-- CHANGE, in "Families and repairs", "and to the latest such family when several match" to "and, when bindings of
-  several families match, to the family of the latest matching binding". In "Smaller issues", CHANGE "`family_of`
-  takes the latest." to "`family_of` takes the family of the latest matching binding, which isn't necessarily the
-  latest family." (`src/chatddx/catalog/families.py:35`).
-- CHANGE, in "Titles", "a fork is shown by its base's title and what it varies" to "a fork is shown by its origin's
-  title and what it varies from its base". ADD to "Smaller issues": "**An unnamed fork's title can pair two
-  versions.** When the origin has no name and has moved on, its title describes its current head, while what the fork
-  varies is measured from the base." (`src/chatddx/catalog/titles.py:205`, `src/chatddx/catalog/threads.py:167`).
-- CHANGE, in "Owners", "but `About` keeps only what holds now: the API doesn't show who changed what." to "but only
-  threads, edits and bindings are returned with them; entries, labels and languages are read without them, and
-  `About` keeps only what holds now." In "Smaller issues", CHANGE "**Who changed what isn't exposed.** Every row
-  records who wrote it and when, but the API only returns what holds now." to "**Who changed an entry, a label or a
-  language isn't exposed.** Every row records who wrote it and when, but entries, labels and languages are read
-  without it, and `About` keeps only what holds now." (`src/chatddx/catalog/model.py:84`,
-  `src/chatddx/catalog/model.py:92`, `src/chatddx/catalog/model.py:112`, `src/chatddx/catalog/read.py:32`,
-  `src/chatddx/catalog/read.py:44`, `src/chatddx/catalog/read.py:46`).
