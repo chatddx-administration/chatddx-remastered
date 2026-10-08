@@ -475,8 +475,8 @@ with this"). Still open:
 
 ### Scorers
 The scorers are seeded (see "Tools and scorers"). Still open:
-- parsing a response into the answer a scorer reads: the JSON content, the answer tool's arguments, or the text.
-  `docs/factors.md` puts it in the scorer's code, which version 1 doesn't do yet;
+- parsing a response into the answer a scorer reads is `chatddx.scorers.answer.read`, which the scoring pass calls
+  before the scorer (`agents/wip-runner.md`, "The scoring pass"). A truncated structure isn't salvaged;
 - free-text parsing beyond `lines@1` (G6);
 - the old scorers' aggregates (`metrics = ["mean", "stderr"]`): the functions are ported
   (`src/chatddx/scorers/aggregate.py`), but no factor says which apply. Summing up over runs is analysis, which

@@ -423,3 +423,11 @@ Most of the plan is compared with what happened (see "What a record holds"), but
 - CHANGE, in "Storage", "A run's canary set has no foreign key, so nothing makes sure it is stored, and `check_run`
   can't resolve it if it isn't." to "A run's canary set has no foreign key. The runner stores it with the trial;
   another writer must store it too, or `check_run` can't resolve it." (`src/chatddx/runner/run.py:Runner.start`).
+- ADD, in "Score", to the list of what `check_score` warns about: "some of the run's cases have no expectation in
+  the scoring (`score.no_expectation`);", and to "Findings" the row "| `score.no_expectation` | `check_score` | score
+  id | Some of the run's cases have no expectation in the scoring. One finding, with the count. |", grouped with
+  `score.run_unfinished` under "A score and the run it grades" (`src/chatddx/ledger/score.py:check_score`).
+- ADD, in "Findings", the rows "| `answer.unread` | scoring pass | item key | The item's answer can't be read from its
+  last response, with the call's error when it has one. |" and "| `answer.invalid` | scoring pass | item key | The
+  item's answer breaks the run skeleton's output schema; it is scored anyway. |", noted while scoring and kept in
+  `ScoreFinished` (`src/chatddx/runner/score.py:score_run`, `src/chatddx/scorers/answer.py:read`).

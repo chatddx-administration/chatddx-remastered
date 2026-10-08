@@ -961,3 +961,13 @@ Schema plays no part in a component's digest, so adding it back changes no diges
   (`src/chatddx/factors/trial.py:Canary.render`).
 - REMOVE, in "Smaller issues", "**No helper turns a canary into a request** (model name, seed, `return_token_ids`)."
   (`src/chatddx/factors/trial.py:Canary.render`).
+- CHANGE, in "Scorer", "Views with a judge, and parsing a response into the answer, aren't covered yet." to "Views
+  with a judge aren't covered yet. The answer an entry point's selectors pick from is read from the item's last
+  response by `src/chatddx/scorers/answer.py:read`, by the skeleton's contract: a native answer is the content as
+  JSON, a tool answer the answer tool's arguments, and a text answer the content, or, when the output has a schema,
+  the JSON in it. An answer that can't be read is none, and the entry point gets `None`."
+  (`src/chatddx/scorers/answer.py:read`, `src/chatddx/runner/score.py:score_run`).
+- CHANGE, in "Smaller issues", "**Missing expectations aren't flagged.** Neither a scoring nor `check_score` warns when
+  a run's case has no expectation, or when a scored item has no expectation behind it." to "**A scoring doesn't say
+  which cases it lacks.** Only `check_score` warns, once a run is scored under it (`score.no_expectation`)."
+  (`src/chatddx/ledger/score.py:check_score`).

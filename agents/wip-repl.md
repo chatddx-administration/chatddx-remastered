@@ -221,6 +221,8 @@ A case can have several expectation threads, such as the archive's and the user'
   - a clean `check_run`.
 
 ### 2. Scoring pass
+Built but for what needs a person (`agents/wip-runner.md`, "The scoring pass"): the answer reader and
+`score_run`, which takes a `Scoring` its caller builds. Which scorers apply, D8 and outstanding runs wait for phase 3.
 - **`chatddx.scorers.answer`** (D5).
 - **Which scorers apply**: the visible scorer threads whose views reach `Skeleton.output_schema`
   (`factors/select.py:reaches`, the same check as `view.unreachable`).

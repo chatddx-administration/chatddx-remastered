@@ -15,7 +15,8 @@ one: a portal, a worker and `chatddx samples` (`agents/wip-sample-data.md`, "Lef
 ## Start with this
 Phases 0–6 are done (`src/chatddx/runner/`). A trial runs at an endpoint, in the execution's order and up to its
 concurrency, with tool rounds and between its canaries, and leaves a finished run log and its owner entry, and
-`check_run` comes back clean.
+`check_run` comes back clean. The scoring pass is built too (see "The scoring pass"): a finished run is scored under
+a scoring, and `check_score` comes back clean.
 
 It was checked:
 - by the tests in `src/chatddx/runner/test/`;
@@ -32,8 +33,11 @@ It was checked:
 - by hand, for phase 6: on the same process, 3 cases × 2 seeds at concurrency 3 with a set of two canaries. Both
   start canaries finished before the first item call, both end canaries started after the last, and `check_run` came
   back clean.
+- by hand, for the scoring pass: on the same process, the `plan` recipe on 3 cases, scored by the sample's `plan`
+  scorer with the cases' targets. Every answer was read; the fake's diagnoses aren't in the targets, so the views gave
+  0 ("not listed"), and `dont-miss` none ("no target").
 
-Next: what's left of "Left", with the scoring pass first (see "Afterwards").
+Next: what's left of "Left" (see "Afterwards").
 
 **Real engines aren't cleared yet.** `worlds/kompismoln/inventory.toml` has no `[cleared]` table, so the gate refuses
 `pelle` and `malborg` for the sample. Clearing them is a human's statement to make.
@@ -169,6 +173,28 @@ In `rounds.py`, which `run.py` calls for every item, with tools or without:
 - **`plan-web` runs without a round on the fake.** A native contract with tools sends `tool_choice: auto` beside a
   `response_format`, which then holds the whole answer (G8; `docs/vllm.md`, item 10).
 
+### The scoring pass
+- **`chatddx.scorers.answer.read(skeleton, response)`** reads the answer a scorer scores, by the skeleton's contract
+  (wip-repl D5, a take; see below): a native answer is the content as JSON, a tool answer the answer tool's
+  arguments, and a text answer the content, or, when the output has a schema, the JSON in it (the whole text, else
+  the last fenced block that is JSON, else the last JSON object or array). It returns the value, or none with why,
+  and where the value breaks the output schema. No truncated structure is salvaged.
+- **`runner/score.py:score_run(conn, run, scoring, registry, by)`** scores a finished run. It refuses before writing
+  a run that hasn't finished, a view with a judge, and a scorer whose code can't run (`scorers/scorer.py:function`).
+  It stores the scoring, then reads the run's trial and the scoring back from the store. Each item's answer is read
+  from its last call, after any tool rounds, and goes through every view (`scorers/scorer.py:score`). It writes
+  `ScoreStarted`, the items of each run item in one transaction, then `ScoreFinished` and the score's owner entry,
+  and returns `check_score`'s findings.
+- **What the pass notes** in `ScoreFinished`: `answer.unread`, for an answer that can't be read, with the call's
+  error when it has one; and `answer.invalid`, for an answer that breaks the output schema. An invalid answer is
+  still scored.
+- **A case without an expectation** gets its items with no value and `{"reason": "no expectation"}`, so the score is
+  complete. `check_score` now warns about it (`score.no_expectation`), since any writer's score can be checked for it.
+- **Where the reading lives.** D5's take was that scorer entry points call the reader, so the scorer's code pins it.
+  Interface version 1 hands the entry point what the view's selectors pick, not the response, so the pass calls the
+  reader instead. It is still pinned: only the running chatddx can score (`core/rig.py:entry`), and the reader is
+  part of it.
+
 ### Phase 6: canaries
 - **`Canary.render(model=)`** (`factors/trial.py`) makes a canary's request as `render` makes a skeleton's: its
   messages and body, the model, the seed when the canary has one, and `return_token_ids`.
@@ -205,7 +231,14 @@ In `rounds.py`, which `run.py` calls for every item, with tools or without:
 - **Canary calls stream without events**, since `Streamed` carries an item key.
 
 ### Afterwards
-- **The scoring pass** (`agents/wip-repl.md`, D5, D8).
+- **What the scoring pass leaves to its caller** (`agents/wip-repl.md`, phase 2):
+  - which expectation a case is scored against when it has several threads (D8), so building the `Scoring`;
+  - which scorers apply to a run: those whose views reach the skeleton's output schema;
+  - which runs are outstanding: a person's runs with no score under the scoring that would be built now.
+
+  They need the reads for a person (`agents/wip-repl.md`, phase 3).
+- **Judged views**, refused until judges run: the judge calls, recorded as `JudgeCall`s, and the scorer interface's
+  next version (`agents/wip-sample-data.md`, "Free-text expectations").
 - **`chatddx samples`** back on the runner.
 - **A runner finding for reasoning that wasn't heeded**, like the old `bench/outcome.py:unheeded`.
 - **Resuming.** `resume(run)` would append an unfinished log's missing items: `Running.send` already skips items

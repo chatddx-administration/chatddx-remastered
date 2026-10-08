@@ -304,3 +304,9 @@ Each code is described where it's produced: `docs/factors.md`, "Lints"; `docs/le
   (`Canary.render`), one at a time before the first item and after the last, at the phases `verify_at` names.
   Nothing compares canary outputs yet (see "Possible design issues")." (`src/chatddx/factors/trial.py:Canary.render`,
   `src/chatddx/runner/run.py:Running.send`).
+- CHANGE, in "Scoring records", step 2, "The code has no function for this; the scorer code does it." to "The
+  scoring pass does it, and gives an item whose case has none no value." (`src/chatddx/runner/score.py:score_run`);
+  in step 3, "Nothing in `factors` does this." to "`chatddx.scorers.answer.read` does it, from the item's last call,
+  before the scorer's entry point is called." (`src/chatddx/scorers/answer.py:read`); and in step 8, "warns
+  `judge.incomplete`, `score.incomplete` and `score.run_unfinished`" to "warns `judge.incomplete`, `score.incomplete`,
+  `score.run_unfinished` and `score.no_expectation`" (`src/chatddx/ledger/score.py:check_score`).
