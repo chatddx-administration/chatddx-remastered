@@ -411,3 +411,8 @@ moment can create two families, since nothing makes current bindings unique.
   notice rather than a warning.
 
 ## Proposed amendments
+- CHANGE, in "Deleting", "Deleted are skipped by (`model.py:About.shows`):" to "Deleted are skipped by:", and add
+  after the list: "`visible`, `visible_families` and `expectation_for` skip them through `model.py:About.shows`;
+  the others read `About.deleted`, and `title_of` ranks them last rather than skipping them." Only those three call
+  `shows` (`threads.py:heads`, `threads.py:find`, `threads.py:visible`, `titles.py`).
+- CHANGE, in "Deleting", "Delete are included in:" to "Deleted are included in:".

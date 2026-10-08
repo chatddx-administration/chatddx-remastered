@@ -420,3 +420,5 @@ Most of the plan is compared with what happened (see "What a record holds"), but
   separate mechanism, as linting is for factors, but nothing is planned or decided.
 
 ## Proposed amendments
+- CHANGE, in "Run", the end of the `tools.unanswered` item, "(`tools.unanswered`)" to "(`tools.unanswered`);", as
+  the other items end; and add the final period to the `tools.unanswered` row in "Findings".

@@ -88,3 +88,5 @@ unreachable.
   `docs/factors.md`, "Splitting expectations", already considers a bump of `Scorer.schema_version`.
 
 ## Proposed amendments
+- CHANGE, in "Code", "the runs still to score under it." (`reads.py:Reads`)" to "the runs still to score under it
+  (`reads.py:Reads`).": a quote left from the integrated amendment.
