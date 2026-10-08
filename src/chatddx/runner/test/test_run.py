@@ -20,9 +20,7 @@ from chatddx.facts.facts import Facts
 from chatddx.fake_vllm.served import Served
 from chatddx.fake_vllm.server import serving
 from chatddx.identity import Person
-from chatddx.inventory.inventory import Inventory
-from chatddx.inventory.serving import start_up
-from chatddx.inventory.sources import DirectorySource
+from chatddx.inventory import DirectorySource, Inventory, start_up
 from chatddx.ledger import Endpoint, ItemKey, RunFinished
 from chatddx.runner.gate import Refused
 from chatddx.runner.run import Event, ItemEnded, ItemStarted, Noted, Runner

@@ -5,8 +5,8 @@ from pydantic import ValidationError
 
 from chatddx.factors.base import Fingerprint
 from chatddx.factors.cases import Case, Vignette
-from chatddx.inventory.inventory import Inventory
-from chatddx.inventory.sources import DirectorySource, MemorySource
+from chatddx.inventory import DirectorySource, Inventory
+from chatddx.inventory.test.memory import MemorySource
 
 
 def vignettes(root: Path) -> Path:

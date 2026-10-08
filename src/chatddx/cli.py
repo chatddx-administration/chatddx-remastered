@@ -11,15 +11,14 @@ from chatddx.core.rig import rig
 from chatddx.facts.facts import Facts
 from chatddx.fake_vllm.server import run
 from chatddx.identity import Role
-from chatddx.inventory.inventory import Inventory
-from chatddx.inventory.report import (
+from chatddx.importers.o11n import (
     Imported,
     endpoints_toml,
     factors_toml,
     imported,
     read,
 )
-from chatddx.inventory.sources import DirectorySource
+from chatddx.inventory import DirectorySource, Inventory
 from chatddx.seed import load_cases, plan_factors, seed, wipe
 from chatddx.seed.plan import SAMPLE
 from chatddx.seed.world import endpoints

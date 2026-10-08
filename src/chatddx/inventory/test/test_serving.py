@@ -18,8 +18,14 @@ from chatddx.factors.engine import (
 from chatddx.facts.facts import Facts
 from chatddx.fake_vllm.served import Served
 from chatddx.fake_vllm.server import serving
-from chatddx.inventory.inventory import EndpointSpec, HostSpec, Inventory
-from chatddx.inventory.serving import confirm, start_up, url_of
+from chatddx.inventory import (
+    EndpointSpec,
+    HostSpec,
+    Inventory,
+    confirm,
+    start_up,
+    url_of,
+)
 from chatddx.seed import Plan, plan_factors
 from chatddx.seed.plan import SAMPLE
 from chatddx.seed.world import endpoints

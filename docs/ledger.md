@@ -411,3 +411,10 @@ Most of the plan is compared with what happened (see "What a record holds"), but
   separate mechanism, as linting is for factors, but nothing is planned or decided.
 
 ## Proposed amendments
+- CHANGE, under "RunStarted", "`endpoint`: the World inventory's name for it and its URL, left out when not given."
+  to "`endpoint`: the World inventory's name for it and its URL (`docs/inventory.md`, "Endpoints"), left out when not
+  given."
+- CHANGE, under "Smaller issues", the item "**Calls don't record where they went.** …" to "**Judge calls don't record
+  where they went.** `ScoreStarted` has no endpoint, so the ledger can't show which one received the case-derived
+  content a judge reads, as `RunStarted.endpoint` does for a run." The heading it cites in `docs/factors.md` is gone,
+  and runs record their endpoint (`src/chatddx/ledger/run.py:Endpoint`, `src/chatddx/ledger/score.py:ScoreStarted`).

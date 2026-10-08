@@ -12,8 +12,7 @@ from chatddx.factors.engine import LocalEngine, RemoteEngine
 from chatddx.factors.request import Skeleton, render
 from chatddx.factors.trial import Execution, Trial
 from chatddx.identity import Person
-from chatddx.inventory.inventory import Inventory
-from chatddx.inventory.serving import url_of
+from chatddx.inventory import Inventory, url_of
 from chatddx.ledger import (
     Call,
     Endpoint,

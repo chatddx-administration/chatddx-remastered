@@ -387,14 +387,14 @@ sample models, served as the old inventory served them, and checks each answer a
   day (https://github.com/vllm-project/vllm/blob/v0.24.0/vllm/entrypoints/openai/parser/harmony_utils.py#L132-L138,
   called with no date by `build_harmony_preamble`, https://github.com/vllm-project/vllm/blob/v0.24.0/vllm/entrypoints/openai/parser/harmony_utils.py#L332-L339,
   for every chat request, https://github.com/vllm-project/vllm/blob/v0.24.0/vllm/entrypoints/serve/render/serving.py#L557-L563)."
-  `src/chatddx/inventory/report.py:_template` reports a gpt-oss engine whose env doesn't set it (`engine.harmony_date`).
+  `src/chatddx/importers/o11n.py:_template` reports a gpt-oss engine whose env doesn't set it (`engine.harmony_date`).
 - ADD, as item 22 under "vLLM 0.24 assumptions": "A model whose `model_type` is `gpt_oss` is rendered with Harmony and
   never with its chat template, `--chat-template` included
   (https://github.com/vllm-project/vllm/blob/v0.24.0/vllm/entrypoints/serve/render/serving.py#L234,
   https://github.com/vllm-project/vllm/blob/v0.24.0/vllm/entrypoints/serve/render/serving.py#L377-L400). So a
   gpt-oss engine's `chat_template` pins nothing, and what shapes its prompt is the `openai-harmony` package in the
   runtime closure."
-  `src/chatddx/inventory/report.py:_template` reports it (`engine.chat_template_unused`), from o11n's report.
+  `src/chatddx/importers/o11n.py:_template` reports it (`engine.chat_template_unused`), from o11n's report.
 - ADD, as item 23 under "vLLM 0.24 assumptions": "With `HF_HUB_OFFLINE`, a model given as a Hugging Face ID is
   resolved to its snapshot with `snapshot_download(repo_id, revision, local_files_only=True)` and no file patterns
   (https://github.com/vllm-project/vllm/blob/v0.24.0/vllm/engine/arg_utils.py#L759-L766,
@@ -403,7 +403,7 @@ sample models, served as the old inventory served them, and checks each answer a
   refuses a snapshot that lacks any listed file the call's patterns select, with `IncompleteSnapshotError`
   (huggingface_hub `_snapshot_download.py:_raise_if_incomplete_snapshot`). So a snapshot downloaded with
   `--exclude` doesn't start from its ID." o11n passes the snapshot's directory (Kompismoln/o11n 84612b2), and
-  `src/chatddx/inventory/report.py:imported` takes it as the host's location for the model.
+  `src/chatddx/importers/o11n.py:imported` takes it as the host's location for the model.
 - CHANGE, under "The fake vLLM", "Schema instances", "the first non-null branch of `anyOf`/`oneOf`/`allOf`" → "the
   first non-null branch of `anyOf`/`oneOf`/`allOf`, read together with the keywords beside it, as JSON Schema
   applies them", since a branch may only add `required` beside `type` and `properties`, as the sample's

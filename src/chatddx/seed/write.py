@@ -8,7 +8,7 @@ from chatddx.factors.lint import lint
 from chatddx.factors.scoring import Expectation
 from chatddx.facts.lint import lint as lint_facts, reasons
 from chatddx.identity import Person
-from chatddx.inventory.sources import Source
+from chatddx.inventory import Source
 from chatddx.store.catalog import Catalog
 from chatddx.store.people import People
 from chatddx.store.store import Connection, Store

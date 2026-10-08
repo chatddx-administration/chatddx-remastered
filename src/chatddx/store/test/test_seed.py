@@ -11,8 +11,8 @@ from chatddx.conftest import connect
 from chatddx.core.rig import rig
 from chatddx.factors.base import Fingerprint
 from chatddx.facts.facts import Facts
-from chatddx.inventory.inventory import Inventory
-from chatddx.inventory.sources import MemorySource
+from chatddx.inventory import Inventory
+from chatddx.inventory.test.memory import MemorySource
 from chatddx.seed import Plan, load_cases, plan_factors, seed
 from chatddx.seed.plan import SAMPLE
 from chatddx.store import Catalog, People

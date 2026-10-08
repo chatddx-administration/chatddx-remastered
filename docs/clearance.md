@@ -31,3 +31,12 @@ engine. The clearance pipeline has to clear tools by their code (`Tool.code`, `e
 they reach; nothing declares those yet.
 
 ## Proposed amendments
+- CHANGE, under "Vetted endpoints", "a World inventory's `[cleared]` table says which sensitive sources each endpoint
+  may receive case-derived content from. It is read from the inventory's own file, never an included one, so
+  importing endpoints again clears nothing." to "a World inventory's `[cleared]` table (`docs/inventory.md`,
+  "Clearance") says which sensitive sources each endpoint may receive case-derived content from.", since where the
+  table is read from is specified there ("Includes"; `src/chatddx/inventory/inventory.py:Inventory.load`).
+- CHANGE, under "Sensitive sources", "Vignettes", "A vignette source declares whether it is sensitive
+  (`[source.<name>] sensitive`, true by default. `src/chatddx/inventory/sources.py:Source.sensitive`." to "A vignette
+  source declares whether it is sensitive, and is by default (`docs/inventory.md`, "Sources")." That also closes the
+  parenthesis the sentence leaves open.

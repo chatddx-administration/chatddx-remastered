@@ -20,9 +20,7 @@ from chatddx.factors.engine import (
     flag_names,
 )
 from chatddx.factors.lint import lint
-
-from .inventory import EndpointSpec, HostSpec
-from .serving import LISTEN_FLAGS
+from chatddx.inventory import LISTEN_FLAGS, EndpointSpec, HostSpec
 
 # What o11n.vllm's report says about the vLLM servers on one host
 # (Kompismoln/o11n, nixos/vllm-report.py).

@@ -38,8 +38,8 @@ ledger provide the means; the runner enforces.
   the clearance check can be audited from the ledger.
 
 ## Open
-1. **What a grant keys on.** This blocks the schema. Endpoints now live in the inventory: ops-authored TOML, mutable,
-   no ids, and no code yet. Candidates:
+1. **What a grant keys on.** This blocks the schema. Endpoints now live in the inventory
+   (`docs/inventory.md`): ops-authored TOML, mutable, no ids. Candidates:
    - the URL (simple, but a local host serves different engines over time, and one engine may have several hosts);
    - an inventory entry name (stable for humans, but the inventory isn't in the database, so no foreign key);
    - the engine digest plus URL (what the old `EndpointBinding` did).

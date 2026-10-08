@@ -138,3 +138,7 @@ Left behind:
   unknown.
 
 ## Proposed amendments
+- CHANGE, under "The sample's facts", "`snapshot` and `source` say where the files are, which is the World
+  inventory's business;" to "`snapshot` and `source` say where the files are, which is the World inventory's
+  business (`docs/inventory.md`, "Hosts");", since a host's `models` table now holds that
+  (`src/chatddx/inventory/inventory.py:HostSpec`).

@@ -271,3 +271,14 @@ Each code is described where it's produced: `docs/factors.md`, "Lints"; `docs/le
 **Canary drift are not implemented:** nothing compares canary outputs between phases or runs.
 
 ## Proposed amendments
+- CHANGE, under "Glossary", the "Inventory" entry to: "**Inventory:** files written by ops that say where things are:
+  vignette sources, endpoints and hosts (`docs/inventory.md`)." The tables and `include` are specified there ("The
+  file", "Includes"; `src/chatddx/inventory/inventory.py:Inventory.load`).
+- REMOVE, under "Glossary", the "Manifest" entry, and ADD in its place: "**Start-up:** what the start-up script runs
+  for one endpoint, joining an engine (what) with inventory entries (where) (`docs/inventory.md`, "The start-up")."
+  Nothing in the code is a manifest; `src/chatddx/inventory/serving.py:StartUp` is what the entry describes, and
+  "manifest" was the factors' old name (`chatddx.core.manifest`, `agents/manifest-*.md`).
+- CHANGE, under "Requirements", "manifest that the start-up script reads" to "a start-up that the start-up script
+  reads (`docs/inventory.md`, "Hosts don't read the start-up")", since the hosts don't read it yet.
+- CHANGE, under "Target stack", "Runs in Kubernetes, write the manifest and hosts the portal." to "Runs in Kubernetes,
+  writes the start-ups and hosts the portal." (`src/chatddx/inventory/serving.py:StartUp`).

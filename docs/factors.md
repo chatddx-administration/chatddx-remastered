@@ -946,3 +946,14 @@ reference, straight from the schema. `RefTo` used to do this, and was stopped be
 Schema plays no part in a component's digest, so adding it back changes no digest.
 
 ## Proposed amendments
+- CHANGE, under "Terms", the "Inventory" row to "Files written by ops that say where things are
+  (`docs/inventory.md`).", since engines' endpoints and hosts are in it now
+  (`src/chatddx/inventory/inventory.py:EndpointSpec`, `HostSpec`).
+- CHANGE, under "Case", "Sources are declared in the inventory and hand over vignettes as UTF-8 text (see "Preparing
+  a case"). `Source.cases()` (`src/chatddx/inventory/sources.py`) builds one case, without appendices, for each
+  vignette a source lists." to "Sources are declared in the inventory (`docs/inventory.md`, "Sources") and hand over
+  vignettes as UTF-8 text (see "Preparing a case").", since `Source.cases()` is described there.
+- REMOVE, under "Open design issues", "Runs don't record where calls went". Runs record it
+  (`src/chatddx/ledger/run.py:Endpoint`; `docs/ledger.md`, "RunStarted"), and what endpoints and hosts are, and how a
+  start-up and `confirm` use them, is `docs/inventory.md`'s ("Endpoints", "Hosts", "Starting and reaching an
+  engine"). That a remote engine's `base_url` is part of its digest is in "Remote engine".
