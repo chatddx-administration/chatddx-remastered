@@ -9,14 +9,13 @@ import pytest
 from psycopg import sql
 
 from chatddx.catalog import Subject
-from chatddx.conftest import connect
+from chatddx.conftest import WORLDS, connect, sample_plan
 from chatddx.core import settings
 from chatddx.core.rig import rig
 from chatddx.factors.base import Fingerprint, resolve
 from chatddx.factors.cases import Case, Vignette
 from chatddx.factors.request import Compilation, compile_request
 from chatddx.factors.trial import Execution, Trial
-from chatddx.facts.facts import Facts
 from chatddx.fake_vllm.served import Served
 from chatddx.fake_vllm.server import serving
 from chatddx.identity import Person
@@ -25,12 +24,11 @@ from chatddx.ledger import Endpoint, ItemKey, RunFinished
 from chatddx.runner.gate import Refused
 from chatddx.runner.run import Event, ItemEnded, ItemStarted, Noted, Runner
 from chatddx.runner.send import STOPPED, Delta
-from chatddx.seed import Plan, plan_factors
-from chatddx.seed.plan import SAMPLE
+from chatddx.seed import Plan
 from chatddx.store import Catalog, People, Store
 from chatddx.store.store import Connection
 
-WORLD = Path(__file__).parents[4] / "sample-world"
+WORLD = WORLDS / "sample"
 QWEN = "qwen3-8b-awq@fake"
 GPT_OSS = "gpt-oss-20b@fake"
 CASES = ("DutchFall10w", "casesfromedn1")
@@ -38,9 +36,7 @@ CASES = ("DutchFall10w", "casesfromedn1")
 
 @pytest.fixture(scope="module")
 def plan() -> Plan:
-    return plan_factors(
-        SAMPLE / "factors.toml", Facts.load(SAMPLE / "facts.toml"), rig()
-    )
+    return sample_plan()
 
 
 @pytest.fixture

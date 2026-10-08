@@ -1,4 +1,5 @@
 from collections.abc import Iterator
+from pathlib import Path
 from uuid import uuid4
 
 import psycopg
@@ -6,8 +7,25 @@ import pytest
 from psycopg import sql
 
 from chatddx.core import settings
+from chatddx.core.rig import rig
+from chatddx.facts.facts import BUNDLED, Facts
+from chatddx.seed import Plan, plan_factors
+from chatddx.seed.plan import SAMPLE
 from chatddx.store import migrate
 from chatddx.store.store import Connection
+
+WORLDS = settings.PROJECT_ROOT / "worlds"
+
+
+# The sample data's per-model records are planned for the models its World's engines serve.
+def sample_plan(factors: Path = SAMPLE / "factors.toml") -> Plan:
+    return plan_factors(
+        factors,
+        Facts.load(BUNDLED),
+        rig(),
+        root=SAMPLE,
+        more=[WORLDS / "sample" / "factors.toml"],
+    )
 
 
 def create_database(template: str | None = None) -> str:

@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from pathlib import Path
-from typing import override
+from typing import Literal, override
 
 from chatddx.factors.base import Fingerprint, Frozen
 from chatddx.factors.cases import Case, Vignette
@@ -31,6 +31,7 @@ class Source(Frozen, ABC):
 
 
 class DirectorySource(Source):
+    kind: Literal["directory"] = "directory"
     path: Path
     suffix: str = ".txt"
 

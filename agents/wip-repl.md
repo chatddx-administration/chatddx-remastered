@@ -26,7 +26,7 @@ The order: decisions, runner, scoring pass, reads for a person, the shell, tool 
 
 ## Decisions needed before phase 1
 ### D1. The clearance gate
-The sample's vignette source is declared sensitive (`sample-world/inventory.toml`, `[source.sample]`). Sending
+The sample's vignette source is declared sensitive (`worlds/sample/inventory.toml`, `[source.sample]`). Sending
 case-derived content to an endpoint that isn't cleared is the one hard block, and the runner enforces it
 (`docs/chatddx.md`, "Findings and errors"). No clearance pipeline exists yet (`agents/wip-clearance.md`, "Open"). A
 runner that follows the rule can't send one sample vignette, not even to the fake.
@@ -40,7 +40,7 @@ Options:
 
 Take: (a). The gate would also:
 - include `confirm` (Open 4);
-- refuse a toolset on a sensitive source until tools are cleared (`docs/clearance.md`, "Tools").
+- refuse a toolset on a sensitive source until tools are cleared (`agents/wip-clearance.md`, "Tools").
 
 Also record where calls went, so the gate can be audited from the ledger: add a defaulted `RunStarted.endpoint`
 (name and URL). A defaulted field is additive in canonical form (`docs/ledger.md`, "Canonical form and versions").
@@ -276,7 +276,7 @@ adopted. Proposals:
 - `docs/factors.md`, "Rendering": streaming (D2);
 - `docs/catalog.md`, "Owners": the runner writes a run's owner (D7);
 - `docs/store.md`, "Known gaps": the listings of phase 3;
-- `docs/ledger.md`, `RunStarted`, and `docs/clearance.md`: the endpoint and the interim gate (D1).
+- `docs/ledger.md`, `RunStarted`, and `agents/wip-clearance.md`: the endpoint and the interim gate (D1).
 
 ## Left out
 - **The portal's own code**: the worker, `bench/plan.py`'s crossing and `bench/held.py`.

@@ -1,0 +1,10 @@
+# Kompismoln's World: pelle and malborg, and the sample World's vignettes. The endpoints and hosts of the engines in
+# factors.toml are what `chatddx import-engine http://pelle.km:12008/ http://malborg.km:12008/ --factors
+# worlds/kompismoln/factors.toml --endpoints worlds/kompismoln/endpoints.toml` writes from the hosts' o11n reports.
+# `chatddx init-data USER --world worlds/kompismoln/inventory.toml --factors worlds/kompismoln/factors.toml` seeds the
+# sample with those engines and checks that each endpoint serves one it seeded.
+include = ["endpoints.toml"]
+
+[source.sample]
+path = "../sample/vignettes"
+sensitive = true

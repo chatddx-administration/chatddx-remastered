@@ -932,3 +932,7 @@ reference, straight from the schema. `RefTo` used to do this, and was stopped be
 Schema plays no part in a component's digest, so adding it back changes no digest.
 
 ## Proposed amendments
+- CHANGE, under "Not factors", "Sensitivity and vetting: `docs/clearance.md`." to "Sensitivity and vetting:
+  `agents/wip-clearance.md`.", since `docs/clearance.md` was folded into it while clearance is in progress.
+- CHANGE, under "Judge", "judge engines fall under the same clearance rule as generation engines
+  (`docs/clearance.md`)" to "… (`agents/wip-clearance.md`)", for the same reason.

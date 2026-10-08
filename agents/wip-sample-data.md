@@ -4,7 +4,7 @@
 `src/chatddx/data/inventory.toml`, `giftbag-inventory.toml` and the vignettes in `src/chatddx/data/cases/`. It is
 hand-edited into remastered's shape, with no adapter, and spreads over remastered's channels: factors, cases,
 catalog, and the World inventory (`docs/inventory.md`). The word "inventory" keeps its glossary meaning.
-The vignettes are copied into `sample-world/` (see "The sample data now").
+The vignettes are copied into `worlds/sample/` (see "The sample data now").
 Permalink base: https://github.com/chatddx-administration/chatddx/blob/7893656c143154e0421af0a85298177c347502e3/
 
 "Decided" means the user said so. "Take" is the agent's recommendation and still open.
@@ -35,10 +35,10 @@ replaced the planned `import-engine` run on a host, which would have read `nvidi
      doesn't read for gpt-oss (it renders with Harmony), so its hash pins nothing.
    - **Malborg's Harmony date**: `VLLM_SYSTEM_START_DATE = "2026-10-07"`, in the engine's env and digest.
    - **The report endpoints**: enabled on both hosts, at `pelle.km:12008` and `malborg.km:12008`.
-   - **Where the real World lives**: `world/` (`docs/inventory.md`, "The Worlds in this repository"), with the
-     factors `import-engine` writes in `world/factors.toml`. `init-data --world world/inventory.toml --factors
-     world/factors.toml` seeds the sample with them, and `src/chatddx/store/test/test_seed.py:test_init_data_command`
-     checks that it binds each endpoint.
+   - **Where the real World lives**: `worlds/kompismoln/` (`docs/inventory.md`, "The Worlds in this repository"),
+     with the factors `import-engine` writes in `worlds/kompismoln/factors.toml`. `init-data --world
+     worlds/kompismoln/inventory.toml --factors worlds/kompismoln/factors.toml` seeds the sample with them, and
+     `src/chatddx/store/test/test_seed.py:test_init_data_command` checks that it binds each endpoint and seeds no fake.
    - **What a model's files are**: every file of the snapshot at the pinned commit, as the report hashes them, with a
      snapshot that holds only what vLLM needs. A list of only what vLLM reads would have to follow vLLM's loaders per
      version and model, and missing a file means missing a change: with `--generation-config auto` (the default)
@@ -66,10 +66,10 @@ replaced the planned `import-engine` run on a host, which would have read `nvidi
    package set, so the closures differed between the hosts for the same packages and would have moved with every
    update of o11n's nixpkgs. Fixed in o11n b84e960 (`vllm-runtime`, from the container's package set) and imported
    again (973dd61): both hosts now report the same runtime root.
-5. **Seeded and checked** (52d728b). `init-data alice --world world/inventory.toml --factors world/factors.toml` creates
-   the two models and engines, their lints are clean, and each World endpoint serves the engine it names:
-   `qwen3-8b@pelle` `sha256:a6845f87…`, `gpt-oss-20b@malborg` `sha256:598792a2…`.
-   With o11n 84612b2 deployed, importing again (9eab37a) changed only `world/endpoints.toml`'s model locations, from
+5. **Seeded and checked** (52d728b). `init-data alice --world worlds/kompismoln/inventory.toml --factors
+   worlds/kompismoln/factors.toml` creates the two models and engines, their lints are clean, and each World endpoint
+   serves the engine it names: `qwen3-8b@pelle` `sha256:a6845f87…`, `gpt-oss-20b@malborg` `sha256:598792a2…`. With o11n
+   84612b2 deployed, importing again (9eab37a) changed only `worlds/kompismoln/endpoints.toml`'s model locations, from
    repo IDs to snapshot directories; the factors and digests stayed the same.
 6. **Served under their digests.** Each engine's digest is first in its server's `servedModelNames` (responses carry
    the first name), and the import of 9eab37a reports no `endpoint.served_name`: both servers answer under their
@@ -144,16 +144,17 @@ the endpoints and `confirm` are ready for.
   Tables are kinds, keys are component fields, and references name records. On top of that, `json_schema_path`
   loads a JSON file, `from_facts` writes a chunk per model, `fork_of` seeds a record as a fork, and `tags` and
   `description` are catalog entries.
-- `facts.toml`: the two sample models' facts (`docs/facts.md`, "The sample's facts").
 - `cases.toml`: the 99 cases, each with its tags, language and targets, without the `# guessed` markers.
 - `schemas/`: the two output schemas and the hand-written `targets.json`.
 
-`factors.toml` also holds the old tool, toolset, `plan-web` and scorers (see "Tools and scorers"), and the old fake
-stacks' models and engines (see "Engines and endpoints").
+`factors.toml` also holds the old tool, toolset, `plan-web` and scorers (see "Tools and scorers"). The two sample
+models' facts are bundled with chatddx (`src/chatddx/facts/models.toml`), and the old fake stacks' models and engines
+are the sample World's (`worlds/sample/factors.toml`, see "Engines and endpoints").
 
-The vignettes aren't in it: they're a fake-sensitive source, so they stay out of the package. `sample-world/` holds
+The vignettes aren't in it: they're a fake-sensitive source, so they stay out of the package. `worlds/sample/` holds
 them as a World would:
-- `inventory.toml` is the sample World inventory (`docs/inventory.md`, "The Worlds in this repository").
+- `inventory.toml` is the sample World inventory (`docs/inventory.md`, "The Worlds in this repository"), and
+  `factors.toml` its fake engines.
 - `vignettes/` has the 99 files of 7893656's `src/chatddx/data/cases`, byte for byte (their git blob hashes match the
   old repo's). 30 of them mix CRLF and LF line endings, so `.gitattributes` marks the directory `-text` to keep git
   from converting them.
@@ -182,11 +183,12 @@ them as a World would:
 missing. It shares everything with USER, who is added when missing. It prints one line per record: created,
 validated, updated, skipped, missing, needs repair, forked, kept or restored. It ends with the lints' findings.
 - **Inputs.** `--data` is what gets seeded, the package's sample data by default, and `--factors` more factors
-  files planned with its own, such as `world/factors.toml`; a name may be defined only once per table. The
-  vignettes come from `--vignettes`, a directory of `<id>.txt` files such as `sample-world/vignettes`, or from
-  `--world`, a World inventory whose `[source.<name>]` table locates them, such as `sample-world/inventory.toml`.
-  `--source` names the source (`sample`), which the cases are keyed by. A path that holds none of the sample's cases is refused before
-  anything is written. `--facts` names the facts files, the data directory's `facts.toml` by default.
+  files planned with its own, such as `worlds/kompismoln/factors.toml`; a name may be defined only once per table. The
+  vignettes come from `--vignettes`, a directory of `<id>.txt` files such as `worlds/sample/vignettes`, or from
+  `--world`, a World inventory whose `[source.<name>]` table locates them, such as `worlds/sample/inventory.toml`.
+  `--source` names the source (`sample`), which the cases are keyed by. A path that holds none of the sample's cases
+  is refused before anything is written. `--facts` adds facts files to the bundled ones
+  (`src/chatddx/facts/models.toml`).
 - **Planning.** `chatddx.seed.plan_factors` is pure. It plans models and engines first, then everything else for
   the models those engines serve that the facts know. For the sample that's 50 records: 2 models and 2 engines,
   14 recipes (7 configurations × 2 models), 12 reasoning chunks, 5 sampling chunks, 7 outputs, a prompt, a tool, a
@@ -224,7 +226,7 @@ The old checkout's vignettes were checked in a scratch database:
 - against the 13d317d checkout, 230 were validated, the renamed `DutchFall10w` was missing, and `Dutchfall11w` and
   `casesfromedn1` needed repair. That matches G13's survey;
 - against 504792c, the head of `new-datamodel` on 2026-10-05, 228 were validated: `Dutchfall1w` needs repair too;
-- through `--world sample-world/inventory.toml`, on a database seeded from the 7893656 checkout, all 236 were
+- through `--world worlds/sample/inventory.toml`, on a database seeded from the 7893656 checkout, all 236 were
   validated and every fork kept;
 - once the tools and scorers were added, the same database got the tool, the toolset, 4 scorers and the 2 `plan-web`
   skeletons created, with the tool, toolset and skeletons forked for alice, and a re-run validated everything;
@@ -244,7 +246,9 @@ Decisions 2A and 4D, done. Endpoints, hosts, the sample World, start-ups and `co
 The sample's side:
 - **The seeder** takes `model`, `local_engine` and `remote_engine` tables, and resolves every reference by name in
   one place (`REFERENCES` in `src/chatddx/seed/plan.py`). Engines aren't gifted, as the old giftbag gave no stacks.
-- **The fake engines** (`factors.toml`): the old fake stacks' models and flags. Every value is ours and says what it
+- **The fake engines** (`worlds/sample/factors.toml`): the old fake stacks' models and flags. Since they're the
+  sample World's, seeding another World doesn't seed them, and seeding the sample takes `--factors
+  worlds/sample/factors.toml`. Every value is ours and says what it
   is: the real repo, so its facts apply, with revision `fake` and one empty file for no weights; no GPU; the runtime
   `0.24.0+fake` run by `chatddx fake-vllm` rather than a Nix closure; an empty chat template. So `init-data`'s lints
   give each fake model `model.revision` and each fake engine `engine.closure`, four warnings on every run.
@@ -278,7 +282,7 @@ Where tool and scorer code lives is settled (see "Decided"):
   - `raw`: `text`. No sample configuration uses `output.raw`, as in the old inventory.
 - **The tool.** `chatddx.tools.web_search` is the old tool on `urllib`, with the old record's name, description and
   parameters, in `toolset.web` with its guidance. It sends the model's query to DuckDuckGo, a third party, so the
-  clearance hard block must cover it (`docs/clearance.md`, "Tools") when the runner runs tools.
+  clearance hard block must cover it (`agents/wip-clearance.md`, "Tools") when the runner runs tools.
 - **init-data** writes the labels, gives USER a fork of the tool as the old giftbag did (scorers stay the
   archive's), and lints the scorers on landing.
 - **Tests**: `src/chatddx/scorers/test/`, `src/chatddx/tools/test/`, and `src/chatddx/store/test/test_seed.py`. One
@@ -342,7 +346,7 @@ Not faked yet:
 | old entity | records | new home | open |
 |---|---|---|---|
 | machine, os | 3, 3 | `LocalEngine.hardware`, `.runtime` (inline) | fake done; pelle, malborg by the import |
-| llm | 2 | `ModelArtifact` (fakes seeded); its facts in `facts.toml` (G1) | the real artifacts, by the import |
+| llm | 2 | `ModelArtifact` (fakes seeded); its facts in `src/chatddx/facts/models.toml` (G1) | the real artifacts, by the import |
 | serving, stack | 5, 5 | `LocalEngine` + World inventory endpoint and host | fake done; pelle, malborg by the import |
 | client | 2 | `Code` on `RunStarted`, written per run | dropped |
 | tool, toolset | 1, 1 | `tool` + `chunk.toolset` (G8), code in `chatddx.tools` | the loop, clearance |
@@ -385,7 +389,7 @@ Each gap was tagged [maybe fix remastered]: the sample data needed something rem
   "Canonical form and digest"). Bytes written before the fix keep their digests, but recompiling the same recipe now
   gives a new skeleton digest.
 - **G8. Tools.** Fixed in shape (`docs/factors.md`, "Tool", "Toolset", "Tool rounds"; `docs/ledger.md`, "Turn and
-  ToolRun"; `docs/clearance.md`, "Tools"). Still open:
+  ToolRun"; `agents/wip-clearance.md`, "Tools"). Still open:
   - the loop itself, and where tools run, are the runner's;
   - `plan-web` can't call its tool on vLLM 0.24: a native contract with tools sends `tool_choice: auto` beside a
     `response_format`, which then constrains the whole answer (`docs/vllm.md`, item 10). `vllm.native_tools_uncallable`
@@ -509,7 +513,7 @@ Decided: Olof's comments on the cases are the foundation for a free-text expecta
      Swedish note is read against an English answer (G18), in the prompt or by translating once into an
      expectation of its own;
   2. a judge in the sample: the skeleton, an engine (a real one; the fakes for tests), seeds, and a scorer whose
-     views name it. A judge engine falls under the clearance rule (`docs/clearance.md`);
+     views name it. A judge engine falls under the clearance rule (`agents/wip-clearance.md`);
   3. running judges: the scorer interface's next version for judged views, and the judge calls, recorded per score
      item (`docs/ledger.md:JudgeCall`). `score` refuses judged views until then, and the calls go with the runner.
 - **They can disagree with the targets.** On `Dutchfall11w`, Olof leads with shock, most likely sepsis, and uses

@@ -1,4 +1,5 @@
-# The old inventory's llm facts (chatddx 7893656, src/chatddx/data/inventory/llms.toml), ported by hand.
+# The facts chatddx ships, loaded by default. The first two models' were the old inventory's llm facts (chatddx
+# 7893656, src/chatddx/data/inventory/llms.toml), ported by hand.
 
 [model."Qwen/Qwen3-8B-AWQ"]
 family = "qwen3"

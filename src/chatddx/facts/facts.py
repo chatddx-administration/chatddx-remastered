@@ -9,6 +9,8 @@ from chatddx.factors.bundle import Registry
 from chatddx.factors.engine import LocalEngine, ModelArtifact, RemoteEngine
 from chatddx.factors.request import Reasoning, Sampling
 
+BUNDLED = Path(__file__).with_name("models.toml")
+
 Intent = Literal["off", "on", "minimal", "low", "medium", "high", "xhigh"]
 Effort = Intent | Literal["default"]
 INTENTS: tuple[Intent, ...] = get_args(Intent)

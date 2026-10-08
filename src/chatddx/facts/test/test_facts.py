@@ -3,7 +3,6 @@ from pathlib import Path
 import pytest
 from pydantic import HttpUrl, JsonValue, ValidationError
 
-import chatddx
 from chatddx.factors.bundle import Registry
 from chatddx.factors.engine import FileDigest, LocalEngine, ModelArtifact, RemoteEngine
 from chatddx.factors.lint import lint
@@ -20,6 +19,7 @@ from chatddx.factors.request import (
 from chatddx.factors.test.sample import SHA, local_engine, world
 from chatddx.factors.trial import Trial
 from chatddx.facts.facts import (
+    BUNDLED,
     Facts,
     ModelFacts,
     OutputFacts,
@@ -30,14 +30,13 @@ from chatddx.facts.facts import (
 )
 from chatddx.facts.lint import lint as lint_facts, reasons
 
-SAMPLE = Path(chatddx.__file__).parent / "data" / "sample" / "facts.toml"
 QWEN = "Qwen/Qwen3-8B-AWQ"
 GPT_OSS = "openai/gpt-oss-20b"
 
 
 @pytest.fixture
 def facts() -> Facts:
-    return Facts.load(SAMPLE)
+    return Facts.load(BUNDLED)
 
 
 def test_reasoning_levels_become_chunks(facts: Facts) -> None:
@@ -95,7 +94,7 @@ def test_facts_are_checked(tmp_path: Path) -> None:
     other = tmp_path / "other.toml"
     _ = other.write_text(f'[model."{QWEN}"]\n')
     with pytest.raises(ValueError, match="more than one file"):
-        _ = Facts.load(SAMPLE, other)
+        _ = Facts.load(BUNDLED, other)
 
 
 def test_facts_check_pairs(facts: Facts) -> None:

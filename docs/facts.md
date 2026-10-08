@@ -139,3 +139,22 @@ Left behind:
   unknown.
 
 ## Proposed amendments
+- CHANGE, under "Where facts come from", "The only facts file today is the sample data's (see "The sample's
+  facts")." to "chatddx ships facts in `models.toml` (`facts.py:BUNDLED`, see "Bundled facts"). `chatddx init-data`
+  loads them by default, and `--facts PATH …` adds files beside them (`src/chatddx/cli.py`)."
+- CHANGE, under "Writing chunks", "The seeder is the only caller today (`agents/wip-sample-data.md`, "init-data")."
+  to "`chatddx init-data` is the only caller today (`agents/wip-seed.md`).", since the seed package is to be renamed.
+- CHANGE, under "Writing chunks", "A refused chunk, and the recipes that need it, are skipped and reported.
+  `chatddx init-data --facts PATH …` names the facts files, by default the data directory's `facts.toml`
+  (`src/chatddx/cli.py`)." to "A refused chunk, and the recipes that need it, are skipped and reported.", since
+  where init-data's facts come from is said under "Where facts come from" (`src/chatddx/cli.py:_init_data`).
+- CHANGE the heading "The sample's facts" to "Bundled facts", and its first sentence to "`models.toml` holds the facts
+  chatddx ships, about the old chatddx's two models, `Qwen/Qwen3-8B-AWQ` and `openai/gpt-oss-20b`, which both the
+  sample World's fake engines and Kompismoln's World serve.", keeping "They were ported by hand …" and the rest
+  (`src/chatddx/facts/models.toml`, `worlds/sample/factors.toml`, `worlds/kompismoln/factors.toml`).
+- ADD, under "Checking pairs", after `facts.missing`: "- `facts.reasoning_unmatched`: the skeleton's
+  `reasoning_effort` and `chat_template_kwargs` match none of the writes the model's reasoning levels land on
+  (`ReasoningFacts.realized`), so the skeleton was written for another model: `enable_thinking` sent to gpt-oss, or
+  `reasoning_effort = "none"` to gpt-oss, whose `off` is refused. A skeleton that sets neither leaves reasoning to the
+  model and isn't checked." It's in the code and tests (`lint.py:_model`, `test/test_facts.py`) but not in the doc;
+  the text is carried over from the removed `agents/wip-facts.md`.

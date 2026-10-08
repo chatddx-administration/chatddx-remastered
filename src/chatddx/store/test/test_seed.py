@@ -7,13 +7,13 @@ import pytest
 
 from chatddx.catalog import Subject
 from chatddx.cli import main
-from chatddx.conftest import connect
+from chatddx.conftest import WORLDS, connect, sample_plan
 from chatddx.core.rig import rig
 from chatddx.factors.base import Fingerprint
-from chatddx.facts.facts import Facts
+from chatddx.facts.facts import BUNDLED, Facts
 from chatddx.inventory import Inventory
 from chatddx.inventory.test.memory import MemorySource
-from chatddx.seed import Plan, load_cases, plan_factors, seed
+from chatddx.seed import load_cases, plan_factors, seed
 from chatddx.seed.plan import SAMPLE
 from chatddx.store import Catalog, People
 from chatddx.store.store import Connection
@@ -33,13 +33,9 @@ FAKES = [
         for name in ("qwen3-8b-awq@fake", "gpt-oss-20b@fake")
     ),
 ]
-SAMPLE_WORLD = Path(__file__).parents[4] / "sample-world" / "inventory.toml"
-WORLD = Path(__file__).parents[4] / "world" / "inventory.toml"
-
-
-def sample_plan(factors: Path = SAMPLE / "factors.toml") -> Plan:
-    facts = Facts.load(SAMPLE / "facts.toml")
-    return plan_factors(factors, facts, rig(), root=SAMPLE)
+SAMPLE_WORLD = WORLDS / "sample" / "inventory.toml"
+SAMPLE_ENGINES = WORLDS / "sample" / "factors.toml"
+WORLD = WORLDS / "kompismoln" / "inventory.toml"
 
 
 def vignettes(**changed: bytes) -> MemorySource:
@@ -177,7 +173,7 @@ output = "raw"
 sampling = "recommended"
 """
     )
-    plan = plan_factors(factors, Facts.load(SAMPLE / "facts.toml"), rig())
+    plan = plan_factors(factors, Facts.load(BUNDLED), rig())
     assert [(r.table, r.name) for r in plan.records] == [
         ("remote_engine", "qwen@api"),
         ("remote_engine", "gemma@api"),
@@ -276,7 +272,17 @@ def test_init_data_command(
         _ = (cases / f"{id}.txt").write_text(f"The vignette of {id}.")
     world = tmp_path / "world.toml"
     _ = world.write_text('[source.sample]\npath = "cases"\n')
-    main(["init-data", "alice", "--world", str(world), "--giftbag"])
+    main(
+        [
+            "init-data",
+            "alice",
+            "--world",
+            str(world),
+            "--factors",
+            str(SAMPLE_ENGINES),
+            "--giftbag",
+        ]
+    )
     out = capsys.readouterr().out.splitlines()
     assert out[0] == "[person] alice: added"
     assert out[1].startswith("[archive model] qwen3-8b-awq@fake: created")
@@ -287,7 +293,16 @@ def test_init_data_command(
             len(CASES),
         )
 
-    main(["init-data", "alice", "--vignettes", str(cases)])
+    main(
+        [
+            "init-data",
+            "alice",
+            "--vignettes",
+            str(cases),
+            "--factors",
+            str(SAMPLE_ENGINES),
+        ]
+    )
     out = capsys.readouterr().out.splitlines()
     assert not [line for line in out if line.startswith("[person]")]
     with connect(db) as conn:
@@ -304,7 +319,16 @@ def test_init_data_command(
         with pytest.raises(SystemExit):
             main(["init-data", "alice", *neither_or_both])
 
-    main(["init-data", "alice", "--world", str(SAMPLE_WORLD)])
+    main(
+        [
+            "init-data",
+            "alice",
+            "--world",
+            str(SAMPLE_WORLD),
+            "--factors",
+            str(SAMPLE_ENGINES),
+        ]
+    )
     sample = Inventory.load(SAMPLE_WORLD)
     assert [
         line
@@ -329,6 +353,7 @@ def test_init_data_command(
         + e.engine.removeprefix("sha256:")[:6]
         for name, e in real.endpoints.items()
     ]
+    assert not [line for line in out if "@fake" in line]
 
 
 def test_wipe_data_deletes_and_unshares_and_init_data_gives_it_back(

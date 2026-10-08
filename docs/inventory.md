@@ -266,3 +266,45 @@ the World the person starting a run meant, since that World decides what is clea
 - **A new kind of source takes two classes,** a spec and a reader.
 
 ## Proposed amendments
+- CHANGE, under "The file", "Paths in the file are relative to the file's directory (`Inventory.root`)." to "Paths in
+  the file are relative to the file's directory, and loading resolves them.", since `Inventory.root` is gone: a
+  source's path is resolved when the file is loaded (`inventory.py:Inventory.load`).
+- ADD, under "What loading checks", a third item: "every source is named after its table, so a `[source.<name>]`
+  table can't set another `name`." (`inventory.py:Inventory._sources_named`).
+- CHANGE, under "Sources", "A `[source.<name>]` table locates vignettes (`inventory.py:DirectorySourceSpec`):" to "A
+  `[source.<name>]` table is a source (`sources.py:DirectorySource`):".
+- CHANGE, under "Sources", the paragraph "Each kind of source is two classes: … Tests stand in for a source with
+  `test/memory.py:MemorySource`." to "Loading names each source after its table and resolves its path, so
+  `Inventory.sources` holds the sources themselves, and a new kind of source is one class with a `kind` of its own.
+  Tests stand in for a source with `test/memory.py:MemorySource`." (`inventory.py:Inventory.load`,
+  `sources.py:DirectorySource`).
+- REMOVE, under "Smaller issues", "**A new kind of source takes two classes,** a spec and a reader.", fixed by the
+  item above.
+- CHANGE the section "The Worlds in this repository" to "Worlds", reading: "A World's files live in one directory:
+  `inventory.toml`, the files it includes, and `factors.toml`, the models and engines its endpoints serve, whether
+  `chatddx import-engine` wrote them or people did. A World may also hold its source's vignettes, when git may hold
+  them.
+
+  A World may point into another. An include and a source's path are relative to the file that names them, so they
+  can reach another World's directory, and one World can take another's vignettes or endpoints without copying them.
+  `test/test_inventory.py:test_a_world_takes_sources_and_endpoints_from_another` keeps that working.
+
+  This repository has two, in `worlds/`:
+  - `worlds/sample/` is the sample World: `[source.sample]` for the vignettes in `vignettes/`, an endpoint for each
+    fake engine on 127.0.0.1, the fake host, a `[cleared]` table that clears both endpoints for the sample, and
+    `factors.toml`, the fake models and engines.
+    `test/test_serving.py:test_the_sample_world_binds_each_fake_engine_the_sample_seeds` fails when the engines
+    change and their endpoints don't.
+  - `worlds/kompismoln/` is Kompismoln's World, the hosts pelle and malborg. Its `inventory.toml` is hand-written and
+    takes the sample World's vignettes (`path = "../sample/vignettes"`). `endpoints.toml` and `factors.toml` are what
+    `chatddx import-engine` writes from the hosts' o11n reports. It has no `[cleared]` table, so the runner refuses
+    to send the sample to its endpoints." (`worlds/`, `src/chatddx/inventory/test/test_inventory.py`).
+- CHANGE, under "Open design issues", "Where a deployment's World is", the sentences "Nothing in
+  `src/chatddx/core/settings.py` locates one. This repository's `world/` holds the hosts' names and the paths on
+  them." to "Nothing in `src/chatddx/core/settings.py` locates one. Suggested: `CHATDDX_WORLD`, the directory of the
+  deployment's World, read in `settings.py`, listed in `.env-example`, and the default for init-data and the runner.
+  `worlds/kompismoln/` holds the hosts' names and the paths on them; once a deployment finds its World through the
+  setting, that directory could live with ops (Kompismoln/org) rather than here." (`src/chatddx/core/settings.py`,
+  `.env-example`).
+- CHANGE the three references to `docs/clearance.md` to `agents/wip-clearance.md`, which it was folded into: under
+  "Sources" ("Sensitive sources"), "Clearance" ("Vetted endpoints") and "Reaching an engine" ("Vetted endpoints").

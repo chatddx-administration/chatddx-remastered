@@ -1,6 +1,7 @@
 # Clearance: work in progress
 
-Material for `docs/clearance.md`. Split out of the former `agents/wip-bookkeeping.md`; checked against d10c96d.
+Material for a future `docs/clearance.md`. Split out of the former `agents/wip-bookkeeping.md`. The stub that was
+`docs/clearance.md` is folded into "What holds now", since clearance is still in progress.
 "Decided" means the user said so; "Take" is the agent's recommendation and still open.
 
 ## Scope
@@ -9,20 +10,48 @@ databases. It is enforcement, not curation: sending case-derived content to an e
 engines included, is the system's one hard block (`docs/chatddx.md`, "Findings and errors"). The factors and the
 ledger provide the means; the runner enforces.
 
+## What holds now
+### Vetted endpoints
+Until clearance has a database grant, a World inventory's `[cleared]` table (`docs/inventory.md`, "Clearance") says
+which sensitive sources each endpoint may receive case-derived content from.
+
+Before a run writes anything, the runner refuses (`src/chatddx/runner/gate.py:check`):
+- an endpoint serving another engine than the trial's;
+- a sensitive source the endpoint isn't cleared for;
+- tools on a sensitive source;
+- an endpoint whose `/v1/models` doesn't list its engine.
+
+### Sensitive sources
+Vignette sources are sensitive unless declared otherwise (`docs/inventory.md`, "Sources"). The runner enforces it
+against the inventory's `[cleared]` table until the clearance pipeline replaces the table.
+
+### Completions derived from vignettes
+- Case-derived records are run items and score items (`src/chatddx/ledger/record.py:Record.case_derived`):
+  completions, the arguments the model passed to tools and what the tools returned, judge responses, and the
+  scorer's `detail`. Started and finished rows are not case-derived. Compilations are components
+  (`src/chatddx/factors/request.py:Compilation`), not records, and hold no case text.
+- No policy has settled. Options: a database-level read restriction on case-derived tables; a destination check
+  when records are exported.
+- Part of it exists: the case-derived tables are in schema `ledger`, and at tier 1 `chatddx_reader` can read
+  `factor` but not `ledger` (`src/chatddx/store/migrations/0005-t1-ledger.sql`). Who gets that role is open.
+
+### Tools
+- A tool's arguments are written by the model from the case. A tool that sends them off the host (a web search;
+  the sample's `chatddx.tools.web_search` goes to DuckDuckGo) sends case-derived content to a third party, so the
+  hard block covers tools as it covers engines and judges.
+- Tools are pinned by code (`Tool.code`, `entry_point`), so the clearance pipeline can clear a tool by its code, with
+  the endpoints it reaches. Nothing declares those yet; that belongs to clearance, not to the factor.
+- Tool results come back from the third party and are stored in the ledger (`ToolRun.result`), next to the
+  responses.
+
 ## What the code offers
-- `Record.case_derived` (`src/chatddx/ledger/ledger.py:45`) marks which logs hold derived content: run and score rows
-  are case-derived, compilations are not (`:306`).
-- Case-derived tables live in schema `ledger`; at tier 1 `chatddx_reader` can't read them
-  (`src/chatddx/store/migrations/0002-t1-grants.sql`).
-- `SourceCase.source` (`src/chatddx/factors/cases.py:12`) names a vignette's source.
-- Sources are declared in the inventory (`src/chatddx/inventory/inventory.py`), and each one says whether it is
-  sensitive (`Source.sensitive`, true by default). `prepare_case` produces the case-derived fills the hard block
-  would guard.
-- `RemoteEngine.base_url` (`src/chatddx/factors/engine.py:76`) is the only endpoint in a factor, and it is part of the
-  engine's digest. A local engine has no URL; by the glossary that is an inventory fact (`docs/factors.md`, "Local
-  engines have no endpoint…").
-- `Call` (`src/chatddx/ledger/ledger.py`) records no URL, so the ledger can't show which endpoint received
-  case-derived content.
+- `Vignette.source` (`src/chatddx/factors/cases.py:Vignette`) names a vignette's source, and is part of the case's
+  digest.
+- `prepare_case` produces the case-derived fills the hard block guards (`docs/factors.md`, "Preparing a case").
+- `RemoteEngine.base_url` (`src/chatddx/factors/engine.py:RemoteEngine`) is the only endpoint in a factor, and it is
+  part of the engine's digest. A local engine is located by the inventory (`docs/inventory.md`, "Endpoints").
+- `RunStarted.endpoint` (`src/chatddx/ledger/run.py:Endpoint`) records where a run's calls went, by the endpoint's
+  name and URL. Judge calls record no endpoint (`src/chatddx/ledger/score.py:ScoreStarted`).
 - The old module had `EndpointBinding(engine, base_url, clearances)` and `CaseSourcePolicy(source,
   required_clearances)`, with a check that every endpoint reached by case-derived content held the clearances its
   sources require (`git show de843eb:src/chatddx/core/manifest.py`, around L1913 and L2258). That shape still fits:
@@ -34,37 +63,27 @@ ledger provide the means; the runner enforces.
 - Storage: schema `clearance`, append-only like the catalog (SELECT, INSERT for the writer; t2 insert-only triggers).
   Granting clearance is the action the hard block depends on, so possibly only a separate role
   (`chatddx_clearance`) may write it. That is the one place a new database role seems justified.
-- Record the endpoint on each `Call` (or once per run in `RunStarted`, if one run talks to one endpoint per engine), so
-  the clearance check can be audited from the ledger.
+- Judges record their endpoint as runs do: a defaulted `ScoreStarted.endpoint`, so the clearance check on judge
+  calls can be audited from the ledger.
 
 ## Open
-1. **What a grant keys on.** This blocks the schema. Endpoints now live in the inventory
-   (`docs/inventory.md`): ops-authored TOML, mutable, no ids. Candidates:
+1. **What a grant keys on.** This blocks the schema. Endpoints live in the inventory (`docs/inventory.md`):
+   ops-authored TOML, mutable, no ids. Candidates:
    - the URL (simple, but a local host serves different engines over time, and one engine may have several hosts);
    - an inventory entry name (stable for humans, but the inventory isn't in the database, so no foreign key);
    - the engine digest plus URL (what the old `EndpointBinding` did).
-   Related: whether `RemoteEngine.base_url` stays in the digest or moves to the inventory, so that local and remote
-   engines are bound the same way.
-   Since decision 2A (`agents/wip-sample-data.md`, "Engines and endpoints"), the inventory has named endpoints, each
-   binding one engine digest to a URL (`src/chatddx/inventory/inventory.py:EndpointSpec`), and `base_url` stays in
-   the remote engine's digest. So a grant can key on the endpoint's name with the digest and URL it holds, as the
-   old `EndpointBinding` did.
-2. **Where vetting is declared.** In the inventory (ops write it alongside the endpoint) or in the database (granted
-   through the portal and logged). The second gives an audit trail and fits the append-only store; the first keeps
-   all location facts in one place.
+
+   Since decision 2A (`agents/wip-sample-data.md`, "Decided"), an endpoint has a name and binds one engine digest to
+   a URL (`src/chatddx/inventory/inventory.py:EndpointSpec`), and `base_url` stays in the remote engine's digest. So
+   a grant can key on the endpoint's name with the digest and URL it holds, as the old `EndpointBinding` did. Today
+   `[cleared]` keys on the name alone, so renaming an endpoint drops its clearance (`docs/inventory.md`, "Smaller
+   issues").
+2. **Where vetting is declared.** Decided for now (`agents/wip-repl.md`, D1; `agents/wip-runner.md`, "Decided"): in
+   the inventory, as `[cleared]`. For the long term: the inventory keeps all location facts in one place, while a
+   database grant (through the portal, logged) gives an audit trail and fits the append-only store.
 3. **Who may grant clearance**, and whether that needs its own role.
-4. **Binding check before sending.** A local engine's `served_model_name` is its digest, and `/v1/models` lists it,
-   so the runner can confirm an inventory binding before sending case-derived content. Whether that check is part of
-   the hard block is undecided.
-5. **Sources.** Sources are now listed in the inventory with a `sensitive` flag (G11 in
-   `agents/wip-sample-data.md`). Still unspecified: what clearance each requires, beyond sensitive or not.
-
-## Tools (G8)
-- A tool's arguments are written by the model from the case. A tool that sends them off the host (the old
-  `web_search` goes to DuckDuckGo) sends case-derived content to a third party, so the hard block covers tools as
-  it covers engines and judges.
-- Tools are pinned by code (`Tool.code`, `entry_point`), so the clearance pipeline can clear a tool by its code.
-  Nothing declares which endpoints a tool reaches; that belongs to clearance, not to the factor.
-- Tool results come back from the third party and are stored in the ledger (`ToolRun.result`), next to the
-  responses.
-
+4. **Binding check before sending.** Built: the gate refuses an endpoint that `confirm` can't confirm
+   (`src/chatddx/runner/gate.py:check`), so it is part of the hard block for runs. Judges and canaries don't run yet.
+5. **Sources.** Sources say only whether they are sensitive. Still unspecified: what clearance each requires beyond
+   that. A `[cleared]` entry for a source that isn't sensitive is accepted and clears nothing
+   (`docs/inventory.md`, "Open design issues").

@@ -8,7 +8,7 @@ import psycopg
 
 from chatddx.core import settings
 from chatddx.core.rig import rig
-from chatddx.facts.facts import Facts
+from chatddx.facts.facts import BUNDLED, Facts
 from chatddx.fake_vllm.server import run
 from chatddx.identity import Role
 from chatddx.importers.o11n import (
@@ -62,7 +62,7 @@ def _person_password(args: argparse.Namespace) -> None:
 
 def _init_data(args: argparse.Namespace) -> None:
     sample: Path = args.data
-    facts = Facts.load(*(args.facts or [sample / "facts.toml"]))
+    facts = Facts.load(BUNDLED, *(args.facts or ()))
     plan = plan_factors(sample / "factors.toml", facts, rig(), more=args.factors or ())
     cases = load_cases(sample / "cases.toml")
     world = None if args.world is None else Inventory.load(args.world)
@@ -73,12 +73,12 @@ def _init_data(args: argparse.Namespace) -> None:
     else:
         raise SystemExit(
             f"--vignettes {args.vignettes}: give a directory of <id>.txt files, such as "
-            + "sample-world/vignettes"
+            + "worlds/sample/vignettes"
         )
     if not set(cases) & set(source.ids()):
         raise SystemExit(
             f"none of the sample's {len(cases)} cases is in source {args.source!r}; "
-            + "the sample World has them: --world sample-world/inventory.toml"
+            + "the sample World has them: --world worlds/sample/inventory.toml"
         )
     lines: list[str] = []
     with psycopg.connect(settings.database()) as conn:
@@ -212,21 +212,21 @@ def main(argv: Sequence[str] | None = None) -> None:
         "--data",
         type=Path,
         default=SAMPLE,
-        help="what to seed: a directory with factors.toml, cases.toml and facts.toml "
+        help="what to seed: a directory with factors.toml and cases.toml "
         + "(the sample data in the package)",
     )
     _ = init.add_argument(
         "--factors",
         type=Path,
         action="append",
-        help="more factors to seed with the data's, such as a World's imported engines "
-        + "(world/factors.toml)",
+        help="more factors to seed with the data's, such as a World's engines "
+        + "(worlds/sample/factors.toml)",
     )
     _ = init.add_argument(
         "--facts",
         type=Path,
         action="append",
-        help="model facts to write per-model chunks from (the sample's facts.toml)",
+        help="more model facts to write per-model chunks from, beside the bundled ones",
     )
     init.set_defaults(run=_init_data)
 
@@ -264,14 +264,14 @@ def main(argv: Sequence[str] | None = None) -> None:
         type=Path,
         required=True,
         help="the factors file to write the models and engines to, such as "
-        + "world/factors.toml, for init-data's --factors",
+        + "worlds/kompismoln/factors.toml, for init-data's --factors",
     )
     _ = imp.add_argument(
         "--endpoints",
         type=Path,
         required=True,
         help="the inventory file to write the endpoints and hosts to, such as "
-        + "world/endpoints.toml, for a World inventory's include",
+        + "worlds/kompismoln/endpoints.toml, for a World inventory's include",
     )
     imp.set_defaults(run=_import_engine)
 
