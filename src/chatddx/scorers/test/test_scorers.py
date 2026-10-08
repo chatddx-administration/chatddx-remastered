@@ -5,6 +5,7 @@ import pytest
 from jsonschema import validators
 from pydantic import JsonValue
 
+from chatddx.conftest import sample_plan
 from chatddx.core.rig import entry, rig
 from chatddx.factors.base import Code, resolve
 from chatddx.factors.bundle import Registry
@@ -12,7 +13,6 @@ from chatddx.factors.request import Skeleton, SlotName
 from chatddx.factors.scoring import Judge, Scorer, View
 from chatddx.factors.select import reaches
 from chatddx.factors.test.sample import world
-from chatddx.facts.facts import Facts
 from chatddx.fake_vllm.chat import ANSWER as ANSWER_TEXT, instance
 from chatddx.scorers.aggregate import AGGREGATES
 from chatddx.scorers.patterns import (
@@ -23,7 +23,7 @@ from chatddx.scorers.patterns import (
     score as patterns,
 )
 from chatddx.scorers.scorer import Scored, function, score
-from chatddx.seed import load_cases, plan_factors
+from chatddx.seed import load_cases
 from chatddx.seed.plan import SAMPLE
 
 SCHEMA = "sha256:" + "0" * 64
@@ -273,9 +273,7 @@ TARGETS_SCHEMA = json.loads((SAMPLE / "schemas" / "targets.json").read_text())
 
 
 def sample_scorer(name: str) -> tuple[Scorer, tuple[str | None, ...]]:
-    plan = plan_factors(
-        SAMPLE / "factors.toml", Facts.load(SAMPLE / "facts.toml"), rig()
-    )
+    plan = sample_plan()
     record = plan.named("scorer", name)
     scorer = plan.registry.get(record.digest)
     assert isinstance(scorer, Scorer)
@@ -478,9 +476,7 @@ READS = {
 
 
 def test_each_sample_scorer_s_views_pick_from_the_answers_it_reads() -> None:
-    plan = plan_factors(
-        SAMPLE / "factors.toml", Facts.load(SAMPLE / "facts.toml"), rig()
-    )
+    plan = sample_plan()
     read: set[str] = set()
     for record in plan.records:
         if record.kind != "skeleton":

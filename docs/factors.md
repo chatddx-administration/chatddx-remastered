@@ -57,9 +57,9 @@ Two runs of the same trial are interchangeable only when those agree too (see "O
   and the evidence of the observed ones, but they aren't factors themselves.
 - People, roles, authentication and authorization: `docs/identity.md`.
 - Names, labels, languages, tags, descriptions, owners, collaborators and version history: `docs/catalog.md`.
-- Sensitivity and vetting: `docs/clearance.md`.
+- Sensitivity and vetting: `agents/wip-clearance.md`.
 - Knowledge about models (reasoning levels, recommended sampling, output caveats, specs): the model facts
-  (`src/chatddx/facts/facts.py`). Facts help write chunks and check them (`src/chatddx/facts/lint.py`), but no
+  (`src/chatddx/facts/models.py`). Facts help write chunks and check them (`src/chatddx/facts/lint.py`), but no
   digest depends on them.
 - Instruments and Provenance: canary sets and compilations are components, but not factors.
 
@@ -181,7 +181,6 @@ by `Store.add`.
 | View | One comparison a scorer makes between part of an output and part of an expectation. |
 | Judge | An LLM used to grade outputs. |
 | Canary | A fixed, non-sensitive probe request. |
-| Inventory | Files written by ops that say where things are. Today they locate vignette sources; engines, model files and chat templates are to follow. |
 | Portal | The web interface where components are written and runs are watched. |
 
 ## Cases
@@ -192,9 +191,10 @@ by `Store.add`.
 
 A case (kind `case`) is a vignette plus the appendices to send with it, in order. `cases.py:Vignette` names the
 vignette by the source it comes from, its id there, and the fingerprint of its raw bytes as fetched. The source
-gives the id; for a directory of files it is the file's name without its suffix. Sources are declared in the
-inventory and hand over vignettes as UTF-8 text (see "Preparing a case"). `Source.cases()`
-(`src/chatddx/inventory/sources.py`) builds one case, without appendices, for each vignette a source lists.
+gives the id; for a directory of files it is the file's name without its suffix.
+
+Sources are declared in the inventory (`docs/inventory.md`, "Sources") and hand over vignettes as UTF-8 text (see
+"Preparing a case").
 
 The vignette itself is sensitive by default, unstructured, and never edited or stored: only its fingerprint is. A
 case's digest covers the vignette and the appendix list, so the same vignette with different appendices is a
@@ -750,7 +750,7 @@ Judge requests go through the same rendering as generation requests, once per se
 (`docs/ledger.md:JudgeCall`). Their scores are reproducible on a best-effort basis. Given the scorer's parse of an
 answer, a judge request can be rebuilt from stored data and checked against the fingerprint its call stored; the
 parsing belongs to the scorer's code, so the rig can't do that check on its own. Because a judge prompt can
-contain case text, judge engines fall under the same clearance rule as generation engines (`docs/clearance.md`).
+contain case text, judge engines fall under the same clearance rule as generation engines (`agents/wip-clearance.md`).
 
 ### Scoring
 - principal author: Researchers
@@ -847,20 +847,6 @@ observed ones (prompt-token fingerprints, returned models, canaries) before pool
 ### Greedy sampling and seeds
 No seed is sent with greedy sampling, but a trial's seeds still count toward its digest, so two otherwise identical
 greedy trials differ only in digest. Likewise, the seeds of a greedy judge all send the same request.
-
-### Runs don't record where calls went
-A local engine pins what it is but not where it is. Where it is lives in the inventory: an endpoint binds an
-engine by digest to a URL, with its capacity and credential, and names the host that runs it; a host says where it
-keeps the model files and chat templates its engines pin, keyed by model artifact digest and template hash
-(`src/chatddx/inventory/inventory.py`). `src/chatddx/inventory/serving.py:start_up` joins them into what the
-start-up script runs, and `confirm` checks that the endpoint's `/v1/models` lists the engine's served name before
-anything is sent.
-
-A remote engine's `base_url`, by contrast, is part of its digest, so moving the same API to a new host makes a new
-engine.
-
-A run's started row names the endpoint its calls went to, by name and URL, so the ledger shows which endpoint
-received case-derived content.
 
 ### Smaller issues
 - **Canary drift isn't checked.** Nothing compares canary outputs between phases or between runs.

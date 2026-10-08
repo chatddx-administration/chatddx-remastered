@@ -3,7 +3,6 @@ from pathlib import Path
 import pytest
 from pydantic import HttpUrl, JsonValue, ValidationError
 
-import chatddx
 from chatddx.factors.bundle import Registry
 from chatddx.factors.engine import FileDigest, LocalEngine, ModelArtifact, RemoteEngine
 from chatddx.factors.lint import lint
@@ -19,7 +18,8 @@ from chatddx.factors.request import (
 )
 from chatddx.factors.test.sample import SHA, local_engine, world
 from chatddx.factors.trial import Trial
-from chatddx.facts.facts import (
+from chatddx.facts import (
+    BUNDLED,
     Facts,
     ModelFacts,
     OutputFacts,
@@ -27,17 +27,17 @@ from chatddx.facts.facts import (
     Refusal,
     Refused,
     Writes,
+    check_pairs,
+    reasons,
 )
-from chatddx.facts.lint import lint as lint_facts, reasons
 
-SAMPLE = Path(chatddx.__file__).parent / "data" / "sample" / "facts.toml"
 QWEN = "Qwen/Qwen3-8B-AWQ"
 GPT_OSS = "openai/gpt-oss-20b"
 
 
 @pytest.fixture
 def facts() -> Facts:
-    return Facts.load(SAMPLE)
+    return Facts.load(BUNDLED)
 
 
 def test_reasoning_levels_become_chunks(facts: Facts) -> None:
@@ -95,7 +95,7 @@ def test_facts_are_checked(tmp_path: Path) -> None:
     other = tmp_path / "other.toml"
     _ = other.write_text(f'[model."{QWEN}"]\n')
     with pytest.raises(ValueError, match="more than one file"):
-        _ = Facts.load(SAMPLE, other)
+        _ = Facts.load(BUNDLED, other)
 
 
 def test_facts_check_pairs(facts: Facts) -> None:
@@ -131,7 +131,7 @@ def test_facts_check_pairs(facts: Facts) -> None:
             Trial(skeleton=skeleton, engine=engine, cases=(ids["case"],), seeds=(1,))
         )
         found = lint(reg, [trial], reasons=reasons(facts, reg))
-        return {f.code: f.level for f in found + lint_facts(reg, facts, [trial])}
+        return {f.code: f.level for f in found + check_pairs(reg, facts, [trial])}
 
     native = skeleton(NativeOutput(), response_format=response_format)
     qwen = engine(QWEN)
@@ -168,7 +168,7 @@ def test_facts_check_pairs(facts: Facts) -> None:
     trial = reg.add(
         Trial(skeleton=native, engine=qwen, cases=(ids["case"],), seeds=(1,))
     )
-    assert [(f.code, f.message) for f in lint_facts(reg, refusing, [trial])] == [
+    assert [(f.code, f.message) for f in check_pairs(reg, refusing, [trial])] == [
         ("facts.output_refused", "no grammar")
     ]
 
@@ -193,7 +193,7 @@ def test_facts_check_that_a_pair_s_sampling_is_for_its_model(facts: Facts) -> No
         trial = reg.add(
             Trial(skeleton=skeleton, engine=engine, cases=(ids["case"],), seeds=(1,))
         )
-        return {f.code: f.message for f in lint_facts(reg, facts, [trial])}
+        return {f.code: f.message for f in check_pairs(reg, facts, [trial])}
 
     qwen_on = facts.models[QWEN].sampling_chunk("on").body()
     qwen_off = facts.models[QWEN].sampling_chunk("off").body()

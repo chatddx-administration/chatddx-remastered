@@ -5,7 +5,7 @@ from pathlib import Path
 import pytest
 from pydantic import ValidationError
 
-from chatddx.core.rig import rig
+from chatddx.conftest import WORLDS, sample_plan
 from chatddx.factors.bundle import Registry
 from chatddx.factors.engine import (
     FileDigest,
@@ -15,23 +15,20 @@ from chatddx.factors.engine import (
     RemoteEngine,
     Runtime,
 )
-from chatddx.facts.facts import Facts
 from chatddx.fake_vllm.served import Served
 from chatddx.fake_vllm.server import serving
-from chatddx.inventory.inventory import EndpointSpec, HostSpec, Inventory
-from chatddx.inventory.serving import confirm, start_up, url_of
-from chatddx.seed import Plan, plan_factors
-from chatddx.seed.plan import SAMPLE
+from chatddx.inventory import (
+    EndpointSpec,
+    HostSpec,
+    Inventory,
+    confirm,
+    start_up,
+    url_of,
+)
 from chatddx.seed.world import endpoints
 
-WORLD = Path(__file__).parents[4] / "sample-world" / "inventory.toml"
+WORLD = WORLDS / "sample" / "inventory.toml"
 TEMPLATE = hashlib.sha256(b"{{ messages }}").hexdigest()
-
-
-def sample_plan() -> Plan:
-    return plan_factors(
-        SAMPLE / "factors.toml", Facts.load(SAMPLE / "facts.toml"), rig()
-    )
 
 
 def local(reg: Registry, *argv: str) -> tuple[str, str]:
@@ -67,7 +64,6 @@ def world(
     templates: dict[str, str] | None = None,
 ) -> Inventory:
     return Inventory(
-        root=Path("."),
         endpoints={
             "qwen@pelle": EndpointSpec.model_validate(
                 {"engine": engine, "url": "http://pelle.km:12009/v1/", "host": "pelle"}
@@ -121,7 +117,7 @@ def test_an_inventory_includes_the_endpoints_and_hosts_of_other_files(
         engine,
         "::",
     )
-    assert inventory.root / inventory.sources["sample"].path == tmp_path / "vignettes"
+    assert inventory.sources["sample"].path == (tmp_path / "vignettes").resolve()
     _ = path.write_text('include = ["imported.toml"]\n\n[host.pelle]\n')
     with pytest.raises(ValueError, match=r"host \['pelle'\] are in .*inventory.toml"):
         _ = Inventory.load(path)
@@ -214,7 +210,6 @@ def test_a_remote_engine_is_reached_at_its_base_url() -> None:
         )
     )
     alone = Inventory(
-        root=Path("."),
         endpoints={"gemma": EndpointSpec(engine=remote, credential="GEMMA_KEY")},
     )
     assert url_of(alone, reg.get, "gemma") == "https://api.example.org/v1/"

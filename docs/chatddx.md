@@ -55,14 +55,12 @@ It must be possible to deliver the cage together with the results, for scientifi
 - **Vetted:** a fact within the planned clearance pipeline.
 - **Portal:** the web-interface used to configure factors, watch runs and export results.
 - **World:** factor parameters outside of the orchestrator's direct control. (the vignette source, model files, the Nix closure, the chat-template file, the remote engine)
-- **Inventory:** Vignette sources are `[source.<name>]` tables (a directory of files today, sensitive unless
-  declared otherwise), engines' endpoints are `[endpoint.<name>]` tables, and what hosts keep where are
-  `[host.<name>]` tables. `include` names files whose endpoints and hosts the inventory takes too, so what
-  `chatddx import-engine` writes stays apart from what people write.
+- **Inventory:** files written by ops that say where vignette sources, endpoints and hosts are (`docs/inventory.md`).
 - **Facts:** ops- or developer-authored knowledge about models (how each reasoning level is expressed or refused,
   recommended sampling, output caveats, specs), typed in code, written in TOML and keyed by model name.
   Not factors: they write and check literal chunks, and no digest depends on them.
-- **Manifest:** a document the rig writes for one consumer in the World, joining factors (what) with inventory entries (where).
+- **Start-up:** what the start-up script runs for one endpoint, joining an engine (what) with inventory entries (where)
+  (`docs/inventory.md`, "The start-up").
 - **Rig:** the chatddx software that builds cages from factors, runs and scores inside them and records what happened.
 
 ### Roles mentioned
@@ -80,9 +78,9 @@ These roles are distinct and not overlapping, a person may inhabit more than one
 - Portal interfaces for managing instructions, few-shots, prompts, output, sampling, reasoning, passthrough, recepies, appendices, expectations, trials, judges, scorings and starting and monitoring runs.
 - Engines, models, canary sets, expectation schemas and scorers are authored by ops or developers.
 - a self-contained bundle that can be verified offline
-- manifest that the start-up script reads
 - scripts that can read the World to import factor parameters.
 - import scripts that fingerprint World inputs (model files, closure, chat template, vignettes) into factors.
+- a start-up that the start-up script reads (`docs/inventory.md`, "Hosts don't read the start-up")
 
 ### Intended evolution of configurations
 The researchers will want to iterate and continuously refine configurations according to the following workflow.
@@ -130,7 +128,7 @@ No comparison between the 3070 and the 5090; each hardware class is its own cage
 
 Returns model identifiers: the run check compares the returned `model` with the declared one (`ledger.run:check_run`). `system_fingerprint` is kept in the raw response but not checked.
 
-- **Orchestrator.** Runs in Kubernetes, write the manifest and hosts the portal. A postgres database store user-managed data: factors and records are append-only; nothing is updated.
+- **Orchestrator.** Runs in Kubernetes, writes the start-ups and hosts the portal. A postgres database stores user-managed data: factors and records are append-only; nothing is updated.
 
 ## Compromises
 The code doesn't declare how reproducible a run is. It is *observed*:

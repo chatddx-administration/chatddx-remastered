@@ -3,10 +3,11 @@ from pathlib import Path
 import pytest
 from pydantic import ValidationError
 
+from chatddx.conftest import WORLDS
 from chatddx.factors.base import Fingerprint
 from chatddx.factors.cases import Case, Vignette
-from chatddx.inventory.inventory import Inventory
-from chatddx.inventory.sources import DirectorySource, MemorySource
+from chatddx.inventory import DirectorySource, Inventory
+from chatddx.inventory.test.memory import MemorySource
 
 
 def vignettes(root: Path) -> Path:
@@ -42,6 +43,32 @@ def test_sources_are_declared_in_the_inventory(tmp_path: Path) -> None:
     _ = path.write_text('[source.sample]\nkind = "s3"\npath = "x"\n')
     with pytest.raises(ValidationError):
         _ = Inventory.load(path)
+    _ = path.write_text('[source.sample]\nname = "other"\npath = "vignettes"\n')
+    with pytest.raises(ValidationError, match="source 'sample' is named 'other'"):
+        _ = Inventory.load(path)
+
+
+def test_a_world_takes_sources_and_endpoints_from_another(tmp_path: Path) -> None:
+    other = tmp_path / "other"
+    other.mkdir()
+    directory = vignettes(other)
+    _ = (other / "endpoints.toml").write_text(
+        '[endpoint.qwen]\nengine = "sha256:' + "c" * 64 + '"\n'
+    )
+    world = tmp_path / "world"
+    world.mkdir()
+    _ = (world / "inventory.toml").write_text(
+        'include = ["../other/endpoints.toml"]\n\n'
+        + '[source.sample]\npath = "../other/vignettes"\n'
+    )
+    inventory = Inventory.load(world / "inventory.toml")
+    assert inventory.sources["sample"].path == directory.resolve()
+    assert list(inventory.endpoints) == ["qwen"]
+
+    kompismoln = Inventory.load(WORLDS / "kompismoln" / "inventory.toml")
+    assert (
+        kompismoln.sources["sample"].path == (WORLDS / "sample" / "vignettes").resolve()
+    )
 
 
 def test_directory_sources_list_fetch_and_make_cases(tmp_path: Path) -> None:

@@ -11,9 +11,8 @@ import pytest
 
 from chatddx.cli import main
 from chatddx.core.rig import rig
-from chatddx.facts.facts import Facts
-from chatddx.inventory.inventory import Inventory
-from chatddx.inventory.report import (
+from chatddx.facts import Facts
+from chatddx.importers.o11n import (
     REPORT,
     Imported,
     endpoints_toml,
@@ -21,7 +20,7 @@ from chatddx.inventory.report import (
     imported,
     read,
 )
-from chatddx.inventory.serving import start_up
+from chatddx.inventory import Inventory, start_up
 from chatddx.seed import plan_factors
 from chatddx.seed.world import endpoints as endpoints_of
 

@@ -1,6 +1,7 @@
 # The sample World: the vignettes of the sample data's cases (src/chatddx/data/sample/cases.toml), copied byte for
 # byte from the old chatddx at 7893656 (src/chatddx/data/cases). `chatddx init-data USER --world
-# sample-world/inventory.toml` seeds the sample with them.
+# worlds/sample/inventory.toml --factors worlds/sample/factors.toml` seeds the sample with them and with this World's
+# engines. Kompismoln's World takes its vignettes from here too.
 #
 # They aren't sensitive, but the source is declared so, as a real one would be, and is kept out of the package.
 
@@ -8,11 +9,11 @@
 path = "vignettes"
 sensitive = true
 
-# Where the sample's fake engines run: chatddx's fake vLLM on this machine, one per engine, as vLLM serves one model.
+# Where the sample's fake engines (factors.toml) run: chatddx's fake vLLM on this machine, one per engine, as vLLM serves one model.
 # An endpoint names the engine it serves by digest, which is also the name it's served under, so changing the engine
 # means changing its endpoint here. The fake host says where it keeps what the engines pin: the fake vLLM takes a model
 # by its repo name, and the fake engines' empty chat template is /dev/null. Start one with
-# `chatddx fake-vllm` and the arguments `chatddx.inventory.serving.start_up` gives.
+# `chatddx fake-vllm` and the arguments `chatddx.inventory.start_up` gives.
 
 [endpoint."qwen3-8b-awq@fake"]
 engine = "sha256:cc0dc8fbbc8dbb3a62d274c6ce62ee4bc9d909b05aef6263015cb46459fdc42f"

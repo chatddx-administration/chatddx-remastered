@@ -129,7 +129,8 @@ phase, in whatever order they happen, then `RunFinished`.
 - optionally a canary set (`canaries`), and the phases at which its canaries are sent (`verify_at`): `start`,
   `end`, or both, the default;
 - the code each of the skeleton's tools runs with, as the runner loaded it (`tool_code`, see below).
-- `endpoint`: the World inventory's name for it and its URL, left out when not given.
+- `endpoint`: the World inventory's name for it and its URL (`docs/inventory.md`, "Endpoints"), left out when not
+  given.
 
 It holds the run's recorded factors, but it is not part of the trial's digest. To run a trial again under the same
 conditions, write a new started row with a new id and time and the same `trial`, `execution`, `canaries` and
@@ -401,9 +402,8 @@ Most of the plan is compared with what happened (see "What a record holds"), but
 - **The finished row is outside the seal.** Its time and findings could change without `ledger.seal` noticing.
 - **`Call` accepts `prompt_token_ids`.** A response is meant to be stored without them, but nothing refuses one that
   still has them.
-- **Calls don't record where they went.** A call has no endpoint, so the ledger can't show which one received
-  case-derived content (`docs/factors.md`, "The inventory doesn't locate local engines yet, and runs don't record
-  where calls went").
+- **Judge calls don't record where they went.** `ScoreStarted` has no endpoint, so the ledger can't show which one
+  received the case-derived content a judge reads, as `RunStarted.endpoint` does for a run.
 - **Records aren't in bundles.** A `Bundle` (`docs/factors.md`, "Registries and bundles") carries components only;
   how records travel with the factors they reference, for example for publication, isn't specified.
 - **Findings have no mechanism of their own.** The runner keeps those it sees while running in the finished row,

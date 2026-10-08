@@ -7,7 +7,7 @@ from typing import Any
 import pytest
 from jsonschema.validators import validator_for
 
-from chatddx.core.rig import rig
+from chatddx.conftest import sample_plan
 from chatddx.factors.request import (
     NativeOutput,
     Skeleton,
@@ -17,7 +17,6 @@ from chatddx.factors.request import (
     render,
     tool_calls,
 )
-from chatddx.facts.facts import Facts
 from chatddx.fake_vllm.chat import (
     ANSWER,
     Call,
@@ -31,7 +30,6 @@ from chatddx.fake_vllm.chat import (
     thinking,
 )
 from chatddx.fake_vllm.served import VERSION, Refused, Served
-from chatddx.seed import plan_factors
 from chatddx.seed.plan import SAMPLE
 
 QWEN = "Qwen/Qwen3-8B-AWQ"
@@ -580,9 +578,7 @@ def test_held_to_a_schema_it_runs_away_before_the_closing_brace() -> None:
 
 
 def sample() -> list[Skeleton]:
-    plan = plan_factors(
-        SAMPLE / "factors.toml", Facts.load(SAMPLE / "facts.toml"), rig()
-    )
+    plan = sample_plan()
     found: list[Skeleton] = []
     for r in plan.records:
         if r.kind == "skeleton":

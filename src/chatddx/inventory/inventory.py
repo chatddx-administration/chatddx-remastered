@@ -1,19 +1,12 @@
 import tomllib
 from pathlib import Path
-from typing import Literal, Self
+from typing import Any, Self
 
 from pydantic import Field, HttpUrl, model_validator
 
 from chatddx.factors.base import Digest, Frozen, Sha256Hex
 
 from .sources import DirectorySource, Source
-
-
-class DirectorySourceSpec(Frozen):
-    kind: Literal["directory"] = "directory"
-    path: Path
-    suffix: str = ".txt"
-    sensitive: bool = True
 
 
 # Where an engine is served: the engine by digest, which is also the name it's served
@@ -36,14 +29,20 @@ class HostSpec(Frozen):
 
 
 class Inventory(Frozen):
-    root: Path
-    sources: dict[str, DirectorySourceSpec] = Field(default_factory=dict)
+    sources: dict[str, DirectorySource] = Field(default_factory=dict)
     endpoints: dict[str, EndpointSpec] = Field(default_factory=dict)
     hosts: dict[str, HostSpec] = Field(default_factory=dict)
     # The sensitive sources each endpoint may receive case-derived content from. Only
     # the inventory's own file says so, never an included one, so importing endpoints
     # again can't clear anything.
     cleared: dict[str, tuple[str, ...]] = Field(default_factory=dict)
+
+    @model_validator(mode="after")
+    def _sources_named(self) -> Self:
+        for name, source in self.sources.items():
+            if source.name != name:
+                raise ValueError(f"source {name!r} is named {source.name!r}")
+        return self
 
     @model_validator(mode="after")
     def _hosts_exist(self) -> Self:
@@ -88,10 +87,14 @@ class Inventory(Frozen):
                 if twice := sorted(set(tables[table]) & set(records)):
                     raise ValueError(f"{included}: {table} {twice} are in {path} too")
                 tables[table] |= records
+        sources: dict[str, dict[str, Any]] = {}
+        for name, record in tables["source"].items():
+            sources[name] = {"name": name, **record}
+            if "path" in record:
+                sources[name]["path"] = (path.parent / record["path"]).resolve()
         return cls.model_validate(
             {
-                "root": path.parent,
-                "sources": tables["source"],
+                "sources": sources,
                 "endpoints": tables["endpoint"],
                 "hosts": tables["host"],
                 "cleared": data.get("cleared", {}),
@@ -99,15 +102,10 @@ class Inventory(Frozen):
         )
 
     def source(self, name: str) -> Source:
-        spec = self.sources.get(name)
-        if spec is None:
+        source = self.sources.get(name)
+        if source is None:
             raise LookupError(f"no source {name!r} in the inventory")
-        return DirectorySource(
-            name=name,
-            path=(self.root / spec.path).resolve(),
-            suffix=spec.suffix,
-            sensitive=spec.sensitive,
-        )
+        return source
 
     def endpoint(self, name: str) -> EndpointSpec:
         spec = self.endpoints.get(name)

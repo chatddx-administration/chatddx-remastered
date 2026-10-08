@@ -1,6 +1,5 @@
 from chatddx.factors.engine import LocalEngine
-from chatddx.inventory.inventory import Inventory
-from chatddx.inventory.serving import start_up, url_of
+from chatddx.inventory import Inventory, start_up, url_of
 
 from .plan import Plan
 from .write import short

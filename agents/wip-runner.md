@@ -18,14 +18,14 @@ entry, and `check_run` comes back clean.
 
 It was checked twice:
 - by the tests in `src/chatddx/runner/test/`;
-- by hand: the `chatddx fake-vllm --runaway` process, started from `sample-world/inventory.toml`'s gpt-oss endpoint,
+- by hand: the `chatddx fake-vllm --runaway` process, started from `worlds/sample/inventory.toml`'s gpt-oss endpoint,
   ran three cases on `plan (openai/gpt-oss-20b)`. Each call was cut at 100 tokens of whitespace, the fake heard each
   hang-up, and the run recorded its endpoint and cutoff.
 
 Next: phase 4, then 5 and 6 (see "Left").
 
-**Real engines aren't cleared yet.** `world/inventory.toml` has no `[cleared]` table, so the gate refuses `pelle` and
-`malborg` for the sample. Clearing them is a human's statement to make.
+**Real engines aren't cleared yet.** `worlds/kompismoln/inventory.toml` has no `[cleared]` table, so the gate refuses
+`pelle` and `malborg` for the sample. Clearing them is a human's statement to make.
 
 ## Decided
 - **Clearance (wip-repl D1).** An interim list in the World inventory says which sources an endpoint is cleared
@@ -47,7 +47,7 @@ Next: phase 4, then 5 and 6 (see "Left").
 - **R4.** `RemoteEngine.served_model_name` returns `model`, so `check_run`, `confirm` and the runner read one name
   (`factors/engine.py`).
 - **R1.** `Inventory.cleared` and `cleared_for` (`inventory/inventory.py`). The table is read only from the
-  inventory's own file and checked against its endpoints and sources. `sample-world/inventory.toml` clears both fake
+  inventory's own file and checked against its endpoints and sources. `worlds/sample/inventory.toml` clears both fake
   endpoints for `sample`.
 - **R3.** `RunStarted.endpoint` (`ledger/run.py:Endpoint`): the endpoint's name and URL, left out by default.
 - **R7.** `Execution.whitespace_limit`, 100 by default (`factors/trial.py`).
@@ -137,18 +137,6 @@ land in the caller's frame while the runner sat suspended at a `yield`. The even
   that are in.
 - **A summary of failed calls.** `check_run` says nothing about `Call.error`. A run whose every call was cut short
   checks clean, and only the items show it. A UI can count them, or the runner could note them.
-
-## Docs proposed
-These are in the docs' "Proposed amendments" sections:
-- `docs/factors.md`:
-  - "Rendering": the runner streams;
-  - "Execution": `whitespace_limit`;
-  - "Smaller issues": the model name is now one property;
-  - "Runs don't record where calls went": `RunStarted.endpoint`.
-- `docs/ledger.md`, "RunStarted": `endpoint`.
-- `docs/clearance.md`: the `[cleared]` table and the gate.
-- `docs/catalog.md`, "Owners": the runner writes a run's owner.
-- `docs/store.md`: where the test fixtures live, and why the runner wants autocommit.
 
 ## Still open from elsewhere
 - **`return_token_ids` on remote engines** (`agents/manifest-triage.md`, D): a non-vLLM API may refuse it. `render`

@@ -4,8 +4,7 @@ from chatddx.factors.base import Resolver, resolve
 from chatddx.factors.cases import Case
 from chatddx.factors.request import Skeleton
 from chatddx.factors.trial import Trial
-from chatddx.inventory.inventory import Inventory
-from chatddx.inventory.serving import confirm
+from chatddx.inventory import Inventory, confirm
 
 
 # Sending case-derived content where it isn't cleared to go is the one hard block.

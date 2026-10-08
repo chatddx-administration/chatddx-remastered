@@ -8,10 +8,11 @@ Material for `docs/identity.md`. Split out of the former `agents/wip-bookkeeping
 referenced by the catalog (owners, collaborators, who started a run) and possibly by clearance (who granted it).
 
 ## Done
-- Migrations `0004-t0-identity.sql`, `0005-t1-identity-grants.sql` (person, grants), `0006-t0-identity-auth.sql`,
-  `0007-t1-identity-auth-grants.sql` (login, roles, active, credential, session) and `0008-t2-identity-checks.sql`
-  (login pattern, role names, session expiry), all in `src/chatddx/store/migrations/`.
-- `src/chatddx/core/identity.py`: `Role`, `Person`, argon2id hashing (`argon2-cffi`), session tokens.
+- Migrations `0007-t0-identity.sql` (person with login, roles and active; credential; session),
+  `0008-t1-identity.sql` (grants) and `0009-t2-identity.sql` (login pattern, role names, session expiry), all in
+  `src/chatddx/store/migrations/` (`docs/migrations.md`).
+- `src/chatddx/identity/identity.py`: `Role`, `Person`, argon2id hashing (`argon2-cffi`), session tokens, exported by
+  `chatddx.identity`.
 - `src/chatddx/store/people.py`: `People`, the store API for people, passwords and sessions.
 - `chatddx person add` / `chatddx person password` (`src/chatddx/cli.py`).
 - Tests: `src/chatddx/store/test/test_identity.py`, `test_cli.py`.
@@ -29,8 +30,8 @@ Take:
   no insert-only triggers to it;
 - a person who leaves can't be deleted while catalog rows reference them (the foreign key restricts it), which keeps
   the history intact. A later `active` column can hide them in the portal;
-- code goes in `src/chatddx/core/identity.py`. `core/` holds only `settings.py` today, and the user's view was that
-  the identity model is what belongs in `core`.
+- code goes in `src/chatddx/core/identity.py`, since the user's view was that the identity model is what belongs in
+  `core`. It has since moved to its own package, `src/chatddx/identity/` (a03f8b5).
 
 ### 2. Not sensitive
 Decided: only vignettes and data derived from them are sensitive. Names are not, so `chatddx_reader` may read
