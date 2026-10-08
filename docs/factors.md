@@ -47,11 +47,13 @@ A trial's outputs therefore depend on the trial's pinned factors and on its run'
 runs of the same trial are interchangeable only when those agree too (see "Open design issues").
 
 ### Not factors
-- Records of what happened (runs, scores, calls): docs/ledger.md. They hold the recorded factors and the evidence of the
+- Records of what happened (runs, scores, calls): [docs/ledger.md]. They hold the recorded factors and the evidence of the
   observed ones, but they aren't factors themselves.
-- People, roles, authentication and authorization: docs/identity.md.
-- Names, labels, languages, tags, descriptions, owners, collaborators and version history: docs/catalog.md.
-- Sensitivity and vetting: agents/wip-clearance.md.
+- People, roles, authentication and authorization: [docs/identity.md].
+- Names, labels, languages, tags, descriptions, owners, collaborators and version history: [docs/catalog.md].
+- Sensitivity and vetting: [agents/wip-clearance.md].
+- Facts from model cards: [docs/facts.md].
+- Inventory: [docs/inventory.md].
 - Knowledge about models (reasoning levels, recommended sampling, output caveats, specs): the model facts
   (docs/facts.md). Facts help write chunks and check them, but no digest depends on them.
 - Instruments and provenance: canary sets and compilations are components, but not factors.
