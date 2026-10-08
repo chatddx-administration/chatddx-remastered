@@ -99,8 +99,8 @@ replaced the planned `import-engine` run on a host, which would have read `nvidi
     since `score` refuses a scorer with one until judges can run.
 
 ### After parity
-The free-text expectations' judges (see "Parked", "Free-text expectations"), and the runner, which the fake vLLM,
-the endpoints and `confirm` are ready for.
+The free-text expectations' judges (see "Parked", "Free-text expectations"), and the runner, which runs trials
+without tools on the fake engines (`agents/wip-runner.md`).
 
 ## Decided
 - Seed now: chunks, recipes (as compiled skeleton threads), cases with their families, an expectation schema and
@@ -324,7 +324,8 @@ Items are `docs/vllm.md`'s; 13–20 are among its proposed amendments.
   need both tool flags, like `auto`. `docs/vllm.md` has proposed amendments for that and for items 13–20.
 
 Left behind:
-- the httpx transport (`FakeTransport`): remastered has no HTTP client yet, and the runner will choose one;
+- the httpx transport (`FakeTransport`): the runner speaks HTTP through the stdlib (`src/chatddx/runner/wire.py`),
+  and its tests run the real fake server;
 - `chatddx samples` and `src/chatddx/dev/samples/` (`typical`, `broken`, `rich`): runs for the old history, which wait
   for the runner.
 

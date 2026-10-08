@@ -55,8 +55,7 @@ Next: phase 4, then 5 and 6 (see "Left").
   - The database fixtures moved from `store/test/conftest.py` to `src/chatddx/conftest.py`.
   - The fake in a thread is `chatddx.fake_vllm.server.serving`, used by the fake's own tests, the inventory's and
     the runner's.
-  - `sample_plan` is still defined twice (`inventory/test/test_serving.py`, `store/test/test_seed.py`); the runner's
-    tests build their own plan.
+  - `sample_plan` is defined once, in `src/chatddx/conftest.py`, and the runner's tests use it.
 
 ### Phase 1: `wire.py`
 - **`post`** sends to `/v1/chat/completions` and returns a `Stream` of parsed SSE chunks. Closing the stream hangs

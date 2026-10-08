@@ -10,11 +10,13 @@ Old permalink base: https://github.com/chatddx-administration/chatddx/blob/50479
 The old repl is a thin UI (`src/chatddx/repl/`, ~1,600 lines and ~1,500 of tests) on top of four layers that do
 the work: `bench/` (identity, the cell, `Ready`, `Trial`, `save`), `runtime/` (resolving a configuration on a stack,
 and the run itself on pydantic-ai and httpx2), `history/` (Django models for trials, runs, messages and scores) and
-`scoring/`, ~3,200 lines together. None of those four has a remastered counterpart on the run path.
+`scoring/`, ~3,200 lines together. Of those four, only `runtime/`'s run has a remastered counterpart so far: the
+runner (`src/chatddx/runner/`).
 
 Remastered has every piece a run is built from: `render`, `Trial`, `Execution`, `prepare_case`, the ledger, the
-store, the catalog, the scorers, the facts, the World inventory with `url_of`/`confirm`, and the fake vLLM. What it
-lacks is the runner that strings them together (`agents/wip-sample-data.md`, "After parity").
+store, the catalog, the scorers, the facts, the World inventory with `url_of`/`confirm`, and the fake vLLM. The
+runner strings them together. Phase 1 and D1–D4 moved to `agents/wip-runner.md`, where they are decided and built,
+but for concurrency, tool rounds and canaries.
 
 So the plan:
 - **Port the UI.** Command table, parsing, completion, prompt, Ctrl-C handling, rendering. These carry over
