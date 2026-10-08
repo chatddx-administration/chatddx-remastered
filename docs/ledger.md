@@ -420,3 +420,12 @@ Most of the plan is compared with what happened (see "What a record holds"), but
   separate mechanism, as linting is for factors, but nothing is planned or decided.
 
 ## Proposed amendments
+- CHANGE, in "Score": move "some of the run's cases have no expectation in the scoring (`score.no_expectation`)" from
+  the list of what `check_score` raises `StructuralError` for to the list under "It warns when". `check_score`
+  returns it as a warning (src/chatddx/ledger/score.py:158-167; src/chatddx/runner/test/test_score.py:137).
+- REMOVE, from "Open design issues", "Smaller issues": "**Missing expectations aren't flagged.** …". `check_score`
+  warns `score.no_expectation` (src/chatddx/ledger/score.py:158-167).
+- CHANGE, in "What a record holds": add `score.no_expectation` to the row "A score and the run it grades"
+  (src/chatddx/ledger/score.py:158-167).
+- CHANGE, in "Storage": "one table per row type" to "one table per kind of row, a log's two stages sharing one
+  (`run_stage`, `score_stage`)" (src/chatddx/store/migrations/0004-t0-ledger.sql:5-13, :37-51).
