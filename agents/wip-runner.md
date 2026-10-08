@@ -138,18 +138,6 @@ land in the caller's frame while the runner sat suspended at a `yield`. The even
 - **A summary of failed calls.** `check_run` says nothing about `Call.error`. A run whose every call was cut short
   checks clean, and only the items show it. A UI can count them, or the runner could note them.
 
-## Docs proposed
-These are in the docs' "Proposed amendments" sections:
-- `docs/factors.md`:
-  - "Rendering": the runner streams;
-  - "Execution": `whitespace_limit`;
-  - "Smaller issues": the model name is now one property;
-  - "Runs don't record where calls went": `RunStarted.endpoint`.
-- `docs/ledger.md`, "RunStarted": `endpoint`.
-- `docs/clearance.md`: the `[cleared]` table and the gate.
-- `docs/catalog.md`, "Owners": the runner writes a run's owner.
-- `docs/store.md`: where the test fixtures live, and why the runner wants autocommit.
-
 ## Still open from elsewhere
 - **`return_token_ids` on remote engines** (`agents/manifest-triage.md`, D): a non-vLLM API may refuse it. `render`
   sends it for every engine.

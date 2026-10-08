@@ -2,8 +2,7 @@
 
 ## Vetted endpoints
 Until clearance has a database grant, a World inventory's `[cleared]` table (`docs/inventory.md`, "Clearance") says
-which sensitive sources each endpoint may receive case-derived content from.", since where the table is read from
-is specified there ("Includes"; `src/chatddx/inventory/inventory.py:Inventory.load`).
+which sensitive sources each endpoint may receive case-derived content from.
 
 Before a run writes anything, the runner refuses an endpoint serving
 another engine than the trial's, a sensitive source the endpoint isn't cleared for, tools on a sensitive source,
@@ -11,12 +10,10 @@ and an endpoint whose `/v1/models` doesn't list its engine.
 
 ## Sensitive sources
 ### Vignettes
-A vignette source declares whether it is sensitive, and is true by default (`docs/inventory.md`, "Sources").
+Vignette sources are sensitive unless declared otherwise (`docs/inventory.md`, "Sources").
 
 The runner enforces it against the inventory's `[cleared]` table (see "Vetted endpoints") until the clearance
 pipeline replaces the table.
-
-- CHANGE, under "Sensitive sources", "Vignettes", "
 
 ### Completions derived from vignettes
 - Case-derived records are run items and score items (`src/chatddx/ledger/record.py:Record.case_derived`):

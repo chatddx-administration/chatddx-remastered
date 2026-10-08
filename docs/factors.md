@@ -181,7 +181,6 @@ by `Store.add`.
 | View | One comparison a scorer makes between part of an output and part of an expectation. |
 | Judge | An LLM used to grade outputs. |
 | Canary | A fixed, non-sensitive probe request. |
-| Inventory | Files written by ops that say where things are (`docs/inventory.md`). |
 | Portal | The web interface where components are written and runs are watched. |
 
 ## Cases

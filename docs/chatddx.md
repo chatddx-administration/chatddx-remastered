@@ -55,12 +55,10 @@ It must be possible to deliver the cage together with the results, for scientifi
 - **Vetted:** a fact within the planned clearance pipeline.
 - **Portal:** the web-interface used to configure factors, watch runs and export results.
 - **World:** factor parameters outside of the orchestrator's direct control. (the vignette source, model files, the Nix closure, the chat-template file, the remote engine)
-- **Inventory:** files written by ops that say where things are: vignette sources, endpoints and hosts (`docs/inventory.md`).
+- **Inventory:** files written by ops that say where vignette sources, endpoints and hosts are (`docs/inventory.md`).
 - **Facts:** ops- or developer-authored knowledge about models (how each reasoning level is expressed or refused,
   recommended sampling, output caveats, specs), typed in code, written in TOML and keyed by model name.
   Not factors: they write and check literal chunks, and no digest depends on them.
-- **Start-up:** what the start-up script runs for one endpoint, joining an engine (what) with inventory entries
-  (where) (`docs/inventory.md`, "The start-up").
 - **Rig:** the chatddx software that builds cages from factors, runs and scores inside them and records what happened.
 
 ### Roles mentioned
@@ -128,7 +126,7 @@ No comparison between the 3070 and the 5090; each hardware class is its own cage
 
 Returns model identifiers: the run check compares the returned `model` with the declared one (`ledger.run:check_run`). `system_fingerprint` is kept in the raw response but not checked.
 
-- **Orchestrator.** Runs in Kubernetes, write the start-ups and hosts the portal. A postgres database store user-managed data: factors and records are append-only; nothing is updated.
+- **Orchestrator.** Runs in Kubernetes, writes the start-ups and hosts the portal. A postgres database store user-managed data: factors and records are append-only; nothing is updated.
 
 ## Compromises
 The code doesn't declare how reproducible a run is. It is *observed*:
