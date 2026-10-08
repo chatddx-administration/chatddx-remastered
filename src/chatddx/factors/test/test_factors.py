@@ -9,6 +9,8 @@ from chatddx.factors.base import (
     Component,
     Fingerprint,
     StructuralError,
+    canonical_bytes,
+    parse_component,
     resolve,
     sha256_digest,
 )
@@ -183,7 +185,33 @@ def test_bytes_with_sorted_keys_keep_their_digest(reg: Registry) -> None:
         raw = json.dumps(
             doc, sort_keys=True, separators=(",", ":"), ensure_ascii=False
         ).encode()
-        assert Registry().add_raw(sha256_digest(raw), raw).canonical == raw
+        assert parse_component(raw).canonical == raw
+
+
+def test_stored_bytes_decide_the_digest(reg: Registry) -> None:
+    engine = local_engine(reg)
+    raw = canonical_bytes({**json.loads(engine.canonical), "api": "chat.completions"})
+    digest = sha256_digest(raw)
+    components = {d: reg.raw(d).decode() for d in reg} | {digest: raw.decode()}
+    bundle = Bundle(generator=RIG, roots=(digest,), components=components)
+    loaded, findings = bundle.load()
+    assert [(f.code, f.subject) for f in findings] == [
+        ("bundle.recanonicalized", digest)
+    ]
+    stored = loaded.get(digest)
+    assert isinstance(stored, LocalEngine)
+    assert stored.canonical == raw
+    assert stored.digest == stored.served_model_name == digest != engine.digest
+
+
+def test_components_refuse_what_the_store_cannot_hold() -> None:
+    with pytest.raises(ValidationError, match="U\\+0000"):
+        _ = Appendix(
+            vignette=Vignette(source="s", id="alice", fingerprint=fp("v")), text="a\0"
+        )
+    with pytest.raises(ValidationError, match="U\\+0000"):
+        _ = Passthrough(body={"min_tokens\0": 1})
+    _ = Prompt(segments=("\\u0000 ", Slot(slot="vignette")))
 
 
 def test_references_come_from_field_types(reg: Registry) -> None:

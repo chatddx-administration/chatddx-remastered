@@ -67,6 +67,18 @@ def sha256_digest(data: bytes) -> str:
     return "sha256:" + hashlib.sha256(data).hexdigest()
 
 
+def _holds_nul(node: JsonValue) -> bool:
+    match node:
+        case str():
+            return "\0" in node
+        case dict():
+            return any("\0" in k or _holds_nul(v) for k, v in node.items())
+        case list():
+            return any(_holds_nul(v) for v in node)
+        case _:
+            return False
+
+
 class Frozen(BaseModel):
     model_config: ClassVar[ConfigDict] = ConfigDict(frozen=True, extra="forbid")
 
@@ -163,6 +175,16 @@ class Component(Frozen):
         if kind in Component.registry and Component.registry[kind] is not cls:
             raise TypeError(f"duplicate component kind {kind!r}")
         Component.registry[kind] = cls
+
+    # The store keeps each component as jsonb, which can't hold U+0000
+    # (src/chatddx/store/migrations/0001-t0-factor.sql).
+    @model_validator(mode="after")
+    def _storable(self) -> Self:
+        if _holds_nul(self.canonical_doc()):
+            raise ValueError(
+                f"a {self.kind_name} may not hold U+0000, which can't be stored"
+            )
+        return self
 
     @property
     def kind_name(self) -> str:
