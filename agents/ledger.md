@@ -33,19 +33,8 @@ A run item holds all three: which item it is comes from the plan, its requests a
 also show how fast the engine answered), and its responses are observations. Finish records add conclusions drawn from
 the rest: the seal and the findings.
 
-Each check compares two of these, or one of them with the pinned factors.
-
-| Compares | Shows |
-| --- | --- |
-| Plan and conduct | whether the run or the score did all it planned, followed its execution settings, and kept its canaries clear of its items |
-| Pinned factors and plan | whether the tools and the scorer ran with the code they pin |
-| Pinned factors and conduct | whether a judged value rests on all of its judge's seeds |
-| Pinned factors and observations | whether the engine is the model it was declared to be, whether a vignette changed at its source, and whether an item ended with tool calls unanswered |
-| Pinned factors with each other | whether a scorer's views can reach anything in the run's answers |
-| A score and the run it grades | whether the run had finished when the score started, and whether the scoring has an expectation for each of the run's cases |
-| Observations that should be there | whether every request of every item has a prompt fingerprint |
-| Observations of two runs | whether the engine read the same prompt for the same item |
-| Records and their seal | whether anything changed after the log was sealed |
+Checking a log sets these side by side, and beside the pinned factors, to show where what happened differs from
+what was declared (see "Run" and "Score").
 
 ### Canonical form and versions
 A record is written out in one fixed way, as a component is (docs/factors.md, "Canonical form and digest"), so the same
