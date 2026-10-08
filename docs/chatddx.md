@@ -37,7 +37,6 @@ It must be possible to deliver the cage together with the results, for scientifi
 - **Segment:** a literal string, a slot or an insert
 - **Purpose:** whether a prompt or skeleton is for `generation` or for a `judge`; it decides which slots are allowed.
 - **Contract:** how an output chunk constrains the answer: `native`, `tool` or `text`.
-- **Normalization:** the text-cleanup steps a trial applies to vignettes.
 - **Text cleanup:** the named steps a trial applies to vignettes before they are sent.
 - **Schema op:** a named, versioned rewrite an output chunk applies to its schema at
   compile time, so the skeleton sends and shows the rewritten schema. Today the only one is `inline_refs@1`.
@@ -288,5 +287,3 @@ Each code is described where it's produced: `docs/factors.md`, "Lints"; `docs/le
   The agent's take is (c)
 
 ## Proposed amendments
-- REMOVE, in "Glossary", "**Normalization:** the text-cleanup steps a trial applies to vignettes.", which "Text
-  cleanup" replaced when the last amendments were integrated.

@@ -218,8 +218,7 @@ It warns (see "Findings") when
 - a finished run lacks items of the trial, or planned canary calls (`run.incomplete`);
 - an item's vignette fingerprint differs from its case's (`case.drift`);
 - an item's last response still calls tools, because the rounds ran out, the run stopped, the call has no whole
-  answer (an error or a cutoff), or the response also called the answer tool (`tools.unanswered`)", and the
-  `tools.unanswered` row in "Findings" to match (`src/chatddx/runner/rounds.py:Toolbox.pending`).
+  answer (an error or a cutoff), or the response also called the answer tool (`tools.unanswered`)
 - a call returned another model name than declared: the engine's digest for a local engine, the requested model for
   a remote one, or none at all (`attestation.model`). Every call of every item that got a response is checked;
 - an item has a call without a prompt-token fingerprint (`attestation.prompt_tokens`);
@@ -345,7 +344,7 @@ of the ledger's findings are warnings.
 | --- | --- | --- | --- |
 | `run.incomplete` | `check_run` | none | A finished run lacks some of its trial's items, or some planned canary calls. One finding for each, with the count. |
 | `case.drift` | `check_run` | item key | The vignette read at the source differs from the case's fingerprint. `prepare_case` reports the same code when the vignette is read. |
-| `tools.unanswered` | `check_run` | item key | An item's last response still calls tools, after its rounds ran out or the run stopped. |
+| `tools.unanswered` | `check_run` | item key | An item's last response still calls tools, after its rounds ran out, the run stopped, the call had no whole answer, or the response also called the answer tool |
 | `tools.code` | `check_run` | tool digest | A tool ran with code other than the code it pins, or its code isn't recorded. |
 | `attestation.model` | `check_run` | item key | A call's response gave another model name than declared, or none. |
 | `execution.retries` | `check_run`, `check_score` | none | Some calls took more attempts than the run's or the score's `retries` allows. One finding, with the count. |
@@ -421,8 +420,3 @@ Most of the plan is compared with what happened (see "What a record holds"), but
   separate mechanism, as linting is for factors, but nothing is planned or decided.
 
 ## Proposed amendments
-- CHANGE, in "Run", the end of the `tools.unanswered` item, "(`tools.unanswered`)", and the `tools.unanswered` row in
-  "Findings" to match (`src/chatddx/runner/rounds.py:Toolbox.pending`)." to "(`tools.unanswered`);": the
-  amendment's instruction was integrated with its text. And in "Findings", the `tools.unanswered` row's "after its
-  rounds ran out or the run stopped" to "after its rounds ran out, the run stopped, the call had no whole answer, or
-  the response also called the answer tool" (`src/chatddx/runner/rounds.py:Toolbox.pending`).
