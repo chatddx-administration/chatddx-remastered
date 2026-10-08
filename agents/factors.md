@@ -85,10 +85,18 @@ guessed at, so after a bump the store can't return components of the old version
 (docs/store.md, "Known gaps").
 
 ### Kinds
-Every component has a kind that says what it is: a model artifact, a local or a remote engine, one of the nine kinds of
-chunk (instructions, few-shot, prompt, output, sampling, reasoning, passthrough, toolset and translations), a tool, a
-skeleton, an appendix, a case, a trial, an expectation schema, an expectation, a scorer, a judge, a scoring, a canary
-set or a compilation.
+Every component has a kind that says what it is. Together, the kinds pin everything a run sends and everything a score
+applies, and they fall into a few groups:
+- **Clinical input**: cases and their appendices, what the model is asked about.
+- **Requests**: chunks, each filling one part of a request, the tools a request may offer, and the skeletons compiled
+  from them: how the model is asked.
+- **Engines**: where requests go, a server we run or an API we don't, and the model weights a server runs.
+- **Grading**: expectations and the schemas they follow, scorers, and judges: how answers are scored.
+- **Roots**: trials and scorings. A trial ties a request, an engine and cases into one experimental condition; a scoring
+  ties a scorer to the expectations it grades against. Pinning a root pins everything it references.
+- **Instruments and provenance**: canary sets and compilations, components that aren't factors.
+
+The sections below take each kind in turn.
 
 ### References and checks
 A reference names the kinds it may point to, and every reference is checked: it must exist and point to an allowed kind.
