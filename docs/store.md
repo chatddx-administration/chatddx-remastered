@@ -26,7 +26,7 @@ Migrations are documented in `docs/migrations.md`.
 - `reads.py:Reads`: what one person sees. The live threads and families they own or collaborate
   on; a thread by its name, matched whole and then as `OWNER/NAME`, since names may hold a slash; the runs they own,
   newest first, by a prefix of the id, or those whose trial reaches a digest; the scorers whose views reach a run's
-  output schema; the scoring a run is scored under; and the runs still to score under it." (`reads.py:Reads`)
+  output schema; the scoring a run is scored under; and the runs still to score under it.
 
 ## Tiers
 Integrity comes in three tiers, and a deployment applies migrations up to a chosen tier. Each schema has migrations
@@ -88,5 +88,3 @@ unreachable.
   `docs/factors.md`, "Splitting expectations", already considers a bump of `Scorer.schema_version`.
 
 ## Proposed amendments
-- CHANGE, in "Code", "the runs still to score under it." (`reads.py:Reads`)" to "the runs still to score under it
-  (`reads.py:Reads`).": a quote left from the integrated amendment.

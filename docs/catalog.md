@@ -193,7 +193,7 @@ doesn't show who changed what.
 
 A deleted thread or family is still there, and so are its digests. What deleting hides depends on the method:
 
-Deleted are skipped by (`model.py:About.shows`):
+Deleted are skipped by:
 - `heads`
 - `visible`
 - `visible_families`
@@ -202,7 +202,12 @@ Deleted are skipped by (`model.py:About.shows`):
 - `behind` (which proposes no deleted thread and flags no case of a deleted family)
 - `title_of` (turns to deleted threads only when the live ones give it nothing to show)
 
-Delete are included in:
+- CHANGE, in "Deleting", "Deleted are skipped by (`model.py:About.shows`):" to "Deleted are skipped by:", and add
+  after the list: "
+`visible`, `visible_families` and `expectation_for` skip them through `model.py:About.shows`; the others read
+`About.deleted`, and `title_of` ranks them last rather than skipping them.
+
+Deleted are included in:
 - `history`
 - `forks`
 - `expectations_of`
@@ -411,8 +416,3 @@ moment can create two families, since nothing makes current bindings unique.
   notice rather than a warning.
 
 ## Proposed amendments
-- CHANGE, in "Deleting", "Deleted are skipped by (`model.py:About.shows`):" to "Deleted are skipped by:", and add
-  after the list: "`visible`, `visible_families` and `expectation_for` skip them through `model.py:About.shows`;
-  the others read `About.deleted`, and `title_of` ranks them last rather than skipping them." Only those three call
-  `shows` (`threads.py:heads`, `threads.py:find`, `threads.py:visible`, `titles.py`).
-- CHANGE, in "Deleting", "Delete are included in:" to "Deleted are included in:".
