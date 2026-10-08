@@ -22,7 +22,8 @@ Facts are keyed by model name: the `ModelArtifact.repo` behind a local engine, o
 (`facts.py:model_name`). `Facts.about(engine, registry)` gives an engine's model facts, or nothing when there are
 none.
 
-The only facts file today is the sample data's (see "The sample's facts").
+Bundled facts are shipped in `models.toml` (`facts.py:BUNDLED`, see "Bundled facts"). `chatddx init-data` loads them by
+default, and `--facts PATH …` adds files beside them (`src/chatddx/cli.py`).
 
 ## What a model's facts hold
 Every part is optional. A missing part means "unknown", not "no".
@@ -65,7 +66,7 @@ Both raise `Refused`, with the fact's reason when there is one, when:
 - a budget is asked for and the model's budget is refused or unknown (`reasoning_chunk`);
 - nothing is recommended for the level the effort lands on (`sampling_chunk`).
 
-The seeder is the only caller today (`agents/wip-sample-data.md`, "init-data").
+`chatddx init-data` is the only caller today (`agents/wip-seed.md`).
 
 A `from_facts` record in a factors file is written once per model that a planned engine serves and the facts
 know. Models and engines are planned first, from the data and any `--factors` files, and a model is the
@@ -74,8 +75,7 @@ known one no planned engine serves, get no records and are reported as skipped.
 
 Named `<record> (<model>)`, and a recipe that uses it comes once per model too.
 
-A refused chunk, and the recipes that need it, are skipped and reported. `chatddx init-data --facts PATH …`
-names the facts files, by default the data directory's `facts.toml` (`src/chatddx/cli.py`).
+A refused chunk, and the recipes that need it, are skipped and reported.
 
 ## Checking pairs
 A trial or a judge pairs a skeleton with an engine, whose model may have facts. `lint.py:lint(registry, facts,
@@ -85,6 +85,10 @@ digests)` checks those pairs:
   and for none of the paired model's levels, so it was written for that model: Qwen3's sampling sent to gpt-oss.
   It's checked when the paired model has no facts too. Sampling that is no model's recommendation, such as greedy,
   is the skeleton's own and isn't checked; nor is a model whose recommendations equal another's.
+- `facts.reasoning_unmatched`: the skeleton's `reasoning_effort` and `chat_template_kwargs` match none of the
+  writes the model's reasoning levels land on (`ReasoningFacts.realized`), so the skeleton was written for another
+  model: `enable_thinking` sent to gpt-oss, or `reasoning_effort = "none"` to gpt-oss, whose `off` is refused.
+  A skeleton that sets neither leaves reasoning to the model and isn't checked.
 - `facts.budget_refused`: `thinking_token_budget` on a model whose budget is refused.
 - `facts.output_refused`: the facts refuse the skeleton's contract.
 - `facts.output_note` (info): the facts have a note on the skeleton's contract.
@@ -98,23 +102,8 @@ changes the model's default, so it stays at info.
 
 Without facts, linting is unchanged.
 
-## The sample's facts
-`src/chatddx/data/sample/facts.toml` holds the facts about the old chatddx's two models, `Qwen/Qwen3-8B-AWQ` and
-`openai/gpt-oss-20b`. They were ported by hand from its `src/chatddx/data/inventory/llms.toml` at 7893656, and the
-tests load them too:
-- the specs moved to the top level;
-- `coercion` became `output`, with `prompted` mapped to `text`;
-- the reasoning writes use the chunk's field names (`effort`, not `reasoning_effort`).
-
-Left behind:
-- `snapshot` and `source` say where the files are, which is the World inventory's business (`docs/inventory.md`,
-  "Hosts").
-- `tags` belong to the catalog.
-- `profile` was for pydantic-ai only.
-- `needs` listed vLLM requirements, which are now the factors' `vllm.*` lints.
-- gpt-oss's note on `tool_choice = "required"`. A `tool` contract with a toolset sends `required`
-  (`docs/factors.md`, "Recipe and compilation"), so the note may come back once it's checked (see "Open design
-  issues").
+## Bundled facts
+`src/chatddx/facts/models.toml` holds the facts chatddx ships about `Qwen/Qwen3-8B-AWQ` and `openai/gpt-oss-20b`.
 
 ## Open design issues
 - **`xhigh` can't be written.** It's a level, but neither `Reasoning.effort` nor `Writes.effort` has the value, so a
@@ -139,22 +128,3 @@ Left behind:
   unknown.
 
 ## Proposed amendments
-- CHANGE, under "Where facts come from", "The only facts file today is the sample data's (see "The sample's
-  facts")." to "chatddx ships facts in `models.toml` (`facts.py:BUNDLED`, see "Bundled facts"). `chatddx init-data`
-  loads them by default, and `--facts PATH …` adds files beside them (`src/chatddx/cli.py`)."
-- CHANGE, under "Writing chunks", "The seeder is the only caller today (`agents/wip-sample-data.md`, "init-data")."
-  to "`chatddx init-data` is the only caller today (`agents/wip-seed.md`).", since the seed package is to be renamed.
-- CHANGE, under "Writing chunks", "A refused chunk, and the recipes that need it, are skipped and reported.
-  `chatddx init-data --facts PATH …` names the facts files, by default the data directory's `facts.toml`
-  (`src/chatddx/cli.py`)." to "A refused chunk, and the recipes that need it, are skipped and reported.", since
-  where init-data's facts come from is said under "Where facts come from" (`src/chatddx/cli.py:_init_data`).
-- CHANGE the heading "The sample's facts" to "Bundled facts", and its first sentence to "`models.toml` holds the facts
-  chatddx ships, about the old chatddx's two models, `Qwen/Qwen3-8B-AWQ` and `openai/gpt-oss-20b`, which both the
-  sample World's fake engines and Kompismoln's World serve.", keeping "They were ported by hand …" and the rest
-  (`src/chatddx/facts/models.toml`, `worlds/sample/factors.toml`, `worlds/kompismoln/factors.toml`).
-- ADD, under "Checking pairs", after `facts.missing`: "- `facts.reasoning_unmatched`: the skeleton's
-  `reasoning_effort` and `chat_template_kwargs` match none of the writes the model's reasoning levels land on
-  (`ReasoningFacts.realized`), so the skeleton was written for another model: `enable_thinking` sent to gpt-oss, or
-  `reasoning_effort = "none"` to gpt-oss, whose `off` is refused. A skeleton that sets neither leaves reasoning to the
-  model and isn't checked." It's in the code and tests (`lint.py:_model`, `test/test_facts.py`) but not in the doc;
-  the text is carried over from the removed `agents/wip-facts.md`.

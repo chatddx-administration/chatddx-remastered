@@ -57,7 +57,7 @@ Two runs of the same trial are interchangeable only when those agree too (see "O
   and the evidence of the observed ones, but they aren't factors themselves.
 - People, roles, authentication and authorization: `docs/identity.md`.
 - Names, labels, languages, tags, descriptions, owners, collaborators and version history: `docs/catalog.md`.
-- Sensitivity and vetting: `docs/clearance.md`.
+- Sensitivity and vetting: `docs/wip-clearance.md`.
 - Knowledge about models (reasoning levels, recommended sampling, output caveats, specs): the model facts
   (`src/chatddx/facts/facts.py`). Facts help write chunks and check them (`src/chatddx/facts/lint.py`), but no
   digest depends on them.
@@ -750,7 +750,7 @@ Judge requests go through the same rendering as generation requests, once per se
 (`docs/ledger.md:JudgeCall`). Their scores are reproducible on a best-effort basis. Given the scorer's parse of an
 answer, a judge request can be rebuilt from stored data and checked against the fingerprint its call stored; the
 parsing belongs to the scorer's code, so the rig can't do that check on its own. Because a judge prompt can
-contain case text, judge engines fall under the same clearance rule as generation engines (`docs/clearance.md`).
+contain case text, judge engines fall under the same clearance rule as generation engines (`docs/wip-clearance.md`).
 
 ### Scoring
 - principal author: Researchers
@@ -932,7 +932,3 @@ reference, straight from the schema. `RefTo` used to do this, and was stopped be
 Schema plays no part in a component's digest, so adding it back changes no digest.
 
 ## Proposed amendments
-- CHANGE, under "Not factors", "Sensitivity and vetting: `docs/clearance.md`." to "Sensitivity and vetting:
-  `agents/wip-clearance.md`.", since `docs/clearance.md` was folded into it while clearance is in progress.
-- CHANGE, under "Judge", "judge engines fall under the same clearance rule as generation engines
-  (`docs/clearance.md`)" to "… (`agents/wip-clearance.md`)", for the same reason.
