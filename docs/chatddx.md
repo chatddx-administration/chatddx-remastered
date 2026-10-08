@@ -59,7 +59,8 @@ It must be possible to deliver the cage together with the results, for scientifi
 - **Facts:** ops- or developer-authored knowledge about models (how each reasoning level is expressed or refused,
   recommended sampling, output caveats, specs), typed in code, written in TOML and keyed by model name.
   Not factors: they write and check literal chunks, and no digest depends on them.
-- **Start-up:** what the start-up script runs for one endpoint, joining an engine (what) with inventory entries
+- **Start-up:** what the start-up script runs for one endpoint, joining an engine (what) with inventory entries (where)
+  (`docs/inventory.md`, "The start-up").
 - **Rig:** the chatddx software that builds cages from factors, runs and scores inside them and records what happened.
 
 ### Roles mentioned

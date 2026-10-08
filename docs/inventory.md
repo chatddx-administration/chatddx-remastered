@@ -46,6 +46,8 @@ Loading checks only what the files themselves show:
 - `[cleared]` names endpoints and sources that exist.
 - every source is named after its table, so a `[source.<name>]` table can't set another `name`.
 
+Anything needing the engines is only checked when an entry is used.
+
 ### Worlds
 A World's files live in one directory: `inventory.toml`, the files it includes, and `factors.toml`, the models and
 engines its endpoints serve, whether `chatddx import-engine` wrote them or people did. A World may also hold its
@@ -64,13 +66,14 @@ This repository has two, in `worlds/`:
 - `worlds/kompismoln/` is Kompismoln's World, the hosts pelle and malborg. Its `inventory.toml` is hand-written and
   takes the sample World's vignettes (`path = "../sample/vignettes"`). `endpoints.toml` and `factors.toml` are what
   `chatddx import-engine` writes from the hosts' o11n reports. It has no `[cleared]` table, so the runner refuses
-  to send the sample to its endpoints." (`worlds/`, `src/chatddx/inventory/test/test_inventory.py`).
+  to send the sample to its endpoints.
 
 ## Sources
-A `[source.<name>]` table is a source (`sources.py:DirectorySource`) with `kind`=`directory` that holds:
+A `[source.<name>]` table is a source (`sources.py:DirectorySource`) that holds:
+- `kind`: `directory` (the only kind and the default)
 - `path`: the directory;
 - `suffix`: the vignette files' suffix, `.txt` by default;
-- `sensitive`: true by default. What it requires is `docs/wip-clearance.md`'s ("Sensitive sources").
+- `sensitive`: true by default. What it requires is `agents/wip-clearance.md`'s ("Sensitive sources").
 
 `Inventory.source(name)` gives the source as a `sources.py:Source`. A source:
 - `ids()` lists its vignettes' ids, sorted. In a directory, an id is a file's name without the suffix, and only
@@ -133,7 +136,7 @@ template, the empty one, is at `/dev/null`.
 ## Clearance
 The `[cleared]` table lists, for each endpoint, the sources it may receive case-derived content from:
 `"qwen3-8b-awq@fake" = ["sample"]`. `Inventory.cleared_for(endpoint)` reads it. The table stands in until clearance
-has a database grant, and what it permits is `docs/wip-clearance.md`'s ("Vetted endpoints"). It is read only from the
+has a database grant, and what it permits is `agents/wip-clearance.md`'s ("Vetted endpoints"). It is read only from the
 inventory's own file (see "Includes"). Clearing an endpoint is a person's statement, so no command writes the table.
 
 ## Starting and reaching an engine
@@ -170,7 +173,7 @@ The fake vLLM can be started from a start-up: `chatddx fake-vllm` with its `argv
 - `served(url)`: the model names that a server's `/v1/models` lists.
 - `confirm(inventory, get, name)`: refuses an endpoint whose `/v1/models` doesn't list the name its engine is
   served under, which is a local engine's digest or a remote engine's model. A server that can't be reached raises
-  `OSError`. The runner confirms an endpoint before it sends case-derived content (`docs/wip-clearance.md`, "Vetted
+  `OSError`. The runner confirms an endpoint before it sends case-derived content (`agents/wip-clearance.md`, "Vetted
   endpoints").
 
 With `--world`, `chatddx init-data` ends with a line per endpoint: its URL and the seeded engine it serves, or why it
@@ -263,9 +266,9 @@ confirm what was started rather than describe it.
 A World is handed over each time: `chatddx init-data` takes it as `--world`, and the runner takes a loaded `Inventory`.
 Nothing in `src/chatddx/core/settings.py` locates one.
 
-Suggested: `CHATDDX_WORLD`, the directory of the deployment's World, read in `settings.py`, listed in
-`.env-example`, and the default for init-data and the runner. `worlds/kompismoln/` holds the hosts' names and the
-paths on them; once a deployment finds its World through the setting, that directory could live with ops
+Suggested: `CHATDDX_WORLD`, the directory of the deployment's World, read in `src/chatddx/core/settings.py`, listed
+in `.env-example`, and the default for init-data and the runner. `worlds/kompismoln/` holds the hosts' names and
+the paths on them; once a deployment finds its World through the setting, that directory could live with ops
 (Kompismoln/org) rather than here.
 
 The runner needs the World the person starting a run meant, since that World decides what is cleared.
