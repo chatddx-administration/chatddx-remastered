@@ -13,8 +13,8 @@ one: a portal, a worker and `chatddx samples` (`agents/wip-sample-data.md`, "Lef
 "Decided" means the user said so. "Take" is the agent's recommendation and still open.
 
 ## Start with this
-Phases 0–4 are done (`src/chatddx/runner/`). A trial runs at an endpoint, in the execution's order and up to its
-concurrency, and leaves a finished run log and its owner entry, and `check_run` comes back clean.
+Phases 0–5 are done (`src/chatddx/runner/`). A trial runs at an endpoint, in the execution's order and up to its
+concurrency, with tool rounds, and leaves a finished run log and its owner entry, and `check_run` comes back clean.
 
 It was checked:
 - by the tests in `src/chatddx/runner/test/`;
@@ -24,8 +24,12 @@ It was checked:
 - by hand, for phase 4: the `chatddx fake-vllm --delay 0.01` process, started from the qwen endpoint, ran 4 cases × 2
   seeds shuffled at concurrency 4. The run took 1.0 s for 3.9 s of calls, and `check_run` came back clean. A SIGINT
   0.3 s in hung up the 4 calls in flight, the fake heard 4 hang-ups, and the 4 were recorded as stopped.
+- by hand, for phase 5: on the same process, 3 cases × 2 seeds at concurrency 2, with the free-text recipe and a
+  toolset of the test tools `lookup` and `broken`, gave 2 rounds per item and 12 tool runs, the failing tool's error
+  recorded, and a clean `check_run`. `plan-web` was refused on the sensitive sample, and ran without a round on the
+  sample declared not sensitive.
 
-Next: phase 5, then 6 (see "Left").
+Next: phase 6 (see "Left").
 
 **Real engines aren't cleared yet.** `worlds/kompismoln/inventory.toml` has no `[cleared]` table, so the gate refuses
 `pelle` and `malborg` for the sample. Clearing them is a human's statement to make.
@@ -95,10 +99,10 @@ goes only into the `Authorization` header; a test checks that no stored row hold
 
 **`Runner(conn, inventory, by)`** refuses a connection that isn't in autocommit mode (R6). `.start(trial, registry,
 endpoint, execution)`:
-1. Refuses a skeleton with tools.
-2. Runs the gate, then refuses a `concurrency` above the endpoint's `max_jobs` (phase 4).
+1. Runs the gate, then refuses a `concurrency` above the endpoint's `max_jobs` (phase 4).
+2. Loads the skeleton's tools (phase 5).
 3. `Store.add`s the trial's closure.
-4. Appends `RunStarted`, with `rig()`, the execution and the endpoint.
+4. Appends `RunStarted`, with `rig()`, the execution, the tools' code and the endpoint.
 5. Writes the run's owner entry.
 
 **`Running.send(on_event)`** sends the items in `Execution.schedule` order:
@@ -113,7 +117,7 @@ endpoint, execution)`:
 **Changed from the plan: events go to a callback** (`on_event`), not to an iterator. A KeyboardInterrupt raised
 while the caller handles an event then lands inside the runner's call, which records it. With a generator, it would
 land in the caller's frame while the runner sat suspended at a `yield`. The events are `ItemStarted`, `Streamed`
-(a `Delta` with its item's key, since phase 4), `ItemEnded` and `Noted`.
+(a `Delta` with its item's key, since phase 4), `ToolRan` (phase 5), `ItemEnded` and `Noted`.
 
 ### Phase 4: order and concurrency
 - **Order.** The runner tests run every order at concurrency 1 and 3, and check that items start in
@@ -134,17 +138,49 @@ land in the caller's frame while the runner sat suspended at a `yield`. The even
 - **Events carry the item's key** (`Streamed`), since deltas of items in flight interleave. That changed the serial
   path's events too, so a caller sees one shape whatever the concurrency.
 
+### Phase 5: tool rounds
+In `rounds.py`, which `run.py` calls for every item, with tools or without:
+- **`load(skeleton, get)`** finds each tool's function with `core/rig.py:entry`, so a tool that pins other code than
+  the running chatddx, or names nothing to call, is refused before anything is written. Each tool's code goes in
+  `RunStarted.tool_code` as the running code.
+- **`converse`** sends an item's first call, then a round per response that calls tools, up to `max_rounds`. A
+  round runs the tools in the calls' order, then sends their results through `next_request`, and is recorded as a
+  `Turn`. The rounds end in any of these cases, and `check_run` notes what a last response still calls
+  (`tools.unanswered`):
+  - a response calls no tool;
+  - a response calls the answer tool;
+  - a call has no whole answer (an error or a cutoff), whose tool calls may be cut short.
+- **`Toolbox.run`** calls a tool with the call's arguments as keyword arguments, and wants text back. The model is
+  told `error: …` in place of a result, and the error is recorded, when the call names no tool of the skeleton, the
+  arguments aren't a JSON object that fits the tool's `parameters`, or the tool raises or returns anything but text.
+  A failing tool doesn't stop the run.
+- **Stopping.** A KeyboardInterrupt or a halt keeps the rounds that have a call. A round stopped while its tools run
+  has none, so its tools are left out (see "Left"). Above concurrency 1, an item's rounds run on its worker, and a
+  halt is also checked before a round's tools.
+- **`ToolRan`** carries the item's key and the `ToolRun`, after each tool.
+- **The gate keeps refusing tools on a sensitive source.** The tests run on the sample with its source declared not
+  sensitive, and with tools that don't leave the host (`runner/test/tools.py`).
+- **`plan-web` runs without a round on the fake.** A native contract with tools sends `tool_choice: auto` beside a
+  `response_format`, which then holds the whole answer (G8; `docs/vllm.md`, item 10).
+
 ## Left
-### 5. Tool rounds
-- The `next_request` loop up to `skeleton.max_rounds`, recorded as `Turn` and `ToolRun`.
-- Tools found with `core/rig.py:entry`, and recorded in `RunStarted.tool_code`.
-- Lift the refusal in `Runner.start`. The gate keeps refusing tools on a sensitive source.
-
-`plan-web` can't call its tool on vLLM 0.24 anyway (G8; `docs/vllm.md`, item 10).
-
 ### 6. Canaries
 - A helper that makes a request body from a canary (`agents/manifest-triage.md`, C6).
 - Start and end phases per `verify_at`, recorded as `CanaryCall`. They need no clearance, but `confirm` still applies.
+
+### From phase 5
+- **A round stopped while its tools run is left out of the log.** A `Turn` needs its call, so tools that ran
+  without one can't be recorded, even one that reached a third party, such as a web search. Two ways out:
+  - `Turn.call` becomes optional, a change to what stored rows may hold;
+  - the runner sends the round's call anyway and hangs it up at once, as a halt does now.
+
+  This needs a decision.
+- **Tools have no time limit of their own.** `web_search` gives up after 10 s, and a halt waits for a tool that's
+  running.
+- **The tool interface isn't versioned**, unlike the scorer's (`scorers/scorer.py`, version 1): keyword arguments in,
+  text out.
+- **The answer tool called beside a toolset tool** ends the item, and `check_run` notes the toolset call
+  (`tools.unanswered`). The fake never does that, so no test covers it on the wire.
 
 ### Afterwards
 - **The scoring pass** (`agents/wip-repl.md`, D5, D8).

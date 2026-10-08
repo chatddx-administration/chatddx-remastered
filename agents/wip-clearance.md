@@ -43,6 +43,8 @@ against the inventory's `[cleared]` table until the clearance pipeline replaces 
   the endpoints it reaches. Nothing declares those yet; that belongs to clearance, not to the factor.
 - Tool results come back from the third party and are stored in the ledger (`ToolRun.result`), next to the
   responses.
+- The runner runs tools since its phase 5 (`src/chatddx/runner/rounds.py`), and the gate keeps refusing them on a
+  sensitive source until a tool can be cleared (`src/chatddx/runner/gate.py:check`).
 
 ## What the code offers
 - `Vignette.source` (`src/chatddx/factors/cases.py:Vignette`) names a vignette's source, and is part of the case's
@@ -99,9 +101,9 @@ runner waits on it:
 - Phase 4 (order, concurrency) doesn't touch clearance, and phase 6's canaries aren't case-derived.
 
 It becomes the next blocker at:
-- tool rounds on a sensitive source (phase 5): the gate refuses them until a tool can be cleared ("Tools"). Until
-  then, the runner's tests can use a source that isn't sensitive, and `plan-web` can't call its tool on vLLM 0.24
-  anyway (`docs/vllm.md`, item 10);
+- tool rounds on a sensitive source: the runner runs rounds since phase 5, but the gate refuses tools on a sensitive
+  source until a tool can be cleared ("Tools"). The runner's tests declare the sample's source not sensitive, and
+  `plan-web` can't call its tool on vLLM 0.24 anyway (`docs/vllm.md`, item 10);
 - judges (the scoring pass), whose engines fall under the hard block, and whose endpoint isn't recorded yet (see
   "Takes");
 - the first real sensitive source, or the first runs on `pelle` and `malborg` whose clearance should be auditable

@@ -16,7 +16,7 @@ runner (`src/chatddx/runner/`).
 Remastered has every piece a run is built from: `render`, `Trial`, `Execution`, `prepare_case`, the ledger, the
 store, the catalog, the scorers, the facts, the World inventory with `url_of`/`confirm`, and the fake vLLM. The
 runner strings them together. Phase 1 and D1–D4 moved to `agents/wip-runner.md`, where they are decided and built,
-but for tool rounds and canaries.
+but for canaries.
 
 So the plan:
 - **Port the UI.** Command table, parsing, completion, prompt, Ctrl-C handling, rendering. These carry over
@@ -266,6 +266,7 @@ completions and lookups, and nothing in it is UI. Tests go in `store/test/` and 
   fixture over `Console(record=True, width=200)`, as the old conftest's `say_to` did.
 
 ### 5. Tool rounds
+Built in the runner (`agents/wip-runner.md`, "Phase 5").
 - The `next_request` loop, with `max_rounds`, `Turn` and `ToolRun`.
 - Tools are found by `core/rig.py:entry`, and their code goes in `RunStarted.tool_code`.
 - D1 gates tools.

@@ -282,7 +282,8 @@ Where tool and scorer code lives is settled (see "Decided"):
   - `raw`: `text`. No sample configuration uses `output.raw`, as in the old inventory.
 - **The tool.** `chatddx.tools.web_search` is the old tool on `urllib`, with the old record's name, description and
   parameters, in `toolset.web` with its guidance. It sends the model's query to DuckDuckGo, a third party, so the
-  clearance hard block must cover it (`agents/wip-clearance.md`, "Tools") when the runner runs tools.
+  clearance hard block must cover it (`agents/wip-clearance.md`, "Tools"). The runner runs tools, and its gate
+  refuses them on a sensitive source, the sample's included.
 - **init-data** writes the labels, gives USER a fork of the tool as the old giftbag did (scorers stay the
   archive's), and lints the scorers on landing.
 - **Tests**: `src/chatddx/scorers/test/`, `src/chatddx/tools/test/`, and `src/chatddx/store/test/test_seed.py`. One
@@ -350,7 +351,7 @@ Not faked yet:
 | llm | 2 | `ModelArtifact` (fakes seeded); its facts in `src/chatddx/facts/models.toml` (G1) | the real artifacts, by the import |
 | serving, stack | 5, 5 | `LocalEngine` + World inventory endpoint and host | fake done; pelle, malborg by the import |
 | client | 2 | `Code` on `RunStarted`, written per run | dropped |
-| tool, toolset | 1, 1 | `tool` + `chunk.toolset` (G8), code in `chatddx.tools` | the loop, clearance |
+| tool, toolset | 1, 1 | `tool` + `chunk.toolset` (G8), code in `chatddx.tools` | clearance |
 | instruction | 2 | `chunk.instructions` + `chunk.prompt` (G3) | |
 | output | 4 | `chunk.output`; views go to scorers (G4, G6, G7) | |
 | coercion | 5 | `chunk.output` contract (G4, G5) | |
@@ -391,13 +392,15 @@ Each gap was tagged [maybe fix remastered]: the sample data needed something rem
   gives a new skeleton digest.
 - **G8. Tools.** Fixed in shape (`docs/factors.md`, "Tool", "Toolset", "Tool rounds"; `docs/ledger.md`, "Turn and
   ToolRun"; `agents/wip-clearance.md`, "Tools"). Still open:
-  - the loop itself, and where tools run, are the runner's;
+  - the loop is the runner's (`src/chatddx/runner/rounds.py`), and runs only on sources that aren't sensitive until
+    tools can be cleared;
   - `plan-web` can't call its tool on vLLM 0.24: a native contract with tools sends `tool_choice: auto` beside a
     `response_format`, which then constrains the whole answer (`docs/vllm.md`, item 10). `vllm.native_tools_uncallable`
     will flag it once it's paired with a vLLM engine, and the fake vLLM answers it by the schema, calling nothing;
   - `schema.ref_unverified` doesn't look at toolset tools' parameters;
   - gpt-oss with `required` (`docs/facts.md`);
-  - a turn after a response that already called the answer tool isn't rejected.
+  - a turn after a response that already called the answer tool isn't rejected by `check_run`, though the runner
+    ends the item there.
 - **G9. Variations.** Fixed: a variation is a fork, and the catalog proposes re-applying it when its origin moves
   (`docs/catalog.md`, "Configurations and variations"). The sample's `extends` became `fork_of`.
 - **G10. Skeleton × engine compatibility.** Fixed: the runtime lints (`docs/factors.md`, "Lints"; `docs/vllm.md`,

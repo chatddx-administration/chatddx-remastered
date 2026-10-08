@@ -19,18 +19,19 @@ from chatddx.factors.trial import Execution, Trial
 from chatddx.identity import Person
 from chatddx.inventory import Inventory, url_of
 from chatddx.ledger import (
-    Call,
     Endpoint,
     ItemKey,
     Run,
     RunItem,
     RunStarted,
+    ToolRun,
     check_run,
 )
 from chatddx.store import Catalog, Store
 from chatddx.store.store import Connection
 
-from . import gate, send as sending
+from . import gate, rounds
+from .rounds import Exchange, Toolbox
 from .send import Delta
 
 
@@ -47,6 +48,12 @@ class Streamed:
 
 
 @dataclass(frozen=True)
+class ToolRan:
+    key: ItemKey
+    run: ToolRun
+
+
+@dataclass(frozen=True)
 class ItemEnded:
     item: RunItem
 
@@ -56,7 +63,7 @@ class Noted:
     finding: Finding
 
 
-type Event = ItemStarted | Streamed | ItemEnded | Noted
+type Event = ItemStarted | Streamed | ToolRan | ItemEnded | Noted
 
 
 @dataclass(frozen=True)
@@ -80,6 +87,10 @@ def _streamed(
     return lambda delta: emit(Streamed(key, delta))
 
 
+def _ran(key: ItemKey, emit: Callable[[ToolRan], None]) -> Callable[[ToolRun], None]:
+    return lambda run: emit(ToolRan(key, run))
+
+
 class Runner:
     def __init__(self, conn: Connection, inventory: Inventory, by: Person) -> None:
         # Each row must land as it's written, so a run that dies leaves a log to read.
@@ -98,9 +109,10 @@ class Runner:
     ) -> "Running":
         execution = execution or Execution()
         _ = registry.add(trial)
-        if resolve(registry.get, trial.skeleton, Skeleton).tools:
-            raise ValueError("the runner doesn't run tools yet")
         gate.check(self._inventory, registry.get, endpoint, trial)
+        toolbox = rounds.load(
+            resolve(registry.get, trial.skeleton, Skeleton), registry.get
+        )
         jobs = self._inventory.endpoint(endpoint).max_jobs
         if execution.concurrency > jobs:
             raise ValueError(
@@ -117,6 +129,7 @@ class Runner:
             rig=rig(),
             trial=trial.digest,
             execution=execution,
+            tool_code=() if toolbox is None else toolbox.code,
             endpoint=Endpoint(name=endpoint, url=url),
         )
         store.append(started)
@@ -125,7 +138,9 @@ class Runner:
             Entry(field=EntryField.OWNER, person=self._by.id),
             self._by.id,
         )
-        return Running(self._conn, self._inventory, registry, started, url, secret)
+        return Running(
+            self._conn, self._inventory, registry, started, url, secret, toolbox
+        )
 
 
 class Running:
@@ -137,6 +152,7 @@ class Running:
         started: RunStarted,
         url: str,
         secret: str | None,
+        toolbox: Toolbox | None,
     ) -> None:
         self._store: Store = Store(conn)
         self._inventory: Inventory = inventory
@@ -144,6 +160,7 @@ class Running:
         self._started: RunStarted = started
         self._url: str = url
         self._secret: str | None = secret
+        self._toolbox: Toolbox | None = toolbox
         self._items: list[RunItem] = []
         self._findings: list[Finding] = []
         self._stopping: bool = False
@@ -216,19 +233,19 @@ class Running:
         self, items: Iterator[_Prepared], emit: Callable[[Event], None]
     ) -> None:
         for item in items:
-            try:
-                call = sending.send(
-                    self._url,
-                    item.body,
-                    execution=self._started.execution,
-                    secret=self._secret,
-                    on_delta=_streamed(item.key, emit),
-                )
-            except sending.Stopped as stopped:
+            exchange = rounds.converse(
+                self._url,
+                item.body,
+                self._toolbox,
+                execution=self._started.execution,
+                secret=self._secret,
+                on_delta=_streamed(item.key, emit),
+                on_tool=_ran(item.key, emit),
+            )
+            self._append(item.key, item.vignette, exchange, emit)
+            if exchange.stopped:
                 self._stopping = True
-                self._append(item.key, item.vignette, stopped.call, emit)
-                raise KeyboardInterrupt from None
-            self._append(item.key, item.vignette, call, emit)
+                raise KeyboardInterrupt
 
     # Calls go out on worker threads, and everything else stays on the caller's: the
     # events, the writes, and the stamp of when each item was sent, which keeps the
@@ -237,24 +254,25 @@ class Running:
         self, items: Iterator[_Prepared], emit: Callable[[Event], None]
     ) -> None:
         execution = self._started.execution
-        results: queue.SimpleQueue[Streamed | Future[Call]] = queue.SimpleQueue()
+        results: queue.SimpleQueue[Streamed | ToolRan | Future[Exchange]] = (
+            queue.SimpleQueue()
+        )
         halt = threading.Event()
-        in_flight: dict[Future[Call], _Prepared] = {}
+        in_flight: dict[Future[Exchange], _Prepared] = {}
         pool = ThreadPoolExecutor(execution.concurrency, "chatddx-runner")
 
-        def work(item: _Prepared, started_at: datetime) -> Call:
-            try:
-                return sending.send(
-                    self._url,
-                    item.body,
-                    execution=execution,
-                    secret=self._secret,
-                    on_delta=_streamed(item.key, results.put),
-                    halt=halt,
-                    started_at=started_at,
-                )
-            except sending.Stopped as stopped:
-                return stopped.call
+        def work(item: _Prepared, started_at: datetime) -> Exchange:
+            return rounds.converse(
+                self._url,
+                item.body,
+                self._toolbox,
+                execution=execution,
+                secret=self._secret,
+                on_delta=_streamed(item.key, results.put),
+                on_tool=_ran(item.key, results.put),
+                halt=halt,
+                started_at=started_at,
+            )
 
         try:
             more = True
@@ -270,7 +288,7 @@ class Running:
                 if not in_flight:
                     return
                 done = results.get()
-                if isinstance(done, Streamed):
+                if isinstance(done, Streamed | ToolRan):
                     emit(done)
                     continue
                 item = in_flight.pop(done)
@@ -280,7 +298,7 @@ class Running:
             self._stopping = True
             while in_flight:
                 done = results.get()
-                if isinstance(done, Streamed):
+                if isinstance(done, Streamed | ToolRan):
                     continue
                 item = in_flight.pop(done, None)
                 if item is not None and done.exception() is None:
@@ -309,10 +327,16 @@ class Running:
         self,
         key: ItemKey,
         vignette: Fingerprint,
-        call: Call,
+        exchange: Exchange,
         emit: Callable[[Event], None],
     ) -> None:
-        item = RunItem(run=self.run, key=key, vignette=vignette, call=call)
+        item = RunItem(
+            run=self.run,
+            key=key,
+            vignette=vignette,
+            call=exchange.call,
+            turns=exchange.turns,
+        )
         self._store.append(item)
         self._items.append(item)
         emit(ItemEnded(item))

@@ -13,15 +13,25 @@ from chatddx.catalog import Subject
 from chatddx.conftest import WORLDS, connect, sample_plan
 from chatddx.core import settings
 from chatddx.core.rig import rig
-from chatddx.factors.base import Fingerprint, resolve
-from chatddx.factors.cases import Case, Vignette
-from chatddx.factors.request import Compilation, compile_request
+from chatddx.factors.base import Code, Fingerprint, resolve
+from chatddx.factors.cases import Case, Vignette, prepare_case
+from chatddx.factors.engine import LocalEngine
+from chatddx.factors.request import (
+    Compilation,
+    Skeleton,
+    Tool,
+    Toolset,
+    compile_request,
+    next_request,
+    render,
+    tool_calls,
+)
 from chatddx.factors.trial import Execution, Trial
 from chatddx.fake_vllm.served import Served
 from chatddx.fake_vllm.server import serving
 from chatddx.identity import Person
 from chatddx.inventory import DirectorySource, Inventory, start_up
-from chatddx.ledger import Endpoint, ItemKey, RunFinished
+from chatddx.ledger import Endpoint, ItemKey, RunFinished, ToolCode, fingerprint_request
 from chatddx.ledger.call import check_execution
 from chatddx.runner import send as sending
 from chatddx.runner.gate import Refused
@@ -32,8 +42,10 @@ from chatddx.runner.run import (
     Noted,
     Runner,
     Streamed,
+    ToolRan,
 )
 from chatddx.runner.send import STOPPED
+from chatddx.runner.test.tools import component
 from chatddx.seed import Plan
 from chatddx.store import Catalog, People, Store
 from chatddx.store.store import Connection
@@ -328,9 +340,9 @@ def test_nothing_is_sent_or_written_where_the_gate_refuses(
     assert f"endpoint {GPT_OSS!r} can't be confirmed" in refused(
         trial(plan, "free-text (openai/gpt-oss-20b)", engine=GPT_OSS), GPT_OSS
     )
-    web = trial(plan, "plan-web (Qwen/Qwen3-8B-AWQ)")
-    with pytest.raises(ValueError, match="doesn't run tools yet"):
-        _ = Runner(conn, inventory, alice).start(web, plan.registry, QWEN)
+    assert "tools can't be cleared yet" in refused(
+        trial(plan, "plan-web (Qwen/Qwen3-8B-AWQ)"), QWEN
+    )
     assert rows(db, "run_stage") == 0
 
 
@@ -532,3 +544,187 @@ def test_a_call_that_fails_on_its_thread_fails_the_send(
         running.send()
     _ = running.finish()
     assert Store(conn).run(running.run).items == ()
+
+
+# The sample's source declared not sensitive, so the gate lets tools see its cases.
+def insensitive(inventory: Inventory) -> Inventory:
+    sample = inventory.sources["sample"].model_copy(update={"sensitive": False})
+    return inventory.model_copy(update={"sources": {"sample": sample}})
+
+
+def tooled(
+    plan: Plan,
+    recipe: str,
+    *tools: Tool,
+    max_rounds: int = 5,
+    cases: tuple[str, ...] = CASES[:1],
+    seeds: tuple[int, ...] = (7,),
+) -> Trial:
+    named = plan.named("recipe", recipe)
+    assert named.compilation is not None
+    compiled = resolve(plan.registry.get, named.compilation, Compilation).recipe
+    toolset = Toolset(
+        tools=tuple(plan.registry.add(t) for t in tools), max_rounds=max_rounds
+    )
+    skeleton = compile_request(
+        compiled.model_copy(update={"toolset": plan.registry.add(toolset)}),
+        plan.registry.get,
+    )
+    made = trial(plan, cases=cases, seeds=seeds).model_copy(
+        update={"skeleton": plan.registry.add(skeleton)}
+    )
+    _ = plan.registry.add(made)
+    return made
+
+
+FREE_TEXT = "free-text (Qwen/Qwen3-8B-AWQ)"
+ASKED = "'fake query'"
+
+
+@pytest.mark.usefixtures("fake")
+def test_a_round_runs_the_tools_a_response_calls_and_sends_back_their_results(
+    conn: Connection, inventory: Inventory, alice: Person, plan: Plan
+) -> None:
+    open_world = insensitive(inventory)
+    made = tooled(plan, FREE_TEXT, component("lookup"), component("broken"))
+    running = Runner(conn, open_world, alice).start(made, plan.registry, QWEN)
+    heard = Heard()
+    running.send(heard)
+    assert running.finish() == []
+
+    stored = Store(conn).run(running.run)
+    skeleton = resolve(plan.registry.get, made.skeleton, Skeleton)
+    assert stored.started.tool_code == tuple(
+        ToolCode(tool=t, code=rig()) for t in sorted(skeleton.tools)
+    )
+    [item] = stored.items
+    assert [[(r.name, r.result, r.error) for r in t.tools] for t in item.turns] == [
+        [("lookup", f"1 results for {ASKED}", None)],
+        [
+            (
+                "broken",
+                f"error: OSError: no answer for {ASKED}",
+                f"OSError: no answer for {ASKED}",
+            )
+        ],
+    ]
+    last = item.turns[-1].call
+    assert last.response is not None and tool_calls(last.response) == ()
+    assert all(c.status == 200 and c.prompt_tokens is not None for c in item.calls)
+    assert [(e.key, e.run.name) for e in heard.of(ToolRan)] == [
+        (item.key, "lookup"),
+        (item.key, "broken"),
+    ]
+
+    case = resolve(plan.registry.get, made.cases[0], Case)
+    raw = open_world.source("sample").fetch(case.vignette.id)
+    fills = prepare_case(
+        case, raw, plan.registry.get, skeleton.appendix_layout, made.cleanup
+    ).fills
+    engine = resolve(plan.registry.get, made.engine, LocalEngine)
+    body = render(skeleton, model=engine.served_model_name, seed=7, fills=fills)
+    assert item.call.request == fingerprint_request(body)
+    assert item.call.response is not None
+    results = {r.id: r.result for r in item.turns[0].tools}
+    second = next_request(body, item.call.response, results)
+    assert item.turns[0].call.request == fingerprint_request(second)
+
+
+@pytest.mark.usefixtures("fake")
+def test_calling_the_answer_tool_ends_the_item(
+    conn: Connection, inventory: Inventory, alice: Person, plan: Plan
+) -> None:
+    made = tooled(plan, "diagnoses-tool (Qwen/Qwen3-8B-AWQ)", component("lookup"))
+    running = Runner(conn, insensitive(inventory), alice).start(
+        made, plan.registry, QWEN
+    )
+    running.send()
+    assert running.finish() == []
+    [item] = Store(conn).run(running.run).items
+    assert [[r.name for r in t.tools] for t in item.turns] == [["lookup"]]
+    last = item.turns[-1].call.response
+    assert last is not None and [c.name for c in tool_calls(last)] == ["final_result"]
+
+
+@pytest.mark.usefixtures("fake")
+def test_rounds_end_after_max_rounds_and_the_calls_left_are_noted(
+    conn: Connection, inventory: Inventory, alice: Person, plan: Plan
+) -> None:
+    made = tooled(
+        plan, FREE_TEXT, component("lookup"), component("broken"), max_rounds=1
+    )
+    running = Runner(conn, insensitive(inventory), alice).start(
+        made, plan.registry, QWEN
+    )
+    running.send()
+    assert [(f.code, f.message) for f in running.finish()] == [
+        (
+            "tools.unanswered",
+            "the last response still calls broken after 1 of 1 rounds",
+        )
+    ]
+    [item] = Store(conn).run(running.run).items
+    assert len(item.turns) == 1
+
+
+@pytest.mark.usefixtures("fake")
+def test_a_tool_that_doesn_t_run_the_running_code_is_refused(
+    conn: Connection, db: str, inventory: Inventory, alice: Person, plan: Plan
+) -> None:
+    other = Code(distribution="chatddx", version="0.0.0")
+    made = tooled(plan, FREE_TEXT, component("lookup", other))
+    with pytest.raises(LookupError, match="pins chatddx 0.0.0"):
+        _ = Runner(conn, insensitive(inventory), alice).start(made, plan.registry, QWEN)
+    assert rows(db, "run_stage") == 0
+
+
+@pytest.mark.usefixtures("fake")
+def test_an_interrupt_while_tools_run_keeps_the_rounds_that_have_a_call(
+    conn: Connection, inventory: Inventory, alice: Person, plan: Plan
+) -> None:
+    made = tooled(plan, FREE_TEXT, component("lookup"), component("broken"))
+    running = Runner(conn, insensitive(inventory), alice).start(
+        made, plan.registry, QWEN
+    )
+    ran: list[ToolRan] = []
+
+    def interrupt(event: Event) -> None:
+        if isinstance(event, ToolRan):
+            ran.append(event)
+            if len(ran) == 2:
+                raise KeyboardInterrupt
+
+    with pytest.raises(KeyboardInterrupt):
+        running.send(Heard(then=interrupt))
+    findings = running.finish()
+    [item] = Store(conn).run(running.run).items
+    assert [[r.name for r in t.tools] for t in item.turns] == [["lookup"]]
+    assert (
+        "tools.unanswered",
+        "the last response still calls broken after 1 of 5 rounds",
+    ) in [(f.code, f.message) for f in findings]
+
+
+@pytest.mark.usefixtures("fake")
+def test_rounds_run_on_the_workers_above_concurrency_1(
+    conn: Connection, inventory: Inventory, alice: Person, plan: Plan
+) -> None:
+    made = tooled(
+        plan,
+        FREE_TEXT,
+        component("lookup"),
+        component("broken"),
+        cases=CASES,
+        seeds=(7, 8),
+    )
+    running = Runner(conn, insensitive(inventory), alice).start(
+        made, plan.registry, QWEN, Execution(concurrency=2)
+    )
+    heard = Heard()
+    running.send(heard)
+    assert running.finish() == []
+    items = Store(conn).run(running.run).items
+    assert [len(i.turns) for i in items] == [2, 2, 2, 2]
+    assert sorted(str(e.key) for e in heard.of(ToolRan)) == sorted(
+        str(i.key) for i in items for _ in range(2)
+    )

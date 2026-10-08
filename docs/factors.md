@@ -932,3 +932,10 @@ reference, straight from the schema. `RefTo` used to do this, and was stopped be
 Schema plays no part in a component's digest, so adding it back changes no digest.
 
 ## Proposed amendments
+- CHANGE, in "Tool rounds", "It ends when a response calls no toolset tool, or after `max_rounds` rounds. A call
+  that names no tool of the skeleton is answered with an error." to "It ends when a response calls no tool, calls the
+  answer tool, or has no whole answer (an error or a cutoff, whose tool calls may be cut short), or after
+  `max_rounds` rounds. A tool is called with the call's arguments as keyword arguments, and returns text. A call that
+  names no tool of the skeleton is answered with an error, and so are arguments that aren't a JSON object fitting the
+  tool's `parameters`, and a tool that raises or returns anything but text." (`src/chatddx/runner/rounds.py:Toolbox`,
+  `src/chatddx/runner/rounds.py:converse`).

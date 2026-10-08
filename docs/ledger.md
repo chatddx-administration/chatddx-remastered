@@ -411,3 +411,12 @@ Most of the plan is compared with what happened (see "What a record holds"), but
   separate mechanism, as linting is for factors, but nothing is planned or decided.
 
 ## Proposed amendments
+- CHANGE, in "Run", "because the rounds ran out or the run stopped (`tools.unanswered`)" to "because the rounds ran
+  out, the run stopped, the call has no whole answer (an error or a cutoff), or the response also called the answer
+  tool (`tools.unanswered`)", and the `tools.unanswered` row in "Findings" to match
+  (`src/chatddx/runner/rounds.py:Toolbox.pending`).
+- ADD, in "Turn and ToolRun", after the `error` item: "The runner tells the model `error: ` and the error."
+  (`src/chatddx/runner/rounds.py:Toolbox.run`).
+- ADD, in "Turn and ToolRun": "A round stopped while its tools run has no call, so it isn't recorded, and neither are
+  its tools, even one that reached a third party." (`src/chatddx/runner/rounds.py:converse`; `agents/wip-runner.md`,
+  "From phase 5").
