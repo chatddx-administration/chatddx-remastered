@@ -74,6 +74,10 @@ def test_repairs_rebind_appendices_cases_and_expectations() -> None:
     ]
     content = families.plan_repair(rows, 1, fingerprint=fp("edited"))
     assert content.moves == [(appended.thread, content.appendices[appendix])]
+    same_id = families.plan_repair(
+        rows, 1, id=case.vignette.id, fingerprint=fp("edited")
+    )
+    assert same_id.moves == content.moves
 
     current = rows.bind(1, renamed)
     [stale] = families.stale_cases(rows, [("/cases/0", ids["case"])])

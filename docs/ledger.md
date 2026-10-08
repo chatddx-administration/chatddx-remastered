@@ -8,7 +8,7 @@ Factors say what an experiment is meant to be; the ledger shows what it was. It 
 evidence of the observed ones (docs/factors.md, "What a factor is"), and checking it compares both with the pinned
 factors, so a run can be shown to have happened under the conditions it claims. This document describes what the
 ledger records and why, and what checking it shows. Names, fields, rules and finding codes are in the API,
-agents/ledger-api.md.
+docs/ledger-api.md.
 
 The ledger builds on the factors and nothing else. The rig writes it: the runner writes runs and the scoring pass
 writes scores.
@@ -202,7 +202,7 @@ score. All of the ledger's findings are warnings. They come from
 - checking a run or a score (see "Run" and "Score"), which can be repeated at any time, so nothing stores them;
 - comparing the prompts of two runs (see "Run").
 
-The API lists every finding (agents/ledger-api.md, "Finding codes").
+The API lists every finding (docs/ledger-api.md, "Finding codes").
 
 ## Storage
 The ledger is a schema of its own (docs/store.md; tables in docs/migrations.md, "ledger"): one table per kind of
@@ -234,7 +234,7 @@ for queries. Stored records are never changed or deleted.
 
 ## Open design issues
 These are open questions of design. Where the code falls short of this document, the API says so
-(agents/ledger-api.md, "Known gaps").
+(docs/ledger-api.md, "Known gaps").
 
 ### Some of what happened isn't checked
 Most of the plan is compared with what happened (see "What a record holds"), but not all:

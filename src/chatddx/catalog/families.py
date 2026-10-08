@@ -152,7 +152,7 @@ def plan_repair(
         (t, rebind(h.digest))
         for t, h in heads_holding(rows, rows.bound_to(old, "appendix")).items()
     ]
-    if id is not None:
+    if vignette.id != old.id:
         for t, h in heads_holding(rows, rows.expectations(list(cases))).items():
             e = resolve(rows.get, h.digest, Expectation)
             _ = registry.add(rows.get(e.expectation_schema))
