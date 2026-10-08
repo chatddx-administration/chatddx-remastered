@@ -35,7 +35,7 @@ replaced the planned `import-engine` run on a host, which would have read `nvidi
      doesn't read for gpt-oss (it renders with Harmony), so its hash pins nothing.
    - **Malborg's Harmony date**: `VLLM_SYSTEM_START_DATE = "2026-10-07"`, in the engine's env and digest.
    - **The report endpoints**: enabled on both hosts, at `pelle.km:12008` and `malborg.km:12008`.
-   - **Where the real World lives**: `worlds/kompismoln/` (`docs/inventory.md`, "The Worlds in this repository"),
+   - **Where the real World lives**: `worlds/kompismoln/` (`docs/inventory.md`, "Worlds"),
      with the factors `import-engine` writes in `worlds/kompismoln/factors.toml`. `init-data --world
      worlds/kompismoln/inventory.toml --factors worlds/kompismoln/factors.toml` seeds the sample with them, and
      `src/chatddx/store/test/test_seed.py:test_init_data_command` checks that it binds each endpoint and seeds no fake.
@@ -153,7 +153,7 @@ are the sample World's (`worlds/sample/factors.toml`, see "Engines and endpoints
 
 The vignettes aren't in it: they're a fake-sensitive source, so they stay out of the package. `worlds/sample/` holds
 them as a World would:
-- `inventory.toml` is the sample World inventory (`docs/inventory.md`, "The Worlds in this repository"), and
+- `inventory.toml` is the sample World inventory (`docs/inventory.md`, "Worlds"), and
   `factors.toml` its fake engines.
 - `vignettes/` has the 99 files of 7893656's `src/chatddx/data/cases`, byte for byte (their git blob hashes match the
   old repo's). 30 of them mix CRLF and LF line endings, so `.gitattributes` marks the directory `-text` to keep git
