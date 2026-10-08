@@ -71,8 +71,8 @@ This repository has two, in `worlds/`:
 ## Sources
 A `[source.<name>]` table is a source (`sources.py:DirectorySource`) that holds:
 - `kind`: `directory` (the only kind and the default)
-- `path`: the directory;
-- `suffix`: the vignette files' suffix, `.txt` by default;
+- `path`: the directory
+- `suffix`: the vignette files' suffix, `.txt` by default
 - `sensitive`: true by default. What it requires is `agents/wip-clearance.md`'s ("Sensitive sources").
 
 `Inventory.source(name)` gives the source as a `sources.py:Source`. A source:

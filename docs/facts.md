@@ -12,28 +12,31 @@ depends on them, and correcting a guessed fact changes nothing stored. A skeleto
 Code paths are relative to `src/chatddx/facts/` unless they start with `src/` or `docs/`. The package builds on
 `chatddx.factors` and imports no other chatddx package; `chatddx.factors` doesn't import it.
 
+It has two modules: `models.py`, what a model's facts hold, the chunks they write and where they come from ("Where
+facts come from" to "Writing chunks"), and `lint.py` ("Checking pairs"). `chatddx.facts` exports the public names.
+
 ## Where facts come from
-Facts are typed in code (`facts.py:Facts`, `facts.py:ModelFacts`) and written in TOML, one `[model."<name>"]` table
+Facts are typed in code (`models.py:Facts`, `models.py:ModelFacts`) and written in TOML, one `[model."<name>"]` table
 per model. `Facts.load(*paths)` reads them. A file may hold only `model` tables, and a model may have facts in only
 one file. Nothing is stored in the database: whoever needs facts loads them and passes them on. Their history is
 git's.
 
 Facts are keyed by model name: the `ModelArtifact.repo` behind a local engine, or a remote engine's `model`
-(`facts.py:model_name`). `Facts.about(engine, registry)` gives an engine's model facts, or nothing when there are
+(`models.py:model_name`). `Facts.about(engine, registry)` gives an engine's model facts, or nothing when there are
 none.
 
-Bundled facts are shipped in `models.toml` (`facts.py:BUNDLED`, see "Bundled facts"). `chatddx init-data` loads them by
+Bundled facts are shipped in `models.toml` (`models.py:BUNDLED`, see "Bundled facts"). `chatddx init-data` loads them by
 default, and `--facts PATH …` adds files beside them (`src/chatddx/cli.py`).
 
 ## What a model's facts hold
 Every part is optional. A missing part means "unknown", not "no".
 
 ### Reasoning
-`reasoning` (`facts.py:ReasoningFacts`) has an entry for each level: `off`, `on`, `minimal`, `low`, `medium`,
-`high` and `xhigh` (`facts.py:Intent`, the old chatddx's intents). Each entry is one of:
-- *writes*: what the `Reasoning` chunk sets, `effort` and/or `chat_template_kwargs` (`facts.py:Writes`);
+`reasoning` (`models.py:ReasoningFacts`) has an entry for each level: `off`, `on`, `minimal`, `low`, `medium`,
+`high` and `xhigh` (`models.py:Intent`, the old chatddx's intents). Each entry is one of:
+- *writes*: what the `Reasoning` chunk sets, `effort` and/or `chat_template_kwargs` (`models.py:Writes`);
 - a *collapse* into another level, e.g. `low = "on"`: asking for `low` is asking for `on`;
-- a *refusal* with a reason, e.g. `off = { refused = "always reasons: …" }` (`facts.py:Refusal`).
+- a *refusal* with a reason, e.g. `off = { refused = "always reasons: …" }` (`models.py:Refusal`).
 
 A level *lands* where its collapses end: on writes, on a refusal, or on nothing when the level it reaches has no
 entry (`ReasoningFacts.land`). Loading refuses collapses that go round, and collapses that land on nothing.
@@ -42,14 +45,14 @@ entry (`ReasoningFacts.land`). Loading refuses collapses that go round, and coll
 collapse. `budget` is `"thinking_token_budget"` when the model takes a thinking budget, or a refusal.
 
 ### Sampling
-`sampling.recommended` holds, per level, the sampling its makers recommend (`facts.py:SamplingValues`, the
+`sampling.recommended` holds, per level, the sampling its makers recommend (`models.py:SamplingValues`, the
 `Sampling` chunk's sampling fields). It's looked up by the level a request lands on, so `recommended.on` serves every
 level that collapses into `on`.
 
 `sampling.generation_config` is what the server fills in when a chunk leaves a field out. It's descriptive only.
 
 ### Output
-`output` holds a note or a refusal per contract, `native`, `tool` and `text` (`facts.py:ContractFact`). Its
+`output` holds a note or a refusal per contract, `native`, `tool` and `text` (`models.py:ContractFact`). Its
 `default`, the contract the model is usually asked for, is descriptive only.
 
 ### Specs
@@ -78,8 +81,8 @@ Named `<record> (<model>)`, and a recipe that uses it comes once per model too.
 A refused chunk, and the recipes that need it, are skipped and reported.
 
 ## Checking pairs
-A trial or a judge pairs a skeleton with an engine, whose model may have facts. `lint.py:lint(registry, facts,
-digests)` checks those pairs:
+A trial or a judge pairs a skeleton with an engine, whose model may have facts.
+`lint.py:check_pairs(registry, facts, digests)` checks those pairs:
 - `facts.missing` (info): there are no facts about the engine's model, so the model-level checks were skipped.
 - `facts.sampling_unmatched`: the skeleton's sampling is what the facts recommend for another model, at some level,
   and for none of the paired model's levels, so it was written for that model: Qwen3's sampling sent to gpt-oss.
@@ -128,14 +131,3 @@ Without facts, linting is unchanged.
   unknown.
 
 ## Proposed amendments
-- CHANGE, after "Code paths are relative to `src/chatddx/facts/` …; `chatddx.factors` doesn't import it.", ADD: "It
-  has two modules: `models.py`, what a model's facts hold, the chunks they write and where they come from ("Where
-  facts come from" to "Writing chunks"), and `lint.py` ("Checking pairs"). `chatddx.facts` exports the public
-  names." (`src/chatddx/facts/__init__.py`).
-- CHANGE every `facts.py:` to `models.py:`, nine times under "Where facts come from" and "What a model's facts
-  hold", since the module was renamed so it no longer repeats the package's name; it types and loads the
-  `[model."<name>"]` tables of `models.toml` beside it (`src/chatddx/facts/models.py`).
-- CHANGE, under "Checking pairs", "`lint.py:lint(registry, facts, digests)` checks those pairs" to
-  "`lint.py:check_pairs(registry, facts, digests)` checks those pairs", since a second `lint` beside
-  `chatddx.factors`' had every caller rename it (`src/chatddx/facts/lint.py:check_pairs`,
-  `src/chatddx/seed/write.py`).

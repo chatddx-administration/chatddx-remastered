@@ -59,7 +59,7 @@ Two runs of the same trial are interchangeable only when those agree too (see "O
 - Names, labels, languages, tags, descriptions, owners, collaborators and version history: `docs/catalog.md`.
 - Sensitivity and vetting: `agents/wip-clearance.md`.
 - Knowledge about models (reasoning levels, recommended sampling, output caveats, specs): the model facts
-  (`src/chatddx/facts/facts.py`). Facts help write chunks and check them (`src/chatddx/facts/lint.py`), but no
+  (`src/chatddx/facts/models.py`). Facts help write chunks and check them (`src/chatddx/facts/lint.py`), but no
   digest depends on them.
 - Instruments and Provenance: canary sets and compilations are components, but not factors.
 
@@ -932,5 +932,3 @@ reference, straight from the schema. `RefTo` used to do this, and was stopped be
 Schema plays no part in a component's digest, so adding it back changes no digest.
 
 ## Proposed amendments
-- CHANGE, under "Not factors", "(`src/chatddx/facts/facts.py`)" to "(`src/chatddx/facts/models.py`)", the facts
-  module's new name.
