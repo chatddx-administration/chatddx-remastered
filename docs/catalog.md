@@ -416,3 +416,39 @@ moment can create two families, since nothing makes current bindings unique.
   notice rather than a warning.
 
 ## Proposed amendments
+
+- CHANGE, in "Entries", the "Read by the code" cell of `owner` from "`find`" to "`find`, and `visible`,
+  `visible_families` and `expectation_for` through `About.shows`", and that of `collaborator` from "no" to "`visible`,
+  `visible_families` and `expectation_for`, through `About.shows`". In "Owners", CHANGE "which authorization may later
+  use to decide what to show" to "which `visible`, `visible_families` and `expectation_for` already use to decide what
+  to show, and authorization may use later" (`src/chatddx/catalog/model.py:245`,
+  `src/chatddx/catalog/threads.py:104`).
+- CHANGE, in "Titles", the last item of the list under "What a component holds is described according to its kind",
+  "anything else by its kind and the start of its digest." to "
+  - a tool by its name, and an appendix by the opening words of its text;
+  - a judge by its skeleton and engine, a scorer by its code's distribution and version, and a scoring by its scorer
+    and how many expectations it has;
+  - a model by its repo, an expectation schema by its title or its properties, and a canary set by how many canaries
+    it has;
+  - a compilation by its kind and the start of its digest." (`src/chatddx/catalog/titles.py:156`-`195`).
+- CHANGE, in "Append-only, and the latest row wins", "The rule is written once, in `model.py:latest` and
+  `model.py:About.of`." to "The rule is written in `model.py:latest` and `model.py:About.of`, and elsewhere as the
+  last of the rows a `Reader` returns." (`src/chatddx/catalog/threads.py:54`, `src/chatddx/catalog/threads.py:167`,
+  `src/chatddx/catalog/families.py:35`, `src/chatddx/catalog/families.py:118`, `src/chatddx/catalog/families.py:172`,
+  `src/chatddx/catalog/titles.py:236`).
+- CHANGE, in "Families and repairs", "and to the latest such family when several match" to "and, when bindings of
+  several families match, to the family of the latest matching binding". In "Smaller issues", CHANGE "`family_of`
+  takes the latest." to "`family_of` takes the family of the latest matching binding, which isn't necessarily the
+  latest family." (`src/chatddx/catalog/families.py:35`).
+- CHANGE, in "Titles", "a fork is shown by its base's title and what it varies" to "a fork is shown by its origin's
+  title and what it varies from its base". ADD to "Smaller issues": "**An unnamed fork's title can pair two
+  versions.** When the origin has no name and has moved on, its title describes its current head, while what the fork
+  varies is measured from the base." (`src/chatddx/catalog/titles.py:205`, `src/chatddx/catalog/threads.py:167`).
+- CHANGE, in "Owners", "but `About` keeps only what holds now: the API doesn't show who changed what." to "but only
+  threads, edits and bindings are returned with them; entries, labels and languages are read without them, and
+  `About` keeps only what holds now." In "Smaller issues", CHANGE "**Who changed what isn't exposed.** Every row
+  records who wrote it and when, but the API only returns what holds now." to "**Who changed an entry, a label or a
+  language isn't exposed.** Every row records who wrote it and when, but entries, labels and languages are read
+  without it, and `About` keeps only what holds now." (`src/chatddx/catalog/model.py:84`,
+  `src/chatddx/catalog/model.py:92`, `src/chatddx/catalog/model.py:112`, `src/chatddx/catalog/read.py:32`,
+  `src/chatddx/catalog/read.py:44`, `src/chatddx/catalog/read.py:46`).
