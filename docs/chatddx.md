@@ -269,3 +269,32 @@ Each code is described where it's produced: `docs/factors.md`, "Lints"; `docs/le
 **Canary drift are not implemented:** nothing compares canary outputs between phases or runs.
 
 ## Proposed amendments
+- CHANGE, in "Glossary", "**Normalization:** the text-cleanup steps a trial applies to vignettes." to "**Text
+  cleanup:** the named steps a trial applies to vignettes before they are sent.", and, in "Roles mentioned",
+  "scoring and normalizations functions" to "scoring and text-cleanup functions". The code and `docs/factors.md`
+  ("Text cleanup") call them cleanup; "normalization" is the old manifest's word (`Trial.normalization`)
+  (`src/chatddx/factors/trial.py:Trial`, `src/chatddx/factors/cases.py:CleanupOp`).
+- CHANGE, in "Intended dataflow", "Before a run", step 3, "A CaseInput is a source case id, the vignette's
+  fingerprint and a list of Appendix references." to "A Case is a vignette, named by its source, its id there and
+  the fingerprint of its raw bytes, and a list of Appendix references."; in "Per (case, replicate)", step 1,
+  "CaseInput" to "Case"; and in step 3, "`prepare_case(case, raw, get, layout, normalization)`" to "`prepare_case(case,
+  raw, get, layout, cleanup)`, with the trial's cleanup" (`src/chatddx/factors/cases.py:Case`,
+  `src/chatddx/factors/cases.py:prepare_case`).
+- CHANGE, in "Per (case, replicate)", step 6, to "Pick the model name from the engine: `engine.served_model_name`,
+  the engine's digest for a local engine and its `model` for a remote one." Both engines have the property now, so
+  every caller reads one name (`src/chatddx/factors/engine.py`).
+- CHANGE, in "Per (case, replicate)", step 9, "[For LocalEngine?]" to "For a local engine, the World inventory's
+  endpoint gives the URL (`docs/inventory.md`, "Endpoints")." (`src/chatddx/inventory/serving.py:url_of`).
+- ADD, in "Glossary", after "Sensitive": "Vignettes and case-derived content are sensitive. Appendices, expectations
+  and people's names are not (`docs/factors.md`, "Appendix" and "Expectation"; `docs/identity.md`)." This was decided
+  when the old manifest was reconciled, and the docs state it only piecemeal
+  (`src/chatddx/inventory/sources.py:Source.sensitive`, `src/chatddx/ledger/record.py:Record.case_derived`).
+- ADD, in "Possible design issues", under "Canary drift": "What counts as the same canary output is undecided:
+  (a) the digest of each choice's message, as the old `compare_canaries` compared output digests; (b) the
+  prompt-token fingerprint alone, which catches a changed template or tokenizer but not changed weights; or (c) both,
+  with (b) under a code of its own. None needs a new field, since `CanaryCall.call` holds the response and the
+  prompt-token fingerprint." The agent's take is (c) (`src/chatddx/ledger/run.py:CanaryCall`; the old code:
+  `git show de843eb:src/chatddx/core/manifest.py`, `compare_canaries`).
+- CHANGE, in "Glossary", "Insert": drop the stray last line "filled with that output's schema.", and name
+  `tool_guidance`, the toolset's guidance, beside `output_guidance` (`src/chatddx/factors/request.py:InsertName`).
+  Found while reviewing, unrelated to the manifest.

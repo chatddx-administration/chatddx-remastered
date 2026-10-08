@@ -184,8 +184,8 @@ A case can have several expectation threads, such as the archive's and the user'
 
 ## Phases
 ### 1. Runner: `src/chatddx/runner/`
-- **The model name an engine answers to**, one method on the engine. Today `ledger/run.py:check_run` and every
-  runner choose it themselves (`docs/factors.md`, "Smaller issues"; `agents/manifest-triage.md`, C4).
+- **The model name an engine answers to**, one method on the engine. Done: `served_model_name`
+  (`agents/wip-runner.md`, R4).
 - **`http.py`**: POST `/v1/chat/completions` over the stdlib, returning JSON or an SSE stream, with a timeout.
   `assemble(chunks)` gives the completion-shaped response (D2).
 - **`gate.py`**: D1 and `confirm`, before the first case-derived request of a run.
@@ -297,5 +297,5 @@ adopted. Proposals:
 - **The same vignette under two names.** The old repl ran it once. Here two source ids make two cases, so both run.
   Take: deduplicate a batch's cases by vignette fingerprint, and say which were merged.
 - **Batch order** is by case digest, since `Trial` sorts its cases, not by name.
-- **`return_token_ids` on remote engines** is still undecided (`agents/manifest-triage.md`, D). The fake and
-  vLLM accept it.
+- **`return_token_ids` on remote engines** is still undecided (`docs/factors.md`, "Proposed amendments"). The fake
+  and vLLM accept it.

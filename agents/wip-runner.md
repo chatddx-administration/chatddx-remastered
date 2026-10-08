@@ -165,7 +165,8 @@ In `rounds.py`, which `run.py` calls for every item, with tools or without:
 
 ## Left
 ### 6. Canaries
-- A helper that makes a request body from a canary (`agents/manifest-triage.md`, C6).
+- A helper that makes a request body from a canary (`docs/factors.md`, "Smaller issues": no helper turns a canary
+  into a request).
 - Start and end phases per `verify_at`, recorded as `CanaryCall`. They need no clearance, but `confirm` still applies.
 
 ### From phase 5
@@ -198,7 +199,7 @@ In `rounds.py`, which `run.py` calls for every item, with tools or without:
   down from the caller's thread would end the wait, but `wire.Stream` doesn't offer that yet.
 
 ## Still open from elsewhere
-- **`return_token_ids` on remote engines** (`agents/manifest-triage.md`, D): a non-vLLM API may refuse it. `render`
-  sends it for every engine.
+- **`return_token_ids` on remote engines** (`docs/factors.md`, "Proposed amendments"): a non-vLLM API may refuse
+  it. `render` sends it for every engine.
 - **Concurrent writers** (`docs/catalog.md`, "Concurrent writers"). The runner writes only its own run's rows and one
   owner entry.

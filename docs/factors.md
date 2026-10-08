@@ -939,3 +939,20 @@ Schema plays no part in a component's digest, so adding it back changes no diges
   names no tool of the skeleton is answered with an error, and so are arguments that aren't a JSON object fitting the
   tool's `parameters`, and a tool that raises or returns anything but text." (`src/chatddx/runner/rounds.py:Toolbox`,
   `src/chatddx/runner/rounds.py:converse`).
+- ADD, in "Greedy sampling and seeds": "Keeping the seeds is deliberate. On an engine that isn't batch invariant,
+  greedy replicates still measure nondeterminism, and the seeds are what name the replicates. The alternative, a
+  replicate count for greedy trials, changes `Trial`'s shape, so it is cheapest decided before trials are stored for
+  real." (`src/chatddx/factors/trial.py:Trial`, `src/chatddx/factors/request.py:render`).
+- ADD, in "Smaller issues", to "Skeleton provenance": "A take: keep hand-written skeletons. Provenance is whether a
+  compilation names the skeleton, a query that a lint can make once the catalog or ledger is queried for it."
+  (`src/chatddx/factors/request.py:Compilation`).
+- ADD, in "Smaller issues", to "Judge engines are never probed": "Probing them would put `canaries` and `verify_at` on
+  `ScoreStarted`, as on `RunStarted`. Both are defaulted fields, so adding them later keeps every stored digest."
+  (`src/chatddx/ledger/score.py:ScoreStarted`, `src/chatddx/ledger/run.py:RunStarted`).
+- ADD, in "Appendix": "Browser text areas submit CRLF line endings, so the portal should apply `newlines.lf@1` to an
+  appendix before it is digested; nothing cleans it afterwards." (`src/chatddx/factors/cases.py:Appendix`,
+  `src/chatddx/factors/cases.py:CleanupOp`).
+- ADD, in "Smaller issues": "**`return_token_ids` goes to every engine.** A remote engine that isn't vLLM may refuse
+  an unknown key with a 400. Either the engine says whether it takes the key (a field on `RemoteEngine`, which
+  changes its digest), or the runner decides per call (`render(..., return_token_ids=False)`, which leaves the run
+  without prompt-token fingerprints)." (`src/chatddx/factors/request.py:render`, `src/chatddx/runner/run.py`).
