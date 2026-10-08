@@ -298,3 +298,9 @@ Each code is described where it's produced: `docs/factors.md`, "Lints"; `docs/le
 - CHANGE, in "Glossary", "Insert": drop the stray last line "filled with that output's schema.", and name
   `tool_guidance`, the toolset's guidance, beside `output_guidance` (`src/chatddx/factors/request.py:InsertName`).
   Found while reviewing, unrelated to the manifest.
+- CHANGE, in "Per (case, replicate)", step 9, "Canaries are sent in the same way, but from their literal Canary
+  bodies, without slots. The code is unclear here as helpers for creating requests and nothing compare canary
+  outputs, the old code had compare canaries." to "Canaries are sent the same way, from their literal bodies
+  (`Canary.render`), one at a time before the first item and after the last, at the phases `verify_at` names.
+  Nothing compares canary outputs yet (see "Possible design issues")." (`src/chatddx/factors/trial.py:Canary.render`,
+  `src/chatddx/runner/run.py:Running.send`).

@@ -13,8 +13,9 @@ one: a portal, a worker and `chatddx samples` (`agents/wip-sample-data.md`, "Lef
 "Decided" means the user said so. "Take" is the agent's recommendation and still open.
 
 ## Start with this
-Phases 0–5 are done (`src/chatddx/runner/`). A trial runs at an endpoint, in the execution's order and up to its
-concurrency, with tool rounds, and leaves a finished run log and its owner entry, and `check_run` comes back clean.
+Phases 0–6 are done (`src/chatddx/runner/`). A trial runs at an endpoint, in the execution's order and up to its
+concurrency, with tool rounds and between its canaries, and leaves a finished run log and its owner entry, and
+`check_run` comes back clean.
 
 It was checked:
 - by the tests in `src/chatddx/runner/test/`;
@@ -28,8 +29,11 @@ It was checked:
   toolset of the test tools `lookup` and `broken`, gave 2 rounds per item and 12 tool runs, the failing tool's error
   recorded, and a clean `check_run`. `plan-web` was refused on the sensitive sample, and ran without a round on the
   sample declared not sensitive.
+- by hand, for phase 6: on the same process, 3 cases × 2 seeds at concurrency 3 with a set of two canaries. Both
+  start canaries finished before the first item call, both end canaries started after the last, and `check_run` came
+  back clean.
 
-Next: phase 6 (see "Left").
+Next: what's left of "Left", with the scoring pass first (see "Afterwards").
 
 **Real engines aren't cleared yet.** `worlds/kompismoln/inventory.toml` has no `[cleared]` table, so the gate refuses
 `pelle` and `malborg` for the sample. Clearing them is a human's statement to make.
@@ -101,8 +105,9 @@ goes only into the `Authorization` header; a test checks that no stored row hold
 endpoint, execution)`:
 1. Runs the gate, then refuses a `concurrency` above the endpoint's `max_jobs` (phase 4).
 2. Loads the skeleton's tools (phase 5).
-3. `Store.add`s the trial's closure.
-4. Appends `RunStarted`, with `rig()`, the execution, the tools' code and the endpoint.
+3. `Store.add`s the trial's closure, and the canary set's (phase 6).
+4. Appends `RunStarted`, with `rig()`, the execution, the canary set and its phases, the tools' code and the
+   endpoint. The row is built before anything is written, so phases without a canary set are refused first.
 5. Writes the run's owner entry.
 
 **`Running.send(on_event)`** sends the items in `Execution.schedule` order:
@@ -117,7 +122,8 @@ endpoint, execution)`:
 **Changed from the plan: events go to a callback** (`on_event`), not to an iterator. A KeyboardInterrupt raised
 while the caller handles an event then lands inside the runner's call, which records it. With a generator, it would
 land in the caller's frame while the runner sat suspended at a `yield`. The events are `ItemStarted`, `Streamed`
-(a `Delta` with its item's key, since phase 4), `ToolRan` (phase 5), `ItemEnded` and `Noted`.
+(a `Delta` with its item's key, since phase 4), `ToolRan` (phase 5), `ItemEnded`, `CanaryEnded` (phase 6) and
+`Noted`.
 
 ### Phase 4: order and concurrency
 - **Order.** The runner tests run every order at concurrency 1 and 3, and check that items start in
@@ -163,12 +169,20 @@ In `rounds.py`, which `run.py` calls for every item, with tools or without:
 - **`plan-web` runs without a round on the fake.** A native contract with tools sends `tool_choice: auto` beside a
   `response_format`, which then holds the whole answer (G8; `docs/vllm.md`, item 10).
 
-## Left
-### 6. Canaries
-- A helper that makes a request body from a canary (`docs/factors.md`, "Smaller issues": no helper turns a canary
-  into a request).
-- Start and end phases per `verify_at`, recorded as `CanaryCall`. They need no clearance, but `confirm` still applies.
+### Phase 6: canaries
+- **`Canary.render(model=)`** (`factors/trial.py`) makes a canary's request as `render` makes a skeleton's: its
+  messages and body, the model, the seed when the canary has one, and `return_token_ids`.
+- **`Runner.start(..., canaries=, verify_at=)`** takes a canary set and the phases to send it at, both phases by
+  default. The set is stored with the trial, so `check_run` can resolve it from the store.
+- **`Running.send`** sends the start canaries before the first item and the end canaries after the last, one at a
+  time on the caller's thread, so they bracket the items whatever the concurrency and `canary.phase` stays quiet.
+  Each is recorded as a `CanaryCall`, followed by a `CanaryEnded` event.
+- **Stopping.** A KeyboardInterrupt during a canary records it as stopped. A stopped run sends no end canaries, and
+  `check_run` counts them as missing (`run.incomplete`).
+- **No clearance**, since canaries aren't case-derived, but they go only where the run goes: the gate, `confirm`
+  included, has passed by then.
 
+## Left
 ### From phase 5
 - **A round stopped while its tools run is left out of the log.** A `Turn` needs its call, so tools that ran
   without one can't be recorded, even one that reached a third party, such as a web search. Two ways out:
@@ -182,6 +196,13 @@ In `rounds.py`, which `run.py` calls for every item, with tools or without:
   text out.
 - **The answer tool called beside a toolset tool** ends the item, and `check_run` notes the toolset call
   (`tools.unanswered`). The fake never does that, so no test covers it on the wire.
+
+### From phase 6
+- **No canary set is seeded.** The sample data has none, so a caller brings its own. Seeding one would take a
+  `canary_set` table in the data set's `factors.toml` (`agents/wip-seed.md`).
+- **Canary outputs aren't compared** (`docs/chatddx.md`, "Possible design issues", and its proposed amendment on
+  what counts as the same output).
+- **Canary calls stream without events**, since `Streamed` carries an item key.
 
 ### Afterwards
 - **The scoring pass** (`agents/wip-repl.md`, D5, D8).

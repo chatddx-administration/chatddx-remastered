@@ -78,6 +78,7 @@ from chatddx.factors.test.sample import (
     world,
 )
 from chatddx.factors.trial import (
+    Canary,
     Execution,
     Trial,
     suggest_seeds,
@@ -242,6 +243,24 @@ def test_compile_and_render(reg: Registry) -> None:
             "content": "Case:\n{{not a template}}\n\nTroponin 80 ng/L.\n\nDifferential?",
         },
     ]
+
+
+def test_a_canary_renders_its_literal_request() -> None:
+    question: dict[str, JsonValue] = {"role": "user", "content": "2+2?"}
+    seeded = Canary(messages=(question,), body={"temperature": 0.7}, seed=0)
+    assert seeded.render(model="served") == {
+        "model": "served",
+        "messages": [question],
+        "temperature": 0.7,
+        "seed": 0,
+        "return_token_ids": True,
+    }
+    unseeded = Canary(messages=(question,)).render(
+        model="served", return_token_ids=False
+    )
+    assert unseeded == {"model": "served", "messages": [question]}
+    with pytest.raises(ValidationError, match="canary body may not set"):
+        _ = Canary(messages=(question,), body={"seed": 1})
 
 
 def test_outputs_show_their_schema(reg: Registry) -> None:

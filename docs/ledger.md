@@ -420,3 +420,6 @@ Most of the plan is compared with what happened (see "What a record holds"), but
 - ADD, in "Turn and ToolRun": "A round stopped while its tools run has no call, so it isn't recorded, and neither are
   its tools, even one that reached a third party." (`src/chatddx/runner/rounds.py:converse`; `agents/wip-runner.md`,
   "From phase 5").
+- CHANGE, in "Storage", "A run's canary set has no foreign key, so nothing makes sure it is stored, and `check_run`
+  can't resolve it if it isn't." to "A run's canary set has no foreign key. The runner stores it with the trial;
+  another writer must store it too, or `check_run` can't resolve it." (`src/chatddx/runner/run.py:Runner.start`).

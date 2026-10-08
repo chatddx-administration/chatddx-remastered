@@ -956,3 +956,8 @@ Schema plays no part in a component's digest, so adding it back changes no diges
   an unknown key with a 400. Either the engine says whether it takes the key (a field on `RemoteEngine`, which
   changes its digest), or the runner decides per call (`render(..., return_token_ids=False)`, which leaves the run
   without prompt-token fingerprints)." (`src/chatddx/factors/request.py:render`, `src/chatddx/runner/run.py`).
+- ADD, in "Canary sets": "`Canary.render(model=)` makes a canary's request as `render` makes a skeleton's: its
+  messages and body, the model, the seed when the canary has one, and `return_token_ids: true`."
+  (`src/chatddx/factors/trial.py:Canary.render`).
+- REMOVE, in "Smaller issues", "**No helper turns a canary into a request** (model name, seed, `return_token_ids`)."
+  (`src/chatddx/factors/trial.py:Canary.render`).

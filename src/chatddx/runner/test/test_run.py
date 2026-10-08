@@ -8,6 +8,7 @@ from typing import Any, cast
 import psycopg
 import pytest
 from psycopg import sql
+from pydantic import ValidationError
 
 from chatddx.catalog import Subject
 from chatddx.conftest import WORLDS, connect, sample_plan
@@ -26,16 +27,24 @@ from chatddx.factors.request import (
     render,
     tool_calls,
 )
-from chatddx.factors.trial import Execution, Trial
+from chatddx.factors.trial import Canary, CanarySet, Execution, Trial
 from chatddx.fake_vllm.served import Served
 from chatddx.fake_vllm.server import serving
 from chatddx.identity import Person
 from chatddx.inventory import DirectorySource, Inventory, start_up
-from chatddx.ledger import Endpoint, ItemKey, RunFinished, ToolCode, fingerprint_request
+from chatddx.ledger import (
+    Endpoint,
+    ItemKey,
+    RunFinished,
+    ToolCode,
+    check_run,
+    fingerprint_request,
+)
 from chatddx.ledger.call import check_execution
 from chatddx.runner import send as sending
 from chatddx.runner.gate import Refused
 from chatddx.runner.run import (
+    CanaryEnded,
     Event,
     ItemEnded,
     ItemStarted,
@@ -728,3 +737,129 @@ def test_rounds_run_on_the_workers_above_concurrency_1(
     assert sorted(str(e.key) for e in heard.of(ToolRan)) == sorted(
         str(i.key) for i in items for _ in range(2)
     )
+
+
+CANARIES = CanarySet(
+    canaries=(
+        Canary(
+            messages=({"role": "user", "content": "Name three causes of chest pain."},),
+            body={"temperature": 0},
+        ),
+        Canary(messages=({"role": "user", "content": "What is 2+2?"},), seed=7),
+    )
+)
+
+
+@pytest.mark.usefixtures("fake")
+@pytest.mark.parametrize("concurrency", [1, 2])
+def test_canaries_bracket_the_items_and_are_stored_with_the_run(
+    conn: Connection,
+    inventory: Inventory,
+    alice: Person,
+    plan: Plan,
+    concurrency: int,
+) -> None:
+    made = trial(plan)
+    running = Runner(conn, inventory, alice).start(
+        made, plan.registry, QWEN, Execution(concurrency=concurrency), CANARIES
+    )
+    heard = Heard()
+    running.send(heard)
+    assert running.finish() == []
+
+    order = [
+        "canary" if isinstance(e, CanaryEnded) else "item"
+        for e in heard.events
+        if isinstance(e, CanaryEnded | ItemStarted | ItemEnded)
+    ]
+    assert order == ["canary"] * 2 + ["item"] * 8 + ["canary"] * 2
+    probes = [(e.call.phase, e.call.canary) for e in heard.of(CanaryEnded)]
+    assert probes == [("start", 0), ("start", 1), ("end", 0), ("end", 1)]
+
+    stored = Store(conn).run(running.run)
+    assert stored.started.canaries == CANARIES.digest
+    served = plan.named("local_engine", QWEN).digest
+    for probe in stored.canaries:
+        body = CANARIES.canaries[probe.canary].render(model=served)
+        assert probe.call.request == fingerprint_request(body)
+        assert probe.call.status == 200 and probe.call.prompt_tokens is not None
+    registry = Store(conn).load([made.digest, CANARIES.digest])
+    assert check_run(stored, registry) == []
+
+
+@pytest.mark.usefixtures("fake")
+def test_canaries_go_only_at_the_phases_planned(
+    conn: Connection, inventory: Inventory, alice: Person, plan: Plan
+) -> None:
+    running = Runner(conn, inventory, alice).start(
+        trial(plan), plan.registry, QWEN, canaries=CANARIES, verify_at=("end",)
+    )
+    running.send()
+    assert running.finish() == []
+    stored = Store(conn).run(running.run).canaries
+    assert sorted((c.phase, c.canary) for c in stored) == [("end", 0), ("end", 1)]
+
+
+@pytest.mark.usefixtures("fake")
+def test_a_stopped_run_sends_no_end_canaries(
+    conn: Connection, inventory: Inventory, alice: Person, plan: Plan
+) -> None:
+    running = Runner(conn, inventory, alice).start(
+        trial(plan), plan.registry, QWEN, canaries=CANARIES
+    )
+
+    def stop(event: Event) -> None:
+        if isinstance(event, Streamed):
+            running.stop()
+
+    running.send(Heard(then=stop))
+    findings = [(f.code, f.message) for f in running.finish()]
+    assert ("run.incomplete", "3 items missing") in findings
+    assert ("run.incomplete", "2 canary calls missing") in findings
+    stored = Store(conn).run(running.run).canaries
+    assert sorted(c.phase for c in stored) == ["start", "start"]
+
+
+@pytest.mark.usefixtures("fake")
+def test_an_interrupt_during_a_canary_records_it_as_stopped(
+    conn: Connection,
+    inventory: Inventory,
+    alice: Person,
+    plan: Plan,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    real = sending.send
+
+    def interrupted(*args: Any, **kwargs: Any) -> Any:
+        heard: list[object] = []
+
+        def on_delta(delta: object) -> None:
+            heard.append(delta)
+            if len(heard) == 2:
+                raise KeyboardInterrupt
+
+        return real(*args, **{**kwargs, "on_delta": on_delta})
+
+    monkeypatch.setattr(sending, "send", interrupted)
+    running = Runner(conn, inventory, alice).start(
+        trial(plan), plan.registry, QWEN, canaries=CANARIES
+    )
+    with pytest.raises(KeyboardInterrupt):
+        running.send()
+    _ = running.finish()
+    stored = Store(conn).run(running.run)
+    assert [(c.phase, c.canary, c.call.error) for c in stored.canaries] == [
+        ("start", 0, STOPPED)
+    ]
+    assert stored.items == ()
+
+
+@pytest.mark.usefixtures("fake")
+def test_phases_without_a_canary_set_are_refused_before_anything_is_written(
+    conn: Connection, db: str, inventory: Inventory, alice: Person, plan: Plan
+) -> None:
+    with pytest.raises(ValidationError, match="verify_at goes with a canary set"):
+        _ = Runner(conn, inventory, alice).start(
+            trial(plan), plan.registry, QWEN, verify_at=("end",)
+        )
+    assert rows(db, "run_stage") == 0

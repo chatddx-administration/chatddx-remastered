@@ -15,8 +15,7 @@ runner (`src/chatddx/runner/`).
 
 Remastered has every piece a run is built from: `render`, `Trial`, `Execution`, `prepare_case`, the ledger, the
 store, the catalog, the scorers, the facts, the World inventory with `url_of`/`confirm`, and the fake vLLM. The
-runner strings them together. Phase 1 and D1–D4 moved to `agents/wip-runner.md`, where they are decided and built,
-but for canaries.
+runner strings them together. Phase 1 and D1–D4 moved to `agents/wip-runner.md`, where they are decided and built.
 
 So the plan:
 - **Port the UI.** Command table, parsing, completion, prompt, Ctrl-C handling, rendering. These carry over

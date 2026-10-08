@@ -85,7 +85,8 @@ against the inventory's `[cleared]` table until the clearance pipeline replaces 
    database grant (through the portal, logged) gives an audit trail and fits the append-only store.
 3. **Who may grant clearance**, and whether that needs its own role.
 4. **Binding check before sending.** Built: the gate refuses an endpoint that `confirm` can't confirm
-   (`src/chatddx/runner/gate.py:check`), so it is part of the hard block for runs. Judges and canaries don't run yet.
+   (`src/chatddx/runner/gate.py:check`), so it is part of the hard block for runs, canaries included. Judges don't
+   run yet.
 5. **Sources.** Sources say only whether they are sensitive. Still unspecified: what clearance each requires beyond
    that. A `[cleared]` entry for a source that isn't sensitive is accepted and clears nothing
    (`docs/inventory.md`, "Open design issues").
