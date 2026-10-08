@@ -107,10 +107,11 @@ tests load them too:
 - the reasoning writes use the chunk's field names (`effort`, not `reasoning_effort`).
 
 Left behind:
-- `snapshot` and `source` say where the files are, which is the World inventory's business;
-- `tags` belong to the catalog;
-- `profile` was for pydantic-ai only;
-- `needs` listed vLLM requirements, which are now the factors' `vllm.*` lints;
+- `snapshot` and `source` say where the files are, which is the World inventory's business (`docs/inventory.md`,
+  "Hosts").
+- `tags` belong to the catalog.
+- `profile` was for pydantic-ai only.
+- `needs` listed vLLM requirements, which are now the factors' `vllm.*` lints.
 - gpt-oss's note on `tool_choice = "required"`. A `tool` contract with a toolset sends `required`
   (`docs/factors.md`, "Recipe and compilation"), so the note may come back once it's checked (see "Open design
   issues").
@@ -138,7 +139,3 @@ Left behind:
   unknown.
 
 ## Proposed amendments
-- CHANGE, under "The sample's facts", "`snapshot` and `source` say where the files are, which is the World
-  inventory's business;" to "`snapshot` and `source` say where the files are, which is the World inventory's
-  business (`docs/inventory.md`, "Hosts");", since a host's `models` table now holds that
-  (`src/chatddx/inventory/inventory.py:HostSpec`).
