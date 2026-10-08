@@ -8,7 +8,14 @@ from pydantic import AwareDatetime, Field, JsonValue, model_validator
 from chatddx.factors.base import Code, Digest, Finding, Frozen, StructuralError, resolve
 from chatddx.factors.bundle import Registry
 from chatddx.factors.request import Skeleton
-from chatddx.factors.scoring import Judge, JudgeRef, Scorer, Scoring, ScoringRef
+from chatddx.factors.scoring import (
+    Expectation,
+    Judge,
+    JudgeRef,
+    Scorer,
+    Scoring,
+    ScoringRef,
+)
 from chatddx.factors.select import reaches
 from chatddx.factors.trial import Execution, Trial
 
@@ -148,6 +155,16 @@ def check_score(score: Score, run: Run, registry: Registry) -> list[Finding]:
             )
         )
     findings.extend(check_seal(score, str(started.score)))
+    covered = {resolve(registry.get, e, Expectation).case for e in scoring.expectations}
+    if uncovered := {k.case for k in run_keys} - covered:
+        findings.append(
+            Finding(
+                code="score.no_expectation",
+                message=f"{len(uncovered)} of the run's cases have no expectation in "
+                + "the scoring",
+                subject=str(started.score),
+            )
+        )
     expected = {(k, v) for k in run_keys for v in range(len(scorer.views))}
     if score.finished is not None and (missing := expected - set(scored)):
         findings.append(

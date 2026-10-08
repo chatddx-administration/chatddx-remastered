@@ -14,7 +14,9 @@ It must be possible to deliver the cage together with the results, for scientifi
 - **Factor:** Anything that can change an output or its score (`docs/factors.md`, "What a factor is").
 - **Fingerprint:** a hash of content that must *not* be stored: vignette, wire body, prompt token ids. It carries its algorithm: `sha256`, or `hmac-sha256` with a `key_id`
 - **Pinned:** a value that can't be altered without changing the digest of one or more factors.
-- **Sensitive:** data that is forbidden from being stored on, or passed to, non-approved sources.
+- **Sensitive:** data that is forbidden from being stored on, or passed to, non-approved sources. Vignettes and
+  case-derived content are sensitive. Appendices, expectations and people's names are not (`docs/factors.md`,
+  "Appendix" and "Expectation"; `docs/identity.md`).
 - **Bundle:** a set of root components plus everything they reference (the closure), stored as canonical text keyed by digest, together with the code version that produced it.
 - **Cage:** the constrained environment a bundle enforces
 - **Digest:** the factor's identity and how it's referenced, an `sha256:<hex>` over the component's canonical bytes.
@@ -29,14 +31,13 @@ It must be possible to deliver the cage together with the results, for scientifi
 - **Recipe:** the chunks a skeleton was compiled from.
 - **Skeleton:** the frozen request.
 - **Slot:** a placeholder filled at send time.
-- **Insert:** a placeholder filled at compile time: `schema` in an output chunk's guidance,
-  filled with that output's schema, and `output_guidance` in the instructions or the prompt, filled with the output's
+- **Insert:** a placeholder filled at compile time: `schema` in an output chunk's guidance, filled with that
+  output's schema, and `output_guidance` and `tool_guidance` in the instructions or the prompt, filled with the output's
   guidance. An insert's `before` and `after` text appear only when what it inserts isn't empty.
-  filled with that output's schema.
 - **Segment:** a literal string, a slot or an insert
 - **Purpose:** whether a prompt or skeleton is for `generation` or for a `judge`; it decides which slots are allowed.
 - **Contract:** how an output chunk constrains the answer: `native`, `tool` or `text`.
-- **Normalization:** the text-cleanup steps a trial applies to vignettes.
+- **Text cleanup:** the named steps a trial applies to vignettes before they are sent.
 - **Schema op:** a named, versioned rewrite an output chunk applies to its schema at
   compile time, so the skeleton sends and shows the rewritten schema. Today the only one is `inline_refs@1`.
 - **Trial:** The smallest unit of an scientific intent (i.e. Experiment): skeleton + engine + cases + text-cleanup steps + seeds.
@@ -67,7 +68,7 @@ It must be possible to deliver the cage together with the results, for scientifi
 These roles are distinct and not overlapping, a person may inhabit more than one role.
 - **Clinicians:** Owners of vignettes and authors of Appendices and Expectations
 - **Researchers:** Authors of Sampling, Scorers and Trials
-- **Developers:** Authors of schemas, canary sets, scoring and normalizations functions
+- **Developers:** Authors of schemas, canary sets, scoring and text-cleanup functions
 - **Ops**: Owners of engines and authors of the engine's components
 
 ## Requirements
@@ -179,8 +180,9 @@ Accepted risks: confirming that a known text is in the study, brute-forcing of s
   - pydantic 2.13.5 and Python 3.13+.
 
 ## Intended dataflow
-The factors and the ledger does not dictate a concrete process, it supplies the pieces that some runner chains together in whatever way they deem fit.
-There is however an intended flow of data behind the pieces, which is described below.
+The factors and the ledger does not dictate a concrete process, it supplies the pieces that some runner chains
+together in whatever way they deem fit. There is however an intended flow of data behind the pieces, which is
+described below.
 
 ### Before a run
 1. A Recipe is created from stored instances of each Chunk: Prompt, Output and Sampling are required, Instructions, FewShot, Reasoning and Passthrough are optional.
@@ -193,7 +195,7 @@ There is however an intended flow of data behind the pieces, which is described 
 
   A Compilation notes which recipe produced which skeleton, it is stored as a component, but isn't a factor.
 
-3. A CaseInput is a source case id, the vignette's fingerprint and a list of Appendix references.
+3. A Case is a vignette, named by its source, its id there and the fingerprint of its raw bytes, and a list of Appendix references.
 4. A Trial names a skeleton, an engine (LocalEngine or RemoteEngine), the case inputs, the text-cleanup steps and the seeds.
 
 ### Per run
@@ -201,21 +203,25 @@ There is however an intended flow of data behind the pieces, which is described 
 2. Execution.schedule(cases, len(seeds)) gives the list of (case, replicate) pairs in the declared order
 
 #### Per (case, replicate)
-1. Load the trial, its skeleton, engine and CaseInput, then that case's appendices, all through Registry.get.
+1. Load the trial, its skeleton, engine and Case, then that case's appendices, all through Registry.get.
 2. Fetch the vignette's raw bytes from its source by id (`Source.fetch`; sources are declared in the inventory).
-3. `prepare_case(case, raw, get, layout, normalization)` checks drift (a mismatch is the warning `case.drift`)
+3. `prepare_case(case, raw, get, layout, cleanup)` checks drift (a mismatch is the warning `case.drift`)
 4. cleans the vignette
 5. joins the appendices, and returns the fills together with the observed fingerprint for `RunItem.vignette`.
-6. Pick the model name from the engine: for a local engine it's engine.served_model_name, which is the engine's hash; for a remote engine it's engine.model.
-7. Pick the seed: trial.seeds[replicate].
+6. Pick the model name from the engine: `engine.served_model_name`, the engine's digest for a local engine and its
+   `model` for a remote one.
+7. Pick the seed: `trial.seeds[replicate]`.
 8. Render the request: render(skeleton, model=…, seed=…, fills={"case": …, "appendices": …}). This:
   - replaces each slot with its text by plain concatenation, with no templating
   - adds model, messages and the skeleton's body;
   - adds seed only if the sampling isn't greedy;
   - adds return_token_ids: true.
 9. Send the request to the engine's /v1/chat/completions.
-  - For a remote engine the URL is RemoteEngine.base_url. [For LocalEngine?]
-  - Canaries are sent in the same way, but from their literal Canary bodies, without slots. The code is unclear here as helpers for creating requests and nothing compare canary outputs, the old code had compare canaries.
+  - For a remote engine the URL is RemoteEngine.base_url.
+  - For a local engine, the World inventory's endpoint gives the URL (`docs/inventory.md`, "Endpoints").
+  - Canaries are sent the same way, from their literal bodies (`Canary.render`), one at a time before the first
+    item and after the last, at the phases `verify_at` names. Nothing compares canary outputs yet (see "Possible
+    design issues").
 
 ### After the run
 1. After each response, fingerprint_prompt_tokens(response) takes prompt_token_ids out of the response and returns their fingerprint. The runner stores a RunItem row with the key (case, replicate), the observed vignette fingerprint and a Call. The Call holds the request's fingerprint, the timings, the attempt count, the response without its prompt token IDs, and the prompt-token fingerprint.
@@ -228,8 +234,12 @@ There is however an intended flow of data behind the pieces, which is described 
   - the rig's code version;
   - the scorer code actually running (scorer_code).
   - the execution settings of its judge calls
-2. Match each run item to its expectation. The item key's case is looked up among the scoring's expectations, whose case field is the same case reference. The code has no function for this; the scorer code does it.
-3. Get the model's output out of the raw response. Parsing belongs to the scorer (content, tool-call arguments, JSON extraction, best-effort handling when validation fails). Nothing in `factors` does this.
+2. Match each run item to its expectation. The item key's case is looked up among the scoring's expectations, whose
+   case field is the same case reference. The scoring pass does it, and gives an item whose case has none no value.
+
+3. Get the model's output out of the raw response. Parsing belongs to the scorer (content, tool-call arguments,
+   JSON extraction, best-effort handling when validation fails). `chatddx.scorers.answer.read` does this, from the
+   item's last call, before the scorer's entry point is called.
 4. Apply each view. A View points into the parsed output (output, a JSON pointer) and into the expectation (expectation), and names a metric that the scorer's code interprets, with params.
 5. If the view names a Judge:
   - Build the judge request with render() from the judge's Skeleton (purpose "judge"). Its slots can be filled with the completion, the expectation, and optionally the case and appendices.
@@ -250,7 +260,7 @@ There is however an intended flow of data behind the pieces, which is described 
  - raises for duplicate score items
  - raises for a judge call whose judge isn't its item's view's judge
  - raises if a seed index out of range or one used twice in an item;
- - warns `judge.incomplete`, `score.incomplete` and `score.run_unfinished`.
+ - warns `judge.incomplete`, `score.incomplete`, `score.run_unfinished` and `score.no_expectation`
 
 The "scored results" are just those ScoreItem rows. What aggregates them isn't named yet.
 
@@ -266,6 +276,14 @@ Each code is described where it's produced: `docs/factors.md`, "Lints"; `docs/le
 
 ## Possible design issues
 
-**Canary drift are not implemented:** nothing compares canary outputs between phases or runs.
+**Canary drift is not implemented:** nothing compares canary outputs between phases or runs. What counts as the
+  same canary output is undecided:
+  (a) the digest of each choice's message, as the old `compare_canaries` compared
+  output digests;
+  (b) the prompt-token fingerprint alone, which catches a changed template or tokenizer but not
+  changed weights; or
+  (c) both, with (b) under a code of its own. None needs a new field, since `CanaryCall.call`
+  holds the response and the prompt-token fingerprint.
+  The agent's take is (c)
 
 ## Proposed amendments

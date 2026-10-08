@@ -58,6 +58,18 @@ class Canary(Frozen):
             raise ValueError(f"canary body may not set {sorted(owned)}")
         return body
 
+    # As `render` does for a skeleton, but with no slots, and the seed sent when given.
+    def render(
+        self, *, model: str, return_token_ids: bool = True
+    ) -> dict[str, JsonValue]:
+        messages: list[JsonValue] = [dict(m) for m in self.messages]
+        body: dict[str, JsonValue] = {"model": model, "messages": messages, **self.body}
+        if self.seed is not None:
+            body["seed"] = self.seed
+        if return_token_ids:
+            body["return_token_ids"] = True
+        return body
+
 
 class CanarySet(Component):
     kind: Literal["canary_set"] = "canary_set"

@@ -8,9 +8,10 @@ from chatddx.factors.base import (
     resolve,
 )
 from chatddx.factors.request import Compilation, Recipe
+from chatddx.factors.scoring import Expectation
 
 from .families import stale_cases
-from .model import THREAD_KINDS, Behind, Edit, Subject, Thread, Variation
+from .model import THREAD_KINDS, About, Behind, Edit, Subject, Thread, Variation
 from .read import Reader, abouts, heads_holding, heads_of
 
 
@@ -75,6 +76,44 @@ def find(rows: Reader, kind: str, name: str, *, owner: int | None = None) -> lis
         and not a.deleted
         and (owner is None or a.owner == owner)
     ]
+
+
+def visible(rows: Reader, kind: str, person: int) -> list[tuple[Edit, About]]:
+    ids = [t.id for t in rows.threads(kind)]
+    found = heads_of(rows, ids)
+    known = abouts(rows, [Subject(thread=i) for i in ids])
+    return [
+        (found[i], a)
+        for i in ids
+        if i in found and (a := known[Subject(thread=i)]).shows(person)
+    ]
+
+
+# The expectation a person scores a case against: the head of a thread of their own,
+# else of the one thread shared with them. Only threads they see whose head is in
+# `schema` count; several heads to choose from are refused, naming the threads.
+def expectation_for(rows: Reader, case: str, person: int, schema: str) -> str | None:
+    held = heads_holding(rows, rows.expectations([case]))
+    known = abouts(rows, [Subject(thread=t) for t in held])
+    seen = {
+        t: e.digest
+        for t, e in held.items()
+        if known[Subject(thread=t)].shows(person)
+        and resolve(rows.get, e.digest, Expectation).expectation_schema == schema
+    }
+    own = {t: d for t, d in seen.items() if known[Subject(thread=t)].owner == person}
+    for choices in (own, seen):
+        match sorted(set(choices.values())):
+            case []:
+                continue
+            case [digest]:
+                return digest
+            case _:
+                raise LookupError(
+                    f"case {case} has expectations to choose from, in threads "
+                    + ", ".join(str(t) for t in sorted(choices))
+                )
+    return None
 
 
 def forks(rows: Reader, thread: int) -> list[int]:

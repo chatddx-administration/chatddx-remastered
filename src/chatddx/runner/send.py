@@ -1,3 +1,4 @@
+import threading
 import time
 from collections.abc import Callable, Iterator, Mapping
 from dataclasses import dataclass
@@ -27,7 +28,7 @@ class Delta:
     tokens: int
 
 
-# A KeyboardInterrupt hung up mid-call; `call` is the call as far as it got.
+# A KeyboardInterrupt or a halt hung up mid-call; `call` is the call as far as it got.
 class Stopped(Exception):
     def __init__(self, call: Call) -> None:
         self.call: Call = call
@@ -70,6 +71,8 @@ def _retryable(status: int) -> bool:
 # Streaming is the wire's business: `Call.request` fingerprints the body as `render` or
 # `next_request` made it, without the stream's keys. Only a call that got no answer is
 # tried again, since an answer cut short is an answer.
+# A call on another thread can't be interrupted, so it hangs up once `halt` is set: at
+# its next chunk, or in its backoff.
 def send(
     url: str,
     body: Mapping[str, JsonValue],
@@ -79,10 +82,12 @@ def send(
     on_delta: Callable[[Delta], None] | None = None,
     key: tuple[str, bytes] | None = None,
     backoff: float = 1.0,
+    halt: threading.Event | None = None,
+    started_at: datetime | None = None,
 ) -> Call:
     execution = execution or Execution()
     request = fingerprint_request(dict(body), key)
-    started = _now()
+    started = started_at or _now()
     attempts = 0
     received: list[wire.Chunk] = []
 
@@ -124,7 +129,11 @@ def send(
             except OSError as e:
                 if attempts > execution.retries:
                     return call(None, f"{type(e).__name__}: {e}")
-            time.sleep(backoff * 2 ** (attempts - 1))
+            delay = backoff * 2 ** (attempts - 1)
+            if halt is None:
+                time.sleep(delay)
+            elif halt.wait(delay):
+                raise Stopped(call(None, STOPPED))
     except KeyboardInterrupt:
         raise Stopped(call(None, STOPPED)) from None
 
@@ -144,6 +153,8 @@ def send(
                     blank = blank + count if whitespace else 0
                     if on_delta is not None:
                         on_delta(Delta(delta.kind, delta.text, tokens))
+                if halt is not None and halt.is_set():
+                    raise Stopped(call(stream.status, STOPPED))
                 if limit is not None and blank >= limit:
                     error = f"stopped: nothing but whitespace for {blank} tokens"
                     break

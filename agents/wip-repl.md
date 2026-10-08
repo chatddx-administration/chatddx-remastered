@@ -10,11 +10,12 @@ Old permalink base: https://github.com/chatddx-administration/chatddx/blob/50479
 The old repl is a thin UI (`src/chatddx/repl/`, ~1,600 lines and ~1,500 of tests) on top of four layers that do
 the work: `bench/` (identity, the cell, `Ready`, `Trial`, `save`), `runtime/` (resolving a configuration on a stack,
 and the run itself on pydantic-ai and httpx2), `history/` (Django models for trials, runs, messages and scores) and
-`scoring/`, ~3,200 lines together. None of those four has a remastered counterpart on the run path.
+`scoring/`, ~3,200 lines together. Of those four, only `runtime/`'s run has a remastered counterpart so far: the
+runner (`src/chatddx/runner/`).
 
 Remastered has every piece a run is built from: `render`, `Trial`, `Execution`, `prepare_case`, the ledger, the
-store, the catalog, the scorers, the facts, the World inventory with `url_of`/`confirm`, and the fake vLLM. What it
-lacks is the runner that strings them together (`agents/wip-sample-data.md`, "After parity").
+store, the catalog, the scorers, the facts, the World inventory with `url_of`/`confirm`, and the fake vLLM. The
+runner strings them together. Phase 1 and D1–D4 moved to `agents/wip-runner.md`, where they are decided and built.
 
 So the plan:
 - **Port the UI.** Command table, parsing, completion, prompt, Ctrl-C handling, rendering. These carry over
@@ -134,6 +135,11 @@ A case can have several expectation threads, such as the archive's and the user'
 2. otherwise the archive's;
 3. otherwise refuse, naming them.
 
+Built, generalized (`src/chatddx/catalog/threads.py:expectation_for`): the person's own thread, else the one thread
+shared with them, so the archive's counts through init-data's sharing rather than by name. Several to choose from are
+refused, naming the threads; none is no expectation. Only threads whose head is in the scorer's expectation schema
+count. Still a take.
+
 ## How the old pieces map
 | old (504792c) | remastered | notes |
 |---|---|---|
@@ -182,8 +188,8 @@ A case can have several expectation threads, such as the archive's and the user'
 
 ## Phases
 ### 1. Runner: `src/chatddx/runner/`
-- **The model name an engine answers to**, one method on the engine. Today `ledger/run.py:check_run` and every
-  runner choose it themselves (`docs/factors.md`, "Smaller issues"; `agents/manifest-triage.md`, C4).
+- **The model name an engine answers to**, one method on the engine. Done: `served_model_name`
+  (`agents/wip-runner.md`, R4).
 - **`http.py`**: POST `/v1/chat/completions` over the stdlib, returning JSON or an SSE stream, with a timeout.
   `assemble(chunks)` gives the completion-shaped response (D2).
 - **`gate.py`**: D1 and `confirm`, before the first case-derived request of a run.
@@ -200,8 +206,9 @@ A case can have several expectation threads, such as the archive's and the user'
      - send, then append the `RunItem`.
   4. Append `RunFinished` with the findings, then `check_run`.
 - **Events** for a UI: an item starting, reasoning text, content text, a tool call, usage, an item ending (its
-  `RunItem`) and a finding. They're synchronous: `Store` has no async API (`docs/store.md`, "Known gaps"), and a
-  batch's concurrency stays 1.
+  `RunItem`) and a finding. They're synchronous: `Store` has no async API (`docs/store.md`, "Known gaps"). Above
+  concurrency 1, calls go out on threads and the events still come on the caller's (`agents/wip-runner.md`, "Phase
+  4").
 - **Tests** in `src/chatddx/runner/test/`. They:
   - start the fake in a thread on port 0, as `inventory/test/test_serving.py` does;
   - point a temporary World inventory at it;
@@ -219,6 +226,8 @@ A case can have several expectation threads, such as the archive's and the user'
   - a clean `check_run`.
 
 ### 2. Scoring pass
+Built but for what needs a person (`agents/wip-runner.md`, "The scoring pass"): the answer reader and
+`score_run`, which takes a `Scoring` its caller builds. Which scorers apply, D8 and outstanding runs wait for phase 3.
 - **`chatddx.scorers.answer`** (D5).
 - **Which scorers apply**: the visible scorer threads whose views reach `Skeleton.output_schema`
   (`factors/select.py:reaches`, the same check as `view.unreachable`).
@@ -233,6 +242,22 @@ A case can have several expectation threads, such as the archive's and the user'
 - **Tests**: each sample output shape against its scorer; a changed expectation makes a run outstanding.
 
 ### 3. Reads for a person
+Built but for the `Bench` (the cell, names and completions), which goes with the shell in phase 4. What was built:
+- `Store.started`, `runs_of`, `finished`, `scores_of` and `reaching` (`src/chatddx/store/store.py`);
+- `Catalog.visible`, `visible_families` and `expectation_for`, with the rules in `chatddx.catalog`
+  (`model.py:About.shows`: live, and owned or shared);
+- `src/chatddx/store/reads.py:Reads(conn, person)`: threads and families, a thread by name (whole, then
+  `OWNER/NAME`, since sample names hold slashes), runs (also by id prefix, and those reaching a digest), the scorers
+  that apply to a run, the scoring it would be scored under (D8), and the runs still to score;
+- tests in `src/chatddx/catalog/test/` and `src/chatddx/store/test/test_reads.py`, on the sample as init-data lands
+  it with a giftbag.
+
+"Applies" is the plan's rule: every view of the scorer reaches the run's output schema. A view that picks the whole
+answer reaches any schema, so the sample's `free-text` and `raw` scorers apply to every run; the pattern scorer then
+reads a structured answer as its JSON text. Narrowing that, say to scorers written for the run's output shape, would
+be a decision.
+
+The plan, as written:
 This closes `docs/store.md`'s known gap "Runs and scores can't be found". The store gets:
 - live threads of a kind that the person owns or collaborates on, by name and as `OWNER/NAME`;
 - the visible families with their tags and language;
@@ -263,6 +288,7 @@ completions and lookups, and nothing in it is UI. Tests go in `store/test/` and 
   fixture over `Console(record=True, width=200)`, as the old conftest's `say_to` did.
 
 ### 5. Tool rounds
+Built in the runner (`agents/wip-runner.md`, "Phase 5").
 - The `next_request` loop, with `max_rounds`, `Turn` and `ToolRun`.
 - Tools are found by `core/rig.py:entry`, and their code goes in `RunStarted.tool_code`.
 - D1 gates tools.
@@ -293,5 +319,5 @@ adopted. Proposals:
 - **The same vignette under two names.** The old repl ran it once. Here two source ids make two cases, so both run.
   Take: deduplicate a batch's cases by vignette fingerprint, and say which were merged.
 - **Batch order** is by case digest, since `Trial` sorts its cases, not by name.
-- **`return_token_ids` on remote engines** is still undecided (`agents/manifest-triage.md`, D). The fake and
-  vLLM accept it.
+- **`return_token_ids` on remote engines** is still undecided (`docs/factors.md`, "Proposed amendments"). The fake
+  and vLLM accept it.

@@ -43,6 +43,8 @@ against the inventory's `[cleared]` table until the clearance pipeline replaces 
   the endpoints it reaches. Nothing declares those yet; that belongs to clearance, not to the factor.
 - Tool results come back from the third party and are stored in the ledger (`ToolRun.result`), next to the
   responses.
+- The runner runs tools since its phase 5 (`src/chatddx/runner/rounds.py`), and the gate keeps refusing them on a
+  sensitive source until a tool can be cleared (`src/chatddx/runner/gate.py:check`).
 
 ## What the code offers
 - `Vignette.source` (`src/chatddx/factors/cases.py:Vignette`) names a vignette's source, and is part of the case's
@@ -83,7 +85,27 @@ against the inventory's `[cleared]` table until the clearance pipeline replaces 
    database grant (through the portal, logged) gives an audit trail and fits the append-only store.
 3. **Who may grant clearance**, and whether that needs its own role.
 4. **Binding check before sending.** Built: the gate refuses an endpoint that `confirm` can't confirm
-   (`src/chatddx/runner/gate.py:check`), so it is part of the hard block for runs. Judges and canaries don't run yet.
+   (`src/chatddx/runner/gate.py:check`), so it is part of the hard block for runs, canaries included. Judges don't
+   run yet.
 5. **Sources.** Sources say only whether they are sensitive. Still unspecified: what clearance each requires beyond
    that. A `[cleared]` entry for a source that isn't sensitive is accepted and clears nothing
    (`docs/inventory.md`, "Open design issues").
+
+## When to build it
+Checked against the runner's phases 4–6 (`agents/wip-runner.md`, "Left"), before phase 4 was built. Nothing in the
+runner waits on it:
+- The gate runs once, in `Runner.start`, and reads `Inventory.cleared_for` (`src/chatddx/runner/gate.py:check`). A
+  database grant changes that one call.
+- A run already records what a grant would key on (Open 1): the endpoint's name and URL (`RunStarted.endpoint`) and,
+  through its trial, the engine's digest. If grants are append-only and dated, whether a run was cleared at
+  `RunStarted.at` is a query, so the pipeline adds no field to stored runs.
+- Phase 4 (order, concurrency) doesn't touch clearance, and phase 6's canaries aren't case-derived.
+
+It becomes the next blocker at:
+- tool rounds on a sensitive source: the runner runs rounds since phase 5, but the gate refuses tools on a sensitive
+  source until a tool can be cleared ("Tools"). The runner's tests declare the sample's source not sensitive, and
+  `plan-web` can't call its tool on vLLM 0.24 anyway (`docs/vllm.md`, item 10);
+- judges (the scoring pass), whose engines fall under the hard block, and whose endpoint isn't recorded yet (see
+  "Takes");
+- the first real sensitive source, or the first runs on `pelle` and `malborg` whose clearance should be auditable
+  from the database rather than from the inventory's git history.

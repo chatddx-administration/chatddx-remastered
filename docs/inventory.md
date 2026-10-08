@@ -116,8 +116,8 @@ The runner reads the variable that `credential` names and sends its value as a b
 the variable isn't set (`src/chatddx/runner/gate.py:secret`). The secret itself never appears in the inventory or
 the ledger.
 
-`chatddx import-engine` takes `max_jobs` from the server's `--max-num-seqs`. Nothing reads it yet, because the
-runner sends one request at a time.
+`chatddx import-engine` takes `max_jobs` from the server's `--max-num-seqs`. The runner refuses an execution whose
+`concurrency` is above it.
 
 ## Hosts
 A `[host.<name>]` table says where a host keeps what its engines pin (`inventory.py:HostSpec`):
@@ -277,6 +277,7 @@ The runner needs the World the person starting a run meant, since that World dec
 - **Endpoint names are only a convention.** Nothing enforces `<server>@<host>`. A run records the endpoint's name,
   and `[cleared]` keys on it, so renaming an endpoint drops its clearance without warning, and its runs appear under
   two names.
-- **`max_jobs` isn't read** until the runner sends more than one request at a time.
+- **`max_jobs` holds per run.** Two runs on one endpoint can send twice as many requests between them. vLLM queues
+  what's over `--max-num-seqs`, so nothing fails, but the batching differs from what each run's execution says.
 
 ## Proposed amendments

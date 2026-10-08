@@ -241,6 +241,12 @@ class About(_Frozen):
             language=language,
         )
 
+    # What a person sees: what is live and theirs, or shared with them.
+    def shows(self, person: int) -> bool:
+        return not self.deleted and (
+            self.owner == person or person in self.collaborators
+        )
+
 
 def _toggle[T](members: set[T], member: T, present: bool) -> None:
     if present:

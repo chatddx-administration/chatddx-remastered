@@ -20,6 +20,13 @@ Migrations are documented in `docs/migrations.md`.
   transaction. The store answers which rows exist; `chatddx.catalog` decides what they mean.
 - `migrate.py`: `migrate(conn, tier)` and `pending(conn, tier)`.
 - `load` returns a `Registry` without checking it, so `Registry.check` and `Registry.bundle` work on it as on any other.
+- `started(runs)`, `runs_of(trial)`, `finished(runs)` and `scores_of(run)`
+  list runs and scores, newest first; `reaching(digest, kind)` lists the components of a kind whose closure holds a
+  digest, through `factor.component_ref`.
+- `reads.py:Reads`: what one person sees. The live threads and families they own or collaborate
+  on; a thread by its name, matched whole and then as `OWNER/NAME`, since names may hold a slash; the runs they own,
+  newest first, by a prefix of the id, or those whose trial reaches a digest; the scorers whose views reach a run's
+  output schema; the scoring a run is scored under; and the runs still to score under it.
 
 ## Tiers
 Integrity comes in three tiers, and a deployment applies migrations up to a chosen tier. Each schema has migrations
@@ -73,9 +80,7 @@ unreachable.
   row has no foreign key to its started row, so a finished row alone is accepted, and `Store.run` then fails with
   `StructuralError: RunStarted vNone is not readable by v1`. `Run` and `Score` validate a log only when it is read.
 - `RunStarted.canaries` has no foreign key, so a run can name a canary set that isn't stored, and `check_run` then
-  can't resolve it." (`migrations/0004-t0-ledger.sql`, `src/chatddx/ledger/run.py:RunStarted`, `check_run`)
-- Runs and scores can't be found: `Store.run` and `Store.score` take an id, and nothing lists the runs of a trial
-  or the scores of a run.
+  can't resolve it. (`migrations/0004-t0-ledger.sql`, `src/chatddx/ledger/run.py:RunStarted`, `check_run`)
 - A schema-version bump strands stored rows. `Store.get`, `load`, `run` and `score` parse every row, and parsing
   refuses another version (`docs/factors.md`, "Versions"; `docs/ledger.md`, "Canonical form and versions"), so
   after a bump the store can't return rows of the old version, nor load a closure that holds one. The rows can't

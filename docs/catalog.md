@@ -83,6 +83,11 @@ Reading (`threads.py`):
 - `Catalog.forks(thread)`: the threads forked from any edit of a thread.
 - `Catalog.expectations_of(case)`: the expectation threads whose head expects a case.
 - `Catalog.containing(digest)`: every edit, in any thread, that points at a digest.
+- `Catalog.visible(kind, person)`: the heads of the live threads of a kind that a person owns or collaborates on
+  (`model.py:About.shows`), with what their entries say.
+- `Catalog.expectation_for(case, person, schema)`: the expectation a person scores a case against: the head of a
+  thread of their own, else of the one thread shared with them, among the threads they see whose head is in
+  `schema`. Several heads to choose from are refused, naming the threads.
 
 A thread moves only when someone saves an edit, and nothing moves along with it. When a prompt's thread moves on, the
 skeletons, trials and scorings built on the old prompt stay as they are; `behind` tells which of them could be
@@ -185,13 +190,31 @@ Every row in the catalog records who wrote it and when (`by`, `at`), but `About`
 doesn't show who changed what.
 
 ### Deleting
+
 A deleted thread or family is still there, and so are its digests. What deleting hides depends on the method:
-- skipped: `heads` (unless asked for deleted threads), `find`, and `behind`, which proposes no deleted thread and
-  flags no case of a deleted family;
-- ranked last: `title_of` turns to deleted threads only when the live ones give it nothing to show;
-- included: `history`, `forks`, `expectations_of`, `containing`, `survey`, and `repair`, which rebinds deleted
-  threads too.
-- `Catalog.involving(person)` gives the subjects whose entries have ever named a person as owner or collaborator,
+
+Deleted are skipped by:
+- `heads`
+- `visible`
+- `visible_families`
+- `expectation_for`
+- `find`
+- `behind` (which proposes no deleted thread and flags no case of a deleted family)
+- `title_of` (turns to deleted threads only when the live ones give it nothing to show)
+
+- CHANGE, in "Deleting", "Deleted are skipped by (`model.py:About.shows`):" to "Deleted are skipped by:", and add
+  after the list: "
+`visible`, `visible_families` and `expectation_for` skip them through `model.py:About.shows`; the others read
+`About.deleted`, and `title_of` ranks them last rather than skipping them.
+
+Deleted are included in:
+- `history`
+- `forks`
+- `expectations_of`
+- `containing`
+- `survey`
+- `repair` (which rebinds deleted threads too)
+- `involving(person)` gives the subjects whose entries have ever named a person as owner or collaborator,
   for `about` to tell what holds now. `chatddx wipe-data` deletes those the person owns and unshares those they
   collaborate on, writing an entry only where it changes something, and `init-data --giftbag` restores a deleted
   fork rather than forking anew.
@@ -259,6 +282,8 @@ Python, `Binding.vignette` holds all three.
 A case belongs to the family with a binding, current or earlier, that matches its vignette exactly, and to the latest
 such family when several match (`Catalog.family`, `families.py:family_of`). So cases from before a repair keep their
 family.
+
+`Catalog.visible_families(person)` returns the live families a person owns or collaborates on.
 
 `Catalog.adopt(case, by, owner=)` returns the case's family, or creates one, binds it to the case's vignette and
 records its owner. It refuses a case whose vignette would give another family's current binding new content (the
@@ -385,8 +410,7 @@ moment can create two families, since nothing makes current bindings unique.
   now.
 - **Why an edit was made isn't stored.** It can be worked out by comparing consecutive edits' references.
 - **Titles take a query for every reference they visit,** are rebuilt from names that change, and aren't unique.
-- **A run's owner isn't recorded, and scorer labels aren't carried to the next scorer edit.** Both wait for the
-  runner and the portal.
+- **Scorer labels aren't carried to the next scorer edit.** That waits for the portal.
 - **Judges aren't checked for language.** A judge's language could be compared with the cases its scoring grades,
   the way `language.mixed` checks a trial. An English judge grading Swedish answers may be intended, so it would be a
   notice rather than a warning.
