@@ -136,34 +136,23 @@ vignette that changed at its source. Checking a run can be repeated at any time 
 stored.
 
 ### Run
-Checking a run compares it with what its start record declared.
+Checking a run shows whether it is what its trial produces under the conditions its start record declares.
 
-It stops when the records don't fit the plan: an item the trial doesn't contain, a canary call that wasn't planned, tool
-rounds the skeleton doesn't allow (rounds without tools, more than its limit, tools run for calls the previous response
-didn't make, or a tool the skeleton doesn't have that ran without failing), or tool code recorded for a tool the
-skeleton doesn't have.
+Records that can't be an account of the plan at all stop the check: work that the trial, the canary plan or the
+skeleton couldn't have asked for means the records are wrong, not the world. Everything else is a warning, of four
+kinds:
+- **Complete**: the run did all it planned. Every item and canary call is there, and no item was left waiting on its
+  tools.
+- **Conducted as declared**: the rig kept to its own plan. It followed the execution settings, kept the canaries clear
+  of the items, and ran each tool with the code the tool pins.
+- **As pinned**: the world matched the pinned factors. The engine attests to the declared model and to the prompt it
+  read, and each vignette is unchanged at its source.
+- **Sealed**: nothing changed after the log was finished.
 
-It warns when
-- a finished run lacks some of its trial's items, or some planned canary calls;
-- a vignette read at its source differs from its case's;
-- an item's last response still calls tools: its rounds ran out, the run stopped, the call had no whole answer (an error
-  or a cutoff), or the response also called the answer function;
-- a tool ran with other code than it pins, or its code isn't recorded. The rule is the one for scorers: the
-  distribution and the version must match, and the revision too when the tool pins one;
-- the engine named another model than declared, or none: the engine's digest for a local engine, the requested model
-  for a remote one;
-- an item has a call without a prompt fingerprint;
-- the calls didn't follow the execution settings: a call took more attempts than its retries allow, items were sent out
-  of the declared order, or more calls were in flight at once than allowed, canary calls included;
-- canary calls overlap the items;
-- records changed after the log was sealed.
+Not everything is checked yet (see "Open design issues").
 
-Canary calls aren't attested, and timeouts aren't checked (see "Open design issues").
-
-Two runs can also be compared item by item: a warning says where the engine read a different prompt for the same item's
-first request. Only runs whose trials build their prompts alike, with the same skeleton, engine and text cleanup, can be
-compared; they may differ otherwise, since items are matched by case and replicate and the seed doesn't shape the
-prompt. Later requests aren't compared, since they depend on what the tools returned.
+Two runs whose trials build their prompts alike can also be compared, to show whether the engine read the same prompt
+for the same item both times.
 
 ## Call
 A call records one exchange with an engine: an item's request, a tool round's, a canary's or a judge's. It holds a
@@ -207,25 +196,15 @@ The finish record closes the score as a run's does, with the findings the scorin
 couldn't read from the run item's last response, or one that breaks the output schema and was scored anyway.
 
 ### Score
-Checking a score compares it with its scoring and its run.
+Checking a score shows whether it is what its scoring makes of its run.
 
-It stops for a score of another run, items for views the scorer doesn't have or items the run doesn't have, and judge
-calls that don't fit the view: another judge than the view's, or seeds the judge doesn't have.
-
-It warns when
-- a view's output selector can't pick anything from answers that follow the run skeleton's output schema. Free text is
-  reachable only by a selector that picks the whole answer;
-- a scored item rests on fewer judge seeds than the judge has. An item without a value may have stopped before calling
-  the judge, so it isn't flagged;
-- a finished score lacks an item for some run item and view;
-- some of the run's cases have no expectation in the scoring;
-- the scorer code that ran isn't the code the scorer pins: the distribution and the version must match, and the
-  revision too when the scorer pins one;
-- the run hadn't finished when the score started, or hasn't finished at all, so the scorer may have graded only part of
-  it. Whether the run's own seal holds is the run check's to say;
-- the judge calls didn't follow the score's execution settings, as for a run; an item counts as sent when its first
-  judge call starts;
-- records changed after the log was sealed.
+Records that can't be an account of that scoring applied to that run stop the check: a score of another run, or views,
+items, judges or seeds that don't exist. Everything else is a warning, of four kinds:
+- **Fit**: the scoring suits the run. Its views can reach the run's answers, every case has an expectation, and the run
+  had finished before the score started.
+- **Complete**: every run item is graded by every view, and every judged value rests on all of its judge's seeds.
+- **Conducted as declared**: the scorer ran the code it pins, and the judge calls followed the execution settings.
+- **Sealed**: nothing changed after the log was finished.
 
 ## Findings
 A finding (docs/factors.md, "Errors and findings") says what it is about: an item, a tool, a scorer, the run or the
