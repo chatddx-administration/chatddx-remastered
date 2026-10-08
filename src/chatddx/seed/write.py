@@ -6,7 +6,7 @@ from chatddx.factors.base import Fingerprint
 from chatddx.factors.cases import Case, Vignette
 from chatddx.factors.lint import lint
 from chatddx.factors.scoring import Expectation
-from chatddx.facts.lint import lint as lint_facts, reasons
+from chatddx.facts import check_pairs, reasons
 from chatddx.identity import Person
 from chatddx.inventory import Source
 from chatddx.store.catalog import Catalog
@@ -160,7 +160,7 @@ class _Seeder:
             languages=self.catalog.language_of,
             reasons=reasons(facts, registry),
         )
-        findings += lint_facts(registry, facts, digests)
+        findings += check_pairs(registry, facts, digests)
         for f in findings:
             what = ", ".join(self.landed.get(f.subject or "") or [str(f.subject)])
             self.lines.append(f"[lint {f.level}] {what}: {f.code}: {f.message}")

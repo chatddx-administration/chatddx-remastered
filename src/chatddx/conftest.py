@@ -8,7 +8,7 @@ from psycopg import sql
 
 from chatddx.core import settings
 from chatddx.core.rig import rig
-from chatddx.facts.facts import BUNDLED, Facts
+from chatddx.facts import BUNDLED, Facts
 from chatddx.seed import Plan, plan_factors
 from chatddx.seed.plan import SAMPLE
 from chatddx.store import migrate

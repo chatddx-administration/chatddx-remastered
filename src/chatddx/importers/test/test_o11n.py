@@ -11,7 +11,7 @@ import pytest
 
 from chatddx.cli import main
 from chatddx.core.rig import rig
-from chatddx.facts.facts import Facts
+from chatddx.facts import Facts
 from chatddx.importers.o11n import (
     REPORT,
     Imported,

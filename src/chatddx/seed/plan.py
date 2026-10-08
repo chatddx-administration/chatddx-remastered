@@ -26,7 +26,7 @@ from chatddx.factors.request import (
     compile_request,
 )
 from chatddx.factors.scoring import ExpectationSchema, Scorer
-from chatddx.facts.facts import INTENTS, Effort, Facts, Refused, model_name
+from chatddx.facts import INTENTS, Effort, Facts, Refused, model_name
 from chatddx.scorers.scorer import function
 
 # The sample's tables, in the order they're planned: a table may reference only those before it.

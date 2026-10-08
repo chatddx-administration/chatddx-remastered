@@ -18,7 +18,7 @@ from chatddx.factors.request import (
 )
 from chatddx.factors.test.sample import SHA, local_engine, world
 from chatddx.factors.trial import Trial
-from chatddx.facts.facts import (
+from chatddx.facts import (
     BUNDLED,
     Facts,
     ModelFacts,
@@ -27,8 +27,9 @@ from chatddx.facts.facts import (
     Refusal,
     Refused,
     Writes,
+    check_pairs,
+    reasons,
 )
-from chatddx.facts.lint import lint as lint_facts, reasons
 
 QWEN = "Qwen/Qwen3-8B-AWQ"
 GPT_OSS = "openai/gpt-oss-20b"
@@ -130,7 +131,7 @@ def test_facts_check_pairs(facts: Facts) -> None:
             Trial(skeleton=skeleton, engine=engine, cases=(ids["case"],), seeds=(1,))
         )
         found = lint(reg, [trial], reasons=reasons(facts, reg))
-        return {f.code: f.level for f in found + lint_facts(reg, facts, [trial])}
+        return {f.code: f.level for f in found + check_pairs(reg, facts, [trial])}
 
     native = skeleton(NativeOutput(), response_format=response_format)
     qwen = engine(QWEN)
@@ -167,7 +168,7 @@ def test_facts_check_pairs(facts: Facts) -> None:
     trial = reg.add(
         Trial(skeleton=native, engine=qwen, cases=(ids["case"],), seeds=(1,))
     )
-    assert [(f.code, f.message) for f in lint_facts(reg, refusing, [trial])] == [
+    assert [(f.code, f.message) for f in check_pairs(reg, refusing, [trial])] == [
         ("facts.output_refused", "no grammar")
     ]
 
@@ -192,7 +193,7 @@ def test_facts_check_that_a_pair_s_sampling_is_for_its_model(facts: Facts) -> No
         trial = reg.add(
             Trial(skeleton=skeleton, engine=engine, cases=(ids["case"],), seeds=(1,))
         )
-        return {f.code: f.message for f in lint_facts(reg, facts, [trial])}
+        return {f.code: f.message for f in check_pairs(reg, facts, [trial])}
 
     qwen_on = facts.models[QWEN].sampling_chunk("on").body()
     qwen_off = facts.models[QWEN].sampling_chunk("off").body()

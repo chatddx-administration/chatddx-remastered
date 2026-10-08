@@ -128,3 +128,14 @@ Without facts, linting is unchanged.
   unknown.
 
 ## Proposed amendments
+- CHANGE, after "Code paths are relative to `src/chatddx/facts/` …; `chatddx.factors` doesn't import it.", ADD: "It
+  has two modules: `models.py`, what a model's facts hold, the chunks they write and where they come from ("Where
+  facts come from" to "Writing chunks"), and `lint.py` ("Checking pairs"). `chatddx.facts` exports the public
+  names." (`src/chatddx/facts/__init__.py`).
+- CHANGE every `facts.py:` to `models.py:`, nine times under "Where facts come from" and "What a model's facts
+  hold", since the module was renamed so it no longer repeats the package's name; it types and loads the
+  `[model."<name>"]` tables of `models.toml` beside it (`src/chatddx/facts/models.py`).
+- CHANGE, under "Checking pairs", "`lint.py:lint(registry, facts, digests)` checks those pairs" to
+  "`lint.py:check_pairs(registry, facts, digests)` checks those pairs", since a second `lint` beside
+  `chatddx.factors`' had every caller rename it (`src/chatddx/facts/lint.py:check_pairs`,
+  `src/chatddx/seed/write.py`).

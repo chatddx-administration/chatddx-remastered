@@ -932,3 +932,5 @@ reference, straight from the schema. `RefTo` used to do this, and was stopped be
 Schema plays no part in a component's digest, so adding it back changes no digest.
 
 ## Proposed amendments
+- CHANGE, under "Not factors", "(`src/chatddx/facts/facts.py`)" to "(`src/chatddx/facts/models.py`)", the facts
+  module's new name.

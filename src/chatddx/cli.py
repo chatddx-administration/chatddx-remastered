@@ -8,7 +8,7 @@ import psycopg
 
 from chatddx.core import settings
 from chatddx.core.rig import rig
-from chatddx.facts.facts import BUNDLED, Facts
+from chatddx.facts import BUNDLED, Facts
 from chatddx.fake_vllm.server import run
 from chatddx.identity import Role
 from chatddx.importers.o11n import (

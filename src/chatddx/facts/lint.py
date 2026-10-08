@@ -9,7 +9,7 @@ from chatddx.factors.request import Sampling, Skeleton
 from chatddx.factors.scoring import Judge
 from chatddx.factors.trial import Trial
 
-from .facts import (
+from .models import (
     ContractFact,
     Facts,
     ModelFacts,
@@ -108,7 +108,7 @@ def _pair(c: Trial | Judge, registry: Registry, facts: Facts) -> Iterable[Findin
     yield from _sampled_for(c.digest, skeleton, name, facts)
 
 
-def lint(
+def check_pairs(
     registry: Registry, facts: Facts, digests: Iterable[str] | None = None
 ) -> list[Finding]:
     findings: list[Finding] = []

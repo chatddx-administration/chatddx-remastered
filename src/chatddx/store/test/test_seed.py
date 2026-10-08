@@ -10,7 +10,7 @@ from chatddx.cli import main
 from chatddx.conftest import WORLDS, connect, sample_plan
 from chatddx.core.rig import rig
 from chatddx.factors.base import Fingerprint
-from chatddx.facts.facts import BUNDLED, Facts
+from chatddx.facts import BUNDLED, Facts
 from chatddx.inventory import Inventory
 from chatddx.inventory.test.memory import MemorySource
 from chatddx.seed import load_cases, plan_factors, seed

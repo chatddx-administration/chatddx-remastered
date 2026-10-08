@@ -209,7 +209,7 @@ validated, updated, skipped, missing, needs repair, forked, kept or restored. It
   `_Seeder.giftbag`).
 - **Lints.** Every component that got a thread or a family this run, validated or not, is linted
   (`src/chatddx/seed/write.py:_Seeder.lint`): `src/chatddx/factors/lint.py:lint`, with the catalog's languages and
-  the facts' `reasons`, and `src/chatddx/facts/lint.py:lint`, with the facts the plan was made with (`Plan.facts`).
+  the facts' `reasons`, and `src/chatddx/facts/lint.py:check_pairs`, with the facts the plan was made with (`Plan.facts`).
   A missing case, or one that needs repair, isn't linted. Each finding is a line, `[lint warning] expectation
   Dutchfall11w: expectation.invalid: at the root: 'diagnosis' is a required property`, naming every record that
   shares the digest, and a last line counts them: `[lint] 0 findings in 230 components` for the sample. The
