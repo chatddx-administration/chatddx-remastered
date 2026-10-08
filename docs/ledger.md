@@ -171,9 +171,13 @@ least one, and the next `Call`.
 A `ToolRun` holds the id of the tool call it answers, the tool's name, the start and end times, and
 - `result`: the text sent back to the model, always. It is stored as sent, since it shaped the next request;
 - `error`: why the tool failed, if it did. The `result` is then what the model was told in its place, which may be
-  shorter than the error. A call that names no tool of the skeleton fails this way.
+  shorter than the error. A call that names no tool of the skeleton fails this way. The runner tells the model
+  `error: ` and the error.
 
 The arguments aren't repeated: they are in the previous call's response.
+
+A round stopped while its tools run has no call, so it isn't recorded, and neither are its tools, even one that
+reached a third party.
 
 ### CanaryCall
 
@@ -213,7 +217,9 @@ and rows of another run.
 It warns (see "Findings") when
 - a finished run lacks items of the trial, or planned canary calls (`run.incomplete`);
 - an item's vignette fingerprint differs from its case's (`case.drift`);
-- an item's last response still calls tools, because the rounds ran out or the run stopped (`tools.unanswered`);
+- an item's last response still calls tools, because the rounds ran out, the run stopped, the call has no whole
+  answer (an error or a cutoff), or the response also called the answer tool (`tools.unanswered`)", and the
+  `tools.unanswered` row in "Findings" to match (`src/chatddx/runner/rounds.py:Toolbox.pending`).
 - a call returned another model name than declared: the engine's digest for a local engine, the requested model for
   a remote one, or none at all (`attestation.model`). Every call of every item that got a response is checked;
 - an item has a call without a prompt-token fingerprint (`attestation.prompt_tokens`);
@@ -313,6 +319,7 @@ for
 - two items for the same run item and view;
 - a judge call whose judge isn't the one its item's view names (so any judge call on a view without a judge), a
   seed position the judge doesn't have, or two judge calls for the same seed in one item.
+- some of the run's cases have no expectation in the scoring (`score.no_expectation`);
 
 It warns when
 - a view's output selector can't pick anything from answers that follow the run skeleton's output schema
@@ -353,6 +360,9 @@ of the ledger's findings are warnings.
 | `score.incomplete` | `check_score` | none | A finished score lacks items for some pairs of run item and view. |
 | `score.scorer_code` | `check_score` | score id | The scorer code that ran isn't the code the scorer pins. |
 | `score.run_unfinished` | `check_score` | score id | The run hasn't finished, or finished after the score started. |
+| `score.no_expectation` | `check_score` | score id | Some of the run's cases have no expectation in the scoring. One finding, with the count. |
+| `answer.unread` | scoring pass | item key | The item's answer can't be read from its last response, with the call's error when it has one. |
+| `answer.invalid` | scoring pass | item key | The item's answer breaks the run skeleton's output schema; it is scored anyway. |
 
 ## Storage
 The ledger is the schema `ledger` (`docs/store.md`; tables in `docs/migrations.md`, "ledger"):
@@ -361,8 +371,8 @@ one table per row type, each row holding its record's canonical bytes (`payload`
   overwritten. It checks nothing else: `Run` and `Score` validate a log when `Store.run(id)` and `Store.score(id)`
   read it back.
 - Components come first: a started row's trial, a score's scoring and an item's case must already be stored
-  (`Store.add`), and a score's started row needs its run's started row. A run's canary set has no foreign key, so
-  nothing makes sure it is stored, and `check_run` can't resolve it if it isn't.
+  (`Store.add`), and a score's started row needs its run's started row. A run's canary set has no foreign key. The
+  runner stores it with the trial; another writer must store it too, or `check_run` can't resolve it.
 - `check_run` takes its registry from `Store.load([trial, canaries])`, and `check_score` from `Store.load` of the
   scoring and the run's trial.
 - `chatddx_reader` can't read the schema at all, which is the store's answer to "Case-derived records".
@@ -411,23 +421,3 @@ Most of the plan is compared with what happened (see "What a record holds"), but
   separate mechanism, as linting is for factors, but nothing is planned or decided.
 
 ## Proposed amendments
-- CHANGE, in "Run", "because the rounds ran out or the run stopped (`tools.unanswered`)" to "because the rounds ran
-  out, the run stopped, the call has no whole answer (an error or a cutoff), or the response also called the answer
-  tool (`tools.unanswered`)", and the `tools.unanswered` row in "Findings" to match
-  (`src/chatddx/runner/rounds.py:Toolbox.pending`).
-- ADD, in "Turn and ToolRun", after the `error` item: "The runner tells the model `error: ` and the error."
-  (`src/chatddx/runner/rounds.py:Toolbox.run`).
-- ADD, in "Turn and ToolRun": "A round stopped while its tools run has no call, so it isn't recorded, and neither are
-  its tools, even one that reached a third party." (`src/chatddx/runner/rounds.py:converse`; `agents/wip-runner.md`,
-  "From phase 5").
-- CHANGE, in "Storage", "A run's canary set has no foreign key, so nothing makes sure it is stored, and `check_run`
-  can't resolve it if it isn't." to "A run's canary set has no foreign key. The runner stores it with the trial;
-  another writer must store it too, or `check_run` can't resolve it." (`src/chatddx/runner/run.py:Runner.start`).
-- ADD, in "Score", to the list of what `check_score` warns about: "some of the run's cases have no expectation in
-  the scoring (`score.no_expectation`);", and to "Findings" the row "| `score.no_expectation` | `check_score` | score
-  id | Some of the run's cases have no expectation in the scoring. One finding, with the count. |", grouped with
-  `score.run_unfinished` under "A score and the run it grades" (`src/chatddx/ledger/score.py:check_score`).
-- ADD, in "Findings", the rows "| `answer.unread` | scoring pass | item key | The item's answer can't be read from its
-  last response, with the call's error when it has one. |" and "| `answer.invalid` | scoring pass | item key | The
-  item's answer breaks the run skeleton's output schema; it is scored anyway. |", noted while scoring and kept in
-  `ScoreFinished` (`src/chatddx/runner/score.py:score_run`, `src/chatddx/scorers/answer.py:read`).

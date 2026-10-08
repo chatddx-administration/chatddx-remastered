@@ -222,6 +222,9 @@ cases of the same vignette: for example a case with a lab appendix and one witho
 
 At send time the appendices are joined into one text by the skeleton's appendix layout (see "Rendering").
 
+Browser text areas submit CRLF line endings, so the portal should apply `newlines.lf@1` to an appendix before it is
+digested; nothing cleans it afterwards.
+
 ### Text cleanup
 - defined in: `cases.py:CleanupOp`, `cases.py:clean`
 
@@ -529,8 +532,11 @@ A response that calls tools gets another request. `tool_calls(response)` reads t
 reasoning) and one `tool` message per call, in the calls' order. Everything else in the body stays, the seed
 included.
 
-The loop belongs to the runner. It ends when a response calls no toolset tool, or after `max_rounds` rounds. A call
-that names no tool of the skeleton is answered with an error.
+The loop belongs to the runner. It ends when a response calls no tool, calls the answer tool, or has no whole
+answer (an error or a cutoff, whose tool calls may be cut short), or after `max_rounds` rounds. A tool is called
+with the call's arguments as keyword arguments, and returns text. A call that names no tool of the skeleton is
+answered with an error, and so are arguments that aren't a JSON object fitting the tool's `parameters`, and a tool
+that raises or returns anything but text.
 
 ## Engines
 An engine is where requests are sent. Researchers pick engines for trials and judges. Every engine speaks the same
@@ -685,8 +691,11 @@ and returns a value (or none) and a detail, as a `ScoreItem` keeps them
 (`src/chatddx/scorers/scorer.py:ScoreFunction`, `src/chatddx/scorers/scorer.py:score`).
 
 Code that lists the metrics it knows (`Metrics.names`) lets a view's `metric` be checked when the scorer is made
-(`src/chatddx/scorers/scorer.py:function`). Views with a judge, and parsing a response into the answer, aren't
-covered yet.
+(`src/chatddx/scorers/scorer.py:function`). Views with a judge aren't covered yet. The answer an entry point's
+selectors pick from is read from the item's last response by `src/chatddx/scorers/answer.py:read`, by the
+skeleton's contract: a native answer is the content as JSON, a tool answer the answer tool's arguments, and a text
+answer the content, or, when the output has a schema, the JSON in it. An answer that can't be read is none, and
+the entry point gets `None`.
 
 Only the running chatddx can be run: `src/chatddx/core/rig.py:entry` finds an entry point's function and refuses
 a pin that isn't the running code. The sample's tools and scorers pin it as compilations record their compiler
@@ -772,6 +781,9 @@ A canary set is an instrument, not a factor: it changes no output and no score, 
 factors, such as an engine that changed between runs. It is a component so that the same set can be compared
 across runs; that comparison isn't implemented yet.
 
+`Canary.render(model=)` makes a canary's request as `render` makes a skeleton's: its messages and body, the model,
+the seed when the canary has one, and `return_token_ids: true`.
+
 ## Lints
 - defined in: `lint.py:lint`
 
@@ -848,23 +860,29 @@ observed ones (prompt-token fingerprints, returned models, canaries) before pool
 No seed is sent with greedy sampling, but a trial's seeds still count toward its digest, so two otherwise identical
 greedy trials differ only in digest. Likewise, the seeds of a greedy judge all send the same request.
 
+Keeping the seeds is deliberate. On an engine that isn't batch invariant, greedy replicates still measure
+nondeterminism, and the seeds are what name the replicates. The alternative, a replicate count for greedy trials,
+changes `Trial`'s shape, so it is cheapest decided before trials are stored for real.
+
 ### Smaller issues
 - **Canary drift isn't checked.** Nothing compares canary outputs between phases or between runs.
-- **Judge engines are never probed.** Canary probes run on the run's engine only.
+- **Judge engines are never probed.** Canary probes run on the run's engine only. Probing them would put
+  `canaries` and `verify_at` on `ScoreStarted`, as on `RunStarted`. Both are defaulted fields,
+  so adding them later keeps every stored digest.
 - **Skeleton provenance.** Should a skeleton be accepted only with a compilation? Hand-written ones, such as judge
-  prompts, are possible today.
+  prompts, are possible today. A take: keep hand-written skeletons. Provenance is whether a compilation names the
+  skeleton, a query that a lint can make once the catalog or ledger is queried for it.
 - **Flags are checked without vLLM's list of flags.** So a bare argument after a flag that takes no value, as in
   `--enforce-eager google/gemma`, passes the argv check, and vLLM then refuses to start. Likewise lints read flags
   by their full names, so an abbreviated flag such as `--reasoning-pars qwen3` works in vLLM but escapes the lints
   that look for `--reasoning-parser`.
-- **Missing expectations aren't flagged.** Neither a scoring nor `check_score` warns when a run's case has no
-  expectation, or when a scored item has no expectation behind it.
+- **A scoring doesn't say which cases it lacks.** Only `check_score` warns, once a run is scored under it
+  (`score.no_expectation`).
 - **Judge calls aren't attested.** Their returned model and prompt-token fingerprint aren't checked the way run
   items are.
 - **Judges that read the vignette must fetch it again.** A judge skeleton with the `vignette` slot makes the scorer
   fetch the sensitive vignette again and redo the trial's cleanup. `prepare_case` covers the cleanup; nothing
   fetches the vignette.
-- **No helper turns a canary into a request** (model name, seed, `return_token_ids`).
 - **A missing slot fill is a bare `KeyError`.** `render` raises `KeyError` when `fills` lacks a slot the skeleton
   uses, instead of a `StructuralError` naming the slot.
 - **Malformed tool calls fall between two helpers.** `tool_calls` skips a call without an id, a name or string
@@ -877,6 +895,10 @@ greedy trials differ only in digest. Likewise, the seeds of a greedy judge all s
 - **Four cleanup steps exist.** Vignettes may also need non-breaking spaces turned into spaces, zero-width
   characters removed, Unicode line breaks turned into newlines, or trailing whitespace stripped.
 - **`Hardware` has no GPU count,** so engines that split a model across GPUs can't be told apart by their hardware.
+- **`return_token_ids` goes to every engine.** A remote engine that isn't vLLM may refuse an unknown key with a
+  400. Either the engine says whether it takes the key (a field on `RemoteEngine`, which changes its digest), or
+  the runner decides per call (`render(..., return_token_ids=False)`, which leaves the run without prompt-token
+  fingerprints).
 
 ## Potential design improvements
 
@@ -932,42 +954,3 @@ reference, straight from the schema. `RefTo` used to do this, and was stopped be
 Schema plays no part in a component's digest, so adding it back changes no digest.
 
 ## Proposed amendments
-- CHANGE, in "Tool rounds", "It ends when a response calls no toolset tool, or after `max_rounds` rounds. A call
-  that names no tool of the skeleton is answered with an error." to "It ends when a response calls no tool, calls the
-  answer tool, or has no whole answer (an error or a cutoff, whose tool calls may be cut short), or after
-  `max_rounds` rounds. A tool is called with the call's arguments as keyword arguments, and returns text. A call that
-  names no tool of the skeleton is answered with an error, and so are arguments that aren't a JSON object fitting the
-  tool's `parameters`, and a tool that raises or returns anything but text." (`src/chatddx/runner/rounds.py:Toolbox`,
-  `src/chatddx/runner/rounds.py:converse`).
-- ADD, in "Greedy sampling and seeds": "Keeping the seeds is deliberate. On an engine that isn't batch invariant,
-  greedy replicates still measure nondeterminism, and the seeds are what name the replicates. The alternative, a
-  replicate count for greedy trials, changes `Trial`'s shape, so it is cheapest decided before trials are stored for
-  real." (`src/chatddx/factors/trial.py:Trial`, `src/chatddx/factors/request.py:render`).
-- ADD, in "Smaller issues", to "Skeleton provenance": "A take: keep hand-written skeletons. Provenance is whether a
-  compilation names the skeleton, a query that a lint can make once the catalog or ledger is queried for it."
-  (`src/chatddx/factors/request.py:Compilation`).
-- ADD, in "Smaller issues", to "Judge engines are never probed": "Probing them would put `canaries` and `verify_at` on
-  `ScoreStarted`, as on `RunStarted`. Both are defaulted fields, so adding them later keeps every stored digest."
-  (`src/chatddx/ledger/score.py:ScoreStarted`, `src/chatddx/ledger/run.py:RunStarted`).
-- ADD, in "Appendix": "Browser text areas submit CRLF line endings, so the portal should apply `newlines.lf@1` to an
-  appendix before it is digested; nothing cleans it afterwards." (`src/chatddx/factors/cases.py:Appendix`,
-  `src/chatddx/factors/cases.py:CleanupOp`).
-- ADD, in "Smaller issues": "**`return_token_ids` goes to every engine.** A remote engine that isn't vLLM may refuse
-  an unknown key with a 400. Either the engine says whether it takes the key (a field on `RemoteEngine`, which
-  changes its digest), or the runner decides per call (`render(..., return_token_ids=False)`, which leaves the run
-  without prompt-token fingerprints)." (`src/chatddx/factors/request.py:render`, `src/chatddx/runner/run.py`).
-- ADD, in "Canary sets": "`Canary.render(model=)` makes a canary's request as `render` makes a skeleton's: its
-  messages and body, the model, the seed when the canary has one, and `return_token_ids: true`."
-  (`src/chatddx/factors/trial.py:Canary.render`).
-- REMOVE, in "Smaller issues", "**No helper turns a canary into a request** (model name, seed, `return_token_ids`)."
-  (`src/chatddx/factors/trial.py:Canary.render`).
-- CHANGE, in "Scorer", "Views with a judge, and parsing a response into the answer, aren't covered yet." to "Views
-  with a judge aren't covered yet. The answer an entry point's selectors pick from is read from the item's last
-  response by `src/chatddx/scorers/answer.py:read`, by the skeleton's contract: a native answer is the content as
-  JSON, a tool answer the answer tool's arguments, and a text answer the content, or, when the output has a schema,
-  the JSON in it. An answer that can't be read is none, and the entry point gets `None`."
-  (`src/chatddx/scorers/answer.py:read`, `src/chatddx/runner/score.py:score_run`).
-- CHANGE, in "Smaller issues", "**Missing expectations aren't flagged.** Neither a scoring nor `check_score` warns when
-  a run's case has no expectation, or when a scored item has no expectation behind it." to "**A scoring doesn't say
-  which cases it lacks.** Only `check_score` warns, once a run is scored under it (`score.no_expectation`)."
-  (`src/chatddx/ledger/score.py:check_score`).
