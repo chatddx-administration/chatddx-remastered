@@ -1,10 +1,11 @@
 from collections.abc import Collection
 
 from chatddx.catalog import Binding, Edit, Entry, Part, Subject, Thread
+from chatddx.factors import request
 from chatddx.factors.base import Component
 from chatddx.factors.bundle import Registry
 from chatddx.factors.cases import Appendix, Case, Vignette
-from chatddx.factors.request import Compilation, Recipe, compile_request
+from chatddx.factors.request import Compilation, Recipe
 from chatddx.factors.scoring import Expectation
 from chatddx.factors.test.sample import NOW, RIG
 
@@ -12,8 +13,8 @@ BY = 1
 
 
 def compiled(registry: Registry, recipe: Recipe) -> Compilation:
-    skeleton = registry.add(compile_request(recipe, registry.get))
-    compilation = Compilation(recipe=recipe, skeleton=skeleton, compiler=RIG)
+    skeleton, compilation = request.compiled(recipe, registry.get, RIG)
+    _ = registry.add(skeleton)
     _ = registry.add(compilation)
     return compilation
 

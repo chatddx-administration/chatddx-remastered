@@ -14,7 +14,7 @@ from chatddx.factors.base import Code, Component
 from chatddx.factors.bundle import Registry
 from chatddx.factors.engine import LocalEngine, ModelArtifact, RemoteEngine
 from chatddx.factors.request import (
-    Compilation,
+    RECIPE_PARTS,
     FewShot,
     Instructions,
     Output,
@@ -26,7 +26,7 @@ from chatddx.factors.request import (
     Tool,
     Toolset,
     Translations,
-    compile_request,
+    compiled,
     own_texts,
 )
 from chatddx.factors.scoring import ExpectationSchema, Scorer
@@ -59,18 +59,6 @@ REFERENCES: dict[str, dict[str, str]] = {
     "scorer": {"expectation_schema": "expectation_schema"},
     "local_engine": {"model": "model"},
 }
-# A recipe's references, by field; each names a record of the table of the same name.
-RECIPE_PARTS = (
-    "instructions",
-    "few_shot",
-    "prompt",
-    "output",
-    "sampling",
-    "reasoning",
-    "passthrough",
-    "translations",
-    "toolset",
-)
 SAMPLE = Path(__file__).parent.parent / "data" / "sample"
 
 
@@ -414,18 +402,16 @@ def plan_factors(
                     recipe = Recipe.model_validate({**body, **made})
                 except ValidationError as e:
                     raise ValueError(f"recipe.{name}: {e}") from None
-                skeleton = plan.registry.add(compile_request(recipe, plan.registry.get))
+                skeleton, compilation = compiled(recipe, plan.registry.get, compiler)
                 variants[key] = Planned(
                     table="recipe",
                     name=_named(name, key),
                     kind="skeleton",
-                    digest=skeleton,
+                    digest=plan.registry.add(skeleton),
                     tags=tags,
                     description=None if description is None else str(description),
                     fork_of=base("recipe", fork_of, key),
-                    compilation=plan.registry.add(
-                        Compilation(recipe=recipe, skeleton=skeleton, compiler=compiler)
-                    ),
+                    compilation=plan.registry.add(compilation),
                 )
         add("recipe", name, variants)
     return plan

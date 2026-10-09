@@ -14,6 +14,7 @@ from chatddx.catalog import (
     Subject,
     Survey,
 )
+from chatddx.factors import request
 from chatddx.factors.base import Component, StructuralError, resolve
 from chatddx.factors.bundle import Registry
 from chatddx.factors.cases import Appendix, Case, Vignette
@@ -28,7 +29,6 @@ from chatddx.factors.request import (
     Sampling,
     Slot,
     Translations,
-    compile_request,
     texts,
 )
 from chatddx.factors.scoring import Expectation, Judge, Scoring
@@ -55,8 +55,8 @@ def compiled(store: Store, reg: Registry, *instructions: str) -> Compilation:
 
 
 def compiled_recipe(store: Store, reg: Registry, recipe: Recipe) -> Compilation:
-    skeleton = reg.add(compile_request(recipe, reg.get))
-    compilation = Compilation(recipe=recipe, skeleton=skeleton, compiler=RIG)
+    skeleton, compilation = request.compiled(recipe, reg.get, RIG)
+    _ = reg.add(skeleton)
     _ = store.add(reg, [reg.add(compilation)])
     return compilation
 

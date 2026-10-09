@@ -931,3 +931,7 @@ Behavior described here that `docs/factors.md` doesn't state. The first three ar
 - CHANGE `compile_request` and `texts`: `TRANSLATED = ("output", "appendix_layout", "toolset")` are the parts a
   recipe's translations translate; `texts` still gives every part's texts, and a translation needs those of the
   `TRANSLATED` parts (src/chatddx/factors/request.py).
+- ADD `RECIPE_PARTS` and `compiled(recipe, get, compiler) -> tuple[Skeleton, Compilation]` in `request.py`: a
+  recipe's fields that name chunks, in reading order, and a recipe compiled with the compilation that records it.
+  init-data and the bench use both, and the bench's `PARTS` is `RECIPE_PARTS` (src/chatddx/factors/request.py,
+  src/chatddx/curation/plan.py, src/chatddx/bench/variation.py, src/chatddx/bench/view.py:_compile).

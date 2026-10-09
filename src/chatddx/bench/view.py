@@ -20,7 +20,7 @@ from chatddx.factors.bundle import Registry
 from chatddx.factors.cases import Case, prepare_case
 from chatddx.factors.engine import LocalEngine, RemoteEngine
 from chatddx.factors.lint import lint
-from chatddx.factors.request import Compilation, Skeleton, compile_request, render
+from chatddx.factors.request import Skeleton, compile_request, compiled, render
 from chatddx.factors.scoring import Expectation, Scorer, Scoring
 from chatddx.factors.select import reaches
 from chatddx.factors.trial import Trial
@@ -448,8 +448,7 @@ class Bench:
             )
         with self.conn.transaction():
             compilation = (
-                self._compile(variation, skeleton)
-                or variation.configuration.compilation
+                self._compile(variation) or variation.configuration.compilation
             )
             if not mine:
                 what = "created"
@@ -472,17 +471,15 @@ class Bench:
         return Saved(name, skeleton.digest, what, TriedVariation(edit, name, recipe))
 
     # Stores what an unsaved skeleton was compiled from, by the running code.
-    def _compile(self, variation: TriedVariation, skeleton: Skeleton) -> str | None:
+    def _compile(self, variation: TriedVariation) -> str | None:
         recipe = variation.varied
         if not variation.parts or recipe is None:
             return None
         registry = self.store.load(s.digest for s in iter_refs(recipe))
+        skeleton, compilation = compiled(recipe, registry.get, rig())
         _ = registry.add(skeleton)
-        compilation = registry.add(
-            Compilation(recipe=recipe, skeleton=skeleton.digest, compiler=rig())
-        )
-        _ = self.store.add(registry, [compilation])
-        return compilation
+        _ = self.store.add(registry, [registry.add(compilation)])
+        return compilation.digest
 
     # The variation run on `cases` with one seed, at `endpoint`; nothing is sent until
     # `Running.send`.
@@ -493,7 +490,7 @@ class Bench:
         registry, trial = self.trial(skeleton, self.endpoint(endpoint), cases, seed)
         runner = Runner(self.conn, self.inventory, self.person)
         running = runner.start(trial, registry, endpoint)
-        _ = self._compile(variation, skeleton)
+        _ = self._compile(variation)
         return running
 
     # A finished run scored under every scorer that applies to it, or those of

@@ -438,6 +438,20 @@ class Recipe(Frozen):
     toolset: Annotated[Digest, RefTo("chunk.toolset")] | None = None
 
 
+# A recipe's fields that name chunks, in the order people read them.
+RECIPE_PARTS = (
+    "instructions",
+    "few_shot",
+    "prompt",
+    "output",
+    "sampling",
+    "reasoning",
+    "passthrough",
+    "translations",
+    "toolset",
+)
+
+
 # The frozen request: what a trial or judge actually references.
 
 
@@ -936,6 +950,16 @@ def compile_request(recipe: Recipe, get: Resolver) -> Skeleton:
         tools=() if toolset is None else toolset.tools,
         max_rounds=None if toolset is None else toolset.max_rounds,
     )
+
+
+# A recipe compiled by `compiler`, the running code, with the compilation that records
+# what the skeleton was compiled from.
+def compiled(
+    recipe: Recipe, get: Resolver, compiler: Code
+) -> tuple[Skeleton, Compilation]:
+    skeleton = compile_request(recipe, get)
+    record = Compilation(recipe=recipe, skeleton=skeleton.digest, compiler=compiler)
+    return skeleton, record
 
 
 def render(
