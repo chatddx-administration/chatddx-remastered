@@ -5,12 +5,19 @@ from typing import Self
 from pydantic import JsonValue
 from rich.console import Console
 from rich.live import Live
+from rich.table import Table
 from rich.text import Text
 
+from chatddx.catalog.titles import short
 from chatddx.factors.base import Finding
-from chatddx.ledger import RunItem
+from chatddx.factors.request import Skeleton, tool_calls
+from chatddx.ledger import Call, RunItem
 from chatddx.runner.run import Event, ItemEnded, Noted, Streamed, ToolRan
-from chatddx.runner.send import Delta
+from chatddx.runner.send import STOPPED, Delta
+from chatddx.scorers.aggregate import mean, stderr
+from chatddx.scorers.answer import Answer, read
+
+from .bench import Graded
 
 LABEL = "dim"
 REFUSED = "red"
@@ -120,6 +127,35 @@ class Transcript:
             case _:
                 pass
 
+    # A stored item told again as it streamed: each call's message, and the results of
+    # the tools it called before the next.
+    def item(self, item: RunItem) -> None:
+        self._message(item.call)
+        for turn in item.turns:
+            for ran in turn.tools:
+                self.event(ToolRan(item.key, ran))
+            self._message(turn.call)
+        self.event(ItemEnded(item))
+
+    def _message(self, call: Call) -> None:
+        response = call.response or {}
+        match response.get("choices"):
+            case [{"message": dict() as message}, *_]:
+                pass
+            case _:
+                message = {}
+        reasoning = message.get("reasoning") or message.get("reasoning_content")
+        if isinstance(reasoning, str) and reasoning.strip():
+            self.begin("thinking")
+            self.write(reasoning.rstrip(), THINKING)
+        content = message.get("content")
+        if isinstance(content, str) and content.strip():
+            self.begin(None)
+            self.write(content.rstrip())
+        for called in tool_calls(response):
+            self.begin(called.name)
+            self.write(called.arguments)
+
     def write(self, text: str, style: str = "") -> None:
         if self.labelled:
             text = text.lstrip()
@@ -197,3 +233,175 @@ class Tally:
                 "  stopping after this case (Ctrl-C again stops it now)", LATER
             )
         return line
+
+
+# How an item went: a word for it, its style, and what to say of it.
+def outcome(skeleton: Skeleton, item: RunItem) -> tuple[str, str, str | None]:
+    last = item.calls[-1]
+    answer = read(skeleton, last.response)
+    if last.error == STOPPED:
+        return "stopped", REFUSED, None
+    if answer.value is None:
+        if last.error is not None:
+            return "errored", REFUSED, last.error
+        return "unread", REFUSED, answer.problem
+    if skeleton.output_schema is None:
+        return "completed", "", last.error
+    if answer.problem is not None:
+        return "invalid", REFUSED, last.error or answer.problem
+    return "valid", VALID, last.error
+
+
+# An item's answer as the scorers read it: the call's error, whether the answer holds to
+# the output's schema, and what the views pick from it.
+def show_answer(
+    console: Console, skeleton: Skeleton, item: RunItem, graded: list[Graded]
+) -> None:
+    last = item.calls[-1]
+    answer = read(skeleton, last.response)
+
+    if last.error is not None and last.error != STOPPED:
+        console.print(Text(last.error, style=REFUSED))
+
+    if answer.value is None:
+        console.print(Text(f"unread: {answer.problem}", style=REFUSED))
+        return
+
+    if skeleton.output_schema is not None:
+        if answer.problem is None:
+            console.print("valid", style=VALID)
+        else:
+            console.print(Text(f"invalid: {answer.problem}", style=REFUSED))
+
+    _views(console, answer, graded)
+
+
+# What the scorers' views read from the answer, each selection once, but for those
+# that read the answer whole.
+def _views(console: Console, answer: Answer, graded: list[Graded]) -> None:
+    seen: set[tuple[str, str | None]] = set()
+    labels: set[str] = set()
+
+    for g in graded:
+        for i, view in enumerate(g.scorer.views):
+            items = view.output_items(answer.value)
+            if (view.output, view.split) in seen or items == [answer.value]:
+                continue
+            seen.add((view.output, view.split))
+            label = g.label(i)
+            shown = label if label not in labels else f"{label} ({g.name})"
+            console.print(shown, style="bold")
+            labels.add(label)
+            for n, picked in enumerate(items, 1):
+                console.print(Text(f"  {n}. {_shown(picked)}"))
+            if not items:
+                console.print("  nothing", style=LABEL)
+
+
+def _shown(value: JsonValue) -> str:
+    return value if isinstance(value, str) else json.dumps(value, ensure_ascii=False)
+
+
+def _detail(detail: JsonValue) -> Text:
+    match detail:
+        case None:
+            return Text("")
+        case {"reason": str() as reason}:
+            return Text(reason, style=LABEL)
+        case _:
+            return Text(clipped_line(_shown(detail)))
+
+
+def show_scores(console: Console, graded: list[Graded]) -> None:
+    if not graded:
+        return
+
+    console.print("scores", style="bold")
+    table = Table(box=None, show_header=False, padding=(0, 1, 0, 2))
+
+    for g in graded:
+        if g.score is None:
+            table.add_row(g.name, "", "", Text(f"not scored: {g.refused}", LATER))
+            continue
+        for n, item in enumerate(g.score.items):
+            table.add_row(
+                g.name if n == 0 else "",
+                g.label(item.view),
+                value_of(item.value),
+                _detail(item.detail),
+            )
+
+    console.print(table)
+
+
+# Each item's value per scorer view, an item to a row.
+def show_table(
+    console: Console, names: dict[str, str], items: list[RunItem], graded: list[Graded]
+) -> None:
+    scored = [g for g in graded if g.score is not None]
+    table = Table(box=None, header_style="bold")
+    table.add_column("case")
+    columns = [(g, i) for g in scored for i in range(len(g.scorer.views))]
+
+    for g, i in columns:
+        table.add_column(f"{g.name}\n{g.label(i)}")
+
+    for item in items:
+        values: dict[tuple[int, str], float | None] = {}
+        for g in scored:
+            assert g.score is not None
+            for s in g.score.items:
+                if s.key == item.key:
+                    values[(s.view, g.name)] = s.value
+        table.add_row(
+            names.get(item.key.case, short(item.key.case)),
+            *(value_of(values.get((i, g.name))) for g, i in columns),
+        )
+
+    if columns and items:
+        console.print(table)
+
+    for g in graded:
+        if g.score is None:
+            console.print(Text(f"{g.name}: not scored: {g.refused}", LATER))
+
+
+# Per scorer view, over every score given: how many items have a value, their mean and
+# standard error, and how many have none.
+def show_summary(console: Console, graded: list[Graded]) -> None:
+    held: dict[tuple[str, int], list[float | None]] = {}
+    labels: dict[tuple[str, int], str] = {}
+
+    for g in graded:
+        if g.score is None:
+            continue
+        for i in range(len(g.scorer.views)):
+            _ = labels.setdefault((g.name, i), g.label(i))
+            held.setdefault((g.name, i), []).extend(
+                s.value for s in g.score.items if s.view == i
+            )
+
+    if not held:
+        return
+
+    table = Table(box=None, header_style="bold")
+
+    for column in ("scorer", "view", "scored", "mean", "stderr", "without a value"):
+        table.add_column(column)
+
+    shown: set[str] = set()
+
+    for (name, i), found in held.items():
+        values = [v for v in found if v is not None]
+        without = len(found) - len(values)
+        table.add_row(
+            name if name not in shown else "",
+            labels[(name, i)],
+            str(len(values)),
+            value_of(mean(values)) if values else "—",
+            value_of(stderr(values)) if values else "—",
+            str(without) if without else "",
+        )
+        shown.add(name)
+
+    console.print(table)

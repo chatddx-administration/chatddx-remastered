@@ -25,8 +25,8 @@ So the plan:
 
 The order: decisions, runner, scoring pass, reads for a person, the shell, tool rounds.
 
-Where it stands: everything but the shell's 4c and the docs is built. `chatddx repl` chooses and inspects (4a), and
-runs and scores (4b; see "4. The shell"). Next is 4c, `runs`, `replay` and `score`.
+Where it stands: the shell is built. `chatddx repl` chooses and inspects (4a), runs and scores (4b), and looks back
+and scores again (4c; see "4. The shell"). Left: the docs (phase 6), and what each step left open.
 
 ## Decisions needed before phase 1
 ### D1. The clearance gate
@@ -343,8 +343,7 @@ Left from 4a:
   `agents/wip-bench.md`. Not acted on; `bench.py` imports nothing from the shell so that the move stays cheap.
 - **An unsaved cell's language is unknown.** `Catalog.language_of` reads the store, so after `set` the request's
   language is `language.unknown` even where the recipe's chunks have one. The sample's chunks have none anyway (G18).
-- **Runs of a scorer.** `show scorer NAME` counts runs that reach it, which no trial does; the scores it gave come
-  with 4c.
+- **Runs of a scorer.** Done in 4c: `show scorer NAME` counts the runs it scored.
 - **The seeded sample fixture** is now defined twice: module-scoped in `src/chatddx/store/test/test_reads.py`,
   session-scoped in `src/chatddx/repl/test/conftest.py`. It could move to `src/chatddx/conftest.py`.
 
@@ -394,6 +393,46 @@ Left from 4b:
 - **The test databases.** Dropping one `WITH (FORCE)` failed now and then: a test's `DB_USER` session had closed but
   not yet ended on the server, and `DB_ADMIN` may not end it. `src/chatddx/conftest.py:_settled` waits for the
   database's sessions to end before a copy or a drop. The runner's tests had failed the same way.
+
+#### Built: 4c
+`runs [COUNT]` and `replay [RUN]` (`src/chatddx/repl/reviewing.py`), and `score [RUN]` (`scoring.py`). What shows an
+answer and its scores is shared by all of them, in `render.py`.
+- **`runs`** lists the person's runs, newest first (`Reads.runs`), the last 20 or COUNT: the run's and the trial's
+  ids, when, what ran (`Bench.described`: the configuration's title, the endpoint, the case or how many, the seeds),
+  how it went (an item's outcome and error, or a count of each outcome; `unfinished` without `RunFinished`), and per
+  scorer its latest score's view means, as `plan 0/0/0/—`.
+- **`replay`** shows the latest run, or the one an id prefix names (`Reads.run`): when, whether it finished, where
+  it ran, and on which chatddx. The request isn't stored, so each item's first request is rendered again from the
+  trial and the source and held to its fingerprint (`Bench.rendered_again`), saying when the vignette at the source
+  isn't the one sent, or the request renders otherwise now. A run of one item is told again as it streamed, from the
+  stored responses and tool runs (`Transcript.item`), then its answer and latest scores; a batch gives its lines,
+  the score table and the summary.
+- **`score`** scores each finished run under the scorers that apply to it and have no score of it under the scoring
+  as it would be built now (`Bench.unscored`), so a changed expectation leaves a run to score again; then sums up
+  over every score given. With RUN: that run alone, or why not (`unfinished`, `no scorer applies to it`, or
+  `scored already, as the scorings are now` with its scores). Scoring holds Ctrl-C as `run` does.
+- **`show KIND NAME` and `show case NAME`** sum up the latest scores of the person's runs with it; `show scorer NAME`
+  counts and sums up the runs it scored.
+- **Completion**: `replay` completes the latest 20 runs' ids, and `score` the runs left to score, both fresh at each
+  Tab.
+- **Tests**: `src/chatddx/repl/test/test_reviewing.py` and `test_scoring.py`. A changed expectation is a new edit of
+  alice's own expectation thread.
+
+Takes made while building, all still open:
+- **What is left to score is worked out per run** (`Bench.unscored`, from `Reads.scorers` and `Reads.scoring`), not
+  per scorer through `Reads.outstanding`: `score RUN` needs a run's own, and a run whose case has several
+  expectations to choose from is skipped for that scorer rather than stopping the listing. `Reads.outstanding` is
+  unused now; it could go, or `unscored` could move to `Reads`.
+- **The latest score per scorer** is what `runs`, `replay` and `show` read. Older ones stay in the ledger, and
+  `scores_of` lists every score of a run, whoever gave it.
+- **The runs list shows means** per view, so a batch fits a line per scorer.
+
+Left from 4c:
+- **An unsaved cell's runs are titled by their recipe**, as `case · diagnoses-tool · recommended (…) · off (…)`,
+  since the cell's label (`diagnoses-tool (…)+reasoning=off`) isn't stored. A catalog entry on the run, or a title
+  built as a variation of the closest configuration, would say it shorter.
+- **Only an item's first request is rendered again.** A later round's request could be rebuilt with `next_request`
+  from the stored responses and tool runs.
 
 ### 5. Tool rounds
 Built in the runner (`agents/wip-runner.md`, "Phase 5").

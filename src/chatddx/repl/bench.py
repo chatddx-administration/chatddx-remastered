@@ -1,25 +1,39 @@
 import secrets
-from collections.abc import Iterable, Mapping
+from collections.abc import Collection, Iterable, Mapping
 from dataclasses import dataclass, field, replace
 from typing import Literal
+from uuid import UUID
 
 from pydantic import JsonValue
 
 from chatddx.catalog import About, Edit, Subject
 from chatddx.catalog.titles import short
 from chatddx.core.rig import rig
-from chatddx.factors.base import Component, Finding, iter_refs, resolve
+from chatddx.factors.base import (
+    Component,
+    Finding,
+    StructuralError,
+    iter_refs,
+    resolve,
+)
 from chatddx.factors.bundle import Registry
-from chatddx.factors.cases import Case
+from chatddx.factors.cases import Case, prepare_case
+from chatddx.factors.engine import LocalEngine, RemoteEngine
 from chatddx.factors.lint import lint
-from chatddx.factors.request import Compilation, Recipe, Skeleton, compile_request
-from chatddx.factors.scoring import Expectation, Scorer
+from chatddx.factors.request import (
+    Compilation,
+    Recipe,
+    Skeleton,
+    compile_request,
+    render,
+)
+from chatddx.factors.scoring import Expectation, Scorer, Scoring
 from chatddx.factors.select import reaches
 from chatddx.factors.trial import Trial
 from chatddx.facts import Facts, check_pairs, model_name, reasons
 from chatddx.identity import Person
 from chatddx.inventory import Inventory
-from chatddx.ledger import RunStarted, Score
+from chatddx.ledger import ItemKey, Run, RunStarted, Score, fingerprint_request
 from chatddx.runner.run import Runner, Running
 from chatddx.runner.score import score_run
 from chatddx.store import Catalog, People, Reads, Store
@@ -464,11 +478,15 @@ class Bench:
         _ = self._compile(cell, skeleton)
         return running
 
-    # A finished run scored under every scorer that applies to it, as each scoring would
-    # be built now.
-    def score(self, run: RunStarted) -> list[Graded]:
+    # A finished run scored under every scorer that applies to it, or those of
+    # `scorers`, as each scoring would be built now.
+    def score(
+        self, run: RunStarted, scorers: Collection[str] | None = None
+    ) -> list[Graded]:
         found: list[Graded] = []
         for edit, about in self.reads.scorers(run):
+            if scorers is not None and edit.digest not in scorers:
+                continue
             name = about.name or self.catalog.title(edit.thread)
             scorer = resolve(self.get, edit.digest, Scorer)
             labels = self.labels(edit.digest)
@@ -484,4 +502,114 @@ class Bench:
                 found.append(Graded(name, scorer, labels, refused=str(e)))
                 continue
             found.append(Graded(name, scorer, labels, score, findings))
+        return found
+
+    # The person's latest run, or the one whose id starts with `prefix`.
+    def run(self, prefix: str | None = None) -> RunStarted:
+        if prefix is not None:
+            return self.reads.run(prefix)
+        runs = self.reads.runs()
+        if not runs:
+            raise LookupError(f"{self.person.login} has no runs")
+        return runs[0]
+
+    # What ran, as `run` and `batch` said it: the configuration, where it ran, the case
+    # or how many, and the seed.
+    def described(self, run: RunStarted) -> str:
+        trial = resolve(self.get, run.trial, Trial)
+        where = self.title(trial.engine) if run.endpoint is None else run.endpoint.name
+        cases = (
+            self.title(trial.cases[0])
+            if len(trial.cases) == 1
+            else f"{len(trial.cases)} cases"
+        )
+        seeds = ", ".join(str(seed) for seed in trial.seeds)
+        return f"{self.title(trial.skeleton)} × {where} × {cases} (seed {seeds})"
+
+    # The latest score under each scorer that scored the run.
+    def scores_of(self, run: UUID) -> list[Graded]:
+        found: dict[str, Graded] = {}
+        for started in self.store.scores_of(run):
+            scorer = resolve(self.get, started.scoring, Scoring).scorer
+            if scorer in found:
+                continue
+            held = self.holder("scorer", scorer)
+            name = held[1].name if held and held[1].name else self.title(scorer)
+            found[scorer] = Graded(
+                name,
+                resolve(self.get, scorer, Scorer),
+                self.labels(scorer),
+                self.store.score(started.score),
+            )
+        return sorted(found.values(), key=lambda g: g.name)
+
+    # The person's runs a scorer gave a score of.
+    def scored_by(self, scorer: str) -> list[RunStarted]:
+        return [
+            run
+            for run in self.reads.runs()
+            if any(
+                resolve(self.get, s.scoring, Scoring).scorer == scorer
+                for s in self.store.scores_of(run.run)
+            )
+        ]
+
+    # The scorers that apply to a run and have no score of it under the scoring each
+    # would be built now, so a changed expectation leaves the run to score again.
+    def unscored(self, run: RunStarted) -> list[str]:
+        scored = {s.scoring for s in self.store.scores_of(run.run)}
+        found: list[str] = []
+        for edit, _ in self.reads.scorers(run):
+            try:
+                scoring = self.reads.scoring(run, edit.digest)
+            except LookupError:
+                continue
+            if scoring is not None and scoring.digest not in scored:
+                found.append(edit.digest)
+        return found
+
+    # The person's finished runs, newest first, with the scorers each is left to score.
+    def outstanding(self) -> list[tuple[RunStarted, list[str]]]:
+        runs = self.reads.runs()
+        finished = self.store.finished([r.run for r in runs])
+        return [
+            (run, scorers)
+            for run in runs
+            if run.run in finished and (scorers := self.unscored(run))
+        ]
+
+    # Whether each item's first request, rendered again from the trial and the source,
+    # is what was sent, since only its fingerprint is kept: None when it is, else why
+    # not.
+    def rendered_again(self, run: Run) -> dict[ItemKey, str | None]:
+        registry = self.store.load([run.started.trial])
+        trial = resolve(registry.get, run.started.trial, Trial)
+        skeleton = resolve(registry.get, trial.skeleton, Skeleton)
+        engine = registry.get(trial.engine)
+        assert isinstance(engine, LocalEngine | RemoteEngine)
+        found: dict[ItemKey, str | None] = {}
+        for item in run.items:
+            case = resolve(registry.get, item.key.case, Case)
+            try:
+                raw = self.inventory.source(case.vignette.source).fetch(
+                    case.vignette.id
+                )
+                prepared = prepare_case(
+                    case, raw, registry.get, skeleton.appendix_layout, trial.cleanup
+                )
+            except (LookupError, StructuralError) as e:
+                found[item.key] = str(e)
+                continue
+            body = render(
+                skeleton,
+                model=engine.served_model_name,
+                seed=trial.seeds[item.key.replicate],
+                fills=prepared.fills,
+            )
+            if prepared.fingerprint != item.vignette:
+                found[item.key] = "the vignette at the source isn't the one sent"
+            elif fingerprint_request(body) != item.call.request:
+                found[item.key] = "the request renders otherwise now"
+            else:
+                found[item.key] = None
         return found

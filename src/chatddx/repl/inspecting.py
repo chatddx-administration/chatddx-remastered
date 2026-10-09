@@ -16,7 +16,16 @@ from chatddx.facts import INTENTS, Effort, ModelFacts, Refusal, Refused
 from chatddx.inventory import url_of
 
 from .bench import KINDS, PARTS, Cell, Family
-from .render import LABEL, LATER, REFUSED, clipped, plural, some, writes
+from .render import (
+    LABEL,
+    LATER,
+    REFUSED,
+    clipped,
+    plural,
+    show_summary,
+    some,
+    writes,
+)
 from .shell import Repl
 
 PLACEHOLDERS: dict[SlotName, str] = {
@@ -279,13 +288,26 @@ def _about(table: Table, about: About) -> None:
         table.add_row("language", about.language)
 
 
+# The person's runs with it, or that a scorer scored, summed up by their latest scores.
 def _runs(repl: Repl, word: str, digest: str) -> None:
-    runs = repl.bench.reads.reaching(digest)
+    bench = repl.bench
+    scorer = word == "scorer"
+    runs = bench.scored_by(digest) if scorer else bench.reads.reaching(digest)
 
     if not runs:
-        repl.console.print(f"no runs of yours with this {word}", style=LABEL)
-    else:
-        repl.console.print(f"{plural(len(runs), 'run')} of yours with it", style=LABEL)
+        said = "it scored" if scorer else f"with this {word}"
+        repl.console.print(f"no runs of yours {said}", style=LABEL)
+        return
+
+    said = "it scored" if scorer else "with it"
+    repl.console.print(f"{plural(len(runs), 'run')} of yours {said}", style=LABEL)
+    graded = [
+        g
+        for run in runs
+        for g in bench.scores_of(run.run)
+        if not scorer or g.scorer.digest == digest
+    ]
+    show_summary(repl.console, graded)
 
 
 # A value as a row, or as a row per key for a mapping of plain values, `depth` deep.

@@ -25,8 +25,15 @@ class Repl:
         return f"{self.bench.person.login}{held} #{self.seed}> "
 
     # The names each word of a command can be: per-model names complete by their
-    # name alone too, since the cell's endpoint picks the model.
+    # name alone too, since the cell's endpoint picks the model. Runs come fresh.
     def completions(self) -> dict[str, list[str]]:
+        runs = self.bench.reads.runs()[:20]
+        return self._names() | {
+            "replay:run": [str(r.run)[:8] for r in runs],
+            "score:run": [str(r.run)[:8] for r, _ in self.bench.outstanding()],
+        }
+
+    def _names(self) -> dict[str, list[str]]:
         if self._completions is not None:
             return self._completions
         bench = self.bench

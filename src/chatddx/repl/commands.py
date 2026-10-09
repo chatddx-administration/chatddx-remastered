@@ -5,7 +5,7 @@ from dataclasses import dataclass
 import psycopg
 from rich.table import Table
 
-from . import choosing, inspecting, listing, running, scoring
+from . import choosing, inspecting, listing, reviewing, running, scoring
 from .shell import Repl
 
 
@@ -84,6 +84,21 @@ COMMANDS: dict[str, Command] = {
         "save the cell's configuration as your own, as NAME",
         choosing.save,
         rest=0,
+    ),
+    "runs": Command(
+        ("[COUNT]",),
+        "list your latest runs, the last 20 unless COUNT says",
+        reviewing.runs,
+    ),
+    "replay": Command(
+        ("[RUN]",),
+        "show a run again as it streamed: the latest, or RUN",
+        reviewing.replay,
+    ),
+    "score": Command(
+        ("[RUN]",),
+        "score your runs that are left to score, or RUN, as the scorings are now",
+        scoring.score,
     ),
     "scorers": Command(
         (),
@@ -196,6 +211,7 @@ def complete(names: Mapping[str, list[str]], line: str) -> list[str]:
             return found
         case _ if position < len(params):
             key = params[position].strip("[].").lower()
-            return _next_words(names.get(key, []), words[-1:])
+            held = names.get(f"{verb}:{key}", names.get(key, []))
+            return _next_words(held, words[-1:])
         case _:
             return []
