@@ -1,6 +1,7 @@
 import hashlib
 import re
 import secrets
+from collections.abc import Collection
 from enum import StrEnum
 from typing import ClassVar
 
@@ -36,6 +37,11 @@ class Person(BaseModel):
         if not LOGIN.match(login):
             raise ValueError(f"invalid login {login!r}")
         return login
+
+
+# What is relevant to show a person: what they own, or what is shared with them.
+def sees(person: int, owner: int | None, collaborators: Collection[int]) -> bool:
+    return owner == person or person in collaborators
 
 
 _hasher = PasswordHasher()

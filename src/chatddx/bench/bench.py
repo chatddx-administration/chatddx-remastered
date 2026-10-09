@@ -36,9 +36,11 @@ from chatddx.inventory import Inventory
 from chatddx.ledger import ItemKey, Run, RunStarted, Score, fingerprint_request
 from chatddx.runner.run import Runner, Running
 from chatddx.runner.score import score_run
-from chatddx.store import Catalog, People, Reads, Store
+from chatddx.store import Catalog, People, Store
 from chatddx.store.catalog import Rows
 from chatddx.store.store import Connection
+
+from .reads import Reads
 
 PARTS = (
     "instructions",
@@ -328,17 +330,21 @@ class Bench:
     def tags(self) -> list[str]:
         return sorted({tag for _, about in self.reads.families() for tag in about.tags})
 
-    # The expectation a person reads for a case: the head of their own thread, else of
-    # one shared with them.
-    def expectation(self, case: str) -> Expectation | None:
-        threads = self.catalog.expectations_of(case)
-        seen = [(t, a) for t in threads if (a := self.about(t)).shows(self.person.id)]
-        own = [t for t, a in seen if a.owner == self.person.id]
-        for choices in (own, [t for t, _ in seen]):
-            if choices:
-                head = self.catalog.head(choices[0])
-                return resolve(self.get, head.digest, Expectation)
-        return None
+    # The schemas of the expectations the person sees for a case.
+    def expectation_schemas(self, case: str) -> list[str]:
+        heads = [
+            self.catalog.head(t).digest
+            for t in self.catalog.expectations_of(case)
+            if self.about(t).shows(self.person.id)
+        ]
+        held = (resolve(self.get, d, Expectation) for d in heads)
+        return sorted({e.expectation_schema for e in held})
+
+    # The expectation the case is scored against for the person under `schema`
+    # (`Catalog.expectation_for`): a LookupError when there are several to choose from.
+    def expectation(self, case: str, schema: str) -> Expectation | None:
+        digest = self.catalog.expectation_for(case, self.person.id, schema)
+        return None if digest is None else resolve(self.get, digest, Expectation)
 
     def trial(
         self, skeleton: Skeleton, engine: str, cases: list[str], seed: int
@@ -405,14 +411,8 @@ class Bench:
                 for f in families if offered else []:
                     key = (f.case, scorer.expectation_schema)
                     if key not in data:
-                        digest = self.catalog.expectation_for(
-                            f.case, self.person.id, scorer.expectation_schema
-                        )
-                        data[key] = (
-                            None
-                            if digest is None
-                            else resolve(self.get, digest, Expectation).data
-                        )
+                        read = self.expectation(f.case, scorer.expectation_schema)
+                        data[key] = None if read is None else read.data
                     held = data[key]
                     if held is None or not view.expectation_items(held):
                         missing.append(f.name)

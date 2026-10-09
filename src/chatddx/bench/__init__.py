@@ -13,6 +13,7 @@ from .bench import (
     Saved,
     drawn_seed,
 )
+from .reads import Reads
 
 __all__ = [
     "KINDS",
@@ -26,6 +27,7 @@ __all__ = [
     "Family",
     "Graded",
     "Reach",
+    "Reads",
     "Saved",
     "drawn_seed",
 ]

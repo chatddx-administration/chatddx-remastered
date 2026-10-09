@@ -6,10 +6,8 @@ from chatddx.factors.select import reaches
 from chatddx.factors.trial import Trial
 from chatddx.identity import Person
 from chatddx.ledger import RunStarted
-
-from .catalog import Catalog
-from .people import People
-from .store import Connection, Store
+from chatddx.store import Catalog, People, Store
+from chatddx.store.store import Connection
 
 
 # What one person sees: the live threads and families they own or collaborate on, and
@@ -102,21 +100,6 @@ class Reads:
             is not None
         ]
         return Scoring(scorer=scorer, expectations=tuple(found)) if found else None
-
-    # The person's finished runs the scorer applies to and that have no score under the
-    # scoring that would be built now, so a changed expectation makes a run outstanding.
-    def outstanding(self, scorer: str) -> list[RunStarted]:
-        mine = self.runs()
-        finished = self._store.finished([r.run for r in mine])
-        found: list[RunStarted] = []
-        for run in mine:
-            if run.run not in finished or not self._applies(scorer, run):
-                continue
-            scoring = self.scoring(run, scorer)
-            scored = {s.scoring for s in self._store.scores_of(run.run)}
-            if scoring is not None and scoring.digest not in scored:
-                found.append(run)
-        return found
 
     def _applies(self, scorer: str, run: RunStarted) -> bool:
         trial = resolve(self._store.get, run.trial, Trial)

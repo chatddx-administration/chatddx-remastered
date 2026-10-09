@@ -54,3 +54,7 @@ development path. Roles could then come from Keycloak's realm roles instead of t
 - CHANGE, under "Roles", "`src/chatddx/store/migrations/0008-t2-identity-checks.sql`" →
   "`src/chatddx/store/migrations/0009-t2-identity.sql`": the file holds the role check, and `0008-t1-identity.sql` is
   tier 1's grants.
+- ADD, under "Authorization": who sees what is `src/chatddx/identity/identity.py:sees`: the owner, and the
+  collaborators. The catalog adds that what it shows is live (`src/chatddx/catalog/model.py:About.shows`). Z1's map from
+  role to kinds goes beside `sees`, and `identity` holds both as data and functions with no store access; the bench
+  applies them to what is in the store and the World (`agents/wip-bench.md`, "Decided").

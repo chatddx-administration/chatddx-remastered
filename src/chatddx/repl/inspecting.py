@@ -376,12 +376,25 @@ def _show_case(repl: Repl, name: str | None) -> None:
         table.add_row("appendices", ", ".join(map(bench.title, case.appendices)))
 
     _about(table, family.about)
-    expectation = bench.expectation(family.case)
+    schemas = bench.expectation_schemas(family.case)
 
-    if expectation is None:
+    if not schemas:
         table.add_row("expectation", Text("none for you", style=LATER))
-    else:
-        _add_rows(repl, table, "expectation", expectation.data, depth=3)
+
+    for schema in schemas:
+        label = "expectation"
+
+        if len(schemas) > 1:
+            label += f" ({bench.title(schema)})"
+
+        try:
+            expectation = bench.expectation(family.case, schema)
+        except LookupError as e:
+            table.add_row(label, Text(str(e), style=REFUSED))
+            continue
+
+        if expectation is not None:
+            _add_rows(repl, table, label, expectation.data, depth=3)
 
     repl.console.print(table)
     _runs(repl, "case", family.case)

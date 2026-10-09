@@ -348,3 +348,10 @@ Behavior described here that `docs/store.md` doesn't state:
 - `People` reads roles back as `Role`, so a role the tier-2 CHECK would refuse raises `ValueError` below tier 2.
 - `public.migration` is created by `migrate`, not by a migration file, and is readable only by the admin.
 - `migrations()` raises `ValueError` for a file name with fewer than three `-`-separated parts.
+
+## Proposed amendments
+- REMOVE "reads.py" and its line in "Contents"; `Reads` from the package's re-exports and the "Builds on" table; "a
+  name or prefix in `Reads` that matches none or several" from `LookupError`'s row; and "`Reads.runs` shows only the
+  runs the person owns now…" from "Beyond docs/store.md". `Reads` moved to `src/chatddx/bench/reads.py`
+  (`agents/wip-bench.md`, "Phase 2", step 2), less `outstanding`, which is gone (step 3); what is said of it here
+  belongs in an API doc of the bench's.

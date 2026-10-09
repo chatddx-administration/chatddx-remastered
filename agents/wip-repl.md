@@ -17,7 +17,7 @@ The shell is built: `chatddx repl` chooses and inspects (4a), runs and scores (4
 2. **The takes made while building** (in "Built: 4a", "Built: 4b" and "Built: 4c") wait for the user's word, and so
    do D5–D8 and which scorers apply to a run (see "3. Reads for a person").
 3. **The bench** is a module of its own now, `src/chatddx/bench/`; what it is waits on `agents/wip-bench.md`.
-4. **Left from 4a**: an unsaved cell's language is unknown; the seeded sample fixture is defined twice.
+4. **Left from 4a**: an unsaved variation's language is unknown.
 5. **Left from 4b**: a structured answer cut short is unread, as nothing salvages it; no word on reasoning that wasn't
    heeded; two tool calls in one response run together on one line.
 6. **Left from 4c**: an unsaved cell's runs are titled by their whole recipe; only an item's first request is rendered
@@ -271,6 +271,9 @@ Built, the `Bench` with the shell in 4a (see "4. The shell"). What was built her
 - tests in `src/chatddx/catalog/test/` and `src/chatddx/store/test/test_reads.py`, on the sample as init-data lands
   it with a giftbag.
 
+`Reads` and its tests have since moved to `src/chatddx/bench/`, without the runs still to score
+(`agents/wip-bench.md`, "Phase 2").
+
 "Applies" is the plan's rule: every view of the scorer reaches the run's output schema. A view that picks the whole
 answer reaches any schema, so the sample's `free-text` and `raw` scorers apply to every run; the pattern scorer then
 reads a structured answer as its JSON text. Narrowing that, say to scorers written for the run's output shape, would
@@ -354,8 +357,8 @@ Left from 4a:
 - **An unsaved cell's language is unknown.** `Catalog.language_of` reads the store, so after `set` the request's
   language is `language.unknown` even where the recipe's chunks have one. The sample's chunks have none anyway (G18).
 - **Runs of a scorer.** Done in 4c: `show scorer NAME` counts the runs it scored.
-- **The seeded sample fixture** is now defined twice: module-scoped in `src/chatddx/store/test/test_reads.py`,
-  session-scoped in `src/chatddx/repl/test/conftest.py`. It could move to `src/chatddx/conftest.py`.
+- **The seeded sample fixture**: done, defined once as `src/chatddx/conftest.py:seeded` (`agents/wip-bench.md`,
+  "Phase 2", step 5).
 
 #### Built: 4b
 `run CASE [SEED]` and `batch TAG...` (`src/chatddx/repl/running.py`), on the runner and the scoring pass through
@@ -429,8 +432,8 @@ answer and its scores is shared by all of them, in `render.py`.
   alice's own expectation thread.
 
 Takes made while building, all still open:
-- **What is left to score is worked out per run** (`Bench.unscored`), not per scorer through `Reads.outstanding`:
-  moved to `agents/wip-bench.md`, "Rules held twice".
+- **What is left to score is worked out per run** (`Bench.unscored`); `Reads.outstanding` is gone
+  (`agents/wip-bench.md`, "Phase 2", step 3).
 - **The latest score per scorer** is what `runs`, `replay` and `show` read. Older ones stay in the ledger, and
   `scores_of` lists every score of a run, whoever gave it.
 - **The runs list shows means** per view, so a batch fits a line per scorer.

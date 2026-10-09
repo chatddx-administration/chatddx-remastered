@@ -4,8 +4,9 @@ from pathlib import Path
 import pytest
 
 from chatddx.bench import Bench, Cell
+from chatddx.conftest import WORLD
 from chatddx.inventory import DirectorySource, Inventory
-from chatddx.repl.test.sample import FREE_TEXT, PLAN, QWEN, WORLD, Say
+from chatddx.repl.test.sample import FREE_TEXT, PLAN, QWEN, Say
 
 
 def rows(written: str) -> list[str]:

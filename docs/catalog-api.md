@@ -736,3 +736,9 @@ amendments there.
 - The tier-2 binding check accepts a binding identical to the previous one, and the tier-2 label check words its error
   differently from `check_label`.
 - `latest` keeps each key at the position of its first row.
+
+## Proposed amendments
+- CHANGE, under "Package", "The package imports no chatddx package but `chatddx.factors`" → "The package imports no
+  chatddx package but `chatddx.factors` and `chatddx.identity`", and add `chatddx.identity` to `model.py`'s row:
+  `About.shows` calls `chatddx.identity.sees`, the rule of who sees what, and adds that what is shown is live
+  (`src/chatddx/catalog/model.py:About.shows`; `agents/wip-bench.md`, "Phase 2", step 1).
