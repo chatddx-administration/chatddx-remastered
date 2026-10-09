@@ -37,14 +37,22 @@ The catalog decides what its rows mean (docs/catalog.md). The store reads the ro
 decided, all of one change at once.
 
 ### Looking things up for someone
-Tools that act for a person, such as the planned shell, look things up the way that person sees them: among the
-live threads and families they own or collaborate on, and the runs they own. That lets the person refer to things
-loosely. A thread is found by its name, matched whole first and only then read as an owner and a name, since names
-may hold a slash, and runs by the start of their id or by a component their trial is built on. For a run, the store
-also tells which scorers can grade its answers, which scoring it would be scored under now, from the expectations the
-catalog picks for the person, and whether it still has to be scored under that scoring, so a run whose expectations
-changed after it was scored is due again. Like authorization, this decides what is relevant to show, not who may read
-what (docs/identity.md, "Authorization").
+The store offesrs a simple lookup scoped to one person for live threads, runs and families they own or collaborate
+on. Which lets a user refer to things loosely. A thread is found by its name, matched whole first and only then
+read as an owner and a name, since names may hold a slash, and runs by the start of their id or by a component
+their trial is built on.
+
+For a run, the store also tells:
+- which scorers can grade its answers
+- which scoring it would be scored under now (from the expectations the catalog picks for the person)
+- whether it still has to be scored under that scoring (the repl works this out for itself, for now)
+
+So a run whose expectations changed after it was scored is due again.
+
+Like authorization, this decides what is relevant to show, not who may read what (docs/identity.md, "Authorization").
+
+This feature should probably not exist in the store, see "Person-scoped lookup may not belong in the store" under
+"Known gaps".
 
 ## Tiers
 Integrity comes in three tiers, and a deployment applies migrations up to a chosen tier. Each schema has migrations
@@ -76,7 +84,12 @@ Agents use the system's cluster (setup in AGENTS.md); the devShell runs one of i
 
 ## Tests
 Every package's tests share one migrated template database per session, and each test gets a fresh copy of it,
-dropped afterwards. The admin creates and migrates databases; tests connect as the writer, except where they need the
+dropped afterwards.
+
+Before a database is copied or dropped, the tests wait for the sessions on it to end, since one closed a moment
+ago may still be ending on the server, and the admin can't end a writer's session to drop the database by force.
+
+The admin creates and migrates databases; tests connect as the writer, except where they need the
 admin, for tier-0 writes and tier-2 triggers. They fail, rather than skip, when the database can't be reached.
 
 ## Terms
@@ -115,17 +128,9 @@ gaps").
   rows of the old version, nor load a closure that holds one. The rows can't be rewritten either: the tables are
   append-only, and digests and seals depend on the bytes. docs/factors.md, "Splitting expectations", already considers
   a bump of the scorer's schema version.
+- Which runs still need scoring is answered twice: by the store, per scorer over all of a person's runs, and by the
+  repl, one run at a time. Only the repl's answer is used.
+- Person-scoped lookup may not belong in the store. `Reads` is mostly policy based on other modules' rules, which
+  contradicts "the store answers which rows exist; the modules decide what they mean".
 
 ## Proposed amendments
-- CHANGE, under "Looking things up for someone", "Tools that act for a person, such as the planned shell," → "Tools
-  that act for a person, such as the shell (src/chatddx/repl/),": the shell is built, and looks things up this way.
-- CHANGE, under "Looking things up for someone", "and whether it still has to be scored under that scoring" → "and
-  whether it still has to be scored under that scoring (the shell works this out for itself, for now)": the store
-  answers it per scorer, for all of a person's runs (src/chatddx/store/reads.py:108), which nothing but its tests
-  calls now, while the shell asks it of one run at a time (src/chatddx/repl/bench.py:559): `score RUN` needs one run's
-  answer, and a run whose case has several expectations to choose from is passed over for that scorer rather than
-  stopping the listing. Moving the shell's question into the store would make the sentence true as it stands.
-- ADD, under "Tests", after "dropped afterwards.": "Before a database is copied or dropped, the tests wait for the
-  sessions on it to end, since one closed a moment ago may still be ending on the server, and the admin can't end a
-  writer's session to drop the database by force.": without the wait, `DROP DATABASE … WITH (FORCE)` failed now and
-  then with "permission denied to terminate process" (src/chatddx/conftest.py:35).

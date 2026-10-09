@@ -239,8 +239,11 @@ These are open questions of design. Where the code falls short of this document,
 ### Some of what happened isn't checked
 Most of the plan is compared with what happened (see "What a record holds"), but not all:
 - timeouts: a call's times span all its attempts, so an attempt that ran past the timeout can't be told from them;
-- the request a call sent and the request it should have been. A request can be rebuilt from stored data and the
-  vignette, and a judge request from the scorer's reading of the answer (docs/factors.md, "Judge"), but nothing does it.
+- the request a call sent and the request it should have been:
+  The repl's replay rebuilds each item's first request from the trial and the vignette and holds it to the call's
+  fingerprint. A later round's request, which could be rebuilt from the stored responses and tool runs, and a judge
+  request, from the scorer's reading of the answer (docs/factors.md, \"Judge\"), aren't rebuilt, and checking a run
+  rebuilds none.
 
 ### Smaller issues
 - **Canary drift isn't checked.** Nothing compares canary outputs between phases or between runs.
@@ -256,9 +259,3 @@ Most of the plan is compared with what happened (see "What a record holds"), but
   nothing is planned or decided.
 
 ## Proposed amendments
-- CHANGE, under "Some of what happened isn't checked", "A request can be rebuilt from stored data and the vignette,
-  and a judge request from the scorer's reading of the answer (docs/factors.md, \"Judge\"), but nothing does it." →
-  "The shell's replay rebuilds each item's first request from the trial and the vignette and holds it to the call's
-  fingerprint. A later round's request, which could be rebuilt from the stored responses and tool runs, and a judge
-  request, from the scorer's reading of the answer (docs/factors.md, \"Judge\"), aren't rebuilt, and checking a run
-  rebuilds none.": src/chatddx/repl/bench.py:584 (`Bench.rendered_again`), src/chatddx/repl/reviewing.py:`replay`.

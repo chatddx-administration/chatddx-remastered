@@ -602,11 +602,9 @@ factors, such as an engine that changed between runs. It is a component so that 
 runs.
 
 ## Lints
-Lints warn about settings that are valid but risky. They run on demand, and no component stores their findings. The
-seeder runs them over every component it seeds and prints what they find, without storing it either.
-
-Keeping them out of the components means knowledge that changes between vLLM releases can change without changing any
-digest.
+Lints warn about settings that are valid but risky. They run on demand, and no component stores their findings.
+Keeping them out of the components means knowledge that changes between vLLM releases can change without changing
+any digest.
 
 They look at:
 - pins that can move: a model revision that isn't a commit, a runtime that isn't a Nix store path, scorer code without a
@@ -724,8 +722,3 @@ a picker of the right kind for every reference, straight from the schema. Refere
 because nothing read it. The JSON Schema plays no part in any digest, so adding it back changes no digest.
 
 ## Proposed amendments
-- CHANGE, under "Lints", "The seeder runs them over every component it seeds and prints what they find, without
-  storing it either." → "The seeder runs them over every component it seeds, and the shell over its cell run as a
-  trial, whenever the cell changes and in `show`; both print what they find, without storing it either.": the shell
-  lints the pair, and with `show` the languages of the cases it counts too (src/chatddx/repl/bench.py:359,
-  src/chatddx/repl/shell.py:71).

@@ -139,8 +139,9 @@ Whoever creates a thread or a family is its owner, unless they name someone else
 them a collaborator. A person sees what they own and what is shared with them, as long as it isn't deleted. Like
 authorization, this decides what is relevant to show, not who may read it (docs/identity.md, "Authorization").
 
-This is the catalog's sense of owning. It is a different thing from the roles' sense, as in "clinicians own the
-vignettes" (docs/chatddx.md, "Roles mentioned").
+A run's owner is whoever started it, and a score's whoever scored it: the runner and the scoring pass write the
+owner entry as they start, and a person's runs are the runs they own. This is the catalog's sense of owning. It is
+a different thing from the roles' sense, as in "clinicians own the vignettes" (docs/chatddx.md, "Roles mentioned").
 
 Every row in the catalog records who wrote it and when. A thread's versions and a family's bindings are shown with
 them; for entries, labels and languages, only what holds now is shown (see "Open design issues").
@@ -166,8 +167,11 @@ A thread's title is its name. Without one, a fork is shown by its origin's title
 ("plan, output: management-plan-shown"), or as "a fork of plan" when it varies nothing; any other thread is shown by
 what its head holds.
 
-Any component can be given a title, in a thread or not, so a run of a variation nobody saved can be shown too. The
-catalog prefers, in order:
+Any component can be given a title, in a thread or not, so a run of a variation nobody saved can be shown too.
+A skeleton is described by its recipe only when a compilation of it is stored, so the shell stores the compilation
+of a variation it runs unsaved.
+
+The catalog prefers, in order:
 1. a live thread whose head it is: its name, or else its title;
 2. a live thread with a name that held it earlier: "plan (earlier)";
 3. the same two among deleted threads;
@@ -346,19 +350,8 @@ two families.
 - **Judges aren't checked for language.** A judge's language could be compared with the cases its scoring grades, the
   way lints check a trial's. An English judge grading Swedish answers may be intended, so it would be a notice rather
   than a warning.
-
-## Proposed amendments
-- ADD, under "Owners", after its first paragraph: "A run's owner is whoever started it, and a score's whoever scored
-  it: the runner and the scoring pass write the owner entry as they start, and a person's runs are the runs they
-  own.": nothing in this document says who owns a run or a score, and the shell lists a person's runs by it
-  (src/chatddx/runner/run.py:151, src/chatddx/runner/score.py:65, src/chatddx/store/reads.py:56).
-- ADD, under "Titles", after "so a run of a variation nobody saved can be shown too.": "A skeleton is described by its
-  recipe only when a compilation of it is stored, so the shell stores the compilation of a variation it runs unsaved.":
-  without it, such a run's configuration is shown as "generation skeleton" and the start of its digest
-  (src/chatddx/catalog/titles.py:_derive, src/chatddx/repl/bench.py:458 and :472).
-- ADD, under "Smaller issues": "**A variation nobody saved has a long title.** It is described by its whole recipe,
-  \"case · diagnoses-tool · recommended (Qwen/Qwen3-8B-AWQ) · off (Qwen/Qwen3-8B-AWQ)\", where the shell called it
-  \"diagnoses-tool (Qwen/Qwen3-8B-AWQ)+reasoning=off\": the configuration it came from and the parts set over it.
+- **A variation nobody saved has a long title.** It is described by its whole recipe:
+  "case · diagnoses-tool · recommended (Qwen/Qwen3-8B-AWQ) · off (Qwen/Qwen3-8B-AWQ)", where the shell called it
+  "diagnoses-tool (Qwen/Qwen3-8B-AWQ)+reasoning=off": the configuration it came from and the parts set over it.
   Neither is stored. An entry on the run, or a title made from the closest configuration and what the variation
-  changes from it, would say it shorter.": the shell's `runs` and `replay` show such titles (src/chatddx/repl/bench.py,
-  `Bench.described`; agents/wip-repl.md, "Left from 4c").
+  changes from it, would say it shorter.
