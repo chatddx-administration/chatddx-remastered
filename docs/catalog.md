@@ -373,3 +373,6 @@ two families.
   changes from it, would say it shorter.
 
 ## Proposed amendments
+- CHANGE "Names" and "Deleting": the sample loader is init-data, and wiping is wipe-data (docs/curation.md). A re-run
+  of init-data also withdraws the tags the archive gave that the data no longer lists, and leaves those people gave
+  (src/chatddx/curation/write.py:_Init.sync).

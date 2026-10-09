@@ -139,3 +139,7 @@ These are open questions of design. Where the code falls short of this document,
   is then unknown.
 
 ## Proposed amendments
+- CHANGE "Where facts come from": init-data and the repl load the bundled facts, a World's `facts.toml` when it has
+  one, and the files `--facts` names, beside each other (src/chatddx/cli.py, src/chatddx/inventory/world.py;
+  docs/curation.md, "The World").
+- CHANGE "Writing chunks": "the seeder (agents/wip-seed.md)" is init-data (docs/curation.md, "Per model").

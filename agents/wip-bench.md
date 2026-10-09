@@ -346,7 +346,7 @@ How the old bench maps onto remastered:
   - A worker, long-lived and serving many owners.
   - An export of scores, and `chatddx samples`.
   - The CLI's ops commands (`migrate`, `person`, `init-data`, `import-engine`). These don't act for one person: seeding
-    writes as the archive (`src/chatddx/seed/write.py:_Seeder`).
+    writes as the archive (`src/chatddx/curation/write.py:_Init`).
 - **One synchronous connection.** The store is synchronous and the bench holds one connection, so a portal would build
   a bench per request, as the old one did.
 - **The store's principle**: "The store answers which rows exist; the modules decide what they mean" (`docs/store.md`,

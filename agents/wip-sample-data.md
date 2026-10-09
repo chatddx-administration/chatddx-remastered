@@ -38,7 +38,7 @@ replaced the planned `import-engine` run on a host, which would have read `nvidi
    - **Where the real World lives**: `worlds/kompismoln/` (`docs/inventory.md`, "Worlds"),
      with the factors `import-engine` writes in `worlds/kompismoln/factors.toml`. `init-data --world
      worlds/kompismoln/inventory.toml --factors worlds/kompismoln/factors.toml` seeds the sample with them, and
-     `src/chatddx/store/test/test_seed.py:test_init_data_command` checks that it binds each endpoint and seeds no fake.
+     `src/chatddx/curation/test/test_init.py:test_init_data_command` checks that it binds each endpoint and seeds no fake.
    - **What a model's files are**: every file of the snapshot at the pinned commit, as the report hashes them, with a
      snapshot that holds only what vLLM needs. A list of only what vLLM reads would have to follow vLLM's loaders per
      version and model, and missing a file means missing a change: with `--generation-config auto` (the default)
@@ -54,13 +54,13 @@ replaced the planned `import-engine` run on a host, which would have read `nvidi
      `import-engine` records that directory as the host's location for the model. The digests don't change.
 2. **Decided since:**
    - **Decision 1, B**: `from_facts` records are written for the models the planned engines serve and the
-     facts know (`src/chatddx/seed/plan.py:plan_factors`, which plans models and engines first). A served model
+     facts know (`src/chatddx/curation/plan.py:plan_factors`, which plans models and engines first). A served model
      without facts and a known model without an engine are reported as skipped. The sample's seeding is unchanged:
      its engines serve the two models the facts know. With it came `facts.sampling_unmatched`, a pair lint for a
      skeleton whose sampling was written for another model (`src/chatddx/facts/lint.py:_sampled_for`); `docs/facts.md`
      has proposed amendments for both.
 3. **Done: `chatddx import-engine`** (`docs/inventory.md`, "Importing from a host"). The digests it writes are the
-   seeder's.
+   ones init-data loads.
 4. **Imported** (chatddx-remastered 5760e10), and every value checks out: the digests recompute, the lints are clean,
    and `start_up` gives o11n's command line. But the runtime root was named after its server and built with the host's
    package set, so the closures differed between the hosts for the same packages and would have moved with every
@@ -83,10 +83,10 @@ replaced the planned `import-engine` run on a host, which would have read `nvidi
   `chatddx person add` and `person password` remain for the rest.
 - Done (decided): `chatddx wipe-data USER` deletes what USER owns and unshares what they collaborate on, a
   `deleted` entry and a collaborator entry with `present` false, each written only when it changes something
-  (`src/chatddx/seed/write.py:wipe`). The person and the archive stay; `wipe-data archive` is refused. Kept to a
+  (`src/chatddx/curation/write.py:wipe`). The person and the archive stay; `wipe-data archive` is refused. Kept to a
   minimum on repeated `init-data`/`wipe-data`: no thread is created again, `init-data --giftbag` restores the forks
   `wipe` deleted rather than forking anew, and a cycle writes one entry per gift and per share
-  (`src/chatddx/store/test/test_seed.py:test_wipe_data_deletes_and_unshares_and_init_data_gives_it_back`).
+  (`src/chatddx/curation/test/test_init.py:test_wipe_data_deletes_and_unshares_and_init_data_gives_it_back`).
 - Done (decided): the old target format's `dont_miss`, `warning = false` and `text`, which no case used, are in
   `targets.json` and the sample's scorers, to show how an output, a view and a scorer meet
   (`src/chatddx/scorers/test/test_scorers.py`, the three tests after `sample_scorer`):
@@ -144,7 +144,8 @@ without tools on the fake engines (`agents/wip-runner.md`).
   Tables are kinds, keys are component fields, and references name records. On top of that, `json_schema_path`
   loads a JSON file, `from_facts` writes a chunk per model, `fork_of` seeds a record as a fork, and `tags` and
   `description` are catalog entries.
-- `cases.toml`: the 99 cases, each with its tags, language and targets, without the `# guessed` markers.
+- `cases-en.toml` and `cases-sv.toml`: the 99 cases by language, 79 and 20, each with its tags and targets, without
+  the `# guessed` markers.
 - `schemas/`: the two output schemas and the hand-written `targets.json`.
 
 `factors.toml` also holds the old tool, toolset, `plan-web` and scorers (see "Tools and scorers"). The two sample
@@ -158,11 +159,11 @@ them as a World would:
 - `vignettes/` has the 99 files of 7893656's `src/chatddx/data/cases`, byte for byte (their git blob hashes match the
   old repo's). 30 of them mix CRLF and LF line endings, so `.gitattributes` marks the directory `-text` to keep git
   from converting them.
-- `src/chatddx/store/test/test_seed.py:test_the_sample_world_holds_the_vignettes_at_7893656` pins their ids, checks
+- `src/chatddx/curation/test/test_init.py:test_the_sample_world_holds_the_vignettes_at_7893656` pins their ids, checks
   that they decode as UTF-8, and pins one fingerprint over all their fingerprints, so leaving 7893656 takes a
   deliberate edit.
 
-`init-data` still needs the source named: there's no default for `--world` or `--vignettes`.
+`init-data` takes the World from `--world DIR`, or `CHATDDX_WORLD`, which `.env-example` sets to `worlds/sample`.
 
 ### What changed in the hand edit
 - `instruction.ddx` and `instruction.bare` collapse into `prompt.case`; bare is the same prompt with `output.raw`.
@@ -178,47 +179,8 @@ them as a World would:
   parity items"). No case has one.
 
 ### init-data
-`chatddx init-data USER (--vignettes DIR | --world FILE) [--source NAME] [--giftbag] [--data DIR] [--factors FILE …] [--facts PATH …]`
-(`src/chatddx/cli.py`) connects as `DB_USER` and seeds in one transaction for the `archive` person, created if
-missing. It shares everything with USER, who is added when missing. It prints one line per record: created,
-validated, updated, skipped, missing, needs repair, forked, kept or restored. It ends with the lints' findings.
-- **Inputs.** `--data` is what gets seeded, the package's sample data by default, and `--factors` more factors
-  files planned with its own, such as `worlds/kompismoln/factors.toml`; a name may be defined only once per table. The
-  vignettes come from `--vignettes`, a directory of `<id>.txt` files such as `worlds/sample/vignettes`, or from
-  `--world`, a World inventory whose `[source.<name>]` table locates them, such as `worlds/sample/inventory.toml`.
-  `--source` names the source (`sample`), which the cases are keyed by. A path that holds none of the sample's cases
-  is refused before anything is written. `--facts` adds facts files to the bundled ones
-  (`src/chatddx/facts/models.toml`).
-- **Planning.** `chatddx.seed.plan_factors` is pure. It plans models and engines first, then everything else for
-  the models those engines serve that the facts know. For the sample that's 50 records: 2 models and 2 engines,
-  14 recipes (7 configurations × 2 models), 12 reasoning chunks, 5 sampling chunks, 7 outputs, a prompt, a tool, a
-  toolset, an expectation schema and 4 scorers. It skips 4 reasoning chunks the facts refuse for gpt-oss.
-- **Chunks and recipes.** Each record becomes a thread named after it and owned by the archive. Recipes are
-  compiled, and their compilations are recorded. A `from_facts` chunk is written from each model's facts, so the
-  recipes using it come once per model, named `plan (Qwen/Qwen3-8B-AWQ)`. A refused combination is skipped and
-  reported. A `fork_of` record is seeded as a fork, so the catalog knows what it varies.
-- **Cases.** Each case is read from the source and adopted into a family named by its id, with its tags and
-  language. Each case gets an expectation thread.
-- **Re-runs.** A record is matched by kind, name and the archive as owner (`Catalog.find`). It's validated when
-  unchanged and gets a new edit when changed, so nothing is duplicated. A vignette that is missing or has changed at
-  the source is reported, and a changed one needs a repair (`docs/catalog.md`, "Families and repairs").
-- **Sharing.** USER becomes a collaborator on every archive thread and family.
-- **`--giftbag`.** USER also gets their own fork of every chunk, tool, skeleton and expectation thread, so the
-  catalog's variations and proposals follow the archive when it moves. Expectation schemas and scorers stay the
-  archive's. Existing forks are kept, and deleted ones (by `wipe-data`) restored (`src/chatddx/seed/write.py:_gifted`,
-  `_Seeder.giftbag`).
-- **Lints.** Every component that got a thread or a family this run, validated or not, is linted
-  (`src/chatddx/seed/write.py:_Seeder.lint`): `src/chatddx/factors/lint.py:lint`, with the catalog's languages and
-  the facts' `reasons`, and `src/chatddx/facts/lint.py:check_pairs`, with the facts the plan was made with (`Plan.facts`).
-  A missing case, or one that needs repair, isn't linted. Each finding is a line, `[lint warning] expectation
-  Dutchfall11w: expectation.invalid: at the root: 'diagnosis' is a required property`, naming every record that
-  shares the digest, and a last line counts them: `[lint] 0 findings in 230 components` for the sample. The
-  findings are printed, not stored, and don't stop the seeding. Today the expectation schema, expectation and
-  scorer, model and engine lints have something to check: the fake models get `model.revision` and the fake
-  engines `engine.closure`, and without `CHATDDX_REVISION` each scorer gets `scorer.revision`, so the sample's
-  count is 4, or 8 without a revision. The vLLM, facts and language lints will apply once trials and judges are seeded.
-- **Compiler.** Compilations record the running code as their compiler (`src/chatddx/core/rig.py:rig`): the version
-  from the package, and the revision from `CHATDDX_REVISION` when it's set.
+What `init-data`, `repair-data` and `wipe-data` do is `docs/curation.md`'s (`chatddx.curation`). The history of the
+parity checks stays here.
 
 The old checkout's vignettes were checked in a scratch database:
 - the first run created 236 records and 136 giftbag forks;
@@ -233,19 +195,13 @@ The old checkout's vignettes were checked in a scratch database:
 - once the fake engines were added, it got their 2 models and 2 engines created, and both sample endpoints reported
   the engine they serve.
 
-Tests: `src/chatddx/store/test/test_seed.py`.
-
-Still open:
-- A renamed vignette shows as missing. `Catalog.survey` could name the rename, and a `repair` command could apply it.
-- `wipe-data`, which tier 2 rules out as a DELETE; deletion is a `deleted` entry.
-- Tags and collaborators are only ever added on a re-run, never removed.
-- The seeded chunks have no language, so a trial's request language is unknown (G18).
+Tests: `src/chatddx/curation/test/`.
 
 ## Engines and endpoints
 Decisions 2A and 4D, done. Endpoints, hosts, the sample World, start-ups and `confirm` are `docs/inventory.md`'s.
 The sample's side:
-- **The seeder** takes `model`, `local_engine` and `remote_engine` tables, and resolves every reference by name in
-  one place (`REFERENCES` in `src/chatddx/seed/plan.py`). Engines aren't gifted, as the old giftbag gave no stacks.
+- **init-data** takes `model`, `local_engine` and `remote_engine` tables, and resolves every reference by name in
+  one place (`REFERENCES` in `src/chatddx/curation/plan.py`). Engines aren't gifted, as the old giftbag gave no stacks.
 - **The fake engines** (`worlds/sample/factors.toml`): the old fake stacks' models and flags. Since they're the
   sample World's, seeding another World doesn't seed them, and seeding the sample takes `--factors
   worlds/sample/factors.toml`. Every value is ours and says what it
@@ -253,13 +209,13 @@ The sample's side:
   `0.24.0+fake` run by `chatddx fake-vllm` rather than a Nix closure; an empty chat template. So `init-data`'s lints
   give each fake model `model.revision` and each fake engine `engine.closure`, four warnings on every run.
 - **The sample World** has an endpoint per fake engine, since vLLM serves one model a process.
-- **init-data** with `--world` ends with a line per endpoint (`src/chatddx/seed/world.py`; `docs/inventory.md`,
+- **init-data** ends with the inventory check's findings (`src/chatddx/inventory/check.py`; `docs/inventory.md`,
   "Reaching an engine").
 
 ## Tools and scorers
 Where tool and scorer code lives is settled (see "Decided"):
 - **Code.** A `tool` or `scorer` record without a `code` pins the running chatddx, the `Code` compilations record as
-  their compiler (`src/chatddx/seed/plan.py:plan_factors`). `src/chatddx/core/rig.py:entry` finds an entry point's
+  their compiler (`src/chatddx/curation/plan.py:plan_factors`). `src/chatddx/core/rig.py:entry` finds an entry point's
   function, and runs only the running chatddx: other pinned code is refused, not run unpinned. Planning refuses an
   entry point that names nothing, and a view whose metric the scorer's code doesn't know (`Metrics.names`). Since the
   code is part of a tool's and a scorer's digest, a new version or `CHATDDX_REVISION` makes new ones, and the
@@ -286,7 +242,7 @@ Where tool and scorer code lives is settled (see "Decided"):
   refuses them on a sensitive source, the sample's included.
 - **init-data** writes the labels, gives USER a fork of the tool as the old giftbag did (scorers stay the
   archive's), and lints the scorers on landing.
-- **Tests**: `src/chatddx/scorers/test/`, `src/chatddx/tools/test/`, and `src/chatddx/store/test/test_seed.py`. One
+- **Tests**: `src/chatddx/scorers/test/`, `src/chatddx/tools/test/`, and `src/chatddx/curation/test/test_init.py`. One
   test builds an answer of each sample configuration's shape and checks that every view of the scorer reading it
   picks something.
 
@@ -439,9 +395,8 @@ Each gap was tagged [maybe fix remastered]: the sample data needed something rem
   kept on families and digests, and `language.mixed`/`language.unknown` (`docs/factors.md`, "Translations";
   `docs/catalog.md`, "Languages"). Also decided: a model that answers in another language than it was prompted in
   loses the score, and mixing is a warning, not a hard block.
-  - In the sample, the seeded chunks have no language, so every trial's request language is unknown
-    (`language.unknown`). Giving them `en` (`Catalog.language`) would make the 20 Swedish cases' trials
-    `language.mixed` until a Swedish translations chunk exists.
+  - Done: the sample's text-bearing chunks are `en`, from its `factors.toml`, so the 20 Swedish cases' trials are
+    `language.mixed` until a Swedish translations chunk exists (`docs/curation.md`, "Languages").
   - Still open: few-shot assistant examples that are JSON answers are translated as one text, so the translator
     edits the JSON by hand.
   - Side effects of the implicit language, which no doc covers yet:
@@ -494,7 +449,7 @@ Decided: Olof's comments on the cases are the foundation for a free-text expecta
   answer they'd want ChatDDx to give. 13d317d also renamed `DutchFall10w` to `Dutchfall10w`, with the same bytes.
 - **Done (decided): the comments are expectation data**, not vignette text, since a vignette and its appendices are
   sent to the model. They're `notes` in the targets (`src/chatddx/data/sample/schemas/targets.json`,
-  `src/chatddx/data/sample/cases.toml`), as the user decided:
+  `src/chatddx/data/sample/cases-*.toml`), as the user decided:
   1. **Kept apart.** A note's `comment` is the reading of the case, its optional `answer` the "Chatddx:" block, so a
      judge can be given either.
   2. **The targets schema is extended**, rather than a schema of its own: `notes` is an optional list beside the
