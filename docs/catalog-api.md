@@ -738,3 +738,6 @@ amendments there.
 - `latest` keeps each key at the position of its first row.
 
 ## Proposed amendments
+- CHANGE, in the "Builds on" table, `model.py`'s row "`chatddx.factors.{base,cases,scoring}`" →
+  "`chatddx.factors.{base,cases,scoring}`, `chatddx.identity`": `About.shows` calls `chatddx.identity.sees`
+  (`src/chatddx/catalog/model.py:About.shows`). The paragraph below the table already says so.

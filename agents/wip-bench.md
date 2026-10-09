@@ -15,20 +15,22 @@ https://github.com/chatddx-administration/chatddx/blob/504792cbeb09508f2c52912be
 2. **Phase 2 has started** (see "Phase 2"). Steps 1–5 are done: the visibility predicate in `identity`, `Reads` in the
    bench, one rule for what is left to score, one rule for the expectation a case is held to, and the bench's own
    tests.
-3. **The reconciliation of "cell"** waits on the user's word on the names (see "'Cell', translated"). Steps 7 and 8
-   come after it, since they touch the same code.
+3. **Whether to keep "cell"** is open again (see "Keeping 'cell' or not"). The options are K1–K3, and the take is K2:
+   the repl keeps the word, and the bench speaks the docs' terms. Steps 6 and 7 wait on it, since they touch the same
+   code.
 
 ## Decided
 - **B3**: the bench is a person-scoped view (see "Phase 1" for the options). The split:
-  - `identity/` holds the pure rules: the map from role to kinds (Z1, `docs/identity.md`, "Authorization") and the
-    predicate for "may this person see this". They are data and functions with no store access, so `identity` stays a
-    leaf.
+  - `identity/` holds the pure rules: the map from role to kinds (Z1, `agents/wip-identity.md`, "Authorization")
+    and the predicate for "may this person see this". They are data and functions with no store access, so `identity`
+    stays a leaf.
   - `bench/` is the view that applies those rules to what is in the store and the World. It also holds the variation
     being tried at an endpoint (see "'Cell', translated") and the writes made for the person.
 - **The two rules for the expectation a case is held to** were to be made one if that could be done cleanly, and
   otherwise looked at more deeply. It was clean (phase 2, step 4).
 - **"Cell" isn't a term of remastered**, and isn't to be used in code or docs. Its translation comes first, then a
-  reconciliation, scheduled below.
+  reconciliation. Since reopened by the user: whether "cell" is worth keeping between the bench and the edges, as long
+  as it stays out of the data model (see "Keeping 'cell' or not"). Until that is decided, new code doesn't use it.
 
 ## "Cell", translated
 "Cell" is the old chatddx's term: `bench/cell.py:Cell(configuration, name, variations, stack)`, a configuration with
@@ -58,35 +60,94 @@ Field by field:
 
 There is one tension. `docs/chatddx.md` calls variations "a supported portal workflow, not an object in the code".
 `Cell` holds the variation being tried as a value (its base, its recipe, and the parts with the names they were set
-by), because the repl shows the names and `save` forks from the base. A value in the bench isn't a catalog object, but
-the reconciliation should keep it a plain value.
+by), because the repl shows the names and `save` forks from the base. A value in the bench isn't a catalog object.
+Whatever is decided about the word, it should stay a plain value.
 
-### The reconciliation
-Scheduled; it waits on the user's word on the names. It renames:
-- **Code**, about 280 uses in `src/` and none in `docs/`:
-  - `Cell` and its members (`using`, `on`, `set`, `held`, `varied`, `label`);
-  - `Repl.cell`, the repl's `cell CONFIGURATION ENDPOINT` command and its help, and the prompt;
-  - messages such as "the cell has no endpoint" and "a case isn't in the cell";
-  - the bench's `cell` parameters;
-  - test names such as `test_the_prompt_shows_the_cell`.
-- **Agents' files**: `agents/wip-repl.md` (28 uses). `agents/wip-repl-manual.md` is the old manual copied unchanged,
-  and stays that way, since it is what the cross-check reads. The new manual (`docs/repl.md`, proposed) won't use the
-  word.
+## Keeping "cell" or not
+### Where it is
+- **The repl**: the `cell CONFIGURATION ENDPOINT` command, `Repl.cell`, about ten help texts ("put a configuration in
+  the cell", "run a case on the cell", "save the cell's configuration as your own"), and messages such as "the cell
+  has no endpoint" and "a case isn't in the cell". The prompt shows what the cell holds, but not the word:
+  `alice plan+reasoning=off×qwen3-8b-awq@fake #7>`.
+- **The bench**: the value `Cell`, and the `cell` parameters of `configuration`, `chunk`, `skeleton`, `findings`,
+  `reach`, `save` and `start`.
+- **Nowhere below the bench.** The factors, the ledger, the catalog, the store, the runner and the scorers never name
+  it, and nothing stored is one. `save` stores a skeleton thread's edit and a compilation, `start` a `Trial`, and
+  scoring a `Scoring`. The cell's label isn't stored either.
+- **Nowhere in `docs/`.** In `agents/`: `agents/wip-repl.md` (28 uses), and `agents/wip-repl-manual.md`, the old
+  manual, which stays as it is.
+- In all, about 280 uses in `src/`: about 130 in the repl's code, 45 in the bench, and 105 in the repl's tests.
 
-The options for names:
-- **R1. Two values, as the translation has it.** The variation being tried is one value, and the endpoint is held
-  beside it (`Repl.endpoint`). The bench's methods take what they need, and the engine comes from the endpoint
-  (`Bench.endpoint`). The repl's `cell X Y` goes, since `use X` and `on Y` do the same, or it becomes `use X on Y`. The
-  value can't be called `Variation`: that is the catalog's (`src/chatddx/catalog/model.py:Variation`, what a saved
-  fork varies from its base). It could be `TriedVariation`, held in variables named `variation`.
-- **R2. One value, `Pair`**, after the skeleton and engine that a trial pairs (`docs/facts.md`, "Checking pairs"),
-  with the variation it came from and the endpoint. The repl's command becomes `pair X Y`. The term exists already,
-  but a pair with one side missing reads oddly, and the repl holds one most of the time.
-- Names ruled out: `Variation`, which is taken, and `Draft`, since "draft" names JSON Schema drafts in
+### What it holds, and the words the docs have for it
+A cell is a configuration, or a variation of it being tried, together with an endpoint. Either side can be missing.
+The docs name each side, but not the two together:
+- **Configuration** and **variation** (`docs/catalog.md`, "Configurations and variations") name the skeleton's side
+  only.
+- **Endpoint** and **engine** name the other side.
+- **Pair** (`docs/facts.md`, "Checking pairs") is a trial's skeleton and engine, and is used for checking them.
+- **Trial** adds the cases, the cleanup and the seeds.
+
+### Is it a good word?
+For it:
+- It is one short word for what the repl shows and acts on all the time.
+- No remastered term names the two sides together.
+- Repl users know it.
+- It can't be mistaken for any term in the code, since none is like it.
+
+Against it:
+- It doesn't say what it holds: the user doesn't see the connection, and a newcomer won't either.
+- The docs, and so a portal built from them, speak of configurations, variations, endpoints and trials. "Cell" would
+  be a fourth word for a combination of two of those.
+- The word's everyday meanings sit right next to it. The repl prints tables, whose cells its tests read
+  (`src/chatddx/repl/test/test_inspecting.py:row_names`). Scores are to be exported and analysed in Python
+  (`docs/chatddx.md`, "On the table"), where a cell is a spreadsheet's or a notebook's.
+- A cell can hold only an endpoint, or only a configuration, which the word doesn't suggest.
+
+### How it would spread
+Today it is held between the bench and one edge. It would spread through:
+- **The bench's API.** Every edge to come (the portal, an API) builds on the bench, and would take `Cell` with it,
+  into forms, routes and resources.
+- **A stored title.** `docs/catalog.md` ("Smaller issues") proposes "an entry on the run" so that an unsaved
+  variation's runs get a shorter title. Stored from the cell's label, it would carry the repl's notation into the
+  catalog.
+- **An export** whose unit is "the runs of a cell".
+- **Docs** for the bench or the repl that use it.
+
+### Options
+- **K1. Keep it between the bench and the edges, as now.** `Cell` stays the bench's value and the repl's word. Define it
+  in the bench's doc and in the repl's manual as "a configuration, or a variation of it being tried, and the endpoint
+  it runs on". Guard the data model (see "The guard"). This costs nothing now, but every edge to come learns the word
+  from the bench.
+- **K2. Keep it in the repl only.** The repl's command, help, messages, manual and its own state (`Repl.cell`) say
+  "cell". The bench speaks the docs' terms: the variation being tried as one value, and the endpoint beside it (R1
+  below). The repl translates, so repl users keep their habit, and the portal and an API start from the docs' terms. It
+  costs renaming the bench's 45 uses and the repl's calls into it.
+- **K3. Drop it everywhere.** That was the earlier decision. The repl's `cell X Y` becomes `use X on Y`, perhaps with
+  `cell` kept as a hidden alias for a while. It costs about 280 renames, and repl users relearn.
+
+Names for the bench's value, under K2 and K3:
+- **R1. Two values.** The variation being tried is one value, and the endpoint is held beside it. The bench's methods
+  take what they need, and the engine comes from the endpoint (`Bench.endpoint`). The value can't be called
+  `Variation`, which is the catalog's (`src/chatddx/catalog/model.py:Variation`, what a saved fork varies from its
+  base). It could be `TriedVariation`, held in variables named `variation`.
+- **R2. One value, `Pair`**, after the skeleton and engine that a trial pairs, with the variation it came from and the
+  endpoint. The term exists already, but a pair with one side missing reads oddly.
+- Ruled out: `Variation`, which is taken, and `Draft`, since "draft" names JSON Schema drafts in
   `src/chatddx/factors/lint.py`.
 
-Take: R1 with `TriedVariation`. It follows the translation, adds no combined concept the docs don't have, and leaves
-`use` and `on` as the repl's ways to choose.
+### The guard
+Whichever option is chosen, the word stays out of the data model:
+- Nothing below the bench names it. A test can check this by grepping the packages under the bench for the word, under
+  K1, or every package but `chatddx.repl`, under K2.
+- Nothing stored is one: a run's title, if one is ever stored, is a title (`docs/catalog.md`, "Titles"), not a label
+  in the repl's notation.
+- Docs below the edges don't use it.
+
+### Take
+K2 with R1. The word's value is the repl's: a habit, a terse command, help that reads short. Its cost is spreading
+through the bench to edges that don't exist yet, whose users would learn it from scratch. K2 keeps the value and stops
+the spread at the cheapest point, since the bench is shared by every edge. The guard is then simple: "cell" appears
+nowhere outside `src/chatddx/repl/`.
 
 ## Phase 0: out of the repl
 Done (fdee878).
@@ -243,11 +304,11 @@ How the old bench maps onto remastered:
 | `Plan`, `crossed` (`bench/plan.py`), `held` (`bench/held.py`) | not ported: the portal's (`agents/wip-repl.md`, "Left out") | `Reads.reaching` and `Bench.scored_by` cover the repl's part of `held` |
 
 ### Forces
-- **Authorization is a convenience, not a protection** (`docs/identity.md`, "Authorization"). What a person sees
+- **Authorization is a convenience, not a protection** (`agents/wip-identity.md`, "Authorization"). What a person sees
   decides what is relevant to show them. Protection comes from clearance, enforced by the runner's gate
   (`src/chatddx/runner/gate.py`), and from the database's grants. So no option needs a facade for safety.
 - **Z1 isn't written.** Z1 maps roles to the kinds each role sees, and it needs the portal's views to mean anything
-  (`docs/identity.md`, "Open").
+  (`agents/wip-identity.md`, "Open").
 - **Edges to come.**
   - The portal, per request, and an API.
   - A worker, long-lived and serving many owners.
@@ -296,11 +357,12 @@ Sub-decisions:
 1. **The visibility predicate is `identity`'s**: `src/chatddx/identity/identity.py:sees(person, owner,
    collaborators)`, the owner or a collaborator. `src/chatddx/catalog/model.py:About.shows` adds that what is shown
    is live, and calls it. So the catalog now imports `chatddx.identity` as well as `chatddx.factors`, which
-   `docs/catalog-api.md` rules out; an amendment is proposed there. Tested in
+   `docs/catalog-api.md` now says (a3431e1); `model.py`'s row in its table is proposed. Tested in
    `src/chatddx/identity/test/test_identity.py`, and through the catalog's visibility tests.
 2. **`Reads` is the bench's**: `src/chatddx/store/reads.py` moved to `src/chatddx/bench/reads.py`, and its tests to
-   `src/chatddx/bench/test/test_reads.py`. `chatddx.store` no longer exports it, and `chatddx.bench` does. Amendments
-   are proposed in `docs/store.md` and `docs/store-api.md`.
+   `src/chatddx/bench/test/test_reads.py`. `chatddx.store` no longer exports it, and `chatddx.bench` does.
+   `docs/store.md` and `docs/store-api.md` dropped it (a3431e1); what they said is kept in "Material for the bench's
+   docs".
 3. **One rule for what is left to score**: `Reads.outstanding` is gone, unused since 4c. `Bench.unscored` (per run) and
    `Bench.outstanding` (the person's finished runs, with what each is left to be scored by) are the one answer. The
    test that pinned "a changed expectation leaves a run to score again" now pins it on `Bench.unscored`
@@ -322,7 +384,8 @@ Sub-decisions:
    (`agents/wip-repl.md`, "Left from 4a").
 
 ### Next
-6. **The reconciliation of "cell"** (see "The reconciliation"), once the user has chosen names.
+6. **"Cell"**, once the user has chosen among K1–K3 (see "Keeping 'cell' or not"): under K1, its definition and the
+   guard; under K2, the bench's rename and the guard; under K3, the whole rename.
 7. **The shell's vocabulary to the repl** (S3). This comes after step 6, since `Cell.set`'s refusal names `none`.
 8. **Typed errors** (S4).
 9. **Z1**: the map from role to kinds goes in `identity`, once the portal's views give it meaning. `sees` then takes
@@ -339,3 +402,52 @@ Sub-decisions:
   rows, and the bench applies it to everything else.
 - **Finding things by name** is still split between `Reads.thread` and `Bench.family` (see "Rules held twice").
   `OWNER/NAME` for families would make them one. Take: do it with the fold.
+
+## Material for the bench's docs
+Taken out of `docs/store.md` ("Looking things up for someone") and `docs/store-api.md` ("reads.py") at a3431e1, when
+`Reads` left the store. It is updated to the code as it is now: `outstanding` is gone (phase 2, step 3), and what is
+left to score is `Bench.unscored`'s.
+
+### Looking things up for someone
+The bench offers a simple lookup scoped to one person: live runs they own, and live threads and families they own or
+collaborate on, which lets a person refer to things loosely. A thread is found by its name, matched whole first and
+only then read as an owner and a name, since names may hold a slash. Runs are found by the start of their id, or by a
+component their trial is built on.
+
+For a run, the bench also tells:
+- which scorers can grade its answers;
+- which scoring it would be scored under now, from the expectations the catalog picks for the person;
+- which of those scorers have no score of it under that scoring, so that a run whose expectations changed after it
+  was scored is due again (`Bench.unscored`).
+
+Like authorization, this decides what is relevant to show, not who may read what (`agents/wip-identity.md`,
+"Authorization").
+
+### `class Reads`
+`Reads(conn: Connection, person: Person)` (`src/chatddx/bench/reads.py`): what one person sees, through `Catalog`,
+`Store` and `People`.
+
+| Method | Returns / raises |
+| --- | --- |
+| `threads(kind: str) -> list[tuple[Edit, About]]` | `Catalog.visible(kind, person.id)`: the heads of the live threads of `kind` the person owns or collaborates on, in thread id order. |
+| `thread(kind: str, name: str) -> Edit` | See below. |
+| `families() -> list[tuple[int, About]]` | `Catalog.visible_families(person.id)`. |
+| `runs() -> list[RunStarted]` | The runs whose entries ever named the person as owner or collaborator, and whose `About` now has the person as owner and isn't deleted; newest first. A collaborator on a run doesn't see it. |
+| `run(prefix: str) -> RunStarted` | The one run of `runs()` whose id, as `str(UUID)`, starts with `prefix`. `LookupError("no run of yours starts with '<prefix>'")` or `LookupError("<n> runs of yours start with '<prefix>'")`. |
+| `reaching(digest: str) -> list[RunStarted]` | The runs of `runs()` whose trial's closure holds `digest` (`Store.reaching(digest, "trial")`), newest first. |
+| `scorers(run: RunStarted) -> list[tuple[Edit, About]]` | The visible scorer threads whose head's every view has an `output` selector that reaches the run's skeleton's `output_schema` (`chatddx.factors.select.reaches`), the check `check_score` warns about as `view.unreachable`. |
+| `scoring(run: RunStarted, scorer: str) -> Scoring \| None` | The scoring the run would be scored under now: `Scoring(scorer, expectations)`, with, for each of the trial's cases in order, the expectation `Catalog.expectation_for(case, person.id, <the scorer's expectation_schema>)` picks, cases without one left out. `None` when no case has one. `LookupError` when the person has several expectations to choose from for a case. Nothing is stored. |
+
+`thread(kind, name)` looks among the threads of `threads(kind)` whose name is exactly `name`:
+1. those the person owns: exactly one is returned, several raise;
+2. when they own none, all of them: exactly one is returned, several raise.
+
+When no thread has the whole name and it holds `/`, it is read as `<login>/<rest>`, and when a person has that
+login, step 2 runs over their threads among `threads(kind)` named `<rest>`. A whole name wins over `OWNER/NAME`,
+since names may hold a slash, as `plan (Qwen/Qwen3-8B-AWQ)` does. Several raise `LookupError("<kind> '<name>' names
+threads <ids>; name one as OWNER/NAME")`; none raises `LookupError("no <kind> named '<name>'")`.
+
+`scorers` and `scoring` resolve the run's trial, its skeleton and the scorers through `Store.get`
+(`StructuralError` when one isn't stored or is of another kind).
+
+`Reads.runs` shows only the runs the person owns now; collaborating on a run shows nothing.
