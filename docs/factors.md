@@ -340,9 +340,11 @@ Translations map source texts to their translations, the way gettext does. Each 
 it, whitespace included, and its translation.
 
 A recipe may name translations, and compilation then passes the text of the output, the toolset and the appendix
-layout through a recipe's translations: The guidance and the text around where it is placed, the descriptions of
-tools and of the answer function, and the titles and descriptions in schemas. Instructions, examples and prompts
-are written in their language, as cases are, and pass through untouched.
+layout through them: the guidance and the text around where it is placed, the descriptions of tools and of the
+answer function, and the titles and descriptions in schemas. Instructions, examples and prompts are written in their
+language, as cases are, and pass through untouched. What defines the answer's structure, such as property names and
+allowed values, is not translated, so the answer's structure and its scoring don't change. A text without a
+translation fails the compilation, which lists every missing text: nothing is guessed, and languages never mix.
 
 Translations carry no language. A request's language is implicit in its text, and no language tag reaches the model;
 languages are recorded in the catalog (docs/catalog.md). The skeleton holds the translated text, and its compilation

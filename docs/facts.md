@@ -62,7 +62,7 @@ They refuse, with the fact's reason when there is one, when the level doesn't la
 known, or the level is refused or unknown), when a budget is asked of a model that refuses one or isn't known to take
 one, and when nothing is recommended for the level.
 
-Today `curation init-data` is the only writer (docs/curation.md). A factors file asks for a chunk from facts and
+Today `chatddx init-data` is the only writer (docs/curation.md). A factors file asks for a chunk from facts and
 gets one for each model that an engine it plans serves and the facts know, named after that model, together with
 one of each recipe that uses it. A model the facts don't know, a model no planned engine serves, and a chunk the
 facts refuse, with the recipes that need it, are skipped and reported.

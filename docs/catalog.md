@@ -131,7 +131,7 @@ and the portal.
 
 ### Names
 A name is for people. None is required, and names needn't be unique: a thread without one is shown by its title (see
-"Titles"). Names can still be used to look threads up by kind, name and owner, which is how `curation init-data`
+"Titles"). Names can still be used to look threads up by kind, name and owner, which is how `chatddx init-data`
 recognises its own records when it runs again (docs/curation.md).
 
 ### Owners

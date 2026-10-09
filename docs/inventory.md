@@ -14,7 +14,7 @@ The inventory isn't stored in the database, and its history is git's. A run reco
 address (docs/ledger.md, "Run start").
 
 This document describes what the inventory says and why. Names, fields, rules and errors are in the API,
-docs/inventory-api.md. The inventory builds on the factors and nothing else. The `init-data`, the engine import and the
+docs/inventory-api.md. The inventory builds on the factors and nothing else. init-data, the engine import and the
 runner read it.
 
 ## The file
@@ -53,7 +53,6 @@ This repository has two, in `worlds/`:
   vignettes; its endpoints, hosts and factors are what the engine import writes from the hosts' reports. Nothing in
   it is cleared, so the runner refuses to send the sample to its endpoints.
 
-- CHANGE "Worlds":
 ## Sources
 A source is where a set of vignettes is fetched from, by id. Today a source is a directory with one file per vignette,
 named by its id. Another kind of source, such as a database, would be added beside directories as a kind of its own,
@@ -65,7 +64,7 @@ appendices, with the fingerprint of the raw bytes (docs/factors.md, "Case"). It 
 it. What happens to the bytes next is the case's preparation (docs/factors.md, "Preparing a case").
 
 A source's name is part of every case built from it, and so of their digests. Renaming a source makes new cases;
-moving its directory changes nothing. The `init-data` seeds the cases of a source a World names.
+moving its directory changes nothing. init-data loads the cases of a source a World names.
 
 ## Endpoints
 An endpoint says where one engine is served: the engine, by digest; the server's address; the host that runs it, for a
@@ -127,8 +126,8 @@ out, the runner confirms the endpoint: its server must list the name the engine 
 digest or a remote engine's model (agents/wip-clearance.md, "Vetted endpoints"). A server that can't be reached
 can't be confirmed.
 
-Running `init-data` against a world ends with the check's findings and a count, or why it can't be started or reached.
-It finds that out without connecting.
+With a World, init-data ends with the inventory check's findings and a count (see "Checks happen when an entry is
+used"). It finds that out without connecting.
 
 ## Importing from a host
 The hosts run vLLM through o11n (Kompismoln/o11n). Each server runs in a container configured outside the rig, so an
@@ -175,23 +174,18 @@ These are open questions of design. Where the code falls short of this document,
 (docs/inventory-api.md, "Known gaps").
 
 ### Checks happen when an entry is used
-Loading checks only what the files show. Everything that needs the engines is checked only when an endpoint is
-started, reached or confirmed, one entry at a time:
+Loading checks only what the files show. Everything that needs the engines is checked when an endpoint is started,
+reached or confirmed, one entry at a time:
 - whether an endpoint's digest names an engine;
 - whether a local engine's endpoint has an address and a host;
 - whether the host says where the model and template are;
 - whether the engine's own arguments leave where to listen alone.
 
-The seeder's endpoint lines are a pass of their own over these checks. A single check of an inventory against the
-engines, returning findings, would give the seeder, the runner and the import the same answer. It would also fit the
-split between errors and findings (docs/chatddx.md, "Findings and errors"), where a problem that needs other
-components to see is a structural error.
-
-Nothing checks:
-- two endpoints at one address (the import refuses it only within what it writes);
-- a remote engine's endpoint that names a host;
-- host locations that no endpoint's engine pins;
-- a clearance for a source that isn't sensitive, which clears nothing.
+One pass checks the whole inventory against the engines and returns findings rather than raising. It finds what
+starting or reaching each endpoint would refuse, and what nothing refuses but is likely a slip: two local engines'
+endpoints at one address, a remote engine's endpoint that names a host, host locations that no endpoint's engine pins,
+and a clearance for a source that isn't sensitive, which clears nothing. init-data prints its findings; the runner and
+the engine import don't run it yet, and still check one entry at a time.
 
 ### Hosts don't read the start-up
 o11n and the hosts' own configuration (Kompismoln/org) decide what each server runs. The rig imports what they run,

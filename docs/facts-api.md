@@ -252,9 +252,6 @@ digest as subject, in this order:
    collapses.
 
 ### `lints(registry, facts, digests, languages=None) -> list[Finding]`
-The factors' lints of `digests` and the facts' checks of their pairs, with the facts' reasons, and the languages
-`languages` says of requests and cases.
-
 The factors' lints of `digests` (`chatddx.factors.lint.lint`, with `reasons(facts, registry)` and `languages`) and
 `check_pairs`, in that order.
 
