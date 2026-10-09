@@ -5,7 +5,7 @@ from uuid import UUID
 
 from pydantic import JsonValue
 
-from chatddx.catalog import About, Edit, Subject
+from chatddx.catalog import About, Edit, Kept, Subject
 from chatddx.catalog.model import LANGUAGE
 from chatddx.catalog.titles import short
 from chatddx.core.rig import rig
@@ -130,6 +130,13 @@ class Saved:
     digest: str
     what: Literal["created", "a new version", "unchanged"]
     variation: TriedVariation
+
+
+SAVED: dict[Kept, Literal["created", "a new version", "unchanged"]] = {
+    "created": "created",
+    "edited": "a new version",
+    "unchanged": "unchanged",
+}
 
 
 # What one person sees and does: the threads, families and runs they see, the World's
@@ -450,23 +457,15 @@ class Bench:
             compilation = (
                 self._compile(variation) or variation.configuration.compilation
             )
-            if not mine:
-                what = "created"
-                edit = self.catalog.create(
-                    skeleton.digest,
-                    self.person.id,
-                    compilation=compilation,
-                    forked_from=variation.configuration.id,
-                    name=name,
-                )
-            elif self.catalog.head(mine[0]).digest == skeleton.digest:
-                what = "unchanged"
-                edit = self.catalog.head(mine[0])
-            else:
-                what = "a new version"
-                edit = self.catalog.edit(
-                    mine[0], skeleton.digest, self.person.id, compilation=compilation
-                )
+            edit, kept = self.catalog.keep(
+                skeleton.digest,
+                self.person.id,
+                mine[0] if mine else None,
+                name=name,
+                compilation=compilation,
+                forked_from=variation.configuration.id,
+            )
+        what = SAVED[kept]
         recipe = self.catalog.recipe(edit.thread)
         return Saved(name, skeleton.digest, what, TriedVariation(edit, name, recipe))
 

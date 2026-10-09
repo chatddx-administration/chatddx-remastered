@@ -76,6 +76,8 @@ class EntryField(StrEnum):
 
 
 Part = Literal["view", "resource"]
+# What keeping a digest in a thread did (src/chatddx/store/catalog.py:Catalog.keep).
+Kept = Literal["created", "edited", "unchanged"]
 
 
 class _Frozen(BaseModel):

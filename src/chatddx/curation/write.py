@@ -1,7 +1,7 @@
 from collections import Counter
 from collections.abc import Collection, Iterable
 
-from chatddx.catalog import Entry, EntryField, Subject, Survey
+from chatddx.catalog import Entry, EntryField, Kept, Subject, Survey
 from chatddx.factors.base import Fingerprint
 from chatddx.factors.cases import Case, Vignette
 from chatddx.factors.lint import lint
@@ -16,6 +16,12 @@ from chatddx.store.store import Connection, Store
 from .plan import Plan, Planned, SampleCase
 
 ARCHIVE = "archive"
+# What a run says it did with each record's thread.
+VERBS: dict[Kept, str] = {
+    "created": "created",
+    "edited": "updated",
+    "unchanged": "validated",
+}
 
 
 # Kinds a giftbag forks for its owner: what the old giftbag held (slices with their
@@ -86,32 +92,27 @@ class _Init:
         what = f"{kind} {name}" if name is not None else kind
         if len(found) > 1:
             raise ValueError(f"the archive has {len(found)} threads for {what}")
-        if not found:
-            forked_from = None if fork_of is None else self.catalog.head(fork_of).id
-            edit = self.catalog.create(
-                digest,
-                self.archive.id,
-                compilation=compilation,
-                forked_from=forked_from,
-                name=name,
-            )
-            return edit.thread, "created"
-        thread = found[0]
-        if self.catalog.head(thread).digest == digest:
-            return thread, "validated"
-        _ = self.catalog.edit(thread, digest, self.archive.id, compilation=compilation)
-        return thread, "updated"
+        forked_from = None
+        if not found and fork_of is not None:
+            forked_from = self.catalog.head(fork_of).id
+        edit, kept = self.catalog.keep(
+            digest,
+            self.archive.id,
+            found[0] if found else None,
+            name=name,
+            compilation=compilation,
+            forked_from=forked_from,
+        )
+        return edit.thread, VERBS[kept]
 
     def record(self, r: Planned) -> None:
         found = self.catalog.find(r.kind, r.name, owner=self.archive.id)
-        head = None if not found else self.catalog.head(found[0])
-        unchanged = head is not None and head.digest == r.digest
         thread, verb = self.put(
             r.kind,
             r.digest,
             found,
             r.name,
-            compilation=None if unchanged else r.compilation,
+            compilation=r.compilation,
             fork_of=None if r.fork_of is None else self.threads[(r.kind, r.fork_of)],
         )
         self.threads[(r.kind, r.name)] = thread

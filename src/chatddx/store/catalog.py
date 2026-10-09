@@ -8,6 +8,7 @@ from chatddx.catalog import (
     Edit,
     Entry,
     EntryField,
+    Kept,
     Part,
     Repair,
     Subject,
@@ -327,6 +328,29 @@ class Catalog:
         if row is None:
             raise LookupError(f"no thread with id {thread}")
         return _edit(row)
+
+    # `digest` kept in `thread`, by `by`: a new edit, or nothing when it's the head
+    # already; or, without a thread, in a new one named `name` and forked from the edit
+    # `forked_from`.
+    def keep(
+        self,
+        digest: str,
+        by: int,
+        thread: int | None,
+        *,
+        name: str | None = None,
+        compilation: str | None = None,
+        forked_from: int | None = None,
+    ) -> tuple[Edit, Kept]:
+        if thread is None:
+            created = self.create(
+                digest, by, compilation=compilation, forked_from=forked_from, name=name
+            )
+            return created, "created"
+        head = self.head(thread)
+        if head.digest == digest:
+            return head, "unchanged"
+        return self.edit(thread, digest, by, compilation=compilation), "edited"
 
     def thread(self, id: int) -> Thread:
         return threads.thread(self._rows, id)

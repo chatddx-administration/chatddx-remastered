@@ -66,6 +66,23 @@ def instructions(c: Compilation) -> str:
     return c.recipe.instructions
 
 
+def test_a_digest_is_kept_in_a_new_thread_a_new_edit_or_as_it_is(
+    conn: Connection,
+) -> None:
+    catalog, store, reg, _, alice = stored_world(conn)
+    v1 = instructions(compiled(store, reg))
+    v2 = instructions(compiled(store, reg, "You are a cardiologist."))
+    first, kept = catalog.keep(v1, alice.id, None, name="physician")
+    assert kept == "created"
+    assert catalog.about(Subject(thread=first.thread)).name == "physician"
+    assert catalog.keep(v1, alice.id, first.thread) == (first, "unchanged")
+    second, kept = catalog.keep(v2, alice.id, first.thread)
+    assert (kept, catalog.history(first.thread)) == ("edited", [first, second])
+    fork, kept = catalog.keep(v2, alice.id, None, forked_from=second.id)
+    assert kept == "created"
+    assert catalog.thread(fork.thread).forked_from == second.id
+
+
 def test_threads_follow_edits(conn: Connection) -> None:
     catalog, store, reg, ids, alice = stored_world(conn)
     v1 = instructions(compiled(store, reg))

@@ -747,3 +747,9 @@ amendments there.
   fingerprint, in the order they were made. `families.family_of` and `families.holder` read only those, and the
   latest binding of each family among them, rather than every binding of the source, so loading a data set no longer
   takes time in the square of its cases (src/chatddx/catalog/read.py:Reader, src/chatddx/catalog/families.py).
+- ADD `Catalog.keep(digest, by, thread, *, name=None, compilation=None, forked_from=None) -> tuple[Edit, Kept]`:
+  `digest` kept in `thread`, a new edit or nothing when it's the head already, or without a thread in a new one,
+  named and forked as given; `Kept` is `"created"`, `"edited"` or `"unchanged"`. init-data keeps each record in the
+  archive's thread of its name, and the bench a saved configuration in the person's
+  (src/chatddx/store/catalog.py:Catalog.keep, src/chatddx/curation/write.py:_Init.put,
+  src/chatddx/bench/view.py:Bench.save).
