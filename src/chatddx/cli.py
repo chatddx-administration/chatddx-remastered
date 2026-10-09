@@ -5,6 +5,7 @@ from collections.abc import Sequence
 from pathlib import Path
 
 import psycopg
+from rich.console import Console
 
 from chatddx.core import settings
 from chatddx.core.rig import rig
@@ -19,6 +20,9 @@ from chatddx.importers.o11n import (
     read,
 )
 from chatddx.inventory import DirectorySource, Inventory
+from chatddx.repl.bench import Bench
+from chatddx.repl.loop import HISTORY, loop
+from chatddx.repl.shell import Repl
 from chatddx.seed import load_cases, plan_factors, seed, wipe
 from chatddx.seed.plan import SAMPLE
 from chatddx.seed.world import endpoints
@@ -148,6 +152,18 @@ def _import_engine(args: argparse.Namespace) -> None:
         print(f"[import] {i.name}: engine {i.engine.digest} at {i.endpoint.url}")
 
 
+def _repl(args: argparse.Namespace) -> None:
+    facts = Facts.load(BUNDLED, *(args.facts or ()))
+    world = Inventory.load(args.world)
+    with psycopg.connect(settings.database(), autocommit=True) as conn:
+        person = People(conn).find(args.login)
+        if person is None:
+            raise SystemExit(
+                f"no person {args.login!r}: chatddx init-data {args.login} adds them"
+            )
+        loop(Repl(Bench(conn, person, world, facts), Console()), args.history)
+
+
 def _fake_vllm(args: argparse.Namespace) -> None:
     run(args.model, args.argv, delay=args.delay, runaway=args.runaway)
 
@@ -274,6 +290,33 @@ def main(argv: Sequence[str] | None = None) -> None:
         + "worlds/kompismoln/endpoints.toml, for a World inventory's include",
     )
     imp.set_defaults(run=_import_engine)
+
+    shell = commands.add_parser(
+        "repl",
+        help="the chatddx shell: put a configuration and an endpoint in the cell, and "
+        + "see what would be sent",
+    )
+    _ = shell.add_argument("login", help="who you are in the shell")
+    _ = shell.add_argument(
+        "--world",
+        type=Path,
+        required=True,
+        help="the World inventory whose endpoints and vignettes the shell uses, such "
+        + "as worlds/sample/inventory.toml",
+    )
+    _ = shell.add_argument(
+        "--facts",
+        type=Path,
+        action="append",
+        help="more model facts, beside the bundled ones, as init-data was given",
+    )
+    _ = shell.add_argument(
+        "--history",
+        type=Path,
+        default=HISTORY,
+        help=f"where the lines you type are kept ({HISTORY})",
+    )
+    shell.set_defaults(run=_repl)
 
     fake = commands.add_parser(
         "fake-vllm",

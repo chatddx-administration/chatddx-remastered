@@ -25,6 +25,9 @@ So the plan:
 
 The order: decisions, runner, scoring pass, reads for a person, the shell, tool rounds.
 
+Where it stands: everything but the shell's 4b and 4c and the docs is built. `chatddx repl` runs 4a, the commands
+that choose and inspect (see "4. The shell", "Built: 4a"). Next is 4b, `run` and `batch` on the runner.
+
 ## Decisions needed before phase 1
 ### D1. The clearance gate
 The sample's vignette source is declared sensitive (`worlds/sample/inventory.toml`, `[source.sample]`). Sending
@@ -242,7 +245,7 @@ Built but for what needs a person (`agents/wip-runner.md`, "The scoring pass"): 
 - **Tests**: each sample output shape against its scorer; a changed expectation makes a run outstanding.
 
 ### 3. Reads for a person
-Built but for the `Bench` (the cell, names and completions), which goes with the shell in phase 4. What was built:
+Built, the `Bench` with the shell in 4a (see "4. The shell"). What was built here:
 - `Store.started`, `runs_of`, `finished`, `scores_of` and `reaching` (`src/chatddx/store/store.py`);
 - `Catalog.visible`, `visible_families` and `expectation_for`, with the rules in `chatddx.catalog`
   (`model.py:About.shows`: live, and owned or shared);
@@ -286,6 +289,64 @@ completions and lookups, and nothing in it is UI. Tests go in `store/test/` and 
   - 4c: `runs`, `replay` and `score`.
 - **Tests**: the old tests' scenarios, rewritten for the new names and columns. They use a `say(*lines) -> text`
   fixture over `Console(record=True, width=200)`, as the old conftest's `say_to` did.
+
+#### Built: 4a
+`chatddx repl LOGIN --world FILE [--facts PATH …] [--history PATH]` (`src/chatddx/cli.py`) connects as `DB_USER` in
+autocommit mode, as the runner needs (R6), and refuses a login with no person. `rich` is a dependency now (D4).
+- **`bench.py`**: `Cell`, the configuration's head edit and recipe with the parts set over it, and the endpoint with
+  its engine; `Bench(conn, person, inventory, facts)`, the person's lookups (threads by name, families and their
+  cases, the expectation they read), the cell's skeleton (the stored head, or `compile_request` on the recipe with
+  the parts set), the provisional trial's lints, each scorer view's reach and coverage, and `save`. It imports
+  nothing from the shell, and the shell holds a `Bench` rather than being one, unlike the old `Repl(Bench)`.
+- **`shell.py`** (`Repl`: the cell, the seed, the prompt, the completion cache), **`commands.py`**, **`render.py`**
+  (styles and helpers only; the streamed transcript comes with 4b), **`choosing.py`**, **`listing.py`**,
+  **`inspecting.py`**, **`scoring.py`** (`scorers`), **`running.py`** (`seed`) and **`loop.py`** (readline, history,
+  and lines from a pipe, the old `repl/cli.py`).
+- **Tests**: `src/chatddx/repl/test/`, 48 of them, on the sample as init-data lands it from the sample World with a
+  giftbag, seeded once per session. Test files share one namespace (their directories have no `__init__.py`), so the
+  old `test_cli.py` is `test_loop.py` here.
+
+Takes made while building, all still open:
+- **Per-model names.** The plan picked a per-model chunk by the engine's model for `set` only. `use`, `cell`, `set`
+  and `show KIND NAME` all do it: a name that names nothing alone is tried as `NAME (MODEL)`, with the model the
+  cell's engine serves, so `cell plan qwen3-8b-awq@fake` holds `plan (Qwen/Qwen3-8B-AWQ)`. Without an endpoint,
+  `use plan` is refused, naming the per-model ones.
+- **Names hold spaces.** A command's last name takes the rest of the line (`use plan (Qwen/Qwen3-8B-AWQ)`, no
+  quotes), and `cell` takes its endpoint from the last word. Completion goes word by word, and offers the name alone
+  of each per-model one.
+- **The cell's lints straight away** (see "Risks", "A configuration on another model's endpoint"). `use`, `on`,
+  `cell` and `set` print what `factors.lint` and `facts.check_pairs` say of the cell's pair, run as a trial of one
+  case: `on gpt-oss-20b@fake` under `plan (Qwen/Qwen3-8B-AWQ)` gives `facts.sampling_unmatched`. `show` lints the
+  trial of every case it counts, languages included.
+- **`set`** compiles at once, so a part that doesn't compile is refused and the cell stays as it was. Setting the
+  configuration's own chunk unsets the part; `none` takes an optional part out.
+- **`save NAME`** writes the compilation with the running code as compiler when parts are set. The person's live
+  thread named NAME gets a new edit, or none when the digest is its head ("unchanged"); without one, a thread named
+  NAME is forked from the configuration's edit the cell holds.
+- **`show`** lists the parts with the catalog's title and `describe`, renders the request with placeholder fills
+  (`‹vignette›`), and leaves the output's schema and the tools' parameters to `show output` and `show tool`. Then the
+  lints, and per scorer view the cases it can hold the cell to: a case has it when the expectation the person reads
+  under the scorer's schema (`Catalog.expectation_for`) gives the view's expectation selector something to pick. The
+  old count also named patterns that don't parse; that reading is the pattern scorer's, and isn't here.
+- **`show KIND [NAME]`**: the kinds are `configuration`, the nine parts, `tool`, `scorer`, `judge`,
+  `expectation_schema`, `canary_set`, `model` and `engine`, plus `case` and `endpoint`. A component's fields, its
+  catalog entries, and how many of the person's runs reach it (`Reads.reaching`). A case shows its source, the
+  vignette fetched from the World, and the expectation the person reads: their own thread's head, else a shared one.
+- **`reasoning`**: a column per model the facts know, headed by the endpoints serving it, and a row per level, plus
+  the default and the thinking budget; ▸ marks the level the cell holds, by the chunk the facts write for it.
+- **`seed`**: drawn below 100,000, held from 0 to 2³¹−1, and "greedy: the seed isn't sent" on a greedy cell, also
+  in `show` (D3).
+
+Left from 4a:
+- **The bench as a module of its own** (the user's remark). In the old project the bench was a layer between the
+  edges (portal, API, repl) and the data model. Ported, it may deserve its own namespace and an
+  `agents/wip-bench.md`. Not acted on; `bench.py` imports nothing from the shell so that the move stays cheap.
+- **An unsaved cell's language is unknown.** `Catalog.language_of` reads the store, so after `set` the request's
+  language is `language.unknown` even where the recipe's chunks have one. The sample's chunks have none anyway (G18).
+- **Runs of a scorer.** `show scorer NAME` counts runs that reach it, which no trial does; the scores it gave come
+  with 4c.
+- **The seeded sample fixture** is now defined twice: module-scoped in `src/chatddx/store/test/test_reads.py`,
+  session-scoped in `src/chatddx/repl/test/conftest.py`. It could move to `src/chatddx/conftest.py`.
 
 ### 5. Tool rounds
 Built in the runner (`agents/wip-runner.md`, "Phase 5").
