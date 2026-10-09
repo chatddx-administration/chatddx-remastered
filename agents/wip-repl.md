@@ -321,8 +321,8 @@ autocommit mode, as the runner needs (R6), and refuses a login with no person. `
   **`inspecting.py`**, **`scoring.py`** (`scorers`), **`running.py`** (`seed`) and **`loop.py`** (readline, history,
   and lines from a pipe, the old `repl/cli.py`).
 - **Tests**: `src/chatddx/repl/test/`, 48 of them, on the sample as init-data lands it from the sample World with a
-  giftbag, seeded once per session. Test files share one namespace (their directories have no `__init__.py`), so the
-  old `test_cli.py` is `test_loop.py` here.
+  giftbag, seeded once per session. The old `test_cli.py` is `test_loop.py` here, after the module it tests. Test
+  directories were made packages since, so test files may share a name across packages.
 
 Takes made while building, all still open:
 - **Per-model names.** The plan picked a per-model chunk by the engine's model for `set` only. `use`, `cell`, `set`
