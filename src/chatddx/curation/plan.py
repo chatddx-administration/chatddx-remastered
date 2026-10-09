@@ -15,6 +15,7 @@ from chatddx.factors.bundle import Registry
 from chatddx.factors.engine import LocalEngine, ModelArtifact, RemoteEngine
 from chatddx.factors.request import (
     RECIPE_PARTS,
+    TRANSLATED,
     FewShot,
     Instructions,
     Output,
@@ -97,16 +98,9 @@ Key = tuple[str | None, str | None]
 Variants = dict[Key, Planned]
 ALL: Key = (None, None)
 # The tables of chunks that hold text the model reads, kept by language in texts files.
-TEXT_TABLES = (
-    "instructions",
-    "few_shot",
-    "prompt",
-    "output",
-    "toolset",
-    "translations",
+TEXT_TABLES = frozenset(
+    {"instructions", "few_shot", "prompt", "output", "toolset", "translations"}
 )
-# Text a recipe's translations stand in for when the language it's made in lacks it.
-TRANSLATED = ("output", "toolset")
 _TEXTS = re.compile(r"^texts-(.+)\.toml$")
 
 

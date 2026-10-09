@@ -773,7 +773,7 @@ def _parts(recipe: Recipe, get: Resolver, tr: Callable[[str], Translate]) -> _Pa
 
 # The parts translations translate. Instructions, few-shot and prompts are written in
 # their language.
-TRANSLATED = ("output", "appendix_layout", "toolset")
+TRANSLATED = frozenset({"output", "appendix_layout", "toolset"})
 
 
 # The texts each part of the recipe holds, in order; whitespace is left out. A translation
