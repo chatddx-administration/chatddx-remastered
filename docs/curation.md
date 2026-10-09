@@ -197,8 +197,6 @@ set has one expectation schema. A canary set is the next asked for (agents/wip-r
 - **Leftovers are listed every run.** Nothing records that a leftover is known and meant to stay.
 - **A rename isn't followed into the data.** After repair-data, loading says the old id is missing until the data set
   names the new one.
-- **Looking up a case's family reads all of its source's bindings**, so loading a data set takes time in the square
-  of its cases (src/chatddx/catalog/families.py:family_of).
 - **The runner and the engine import don't run the inventory check** that loading does.
 
 ## Proposed amendments

@@ -122,6 +122,17 @@ class Memory:
     def bindings_in(self, source: str) -> list[Binding]:
         return [b for b in self._bindings if b.vignette.source == source]
 
+    def bindings_sharing(self, vignette: Vignette) -> list[Binding]:
+        return [
+            b
+            for b in self._bindings
+            if b.vignette.source == vignette.source
+            and (
+                b.vignette.id == vignette.id
+                or b.vignette.fingerprint == vignette.fingerprint
+            )
+        ]
+
     def bound_to(self, vignette: Vignette, kind: str) -> list[str]:
         return [
             d

@@ -207,6 +207,18 @@ class Rows:
         ).fetchall()
         return [_binding(r) for r in rows]
 
+    def bindings_sharing(self, vignette: Vignette) -> list[Binding]:
+        rows = self._conn.execute(
+            f"""
+            SELECT {_BINDING} FROM catalog.binding b
+            WHERE b.source = %s
+                AND (b.source_id = %s OR b.fingerprint = %s::jsonb)
+            ORDER BY b.id
+            """,
+            (vignette.source, vignette.id, _jsonb(vignette.fingerprint)),
+        ).fetchall()
+        return [_binding(r) for r in rows]
+
     def bound_to(self, vignette: Vignette, kind: str) -> list[str]:
         return [
             str(d)

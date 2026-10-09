@@ -743,3 +743,7 @@ amendments there.
 - ADD `read.tags_given(rows, subject) -> dict[str, int]` and `Catalog.tags_given(subject)`: the tags that hold on a
   subject now, each with the writer of the latest entry about it. init-data withdraws only the tags the archive gave
   (src/chatddx/catalog/read.py:tags_given, src/chatddx/curation/write.py:_Init.sync).
+- ADD `Reader.bindings_sharing(vignette) -> list[Binding]`: the bindings in the vignette's source to its id or to its
+  fingerprint, in the order they were made. `families.family_of` and `families.holder` read only those, and the
+  latest binding of each family among them, rather than every binding of the source, so loading a data set no longer
+  takes time in the square of its cases (src/chatddx/catalog/read.py:Reader, src/chatddx/catalog/families.py).

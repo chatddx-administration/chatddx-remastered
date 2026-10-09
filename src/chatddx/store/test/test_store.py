@@ -55,6 +55,7 @@ def test_migrations_apply_up_to_a_tier(empty: Connection) -> None:
         "0004-t0-ledger",
         "0007-t0-identity",
         "0010-t0-catalog",
+        "0013-t0-catalog-binding-content",
     ]
     assert empty.info.transaction_status == TransactionStatus.IDLE
     assert migrate(empty, tier=0) == []

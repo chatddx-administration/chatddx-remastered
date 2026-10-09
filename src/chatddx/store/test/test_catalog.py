@@ -36,6 +36,7 @@ from chatddx.factors.test.sample import NOW, RIG, fp, generation_recipe, world
 from chatddx.identity import Person
 from chatddx.ledger import RunStarted, ScoreStarted
 from chatddx.store import Catalog, People, Store
+from chatddx.store.catalog import Rows
 from chatddx.store.store import Connection
 
 
@@ -461,6 +462,13 @@ def test_families(conn: Connection) -> None:
         _ = catalog.adopt(ids["trial"], alice.id)
     with pytest.raises(LookupError):
         _ = catalog.bindings(999)
+
+    rows = Rows(conn)
+    sharing = [b.vignette for b in rows.bindings_sharing(vignette)]
+    assert sharing == [vignette]
+    look = vignette.model_copy(update={"id": "c2", "fingerprint": vignette.fingerprint})
+    assert [b.vignette.id for b in rows.bindings_sharing(look)] == ["c1", "c2"]
+    assert rows.bindings_sharing(look.model_copy(update={"source": "other"})) == []
 
 
 def test_behind_looks_through_cases(conn: Connection) -> None:
