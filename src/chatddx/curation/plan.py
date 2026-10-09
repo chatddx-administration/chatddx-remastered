@@ -1,4 +1,5 @@
 import json
+import re
 import tomllib
 from collections.abc import Sequence
 from dataclasses import dataclass, field
@@ -6,8 +7,9 @@ from pathlib import Path
 
 from pydantic import JsonValue, ValidationError
 
+from chatddx.catalog.model import LANGUAGE_KINDS, language_tag
 from chatddx.core.rig import entry
-from chatddx.factors.base import Code, Component
+from chatddx.factors.base import Code, Component, Resolver
 from chatddx.factors.bundle import Registry
 from chatddx.factors.engine import LocalEngine, ModelArtifact, RemoteEngine
 from chatddx.factors.request import (
@@ -24,6 +26,7 @@ from chatddx.factors.request import (
     Toolset,
     Translations,
     compile_request,
+    own_texts,
 )
 from chatddx.factors.scoring import ExpectationSchema, Scorer
 from chatddx.facts import INTENTS, Effort, Facts, Refused, model_name
@@ -82,6 +85,7 @@ class Planned:
     compilation: str | None = None
     # a scorer's view labels, by position
     labels: tuple[str | None, ...] = ()
+    language: str | None = None
 
 
 @dataclass
@@ -181,15 +185,70 @@ def _tags(value: JsonValue) -> tuple[str, ...]:
     return tuple(str(t) for t in value)
 
 
-def _load(path: Path, root: Path) -> dict[str, dict[str, JsonValue]]:
+# A record's language, and whether it was its own rather than its file's.
+Language = tuple[str | None, bool]
+
+
+def _load(
+    path: Path, root: Path
+) -> tuple[dict[str, dict[str, JsonValue]], dict[tuple[str, str], Language]]:
     with path.open("rb") as f:
         data = tomllib.load(f)
+    default = data.pop("language", None)
+    if default is not None and not isinstance(default, str):
+        raise ValueError(f"{path}: language must be a string, not {default!r}")
+    if default is not None:
+        _ = language_tag(default)
     if stray := set(data) - set(TABLES) - {"recipe"}:
         raise ValueError(f"{path}: unknown tables {sorted(stray)}")
-    return {
-        table: {name: _with_files(raw, root) for name, raw in records.items()}
-        for table, records in data.items()
-    }
+    tables: dict[str, dict[str, JsonValue]] = {}
+    languages: dict[tuple[str, str], Language] = {}
+    for table, records in data.items():
+        tables[table] = {}
+        for name, raw in records.items():
+            body = _with_files(raw, root)
+            if isinstance(body, dict) and "language" in body:
+                own = _language(table, name, body.pop("language"))
+                languages[(table, name)] = (own, True)
+            else:
+                languages[(table, name)] = (default, False)
+            tables[table][name] = body
+    return tables, languages
+
+
+def _language(table: str, name: str, value: JsonValue) -> str:
+    match value:
+        case str():
+            try:
+                return language_tag(value)
+            except ValueError as e:
+                raise ValueError(f"{table}.{name}: {e}") from None
+        case _:
+            raise ValueError(
+                f"{table}.{name}: language must be a string, not {value!r}"
+            )
+
+
+# A chunk that holds text has a language, its own or its file's; one that holds none has
+# none, and may not be given one of its own.
+def _language_of(
+    table: str, name: str, component: Component, given: Language, get: Resolver
+) -> str | None:
+    language, own = given
+    if component.kind_name not in LANGUAGE_KINDS:
+        if own:
+            raise ValueError(f"{table}.{name}: {table} records have no language")
+        return None
+    if own_texts(component, get):
+        if language is None:
+            raise ValueError(
+                f"{table}.{name}: it holds text, so it needs a language, its own or "
+                + "its file's"
+            )
+        return language
+    if own:
+        raise ValueError(f"{table}.{name}: it holds no text, so it has no language")
+    return None
 
 
 # `more` are factors files planned with the first, such as a World's imported engines;
@@ -201,13 +260,15 @@ def plan_factors(
     root: Path | None = None,
     more: Sequence[Path] = (),
 ) -> Plan:
-    data = _load(path, root or path.parent)
+    data, languages = _load(path, root or path.parent)
     for extra in more:
-        for table, records in _load(extra, extra.parent).items():
+        tables, extra_languages = _load(extra, extra.parent)
+        for table, records in tables.items():
             known = data.setdefault(table, {})
             if twice := sorted(set(known) & set(records)):
                 raise ValueError(f"{extra}: {table} {twice} are named before it too")
             known.update(records)
+        languages.update(extra_languages)
     plan = Plan(Registry(), facts)
     planned: dict[tuple[str, str], Variants] = {}
 
@@ -264,6 +325,9 @@ def plan_factors(
                         _check_runs(component)
                     except (LookupError, TypeError) as e:
                         raise ValueError(f"{table}.{name}: {e}") from None
+                language = _language_of(
+                    table, name, component, languages[(table, name)], plan.registry.get
+                )
                 variants[model] = Planned(
                     table=table,
                     name=_named(name, model),
@@ -273,6 +337,7 @@ def plan_factors(
                     description=None if description is None else str(description),
                     fork_of=base(table, fork_of, model),
                     labels=labels,
+                    language=language,
                 )
             add(table, name, variants)
 
@@ -303,6 +368,10 @@ def plan_factors(
     for name, raw in data.get("recipe", {}).items():
         assert isinstance(raw, dict)
         body = dict(raw)
+        if languages[("recipe", name)][1]:
+            raise ValueError(
+                f"recipe.{name}: a recipe's language comes from its chunks"
+            )
         tags = _tags(body.pop("tags", []))
         description = body.pop("description", None)
         fork_of = body.pop("fork_of", None)
@@ -341,22 +410,39 @@ def plan_factors(
 @dataclass(frozen=True)
 class SampleCase:
     tags: tuple[str, ...]
-    language: str | None
+    language: str
     targets: JsonValue
 
 
-def load_cases(path: Path) -> dict[str, SampleCase]:
-    with path.open("rb") as f:
-        data = tomllib.load(f)
-    if set(data) - {"case"}:
-        raise ValueError(f"{path}: the sample's cases have only 'case' tables")
+_CASES = re.compile(r"^cases-(.+)\.toml$")
+
+
+# A data set's cases are in its cases-<language>.toml files, each case in its file's
+# language.
+def load_cases(data: Path) -> dict[str, SampleCase]:
     cases: dict[str, SampleCase] = {}
-    for id, case in data.get("case", {}).items():
-        if stray := set(case) - {"tags", "language", "targets"}:
-            raise ValueError(f"case.{id}: unknown keys {sorted(stray)}")
-        cases[id] = SampleCase(
-            tags=tuple(case.get("tags", ())),
-            language=case.get("language"),
-            targets=case.get("targets"),
-        )
+    where: dict[str, Path] = {}
+    for path in sorted(data.glob("cases*.toml")):
+        named = _CASES.match(path.name)
+        if named is None:
+            raise ValueError(f"{path}: cases are kept in cases-<language>.toml files")
+        try:
+            language = language_tag(named[1])
+        except ValueError as e:
+            raise ValueError(f"{path}: {e}") from None
+        with path.open("rb") as f:
+            tables = tomllib.load(f)
+        if set(tables) - {"case"}:
+            raise ValueError(f"{path}: a cases file has only 'case' tables")
+        for id, case in tables.get("case", {}).items():
+            if id in where:
+                raise ValueError(f"{path}: case.{id} is in {where[id].name} too")
+            if stray := set(case) - {"tags", "targets"}:
+                raise ValueError(f"{path}: case.{id}: unknown keys {sorted(stray)}")
+            where[id] = path
+            cases[id] = SampleCase(
+                tags=tuple(case.get("tags", ())),
+                language=language,
+                targets=case.get("targets"),
+            )
     return cases

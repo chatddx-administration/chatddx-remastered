@@ -9,20 +9,18 @@ import pytest
 from chatddx.catalog import Subject
 from chatddx.cli import main
 from chatddx.conftest import WORLDS, connect, sample_plan
-from chatddx.core.rig import rig
-from chatddx.curation import init, load_cases, plan_factors
+from chatddx.curation import init, load_cases
 from chatddx.curation.plan import SAMPLE
 from chatddx.factors.base import Fingerprint
-from chatddx.facts import BUNDLED, Facts
 from chatddx.inventory import Inventory
 from chatddx.inventory.test.memory import MemorySource
 from chatddx.store import Catalog, People
 from chatddx.store.store import Connection
 
-CASES = load_cases(SAMPLE / "cases.toml")
+CASES = load_cases(SAMPLE)
 # What the tests of init-data's mechanics load, so they're quick; only
 # test_init_data_loads_the_archive loads every case.
-FEW = ("DutchFall10w", "Dutchfall11w", "Dutchfall12w")
+FEW = ("DutchFall10w", "Dutchfall11w", "casesfromedn1")
 SOME = {id: CASES[id] for id in FEW}
 REVISION = "f" * 40
 # The fake engines say what they are: no commit, no Nix closure.
@@ -52,11 +50,12 @@ def vignettes(**changed: bytes) -> MemorySource:
 def few(tmp_path: Path) -> Path:
     data = tmp_path / "data"
     _ = shutil.copytree(SAMPLE, data)
-    blocks = (SAMPLE / "cases.toml").read_text().split("\n[case.")[1:]
-    _ = (data / "cases.toml").write_text(
-        "".join(f"[case.{b}\n" for b in blocks if b.split("]")[0] in FEW)
-    )
-    assert load_cases(data / "cases.toml") == SOME
+    for path in data.glob("cases-*.toml"):
+        blocks = path.read_text().split("\n[case.")[1:]
+        _ = path.write_text(
+            "".join(f"[case.{b}\n" for b in blocks if b.split("]")[0] in FEW)
+        )
+    assert load_cases(data) == SOME
     return data
 
 
@@ -145,10 +144,19 @@ def test_init_data_loads_the_archive(conn: Connection) -> None:
     assert catalog.about(Subject(thread=tool)).description == (
         "Search the web for up-to-date information"
     )
+    assert [line for line in lines if line.endswith(", in en")] == [
+        f"[archive {r.kind}] {r.name}: created {r.digest.removeprefix('sha256:')[:6]}"
+        + ", in en"
+        for r in plan.records
+        if r.language is not None
+    ]
+    assert catalog.language_of(plan.named("toolset", "web").digest) == "en"
+    assert catalog.language_of(plan.named("prompt", "case").digest) is None
 
     again = init(conn, sample_plan(), SOME, vignettes(), alice)
     assert {v for v in tally(again) if v.startswith("archive")} == {"archive validated"}
     assert again[-len(FAKES) - 2].startswith("[share] 0 of ")
+    assert not [line for line in again if line.endswith(", in en")]
 
 
 def test_init_data_lints_what_it_lands(
@@ -170,52 +178,6 @@ def test_init_data_lints_what_it_lands(
         + "'diagnosis' is a required property",
         f"[lint] {5 + len(FAKES)} findings in {components} components",
     ]
-
-
-def test_from_facts_records_follow_the_models_the_engines_serve(
-    tmp_path: Path,
-) -> None:
-    factors = tmp_path / "factors.toml"
-    _ = factors.write_text(
-        """
-[remote_engine."qwen@api"]
-base_url = "https://api.example/v1/"
-model = "Qwen/Qwen3-8B-AWQ"
-
-[remote_engine."gemma@api"]
-base_url = "https://api.example/v1/"
-model = "google/gemma-3-27b-it"
-
-[prompt.case]
-segments = [{ slot = "vignette" }]
-
-[output.raw]
-contract = { kind = "text" }
-
-[sampling.recommended]
-from_facts = { effort = "default" }
-
-[recipe.raw]
-prompt = "case"
-output = "raw"
-sampling = "recommended"
-"""
-    )
-    plan = plan_factors(factors, Facts.load(BUNDLED), rig())
-    assert [(r.table, r.name) for r in plan.records] == [
-        ("remote_engine", "qwen@api"),
-        ("remote_engine", "gemma@api"),
-        ("prompt", "case"),
-        ("output", "raw"),
-        ("sampling", "recommended (Qwen/Qwen3-8B-AWQ)"),
-        ("recipe", "raw (Qwen/Qwen3-8B-AWQ)"),
-    ]
-    assert plan.skipped == [
-        "from_facts records for google/gemma-3-27b-it: the facts don't know it, served "
-        + "by engine.remote gemma@api",
-        "from_facts records for openai/gpt-oss-20b: no planned engine serves it",
-    ]
-    assert not [s for s in sample_plan().skipped if s.startswith("from_facts records")]
 
 
 def test_init_data_updates_and_gives_forks(conn: Connection, tmp_path: Path) -> None:

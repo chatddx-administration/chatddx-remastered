@@ -15,7 +15,12 @@
 # - a tool or a scorer without a `code` pins the running chatddx, as compilations record it as their compiler, and
 #   its `entry_point` must name a function there;
 # - `tags` and `description` are catalog entries, not fields, and so is a scorer view's `label`. A tool's
-#   `description` is a field too, the one the model reads.
+#   `description` is a field too, the one the model reads;
+# - `language` is the language of a record's text, kept on its digest. The top-level one is every record's that
+#   holds text and gives none of its own. A record that holds text needs one, one that holds none takes none, and a
+#   recipe's comes from its chunks. A toolset holds its tools' text.
+
+language = "en"
 
 # instruction.ddx was a system message made of the guidance slots and a user message of {{case}}: this prompt, with
 # the output's guidance becoming the system message. instruction.bare is the same prompt with an output that

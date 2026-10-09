@@ -41,7 +41,9 @@ def test_show_sets_each_part_beside_what_it_is_and_renders_the_request(say: Say)
     assert "List the plausible diagnoses, one per line, most likely first." in written
     assert "‹vignette›‹appendices›" in written
     assert '"seed": 7' in written
-    assert "[info] language.unknown" in written
+    assert "[warning] language.mixed: the request is en, but 20 of 99 cases are sv" in (
+        written
+    )
 
 
 def test_show_says_what_is_set_and_what_the_configuration_has(say: Say):

@@ -111,7 +111,13 @@ class _Init:
         for position, label in enumerate(r.labels):
             if label is not None and labelled.get(("view", position)) != label:
                 self.catalog.label(r.digest, "view", position, label, self.archive.id)
-        self.lines.append(f"[archive {r.kind}] {r.name}: {verb} {short(r.digest)}")
+        said = ""
+        if r.language is not None and self.catalog.language_of(r.digest) != r.language:
+            self.catalog.language(r.digest, r.language, self.archive.id)
+            said = f", in {r.language}"
+        self.lines.append(
+            f"[archive {r.kind}] {r.name}: {verb} {short(r.digest)}{said}"
+        )
 
     def case(self, source: Source, id: str, sample: SampleCase, schema: str) -> None:
         try:

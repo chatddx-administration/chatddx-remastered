@@ -36,7 +36,7 @@ def test_a_person_sees_their_own_and_shared_threads_and_families(
         _ = bench.thread("configuration", "nothing")
 
     families = bench.families()
-    assert len(families) == len(load_cases(SAMPLE / "cases.toml"))
+    assert len(families) == len(load_cases(SAMPLE))
     assert {f.about.language for f in families} == {"en", "sv"}
     assert all(f.about.tags for f in families)
     bobs = Bench(conn, bob, bench.inventory, bench.facts)

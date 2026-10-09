@@ -77,7 +77,7 @@ def test_a_pattern_that_doesn_t_read_is_refused(pattern: str, problem: str) -> N
 
 
 def test_every_sample_target_reads() -> None:
-    for case in load_cases(SAMPLE / "cases.toml").values():
+    for case in load_cases(SAMPLE).values():
         assert isinstance(case.targets, dict)
         for kind, target in case.targets.items():
             if kind == "notes":
@@ -332,7 +332,7 @@ def test_a_case_s_notes_keep_their_author_language_comment_and_answer() -> None:
 
 
 def test_the_sample_holds_olof_s_notes_on_three_cases_as_written() -> None:
-    cases = load_cases(SAMPLE / "cases.toml")
+    cases = load_cases(SAMPLE)
     valid = validators.validator_for(TARGETS_SCHEMA)(TARGETS_SCHEMA).is_valid
     assert all(valid(case.targets) for case in cases.values())
     noted = {
@@ -353,7 +353,7 @@ def test_the_sample_holds_olof_s_notes_on_three_cases_as_written() -> None:
 
 
 def test_a_judge_reads_a_case_s_notes_beside_the_targets_the_patterns_read() -> None:
-    targets = load_cases(SAMPLE / "cases.toml")["Dutchfall11w"].targets
+    targets = load_cases(SAMPLE)["Dutchfall11w"].targets
     answer: JsonValue = {
         "diagnoses": [
             {"diagnosis": "Septic shock", "critical": True},

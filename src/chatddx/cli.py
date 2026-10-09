@@ -79,7 +79,7 @@ def _init_data(args: argparse.Namespace) -> None:
     facts = Facts.load(BUNDLED, *world.facts, *(args.facts or ()))
     more = [*world.factors, *(args.factors or ())]
     plan = plan_factors(data / "factors.toml", facts, rig(), more=more)
-    cases = load_cases(data / "cases.toml")
+    cases = load_cases(data)
     try:
         source = world.inventory.source(args.source)
     except LookupError as e:
@@ -235,7 +235,7 @@ def main(argv: Sequence[str] | None = None) -> None:
         "--data",
         type=Path,
         default=SAMPLE,
-        help="what to load: a directory with factors.toml and cases.toml "
+        help="what to load: a directory with factors.toml and cases-<language>.toml "
         + "(the sample data in the package)",
     )
     _ = init.add_argument(

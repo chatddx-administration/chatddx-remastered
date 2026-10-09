@@ -920,3 +920,10 @@ Behavior described here that `docs/factors.md` doesn't state. The first three ar
 - `Case.appendices` may list the same appendix twice.
 - `Canary.render` sends the canary's seed whatever the temperature.
 - `JsonPointer` (`base.py`) is defined but unused.
+
+## Proposed amendments
+- ADD `own_texts(chunk, get) -> tuple[str, ...]` in `request.py`: the texts a chunk holds itself, whitespace left out,
+  in the order a translation would need them; an instructions, few-shot, prompt or output chunk's literal texts and
+  schema prose, a toolset's guidance with its tools' descriptions and parameter prose, a translations chunk's
+  translations, and nothing for any other component. init-data refuses a language on a chunk with none and requires
+  one on a chunk with some (src/chatddx/factors/request.py:own_texts, src/chatddx/curation/plan.py:_language_of).

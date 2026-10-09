@@ -57,7 +57,7 @@ def fake(inventory: Inventory, plan: Plan) -> Iterator[None]:
 # Each case's targets as init-data lands them (src/chatddx/curation/write.py).
 def expectations(plan: Plan, made: Trial) -> tuple[str, ...]:
     schema = plan.named("expectation_schema", "targets").digest
-    targets = load_cases(SAMPLE / "cases.toml")
+    targets = load_cases(SAMPLE)
     found: list[str] = []
     for ref in made.cases:
         case = resolve(plan.registry.get, ref, Case)

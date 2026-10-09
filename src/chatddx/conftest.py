@@ -88,7 +88,7 @@ def curated(migrated: str) -> Iterator[str]:
     try:
         with connect(name) as conn:
             alice = People(conn).add("alice", "Alice")
-            cases = load_cases(SAMPLE / "cases.toml")
+            cases = load_cases(SAMPLE)
             source = World.load(WORLD).inventory.source("sample")
             _ = init(conn, sample_plan(), cases, source, alice, giftbag=True)
         yield name
