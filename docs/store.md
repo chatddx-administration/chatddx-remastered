@@ -117,3 +117,15 @@ gaps").
   a bump of the scorer's schema version.
 
 ## Proposed amendments
+- CHANGE, under "Looking things up for someone", "Tools that act for a person, such as the planned shell," → "Tools
+  that act for a person, such as the shell (src/chatddx/repl/),": the shell is built, and looks things up this way.
+- CHANGE, under "Looking things up for someone", "and whether it still has to be scored under that scoring" → "and
+  whether it still has to be scored under that scoring (the shell works this out for itself, for now)": the store
+  answers it per scorer, for all of a person's runs (src/chatddx/store/reads.py:108), which nothing but its tests
+  calls now, while the shell asks it of one run at a time (src/chatddx/repl/bench.py:559): `score RUN` needs one run's
+  answer, and a run whose case has several expectations to choose from is passed over for that scorer rather than
+  stopping the listing. Moving the shell's question into the store would make the sentence true as it stands.
+- ADD, under "Tests", after "dropped afterwards.": "Before a database is copied or dropped, the tests wait for the
+  sessions on it to end, since one closed a moment ago may still be ending on the server, and the admin can't end a
+  writer's session to drop the database by force.": without the wait, `DROP DATABASE … WITH (FORCE)` failed now and
+  then with "permission denied to terminate process" (src/chatddx/conftest.py:35).

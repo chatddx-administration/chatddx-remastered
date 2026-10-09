@@ -348,3 +348,17 @@ two families.
   than a warning.
 
 ## Proposed amendments
+- ADD, under "Owners", after its first paragraph: "A run's owner is whoever started it, and a score's whoever scored
+  it: the runner and the scoring pass write the owner entry as they start, and a person's runs are the runs they
+  own.": nothing in this document says who owns a run or a score, and the shell lists a person's runs by it
+  (src/chatddx/runner/run.py:151, src/chatddx/runner/score.py:65, src/chatddx/store/reads.py:56).
+- ADD, under "Titles", after "so a run of a variation nobody saved can be shown too.": "A skeleton is described by its
+  recipe only when a compilation of it is stored, so the shell stores the compilation of a variation it runs unsaved.":
+  without it, such a run's configuration is shown as "generation skeleton" and the start of its digest
+  (src/chatddx/catalog/titles.py:_derive, src/chatddx/repl/bench.py:458 and :472).
+- ADD, under "Smaller issues": "**A variation nobody saved has a long title.** It is described by its whole recipe,
+  \"case · diagnoses-tool · recommended (Qwen/Qwen3-8B-AWQ) · off (Qwen/Qwen3-8B-AWQ)\", where the shell called it
+  \"diagnoses-tool (Qwen/Qwen3-8B-AWQ)+reasoning=off\": the configuration it came from and the parts set over it.
+  Neither is stored. An entry on the run, or a title made from the closest configuration and what the variation
+  changes from it, would say it shorter.": the shell's `runs` and `replay` show such titles (src/chatddx/repl/bench.py,
+  `Bench.described`; agents/wip-repl.md, "Left from 4c").

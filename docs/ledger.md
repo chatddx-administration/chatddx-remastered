@@ -256,3 +256,9 @@ Most of the plan is compared with what happened (see "What a record holds"), but
   nothing is planned or decided.
 
 ## Proposed amendments
+- CHANGE, under "Some of what happened isn't checked", "A request can be rebuilt from stored data and the vignette,
+  and a judge request from the scorer's reading of the answer (docs/factors.md, \"Judge\"), but nothing does it." →
+  "The shell's replay rebuilds each item's first request from the trial and the vignette and holds it to the call's
+  fingerprint. A later round's request, which could be rebuilt from the stored responses and tool runs, and a judge
+  request, from the scorer's reading of the answer (docs/factors.md, \"Judge\"), aren't rebuilt, and checking a run
+  rebuilds none.": src/chatddx/repl/bench.py:584 (`Bench.rendered_again`), src/chatddx/repl/reviewing.py:`replay`.

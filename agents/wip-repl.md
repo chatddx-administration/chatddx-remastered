@@ -7,6 +7,27 @@ Old permalink base: https://github.com/chatddx-administration/chatddx/blob/50479
 "Decided" means the user said so. "Take" is the agent's recommendation and still open.
 
 ## Start with this
+The shell is built: `chatddx repl` chooses and inspects (4a), runs and scores (4b), and looks back and scores again
+(4c; see "4. The shell"). What's outstanding:
+1. **Cross-check the shell with the old manual**, `agents/wip-repl-manual.md`: the old project's `docs/repl.md` at
+   504792c, copied unchanged. Go through it command by command and example by example, and note where remastered's
+   shell does otherwise: the vocabulary (D6), per-model names, `seed` without `none` (D3), scores after a batch rather
+   than on its lines, `show`'s tables, and what isn't ported. That is the ground for the new manual, `docs/repl.md`,
+   proposed in phase 6.
+2. **The takes made while building** (in "Built: 4a", "Built: 4b" and "Built: 4c") wait for the user's word, and so
+   do D5–D8 and which scorers apply to a run (see "3. Reads for a person").
+3. **The bench as a module of its own** (the user's remark; "Left from 4a"): not acted on.
+4. **Left from 4a**: an unsaved cell's language is unknown; the seeded sample fixture is defined twice.
+5. **Left from 4b**: a structured answer cut short is unread, as nothing salvages it; no word on reasoning that wasn't
+   heeded; two tool calls in one response run together on one line.
+6. **Left from 4c**: an unsaved cell's runs are titled by their whole recipe; only an item's first request is rendered
+   again.
+7. **Left out** of the port (see "Left out"): `chatddx samples`, endpoints with a credential, and judges.
+
+The docs' proposed amendments for what the shell changed are in `docs/factors.md`, `docs/catalog.md`, `docs/store.md`
+and `docs/ledger.md`, and the surprises met while building it in `AGENTS.md` (see "6. Docs").
+
+## Background
 The old repl is a thin UI (`src/chatddx/repl/`, ~1,600 lines and ~1,500 of tests) on top of four layers that do
 the work: `bench/` (identity, the cell, `Ready`, `Trial`, `save`), `runtime/` (resolving a configuration on a stack,
 and the run itself on pydantic-ai and httpx2), `history/` (Django models for trials, runs, messages and scores) and
@@ -24,9 +45,6 @@ So the plan:
   `scoring/`.
 
 The order: decisions, runner, scoring pass, reads for a person, the shell, tool rounds.
-
-Where it stands: the shell is built. `chatddx repl` chooses and inspects (4a), runs and scores (4b), and looks back
-and scores again (4c; see "4. The shell"). Left: the docs (phase 6), and what each step left open.
 
 ## Decisions needed before phase 1
 ### D1. The clearance gate
@@ -445,11 +463,19 @@ It comes last: `plan-web` can't call its tool on vLLM 0.24 anyway (G8; `docs/vll
 ### 6. Docs
 Agents propose and humans write `docs/*` (`AGENTS.md`, "Docs"). The manual's draft stays in `agents/` until it's
 adopted. Proposals:
-- a new `docs/repl.md`, the old manual rewritten;
-- `docs/factors.md`, "Rendering": streaming (D2);
-- `docs/catalog.md`, "Owners": the runner writes a run's owner (D7);
-- `docs/store.md`, "Known gaps": the listings of phase 3;
-- `docs/ledger.md`, `RunStarted`, and `agents/wip-clearance.md`: the endpoint and the interim gate (D1).
+- a new `docs/repl.md`, the old manual rewritten. Outstanding: it starts from the cross-check with
+  `agents/wip-repl-manual.md` (see "Start with this");
+- `docs/factors.md`, "Rendering": streaming (D2). In the docs since their rewrite (4e526e6). Proposed since: the
+  shell runs the lints ("Lints");
+- `docs/catalog.md`, "Owners": the runner writes a run's owner (D7). Proposed, with how an unsaved variation's run
+  is titled ("Titles", "Smaller issues");
+- `docs/store.md`, "Known gaps": the listings of phase 3. In the docs as "Looking things up for someone". Proposed
+  since: the shell is built, it works out what is left to score per run, and the tests' databases wait for their
+  sessions to end ("Tests");
+- `docs/ledger.md`, `RunStarted`, and `agents/wip-clearance.md`: the endpoint and the interim gate (D1). In the docs
+  ("Run start"). Proposed since: `replay` rebuilds a run's first requests ("Some of what happened isn't checked");
+- `AGENTS.md`: the surprises met while building the shell, proposed: nothing loads `.env`, test file names must be
+  unique across packages, and how to serve the sample World's fakes by hand.
 
 ## Left out
 - **The portal's own code**: the worker, `bench/plan.py`'s crossing and `bench/held.py`.
