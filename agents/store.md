@@ -36,15 +36,15 @@ but never removes them; it checks passwords and keeps sessions, and disabling a 
 The catalog decides what its rows mean (docs/catalog.md). The store reads the rows it asks for and writes what it
 decided, all of one change at once.
 
-### What one person sees
-For one person, the store gives:
-- the live threads and families they own or collaborate on;
-- a thread by its name, matched whole first and then as owner and name, since names may hold a slash;
-- the runs they own, newest first, by the start of their id, or those whose trial reaches a given component;
-- the scorers whose views can reach a run's answers;
-- the scoring a run would be scored under now, from the expectations the catalog picks for them;
-- their finished runs still to be scored under it, so a run whose expectations changed after it was scored is to be
-  scored again.
+### Looking things up for someone
+Tools that act for a person, such as the planned shell, look things up the way that person sees them: among the
+live threads and families they own or collaborate on, and the runs they own. That lets the person refer to things
+loosely. A thread is found by its name, matched whole first and only then read as an owner and a name, since names
+may hold a slash, and runs by the start of their id or by a component their trial is built on. For a run, the store
+also tells which scorers can grade its answers, which scoring it would be scored under now, from the expectations the
+catalog picks for the person, and whether it still has to be scored under that scoring, so a run whose expectations
+changed after it was scored is due again. Like authorization, this decides what is relevant to show, not who may read
+what (docs/identity.md, "Authorization").
 
 ## Tiers
 Integrity comes in three tiers, and a deployment applies migrations up to a chosen tier. Each schema has migrations
@@ -60,17 +60,17 @@ order: a later schema's tier 0 runs after an earlier schema's tier 2. The comman
 admin, up to the top tier unless told otherwise, and can list what it would apply instead.
 
 ## Roles and connections
-Connections are set up from the environment (.env-example), through the project's settings.
-- The admin owns the database and its schemas and runs the migrations. It needs to create roles the first time tier 1
-  runs in a cluster, and to create databases to run the tests.
-- The writer is what the app connects as. Tier 1 creates it, unable to log in, only if it doesn't exist, so the login
-  role is created outside the migrations, by the database setup script.
-- The reader may read what isn't sensitive: the factors, the catalog and people, but not the ledger, passwords or
-  sessions.
-- Grants don't bind the admin or a superuser, which is why the app doesn't connect as the admin. At tier 0 there are
-  no grants, so a tier-0 deployment has to connect as the admin.
-- Tier-2 triggers bind the admin too; only a superuser who disables triggers gets around them.
-- Roles are cluster-wide, so every database in a cluster shares the writer and the reader.
+Connections are set up from the environment (.env-example), through the project's settings. Roles belong to the
+cluster rather than to a database, so every database in a cluster shares them. Grants don't bind the admin or a
+superuser, which is why the app connects as the writer and not as the admin; at tier 0 there are no grants, so a
+tier-0 deployment has to connect as the admin. Tier-2 triggers bind the admin too, and only a superuser who disables
+triggers gets around them.
+
+| Role | Used by | Created by | May |
+| --- | --- | --- | --- |
+| Admin | Whoever deploys: it owns the database and its schemas, runs the migrations and creates the tests' databases. | The database setup script, which also creates the database it owns. | Everything. It has to be able to create roles the first time tier 1 runs in a cluster, and databases to run the tests. |
+| Writer | The app. | The database setup script, as a role that can log in. Tier 1 creates it, unable to log in, only when it doesn't exist. | Read and add to the factors, the ledger and the catalog; add people and change them and their passwords, but never remove them; open and end sessions. |
+| Reader | Nothing yet. | Tier 1, unable to log in, when it doesn't exist. | Read what isn't sensitive: the factors, the catalog and people, but not the ledger, passwords or sessions. |
 
 Agents use the system's cluster (setup in AGENTS.md); the devShell runs one of its own (scripts/dev-db.sh).
 
