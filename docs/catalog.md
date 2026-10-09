@@ -142,6 +142,9 @@ authorization, this decides what is relevant to show, not who may read it (docs/
 This is the catalog's sense of owning. It is a different thing from the roles' sense, as in "clinicians own the
 vignettes" (docs/chatddx.md, "Roles mentioned").
 
+A run's owner is whoever started it, and a score's whoever scored it: the runner and the scoring pass write the
+owner entry as they start, and a person's runs are the runs they own.
+
 Every row in the catalog records who wrote it and when. A thread's versions and a family's bindings are shown with
 them; for entries, labels and languages, only what holds now is shown (see "Open design issues").
 
@@ -178,19 +181,36 @@ its appendices. A case from before a repair says so: "chest pain (earlier) with 
 its own source and id.
 
 What a component holds is described by what tells it apart from others of its kind, and the components it uses are
-shown by their titles in turn:
-- a configuration by its recipe's parts, translations and toolset included: "ddx · case · management-plan ·
-  recommended · off". A judge's recipe says so first. A hand-written skeleton is shown by its purpose and the start of
-  its digest;
-- a chunk by its values or the opening words of its text, and a translations chunk by its language and size: "sv
-  translations, 12 texts";
-- a tool by its name, an appendix by the opening words of its text, and an expectation by its case;
-- a model by its repository, a local engine by its model, server and GPU ("google/gemma-3-12b-it on vllm 0.24.0 (RTX
-  5090)"), and a remote engine by its model and host;
-- a trial by its skeleton, its engine and how many cases and seeds it has, and a judge by its skeleton and engine;
-- a scorer by its code, and a scoring by its scorer and how many expectations it has;
-- an expectation schema by its title or its properties, and a canary set by how many canaries it has;
-- anything with nothing better to go by, such as a compilation, by its kind and the start of its digest.
+shown by their titles in turn.
+
+A configuration is described by its recipe's parts, translations and toolset included, when a compilation of it is
+stored: "ddx · case · management-plan · recommended · off". A judge's recipe says so first. Without a stored
+compilation, as for a hand-written skeleton, it is shown by its purpose and the start of its digest:
+"generation skeleton 1a2b3c".
+
+Each kind is described by:
+
+| Component | Described by | Example |
+| --- | --- | --- |
+| Chunk | Its values or the opening words of its text. | `temperature 1.0, top_p 1.0` or `"{vignette}{appendices}"` |
+| Chunk (few-shot) | How many messages it has. | `few-shot, 2 messages` |
+| Chunk (output) | Its contract, and its schema's title or properties. | `native output: management_plan_v1` |
+| Chunk (toolset) | Its tools. | `with web_search` |
+| Chunk (passthrough) | The options it sets. | `passthrough: logprobs, top_logprobs` |
+| Translations chunk | Its language and size. | `sv translations, 12 texts` |
+| Tool | Its name. | `web_search` |
+| Appendix | The opening words of its text. | `"Lab results: CRP 180 mg/L, lactate 2.8…"` |
+| Expectation | Its case. | `expectation for Dutchfall11w` |
+| Model | Its repository. | `google/gemma-3-12b-it` |
+| Local engine | Its model, server and GPU. | `google/gemma-3-12b-it on vllm 0.24.0 (NVIDIA GeForce RTX 5090)` |
+| Remote engine | Its model and host. | `gpt-4o at api.openai.com` |
+| Trial | Its skeleton, its engine, and how many cases and seeds it has. | `plan on qwen3-8b@pelle, 20 cases, 1 seed` |
+| Judge | Its skeleton and engine. | `judge grader on qwen3-8b@pelle` |
+| Scorer | Its code. | `scorer chatddx 0.0.0+dev` |
+| Scoring | Its scorer and how many expectations it has. | `plan against 20 expectations` |
+| Expectation schema | Its title or its properties. | `Targets` |
+| Canary set | How many canaries it has. | `2 canaries` |
+| Anything with nothing better to go by | Its kind and the start of its digest. | `compilation 1a2b3c` |
 
 Titles aren't unique: two unnamed components can be described alike, and names aren't unique either. Titles change when
 the names they're built from change, so an export for publication should freeze the titles it uses.
@@ -288,7 +308,7 @@ component of the kind it records. At tier 2 it repeats the rules above that two 
 
 | Term | Meaning |
 | --- | --- |
-| Catalog | People's handles on components and records: names, versions, owners, sharing, deletions, languages and labels. Nothing in it changes an output. |
+| Catalog | People's handles on components and records: names, versions, owners, sharing, deletions, languages and labels. |
 | Thread | The versions of one component that people edit, in order. |
 | Edit | One version on a thread. |
 | Head | A thread's latest edit, its current version. |
@@ -346,5 +366,10 @@ two families.
 - **Judges aren't checked for language.** A judge's language could be compared with the cases its scoring grades, the
   way lints check a trial's. An English judge grading Swedish answers may be intended, so it would be a notice rather
   than a warning.
+- **A variation nobody saved has a long title.** It is described by its whole recipe:
+  "case · diagnoses-tool · recommended (Qwen/Qwen3-8B-AWQ) · off (Qwen/Qwen3-8B-AWQ)", where the repl called it
+  "diagnoses-tool (Qwen/Qwen3-8B-AWQ)+reasoning=off": the configuration it came from and the parts set over it.
+  Neither is stored. An entry on the run, or a title made from the closest configuration and what the variation
+  changes from it, would say it shorter.
 
 ## Proposed amendments

@@ -7,8 +7,9 @@ pieces that already existed:
 - the World inventory with `url_of` and `confirm`;
 - the fake vLLM.
 
-This file split off from `agents/wip-repl.md`, which is parked. The repl is the runner's first caller, not its only
-one: a portal, a worker and `chatddx samples` (`agents/wip-sample-data.md`, "Left behind") would call it too.
+This file split off from `agents/wip-repl.md`, whose shell is being built. The repl is the runner's first caller,
+not its only one: a portal, a worker and `chatddx samples` (`agents/wip-sample-data.md`, "Left behind") would call it
+too.
 
 "Decided" means the user said so. "Take" is the agent's recommendation and still open.
 

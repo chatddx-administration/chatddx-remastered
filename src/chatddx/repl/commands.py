@@ -1,0 +1,217 @@
+import shlex
+from collections.abc import Callable, Iterable, Mapping
+from dataclasses import dataclass
+
+import psycopg
+from rich.table import Table
+
+from . import choosing, inspecting, listing, reviewing, running, scoring
+from .shell import Repl
+
+
+@dataclass(frozen=True)
+class Command:
+    params: tuple[str, ...]
+    text: str
+    run: Callable[..., None] | None
+    # The param that takes the words left over, as one name: names may hold spaces.
+    rest: int | None = None
+
+    @property
+    def repeats(self) -> bool:
+        return bool(self.params) and self.params[-1].strip("[]").endswith("...")
+
+
+def help_(repl: Repl) -> None:
+    table = Table(box=None, show_header=False)
+    for verb, command in COMMANDS.items():
+        table.add_row(" ".join((verb, *command.params)), command.text)
+    repl.console.print(table)
+
+
+COMMANDS: dict[str, Command] = {
+    "configurations": Command(
+        (), "list the configurations you can use", listing.configurations
+    ),
+    "endpoints": Command(
+        (), "list the World's endpoints, and the engine each serves", listing.endpoints
+    ),
+    "cases": Command((), "list the cases you can run", listing.cases),
+    "use": Command(
+        ("CONFIGURATION",),
+        "put a configuration in the cell: yours, one shared with you, or OWNER/NAME",
+        choosing.use,
+        rest=0,
+    ),
+    "on": Command(("ENDPOINT",), "put an endpoint in the cell", choosing.on),
+    "cell": Command(
+        ("CONFIGURATION", "ENDPOINT"), "put both in the cell", choosing.cell, rest=0
+    ),
+    "set": Command(
+        ("PART", "CHUNK"),
+        "put another chunk in a part of the cell's configuration; none takes an "
+        + "optional part out",
+        choosing.set_,
+        rest=1,
+    ),
+    "show": Command(
+        ("[KIND]", "[NAME...]"),
+        "show the cell, its request, what the lints say and the cases each scorer "
+        + "can hold it to (tag TAG...: those with any TAG); or a KIND, the cell's or "
+        + "NAME, and your runs with it",
+        inspecting.show,
+    ),
+    "reasoning": Command(
+        (), "show what each reasoning level does on each model", inspecting.reasoning
+    ),
+    "run": Command(
+        ("CASE", "[SEED]"),
+        "run a case on the cell, with SEED or the seed the repl holds, and score it",
+        running.run,
+    ),
+    "batch": Command(
+        ("TAG...",),
+        "run the cell on each case with any TAG, then score them (Ctrl-C stops)",
+        running.batch,
+    ),
+    "seed": Command(
+        ("[SEED]",),
+        "draw a fresh seed for the cell's runs; SEED holds it",
+        running.seed,
+    ),
+    "save": Command(
+        ("NAME",),
+        "save the cell's configuration as your own, as NAME",
+        choosing.save,
+        rest=0,
+    ),
+    "runs": Command(
+        ("[COUNT]",),
+        "list your latest runs, the last 20 unless COUNT says",
+        reviewing.runs,
+    ),
+    "replay": Command(
+        ("[RUN]",),
+        "show a run again as it streamed: the latest, or RUN",
+        reviewing.replay,
+    ),
+    "score": Command(
+        ("[RUN]",),
+        "score your runs that are left to score, or RUN, as the scorings are now",
+        scoring.score,
+    ),
+    "scorers": Command(
+        (),
+        "list the scorers, what each view reads, and whether the cell's output "
+        + "offers it",
+        scoring.scorers,
+    ),
+    "help": Command((), "list the commands", help_),
+    "quit": Command((), "leave (or Ctrl-D)", None),
+}
+
+
+def _joined(command: Command, args: list[str]) -> list[str]:
+    extra = len(args) - len(command.params)
+    if command.rest is None or extra <= 0:
+        return args
+    at = command.rest
+    return [*args[:at], " ".join(args[at : at + extra + 1]), *args[at + extra + 1 :]]
+
+
+def handle(repl: Repl, line: str) -> bool:
+    try:
+        words = shlex.split(line)
+    except ValueError as e:
+        repl.error(str(e))
+        return True
+
+    if not words:
+        return True
+
+    verb, *args = words
+    command = COMMANDS.get("quit" if verb == "exit" else verb)
+
+    if command is None:
+        repl.error(f"no command '{verb}': try help")
+        return True
+
+    if command.run is None:
+        return False
+
+    args = _joined(command, args)
+    required = [param for param in command.params if not param.startswith("[")]
+    most = len(args) if command.repeats else len(command.params)
+
+    if not len(required) <= len(args) <= most:
+        repl.error(f"usage: {' '.join((verb, *command.params))}")
+        return True
+
+    try:
+        command.run(repl, *args)
+    except (LookupError, ValueError) as e:
+        repl.error(str(e))
+    except psycopg.Error as e:
+        said = str(e).strip()
+        repl.error(
+            f"the database failed: {said.splitlines()[0] if said else type(e).__name__}"
+        )
+
+    return True
+
+
+# The next word of each name that starts with the words typed so far.
+def _next_words(names: Iterable[str], typed: list[str]) -> list[str]:
+    found: dict[str, None] = {}
+    for name in names:
+        words = name.split(" ")
+        if (
+            len(words) >= len(typed)
+            and words[: len(typed) - 1] == typed[:-1]
+            and words[len(typed) - 1].startswith(typed[-1])
+        ):
+            found[words[len(typed) - 1]] = None
+    return list(found)
+
+
+def complete(names: Mapping[str, list[str]], line: str) -> list[str]:
+    verb, *words = line.split(" ")
+
+    if not words:
+        return [name for name in COMMANDS if name.startswith(verb)]
+
+    command = COMMANDS.get(verb)
+    params = command.params if command else ()
+    position = len(words) - 1
+
+    match verb:
+        case "show" if position == 0:
+            return _next_words(names.get("kind", []), words)
+        case "show" if words[0] == "tag":
+            given = words[1:-1]
+            return [
+                tag
+                for tag in names.get("tag", [])
+                if tag.startswith(words[-1]) and tag not in given
+            ]
+        case "show":
+            return _next_words(names.get(words[0], []), words[1:])
+        case "set" if position >= 1:
+            return _next_words(names.get(words[0], []), words[1:])
+        case _ if command is not None and command.rest is not None:
+            if position < command.rest:
+                return _next_words(names.get(params[position].lower(), []), words[-1:])
+            name = words[command.rest :]
+            found = _next_words(names.get(params[command.rest].lower(), []), name)
+            after = command.rest + 1
+            if after < len(params) and " ".join(name[:-1]) in names.get(
+                params[command.rest].lower(), []
+            ):
+                found += _next_words(names.get(params[after].lower(), []), name[-1:])
+            return found
+        case _ if position < len(params):
+            key = params[position].strip("[].").lower()
+            held = names.get(f"{verb}:{key}", names.get(key, []))
+            return _next_words(held, words[-1:])
+        case _:
+            return []

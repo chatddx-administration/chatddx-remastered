@@ -602,11 +602,9 @@ factors, such as an engine that changed between runs. It is a component so that 
 runs.
 
 ## Lints
-Lints warn about settings that are valid but risky. They run on demand, and no component stores their findings. The
-seeder runs them over every component it seeds and prints what they find, without storing it either.
-
-Keeping them out of the components means knowledge that changes between vLLM releases can change without changing any
-digest.
+Lints warn about settings that are valid but risky. They run on demand, and no component stores their findings.
+Keeping them out of the components means knowledge that changes between vLLM releases can change without changing
+any digest.
 
 They look at:
 - pins that can move: a model revision that isn't a commit, a runtime that isn't a Nix store path, scorer code without a

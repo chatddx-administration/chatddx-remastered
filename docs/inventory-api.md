@@ -17,7 +17,6 @@ Paths are relative to `src/chatddx/inventory/` unless they start with `src/`, `d
 - [sources.py](#sourcespy): `Source`, `DirectorySource`
 - [serving.py](#servingpy): `StartUp`, `start_up`, `url_of`, `served`, `confirm`
 - [Worlds](#worlds)
-- [Callers](#callers)
 - [Known gaps](#known-gaps)
 - [Beyond docs/inventory.md](#beyond-docsinventorymd)
 
@@ -261,22 +260,6 @@ endpoints serve. `worlds/` holds two:
 `endpoints.toml` and `factors.toml` in `worlds/kompismoln/` are what `chatddx import-engine` writes.
 `test/test_serving.py:test_the_sample_world_binds_each_fake_engine_the_sample_seeds` fails when the sample World's
 endpoints don't match the engines the sample seeds.
-
-## Callers
-- `src/chatddx/cli.py:_init_data`: `Inventory.load(--world)` and `source(--source)`; without `--world`, a
-  `DirectorySource` over `--vignettes`.
-- `src/chatddx/seed/world.py:endpoints`: one line per endpoint, after init-data seeds. An endpoint whose engine the
-  data doesn't seed is reported as such; otherwise `url_of`, and `start_up` for a local engine, and their
-  `LookupError` is the line.
-- `src/chatddx/runner/gate.py:check`: refuses a run unless the endpoint exists, the trial's sources exist, the
-  endpoint serves the trial's engine, it is `cleared_for` every sensitive source, the skeleton has no tools when a
-  source is sensitive, and `confirm` passes; `LookupError` and `OSError` become `Refused`. Before confirming, it reads
-  the endpoint's secret (`gate.py:secret`: the variable `credential` names, refused when unset or empty), sends it
-  with `confirm`, and returns it for the run's calls.
-- `src/chatddx/runner/run.py`: refuses an execution whose `concurrency` is above `max_jobs` (`ValueError`), records
-  the endpoint's name and `url_of` in `RunStarted.endpoint`, and fetches each vignette through `source(...).fetch`;
-  `LookupError` there is a `case.unreadable` finding.
-- `src/chatddx/importers/o11n.py`: builds `EndpointSpec` and `HostSpec` tables and refuses `LISTEN_FLAGS`.
 
 ## Known gaps
 From `docs/inventory.md`, "Open design issues":

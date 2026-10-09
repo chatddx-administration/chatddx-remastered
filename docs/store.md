@@ -37,14 +37,22 @@ The catalog decides what its rows mean (docs/catalog.md). The store reads the ro
 decided, all of one change at once.
 
 ### Looking things up for someone
-Tools that act for a person, such as the planned shell, look things up the way that person sees them: among the
-live threads and families they own or collaborate on, and the runs they own. That lets the person refer to things
-loosely. A thread is found by its name, matched whole first and only then read as an owner and a name, since names
-may hold a slash, and runs by the start of their id or by a component their trial is built on. For a run, the store
-also tells which scorers can grade its answers, which scoring it would be scored under now, from the expectations the
-catalog picks for the person, and whether it still has to be scored under that scoring, so a run whose expectations
-changed after it was scored is due again. Like authorization, this decides what is relevant to show, not who may read
-what (docs/identity.md, "Authorization").
+The store offers a simple lookup scoped to one person for live runs they own and live threads and families they own or
+collaborate on, which lets a person refer to things loosely. A thread is found by its name, matched whole first and
+only then read as an owner and a name, since names may hold a slash, and runs by the start of their id or by a
+component their trial is built on.
+
+For a run, the store also tells:
+- which scorers can grade its answers
+- which scoring it would be scored under now (from the expectations the catalog picks for the person)
+
+The repl works out for itself, for now, whether a run still has to be scored under that scoring, so a run whose
+expectations changed after it was scored is due again (see "Which runs still need scoring" under "Known gaps").
+
+Like authorization, this decides what is relevant to show, not who may read what (docs/identity.md, "Authorization").
+
+This feature should probably not exist in the store, see "Person-scoped lookup may not belong in the store" under
+"Known gaps".
 
 ## Tiers
 Integrity comes in three tiers, and a deployment applies migrations up to a chosen tier. Each schema has migrations
@@ -62,21 +70,29 @@ admin, up to the top tier unless told otherwise, and can list what it would appl
 ## Roles and connections
 Connections are set up from the environment (.env-example), through the project's settings. Roles belong to the
 cluster rather than to a database, so every database in a cluster shares them. Grants don't bind the admin or a
-superuser, which is why the app connects as the writer and not as the admin; at tier 0 there are no grants, so a
-tier-0 deployment has to connect as the admin. Tier-2 triggers bind the admin too, and only a superuser who disables
-triggers gets around them.
+superuser, which is why the app connects as the writer and not as the admin.
+
+At tier 0 there are no grants, so a tier-0 deployment has to connect as the admin.
+Tier-2 triggers bind the admin too, and only a superuser who disables triggers gets around them.
 
 | Role | Used by | Created by | May |
 | --- | --- | --- | --- |
-| Admin | Whoever deploys: it owns the database and its schemas, runs the migrations and creates the tests' databases. | The database setup script, which also creates the database it owns. | Everything. It has to be able to create roles the first time tier 1 runs in a cluster, and databases to run the tests. |
-| Writer | The app. | The database setup script, as a role that can log in. Tier 1 creates it, unable to log in, only when it doesn't exist. | Read and add to the factors, the ledger and the catalog; add people and change them and their passwords, but never remove them; open and end sessions. |
-| Reader | Nothing yet. | Tier 1, unable to log in, when it doesn't exist. | Read what isn't sensitive: the factors, the catalog and people, but not the ledger, passwords or sessions. |
+| Admin | `chatddx migrate` and the tests. | Setup script. | Own the database and schemas; create databases and roles. |
+| Writer | The app. | Setup script. | Read and add to factors, ledger and catalog; create, read and update people. |
+| Reader | Nothing yet. | Tier 1. | Read the factors, the catalog and people, but not passwords. |
+
+The reader can't read the ledger or sessions.
 
 Agents use the system's cluster (setup in AGENTS.md); the devShell runs one of its own (scripts/dev-db.sh).
 
 ## Tests
 Every package's tests share one migrated template database per session, and each test gets a fresh copy of it,
-dropped afterwards. The admin creates and migrates databases; tests connect as the writer, except where they need the
+dropped afterwards.
+
+Before a database is copied or dropped, the tests wait for the sessions on it to end, since one closed a moment
+ago may still be ending on the server, and the admin can't end a writer's session to drop the database by force.
+
+The admin creates and migrates databases; tests connect as the writer, except where they need the
 admin, for tier-0 writes and tier-2 triggers. They fail, rather than skip, when the database can't be reached.
 
 ## Terms
@@ -92,8 +108,7 @@ admin, for tier-0 writes and tier-2 triggers. They fail, rather than skip, when 
 | Closure | A component and everything it references, transitively. |
 
 ## Known gaps
-These are known shortcomings of the store's design. The API lists them where they show (docs/store-api.md, "Known
-gaps").
+These are known shortcomings of the store's design. Some have more details in docs/store-api.md.
 - The database doesn't check that a component has all its reference rows, only that the rows it has are right; the
   store writes them together.
 - The database allows a thread without versions; the catalog writes a thread together with its first version.
@@ -115,5 +130,9 @@ gaps").
   rows of the old version, nor load a closure that holds one. The rows can't be rewritten either: the tables are
   append-only, and digests and seals depend on the bytes. docs/factors.md, "Splitting expectations", already considers
   a bump of the scorer's schema version.
+- Which runs still need scoring is answered twice: by the store, per scorer over all of a person's runs, and by the
+  repl, one run at a time. Only the repl's answer is used.
+- Person-scoped lookup may not belong in the store. `Reads` is mostly policy based on other modules' rules, which
+  contradicts "the store answers which rows exist; the modules decide what they mean".
 
 ## Proposed amendments

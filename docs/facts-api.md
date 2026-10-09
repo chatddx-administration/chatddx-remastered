@@ -16,7 +16,6 @@ Paths are relative to `src/chatddx/facts/` unless they start with `src/`, `docs/
 - [lint.py](#lintpy): `reasons`, `check_pairs`
 - [Finding codes](#finding-codes)
 - [Bundled facts](#bundled-facts)
-- [Callers](#callers)
 - [Known gaps](#known-gaps)
 - [Beyond docs/facts.md](#beyond-docsfactsmd)
 
@@ -281,16 +280,6 @@ The subject is always the trial's or judge's digest.
 | `recommended` | `on`: temperature 0.6, top_p 0.95, top_k 20, presence_penalty 1.5; `off`: temperature 0.7, top_p 0.8, top_k 20, presence_penalty 1.5 | `low`, `medium`, `high`: temperature 1.0, top_p 1.0 |
 | `generation_config` | temperature 0.6, top_p 0.95, top_k 20 | empty |
 | `output` | `default = "native"`; `native`, `tool`, `text` without notes | `default = "native"`; a note on `native` (harmony renders no `response_format`); `tool`, `text` without notes |
-
-## Callers
-- `src/chatddx/cli.py:_init_data`: `Facts.load(BUNDLED, *args.facts)`; `--facts PATH` may be repeated.
-- `src/chatddx/seed/plan.py:_component`: a `from_facts` record. For `sampling`, its `effort` (default `"default"`)
-  and the rest of its options and the record's body as overrides to `sampling_chunk`; for `reasoning`, only `effort`
-  and an integer `budget` to `reasoning_chunk`. `Refused` skips the record and is reported; an effort that isn't a
-  level or `"default"` is a `ValueError`. `plan_factors` writes these records once per model that a planned engine
-  serves and the facts know (`model_name`), and reports the others as skipped.
-- `src/chatddx/seed/write.py`, the seed's lint: `reasons(facts, registry)` to `chatddx.factors.lint.lint`, then
-  `check_pairs` over the landed digests.
 
 ## Known gaps
 From `docs/facts.md`, "Open design issues":
