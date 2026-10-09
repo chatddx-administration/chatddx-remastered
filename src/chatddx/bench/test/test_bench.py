@@ -1,7 +1,14 @@
 import pytest
 
-from chatddx.bench import Bench
-from chatddx.bench.test.sample import FREE_TEXT, another_expectation, ran, trial
+from chatddx.bench import Ambiguous, Bench, NotFound
+from chatddx.bench.test.sample import (
+    FREE_TEXT,
+    PLAN,
+    QWEN,
+    another_expectation,
+    ran,
+    trial,
+)
 from chatddx.catalog import Subject
 from chatddx.factors.base import resolve
 from chatddx.factors.scoring import Expectation
@@ -79,3 +86,49 @@ def test_several_expectations_to_choose_from_are_refused(bench: Bench) -> None:
 
     with pytest.raises(LookupError, match="has expectations to choose from"):
         _ = bench.expectation(case, schema)
+
+
+def test_a_per_model_configuration_is_picked_by_the_engine_s_model(
+    bench: Bench,
+) -> None:
+    with pytest.raises(NotFound) as refused:
+        _ = bench.configuration("plan")
+    assert refused.value.per_model == (PLAN, "plan (openai/gpt-oss-20b)")
+
+    variation = bench.configuration("plan", bench.endpoint(QWEN))
+    assert (variation.name, variation.label, variation.parts) == (PLAN, PLAN, {})
+
+    with pytest.raises(NotFound) as refused:
+        _ = bench.configuration("nope", bench.endpoint(QWEN))
+    assert refused.value.per_model == ()
+
+
+def test_a_variation_replaces_parts_over_its_configuration(bench: Bench) -> None:
+    engine = bench.endpoint(QWEN)
+    configuration = bench.configuration(FREE_TEXT, engine)
+    off = configuration.set("reasoning", bench.chunk("reasoning", "off", engine), "off")
+
+    assert off.label == f"{FREE_TEXT}+reasoning=off"
+    assert off.configuration == configuration.configuration
+    assert bench.skeleton(off).digest != bench.skeleton(configuration).digest
+    assert bench.skeleton(off).body["chat_template_kwargs"] == {
+        "enable_thinking": False
+    }
+
+    own = configuration.held("reasoning")
+    assert off.set("reasoning", own, "its own").parts == {}
+    with pytest.raises(ValueError, match="only .* can be taken out"):
+        _ = off.set("prompt", None, "none")
+
+
+def test_several_configurations_of_one_name_are_refused_a_save(bench: Bench) -> None:
+    variation = bench.configuration(FREE_TEXT, bench.endpoint(QWEN))
+    _ = Catalog(bench.conn).create(
+        variation.configuration.digest, bench.person.id, name="twice"
+    )
+    _ = Catalog(bench.conn).create(
+        variation.configuration.digest, bench.person.id, name="twice"
+    )
+
+    with pytest.raises(Ambiguous, match="2 configurations named 'twice'"):
+        _ = bench.save(variation, "twice")

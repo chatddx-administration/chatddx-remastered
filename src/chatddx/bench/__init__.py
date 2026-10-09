@@ -1,33 +1,28 @@
 from .bench import (
     KINDS,
-    MAX_SEED,
-    NONE,
     OPTIONAL,
     PARTS,
-    SEEDS,
     Bench,
-    Cell,
     Family,
     Graded,
     Reach,
     Saved,
-    drawn_seed,
+    TriedVariation,
 )
+from .errors import Ambiguous, NotFound
 from .reads import Reads
 
 __all__ = [
     "KINDS",
-    "MAX_SEED",
-    "NONE",
     "OPTIONAL",
     "PARTS",
-    "SEEDS",
+    "Ambiguous",
     "Bench",
-    "Cell",
     "Family",
     "Graded",
+    "NotFound",
     "Reach",
     "Reads",
     "Saved",
-    "drawn_seed",
+    "TriedVariation",
 ]

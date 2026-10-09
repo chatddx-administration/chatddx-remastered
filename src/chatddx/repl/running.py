@@ -6,7 +6,7 @@ from typing import Any, Self
 
 from rich.text import Text
 
-from chatddx.bench import MAX_SEED, Cell, drawn_seed
+from chatddx.bench import TriedVariation
 from chatddx.catalog.titles import short
 from chatddx.ledger import RunItem
 from chatddx.runner.gate import Refused
@@ -25,7 +25,7 @@ from .render import (
     show_table,
     usage,
 )
-from .shell import Repl
+from .shell import MAX_SEED, Repl, drawn_seed
 
 
 def seed(repl: Repl, value: str | None = None) -> None:
@@ -37,28 +37,29 @@ def seed(repl: Repl, value: str | None = None) -> None:
         repl.seed = held
 
     repl.console.print(f"seed: #{repl.seed}")
-    cell = repl.cell
+    variation = repl.cell.variation
 
-    if cell.configuration is not None and repl.bench.skeleton(cell).greedy:
+    if variation is not None and repl.bench.skeleton(variation).greedy:
         repl.console.print("greedy: the seed isn't sent", style=LABEL)
 
 
 def run(repl: Repl, name: str, seed: str | None = None) -> None:
     chosen = repl.seed if seed is None else _seed_of(repl, seed)
-    cell = _whole(repl)
+    whole = _whole(repl)
 
-    if chosen is None or cell is None:
+    if chosen is None or whole is None:
         return
 
+    variation, endpoint = whole
     bench = repl.bench
     family = bench.family(name)
-    skeleton = bench.skeleton(cell)
-    running = _started(repl, cell, [family.case], chosen)
+    skeleton = bench.skeleton(variation)
+    running = _started(repl, variation, endpoint, [family.case], chosen)
 
     if running is None:
         return
 
-    title = f"trial: {cell.label} × {cell.endpoint} × {family.name} (seed {chosen})"
+    title = f"trial: {variation.label} × {endpoint} × {family.name} (seed {chosen})"
     repl.console.print(Text(title, style="bold"))
     transcript = Transcript(repl.console)
     ended: list[RunItem] = []
@@ -93,11 +94,12 @@ def run(repl: Repl, name: str, seed: str | None = None) -> None:
 
 
 def batch(repl: Repl, *tags: str) -> None:
-    cell = _whole(repl)
+    whole = _whole(repl)
 
-    if cell is None:
+    if whole is None:
         return
 
+    variation, endpoint = whole
     bench = repl.bench
     families = bench.families(tags)
     tagged = " or ".join(tags)
@@ -106,8 +108,8 @@ def batch(repl: Repl, *tags: str) -> None:
         repl.error(f"no case tagged {tagged} for {bench.person.login}")
         return
 
-    skeleton = bench.skeleton(cell)
-    running = _started(repl, cell, [f.case for f in families], repl.seed)
+    skeleton = bench.skeleton(variation)
+    running = _started(repl, variation, endpoint, [f.case for f in families], repl.seed)
 
     if running is None:
         return
@@ -116,7 +118,7 @@ def batch(repl: Repl, *tags: str) -> None:
     width = max(len("case"), *(len(n) for n in names.values()))
     repl.console.print(
         Text(
-            f"batch: {cell.label} × {cell.endpoint} × "
+            f"batch: {variation.label} × {endpoint} × "
             + f"{plural(len(families), 'case')} tagged {tagged}, seed {repl.seed}",
             style="bold",
         )
@@ -177,21 +179,23 @@ def _seed_of(repl: Repl, value: str) -> int | None:
     return int(value)
 
 
-def _whole(repl: Repl) -> Cell | None:
+def _whole(repl: Repl) -> tuple[TriedVariation, str] | None:
     cell = repl.cell
-    if cell.configuration is None or cell.endpoint is None:
+    if cell.variation is None or cell.endpoint is None:
         repl.error(
             "the cell needs a configuration and an endpoint: cell CONFIGURATION ENDPOINT"
         )
         return None
-    return cell
+    return cell.variation, cell.endpoint
 
 
-def _started(repl: Repl, cell: Cell, cases: list[str], seed: int) -> Running | None:
-    if repl.bench.skeleton(cell).greedy:
+def _started(
+    repl: Repl, variation: TriedVariation, endpoint: str, cases: list[str], seed: int
+) -> Running | None:
+    if repl.bench.skeleton(variation).greedy:
         repl.console.print("greedy: the seed isn't sent", style=LABEL)
     try:
-        return repl.bench.start(cell, cases, seed)
+        return repl.bench.start(variation, endpoint, cases, seed)
     except Refused as e:
         repl.error(f"refused: {e}")
         return None

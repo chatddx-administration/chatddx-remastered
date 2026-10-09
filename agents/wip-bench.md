@@ -12,12 +12,11 @@ https://github.com/chatddx-administration/chatddx/blob/504792cbeb09508f2c52912be
 
 ## Start with this
 1. **Decided: B3**, a person-scoped view, split between `identity` and the bench (see "Decided").
-2. **Phase 2 has started** (see "Phase 2"). Steps 1–5 are done: the visibility predicate in `identity`, `Reads` in the
-   bench, one rule for what is left to score, one rule for the expectation a case is held to, and the bench's own
-   tests.
-3. **Whether to keep "cell"** is open again (see "Keeping 'cell' or not"). The options are K1–K3, and the take is K2:
-   the repl keeps the word, and the bench speaks the docs' terms. Steps 6 and 7 wait on it, since they touch the same
-   code.
+2. **Phase 2** (see "Phase 2"): steps 1–8 are done. Step 9, Z1, waits for the portal.
+3. **Decided: K2 with R1** (see "Keeping 'cell' or not"). "Cell" is the repl's word only, and the bench speaks of a
+   `TriedVariation` and an endpoint. A test keeps the word out of the code outside `src/chatddx/repl/`.
+4. **Open** (see "Phase 2", "Open"), each with a take: one class or two for `Reads` and `Bench`; where the visibility
+   rule is applied to the catalog's rows; finding families by `OWNER/NAME`; the catalog's own `LookupError`s.
 
 ## Decided
 - **B3**: the bench is a person-scoped view (see "Phase 1" for the options). The split:
@@ -29,8 +28,8 @@ https://github.com/chatddx-administration/chatddx/blob/504792cbeb09508f2c52912be
 - **The two rules for the expectation a case is held to** were to be made one if that could be done cleanly, and
   otherwise looked at more deeply. It was clean (phase 2, step 4).
 - **"Cell" isn't a term of remastered**, and isn't to be used in code or docs. Its translation comes first, then a
-  reconciliation. Since reopened by the user: whether "cell" is worth keeping between the bench and the edges, as long
-  as it stays out of the data model (see "Keeping 'cell' or not"). Until that is decided, new code doesn't use it.
+  reconciliation. The user later reopened this: whether "cell" is worth keeping between the bench and the edges, as
+  long as it stays out of the data model. Decided: K2 with R1 (see "Keeping 'cell' or not"), built in phase 2, step 6.
 
 ## "Cell", translated
 "Cell" is the old chatddx's term: `bench/cell.py:Cell(configuration, name, variations, stack)`, a configuration with
@@ -46,9 +45,10 @@ In remastered's terms, it is **a variation being tried, at an endpoint**:
 - Together they give the skeleton and the engine that a trial pairs (`docs/facts.md`, "Checking pairs"). `run` and
   `batch` add the cases and the seed, and that makes the trial.
 
-Field by field:
+Field by field, for the bench's former `Cell`. It is now the bench's `TriedVariation`, and the repl's own `Cell`
+holds one beside the endpoint and its engine (phase 2, step 6):
 
-| `Cell` (`src/chatddx/bench/bench.py`) | In remastered's terms |
+| The former `Cell` | In remastered's terms |
 |---|---|
 | `configuration: Edit` | the head of the configuration, a skeleton thread, that the variation is based on |
 | `name` | the configuration's name, as the person addressed it |
@@ -61,10 +61,12 @@ Field by field:
 There is one tension. `docs/chatddx.md` calls variations "a supported portal workflow, not an object in the code".
 `Cell` holds the variation being tried as a value (its base, its recipe, and the parts with the names they were set
 by), because the repl shows the names and `save` forks from the base. A value in the bench isn't a catalog object.
-Whatever is decided about the word, it should stay a plain value.
+`TriedVariation` stays a plain value.
 
 ## Keeping "cell" or not
-### Where it is
+Decided: K2 with R1 (see "Options"). Built in phase 2, step 6.
+
+### Where it was
 - **The repl**: the `cell CONFIGURATION ENDPOINT` command, `Repl.cell`, about ten help texts ("put a configuration in
   the cell", "run a case on the cell", "save the cell's configuration as your own"), and messages such as "the cell
   has no endpoint" and "a case isn't in the cell". The prompt shows what the cell holds, but not the word:
@@ -102,6 +104,8 @@ Against it:
   (`src/chatddx/repl/test/test_inspecting.py:row_names`). Scores are to be exported and analysed in Python
   (`docs/chatddx.md`, "On the table"), where a cell is a spreadsheet's or a notebook's.
 - A cell can hold only an endpoint, or only a configuration, which the word doesn't suggest.
+- It is a clinical word too: the sample's cases speak of "basal cell carcinoma" and "hepatocellular carcinoma"
+  (`src/chatddx/data/sample/cases.toml`), which the guard's test met at once.
 
 ### How it would spread
 Today it is held between the bench and one edge. It would spread through:
@@ -138,7 +142,8 @@ Names for the bench's value, under K2 and K3:
 ### The guard
 Whichever option is chosen, the word stays out of the data model:
 - Nothing below the bench names it. A test can check this by grepping the packages under the bench for the word, under
-  K1, or every package but `chatddx.repl`, under K2.
+  K1, or every package but `chatddx.repl`, under K2. Built for K2:
+  `src/chatddx/repl/test/test_vocabulary.py`, over code only (`.py` and `.sql`), since clinical data says "cell".
 - Nothing stored is one: a run's title, if one is ever stored, is a title (`docs/catalog.md`, "Titles"), not a label
   in the repl's notation.
 - Docs below the edges don't use it.
@@ -344,9 +349,9 @@ Sub-decisions:
 - **S2. Where the variation being tried lives**: the bench (decided).
 - **S3. The shell's vocabulary** (`KINDS`, `NONE`, `SEEDS` and `drawn_seed`, and how messages are worded) moves to
   the repl. `PARTS` and `OPTIONAL` are the recipe's, and could come from `src/chatddx/factors/request.py:Recipe`.
-  Take; step 7.
+  Done in step 7, except `KINDS`, which turned out not to be the shell's.
 - **S4. Typed errors**, such as `NotFound` and `Ambiguous`, that subclass `LookupError`, so the repl keeps catching
-  what it catches and an API can map them. Take; step 8.
+  what it catches and an API can map them. Done in step 8.
 - **S5. State**: the caches of logins and models make a bench last one session. That suits a request or a repl. A
   long-lived worker would rebuild it. Take; nothing to build.
 - **S6. Tests of its own.** Done in step 5.
@@ -383,18 +388,44 @@ Sub-decisions:
    and the repl's copy it for each test. That settles "the seeded sample fixture is defined twice"
    (`agents/wip-repl.md`, "Left from 4a").
 
+6. **"Cell" is the repl's** (K2 with R1).
+   - The bench's `Cell` is now `src/chatddx/bench/bench.py:TriedVariation`: the configuration's head edit, the name
+     it was called by, its recipe, and the parts replaced over it. It always has a configuration. It has no endpoint,
+     and lost `using` and `on`.
+   - The bench's methods take what they need: `configuration(name, engine)`, `chunk(part, name, engine)`,
+     `skeleton(variation)`, `findings(variation, engine, seed, cases)`, `reach(variation, families)`,
+     `save(variation, name)`, which returns `Saved.variation`, and `start(variation, endpoint, cases, seed)`, which
+     finds the engine from the endpoint.
+   - The repl's own `Cell` (`src/chatddx/repl/shell.py`) holds a `TriedVariation`, the endpoint and its engine, with
+     `trying` and `on`. The repl's commands, help, messages and tests keep the word.
+   - `src/chatddx/cli.py`'s help for `chatddx repl` no longer says it.
+   - The guard: `src/chatddx/repl/test/test_vocabulary.py`.
+   - Tests: `src/chatddx/bench/test/test_bench.py` covers the per-model pick, replacing parts and taking one back,
+     and the refusal to take out a part a configuration always has.
+7. **The shell's vocabulary is the repl's**: `NONE`, `SEEDS`, `MAX_SEED` and `drawn_seed` moved to
+   `src/chatddx/repl/shell.py`. `set PART none` is the repl's: it hands the bench no digest, and `Bench.chunk` no
+   longer knows the word. A part a configuration always has is refused as one that "can be taken out" only if it is
+   optional, rather than "can be none". `KINDS` stays: its words (configuration, the recipe's parts, engine and the
+   rest) are the docs', not the shell's, and its comment now says what it maps.
+8. **Typed errors**: `src/chatddx/bench/errors.py`, `NotFound` and `Ambiguous`, both `LookupError`s, exported by
+   `chatddx.bench`.
+   - `NotFound` is raised for a thread, family, run or endpoint's engine that the person doesn't see, or the store
+     doesn't hold. It carries `per_model`: the per-model threads under a name, when no model was given to pick one.
+   - `Ambiguous` is raised for a name or id prefix that matches several, and by `save` when the person has several
+     configurations of that name (a `ValueError` before).
+   - The repl words the hint itself: when `per_model` is set, `handle` adds ", picked by the endpoint in the cell"
+     (`src/chatddx/repl/commands.py:_said`).
+   - Not typed: what the catalog raises, such as `expectation_for`'s "has expectations to choose from", which passes
+     through `Bench.expectation` and `Reads.scoring` as a plain `LookupError`.
+
 ### Next
-6. **"Cell"**, once the user has chosen among K1–K3 (see "Keeping 'cell' or not"): under K1, its definition and the
-   guard; under K2, the bench's rename and the guard; under K3, the whole rename.
-7. **The shell's vocabulary to the repl** (S3). This comes after step 6, since `Cell.set`'s refusal names `none`.
-8. **Typed errors** (S4).
 9. **Z1**: the map from role to kinds goes in `identity`, once the portal's views give it meaning. `sees` then takes
    the person's roles and the kind.
 
 ### Open
 - **`Reads` and `Bench`, one class or two.** `Bench` wraps most of `Reads`, and the repl reaches `bench.reads`
-  directly. Both are the bench's now, so this only decides the bench's own shape. Take: fold `Reads` into `Bench`
-  after step 6, so that the reach-through `bench.reads.*` becomes `bench.*`.
+  directly. Both are the bench's now, so this only decides the bench's own shape. Take: fold `Reads` into `Bench`, so
+  that the reach-through `bench.reads.*` becomes `bench.*`.
 - **Where the rule is applied to the catalog's rows.** `catalog/threads.py:visible`, `catalog/families.py:visible`
   and `catalog/threads.py:expectation_for` apply the visibility rule to the catalog's rows, inside the catalog.
   `docs/catalog.md` lists "what a person sees" and "the expectation a person scores a case against" as the catalog's,
@@ -402,6 +433,9 @@ Sub-decisions:
   rows, and the bench applies it to everything else.
 - **Finding things by name** is still split between `Reads.thread` and `Bench.family` (see "Rules held twice").
   `OWNER/NAME` for families would make them one. Take: do it with the fold.
+- **The catalog's own `LookupError`s** reach the edges untyped (step 8). An API mapping errors to status codes would
+  take an ambiguous expectation for a missing one. Take: have `Bench.expectation` and `Reads.scoring` raise
+  `Ambiguous` for it, once an API needs the difference.
 
 ## Material for the bench's docs
 Taken out of `docs/store.md` ("Looking things up for someone") and `docs/store-api.md` ("reads.py") at a3431e1, when

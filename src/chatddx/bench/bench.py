@@ -1,4 +1,3 @@
-import secrets
 from collections.abc import Collection, Iterable, Mapping
 from dataclasses import dataclass, field, replace
 from typing import Literal
@@ -40,6 +39,7 @@ from chatddx.store import Catalog, People, Store
 from chatddx.store.catalog import Rows
 from chatddx.store.store import Connection
 
+from .errors import Ambiguous, NotFound
 from .reads import Reads
 
 PARTS = (
@@ -54,9 +54,9 @@ PARTS = (
     "toolset",
 )
 OPTIONAL = tuple(p for p in PARTS if not Recipe.model_fields[p].is_required())
-NONE = "none"
 
-# What the shell calls each kind of thread; a case and an endpoint aren't threads.
+# The kinds of thread each word names: a configuration is a skeleton thread, a part is a
+# chunk of that part, and an engine is local or remote.
 KINDS: dict[str, tuple[str, ...]] = {
     "configuration": ("skeleton",),
     **{part: (f"chunk.{part}",) for part in PARTS},
@@ -69,40 +69,22 @@ KINDS: dict[str, tuple[str, ...]] = {
     "engine": ("engine.local", "engine.remote"),
 }
 
-# A drawn seed is short, so the prompt stays readable; any seed a trial takes can be held.
-SEEDS = 100_000
-MAX_SEED = 2**31 - 1
 
-
-def drawn_seed() -> int:
-    return secrets.randbelow(SEEDS)
-
-
+# A configuration, or a variation of it being tried: the configuration's head edit and
+# recipe, under the name the person called it by, with the recipe parts replaced over it.
 @dataclass(frozen=True)
-class Cell:
-    configuration: Edit | None = None
-    name: str = ""
+class TriedVariation:
+    configuration: Edit
+    name: str
     recipe: Recipe | None = None
-    # The parts set over the configuration's recipe: a chunk's digest, or None for an
-    # optional part taken out, with the name it was set by.
+    # A chunk's digest, or None for an optional part taken out, with the name it was
+    # set by.
     parts: Mapping[str, tuple[str | None, str]] = field(
         default_factory=dict[str, tuple[str | None, str]]
     )
-    endpoint: str | None = None
-    engine: str | None = None
-
-    def using(self, configuration: Edit, name: str, recipe: Recipe | None) -> "Cell":
-        return replace(
-            self, configuration=configuration, name=name, recipe=recipe, parts={}
-        )
-
-    def on(self, endpoint: str, engine: str) -> "Cell":
-        return replace(self, endpoint=endpoint, engine=engine)
 
     @property
     def label(self) -> str:
-        if self.configuration is None:
-            return ""
         return self.name + "".join(
             f"+{p}={self.parts[p][1]}" for p in PARTS if p in self.parts
         )
@@ -112,13 +94,13 @@ class Cell:
             return self.parts[part][0]
         return None if self.recipe is None else getattr(self.recipe, part)
 
-    def set(self, part: str, digest: str | None, name: str) -> "Cell":
+    def set(self, part: str, digest: str | None, name: str) -> "TriedVariation":
         if self.recipe is None:
             raise ValueError(f"{self.name} has no recipe to set its {part} in")
         if digest is None and part not in OPTIONAL:
             raise ValueError(
                 f"a configuration always has a {part}: only {', '.join(OPTIONAL)} "
-                + f"can be {NONE}"
+                + "can be taken out"
             )
         parts = {p: held for p, held in self.parts.items() if p != part}
         if getattr(self.recipe, part) != digest:
@@ -144,7 +126,7 @@ class Family:
         return self.about.name or f"family {self.id}"
 
 
-# What one view of a scorer gets from the cell's answers and the cases' expectations.
+# What one view of a scorer gets from a variation's answers and the cases' expectations.
 @dataclass(frozen=True)
 class Reach:
     scorer: str
@@ -178,11 +160,11 @@ class Saved:
     name: str
     digest: str
     what: Literal["created", "a new version", "unchanged"]
-    cell: Cell
+    variation: TriedVariation
 
 
-# What one person works with: the threads and families they see, the World's endpoints,
-# and the cell they build up. Nothing here is UI.
+# What one person sees and does: the threads, families and runs they see, the World's
+# endpoints, and the variations they try and save. Nothing here is UI.
 class Bench:
     def __init__(
         self, conn: Connection, person: Person, inventory: Inventory, facts: Facts
@@ -215,8 +197,8 @@ class Bench:
     def names(self, word: str) -> list[str]:
         return sorted({a.name for _, a in self.threads(word) if a.name is not None})
 
-    # A thread by name, as `Reads.thread` finds it, or else the one made for the model
-    # the cell's engine serves, `NAME (MODEL)`. Returns it with the name that found it.
+    # A thread by name, as `Reads.thread` finds it, or else the one made for `model`,
+    # `NAME (MODEL)`. Returns it with the name that found it.
     def thread(
         self, word: str, name: str, model: str | None = None
     ) -> tuple[Edit, str]:
@@ -240,11 +222,9 @@ class Bench:
                 said = f"no {word} {name!r} for {self.person.login}"
                 if per_model := sorted(n for n in every if n.startswith(f"{name} (")):
                     said += f"; per model: {', '.join(per_model)}"
-                    if model is None:
-                        said += ", picked by the endpoint in the cell"
-                raise LookupError(said)
+                raise NotFound(said, per_model if model is None else ())
             case _:
-                raise LookupError(f"{word} {name!r} names a {' and a '.join(kinds)}")
+                raise Ambiguous(f"{word} {name!r} names a {' and a '.join(kinds)}")
 
     def about(self, thread: int) -> About:
         return self.catalog.about(Subject(thread=thread))
@@ -270,29 +250,28 @@ class Bench:
     def endpoint(self, name: str) -> str:
         engine = self.inventory.endpoint(name).engine
         if self._rows.kind(engine) is None:
-            raise LookupError(
+            raise NotFound(
                 f"endpoint {name!r} serves engine {short(engine)}, which isn't in the "
                 + "store: seed its World's factors with init-data --factors"
             )
         return engine
 
-    def configuration(self, name: str, cell: Cell) -> Cell:
-        model = None if cell.engine is None else self.model(cell.engine)
+    # A configuration by name, with nothing replaced yet; a per-model one is picked by
+    # the model `engine` serves.
+    def configuration(self, name: str, engine: str | None = None) -> TriedVariation:
+        model = None if engine is None else self.model(engine)
         edit, found = self.thread("configuration", name, model)
         called = found.removeprefix(f"{self.person.login}/")
-        return cell.using(edit, called, self.catalog.recipe(edit.thread))
+        return TriedVariation(edit, called, self.catalog.recipe(edit.thread))
 
-    def chunk(self, part: str, name: str, cell: Cell) -> str | None:
-        if name == NONE:
-            return None
-        model = None if cell.engine is None else self.model(cell.engine)
+    def chunk(self, part: str, name: str, engine: str | None = None) -> str:
+        model = None if engine is None else self.model(engine)
         return self.thread(part, name, model)[0].digest
 
-    def skeleton(self, cell: Cell) -> Skeleton:
-        assert cell.configuration is not None
-        recipe = cell.varied
-        if not cell.parts or recipe is None:
-            return resolve(self.get, cell.configuration.digest, Skeleton)
+    def skeleton(self, variation: TriedVariation) -> Skeleton:
+        recipe = variation.varied
+        if not variation.parts or recipe is None:
+            return resolve(self.get, variation.configuration.digest, Skeleton)
         registry = self.store.load(s.digest for s in iter_refs(recipe))
         return compile_request(recipe, registry.get)
 
@@ -322,10 +301,10 @@ class Bench:
         own = [f for f in found if f[1].owner == self.person.id]
         for choices in (own, found):
             if len(choices) > 1:
-                raise LookupError(f"{len(choices)} cases are named {name!r}")
+                raise Ambiguous(f"{len(choices)} cases are named {name!r}")
             if choices and (case := self._case(choices[0][0])) is not None:
                 return Family(*choices[0], case)
-        raise LookupError(f"no case {name!r} for {self.person.login}")
+        raise NotFound(f"no case {name!r} for {self.person.login}")
 
     def tags(self) -> list[str]:
         return sorted({tag for _, about in self.reads.families() for tag in about.tags})
@@ -359,13 +338,16 @@ class Bench:
         _ = registry.add(trial)
         return registry, trial
 
-    # What the lints say of the cell run as a trial: the pair's checks, and with `cases`
-    # the languages of those cases too. Without, any one case makes the trial, since the
-    # pair's checks don't read cases.
+    # What the lints say of the variation run on `engine` as a trial: the pair's checks,
+    # and with `cases` the languages of those cases too. Without, any one case makes the
+    # trial, since the pair's checks don't read cases.
     def findings(
-        self, cell: Cell, seed: int, cases: list[str] | None = None
+        self,
+        variation: TriedVariation,
+        engine: str,
+        seed: int,
+        cases: list[str] | None = None,
     ) -> list[Finding]:
-        assert cell.engine is not None
         some = cases
         if some is None:
             held = (self._case(f) for f, _ in self.reads.families())
@@ -373,7 +355,7 @@ class Bench:
             some = [] if first is None else [first]
         if not some:
             return []
-        registry, trial = self.trial(self.skeleton(cell), cell.engine, some, seed)
+        registry, trial = self.trial(self.skeleton(variation), engine, some, seed)
         languages = None if cases is None else self.catalog.language_of
         found = lint(
             registry,
@@ -396,10 +378,10 @@ class Bench:
             if part == "view"
         }
 
-    # For each view of each scorer: whether the cell's output offers what it reads, and
-    # which cases have an expectation it picks something from.
-    def reach(self, cell: Cell, families: list[Family]) -> list[Reach]:
-        schema = self.skeleton(cell).output_schema
+    # For each view of each scorer: whether the variation's output offers what it reads,
+    # and which cases have an expectation it picks something from.
+    def reach(self, variation: TriedVariation, families: list[Family]) -> list[Reach]:
+        schema = self.skeleton(variation).output_schema
         data: dict[tuple[str, str], JsonValue | None] = {}
         found: list[Reach] = []
         for edit, about, scorer in self.scorers():
@@ -420,19 +402,19 @@ class Bench:
                 found.append(Reach(name, i, label, offered, len(families), missing))
         return found
 
-    # Keeps the cell's configuration as the person's own, under `name`: a new version of
-    # their thread of that name, or else a fork of the configuration's thread.
-    def save(self, cell: Cell, name: str) -> Saved:
-        assert cell.configuration is not None
-        skeleton = self.skeleton(cell)
+    # Keeps the variation as the person's own configuration, under `name`: a new version
+    # of their thread of that name, or else a fork of the configuration's thread.
+    def save(self, variation: TriedVariation, name: str) -> Saved:
+        skeleton = self.skeleton(variation)
         mine = self.catalog.find("skeleton", name, owner=self.person.id)
         if len(mine) > 1:
-            raise ValueError(
+            raise Ambiguous(
                 f"{self.person.login} has {len(mine)} configurations named {name!r}"
             )
         with self.conn.transaction():
             compilation = (
-                self._compile(cell, skeleton) or cell.configuration.compilation
+                self._compile(variation, skeleton)
+                or variation.configuration.compilation
             )
             if not mine:
                 what = "created"
@@ -440,7 +422,7 @@ class Bench:
                     skeleton.digest,
                     self.person.id,
                     compilation=compilation,
-                    forked_from=cell.configuration.id,
+                    forked_from=variation.configuration.id,
                     name=name,
                 )
             elif self.catalog.head(mine[0]).digest == skeleton.digest:
@@ -452,12 +434,12 @@ class Bench:
                     mine[0], skeleton.digest, self.person.id, compilation=compilation
                 )
         recipe = self.catalog.recipe(edit.thread)
-        return Saved(name, skeleton.digest, what, cell.using(edit, name, recipe))
+        return Saved(name, skeleton.digest, what, TriedVariation(edit, name, recipe))
 
     # Stores what an unsaved skeleton was compiled from, by the running code.
-    def _compile(self, cell: Cell, skeleton: Skeleton) -> str | None:
-        recipe = cell.varied
-        if not cell.parts or recipe is None:
+    def _compile(self, variation: TriedVariation, skeleton: Skeleton) -> str | None:
+        recipe = variation.varied
+        if not variation.parts or recipe is None:
             return None
         registry = self.store.load(s.digest for s in iter_refs(recipe))
         _ = registry.add(skeleton)
@@ -467,15 +449,16 @@ class Bench:
         _ = self.store.add(registry, [compilation])
         return compilation
 
-    # The cell run on `cases` with one seed, at the cell's endpoint; nothing is sent
-    # until `Running.send`.
-    def start(self, cell: Cell, cases: list[str], seed: int) -> Running:
-        assert cell.endpoint is not None and cell.engine is not None
-        skeleton = self.skeleton(cell)
-        registry, trial = self.trial(skeleton, cell.engine, cases, seed)
+    # The variation run on `cases` with one seed, at `endpoint`; nothing is sent until
+    # `Running.send`.
+    def start(
+        self, variation: TriedVariation, endpoint: str, cases: list[str], seed: int
+    ) -> Running:
+        skeleton = self.skeleton(variation)
+        registry, trial = self.trial(skeleton, self.endpoint(endpoint), cases, seed)
         runner = Runner(self.conn, self.inventory, self.person)
-        running = runner.start(trial, registry, cell.endpoint)
-        _ = self._compile(cell, skeleton)
+        running = runner.start(trial, registry, endpoint)
+        _ = self._compile(variation, skeleton)
         return running
 
     # A finished run scored under every scorer that applies to it, or those of
@@ -510,7 +493,7 @@ class Bench:
             return self.reads.run(prefix)
         runs = self.reads.runs()
         if not runs:
-            raise LookupError(f"{self.person.login} has no runs")
+            raise NotFound(f"{self.person.login} has no runs")
         return runs[0]
 
     # What ran, as `run` and `batch` said it: the configuration, where it ran, the case

@@ -3,7 +3,7 @@ from pathlib import Path
 
 import pytest
 
-from chatddx.bench import Bench, Cell
+from chatddx.bench import Bench
 from chatddx.conftest import WORLD
 from chatddx.inventory import DirectorySource, Inventory
 from chatddx.repl.test.sample import FREE_TEXT, PLAN, QWEN, Say
@@ -97,8 +97,8 @@ def test_replay_says_when_the_request_would_render_otherwise_now(
 
 @pytest.mark.usefixtures("fake")
 def test_an_unfinished_run_is_listed_so_and_left_unscored(bench: Bench, say: Say):
-    cell = bench.configuration(FREE_TEXT, Cell().on(QWEN, bench.endpoint(QWEN)))
-    running = bench.start(cell, [bench.family("Dutchfall11w").case], 7)
+    variation = bench.configuration(FREE_TEXT, bench.endpoint(QWEN))
+    running = bench.start(variation, QWEN, [bench.family("Dutchfall11w").case], 7)
     running.send()
 
     [row] = rows(say("runs"))

@@ -1,6 +1,6 @@
 from chatddx.repl.commands import COMMANDS, complete, handle
 from chatddx.repl.shell import Repl
-from chatddx.repl.test.sample import PLAN, QWEN, Say
+from chatddx.repl.test.sample import PLAN, QWEN, Say, tried
 
 
 def test_the_prompt_shows_the_cell(repl: Repl, say: Say):
@@ -32,7 +32,7 @@ def test_what_it_doesn_t_know_is_said_and_nothing_changes(repl: Repl, say: Say):
     assert "usage: on ENDPOINT" in written
     assert "no command 'frobnicate': try help" in written
     assert "No closing quotation" in written
-    assert repl.cell.configuration is None
+    assert repl.cell.variation is None
 
 
 def test_a_name_with_spaces_needs_no_quotes(repl: Repl, say: Say):
@@ -40,7 +40,7 @@ def test_a_name_with_spaces_needs_no_quotes(repl: Repl, say: Say):
     assert repl.prompt == f"alice {PLAN}×{QWEN} #7> "
 
     _ = say(f"use '{PLAN}'")
-    assert repl.cell.name == PLAN
+    assert tried(repl).name == PLAN
 
 
 def test_quit_leaves(repl: Repl):

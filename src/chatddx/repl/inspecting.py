@@ -6,7 +6,7 @@ from pydantic import JsonValue
 from rich.table import Table
 from rich.text import Text
 
-from chatddx.bench import KINDS, PARTS, Cell, Family
+from chatddx.bench import KINDS, PARTS, Family, TriedVariation
 from chatddx.catalog import About
 from chatddx.catalog.titles import describe, short
 from chatddx.factors.base import Component, resolve
@@ -60,8 +60,9 @@ def show(repl: Repl, kind: str | None = None, *names: str) -> None:
 
 def _show_cell(repl: Repl, tags: tuple[str, ...] = ()) -> None:
     bench, cell = repl.bench, repl.cell
+    variation = cell.variation
 
-    if not (cell.configuration or cell.endpoint):
+    if not (variation or cell.endpoint):
         repl.error("the cell is empty: use CONFIGURATION, on ENDPOINT")
         return
 
@@ -84,22 +85,22 @@ def _show_cell(repl: Repl, tags: tuple[str, ...] = ()) -> None:
         where = f"{bench.title(cell.engine)}, served as {served} at {url}"
         table.add_row("endpoint", cell.endpoint, where)
 
-    if cell.configuration:
+    if variation:
         for part in PARTS:
-            held = cell.held(part)
+            held = variation.held(part)
             component = None if held is None else bench.get(held)
             table.add_row(
                 part,
-                _chunk(repl, cell, part),
+                _chunk(repl, variation, part),
                 "" if component is None else describe(component, bench.title),
             )
 
     repl.console.print(table)
 
-    if not cell.configuration:
+    if not variation:
         return
 
-    skeleton = bench.skeleton(cell)
+    skeleton = bench.skeleton(variation)
     served = "‹model›" if cell.engine is None else _served_name(bench.get(cell.engine))
     request = render(skeleton, model=served, seed=repl.seed, fills=PLACEHOLDERS)
 
@@ -120,13 +121,14 @@ def _show_cell(repl: Repl, tags: tuple[str, ...] = ()) -> None:
         repl.console.print("greedy: the seed isn't sent", style=LABEL)
 
     if cell.engine is not None:
-        findings = bench.findings(cell, repl.seed, [f.case for f in families])
+        cases = [f.case for f in families]
+        findings = bench.findings(variation, cell.engine, repl.seed, cases)
         repl.console.print("lints", style="bold")
         repl.say_findings(findings)
         if not findings:
             repl.console.print("no findings", style=LABEL)
 
-    _show_scorers(repl, families, tags)
+    _show_scorers(repl, variation, families, tags)
 
 
 def _served_name(engine: Component) -> str:
@@ -137,26 +139,31 @@ def _served_name(engine: Component) -> str:
             return "?"
 
 
-def _chunk(repl: Repl, cell: Cell, part: str) -> Text:
+def _chunk(repl: Repl, variation: TriedVariation, part: str) -> Text:
     bench = repl.bench
-    own = None if cell.recipe is None else getattr(cell.recipe, part)
+    own = None if variation.recipe is None else getattr(variation.recipe, part)
 
-    if part not in cell.parts:
+    if part not in variation.parts:
         return Text(bench.title(own))
 
-    text = Text(cell.parts[part][1], style="bold")
-    _ = text.append(f" (set; {cell.name} has {bench.title(own)})", style=LABEL)
+    text = Text(variation.parts[part][1], style="bold")
+    _ = text.append(f" (set; {variation.name} has {bench.title(own)})", style=LABEL)
     return text
 
 
-def _show_scorers(repl: Repl, families: list[Family], tags: tuple[str, ...]) -> None:
+def _show_scorers(
+    repl: Repl,
+    variation: TriedVariation,
+    families: list[Family],
+    tags: tuple[str, ...],
+) -> None:
     where = f" tagged {' or '.join(tags)}" if tags else ""
     table = Table(box=None, header_style="bold")
 
     for column in ("scorer", "view", f"of {plural(len(families), 'case')}{where}"):
         table.add_column(column)
 
-    for reach in repl.bench.reach(repl.cell, families):
+    for reach in repl.bench.reach(variation, families):
         if not reach.offered:
             said = Text("the output offers no such view", style=REFUSED)
         else:
@@ -177,8 +184,10 @@ def _show_thread(repl: Repl, word: str, name: str | None) -> None:
         _show_component(repl, word, found, edit.digest, bench.about(edit.thread))
         return
 
-    if word == "configuration" and cell.configuration and cell.parts:
-        skeleton = bench.skeleton(cell)
+    variation = cell.variation
+
+    if word == "configuration" and variation and variation.parts:
+        skeleton = bench.skeleton(variation)
         header = Text(f"configuration {cell.label}", style="bold")
         _ = header.append(", unsaved")
         _ = header.append(f"  {short(skeleton.digest)}", style=LABEL)
@@ -198,12 +207,13 @@ def _show_thread(repl: Repl, word: str, name: str | None) -> None:
 
 def _in_cell(repl: Repl, word: str) -> str | None:
     bench, cell = repl.bench, repl.cell
+    variation = cell.variation
     digest: str | None = None
 
-    if word == "configuration" and cell.configuration:
-        digest = cell.configuration.digest
-    elif word in PARTS and cell.configuration:
-        digest = cell.held(word)
+    if word == "configuration" and variation:
+        digest = variation.configuration.digest
+    elif word in PARTS and variation:
+        digest = variation.held(word)
         if digest is None:
             repl.error(f"the cell has no {word}")
             return None
@@ -450,10 +460,11 @@ def reasoning(repl: Repl) -> None:
             serving.setdefault(model, []).append(marked)
 
     current = None if cell.engine is None else bench.model(cell.engine)
-    held = cell.held("reasoning") if cell.configuration else None
+    variation = cell.variation
+    held = variation.held("reasoning") if variation else None
     caption = (
         "▸ the cell's reasoning, as its model's facts say"
-        if cell.configuration and current in models
+        if variation and current in models
         else "the cell has no configuration on a model the facts know"
     )
     table = Table(header_style="bold", show_lines=True, caption=caption)
@@ -465,7 +476,7 @@ def reasoning(repl: Repl) -> None:
     for effort in ("default", *INTENTS):
         levels = {model: _level(facts, effort) for model, facts in models.items()}
         mine = levels.get(current or "", (None, None))[1]
-        marked = cell.configuration is not None and (
+        marked = variation is not None and (
             mine == held if held is not None else effort == "default"
         )
         cells = [text for text, _ in levels.values()]

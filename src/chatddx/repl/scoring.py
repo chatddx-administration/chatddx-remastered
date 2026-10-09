@@ -57,8 +57,8 @@ def _scored(repl: Repl, started: RunStarted, graded: list[Graded]) -> None:
 
 
 def scorers(repl: Repl) -> None:
-    bench, cell = repl.bench, repl.cell
-    schema = None if cell.configuration is None else bench.skeleton(cell).output_schema
+    bench, variation = repl.bench, repl.cell.variation
+    schema = None if variation is None else bench.skeleton(variation).output_schema
     table = Table(box=None, header_style="bold")
 
     for column in ("scorer", "view", "metric", "reads", "held to", "owner", "the cell"):
@@ -72,7 +72,7 @@ def scorers(repl: Repl) -> None:
             if view.split is not None:
                 reads += f", {view.split}"
             metric = view.metric if view.judge is None else f"{view.metric}, judged"
-            if cell.configuration is None:
+            if variation is None:
                 offered = Text("—", style=LABEL)
             elif reaches(schema, view.output):
                 offered = Text("offers it", style=VALID)

@@ -9,6 +9,8 @@ from chatddx.ledger import RunStarted
 from chatddx.store import Catalog, People, Store
 from chatddx.store.store import Connection
 
+from .errors import Ambiguous, NotFound
+
 
 # What one person sees: the live threads and families they own or collaborate on, and
 # the runs they own.
@@ -43,10 +45,10 @@ class Reads:
                 return choices[0]
             if choices:
                 threads = ", ".join(str(e.thread) for e in choices)
-                raise LookupError(
+                raise Ambiguous(
                     f"{kind} {name!r} names threads {threads}; name one as OWNER/NAME"
                 )
-        raise LookupError(f"no {kind} named {name!r}")
+        raise NotFound(f"no {kind} named {name!r}")
 
     def families(self) -> list[tuple[int, About]]:
         return self._catalog.visible_families(self._person.id)
@@ -69,9 +71,9 @@ class Reads:
             case [run]:
                 return run
             case []:
-                raise LookupError(f"no run of yours starts with {prefix!r}")
+                raise NotFound(f"no run of yours starts with {prefix!r}")
             case _:
-                raise LookupError(f"{len(found)} runs of yours start with {prefix!r}")
+                raise Ambiguous(f"{len(found)} runs of yours start with {prefix!r}")
 
     def reaching(self, digest: str) -> list[RunStarted]:
         trials = set(self._store.reaching(digest, "trial"))
