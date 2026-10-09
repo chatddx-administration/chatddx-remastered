@@ -120,7 +120,7 @@ class Runner:
         execution = execution or Execution()
         _ = registry.add(trial)
         canary_set = None if canaries is None else registry.add(canaries)
-        gate.check(self._inventory, registry.get, endpoint, trial)
+        secret = gate.check(self._inventory, registry.get, endpoint, trial)
         toolbox = rounds.load(
             resolve(registry.get, trial.skeleton, Skeleton), registry.get
         )
@@ -130,7 +130,6 @@ class Runner:
                 f"endpoint {endpoint!r} takes {jobs} requests at once, the execution "
                 + f"sends {execution.concurrency}"
             )
-        secret = gate.secret(self._inventory, endpoint)
         url = url_of(self._inventory, registry.get, endpoint)
         started = RunStarted(
             run=uuid4(),

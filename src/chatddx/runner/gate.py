@@ -18,7 +18,7 @@ def check(
     endpoint: str,
     trial: Trial,
     timeout: float = 10.0,
-) -> None:
+) -> str | None:
     try:
         spec = inventory.endpoint(endpoint)
         sources = sorted({resolve(get, c, Case).vignette.source for c in trial.cases})
@@ -40,10 +40,12 @@ def check(
             f"the skeleton's tools would get content from source {', '.join(sensitive)}, "
             + "which is sensitive, and tools can't be cleared yet"
         )
+    key = secret(inventory, endpoint)
     try:
-        confirm(inventory, get, endpoint, timeout)
+        confirm(inventory, get, endpoint, timeout, key)
     except (LookupError, OSError) as e:
         raise Refused(f"endpoint {endpoint!r} can't be confirmed: {e}") from None
+    return key
 
 
 # An endpoint's credential names the environment variable holding its secret.

@@ -231,20 +231,21 @@ know, as `start_up`, and:
 
 A local engine's host isn't looked at. Nothing connects.
 
-### `served(url: str, timeout: float = 10.0) -> list[str]`
+### `served(url: str, timeout: float = 10.0, secret: str | None = None) -> list[str]`
 GETs `url` without its trailing `/`, followed by `/models`, and returns `str(entry["id"])` for each entry of the
-response's `data` (`[]` when `data` is missing or empty; `"None"` for an entry without `id`). It sends no credential.
+response's `data` (`[]` when `data` is missing or empty; `"None"` for an entry without `id`). With `secret`, the
+request carries `Authorization: Bearer <secret>`, as the runner's calls do.
 Raises `OSError` when the server can't be reached, times out or answers with an HTTP error;
 `json.JSONDecodeError` for a body that isn't JSON; `AttributeError` for JSON that isn't an object, or an entry that
 isn't.
 
-### `confirm(inventory: Inventory, get: Resolver, name: str, timeout: float = 10.0) -> None`
+### `confirm(inventory: Inventory, get: Resolver, name: str, timeout: float = 10.0, secret: str | None = None) -> None`
 Refuses an endpoint whose server doesn't list the name its engine is served under: a local engine's digest, a remote
 engine's `model` (`served_model_name`). In order:
 1. `LookupError` for a missing endpoint or an engine `get` doesn't know, as `start_up`;
 2. `LookupError("endpoint '<name>' names a <kind>, not an engine")`;
 3. `url_of`'s `LookupError`s;
-4. `served(url, timeout)` and its errors;
+4. `served(url, timeout, secret)` and its errors;
 5. `LookupError("endpoint '<name>' at <url> serves <listed names, joined by ", ", or 'nothing'>, not <served
    name>")`.
 
@@ -269,8 +270,9 @@ endpoints don't match the engines the sample seeds.
   `LookupError` is the line.
 - `src/chatddx/runner/gate.py:check`: refuses a run unless the endpoint exists, the trial's sources exist, the
   endpoint serves the trial's engine, it is `cleared_for` every sensitive source, the skeleton has no tools when a
-  source is sensitive, and `confirm` passes; `LookupError` and `OSError` become `Refused`. `gate.py:secret` reads the
-  `credential` variable and refuses when it is unset or empty.
+  source is sensitive, and `confirm` passes; `LookupError` and `OSError` become `Refused`. Before confirming, it reads
+  the endpoint's secret (`gate.py:secret`: the variable `credential` names, refused when unset or empty), sends it
+  with `confirm`, and returns it for the run's calls.
 - `src/chatddx/runner/run.py`: refuses an execution whose `concurrency` is above `max_jobs` (`ValueError`), records
   the endpoint's name and `url_of` in `RunStarted.endpoint`, and fetches each vignette through `source(...).fetch`;
   `LookupError` there is a `case.unreadable` finding.
@@ -294,8 +296,7 @@ Also, proposed as an amendment to `docs/inventory.md`: a new kind of source has 
 Behavior described here that `docs/inventory.md` doesn't state:
 - `Inventory.sources` takes only `DirectorySource`, so a new kind of source is also a change to that field. Proposed
   as an amendment there.
-- `served`, and so `confirm` and the runner's gate, send no credential, so a server that wants one for `/v1/models`
-  answers with an HTTP error and the endpoint is refused.
+- `confirm` sends a secret only when it is given one; the runner's gate gives it the endpoint's.
 - `served` and `confirm` raise `json.JSONDecodeError` or `AttributeError`, not `OSError`, for a server whose answer
   isn't a JSON object; the runner's gate doesn't catch them.
 - `start_up` raises `StructuralError` when the engine's model artifact isn't held by `get`.

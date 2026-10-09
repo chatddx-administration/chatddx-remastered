@@ -107,8 +107,9 @@ def url_of(inventory: Inventory, get: Resolver, name: str) -> str:
             )
 
 
-def served(url: str, timeout: float = 10.0) -> list[str]:
-    request = urllib.request.Request(url.rstrip("/") + "/models")
+def served(url: str, timeout: float = 10.0, secret: str | None = None) -> list[str]:
+    headers = {} if secret is None else {"Authorization": f"Bearer {secret}"}
+    request = urllib.request.Request(url.rstrip("/") + "/models", headers=headers)
     with urllib.request.urlopen(request, timeout=timeout) as response:
         listed: Any = json.loads(response.read())
     models = cast(list[dict[str, Any]], listed.get("data") or [])
@@ -118,7 +119,11 @@ def served(url: str, timeout: float = 10.0) -> list[str]:
 # Before case-derived content goes out: the endpoint must list the name its engine is
 # served under, the engine's digest for a local engine, its model for a remote one.
 def confirm(
-    inventory: Inventory, get: Resolver, name: str, timeout: float = 10.0
+    inventory: Inventory,
+    get: Resolver,
+    name: str,
+    timeout: float = 10.0,
+    secret: str | None = None,
 ) -> None:
     match _engine(inventory, get, name):
         case LocalEngine() | RemoteEngine() as engine:
@@ -128,7 +133,7 @@ def confirm(
                 f"endpoint {name!r} names a {other.kind_name}, not an engine"
             )
     url = url_of(inventory, get, name)
-    listed = served(url, timeout)
+    listed = served(url, timeout, secret)
     if expected not in listed:
         raise LookupError(
             f"endpoint {name!r} at {url} serves {', '.join(listed) or 'nothing'}, "
