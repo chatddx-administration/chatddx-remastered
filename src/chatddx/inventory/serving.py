@@ -2,7 +2,14 @@ import json
 import urllib.request
 from typing import Any, cast
 
-from chatddx.factors.base import Digest, Frozen, Resolver, resolve
+from chatddx.factors.base import (
+    Component,
+    Digest,
+    Frozen,
+    Resolver,
+    StructuralError,
+    resolve,
+)
 from chatddx.factors.engine import LocalEngine, ModelArtifact, RemoteEngine, flag_names
 
 from .inventory import Inventory
@@ -21,9 +28,16 @@ class StartUp(Frozen):
     env: dict[str, str]
 
 
+def _engine(inventory: Inventory, get: Resolver, name: str) -> Component:
+    try:
+        return get(inventory.endpoint(name).engine)
+    except StructuralError as e:
+        raise LookupError(f"endpoint {name!r}: {e}") from None
+
+
 def start_up(inventory: Inventory, get: Resolver, name: str) -> StartUp:
     endpoint = inventory.endpoint(name)
-    match get(endpoint.engine):
+    match _engine(inventory, get, name):
         case LocalEngine() as engine:
             pass
         case other:
@@ -73,7 +87,7 @@ def start_up(inventory: Inventory, get: Resolver, name: str) -> StartUp:
 
 def url_of(inventory: Inventory, get: Resolver, name: str) -> str:
     endpoint = inventory.endpoint(name)
-    match get(endpoint.engine):
+    match _engine(inventory, get, name):
         case RemoteEngine(base_url=base_url):
             if endpoint.url is not None and endpoint.url != base_url:
                 raise LookupError(
@@ -93,8 +107,9 @@ def url_of(inventory: Inventory, get: Resolver, name: str) -> str:
             )
 
 
-def served(url: str, timeout: float = 10.0) -> list[str]:
-    request = urllib.request.Request(url.rstrip("/") + "/models")
+def served(url: str, timeout: float = 10.0, secret: str | None = None) -> list[str]:
+    headers = {} if secret is None else {"Authorization": f"Bearer {secret}"}
+    request = urllib.request.Request(url.rstrip("/") + "/models", headers=headers)
     with urllib.request.urlopen(request, timeout=timeout) as response:
         listed: Any = json.loads(response.read())
     models = cast(list[dict[str, Any]], listed.get("data") or [])
@@ -104,9 +119,13 @@ def served(url: str, timeout: float = 10.0) -> list[str]:
 # Before case-derived content goes out: the endpoint must list the name its engine is
 # served under, the engine's digest for a local engine, its model for a remote one.
 def confirm(
-    inventory: Inventory, get: Resolver, name: str, timeout: float = 10.0
+    inventory: Inventory,
+    get: Resolver,
+    name: str,
+    timeout: float = 10.0,
+    secret: str | None = None,
 ) -> None:
-    match get(inventory.endpoint(name).engine):
+    match _engine(inventory, get, name):
         case LocalEngine() | RemoteEngine() as engine:
             expected = engine.served_model_name
         case other:
@@ -114,7 +133,7 @@ def confirm(
                 f"endpoint {name!r} names a {other.kind_name}, not an engine"
             )
     url = url_of(inventory, get, name)
-    listed = served(url, timeout)
+    listed = served(url, timeout, secret)
     if expected not in listed:
         raise LookupError(
             f"endpoint {name!r} at {url} serves {', '.join(listed) or 'nothing'}, "

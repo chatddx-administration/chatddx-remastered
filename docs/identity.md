@@ -51,3 +51,6 @@ development path. Roles could then come from Keycloak's realm roles instead of t
 - **Expired sessions** are only removed by `People.purge_sessions()`; nothing calls it on a schedule.
 
 ## Proposed amendments
+- CHANGE, under "Roles", "`src/chatddx/store/migrations/0008-t2-identity-checks.sql`" →
+  "`src/chatddx/store/migrations/0009-t2-identity.sql`": the file holds the role check, and `0008-t1-identity.sql` is
+  tier 1's grants.

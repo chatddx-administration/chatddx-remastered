@@ -196,6 +196,14 @@ def test_run_and_score_roundtrip(conn: Connection) -> None:
     with pytest.raises(LookupError):
         _ = store.run(uuid4())
 
+    alone = uuid4()
+    store.append(finished.model_copy(update={"run": alone}))
+    with pytest.raises(StructuralError, match=f"run {alone} has no started row"):
+        _ = store.run(alone)
+    store.append(score_finished.model_copy(update={"score": alone}))
+    with pytest.raises(StructuralError, match=f"score {alone} has no started row"):
+        _ = store.score(alone)
+
 
 def test_database_guards_the_ledger(conn: Connection) -> None:
     store, _, ids = stored_world(conn)

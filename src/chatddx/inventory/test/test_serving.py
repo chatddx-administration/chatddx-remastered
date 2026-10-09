@@ -1,6 +1,13 @@
 import hashlib
+import json
 import socket
+from collections.abc import Generator
+from contextlib import contextmanager
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
+from threading import Thread
+from typing import override
+from urllib.error import HTTPError
 
 import pytest
 from pydantic import ValidationError
@@ -22,6 +29,7 @@ from chatddx.inventory import (
     HostSpec,
     Inventory,
     confirm,
+    served,
     start_up,
     url_of,
 )
@@ -200,6 +208,10 @@ def test_a_start_up_is_refused_where_the_inventory_or_the_engine_falls_short() -
     )
     with pytest.raises(LookupError, match="engine.remote, not ours to start"):
         _ = start_up(world(remote), reg.get, "qwen@pelle")
+    unknown = world("sha256:" + "c" * 64, {model: "/m"}, {TEMPLATE: "/t"})
+    for f in (start_up, url_of, confirm):
+        with pytest.raises(LookupError, match="'qwen@pelle': sha256:c+ is not in the"):
+            _ = f(unknown, reg.get, "qwen@pelle")
 
 
 def test_a_remote_engine_is_reached_at_its_base_url() -> None:
@@ -263,3 +275,43 @@ def test_a_fake_started_from_an_endpoint_serves_its_engine(tmp_path: Path) -> No
             confirm(inventory, plan.registry.get, "gpt-oss-20b@fake")
     with pytest.raises(OSError):
         confirm(inventory, plan.registry.get, "qwen3-8b-awq@fake", timeout=1.0)
+
+
+@contextmanager
+def keyed_models(secret: str, model: str) -> Generator[str]:
+    class Models(BaseHTTPRequestHandler):
+        def do_GET(self) -> None:
+            if self.headers.get("Authorization") != f"Bearer {secret}":
+                self.send_error(401)
+                return
+            body = json.dumps({"data": [{"id": model}]}).encode()
+            self.send_response(200)
+            self.send_header("Content-Length", str(len(body)))
+            self.end_headers()
+            _ = self.wfile.write(body)
+
+        @override
+        def log_message(self, format: str, *args: object) -> None:
+            pass
+
+    with ThreadingHTTPServer(("127.0.0.1", 0), Models) as server:
+        thread = Thread(target=server.serve_forever)
+        thread.start()
+        try:
+            yield f"http://127.0.0.1:{server.server_port}/v1/"
+        finally:
+            server.shutdown()
+            thread.join()
+
+
+def test_an_endpoint_s_secret_goes_with_the_request_that_confirms_it() -> None:
+    reg = Registry()
+    with keyed_models("s3cret", "gemma") as url:
+        remote = reg.add(
+            RemoteEngine.model_validate({"base_url": url, "model": "gemma"})
+        )
+        inventory = Inventory(endpoints={"gemma": EndpointSpec(engine=remote)})
+        assert served(url, secret="s3cret") == ["gemma"]
+        confirm(inventory, reg.get, "gemma", secret="s3cret")
+        with pytest.raises(HTTPError, match="401"):
+            confirm(inventory, reg.get, "gemma")

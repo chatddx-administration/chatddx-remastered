@@ -165,20 +165,13 @@ class Store:
                         raise TypeError(f"no table for {type(record).__name__}")
 
     def run(self, run: UUID) -> Run:
-        stages = self._payloads(
-            """
-            SELECT payload FROM ledger.run_stage
-            WHERE run = %s
-            ORDER BY stage = 'finished'
-            """,
-            run,
+        started, finished = self._stages(
+            "SELECT stage, payload FROM ledger.run_stage WHERE run = %s", "run", run
         )
-        if not stages:
-            raise LookupError(f"run {run} is not in the store")
         return Run(
             stages=(
-                RunStarted.parse(stages[0]),
-                *(RunFinished.parse(p) for p in stages[1:]),
+                RunStarted.parse(started),
+                *(RunFinished.parse(p) for p in finished),
             ),
             items=tuple(
                 RunItem.parse(p)
@@ -195,20 +188,15 @@ class Store:
         )
 
     def score(self, score: UUID) -> Score:
-        stages = self._payloads(
-            """
-            SELECT payload FROM ledger.score_stage
-            WHERE score = %s
-            ORDER BY stage = 'finished'
-            """,
+        started, finished = self._stages(
+            "SELECT stage, payload FROM ledger.score_stage WHERE score = %s",
+            "score",
             score,
         )
-        if not stages:
-            raise LookupError(f"score {score} is not in the store")
         return Score(
             stages=(
-                ScoreStarted.parse(stages[0]),
-                *(ScoreFinished.parse(p) for p in stages[1:]),
+                ScoreStarted.parse(started),
+                *(ScoreFinished.parse(p) for p in finished),
             ),
             items=tuple(
                 ScoreItem.parse(p)
@@ -296,6 +284,17 @@ class Store:
 
     def _payloads(self, query: LiteralString, key: object) -> list[str]:
         return [str(p) for (p,) in self._conn.execute(query, (key,))]
+
+    # A finished row may be stored without its started row (migrations/0004-t0-ledger.sql).
+    def _stages(
+        self, query: LiteralString, log: str, key: UUID
+    ) -> tuple[str, list[str]]:
+        stages = {str(s): str(p) for s, p in self._conn.execute(query, (key,))}
+        if not stages:
+            raise LookupError(f"{log} {key} is not in the store")
+        if "started" not in stages:
+            raise StructuralError(f"{log} {key} has no started row")
+        return stages["started"], [p for s, p in stages.items() if s == "finished"]
 
 
 def _newest[S: RunStarted | ScoreStarted](started: Iterable[S]) -> list[S]:
