@@ -1,6 +1,6 @@
 # Inventory API
 
-Reference for the `chatddx.inventory` package, as of e9bdca7. It was written from `src/chatddx/inventory/*` and
+Reference for the `chatddx.inventory` package, as of db74bd3. It was written from `src/chatddx/inventory/*` and
 `docs/inventory.md`. There are no inventory migrations, because the inventory isn't stored. What the inventory is and
 why it is shaped this way is in `docs/inventory.md`; this file says what each name accepts, returns and raises.
 Factor types it uses (`Digest`, `Sha256Hex`, `Resolver`, `LocalEngine`, `RemoteEngine`, `ModelArtifact`, `Case`,
@@ -289,13 +289,9 @@ From `docs/inventory.md`, "Open design issues":
 - Endpoint names are only a convention, and renaming one drops its clearance.
 - `max_jobs` holds per run, not per endpoint.
 
-Also, proposed as an amendment to `docs/inventory.md`: a new kind of source has to be added to the type of
-`Inventory.sources`.
-
 ## Beyond docs/inventory.md
 Behavior described here that `docs/inventory.md` doesn't state:
-- `Inventory.sources` takes only `DirectorySource`, so a new kind of source is also a change to that field. Proposed
-  as an amendment there.
+- `Inventory.sources` takes only `DirectorySource`; a new kind of source is added to that field's type.
 - `confirm` sends a secret only when it is given one; the runner's gate gives it the endpoint's.
 - `served` and `confirm` raise `json.JSONDecodeError` or `AttributeError`, not `OSError`, for a server whose answer
   isn't a JSON object; the runner's gate doesn't catch them.

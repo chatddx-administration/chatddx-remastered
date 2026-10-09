@@ -303,15 +303,13 @@ From `docs/facts.md`, "Open design issues":
 - A `sampling.recommended` entry for a level that collapses is never read by `sampling_chunk`, and nothing reports
   it.
 - An unknown budget passes `facts.budget_refused`, while `reasoning_chunk` refuses to write it.
+- Unknown reasoning fails `facts.reasoning_unmatched`: a model without writes at any level, or a skeleton using a
+  level nothing is known about, gets the warning.
 - A `default` that lands on a refusal loads, and `reasons_by_default` then says `None`.
-
-Also, proposed as an amendment to `docs/facts.md`: unknown reasoning fails `facts.reasoning_unmatched`.
 
 ## Beyond docs/facts.md
 Behavior described here that `docs/facts.md` doesn't state:
-- `facts.reasoning_unmatched` treats the levels with writes as all there is, so a model whose reasoning is unknown,
-  or a skeleton using an unknown level, gets the warning. Proposed as an amendment there.
-- It compares `chat_template_kwargs` whole: a key that isn't about reasoning makes a skeleton unmatched.
+- `facts.reasoning_unmatched` compares `chat_template_kwargs` whole: a key that isn't about reasoning makes a skeleton unmatched.
 - An entry of `{}` is a write that sets nothing, not "effort and/or chat template kwargs".
 - `reasoning_chunk` resolves the level before it checks the budget; `sampling_chunk` refuses a level that lands on a
   refusal even when sampling for it would be known.

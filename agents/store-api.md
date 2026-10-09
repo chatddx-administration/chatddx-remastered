@@ -336,12 +336,8 @@ From `docs/store.md`, "Known gaps", where they concern this API:
   can't be rewritten.
 
 ## Beyond docs/store.md
-Behavior described here that `docs/store.md` doesn't state, or states otherwise:
-- `Store.run` and `Store.score` raise `StructuralError("<log> <id> has no started row")` for a finished row stored
-  alone; `docs/store.md` names the `ValidationError` this replaced. Proposed as an amendment there.
-- `Store.finished` returns a set, not a newest-first list. Proposed as an amendment there.
-- `Reads.scoring` builds the scoring a run would be scored under now, not the one it was scored under. Proposed as
-  an amendment there.
+Behavior described here that `docs/store.md` doesn't state:
+- `Store.finished` returns a set, not a newest-first list.
 - `Store.add` returns the whole closure, also the components that were already stored.
 - `Store.get` returns a new component on each call; nothing is cached.
 - `Store.run` and `Store.score` return items and canary calls in whatever order Postgres returns them.
