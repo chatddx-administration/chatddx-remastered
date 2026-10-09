@@ -1,6 +1,8 @@
+import re
+
 import pytest
 
-from chatddx.bench import Ambiguous, Bench, NotFound
+from chatddx.bench import Ambiguous, Bench, NotFound, made_for
 from chatddx.bench.test.sample import (
     FREE_TEXT,
     PLAN,
@@ -153,7 +155,7 @@ def test_a_per_model_configuration_is_picked_by_the_engine_s_model(
 ) -> None:
     with pytest.raises(NotFound) as refused:
         _ = bench.configuration("plan")
-    assert refused.value.per_model == (PLAN, "plan (openai/gpt-oss-20b)")
+    assert refused.value.per_model == (PLAN, "plan (en, openai/gpt-oss-20b)")
 
     variation = bench.configuration("plan", bench.endpoint(QWEN))
     assert (variation.name, variation.label, variation.parts) == (PLAN, PLAN, {})
@@ -161,6 +163,28 @@ def test_a_per_model_configuration_is_picked_by_the_engine_s_model(
     with pytest.raises(NotFound) as refused:
         _ = bench.configuration("nope", bench.endpoint(QWEN))
     assert refused.value.per_model == ()
+
+
+def test_a_configuration_made_in_several_languages_is_named_whole(
+    bench: Bench, alice: Person
+) -> None:
+    engine = bench.endpoint(QWEN)
+    english = bench.configuration("plan", engine).configuration
+    swedish = "plan (sv, Qwen/Qwen3-8B-AWQ)"
+    _ = bench.catalog.create(english.digest, alice.id, name=swedish)
+    several = f"made in more than one language: {PLAN}, {swedish}"
+    with pytest.raises(Ambiguous, match=re.escape(several)):
+        _ = bench.configuration("plan", engine)
+    assert bench.configuration(swedish, engine).name == swedish
+    models = ["Qwen/Qwen3-8B-AWQ"]
+    assert [made_for(n, models) for n in (swedish, "web (en)", "off (sv)")] == [
+        ("plan", "sv", "Qwen/Qwen3-8B-AWQ"),
+        ("web", "en", None),
+        ("off", "sv", None),
+    ]
+    assert made_for("plan (Qwen/Qwen3-8B-AWQ)", models) == ("plan", None, models[0])
+    assert made_for("a (b) c", models) is None
+    assert made_for("plan (sv, other/model)", models) is None
 
 
 def test_a_variation_compiles_to_a_skeleton_of_its_own(bench: Bench) -> None:

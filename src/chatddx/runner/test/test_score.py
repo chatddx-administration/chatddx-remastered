@@ -101,7 +101,7 @@ def test_a_run_is_scored_through_every_view_of_its_scorer(
     recipe: str,
     scored_by: str,
 ) -> None:
-    made = trial(plan, f"{recipe} (Qwen/Qwen3-8B-AWQ)")
+    made = trial(plan, f"{recipe} (en, Qwen/Qwen3-8B-AWQ)")
     run = ran(conn, inventory, alice, made, plan)
     scoring = Scoring(
         scorer=plan.named("scorer", scored_by).digest,
@@ -125,7 +125,7 @@ def test_a_run_is_scored_through_every_view_of_its_scorer(
 def test_cases_without_an_expectation_get_no_value_and_are_noted(
     conn: Connection, inventory: Inventory, alice: Person, plan: Plan
 ) -> None:
-    made = trial(plan, "free-text (Qwen/Qwen3-8B-AWQ)")
+    made = trial(plan, "free-text (en, Qwen/Qwen3-8B-AWQ)")
     run = ran(conn, inventory, alice, made, plan)
     first, _ = expectations(plan, made)
     scoring = Scoring(
@@ -148,7 +148,7 @@ def test_cases_without_an_expectation_get_no_value_and_are_noted(
 def test_an_answer_that_can_t_be_read_is_noted_and_scored_without_one(
     conn: Connection, inventory: Inventory, alice: Person, plan: Plan
 ) -> None:
-    made = trial(plan, "plan (Qwen/Qwen3-8B-AWQ)", seeds=(7,))
+    made = trial(plan, "plan (en, Qwen/Qwen3-8B-AWQ)", seeds=(7,))
     with faked(inventory, plan, DELAY * 10):
         run = ran(conn, inventory, alice, made, plan, Execution(timeout_s=0.2))
     scoring = Scoring(
@@ -176,7 +176,7 @@ def test_an_answer_that_can_t_be_read_is_noted_and_scored_without_one(
 def test_scoring_is_refused_before_anything_is_written(
     conn: Connection, db: str, inventory: Inventory, alice: Person, plan: Plan
 ) -> None:
-    made = trial(plan, "free-text (Qwen/Qwen3-8B-AWQ)")
+    made = trial(plan, "free-text (en, Qwen/Qwen3-8B-AWQ)")
     found = expectations(plan, made)
     running = Runner(conn, inventory, alice).start(made, plan.registry, QWEN)
     running.send()

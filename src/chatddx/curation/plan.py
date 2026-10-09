@@ -1,15 +1,16 @@
 import json
 import re
 import tomllib
-from collections.abc import Sequence
+from collections.abc import Collection, Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
+from typing import Any, cast
 
 from pydantic import JsonValue, ValidationError
 
-from chatddx.catalog.model import LANGUAGE_KINDS, language_tag
+from chatddx.catalog.model import language_tag
 from chatddx.core.rig import entry
-from chatddx.factors.base import Code, Component, Resolver
+from chatddx.factors.base import Code, Component
 from chatddx.factors.bundle import Registry
 from chatddx.factors.engine import LocalEngine, ModelArtifact, RemoteEngine
 from chatddx.factors.request import (
@@ -102,12 +103,37 @@ class Plan:
         raise LookupError(f"no {table} named {name!r} in the plan")
 
 
-# A record per model, or one for all (None).
-Variants = dict[str | None, Planned]
+# What a record is made for: a language, when it's written in one, and a model, when it's
+# written from the model's facts. None for either is all of them.
+Key = tuple[str | None, str | None]
+Variants = dict[Key, Planned]
+ALL: Key = (None, None)
+# The tables of chunks that hold text the model reads, kept by language in texts files.
+TEXT_TABLES = (
+    "instructions",
+    "few_shot",
+    "prompt",
+    "output",
+    "toolset",
+    "translations",
+)
+# Text a recipe's translations stand in for when the language it's made in lacks it.
+TRANSLATED = ("output", "toolset")
+_TEXTS = re.compile(r"^texts-(.+)\.toml$")
 
 
-def _named(name: str, model: str | None) -> str:
-    return name if model is None else f"{name} ({model})"
+def _named(name: str, key: Key) -> str:
+    qualifiers = [q for q in key if q is not None]
+    return f"{name} ({', '.join(qualifiers)})" if qualifiers else name
+
+
+# The variant of `variants` for `key`, else the one for all languages or all models.
+def _pick(variants: Variants, key: Key) -> Planned | None:
+    language, model = key
+    for k in (key, (language, None), (None, model), ALL):
+        if k in variants:
+            return variants[k]
+    return None
 
 
 def _with_files(node: JsonValue, root: Path) -> JsonValue:
@@ -185,90 +211,75 @@ def _tags(value: JsonValue) -> tuple[str, ...]:
     return tuple(str(t) for t in value)
 
 
-# A record's language, and whether it was its own rather than its file's.
-Language = tuple[str | None, bool]
-
-
-def _load(
-    path: Path, root: Path
-) -> tuple[dict[str, dict[str, JsonValue]], dict[tuple[str, str], Language]]:
+def _read(path: Path) -> dict[str, Any]:
     with path.open("rb") as f:
-        data = tomllib.load(f)
-    default = data.pop("language", None)
-    if default is not None and not isinstance(default, str):
-        raise ValueError(f"{path}: language must be a string, not {default!r}")
-    if default is not None:
-        _ = language_tag(default)
-    if stray := set(data) - set(TABLES) - {"recipe"}:
+        return tomllib.load(f)
+
+
+def _records(
+    path: Path, data: dict[str, Any], tables: Collection[str]
+) -> dict[str, dict[str, JsonValue]]:
+    if stray := set(data) - set(tables):
         raise ValueError(f"{path}: unknown tables {sorted(stray)}")
-    tables: dict[str, dict[str, JsonValue]] = {}
-    languages: dict[tuple[str, str], Language] = {}
-    for table, records in data.items():
-        tables[table] = {}
+    found: dict[str, dict[str, JsonValue]] = {}
+    for table, records in cast(dict[str, dict[str, JsonValue]], data).items():
+        found[table] = {}
         for name, raw in records.items():
-            body = _with_files(raw, root)
-            if isinstance(body, dict) and "language" in body:
-                own = _language(table, name, body.pop("language"))
-                languages[(table, name)] = (own, True)
-            else:
-                languages[(table, name)] = (default, False)
-            tables[table][name] = body
-    return tables, languages
+            if isinstance(raw, dict) and "language" in raw:
+                raise ValueError(
+                    f"{path}: {table}.{name}: a text's language is the texts file it's "
+                    + "written in"
+                )
+            found[table][name] = _with_files(raw, path.parent)
+    return found
 
 
-def _language(table: str, name: str, value: JsonValue) -> str:
-    match value:
-        case str():
-            try:
-                return language_tag(value)
-            except ValueError as e:
-                raise ValueError(f"{table}.{name}: {e}") from None
-        case _:
-            raise ValueError(
-                f"{table}.{name}: language must be a string, not {value!r}"
-            )
+# A data set's texts, by language, from its texts-<language>.toml files.
+def _texts(data: Path) -> dict[str, dict[str, dict[str, JsonValue]]]:
+    texts: dict[str, dict[str, dict[str, JsonValue]]] = {}
+    for path in sorted(data.glob("texts*.toml")):
+        named = _TEXTS.match(path.name)
+        if named is None:
+            raise ValueError(f"{path}: texts are kept in texts-<language>.toml files")
+        try:
+            language = language_tag(named[1])
+        except ValueError as e:
+            raise ValueError(f"{path}: {e}") from None
+        texts[language] = _records(path, _read(path), TEXT_TABLES)
+    return texts
 
 
-# A chunk that holds text has a language, its own or its file's; one that holds none has
-# none, and may not be given one of its own.
-def _language_of(
-    table: str, name: str, component: Component, given: Language, get: Resolver
-) -> str | None:
-    language, own = given
-    if component.kind_name not in LANGUAGE_KINDS:
-        if own:
-            raise ValueError(f"{table}.{name}: {table} records have no language")
-        return None
-    if own_texts(component, get):
-        if language is None:
-            raise ValueError(
-                f"{table}.{name}: it holds text, so it needs a language, its own or "
-                + "its file's"
-            )
-        return language
-    if own:
-        raise ValueError(f"{table}.{name}: it holds no text, so it has no language")
-    return None
-
-
-# `more` are factors files planned with the first, such as a World's imported engines;
-# each resolves its files against its own directory.
+# A data set's factors.toml, and its texts-<language>.toml files, planned with `more`
+# factors files, such as a World's imported engines; each file resolves its files against
+# its own directory.
 def plan_factors(
-    path: Path,
-    facts: Facts,
-    compiler: Code,
-    root: Path | None = None,
-    more: Sequence[Path] = (),
+    data: Path, facts: Facts, compiler: Code, more: Sequence[Path] = ()
 ) -> Plan:
-    data, languages = _load(path, root or path.parent)
+    factors = data / "factors.toml"
+    found = _records(factors, _read(factors), [*TABLES, "recipe"])
     for extra in more:
-        tables, extra_languages = _load(extra, extra.parent)
-        for table, records in tables.items():
-            known = data.setdefault(table, {})
+        for table, records in _records(
+            extra, _read(extra), [*TABLES, "recipe"]
+        ).items():
+            known = found.setdefault(table, {})
             if twice := sorted(set(known) & set(records)):
                 raise ValueError(f"{extra}: {table} {twice} are named before it too")
             known.update(records)
-        languages.update(extra_languages)
+    # Each table's records by name, then by language: None for factors.toml's.
+    bodies: dict[str, dict[str, dict[str | None, JsonValue]]] = {
+        table: {name: {None: body} for name, body in records.items()}
+        for table, records in found.items()
+    }
+    for language, tables in _texts(data).items():
+        for table, records in tables.items():
+            for name, body in records.items():
+                if None in (
+                    written := bodies.setdefault(table, {}).setdefault(name, {})
+                ):
+                    raise ValueError(
+                        f"{table}.{name} is in factors.toml and texts-{language}.toml"
+                    )
+                written[language] = body
     plan = Plan(Registry(), facts)
     planned: dict[tuple[str, str], Variants] = {}
 
@@ -276,69 +287,84 @@ def plan_factors(
         planned[(table, name)] = variants
         plan.records.extend(variants.values())
 
-    def base(table: str, fork_of: object, model: str | None) -> str | None:
+    def base(table: str, fork_of: object, key: Key) -> str | None:
         if fork_of is None:
             return None
         assert isinstance(fork_of, str)
         variants = planned.get((table, fork_of))
         if variants is None:
             raise ValueError(f"{table}.{fork_of} must come before its forks")
-        found = variants.get(model) or variants.get(None)
+        found = _pick(variants, key)
         return None if found is None else found.name
 
     def plan_table(table: str, models: list[str]) -> None:
         kind = TABLES[table]
-        for name, raw in data.get(table, {}).items():
-            assert isinstance(raw, dict)
-            body = dict(raw)
-            tags = _tags(body.pop("tags", []))
-            # A tool's description is a field, what the model reads; it's the entry too.
-            if "description" in kind.model_fields:
-                description = body.get("description")
-            else:
-                description = body.pop("description", None)
-            fork_of = body.pop("fork_of", None)
-            for key, target in REFERENCES.get(table, {}).items():
-                match body.get(key):
-                    case str() as named:
-                        body[key] = plan.named(target, named).digest
-                    case list() as names:
-                        body[key] = [plan.named(target, str(n)).digest for n in names]
-                    case _:
-                        pass
-            # Tools and scorers pin the code that runs them: the running chatddx, which
-            # compilations record as their compiler, unless they name other code.
-            if table in ("tool", "scorer") and "code" not in body:
-                body["code"] = compiler.model_dump(mode="json")
-            labels = _labels(table, body)
+        for name, written in bodies.get(table, {}).items():
             variants: Variants = {}
-            for model in models if "from_facts" in body else [None]:
-                try:
-                    component = _component(table, dict(body), model, facts)
-                except Refused as e:
-                    plan.skipped.append(f"{table} {_named(name, model)}: {e}")
-                    continue
-                except ValidationError as e:
-                    raise ValueError(f"{table}.{name}: {e}") from None
-                if getattr(component, "code", None) == compiler:
+            for language, raw in written.items():
+                assert isinstance(raw, dict)
+                where = "factors.toml" if language is None else f"texts-{language}.toml"
+                body = dict(raw)
+                tags = _tags(body.pop("tags", []))
+                # A tool's description is a field, what the model reads; it's the entry
+                # too.
+                if "description" in kind.model_fields:
+                    description = body.get("description")
+                else:
+                    description = body.pop("description", None)
+                fork_of = body.pop("fork_of", None)
+                for field_name, target in REFERENCES.get(table, {}).items():
+                    match body.get(field_name):
+                        case str() as one:
+                            body[field_name] = plan.named(target, one).digest
+                        case list() as names:
+                            body[field_name] = [
+                                plan.named(target, str(n)).digest for n in names
+                            ]
+                        case _:
+                            pass
+                # Tools and scorers pin the code that runs them: the running chatddx,
+                # which compilations record as their compiler, unless they name other
+                # code.
+                if table in ("tool", "scorer") and "code" not in body:
+                    body["code"] = compiler.model_dump(mode="json")
+                labels = _labels(table, body)
+                for model in models if "from_facts" in body else [None]:
+                    key = (language, model)
                     try:
-                        _check_runs(component)
-                    except (LookupError, TypeError) as e:
-                        raise ValueError(f"{table}.{name}: {e}") from None
-                language = _language_of(
-                    table, name, component, languages[(table, name)], plan.registry.get
-                )
-                variants[model] = Planned(
-                    table=table,
-                    name=_named(name, model),
-                    kind=component.kind_name,
-                    digest=plan.registry.add(component),
-                    tags=tags,
-                    description=None if description is None else str(description),
-                    fork_of=base(table, fork_of, model),
-                    labels=labels,
-                    language=language,
-                )
+                        component = _component(table, dict(body), model, facts)
+                    except Refused as e:
+                        plan.skipped.append(f"{table} {_named(name, key)}: {e}")
+                        continue
+                    except ValidationError as e:
+                        raise ValueError(f"{where}: {table}.{name}: {e}") from None
+                    if getattr(component, "code", None) == compiler:
+                        try:
+                            _check_runs(component)
+                        except (LookupError, TypeError) as e:
+                            raise ValueError(f"{table}.{name}: {e}") from None
+                    holds = bool(own_texts(component, plan.registry.get))
+                    if language is None and holds and table in TEXT_TABLES:
+                        raise ValueError(
+                            f"{table}.{name} holds text, so it's written in a "
+                            + "texts-<language>.toml"
+                        )
+                    if language is not None and not holds:
+                        raise ValueError(
+                            f"{where}: {table}.{name} holds no text, so it belongs in "
+                            + "factors.toml"
+                        )
+                    variants[key] = Planned(
+                        table=table,
+                        name=_named(name, key),
+                        kind=component.kind_name,
+                        digest=plan.registry.add(component),
+                        tags=tags,
+                        description=None if description is None else str(description),
+                        fork_of=base(table, fork_of, key),
+                        labels=labels,
+                        language=language,
+                    )
             add(table, name, variants)
 
     for table in ENGINE_TABLES:
@@ -365,46 +391,84 @@ def plan_factors(
         if table not in ENGINE_TABLES:
             plan_table(table, models)
 
-    for name, raw in data.get("recipe", {}).items():
+    for name, raw in found.get("recipe", {}).items():
         assert isinstance(raw, dict)
         body = dict(raw)
-        if languages[("recipe", name)][1]:
-            raise ValueError(
-                f"recipe.{name}: a recipe's language comes from its chunks"
-            )
         tags = _tags(body.pop("tags", []))
         description = body.pop("description", None)
         fork_of = body.pop("fork_of", None)
         parts = {p: planned[(p, str(body.pop(p)))] for p in RECIPE_PARTS if p in body}
-        per_model = any(None not in v for v in parts.values())
+        languages = sorted(
+            {k[0] for v in parts.values() for k in v if k[0] is not None}
+        )
+        per_model = any(k[1] is not None for v in parts.values() for k in v)
         variants: Variants = {}
-        for model in models if per_model else [None]:
-            refs = {p: v.get(model) or v.get(None) for p, v in parts.items()}
-            if missing := sorted(p for p, r in refs.items() if r is None):
-                plan.skipped.append(
-                    f"recipe {_named(name, model)}: the facts refuse its {', '.join(missing)}"
+        for language in languages or [None]:
+            for model in models if per_model else [None]:
+                key = (language, model)
+                made = _recipe(name, key, parts)
+                if isinstance(made, str):
+                    plan.skipped.append(f"recipe {_named(name, key)}: {made}")
+                    continue
+                try:
+                    recipe = Recipe.model_validate({**body, **made})
+                except ValidationError as e:
+                    raise ValueError(f"recipe.{name}: {e}") from None
+                skeleton = plan.registry.add(compile_request(recipe, plan.registry.get))
+                variants[key] = Planned(
+                    table="recipe",
+                    name=_named(name, key),
+                    kind="skeleton",
+                    digest=skeleton,
+                    tags=tags,
+                    description=None if description is None else str(description),
+                    fork_of=base("recipe", fork_of, key),
+                    compilation=plan.registry.add(
+                        Compilation(recipe=recipe, skeleton=skeleton, compiler=compiler)
+                    ),
                 )
-                continue
-            digests = {p: r.digest for p, r in refs.items() if r is not None}
-            try:
-                recipe = Recipe.model_validate({**body, **digests})
-            except ValidationError as e:
-                raise ValueError(f"recipe.{name}: {e}") from None
-            skeleton = plan.registry.add(compile_request(recipe, plan.registry.get))
-            variants[model] = Planned(
-                table="recipe",
-                name=_named(name, model),
-                kind="skeleton",
-                digest=skeleton,
-                tags=tags,
-                description=None if description is None else str(description),
-                fork_of=base("recipe", fork_of, model),
-                compilation=plan.registry.add(
-                    Compilation(recipe=recipe, skeleton=skeleton, compiler=compiler)
-                ),
-            )
         add("recipe", name, variants)
     return plan
+
+
+# A recipe's parts for `key`, by digest, or why it can't be made there. A part written in
+# another language than the recipe's is the output's or toolset's, which the recipe's
+# translations in its language stand in for; in its own language, it needs none.
+def _recipe(name: str, key: Key, parts: dict[str, Variants]) -> dict[str, str] | str:
+    language, model = key
+    chosen: dict[str, str] = {}
+    refused: list[str] = []
+    missing: list[str] = []
+    translated: list[str] = []
+    for part, variants in parts.items():
+        if part == "translations":
+            continue
+        found = _pick(variants, key)
+        if found is None and part in TRANSLATED and language is not None:
+            written = sorted({k[0] for k in variants if k[0] is not None})
+            if len(written) == 1:
+                found = _pick(variants, (written[0], model))
+                translated.append(f"{part} in {written[0]}")
+        if found is not None:
+            chosen[part] = found.digest
+        elif any(k[1] is not None for k in variants):
+            refused.append(part)
+        else:
+            missing.append(part)
+    if refused:
+        return f"the facts refuse its {', '.join(refused)}"
+    if missing:
+        return f"it has no {', '.join(missing)} in {language}"
+    if translated:
+        named = parts.get("translations")
+        found = None if named is None else _pick(named, key)
+        if found is None:
+            return (
+                f"its {', '.join(translated)} needs translations in {language}, and "
+                + f"recipe.{name} names none there"
+            )
+        chosen["translations"] = found.digest
+    return chosen
 
 
 @dataclass(frozen=True)

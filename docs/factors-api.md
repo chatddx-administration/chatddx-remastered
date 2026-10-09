@@ -925,8 +925,9 @@ Behavior described here that `docs/factors.md` doesn't state. The first three ar
 - ADD `own_texts(chunk, get) -> tuple[str, ...]` in `request.py`: the texts a chunk holds itself, whitespace left out,
   in the order a translation would need them; an instructions, few-shot, prompt or output chunk's literal texts and
   schema prose, a toolset's guidance with its tools' descriptions and parameter prose, a translations chunk's
-  translations, and nothing for any other component. init-data refuses a language on a chunk with none and requires
-  one on a chunk with some (src/chatddx/factors/request.py:own_texts, src/chatddx/curation/plan.py:_language_of).
+  translations, and nothing for any other component. init-data keeps a chunk with some in a texts file of its
+  language, and one with none in `factors.toml` (src/chatddx/factors/request.py:own_texts,
+  src/chatddx/curation/plan.py:plan_factors).
 - CHANGE `compile_request` and `texts`: `TRANSLATED = ("output", "appendix_layout", "toolset")` are the parts a
   recipe's translations translate; `texts` still gives every part's texts, and a translation needs those of the
   `TRANSLATED` parts (src/chatddx/factors/request.py).

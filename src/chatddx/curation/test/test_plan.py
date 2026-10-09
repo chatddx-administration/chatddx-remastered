@@ -4,16 +4,17 @@ import pytest
 
 from chatddx.conftest import sample_plan
 from chatddx.core.rig import rig
-from chatddx.curation import load_cases, plan_factors
+from chatddx.curation import Plan, load_cases, plan_factors
 from chatddx.curation.plan import SAMPLE
+from chatddx.factors.request import Compilation, Skeleton
 from chatddx.facts import BUNDLED, Facts
 
 
-def plan(tmp_path: Path, text: str) -> list[tuple[str, str, str | None]]:
-    factors = tmp_path / "factors.toml"
-    _ = factors.write_text(text)
-    planned = plan_factors(factors, Facts.load(BUNDLED), rig())
-    return [(r.table, r.name, r.language) for r in planned.records]
+# A data set of `files`, by name, planned.
+def plan(tmp_path: Path, **files: str) -> Plan:
+    for name, text in files.items():
+        _ = (tmp_path / name.replace("_", "-")).with_suffix(".toml").write_text(text)
+    return plan_factors(tmp_path, Facts.load(BUNDLED), rig())
 
 
 def test_from_facts_records_follow_the_models_the_engines_serve(
@@ -45,7 +46,7 @@ output = "raw"
 sampling = "recommended"
 """
     )
-    plan = plan_factors(factors, Facts.load(BUNDLED), rig())
+    plan = plan_factors(tmp_path, Facts.load(BUNDLED), rig())
     assert [(r.table, r.name) for r in plan.records] == [
         ("remote_engine", "qwen@api"),
         ("remote_engine", "gemma@api"),
@@ -62,45 +63,108 @@ sampling = "recommended"
     assert not [s for s in sample_plan().skipped if s.startswith("from_facts records")]
 
 
-GUIDED = """
+ENGINE = """
+[remote_engine."qwen@api"]
+base_url = "https://api.example/v1/"
+model = "Qwen/Qwen3-8B-AWQ"
+"""
+NEUTRAL = """
+[prompt.case]
+segments = [{ slot = "vignette" }]
+
+[output.raw]
+contract = { kind = "text" }
+
+[sampling.recommended]
+from_facts = { effort = "default" }
+
+[sampling.greedy]
+temperature = 0
+"""
+ENGLISH = """
+[instructions.physician]
+text = "You are an emergency physician."
+
 [output.plan]
 contract = { kind = "text" }
 guidance = "Fill in the plan."
 """
 
 
-def test_a_record_that_holds_text_has_a_language_its_own_or_its_file_s(
+def test_texts_are_written_by_language_and_recipes_made_in_each(
     tmp_path: Path,
 ) -> None:
-    assert plan(
+    planned = plan(
         tmp_path,
-        'language = "en"\n'
-        + GUIDED
+        factors=ENGINE
+        + NEUTRAL
         + """
-[output.plan-sv]
-language = "sv"
-contract = { kind = "text" }
-guidance = "Fyll i planen."
+[recipe.plan]
+prompt = "case"
+output = "plan"
+sampling = "greedy"
+translations = "ui"
 
-[output.raw]
-contract = { kind = "text" }
+[recipe.asked]
+instructions = "physician"
+prompt = "case"
+output = "plan"
+sampling = "recommended"
 
-[prompt.case]
-segments = [{ slot = "vignette" }]
-
-[sampling.greedy]
-temperature = 0
+[recipe.raw]
+prompt = "case"
+output = "raw"
+sampling = "greedy"
 """,
-    ) == [
+        texts_en=ENGLISH,
+        texts_sv="""
+[instructions.physician]
+text = "Du är akutläkare."
+
+[translations.ui]
+entries = { "Fill in the plan." = "Fyll i planen." }
+""",
+    )
+    assert [(r.table, r.name, r.language) for r in planned.records] == [
+        ("remote_engine", "qwen@api", None),
+        ("instructions", "physician (en)", "en"),
+        ("instructions", "physician (sv)", "sv"),
         ("prompt", "case", None),
-        ("output", "plan", "en"),
-        ("output", "plan-sv", "sv"),
         ("output", "raw", None),
+        ("output", "plan (en)", "en"),
+        ("sampling", "recommended (Qwen/Qwen3-8B-AWQ)", None),
         ("sampling", "greedy", None),
+        ("translations", "ui (sv)", "sv"),
+        ("recipe", "plan (en)", None),
+        ("recipe", "plan (sv)", None),
+        ("recipe", "asked (en, Qwen/Qwen3-8B-AWQ)", None),
+        ("recipe", "raw", None),
     ]
+    assert planned.skipped[-1] == (
+        "recipe asked (sv, Qwen/Qwen3-8B-AWQ): its output in en needs translations in "
+        + "sv, and recipe.asked names none there"
+    )
+
+    def said(name: str) -> list[str]:
+        skeleton = planned.registry.get(planned.named("recipe", name).digest)
+        assert isinstance(skeleton, Skeleton)
+        return [str(m.content[0]) for m in skeleton.messages]
+
+    assert said("plan (en)")[0] == "Fill in the plan."
+    assert said("plan (sv)")[0] == "Fyll i planen."
+    assert said("asked (en, Qwen/Qwen3-8B-AWQ)")[0] == (
+        "You are an emergency physician.\n\nFill in the plan."
+    )
+    compilation = planned.named("recipe", "plan (en)").compilation
+    assert compilation is not None
+    recipe = planned.registry.get(compilation)
+    assert isinstance(recipe, Compilation) and recipe.recipe.translations is None
+
+
+def test_the_sample_s_texts_are_english() -> None:
     sample = sample_plan()
     assert {(r.table, r.name) for r in sample.records if r.language == "en"} == {
-        ("output", name)
+        ("output", f"{name} (en)")
         for name in (
             "management-plan",
             "management-plan-shown",
@@ -109,41 +173,64 @@ temperature = 0
             "diagnoses-tool",
             "free-text",
         )
-    } | {("toolset", "web")}
-    assert {r.language for r in sample.records} == {"en", None}
+    } | {("toolset", "web (en)")}
+    assert {r.name for r in sample.records if r.table == "recipe"} == {
+        f"{name} (en, {model})"
+        for name in (
+            "plan",
+            "plan-shown",
+            "plan-prompted",
+            "plan-web",
+            "diagnoses",
+            "diagnoses-tool",
+            "free-text",
+        )
+        for model in ("Qwen/Qwen3-8B-AWQ", "openai/gpt-oss-20b")
+    }
 
 
 @pytest.mark.parametrize(
-    ("text", "refusal"),
+    ("files", "refusal"),
     [
-        (GUIDED, "output.plan: it holds text, so it needs a language"),
         (
-            '[output.raw]\nlanguage = "en"\ncontract = { kind = "text" }\n',
-            "output.raw: it holds no text, so it has no language",
+            {"factors": ENGLISH},
+            "instructions.physician holds text, so it's written in a "
+            + r"texts-<language>.toml",
         ),
         (
-            '[sampling.greedy]\nlanguage = "en"\ntemperature = 0\n',
-            "sampling.greedy: sampling records have no language",
-        ),
-        ('language = "english"\n' + GUIDED, "'english' is not a language tag"),
-        (
-            GUIDED.replace("[output.plan]", '[output.plan]\nlanguage = "en_GB"'),
-            "output.plan: 'en_GB' is not a language tag",
+            {"factors": "", "texts_en": '[output.raw]\ncontract = { kind = "text" }\n'},
+            "output.raw holds no text, so it belongs in factors.toml",
         ),
         (
-            'language = "en"\n'
-            + GUIDED
-            + '[prompt.case]\nsegments = [{ slot = "vignette" }]\n\n'
-            + '[recipe.plan]\nlanguage = "en"\nprompt = "case"\noutput = "plan"\n',
-            "recipe.plan: a recipe's language comes from its chunks",
+            {
+                "factors": NEUTRAL,
+                "texts_en": '[prompt.case]\nsegments = ["Case: ", { slot = "vignette" }]\n',
+            },
+            "prompt.case is in factors.toml and texts-en.toml",
         ),
+        ({"factors": 'language = "en"\n'}, r"unknown tables \['language'\]"),
+        (
+            {
+                "factors": "",
+                "texts_en": ENGLISH.replace(
+                    "[output.plan]", '[output.plan]\nlanguage = "en"'
+                ),
+            },
+            "output.plan: a text's language is the texts file it's written in",
+        ),
+        (
+            {"factors": "", "texts_en": "[sampling.greedy]\ntemperature = 0\n"},
+            r"unknown tables \['sampling'\]",
+        ),
+        ({"factors": "", "texts_english": ENGLISH}, "'english' is not a language tag"),
+        ({"factors": "", "texts": ENGLISH}, "texts are kept in texts-<language>.toml"),
     ],
 )
-def test_a_language_is_refused_where_it_says_nothing_or_isn_t_one(
-    tmp_path: Path, text: str, refusal: str
+def test_texts_are_refused_where_they_say_the_wrong_thing(
+    tmp_path: Path, files: dict[str, str], refusal: str
 ) -> None:
     with pytest.raises(ValueError, match=refusal):
-        _ = plan(tmp_path, text)
+        _ = plan(tmp_path, **files)
 
 
 def test_cases_are_kept_by_language(tmp_path: Path) -> None:

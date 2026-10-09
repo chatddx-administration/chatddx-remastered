@@ -122,7 +122,7 @@ def slow(inventory: Inventory, plan: Plan) -> Iterator[None]:
 
 def trial(
     plan: Plan,
-    skeleton: str = "free-text (Qwen/Qwen3-8B-AWQ)",
+    skeleton: str = "free-text (en, Qwen/Qwen3-8B-AWQ)",
     cases: tuple[str, ...] = CASES,
     seeds: tuple[int, ...] = (7, 8),
     engine: str = QWEN,
@@ -208,7 +208,7 @@ def test_a_run_sends_each_item_and_writes_its_log(
 def test_a_greedy_skeleton_is_sent_without_its_seed(
     conn: Connection, inventory: Inventory, alice: Person, plan: Plan
 ) -> None:
-    named = plan.named("recipe", "free-text (Qwen/Qwen3-8B-AWQ)")
+    named = plan.named("recipe", "free-text (en, Qwen/Qwen3-8B-AWQ)")
     assert named.compilation is not None
     compiled = resolve(plan.registry.get, named.compilation, Compilation)
     greedy = compiled.recipe.model_copy(
@@ -347,10 +347,10 @@ def test_nothing_is_sent_or_written_where_the_gate_refuses(
     )
     assert "serves engine" in refused(trial(plan), GPT_OSS)
     assert f"endpoint {GPT_OSS!r} can't be confirmed" in refused(
-        trial(plan, "free-text (openai/gpt-oss-20b)", engine=GPT_OSS), GPT_OSS
+        trial(plan, "free-text (en, openai/gpt-oss-20b)", engine=GPT_OSS), GPT_OSS
     )
     assert "tools can't be cleared yet" in refused(
-        trial(plan, "plan-web (Qwen/Qwen3-8B-AWQ)"), QWEN
+        trial(plan, "plan-web (en, Qwen/Qwen3-8B-AWQ)"), QWEN
     )
     assert rows(db, "run_stage") == 0
 
@@ -586,7 +586,7 @@ def tooled(
     return made
 
 
-FREE_TEXT = "free-text (Qwen/Qwen3-8B-AWQ)"
+FREE_TEXT = "free-text (en, Qwen/Qwen3-8B-AWQ)"
 ASKED = "'fake query'"
 
 
@@ -643,7 +643,7 @@ def test_a_round_runs_the_tools_a_response_calls_and_sends_back_their_results(
 def test_calling_the_answer_tool_ends_the_item(
     conn: Connection, inventory: Inventory, alice: Person, plan: Plan
 ) -> None:
-    made = tooled(plan, "diagnoses-tool (Qwen/Qwen3-8B-AWQ)", component("lookup"))
+    made = tooled(plan, "diagnoses-tool (en, Qwen/Qwen3-8B-AWQ)", component("lookup"))
     running = Runner(conn, insensitive(inventory), alice).start(
         made, plan.registry, QWEN
     )

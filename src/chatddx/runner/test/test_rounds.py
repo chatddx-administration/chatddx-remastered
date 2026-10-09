@@ -109,7 +109,7 @@ def test_a_round_answers_every_call_until_the_answer_tool_is_called() -> None:
 
 
 def skeleton(plan: Plan, *made: Tool) -> tuple[Skeleton, Toolset]:
-    named = plan.named("recipe", "free-text (Qwen/Qwen3-8B-AWQ)")
+    named = plan.named("recipe", "free-text (en, Qwen/Qwen3-8B-AWQ)")
     assert named.compilation is not None
     recipe = resolve(plan.registry.get, named.compilation, Compilation).recipe
     toolset = Toolset(tools=tuple(plan.registry.add(t) for t in made), max_rounds=3)
@@ -141,7 +141,7 @@ def test_a_tool_that_can_t_be_run_is_refused(plan: Plan) -> None:
 
 
 def test_a_skeleton_without_tools_has_no_toolbox(plan: Plan) -> None:
-    named = plan.named("recipe", "free-text (Qwen/Qwen3-8B-AWQ)")
+    named = plan.named("recipe", "free-text (en, Qwen/Qwen3-8B-AWQ)")
     assert (
         load(resolve(plan.registry.get, named.digest, Skeleton), plan.registry.get)
         is None

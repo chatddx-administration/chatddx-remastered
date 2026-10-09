@@ -179,7 +179,7 @@ def test_the_tables_it_prints_plan_the_engine_it_imported_and_start_it_as_served
     ]
     factors = tmp_path / "factors.toml"
     _ = factors.write_text(factors_toml(imports))
-    plan = plan_factors(factors, Facts(), rig())
+    plan = plan_factors(tmp_path, Facts(), rig())
     for i in imports:
         assert plan.named("model", i.name).digest == i.model.digest
         assert plan.named("local_engine", i.name).digest == i.engine.digest
@@ -205,8 +205,11 @@ def test_the_tables_it_prints_plan_the_engine_it_imported_and_start_it_as_served
     )
     assert startup.env == {"VLLM_USE_FLASHINFER_SAMPLER": "0"}
     assert inventory.endpoint("gpt-oss-20b@malborg").max_jobs == 4
-    sample = tmp_path / "sample.toml"
-    _ = sample.write_text('[prompt.case]\nsegments = [{ slot = "vignette" }]\n')
+    sample = tmp_path / "sample"
+    sample.mkdir()
+    _ = (sample / "factors.toml").write_text(
+        '[prompt.case]\nsegments = [{ slot = "vignette" }]\n'
+    )
     both = plan_factors(sample, Facts(), rig(), more=[factors])
     assert (
         both.named("local_engine", "qwen3-8b@pelle").digest == imports[0].engine.digest
@@ -215,7 +218,7 @@ def test_the_tables_it_prints_plan_the_engine_it_imported_and_start_it_as_served
         ValueError,
         match=r"model \['gpt-oss-20b@malborg', 'qwen3-8b@pelle'\] are named before",
     ):
-        _ = plan_factors(factors, Facts(), rig(), more=[factors])
+        _ = plan_factors(tmp_path, Facts(), rig(), more=[factors])
 
 
 def test_servers_on_one_host_share_its_table_unless_they_bind_apart() -> None:
@@ -376,8 +379,11 @@ def test_the_command_writes_the_engines_and_their_endpoints_apart(
     assert "[model." not in endpoints.read_text()
     world = tmp_path / "inventory.toml"
     _ = world.write_text('include = ["endpoints.toml"]\n')
-    sample = tmp_path / "sample.toml"
-    _ = sample.write_text('[prompt.case]\nsegments = [{ slot = "vignette" }]\n')
+    sample = tmp_path / "sample"
+    sample.mkdir()
+    _ = (sample / "factors.toml").write_text(
+        '[prompt.case]\nsegments = [{ slot = "vignette" }]\n'
+    )
     plan = plan_factors(sample, Facts(), rig(), more=[factors])
     assert check(Inventory.load(world), plan.registry.get) == []
     with pytest.raises(SystemExit, match="import-engine: no report has a server other"):

@@ -21,14 +21,8 @@ WORLD = WORLDS / "sample"
 
 
 # The sample data's per-model records are planned for the models its World's engines serve.
-def sample_plan(factors: Path = SAMPLE / "factors.toml") -> Plan:
-    return plan_factors(
-        factors,
-        Facts.load(BUNDLED),
-        rig(),
-        root=SAMPLE,
-        more=[WORLD / "factors.toml"],
-    )
+def sample_plan(data: Path = SAMPLE) -> Plan:
+    return plan_factors(data, Facts.load(BUNDLED), rig(), more=[WORLD / "factors.toml"])
 
 
 # A session closed a moment ago may still be ending on the server, and neither a

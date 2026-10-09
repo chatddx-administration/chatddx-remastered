@@ -17,7 +17,7 @@ def plan() -> Plan:
 
 
 def skeleton(plan: Plan, recipe: str) -> Skeleton:
-    named = plan.named("recipe", f"{recipe} (Qwen/Qwen3-8B-AWQ)")
+    named = plan.named("recipe", f"{recipe} (en, Qwen/Qwen3-8B-AWQ)")
     return resolve(plan.registry.get, named.digest, Skeleton)
 
 

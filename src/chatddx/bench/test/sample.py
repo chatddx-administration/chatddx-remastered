@@ -17,8 +17,8 @@ from chatddx.store import Catalog, Store
 from chatddx.store.store import Connection
 
 SOURCE = DirectorySource(name="sample", path=WORLDS / "sample" / "vignettes")
-FREE_TEXT = "free-text (Qwen/Qwen3-8B-AWQ)"
-PLAN = "plan (Qwen/Qwen3-8B-AWQ)"
+FREE_TEXT = "free-text (en, Qwen/Qwen3-8B-AWQ)"
+PLAN = "plan (en, Qwen/Qwen3-8B-AWQ)"
 QWEN = "qwen3-8b-awq@fake"
 
 

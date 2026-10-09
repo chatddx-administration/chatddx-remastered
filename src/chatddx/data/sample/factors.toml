@@ -15,70 +15,18 @@
 # - a tool or a scorer without a `code` pins the running chatddx, as compilations record it as their compiler, and
 #   its `entry_point` must name a function there;
 # - `tags` and `description` are catalog entries, not fields, and so is a scorer view's `label`. A tool's
-#   `description` is a field too, the one the model reads;
-# - `language` is the language of a record's text, kept on its digest. The top-level one is every record's that
-#   holds text and gives none of its own. A record that holds text needs one, one that holds none takes none, and a
-#   recipe's comes from its chunks. A toolset holds its tools' text.
-
-language = "en"
+#   `description` is a field too, the one the model reads.
+#
+# Instructions, few-shot, prompts, outputs, toolsets and translations that hold text the model reads are written in
+# texts-<language>.toml, here texts-en.toml, whose name gives their language; those here hold none. A recipe that
+# names a text is made per language that has it, named "<recipe> (<language>)", or "<recipe> (<language>, <model>)"
+# when it's made per model too.
 
 # instruction.ddx was a system message made of the guidance slots and a user message of {{case}}: this prompt, with
 # the output's guidance becoming the system message. instruction.bare is the same prompt with an output that
 # brings no guidance (output.raw).
 [prompt.case]
 segments = [{ slot = "vignette" }, { slot = "appendices" }]
-
-[output.management-plan]
-description = "The management plan, as the medical-assistant agents ask for it."
-contract = { kind = "native" }
-json_schema_path = "schemas/management_plan_v1.json"
-guidance = "Fill in the management plan for the case."
-
-[output.management-plan-shown]
-description = "The management plan, with its schema also shown to the model."
-fork_of = "management-plan"
-contract = { kind = "native" }
-json_schema_path = "schemas/management_plan_v1.json"
-guidance = [
-  """Fill in the management plan for the case.
-
-Answer with a JSON object that matches this JSON Schema, and nothing else:
-
-""",
-  { insert = "schema" },
-]
-
-[output.management-plan-prompted]
-description = "The management plan, with its schema shown and nothing enforcing it."
-fork_of = "management-plan-shown"
-contract = { kind = "text" }
-json_schema_path = "schemas/management_plan_v1.json"
-guidance = [
-  """Fill in the management plan for the case.
-
-Answer with a JSON object that matches this JSON Schema, and nothing else:
-
-""",
-  { insert = "schema" },
-]
-
-[output.diagnoses]
-description = "The differential alone, as the medical-assistant agents ask for it."
-contract = { kind = "native" }
-json_schema_path = "schemas/diagnoses.json"
-guidance = "List the plausible diagnoses, most likely first."
-
-[output.diagnoses-tool]
-description = "The differential, answered through the final-result tool."
-fork_of = "diagnoses"
-contract = { kind = "tool", name = "final_result", description = "Give your answer by calling this tool, with the answer as its arguments." }
-json_schema_path = "schemas/diagnoses.json"
-guidance = "List the plausible diagnoses, most likely first."
-
-[output.free-text]
-description = "The differential as plain lines."
-contract = { kind = "text" }
-guidance = "List the plausible diagnoses, one per line, most likely first."
 
 [output.raw]
 description = "Free text with no guidance: whatever the model makes of the case alone."
@@ -141,10 +89,6 @@ properties.query = { type = "string" }
 properties.max_results = { type = "integer", default = 5 }
 required = ["query"]
 additionalProperties = false
-
-[toolset.web]
-tools = ["web_search"]
-guidance = "You have access to a web_search tool. Use it whenever you need current facts, documentation, or anything you're not confident about from memory, instead of guessing."
 
 # Configurations: recipes, compiled into skeleton threads.
 [recipe.plan]

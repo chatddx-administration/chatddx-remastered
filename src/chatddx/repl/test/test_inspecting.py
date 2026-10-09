@@ -135,7 +135,7 @@ def test_show_case_says_when_scoring_has_expectations_to_choose_from(
 def test_show_without_a_name_shows_the_cell_s(say: Say):
     written = say(f"cell {FREE_TEXT} {QWEN}", "show output")
 
-    assert "output free-text  " in written
+    assert "output free-text (en)  " in written
     assert "List the plausible diagnoses" in line_of(written, "guidance")
     assert "no runs of yours with this output" in written
 

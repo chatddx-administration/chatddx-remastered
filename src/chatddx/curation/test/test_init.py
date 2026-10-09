@@ -1,3 +1,4 @@
+import shutil
 from collections import Counter
 from collections.abc import Iterator
 from dataclasses import replace
@@ -33,6 +34,16 @@ FAKES = [
 ]
 SAMPLE_WORLD = WORLDS / "sample"
 KOMPISMOLN = WORLDS / "kompismoln"
+
+
+# A copy of the sample with `old` replaced by `new` in one of its files.
+def changed(tmp_path: Path, file: str, old: str, new: str) -> Path:
+    data = tmp_path / "data"
+    _ = shutil.copytree(SAMPLE, data)
+    text = (data / file).read_text()
+    assert old in text
+    _ = (data / file).write_text(text.replace(old, new))
+    return data
 
 
 def tally(lines: list[str]) -> Counter[str]:
@@ -81,9 +92,9 @@ def test_init_data_loads_the_archive(conn: Connection) -> None:
     archive = People(conn).find("archive")
     assert archive is not None
     [plan_thread] = catalog.find(
-        "skeleton", "plan (Qwen/Qwen3-8B-AWQ)", owner=archive.id
+        "skeleton", "plan (en, Qwen/Qwen3-8B-AWQ)", owner=archive.id
     )
-    [shown] = catalog.find("skeleton", "plan-shown (Qwen/Qwen3-8B-AWQ)")
+    [shown] = catalog.find("skeleton", "plan-shown (en, Qwen/Qwen3-8B-AWQ)")
     variation = catalog.variation(shown)
     assert variation is not None and set(variation.varies) == {"/recipe/output"}
     assert variation.base.thread == plan_thread
@@ -115,7 +126,7 @@ def test_init_data_loads_the_archive(conn: Connection) -> None:
         for r in plan.records
         if r.language is not None
     ]
-    assert catalog.language_of(plan.named("toolset", "web").digest) == "en"
+    assert catalog.language_of(plan.named("toolset", "web (en)").digest) == "en"
     assert catalog.language_of(plan.named("prompt", "case").digest) is None
 
     # The rest of the sample's cases, and their expectations, are left over.
@@ -154,14 +165,11 @@ def test_init_data_lints_what_it_lands(
 def test_init_data_updates_and_gives_forks(conn: Connection, tmp_path: Path) -> None:
     alice = People(conn).add("alice", "Alice")
     _ = init(conn, sample_plan(), SOME, vignettes(), alice)
-    edited = tmp_path / "factors.toml"
-    _ = edited.write_text(
-        (SAMPLE / "factors.toml")
-        .read_text()
-        .replace(
-            'guidance = "Fill in the management plan for the case."',
-            'guidance = "Fill in the whole management plan."',
-        )
+    edited = changed(
+        tmp_path,
+        "texts-en.toml",
+        'guidance = "Fill in the management plan for the case."',
+        'guidance = "Fill in the whole management plan."',
     )
     lines = init(
         conn,
@@ -176,9 +184,9 @@ def test_init_data_updates_and_gives_forks(conn: Connection, tmp_path: Path) -> 
         for line in sorted(lines)
         if line.startswith(
             (
-                "[archive chunk.output] management-plan:",
-                "[archive skeleton] plan (",
-                "[archive skeleton] plan-web (",
+                "[archive chunk.output] management-plan (en):",
+                "[archive skeleton] plan (en, ",
+                "[archive skeleton] plan-web (en, ",
             )
         )
     ]
@@ -197,8 +205,9 @@ def test_init_data_updates_and_gives_forks(conn: Connection, tmp_path: Path) -> 
     catalog = Catalog(conn)
     archive = People(conn).find("archive")
     assert archive is not None
-    [archived] = catalog.find("chunk.output", "management-plan", owner=archive.id)
-    assert len(catalog.find("chunk.output", "management-plan", owner=alice.id)) == 1
+    output = "management-plan (en)"
+    [archived] = catalog.find("chunk.output", output, owner=archive.id)
+    assert len(catalog.find("chunk.output", output, owner=alice.id)) == 1
     owners = [catalog.about(Subject(thread=t)).owner for t in catalog.forks(archived)]
     assert owners.count(alice.id) == 1
     again = init(
@@ -226,20 +235,17 @@ def test_init_data_withdraws_only_the_tags_the_archive_gave(
     alice = People(conn).add("alice", "Alice")
     _ = init(conn, sample_plan(), SOME, vignettes(), alice)
     catalog = Catalog(conn)
-    [plan] = catalog.find("skeleton", "plan (Qwen/Qwen3-8B-AWQ)")
+    [plan] = catalog.find("skeleton", "plan (en, Qwen/Qwen3-8B-AWQ)")
     family = catalog.family(vignettes().cases()[0].digest)
     assert family is not None
     for subject in (Subject(thread=plan), Subject(family=family)):
         catalog.note(subject, Entry(field=EntryField.TAG, value="alice's"), alice.id)
 
-    edited = tmp_path / "factors.toml"
-    _ = edited.write_text(
-        (SAMPLE / "factors.toml")
-        .read_text()
-        .replace(
-            'tags = ["ddx"]\nprompt = "case"\noutput = "management-plan"\n',
-            'prompt = "case"\noutput = "management-plan"\n',
-        )
+    edited = changed(
+        tmp_path,
+        "factors.toml",
+        'tags = ["ddx"]\nprompt = "case"\noutput = "management-plan"\n',
+        'prompt = "case"\noutput = "management-plan"\n',
     )
     retagged = {**SOME, "DutchFall10w": replace(SOME["DutchFall10w"], tags=("falls",))}
     _ = init(conn, sample_plan(edited), retagged, vignettes(), alice)
@@ -404,7 +410,7 @@ off = { temperature = 1.0, top_k = 64, top_p = 0.95 }
         for line in out
     )
     assert any(
-        line.startswith("[archive skeleton] plan (google/gemma-3-27b-it): created")
+        line.startswith("[archive skeleton] plan (en, google/gemma-3-27b-it): created")
         for line in out
     )
 

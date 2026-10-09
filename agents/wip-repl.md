@@ -165,7 +165,7 @@ count. Still a take.
 | old (504792c) | remastered | notes |
 |---|---|---|
 | identity (`core/models.py:IdentityModel`) | `identity.person`, `People.find(login)` | `init-data` adds it |
-| configuration, 6 slices (`repo/entities/configuration`) | skeleton thread; parts from `Catalog.recipe` | model-dependent chunks are per model: `plan (Qwen/Qwen3-8B-AWQ)` |
+| configuration, 6 slices (`repo/entities/configuration`) | skeleton thread; parts from `Catalog.recipe` | model-dependent chunks are per model, and texts per language: `plan (en, Qwen/Qwen3-8B-AWQ)` |
 | stack (`repo/entities/stack`) | engine plus World endpoint (`url_of`, `confirm`) | D6 |
 | resolution and refusals (`runtime/resolution.py`) | the compiled skeleton, plus `factors.lint` and `facts.lint` on a provisional trial | warnings, never refusals (`docs/chatddx.md`, "Compromises") |
 | case, tags (`repo/entities/case`) | family (name, tags, language), its case, the vignette from the source | |
@@ -324,10 +324,12 @@ autocommit mode, as the runner needs (R6), and refuses a login with no person. `
 
 Takes made while building, all still open:
 - **Per-model names.** The plan picked a per-model chunk by the engine's model for `set` only. `use`, `cell`, `set`
-  and `show KIND NAME` all do it: a name that names nothing alone is tried as `NAME (MODEL)`, with the model the
-  cell's engine serves, so `cell plan qwen3-8b-awq@fake` holds `plan (Qwen/Qwen3-8B-AWQ)`. Without an endpoint,
-  `use plan` is refused, naming the per-model ones.
-- **Names hold spaces.** A command's last name takes the rest of the line (`use plan (Qwen/Qwen3-8B-AWQ)`, no
+  and `show KIND NAME` all do it: a name that names nothing alone is tried as its one variant the cell's engine's
+  model may use, `NAME (LANGUAGE)`, `NAME (MODEL)` or `NAME (LANGUAGE, MODEL)` (`src/chatddx/bench/view.py:made_for`),
+  so `cell plan qwen3-8b-awq@fake` holds `plan (en, Qwen/Qwen3-8B-AWQ)`. Without an endpoint, `use plan` is refused,
+  naming the per-model ones; a name made in more than one language is refused, naming them. Picking the variant in
+  the language of the cell's cases is open (`docs/curation.md`, "Picking a variant by the case's language").
+- **Names hold spaces.** A command's last name takes the rest of the line (`use plan (en, Qwen/Qwen3-8B-AWQ)`, no
   quotes), and `cell` takes its endpoint from the last word. Completion goes word by word, and offers the name alone
   of each per-model one.
 - **The cell's lints straight away** (see "Risks", "A configuration on another model's endpoint"). `use`, `on`,

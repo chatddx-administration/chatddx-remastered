@@ -50,7 +50,7 @@ def test_quit_leaves(repl: Repl):
 
 def test_it_completes_a_command_and_then_its_names_word_by_word():
     names = {
-        "configuration": ["free-text", PLAN, "plan", "plan (openai/gpt-oss-20b)"],
+        "configuration": ["free-text", PLAN, "plan", "plan (en, openai/gpt-oss-20b)"],
         "endpoint": [QWEN, "gpt-oss-20b@fake"],
         "part": ["prompt", "reasoning", "sampling"],
         "reasoning": ["off", "off (Qwen/Qwen3-8B-AWQ)", "on", "none"],
@@ -60,18 +60,14 @@ def test_it_completes_a_command_and_then_its_names_word_by_word():
 
     assert complete(names, "us") == ["use"]
     assert complete(names, "use pl") == ["plan"]
-    assert complete(names, "use plan ") == [
-        "(Qwen/Qwen3-8B-AWQ)",
-        "(openai/gpt-oss-20b)",
+    assert complete(names, "use plan ") == ["(en,"]
+    assert complete(names, "use plan (en, ") == [
+        "Qwen/Qwen3-8B-AWQ)",
+        "openai/gpt-oss-20b)",
     ]
-    assert complete(names, "use plan (o") == ["(openai/gpt-oss-20b)"]
+    assert complete(names, "use plan (en, o") == ["openai/gpt-oss-20b)"]
     assert complete(names, f"cell {PLAN} q") == [QWEN]
-    assert complete(names, "cell plan ") == [
-        "(Qwen/Qwen3-8B-AWQ)",
-        "(openai/gpt-oss-20b)",
-        QWEN,
-        "gpt-oss-20b@fake",
-    ]
+    assert complete(names, "cell plan ") == ["(en,", QWEN, "gpt-oss-20b@fake"]
     assert complete(names, "on g") == ["gpt-oss-20b@fake"]
     assert complete(names, "set r") == ["reasoning"]
     assert complete(names, "set reasoning o") == ["off", "on"]

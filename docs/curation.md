@@ -29,19 +29,30 @@ from a person's: a re-run recognises its own records by kind, name and the archi
 The archive is never wiped.
 
 ## Data sets
-A data set is a directory of authored files: a `factors.toml`, the cases in `cases-<language>.toml` files, and the
-files they load, such as JSON schemas. chatddx ships one, the sample (src/chatddx/data/sample/), the old chatddx's
-inventory hand-edited into this shape (agents/wip-sample-data.md). The sample holds no vignettes and no engines:
-those are a World's (see "The World").
+A data set is a directory of authored files: a `factors.toml`, the texts in `texts-<language>.toml` files, the cases
+in `cases-<language>.toml` files, and the files they load, such as JSON schemas. chatddx ships one, the sample
+(src/chatddx/data/sample/), the old chatddx's inventory hand-edited into this shape (agents/wip-sample-data.md). The
+sample holds no vignettes and no engines: those are a World's (see "The World").
+
+```
+src/chatddx/data/sample/
+  factors.toml    what holds no text: models and engines (none here), sampling, reasoning, passthrough, tools,
+                  expectation schemas, scorers, recipes, and chunks of slots alone
+  texts-en.toml   what holds text the model reads, in English: instructions, few-shot, prompts, outputs, toolsets
+                  and translations
+  cases-en.toml   the English cases
+  cases-sv.toml   the Swedish cases
+  schemas/
+```
 
 ### Factors
-`factors.toml` holds one table per kind of component, keyed by name, whose keys are the component's fields
+Both kinds of file hold one table per kind of component, keyed by name, whose keys are the component's fields
 (docs/factors-api.md). The kinds are models, local and remote engines, instructions, few-shot, prompts, outputs,
 sampling, reasoning, passthrough, translations, tools, toolsets, expectation schemas, scorers and recipes. On top of
 the fields:
 - **References by name.** A toolset's tools, a scorer's expectation schema, a local engine's model and a recipe's
   parts name records, not digests.
-- **Files.** `json_schema_path` loads a JSON file, relative to the factors file, in place of `json_schema`.
+- **Files.** `json_schema_path` loads a JSON file, relative to the file that names it, in place of `json_schema`.
 - **Forks.** `fork_of` names a record of the same kind that this one is a variation of. It is loaded as a fork of
   that record's thread, so the catalog knows what it varies (docs/catalog.md, "Forks"). It inherits no fields.
 - **Code.** A tool or a scorer that names no `code` pins the running chatddx, as a compilation records it as its
@@ -49,9 +60,32 @@ the fields:
 - **Catalog entries.** `tags` and `description` are entries on the record's thread, and a scorer view's `label` is a
   label. A tool's `description` is also a field, the one the model reads.
 - **From facts.** `from_facts` asks for a sampling or reasoning chunk per model (see "Per model").
-- **Language.** See "Languages".
 
-A name is defined once per kind, across the data set's file and the World's.
+A name is defined once per kind across `factors.toml` and the World's, and a text's name may come back in each texts
+file, as the same text in another language.
+
+### Texts
+What the model reads is written in a language, and a texts file's name gives it: every text in `texts-sv.toml` is
+Swedish, and no record says its own language. A chunk holds text when an instruction, an example, a prompt, a
+guidance, an answer-function or tool description, or schema prose says something, so a prompt of slots alone, or an
+output without guidance or schema, holds none. A chunk that holds text is written in a texts file, and one that holds
+none in `factors.toml`, where it serves every language. Loading writes each text's language on its digest, and names
+it after it, such as `management-plan (en)`.
+
+Texts come in two kinds. Instructions, few-shot and prompts are written in each language they are used in, as cases
+are. Outputs and toolsets bring text with code, guidance and schemas, and may be written in one language and
+translated into the others by a translations chunk of each (docs/factors.md, proposed amendments); a native one can
+still be written in a language of its own.
+
+A recipe that names a text is made in each language that has it, named after the language, such as
+`plan (en, Qwen/Qwen3-8B-AWQ)`. In a language, it takes each text written in that language. An output or a toolset
+written only in another language is taken from there, and the recipe's translations in its language stand in for it;
+a recipe without them there is skipped and reported. In the language its output and toolset are written in, it needs
+no translations and is made without them. A recipe that names no text is made once, as before.
+
+The sample is written in English: its six outputs with guidance and its toolset are in `texts-en.toml`, and every
+recipe is made in English. A trial of them on the Swedish cases is linted as mixing languages until the sample has
+Swedish texts, which is what a trial of an English request on a Swedish case is.
 
 ### Cases
 A cases file holds `[case.<id>]` tables, keyed by the vignette's id at the source. A case has `tags`, entries on its
@@ -70,20 +104,6 @@ engine of the plan serves and the facts know, and named after it, such as `recom
 that uses one is made per model too. What the facts refuse is skipped, together with the recipes that need it, and
 reported, and so are a served model the facts don't know and a known model no engine serves. Models and engines are
 planned first for this reason.
-
-### Languages
-A record that holds text the model reads has a language: its own `language`, or the factors file's top-level one. The
-kinds that can are the chunks whose language is their own (docs/catalog.md, "Languages"): instructions, few-shot,
-prompts, outputs, toolsets, which hold their tools' text, and translations. Whether a record holds text is read from
-the record itself, so a prompt of slots alone, or an output without guidance or schema, holds none.
-
-Planning refuses a record that holds text without a language, a record that holds none but names one, a language on
-a kind that has none, a language on a recipe, whose language comes from its chunks, and anything that isn't a
-language tag. Loading writes each language on the record's digest.
-
-The sample is in English: its six outputs with guidance and its toolset are `en`. So a trial of the sample's
-configurations on the Swedish cases is linted as mixing languages until a Swedish translations chunk exists, which is
-what a trial of an English request on a Swedish case is.
 
 ## The World
 A World is a directory (docs/inventory.md, "Worlds"). Loading reads its `inventory.toml` for the source of the cases'
@@ -105,8 +125,8 @@ connects as the writer and does everything in one transaction. It prints a line 
 the sample's first run comes to 248 threads and families.
 
 1. **Plan.** The data set, the World's factors and any more `--factors` are planned into components, without the
-   store: references resolved, per-model records written, recipes compiled, languages and entry points checked. A
-   data set that can't be planned is refused before anything is written.
+   store: references resolved, per-model records written, recipes made per language and compiled, texts and entry
+   points checked. A data set that can't be planned is refused before anything is written.
 2. **Records.** Each planned record becomes a thread named after it. A record the archive already has, by kind and
    name, is validated when its digest is unchanged and gets a new edit when it changed; a compiled skeleton's edit
    records its compilation. Its tags, description, view labels and language are brought in line with the data.
@@ -168,6 +188,8 @@ session (src/chatddx/conftest.py, `curated`).
 | Data set | A directory of authored files: factors, cases by language, and what they load. |
 | Record | A named entry of a data set's factors file, loaded as a thread. |
 | Per-model record | A record written from each served model's facts, named after the model. |
+| Text | A chunk that holds text the model reads, written in a texts file whose name gives its language. |
+| Variant | A record made for a language, a model or both, named after them: `plan (en, Qwen/Qwen3-8B-AWQ)`. |
 | Giftbag | A person's own forks of the archive's chunks, tools, skeletons and expectations. |
 | Leftover | An archive thread or family the data set no longer names. |
 
@@ -191,6 +213,11 @@ Curation is the place for the rest of the store's authored content to come and g
 ### What a data set can't hold yet
 Trials, executions, judges, scorings, canary sets, appendices and hand-written skeletons have no tables, and a data
 set has one expectation schema. A canary set is the next asked for (agents/wip-runner.md).
+
+### Picking a variant by the case's language
+The bench picks a configuration's variant by the model the cell's engine serves, and by language only when there is
+one (src/chatddx/bench/view.py:made_for). With texts in several languages, a cell's cases should run the variant in
+their own language, so a batch of English and Swedish cases runs each under its own.
 
 ### Smaller issues
 - **One source a run.** A data set's cases all come from the source `--source` names.
