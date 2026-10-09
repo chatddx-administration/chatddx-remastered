@@ -85,7 +85,7 @@ def run(repl: Repl, name: str, seed: str | None = None) -> None:
     show_scores(repl.console, graded)
     repl.say_findings(findings)
     trial = running.started.trial
-    runs = [r for r in bench.reads.runs() if r.trial == trial]
+    runs = [r for r in bench.runs() if r.trial == trial]
     repl.console.print(
         f"recorded as run {len(runs)} of trial {short(trial)}, "
         + f"run {str(running.run)[:8]}",

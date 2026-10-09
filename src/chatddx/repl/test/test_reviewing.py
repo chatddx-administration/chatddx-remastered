@@ -70,7 +70,7 @@ def test_replay_shows_a_batch_again_by_its_lines(say: Say):
 @pytest.mark.usefixtures("fake")
 def test_replay_takes_a_run_by_the_start_of_its_id(bench: Bench, say: Say):
     _ = say(f"cell {FREE_TEXT} {QWEN}", "run Dutchfall11w", "run casesfromedn1")
-    first = bench.reads.runs()[-1]
+    first = bench.runs()[-1]
 
     assert "× Dutchfall11w (seed 7)" in say(f"replay {str(first.run)[:8]}")
     assert "no run of yours starts with 'zzzz'" in say("replay zzzz")

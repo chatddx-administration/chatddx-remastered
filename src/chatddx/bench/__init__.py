@@ -1,16 +1,6 @@
-from .bench import (
-    KINDS,
-    OPTIONAL,
-    PARTS,
-    Bench,
-    Family,
-    Graded,
-    Reach,
-    Saved,
-    TriedVariation,
-)
 from .errors import Ambiguous, NotFound
-from .reads import Reads
+from .variation import OPTIONAL, PARTS, TriedVariation
+from .view import KINDS, Bench, Family, Graded, Reach, Saved
 
 __all__ = [
     "KINDS",
@@ -22,7 +12,6 @@ __all__ = [
     "Graded",
     "NotFound",
     "Reach",
-    "Reads",
     "Saved",
     "TriedVariation",
 ]

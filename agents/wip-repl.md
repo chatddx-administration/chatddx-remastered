@@ -271,8 +271,8 @@ Built, the `Bench` with the shell in 4a (see "4. The shell"). What was built her
 - tests in `src/chatddx/catalog/test/` and `src/chatddx/store/test/test_reads.py`, on the sample as init-data lands
   it with a giftbag.
 
-`Reads` and its tests have since moved to `src/chatddx/bench/`, without the runs still to score
-(`agents/wip-bench.md`, "Phase 2").
+`Reads` and its tests have since moved to `src/chatddx/bench/`, without the runs still to score, and `Reads` was
+folded into `Bench` (`agents/wip-bench.md`, "Phase 2").
 
 "Applies" is the plan's rule: every view of the scorer reaches the run's output schema. A view that picks the whole
 answer reaches any schema, so the sample's `free-text` and `raw` scorers apply to every run; the pattern scorer then

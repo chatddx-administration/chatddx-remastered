@@ -45,7 +45,7 @@ def line_of(written: str, start: str) -> str:
 
 
 def ran(bench: Bench) -> list[Run]:
-    return [Store(bench.conn).run(r.run) for r in bench.reads.runs()]
+    return [Store(bench.conn).run(r.run) for r in bench.runs()]
 
 
 @pytest.mark.usefixtures("fake")

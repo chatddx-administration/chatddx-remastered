@@ -12,11 +12,11 @@ https://github.com/chatddx-administration/chatddx/blob/504792cbeb09508f2c52912be
 
 ## Start with this
 1. **Decided: B3**, a person-scoped view, split between `identity` and the bench (see "Decided").
-2. **Phase 2** (see "Phase 2"): steps 1–8 are done. Step 9, Z1, waits for the portal.
+2. **Phase 2** (see "Phase 2"): steps 1–11 are done. Step 12, Z1, waits for the portal.
 3. **Decided: K2 with R1** (see "Keeping 'cell' or not"). "Cell" is the repl's word only, and the bench speaks of a
    `TriedVariation` and an endpoint. A test keeps the word out of the code outside `src/chatddx/repl/`.
-4. **Open** (see "Phase 2", "Open"), each with a take: one class or two for `Reads` and `Bench`; where the visibility
-   rule is applied to the catalog's rows; finding families by `OWNER/NAME`; the catalog's own `LookupError`s.
+4. **The bench's modules** are `errors.py`, `variation.py` and `view.py` (see "Modules"). There is no
+   `bench/bench.py`.
 
 ## Decided
 - **B3**: the bench is a person-scoped view (see "Phase 1" for the options). The split:
@@ -154,6 +154,33 @@ through the bench to edges that don't exist yet, whose users would learn it from
 the spread at the cheapest point, since the bench is shared by every edge. The guard is then simple: "cell" appears
 nowhere outside `src/chatddx/repl/`.
 
+## Modules
+`src/chatddx/bench/`, since phase 2, step 11:
+
+| Module | Holds | Builds on |
+|---|---|---|
+| `errors.py` | `NotFound`, `Ambiguous` | nothing |
+| `variation.py` | `PARTS`, `OPTIONAL`, `TriedVariation`: the variation being tried, a plain value | `chatddx.catalog`, `chatddx.factors.request` |
+| `view.py` | `Bench`, the person's view: what they see, the variations they try, and what is written for them; `KINDS`, and what `Bench` returns: `Family`, `Reach`, `Graded`, `Saved` | `errors.py`, `variation.py`, the store, the catalog, the factors, the facts, the inventory, the ledger and the runner |
+
+`__init__.py` re-exports them, so edges import from `chatddx.bench` and never by path.
+
+Why this layout:
+- **No `bench/bench.py`.** It repeated the package's name and said nothing about what it held. Most packages here
+  name modules by what they hold (`catalog/threads.py`, `runner/send.py`, `ledger/run.py`). `identity/identity.py`,
+  `inventory/inventory.py` and `store/store.py` repeat their package's name as `bench/bench.py` did; that is
+  happenstance, not a convention.
+- **`variation.py` is pure.** `TriedVariation` touches neither the store nor a person. It is tested without a
+  database (`src/chatddx/bench/test/test_variation.py`), and an edge can hold one without a bench.
+- **`Bench` stays one class in one module.** Its lookups, the variations it tries, and runs and scores call each
+  other through `self`: `configuration` and `chunk` use `thread`; `findings`, `reach`, `save` and `start` use
+  `skeleton`; `score` and `unscored` use `scorers_for` and `scoring`; `reach`, `score` and `scores_of` use `labels`.
+  Splitting the class by concern would take mixins, which hide where a method lives, or functions taking a bench,
+  which give edges a second surface beside `bench.*`. At 615 lines, `view.py` is about the size of
+  `fake_vllm/chat.py` (609), and shorter than `factors/request.py` (961).
+- **"View"** because B3 made the bench a person-scoped view. It also writes for the person (`save`, `start`,
+  `score`), but only through what the view finds.
+
 ## Phase 0: out of the repl
 Done (fdee878).
 - `src/chatddx/repl/bench.py` moved to `src/chatddx/bench/bench.py` unchanged. `src/chatddx/bench/__init__.py` exports
@@ -244,7 +271,7 @@ So the bench was a person-scoped view with helpers attached. It wasn't a facade:
 around it, and the repl did so through the bench itself.
 
 ### Rules held twice
-All three are resolved in phase 2, or have a step scheduled.
+All three are resolved in phase 2.
 - **The expectation a person reads for a case.** `Bench.expectation` took the head of the person's first own thread,
   else of the first shared one, in any schema. `src/chatddx/catalog/threads.py:expectation_for` keeps only heads in
   the scorer's expectation schema, and refuses when there are several to choose from. `show case` read the first rule,
@@ -258,7 +285,7 @@ All three are resolved in phase 2, or have a step scheduled.
     per-model names and the shell's kinds.
   - `Bench.family` finds a family on its own, own first, without `OWNER/NAME`.
 
-  Still open; see "Phase 2", "Open".
+  Made one in step 11.
 
 ### The old bench
 - **Bound to a person**, by login: `Bench(identity_name, transport=None, own=())` (`src/chatddx/bench/bench.py`,
@@ -306,7 +333,7 @@ How the old bench maps onto remastered:
 | `outcome.py:unheeded` | nothing yet | `agents/wip-runner.md`, "Afterwards" |
 | `cell_read`, `Drifted` | `Bench.rendered_again`: whether a run's first requests render the same now | |
 | `secret`, `NoSecret` | an endpoint's `credential`, only a name | refused for now (`agents/wip-repl.md`, "Left out") |
-| `Plan`, `crossed` (`bench/plan.py`), `held` (`bench/held.py`) | not ported: the portal's (`agents/wip-repl.md`, "Left out") | `Reads.reaching` and `Bench.scored_by` cover the repl's part of `held` |
+| `Plan`, `crossed` (`bench/plan.py`), `held` (`bench/held.py`) | not ported: the portal's (`agents/wip-repl.md`, "Left out") | `Bench.reaching` and `Bench.scored_by` cover the repl's part of `held` |
 
 ### Forces
 - **Authorization is a convenience, not a protection** (`agents/wip-identity.md`, "Authorization"). What a person sees
@@ -365,13 +392,14 @@ Sub-decisions:
    `docs/catalog-api.md` now says (a3431e1); `model.py`'s row in its table is proposed. Tested in
    `src/chatddx/identity/test/test_identity.py`, and through the catalog's visibility tests.
 2. **`Reads` is the bench's**: `src/chatddx/store/reads.py` moved to `src/chatddx/bench/reads.py`, and its tests to
-   `src/chatddx/bench/test/test_reads.py`. `chatddx.store` no longer exports it, and `chatddx.bench` does.
+   `src/chatddx/bench/test/test_reads.py`. `chatddx.store` no longer exports it. It was then folded into `Bench`
+   (step 9).
    `docs/store.md` and `docs/store-api.md` dropped it (a3431e1); what they said is kept in "Material for the bench's
    docs".
 3. **One rule for what is left to score**: `Reads.outstanding` is gone, unused since 4c. `Bench.unscored` (per run) and
    `Bench.outstanding` (the person's finished runs, with what each is left to be scored by) are the one answer. The
    test that pinned "a changed expectation leaves a run to score again" now pins it on `Bench.unscored`
-   (`src/chatddx/bench/test/test_bench.py`).
+   (`src/chatddx/bench/test/test_view.py`).
 4. **One rule for the expectation a case is held to**: `Catalog.expectation_for`, the one scoring uses.
    - `Bench.expectation(case, schema)` is the expectation it picks for the person under that schema. It raises a
      `LookupError` when there are several to choose from.
@@ -381,7 +409,7 @@ Sub-decisions:
      shows what it showed before.
    - `Bench.reach` reads expectations through `Bench.expectation` too.
 
-   Tests: `src/chatddx/bench/test/test_bench.py`, and
+   Tests: `src/chatddx/bench/test/test_view.py`, and
    `src/chatddx/repl/test/test_inspecting.py:test_show_case_says_when_scoring_has_expectations_to_choose_from`.
 5. **The bench's own tests**, in `src/chatddx/bench/test/`, on the seeded sample. The seeded fixture is defined once,
    session-scoped, as `src/chatddx/conftest.py:seeded` (with `WORLD`, the sample World's inventory). The bench's tests
@@ -389,7 +417,7 @@ Sub-decisions:
    (`agents/wip-repl.md`, "Left from 4a").
 
 6. **"Cell" is the repl's** (K2 with R1).
-   - The bench's `Cell` is now `src/chatddx/bench/bench.py:TriedVariation`: the configuration's head edit, the name
+   - The bench's `Cell` is now `src/chatddx/bench/variation.py:TriedVariation`: the configuration's head edit, the name
      it was called by, its recipe, and the parts replaced over it. It always has a configuration. It has no endpoint,
      and lost `using` and `on`.
    - The bench's methods take what they need: `configuration(name, engine)`, `chunk(part, name, engine)`,
@@ -400,8 +428,8 @@ Sub-decisions:
      `trying` and `on`. The repl's commands, help, messages and tests keep the word.
    - `src/chatddx/cli.py`'s help for `chatddx repl` no longer says it.
    - The guard: `src/chatddx/repl/test/test_vocabulary.py`.
-   - Tests: `src/chatddx/bench/test/test_bench.py` covers the per-model pick, replacing parts and taking one back,
-     and the refusal to take out a part a configuration always has.
+   - Tests: `src/chatddx/bench/test/test_view.py` covers the per-model pick and compiling a variation;
+     `src/chatddx/bench/test/test_variation.py` covers replacing parts, taking one back, and the refusals.
 7. **The shell's vocabulary is the repl's**: `NONE`, `SEEDS`, `MAX_SEED` and `drawn_seed` moved to
    `src/chatddx/repl/shell.py`. `set PART none` is the repl's: it hands the bench no digest, and `Bench.chunk` no
    longer knows the word. A part a configuration always has is refused as one that "can be taken out" only if it is
@@ -416,37 +444,39 @@ Sub-decisions:
    - The repl words the hint itself: when `per_model` is set, `handle` adds ", picked by the endpoint in the cell"
      (`src/chatddx/repl/commands.py:_said`).
    - Not typed: what the catalog raises, such as `expectation_for`'s "has expectations to choose from", which passes
-     through `Bench.expectation` and `Reads.scoring` as a plain `LookupError`.
+     through `Bench.expectation` and `Bench.scoring` as a plain `LookupError` (see step 10).
+
+9. **`Reads` is folded into `Bench`** (decided, the take on "one class or two"). `Bench.runs`, `run`, `reaching`,
+   `scorers_for` (`Reads.scorers`, renamed since `Bench.scorers` lists the scorers the person sees) and `scoring` are
+   the bench's own. The repl calls `bench.runs()` rather than `bench.reads.runs()`, and `src/chatddx/bench/reads.py`
+   is gone.
+10. **Decided, nothing to build:**
+    - The catalog keeps applying the visibility rule to its own rows (`catalog/threads.py:visible`,
+      `catalog/families.py:visible`, `catalog/threads.py:expectation_for`), as `docs/catalog.md` says it decides
+      "what a person sees". The rule itself is `identity`'s, and the bench applies it to everything else.
+    - The catalog's own `LookupError`s stay untyped until an API needs to tell an ambiguous expectation from a
+      missing one. `Bench.expectation` and `Bench.scoring` would then raise `Ambiguous` for it.
+11. **One rule for finding things by name**: `Bench._named`. A name is matched whole first, then read as
+    `OWNER/NAME`; the person's own wins, else the one shared with them; several raise `Ambiguous`, none `NotFound`.
+    `Bench.thread` uses it for threads, and `Bench.family` for families, which can now be found as
+    `archive/Dutchfall11w`. The repl's `show case`, `run` and the rest take `OWNER/NAME` for a case with it.
+    Then the modules were laid out (see "Modules"): `bench.py` became `view.py`, and `TriedVariation` moved to
+    `variation.py`. The tests followed: `test_view.py` and `test_variation.py`.
 
 ### Next
-9. **Z1**: the map from role to kinds goes in `identity`, once the portal's views give it meaning. `sees` then takes
-   the person's roles and the kind.
-
-### Open
-- **`Reads` and `Bench`, one class or two.** `Bench` wraps most of `Reads`, and the repl reaches `bench.reads`
-  directly. Both are the bench's now, so this only decides the bench's own shape. Take: fold `Reads` into `Bench`, so
-  that the reach-through `bench.reads.*` becomes `bench.*`.
-- **Where the rule is applied to the catalog's rows.** `catalog/threads.py:visible`, `catalog/families.py:visible`
-  and `catalog/threads.py:expectation_for` apply the visibility rule to the catalog's rows, inside the catalog.
-  `docs/catalog.md` lists "what a person sees" and "the expectation a person scores a case against" as the catalog's,
-  and the bench calls them. Take: leave them there. The rule itself is `identity`'s, the catalog applies it to its own
-  rows, and the bench applies it to everything else.
-- **Finding things by name** is still split between `Reads.thread` and `Bench.family` (see "Rules held twice").
-  `OWNER/NAME` for families would make them one. Take: do it with the fold.
-- **The catalog's own `LookupError`s** reach the edges untyped (step 8). An API mapping errors to status codes would
-  take an ambiguous expectation for a missing one. Take: have `Bench.expectation` and `Reads.scoring` raise
-  `Ambiguous` for it, once an API needs the difference.
+12. **Z1**: the map from role to kinds goes in `identity`, once the portal's views give it meaning. `sees` then takes
+    the person's roles and the kind.
 
 ## Material for the bench's docs
 Taken out of `docs/store.md` ("Looking things up for someone") and `docs/store-api.md` ("reads.py") at a3431e1, when
-`Reads` left the store. It is updated to the code as it is now: `outstanding` is gone (phase 2, step 3), and what is
-left to score is `Bench.unscored`'s.
+`Reads` left the store. It is updated to the code as it is now: `outstanding` is gone (phase 2, step 3), what is left
+to score is `Bench.unscored`'s, and `Reads` is folded into `Bench` (step 9).
 
 ### Looking things up for someone
 The bench offers a simple lookup scoped to one person: live runs they own, and live threads and families they own or
-collaborate on, which lets a person refer to things loosely. A thread is found by its name, matched whole first and
-only then read as an owner and a name, since names may hold a slash. Runs are found by the start of their id, or by a
-component their trial is built on.
+collaborate on, which lets a person refer to things loosely. A thread or a family is found by its name, matched whole
+first and only then read as an owner and a name, since names may hold a slash. Runs are found by the start of their
+id, or by a component their trial is built on.
 
 For a run, the bench also tells:
 - which scorers can grade its answers;
@@ -457,31 +487,33 @@ For a run, the bench also tells:
 Like authorization, this decides what is relevant to show, not who may read what (`agents/wip-identity.md`,
 "Authorization").
 
-### `class Reads`
-`Reads(conn: Connection, person: Person)` (`src/chatddx/bench/reads.py`): what one person sees, through `Catalog`,
-`Store` and `People`.
+### What `Bench` looks up for the person
+`Bench(conn: Connection, person: Person, inventory: Inventory, facts: Facts)` (`src/chatddx/bench/view.py`). Its
+lookups go through `Catalog`, `Store` and `People`:
 
 | Method | Returns / raises |
 | --- | --- |
-| `threads(kind: str) -> list[tuple[Edit, About]]` | `Catalog.visible(kind, person.id)`: the heads of the live threads of `kind` the person owns or collaborates on, in thread id order. |
-| `thread(kind: str, name: str) -> Edit` | See below. |
-| `families() -> list[tuple[int, About]]` | `Catalog.visible_families(person.id)`. |
+| `threads(word: str) -> list[tuple[Edit, About]]` | `Catalog.visible(kind, person.id)` for each kind `KINDS[word]` names: the heads of the live threads the person owns or collaborates on, in thread id order. |
+| `thread(word: str, name: str, model: str \| None = None) -> tuple[Edit, str]` | The thread called `name` among them, or else the one made for `model`, `NAME (MODEL)`, with the name that found it. See below. `NotFound` carries the per-model names when no model was given. |
+| `families(tags=()) -> list[Family]` | The live families the person owns or collaborates on that have a case, with any of `tags`, by name. |
+| `family(name: str) -> Family` | The family called `name`, as below; one without a name is called `family ID`. |
 | `runs() -> list[RunStarted]` | The runs whose entries ever named the person as owner or collaborator, and whose `About` now has the person as owner and isn't deleted; newest first. A collaborator on a run doesn't see it. |
-| `run(prefix: str) -> RunStarted` | The one run of `runs()` whose id, as `str(UUID)`, starts with `prefix`. `LookupError("no run of yours starts with '<prefix>'")` or `LookupError("<n> runs of yours start with '<prefix>'")`. |
+| `run(prefix: str \| None = None) -> RunStarted` | The latest of `runs()`, or the one whose id, as `str(UUID)`, starts with `prefix`. `NotFound("<login> has no runs")`, `NotFound("no run of yours starts with '<prefix>'")` or `Ambiguous("<n> runs of yours start with '<prefix>'")`. |
 | `reaching(digest: str) -> list[RunStarted]` | The runs of `runs()` whose trial's closure holds `digest` (`Store.reaching(digest, "trial")`), newest first. |
-| `scorers(run: RunStarted) -> list[tuple[Edit, About]]` | The visible scorer threads whose head's every view has an `output` selector that reaches the run's skeleton's `output_schema` (`chatddx.factors.select.reaches`), the check `check_score` warns about as `view.unreachable`. |
+| `scorers_for(run: RunStarted) -> list[tuple[Edit, About]]` | The visible scorer threads whose head's every view has an `output` selector that reaches the run's skeleton's `output_schema` (`chatddx.factors.select.reaches`), the check `check_score` warns about as `view.unreachable`. |
 | `scoring(run: RunStarted, scorer: str) -> Scoring \| None` | The scoring the run would be scored under now: `Scoring(scorer, expectations)`, with, for each of the trial's cases in order, the expectation `Catalog.expectation_for(case, person.id, <the scorer's expectation_schema>)` picks, cases without one left out. `None` when no case has one. `LookupError` when the person has several expectations to choose from for a case. Nothing is stored. |
+| `unscored(run: RunStarted) -> list[str]` | The scorers of `scorers_for(run)` with no score of the run under `scoring(run, scorer)`, so a run whose expectations changed after it was scored is due again. Scorers whose scoring can't be built are left out. |
 
-`thread(kind, name)` looks among the threads of `threads(kind)` whose name is exactly `name`:
+A thread or a family is found by name among those the person sees (`Bench._named`):
 1. those the person owns: exactly one is returned, several raise;
 2. when they own none, all of them: exactly one is returned, several raise.
 
-When no thread has the whole name and it holds `/`, it is read as `<login>/<rest>`, and when a person has that
-login, step 2 runs over their threads among `threads(kind)` named `<rest>`. A whole name wins over `OWNER/NAME`,
-since names may hold a slash, as `plan (Qwen/Qwen3-8B-AWQ)` does. Several raise `LookupError("<kind> '<name>' names
-threads <ids>; name one as OWNER/NAME")`; none raises `LookupError("no <kind> named '<name>'")`.
+When nothing has the whole name and it holds `/`, it is read as `<login>/<rest>`, and when a person has that login,
+step 2 runs over theirs named `<rest>`. A whole name wins over `OWNER/NAME`, since names may hold a slash, as
+`plan (Qwen/Qwen3-8B-AWQ)` does. Several raise `Ambiguous("<word> '<name>' names <n>; name one as OWNER/NAME")`;
+none raises `NotFound("no <word> '<name>' for <login>")`.
 
-`scorers` and `scoring` resolve the run's trial, its skeleton and the scorers through `Store.get`
+`scorers_for`, `scoring` and `unscored` resolve the run's trial, its skeleton and the scorers through `Store.get`
 (`StructuralError` when one isn't stored or is of another kind).
 
-`Reads.runs` shows only the runs the person owns now; collaborating on a run shows nothing.
+`runs` shows only the runs the person owns now; collaborating on a run shows nothing.

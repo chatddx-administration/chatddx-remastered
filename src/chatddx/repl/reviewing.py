@@ -35,7 +35,7 @@ def runs(repl: Repl, count: str = "20") -> None:
         return
 
     bench = repl.bench
-    found = bench.reads.runs()[: int(count)]
+    found = bench.runs()[: int(count)]
 
     if not found:
         repl.console.print(f"{bench.person.login} has no runs", style=LABEL)

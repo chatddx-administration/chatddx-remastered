@@ -302,7 +302,7 @@ def _about(table: Table, about: About) -> None:
 def _runs(repl: Repl, word: str, digest: str) -> None:
     bench = repl.bench
     scorer = word == "scorer"
-    runs = bench.scored_by(digest) if scorer else bench.reads.reaching(digest)
+    runs = bench.scored_by(digest) if scorer else bench.reaching(digest)
 
     if not runs:
         said = "it scored" if scorer else f"with this {word}"
@@ -438,7 +438,7 @@ def _show_endpoint(repl: Repl, name: str | None) -> None:
     table.add_row("cleared for", " ".join(sorted(bench.inventory.cleared_for(name))))
     repl.console.print(table)
 
-    runs = [r for r in bench.reads.runs() if r.endpoint and r.endpoint.name == name]
+    runs = [r for r in bench.runs() if r.endpoint and r.endpoint.name == name]
     if not runs:
         repl.console.print("no runs of yours at this endpoint", style=LABEL)
     else:

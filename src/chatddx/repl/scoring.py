@@ -40,7 +40,7 @@ def score(repl: Repl, prefix: str | None = None) -> None:
         with held():
             graded = bench.score(started, unscored)
         _scored(repl, started, graded)
-    elif not bench.reads.scorers(started):
+    elif not bench.scorers_for(started):
         repl.console.print("no scorer applies to it", style=LABEL)
     else:
         repl.console.print("scored already, as the scorings are now", style=LABEL)
