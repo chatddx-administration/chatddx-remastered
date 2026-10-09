@@ -28,7 +28,7 @@ from chatddx.facts import (
     Refused,
     Writes,
     check_pairs,
-    reasons,
+    lints,
 )
 
 QWEN = "Qwen/Qwen3-8B-AWQ"
@@ -130,8 +130,7 @@ def test_facts_check_pairs(facts: Facts) -> None:
         trial = reg.add(
             Trial(skeleton=skeleton, engine=engine, cases=(ids["case"],), seeds=(1,))
         )
-        found = lint(reg, [trial], reasons=reasons(facts, reg))
-        return {f.code: f.level for f in found + check_pairs(reg, facts, [trial])}
+        return {f.code: f.level for f in lints(reg, facts, [trial])}
 
     native = skeleton(NativeOutput(), response_format=response_format)
     qwen = engine(QWEN)

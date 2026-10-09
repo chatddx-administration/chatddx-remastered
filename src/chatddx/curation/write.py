@@ -4,9 +4,8 @@ from collections.abc import Collection, Iterable
 from chatddx.catalog import Entry, EntryField, Kept, Subject, Survey
 from chatddx.factors.base import Fingerprint
 from chatddx.factors.cases import Case, Vignette
-from chatddx.factors.lint import lint
 from chatddx.factors.scoring import Expectation
-from chatddx.facts import check_pairs, reasons
+from chatddx.facts import lints
 from chatddx.identity import Person
 from chatddx.inventory import Source
 from chatddx.store.catalog import Catalog
@@ -233,13 +232,7 @@ class _Init:
 
     def lint(self) -> None:
         registry, facts, digests = self.plan.registry, self.plan.facts, [*self.landed]
-        findings = lint(
-            registry,
-            digests,
-            languages=self.catalog.language_of,
-            reasons=reasons(facts, registry),
-        )
-        findings += check_pairs(registry, facts, digests)
+        findings = lints(registry, facts, digests, self.catalog.language_of)
         for f in findings:
             what = ", ".join(self.landed.get(f.subject or "") or [str(f.subject)])
             self.lines.append(f"[lint {f.level}] {what}: {f.code}: {f.message}")

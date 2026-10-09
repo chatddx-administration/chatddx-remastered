@@ -1,4 +1,4 @@
-from .lint import check_pairs, reasons
+from .lint import check_pairs, lints, reasons
 from .models import (
     BUNDLED,
     INTENTS,
@@ -35,6 +35,7 @@ __all__ = [
     "SamplingValues",
     "Writes",
     "check_pairs",
+    "lints",
     "model_name",
     "reasons",
 ]

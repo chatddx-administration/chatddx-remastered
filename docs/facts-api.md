@@ -309,3 +309,9 @@ Behavior described here that `docs/facts.md` doesn't state:
 - `Facts.load` refuses the same file given twice, as facts in more than one file.
 - `--facts` is repeated for several files (`--facts A --facts B`).
 - `reasons` and `check_pairs` raise `StructuralError` for components the registry doesn't hold.
+
+## Proposed amendments
+- ADD `lints(registry, facts, digests, languages=None) -> list[Finding]` in `lint.py`: the factors' lints of `digests`
+  (`chatddx.factors.lint.lint`, with `reasons(facts, registry)` and `languages`) and `check_pairs`, in that order.
+  init-data lints what it lands with it, and the bench a variation's trial (src/chatddx/facts/lint.py:lints,
+  src/chatddx/curation/write.py:_Init.lint, src/chatddx/bench/view.py:Bench.findings).

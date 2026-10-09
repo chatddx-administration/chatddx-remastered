@@ -19,12 +19,11 @@ from chatddx.factors.base import (
 from chatddx.factors.bundle import Registry
 from chatddx.factors.cases import Case, prepare_case
 from chatddx.factors.engine import LocalEngine, RemoteEngine
-from chatddx.factors.lint import lint
 from chatddx.factors.request import Skeleton, compile_request, compiled, render
 from chatddx.factors.scoring import Expectation, Scorer, Scoring
 from chatddx.factors.select import reaches
 from chatddx.factors.trial import Trial
-from chatddx.facts import Facts, check_pairs, model_name, reasons
+from chatddx.facts import Facts, lints, model_name
 from chatddx.identity import Person
 from chatddx.inventory import Inventory
 from chatddx.ledger import ItemKey, Run, RunStarted, Score, fingerprint_request
@@ -369,13 +368,7 @@ class Bench:
             return []
         registry, trial = self.trial(self.skeleton(variation), engine, some, seed)
         languages = None if cases is None else self.catalog.language_of
-        found = lint(
-            registry,
-            [trial.digest],
-            languages=languages,
-            reasons=reasons(self.facts, registry),
-        )
-        return found + check_pairs(registry, self.facts, [trial.digest])
+        return lints(registry, self.facts, [trial.digest], languages)
 
     def scorers(self) -> list[tuple[Edit, About, Scorer]]:
         return [
