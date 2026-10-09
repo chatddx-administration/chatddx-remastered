@@ -191,25 +191,25 @@ Each kind is described by:
 
 | Component | Described by | Example |
 | --- | --- | --- |
-| Chunk | Its values or the opening words of its text. | |
-| Chunk (few-shot) | | |
-| Chunk (output) | | |
-| Chunk (toolset) | | |
-| Chunk (passthrough) | | |
-| Translations chunk | Its language and size. | "sv translations, 12 texts" |
-| Tool | Its name. | "web_search" |
-| Appendix | The opening words of its text. | |
-| Expectation | Its case. | "expectation for Dutchfall11w" |
-| Model | Its repository. | |
-| Local engine | Its model, server and GPU. | "google/gemma-3-12b-it on vllm 0.24.0 (RTX 5090)" |
-| Remote engine | Its model and host. | |
-| Trial | Its skeleton, its engine, and how many cases and seeds it has. | |
-| Judge | Its skeleton and engine. | |
-| Scorer | Its code. | "scorer chatddx 0.0.0+dev" |
-| Scoring | Its scorer and how many expectations it has. | |
-| Expectation schema | Its title or its properties. | |
-| Canary set | How many canaries it has. | |
-| Anything with nothing better to go by, such as a compilation | Its kind and the start of its digest. | |
+| Chunk | Its values or the opening words of its text. | `temperature 1.0, top_p 1.0` or `"{vignette}{appendices}"` |
+| Chunk (few-shot) | How many messages it has. | `few-shot, 2 messages` |
+| Chunk (output) | Its contract, and its schema's title or properties. | `native output: management_plan_v1` |
+| Chunk (toolset) | Its tools. | `with web_search` |
+| Chunk (passthrough) | The options it sets. | `passthrough: logprobs, top_logprobs` |
+| Translations chunk | Its language and size. | `sv translations, 12 texts` |
+| Tool | Its name. | `web_search` |
+| Appendix | The opening words of its text. | `"Lab results: CRP 180 mg/L, lactate 2.8…"` |
+| Expectation | Its case. | `expectation for Dutchfall11w` |
+| Model | Its repository. | `google/gemma-3-12b-it` |
+| Local engine | Its model, server and GPU. | `google/gemma-3-12b-it on vllm 0.24.0 (NVIDIA GeForce RTX 5090)` |
+| Remote engine | Its model and host. | `gpt-4o at api.openai.com` |
+| Trial | Its skeleton, its engine, and how many cases and seeds it has. | `plan on qwen3-8b@pelle, 20 cases, 1 seed` |
+| Judge | Its skeleton and engine. | `judge grader on qwen3-8b@pelle` |
+| Scorer | Its code. | `scorer chatddx 0.0.0+dev` |
+| Scoring | Its scorer and how many expectations it has. | `plan against 20 expectations` |
+| Expectation schema | Its title or its properties. | `Targets` |
+| Canary set | How many canaries it has. | `2 canaries` |
+| Anything with nothing better to go by | Its kind and the start of its digest. | `compilation 1a2b3c` |
 
 Titles aren't unique: two unnamed components can be described alike, and names aren't unique either. Titles change when
 the names they're built from change, so an export for publication should freeze the titles it uses.
