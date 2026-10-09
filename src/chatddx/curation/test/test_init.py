@@ -334,16 +334,11 @@ def test_init_data_command(
         main(["init-data", "alice", *data])
 
     main(["init-data", "alice", "--world", str(SAMPLE_WORLD), "--data", str(few)])
-    sample = Inventory.load(SAMPLE_WORLD / "inventory.toml")
     assert [
         line
         for line in capsys.readouterr().out.splitlines()
-        if line.startswith("[world endpoint]")
-    ] == [
-        f"[world endpoint] {name}: {e.url} serves engine.local {name} "
-        + e.engine.removeprefix("sha256:")[:6]
-        for name, e in sample.endpoints.items()
-    ]
+        if line.startswith("[world")
+    ] == [f"[world] 0 findings in 2 endpoints of {SAMPLE_WORLD}"]
 
     main(["init-data", "alice", "--world", str(KOMPISMOLN), "--data", str(few)])
     real = Inventory.load(KOMPISMOLN / "inventory.toml")
@@ -352,10 +347,8 @@ def test_init_data_command(
         assert any(
             line.startswith(f"[archive engine.local] {name}: created") for line in out
         )
-    assert [line for line in out if line.startswith("[world endpoint]")] == [
-        f"[world endpoint] {name}: {e.url} serves engine.local {name} "
-        + e.engine.removeprefix("sha256:")[:6]
-        for name, e in real.endpoints.items()
+    assert [line for line in out if line.startswith("[world")] == [
+        f"[world] 0 findings in 2 endpoints of {KOMPISMOLN}"
     ]
     assert not [line for line in out if "@fake" in line]
 
@@ -388,11 +381,18 @@ off = {}
 off = { temperature = 1.0, top_k = 64, top_p = 0.95 }
 """
     )
+    ghost = "sha256:" + "c" * 64
+    with (world / "inventory.toml").open("a") as f:
+        _ = f.write(f'\n[endpoint.ghost]\nengine = "{ghost}"\n')
     main(["init-data", "alice", "--world", str(world), "--data", str(few)])
     out = capsys.readouterr().out.splitlines()
     assert any(
         line.startswith("[archive engine.remote] gemma@api: created") for line in out
     )
+    assert out[-2:] == [
+        f"[world warning] ghost: endpoint.engine_unknown: {ghost} is not in the registry",
+        f"[world] 1 finding in 1 endpoint of {world}",
+    ]
     assert any(
         line.startswith(
             "[archive chunk.sampling] recommended (google/gemma-3-27b-it): created"

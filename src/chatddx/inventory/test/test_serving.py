@@ -13,7 +13,6 @@ import pytest
 from pydantic import ValidationError
 
 from chatddx.conftest import WORLDS, sample_plan
-from chatddx.curation.world import endpoints
 from chatddx.factors.bundle import Registry
 from chatddx.factors.engine import (
     FileDigest,
@@ -29,6 +28,7 @@ from chatddx.inventory import (
     EndpointSpec,
     HostSpec,
     Inventory,
+    check,
     confirm,
     served,
     start_up,
@@ -214,6 +214,65 @@ def test_a_start_up_is_refused_where_the_inventory_or_the_engine_falls_short() -
             _ = f(unknown, reg.get, "qwen@pelle")
 
 
+def test_a_check_finds_what_starting_or_reaching_each_endpoint_would_refuse() -> None:
+    reg = Registry()
+    model, engine = local(reg)
+    _, listening = local(reg, "--port=9000")
+    remote = reg.add(
+        RemoteEngine.model_validate(
+            {"base_url": "https://api.example.org/v1/", "model": "gemma"}
+        )
+    )
+    url = "http://pelle.km:12009/v1/"
+    pelle = HostSpec(models={model: "/m", "sha256:" + "e" * 64: "/old"})
+    inventory = Inventory.model_validate(
+        {
+            "sources": {"sample": {"name": "sample", "path": "/v", "sensitive": False}},
+            "endpoints": {
+                "qwen@pelle": {"engine": engine, "url": url, "host": "pelle"},
+                "again@pelle": {"engine": engine, "url": url, "host": "pelle"},
+                "nowhere@pelle": {"engine": engine, "host": "pelle"},
+                "listening@pelle": {
+                    "engine": listening,
+                    "url": "http://pelle.km:12010/v1/",
+                    "host": "pelle",
+                },
+                "gemma": {"engine": remote, "host": "pelle"},
+                "ghost": {"engine": "sha256:" + "c" * 64},
+                "model": {"engine": model},
+            },
+            "hosts": {"pelle": pelle},
+            "cleared": {"gemma": ["sample"]},
+        }
+    )
+    assert [(f.subject, f.code, f.level) for f in check(inventory, reg.get)] == [
+        ("qwen@pelle", "endpoint.unstartable", "warning"),
+        ("again@pelle", "endpoint.unstartable", "warning"),
+        ("nowhere@pelle", "endpoint.unreachable", "warning"),
+        ("listening@pelle", "endpoint.unstartable", "warning"),
+        ("gemma", "endpoint.remote_host", "warning"),
+        ("ghost", "endpoint.engine_unknown", "warning"),
+        ("model", "endpoint.not_engine", "warning"),
+        ("again@pelle", "endpoint.shared_url", "warning"),
+        ("pelle", "host.unpinned", "info"),
+        ("gemma", "cleared.not_sensitive", "info"),
+    ]
+    messages = {(f.subject, f.code): f.message for f in check(inventory, reg.get)}
+    assert messages[("qwen@pelle", "endpoint.unstartable")] == (
+        f"host 'pelle' doesn't say where it keeps chat template {TEMPLATE}"
+    )
+    assert messages[("again@pelle", "endpoint.shared_url")] == (
+        f"{url} is also the address of endpoint 'qwen@pelle'"
+    )
+    assert messages[("pelle", "host.unpinned")] == (
+        f"it says where it keeps model sha256:{'e' * 64}, which none of its "
+        + "endpoints' engines pins"
+    )
+    assert messages[("ghost", "endpoint.engine_unknown")] == (
+        f"sha256:{'c' * 64} is not in the registry"
+    )
+
+
 def test_a_remote_engine_is_reached_at_its_base_url() -> None:
     reg = Registry()
     remote = reg.add(
@@ -229,7 +288,7 @@ def test_a_remote_engine_is_reached_at_its_base_url() -> None:
         _ = url_of(world(remote), reg.get, "qwen@pelle")
 
 
-def test_the_sample_world_binds_each_fake_engine_the_sample_seeds() -> None:
+def test_the_sample_world_binds_each_fake_engine_the_sample_loads() -> None:
     inventory = Inventory.load(WORLD)
     plan = sample_plan()
     assert sorted(inventory.endpoints) == ["gpt-oss-20b@fake", "qwen3-8b-awq@fake"]
@@ -244,12 +303,7 @@ def test_the_sample_world_binds_each_fake_engine_the_sample_seeds() -> None:
             engine.digest,
         )
         assert startup.closure == "chatddx fake-vllm"
-    assert [
-        line.split(": ")[1].split(" serves ")[1] for line in endpoints(inventory, plan)
-    ] == [
-        f"engine.local {name} {inventory.endpoint(name).engine.removeprefix('sha256:')[:6]}"
-        for name in inventory.endpoints
-    ]
+    assert check(inventory, plan.registry.get) == []
 
 
 def free_port() -> int:

@@ -12,7 +12,6 @@ from chatddx.core import settings
 from chatddx.core.rig import rig
 from chatddx.curation import init, load_cases, plan_factors, wipe
 from chatddx.curation.plan import SAMPLE
-from chatddx.curation.world import endpoints
 from chatddx.curation.write import ARCHIVE
 from chatddx.facts import BUNDLED, Facts
 from chatddx.fake_vllm.server import run
@@ -24,7 +23,7 @@ from chatddx.importers.o11n import (
     imported,
     read,
 )
-from chatddx.inventory import World
+from chatddx.inventory import World, check
 from chatddx.repl.loop import HISTORY, loop
 from chatddx.repl.shell import Repl
 from chatddx.store.migrate import TOP_TIER, migrate, pending
@@ -98,7 +97,13 @@ def _init_data(args: argparse.Namespace) -> None:
             user = people.add(args.user, args.user)
             lines.append(f"[person] {args.user}: added")
         lines += init(conn, plan, cases, source, user, giftbag=args.giftbag)
-    lines += endpoints(world.inventory, plan)
+    findings = check(world.inventory, plan.registry.get)
+    lines += [f"[world {f.level}] {f.subject}: {f.code}: {f.message}" for f in findings]
+    n, m = len(findings), len(world.inventory.endpoints)
+    lines.append(
+        f"[world] {n} finding{'' if n == 1 else 's'} in {m} endpoint"
+        + f"{'' if m == 1 else 's'} of {world.path}"
+    )
     for line in lines:
         print(line)
 

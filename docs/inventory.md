@@ -212,3 +212,20 @@ The runner needs the World the person starting a run meant, since that World dec
   what's over its limit, so nothing fails, but the batching differs from what each run's execution says.
 
 ## Proposed amendments
+- CHANGE "Checks happen when an entry is used": one pass now checks the whole inventory against the engines and
+  returns findings rather than raising: an endpoint whose engine is unknown or isn't an engine
+  (`endpoint.engine_unknown`, `endpoint.not_engine`), that can't be reached or started as `url_of` and `start_up`
+  would refuse (`endpoint.unreachable`, `endpoint.unstartable`), a remote engine's endpoint naming a host
+  (`endpoint.remote_host`), two local engines' endpoints at one address (`endpoint.shared_url`), and, as info, a host
+  location no endpoint's engine pins (`host.unpinned`) and a clearance for a source that isn't sensitive
+  (`cleared.not_sensitive`). init-data prints them; the runner and the engine import don't use it yet
+  (src/chatddx/inventory/check.py, src/chatddx/cli.py:_init_data, src/chatddx/inventory/test/test_serving.py).
+- CHANGE "Reaching an engine": init-data no longer ends with a line per endpoint, but with the check's findings and a
+  count, `[world] 0 findings in 2 endpoints of worlds/sample` (src/chatddx/cli.py:_init_data).
+- CHANGE "Worlds": a World is handed over as its directory, `--world DIR`, and read as its `inventory.toml` and, when
+  present, `factors.toml` and `facts.toml`, facts about models the bundled ones don't know, loaded beside them by
+  init-data and the repl (src/chatddx/inventory/world.py, src/chatddx/cli.py).
+- CHANGE "Where a deployment's World is": decided and done: `CHATDDX_WORLD` names the deployment's World directory and
+  is the default `--world` of init-data and the repl (src/chatddx/core/settings.py:world, `.env-example`). The runner
+  is handed its inventory by the bench, as before.
+- CHANGE "the seeder" throughout: init-data, in `chatddx.curation` (docs/curation.md).

@@ -12,7 +12,6 @@ import pytest
 from chatddx.cli import main
 from chatddx.core.rig import rig
 from chatddx.curation import plan_factors
-from chatddx.curation.world import endpoints as endpoints_of
 from chatddx.facts import Facts
 from chatddx.importers.o11n import (
     REPORT,
@@ -22,7 +21,7 @@ from chatddx.importers.o11n import (
     imported,
     read,
 )
-from chatddx.inventory import Inventory, start_up
+from chatddx.inventory import Inventory, check, start_up
 
 STORE = "/nix/store/" + "s" * 32
 SNAPSHOTS = "/srv/models/huggingface/models--{}/snapshots/{}"
@@ -165,7 +164,7 @@ def test_its_capacity_is_the_server_s_max_num_seqs_however_it_is_spelled() -> No
         assert i.endpoint.max_jobs == jobs
 
 
-def test_the_tables_it_prints_seed_the_engine_it_imported_and_start_it_as_served(
+def test_the_tables_it_prints_plan_the_engine_it_imported_and_start_it_as_served(
     tmp_path: Path,
 ) -> None:
     gpt = server(
@@ -380,10 +379,7 @@ def test_the_command_writes_the_engines_and_their_endpoints_apart(
     sample = tmp_path / "sample.toml"
     _ = sample.write_text('[prompt.case]\nsegments = [{ slot = "vignette" }]\n')
     plan = plan_factors(sample, Facts(), rig(), more=[factors])
-    assert endpoints_of(Inventory.load(world), plan) == [
-        "[world endpoint] qwen3-8b@pelle: http://pelle.km:12009/v1/ serves "
-        + f"engine.local qwen3-8b@pelle {digest.removeprefix('sha256:')[:6]}"
-    ]
+    assert check(Inventory.load(world), plan.registry.get) == []
     with pytest.raises(SystemExit, match="import-engine: no report has a server other"):
         _ = import_engine(tmp_path, str(path), "--server", "other")
     with pytest.raises(SystemExit):

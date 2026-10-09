@@ -286,3 +286,14 @@ Behavior described here that `docs/inventory.md` doesn't state:
 - `DirectorySource.fetch` passes through `OSError`s other than a missing file.
 - The duplicate-name error names the inventory's own file, also when the clash is between two included files.
 - `cleared_for` gives an empty set for an endpoint that doesn't exist.
+
+## Proposed amendments
+- ADD a `world.py` section: `World(path, inventory, factors=(), facts=())`, frozen; `World.load(path)` reads
+  `path / "inventory.toml"` and takes `factors.toml` and `facts.toml` beside it when they're files;
+  `LookupError("<path> is no World: it holds no inventory.toml")` without one (src/chatddx/inventory/world.py).
+- ADD a `check.py` section: `check(inventory, get) -> list[Finding]`, its codes, levels and subjects (the endpoint's,
+  host's or cleared endpoint's name), in the order endpoints, shared addresses, hosts, clearance
+  (src/chatddx/inventory/check.py).
+- CHANGE "Package": the re-exports gain `World` and `check`; `check.py` builds on `serving.py`.
+- CHANGE "Worlds": `test/test_serving.py:test_the_sample_world_binds_each_fake_engine_the_sample_loads` asserts the
+  check finds nothing in the sample World against the sample's plan.
