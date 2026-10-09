@@ -24,6 +24,32 @@ The reworks waiting for `chatddx.seed` (`src/chatddx/seed/`) and its commands, `
   and reports every `from_facts` record as skipped, since no planned engine serves a model.
 - **Worlds live in `worlds/<name>/`**: `worlds/sample/` and `worlds/kompismoln/` (`docs/inventory.md`).
 
+## Decided this run (the user, 2026-10-09)
+Implemented in this order, each its own commit; the doc is `docs/curation.md` once all are in.
+1. **Name: `chatddx.curation`**: the package manages the store's authored content: it loads (`init`), wipes
+   (`wipe`) and repairs (`repair`) it now, and import, export and verification are its business later. `_Seeder`
+   becomes `_Init`; the commands keep their names. `SAMPLE` moves with it. "Seed" stays the sampler's word.
+2. **`--world DIR`**, for init-data and the repl: a World directory, read as `inventory.toml` plus, when present,
+   `factors.toml` (init-data) and `facts.toml` (both, beside the bundled facts). `--vignettes` goes; `--factors` and
+   `--facts` stay for more files.
+3. **`CHATDDX_WORLD`** in `chatddx.core.settings` is the default `--world`; `.env-example` sets `worlds/sample`.
+4. **One inventory check pass now**: the inventory checked against the engines returns findings; init-data prints
+   them and `world.py` goes. No reason to defer but touching a solidified package; docs/inventory.md gets proposed
+   amendments.
+5. **Repairs**: init-data surveys the source and says renamed or changed rather than missing; `chatddx repair-data`
+   applies `Catalog.repair` to the archive's families the survey finds renamed or changed, `--dry-run` to list them.
+6. **Tags**: a re-run withdraws a tag the archive gave that the data no longer lists; tags people gave stay.
+7. **Leftovers**: archive threads and families the data set no longer names are reported, not deleted. A garbage
+   collection as the admin that deletes everything unreferenced came up: an open issue for the doc.
+8. **Chunk languages**: a text-bearing record takes `language`, and `factors.toml` may set a top-level default; both
+   are written on the digest (`Catalog.language`). The planner checks them. In the sample only the six outputs with
+   guidance and `toolset.web` carry text (`prompt.case` is slots only, `output.raw` has none).
+9. **Cases by language**: `cases-<lang>.toml`, whose language is its cases' families'; a case's own `language` key
+   goes (notes keep theirs); every `cases-*.toml` is read, and an id in two files is refused. The sample is
+   `cases-en.toml` (79) and `cases-sv.toml` (20).
+- Done before these: lint checks an expectation schema once per lint, and the mechanics tests seed three cases
+  (02532fc).
+
 ## The name
 "Seed" is already the sampler's word: a trial's `seeds`, a replicate is "one seed of a trial", `suggest_seeds`,
 `render(…, seed=)`, a judge's seeds, and `docs/factors.md` ("Greedy sampling and seeds"). A package that "seeds the
