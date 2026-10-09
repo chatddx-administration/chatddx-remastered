@@ -1,10 +1,10 @@
 from rich.table import Table
 from rich.text import Text
 
+from chatddx.bench import Graded
 from chatddx.factors.select import reaches
 from chatddx.ledger import RunStarted
 
-from .bench import Graded
 from .render import LABEL, REFUSED, VALID, show_scores, show_summary, show_table
 from .reviewing import said
 from .running import held
@@ -40,7 +40,7 @@ def score(repl: Repl, prefix: str | None = None) -> None:
         with held():
             graded = bench.score(started, unscored)
         _scored(repl, started, graded)
-    elif not bench.reads.scorers(started):
+    elif not bench.scorers_for(started):
         repl.console.print("no scorer applies to it", style=LABEL)
     else:
         repl.console.print("scored already, as the scorings are now", style=LABEL)
@@ -57,8 +57,8 @@ def _scored(repl: Repl, started: RunStarted, graded: list[Graded]) -> None:
 
 
 def scorers(repl: Repl) -> None:
-    bench, cell = repl.bench, repl.cell
-    schema = None if cell.configuration is None else bench.skeleton(cell).output_schema
+    bench, variation = repl.bench, repl.cell.variation
+    schema = None if variation is None else bench.skeleton(variation).output_schema
     table = Table(box=None, header_style="bold")
 
     for column in ("scorer", "view", "metric", "reads", "held to", "owner", "the cell"):
@@ -72,7 +72,7 @@ def scorers(repl: Repl) -> None:
             if view.split is not None:
                 reads += f", {view.split}"
             metric = view.metric if view.judge is None else f"{view.metric}, judged"
-            if cell.configuration is None:
+            if variation is None:
                 offered = Text("—", style=LABEL)
             elif reaches(schema, view.output):
                 offered = Text("offers it", style=VALID)

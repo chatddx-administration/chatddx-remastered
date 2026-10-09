@@ -1,10 +1,10 @@
 import pytest
 from pydantic import JsonValue
 
+from chatddx.bench import Bench
 from chatddx.catalog import Subject
 from chatddx.factors.base import resolve
 from chatddx.factors.scoring import Expectation
-from chatddx.repl.bench import Bench
 from chatddx.repl.commands import complete
 from chatddx.repl.shell import Repl
 from chatddx.repl.test.sample import FREE_TEXT, QWEN, Say
@@ -55,7 +55,7 @@ def test_score_scores_the_runs_a_changed_expectation_leaves_and_sums_them_up(
 @pytest.mark.usefixtures("fake")
 def test_score_run_says_what_came_of_one_run(bench: Bench, say: Say):
     _ = say(f"cell {FREE_TEXT} {QWEN}", "run Dutchfall11w")
-    run = str(bench.reads.runs()[0].run)[:8]
+    run = str(bench.runs()[0].run)[:8]
 
     written = say(f"score {run}")
 
@@ -73,7 +73,7 @@ def test_score_run_says_what_came_of_one_run(bench: Bench, say: Say):
 @pytest.mark.usefixtures("fake")
 def test_the_runs_left_to_score_complete(repl: Repl, bench: Bench, say: Say):
     _ = say(f"cell {FREE_TEXT} {QWEN}", "run Dutchfall11w")
-    run = str(bench.reads.runs()[0].run)[:8]
+    run = str(bench.runs()[0].run)[:8]
     assert repl.completions()["score:run"] == []
 
     retarget(bench, "Dutchfall11w", {"diagnosis": {"pattern": "fake & diagnosis"}})

@@ -4,10 +4,10 @@ from functools import cache
 from rich.table import Table
 from rich.text import Text
 
+from chatddx.bench import PARTS
 from chatddx.catalog.titles import short
 from chatddx.inventory import url_of
 
-from .bench import PARTS
 from .render import LABEL, REFUSED, plural
 from .shell import Repl
 

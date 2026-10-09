@@ -8,6 +8,7 @@ from rich.live import Live
 from rich.table import Table
 from rich.text import Text
 
+from chatddx.bench import Graded
 from chatddx.catalog.titles import short
 from chatddx.factors.base import Finding
 from chatddx.factors.request import Skeleton, tool_calls
@@ -16,8 +17,6 @@ from chatddx.runner.run import Event, ItemEnded, Noted, Streamed, ToolRan
 from chatddx.runner.send import STOPPED, Delta
 from chatddx.scorers.aggregate import mean, stderr
 from chatddx.scorers.answer import Answer, read
-
-from .bench import Graded
 
 LABEL = "dim"
 REFUSED = "red"

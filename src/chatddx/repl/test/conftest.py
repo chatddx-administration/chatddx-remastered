@@ -6,37 +6,18 @@ import psycopg
 import pytest
 from rich.console import Console
 
-from chatddx.conftest import connect, create_database, drop_database, sample_plan
+from chatddx.bench import Bench
+from chatddx.conftest import WORLD, create_database, drop_database
 from chatddx.core import settings
 from chatddx.facts import BUNDLED, Facts
 from chatddx.fake_vllm.served import Served
 from chatddx.fake_vllm.server import serving
 from chatddx.inventory import Inventory, start_up
-from chatddx.repl.bench import Bench
 from chatddx.repl.commands import handle
 from chatddx.repl.shell import Repl
-from chatddx.repl.test.sample import QWEN, WORLD, Say
-from chatddx.seed import load_cases, seed
-from chatddx.seed.plan import SAMPLE
+from chatddx.repl.test.sample import QWEN, Say
 from chatddx.store import People
 from chatddx.store.store import Connection
-
-
-# The sample as init-data lands it from the sample World: the archive's threads and
-# families, shared with alice, and her giftbag of forks. Seeded once, and copied for
-# each test.
-@pytest.fixture(scope="session")
-def seeded(migrated: str) -> Iterator[str]:
-    name = create_database(template=migrated)
-    try:
-        with connect(name) as conn:
-            alice = People(conn).add("alice", "Alice")
-            cases = load_cases(SAMPLE / "cases.toml")
-            source = Inventory.load(WORLD).source("sample")
-            _ = seed(conn, sample_plan(), cases, source, alice, giftbag=True)
-        yield name
-    finally:
-        drop_database(name)
 
 
 @pytest.fixture

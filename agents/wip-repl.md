@@ -16,8 +16,8 @@ The shell is built: `chatddx repl` chooses and inspects (4a), runs and scores (4
    proposed in phase 6.
 2. **The takes made while building** (in "Built: 4a", "Built: 4b" and "Built: 4c") wait for the user's word, and so
    do D5–D8 and which scorers apply to a run (see "3. Reads for a person").
-3. **The bench as a module of its own** (the user's remark; "Left from 4a"): not acted on.
-4. **Left from 4a**: an unsaved cell's language is unknown; the seeded sample fixture is defined twice.
+3. **The bench** is a module of its own now, `src/chatddx/bench/`; what it is waits on `agents/wip-bench.md`.
+4. **Left from 4a**: an unsaved variation's language is unknown.
 5. **Left from 4b**: a structured answer cut short is unread, as nothing salvages it; no word on reasoning that wasn't
    heeded; two tool calls in one response run together on one line.
 6. **Left from 4c**: an unsaved cell's runs are titled by their whole recipe; only an item's first request is rendered
@@ -166,22 +166,20 @@ count. Still a take.
 |---|---|---|
 | identity (`core/models.py:IdentityModel`) | `identity.person`, `People.find(login)` | `init-data` adds it |
 | configuration, 6 slices (`repo/entities/configuration`) | skeleton thread; parts from `Catalog.recipe` | model-dependent chunks are per model: `plan (Qwen/Qwen3-8B-AWQ)` |
-| `set` a slice (`bench/cell.py:Cell.set`) | swap a recipe part, then `compile_request` to an unsaved skeleton | shown by `Catalog.title_of` |
-| `save` (`bench/bench.py:Bench.save`) | fork of the skeleton thread, or a new thread, plus name and owner entries | no "yours now too": digests aren't owned |
-| "save it as your own first" (`NotOwn`) | dropped: any digest can be run without a thread | |
 | stack (`repo/entities/stack`) | engine plus World endpoint (`url_of`, `confirm`) | D6 |
 | resolution and refusals (`runtime/resolution.py`) | the compiled skeleton, plus `factors.lint` and `facts.lint` on a provisional trial | warnings, never refusals (`docs/chatddx.md`, "Compromises") |
 | case, tags (`repo/entities/case`) | family (name, tags, language), its case, the vignette from the source | |
 | targets | expectation thread per case | D8 |
-| trial: cell × case × seed (`bench.py:Trial`) | `Trial`: skeleton, engine, cases, cleanup, seeds | `run` is 1 case and 1 seed; `batch` is n cases and 1 seed |
 | run, conversation, messages (`history/`) | `RunStarted`, `RunItem` (`Call`, `Turn`s), `RunFinished` | requests kept only as fingerprints |
 | client and build | `RunStarted.rig` (`core/rig.py:rig`) | |
 | `Run` on pydantic-ai (`runtime/run.py`) | new `chatddx.runner` | D2, D4 |
-| `Sending`, `Outcome` (`bench/sending.py`, `outcome.py`) | runner events, `Call.error` | |
 | scorer, one view each (`scoring/score.py`) | scorer with views and labels (`Catalog.labels`), one per output shape | batch columns become view labels |
 | score (`ScoreModel`) | `ScoreStarted`, `ScoreItem`, `ScoreFinished` under a `Scoring` | built per run (phase 2) |
 | mean and stderr (`scoring/metrics.py`) | `scorers/aggregate.py` | display only: analysis, not a score |
 | per-identity secrets | endpoint `credential`, only a name | refused for now (see "Left out") |
+
+The old `bench/` (the cell, `save`, `NotOwn`, `Ready`, `Trial`, `Sending`, `Outcome`) maps in `agents/wip-bench.md`,
+"The old bench".
 
 ## Commands
 | command | backed by | what changes |
@@ -273,6 +271,9 @@ Built, the `Bench` with the shell in 4a (see "4. The shell"). What was built her
 - tests in `src/chatddx/catalog/test/` and `src/chatddx/store/test/test_reads.py`, on the sample as init-data lands
   it with a giftbag.
 
+`Reads` and its tests have since moved to `src/chatddx/bench/`, without the runs still to score, and `Reads` was
+folded into `Bench` (`agents/wip-bench.md`, "Phase 2").
+
 "Applies" is the plan's rule: every view of the scorer reaches the run's output schema. A view that picks the whole
 answer reaches any schema, so the sample's `free-text` and `raw` scorers apply to every run; the pattern scorer then
 reads a structured answer as its JSON text. Narrowing that, say to scorers written for the run's output shape, would
@@ -286,8 +287,7 @@ This closes `docs/store.md`'s known gap "Runs and scores can't be found". The st
 - the runs of a trial (for "run N of trial X") and the scores of a run;
 - the runs whose trial reaches a digest, through the factor reference rows (for `show KIND NAME`).
 
-A person-scoped layer, the old `Bench`'s role, goes in `src/chatddx/repl/bench.py`. It holds the cell, names,
-completions and lookups, and nothing in it is UI. Tests go in `store/test/` and `repl/test/`.
+A person-scoped layer, the old `Bench`'s role, is planned in `agents/wip-bench.md`.
 
 ### 4. The shell: `src/chatddx/repl/`
 - **Entry**: `chatddx repl LOGIN --world FILE [--history PATH]`, a subcommand in `src/chatddx/cli.py`. `--world`
@@ -311,11 +311,8 @@ completions and lookups, and nothing in it is UI. Tests go in `store/test/` and 
 #### Built: 4a
 `chatddx repl LOGIN --world FILE [--facts PATH …] [--history PATH]` (`src/chatddx/cli.py`) connects as `DB_USER` in
 autocommit mode, as the runner needs (R6), and refuses a login with no person. `rich` is a dependency now (D4).
-- **`bench.py`**: `Cell`, the configuration's head edit and recipe with the parts set over it, and the endpoint with
-  its engine; `Bench(conn, person, inventory, facts)`, the person's lookups (threads by name, families and their
-  cases, the expectation they read), the cell's skeleton (the stored head, or `compile_request` on the recipe with
-  the parts set), the provisional trial's lints, each scorer view's reach and coverage, and `save`. It imports
-  nothing from the shell, and the shell holds a `Bench` rather than being one, unlike the old `Repl(Bench)`.
+- **The bench**, `Cell` and `Bench`, then `bench.py` here, now `src/chatddx/bench/` (`agents/wip-bench.md`, "What
+  the bench is now").
 - **`shell.py`** (`Repl`: the cell, the seed, the prompt, the completion cache), **`commands.py`**, **`render.py`**
   (styles and helpers only; the streamed transcript comes with 4b), **`choosing.py`**, **`listing.py`**,
   **`inspecting.py`**, **`scoring.py`** (`scorers`), **`running.py`** (`seed`) and **`loop.py`** (readline, history,
@@ -356,14 +353,12 @@ Takes made while building, all still open:
   in `show` (D3).
 
 Left from 4a:
-- **The bench as a module of its own** (the user's remark). In the old project the bench was a layer between the
-  edges (portal, API, repl) and the data model. Ported, it may deserve its own namespace and an
-  `agents/wip-bench.md`. Not acted on; `bench.py` imports nothing from the shell so that the move stays cheap.
+- **The bench as a module of its own** (the user's remark): done, `agents/wip-bench.md`, "Phase 0".
 - **An unsaved cell's language is unknown.** `Catalog.language_of` reads the store, so after `set` the request's
   language is `language.unknown` even where the recipe's chunks have one. The sample's chunks have none anyway (G18).
 - **Runs of a scorer.** Done in 4c: `show scorer NAME` counts the runs it scored.
-- **The seeded sample fixture** is now defined twice: module-scoped in `src/chatddx/store/test/test_reads.py`,
-  session-scoped in `src/chatddx/repl/test/conftest.py`. It could move to `src/chatddx/conftest.py`.
+- **The seeded sample fixture**: done, defined once as `src/chatddx/conftest.py:seeded` (`agents/wip-bench.md`,
+  "Phase 2", step 5).
 
 #### Built: 4b
 `run CASE [SEED]` and `batch TAG...` (`src/chatddx/repl/running.py`), on the runner and the scoring pass through
@@ -437,10 +432,8 @@ answer and its scores is shared by all of them, in `render.py`.
   alice's own expectation thread.
 
 Takes made while building, all still open:
-- **What is left to score is worked out per run** (`Bench.unscored`, from `Reads.scorers` and `Reads.scoring`), not
-  per scorer through `Reads.outstanding`: `score RUN` needs a run's own, and a run whose case has several
-  expectations to choose from is skipped for that scorer rather than stopping the listing. `Reads.outstanding` is
-  unused now; it could go, or `unscored` could move to `Reads`.
+- **What is left to score is worked out per run** (`Bench.unscored`); `Reads.outstanding` is gone
+  (`agents/wip-bench.md`, "Phase 2", step 3).
 - **The latest score per scorer** is what `runs`, `replay` and `show` read. Older ones stay in the ledger, and
   `scores_of` lists every score of a run, whoever gave it.
 - **The runs list shows means** per view, so a batch fits a line per scorer.

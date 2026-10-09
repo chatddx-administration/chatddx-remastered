@@ -5,6 +5,8 @@ from dataclasses import dataclass
 import psycopg
 from rich.table import Table
 
+from chatddx.bench import NotFound
+
 from . import choosing, inspecting, listing, reviewing, running, scoring
 from .shell import Repl
 
@@ -150,7 +152,7 @@ def handle(repl: Repl, line: str) -> bool:
     try:
         command.run(repl, *args)
     except (LookupError, ValueError) as e:
-        repl.error(str(e))
+        repl.error(_said(e))
     except psycopg.Error as e:
         said = str(e).strip()
         repl.error(
@@ -158,6 +160,13 @@ def handle(repl: Repl, line: str) -> bool:
         )
 
     return True
+
+
+# A name made per model names nothing alone until the cell's endpoint picks the model.
+def _said(e: LookupError | ValueError) -> str:
+    if isinstance(e, NotFound) and e.per_model:
+        return f"{e}, picked by the endpoint in the cell"
+    return str(e)
 
 
 # The next word of each name that starts with the words typed so far.

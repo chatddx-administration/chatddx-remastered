@@ -1,12 +1,44 @@
+import secrets
 from collections.abc import Iterable
+from dataclasses import dataclass, replace
 
 from rich.console import Console
 from rich.text import Text
 
+from chatddx.bench import KINDS, OPTIONAL, PARTS, Bench, TriedVariation
 from chatddx.factors.base import Finding
 
-from .bench import KINDS, NONE, OPTIONAL, PARTS, Bench, Cell, drawn_seed
 from .render import REFUSED, finding
+
+# What `set` takes an optional part out with.
+NONE = "none"
+
+# A drawn seed is short, so the prompt stays readable; any seed a trial takes can be held.
+SEEDS = 100_000
+MAX_SEED = 2**31 - 1
+
+
+def drawn_seed() -> int:
+    return secrets.randbelow(SEEDS)
+
+
+# What the repl runs: a configuration, or a variation of it being tried, at an endpoint,
+# with the engine the endpoint serves. Either side can be missing.
+@dataclass(frozen=True)
+class Cell:
+    variation: TriedVariation | None = None
+    endpoint: str | None = None
+    engine: str | None = None
+
+    def trying(self, variation: TriedVariation) -> "Cell":
+        return replace(self, variation=variation)
+
+    def on(self, endpoint: str, engine: str) -> "Cell":
+        return replace(self, endpoint=endpoint, engine=engine)
+
+    @property
+    def label(self) -> str:
+        return "" if self.variation is None else self.variation.label
 
 
 class Repl:
@@ -21,13 +53,13 @@ class Repl:
     def prompt(self) -> str:
         cell = self.cell
         endpoint = f"×{cell.endpoint}" if cell.endpoint else ""
-        held = f" {cell.label}{endpoint}" if cell.configuration or cell.endpoint else ""
+        held = f" {cell.label}{endpoint}" if cell.variation or cell.endpoint else ""
         return f"{self.bench.person.login}{held} #{self.seed}> "
 
     # The names each word of a command can be: per-model names complete by their
     # name alone too, since the cell's endpoint picks the model. Runs come fresh.
     def completions(self) -> dict[str, list[str]]:
-        runs = self.bench.reads.runs()[:20]
+        runs = self.bench.runs()[:20]
         return self._names() | {
             "replay:run": [str(r.run)[:8] for r in runs],
             "score:run": [str(r.run)[:8] for r, _ in self.bench.outstanding()],
@@ -70,8 +102,11 @@ class Repl:
     # The cell as it changed, and what the lints say of its pair.
     def say_changed(self) -> None:
         self.say_cell()
-        if self.cell.configuration is not None and self.cell.engine is not None:
-            self.say_findings(self.bench.findings(self.cell, self.seed))
+        cell = self.cell
+        if cell.variation is not None and cell.engine is not None:
+            self.say_findings(
+                self.bench.findings(cell.variation, cell.engine, self.seed)
+            )
 
     def say_findings(self, findings: Iterable[Finding]) -> None:
         for f in findings:

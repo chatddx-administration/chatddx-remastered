@@ -3,9 +3,10 @@ from pathlib import Path
 
 import pytest
 
+from chatddx.bench import Bench
+from chatddx.conftest import WORLD
 from chatddx.inventory import DirectorySource, Inventory
-from chatddx.repl.bench import Bench, Cell
-from chatddx.repl.test.sample import FREE_TEXT, PLAN, QWEN, WORLD, Say
+from chatddx.repl.test.sample import FREE_TEXT, PLAN, QWEN, Say
 
 
 def rows(written: str) -> list[str]:
@@ -69,7 +70,7 @@ def test_replay_shows_a_batch_again_by_its_lines(say: Say):
 @pytest.mark.usefixtures("fake")
 def test_replay_takes_a_run_by_the_start_of_its_id(bench: Bench, say: Say):
     _ = say(f"cell {FREE_TEXT} {QWEN}", "run Dutchfall11w", "run casesfromedn1")
-    first = bench.reads.runs()[-1]
+    first = bench.runs()[-1]
 
     assert "× Dutchfall11w (seed 7)" in say(f"replay {str(first.run)[:8]}")
     assert "no run of yours starts with 'zzzz'" in say("replay zzzz")
@@ -96,8 +97,8 @@ def test_replay_says_when_the_request_would_render_otherwise_now(
 
 @pytest.mark.usefixtures("fake")
 def test_an_unfinished_run_is_listed_so_and_left_unscored(bench: Bench, say: Say):
-    cell = bench.configuration(FREE_TEXT, Cell().on(QWEN, bench.endpoint(QWEN)))
-    running = bench.start(cell, [bench.family("Dutchfall11w").case], 7)
+    variation = bench.configuration(FREE_TEXT, bench.endpoint(QWEN))
+    running = bench.start(variation, QWEN, [bench.family("Dutchfall11w").case], 7)
     running.send()
 
     [row] = rows(say("runs"))

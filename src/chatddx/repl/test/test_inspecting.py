@@ -1,3 +1,5 @@
+from chatddx.bench import Bench
+from chatddx.bench.test.sample import another_expectation
 from chatddx.repl.test.sample import FREE_TEXT, GPT_OSS, PLAN, QWEN, Say
 
 INTENTS = [
@@ -116,6 +118,16 @@ def test_show_case_says_its_vignette_expectation_and_tags(say: Say):
     assert "en" in line_of(written, "language")
     assert '"author": "Olof"' in written
     assert "no runs of yours with this case" in written
+
+
+def test_show_case_says_when_scoring_has_expectations_to_choose_from(
+    bench: Bench, say: Say
+):
+    case = bench.family("Dutchfall11w").case
+    _ = another_expectation(bench, case, {"diagnosis": {"pattern": "sepsis"}})
+    written = say("show case Dutchfall11w")
+
+    assert "has expectations to choose from" in line_of(written, "expectation")
 
 
 def test_show_without_a_name_shows_the_cell_s(say: Say):

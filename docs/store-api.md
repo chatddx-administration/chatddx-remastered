@@ -18,7 +18,6 @@ Paths are relative to `src/chatddx/store/` unless they start with `src/`, `docs/
 - [Conventions](#conventions)
 - [store.py](#storepy): `Store`, components and ledger records
 - [people.py](#peoplepy): `People`, passwords and sessions
-- [reads.py](#readspy): `Reads`, what one person sees
 - [catalog.py](#catalogpy): `Rows`
 - [migrate.py](#migratepy): migrations and tiers
 - [Roles and connections](#roles-and-connections)
@@ -31,7 +30,7 @@ Paths are relative to `src/chatddx/store/` unless they start with `src/`, `docs/
 
 ## Package
 
-`chatddx.store` re-exports `TOP_TIER`, `Catalog`, `People`, `Reads`, `Store` and `migrate`. `Connection` (in
+`chatddx.store` re-exports `TOP_TIER`, `Catalog`, `People`, `Store` and `migrate`. `Connection` (in
 `store.py`), `Rows`, `pending`, `migrations`, `Migration` and `MIGRATIONS` are imported by path.
 
 | Module | Builds on |
@@ -40,7 +39,6 @@ Paths are relative to `src/chatddx/store/` unless they start with `src/`, `docs/
 | `migrate.py` | psycopg only |
 | `people.py` | `store.py`, `chatddx.core.settings`, `chatddx.identity` |
 | `catalog.py` | `store.py`, `chatddx.catalog`, `chatddx.factors.{base,cases,request,scoring}` |
-| `reads.py` | `catalog.py`, `people.py`, `store.py`, `chatddx.catalog`, `chatddx.factors.{base,request,scoring,select,trial}`, `chatddx.identity`, `chatddx.ledger` |
 
 The package holds chatddx's SQL. It uses psycopg 3, synchronously, and no ORM.
 
@@ -64,7 +62,7 @@ in whatever order Postgres returns.
 
 | Exception | When |
 | --- | --- |
-| `LookupError` | A run, score or person that isn't stored; a name or prefix in `Reads` that matches none or several; `Catalog`'s lookups (`docs/catalog-api.md`). |
+| `LookupError` | A run, score or person that isn't stored; `Catalog`'s lookups (`docs/catalog-api.md`). |
 | `chatddx.factors.base.StructuralError` (a `ValueError`) | A digest that isn't stored (`Store.get`, `Store.load`, and `resolve` through them); stored bytes that don't match their digest or can't be read by this version; a log whose started row isn't stored; `Store.add` of a closure that doesn't check (`Registry.closure`, `Registry.check`). |
 | `pydantic.ValidationError` | A record that doesn't parse, or a log that breaks its rules (`Run`, `Score`); `People.add` with a login that isn't `chatddx.identity.LOGIN`. |
 | `TypeError` | `Store.append` of a record type that has no table. |
@@ -135,38 +133,6 @@ does.
 | `purge_sessions() -> int` | Deletes the expired sessions and returns how many. |
 
 `settings.SESSION_TTL` is 12 hours.
-
-## reads.py
-
-### `class Reads`
-`Reads(conn: Connection, person: Person)`: what one person sees, through `Catalog`, `Store` and `People`.
-
-| Method | Returns / raises |
-| --- | --- |
-| `threads(kind: str) -> list[tuple[Edit, About]]` | `Catalog.visible(kind, person.id)`: the heads of the live threads of `kind` the person owns or collaborates on, in thread id order. |
-| `thread(kind: str, name: str) -> Edit` | See below. |
-| `families() -> list[tuple[int, About]]` | `Catalog.visible_families(person.id)`. |
-| `runs() -> list[RunStarted]` | The runs whose entries ever named the person as owner or collaborator, and whose `About` now has the person as owner and isn't deleted; newest first. A collaborator on a run doesn't see it. |
-| `run(prefix: str) -> RunStarted` | The one run of `runs()` whose id, as `str(UUID)`, starts with `prefix`. `LookupError("no run of yours starts with '<prefix>'")` or `LookupError("<n> runs of yours start with '<prefix>'")`. |
-| `reaching(digest: str) -> list[RunStarted]` | The runs of `runs()` whose trial's closure holds `digest` (`Store.reaching(digest, "trial")`), newest first. |
-| `scorers(run: RunStarted) -> list[tuple[Edit, About]]` | The visible scorer threads whose head's every view has an `output` selector that reaches the run's skeleton's `output_schema` (`chatddx.factors.select.reaches`), the check `check_score` warns about as `view.unreachable`. |
-| `scoring(run: RunStarted, scorer: str) -> Scoring \| None` | The scoring the run would be scored under now: `Scoring(scorer, expectations)`, with, for each of the trial's cases in order, the expectation `Catalog.expectation_for(case, person.id, <the scorer's expectation_schema>)` picks, cases without one left out. `None` when no case has one. `LookupError` when the person has several expectations to choose from for a case. Nothing is stored. |
-| `outstanding(scorer: str) -> list[RunStarted]` | The person's finished runs that the scorer applies to (as `scorers`) and that have no score under the scoring `scoring(run, scorer)` builds now, newest first. A run whose expectations changed after it was scored is outstanding again. Runs without a scoring are left out. |
-
-#### `thread(kind, name)`
-Among the threads of `threads(kind)` whose name is exactly `name`:
-1. those the person owns: exactly one is returned, several raise;
-2. when they own none, all of them: exactly one is returned, several raise.
-
-When no thread has the whole name and it holds `/`, it is read as `<login>/<rest>`, and when a person has that
-login, step 2 runs over their threads among `threads(kind)` named `<rest>`. A whole name wins over `OWNER/NAME`,
-since names may hold a slash, as `plan (Qwen/Qwen3-8B-AWQ)` does.
-
-Several raise `LookupError("<kind> '<name>' names threads <ids>; name one as OWNER/NAME")`; none
-`LookupError("no <kind> named '<name>'")`.
-
-`scorers`, `scoring` and `outstanding` resolve the run's trial, its skeleton and the scorers through `Store.get`
-(`StructuralError` when one isn't stored or is of another kind).
 
 ## catalog.py
 
@@ -343,7 +309,6 @@ Behavior described here that `docs/store.md` doesn't state:
 - `Store.run` and `Store.score` return items and canary calls in whatever order Postgres returns them.
 - `Store.reaching` includes the digest itself when it is of the kind asked for.
 - `Store.compilations` isn't listed in `docs/store.md`.
-- `Reads.runs` shows only the runs the person owns now; collaborating on a run shows nothing.
 - `People.update` with `roles=[]` clears the roles, and reactivating a person restores no sessions.
 - `People` reads roles back as `Role`, so a role the tier-2 CHECK would refuse raises `ValueError` below tier 2.
 - `public.migration` is created by `migrate`, not by a migration file, and is readable only by the admin.

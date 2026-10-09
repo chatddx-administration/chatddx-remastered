@@ -1,13 +1,13 @@
 import pytest
 
+from chatddx.bench import Bench
 from chatddx.catalog import Entry, EntryField, Subject
 from chatddx.factors.base import resolve
 from chatddx.factors.request import Compilation, Reasoning, Skeleton
 from chatddx.identity import Person
 from chatddx.inventory import Inventory
-from chatddx.repl.bench import Bench
 from chatddx.repl.shell import Repl
-from chatddx.repl.test.sample import FREE_TEXT, GPT_OSS, PLAN, QWEN, Say
+from chatddx.repl.test.sample import FREE_TEXT, GPT_OSS, PLAN, QWEN, Say, tried
 from chatddx.store import Catalog, People
 from chatddx.store.store import Connection
 
@@ -51,13 +51,13 @@ def test_a_per_model_configuration_is_picked_by_the_endpoint(repl: Repl, say: Sa
         f"no configuration 'plan' for alice; per model: {PLAN}, "
         + "plan (openai/gpt-oss-20b), picked by the endpoint in the cell"
     ) in written
-    assert repl.cell.configuration is None
+    assert repl.cell.variation is None
 
     _ = say(f"on {QWEN}", "use plan")
-    assert repl.cell.name == PLAN
+    assert tried(repl).name == PLAN
 
     _ = say(f"cell plan {GPT_OSS}")
-    assert repl.cell.name == "plan (openai/gpt-oss-20b)"
+    assert tried(repl).name == "plan (openai/gpt-oss-20b)"
 
 
 def test_set_puts_another_chunk_in_the_cell(repl: Repl, bench: Bench, say: Say):
@@ -65,7 +65,7 @@ def test_set_puts_another_chunk_in_the_cell(repl: Repl, bench: Bench, say: Say):
 
     assert repl.prompt == f"alice {FREE_TEXT}+reasoning=off×{QWEN} #7> "
     assert f"cell: {FREE_TEXT}+reasoning=off × {QWEN}" in written
-    body = bench.skeleton(repl.cell).body
+    body = bench.skeleton(tried(repl)).body
     assert body["chat_template_kwargs"] == {"enable_thinking": False}
 
 
@@ -83,7 +83,7 @@ def test_none_takes_an_optional_part_out(repl: Repl, bench: Bench, say: Say):
 
     assert repl.prompt == f"alice {web}+toolset=none×{QWEN} #7> "
     assert f"none (set; {web} has web)" in written
-    assert "tools" not in bench.skeleton(repl.cell).body
+    assert "tools" not in bench.skeleton(tried(repl)).body
 
     _ = say("set toolset web")
     assert repl.prompt == f"alice {web}×{QWEN} #7> "
@@ -118,7 +118,7 @@ def test_save_keeps_the_cell_as_a_configuration_of_one_s_own(
     repl: Repl, bench: Bench, conn: Connection, say: Say
 ):
     _ = say(f"cell {FREE_TEXT} {QWEN}")
-    origin = repl.cell.configuration
+    origin = tried(repl).configuration
     written = say("set reasoning off", "save quiet")
 
     assert "saved as quiet: created" in written
@@ -170,12 +170,10 @@ def test_one_s_own_configuration_shadows_the_archive_s(
     repl: Repl, bench: Bench, say: Say
 ):
     _ = say(f"use {PLAN}")
-    assert repl.cell.configuration is not None
-    assert bench.about(repl.cell.configuration.thread).owner == bench.person.id
+    assert bench.about(tried(repl).configuration.thread).owner == bench.person.id
 
     _ = say(f"use archive/{PLAN}")
-    assert repl.cell.configuration is not None
-    assert bench.about(repl.cell.configuration.thread).owner != bench.person.id
+    assert bench.about(tried(repl).configuration.thread).owner != bench.person.id
     assert repl.prompt == f"alice archive/{PLAN} #7> "
 
 
@@ -185,11 +183,11 @@ def test_another_s_configuration_is_found_where_it_is_shared(
     bobs(conn, bob, bench.person, shared=True)
     written = say("use bob/bobs-plan", f"on {QWEN}", "save my-plan")
 
-    assert repl.cell.name == "my-plan"
+    assert tried(repl).name == "my-plan"
     assert "saved as my-plan: created" in written
 
     _ = say("use bobs-plan")
-    assert repl.cell.name == "bobs-plan"
+    assert tried(repl).name == "bobs-plan"
 
 
 def test_another_s_configuration_isn_t_found_where_it_isn_t_shared(

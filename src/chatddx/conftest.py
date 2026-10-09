@@ -10,12 +10,14 @@ from psycopg import sql
 from chatddx.core import settings
 from chatddx.core.rig import rig
 from chatddx.facts import BUNDLED, Facts
-from chatddx.seed import Plan, plan_factors
+from chatddx.inventory import Inventory
+from chatddx.seed import Plan, load_cases, plan_factors, seed
 from chatddx.seed.plan import SAMPLE
-from chatddx.store import migrate
+from chatddx.store import People, migrate
 from chatddx.store.store import Connection
 
 WORLDS = settings.PROJECT_ROOT / "worlds"
+WORLD = WORLDS / "sample" / "inventory.toml"
 
 
 # The sample data's per-model records are planned for the models its World's engines serve.
@@ -72,6 +74,23 @@ def migrated() -> Iterator[str]:
     try:
         with connect(name, admin=True) as conn:
             _ = migrate(conn)
+        yield name
+    finally:
+        drop_database(name)
+
+
+# The sample as init-data lands it from the sample World: the archive's threads and
+# families, shared with alice, and her giftbag of forks. Seeded once, and copied for
+# each test by the packages whose `db` is made from it.
+@pytest.fixture(scope="session")
+def seeded(migrated: str) -> Iterator[str]:
+    name = create_database(template=migrated)
+    try:
+        with connect(name) as conn:
+            alice = People(conn).add("alice", "Alice")
+            cases = load_cases(SAMPLE / "cases.toml")
+            source = Inventory.load(WORLD).source("sample")
+            _ = seed(conn, sample_plan(), cases, source, alice, giftbag=True)
         yield name
     finally:
         drop_database(name)

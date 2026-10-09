@@ -32,16 +32,16 @@ Functions are called through their module (`threads.behind(rows, thread)`); `mod
 
 | Module | Builds on |
 | --- | --- |
-| `model.py` | `chatddx.factors.{base,cases,scoring}` |
+| `model.py` | `chatddx.factors.{base,cases,scoring}`, `chatddx.identity` |
 | `read.py` | `model.py`, `chatddx.factors.{base,cases,request}` |
 | `families.py` | `model.py`, `read.py`, `chatddx.factors.{base,bundle,cases,scoring}` |
 | `threads.py` | `families.py`, `model.py`, `read.py`, `chatddx.factors.{base,request,scoring}` |
 | `language.py` | `families.py`, `model.py`, `read.py`, `chatddx.factors.{base,request,scoring,trial}` |
 | `titles.py` | `families.py`, `language.py`, `model.py`, `read.py`, `threads.py`, `chatddx.factors.{base,cases,engine,request,scoring,trial}` |
 
-The package imports no chatddx package but `chatddx.factors`, no third-party package but pydantic, and holds no SQL.
-It reads through a `Reader` and writes nothing; `src/chatddx/store/catalog.py:Catalog` writes what it decides (see
-"The store's Catalog").
+The package imports no chatddx package but `chatddx.factors` and `chatddx.identity`, no third-party package but
+pydantic, and holds no SQL. It reads through a `Reader` and writes nothing; `src/chatddx/store/catalog.py:Catalog`
+writes what it decides (see "The store's Catalog").
 
 ## Conventions
 
@@ -736,3 +736,5 @@ amendments there.
 - The tier-2 binding check accepts a binding identical to the previous one, and the tier-2 label check words its error
   differently from `check_label`.
 - `latest` keeps each key at the position of its first row.
+
+## Proposed amendments

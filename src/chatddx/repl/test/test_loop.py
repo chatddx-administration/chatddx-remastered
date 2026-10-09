@@ -4,7 +4,8 @@ from pathlib import Path
 import pytest
 
 from chatddx.cli import main
-from chatddx.repl.test.sample import FREE_TEXT, QWEN, WORLD
+from chatddx.conftest import WORLD
+from chatddx.repl.test.sample import FREE_TEXT, QWEN
 
 
 def test_the_shell_reads_lines_from_a_pipe_and_keeps_them(
