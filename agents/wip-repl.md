@@ -290,8 +290,9 @@ This closes `docs/store.md`'s known gap "Runs and scores can't be found". The st
 A person-scoped layer, the old `Bench`'s role, is planned in `agents/wip-bench.md`.
 
 ### 4. The shell: `src/chatddx/repl/`
-- **Entry**: `chatddx repl LOGIN --world FILE [--history PATH]`, a subcommand in `src/chatddx/cli.py`. `--world`
-  locates the vignettes and endpoints, as for `init-data`.
+- **Entry**: `chatddx repl LOGIN [--world DIR] [--history PATH]`, a subcommand in `src/chatddx/cli.py`. `--world`
+  (`CHATDDX_WORLD` by default) is a World directory: its inventory locates the vignettes and endpoints, and its
+  `facts.toml`, when it has one, is loaded beside the bundled facts, as for `init-data`.
 - **Modules**, after the old ones:
   - `commands.py`: the `Command` table, `handle` and `complete`, nearly verbatim;
   - `shell.py`: the prompt and the completion cache;
@@ -309,7 +310,7 @@ A person-scoped layer, the old `Bench`'s role, is planned in `agents/wip-bench.m
   fixture over `Console(record=True, width=200)`, as the old conftest's `say_to` did.
 
 #### Built: 4a
-`chatddx repl LOGIN --world FILE [--facts PATH …] [--history PATH]` (`src/chatddx/cli.py`) connects as `DB_USER` in
+`chatddx repl LOGIN [--world DIR] [--facts PATH …] [--history PATH]` (`src/chatddx/cli.py`) connects as `DB_USER` in
 autocommit mode, as the runner needs (R6), and refuses a login with no person. `rich` is a dependency now (D4).
 - **The bench**, `Cell` and `Bench`, then `bench.py` here, now `src/chatddx/bench/` (`agents/wip-bench.md`, "What
   the bench is now").

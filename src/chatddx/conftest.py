@@ -12,12 +12,12 @@ from chatddx.core.rig import rig
 from chatddx.curation import Plan, init, load_cases, plan_factors
 from chatddx.curation.plan import SAMPLE
 from chatddx.facts import BUNDLED, Facts
-from chatddx.inventory import Inventory
+from chatddx.inventory import World
 from chatddx.store import People, migrate
 from chatddx.store.store import Connection
 
 WORLDS = settings.PROJECT_ROOT / "worlds"
-WORLD = WORLDS / "sample" / "inventory.toml"
+WORLD = WORLDS / "sample"
 
 
 # The sample data's per-model records are planned for the models its World's engines serve.
@@ -27,7 +27,7 @@ def sample_plan(factors: Path = SAMPLE / "factors.toml") -> Plan:
         Facts.load(BUNDLED),
         rig(),
         root=SAMPLE,
-        more=[WORLDS / "sample" / "factors.toml"],
+        more=[WORLD / "factors.toml"],
     )
 
 
@@ -89,7 +89,7 @@ def curated(migrated: str) -> Iterator[str]:
         with connect(name) as conn:
             alice = People(conn).add("alice", "Alice")
             cases = load_cases(SAMPLE / "cases.toml")
-            source = Inventory.load(WORLD).source("sample")
+            source = World.load(WORLD).inventory.source("sample")
             _ = init(conn, sample_plan(), cases, source, alice, giftbag=True)
         yield name
     finally:

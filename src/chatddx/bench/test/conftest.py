@@ -48,4 +48,6 @@ def bob(conn: Connection) -> Person:
 
 @pytest.fixture
 def bench(conn: Connection, alice: Person) -> Bench:
-    return Bench(conn, alice, Inventory.load(WORLD), Facts.load(BUNDLED))
+    return Bench(
+        conn, alice, Inventory.load(WORLD / "inventory.toml"), Facts.load(BUNDLED)
+    )

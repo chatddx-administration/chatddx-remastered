@@ -1,7 +1,7 @@
 # The sample World: the vignettes of the sample data's cases (src/chatddx/data/sample/cases.toml), copied byte for
 # byte from the old chatddx at 7893656 (src/chatddx/data/cases). `chatddx init-data USER --world
-# worlds/sample/inventory.toml --factors worlds/sample/factors.toml` seeds the sample with them and with this World's
-# engines. Kompismoln's World takes its vignettes from here too.
+# worlds/sample` loads the sample with them and with this World's engines (factors.toml). Kompismoln's World takes its
+# vignettes from here too.
 #
 # They aren't sensitive, but the source is declared so, as a real one would be, and is kept out of the package.
 

@@ -38,9 +38,8 @@ FAKES = [
         for name in ("qwen3-8b-awq@fake", "gpt-oss-20b@fake")
     ),
 ]
-SAMPLE_WORLD = WORLDS / "sample" / "inventory.toml"
-SAMPLE_ENGINES = WORLDS / "sample" / "factors.toml"
-WORLD = WORLDS / "kompismoln" / "inventory.toml"
+SAMPLE_WORLD = WORLDS / "sample"
+KOMPISMOLN = WORLDS / "kompismoln"
 
 
 def vignettes(**changed: bytes) -> MemorySource:
@@ -59,6 +58,17 @@ def few(tmp_path: Path) -> Path:
     )
     assert load_cases(data / "cases.toml") == SOME
     return data
+
+
+# A World whose one source holds FEW's vignettes, each a line of text.
+@pytest.fixture
+def world(tmp_path: Path) -> Path:
+    world = tmp_path / "world"
+    (world / "vignettes").mkdir(parents=True)
+    for id in SOME:
+        _ = (world / "vignettes" / f"{id}.txt").write_text(f"The vignette of {id}.")
+    _ = (world / "inventory.toml").write_text('[source.sample]\npath = "vignettes"\n')
+    return world
 
 
 def tally(lines: list[str]) -> Counter[str]:
@@ -280,30 +290,14 @@ def test_init_data_updates_and_gives_forks(conn: Connection, tmp_path: Path) -> 
 def test_init_data_command(
     db: str,
     few: Path,
+    world: Path,
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
     capsys: pytest.CaptureFixture[str],
 ) -> None:
     monkeypatch.setenv("DB_NAME", db)
-    cases = tmp_path / "cases"
-    cases.mkdir()
-    for id in SOME:
-        _ = (cases / f"{id}.txt").write_text(f"The vignette of {id}.")
-    world = tmp_path / "world.toml"
-    _ = world.write_text('[source.sample]\npath = "cases"\n')
-    data = ["--data", str(few)]
-    main(
-        [
-            "init-data",
-            "alice",
-            "--world",
-            str(world),
-            "--factors",
-            str(SAMPLE_ENGINES),
-            "--giftbag",
-            *data,
-        ]
-    )
+    data = ["--data", str(few), "--factors", str(SAMPLE_WORLD / "factors.toml")]
+    main(["init-data", "alice", "--world", str(world), "--giftbag", *data])
     out = capsys.readouterr().out.splitlines()
     assert out[0] == "[person] alice: added"
     assert out[1].startswith("[archive model] qwen3-8b-awq@fake: created")
@@ -314,17 +308,8 @@ def test_init_data_command(
             len(SOME),
         )
 
-    main(
-        [
-            "init-data",
-            "alice",
-            "--vignettes",
-            str(cases),
-            "--factors",
-            str(SAMPLE_ENGINES),
-            *data,
-        ]
-    )
+    monkeypatch.setenv("CHATDDX_WORLD", str(world))
+    main(["init-data", "alice", *data])
     out = capsys.readouterr().out.splitlines()
     assert not [line for line in out if line.startswith("[person]")]
     with connect(db) as conn:
@@ -333,26 +318,23 @@ def test_init_data_command(
     assert {
         line.split(": ")[1].split(" ")[0] for line in out if line.startswith("[archive")
     } == {"validated"}
-    with pytest.raises(SystemExit, match="a directory of <id>.txt files"):
-        main(["init-data", "alice", "--vignettes", str(SAMPLE / "cases.toml")])
-    with pytest.raises(SystemExit, match="none of the sample's 99 cases"):
-        main(["init-data", "alice", "--vignettes", str(SAMPLE)])
-    for neither_or_both in ([], ["--world", str(world), "--vignettes", str(cases)]):
-        with pytest.raises(SystemExit):
-            main(["init-data", "alice", *neither_or_both])
 
-    main(
-        [
-            "init-data",
-            "alice",
-            "--world",
-            str(SAMPLE_WORLD),
-            "--factors",
-            str(SAMPLE_ENGINES),
-            *data,
-        ]
-    )
-    sample = Inventory.load(SAMPLE_WORLD)
+    empty = tmp_path / "empty"
+    (empty / "vignettes").mkdir(parents=True)
+    _ = (empty / "inventory.toml").write_text('[source.sample]\npath = "vignettes"\n')
+    for argv, refusal in [
+        (["--world", str(tmp_path)], "is no World: it holds no inventory.toml"),
+        (["--world", str(empty)], "none of the data's 3 cases is in source 'sample'"),
+        (["--source", "other"], "no source 'other'"),
+    ]:
+        with pytest.raises(SystemExit, match=refusal):
+            main(["init-data", "alice", *data, *argv])
+    monkeypatch.delenv("CHATDDX_WORLD")
+    with pytest.raises(SystemExit, match="give a World with --world DIR"):
+        main(["init-data", "alice", *data])
+
+    main(["init-data", "alice", "--world", str(SAMPLE_WORLD), "--data", str(few)])
+    sample = Inventory.load(SAMPLE_WORLD / "inventory.toml")
     assert [
         line
         for line in capsys.readouterr().out.splitlines()
@@ -363,9 +345,8 @@ def test_init_data_command(
         for name, e in sample.endpoints.items()
     ]
 
-    world = ["--world", str(WORLD), "--factors", str(WORLD.parent / "factors.toml")]
-    main(["init-data", "alice", *world, *data])
-    real = Inventory.load(WORLD)
+    main(["init-data", "alice", "--world", str(KOMPISMOLN), "--data", str(few)])
+    real = Inventory.load(KOMPISMOLN / "inventory.toml")
     out = capsys.readouterr().out.splitlines()
     for name in real.endpoints:
         assert any(
@@ -379,18 +360,59 @@ def test_init_data_command(
     assert not [line for line in out if "@fake" in line]
 
 
-def test_wipe_data_deletes_and_unshares_and_init_data_gives_it_back(
+def test_a_world_brings_its_engines_and_their_models_facts(
     db: str,
     few: Path,
-    tmp_path: Path,
+    world: Path,
     monkeypatch: pytest.MonkeyPatch,
     capsys: pytest.CaptureFixture[str],
 ) -> None:
     monkeypatch.setenv("DB_NAME", db)
-    cases = tmp_path / "cases"
-    cases.mkdir()
-    for id in SOME:
-        _ = (cases / f"{id}.txt").write_text(f"The vignette of {id}.")
+    _ = (world / "factors.toml").write_text(
+        """
+[remote_engine."gemma@api"]
+base_url = "https://api.example/v1/"
+model = "google/gemma-3-27b-it"
+"""
+    )
+    _ = (world / "facts.toml").write_text(
+        """
+[model."google/gemma-3-27b-it"]
+family = "gemma3"
+
+[model."google/gemma-3-27b-it".reasoning]
+default = "off"
+off = {}
+
+[model."google/gemma-3-27b-it".sampling.recommended]
+off = { temperature = 1.0, top_k = 64, top_p = 0.95 }
+"""
+    )
+    main(["init-data", "alice", "--world", str(world), "--data", str(few)])
+    out = capsys.readouterr().out.splitlines()
+    assert any(
+        line.startswith("[archive engine.remote] gemma@api: created") for line in out
+    )
+    assert any(
+        line.startswith(
+            "[archive chunk.sampling] recommended (google/gemma-3-27b-it): created"
+        )
+        for line in out
+    )
+    assert any(
+        line.startswith("[archive skeleton] plan (google/gemma-3-27b-it): created")
+        for line in out
+    )
+
+
+def test_wipe_data_deletes_and_unshares_and_init_data_gives_it_back(
+    db: str,
+    few: Path,
+    world: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    monkeypatch.setenv("DB_NAME", db)
 
     def run(*argv: str) -> list[str]:
         main(list(argv))
@@ -403,8 +425,8 @@ def test_wipe_data_deletes_and_unshares_and_init_data_gives_it_back(
         assert threads is not None and entries is not None
         return threads[0], entries[0]
 
-    argv = ["init-data", "alice", "--vignettes", str(cases), "--giftbag"]
-    argv += ["--data", str(few)]
+    argv = ["init-data", "alice", "--world", str(world), "--giftbag"]
+    argv += ["--data", str(few), "--factors", str(SAMPLE_WORLD / "factors.toml")]
     loaded = run(*argv)
     gifts = sum(line.startswith("[giftbag ") for line in loaded)
     shares = int(next(line for line in loaded if line.startswith("[share]")).split()[1])
@@ -445,7 +467,7 @@ def test_wipe_data_deletes_and_unshares_and_init_data_gives_it_back(
 
 
 def test_the_sample_world_holds_the_vignettes_at_7893656() -> None:
-    source = Inventory.load(SAMPLE_WORLD).source("sample")
+    source = Inventory.load(SAMPLE_WORLD / "inventory.toml").source("sample")
     assert source.sensitive
     assert source.ids() == sorted(CASES)
     for id in source.ids():

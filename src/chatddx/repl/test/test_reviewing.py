@@ -82,7 +82,7 @@ def test_replay_says_when_the_request_would_render_otherwise_now(
 ):
     _ = say(f"cell {FREE_TEXT} {QWEN}", "run Dutchfall11w")
     moved = tmp_path / "vignettes"
-    _ = shutil.copytree(WORLD.parent / "vignettes", moved)
+    _ = shutil.copytree(WORLD / "vignettes", moved)
     _ = (moved / "Dutchfall11w.txt").write_text("another vignette")
     source = DirectorySource(name="sample", path=moved)
     bench.inventory = world.model_copy(update={"sources": {"sample": source}})

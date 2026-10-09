@@ -43,3 +43,6 @@ For docs in (`docs/*`), the same rule applies as to this document: Humans write,
 * For placeholder usernames in docs and tests, use alice, bob, carol... or semantic names (archive, guest, nobody, other, collaborator-one, admin).
 
 ## Proposed amendments
+- CHANGE: "To try the repl or the runner by hand" seeds the sample World with
+  `chatddx init-data alice --giftbag`: `CHATDDX_WORLD` (`.env-example`) names `worlds/sample`, whose `factors.toml` is
+  loaded with the data (src/chatddx/inventory/world.py, src/chatddx/cli.py:_init_data). `--world DIR` names another.

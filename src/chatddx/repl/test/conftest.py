@@ -41,9 +41,8 @@ def world(tmp_path: Path) -> Inventory:
     with socket.socket() as s:
         s.bind(("127.0.0.1", 0))
         port = int(s.getsockname()[1])
-    text = WORLD.read_text().replace(
-        'path = "vignettes"', f'path = "{WORLD.parent / "vignettes"}"'
-    )
+    text = (WORLD / "inventory.toml").read_text()
+    text = text.replace('path = "vignettes"', f'path = "{WORLD / "vignettes"}"')
     path = tmp_path / "inventory.toml"
     _ = path.write_text(
         text.replace("12099", str(port)).replace("12100", str(port + 1))
