@@ -15,6 +15,15 @@ This document contains project-wide instructions written by humans for agents. A
     A `service postgresql start` is needed on every session.
 * Base the fake vLLM on 0.24.0, extend/amend continuously as new facts are discovered, questions arise or sample data is needed.
 * `chatddx.core.settings` is the project-wide source of truth.
+* Nothing loads `.env`: export `.env-example`'s variables in the shell that runs `chatddx` or `pytest`, as
+  `set -a; . ./.env-example; set +a`.": without them, `chatddx migrate` fails with `KeyError: 'DB_HOST'`
+  (src/chatddx/core/settings.py:12).
+* To try the repl or the runner by hand, serve each endpoint of the sample World with `chatddx fake-vllm` and the
+  arguments `chatddx.inventory.start_up` gives for it, after seeding it with
+  `chatddx init-data alice --world worlds/sample/inventory.toml --factors worlds/sample/factors.toml --giftbag`.":
+  no command prints an endpoint's start-up, only worlds/sample/inventory.toml's comment says where to find it
+  (src/chatddx/inventory/serving.py:start_up).
+  The tests serve the fake in a thread instead (src/chatddx/repl/test/conftest.py, `fake`).
 
 ## Typechecking
 * Errors and warnings that indicate issues beyond the scope of the current task should remain, never hide them.
@@ -35,15 +44,3 @@ For docs in (`docs/*`), the same rule applies as to this document: Humans write,
 * For placeholder usernames in docs and tests, use alice, bob, carol... or semantic names (archive, guest, nobody, other, collaborator-one, admin).
 
 ## Proposed amendments
-- ADD, under "Environment": "* Nothing loads `.env`: export `.env-example`'s variables in the shell that runs
-  `chatddx` or `pytest`, as `set -a; . ./.env-example; set +a`.": without them, `chatddx migrate` fails with
-  `KeyError: 'DB_HOST'` (src/chatddx/core/settings.py:12).
-- ADD, under "Testing": "* Test directories have no `__init__.py`, so pytest imports each test module by its file name:
-  a test file's name must be unique across packages.": a second `test_cli.py` beside
-  src/chatddx/store/test/test_cli.py would clash, which is why the shell's is src/chatddx/repl/test/test_loop.py.
-- ADD, under "Environment": "* To try the shell or the runner by hand, serve each endpoint of the sample World with
-  `chatddx fake-vllm` and the arguments `chatddx.inventory.start_up` gives for it, after seeding it with `chatddx
-  init-data alice --world worlds/sample/inventory.toml --factors worlds/sample/factors.toml --giftbag`.": no command
-  prints an endpoint's start-up, only worlds/sample/inventory.toml's comment says where to find it
-  (src/chatddx/inventory/serving.py:start_up). The tests serve the fake in a thread instead
-  (src/chatddx/repl/test/conftest.py, `fake`).

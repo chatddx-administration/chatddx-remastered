@@ -139,8 +139,7 @@ does.
 ## reads.py
 
 ### `class Reads`
-`Reads(conn: Connection, person: Person)`: what one person sees, through `Catalog`, `Store` and `People`. Nothing
-outside the store's tests calls it yet.
+`Reads(conn: Connection, person: Person)`: what one person sees, through `Catalog`, `Store` and `People`.
 
 | Method | Returns / raises |
 | --- | --- |
@@ -344,7 +343,6 @@ Behavior described here that `docs/store.md` doesn't state:
 - `Store.reaching` includes the digest itself when it is of the kind asked for.
 - `Store.compilations` isn't listed in `docs/store.md`.
 - `Reads.runs` shows only the runs the person owns now; collaborating on a run shows nothing.
-- `Reads` has no caller outside its tests.
 - `People.update` with `roles=[]` clears the roles, and reactivating a person restores no sessions.
 - `People` reads roles back as `Role`, so a role the tier-2 CHECK would refuse raises `ValueError` below tier 2.
 - `public.migration` is created by `migrate`, not by a migration file, and is readable only by the admin.

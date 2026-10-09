@@ -139,9 +139,11 @@ Whoever creates a thread or a family is its owner, unless they name someone else
 them a collaborator. A person sees what they own and what is shared with them, as long as it isn't deleted. Like
 authorization, this decides what is relevant to show, not who may read it (docs/identity.md, "Authorization").
 
+This is the catalog's sense of owning. It is a different thing from the roles' sense, as in "clinicians own the
+vignettes" (docs/chatddx.md, "Roles mentioned").
+
 A run's owner is whoever started it, and a score's whoever scored it: the runner and the scoring pass write the
-owner entry as they start, and a person's runs are the runs they own. This is the catalog's sense of owning. It is
-a different thing from the roles' sense, as in "clinicians own the vignettes" (docs/chatddx.md, "Roles mentioned").
+owner entry as they start, and a person's runs are the runs they own.
 
 Every row in the catalog records who wrote it and when. A thread's versions and a family's bindings are shown with
 them; for entries, labels and languages, only what holds now is shown (see "Open design issues").
@@ -167,11 +169,8 @@ A thread's title is its name. Without one, a fork is shown by its origin's title
 ("plan, output: management-plan-shown"), or as "a fork of plan" when it varies nothing; any other thread is shown by
 what its head holds.
 
-Any component can be given a title, in a thread or not, so a run of a variation nobody saved can be shown too.
-A skeleton is described by its recipe only when a compilation of it is stored, so the shell stores the compilation
-of a variation it runs unsaved.
-
-The catalog prefers, in order:
+Any component can be given a title, in a thread or not, so a run of a variation nobody saved can be shown too. The
+catalog prefers, in order:
 1. a live thread whose head it is: its name, or else its title;
 2. a live thread with a name that held it earlier: "plan (earlier)";
 3. the same two among deleted threads;
@@ -183,18 +182,30 @@ its own source and id.
 
 What a component holds is described by what tells it apart from others of its kind, and the components it uses are
 shown by their titles in turn:
-- a configuration by its recipe's parts, translations and toolset included: "ddx · case · management-plan ·
-  recommended · off". A judge's recipe says so first. A hand-written skeleton is shown by its purpose and the start of
-  its digest;
-- a chunk by its values or the opening words of its text, and a translations chunk by its language and size: "sv
-  translations, 12 texts";
-- a tool by its name, an appendix by the opening words of its text, and an expectation by its case;
-- a model by its repository, a local engine by its model, server and GPU ("google/gemma-3-12b-it on vllm 0.24.0 (RTX
-  5090)"), and a remote engine by its model and host;
-- a trial by its skeleton, its engine and how many cases and seeds it has, and a judge by its skeleton and engine;
-- a scorer by its code, and a scoring by its scorer and how many expectations it has;
-- an expectation schema by its title or its properties, and a canary set by how many canaries it has;
-- anything with nothing better to go by, such as a compilation, by its kind and the start of its digest.
+
+A Configuration is described by its recipe's parts, translations and toolset included. When a compilation of it is
+stored, a judge's recipe says so first.
+
+Example: "ddx · case · management-plan · recommended · off"
+
+This table shows how each component calculates its title:
+| Component | Described by | Example |
+| --- | --- | --- |
+| Chunk | Its values or the opening words of its text. | |
+| Translations chunk | Its language and size. | "sv translations, 12 texts" |
+| Tool | Its name. | |
+| Appendix | The opening words of its text. | |
+| Expectation | Its case. | |
+| Model | Its repository. | |
+| Local engine | Its model, server and GPU. | "google/gemma-3-12b-it on vllm 0.24.0 (RTX 5090)" |
+| Remote engine | Its model and host. | |
+| Trial | Its skeleton, its engine, and how many cases and seeds it has. | |
+| Judge | Its skeleton and engine. | |
+| Scorer | Its code. | |
+| Scoring | Its scorer and how many expectations it has. | |
+| Expectation schema | Its title or its properties. | |
+| Canary set | How many canaries it has. | |
+| Anything with nothing better to go by, such as a compilation | Its kind and the start of its digest. | |
 
 Titles aren't unique: two unnamed components can be described alike, and names aren't unique either. Titles change when
 the names they're built from change, so an export for publication should freeze the titles it uses.
@@ -351,7 +362,9 @@ two families.
   way lints check a trial's. An English judge grading Swedish answers may be intended, so it would be a notice rather
   than a warning.
 - **A variation nobody saved has a long title.** It is described by its whole recipe:
-  "case · diagnoses-tool · recommended (Qwen/Qwen3-8B-AWQ) · off (Qwen/Qwen3-8B-AWQ)", where the shell called it
+  "case · diagnoses-tool · recommended (Qwen/Qwen3-8B-AWQ) · off (Qwen/Qwen3-8B-AWQ)", where the repl called it
   "diagnoses-tool (Qwen/Qwen3-8B-AWQ)+reasoning=off": the configuration it came from and the parts set over it.
   Neither is stored. An entry on the run, or a title made from the closest configuration and what the variation
   changes from it, would say it shorter.
+
+## Proposed amendments

@@ -37,17 +37,18 @@ The catalog decides what its rows mean (docs/catalog.md). The store reads the ro
 decided, all of one change at once.
 
 ### Looking things up for someone
-The store offesrs a simple lookup scoped to one person for live threads, runs and families they own or collaborate
-on. Which lets a user refer to things loosely. A thread is found by its name, matched whole first and only then
-read as an owner and a name, since names may hold a slash, and runs by the start of their id or by a component
-their trial is built on.
+The store offers a simple lookup scoped to one person for owned runs and live threads and families they own or
+collaborate on, which lets a person refer to things loosely. A thread is found by its name, matched whole first and
+only then read as an owner and a name, since names may hold a slash, and runs by the start of their id or by a
+component their trial is built on.
 
 For a run, the store also tells:
 - which scorers can grade its answers
 - which scoring it would be scored under now (from the expectations the catalog picks for the person)
-- whether it still has to be scored under that scoring (the repl works this out for itself, for now)
 
-So a run whose expectations changed after it was scored is due again.
+Whether it still has to be scored under that scoring, the repl works this out for itself for now,
+so a run whose expectations changed after it was scored is due again. See "Which runs still need scoring..."
+under "Known gaps".
 
 Like authorization, this decides what is relevant to show, not who may read what (docs/identity.md, "Authorization").
 
@@ -105,8 +106,7 @@ admin, for tier-0 writes and tier-2 triggers. They fail, rather than skip, when 
 | Closure | A component and everything it references, transitively. |
 
 ## Known gaps
-These are known shortcomings of the store's design. The API lists them where they show (docs/store-api.md, "Known
-gaps").
+These are known shortcomings of the store's design. Some have more details in docs/store-api.md.
 - The database doesn't check that a component has all its reference rows, only that the rows it has are right; the
   store writes them together.
 - The database allows a thread without versions; the catalog writes a thread together with its first version.

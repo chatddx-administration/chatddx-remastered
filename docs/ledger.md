@@ -242,7 +242,7 @@ Most of the plan is compared with what happened (see "What a record holds"), but
 - the request a call sent and the request it should have been:
   The repl's replay rebuilds each item's first request from the trial and the vignette and holds it to the call's
   fingerprint. A later round's request, which could be rebuilt from the stored responses and tool runs, and a judge
-  request, from the scorer's reading of the answer (docs/factors.md, \"Judge\"), aren't rebuilt, and checking a run
+  request, from the scorer's reading of the answer (docs/factors.md, "Judge"), aren't rebuilt, and checking a run
   rebuilds none.
 
 ### Smaller issues
