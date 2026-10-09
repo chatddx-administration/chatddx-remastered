@@ -32,7 +32,7 @@ Functions are called through their module (`threads.behind(rows, thread)`); `mod
 
 | Module | Builds on |
 | --- | --- |
-| `model.py` | `chatddx.factors.{base,cases,scoring}` |
+| `model.py` | `chatddx.factors.{base,cases,scoring}`, `chatddx.identity` |
 | `read.py` | `model.py`, `chatddx.factors.{base,cases,request}` |
 | `families.py` | `model.py`, `read.py`, `chatddx.factors.{base,bundle,cases,scoring}` |
 | `threads.py` | `families.py`, `model.py`, `read.py`, `chatddx.factors.{base,request,scoring}` |
@@ -738,6 +738,3 @@ amendments there.
 - `latest` keeps each key at the position of its first row.
 
 ## Proposed amendments
-- CHANGE, in the "Builds on" table, `model.py`'s row "`chatddx.factors.{base,cases,scoring}`" →
-  "`chatddx.factors.{base,cases,scoring}`, `chatddx.identity`": `About.shows` calls `chatddx.identity.sees`
-  (`src/chatddx/catalog/model.py:About.shows`). The paragraph below the table already says so.
