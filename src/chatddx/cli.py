@@ -76,10 +76,13 @@ def _world(command: str, path: Path | None) -> World:
 def _init_data(args: argparse.Namespace) -> None:
     world = _world("init-data", args.world)
     data: Path = args.data
-    facts = Facts.load(BUNDLED, *world.facts, *(args.facts or ()))
     more = [*world.factors, *(args.factors or ())]
-    plan = plan_factors(data / "factors.toml", facts, rig(), more=more)
-    cases = load_cases(data)
+    try:
+        facts = Facts.load(BUNDLED, *world.facts, *(args.facts or ()))
+        plan = plan_factors(data / "factors.toml", facts, rig(), more=more)
+        cases = load_cases(data)
+    except ValueError as e:
+        raise SystemExit(f"init-data: {e}") from None
     try:
         source = world.inventory.source(args.source)
     except LookupError as e:

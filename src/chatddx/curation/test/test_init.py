@@ -324,6 +324,7 @@ def test_init_data_command(
         (["--world", str(tmp_path)], "is no World: it holds no inventory.toml"),
         (["--world", str(empty)], "none of the data's 3 cases is in source 'sample'"),
         (["--source", "other"], "no source 'other'"),
+        (["--facts", str(SAMPLE / "factors.toml")], "facts have only 'model' tables"),
     ]:
         with pytest.raises(SystemExit, match=refusal):
             main(["init-data", "alice", *data, *argv])
