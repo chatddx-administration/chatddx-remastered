@@ -6,7 +6,7 @@ from pathlib import Path
 
 import pytest
 
-from chatddx.catalog import Subject
+from chatddx.catalog import Entry, EntryField, Subject
 from chatddx.cli import main
 from chatddx.conftest import WORLDS, connect, sample_plan
 from chatddx.curation import init, load_cases
@@ -153,8 +153,14 @@ def test_init_data_loads_the_archive(conn: Connection) -> None:
     assert catalog.language_of(plan.named("toolset", "web").digest) == "en"
     assert catalog.language_of(plan.named("prompt", "case").digest) is None
 
+    # The rest of the sample's cases, and their expectations, are left over.
     again = init(conn, sample_plan(), SOME, vignettes(), alice)
-    assert {v for v in tally(again) if v.startswith("archive")} == {"archive validated"}
+    assert {v for v in tally(again) if v.startswith("archive")} == {
+        "archive validated",
+        "archive not",
+    }
+    assert tally(again)["archive not"] == 2 * (len(CASES) - len(SOME))
+    assert "[archive case] Dutchfall13w: not in the data" in again
     assert again[-len(FAKES) - 2].startswith("[share] 0 of ")
     assert not [line for line in again if line.endswith(", in en")]
 
@@ -249,6 +255,71 @@ def test_init_data_updates_and_gives_forks(conn: Connection, tmp_path: Path) -> 
     assert "[archive case] Dutchfall11w: missing at source 'sample'" in lines
 
 
+def test_init_data_withdraws_only_the_tags_the_archive_gave(
+    conn: Connection, tmp_path: Path
+) -> None:
+    alice = People(conn).add("alice", "Alice")
+    _ = init(conn, sample_plan(), SOME, vignettes(), alice)
+    catalog = Catalog(conn)
+    [plan] = catalog.find("skeleton", "plan (Qwen/Qwen3-8B-AWQ)")
+    family = catalog.family(vignettes().cases()[0].digest)
+    assert family is not None
+    for subject in (Subject(thread=plan), Subject(family=family)):
+        catalog.note(subject, Entry(field=EntryField.TAG, value="alice's"), alice.id)
+
+    edited = tmp_path / "factors.toml"
+    _ = edited.write_text(
+        (SAMPLE / "factors.toml")
+        .read_text()
+        .replace(
+            'tags = ["ddx"]\nprompt = "case"\noutput = "management-plan"\n',
+            'prompt = "case"\noutput = "management-plan"\n',
+        )
+    )
+    retagged = {**SOME, "DutchFall10w": replace(SOME["DutchFall10w"], tags=("falls",))}
+    _ = init(conn, sample_plan(edited), retagged, vignettes(), alice)
+    assert catalog.about(Subject(thread=plan)).tags == {"alice's"}
+    assert catalog.about(Subject(family=family)).tags == {"alice's", "falls"}
+
+
+def test_init_data_says_how_a_vignette_moved_at_its_source(conn: Connection) -> None:
+    alice = People(conn).add("alice", "Alice")
+    _ = init(conn, sample_plan(), SOME, vignettes(), alice)
+    catalog = Catalog(conn)
+    families = {
+        c.vignette.id: catalog.family(c.digest)
+        for c in vignettes().cases()
+        if c.vignette.id in SOME
+    }
+    texts = vignettes().vignettes
+    moved = MemorySource(
+        name="sample",
+        vignettes={
+            **{id: text for id, text in texts.items() if id != "Dutchfall11w"},
+            "Dutchfall11W": texts["Dutchfall11w"],
+            "DutchFall10w": b"Edited at the source.",
+        },
+    )
+    at = "at source 'sample'; repair-data rebinds family"
+    lines = init(conn, sample_plan(), SOME, moved, alice)
+    assert [line for line in lines if "needs repair" in line] == [
+        f"[archive case] DutchFall10w: needs repair: changed {at} "
+        + str(families["DutchFall10w"]),
+        f"[archive case] Dutchfall11w: needs repair: renamed to Dutchfall11W {at} "
+        + str(families["Dutchfall11w"]),
+    ]
+    assert not [line for line in lines if "not in the data" in line]
+
+    renamed = {**SOME, "Dutchfall11W": SOME["Dutchfall11w"]}
+    del renamed["Dutchfall11w"]
+    lines = init(conn, sample_plan(), renamed, moved, alice)
+    assert (
+        f"[archive case] Dutchfall11W: needs repair: renamed from Dutchfall11w {at} "
+        + str(families["Dutchfall11w"])
+    ) in lines
+    assert not [line for line in lines if "not in the data" in line]
+
+
 def test_init_data_command(
     db: str,
     few: Path,
@@ -312,7 +383,12 @@ def test_init_data_command(
     assert [line for line in out if line.startswith("[world")] == [
         f"[world] 0 findings in 2 endpoints of {KOMPISMOLN}"
     ]
-    assert not [line for line in out if "@fake" in line]
+    # The sample World's fake engines aren't Kompismoln's.
+    assert sorted(line for line in out if "@fake" in line) == [
+        f"[archive {kind}] {name}@fake: not in the data"
+        for kind in ("engine.local", "model")
+        for name in ("gpt-oss-20b", "qwen3-8b-awq")
+    ]
 
 
 def test_a_world_brings_its_engines_and_their_models_facts(

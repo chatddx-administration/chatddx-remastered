@@ -138,10 +138,12 @@ class Rows:
         ).fetchall()
         return [_edit(r) for r in rows]
 
-    def entries(self, subjects: Collection[Subject]) -> list[tuple[Subject, Entry]]:
+    def entries(
+        self, subjects: Collection[Subject]
+    ) -> list[tuple[Subject, Entry, int]]:
         rows = self._conn.execute(
             """
-            SELECT thread, family, run, score, field, value, person, present
+            SELECT thread, family, run, score, field, value, person, present, by
             FROM catalog.entry
             WHERE thread = ANY(%s::bigint[]) OR family = ANY(%s::bigint[])
                 OR run = ANY(%s::uuid[]) OR score = ANY(%s::uuid[])
@@ -160,8 +162,9 @@ class Rows:
                 Entry(
                     field=EntryField(field), value=value, person=person, present=present
                 ),
+                int(by),
             )
-            for thread, family, run, score, field, value, person, present in rows
+            for thread, family, run, score, field, value, person, present, by in rows
         ]
 
     def subjects_naming(
@@ -450,6 +453,9 @@ class Catalog:
 
     def abouts(self, subjects: Collection[Subject]) -> dict[Subject, About]:
         return read.abouts(self._rows, subjects)
+
+    def tags_given(self, subject: Subject) -> dict[str, int]:
+        return read.tags_given(self._rows, subject)
 
     # The subjects whose entries have ever named a person as owner or collaborator; what
     # holds now is `about`'s.

@@ -738,3 +738,8 @@ amendments there.
 - `latest` keeps each key at the position of its first row.
 
 ## Proposed amendments
+- CHANGE `Reader.entries(subjects)`: it returns `(subject, entry, by)`, each entry with the person who wrote it; the
+  store's `Rows` reads `catalog.entry.by` (src/chatddx/catalog/read.py:Reader, src/chatddx/store/catalog.py:Rows).
+- ADD `read.tags_given(rows, subject) -> dict[str, int]` and `Catalog.tags_given(subject)`: the tags that hold on a
+  subject now, each with the writer of the latest entry about it. init-data withdraws only the tags the archive gave
+  (src/chatddx/catalog/read.py:tags_given, src/chatddx/curation/write.py:_Init.sync).

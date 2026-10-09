@@ -23,7 +23,7 @@ class Memory:
         self.registry: Registry = registry
         self._threads: list[Thread] = []
         self._edits: list[Edit] = []
-        self._entries: list[tuple[Subject, Entry]] = []
+        self._entries: list[tuple[Subject, Entry, int]] = []
         self._bindings: list[Binding] = []
         self._languages: list[tuple[str, str]] = []
         self._labels: list[tuple[str, Part, int, str]] = []
@@ -65,8 +65,8 @@ class Memory:
         self._edits.append(edit)
         return edit
 
-    def note(self, subject: Subject, entry: Entry) -> None:
-        self._entries.append((subject, entry))
+    def note(self, subject: Subject, entry: Entry, by: int = BY) -> None:
+        self._entries.append((subject, entry, by))
 
     def bind(self, family: int, vignette: Vignette) -> Binding:
         binding = Binding(
@@ -108,8 +108,10 @@ class Memory:
     def edits_holding(self, digests: Collection[str]) -> list[Edit]:
         return [e for e in self._edits if e.digest in digests]
 
-    def entries(self, subjects: Collection[Subject]) -> list[tuple[Subject, Entry]]:
-        return [(s, e) for s, e in self._entries if s in subjects]
+    def entries(
+        self, subjects: Collection[Subject]
+    ) -> list[tuple[Subject, Entry, int]]:
+        return [(s, e, by) for s, e, by in self._entries if s in subjects]
 
     def bindings(self, family: int) -> list[Binding]:
         return [b for b in self._bindings if b.family == family]
