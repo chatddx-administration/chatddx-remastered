@@ -184,8 +184,9 @@ What a component holds is described by what tells it apart from others of its ki
 shown by their titles in turn.
 
 A configuration is described by its recipe's parts, translations and toolset included, when a compilation of it is
-stored; a judge's recipe says so first: "ddx · case · management-plan · recommended · off". Without one, as for a
-hand-written skeleton, it is shown by its purpose and the start of its digest: "generation skeleton 1a2b3c".
+stored: "ddx · case · management-plan · recommended · off". A judge's recipe says so first. Without a stored
+compilation, as for a hand-written skeleton, it is shown by its purpose and the start of its digest:
+"generation skeleton 1a2b3c".
 
 Each kind is described by:
 

@@ -17,7 +17,6 @@ Paths are relative to `src/chatddx/inventory/` unless they start with `src/`, `d
 - [sources.py](#sourcespy): `Source`, `DirectorySource`
 - [serving.py](#servingpy): `StartUp`, `start_up`, `url_of`, `served`, `confirm`
 - [Worlds](#worlds)
-- [Callers](#callers)
 - [Known gaps](#known-gaps)
 - [Beyond docs/inventory.md](#beyond-docsinventorymd)
 

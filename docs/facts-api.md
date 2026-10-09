@@ -16,7 +16,6 @@ Paths are relative to `src/chatddx/facts/` unless they start with `src/`, `docs/
 - [lint.py](#lintpy): `reasons`, `check_pairs`
 - [Finding codes](#finding-codes)
 - [Bundled facts](#bundled-facts)
-- [Callers](#callers)
 - [Known gaps](#known-gaps)
 - [Beyond docs/facts.md](#beyond-docsfactsmd)
 

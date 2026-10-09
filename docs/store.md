@@ -76,9 +76,13 @@ triggers gets around them.
 
 | Role | Used by | Created by | May |
 | --- | --- | --- | --- |
-| Admin | Creates and owns the database and its schemas, runs the migrations. | The database setup script | Everything. |
-| Writer | The app. | Setup script, as a role that can log in. | Read and add to factors, ledger and catalog; CRU people, but not remove them; open and end sessions. |
-| Reader | Nothing yet. | Tier 1. | Read what isn't sensitive: the factors, the catalog and people, but not the ledger, passwords or sessions. |
+| Admin | `chatddx migrate` and the tests. | Setup script. | Own the database and schemas; create databases and roles. |
+| Writer | The app. | Setup script. | Read and add to factors, ledger and catalog; create, read and update people. |
+| Reader | Nothing yet. | Tier 1. | Read the factors, the catalog and people, but not passwords. |
+
+Tier 2's triggers bind the admin like any other role. The writer also opens and ends sessions, and can't remove people;
+tier 1 creates it, unable to log in, when the setup script hasn't (src/chatddx/store/migrations/0002-t1-factor.sql:6).
+The reader can't read the ledger or sessions.
 
 Agents use the system's cluster (setup in AGENTS.md); the devShell runs one of its own (scripts/dev-db.sh).
 

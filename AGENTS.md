@@ -17,10 +17,9 @@ This document contains project-wide instructions written by humans for agents. A
 * `chatddx.core.settings` is the project-wide source of truth.
 * Nothing loads `.env`: export `.env-example`'s variables in the shell that runs `chatddx` or `pytest`, as
   `set -a; . ./.env-example; set +a`.
-  (src/chatddx/core/settings.py:12).
 * To try the repl or the runner by hand, serve each endpoint of the sample World with `chatddx fake-vllm` and the
   arguments `chatddx.inventory.start_up` gives for it, after seeding it with
-  `chatddx init-data alice --world worlds/sample/inventory.toml --factors worlds/sample/factors.toml --giftbag`.":
+  `chatddx init-data alice --world worlds/sample/inventory.toml --factors worlds/sample/factors.toml --giftbag`.:
   no command prints an endpoint's start-up, only worlds/sample/inventory.toml's comment says where to find it
   (src/chatddx/inventory/serving.py:start_up).
   The tests serve the fake in a thread instead (src/chatddx/repl/test/conftest.py, `fake`).
