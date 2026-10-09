@@ -4,11 +4,11 @@ import pytest
 from pydantic import JsonValue
 
 from chatddx.conftest import sample_plan
+from chatddx.curation import Plan
 from chatddx.factors.base import resolve
 from chatddx.factors.request import Skeleton
 from chatddx.fake_vllm.chat import instance
 from chatddx.scorers.answer import Answer, read
-from chatddx.seed import Plan
 
 
 @pytest.fixture(scope="module")

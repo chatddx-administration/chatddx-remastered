@@ -9,6 +9,8 @@ import pytest
 from chatddx.catalog import Subject
 from chatddx.conftest import sample_plan
 from chatddx.core import settings
+from chatddx.curation import Plan, load_cases
+from chatddx.curation.plan import SAMPLE
 from chatddx.factors.base import Code, resolve
 from chatddx.factors.cases import Case
 from chatddx.factors.scoring import Expectation, Scorer, Scoring
@@ -18,8 +20,6 @@ from chatddx.inventory import Inventory
 from chatddx.runner.run import Runner
 from chatddx.runner.score import NO_EXPECTATION, score_run
 from chatddx.runner.test.test_run import DELAY, QWEN, faked, rows, trial, world
-from chatddx.seed import Plan, load_cases
-from chatddx.seed.plan import SAMPLE
 from chatddx.store import Catalog, People, Store
 from chatddx.store.store import Connection
 
@@ -54,7 +54,7 @@ def fake(inventory: Inventory, plan: Plan) -> Iterator[None]:
         yield
 
 
-# Each case's targets as init-data lands them (src/chatddx/seed/write.py).
+# Each case's targets as init-data lands them (src/chatddx/curation/write.py).
 def expectations(plan: Plan, made: Trial) -> tuple[str, ...]:
     schema = plan.named("expectation_schema", "targets").digest
     targets = load_cases(SAMPLE / "cases.toml")

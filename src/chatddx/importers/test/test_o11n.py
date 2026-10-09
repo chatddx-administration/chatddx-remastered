@@ -11,6 +11,8 @@ import pytest
 
 from chatddx.cli import main
 from chatddx.core.rig import rig
+from chatddx.curation import plan_factors
+from chatddx.curation.world import endpoints as endpoints_of
 from chatddx.facts import Facts
 from chatddx.importers.o11n import (
     REPORT,
@@ -21,8 +23,6 @@ from chatddx.importers.o11n import (
     read,
 )
 from chatddx.inventory import Inventory, start_up
-from chatddx.seed import plan_factors
-from chatddx.seed.world import endpoints as endpoints_of
 
 STORE = "/nix/store/" + "s" * 32
 SNAPSHOTS = "/srv/models/huggingface/models--{}/snapshots/{}"

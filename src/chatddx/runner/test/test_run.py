@@ -14,6 +14,7 @@ from chatddx.catalog import Subject
 from chatddx.conftest import WORLDS, connect, sample_plan
 from chatddx.core import settings
 from chatddx.core.rig import rig
+from chatddx.curation import Plan
 from chatddx.factors.base import Code, Fingerprint, resolve
 from chatddx.factors.cases import Case, Vignette, prepare_case
 from chatddx.factors.engine import LocalEngine
@@ -55,7 +56,6 @@ from chatddx.runner.run import (
 )
 from chatddx.runner.send import STOPPED
 from chatddx.runner.test.tools import component
-from chatddx.seed import Plan
 from chatddx.store import Catalog, People, Store
 from chatddx.store.store import Connection
 

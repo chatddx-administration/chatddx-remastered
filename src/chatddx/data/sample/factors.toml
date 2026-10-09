@@ -1,5 +1,5 @@
 # The old inventory's slices, configurations and scorers (chatddx 7893656, src/chatddx/data/inventory/slices.toml,
-# configurations.toml and scorers.toml), hand-edited into remastered's shape. `chatddx init-data` seeds them for
+# configurations.toml and scorers.toml), hand-edited into remastered's shape. `chatddx init-data` loads them into
 # the archive.
 #
 # Tables are kinds and keys are component fields, except:
@@ -10,7 +10,7 @@
 #   "<record> (<model>)", and a record referencing it is made per model too. A model whose facts refuse the
 #   chunk gets none, and is reported, and so is a served model the facts don't know or a known one no engine
 #   serves;
-# - `fork_of` names a record of the same kind that this one is a variation of. It's seeded as a fork of that
+# - `fork_of` names a record of the same kind that this one is a variation of. It's loaded as a fork of that
 #   record's thread, and doesn't inherit its fields;
 # - a tool or a scorer without a `code` pins the running chatddx, as compilations record it as their compiler, and
 #   its `entry_point` must name a function there;

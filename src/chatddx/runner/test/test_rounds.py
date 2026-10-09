@@ -7,6 +7,7 @@ from pydantic import JsonValue
 
 from chatddx.conftest import sample_plan
 from chatddx.core.rig import rig
+from chatddx.curation import Plan
 from chatddx.factors.base import Code, Fingerprint, resolve
 from chatddx.factors.request import (
     Compilation,
@@ -19,7 +20,6 @@ from chatddx.factors.request import (
 from chatddx.ledger import Call
 from chatddx.runner.rounds import Toolbox, load
 from chatddx.runner.test import tools
-from chatddx.seed import Plan
 
 FUNCTIONS = {"lookup": tools.lookup, "broken": tools.broken, "counted": tools.counted}
 

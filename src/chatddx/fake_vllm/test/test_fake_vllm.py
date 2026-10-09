@@ -8,6 +8,7 @@ import pytest
 from jsonschema.validators import validator_for
 
 from chatddx.conftest import sample_plan
+from chatddx.curation.plan import SAMPLE
 from chatddx.factors.request import (
     NativeOutput,
     Skeleton,
@@ -30,7 +31,6 @@ from chatddx.fake_vllm.chat import (
     thinking,
 )
 from chatddx.fake_vllm.served import VERSION, Refused, Served
-from chatddx.seed.plan import SAMPLE
 
 QWEN = "Qwen/Qwen3-8B-AWQ"
 GPT_OSS = "openai/gpt-oss-20b"

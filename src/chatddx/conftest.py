@@ -9,10 +9,10 @@ from psycopg import sql
 
 from chatddx.core import settings
 from chatddx.core.rig import rig
+from chatddx.curation import Plan, init, load_cases, plan_factors
+from chatddx.curation.plan import SAMPLE
 from chatddx.facts import BUNDLED, Facts
 from chatddx.inventory import Inventory
-from chatddx.seed import Plan, load_cases, plan_factors, seed
-from chatddx.seed.plan import SAMPLE
 from chatddx.store import People, migrate
 from chatddx.store.store import Connection
 
@@ -80,17 +80,17 @@ def migrated() -> Iterator[str]:
 
 
 # The sample as init-data lands it from the sample World: the archive's threads and
-# families, shared with alice, and her giftbag of forks. Seeded once, and copied for
+# families, shared with alice, and her giftbag of forks. Loaded once, and copied for
 # each test by the packages whose `db` is made from it.
 @pytest.fixture(scope="session")
-def seeded(migrated: str) -> Iterator[str]:
+def curated(migrated: str) -> Iterator[str]:
     name = create_database(template=migrated)
     try:
         with connect(name) as conn:
             alice = People(conn).add("alice", "Alice")
             cases = load_cases(SAMPLE / "cases.toml")
             source = Inventory.load(WORLD).source("sample")
-            _ = seed(conn, sample_plan(), cases, source, alice, giftbag=True)
+            _ = init(conn, sample_plan(), cases, source, alice, giftbag=True)
         yield name
     finally:
         drop_database(name)

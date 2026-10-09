@@ -10,12 +10,12 @@ from chatddx.bench.test.sample import (
     trial,
 )
 from chatddx.catalog import Entry, EntryField, Subject
+from chatddx.curation import Plan, load_cases
+from chatddx.curation.plan import SAMPLE
 from chatddx.factors.base import resolve
 from chatddx.factors.scoring import Expectation
 from chatddx.identity import Person
 from chatddx.runner.score import score_run
-from chatddx.seed import Plan, load_cases
-from chatddx.seed.plan import SAMPLE
 from chatddx.store import Catalog, People, Store
 from chatddx.store.store import Connection
 

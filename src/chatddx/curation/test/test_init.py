@@ -10,18 +10,18 @@ from chatddx.catalog import Subject
 from chatddx.cli import main
 from chatddx.conftest import WORLDS, connect, sample_plan
 from chatddx.core.rig import rig
+from chatddx.curation import init, load_cases, plan_factors
+from chatddx.curation.plan import SAMPLE
 from chatddx.factors.base import Fingerprint
 from chatddx.facts import BUNDLED, Facts
 from chatddx.inventory import Inventory
 from chatddx.inventory.test.memory import MemorySource
-from chatddx.seed import load_cases, plan_factors, seed
-from chatddx.seed.plan import SAMPLE
 from chatddx.store import Catalog, People
 from chatddx.store.store import Connection
 
 CASES = load_cases(SAMPLE / "cases.toml")
-# What the tests of seeding's mechanics seed, so they're quick; only
-# test_init_data_seeds_the_archive seeds every case.
+# What the tests of init-data's mechanics load, so they're quick; only
+# test_init_data_loads_the_archive loads every case.
 FEW = ("DutchFall10w", "Dutchfall11w", "Dutchfall12w")
 SOME = {id: CASES[id] for id in FEW}
 REVISION = "f" * 40
@@ -79,10 +79,10 @@ def revision() -> Iterator[None]:
         yield
 
 
-def test_init_data_seeds_the_archive(conn: Connection) -> None:
+def test_init_data_loads_the_archive(conn: Connection) -> None:
     alice = People(conn).add("alice", "Alice")
     plan = sample_plan()
-    lines = seed(conn, plan, CASES, vignettes(), alice)
+    lines = init(conn, plan, CASES, vignettes(), alice)
     threads = len(plan.records) + len(CASES)
     assert tally(lines) == Counter(
         {
@@ -136,7 +136,7 @@ def test_init_data_seeds_the_archive(conn: Connection) -> None:
         "Search the web for up-to-date information"
     )
 
-    again = seed(conn, sample_plan(), SOME, vignettes(), alice)
+    again = init(conn, sample_plan(), SOME, vignettes(), alice)
     assert {v for v in tally(again) if v.startswith("archive")} == {"archive validated"}
     assert again[-len(FAKES) - 2].startswith("[share] 0 of ")
 
@@ -148,7 +148,7 @@ def test_init_data_lints_what_it_lands(
     alice = People(conn).add("alice", "Alice")
     plan = sample_plan()
     unlike = replace(SOME["Dutchfall11w"], targets={"warning": {"pattern": "shock"}})
-    lines = seed(conn, plan, {**SOME, "Dutchfall11w": unlike}, vignettes(), alice)
+    lines = init(conn, plan, {**SOME, "Dutchfall11w": unlike}, vignettes(), alice)
     components = len({r.digest for r in plan.records}) + 2 * len(SOME)
     assert [line for line in lines if line.startswith("[lint")] == [
         *FAKES,
@@ -210,7 +210,7 @@ sampling = "recommended"
 
 def test_init_data_updates_and_gives_forks(conn: Connection, tmp_path: Path) -> None:
     alice = People(conn).add("alice", "Alice")
-    _ = seed(conn, sample_plan(), SOME, vignettes(), alice)
+    _ = init(conn, sample_plan(), SOME, vignettes(), alice)
     edited = tmp_path / "factors.toml"
     _ = edited.write_text(
         (SAMPLE / "factors.toml")
@@ -220,7 +220,7 @@ def test_init_data_updates_and_gives_forks(conn: Connection, tmp_path: Path) -> 
             'guidance = "Fill in the whole management plan."',
         )
     )
-    lines = seed(
+    lines = init(
         conn,
         sample_plan(edited),
         SOME,
@@ -258,7 +258,7 @@ def test_init_data_updates_and_gives_forks(conn: Connection, tmp_path: Path) -> 
     assert len(catalog.find("chunk.output", "management-plan", owner=alice.id)) == 1
     owners = [catalog.about(Subject(thread=t)).owner for t in catalog.forks(archived)]
     assert owners.count(alice.id) == 1
-    again = seed(
+    again = init(
         conn,
         sample_plan(edited),
         SOME,
@@ -271,7 +271,7 @@ def test_init_data_updates_and_gives_forks(conn: Connection, tmp_path: Path) -> 
     }
 
     gone = MemorySource(name="sample", vignettes={})
-    lines = seed(
+    lines = init(
         conn, sample_plan(edited), {"Dutchfall11w": SOME["Dutchfall11w"]}, gone, alice
     )
     assert "[archive case] Dutchfall11w: missing at source 'sample'" in lines
@@ -403,13 +403,13 @@ def test_wipe_data_deletes_and_unshares_and_init_data_gives_it_back(
         assert threads is not None and entries is not None
         return threads[0], entries[0]
 
-    init = ["init-data", "alice", "--vignettes", str(cases), "--giftbag"]
-    init += ["--data", str(few)]
-    seeded = run(*init)
-    gifts = sum(line.startswith("[giftbag ") for line in seeded)
-    shares = int(next(line for line in seeded if line.startswith("[share]")).split()[1])
+    argv = ["init-data", "alice", "--vignettes", str(cases), "--giftbag"]
+    argv += ["--data", str(few)]
+    loaded = run(*argv)
+    gifts = sum(line.startswith("[giftbag ") for line in loaded)
+    shares = int(next(line for line in loaded if line.startswith("[share]")).split()[1])
     threads, entries = rows()
-    _ = run(*init)
+    _ = run(*argv)
     assert rows() == (threads, entries)
 
     wiped = run("wipe-data", "alice")
@@ -431,7 +431,7 @@ def test_wipe_data_deletes_and_unshares_and_init_data_gives_it_back(
     # Each later run writes an entry per gift and per share, and no thread.
     cost = gifts + shares
     for cycle in (1, 2):
-        again = run(*init)
+        again = run(*argv)
         assert sum(line.endswith(": restored") for line in again) == gifts
         assert not [line for line in again if ": created" in line or "forked" in line]
         assert rows() == (threads, entries + 2 * cycle * cost)

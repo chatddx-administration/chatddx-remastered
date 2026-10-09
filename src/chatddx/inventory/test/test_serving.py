@@ -13,6 +13,7 @@ import pytest
 from pydantic import ValidationError
 
 from chatddx.conftest import WORLDS, sample_plan
+from chatddx.curation.world import endpoints
 from chatddx.factors.bundle import Registry
 from chatddx.factors.engine import (
     FileDigest,
@@ -33,7 +34,6 @@ from chatddx.inventory import (
     start_up,
     url_of,
 )
-from chatddx.seed.world import endpoints
 
 WORLD = WORLDS / "sample" / "inventory.toml"
 TEMPLATE = hashlib.sha256(b"{{ messages }}").hexdigest()

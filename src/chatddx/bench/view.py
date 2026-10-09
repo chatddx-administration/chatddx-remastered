@@ -219,7 +219,7 @@ class Bench:
         if self._rows.kind(engine) is None:
             raise NotFound(
                 f"endpoint {name!r} serves engine {short(engine)}, which isn't in the "
-                + "store: seed its World's factors with init-data --factors"
+                + "store: load its World with init-data"
             )
         return engine
 

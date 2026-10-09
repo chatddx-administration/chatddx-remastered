@@ -7,6 +7,8 @@ from pydantic import JsonValue
 
 from chatddx.conftest import sample_plan
 from chatddx.core.rig import entry, rig
+from chatddx.curation import load_cases
+from chatddx.curation.plan import SAMPLE
 from chatddx.factors.base import Code, resolve
 from chatddx.factors.bundle import Registry
 from chatddx.factors.request import Skeleton, SlotName
@@ -23,8 +25,6 @@ from chatddx.scorers.patterns import (
     score as patterns,
 )
 from chatddx.scorers.scorer import Scored, function, score
-from chatddx.seed import load_cases
-from chatddx.seed.plan import SAMPLE
 
 SCHEMA = "sha256:" + "0" * 64
 PATTERNS = "chatddx.scorers.patterns:score"

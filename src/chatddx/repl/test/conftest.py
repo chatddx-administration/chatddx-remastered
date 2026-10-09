@@ -21,8 +21,8 @@ from chatddx.store.store import Connection
 
 
 @pytest.fixture
-def db(seeded: str) -> Iterator[str]:
-    name = create_database(template=seeded)
+def db(curated: str) -> Iterator[str]:
+    name = create_database(template=curated)
     try:
         yield name
     finally:

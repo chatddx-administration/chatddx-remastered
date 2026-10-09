@@ -10,6 +10,10 @@ from rich.console import Console
 from chatddx.bench import Bench
 from chatddx.core import settings
 from chatddx.core.rig import rig
+from chatddx.curation import init, load_cases, plan_factors, wipe
+from chatddx.curation.plan import SAMPLE
+from chatddx.curation.world import endpoints
+from chatddx.curation.write import ARCHIVE
 from chatddx.facts import BUNDLED, Facts
 from chatddx.fake_vllm.server import run
 from chatddx.identity import Role
@@ -23,10 +27,6 @@ from chatddx.importers.o11n import (
 from chatddx.inventory import DirectorySource, Inventory
 from chatddx.repl.loop import HISTORY, loop
 from chatddx.repl.shell import Repl
-from chatddx.seed import load_cases, plan_factors, seed, wipe
-from chatddx.seed.plan import SAMPLE
-from chatddx.seed.world import endpoints
-from chatddx.seed.write import ARCHIVE
 from chatddx.store.migrate import TOP_TIER, migrate, pending
 from chatddx.store.people import People
 
@@ -91,7 +91,7 @@ def _init_data(args: argparse.Namespace) -> None:
         if user is None:
             user = people.add(args.user, args.user)
             lines.append(f"[person] {args.user}: added")
-        lines += seed(conn, plan, cases, source, user, giftbag=args.giftbag)
+        lines += init(conn, plan, cases, source, user, giftbag=args.giftbag)
     if world is not None:
         lines += endpoints(world, plan)
     for line in lines:
@@ -200,7 +200,7 @@ def main(argv: Sequence[str] | None = None) -> None:
 
     init = commands.add_parser(
         "init-data",
-        help="seed the sample data for the archive and share it with a person",
+        help="load the sample data into the archive and share it with a person",
     )
     _ = init.add_argument(
         "user", help="the login to share the archive with, added when missing"
@@ -228,14 +228,14 @@ def main(argv: Sequence[str] | None = None) -> None:
         "--data",
         type=Path,
         default=SAMPLE,
-        help="what to seed: a directory with factors.toml and cases.toml "
+        help="what to load: a directory with factors.toml and cases.toml "
         + "(the sample data in the package)",
     )
     _ = init.add_argument(
         "--factors",
         type=Path,
         action="append",
-        help="more factors to seed with the data's, such as a World's engines "
+        help="more factors to load with the data's, such as a World's engines "
         + "(worlds/sample/factors.toml)",
     )
     _ = init.add_argument(

@@ -29,7 +29,7 @@ def short(digest: str) -> str:
     return digest.removeprefix("sha256:")[:6]
 
 
-class _Seeder:
+class _Init:
     def __init__(self, conn: Connection, plan: Plan, archive: Person) -> None:
         self.store: Store = Store(conn)
         self.catalog: Catalog = Catalog(conn)
@@ -249,7 +249,7 @@ def wipe(conn: Connection, user: Person) -> list[str]:
     ] or [f"[wipe] {user.login}: nothing to delete or unshare"]
 
 
-def seed(
+def init(
     conn: Connection,
     plan: Plan,
     cases: dict[str, SampleCase],
@@ -263,18 +263,18 @@ def seed(
     with conn.transaction():
         people = People(conn)
         archive = people.find(ARCHIVE) or people.add(ARCHIVE, "Archive")
-        seeder = _Seeder(conn, plan, archive)
+        writer = _Init(conn, plan, archive)
         compilations = [r.compilation for r in plan.records if r.compilation]
-        _ = seeder.store.add(
+        _ = writer.store.add(
             plan.registry, [*(r.digest for r in plan.records), *compilations]
         )
         for r in plan.records:
-            seeder.record(r)
-        seeder.lines += [f"[skipped] {s}" for s in plan.skipped]
+            writer.record(r)
+        writer.lines += [f"[skipped] {s}" for s in plan.skipped]
         for id, sample in cases.items():
-            seeder.case(source, id, sample, schemas[0].digest)
-        seeder.share(user)
+            writer.case(source, id, sample, schemas[0].digest)
+        writer.share(user)
         if giftbag:
-            seeder.giftbag(user)
-        seeder.lint()
-        return seeder.lines
+            writer.giftbag(user)
+        writer.lint()
+        return writer.lines
