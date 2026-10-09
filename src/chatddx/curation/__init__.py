@@ -1,4 +1,5 @@
 from .plan import Plan, Planned, SampleCase, load_cases, plan_factors
+from .repair import repair
 from .write import init, wipe
 
 __all__ = [
@@ -8,5 +9,6 @@ __all__ = [
     "init",
     "load_cases",
     "plan_factors",
+    "repair",
     "wipe",
 ]

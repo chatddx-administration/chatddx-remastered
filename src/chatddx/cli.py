@@ -10,7 +10,7 @@ from rich.console import Console
 from chatddx.bench import Bench
 from chatddx.core import settings
 from chatddx.core.rig import rig
-from chatddx.curation import init, load_cases, plan_factors, wipe
+from chatddx.curation import init, load_cases, plan_factors, repair, wipe
 from chatddx.curation.plan import SAMPLE
 from chatddx.curation.write import ARCHIVE
 from chatddx.facts import BUNDLED, Facts
@@ -104,6 +104,21 @@ def _init_data(args: argparse.Namespace) -> None:
         f"[world] {n} finding{'' if n == 1 else 's'} in {m} endpoint"
         + f"{'' if m == 1 else 's'} of {world.path}"
     )
+    for line in lines:
+        print(line)
+
+
+def _repair_data(args: argparse.Namespace) -> None:
+    world = _world("repair-data", args.world)
+    try:
+        source = world.inventory.source(args.source)
+    except LookupError as e:
+        raise SystemExit(f"repair-data: {world.path}: {e}") from None
+    with psycopg.connect(settings.database()) as conn:
+        archive = People(conn).find(ARCHIVE)
+        if archive is None:
+            raise SystemExit(f"repair-data: no {ARCHIVE!r} yet; init-data loads it")
+        lines = repair(conn, source, archive, dry=args.dry_run)
     for line in lines:
         print(line)
 
@@ -252,6 +267,24 @@ def main(argv: Sequence[str] | None = None) -> None:
         + "ones and the World's",
     )
     init.set_defaults(run=_init_data)
+
+    repair_parser = commands.add_parser(
+        "repair-data",
+        help="move the archive's families whose vignettes were renamed or changed at "
+        + "their source",
+    )
+    _ = repair_parser.add_argument(
+        "--world",
+        type=Path,
+        help="the World directory whose source holds the vignettes (CHATDDX_WORLD)",
+    )
+    _ = repair_parser.add_argument(
+        "--source", default="sample", help="the source's name in the World (sample)"
+    )
+    _ = repair_parser.add_argument(
+        "--dry-run", action="store_true", help="list the repairs without making them"
+    )
+    repair_parser.set_defaults(run=_repair_data)
 
     wipe_parser = commands.add_parser(
         "wipe-data",

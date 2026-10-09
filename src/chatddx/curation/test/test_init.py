@@ -1,4 +1,3 @@
-import shutil
 from collections import Counter
 from collections.abc import Iterator
 from dataclasses import replace
@@ -9,19 +8,15 @@ import pytest
 from chatddx.catalog import Entry, EntryField, Subject
 from chatddx.cli import main
 from chatddx.conftest import WORLDS, connect, sample_plan
-from chatddx.curation import init, load_cases
+from chatddx.curation import init
 from chatddx.curation.plan import SAMPLE
+from chatddx.curation.test.sample import CASES, SOME, vignettes
 from chatddx.factors.base import Fingerprint
 from chatddx.inventory import Inventory
 from chatddx.inventory.test.memory import MemorySource
 from chatddx.store import Catalog, People
 from chatddx.store.store import Connection
 
-CASES = load_cases(SAMPLE)
-# What the tests of init-data's mechanics load, so they're quick; only
-# test_init_data_loads_the_archive loads every case.
-FEW = ("DutchFall10w", "Dutchfall11w", "casesfromedn1")
-SOME = {id: CASES[id] for id in FEW}
 REVISION = "f" * 40
 # The fake engines say what they are: no commit, no Nix closure.
 FAKES = [
@@ -38,36 +33,6 @@ FAKES = [
 ]
 SAMPLE_WORLD = WORLDS / "sample"
 KOMPISMOLN = WORLDS / "kompismoln"
-
-
-def vignettes(**changed: bytes) -> MemorySource:
-    texts = {id: f"The vignette of {id}.".encode() for id in CASES}
-    return MemorySource(name="sample", vignettes={**texts, **changed})
-
-
-# The sample data with only FEW's cases, for init-data's --data.
-@pytest.fixture
-def few(tmp_path: Path) -> Path:
-    data = tmp_path / "data"
-    _ = shutil.copytree(SAMPLE, data)
-    for path in data.glob("cases-*.toml"):
-        blocks = path.read_text().split("\n[case.")[1:]
-        _ = path.write_text(
-            "".join(f"[case.{b}\n" for b in blocks if b.split("]")[0] in FEW)
-        )
-    assert load_cases(data) == SOME
-    return data
-
-
-# A World whose one source holds FEW's vignettes, each a line of text.
-@pytest.fixture
-def world(tmp_path: Path) -> Path:
-    world = tmp_path / "world"
-    (world / "vignettes").mkdir(parents=True)
-    for id in SOME:
-        _ = (world / "vignettes" / f"{id}.txt").write_text(f"The vignette of {id}.")
-    _ = (world / "inventory.toml").write_text('[source.sample]\npath = "vignettes"\n')
-    return world
 
 
 def tally(lines: list[str]) -> Counter[str]:
