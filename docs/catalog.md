@@ -181,27 +181,31 @@ its appendices. A case from before a repair says so: "chest pain (earlier) with 
 its own source and id.
 
 What a component holds is described by what tells it apart from others of its kind, and the components it uses are
-shown by their titles in turn:
+shown by their titles in turn.
 
-A Configuration is described by its recipe's parts, translations and toolset included. When a compilation of it is
-stored, a judge's recipe says so first.
+A configuration is described by its recipe's parts, translations and toolset included, when a compilation of it is
+stored; a judge's recipe says so first: "ddx · case · management-plan · recommended · off". Without one, as for a
+hand-written skeleton, it is shown by its purpose and the start of its digest: "generation skeleton 1a2b3c".
 
-Example: "ddx · case · management-plan · recommended · off"
+Each kind is described by:
 
-This table shows how each component calculates its title:
 | Component | Described by | Example |
 | --- | --- | --- |
 | Chunk | Its values or the opening words of its text. | |
+| Chunk (few-shot) | | |
+| Chunk (output) | | |
+| Chunk (toolset) | | |
+| Chunk (passthrough) | | |
 | Translations chunk | Its language and size. | "sv translations, 12 texts" |
-| Tool | Its name. | |
+| Tool | Its name. | "web_search" |
 | Appendix | The opening words of its text. | |
-| Expectation | Its case. | |
+| Expectation | Its case. | "expectation for Dutchfall11w" |
 | Model | Its repository. | |
 | Local engine | Its model, server and GPU. | "google/gemma-3-12b-it on vllm 0.24.0 (RTX 5090)" |
 | Remote engine | Its model and host. | |
 | Trial | Its skeleton, its engine, and how many cases and seeds it has. | |
 | Judge | Its skeleton and engine. | |
-| Scorer | Its code. | |
+| Scorer | Its code. | "scorer chatddx 0.0.0+dev" |
 | Scoring | Its scorer and how many expectations it has. | |
 | Expectation schema | Its title or its properties. | |
 | Canary set | How many canaries it has. | |

@@ -37,7 +37,7 @@ The catalog decides what its rows mean (docs/catalog.md). The store reads the ro
 decided, all of one change at once.
 
 ### Looking things up for someone
-The store offers a simple lookup scoped to one person for owned runs and live threads and families they own or
+The store offers a simple lookup scoped to one person for live runs they own and live threads and families they own or
 collaborate on, which lets a person refer to things loosely. A thread is found by its name, matched whole first and
 only then read as an owner and a name, since names may hold a slash, and runs by the start of their id or by a
 component their trial is built on.
@@ -46,9 +46,8 @@ For a run, the store also tells:
 - which scorers can grade its answers
 - which scoring it would be scored under now (from the expectations the catalog picks for the person)
 
-Whether it still has to be scored under that scoring, the repl works this out for itself for now,
-so a run whose expectations changed after it was scored is due again. See "Which runs still need scoring..."
-under "Known gaps".
+The repl works out for itself, for now, whether a run still has to be scored under that scoring, so a run whose
+expectations changed after it was scored is due again (see "Which runs still need scoring" under "Known gaps").
 
 Like authorization, this decides what is relevant to show, not who may read what (docs/identity.md, "Authorization").
 
@@ -77,9 +76,9 @@ triggers gets around them.
 
 | Role | Used by | Created by | May |
 | --- | --- | --- | --- |
-| Admin | Whoever deploys: it owns the database and its schemas, runs the migrations and creates the tests' databases. | The database setup script, which also creates the database it owns. | Everything. It has to be able to create roles the first time tier 1 runs in a cluster, and databases to run the tests. |
-| Writer | The app. | The database setup script, as a role that can log in. Tier 1 creates it, unable to log in, only when it doesn't exist. | Read and add to the factors, the ledger and the catalog; add people and change them and their passwords, but never remove them; open and end sessions. |
-| Reader | Nothing yet. | Tier 1, unable to log in, when it doesn't exist. | Read what isn't sensitive: the factors, the catalog and people, but not the ledger, passwords or sessions. |
+| Admin | Creates and owns the database and its schemas, runs the migrations. | The database setup script | Everything. |
+| Writer | The app. | Setup script, as a role that can log in. | Read and add to factors, ledger and catalog; CRU people, but not remove them; open and end sessions. |
+| Reader | Nothing yet. | Tier 1. | Read what isn't sensitive: the factors, the catalog and people, but not the ledger, passwords or sessions. |
 
 Agents use the system's cluster (setup in AGENTS.md); the devShell runs one of its own (scripts/dev-db.sh).
 

@@ -310,8 +310,9 @@ How to name and list a new migration is in `docs/migrations.md`.
 
 | Name | Description |
 | --- | --- |
-| `create_database(template: str \| None = None) -> str` | Creates `chatddx_test_<12 hex>` as the admin, from `template` when given, and returns its name. |
-| `drop_database(name: str) -> None` | `DROP DATABASE … WITH (FORCE)` as the admin. |
+| `create_database(template: str \| None = None) -> str` | Creates `chatddx_test_<12 hex>` as the admin, from `template` when given, and returns its name. With a template, it first waits for the template's sessions to end (`_settled`), since copying a database that has sessions fails. |
+| `drop_database(name: str) -> None` | Waits for the database's sessions to end (`_settled`), then `DROP DATABASE … WITH (FORCE)` as the admin. |
+| `_settled(admin: Connection, name: str) -> None` | Polls `pg_stat_activity` until no session is on `name`, every 0.05 s for at most 5 s, then returns either way. A session closed a moment ago may still be ending on the server, and `WITH (FORCE)` as the admin can't end a session of the writer's: it fails with "permission denied to terminate process". |
 | `connect(name: str, admin: bool = False) -> Connection` | A connection to that database, as the writer or the admin. |
 | `migrated` (session fixture) | A database migrated to `TOP_TIER`, the template for `db`; dropped at the end. |
 | `db` | A fresh copy of `migrated` per test, dropped afterwards. |

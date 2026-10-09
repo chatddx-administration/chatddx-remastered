@@ -282,16 +282,6 @@ The subject is always the trial's or judge's digest.
 | `generation_config` | temperature 0.6, top_p 0.95, top_k 20 | empty |
 | `output` | `default = "native"`; `native`, `tool`, `text` without notes | `default = "native"`; a note on `native` (harmony renders no `response_format`); `tool`, `text` without notes |
 
-## Callers
-- `src/chatddx/cli.py:_init_data`: `Facts.load(BUNDLED, *args.facts)`; `--facts PATH` may be repeated.
-- `src/chatddx/seed/plan.py:_component`: a `from_facts` record. For `sampling`, its `effort` (default `"default"`)
-  and the rest of its options and the record's body as overrides to `sampling_chunk`; for `reasoning`, only `effort`
-  and an integer `budget` to `reasoning_chunk`. `Refused` skips the record and is reported; an effort that isn't a
-  level or `"default"` is a `ValueError`. `plan_factors` writes these records once per model that a planned engine
-  serves and the facts know (`model_name`), and reports the others as skipped.
-- `src/chatddx/seed/write.py`, the seed's lint: `reasons(facts, registry)` to `chatddx.factors.lint.lint`, then
-  `check_pairs` over the landed digests.
-
 ## Known gaps
 From `docs/facts.md`, "Open design issues":
 - `xhigh` can't be written: neither `Writes.effort` nor `Reasoning.effort` has the value.

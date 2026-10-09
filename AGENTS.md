@@ -16,7 +16,7 @@ This document contains project-wide instructions written by humans for agents. A
 * Base the fake vLLM on 0.24.0, extend/amend continuously as new facts are discovered, questions arise or sample data is needed.
 * `chatddx.core.settings` is the project-wide source of truth.
 * Nothing loads `.env`: export `.env-example`'s variables in the shell that runs `chatddx` or `pytest`, as
-  `set -a; . ./.env-example; set +a`.": without them, `chatddx migrate` fails with `KeyError: 'DB_HOST'`
+  `set -a; . ./.env-example; set +a`.
   (src/chatddx/core/settings.py:12).
 * To try the repl or the runner by hand, serve each endpoint of the sample World with `chatddx fake-vllm` and the
   arguments `chatddx.inventory.start_up` gives for it, after seeding it with
