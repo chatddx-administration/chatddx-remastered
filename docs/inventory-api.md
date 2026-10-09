@@ -22,7 +22,7 @@ Paths are relative to `src/chatddx/inventory/` unless they start with `src/`, `d
 
 ## Package
 
-`chatddx.inventory` re-exports `LISTEN_FLAGS`, `DirectorySource`, `EndpointSpec`, `HostSpec`, `Inventory`, `Source`,
+`chatddx.inventory` re-exports `LISTEN_FLAGS`, `DirectorySource`, `EndpointSpec`, `HostSpec`, `Inventory`, `Source`, `World`, `check`,
 `StartUp`, `confirm`, `served`, `start_up` and `url_of`. `test/memory.py:MemorySource` is imported by path.
 
 | Module | Builds on |
@@ -248,6 +248,16 @@ engine's `model` (`served_model_name`). In order:
 5. `LookupError("endpoint '<name>' at <url> serves <listed names, joined by ", ", or 'nothing'>, not <served
    name>")`.
 
+## `world.py`
+`World(path, inventory, factors=(), facts=())`, frozen; `World.load(path)` reads `path / "inventory.toml"` and
+takes `factors.toml` and `facts.toml` beside it when they're files;
+
+`LookupError("<path> is no World: it holds no inventory.toml")`.
+
+## `check.py`
+`check(inventory, get) -> list[Finding]`, its codes, levels and subjects (the endpoint's, host's or cleared
+endpoint's name), in the order endpoints, shared addresses, hosts, clearance.
+
 ## Worlds
 A World is a directory with `inventory.toml`, the files it includes, and `factors.toml`, the models and engines its
 endpoints serve. `worlds/` holds two:
@@ -258,8 +268,9 @@ endpoints serve. `worlds/` holds two:
 | `worlds/kompismoln/` | `sample`, `path = "../sample/vignettes"`, sensitive | from `endpoints.toml`: `qwen3-8b@pelle` (`max_jobs = 1`), `gpt-oss-20b@malborg` (`max_jobs = 4`) | from `endpoints.toml`: `pelle`, `malborg`, `bind = "::"` | none |
 
 `endpoints.toml` and `factors.toml` in `worlds/kompismoln/` are what `chatddx import-engine` writes.
-`test/test_serving.py:test_the_sample_world_binds_each_fake_engine_the_sample_seeds` fails when the sample World's
-endpoints don't match the engines the sample seeds.
+
+`test/test_serving.py:test_the_sample_world_binds_each_fake_engine_the_sample_loads` asserts the check finds
+nothing in the sample World against the sample's plan.
 
 ## Known gaps
 From `docs/inventory.md`, "Open design issues":
@@ -288,12 +299,3 @@ Behavior described here that `docs/inventory.md` doesn't state:
 - `cleared_for` gives an empty set for an endpoint that doesn't exist.
 
 ## Proposed amendments
-- ADD a `world.py` section: `World(path, inventory, factors=(), facts=())`, frozen; `World.load(path)` reads
-  `path / "inventory.toml"` and takes `factors.toml` and `facts.toml` beside it when they're files;
-  `LookupError("<path> is no World: it holds no inventory.toml")` without one (src/chatddx/inventory/world.py).
-- ADD a `check.py` section: `check(inventory, get) -> list[Finding]`, its codes, levels and subjects (the endpoint's,
-  host's or cleared endpoint's name), in the order endpoints, shared addresses, hosts, clearance
-  (src/chatddx/inventory/check.py).
-- CHANGE "Package": the re-exports gain `World` and `check`; `check.py` builds on `serving.py`.
-- CHANGE "Worlds": `test/test_serving.py:test_the_sample_world_binds_each_fake_engine_the_sample_loads` asserts the
-  check finds nothing in the sample World against the sample's plan.

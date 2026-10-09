@@ -293,6 +293,8 @@ stored.
 | `GREEDY_DROPS` | `top_p`, `top_k`, `min_p` |
 | `ToolName` | `str` matching `^[A-Za-z0-9_-]{1,64}$` |
 | `EntryPoint` | `str` matching `^[\w.]+:[\w.]+$`, as `module:attribute` |
+| `TRANSLATED` | `output`, `appendix_layout`, `toolset` |
+| `RECIPE_PARTS` |  `instructions`, `few_shot`, `prompt`, `output`, `sampling`, `reasoning`, `passthrough`, `translations`, `toolset` |
 
 ### Segments and text
 
@@ -304,6 +306,7 @@ stored.
   without inserts becomes one plain string.
 - `Message(role: Literal["system", "developer", "user", "assistant"], content: tuple[Segment, ...])`: at least one
   segment.
+- `own_texts(chunk, get) -> tuple[str, ...]`: the texts a chunk holds itself, whitespace left out,
 
 Slot rules, checked for a prompt and for a skeleton's messages together: only the purpose's slots, every required
 slot, and none twice. Insert rules, per chunk: only the kind's inserts, and none twice.
@@ -462,8 +465,8 @@ Before validation, a `body` with `temperature == 0` loses `top_p`, `top_k` and `
 nothing checks that the recipe compiles to the skeleton.
 
 ### `texts(recipe: Recipe, get: Resolver) -> dict[str, tuple[str, ...]]`
-The texts a translation of the recipe needs, by part, in first-seen order, without duplicates. Whitespace-only texts
-are left out, and so are parts without texts. Parts and their texts:
+The texts a translation of the recipe needs, by `TRANSLATED` parts, in first-seen order, without duplicates.
+Whitespace-only texts are left out, and so are parts without texts. Parts and their texts:
 
 | Part | Texts |
 | --- | --- |
@@ -503,6 +506,10 @@ kept, and nothing under `enum`, `const`, `default` or `examples` is translated.
 
 The same recipe and the same compiler always give the same skeleton. Without translations, how a chunk splits its
 text doesn't change the skeleton.
+
+### `compiled(recipe, get, compiler) -> tuple[Skeleton, Compilation]`
+A recipe compiled by `compiler`, the running code, with the compilation that records what the skeleton was compiled
+from. Its fields name chunks (in reading order) and a recipe compiled with the compilation that records it.
 
 ### `render(skeleton, *, model, seed, fills, return_token_ids=True) -> dict[str, JsonValue]`
 | Parameter | Type |
@@ -922,16 +929,3 @@ Behavior described here that `docs/factors.md` doesn't state. The first three ar
 - `JsonPointer` (`base.py`) is defined but unused.
 
 ## Proposed amendments
-- ADD `own_texts(chunk, get) -> tuple[str, ...]` in `request.py`: the texts a chunk holds itself, whitespace left out,
-  in the order a translation would need them; an instructions, few-shot, prompt or output chunk's literal texts and
-  schema prose, a toolset's guidance with its tools' descriptions and parameter prose, a translations chunk's
-  translations, and nothing for any other component. init-data keeps a chunk with some in a texts file of its
-  language, and one with none in `factors.toml` (src/chatddx/factors/request.py:own_texts,
-  src/chatddx/curation/plan.py:plan_factors).
-- CHANGE `compile_request` and `texts`: `TRANSLATED = ("output", "appendix_layout", "toolset")` are the parts a
-  recipe's translations translate; `texts` still gives every part's texts, and a translation needs those of the
-  `TRANSLATED` parts (src/chatddx/factors/request.py).
-- ADD `RECIPE_PARTS` and `compiled(recipe, get, compiler) -> tuple[Skeleton, Compilation]` in `request.py`: a
-  recipe's fields that name chunks, in reading order, and a recipe compiled with the compilation that records it.
-  init-data and the bench use both, and the bench's `PARTS` is `RECIPE_PARTS` (src/chatddx/factors/request.py,
-  src/chatddx/curation/plan.py, src/chatddx/bench/variation.py, src/chatddx/bench/view.py:_compile).

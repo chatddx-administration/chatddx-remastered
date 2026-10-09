@@ -251,6 +251,13 @@ digest as subject, in this order:
    naming those models in sorted order. Every entry of `sampling.recommended` counts, also one for a level that
    collapses.
 
+### `lints(registry, facts, digests, languages=None) -> list[Finding]`
+The factors' lints of `digests` and the facts' checks of their pairs, with the facts' reasons, and the languages
+`languages` says of requests and cases.
+
+The factors' lints of `digests` (`chatddx.factors.lint.lint`, with `reasons(facts, registry)` and `languages`) and
+`check_pairs`, in that order.
+
 ## Finding codes
 
 | Code | Level | Message |
@@ -311,7 +318,3 @@ Behavior described here that `docs/facts.md` doesn't state:
 - `reasons` and `check_pairs` raise `StructuralError` for components the registry doesn't hold.
 
 ## Proposed amendments
-- ADD `lints(registry, facts, digests, languages=None) -> list[Finding]` in `lint.py`: the factors' lints of `digests`
-  (`chatddx.factors.lint.lint`, with `reasons(facts, registry)` and `languages`) and `check_pairs`, in that order.
-  init-data lints what it lands with it, and the bench a variation's trial (src/chatddx/facts/lint.py:lints,
-  src/chatddx/curation/write.py:_Init.lint, src/chatddx/bench/view.py:Bench.findings).

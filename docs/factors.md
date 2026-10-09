@@ -339,12 +339,10 @@ Principal author: researchers (translators).
 Translations map source texts to their translations, the way gettext does. Each entry is a text exactly as a chunk holds
 it, whitespace included, and its translation.
 
-A recipe may name translations, and compilation then passes every text the recipe brings through them: the instructions,
-the examples and the prompt; the guidance and the text around where it is placed; the appendix layout; the descriptions
-of tools and of the answer function; and the titles and descriptions in schemas. What defines the answer's structure,
-such as property names and allowed values, is not translated, so the answer's structure and its scoring don't change. A
-text without a translation fails the compilation, which lists every missing text: nothing is guessed, and languages
-never mix.
+A recipe may name translations, and compilation then passes the text of the output, the toolset and the appendix
+layout through a recipe's translations: The guidance and the text around where it is placed, the descriptions of
+tools and of the answer function, and the titles and descriptions in schemas. Instructions, examples and prompts
+are written in their language, as cases are, and pass through untouched.
 
 Translations carry no language. A request's language is implicit in its text, and no language tag reaches the model;
 languages are recorded in the catalog (docs/catalog.md). The skeleton holds the translated text, and its compilation
@@ -722,9 +720,3 @@ a picker of the right kind for every reference, straight from the schema. Refere
 because nothing read it. The JSON Schema plays no part in any digest, so adding it back changes no digest.
 
 ## Proposed amendments
-- CHANGE "Translations": compilation passes only the text of the output, the toolset and the appendix layout through a
-  recipe's translations: the guidance and the text around where it is placed, the descriptions of tools and of the
-  answer function, and the titles and descriptions in schemas. Instructions, examples and prompts are written in their
-  language, as cases are, and pass through untouched; a data set keeps them in a file per language (docs/curation.md).
-  A text of a translated part without a translation still fails the compilation
-  (src/chatddx/factors/request.py:TRANSLATED, compile_request).

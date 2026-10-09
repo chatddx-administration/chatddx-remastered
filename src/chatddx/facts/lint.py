@@ -121,8 +121,6 @@ def check_pairs(
     return findings
 
 
-# The factors' lints of `digests` and the facts' checks of their pairs, with the facts'
-# reasons, and the languages `languages` says of requests and cases.
 def lints(
     registry: Registry,
     facts: Facts,

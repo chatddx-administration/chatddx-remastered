@@ -131,8 +131,8 @@ and the portal.
 
 ### Names
 A name is for people. None is required, and names needn't be unique: a thread without one is shown by its title (see
-"Titles"). Names can still be used to look threads up by kind, name and owner, which is how the sample loader
-recognises its own records when it runs again.
+"Titles"). Names can still be used to look threads up by kind, name and owner, which is how `curation init-data`
+recognises its own records when it runs again (docs/curation.md).
 
 ### Owners
 Whoever creates a thread or a family is its owner, unless they name someone else, and sharing it with someone makes
@@ -373,6 +373,3 @@ two families.
   changes from it, would say it shorter.
 
 ## Proposed amendments
-- CHANGE "Names" and "Deleting": the sample loader is init-data, and wiping is wipe-data (docs/curation.md). A re-run
-  of init-data also withdraws the tags the archive gave that the data no longer lists, and leaves those people gave
-  (src/chatddx/curation/write.py:_Init.sync).

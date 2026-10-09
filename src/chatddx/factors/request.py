@@ -952,8 +952,6 @@ def compile_request(recipe: Recipe, get: Resolver) -> Skeleton:
     )
 
 
-# A recipe compiled by `compiler`, the running code, with the compilation that records
-# what the skeleton was compiled from.
 def compiled(
     recipe: Recipe, get: Resolver, compiler: Code
 ) -> tuple[Skeleton, Compilation]:

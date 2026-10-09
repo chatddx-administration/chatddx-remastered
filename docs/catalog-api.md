@@ -234,7 +234,7 @@ picks the latest row. `src/chatddx/store/catalog.py:Rows` implements it over the
 | `edit(id: int) -> Edit \| None` | |
 | `edits(threads: Collection[int]) -> list[Edit]` | The edits of these threads, by id. |
 | `edits_holding(digests: Collection[str]) -> list[Edit]` | The edits, in any thread, whose digest is one of these, by id. |
-| `entries(subjects: Collection[Subject]) -> list[tuple[Subject, Entry]]` | The entries about these subjects, by id, without `by` and `at`. |
+| `entries(subjects: Collection[Subject]) -> list[tuple[Subject, Entry, int]]` | The entries about `subjects` with the person who wrote it. |
 | `bindings(family: int) -> list[Binding]` | The family's bindings, by id; `[]` for an unknown family. |
 | `families() -> list[int]` | Every family's id. `Rows` reads `catalog.family`; `Memory` lists the families that have bindings. |
 | `bindings_in(source: str) -> list[Binding]` | Every binding, of any family, in a source, by id. |
@@ -242,6 +242,7 @@ picks the latest row. `src/chatddx/store/catalog.py:Rows` implements it over the
 | `expectations(cases: Collection[str]) -> list[str]` | The stored expectations of these cases, by digest. |
 | `languages(digests: Collection[str]) -> list[tuple[str, str]]` | (digest, language) rows for these digests, by id. |
 | `labels(scorer: str) -> list[tuple[Part, int, str]]` | (part, position, label) rows for a scorer, by id. |
+| `bindings_sharing(vignette: vignette) -> list[Binding]` | The bindings to the vignette's source in the order they were made. |
 
 ### Helpers
 
@@ -343,6 +344,20 @@ stored.
 - Otherwise: the canonical document of the origin's head, with each varied top-level field set to the fork's value,
   or removed where the fork has none, read back with `parse_component`. `StructuralError` or `ValidationError` when
   the result isn't a valid component.
+
+## `variants.py`
+
+### `variant_name(name, language, model)` -> `str`
+What's made for a language, a model or both is named after them, so that one name finds
+the variant that fits: `NAME (LANGUAGE)`, `NAME (MODEL)` or `NAME (LANGUAGE, MODEL)`.
+
+### `made_for(name, models)` -> `(name, language, model) | None`
+What a variant's name says it was made from and for, or None for a name that isn't a
+variant's; `models` are the models a variant may be made for.
+
+### `variants_for(name, names, model)`
+The variants of `name` among `names` that `model` may use: those made for it, or for
+every model.
 
 ## families.py
 
@@ -558,6 +573,8 @@ with a psycopg error when the Python lets it through.
 | `involving(person) -> list[Subject]` | the store only | the subjects whose `owner` or `collaborator` entries ever named the person |
 | `label(scorer, part, position, value, by)` | `check_label` of the resolved scorer | the label |
 | `labels(scorer)` | `read.labels` | |
+| `tags_given(rows, subject)` | `read.tags_given` | |
+| `keep(digest, by, thread, *, name=None, compilation=None, forked_from=None) -> tuple[Edit, Kept]` | `digest` | `thread` |
 
 ## Database: schema `catalog`
 
@@ -738,25 +755,3 @@ amendments there.
 - `latest` keeps each key at the position of its first row.
 
 ## Proposed amendments
-- CHANGE `Reader.entries(subjects)`: it returns `(subject, entry, by)`, each entry with the person who wrote it; the
-  store's `Rows` reads `catalog.entry.by` (src/chatddx/catalog/read.py:Reader, src/chatddx/store/catalog.py:Rows).
-- ADD `read.tags_given(rows, subject) -> dict[str, int]` and `Catalog.tags_given(subject)`: the tags that hold on a
-  subject now, each with the writer of the latest entry about it. init-data withdraws only the tags the archive gave
-  (src/chatddx/catalog/read.py:tags_given, src/chatddx/curation/write.py:_Init.sync).
-- ADD `Reader.bindings_sharing(vignette) -> list[Binding]`: the bindings in the vignette's source to its id or to its
-  fingerprint, in the order they were made. `families.family_of` and `families.holder` read only those, and the
-  latest binding of each family among them, rather than every binding of the source, so loading a data set no longer
-  takes time in the square of its cases (src/chatddx/catalog/read.py:Reader, src/chatddx/catalog/families.py).
-- ADD `Catalog.keep(digest, by, thread, *, name=None, compilation=None, forked_from=None) -> tuple[Edit, Kept]`:
-  `digest` kept in `thread`, a new edit or nothing when it's the head already, or without a thread in a new one,
-  named and forked as given; `Kept` is `"created"`, `"edited"` or `"unchanged"`. init-data keeps each record in the
-  archive's thread of its name, and the bench a saved configuration in the person's
-  (src/chatddx/store/catalog.py:Catalog.keep, src/chatddx/curation/write.py:_Init.put,
-  src/chatddx/bench/view.py:Bench.save).
-- ADD a `variants.py` section: the names of variants, things made for a language, a model or both.
-  `variant_name(name, language, model)` gives `NAME (LANGUAGE)`, `NAME (MODEL)` or `NAME (LANGUAGE, MODEL)`;
-  `made_for(name, models)` reads one back as `(name, language, model)`, or None for a name that isn't a variant's;
-  `variants_for(name, names, model)` gives, sorted, the variants of `name` among `names` made for `model` or for every
-  model. init-data names its records with the first, and the bench and the repl find one by its plain name with the
-  others (src/chatddx/catalog/variants.py, src/chatddx/curation/plan.py, src/chatddx/bench/view.py:Bench.thread,
-  src/chatddx/repl/shell.py). A variant is known by its name alone (agents/wip-variants.md).
