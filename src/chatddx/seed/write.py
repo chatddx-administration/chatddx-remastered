@@ -130,16 +130,17 @@ class _Seeder:
             Expectation(case=digest, expectation_schema=schema, data=sample.targets)
         )
         _ = self.store.add(registry, [digest, expectation])
-        known = self.catalog.family(digest) is not None
-        try:
-            family = self.catalog.adopt(digest, self.archive.id)
-        except ValueError as e:
-            self.lines.append(f"[archive case] {id}: needs repair: {e}")
-            return
+        family = self.catalog.family(digest)
+        verb = "validated" if family is not None else "created"
+        if family is None:
+            try:
+                family = self.catalog.adopt(digest, self.archive.id)
+            except ValueError as e:
+                self.lines.append(f"[archive case] {id}: needs repair: {e}")
+                return
         self.families.append(family)
         self.land(digest, f"case {id}")
         self.sync(Subject(family=family), sample.tags, None, sample.language, name=id)
-        verb = "validated" if known else "created"
         self.lines.append(f"[archive case] {id}: {verb} {short(digest)}")
         found = [
             t
@@ -172,9 +173,10 @@ class _Seeder:
     def share(self, user: Person) -> None:
         subjects = [Subject(thread=t) for t in self.threads.values()]
         subjects += [Subject(family=f) for f in self.families]
+        known = self.catalog.abouts(subjects)
         shared = 0
         for subject in subjects:
-            if user.id not in self.catalog.about(subject).collaborators:
+            if user.id not in known[subject].collaborators:
                 self.note(subject, Entry(field=EntryField.COLLABORATOR, person=user.id))
                 shared += 1
         self.lines.append(

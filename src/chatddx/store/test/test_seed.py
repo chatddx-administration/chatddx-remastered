@@ -1,3 +1,4 @@
+import shutil
 from collections import Counter
 from collections.abc import Iterator
 from dataclasses import replace
@@ -19,6 +20,10 @@ from chatddx.store import Catalog, People
 from chatddx.store.store import Connection
 
 CASES = load_cases(SAMPLE / "cases.toml")
+# What the tests of seeding's mechanics seed, so they're quick; only
+# test_init_data_seeds_the_archive seeds every case.
+FEW = ("DutchFall10w", "Dutchfall11w", "Dutchfall12w")
+SOME = {id: CASES[id] for id in FEW}
 REVISION = "f" * 40
 # The fake engines say what they are: no commit, no Nix closure.
 FAKES = [
@@ -41,6 +46,19 @@ WORLD = WORLDS / "kompismoln" / "inventory.toml"
 def vignettes(**changed: bytes) -> MemorySource:
     texts = {id: f"The vignette of {id}.".encode() for id in CASES}
     return MemorySource(name="sample", vignettes={**texts, **changed})
+
+
+# The sample data with only FEW's cases, for init-data's --data.
+@pytest.fixture
+def few(tmp_path: Path) -> Path:
+    data = tmp_path / "data"
+    _ = shutil.copytree(SAMPLE, data)
+    blocks = (SAMPLE / "cases.toml").read_text().split("\n[case.")[1:]
+    _ = (data / "cases.toml").write_text(
+        "".join(f"[case.{b}\n" for b in blocks if b.split("]")[0] in FEW)
+    )
+    assert load_cases(data / "cases.toml") == SOME
+    return data
 
 
 def tally(lines: list[str]) -> Counter[str]:
@@ -118,7 +136,7 @@ def test_init_data_seeds_the_archive(conn: Connection) -> None:
         "Search the web for up-to-date information"
     )
 
-    again = seed(conn, sample_plan(), CASES, vignettes(), alice)
+    again = seed(conn, sample_plan(), SOME, vignettes(), alice)
     assert {v for v in tally(again) if v.startswith("archive")} == {"archive validated"}
     assert again[-len(FAKES) - 2].startswith("[share] 0 of ")
 
@@ -129,9 +147,9 @@ def test_init_data_lints_what_it_lands(
     monkeypatch.delenv("CHATDDX_REVISION")
     alice = People(conn).add("alice", "Alice")
     plan = sample_plan()
-    unlike = replace(CASES["Dutchfall11w"], targets={"warning": {"pattern": "shock"}})
-    lines = seed(conn, plan, {**CASES, "Dutchfall11w": unlike}, vignettes(), alice)
-    components = len({r.digest for r in plan.records}) + 2 * len(CASES)
+    unlike = replace(SOME["Dutchfall11w"], targets={"warning": {"pattern": "shock"}})
+    lines = seed(conn, plan, {**SOME, "Dutchfall11w": unlike}, vignettes(), alice)
+    components = len({r.digest for r in plan.records}) + 2 * len(SOME)
     assert [line for line in lines if line.startswith("[lint")] == [
         *FAKES,
         *(
@@ -192,7 +210,7 @@ sampling = "recommended"
 
 def test_init_data_updates_and_gives_forks(conn: Connection, tmp_path: Path) -> None:
     alice = People(conn).add("alice", "Alice")
-    _ = seed(conn, sample_plan(), CASES, vignettes(), alice)
+    _ = seed(conn, sample_plan(), SOME, vignettes(), alice)
     edited = tmp_path / "factors.toml"
     _ = edited.write_text(
         (SAMPLE / "factors.toml")
@@ -205,7 +223,7 @@ def test_init_data_updates_and_gives_forks(conn: Connection, tmp_path: Path) -> 
     lines = seed(
         conn,
         sample_plan(edited),
-        CASES,
+        SOME,
         vignettes(DutchFall10w=b"Edited at the source."),
         alice,
         giftbag=True,
@@ -243,7 +261,7 @@ def test_init_data_updates_and_gives_forks(conn: Connection, tmp_path: Path) -> 
     again = seed(
         conn,
         sample_plan(edited),
-        CASES,
+        SOME,
         vignettes(DutchFall10w=b"Edited at the source."),
         alice,
         giftbag=True,
@@ -254,13 +272,14 @@ def test_init_data_updates_and_gives_forks(conn: Connection, tmp_path: Path) -> 
 
     gone = MemorySource(name="sample", vignettes={})
     lines = seed(
-        conn, sample_plan(edited), {"Dutchfall11w": CASES["Dutchfall11w"]}, gone, alice
+        conn, sample_plan(edited), {"Dutchfall11w": SOME["Dutchfall11w"]}, gone, alice
     )
     assert "[archive case] Dutchfall11w: missing at source 'sample'" in lines
 
 
 def test_init_data_command(
     db: str,
+    few: Path,
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
     capsys: pytest.CaptureFixture[str],
@@ -268,10 +287,11 @@ def test_init_data_command(
     monkeypatch.setenv("DB_NAME", db)
     cases = tmp_path / "cases"
     cases.mkdir()
-    for id in CASES:
+    for id in SOME:
         _ = (cases / f"{id}.txt").write_text(f"The vignette of {id}.")
     world = tmp_path / "world.toml"
     _ = world.write_text('[source.sample]\npath = "cases"\n')
+    data = ["--data", str(few)]
     main(
         [
             "init-data",
@@ -281,6 +301,7 @@ def test_init_data_command(
             "--factors",
             str(SAMPLE_ENGINES),
             "--giftbag",
+            *data,
         ]
     )
     out = capsys.readouterr().out.splitlines()
@@ -290,7 +311,7 @@ def test_init_data_command(
     assert any(line.startswith("[giftbag skeleton] plan (") for line in out)
     with connect(db) as conn:
         assert conn.execute("SELECT count(*) FROM catalog.family").fetchone() == (
-            len(CASES),
+            len(SOME),
         )
 
     main(
@@ -301,6 +322,7 @@ def test_init_data_command(
             str(cases),
             "--factors",
             str(SAMPLE_ENGINES),
+            *data,
         ]
     )
     out = capsys.readouterr().out.splitlines()
@@ -327,6 +349,7 @@ def test_init_data_command(
             str(SAMPLE_WORLD),
             "--factors",
             str(SAMPLE_ENGINES),
+            *data,
         ]
     )
     sample = Inventory.load(SAMPLE_WORLD)
@@ -341,7 +364,7 @@ def test_init_data_command(
     ]
 
     world = ["--world", str(WORLD), "--factors", str(WORLD.parent / "factors.toml")]
-    main(["init-data", "alice", *world])
+    main(["init-data", "alice", *world, *data])
     real = Inventory.load(WORLD)
     out = capsys.readouterr().out.splitlines()
     for name in real.endpoints:
@@ -358,6 +381,7 @@ def test_init_data_command(
 
 def test_wipe_data_deletes_and_unshares_and_init_data_gives_it_back(
     db: str,
+    few: Path,
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
     capsys: pytest.CaptureFixture[str],
@@ -365,7 +389,7 @@ def test_wipe_data_deletes_and_unshares_and_init_data_gives_it_back(
     monkeypatch.setenv("DB_NAME", db)
     cases = tmp_path / "cases"
     cases.mkdir()
-    for id in CASES:
+    for id in SOME:
         _ = (cases / f"{id}.txt").write_text(f"The vignette of {id}.")
 
     def run(*argv: str) -> list[str]:
@@ -380,6 +404,7 @@ def test_wipe_data_deletes_and_unshares_and_init_data_gives_it_back(
         return threads[0], entries[0]
 
     init = ["init-data", "alice", "--vignettes", str(cases), "--giftbag"]
+    init += ["--data", str(few)]
     seeded = run(*init)
     gifts = sum(line.startswith("[giftbag ") for line in seeded)
     shares = int(next(line for line in seeded if line.startswith("[share]")).split()[1])
