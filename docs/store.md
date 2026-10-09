@@ -88,3 +88,13 @@ unreachable.
   `docs/factors.md`, "Splitting expectations", already considers a bump of `Scorer.schema_version`.
 
 ## Proposed amendments
+- CHANGE, under "Code", "`started(runs)`, `runs_of(trial)`, `finished(runs)` and `scores_of(run)` list runs and
+  scores, newest first" → "`started(runs)`, `runs_of(trial)` and `scores_of(run)` list runs and scores, newest first;
+  `finished(runs)` gives the set of those runs that have a finished row" (`store.py:Store.finished`).
+- CHANGE, under "Code", "the scoring a run is scored under" → "the scoring a run would be scored under now, from the
+  expectations the catalog picks for the person", since a run whose expectations changed after it was scored is
+  outstanding again (`reads.py:Reads.scoring`, `reads.py:Reads.outstanding`,
+  `test/test_reads.py:test_a_run_is_outstanding_until_scored_under_the_scoring_built_now`).
+- CHANGE, under "Known gaps", "and `Store.run` then fails with `StructuralError: RunStarted vNone is not readable by
+  v1`" → "and `Store.run` then fails with `StructuralError: run <id> has no started row`, as `Store.score` does for a
+  score" (`store.py:Store._stages`, `test/test_store.py:test_run_and_score_roundtrip`).

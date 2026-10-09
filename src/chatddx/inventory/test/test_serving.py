@@ -200,6 +200,10 @@ def test_a_start_up_is_refused_where_the_inventory_or_the_engine_falls_short() -
     )
     with pytest.raises(LookupError, match="engine.remote, not ours to start"):
         _ = start_up(world(remote), reg.get, "qwen@pelle")
+    unknown = world("sha256:" + "c" * 64, {model: "/m"}, {TEMPLATE: "/t"})
+    for f in (start_up, url_of, confirm):
+        with pytest.raises(LookupError, match="'qwen@pelle': sha256:c+ is not in the"):
+            _ = f(unknown, reg.get, "qwen@pelle")
 
 
 def test_a_remote_engine_is_reached_at_its_base_url() -> None:

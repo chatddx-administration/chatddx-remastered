@@ -281,3 +281,7 @@ The runner needs the World the person starting a run meant, since that World dec
   what's over `--max-num-seqs`, so nothing fails, but the batching differs from what each run's execution says.
 
 ## Proposed amendments
+- CHANGE, under "Sources", "and a new kind of source is one class with a `kind` of its own" → "and a new kind of
+  source is one class with a `kind` of its own, added to the type of `Inventory.sources`", since that field takes
+  only `DirectorySource` today and refuses any other `kind` (`src/chatddx/inventory/inventory.py:Inventory.sources`,
+  `src/chatddx/inventory/test/test_inventory.py:test_sources_are_declared_in_the_inventory`).

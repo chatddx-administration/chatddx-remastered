@@ -131,3 +131,8 @@ Without facts, linting is unchanged.
   unknown.
 
 ## Proposed amendments
+- ADD, under "Open design issues", "Smaller issues", after "An unknown budget passes the check.": "**Unknown
+  reasoning fails the check.** `facts.reasoning_unmatched` compares a skeleton's `reasoning_effort` and
+  `chat_template_kwargs` with the writes of the levels that have them, so a skeleton gets the warning when the model's
+  reasoning facts are missing, or when it uses a level nothing is known about, though a missing part otherwise means
+  "unknown"." (`src/chatddx/facts/lint.py:_model`, `src/chatddx/facts/models.py:ReasoningFacts.realized`)
