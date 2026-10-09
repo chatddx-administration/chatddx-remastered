@@ -1,3 +1,4 @@
+from chatddx.inventory import Inventory
 from chatddx.repl.test.sample import FREE_TEXT, GPT_OSS, QWEN, Say
 
 
@@ -5,14 +6,16 @@ def line_of(written: str, start: str) -> str:
     return [line for line in written.splitlines() if line.strip().startswith(start)][-1]
 
 
-def test_endpoints_are_listed_with_their_engines_and_clearance(say: Say):
+def test_endpoints_are_listed_with_their_engines_and_clearance(
+    world: Inventory, say: Say
+):
     written = say("endpoints")
 
     assert line_of(written, QWEN).split() == [
         QWEN,
         QWEN,
         "Qwen/Qwen3-8B-AWQ",
-        "http://127.0.0.1:12099/v1/",
+        str(world.endpoints[QWEN].url),
         "sample",
     ]
     assert line_of(written, GPT_OSS).split()[2] == "openai/gpt-oss-20b"

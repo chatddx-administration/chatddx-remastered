@@ -64,6 +64,16 @@ COMMANDS: dict[str, Command] = {
     "reasoning": Command(
         (), "show what each reasoning level does on each model", inspecting.reasoning
     ),
+    "run": Command(
+        ("CASE", "[SEED]"),
+        "run a case on the cell, with SEED or the seed the repl holds, and score it",
+        running.run,
+    ),
+    "batch": Command(
+        ("TAG...",),
+        "run the cell on each case with any TAG, then score them (Ctrl-C stops)",
+        running.batch,
+    ),
     "seed": Command(
         ("[SEED]",),
         "draw a fresh seed for the cell's runs; SEED holds it",

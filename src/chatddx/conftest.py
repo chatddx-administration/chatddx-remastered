@@ -1,3 +1,4 @@
+import time
 from collections.abc import Iterator
 from pathlib import Path
 from uuid import uuid4
@@ -28,18 +29,34 @@ def sample_plan(factors: Path = SAMPLE / "factors.toml") -> Plan:
     )
 
 
+# A session closed a moment ago may still be ending on the server, and neither a
+# template's copy nor DROP ... WITH (FORCE) waits for it: FORCE may not end a session
+# of DB_USER's as DB_ADMIN.
+def _settled(admin: Connection, name: str) -> None:
+    for _ in range(100):
+        row = admin.execute(
+            "SELECT count(*) FROM pg_stat_activity WHERE datname = %s", (name,)
+        ).fetchone()
+        if row is None or row[0] == 0:
+            return
+        time.sleep(0.05)
+
+
 def create_database(template: str | None = None) -> str:
     name = f"chatddx_test_{uuid4().hex[:12]}"
     create = sql.SQL("CREATE DATABASE {}").format(sql.Identifier(name))
     if template is not None:
         create += sql.SQL(" TEMPLATE {}").format(sql.Identifier(template))
     with psycopg.connect(settings.database(admin=True), autocommit=True) as admin:
+        if template is not None:
+            _settled(admin, template)
         _ = admin.execute(create)
     return name
 
 
 def drop_database(name: str) -> None:
     with psycopg.connect(settings.database(admin=True), autocommit=True) as admin:
+        _settled(admin, name)
         _ = admin.execute(
             sql.SQL("DROP DATABASE {} WITH (FORCE)").format(sql.Identifier(name))
         )

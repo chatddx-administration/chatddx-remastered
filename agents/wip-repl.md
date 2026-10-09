@@ -25,8 +25,8 @@ So the plan:
 
 The order: decisions, runner, scoring pass, reads for a person, the shell, tool rounds.
 
-Where it stands: everything but the shell's 4b and 4c and the docs is built. `chatddx repl` runs 4a, the commands
-that choose and inspect (see "4. The shell", "Built: 4a"). Next is 4b, `run` and `batch` on the runner.
+Where it stands: everything but the shell's 4c and the docs is built. `chatddx repl` chooses and inspects (4a), and
+runs and scores (4b; see "4. The shell"). Next is 4c, `runs`, `replay` and `score`.
 
 ## Decisions needed before phase 1
 ### D1. The clearance gate
@@ -348,6 +348,53 @@ Left from 4a:
 - **The seeded sample fixture** is now defined twice: module-scoped in `src/chatddx/store/test/test_reads.py`,
   session-scoped in `src/chatddx/repl/test/conftest.py`. It could move to `src/chatddx/conftest.py`.
 
+#### Built: 4b
+`run CASE [SEED]` and `batch TAG...` (`src/chatddx/repl/running.py`), on the runner and the scoring pass through
+the bench (`Bench.start`, `Bench.score`).
+- **`run`** makes a trial of the cell, the case and the seed, the shell's unless one is given, and starts it at the
+  cell's endpoint. The gate's refusals come before anything is written, as `refused: …`: `plan-web` on the sample,
+  whose source is sensitive, or an endpoint that doesn't answer. The transcript streams the thinking, labelled, the
+  answer, each tool call as `[name] arguments` with its `[result]`, and the tokens used. After `finish`, the run is
+  scored under every scorer that applies (`Reads.scorers`), each as its scoring would be built now
+  (`Reads.scoring`, D8; `runner/score.py:score_run`). Then: `valid` or `invalid: …` for an output with a schema,
+  `unread: …` for an answer that can't be read, the call's error when it has one, what the scorers' views read, the
+  scores with their reasons, `check_run`'s findings, and `recorded as run N of trial X`, N counting the person's runs
+  of that trial.
+- **`batch`** makes one trial of the cases with any of the tags and the shell's seed, so one run. A line per case,
+  in the schedule's order (cases by digest), counts its tokens as they stream and says how the call went:
+  `completed`, `valid`, `invalid`, `unread`, `errored` or `stopped`, with the call's error. The run is then scored,
+  and a table gives each case's value per scorer view, and another, per view, how many were scored, their mean and
+  standard error (`scorers/aggregate.py`), and how many have no value.
+- **Ctrl-C** as planned (see "Modules"): in `run`, the call hangs up and is recorded as stopped; in a batch, a first
+  press is `Running.stop()`, so the case under way finishes and the batch stops, and a second hangs that call up
+  too. While a run is finished and scored, a first press waits for it, and a second goes through.
+- **Tests**: in `src/chatddx/repl/test/test_running.py`, with the sample World on free ports and the fake vLLM
+  serving the Qwen endpoint in a thread; Ctrl-C is pressed with `signal.raise_signal` as a call streams.
+
+Takes made while building, all still open:
+- **Scores come after the run.** `score_run` takes a finished run, so a batch's lines say how each call went, and the
+  scores follow in a table. The old lines carried each case's scores as it ended.
+- **Which views are shown.** After `run`, each selection the applying scorers' views make is listed once, by the
+  first label that makes it, and a label used again gets its scorer's name, as `differential (diagnoses)`. A view that
+  reads the answer whole isn't listed, since the transcript holds it.
+- **An unsaved cell's compilation is stored** before its run, with the running code as compiler, so the run's
+  skeleton keeps a recipe and a title.
+- **Greedy cells run**, with the notice, rather than being refused a seed (D3). The trial still holds the seed.
+- **The transcript leaves out trailing whitespace**, so a runaway's newlines don't fill the screen; the cutoff is
+  said after it.
+
+Left from 4b:
+- **A structured answer cut short is unread.** A runaway on `plan` stops inside the JSON, which isn't salvaged
+  (`agents/wip-runner.md`, "The scoring pass"), so every view scores "no answer". The old repl closed the structure
+  where it stopped (D5's salvage); free text keeps what came.
+- **No word on reasoning that wasn't heeded**, as the old `bench/outcome.py:unheeded` gave (`agents/wip-runner.md`,
+  "Afterwards"), and no `[thinking in content]`: the runner can't tell reasoning a parser missed.
+- **Two tool calls in one response run together** on one transcript line: a call's first delta is taken as its
+  name, and the deltas don't say where the next call begins.
+- **The test databases.** Dropping one `WITH (FORCE)` failed now and then: a test's `DB_USER` session had closed but
+  not yet ended on the server, and `DB_ADMIN` may not end it. `src/chatddx/conftest.py:_settled` waits for the
+  database's sessions to end before a copy or a drop. The runner's tests had failed the same way.
+
 ### 5. Tool rounds
 Built in the runner (`agents/wip-runner.md`, "Phase 5").
 - The `next_request` loop, with `max_rounds`, `Turn` and `ToolRun`.
@@ -377,8 +424,8 @@ adopted. Proposals:
 - **A configuration on another model's endpoint.** The old `show` said what each slice became on the stack.
   Here, model-dependent chunks are fixed at seed time, so such a mismatch shows only through
   `facts.sampling_unmatched` and the `vllm.*` lints. `use`, `on` and `cell` should say so straight away.
-- **The same vignette under two names.** The old repl ran it once. Here two source ids make two cases, so both run.
-  Take: deduplicate a batch's cases by vignette fingerprint, and say which were merged.
+- **The same vignette under two names** can't be in two families: adopting a vignette another family holds, by id or
+  by fingerprint, is refused (`src/chatddx/catalog/families.py:check_adoptable`), so a batch runs it once.
 - **Batch order** is by case digest, since `Trial` sorts its cases, not by name.
 - **`return_token_ids` on remote engines** is still undecided (`docs/factors.md`, "Proposed amendments"). The fake
   and vLLM accept it.

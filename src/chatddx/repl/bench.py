@@ -19,6 +19,9 @@ from chatddx.factors.trial import Trial
 from chatddx.facts import Facts, check_pairs, model_name, reasons
 from chatddx.identity import Person
 from chatddx.inventory import Inventory
+from chatddx.ledger import RunStarted, Score
+from chatddx.runner.run import Runner, Running
+from chatddx.runner.score import score_run
 from chatddx.store import Catalog, People, Reads, Store
 from chatddx.store.catalog import Rows
 from chatddx.store.store import Connection
@@ -138,6 +141,20 @@ class Reach:
     @property
     def have(self) -> int:
         return self.cases - len(self.missing)
+
+
+# A run's score under one scorer, or why it couldn't be scored.
+@dataclass(frozen=True)
+class Graded:
+    name: str
+    scorer: Scorer
+    labels: dict[int, str]
+    score: Score | None = None
+    findings: list[Finding] = field(default_factory=list[Finding])
+    refused: str | None = None
+
+    def label(self, view: int) -> str:
+        return self.labels.get(view, f"view {view}")
 
 
 @dataclass(frozen=True)
@@ -394,21 +411,15 @@ class Bench:
     def save(self, cell: Cell, name: str) -> Saved:
         assert cell.configuration is not None
         skeleton = self.skeleton(cell)
-        recipe = cell.varied
         mine = self.catalog.find("skeleton", name, owner=self.person.id)
         if len(mine) > 1:
             raise ValueError(
                 f"{self.person.login} has {len(mine)} configurations named {name!r}"
             )
         with self.conn.transaction():
-            compilation = cell.configuration.compilation
-            if cell.parts and recipe is not None:
-                registry = self.store.load(s.digest for s in iter_refs(recipe))
-                _ = registry.add(skeleton)
-                compilation = registry.add(
-                    Compilation(recipe=recipe, skeleton=skeleton.digest, compiler=rig())
-                )
-                _ = self.store.add(registry, [compilation])
+            compilation = (
+                self._compile(cell, skeleton) or cell.configuration.compilation
+            )
             if not mine:
                 what = "created"
                 edit = self.catalog.create(
@@ -428,3 +439,49 @@ class Bench:
                 )
         recipe = self.catalog.recipe(edit.thread)
         return Saved(name, skeleton.digest, what, cell.using(edit, name, recipe))
+
+    # Stores what an unsaved skeleton was compiled from, by the running code.
+    def _compile(self, cell: Cell, skeleton: Skeleton) -> str | None:
+        recipe = cell.varied
+        if not cell.parts or recipe is None:
+            return None
+        registry = self.store.load(s.digest for s in iter_refs(recipe))
+        _ = registry.add(skeleton)
+        compilation = registry.add(
+            Compilation(recipe=recipe, skeleton=skeleton.digest, compiler=rig())
+        )
+        _ = self.store.add(registry, [compilation])
+        return compilation
+
+    # The cell run on `cases` with one seed, at the cell's endpoint; nothing is sent
+    # until `Running.send`.
+    def start(self, cell: Cell, cases: list[str], seed: int) -> Running:
+        assert cell.endpoint is not None and cell.engine is not None
+        skeleton = self.skeleton(cell)
+        registry, trial = self.trial(skeleton, cell.engine, cases, seed)
+        runner = Runner(self.conn, self.inventory, self.person)
+        running = runner.start(trial, registry, cell.endpoint)
+        _ = self._compile(cell, skeleton)
+        return running
+
+    # A finished run scored under every scorer that applies to it, as each scoring would
+    # be built now.
+    def score(self, run: RunStarted) -> list[Graded]:
+        found: list[Graded] = []
+        for edit, about in self.reads.scorers(run):
+            name = about.name or self.catalog.title(edit.thread)
+            scorer = resolve(self.get, edit.digest, Scorer)
+            labels = self.labels(edit.digest)
+            try:
+                scoring = self.reads.scoring(run, edit.digest)
+                if scoring is None:
+                    raise LookupError("none of the run's cases has an expectation")
+                registry = self.store.load([scoring.scorer, *scoring.expectations])
+                score, findings = score_run(
+                    self.conn, run.run, scoring, registry, self.person
+                )
+            except (LookupError, TypeError, NotImplementedError) as e:
+                found.append(Graded(name, scorer, labels, refused=str(e)))
+                continue
+            found.append(Graded(name, scorer, labels, score, findings))
+        return found

@@ -1,4 +1,6 @@
+import socket
 from collections.abc import Iterator
+from pathlib import Path
 
 import psycopg
 import pytest
@@ -7,11 +9,13 @@ from rich.console import Console
 from chatddx.conftest import connect, create_database, drop_database, sample_plan
 from chatddx.core import settings
 from chatddx.facts import BUNDLED, Facts
-from chatddx.inventory import Inventory
+from chatddx.fake_vllm.served import Served
+from chatddx.fake_vllm.server import serving
+from chatddx.inventory import Inventory, start_up
 from chatddx.repl.bench import Bench
 from chatddx.repl.commands import handle
 from chatddx.repl.shell import Repl
-from chatddx.repl.test.sample import WORLD, Say
+from chatddx.repl.test.sample import QWEN, WORLD, Say
 from chatddx.seed import load_cases, seed
 from chatddx.seed.plan import SAMPLE
 from chatddx.store import People
@@ -50,9 +54,28 @@ def conn(db: str) -> Iterator[Connection]:
         yield c
 
 
+# The sample World, its endpoints on ports nothing else listens on.
 @pytest.fixture
-def world() -> Inventory:
-    return Inventory.load(WORLD)
+def world(tmp_path: Path) -> Inventory:
+    with socket.socket() as s:
+        s.bind(("127.0.0.1", 0))
+        port = int(s.getsockname()[1])
+    text = WORLD.read_text().replace(
+        'path = "vignettes"', f'path = "{WORLD.parent / "vignettes"}"'
+    )
+    path = tmp_path / "inventory.toml"
+    _ = path.write_text(
+        text.replace("12099", str(port)).replace("12100", str(port + 1))
+    )
+    return Inventory.load(path)
+
+
+# The fake vLLM serving the Qwen endpoint's engine, as its start-up says.
+@pytest.fixture
+def fake(world: Inventory, bench: Bench) -> Iterator[None]:
+    startup = start_up(world, bench.get, QWEN)
+    with serving([Served.of(startup.argv[0], startup.argv[1:])]):
+        yield
 
 
 @pytest.fixture
