@@ -619,6 +619,10 @@ _NAMED = frozenset(
 _DATA = frozenset({"enum", "const", "default", "examples"})
 
 
+def _untranslated(text: str) -> str:
+    return text
+
+
 def _tr(text: str, tr: Translate) -> str:
     return tr(text) if text.strip() else text
 
@@ -753,7 +757,13 @@ def _parts(recipe: Recipe, get: Resolver, tr: Callable[[str], Translate]) -> _Pa
     )
 
 
-# What a translation of the recipe needs, per part, in order; whitespace is left out.
+# The parts translations translate. Instructions, few-shot and prompts are written in
+# their language.
+TRANSLATED = ("output", "appendix_layout", "toolset")
+
+
+# The texts each part of the recipe holds, in order; whitespace is left out. A translation
+# needs those of the TRANSLATED parts.
 def texts(recipe: Recipe, get: Resolver) -> dict[str, tuple[str, ...]]:
     found: dict[str, list[str]] = {}
 
@@ -815,7 +825,9 @@ def compile_request(recipe: Recipe, get: Resolver) -> Skeleton:
             return text
         return entries[text]
 
-    parts = _parts(recipe, get, lambda _: translate)
+    parts = _parts(
+        recipe, get, lambda part: translate if part in TRANSLATED else _untranslated
+    )
     if missing:
         raise StructuralError(
             "no translation for " + ", ".join(repr(t) for t in sorted(missing))

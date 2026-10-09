@@ -927,3 +927,6 @@ Behavior described here that `docs/factors.md` doesn't state. The first three ar
   schema prose, a toolset's guidance with its tools' descriptions and parameter prose, a translations chunk's
   translations, and nothing for any other component. init-data refuses a language on a chunk with none and requires
   one on a chunk with some (src/chatddx/factors/request.py:own_texts, src/chatddx/curation/plan.py:_language_of).
+- CHANGE `compile_request` and `texts`: `TRANSLATED = ("output", "appendix_layout", "toolset")` are the parts a
+  recipe's translations translate; `texts` still gives every part's texts, and a translation needs those of the
+  `TRANSLATED` parts (src/chatddx/factors/request.py).

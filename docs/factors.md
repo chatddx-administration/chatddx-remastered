@@ -722,3 +722,9 @@ a picker of the right kind for every reference, straight from the schema. Refere
 because nothing read it. The JSON Schema plays no part in any digest, so adding it back changes no digest.
 
 ## Proposed amendments
+- CHANGE "Translations": compilation passes only the text of the output, the toolset and the appendix layout through a
+  recipe's translations: the guidance and the text around where it is placed, the descriptions of tools and of the
+  answer function, and the titles and descriptions in schemas. Instructions, examples and prompts are written in their
+  language, as cases are, and pass through untouched; a data set keeps them in a file per language (docs/curation.md).
+  A text of a translated part without a translation still fails the compilation
+  (src/chatddx/factors/request.py:TRANSLATED, compile_request).

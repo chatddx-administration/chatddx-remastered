@@ -31,6 +31,7 @@ from chatddx.factors.lint import lint
 from chatddx.factors.request import (
     MANAGED_KEYS,
     OUTPUT_KEYS,
+    TRANSLATED,
     AppendixLayout,
     Compilation,
     Example,
@@ -797,10 +798,6 @@ def test_translations_apply_at_compile_time(reg: Registry) -> None:
         "appendix_layout": ("\n\nLabs:\n",),
     }
     swedish = {
-        "You are an emergency physician.": "Du är akutläkare.",
-        "Chest pain.": "Bröstsmärta.",
-        "ACS.": "AKS.",
-        "Case:\n": "Fall:\n",
         "Answer with:\n\n": "Svara med:\n\n",
         "Plan": "Vårdplan",
         "How urgent.": "Hur brådskande.",
@@ -808,17 +805,20 @@ def test_translations_apply_at_compile_time(reg: Registry) -> None:
         "The plan.": "Planen.",
         "\n\nLabs:\n": "\n\nLabb:\n",
     }
+    assert {t for p in TRANSLATED for t in texts(recipe, reg.get).get(p, ())} == set(
+        swedish
+    )
     translated = recipe.model_copy(
         update={"translations": reg.add(Translations(entries=swedish))}
     )
     skeleton = compile_request(translated, reg.get)
     system, user, assistant, prompt = skeleton.messages
     assert system.content[0] == (
-        "Du är akutläkare.\n\nSvara med:\n\n"
+        "You are an emergency physician.\n\nSvara med:\n\n"
         + json.dumps(skeleton.output_schema, indent=2, ensure_ascii=False)
     )
-    assert (user.content, assistant.content) == (("Bröstsmärta.",), ("AKS.",))
-    assert prompt.content == ("Fall:\n", Slot(slot="vignette"))
+    assert (user.content, assistant.content) == (("Chest pain.",), ("ACS.",))
+    assert prompt.content == ("Case:\n", Slot(slot="vignette"))
     assert skeleton.appendix_layout.before == "\n\nLabb:\n"
     assert skeleton.output_schema == {
         "type": "object",
@@ -840,8 +840,8 @@ def test_translations_apply_at_compile_time(reg: Registry) -> None:
         "parameters": skeleton.output_schema,
     }
 
-    partial = {k: v for k, v in swedish.items() if k not in ("Plan", "ACS.")}
-    with pytest.raises(StructuralError, match="no translation for 'ACS.', 'Plan'"):
+    partial = {k: v for k, v in swedish.items() if k not in ("Plan", "The plan.")}
+    with pytest.raises(StructuralError, match="no translation for 'Plan', 'The plan.'"):
         _ = compile_request(
             recipe.model_copy(
                 update={"translations": reg.add(Translations(entries=partial))}
