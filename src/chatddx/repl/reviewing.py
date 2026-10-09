@@ -3,6 +3,7 @@ from collections import Counter
 from rich.table import Table
 from rich.text import Text
 
+from chatddx.bench import Graded
 from chatddx.catalog.titles import short
 from chatddx.factors.base import resolve
 from chatddx.factors.request import Skeleton
@@ -10,7 +11,6 @@ from chatddx.factors.trial import Trial
 from chatddx.ledger import Run, RunItem, RunStarted
 from chatddx.scorers.aggregate import mean
 
-from .bench import Graded
 from .render import (
     LABEL,
     LATER,

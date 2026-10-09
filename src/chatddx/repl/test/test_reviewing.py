@@ -3,8 +3,8 @@ from pathlib import Path
 
 import pytest
 
+from chatddx.bench import Bench, Cell
 from chatddx.inventory import DirectorySource, Inventory
-from chatddx.repl.bench import Bench, Cell
 from chatddx.repl.test.sample import FREE_TEXT, PLAN, QWEN, WORLD, Say
 
 

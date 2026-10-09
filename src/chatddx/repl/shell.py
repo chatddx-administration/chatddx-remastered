@@ -3,9 +3,9 @@ from collections.abc import Iterable
 from rich.console import Console
 from rich.text import Text
 
+from chatddx.bench import KINDS, NONE, OPTIONAL, PARTS, Bench, Cell, drawn_seed
 from chatddx.factors.base import Finding
 
-from .bench import KINDS, NONE, OPTIONAL, PARTS, Bench, Cell, drawn_seed
 from .render import REFUSED, finding
 
 

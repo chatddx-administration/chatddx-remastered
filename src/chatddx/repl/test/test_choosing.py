@@ -1,11 +1,11 @@
 import pytest
 
+from chatddx.bench import Bench
 from chatddx.catalog import Entry, EntryField, Subject
 from chatddx.factors.base import resolve
 from chatddx.factors.request import Compilation, Reasoning, Skeleton
 from chatddx.identity import Person
 from chatddx.inventory import Inventory
-from chatddx.repl.bench import Bench
 from chatddx.repl.shell import Repl
 from chatddx.repl.test.sample import FREE_TEXT, GPT_OSS, PLAN, QWEN, Say
 from chatddx.store import Catalog, People

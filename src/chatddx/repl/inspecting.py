@@ -6,6 +6,7 @@ from pydantic import JsonValue
 from rich.table import Table
 from rich.text import Text
 
+from chatddx.bench import KINDS, PARTS, Cell, Family
 from chatddx.catalog import About
 from chatddx.catalog.titles import describe, short
 from chatddx.factors.base import Component, resolve
@@ -15,7 +16,6 @@ from chatddx.factors.request import Reasoning, Skeleton, SlotName, render
 from chatddx.facts import INTENTS, Effort, ModelFacts, Refusal, Refused
 from chatddx.inventory import url_of
 
-from .bench import KINDS, PARTS, Cell, Family
 from .render import (
     LABEL,
     LATER,

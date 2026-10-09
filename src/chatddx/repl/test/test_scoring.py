@@ -1,10 +1,10 @@
 import pytest
 from pydantic import JsonValue
 
+from chatddx.bench import Bench
 from chatddx.catalog import Subject
 from chatddx.factors.base import resolve
 from chatddx.factors.scoring import Expectation
-from chatddx.repl.bench import Bench
 from chatddx.repl.commands import complete
 from chatddx.repl.shell import Repl
 from chatddx.repl.test.sample import FREE_TEXT, QWEN, Say

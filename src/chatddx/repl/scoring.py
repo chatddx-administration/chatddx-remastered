@@ -1,10 +1,10 @@
 from rich.table import Table
 from rich.text import Text
 
+from chatddx.bench import Graded
 from chatddx.factors.select import reaches
 from chatddx.ledger import RunStarted
 
-from .bench import Graded
 from .render import LABEL, REFUSED, VALID, show_scores, show_summary, show_table
 from .reviewing import said
 from .running import held

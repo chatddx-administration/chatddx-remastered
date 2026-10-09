@@ -6,12 +6,12 @@ from typing import Any, Self
 
 from rich.text import Text
 
+from chatddx.bench import MAX_SEED, Cell, drawn_seed
 from chatddx.catalog.titles import short
 from chatddx.ledger import RunItem
 from chatddx.runner.gate import Refused
 from chatddx.runner.run import Event, ItemEnded, ItemStarted, Noted, Running, Streamed
 
-from .bench import MAX_SEED, Cell, drawn_seed
 from .render import (
     LABEL,
     TOKENS,

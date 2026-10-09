@@ -6,13 +6,13 @@ import psycopg
 import pytest
 from rich.console import Console
 
+from chatddx.bench import Bench
 from chatddx.conftest import connect, create_database, drop_database, sample_plan
 from chatddx.core import settings
 from chatddx.facts import BUNDLED, Facts
 from chatddx.fake_vllm.served import Served
 from chatddx.fake_vllm.server import serving
 from chatddx.inventory import Inventory, start_up
-from chatddx.repl.bench import Bench
 from chatddx.repl.commands import handle
 from chatddx.repl.shell import Repl
 from chatddx.repl.test.sample import QWEN, WORLD, Say

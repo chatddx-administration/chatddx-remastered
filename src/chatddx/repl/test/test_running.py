@@ -3,13 +3,13 @@ import signal
 
 import pytest
 
+from chatddx.bench import SEEDS, Bench
 from chatddx.factors.base import Finding, resolve
 from chatddx.factors.trial import Trial
 from chatddx.fake_vllm.served import Served
 from chatddx.fake_vllm.server import serving
 from chatddx.inventory import Inventory, start_up
 from chatddx.ledger import Run
-from chatddx.repl.bench import SEEDS, Bench
 from chatddx.repl.render import Tally, Transcript
 from chatddx.repl.shell import Repl
 from chatddx.repl.test.sample import FREE_TEXT, GPT_OSS, PLAN, QWEN, Say

@@ -1,8 +1,8 @@
 from rich.text import Text
 
+from chatddx.bench import PARTS, Cell
 from chatddx.catalog.titles import short
 
-from .bench import PARTS, Cell
 from .shell import Repl
 
 

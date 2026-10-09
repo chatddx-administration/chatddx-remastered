@@ -136,3 +136,7 @@ These are known shortcomings of the store's design. Some have more details in do
   contradicts "the store answers which rows exist; the modules decide what they mean".
 
 ## Proposed amendments
+- CHANGE, under "Looking things up for someone", "The repl works out for itself" → "The bench works out for itself",
+  and under "Known gaps", "by the repl, one run at a time. Only the repl's answer is used." → "by the bench, one run at
+  a time. Only the bench's answer is used.": the bench moved out of the repl into a module of its own
+  (`src/chatddx/bench/bench.py:Bench.unscored`; `agents/wip-bench.md`, "Phase 0").

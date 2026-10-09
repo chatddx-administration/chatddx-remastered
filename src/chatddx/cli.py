@@ -7,6 +7,7 @@ from pathlib import Path
 import psycopg
 from rich.console import Console
 
+from chatddx.bench import Bench
 from chatddx.core import settings
 from chatddx.core.rig import rig
 from chatddx.facts import BUNDLED, Facts
@@ -20,7 +21,6 @@ from chatddx.importers.o11n import (
     read,
 )
 from chatddx.inventory import DirectorySource, Inventory
-from chatddx.repl.bench import Bench
 from chatddx.repl.loop import HISTORY, loop
 from chatddx.repl.shell import Repl
 from chatddx.seed import load_cases, plan_factors, seed, wipe
