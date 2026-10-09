@@ -1,6 +1,6 @@
 from .errors import Ambiguous, NotFound
 from .variation import OPTIONAL, PARTS, TriedVariation
-from .view import KINDS, Bench, Family, Graded, Reach, Saved, made_for
+from .view import KINDS, Bench, Family, Graded, Reach, Saved
 
 __all__ = [
     "KINDS",
@@ -14,5 +14,4 @@ __all__ = [
     "Reach",
     "Saved",
     "TriedVariation",
-    "made_for",
 ]

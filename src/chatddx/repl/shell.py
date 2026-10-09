@@ -5,7 +5,8 @@ from dataclasses import dataclass, replace
 from rich.console import Console
 from rich.text import Text
 
-from chatddx.bench import KINDS, OPTIONAL, PARTS, Bench, TriedVariation, made_for
+from chatddx.bench import KINDS, OPTIONAL, PARTS, Bench, TriedVariation
+from chatddx.catalog import made_for
 from chatddx.factors.base import Finding
 
 from .render import REFUSED, finding

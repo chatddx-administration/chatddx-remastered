@@ -753,3 +753,10 @@ amendments there.
   archive's thread of its name, and the bench a saved configuration in the person's
   (src/chatddx/store/catalog.py:Catalog.keep, src/chatddx/curation/write.py:_Init.put,
   src/chatddx/bench/view.py:Bench.save).
+- ADD a `variants.py` section: the names of variants, things made for a language, a model or both.
+  `variant_name(name, language, model)` gives `NAME (LANGUAGE)`, `NAME (MODEL)` or `NAME (LANGUAGE, MODEL)`;
+  `made_for(name, models)` reads one back as `(name, language, model)`, or None for a name that isn't a variant's;
+  `variants_for(name, names, model)` gives, sorted, the variants of `name` among `names` made for `model` or for every
+  model. init-data names its records with the first, and the bench and the repl find one by its plain name with the
+  others (src/chatddx/catalog/variants.py, src/chatddx/curation/plan.py, src/chatddx/bench/view.py:Bench.thread,
+  src/chatddx/repl/shell.py). A variant is known by its name alone (agents/wip-variants.md).

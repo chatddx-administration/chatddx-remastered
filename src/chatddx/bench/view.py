@@ -5,8 +5,7 @@ from uuid import UUID
 
 from pydantic import JsonValue
 
-from chatddx.catalog import About, Edit, Kept, Subject
-from chatddx.catalog.model import LANGUAGE
+from chatddx.catalog import About, Edit, Kept, Subject, variants_for
 from chatddx.catalog.titles import short
 from chatddx.core.rig import rig
 from chatddx.factors.base import (
@@ -49,38 +48,6 @@ KINDS: dict[str, tuple[str, ...]] = {
     "model": ("model",),
     "engine": ("engine.local", "engine.remote"),
 }
-
-
-# What a variant's name says it was made for: a language, a model, or both, as in
-# `NAME (LANGUAGE)`, `NAME (MODEL)` and `NAME (LANGUAGE, MODEL)`. None for a name that
-# isn't a variant's; `models` are the models a variant may be made for.
-def made_for(
-    name: str, models: Collection[str]
-) -> tuple[str, str | None, str | None] | None:
-    base, opened, rest = name.rpartition(" (")
-    if not opened or not rest.endswith(")"):
-        return None
-    match rest[:-1].split(", "):
-        case [language, model] if LANGUAGE.match(language) and model in models:
-            return base, language, model
-        case [one] if one in models:
-            return base, None, one
-        case [one] if LANGUAGE.match(one):
-            return base, one, None
-        case _:
-            return None
-
-
-# The variants of `name` that `model` may use: those made for it, or for every model.
-def _variants(name: str, every: Iterable[str], model: str | None) -> list[str]:
-    models = [] if model is None else [model]
-    return sorted(
-        n
-        for n in every
-        if (made := made_for(n, models)) is not None
-        and made[0] == name
-        and made[2] in (None, model)
-    )
 
 
 @dataclass(frozen=True)
@@ -177,7 +144,7 @@ class Bench:
         return sorted({a.name for _, a in self.threads(word) if a.name is not None})
 
     # A thread by name, as `_named` finds it, or else its one variant `model` may use
-    # (`_variants`). Returns it with the name that found it.
+    # (`chatddx.catalog.variants_for`). Returns it with the name that found it.
     def thread(
         self, word: str, name: str, model: str | None = None
     ) -> tuple[Edit, str]:
@@ -193,7 +160,7 @@ class Bench:
         }
         every = set[str]().union(*addresses.values())
         if name not in every:
-            match _variants(name, every, model):
+            match variants_for(name, every, model):
                 case [one]:
                     name = one
                 case []:

@@ -494,7 +494,7 @@ lookups go through `Catalog`, `Store` and `People`:
 | Method | Returns / raises |
 | --- | --- |
 | `threads(word: str) -> list[tuple[Edit, About]]` | `Catalog.visible(kind, person.id)` for each kind `KINDS[word]` names: the heads of the live threads the person owns or collaborates on, in thread id order. |
-| `thread(word: str, name: str, model: str \| None = None) -> tuple[Edit, str]` | The thread called `name` among them, or else its one variant `model` may use, `NAME (LANGUAGE)`, `NAME (MODEL)` or `NAME (LANGUAGE, MODEL)` (`made_for`), with the name that found it; several languages raise `Ambiguous`. See below. `NotFound` carries the per-model names when no model was given. |
+| `thread(word: str, name: str, model: str \| None = None) -> tuple[Edit, str]` | The thread called `name` among them, or else its one variant `model` may use, `NAME (LANGUAGE)`, `NAME (MODEL)` or `NAME (LANGUAGE, MODEL)` (`chatddx.catalog.variants_for`), with the name that found it; several languages raise `Ambiguous`. See below. `NotFound` carries the per-model names when no model was given. |
 | `families(tags=()) -> list[Family]` | The live families the person owns or collaborates on that have a case, with any of `tags`, by name. |
 | `family(name: str) -> Family` | The family called `name`, as below; one without a name is called `family ID`. |
 | `runs() -> list[RunStarted]` | The runs whose entries ever named the person as owner or collaborator, and whose `About` now has the person as owner and isn't deleted; newest first. A collaborator on a run doesn't see it. |

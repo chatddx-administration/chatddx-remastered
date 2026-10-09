@@ -8,7 +8,7 @@ from typing import Any, cast
 
 from pydantic import JsonValue, ValidationError
 
-from chatddx.catalog.model import language_tag
+from chatddx.catalog import language_tag, variant_name
 from chatddx.core.rig import entry
 from chatddx.factors.base import Code, Component
 from chatddx.factors.bundle import Registry
@@ -111,8 +111,7 @@ _TEXTS = re.compile(r"^texts-(.+)\.toml$")
 
 
 def _named(name: str, key: Key) -> str:
-    qualifiers = [q for q in key if q is not None]
-    return f"{name} ({', '.join(qualifiers)})" if qualifiers else name
+    return variant_name(name, *key)
 
 
 # The variant of `variants` for `key`, else the one for all languages or all models.

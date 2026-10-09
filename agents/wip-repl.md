@@ -325,7 +325,7 @@ autocommit mode, as the runner needs (R6), and refuses a login with no person. `
 Takes made while building, all still open:
 - **Per-model names.** The plan picked a per-model chunk by the engine's model for `set` only. `use`, `cell`, `set`
   and `show KIND NAME` all do it: a name that names nothing alone is tried as its one variant the cell's engine's
-  model may use, `NAME (LANGUAGE)`, `NAME (MODEL)` or `NAME (LANGUAGE, MODEL)` (`src/chatddx/bench/view.py:made_for`),
+  model may use, `NAME (LANGUAGE)`, `NAME (MODEL)` or `NAME (LANGUAGE, MODEL)` (`src/chatddx/catalog/variants.py`),
   so `cell plan qwen3-8b-awq@fake` holds `plan (en, Qwen/Qwen3-8B-AWQ)`. Without an endpoint, `use plan` is refused,
   naming the per-model ones; a name made in more than one language is refused, naming them. Picking the variant in
   the language of the cell's cases is open (`docs/curation.md`, "Picking a variant by the case's language").

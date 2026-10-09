@@ -216,7 +216,7 @@ set has one expectation schema. A canary set is the next asked for (agents/wip-r
 
 ### Picking a variant by the case's language
 The bench picks a configuration's variant by the model the cell's engine serves, and by language only when there is
-one (src/chatddx/bench/view.py:made_for). With texts in several languages, a cell's cases should run the variant in
+one (src/chatddx/catalog/variants.py). With texts in several languages, a cell's cases should run the variant in
 their own language, so a batch of English and Swedish cases runs each under its own.
 
 ### Smaller issues
