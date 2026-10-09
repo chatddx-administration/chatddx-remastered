@@ -19,8 +19,8 @@ history is git's. A model's facts are in one file, so they are never pieced toge
 Facts are about a model, by its name: the repository a local engine's model comes from, or the model a remote engine
 names. An engine's facts are its model's, and an engine whose model has none has none.
 
-chatddx ships facts about the models it is tried with (see "Bundled facts"). The seeder loads them by default and
-takes more files beside them.
+`init-data` and the `repl` load the bundled facts, a World's `facts.toml` when it has one, and the files `--facts`
+names, beside each other.
 
 ## What a model's facts hold
 Every part is optional. A missing part means "unknown", not "no". Facts say no with a refusal, which always says why.
@@ -62,10 +62,10 @@ They refuse, with the fact's reason when there is one, when the level doesn't la
 known, or the level is refused or unknown), when a budget is asked of a model that refuses one or isn't known to take
 one, and when nothing is recommended for the level.
 
-Today the seeder is the only writer (agents/wip-seed.md). A factors file asks for a chunk from facts and gets one for
-each model that an engine it plans serves and the facts know, named after that model, together with one of each
-recipe that uses it. A model the facts don't know, a model no planned engine serves, and a chunk the facts refuse,
-with the recipes that need it, are skipped and reported.
+Today `chatddx init-data` is the only writer (docs/curation.md). A factors file asks for a chunk from facts and
+gets one for each model that an engine it plans serves and the facts know, named after that model, together with
+one of each recipe that uses it. A model the facts don't know, a model no planned engine serves, and a chunk the
+facts refuse, with the recipes that need it, are skipped and reported.
 
 ## Checking pairs
 A trial or a judge pairs a skeleton with an engine, whose model may have facts. Checking the pairs warns when the

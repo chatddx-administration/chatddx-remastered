@@ -346,7 +346,7 @@ How the old bench maps onto remastered:
   - A worker, long-lived and serving many owners.
   - An export of scores, and `chatddx samples`.
   - The CLI's ops commands (`migrate`, `person`, `init-data`, `import-engine`). These don't act for one person: seeding
-    writes as the archive (`src/chatddx/seed/write.py:_Seeder`).
+    writes as the archive (`src/chatddx/curation/write.py:_Init`).
 - **One synchronous connection.** The store is synchronous and the bench holds one connection, so a portal would build
   a bench per request, as the old one did.
 - **The store's principle**: "The store answers which rows exist; the modules decide what they mean" (`docs/store.md`,
@@ -494,7 +494,7 @@ lookups go through `Catalog`, `Store` and `People`:
 | Method | Returns / raises |
 | --- | --- |
 | `threads(word: str) -> list[tuple[Edit, About]]` | `Catalog.visible(kind, person.id)` for each kind `KINDS[word]` names: the heads of the live threads the person owns or collaborates on, in thread id order. |
-| `thread(word: str, name: str, model: str \| None = None) -> tuple[Edit, str]` | The thread called `name` among them, or else the one made for `model`, `NAME (MODEL)`, with the name that found it. See below. `NotFound` carries the per-model names when no model was given. |
+| `thread(word: str, name: str, model: str \| None = None) -> tuple[Edit, str]` | The thread called `name` among them, or else its one variant `model` may use, `NAME (LANGUAGE)`, `NAME (MODEL)` or `NAME (LANGUAGE, MODEL)` (`chatddx.catalog.variants_for`), with the name that found it; several languages raise `Ambiguous`. See below. `NotFound` carries the per-model names when no model was given. |
 | `families(tags=()) -> list[Family]` | The live families the person owns or collaborates on that have a case, with any of `tags`, by name. |
 | `family(name: str) -> Family` | The family called `name`, as below; one without a name is called `family ID`. |
 | `runs() -> list[RunStarted]` | The runs whose entries ever named the person as owner or collaborator, and whose `About` now has the person as owner and isn't deleted; newest first. A collaborator on a run doesn't see it. |

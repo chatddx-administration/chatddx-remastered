@@ -1,7 +1,6 @@
 # The sample World's engines: the old inventory's two fake stacks (chatddx 7893656,
 # src/chatddx/data/inventory/fake.toml), every value of theirs ours to choose. inventory.toml says where they're
-# served. `chatddx init-data USER --world worlds/sample/inventory.toml --factors worlds/sample/factors.toml` seeds
-# them with the sample data.
+# served. `chatddx init-data USER --world worlds/sample` loads them with the sample data.
 #
 # The fake vLLM imitates a model by its name and reads no weights. So a fake model is the real repo, which its facts
 # are keyed by, with revision "fake" and one empty file standing for no weights. A fake engine has no GPU, runs

@@ -36,16 +36,16 @@ def family_of(rows: Reader, case: str) -> int | None:
     if rows.kind(case) != "case":
         return None
     vignette = resolve(rows.get, case, Case).vignette
-    matching = [b for b in rows.bindings_in(vignette.source) if b.vignette == vignette]
+    matching = [b for b in rows.bindings_sharing(vignette) if b.vignette == vignette]
     return matching[-1].family if matching else None
 
 
 def holder(
     rows: Reader, vignette: Vignette, *, but: int | None = None
 ) -> tuple[int, bool] | None:
-    current = latest((b.family, b) for b in rows.bindings_in(vignette.source))
-    for family in sorted(current):
-        held = current[family].vignette
+    # A family that holds the place now has a binding to it, its latest.
+    for family in sorted({b.family for b in rows.bindings_sharing(vignette)}):
+        held = rows.bindings(family)[-1].vignette
         if family != but and (
             held.id == vignette.id or held.fingerprint == vignette.fingerprint
         ):

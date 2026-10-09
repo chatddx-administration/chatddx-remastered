@@ -5,7 +5,7 @@ from uuid import UUID
 
 from pydantic import JsonValue
 
-from chatddx.catalog import About, Edit, Subject
+from chatddx.catalog import About, Edit, Kept, Subject, variants_for
 from chatddx.catalog.titles import short
 from chatddx.core.rig import rig
 from chatddx.factors.base import (
@@ -18,12 +18,11 @@ from chatddx.factors.base import (
 from chatddx.factors.bundle import Registry
 from chatddx.factors.cases import Case, prepare_case
 from chatddx.factors.engine import LocalEngine, RemoteEngine
-from chatddx.factors.lint import lint
-from chatddx.factors.request import Compilation, Skeleton, compile_request, render
+from chatddx.factors.request import Skeleton, compile_request, compiled, render
 from chatddx.factors.scoring import Expectation, Scorer, Scoring
 from chatddx.factors.select import reaches
 from chatddx.factors.trial import Trial
-from chatddx.facts import Facts, check_pairs, model_name, reasons
+from chatddx.facts import Facts, lints, model_name
 from chatddx.identity import Person
 from chatddx.inventory import Inventory
 from chatddx.ledger import ItemKey, Run, RunStarted, Score, fingerprint_request
@@ -99,6 +98,13 @@ class Saved:
     variation: TriedVariation
 
 
+SAVED: dict[Kept, Literal["created", "a new version", "unchanged"]] = {
+    "created": "created",
+    "edited": "a new version",
+    "unchanged": "unchanged",
+}
+
+
 # What one person sees and does: the threads, families and runs they see, the World's
 # endpoints, and the variations they try and save. Nothing here is UI.
 class Bench:
@@ -137,8 +143,8 @@ class Bench:
     def names(self, word: str) -> list[str]:
         return sorted({a.name for _, a in self.threads(word) if a.name is not None})
 
-    # A thread by name, as `_named` finds it, or else the one made for `model`,
-    # `NAME (MODEL)`. Returns it with the name that found it.
+    # A thread by name, as `_named` finds it, or else its one variant `model` may use
+    # (`chatddx.catalog.variants_for`). Returns it with the name that found it.
     def thread(
         self, word: str, name: str, model: str | None = None
     ) -> tuple[Edit, str]:
@@ -153,8 +159,17 @@ class Bench:
             for kind, found in seen.items()
         }
         every = set[str]().union(*addresses.values())
-        if model is not None and name not in every and f"{name} ({model})" in every:
-            name = f"{name} ({model})"
+        if name not in every:
+            match variants_for(name, every, model):
+                case [one]:
+                    name = one
+                case []:
+                    pass
+                case several:
+                    raise Ambiguous(
+                        f"{word} {name!r} is made in more than one language: "
+                        + f"{', '.join(several)}"
+                    )
         kinds = [kind for kind, held in addresses.items() if name in held]
         match kinds:
             case [kind]:
@@ -219,7 +234,7 @@ class Bench:
         if self._rows.kind(engine) is None:
             raise NotFound(
                 f"endpoint {name!r} serves engine {short(engine)}, which isn't in the "
-                + "store: seed its World's factors with init-data --factors"
+                + "store: load its World with init-data"
             )
         return engine
 
@@ -320,13 +335,7 @@ class Bench:
             return []
         registry, trial = self.trial(self.skeleton(variation), engine, some, seed)
         languages = None if cases is None else self.catalog.language_of
-        found = lint(
-            registry,
-            [trial.digest],
-            languages=languages,
-            reasons=reasons(self.facts, registry),
-        )
-        return found + check_pairs(registry, self.facts, [trial.digest])
+        return lints(registry, self.facts, [trial.digest], languages)
 
     def scorers(self) -> list[tuple[Edit, About, Scorer]]:
         return [
@@ -406,41 +415,30 @@ class Bench:
             )
         with self.conn.transaction():
             compilation = (
-                self._compile(variation, skeleton)
-                or variation.configuration.compilation
+                self._compile(variation) or variation.configuration.compilation
             )
-            if not mine:
-                what = "created"
-                edit = self.catalog.create(
-                    skeleton.digest,
-                    self.person.id,
-                    compilation=compilation,
-                    forked_from=variation.configuration.id,
-                    name=name,
-                )
-            elif self.catalog.head(mine[0]).digest == skeleton.digest:
-                what = "unchanged"
-                edit = self.catalog.head(mine[0])
-            else:
-                what = "a new version"
-                edit = self.catalog.edit(
-                    mine[0], skeleton.digest, self.person.id, compilation=compilation
-                )
+            edit, kept = self.catalog.keep(
+                skeleton.digest,
+                self.person.id,
+                mine[0] if mine else None,
+                name=name,
+                compilation=compilation,
+                forked_from=variation.configuration.id,
+            )
+        what = SAVED[kept]
         recipe = self.catalog.recipe(edit.thread)
         return Saved(name, skeleton.digest, what, TriedVariation(edit, name, recipe))
 
     # Stores what an unsaved skeleton was compiled from, by the running code.
-    def _compile(self, variation: TriedVariation, skeleton: Skeleton) -> str | None:
+    def _compile(self, variation: TriedVariation) -> str | None:
         recipe = variation.varied
         if not variation.parts or recipe is None:
             return None
         registry = self.store.load(s.digest for s in iter_refs(recipe))
+        skeleton, compilation = compiled(recipe, registry.get, rig())
         _ = registry.add(skeleton)
-        compilation = registry.add(
-            Compilation(recipe=recipe, skeleton=skeleton.digest, compiler=rig())
-        )
-        _ = self.store.add(registry, [compilation])
-        return compilation
+        _ = self.store.add(registry, [registry.add(compilation)])
+        return compilation.digest
 
     # The variation run on `cases` with one seed, at `endpoint`; nothing is sent until
     # `Running.send`.
@@ -451,7 +449,7 @@ class Bench:
         registry, trial = self.trial(skeleton, self.endpoint(endpoint), cases, seed)
         runner = Runner(self.conn, self.inventory, self.person)
         running = runner.start(trial, registry, endpoint)
-        _ = self._compile(variation, skeleton)
+        _ = self._compile(variation)
         return running
 
     # A finished run scored under every scorer that applies to it, or those of

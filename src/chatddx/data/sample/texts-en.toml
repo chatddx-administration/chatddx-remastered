@@ -1,0 +1,60 @@
+# The sample's texts, in English: its outputs and its toolset, which hold text the model reads. The format is
+# factors.toml's. A text's language is this file's, and the same name in another texts-<language>.toml is the same
+# text in that language. A recipe that names one is made per language, and in a language without the output or the
+# toolset, it needs translations there.
+
+[output.management-plan]
+description = "The management plan, as the medical-assistant agents ask for it."
+contract = { kind = "native" }
+json_schema_path = "schemas/management_plan_v1.json"
+guidance = "Fill in the management plan for the case."
+
+[output.management-plan-shown]
+description = "The management plan, with its schema also shown to the model."
+fork_of = "management-plan"
+contract = { kind = "native" }
+json_schema_path = "schemas/management_plan_v1.json"
+guidance = [
+  """Fill in the management plan for the case.
+
+Answer with a JSON object that matches this JSON Schema, and nothing else:
+
+""",
+  { insert = "schema" },
+]
+
+[output.management-plan-prompted]
+description = "The management plan, with its schema shown and nothing enforcing it."
+fork_of = "management-plan-shown"
+contract = { kind = "text" }
+json_schema_path = "schemas/management_plan_v1.json"
+guidance = [
+  """Fill in the management plan for the case.
+
+Answer with a JSON object that matches this JSON Schema, and nothing else:
+
+""",
+  { insert = "schema" },
+]
+
+[output.diagnoses]
+description = "The differential alone, as the medical-assistant agents ask for it."
+contract = { kind = "native" }
+json_schema_path = "schemas/diagnoses.json"
+guidance = "List the plausible diagnoses, most likely first."
+
+[output.diagnoses-tool]
+description = "The differential, answered through the final-result tool."
+fork_of = "diagnoses"
+contract = { kind = "tool", name = "final_result", description = "Give your answer by calling this tool, with the answer as its arguments." }
+json_schema_path = "schemas/diagnoses.json"
+guidance = "List the plausible diagnoses, most likely first."
+
+[output.free-text]
+description = "The differential as plain lines."
+contract = { kind = "text" }
+guidance = "List the plausible diagnoses, one per line, most likely first."
+
+[toolset.web]
+tools = ["web_search"]
+guidance = "You have access to a web_search tool. Use it whenever you need current facts, documentation, or anything you're not confident about from memory, instead of guessing."

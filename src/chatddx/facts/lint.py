@@ -1,10 +1,10 @@
-from collections.abc import Iterable, Mapping
+from collections.abc import Collection, Iterable, Mapping
 
 from pydantic import JsonValue
 
 from chatddx.factors.base import Finding, resolve
 from chatddx.factors.bundle import Registry
-from chatddx.factors.lint import Reasons
+from chatddx.factors.lint import Languages, Reasons, lint
 from chatddx.factors.request import Sampling, Skeleton
 from chatddx.factors.scoring import Judge
 from chatddx.factors.trial import Trial
@@ -119,3 +119,15 @@ def check_pairs(
             case _:
                 pass
     return findings
+
+
+def lints(
+    registry: Registry,
+    facts: Facts,
+    digests: Collection[str],
+    languages: Languages | None = None,
+) -> list[Finding]:
+    found = lint(
+        registry, digests, languages=languages, reasons=reasons(facts, registry)
+    )
+    return found + check_pairs(registry, facts, digests)

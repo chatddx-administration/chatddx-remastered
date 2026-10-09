@@ -5,7 +5,17 @@ from chatddx.factors.base import Component
 from chatddx.factors.cases import Vignette
 from chatddx.factors.request import Compilation
 
-from .model import About, Binding, Edit, Entry, Part, Subject, Thread, latest
+from .model import (
+    About,
+    Binding,
+    Edit,
+    Entry,
+    EntryField,
+    Part,
+    Subject,
+    Thread,
+    latest,
+)
 
 
 # Rows come back in the order they were written; nothing here picks the latest. The store
@@ -29,13 +39,19 @@ class Reader(Protocol):
 
     def edits_holding(self, digests: Collection[str]) -> list[Edit]: ...
 
-    def entries(self, subjects: Collection[Subject]) -> list[tuple[Subject, Entry]]: ...
+    # Each entry with the person who wrote it.
+    def entries(
+        self, subjects: Collection[Subject]
+    ) -> list[tuple[Subject, Entry, int]]: ...
 
     def bindings(self, family: int) -> list[Binding]: ...
 
     def families(self) -> list[int]: ...
 
     def bindings_in(self, source: str) -> list[Binding]: ...
+
+    # The bindings in a vignette's source to its id or to its content.
+    def bindings_sharing(self, vignette: Vignette) -> list[Binding]: ...
 
     def bound_to(self, vignette: Vignette, kind: str) -> list[str]: ...
 
@@ -62,9 +78,23 @@ def heads_holding(rows: Reader, digests: Collection[str]) -> dict[int, Edit]:
 
 def abouts(rows: Reader, subjects: Collection[Subject]) -> dict[Subject, About]:
     entries: dict[Subject, list[Entry]] = {s: [] for s in subjects}
-    for subject, entry in rows.entries(subjects):
+    for subject, entry, _ in rows.entries(subjects):
         entries[subject].append(entry)
     return {s: About.of(e) for s, e in entries.items()}
+
+
+# The tags that hold on a subject now, each with who gave it: the writer of the latest
+# entry about it.
+def tags_given(rows: Reader, subject: Subject) -> dict[str, int]:
+    given: dict[str, int] = {}
+    for _, entry, by in rows.entries([subject]):
+        if entry.field == EntryField.TAG:
+            assert entry.value is not None
+            if entry.present:
+                given[entry.value] = by
+            else:
+                _ = given.pop(entry.value, None)
+    return given
 
 
 def about(rows: Reader, subject: Subject) -> About:

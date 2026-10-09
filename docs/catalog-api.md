@@ -18,6 +18,7 @@ Paths are relative to `src/chatddx/catalog/` unless they start with `src/` or `d
 - [families.py](#familiespy): bindings, `family_of`, adopting, surveying, repairing, stale cases
 - [language.py](#languagepy): a component's language, and the checks on writing one
 - [titles.py](#titlespy): descriptions and titles
+- [variants.py](#variantspy): the names of what's made for a language or a model
 - [The store's Catalog](#the-stores-catalog)
 - [Database: schema `catalog`](#database-schema-catalog)
 - [Known gaps](#known-gaps)
@@ -26,8 +27,9 @@ Paths are relative to `src/chatddx/catalog/` unless they start with `src/` or `d
 ## Package
 
 `chatddx.catalog` re-exports `LANGUAGE`, `LANGUAGE_KINDS`, `THREAD_KINDS`, `About`, `Behind`, `Binding`, `Edit`,
-`Entry`, `EntryField`, `Part`, `Reader`, `Repair`, `RepairPlan`, `Subject`, `Survey`, `Thread`, `Variation`,
-`check_label`, `language_tag`, `latest`, and the modules `families`, `language`, `read`, `threads` and `titles`.
+`Entry`, `EntryField`, `Kept`, `Part`, `Reader`, `Repair`, `RepairPlan`, `Subject`, `Survey`, `Thread`, `Variation`,
+`check_label`, `language_tag`, `latest`, `made_for`, `variant_name`, `variants_for`, and the modules `families`,
+`language`, `read`, `threads`, `titles` and `variants`.
 Functions are called through their module (`threads.behind(rows, thread)`); `model.py` is imported by path.
 
 | Module | Builds on |
@@ -38,6 +40,7 @@ Functions are called through their module (`threads.behind(rows, thread)`); `mod
 | `threads.py` | `families.py`, `model.py`, `read.py`, `chatddx.factors.{base,request,scoring}` |
 | `language.py` | `families.py`, `model.py`, `read.py`, `chatddx.factors.{base,request,scoring,trial}` |
 | `titles.py` | `families.py`, `language.py`, `model.py`, `read.py`, `threads.py`, `chatddx.factors.{base,cases,engine,request,scoring,trial}` |
+| `variants.py` | `model.py` |
 
 The package imports no chatddx package but `chatddx.factors` and `chatddx.identity`, no third-party package but
 pydantic, and holds no SQL. It reads through a `Reader` and writes nothing; `src/chatddx/store/catalog.py:Catalog`
@@ -88,6 +91,7 @@ threads and families is said in its entry; in short:
 | `LANGUAGE_KINDS` | `frozenset` of the 7 kinds that can have a language of their own: `chunk.instructions`, `chunk.few_shot`, `chunk.prompt`, `chunk.output`, `chunk.toolset`, `chunk.translations`, `skeleton`. Repeated in `0012` (`language_kind_check`). |
 | `LANGUAGE` | `re.compile(r"^[a-z]{2,3}(-[A-Za-z0-9]{1,8})*$")`. Accepts `sv`, `pt-BR`, `zh-Hant-TW`; refuses `SV`, `en_US`. Repeated in `0012`. |
 | `Part` | `Literal["view", "resource"]` |
+| `Kept` | `Literal["created", "edited", "unchanged"]`: what `Catalog.keep` did |
 
 ### `language_tag(value: str) -> str`
 Returns `value` when `LANGUAGE` matches it, else `ValueError("'<value>' is not a language tag such as 'sv' or
@@ -234,7 +238,7 @@ picks the latest row. `src/chatddx/store/catalog.py:Rows` implements it over the
 | `edit(id: int) -> Edit \| None` | |
 | `edits(threads: Collection[int]) -> list[Edit]` | The edits of these threads, by id. |
 | `edits_holding(digests: Collection[str]) -> list[Edit]` | The edits, in any thread, whose digest is one of these, by id. |
-| `entries(subjects: Collection[Subject]) -> list[tuple[Subject, Entry]]` | The entries about these subjects, by id, without `by` and `at`. |
+| `entries(subjects: Collection[Subject]) -> list[tuple[Subject, Entry, int]]` | The entries about these subjects, by id, each with the person who wrote it. |
 | `bindings(family: int) -> list[Binding]` | The family's bindings, by id; `[]` for an unknown family. |
 | `families() -> list[int]` | Every family's id. `Rows` reads `catalog.family`; `Memory` lists the families that have bindings. |
 | `bindings_in(source: str) -> list[Binding]` | Every binding, of any family, in a source, by id. |
@@ -242,6 +246,7 @@ picks the latest row. `src/chatddx/store/catalog.py:Rows` implements it over the
 | `expectations(cases: Collection[str]) -> list[str]` | The stored expectations of these cases, by digest. |
 | `languages(digests: Collection[str]) -> list[tuple[str, str]]` | (digest, language) rows for these digests, by id. |
 | `labels(scorer: str) -> list[tuple[Part, int, str]]` | (part, position, label) rows for a scorer, by id. |
+| `bindings_sharing(vignette: Vignette) -> list[Binding]` | The bindings in the vignette's source to its id or to its fingerprint, by id. |
 
 ### Helpers
 
@@ -253,6 +258,7 @@ picks the latest row. `src/chatddx/store/catalog.py:Rows` implements it over the
 | `abouts(rows, subjects: Collection[Subject]) -> dict[Subject, About]` | `About.of` each subject's entries; every subject given is a key. |
 | `about(rows, subject: Subject) -> About` | `abouts` of one subject. |
 | `labels(rows, scorer: str) -> dict[tuple[Part, int], str]` | The latest label for each (part, position). `{}` for a scorer without labels, stored or not. |
+| `tags_given(rows, subject: Subject) -> dict[str, int]` | The tags that hold on the subject now, each with the writer of the latest entry about it. |
 
 ## threads.py
 
@@ -343,6 +349,20 @@ stored.
 - Otherwise: the canonical document of the origin's head, with each varied top-level field set to the fork's value,
   or removed where the fork has none, read back with `parse_component`. `StructuralError` or `ValidationError` when
   the result isn't a valid component.
+
+## `variants.py`
+
+### `variant_name(name, language, model)` -> `str`
+What's made for a language, a model or both is named after them, so that one name finds
+the variant that fits: `NAME (LANGUAGE)`, `NAME (MODEL)` or `NAME (LANGUAGE, MODEL)`.
+
+### `made_for(name, models)` -> `(name, language, model) | None`
+What a variant's name says it was made from and for, or None for a name that isn't a
+variant's; `models` are the models a variant may be made for.
+
+### `variants_for(name, names, model)`
+The variants of `name` among `names` that `model` may use: those made for it, or for
+every model.
 
 ## families.py
 
@@ -558,6 +578,8 @@ with a psycopg error when the Python lets it through.
 | `involving(person) -> list[Subject]` | the store only | the subjects whose `owner` or `collaborator` entries ever named the person |
 | `label(scorer, part, position, value, by)` | `check_label` of the resolved scorer | the label |
 | `labels(scorer)` | `read.labels` | |
+| `tags_given(subject)` | `read.tags_given` | |
+| `keep(digest, by, thread, *, name=None, compilation=None, forked_from=None) -> tuple[Edit, Kept]` | `threads.head`, then `create` without a thread or `edit` | a new thread, a new edit, or nothing when the head is `digest` already |
 
 ## Database: schema `catalog`
 

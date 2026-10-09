@@ -16,3 +16,8 @@ def database(admin: bool = False) -> str:
 
 
 SESSION_TTL = timedelta(hours=12)
+
+
+def world() -> Path | None:
+    value = os.environ.get("CHATDDX_WORLD")
+    return Path(value) if value else None

@@ -16,6 +16,8 @@ Paths are relative to `src/chatddx/inventory/` unless they start with `src/`, `d
 - [inventory.py](#inventorypy): `EndpointSpec`, `HostSpec`, `Inventory`
 - [sources.py](#sourcespy): `Source`, `DirectorySource`
 - [serving.py](#servingpy): `StartUp`, `start_up`, `url_of`, `served`, `confirm`
+- [world.py](#worldpy): `World`
+- [check.py](#checkpy): `check`
 - [Worlds](#worlds)
 - [Known gaps](#known-gaps)
 - [Beyond docs/inventory.md](#beyond-docsinventorymd)
@@ -23,13 +25,16 @@ Paths are relative to `src/chatddx/inventory/` unless they start with `src/`, `d
 ## Package
 
 `chatddx.inventory` re-exports `LISTEN_FLAGS`, `DirectorySource`, `EndpointSpec`, `HostSpec`, `Inventory`, `Source`,
-`StartUp`, `confirm`, `served`, `start_up` and `url_of`. `test/memory.py:MemorySource` is imported by path.
+`StartUp`, `World`, `check`, `confirm`, `served`, `start_up` and `url_of`. `test/memory.py:MemorySource` is imported
+by path.
 
 | Module | Builds on |
 | --- | --- |
 | `sources.py` | `chatddx.factors.{base,cases}` |
 | `inventory.py` | `sources.py`, `chatddx.factors.base` |
 | `serving.py` | `inventory.py`, `chatddx.factors.{base,engine}` |
+| `world.py` | `inventory.py` |
+| `check.py` | `inventory.py`, `serving.py`, `chatddx.factors.{base,engine}` |
 
 The package imports no chatddx package but `chatddx.factors`, no third-party package but pydantic, and holds no SQL.
 Only `served` and `confirm` connect to anything.
@@ -46,7 +51,7 @@ it, so an unknown key in an inventory file is a `ValidationError`.
 them up through a `Resolver` (`get`), such as `Registry.get` or `Store.get`.
 
 **Checked late.** Loading checks only what the files show. Whatever needs the engines is checked when `start_up`,
-`url_of` or `confirm` is called.
+`url_of` or `confirm` is called, or for every entry at once by `check`.
 
 **Errors.**
 
@@ -248,6 +253,26 @@ engine's `model` (`served_model_name`). In order:
 5. `LookupError("endpoint '<name>' at <url> serves <listed names, joined by ", ", or 'nothing'>, not <served
    name>")`.
 
+## `world.py`
+`World(path, inventory, factors=(), facts=())`, frozen; `World.load(path)` reads `path / "inventory.toml"` and
+takes `factors.toml` and `facts.toml` beside it when they're files;
+`LookupError("<path> is no World: it holds no inventory.toml")` without one.
+
+## `check.py`
+`check(inventory, get) -> list[Finding]`: the inventory against the engines `get` knows, in the order endpoints,
+shared addresses, hosts, clearance. A finding's subject is the endpoint's or the host's name.
+
+| Code | Level | When |
+| --- | --- | --- |
+| `endpoint.engine_unknown` | warning | `get` doesn't know the endpoint's engine; the resolver's message |
+| `endpoint.not_engine` | warning | the endpoint's digest names another kind of component |
+| `endpoint.unreachable` | warning | `url_of` refuses it; its message |
+| `endpoint.unstartable` | warning | a local engine's endpoint that `start_up` refuses; its message |
+| `endpoint.remote_host` | warning | a remote engine's endpoint names a host |
+| `endpoint.shared_url` | warning | a local engine's endpoint has the address of an earlier one |
+| `host.unpinned` | info | a host says where it keeps a model or a chat template that none of its endpoints' engines pins |
+| `cleared.not_sensitive` | info | an endpoint is cleared for a source that isn't sensitive |
+
 ## Worlds
 A World is a directory with `inventory.toml`, the files it includes, and `factors.toml`, the models and engines its
 endpoints serve. `worlds/` holds two:
@@ -258,17 +283,14 @@ endpoints serve. `worlds/` holds two:
 | `worlds/kompismoln/` | `sample`, `path = "../sample/vignettes"`, sensitive | from `endpoints.toml`: `qwen3-8b@pelle` (`max_jobs = 1`), `gpt-oss-20b@malborg` (`max_jobs = 4`) | from `endpoints.toml`: `pelle`, `malborg`, `bind = "::"` | none |
 
 `endpoints.toml` and `factors.toml` in `worlds/kompismoln/` are what `chatddx import-engine` writes.
-`test/test_serving.py:test_the_sample_world_binds_each_fake_engine_the_sample_seeds` fails when the sample World's
-endpoints don't match the engines the sample seeds.
+
+`test/test_serving.py:test_the_sample_world_binds_each_fake_engine_the_sample_loads` asserts the check finds
+nothing in the sample World against the sample's plan.
 
 ## Known gaps
 From `docs/inventory.md`, "Open design issues":
-- Everything that needs the engines is checked only when `start_up`, `url_of` or `confirm` is called, one entry at a
-  time; there is no `check(inventory, get)` returning findings.
-- Nothing checks two endpoints at one URL, a remote engine's endpoint that names a host, host locations no engine
-  pins, or a `[cleared]` entry for a source that isn't sensitive.
+- The runner and the engine import don't run `check`: they check an entry when they use it.
 - Hosts don't start engines from the start-up; only the fake vLLM is started from one.
-- Nothing locates a deployment's World; it is passed in each time.
 - Endpoint names are only a convention, and renaming one drops its clearance.
 - `max_jobs` holds per run, not per endpoint.
 
@@ -286,3 +308,5 @@ Behavior described here that `docs/inventory.md` doesn't state:
 - `DirectorySource.fetch` passes through `OSError`s other than a missing file.
 - The duplicate-name error names the inventory's own file, also when the clash is between two included files.
 - `cleared_for` gives an empty set for an endpoint that doesn't exist.
+
+## Proposed amendments

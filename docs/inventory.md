@@ -14,7 +14,7 @@ The inventory isn't stored in the database, and its history is git's. A run reco
 address (docs/ledger.md, "Run start").
 
 This document describes what the inventory says and why. Names, fields, rules and errors are in the API,
-docs/inventory-api.md. The inventory builds on the factors and nothing else. The seeder, the engine import and the
+docs/inventory-api.md. The inventory builds on the factors and nothing else. init-data, the engine import and the
 runner read it.
 
 ## The file
@@ -34,14 +34,18 @@ endpoints and sources that exist, and that each source is named by its table. An
 checked when an entry is used (see "Checks happen when an entry is used").
 
 ### Worlds
-A World is one directory: its inventory, the files that includes, and the factors of the models and engines its
-endpoints serve, whether the engine import wrote them or people did. A World may also hold its source's vignettes,
+A World is handed over as its directory, `--world DIR`, and read as its `inventory.toml` and, when present,
+`factors.toml` and `facts.toml`, facts about models the bundled ones don't know, loaded beside them by init-data
+and the repl (src/chatddx/inventory/world.py, src/chatddx/cli.py). A World may also hold its source's vignettes,
 when git may hold them.
+
+`CHATDDX_WORLD` names the deployment's World directory and is the default `--world` of `init-data` and the `repl`
+(src/chatddx/core/settings.py:world, `.env-example`). The runner is handed its inventory by the bench, as before.
 
 A World may point into another. An include or a source's path can reach another World's directory, so one World can
 take another's vignettes or endpoints without copying them.
 
-This repository has two, in worlds/:
+This repository has two, in `worlds/`:
 - The sample World: the sample's vignettes, an endpoint for each fake engine on this machine, the fake host, and the
   factors of the fake models and engines. Both endpoints are cleared for the sample. A test fails when its engines
   change and its endpoints don't.
@@ -60,7 +64,7 @@ appendices, with the fingerprint of the raw bytes (docs/factors.md, "Case"). It 
 it. What happens to the bytes next is the case's preparation (docs/factors.md, "Preparing a case").
 
 A source's name is part of every case built from it, and so of their digests. Renaming a source makes new cases;
-moving its directory changes nothing. The seeder seeds the cases of a source a World names.
+moving its directory changes nothing. init-data loads the cases of a source a World names.
 
 ## Endpoints
 An endpoint says where one engine is served: the engine, by digest; the server's address; the host that runs it, for a
@@ -122,8 +126,8 @@ out, the runner confirms the endpoint: its server must list the name the engine 
 digest or a remote engine's model (agents/wip-clearance.md, "Vetted endpoints"). A server that can't be reached
 can't be confirmed.
 
-With a World, the seeder ends with a line per endpoint: its address and the seeded engine it serves, or why it can't
-be started or reached. It finds that out without connecting.
+With a World, init-data ends with the inventory check's findings and a count (see "Checks happen when an entry is
+used"). It finds that out without connecting.
 
 ## Importing from a host
 The hosts run vLLM through o11n (Kompismoln/o11n). Each server runs in a container configured outside the rig, so an
@@ -131,7 +135,7 @@ engine's values come from its host, not from people: the engine import reads eac
 factors and the inventory entries together.
 
 For each server, the import writes the model artifact, the local engine, the endpoint, and where the host keeps the
-model and the template, all named server@host after the report's host name. The factors go to a file the seeder takes
+model and the template, all named server@host after the report's host name. The factors go to a file `init-data` takes
 beside the data's, and the endpoints and hosts to a file an inventory includes. Both files are rewritten whole, so to
 change them, import again rather than edit.
 
@@ -170,39 +174,24 @@ These are open questions of design. Where the code falls short of this document,
 (docs/inventory-api.md, "Known gaps").
 
 ### Checks happen when an entry is used
-Loading checks only what the files show. Everything that needs the engines is checked only when an endpoint is
-started, reached or confirmed, one entry at a time:
+Loading checks only what the files show. Everything that needs the engines is checked when an endpoint is started,
+reached or confirmed, one entry at a time:
 - whether an endpoint's digest names an engine;
 - whether a local engine's endpoint has an address and a host;
 - whether the host says where the model and template are;
 - whether the engine's own arguments leave where to listen alone.
 
-The seeder's endpoint lines are a pass of their own over these checks. A single check of an inventory against the
-engines, returning findings, would give the seeder, the runner and the import the same answer. It would also fit the
-split between errors and findings (docs/chatddx.md, "Findings and errors"), where a problem that needs other
-components to see is a structural error.
-
-Nothing checks:
-- two endpoints at one address (the import refuses it only within what it writes);
-- a remote engine's endpoint that names a host;
-- host locations that no endpoint's engine pins;
-- a clearance for a source that isn't sensitive, which clears nothing.
+One pass checks the whole inventory against the engines and returns findings rather than raising. It finds what
+starting or reaching each endpoint would refuse, and what nothing refuses but is likely a slip: two local engines'
+endpoints at one address, a remote engine's endpoint that names a host, host locations that no endpoint's engine pins,
+and a clearance for a source that isn't sensitive, which clears nothing. init-data prints its findings; the runner and
+the engine import don't run it yet, and still check one entry at a time.
 
 ### Hosts don't read the start-up
 o11n and the hosts' own configuration (Kompismoln/org) decide what each server runs. The rig imports what they run,
 and the start-up of an imported endpoint gives back the command line o11n runs. So the start-up is a check, and only
 the fake vLLM is started from one. For a host to start its engines from the rig's start-up, o11n would have to read
 it, and the import would then confirm what was started rather than describe it.
-
-### Where a deployment's World is
-A World is handed over each time: the seeder and the runner are each given one. Nothing in the project's settings
-locates one.
-
-Suggested: a setting naming the directory of the deployment's World, listed with the other settings and used by
-default by the seeder and the runner. Kompismoln's World holds the hosts' names and the paths on them; once a
-deployment finds its World through the setting, that directory could live with ops (Kompismoln/org) rather than here.
-
-The runner needs the World the person starting a run meant, since that World decides what is cleared.
 
 ### Smaller issues
 - **Endpoint names are only a convention.** Nothing enforces server@host. A run records the endpoint's name, and

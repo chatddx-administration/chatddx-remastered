@@ -8,6 +8,7 @@ from chatddx.catalog import (
     Edit,
     Entry,
     EntryField,
+    Kept,
     Part,
     Repair,
     Subject,
@@ -138,10 +139,12 @@ class Rows:
         ).fetchall()
         return [_edit(r) for r in rows]
 
-    def entries(self, subjects: Collection[Subject]) -> list[tuple[Subject, Entry]]:
+    def entries(
+        self, subjects: Collection[Subject]
+    ) -> list[tuple[Subject, Entry, int]]:
         rows = self._conn.execute(
             """
-            SELECT thread, family, run, score, field, value, person, present
+            SELECT thread, family, run, score, field, value, person, present, by
             FROM catalog.entry
             WHERE thread = ANY(%s::bigint[]) OR family = ANY(%s::bigint[])
                 OR run = ANY(%s::uuid[]) OR score = ANY(%s::uuid[])
@@ -160,8 +163,9 @@ class Rows:
                 Entry(
                     field=EntryField(field), value=value, person=person, present=present
                 ),
+                int(by),
             )
-            for thread, family, run, score, field, value, person, present in rows
+            for thread, family, run, score, field, value, person, present, by in rows
         ]
 
     def subjects_naming(
@@ -201,6 +205,18 @@ class Rows:
             WHERE b.source = %s ORDER BY b.id
             """,
             (source,),
+        ).fetchall()
+        return [_binding(r) for r in rows]
+
+    def bindings_sharing(self, vignette: Vignette) -> list[Binding]:
+        rows = self._conn.execute(
+            f"""
+            SELECT {_BINDING} FROM catalog.binding b
+            WHERE b.source = %s
+                AND (b.source_id = %s OR b.fingerprint = %s::jsonb)
+            ORDER BY b.id
+            """,
+            (vignette.source, vignette.id, _jsonb(vignette.fingerprint)),
         ).fetchall()
         return [_binding(r) for r in rows]
 
@@ -312,6 +328,29 @@ class Catalog:
         if row is None:
             raise LookupError(f"no thread with id {thread}")
         return _edit(row)
+
+    # `digest` kept in `thread`, by `by`: a new edit, or nothing when it's the head
+    # already; or, without a thread, in a new one named `name` and forked from the edit
+    # `forked_from`.
+    def keep(
+        self,
+        digest: str,
+        by: int,
+        thread: int | None,
+        *,
+        name: str | None = None,
+        compilation: str | None = None,
+        forked_from: int | None = None,
+    ) -> tuple[Edit, Kept]:
+        if thread is None:
+            created = self.create(
+                digest, by, compilation=compilation, forked_from=forked_from, name=name
+            )
+            return created, "created"
+        head = self.head(thread)
+        if head.digest == digest:
+            return head, "unchanged"
+        return self.edit(thread, digest, by, compilation=compilation), "edited"
 
     def thread(self, id: int) -> Thread:
         return threads.thread(self._rows, id)
@@ -450,6 +489,9 @@ class Catalog:
 
     def abouts(self, subjects: Collection[Subject]) -> dict[Subject, About]:
         return read.abouts(self._rows, subjects)
+
+    def tags_given(self, subject: Subject) -> dict[str, int]:
+        return read.tags_given(self._rows, subject)
 
     # The subjects whose entries have ever named a person as owner or collaborator; what
     # holds now is `about`'s.

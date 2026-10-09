@@ -14,6 +14,7 @@ from chatddx.catalog import (
     Subject,
     Survey,
 )
+from chatddx.factors import request
 from chatddx.factors.base import Component, StructuralError, resolve
 from chatddx.factors.bundle import Registry
 from chatddx.factors.cases import Appendix, Case, Vignette
@@ -28,7 +29,6 @@ from chatddx.factors.request import (
     Sampling,
     Slot,
     Translations,
-    compile_request,
     texts,
 )
 from chatddx.factors.scoring import Expectation, Judge, Scoring
@@ -36,6 +36,7 @@ from chatddx.factors.test.sample import NOW, RIG, fp, generation_recipe, world
 from chatddx.identity import Person
 from chatddx.ledger import RunStarted, ScoreStarted
 from chatddx.store import Catalog, People, Store
+from chatddx.store.catalog import Rows
 from chatddx.store.store import Connection
 
 
@@ -54,8 +55,8 @@ def compiled(store: Store, reg: Registry, *instructions: str) -> Compilation:
 
 
 def compiled_recipe(store: Store, reg: Registry, recipe: Recipe) -> Compilation:
-    skeleton = reg.add(compile_request(recipe, reg.get))
-    compilation = Compilation(recipe=recipe, skeleton=skeleton, compiler=RIG)
+    skeleton, compilation = request.compiled(recipe, reg.get, RIG)
+    _ = reg.add(skeleton)
     _ = store.add(reg, [reg.add(compilation)])
     return compilation
 
@@ -63,6 +64,23 @@ def compiled_recipe(store: Store, reg: Registry, recipe: Recipe) -> Compilation:
 def instructions(c: Compilation) -> str:
     assert c.recipe.instructions is not None
     return c.recipe.instructions
+
+
+def test_a_digest_is_kept_in_a_new_thread_a_new_edit_or_as_it_is(
+    conn: Connection,
+) -> None:
+    catalog, store, reg, _, alice = stored_world(conn)
+    v1 = instructions(compiled(store, reg))
+    v2 = instructions(compiled(store, reg, "You are a cardiologist."))
+    first, kept = catalog.keep(v1, alice.id, None, name="physician")
+    assert kept == "created"
+    assert catalog.about(Subject(thread=first.thread)).name == "physician"
+    assert catalog.keep(v1, alice.id, first.thread) == (first, "unchanged")
+    second, kept = catalog.keep(v2, alice.id, first.thread)
+    assert (kept, catalog.history(first.thread)) == ("edited", [first, second])
+    fork, kept = catalog.keep(v2, alice.id, None, forked_from=second.id)
+    assert kept == "created"
+    assert catalog.thread(fork.thread).forked_from == second.id
 
 
 def test_threads_follow_edits(conn: Connection) -> None:
@@ -461,6 +479,13 @@ def test_families(conn: Connection) -> None:
         _ = catalog.adopt(ids["trial"], alice.id)
     with pytest.raises(LookupError):
         _ = catalog.bindings(999)
+
+    rows = Rows(conn)
+    sharing = [b.vignette for b in rows.bindings_sharing(vignette)]
+    assert sharing == [vignette]
+    look = vignette.model_copy(update={"id": "c2", "fingerprint": vignette.fingerprint})
+    assert [b.vignette.id for b in rows.bindings_sharing(look)] == ["c1", "c2"]
+    assert rows.bindings_sharing(look.model_copy(update={"source": "other"})) == []
 
 
 def test_behind_looks_through_cases(conn: Connection) -> None:

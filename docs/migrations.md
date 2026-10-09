@@ -81,6 +81,11 @@ it, if any. A new schema gets its own section with all three tiers.
   - `language (id, digest, kind, value, by, at)`: a component's language, kept on its digest; `(digest, kind)`
     references `factor.component`.
 
+- `0013-t0-catalog-binding-content.sql`: index `binding_content (source, fingerprint)` on `catalog.binding`,
+  beside `binding_source (source, source_id)`, so that looking a case's family up and finding which family holds
+  a vignette's place read only the bindings to its id or content
+  (`src/chatddx/store/catalog.py:Rows.bindings_sharing`, `src/chatddx/catalog/families.py:family_of`, `holder`).
+
 ### Tier 1
 - `0011-t1-catalog.sql`: PUBLIC loses all access; the writer gets SELECT, INSERT and the reader SELECT, with
   default privileges.
@@ -99,3 +104,5 @@ it, if any. A new schema gets its own section with all three tiers.
   - Language tags and kinds on `catalog.language`, and no language for a skeleton already known to be compiled
     (`src/chatddx/catalog/language.py:check_language`).
   - Insert-only triggers on every table.
+
+## Proposed amendments

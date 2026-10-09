@@ -11,6 +11,7 @@ import pytest
 
 from chatddx.cli import main
 from chatddx.core.rig import rig
+from chatddx.curation import plan_factors
 from chatddx.facts import Facts
 from chatddx.importers.o11n import (
     REPORT,
@@ -20,9 +21,7 @@ from chatddx.importers.o11n import (
     imported,
     read,
 )
-from chatddx.inventory import Inventory, start_up
-from chatddx.seed import plan_factors
-from chatddx.seed.world import endpoints as endpoints_of
+from chatddx.inventory import Inventory, check, start_up
 
 STORE = "/nix/store/" + "s" * 32
 SNAPSHOTS = "/srv/models/huggingface/models--{}/snapshots/{}"
@@ -165,7 +164,7 @@ def test_its_capacity_is_the_server_s_max_num_seqs_however_it_is_spelled() -> No
         assert i.endpoint.max_jobs == jobs
 
 
-def test_the_tables_it_prints_seed_the_engine_it_imported_and_start_it_as_served(
+def test_the_tables_it_prints_plan_the_engine_it_imported_and_start_it_as_served(
     tmp_path: Path,
 ) -> None:
     gpt = server(
@@ -180,7 +179,7 @@ def test_the_tables_it_prints_seed_the_engine_it_imported_and_start_it_as_served
     ]
     factors = tmp_path / "factors.toml"
     _ = factors.write_text(factors_toml(imports))
-    plan = plan_factors(factors, Facts(), rig())
+    plan = plan_factors(tmp_path, Facts(), rig())
     for i in imports:
         assert plan.named("model", i.name).digest == i.model.digest
         assert plan.named("local_engine", i.name).digest == i.engine.digest
@@ -206,8 +205,11 @@ def test_the_tables_it_prints_seed_the_engine_it_imported_and_start_it_as_served
     )
     assert startup.env == {"VLLM_USE_FLASHINFER_SAMPLER": "0"}
     assert inventory.endpoint("gpt-oss-20b@malborg").max_jobs == 4
-    sample = tmp_path / "sample.toml"
-    _ = sample.write_text('[prompt.case]\nsegments = [{ slot = "vignette" }]\n')
+    sample = tmp_path / "sample"
+    sample.mkdir()
+    _ = (sample / "factors.toml").write_text(
+        '[prompt.case]\nsegments = [{ slot = "vignette" }]\n'
+    )
     both = plan_factors(sample, Facts(), rig(), more=[factors])
     assert (
         both.named("local_engine", "qwen3-8b@pelle").digest == imports[0].engine.digest
@@ -216,7 +218,7 @@ def test_the_tables_it_prints_seed_the_engine_it_imported_and_start_it_as_served
         ValueError,
         match=r"model \['gpt-oss-20b@malborg', 'qwen3-8b@pelle'\] are named before",
     ):
-        _ = plan_factors(factors, Facts(), rig(), more=[factors])
+        _ = plan_factors(tmp_path, Facts(), rig(), more=[factors])
 
 
 def test_servers_on_one_host_share_its_table_unless_they_bind_apart() -> None:
@@ -377,13 +379,13 @@ def test_the_command_writes_the_engines_and_their_endpoints_apart(
     assert "[model." not in endpoints.read_text()
     world = tmp_path / "inventory.toml"
     _ = world.write_text('include = ["endpoints.toml"]\n')
-    sample = tmp_path / "sample.toml"
-    _ = sample.write_text('[prompt.case]\nsegments = [{ slot = "vignette" }]\n')
+    sample = tmp_path / "sample"
+    sample.mkdir()
+    _ = (sample / "factors.toml").write_text(
+        '[prompt.case]\nsegments = [{ slot = "vignette" }]\n'
+    )
     plan = plan_factors(sample, Facts(), rig(), more=[factors])
-    assert endpoints_of(Inventory.load(world), plan) == [
-        "[world endpoint] qwen3-8b@pelle: http://pelle.km:12009/v1/ serves "
-        + f"engine.local qwen3-8b@pelle {digest.removeprefix('sha256:')[:6]}"
-    ]
+    assert check(Inventory.load(world), plan.registry.get) == []
     with pytest.raises(SystemExit, match="import-engine: no report has a server other"):
         _ = import_engine(tmp_path, str(path), "--server", "other")
     with pytest.raises(SystemExit):

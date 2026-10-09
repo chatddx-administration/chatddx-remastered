@@ -43,6 +43,7 @@ def test_configurations_are_listed_with_their_parts_and_whose_they_are(say: Say)
             *FREE_TEXT.split(),
             "case",
             "free-text",
+            "(en)",
             "recommended",
             "(Qwen/Qwen3-8B-AWQ)",
             "—",
@@ -51,13 +52,14 @@ def test_configurations_are_listed_with_their_parts_and_whose_they_are(say: Say)
             *FREE_TEXT.split(),
             "case",
             "free-text",
+            "(en)",
             "recommended",
             "(Qwen/Qwen3-8B-AWQ)",
             "—",
             "archive",
         ],
     ]
-    assert "web" in line_of(written, "plan-web (Qwen")
+    assert "web (en)" in line_of(written, "plan-web (en, Qwen")
 
 
 def test_cases_are_listed_by_name_with_their_tags(say: Say):

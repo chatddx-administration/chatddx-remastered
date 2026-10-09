@@ -1,12 +1,11 @@
 from collections import Counter
-from collections.abc import Iterable
+from collections.abc import Collection, Iterable
 
-from chatddx.catalog import Entry, EntryField, Subject
+from chatddx.catalog import Entry, EntryField, Kept, Subject, Survey
 from chatddx.factors.base import Fingerprint
 from chatddx.factors.cases import Case, Vignette
-from chatddx.factors.lint import lint
 from chatddx.factors.scoring import Expectation
-from chatddx.facts import check_pairs, reasons
+from chatddx.facts import lints
 from chatddx.identity import Person
 from chatddx.inventory import Source
 from chatddx.store.catalog import Catalog
@@ -16,6 +15,12 @@ from chatddx.store.store import Connection, Store
 from .plan import Plan, Planned, SampleCase
 
 ARCHIVE = "archive"
+# What a run says it did with each record's thread.
+VERBS: dict[Kept, str] = {
+    "created": "created",
+    "edited": "updated",
+    "unchanged": "validated",
+}
 
 
 # Kinds a giftbag forks for its owner: what the old giftbag held (slices with their
@@ -29,7 +34,7 @@ def short(digest: str) -> str:
     return digest.removeprefix("sha256:")[:6]
 
 
-class _Seeder:
+class _Init:
     def __init__(self, conn: Connection, plan: Plan, archive: Person) -> None:
         self.store: Store = Store(conn)
         self.catalog: Catalog = Catalog(conn)
@@ -39,6 +44,9 @@ class _Seeder:
         self.families: list[int] = []
         self.landed: dict[str, list[str]] = {}
         self.lines: list[str] = []
+        self.surveyed: Survey | None = None
+        # The families of the data's cases that need a repair before they're adopted.
+        self.unsettled: set[int] = set()
 
     def land(self, digest: str, what: str) -> None:
         self.landed.setdefault(digest, []).append(what)
@@ -59,6 +67,13 @@ class _Seeder:
             self.note(subject, Entry(field=EntryField.NAME, value=name))
         for tag in sorted(set(tags) - about.tags):
             self.note(subject, Entry(field=EntryField.TAG, value=tag))
+        # The data says which tags the archive gives; tags people gave are theirs.
+        if dropped := about.tags - set(tags):
+            given = self.catalog.tags_given(subject)
+            for tag in sorted(t for t in dropped if given.get(t) == self.archive.id):
+                self.note(
+                    subject, Entry(field=EntryField.TAG, value=tag, present=False)
+                )
         if description is not None and about.description != description:
             self.note(subject, Entry(field=EntryField.DESCRIPTION, value=description))
         if language is not None and about.language != language:
@@ -76,32 +91,27 @@ class _Seeder:
         what = f"{kind} {name}" if name is not None else kind
         if len(found) > 1:
             raise ValueError(f"the archive has {len(found)} threads for {what}")
-        if not found:
-            forked_from = None if fork_of is None else self.catalog.head(fork_of).id
-            edit = self.catalog.create(
-                digest,
-                self.archive.id,
-                compilation=compilation,
-                forked_from=forked_from,
-                name=name,
-            )
-            return edit.thread, "created"
-        thread = found[0]
-        if self.catalog.head(thread).digest == digest:
-            return thread, "validated"
-        _ = self.catalog.edit(thread, digest, self.archive.id, compilation=compilation)
-        return thread, "updated"
+        forked_from = None
+        if not found and fork_of is not None:
+            forked_from = self.catalog.head(fork_of).id
+        edit, kept = self.catalog.keep(
+            digest,
+            self.archive.id,
+            found[0] if found else None,
+            name=name,
+            compilation=compilation,
+            forked_from=forked_from,
+        )
+        return edit.thread, VERBS[kept]
 
     def record(self, r: Planned) -> None:
         found = self.catalog.find(r.kind, r.name, owner=self.archive.id)
-        head = None if not found else self.catalog.head(found[0])
-        unchanged = head is not None and head.digest == r.digest
         thread, verb = self.put(
             r.kind,
             r.digest,
             found,
             r.name,
-            compilation=None if unchanged else r.compilation,
+            compilation=r.compilation,
             fork_of=None if r.fork_of is None else self.threads[(r.kind, r.fork_of)],
         )
         self.threads[(r.kind, r.name)] = thread
@@ -111,13 +121,42 @@ class _Seeder:
         for position, label in enumerate(r.labels):
             if label is not None and labelled.get(("view", position)) != label:
                 self.catalog.label(r.digest, "view", position, label, self.archive.id)
-        self.lines.append(f"[archive {r.kind}] {r.name}: {verb} {short(r.digest)}")
+        said = ""
+        if r.language is not None and self.catalog.language_of(r.digest) != r.language:
+            self.catalog.language(r.digest, r.language, self.archive.id)
+            said = f", in {r.language}"
+        self.lines.append(
+            f"[archive {r.kind}] {r.name}: {verb} {short(r.digest)}{said}"
+        )
+
+    # What the source says of a case that can't be adopted as the data names it: the
+    # vignette was renamed or changed there, so its family needs a repair.
+    def repair_for(self, source: Source, id: str) -> str | None:
+        if self.surveyed is None:
+            listing = {c.vignette.id: c.vignette.fingerprint for c in source.cases()}
+            self.surveyed = self.catalog.survey(source.name, listing)
+        at = f"at source {source.name!r}; repair-data rebinds family"
+        for family, old, new in self.surveyed.renamed:
+            if id in (old, new):
+                self.unsettled.add(family)
+                moved = f"to {new}" if id == old else f"from {old}"
+                return f"renamed {moved} {at} {family}"
+        for family, changed, _ in self.surveyed.changed:
+            if id == changed:
+                self.unsettled.add(family)
+                return f"changed {at} {family}"
+        return None
 
     def case(self, source: Source, id: str, sample: SampleCase, schema: str) -> None:
         try:
             raw = source.fetch(id)
         except LookupError:
-            self.lines.append(f"[archive case] {id}: missing at source {source.name!r}")
+            if (repair := self.repair_for(source, id)) is not None:
+                self.lines.append(f"[archive case] {id}: needs repair: {repair}")
+            else:
+                self.lines.append(
+                    f"[archive case] {id}: missing at source {source.name!r}"
+                )
             return
         case = Case(
             vignette=Vignette(
@@ -130,16 +169,18 @@ class _Seeder:
             Expectation(case=digest, expectation_schema=schema, data=sample.targets)
         )
         _ = self.store.add(registry, [digest, expectation])
-        known = self.catalog.family(digest) is not None
-        try:
-            family = self.catalog.adopt(digest, self.archive.id)
-        except ValueError as e:
-            self.lines.append(f"[archive case] {id}: needs repair: {e}")
-            return
+        family = self.catalog.family(digest)
+        verb = "validated" if family is not None else "created"
+        if family is None:
+            try:
+                family = self.catalog.adopt(digest, self.archive.id)
+            except ValueError as e:
+                repair = self.repair_for(source, id) or str(e)
+                self.lines.append(f"[archive case] {id}: needs repair: {repair}")
+                return
         self.families.append(family)
         self.land(digest, f"case {id}")
         self.sync(Subject(family=family), sample.tags, None, sample.language, name=id)
-        verb = "validated" if known else "created"
         self.lines.append(f"[archive case] {id}: {verb} {short(digest)}")
         found = [
             t
@@ -152,15 +193,46 @@ class _Seeder:
         self.sync(Subject(thread=thread))
         self.lines.append(f"[archive expectation] {id}: {verb} {short(expectation)}")
 
+    # The archive's threads and families this run didn't come to, but for those of the
+    # data's cases it reported missing or needing repair.
+    def leftovers(self, cases: Collection[str]) -> None:
+        threads = set(self.threads.values())
+        subjects = self.catalog.involving(self.archive.id)
+        known = self.catalog.abouts(subjects)
+
+        def named(family: int | None) -> bool:
+            if family is None:
+                return False
+            if family in self.families or family in self.unsettled:
+                return True
+            about = known.get(Subject(family=family))
+            return about is not None and about.name in cases
+
+        lines: list[str] = []
+        for subject in subjects:
+            about = known[subject]
+            if about.owner != self.archive.id or about.deleted:
+                continue
+            if subject.thread is not None and subject.thread not in threads:
+                kind = self.catalog.thread(subject.thread).kind
+                if kind == "expectation" and named(self.family_of(subject.thread)):
+                    continue
+                name = about.name or self.catalog.title(subject.thread)
+                lines.append(f"[archive {kind}] {name}: not in the data")
+            elif subject.family is not None and not named(subject.family):
+                name = about.name or f"family {subject.family}"
+                lines.append(f"[archive case] {name}: not in the data")
+        self.lines += sorted(lines)
+
+    def family_of(self, expectation_thread: int) -> int | None:
+        head = self.catalog.head(expectation_thread)
+        expectation = self.store.get(head.digest)
+        assert isinstance(expectation, Expectation)
+        return self.catalog.family(expectation.case)
+
     def lint(self) -> None:
         registry, facts, digests = self.plan.registry, self.plan.facts, [*self.landed]
-        findings = lint(
-            registry,
-            digests,
-            languages=self.catalog.language_of,
-            reasons=reasons(facts, registry),
-        )
-        findings += check_pairs(registry, facts, digests)
+        findings = lints(registry, facts, digests, self.catalog.language_of)
         for f in findings:
             what = ", ".join(self.landed.get(f.subject or "") or [str(f.subject)])
             self.lines.append(f"[lint {f.level}] {what}: {f.code}: {f.message}")
@@ -172,9 +244,10 @@ class _Seeder:
     def share(self, user: Person) -> None:
         subjects = [Subject(thread=t) for t in self.threads.values()]
         subjects += [Subject(family=f) for f in self.families]
+        known = self.catalog.abouts(subjects)
         shared = 0
         for subject in subjects:
-            if user.id not in self.catalog.about(subject).collaborators:
+            if user.id not in known[subject].collaborators:
                 self.note(subject, Entry(field=EntryField.COLLABORATOR, person=user.id))
                 shared += 1
         self.lines.append(
@@ -247,7 +320,7 @@ def wipe(conn: Connection, user: Person) -> list[str]:
     ] or [f"[wipe] {user.login}: nothing to delete or unshare"]
 
 
-def seed(
+def init(
     conn: Connection,
     plan: Plan,
     cases: dict[str, SampleCase],
@@ -261,18 +334,19 @@ def seed(
     with conn.transaction():
         people = People(conn)
         archive = people.find(ARCHIVE) or people.add(ARCHIVE, "Archive")
-        seeder = _Seeder(conn, plan, archive)
+        writer = _Init(conn, plan, archive)
         compilations = [r.compilation for r in plan.records if r.compilation]
-        _ = seeder.store.add(
+        _ = writer.store.add(
             plan.registry, [*(r.digest for r in plan.records), *compilations]
         )
         for r in plan.records:
-            seeder.record(r)
-        seeder.lines += [f"[skipped] {s}" for s in plan.skipped]
+            writer.record(r)
+        writer.lines += [f"[skipped] {s}" for s in plan.skipped]
         for id, sample in cases.items():
-            seeder.case(source, id, sample, schemas[0].digest)
-        seeder.share(user)
+            writer.case(source, id, sample, schemas[0].digest)
+        writer.leftovers(cases)
+        writer.share(user)
         if giftbag:
-            seeder.giftbag(user)
-        seeder.lint()
-        return seeder.lines
+            writer.giftbag(user)
+        writer.lint()
+        return writer.lines

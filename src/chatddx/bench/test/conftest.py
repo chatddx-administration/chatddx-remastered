@@ -6,10 +6,10 @@ import pytest
 from chatddx.bench import Bench
 from chatddx.conftest import WORLD, create_database, drop_database, sample_plan
 from chatddx.core import settings
+from chatddx.curation import Plan
 from chatddx.facts import BUNDLED, Facts
 from chatddx.identity import Person
 from chatddx.inventory import Inventory
-from chatddx.seed import Plan
 from chatddx.store import People
 from chatddx.store.store import Connection
 
@@ -20,8 +20,8 @@ def plan() -> Plan:
 
 
 @pytest.fixture
-def db(seeded: str) -> Iterator[str]:
-    name = create_database(template=seeded)
+def db(curated: str) -> Iterator[str]:
+    name = create_database(template=curated)
     try:
         yield name
     finally:
@@ -48,4 +48,6 @@ def bob(conn: Connection) -> Person:
 
 @pytest.fixture
 def bench(conn: Connection, alice: Person) -> Bench:
-    return Bench(conn, alice, Inventory.load(WORLD), Facts.load(BUNDLED))
+    return Bench(
+        conn, alice, Inventory.load(WORLD / "inventory.toml"), Facts.load(BUNDLED)
+    )

@@ -10,6 +10,9 @@ from rich.console import Console
 from chatddx.bench import Bench
 from chatddx.core import settings
 from chatddx.core.rig import rig
+from chatddx.curation import init, load_cases, plan_factors, repair, wipe
+from chatddx.curation.plan import SAMPLE
+from chatddx.curation.write import ARCHIVE
 from chatddx.facts import BUNDLED, Facts
 from chatddx.fake_vllm.server import run
 from chatddx.identity import Role
@@ -20,13 +23,9 @@ from chatddx.importers.o11n import (
     imported,
     read,
 )
-from chatddx.inventory import DirectorySource, Inventory
+from chatddx.inventory import World, check
 from chatddx.repl.loop import HISTORY, loop
 from chatddx.repl.shell import Repl
-from chatddx.seed import load_cases, plan_factors, seed, wipe
-from chatddx.seed.plan import SAMPLE
-from chatddx.seed.world import endpoints
-from chatddx.seed.write import ARCHIVE
 from chatddx.store.migrate import TOP_TIER, migrate, pending
 from chatddx.store.people import People
 
@@ -64,25 +63,34 @@ def _person_password(args: argparse.Namespace) -> None:
     print(f"password set for {args.login}")
 
 
+def _world(command: str, path: Path | None) -> World:
+    path = path or settings.world()
+    if path is None:
+        raise SystemExit(f"{command}: give a World with --world DIR or CHATDDX_WORLD")
+    try:
+        return World.load(path)
+    except LookupError as e:
+        raise SystemExit(f"{command}: {e}") from None
+
+
 def _init_data(args: argparse.Namespace) -> None:
-    sample: Path = args.data
-    facts = Facts.load(BUNDLED, *(args.facts or ()))
-    plan = plan_factors(sample / "factors.toml", facts, rig(), more=args.factors or ())
-    cases = load_cases(sample / "cases.toml")
-    world = None if args.world is None else Inventory.load(args.world)
-    if world is not None:
-        source = world.source(args.source)
-    elif args.vignettes.is_dir():
-        source = DirectorySource(name=args.source, path=args.vignettes.resolve())
-    else:
-        raise SystemExit(
-            f"--vignettes {args.vignettes}: give a directory of <id>.txt files, such as "
-            + "worlds/sample/vignettes"
-        )
+    world = _world("init-data", args.world)
+    data: Path = args.data
+    more = [*world.factors, *(args.factors or ())]
+    try:
+        facts = Facts.load(BUNDLED, *world.facts, *(args.facts or ()))
+        plan = plan_factors(data, facts, rig(), more=more)
+        cases = load_cases(data)
+    except ValueError as e:
+        raise SystemExit(f"init-data: {e}") from None
+    try:
+        source = world.inventory.source(args.source)
+    except LookupError as e:
+        raise SystemExit(f"init-data: {world.path}: {e}") from None
     if not set(cases) & set(source.ids()):
         raise SystemExit(
-            f"none of the sample's {len(cases)} cases is in source {args.source!r}; "
-            + "the sample World has them: --world worlds/sample/inventory.toml"
+            f"init-data: none of the data's {len(cases)} cases is in source "
+            + f"{args.source!r} of {world.path}; the sample World has them"
         )
     lines: list[str] = []
     with psycopg.connect(settings.database()) as conn:
@@ -91,9 +99,29 @@ def _init_data(args: argparse.Namespace) -> None:
         if user is None:
             user = people.add(args.user, args.user)
             lines.append(f"[person] {args.user}: added")
-        lines += seed(conn, plan, cases, source, user, giftbag=args.giftbag)
-    if world is not None:
-        lines += endpoints(world, plan)
+        lines += init(conn, plan, cases, source, user, giftbag=args.giftbag)
+    findings = check(world.inventory, plan.registry.get)
+    lines += [f"[world {f.level}] {f.subject}: {f.code}: {f.message}" for f in findings]
+    n, m = len(findings), len(world.inventory.endpoints)
+    lines.append(
+        f"[world] {n} finding{'' if n == 1 else 's'} in {m} endpoint"
+        + f"{'' if m == 1 else 's'} of {world.path}"
+    )
+    for line in lines:
+        print(line)
+
+
+def _repair_data(args: argparse.Namespace) -> None:
+    world = _world("repair-data", args.world)
+    try:
+        source = world.inventory.source(args.source)
+    except LookupError as e:
+        raise SystemExit(f"repair-data: {world.path}: {e}") from None
+    with psycopg.connect(settings.database()) as conn:
+        archive = People(conn).find(ARCHIVE)
+        if archive is None:
+            raise SystemExit(f"repair-data: no {ARCHIVE!r} yet; init-data loads it")
+        lines = repair(conn, source, archive, dry=args.dry_run)
     for line in lines:
         print(line)
 
@@ -153,15 +181,15 @@ def _import_engine(args: argparse.Namespace) -> None:
 
 
 def _repl(args: argparse.Namespace) -> None:
-    facts = Facts.load(BUNDLED, *(args.facts or ()))
-    world = Inventory.load(args.world)
+    world = _world("repl", args.world)
+    facts = Facts.load(BUNDLED, *world.facts, *(args.facts or ()))
     with psycopg.connect(settings.database(), autocommit=True) as conn:
         person = People(conn).find(args.login)
         if person is None:
             raise SystemExit(
                 f"no person {args.login!r}: chatddx init-data {args.login} adds them"
             )
-        loop(Repl(Bench(conn, person, world, facts), Console()), args.history)
+        loop(Repl(Bench(conn, person, world.inventory, facts), Console()), args.history)
 
 
 def _fake_vllm(args: argparse.Namespace) -> None:
@@ -200,26 +228,23 @@ def main(argv: Sequence[str] | None = None) -> None:
 
     init = commands.add_parser(
         "init-data",
-        help="seed the sample data for the archive and share it with a person",
+        help="load the sample data into the archive and share it with a person",
     )
     _ = init.add_argument(
         "user", help="the login to share the archive with, added when missing"
     )
-    vignettes = init.add_mutually_exclusive_group(required=True)
-    _ = vignettes.add_argument(
+    _ = init.add_argument(
         "--world",
         type=Path,
-        help="a World inventory whose [source.<name>] table locates the vignettes",
-    )
-    _ = vignettes.add_argument(
-        "--vignettes",
-        type=Path,
-        help="a directory of <id>.txt vignettes, in place of a World inventory",
+        help="the World directory: its inventory.toml locates the vignettes and "
+        + "endpoints, and its factors.toml and facts.toml are loaded with the data's "
+        + "(CHATDDX_WORLD)",
     )
     _ = init.add_argument(
         "--source",
         default="sample",
-        help="the vignette source's name, in the World inventory and the cases (sample)",
+        help="the vignette source's name, in the World's inventory and the cases "
+        + "(sample)",
     )
     _ = init.add_argument(
         "--giftbag", action="store_true", help="also give the user forks of their own"
@@ -228,23 +253,41 @@ def main(argv: Sequence[str] | None = None) -> None:
         "--data",
         type=Path,
         default=SAMPLE,
-        help="what to seed: a directory with factors.toml and cases.toml "
+        help="what to load: a directory with factors.toml and cases-<language>.toml "
         + "(the sample data in the package)",
     )
     _ = init.add_argument(
         "--factors",
         type=Path,
         action="append",
-        help="more factors to seed with the data's, such as a World's engines "
-        + "(worlds/sample/factors.toml)",
+        help="more factors to load with the data's and the World's",
     )
     _ = init.add_argument(
         "--facts",
         type=Path,
         action="append",
-        help="more model facts to write per-model chunks from, beside the bundled ones",
+        help="more model facts to write per-model chunks from, beside the bundled "
+        + "ones and the World's",
     )
     init.set_defaults(run=_init_data)
+
+    repair_parser = commands.add_parser(
+        "repair-data",
+        help="move the archive's families whose vignettes were renamed or changed at "
+        + "their source",
+    )
+    _ = repair_parser.add_argument(
+        "--world",
+        type=Path,
+        help="the World directory whose source holds the vignettes (CHATDDX_WORLD)",
+    )
+    _ = repair_parser.add_argument(
+        "--source", default="sample", help="the source's name in the World (sample)"
+    )
+    _ = repair_parser.add_argument(
+        "--dry-run", action="store_true", help="list the repairs without making them"
+    )
+    repair_parser.set_defaults(run=_repair_data)
 
     wipe_parser = commands.add_parser(
         "wipe-data",
@@ -280,7 +323,7 @@ def main(argv: Sequence[str] | None = None) -> None:
         type=Path,
         required=True,
         help="the factors file to write the models and engines to, such as "
-        + "worlds/kompismoln/factors.toml, for init-data's --factors",
+        + "worlds/kompismoln/factors.toml, which init-data loads with its World",
     )
     _ = imp.add_argument(
         "--endpoints",
@@ -300,15 +343,15 @@ def main(argv: Sequence[str] | None = None) -> None:
     _ = shell.add_argument(
         "--world",
         type=Path,
-        required=True,
-        help="the World inventory whose endpoints and vignettes the shell uses, such "
-        + "as worlds/sample/inventory.toml",
+        help="the World directory whose endpoints, vignettes and facts the shell uses "
+        + "(CHATDDX_WORLD)",
     )
     _ = shell.add_argument(
         "--facts",
         type=Path,
         action="append",
-        help="more model facts, beside the bundled ones, as init-data was given",
+        help="more model facts, beside the bundled ones and the World's, as init-data "
+        + "was given",
     )
     _ = shell.add_argument(
         "--history",

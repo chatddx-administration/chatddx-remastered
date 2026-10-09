@@ -438,6 +438,20 @@ class Recipe(Frozen):
     toolset: Annotated[Digest, RefTo("chunk.toolset")] | None = None
 
 
+# A recipe's fields that name chunks, in the order people read them.
+RECIPE_PARTS = (
+    "instructions",
+    "few_shot",
+    "prompt",
+    "output",
+    "sampling",
+    "reasoning",
+    "passthrough",
+    "translations",
+    "toolset",
+)
+
+
 # The frozen request: what a trial or judge actually references.
 
 
@@ -619,6 +633,10 @@ _NAMED = frozenset(
 _DATA = frozenset({"enum", "const", "default", "examples"})
 
 
+def _untranslated(text: str) -> str:
+    return text
+
+
 def _tr(text: str, tr: Translate) -> str:
     return tr(text) if text.strip() else text
 
@@ -691,24 +709,52 @@ class _Parts(NamedTuple):
     tools: tuple[Tool, ...]
 
 
+def _tr_instructions(c: Instructions, tr: Translate) -> Instructions:
+    return Instructions(role=c.role, text=_tr_text(c.text, tr))
+
+
+def _tr_few_shot(f: FewShot, tr: Translate) -> FewShot:
+    return FewShot(
+        messages=tuple(
+            Example(role=m.role, content=_tr(m.content, tr)) for m in f.messages
+        )
+    )
+
+
+def _tr_prompt(p: Prompt, tr: Translate) -> Prompt:
+    return Prompt(purpose=p.purpose, segments=_tr_segments(p.segments, tr))
+
+
+def _tr_toolset(
+    ts: Toolset, get: Resolver, tr: Translate
+) -> tuple[Toolset, tuple[Tool, ...]]:
+    toolset = Toolset(
+        tools=ts.tools,
+        guidance=None if ts.guidance is None else _tr(ts.guidance, tr),
+        max_rounds=ts.max_rounds,
+    )
+    tools = tuple(
+        Tool.model_validate(
+            {
+                **tool.model_dump(),
+                "description": _tr(tool.description, tr),
+                "parameters": _tr_schema(tool.parameters, tr),
+            }
+        )
+        for tool in (resolve(get, d, Tool) for d in ts.tools)
+    )
+    return toolset, tools
+
+
 # The recipe's text-bearing parts, with every text passed through tr(part).
 def _parts(recipe: Recipe, get: Resolver, tr: Callable[[str], Translate]) -> _Parts:
     instructions = few_shot = None
     if recipe.instructions is not None:
         c = resolve(get, recipe.instructions, Instructions)
-        instructions = Instructions(
-            role=c.role, text=_tr_text(c.text, tr("instructions"))
-        )
+        instructions = _tr_instructions(c, tr("instructions"))
     if recipe.few_shot is not None:
-        f = resolve(get, recipe.few_shot, FewShot)
-        few_shot = FewShot(
-            messages=tuple(
-                Example(role=m.role, content=_tr(m.content, tr("few_shot")))
-                for m in f.messages
-            )
-        )
-    p = resolve(get, recipe.prompt, Prompt)
-    prompt = Prompt(purpose=p.purpose, segments=_tr_segments(p.segments, tr("prompt")))
+        few_shot = _tr_few_shot(resolve(get, recipe.few_shot, FewShot), tr("few_shot"))
+    prompt = _tr_prompt(resolve(get, recipe.prompt, Prompt), tr("prompt"))
     output = _tr_output(resolve(get, recipe.output, Output), tr("output"))
     layout, t = recipe.appendix_layout, tr("appendix_layout")
     appendix_layout = AppendixLayout(
@@ -718,28 +764,20 @@ def _parts(recipe: Recipe, get: Resolver, tr: Callable[[str], Translate]) -> _Pa
     )
     toolset, tools = None, ()
     if recipe.toolset is not None:
-        ts, t = resolve(get, recipe.toolset, Toolset), tr("toolset")
-        toolset = Toolset(
-            tools=ts.tools,
-            guidance=None if ts.guidance is None else _tr(ts.guidance, t),
-            max_rounds=ts.max_rounds,
-        )
-        tools = tuple(
-            Tool.model_validate(
-                {
-                    **tool.model_dump(),
-                    "description": _tr(tool.description, t),
-                    "parameters": _tr_schema(tool.parameters, t),
-                }
-            )
-            for tool in (resolve(get, d, Tool) for d in ts.tools)
-        )
+        ts = resolve(get, recipe.toolset, Toolset)
+        toolset, tools = _tr_toolset(ts, get, tr("toolset"))
     return _Parts(
         instructions, few_shot, prompt, output, appendix_layout, toolset, tools
     )
 
 
-# What a translation of the recipe needs, per part, in order; whitespace is left out.
+# The parts translations translate. Instructions, few-shot and prompts are written in
+# their language.
+TRANSLATED = frozenset({"output", "appendix_layout", "toolset"})
+
+
+# The texts each part of the recipe holds, in order; whitespace is left out. A translation
+# needs those of the TRANSLATED parts.
 def texts(recipe: Recipe, get: Resolver) -> dict[str, tuple[str, ...]]:
     found: dict[str, list[str]] = {}
 
@@ -755,6 +793,34 @@ def texts(recipe: Recipe, get: Resolver) -> dict[str, tuple[str, ...]]:
 
     _ = _parts(recipe, get, collect)
     return {part: tuple(seen) for part, seen in found.items() if seen}
+
+
+# The texts a chunk holds itself, whitespace left out, which give it a language of its
+# own: a toolset's include its tools'. A translations chunk's are its translations.
+def own_texts(chunk: Component, get: Resolver) -> tuple[str, ...]:
+    seen: list[str] = []
+
+    def tr(text: str) -> str:
+        if text not in seen:
+            seen.append(text)
+        return text
+
+    match chunk:
+        case Instructions():
+            _ = _tr_instructions(chunk, tr)
+        case FewShot():
+            _ = _tr_few_shot(chunk, tr)
+        case Prompt():
+            _ = _tr_prompt(chunk, tr)
+        case Output():
+            _ = _tr_output(chunk, tr)
+        case Toolset():
+            _ = _tr_toolset(chunk, get, tr)
+        case Translations():
+            seen.extend(t for t in chunk.entries.values() if t.strip())
+        case _:
+            pass
+    return tuple(seen)
 
 
 def compile_request(recipe: Recipe, get: Resolver) -> Skeleton:
@@ -773,7 +839,9 @@ def compile_request(recipe: Recipe, get: Resolver) -> Skeleton:
             return text
         return entries[text]
 
-    parts = _parts(recipe, get, lambda _: translate)
+    parts = _parts(
+        recipe, get, lambda part: translate if part in TRANSLATED else _untranslated
+    )
     if missing:
         raise StructuralError(
             "no translation for " + ", ".join(repr(t) for t in sorted(missing))
@@ -882,6 +950,14 @@ def compile_request(recipe: Recipe, get: Resolver) -> Skeleton:
         tools=() if toolset is None else toolset.tools,
         max_rounds=None if toolset is None else toolset.max_rounds,
     )
+
+
+def compiled(
+    recipe: Recipe, get: Resolver, compiler: Code
+) -> tuple[Skeleton, Compilation]:
+    skeleton = compile_request(recipe, get)
+    record = Compilation(recipe=recipe, skeleton=skeleton.digest, compiler=compiler)
+    return skeleton, record
 
 
 def render(

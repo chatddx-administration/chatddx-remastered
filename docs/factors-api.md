@@ -293,6 +293,8 @@ stored.
 | `GREEDY_DROPS` | `top_p`, `top_k`, `min_p` |
 | `ToolName` | `str` matching `^[A-Za-z0-9_-]{1,64}$` |
 | `EntryPoint` | `str` matching `^[\w.]+:[\w.]+$`, as `module:attribute` |
+| `TRANSLATED` | `output`, `appendix_layout`, `toolset` |
+| `RECIPE_PARTS` |  `instructions`, `few_shot`, `prompt`, `output`, `sampling`, `reasoning`, `passthrough`, `translations`, `toolset` |
 
 ### Segments and text
 
@@ -304,6 +306,9 @@ stored.
   without inserts becomes one plain string.
 - `Message(role: Literal["system", "developer", "user", "assistant"], content: tuple[Segment, ...])`: at least one
   segment.
+- `own_texts(chunk, get) -> tuple[str, ...]`: the texts a chunk holds itself, whitespace left out: a toolset's include
+  its tools' descriptions and parameter prose, a translations chunk's are its translations, and any other component
+  has none.
 
 Slot rules, checked for a prompt and for a skeleton's messages together: only the purpose's slots, every required
 slot, and none twice. Insert rules, per chunk: only the kind's inserts, and none twice.
@@ -462,8 +467,8 @@ Before validation, a `body` with `temperature == 0` loses `top_p`, `top_k` and `
 nothing checks that the recipe compiles to the skeleton.
 
 ### `texts(recipe: Recipe, get: Resolver) -> dict[str, tuple[str, ...]]`
-The texts a translation of the recipe needs, by part, in first-seen order, without duplicates. Whitespace-only texts
-are left out, and so are parts without texts. Parts and their texts:
+The texts of each part of the recipe, in first-seen order, without duplicates; a translation needs those of the
+`TRANSLATED` parts. Whitespace-only texts are left out, and so are parts without texts. Parts and their texts:
 
 | Part | Texts |
 | --- | --- |
@@ -503,6 +508,10 @@ kept, and nothing under `enum`, `const`, `default` or `examples` is translated.
 
 The same recipe and the same compiler always give the same skeleton. Without translations, how a chunk splits its
 text doesn't change the skeleton.
+
+### `compiled(recipe, get, compiler) -> tuple[Skeleton, Compilation]`
+A recipe compiled by `compiler`, the running code, with the compilation that records what the skeleton was compiled
+from.
 
 ### `render(skeleton, *, model, seed, fills, return_token_ids=True) -> dict[str, JsonValue]`
 | Parameter | Type |
@@ -920,3 +929,5 @@ Behavior described here that `docs/factors.md` doesn't state. The first three ar
 - `Case.appendices` may list the same appendix twice.
 - `Canary.render` sends the canary's seed whatever the temperature.
 - `JsonPointer` (`base.py`) is defined but unused.
+
+## Proposed amendments

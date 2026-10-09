@@ -2,19 +2,9 @@ from collections.abc import Mapping
 from dataclasses import dataclass, field, replace
 
 from chatddx.catalog import Edit
-from chatddx.factors.request import Recipe
+from chatddx.factors.request import RECIPE_PARTS, Recipe
 
-PARTS = (
-    "instructions",
-    "few_shot",
-    "prompt",
-    "output",
-    "sampling",
-    "reasoning",
-    "passthrough",
-    "translations",
-    "toolset",
-)
+PARTS = RECIPE_PARTS
 OPTIONAL = tuple(p for p in PARTS if not Recipe.model_fields[p].is_required())
 
 

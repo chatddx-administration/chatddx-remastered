@@ -7,18 +7,18 @@ from chatddx.bench import Bench
 from chatddx.catalog import Entry, EntryField, Subject
 from chatddx.conftest import WORLDS
 from chatddx.core.rig import rig
+from chatddx.curation import Plan
 from chatddx.factors.scoring import Expectation
 from chatddx.factors.trial import Trial
 from chatddx.identity import Person
 from chatddx.inventory import DirectorySource
 from chatddx.ledger import Run, RunStarted
-from chatddx.seed import Plan
 from chatddx.store import Catalog, Store
 from chatddx.store.store import Connection
 
 SOURCE = DirectorySource(name="sample", path=WORLDS / "sample" / "vignettes")
-FREE_TEXT = "free-text (Qwen/Qwen3-8B-AWQ)"
-PLAN = "plan (Qwen/Qwen3-8B-AWQ)"
+FREE_TEXT = "free-text (en, Qwen/Qwen3-8B-AWQ)"
+PLAN = "plan (en, Qwen/Qwen3-8B-AWQ)"
 QWEN = "qwen3-8b-awq@fake"
 
 

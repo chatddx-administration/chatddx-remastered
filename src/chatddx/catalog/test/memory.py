@@ -1,10 +1,11 @@
 from collections.abc import Collection
 
 from chatddx.catalog import Binding, Edit, Entry, Part, Subject, Thread
+from chatddx.factors import request
 from chatddx.factors.base import Component
 from chatddx.factors.bundle import Registry
 from chatddx.factors.cases import Appendix, Case, Vignette
-from chatddx.factors.request import Compilation, Recipe, compile_request
+from chatddx.factors.request import Compilation, Recipe
 from chatddx.factors.scoring import Expectation
 from chatddx.factors.test.sample import NOW, RIG
 
@@ -12,8 +13,8 @@ BY = 1
 
 
 def compiled(registry: Registry, recipe: Recipe) -> Compilation:
-    skeleton = registry.add(compile_request(recipe, registry.get))
-    compilation = Compilation(recipe=recipe, skeleton=skeleton, compiler=RIG)
+    skeleton, compilation = request.compiled(recipe, registry.get, RIG)
+    _ = registry.add(skeleton)
     _ = registry.add(compilation)
     return compilation
 
@@ -23,7 +24,7 @@ class Memory:
         self.registry: Registry = registry
         self._threads: list[Thread] = []
         self._edits: list[Edit] = []
-        self._entries: list[tuple[Subject, Entry]] = []
+        self._entries: list[tuple[Subject, Entry, int]] = []
         self._bindings: list[Binding] = []
         self._languages: list[tuple[str, str]] = []
         self._labels: list[tuple[str, Part, int, str]] = []
@@ -65,8 +66,8 @@ class Memory:
         self._edits.append(edit)
         return edit
 
-    def note(self, subject: Subject, entry: Entry) -> None:
-        self._entries.append((subject, entry))
+    def note(self, subject: Subject, entry: Entry, by: int = BY) -> None:
+        self._entries.append((subject, entry, by))
 
     def bind(self, family: int, vignette: Vignette) -> Binding:
         binding = Binding(
@@ -108,8 +109,10 @@ class Memory:
     def edits_holding(self, digests: Collection[str]) -> list[Edit]:
         return [e for e in self._edits if e.digest in digests]
 
-    def entries(self, subjects: Collection[Subject]) -> list[tuple[Subject, Entry]]:
-        return [(s, e) for s, e in self._entries if s in subjects]
+    def entries(
+        self, subjects: Collection[Subject]
+    ) -> list[tuple[Subject, Entry, int]]:
+        return [(s, e, by) for s, e, by in self._entries if s in subjects]
 
     def bindings(self, family: int) -> list[Binding]:
         return [b for b in self._bindings if b.family == family]
@@ -119,6 +122,17 @@ class Memory:
 
     def bindings_in(self, source: str) -> list[Binding]:
         return [b for b in self._bindings if b.vignette.source == source]
+
+    def bindings_sharing(self, vignette: Vignette) -> list[Binding]:
+        return [
+            b
+            for b in self._bindings
+            if b.vignette.source == vignette.source
+            and (
+                b.vignette.id == vignette.id
+                or b.vignette.fingerprint == vignette.fingerprint
+            )
+        ]
 
     def bound_to(self, vignette: Vignette, kind: str) -> list[str]:
         return [

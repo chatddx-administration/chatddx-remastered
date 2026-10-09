@@ -74,7 +74,7 @@ def _known_draft(draft: JsonValue) -> bool:
     return True
 
 
-def _validator(schema: dict[str, JsonValue]) -> type[Validator] | str:
+def _validator(schema: dict[str, JsonValue]) -> Validator | str:
     draft = schema.get("$schema", "https://json-schema.org/draft/2020-12/schema")
     if not _known_draft(draft):
         return f"$schema {draft!r} names no draft that can be checked"
@@ -83,11 +83,27 @@ def _validator(schema: dict[str, JsonValue]) -> type[Validator] | str:
         cls.check_schema(schema)
     except SchemaError as e:
         return f"{_where(e)}: {e.message}"
-    return cls
+    return cls(schema)
 
 
-def _expectation_schema(c: ExpectationSchema, _: Registry) -> Iterable[Finding]:
-    match _validator(c.json_schema):
+# An expectation schema's validator, or why it has none, by the schema's digest, so a
+# lint checks each schema once however many expectations it lints against it.
+Validators = dict[str, Validator | str]
+
+
+def _validator_of(
+    digest: str, registry: Registry, known: Validators
+) -> Validator | str:
+    if digest not in known:
+        schema = resolve(registry.get, digest, ExpectationSchema).json_schema
+        known[digest] = _validator(schema)
+    return known[digest]
+
+
+def _expectation_schema(
+    c: ExpectationSchema, registry: Registry, known: Validators
+) -> Iterable[Finding]:
+    match _validator_of(c.digest, registry, known):
         case str() as message:
             yield Finding(
                 code="expectation_schema.invalid", message=message, subject=c.digest
@@ -96,13 +112,14 @@ def _expectation_schema(c: ExpectationSchema, _: Registry) -> Iterable[Finding]:
             pass
 
 
-def _expectation(c: Expectation, registry: Registry) -> Iterable[Finding]:
-    schema = resolve(registry.get, c.expectation_schema, ExpectationSchema).json_schema
-    cls = _validator(schema)
-    if isinstance(cls, str):
+def _expectation(
+    c: Expectation, registry: Registry, known: Validators
+) -> Iterable[Finding]:
+    validator = _validator_of(c.expectation_schema, registry, known)
+    if isinstance(validator, str):
         return
     try:
-        errors = list(cls(schema).iter_errors(c.data))
+        errors = list(validator.iter_errors(c.data))
     except Unresolvable as e:
         yield Finding(
             code="expectation.unchecked",
@@ -271,6 +288,7 @@ def lint(
     reasons: Reasons | None = None,
 ) -> list[Finding]:
     findings: list[Finding] = []
+    known: Validators = {}
     for d in registry if digests is None else digests:
         match registry.get(d):
             case ModelArtifact() as c:
@@ -280,9 +298,9 @@ def lint(
             case Scorer() as c:
                 findings.extend(_scorer(c, registry))
             case ExpectationSchema() as c:
-                findings.extend(_expectation_schema(c, registry))
+                findings.extend(_expectation_schema(c, registry, known))
             case Expectation() as c:
-                findings.extend(_expectation(c, registry))
+                findings.extend(_expectation(c, registry, known))
             case Trial() as c:
                 findings.extend(_pair(c, registry, reasons))
                 if languages is not None:

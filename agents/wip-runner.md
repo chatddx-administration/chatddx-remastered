@@ -226,7 +226,7 @@ In `rounds.py`, which `run.py` calls for every item, with tools or without:
 
 ### From phase 6
 - **No canary set is seeded.** The sample data has none, so a caller brings its own. Seeding one would take a
-  `canary_set` table in the data set's `factors.toml` (`agents/wip-seed.md`).
+  `canary_set` table in the data set's `factors.toml` (`docs/curation.md`, "What a data set can't hold yet").
 - **Canary outputs aren't compared** (`docs/chatddx.md`, "Possible design issues", and its proposed amendment on
   what counts as the same output).
 - **Canary calls stream without events**, since `Streamed` carries an item key.

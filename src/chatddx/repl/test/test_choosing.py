@@ -49,7 +49,7 @@ def test_a_per_model_configuration_is_picked_by_the_endpoint(repl: Repl, say: Sa
 
     assert (
         f"no configuration 'plan' for alice; per model: {PLAN}, "
-        + "plan (openai/gpt-oss-20b), picked by the endpoint in the cell"
+        + "plan (en, openai/gpt-oss-20b), picked by the endpoint in the cell"
     ) in written
     assert repl.cell.variation is None
 
@@ -57,7 +57,7 @@ def test_a_per_model_configuration_is_picked_by_the_endpoint(repl: Repl, say: Sa
     assert tried(repl).name == PLAN
 
     _ = say(f"cell plan {GPT_OSS}")
-    assert tried(repl).name == "plan (openai/gpt-oss-20b)"
+    assert tried(repl).name == "plan (en, openai/gpt-oss-20b)"
 
 
 def test_set_puts_another_chunk_in_the_cell(repl: Repl, bench: Bench, say: Say):
@@ -78,11 +78,11 @@ def test_setting_the_configuration_s_own_chunk_unsets_it(repl: Repl, say: Say):
 
 
 def test_none_takes_an_optional_part_out(repl: Repl, bench: Bench, say: Say):
-    web = "plan-web (Qwen/Qwen3-8B-AWQ)"
+    web = "plan-web (en, Qwen/Qwen3-8B-AWQ)"
     written = say(f"cell {web} {QWEN}", "set toolset none", "show")
 
     assert repl.prompt == f"alice {web}+toolset=none×{QWEN} #7> "
-    assert f"none (set; {web} has web)" in written
+    assert f"none (set; {web} has web (en))" in written
     assert "tools" not in bench.skeleton(tried(repl)).body
 
     _ = say("set toolset web")

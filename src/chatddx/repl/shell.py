@@ -6,6 +6,7 @@ from rich.console import Console
 from rich.text import Text
 
 from chatddx.bench import KINDS, OPTIONAL, PARTS, Bench, TriedVariation
+from chatddx.catalog import made_for
 from chatddx.factors.base import Finding
 
 from .render import REFUSED, finding
@@ -86,12 +87,8 @@ class Repl:
         self._completions = None
 
     def _per_model(self, names: list[str]) -> list[str]:
-        alone = {
-            name.removesuffix(f" ({model})")
-            for name in names
-            for model in self.bench.facts.models
-            if name.endswith(f" ({model})")
-        }
+        models = self.bench.facts.models
+        alone = {made[0] for name in names if (made := made_for(name, models))}
         return sorted({*names, *alone})
 
     def say_cell(self) -> None:

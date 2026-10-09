@@ -1,4 +1,4 @@
-from . import families, language, read, threads, titles
+from . import families, language, read, threads, titles, variants
 from .families import RepairPlan
 from .model import (
     LANGUAGE,
@@ -10,6 +10,7 @@ from .model import (
     Edit,
     Entry,
     EntryField,
+    Kept,
     Part,
     Repair,
     Subject,
@@ -21,6 +22,7 @@ from .model import (
     latest,
 )
 from .read import Reader
+from .variants import made_for, variant_name, variants_for
 
 __all__ = [
     "LANGUAGE",
@@ -32,6 +34,7 @@ __all__ = [
     "Edit",
     "Entry",
     "EntryField",
+    "Kept",
     "Part",
     "Reader",
     "Repair",
@@ -45,7 +48,11 @@ __all__ = [
     "language",
     "language_tag",
     "latest",
+    "made_for",
     "read",
     "threads",
     "titles",
+    "variant_name",
+    "variants",
+    "variants_for",
 ]
