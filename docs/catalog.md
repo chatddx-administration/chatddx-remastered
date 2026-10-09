@@ -308,7 +308,7 @@ component of the kind it records. At tier 2 it repeats the rules above that two 
 
 | Term | Meaning |
 | --- | --- |
-| Catalog | People's handles on components and records: names, versions, owners, sharing, deletions, languages and labels. Nothing in it changes an output. |
+| Catalog | People's handles on components and records: names, versions, owners, sharing, deletions, languages and labels. |
 | Thread | The versions of one component that people edit, in order. |
 | Edit | One version on a thread. |
 | Head | A thread's latest edit, its current version. |

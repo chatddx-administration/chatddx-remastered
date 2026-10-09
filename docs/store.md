@@ -70,9 +70,10 @@ admin, up to the top tier unless told otherwise, and can list what it would appl
 ## Roles and connections
 Connections are set up from the environment (.env-example), through the project's settings. Roles belong to the
 cluster rather than to a database, so every database in a cluster shares them. Grants don't bind the admin or a
-superuser, which is why the app connects as the writer and not as the admin; at tier 0 there are no grants, so a
-tier-0 deployment has to connect as the admin. Tier-2 triggers bind the admin too, and only a superuser who disables
-triggers gets around them.
+superuser, which is why the app connects as the writer and not as the admin.
+
+At tier 0 there are no grants, so a tier-0 deployment has to connect as the admin.
+Tier-2 triggers bind the admin too, and only a superuser who disables triggers gets around them.
 
 | Role | Used by | Created by | May |
 | --- | --- | --- | --- |
@@ -80,8 +81,6 @@ triggers gets around them.
 | Writer | The app. | Setup script. | Read and add to factors, ledger and catalog; create, read and update people. |
 | Reader | Nothing yet. | Tier 1. | Read the factors, the catalog and people, but not passwords. |
 
-Tier 2's triggers bind the admin like any other role. The writer also opens and ends sessions, and can't remove people;
-tier 1 creates it, unable to log in, when the setup script hasn't (src/chatddx/store/migrations/0002-t1-factor.sql:6).
 The reader can't read the ledger or sessions.
 
 Agents use the system's cluster (setup in AGENTS.md); the devShell runs one of its own (scripts/dev-db.sh).
