@@ -36,24 +36,6 @@ but never removes them; it checks passwords and keeps sessions, and disabling a 
 The catalog decides what its rows mean (docs/catalog.md). The store reads the rows it asks for and writes what it
 decided, all of one change at once.
 
-### Looking things up for someone
-The store offers a simple lookup scoped to one person for live runs they own and live threads and families they own or
-collaborate on, which lets a person refer to things loosely. A thread is found by its name, matched whole first and
-only then read as an owner and a name, since names may hold a slash, and runs by the start of their id or by a
-component their trial is built on.
-
-For a run, the store also tells:
-- which scorers can grade its answers
-- which scoring it would be scored under now (from the expectations the catalog picks for the person)
-
-The repl works out for itself, for now, whether a run still has to be scored under that scoring, so a run whose
-expectations changed after it was scored is due again (see "Which runs still need scoring" under "Known gaps").
-
-Like authorization, this decides what is relevant to show, not who may read what (docs/identity.md, "Authorization").
-
-This feature should probably not exist in the store, see "Person-scoped lookup may not belong in the store" under
-"Known gaps".
-
 ## Tiers
 Integrity comes in three tiers, and a deployment applies migrations up to a chosen tier. Each schema has migrations
 at every tier:
@@ -130,16 +112,3 @@ These are known shortcomings of the store's design. Some have more details in do
   rows of the old version, nor load a closure that holds one. The rows can't be rewritten either: the tables are
   append-only, and digests and seals depend on the bytes. docs/factors.md, "Splitting expectations", already considers
   a bump of the scorer's schema version.
-- Which runs still need scoring is answered twice: by the store, per scorer over all of a person's runs, and by the
-  repl, one run at a time. Only the repl's answer is used.
-- Person-scoped lookup may not belong in the store. `Reads` is mostly policy based on other modules' rules, which
-  contradicts "the store answers which rows exist; the modules decide what they mean".
-
-## Proposed amendments
-- REMOVE "Looking things up for someone": person-scoped lookup is the bench's now
-  (`src/chatddx/bench/reads.py:Reads`, `src/chatddx/bench/bench.py:Bench.unscored`; `agents/wip-bench.md`, "Phase 2",
-  steps 2 and 3). Its text belongs in a doc of the bench's.
-- REMOVE, under "Known gaps", "Which runs still need scoring is answered twice…": `Reads.outstanding` is gone, and
-  `src/chatddx/bench/bench.py:Bench.unscored` is the one answer.
-- REMOVE, under "Known gaps", "Person-scoped lookup may not belong in the store…": `Reads` moved to
-  `src/chatddx/bench/reads.py`.

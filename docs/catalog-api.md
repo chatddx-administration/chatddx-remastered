@@ -39,9 +39,9 @@ Functions are called through their module (`threads.behind(rows, thread)`); `mod
 | `language.py` | `families.py`, `model.py`, `read.py`, `chatddx.factors.{base,request,scoring,trial}` |
 | `titles.py` | `families.py`, `language.py`, `model.py`, `read.py`, `threads.py`, `chatddx.factors.{base,cases,engine,request,scoring,trial}` |
 
-The package imports no chatddx package but `chatddx.factors`, no third-party package but pydantic, and holds no SQL.
-It reads through a `Reader` and writes nothing; `src/chatddx/store/catalog.py:Catalog` writes what it decides (see
-"The store's Catalog").
+The package imports no chatddx package but `chatddx.factors` and `chatddx.identity`, no third-party package but
+pydantic, and holds no SQL. It reads through a `Reader` and writes nothing; `src/chatddx/store/catalog.py:Catalog`
+writes what it decides (see "The store's Catalog").
 
 ## Conventions
 
@@ -738,7 +738,3 @@ amendments there.
 - `latest` keeps each key at the position of its first row.
 
 ## Proposed amendments
-- CHANGE, under "Package", "The package imports no chatddx package but `chatddx.factors`" → "The package imports no
-  chatddx package but `chatddx.factors` and `chatddx.identity`", and add `chatddx.identity` to `model.py`'s row:
-  `About.shows` calls `chatddx.identity.sees`, the rule of who sees what, and adds that what is shown is live
-  (`src/chatddx/catalog/model.py:About.shows`; `agents/wip-bench.md`, "Phase 2", step 1).
