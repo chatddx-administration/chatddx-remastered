@@ -19,9 +19,9 @@ https://github.com/chatddx-administration/chatddx/blob/504792cbeb09508f2c52912be
      new datamodel: the repl over HTTP, streamed" (110f9a5). See "Where it follows the repl" for each surprise and
      what replaces it.
 2. **Decisions**, in the order they block (see "Options"): A1, who it is for; A2, the framework; A3, signing in.
-   A4–A12 shape the endpoints. Decided so far: A9, S3.
-3. **The plan** (see "The plan") assumes the takes. Its phase 0, below the edges, is built (see "Phase 0: built").
-   Phase 1 waits on A1–A3.
+   A4–A12 shape the endpoints. Decided so far: A1 kept open, A2 (F2), A3, and A9 (S3).
+3. **The plan** (see "The plan") assumes the takes. Phases 0 and 1 are built (see "Phase 0: built" and "Phase 1:
+   built"). Phase 2, the reads, is next.
 
 ## The old API
 ### Where it came from
@@ -218,6 +218,9 @@ way the old project copied its rules into every edge (`agents/wip-bench.md`, "Th
 
 Take: C1 now, keeping C2 possible: one sign-in serves both (A3), and W2 lets a run be followed by GET (A6).
 
+Decided: kept open. A browser is certain, and the portal may be built on the API too (C2, perhaps C3), beside
+programs (C1). So cookies and the checks that come with them are first-class from the start, not a later addition.
+
 ### A2. The framework
 - **F1. The stdlib** (`http.server`, as the fake vLLM uses). No dependency, but routing, validation errors, OpenAPI,
   cookies and CSRF are written by hand, and Python's docs say `http.server` isn't meant for production.
@@ -234,6 +237,9 @@ Take: F2, imported only under `chatddx.api` as `rich` is only under `chatddx.rep
 group. Settle it together with the portal's framework. If the portal goes to Django, ninja takes the same pydantic
 schemas, and little but the routing changes.
 
+Decided: F2. fastapi and uvicorn are dependencies like `rich`, and the test client's `httpx2` is in the test group
+(Starlette 1.7 deprecates `httpx` for it).
+
 ### A3. Signing in
 - `POST /api/session {login, password}` → `People.authenticate`, then `open_session`. It returns the token and also
   sets it as an `HttpOnly`, `SameSite=Strict` cookie. `DELETE /api/session` closes it, and `GET /api/me` gives the
@@ -247,6 +253,8 @@ schemas, and little but the routing changes.
   limiting.
 
 Take: as above. Add personal tokens when a script needs one.
+
+Decided: as above.
 
 ### A4. How things are named
 - **N1. By id** in paths: `/threads/{id}`, `/families/{id}`, `/runs/{uuid}`, `/components/{digest}` and
@@ -399,14 +407,15 @@ Dropped from the old API:
 
 | Module | Holds |
 |---|---|
-| `app.py` | `app(world, facts)`: the routers and the error handlers, with the World and the facts loaded once |
-| `people.py` | signing in, the person a request acts for, the CSRF check on cookies, and a bench per request on a connection in autocommit mode |
+| `app.py` | `app(inventory, facts, conninfo)`: the routers, the error handlers and the OpenAPI document |
+| `state.py` | `AppState`, what the app is made with, loaded once; and `connection`, a connection per request in autocommit mode |
+| `people.py` | signing in and out, `/me`, the session a request acts in, and the same-origin check on cookies; the bench per request comes with phase 2 |
 | `schemas.py` | the request and response models |
 | `threads.py`, `families.py`, `world.py`, `runs.py` | the routes: `world.py` has endpoints, models and components |
 | `events.py` | the runner's events as server-sent events |
 
-On the command line it is `chatddx api [--world DIR] [--facts PATH …] [--bind ADDRESS]`, served by uvicorn. `--bind`
-could default to `HOST`, which would give that variable a reader.
+On the command line it is `chatddx api [--world DIR] [--facts PATH …] [--bind HOST:PORT]`, served by uvicorn.
+`--bind` defaults to `HOST` (`settings.host()`).
 
 ### Phases
 0. **Below the edges.** None of this needs a framework.
@@ -466,6 +475,41 @@ Each step is one commit; the suite went from 468 tests to 477, and basedpyright 
    `send` has its own event. Built alongside it: a concurrent send no longer sets that event when nothing is left
    in flight, which would have hung up the end canaries now that they watch it.
 
+### Phase 1: built
+The suite went from 477 tests to 486, and basedpyright and ruff stay clean. It was also tried by hand: `chatddx api`
+under uvicorn, on the sample seeded with `init-data alice --giftbag`, driven with curl through signing in, `/me` by
+bearer, a cross-site DELETE refused, signing out, and `/api/docs`.
+- **Dependencies**: fastapi 0.143 and uvicorn 0.54, and `httpx2` in the test group for `TestClient`.
+- **`src/chatddx/api/`**: `app.py`, `state.py`, `people.py` and `schemas.py` (`SignIn`, `Me`, `SignedIn`). The bench
+  per request waits for phase 2, the first that needs one.
+- **Signing in** (`people.py`):
+  - `POST /api/session {login, password}` gives 201 with `{token, person}` and sets the token as
+    `__Host-chatddx-session`: `HttpOnly`, `Secure`, `SameSite=Strict`, `Path=/`, and `Max-Age` the session's lifetime.
+    A wrong login or password is 401, as one.
+  - `DELETE /api/session` closes the session the request acts in (204) and drops the cookie.
+  - `GET /api/me` gives `{id, login, name, roles}`, and changes nothing.
+  - A request acts in the session of its `Authorization: Bearer` token, else of its cookie. Without either, or with
+    one that ended, it is 401 with `WWW-Authenticate: Bearer`.
+- **The same-origin check** stands in for a CSRF token, since the browser is certain (A1). Every unsafe request with
+  the cookie, and signing in, which a forged sign-in would abuse, must come from this site's own pages:
+  `Sec-Fetch-Site` must be `same-origin` or `none` where the browser sends it, else `Origin` must name this host. A
+  request with neither header isn't a browser's on another page's behalf, and passes. A bearer's requests aren't
+  checked, since no browser adds a bearer by itself. This keeps the session table as it is: no token per session.
+- **Errors** (`app.py:STATUSES`): `NotFound` 404, `Ambiguous` 409 and `gate.Refused` 422, each as `{"detail"}`.
+  FastAPI's own 422 lists where a request didn't validate, and the schemas forbid fields they don't name.
+- **OpenAPI** at `/api/openapi.json`, its pages at `/api/docs`, with both ways of signing in among its security
+  schemes.
+- **`chatddx api`** (`src/chatddx/cli.py:_api`), with `settings.host()`.
+- **Tests**: `src/chatddx/api/test/`, through `TestClient` over `https://testserver`, since the cookie is `Secure`.
+
+Open from phase 1:
+- **A cookie over plain HTTP.** Browsers keep a `Secure`, `__Host-` cookie only over HTTPS, or on `localhost`. A
+  deployment serves the API behind TLS.
+- **`Origin` against `Host`.** A proxy that rewrites `Host` would fail the `Origin` check for a browser that sends no
+  `Sec-Fetch-Site`, which today's browsers all send. If it bites: the public origin as a setting.
+- **A connection per request**, opened and closed each time. A pool (`psycopg_pool`) when that costs.
+- **Login rate limiting**, as A3 left it.
+
 ## Left out
 - **Free-text vignettes** (`RunIn.vignette`, the swift client's `symptoms`). A case is a source's vignette, by id,
   fetched from the World and never stored. Running pasted text would take a source that holds it.
@@ -491,6 +535,6 @@ Each step is one commit; the suite went from 468 tests to 477, and basedpyright 
   in the repl.
 
 ## Surprises
-- `.env-example`'s `HOST=localhost:8000` is read by nothing in `src/`.
+- `.env-example`'s `HOST=localhost:8000` was read by nothing in `src/`. `chatddx api` reads it since phase 1.
 - The "cell" guard's pattern matches "cancelled" (`src/chatddx/repl/test/test_vocabulary.py:CELL`).
 - The old `docs/api.md` is missing at 504792c; it was removed at 7db5dac.
