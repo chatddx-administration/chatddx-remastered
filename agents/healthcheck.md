@@ -1,7 +1,28 @@
-# Healthcheck at 657716a
+# Healthcheck at 657716a (dirty)
 
-Taken 2026-10-10 at 657716a. Amended in the same session at a5864d9: the three spawned reviews (plans, docs, code)
-folded in, and what a5864d9 fixed taken out. A snapshot, not a plan: re-take it rather than update it.
+Dirty: reworked in its session instead of left as generated. It was taken at 657716a, then amended as the doc fixes it
+prompted landed, last against 950c70a, so it isn't the record of a single pass. Healthchecks from here on are generated
+once and left unchanged: re-take one rather than update it.
+
+- **Signed:** Claude Opus 5.5 at effort xhigh, 1M-token context, as the session reports them; Claude Code 2.1.296 in a
+  claude.ai cloud session, with a shell, PostgreSQL 16 and GitHub access. The first pass spawned three
+  general-purpose subagents of the session, for the plans, the docs and the code.
+- **Date:** 2026-10-10.
+- **Passes:**
+  1. 5976b07: taken at 657716a.
+  2. 791f355: the subagents' reviews folded in; checked against a5864d9.
+  3. Checked against 950c70a, and what it fixed taken out. `src/`, `worlds/`, README and the project files haven't
+     changed since 657716a, so the checks' results and the code findings stand.
+- **Prompt:**
+  ```
+  At 657716a
+
+  Make a healthcheck, check:
+
+  1. The general vibe
+  2. What's ahead
+  3. How's it going
+  ```
 
 Verdict: healthy. A young (12 days, 27 commits), disciplined codebase, green across the board. The risks are process
 (no CI, near-zero review latency at thousands of lines a day) and a few privacy edges to close before real patient data.
@@ -120,22 +141,9 @@ grain:
 - Pace: 1–8k lines per commit. 10 of 12 PRs merged within 5 minutes of opening.
 - No CI: there is no `.github/`. Tests, types and lint only run when someone runs them.
 
-### Docs drift (at a5864d9)
+### Docs drift (at 950c70a)
 Most of what the API docs name exists with the documented shape: the signatures quoted in the docs match the code, and
 every finding code listed in factors-api, ledger-api and facts-api exists. What's left:
-- `docs/identity.md` is linked from 10 places (`docs/chatddx.md:19`, `docs/factors.md:16`, :46, `docs/store.md:5`, :34,
-  `docs/catalog.md:14`, :144, `docs/catalog-api.md:56`, `docs/store-api.md:12`, :119) but doesn't exist; a5864d9
-  declined the suggested file, so identity stays in `agents/wip-identity.md` and the links wait for it.
-- `docs/catalog-api.md:638-640` lost the trigger's name when a5864d9 merged the index sentence: it now reads "Indexes
-  … (0013): `catalog.check_binding()` raises …". The check is trigger `binding_anchor` (0012, BEFORE INSERT,
-  `src/chatddx/store/migrations/0012-t2-catalog.sql:88`), not an index.
-- `docs/ledger-api.md:3` is the only API doc still "as of" a commit (401b696) since a5864d9 dropped the others'.
-- `docs/vllm.md` still holds 7 proposals in the old format (from :384), all already implemented. They say "vLLM 0.24
-  assumptions" where the section is "discoveries" (:7), and the `fake-engines` one leaves out `--delay` and
-  `--runaway` (`cli.py:454-459`).
-- Every doc but `docs/ledger-api.md` still ends with an empty "Proposed amendments" section, from the old system.
-- `docs/chatddx.md:277` lists where finding codes are described ("Lints", "Findings", "Checking pairs") but not the
-  import's codes, now in `docs/inventory.md`, "Importing from a host".
 - Code with no doc, covered only by agents/wip-*.md (their tests are all `wip`, which is consistent): runner (1,144
   lines), repl (1,938), bench (837), api (578), scorers (455), tools (56), identity (95). `importers/o11n.py` (335)
   has prose and codes in `docs/inventory.md` but no API doc, though its tests are `solidified`.
@@ -149,6 +157,10 @@ every finding code listed in factors-api, ledger-api and facts-api exists. What'
   - it leaves out `person`, `repair-data`, `wipe-data`, `api` and `fake-vllm`;
   - its commands without `--world` rely on `CHATDDX_WORLD=worlds/sample`, a relative path, so they work only from the
     repository's root.
+- `AGENTS.md:47` opens a quote with `"` and closes it with a backtick (`` "Humans write, agents propose` ``), so a stray
+  backtick renders.
+- Not a finding: the links to `docs/identity.md` from chatddx.md, factors.md, store.md, store-api.md, catalog.md and
+  catalog-api.md are deliberate; they constrain the planned doc, drafted in `agents/wip-identity.md`.
 - Checked and fine: inventory-api and ledger-api fully (classes, fields, signatures, codes, schema tables); factors-api
   and catalog-api mostly; every symbol and code `docs/chatddx.md` cites; every `src/…:Symbol` reference in docs/;
   `docs/curation.md`'s "11 of the 24" slow tests.
@@ -169,20 +181,18 @@ every finding code listed in factors-api, ledger-api and facts-api exists. What'
   - `agents/wip-repl.md:489` says endpoints with a credential are refused; `runner/gate.py:52-61` reads the secret
     from the environment variable the credential names.
 - Stale references:
-  - wip-repl: "at 249548a" (:4); "what it is waits on wip-bench" (:19), though B3 is decided; points to surprises
-    proposed in AGENTS.md (:29-30, :475-476), whose section was emptied in 657716a and whose system changed in
-    a5864d9; a section "What the bench is now" (:317) that doesn't exist; `conftest.py:seeded` (:365).
+  - Plans point at the docs' and AGENTS.md's "Proposed amendments", which none has since 950c70a:
+    `agents/wip-batch.md:139`, `agents/wip-objects.md:83`, `agents/wip-portal.md:224`, `agents/wip-repl.md:29-30`,
+    :84, :475-476, :500, `agents/wip-runner.md:230`, :258, `agents/wip-sample-data.md:61`, :252, :281, :522.
+  - wip-repl: "at 249548a" (:4); "what it is waits on wip-bench" (:19), though B3 is decided; a section "What the
+    bench is now" (:317) that doesn't exist; `conftest.py:seeded` (:365).
   - wip-runner: `Reads` and `store/reads.py` (:235-236), both gone.
   - wip-api: `.env-example` (:189, :577), now `.env-container`; `conftest.py:seeded` (:452), now `curated`.
   - wip-bench: `seeded` (:434); "615 lines" (:198), but `bench/view.py` is 708.
   - wip-sample-data: "What's left, in order" (:16-19) lists only finished items; "After parity" (:101-103) treats the
-    runner as unbuilt; 52d728b (:50, :69) is no commit anywhere.
-  - wip-identity: "checked against d10c96d" (:3), no commit anywhere.
-  - wip-api cites fe2717b, 2ad6a85, f06f049, e66bc43 and 0e55b5d (:457-476), which exist only on the leftover branch
-    `claude/relaxed-clarke-gbdges`; wip-bench cites fdee878 and a3431e1 (:204, :411-492), only on
-    `claude/jolly-dirac-8aaspo`.
-- Orphaned: `fake_vllm/test/test_fake_engines.py` is `wip` but belongs to no wip plan; only `docs/vllm.md`'s old
-  `fake-engines` proposal covers it.
+    runner as unbuilt.
+- Out of step: `fake_vllm/test/test_fake_engines.py` is `wip` and belongs to no wip plan, though `docs/vllm.md`
+  documents `chatddx fake-engines` since 950c70a.
 
 ## 3. What's ahead
 
@@ -261,7 +271,7 @@ The main thing gating progress:
 - Objects: the name, A or B (`agents/wip-objects.md:210-215`).
 - Clearance Open 1–6 (`agents/wip-clearance.md:75-104`).
 - LLM judges: the judge prompt needs Olof (`agents/wip-sample-data.md:524-532`).
-- Canary drift (a)/(b)/(c) (`docs/chatddx.md:280`).
+- Canary drift (a)/(b)/(c) (`docs/chatddx.md:281`).
 - Portal: one process or two, the island build, swift's questions (`agents/wip-portal.md:235-237`, :257-263).
 - Takes built but not ratified: API A4/A10/A12 (`agents/wip-api.md:22`), repl D5–D8 (`agents/wip-repl.md:9-27`).
 
@@ -300,9 +310,7 @@ The main thing gating progress:
 ## Surprises
 
 - The full suite took 63 s in the container, against "~50 s" in AGENTS.md; the quick run stays under 30 s.
-- 12 leftover `claude/*` branches on origin look like pre-squash snapshots of merged work. Deleting
-  `claude/relaxed-clarke-gbdges` or `claude/jolly-dirac-8aaspo` orphans the commits wip-api and wip-bench cite.
-- AGENTS.md still speaks of the old system after a5864d9: "Agents may append proposed amendments" (:2), "it should be
-  added as a proposed amendment" (:31), and its own "Proposed amendments" section (:38).
+- 12 leftover `claude/*` branches on origin look like pre-squash snapshots of merged work. Since 676d91c nothing in
+  docs/, agents/, AGENTS.md or README cites a commit only they hold, so they can go.
 - `CHATDDX_REVISION` is read in `core/rig.py:14`, bypassing `chatddx.core.settings`.
 - `worlds/sample/inventory.toml:1` cites `src/chatddx/data/sample/cases.toml`, now `cases-en.toml`/`cases-sv.toml`.
