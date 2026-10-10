@@ -19,7 +19,7 @@ https://github.com/chatddx-administration/chatddx/blob/504792cbeb09508f2c52912be
      new datamodel: the repl over HTTP, streamed" (110f9a5). See "Where it follows the repl" for each surprise and
      what replaces it.
 2. **Decisions**, in the order they block (see "Options"): A1, who it is for; A2, the framework; A3, signing in.
-   A4–A12 shape the endpoints.
+   A4–A12 shape the endpoints. Decided so far: A9, S3.
 3. **The plan** (see "The plan") assumes the takes. Its phase 0 is below the edges and needs none of A1–A3, so it can
    start first.
 
@@ -325,8 +325,8 @@ listing.
   deltas only in the stream; nothing else carries any. When clearance gets a policy for edges, it gates those few
   places.
 
-Take: S3. Also add the question to `agents/wip-clearance.md`: an edge that shows case-derived content is a
-destination too.
+Decided: S3. The question is raised in `agents/wip-clearance.md` ("Open", 6): an edge that shows case-derived content
+is a destination too.
 
 ### A10. Errors
 | Raised | Status |
@@ -431,9 +431,8 @@ could default to `HOST`, which would give that variable a reader.
    run, its items, and `rendered-again`. The tests serve the sample World with the fake vLLM in a thread
    (`src/chatddx/repl/test/conftest.py:fake`, moved where both packages can use it).
 5. **Scores**: a run's scores, scoring it, and `unscored`.
-6. **Docs.** Material for a `docs/api.md` kept here, as `agents/wip-bench.md` keeps material for the bench's.
-   Proposals for `agents/wip-clearance.md` (edges as destinations, A9) and `agents/wip-identity.md` (the framework
-   and signing in).
+6. **Docs.** Material for a `docs/api.md` kept here, as `agents/wip-bench.md` keeps material for the bench's, and
+   a proposal for `agents/wip-identity.md` (the framework and signing in).
 
 The tests live in `src/chatddx/api/test/` and use the seeded sample (`src/chatddx/conftest.py:seeded`), as the bench's
 and the repl's do. The guard needs no change.
