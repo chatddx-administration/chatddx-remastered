@@ -271,3 +271,33 @@ def test_several_configurations_of_one_name_are_refused_a_save(bench: Bench) -> 
 
     with pytest.raises(Ambiguous, match="2 configurations named 'twice'"):
         _ = bench.save(variation, "twice")
+
+
+def test_a_fork_is_a_new_configuration_and_an_edit_a_new_version_of_one_s_own(
+    bench: Bench,
+) -> None:
+    engine = bench.endpoint(QWEN)
+    variation = bench.configuration(FREE_TEXT, engine)
+    off = variation.set("reasoning", bench.chunk("reasoning", "off", engine), "off")
+    catalog = Catalog(bench.conn)
+
+    forked = bench.fork(off, "terse")
+    again = bench.fork(off, "terse")
+    assert (forked.what, again.what) == ("created", "created")
+    thread = forked.variation.configuration.thread
+    assert thread != again.variation.configuration.thread
+    assert catalog.thread(thread).forked_from == variation.configuration.id
+    assert bench.about(thread).owner == bench.person.id
+    assert forked.digest == bench.skeleton(off).digest
+
+    edited = bench.edit(thread, variation)
+    assert (edited.what, edited.name) == ("a new version", "terse")
+    assert bench.edit(thread, variation).what == "unchanged"
+    assert [e.digest for e in catalog.history(thread)] == [
+        forked.digest,
+        variation.configuration.digest,
+    ]
+
+    archives = bench.thread("configuration", f"archive/{FREE_TEXT}")[0].thread
+    with pytest.raises(NotFound, match=f"no configuration {archives} of yours"):
+        _ = bench.edit(archives, variation)

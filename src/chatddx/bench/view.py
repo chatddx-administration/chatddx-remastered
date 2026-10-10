@@ -474,12 +474,28 @@ class Bench:
     # Keeps the variation as the person's own configuration, under `name`: a new version
     # of their thread of that name, or else a fork of the configuration's thread.
     def save(self, variation: TriedVariation, name: str) -> Saved:
-        skeleton = self.skeleton(variation)
         mine = self.catalog.find("skeleton", name, owner=self.person.id)
         if len(mine) > 1:
             raise Ambiguous(
                 f"{self.person.login} has {len(mine)} configurations named {name!r}"
             )
+        return self.edit(mine[0], variation) if mine else self.fork(variation, name)
+
+    # Keeps the variation as a new configuration of the person's own, named `name` and
+    # forked from the configuration's edit it varies.
+    def fork(self, variation: TriedVariation, name: str) -> Saved:
+        return self._kept(variation, None, name)
+
+    # Keeps the variation as a new version of `thread`, a configuration the person owns;
+    # nothing is written when it is the head already.
+    def edit(self, thread: int, variation: TriedVariation) -> Saved:
+        _, about = self.thread_by_id(thread, "configuration")
+        if about.owner != self.person.id:
+            raise NotFound(f"no configuration {thread} of yours")
+        return self._kept(variation, thread, about.name or self.catalog.title(thread))
+
+    def _kept(self, variation: TriedVariation, thread: int | None, name: str) -> Saved:
+        skeleton = self.skeleton(variation)
         with self.conn.transaction():
             compilation = (
                 self._compile(variation) or variation.configuration.compilation
@@ -487,7 +503,7 @@ class Bench:
             edit, kept = self.catalog.keep(
                 skeleton.digest,
                 self.person.id,
-                mine[0] if mine else None,
+                thread,
                 name=name,
                 compilation=compilation,
                 forked_from=variation.configuration.id,
