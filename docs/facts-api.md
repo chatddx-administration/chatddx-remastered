@@ -1,13 +1,6 @@
 # Facts API
 
-```
-AGENT: CHANGE
-e9bdca7 is on no commit of main, only on the leftover branch claude/keen-bell-2kwmiv, and goes when that branch is
-deleted. 4e526e6, which squashed it into main, has the same src/chatddx/facts/.
----
-as of 4e526e6
-```
-Reference for the `chatddx.facts` package, as of e9bdca7. It was written from `src/chatddx/facts/*` and
+Reference for the `chatddx.facts` package. It was written from `src/chatddx/facts/*` and
 `docs/facts.md`. There are no facts migrations, because facts aren't stored. What facts are and why they are shaped
 this way is in `docs/facts.md`; this file says what each name accepts, returns and raises. Factor types it uses
 (`Component`, `Registry`, `Reasoning`, `Sampling`, `Skeleton`, `Trial`, `Judge`, `Finding`, …) are in
@@ -20,13 +13,7 @@ Paths are relative to `src/chatddx/facts/` unless they start with `src/`, `docs/
 - [Conventions](#conventions)
 - [models.py](#modelspy): levels, refusals, writes, reasoning, sampling and output facts, `ModelFacts`, `Facts`
 - [The facts file](#the-facts-file)
-```
-AGENT: CHANGE
-lint.py also has lints, documented under "lint.py".
----
 - [lint.py](#lintpy): `reasons`, `check_pairs`, `lints`
-```
-- [lint.py](#lintpy): `reasons`, `check_pairs`
 - [Finding codes](#finding-codes)
 - [Bundled facts](#bundled-facts)
 - [Known gaps](#known-gaps)
@@ -34,17 +21,9 @@ lint.py also has lints, documented under "lint.py".
 
 ## Package
 
-```
-AGENT: CHANGE
-lints is re-exported too (src/chatddx/facts/__init__.py:1); curation and the bench import it from chatddx.facts.
----
 `chatddx.facts` re-exports every public name of both modules: `BUNDLED`, `INTENTS`, `ContractFact`, `Effort`,
 `Facts`, `Intent`, `ModelFacts`, `OutputFacts`, `ReasoningFact`, `ReasoningFacts`, `Refusal`, `Refused`,
 `SamplingFacts`, `SamplingValues`, `Writes`, `check_pairs`, `lints`, `model_name` and `reasons`.
-```
-`chatddx.facts` re-exports every public name of both modules: `BUNDLED`, `INTENTS`, `ContractFact`, `Effort`,
-`Facts`, `Intent`, `ModelFacts`, `OutputFacts`, `ReasoningFact`, `ReasoningFacts`, `Refusal`, `Refused`,
-`SamplingFacts`, `SamplingValues`, `Writes`, `check_pairs`, `model_name` and `reasons`.
 
 | Module | Builds on |
 | --- | --- |

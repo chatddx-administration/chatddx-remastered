@@ -560,14 +560,6 @@ From `docs/ledger.md`, "Open design issues", where they concern this API:
 - Records don't travel in a `Bundle`.
 - Findings have no mechanism of their own beyond the finished rows and the check functions.
 
-```
-AGENT: REMOVE
-docs/ledger.md no longer lists "Missing expectations aren't flagged", so the removal this paragraph points to is done.
----
-```
-`docs/ledger.md` also lists "Missing expectations aren't flagged"; `check_score` does warn (`score.no_expectation`),
-and its removal is proposed there.
-
 ## Beyond docs/ledger.md
 Behavior described here that `docs/ledger.md` doesn't state:
 - `Record.parse` raises `json.JSONDecodeError` for text that isn't JSON, and `ValidationError` for bad fields.

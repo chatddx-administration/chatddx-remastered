@@ -1,13 +1,6 @@
 # Inventory API
 
-```
-AGENT: CHANGE
-db74bd3 is on no commit of main, only on the leftover branch claude/keen-bell-2kwmiv, and goes when that branch is
-deleted. 4e526e6, which squashed it into main, has the same src/.
----
-as of 4e526e6
-```
-Reference for the `chatddx.inventory` package, as of db74bd3. It was written from `src/chatddx/inventory/*` and
+Reference for the `chatddx.inventory` package. It was written from `src/chatddx/inventory/*` and
 `docs/inventory.md`. There are no inventory migrations, because the inventory isn't stored. What the inventory is and
 why it is shaped this way is in `docs/inventory.md`; this file says what each name accepts, returns and raises.
 Factor types it uses (`Digest`, `Sha256Hex`, `Resolver`, `LocalEngine`, `RemoteEngine`, `ModelArtifact`, `Case`,

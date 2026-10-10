@@ -362,14 +362,7 @@ sample models, served as the old inventory served them, and checks each answer a
   apart.
 
 ### Extending
-```
-AGENT: CHANGE
-The section is titled "vLLM 0.24 discoveries" (line 7); nothing is titled "vLLM 0.24 assumptions".
----
 1. If it's vLLM's behaviour, pin it first: add it as the next item under "vLLM 0.24 discoveries", with permalinks into
-   `v0.24.0`. Items keep their numbers, since other docs cite them.
-```
-1. If it's vLLM's behaviour, pin it first: add it as the next item under "vLLM 0.24 assumptions", with permalinks into
    `v0.24.0`. Items keep their numbers, since other docs cite them.
 2. Code it where its stage is:
    - a `vllm serve` flag: a field on `Served`, read in `Served.of` (`_one` and `_int` for values, `Refused` to stop

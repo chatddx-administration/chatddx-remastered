@@ -1,13 +1,6 @@
 # Factors API
 
-```
-AGENT: CHANGE
-09c170d is on no commit of main, only on the leftover branch claude/jolly-feynman-fdny31, and goes when that branch is
-deleted. 401b696, which squashed it into main, has the same src/.
----
-as of 401b696
-```
-Reference for the `chatddx.factors` package and the `factor` database schema, as of 09c170d. It was written from
+Reference for the `chatddx.factors` package and the `factor` database schema. It was written from
 `src/chatddx/factors/*`, `docs/factors.md` and `src/chatddx/store/migrations/000{1,2,3}-*-factor.sql`. What factors
 are and why they are shaped this way is in `docs/factors.md`; this file says what each name accepts, returns and
 raises.
@@ -937,14 +930,7 @@ From `docs/factors.md`, "Open design issues", where they concern this API:
 - Nothing checks that a compilation's recipe compiles to its skeleton.
 
 ## Beyond docs/factors.md
-```
-AGENT: CHANGE
-docs/factors.md has no proposals and doesn't state these three either, so they weren't adopted. The pointer goes; the
-list stays.
----
 Behavior described here that `docs/factors.md` doesn't state.
-```
-Behavior described here that `docs/factors.md` doesn't state. The first three are proposed as amendments there.
 - `vllm.grammar_before_reasoning`: `--default-chat-template-kwargs` makes the model's default unknown, and the
   finding isn't reported beside `vllm.tools_refused`.
 - `Registry.add_raw` pins a loaded component's `canonical` and `digest` to the stored ones.

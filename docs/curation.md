@@ -72,18 +72,9 @@ output without guidance or schema, holds none. A chunk that holds text is writte
 none in `factors.toml`, where it serves every language. Loading writes each text's language on its digest, and names
 it after it, such as `management-plan (en)`.
 
-```
-AGENT: CHANGE
-docs/factors.md has no proposals; translations are in its body, under "Translations".
----
 Texts come in two kinds. Instructions, few-shot and prompts are written in each language they are used in, as cases
 are. Outputs and toolsets bring text with code, guidance and schemas, and may be written in one language and
 translated into the others by a translations chunk of each (docs/factors.md, "Translations"); a native one can
-still be written in a language of its own.
-```
-Texts come in two kinds. Instructions, few-shot and prompts are written in each language they are used in, as cases
-are. Outputs and toolsets bring text with code, guidance and schemas, and may be written in one language and
-translated into the others by a translations chunk of each (docs/factors.md, proposed amendments); a native one can
 still be written in a language of its own.
 
 A recipe that names a text is made in each language that has it, named after the language, such as
@@ -124,15 +115,8 @@ about it.
 The World is `--world DIR`, or by default the directory `CHATDDX_WORLD` names. The repl reads the same World, for its
 endpoints, vignettes and facts.
 
-```
-AGENT: CHANGE
-docs/inventory.md has no proposals; the one-pass check is in its body, under "Checks happen when an entry is used".
----
 A loading ends with the inventory checked against the engines just planned, all at once: what starting or reaching
 each endpoint would refuse, and what is likely a slip (docs/inventory.md, "Checks happen when an entry is used").
-```
-A loading ends with the inventory checked against the engines just planned, all at once: what starting or reaching
-each endpoint would refuse, and what is likely a slip (docs/inventory.md, proposed amendments).
 
 ## Loading
 `chatddx init-data USER [--world DIR] [--source NAME] [--giftbag] [--data DIR] [--factors FILE …] [--facts PATH …]`

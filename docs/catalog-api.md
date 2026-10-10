@@ -1,14 +1,6 @@
 # Catalog API
 
-```
-AGENT: CHANGE
-a3e5050 is on no commit of main, only on the leftover branch claude/fervent-galileo-ckxp3j, and goes when that branch
-is deleted. fb6489d, which squashed it into main, has the same src/. Two later changes, 0013 (1dd791a) and threads.py's
-import of factors.kinds (657716a), have their own suggestions below.
----
-as of fb6489d
-```
-Reference for the `chatddx.catalog` package and the `catalog` database schema, as of a3e5050. It was written from
+Reference for the `chatddx.catalog` package and the `catalog` database schema. It was written from
 `src/chatddx/catalog/*`, `docs/catalog.md` and `src/chatddx/store/migrations/001{0,1,2}-*-catalog.sql`;
 `src/chatddx/store/catalog.py` was read only to map the store's `Catalog` onto this package. What the catalog is and
 why it is shaped this way is in `docs/catalog.md`; this file says what each name accepts, returns and raises. Factor
@@ -40,18 +32,12 @@ Paths are relative to `src/chatddx/catalog/` unless they start with `src/` or `d
 `language`, `read`, `threads`, `titles` and `variants`.
 Functions are called through their module (`threads.behind(rows, thread)`); `model.py` is imported by path.
 
-```
-AGENT: CHANGE
-threads.py imports parse_component from chatddx.factors.kinds since 657716a (src/chatddx/catalog/threads.py:4).
----
-| `threads.py` | `families.py`, `model.py`, `read.py`, `chatddx.factors.{base,kinds,request,scoring}` |
-```
 | Module | Builds on |
 | --- | --- |
 | `model.py` | `chatddx.factors.{base,cases,scoring}`, `chatddx.identity` |
 | `read.py` | `model.py`, `chatddx.factors.{base,cases,request}` |
 | `families.py` | `model.py`, `read.py`, `chatddx.factors.{base,bundle,cases,scoring}` |
-| `threads.py` | `families.py`, `model.py`, `read.py`, `chatddx.factors.{base,request,scoring}` |
+| `threads.py` | `families.py`, `model.py`, `read.py`, `chatddx.factors.{base,kinds,request,scoring}` |
 | `language.py` | `families.py`, `model.py`, `read.py`, `chatddx.factors.{base,request,scoring,trial}` |
 | `titles.py` | `families.py`, `language.py`, `model.py`, `read.py`, `threads.py`, `chatddx.factors.{base,cases,engine,request,scoring,trial}` |
 | `variants.py` | `model.py` |
@@ -649,15 +635,8 @@ No columns but `id`, `by` and `at`.
 | `source_id` | `text NOT NULL` | `vignette.id` |
 | `fingerprint` | `jsonb NOT NULL` | `vignette.fingerprint`, as its canonical JSON |
 
-```
-AGENT: CHANGE
-0013-t0-catalog-binding-content.sql (1dd791a) adds a third index, documented in docs/migrations.md, "Tier 0".
----
 Indexes `binding_family (family, id)`, `binding_source (source, source_id)` and `binding_content (source,
-fingerprint)` (0013).
-```
-Indexes `binding_family (family, id)` and `binding_source (source, source_id)`. Trigger `binding_anchor` (0012,
-BEFORE INSERT): `catalog.check_binding()` raises `family <n>: a new binding must keep the source, and the id or the
+fingerprint)` (0013): `catalog.check_binding()` raises `family <n>: a new binding must keep the source, and the id or the
 fingerprint` unless the new binding has the previous one's source and its `source_id` or its `fingerprint`.
 
 ### `catalog.entry`
@@ -758,14 +737,7 @@ Also:
   on to `"beta second version"` is titled `"beta second version", text: "gamma fork text"`.
 
 ## Beyond docs/catalog.md
-```
-AGENT: CHANGE
-docs/catalog.md has no proposals, and main's history never had these six there. The pointer goes; the list stays.
----
-Behavior described here that `docs/catalog.md` doesn't state, or states otherwise.
-```
-Behavior described here that `docs/catalog.md` doesn't state, or states otherwise. The first six are proposed as
-amendments there.
+Behavior described here that `docs/catalog.md` doesn't state, or states otherwise:
 - `owner` and `collaborator` entries are read by `About.shows`, so by `visible`, `visible_families` and
   `expectation_for`; `expectation_for` also reads `owner` itself.
 - Tools, appendices, judges, scorers, scorings, models, expectation schemas and canary sets have descriptions of their
