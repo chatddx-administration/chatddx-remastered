@@ -20,8 +20,8 @@ https://github.com/chatddx-administration/chatddx/blob/504792cbeb09508f2c52912be
      what replaces it.
 2. **Decisions**, in the order they block (see "Options"): A1, who it is for; A2, the framework; A3, signing in.
    A4–A12 shape the endpoints. Decided so far: A1 kept open, A2 (F2), A3, and A9 (S3).
-3. **The plan** (see "The plan") assumes the takes. Phases 0 and 1 are built (see "Phase 0: built" and "Phase 1:
-   built"). Phase 2, the reads, is next.
+3. **The plan** (see "The plan") assumes the takes. Phases 0–2 are built (see "Phase 0: built", "Phase 1: built"
+   and "Phase 2: built"). Phase 3, the variations, is next.
 
 ## The old API
 ### Where it came from
@@ -409,9 +409,9 @@ Dropped from the old API:
 |---|---|
 | `app.py` | `app(inventory, facts, conninfo)`: the routers, the error handlers and the OpenAPI document |
 | `state.py` | `AppState`, what the app is made with, loaded once; and `connection`, a connection per request in autocommit mode |
-| `people.py` | signing in and out, `/me`, the session a request acts in, and the same-origin check on cookies; the bench per request comes with phase 2 |
+| `people.py` | signing in and out, `/me`, the session a request acts in, the same-origin check on cookies, and the bench per request (`BenchDep`) |
 | `schemas.py` | the request and response models |
-| `threads.py`, `families.py`, `world.py`, `runs.py` | the routes: `world.py` has endpoints, models and components |
+| `threads.py`, `families.py`, `world.py`, `runs.py` | the routes: `families.py` has the tags too, and `world.py` endpoints, models and components |
 | `events.py` | the runner's events as server-sent events |
 
 On the command line it is `chatddx api [--world DIR] [--facts PATH …] [--bind HOST:PORT]`, served by uvicorn.
@@ -501,6 +501,42 @@ bearer, a cross-site DELETE refused, signing out, and `/api/docs`.
   schemes.
 - **`chatddx api`** (`src/chatddx/cli.py:_api`), with `settings.host()`.
 - **Tests**: `src/chatddx/api/test/`, through `TestClient` over `https://testserver`, since the cookie is `Secure`.
+
+### Phase 2: built
+The suite went from 486 tests to 498, and basedpyright and ruff stay clean.
+- **Every read needs a session**, and acts through `people.py:bench`: a `Bench` for the person signed in, on the
+  request's connection. The bench's `_visible(kind)` became `visible(kind)`, so the listing can say each thread's
+  kind.
+- **Threads** (`threads.py`):
+  - `GET /api/threads?kind=WORD` with `name`, `owner` (a login) and `tag` (any of them) as filters. `WORD` is one of
+    `KINDS`; another is 422. Each thread gives its id, kind, name, title, owner, tags and head edit.
+  - `GET /api/threads/{thread}` adds the description, collaborators, the head's language (`Catalog.language_of`),
+    the edit it was forked from, and its recipe: the parts' digests and the appendix layout, or null without a
+    compilation.
+  - `GET /api/threads/{thread}/edits`: its versions, the head last.
+- **Families** (`families.py`):
+  - `GET /api/families` with `tag` (any of them) and `name`; each gives its id, name, owner, tags, language and case.
+  - `GET /api/families/{family}` adds the description, collaborators, the case's appendices, and the expectation
+    under each schema the person sees. Several to choose from don't fail the request: that schema's `ambiguous`
+    says so, and `expectation` and `data` are null.
+  - `GET /api/families/{family}/vignette` (A9): the text the source holds, and `drifted`, whether its fingerprint
+    differs from the case's (unknown for a keyed one). A source that doesn't hold it is 404.
+  - `GET /api/tags`.
+- **The World** (`world.py`):
+  - `GET /api/endpoints` and `/api/endpoints/{name}`: the engine, its title and model, the URL, host, `max_jobs`,
+    the credential's name and the sources cleared for. An engine not in the store, or a URL that can't be told, is
+    said in `problem`, as the repl's `endpoints` says it, rather than failing the listing.
+  - `GET /api/models`: each model the facts know or an endpoint serves, its facts as they are typed
+    (`ModelFacts`), and the endpoints serving it.
+  - `GET /api/components/{digest}`: any stored component, its kind and title. Not person-scoped (B3).
+- **Tests**: `test_threads.py`, `test_families.py` and `test_world.py`, signed in by a bearer token, with bob for what
+  isn't his to see, and a check that every read refuses a request without a session.
+- **A flaky error outside the API.** On a container just started, the first two full runs each ended with a setup
+  error in a test the API doesn't touch (`store/test/test_catalog.py::test_changed_vignettes_are_repaired`, then
+  `repl/test/test_running.py::test_ctrl_c_stops_a_run_as_it_streams_and_it_is_recorded_as_stopped`). The six full
+  runs after were clean, and so were six runs of those two modules alone. The message wasn't kept. The likeliest
+  cause is the test databases' race, which `src/chatddx/conftest.py:_settled` waits out for at most 5 s. The full
+  suite also took about 110 s there, against 67 s on the container phase 1 ran on; the API's own tests take 11 s.
 
 Open from phase 1:
 - **A cookie over plain HTTP.** Browsers keep a `Secure`, `__Host-` cookie only over HTTPS, or on `localhost`. A
