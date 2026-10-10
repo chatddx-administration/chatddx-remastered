@@ -551,8 +551,8 @@ Open from phase 1:
 
 ## Left out
 - **Free-text vignettes** (`RunIn.vignette`, the swift client's `symptoms`). A case is a source's vignette, by id,
-  fetched from the World and never stored. For swift since: a typed text is kept in a source the portal writes, and
-  its case is written like any other (`agents/wip-portal.md`, "Swift", "Typed cases").
+  fetched from the World and never stored. Decided for swift since: a typed text is kept in the database, as a
+  source of its own, and its case is written like any other (`agents/wip-portal.md`, "Swift", "Typed cases").
 - **`/api/auth/`** for a proxy's forward auth. Once Keycloak is in front, that is the proxy's job.
 - **Endpoints with a credential.** As in the repl, the secret comes from an environment variable
   (`src/chatddx/runner/gate.py:secret`), not from the person's secrets.

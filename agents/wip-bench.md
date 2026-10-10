@@ -31,8 +31,8 @@ https://github.com/chatddx-administration/chatddx/blob/504792cbeb09508f2c52912be
      (`docs/factors.md`, "Appendix"); and the cases that order them in a family.
    - **Expectations**, one case's reference answer, held to an expectation schema (`docs/factors.md`, "Expectation"),
      and read back through `Bench.expectation`.
-   - **Cases and families**, for swift's typed cases: a `Case` for a vignette a source the portal writes holds, and a
-     family for the person (`agents/wip-portal.md`, "Swift", "Typed cases").
+   - **Cases and families**, for swift's typed cases: the text, its `Case` and a family for the person, in one
+     transaction (`agents/wip-portal.md`, "Swift", "Typed cases").
    - Beside them: a scorer's labels carried to its next edit (`docs/catalog.md`, "Scorer labels"), and deleting
      (`docs/catalog.md`, "Deleting").
 
