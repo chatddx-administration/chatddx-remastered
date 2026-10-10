@@ -290,13 +290,16 @@ records the skeleton it ran. If that isn't enough, `edit` (an edit's id) can sta
   halts the run (this needs a halt, phase 0), and the run is finished and scored whether anyone is listening or not.
 - **W2. In the API's process, beside the request.** `POST /runs` returns 202 with the run's id, `GET
   /runs/{id}/events` streams it (a GET, so `EventSource` works), and `POST /runs/{id}/stop` stops it. Runs end with
-  the process, and an unfinished run stays unfinished, since resuming isn't built (`agents/wip-runner.md`,
-  "Afterwards").
+  the process, and an unfinished run stays unfinished, since resuming isn't built (`agents/wip-worker.md`, "Below the
+  worker").
 - **W3. A worker**, to come (`agents/wip-bench.md`, "Forces"). It needs a queue, which the append-only store has no
   place for.
 
 Take: W1 now, shaped so that W2 can follow: the events stay the same, and a run's record can always be read back,
 since its rows land as they are written.
+
+Runs that outlive the request are planned in `agents/wip-worker.md`, whose take is W3, runnable in the app's process
+too, rather than W2.
 
 ### A7. The stream
 - It is asked for with `Accept: text/event-stream`. Otherwise `POST /runs` answers 201, with `Location`, once the run
@@ -548,7 +551,8 @@ Open from phase 1:
 
 ## Left out
 - **Free-text vignettes** (`RunIn.vignette`, the swift client's `symptoms`). A case is a source's vignette, by id,
-  fetched from the World and never stored. Running pasted text would take a source that holds it.
+  fetched from the World and never stored. Running pasted text would take a source that holds it. Swift is to be
+  integrated with the portal (`agents/wip-portal.md`, "Swift"), which plans this.
 - **`/api/auth/`** for a proxy's forward auth. Once Keycloak is in front, that is the proxy's job.
 - **Endpoints with a credential.** As in the repl, the secret comes from an environment variable
   (`src/chatddx/runner/gate.py:secret`), not from the person's secrets.
@@ -559,8 +563,7 @@ Open from phase 1:
 ## Open
 - **A stream through a proxy** needs buffering off. The old API sent `Cache-Control: no-cache` and
   `X-Accel-Buffering: no`.
-- **Long requests.** A batch of hundreds of cases is a request that lasts minutes, holding a connection and a thread.
-  If that hurts, move to W2.
+- **Long requests**: moved to `agents/wip-worker.md` ("Why").
 - **`Bench.runs` reads every run the person owns**, and the listing pages afterwards. Page in the store once that is
   slow.
 - **Concurrent writers.** Two requests can save the same name at once (`docs/catalog.md`, "Concurrent writers").

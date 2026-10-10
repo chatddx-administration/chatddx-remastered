@@ -238,13 +238,10 @@ In `rounds.py`, which `run.py` calls for every item, with tools or without:
   next version (`agents/wip-sample-data.md`, "Free-text expectations").
 - **`chatddx samples`** back on the runner.
 - **A runner finding for reasoning that wasn't heeded**, like the old `bench/outcome.py:unheeded`.
-- **Resuming.** `resume(run)` would append an unfinished log's missing items: `Running.send` already skips items
-  that are in.
+- **Resuming** and **`max_jobs` across runs**: moved to `agents/wip-worker.md` ("Below the worker"), their first
+  caller.
 - **A summary of failed calls.** `check_run` says nothing about `Call.error`. A run whose every call was cut short
   checks clean, and only the items show it. A UI can count them, or the runner could note them.
-- **`max_jobs` across runs.** Each run is held to its endpoint's `max_jobs`, but two runs on one endpoint can send
-  twice that between them. vLLM queues what's over `--max-num-seqs` rather than refusing it, so the cost is batching
-  that the runs' `execution` doesn't show.
 - **A halted call waits for its next chunk.** An engine that stalls mid-stream, under an execution with no
   `timeout_s`, keeps its worker waiting after a KeyboardInterrupt, until a second one. Shutting the worker's socket
   down from the caller's thread would end the wait, but `wire.Stream` doesn't offer that yet. Since

@@ -11,14 +11,19 @@ https://github.com/chatddx-administration/chatddx/blob/504792cbeb09508f2c52912be
 "Decided" means the user said so. "Take" is the agent's recommendation and still open.
 
 ## Start with this
-1. **How it is built** (see "Options"): P1, keep the old Django portal; P2, a PWA; P3, HTML with focused islands of
-   TS. Take: P3 as P3b, pages rendered on the server from the bench, islands on the API. Not decided.
-2. **Most of the work is below the UI**, whichever option is chosen (see "Below the UI"): runs that outlive a request,
-   the bench's writes for authoring, the batch planner, the worker, and Z1.
-3. **The batch planner and the worker** are planned apart, around one contract settled first (see "The batch planner
-   and the worker"). Take, not decided.
-4. **Sample runs**, genuine runs answered by a script, are test data for every edge, the portal's among them. They
+1. **Decided: P3, HTML with focused Svelte islands** (see "Options"): pages rendered on the server from the bench,
+   and islands, in Svelte with TypeScript, that call the API (P3b). How it is built otherwise is still a take (see
+   "P3b, concretely").
+2. **Decided: the portal integrates swift, and swift is ported to Svelte** (see "Swift"). Swift's free text is the
+   open question that blocks it.
+3. **Most of the work is below the UI** (see "Below the UI"): the bench's writes for authoring
+   (`agents/wip-bench.md`, "Start with this", 6), the worker (`agents/wip-worker.md`), the batch planner
+   (`agents/wip-batch.md`), and Z1.
+4. **Decided: the batch planner and the worker are planned apart**, in `agents/wip-batch.md` and
+   `agents/wip-worker.md`, around one contract (`agents/wip-worker.md`, "The contract").
+5. **Sample runs**, genuine runs answered by a script, are test data for every edge, the portal's among them. They
    are planned with the sample data (`agents/wip-sample-data.md`, "Sample runs").
+6. **Dependencies**: `jinja2` and `python-multipart` are in `pyproject.toml`.
 
 ## The old portal
 ### What it is
@@ -31,7 +36,8 @@ https://github.com/chatddx-administration/chatddx/blob/504792cbeb09508f2c52912be
   `ModelAdmin`s over proxy models (`models.py`: `Case(CaseBranchModel)` and the like), most of them overridden at
   length: `case_admin.py` is 726 lines, `variation_admin.py` 429, `checking.py` 823.
 - It had a model of its own, `BatchModel`: a batch's configuration, stack, tags, variations and seed, and its cells,
-  held-back cells and cases as JSON. The worker's `JobModel` pointed at it.
+  held-back cells and cases as JSON. The worker's `JobModel` pointed at it (`agents/wip-batch.md`,
+  `agents/wip-worker.md`).
 
 ### What it offered
 From its manual (`docs/portal.md`), which reads as a functional spec:
@@ -58,8 +64,9 @@ From its manual (`docs/portal.md`), which reads as a functional spec:
 | a variation as a stored object (`variation_admin.py`) | a chunk on a thread of its part's kind; a saved variation is a fork (`Bench.fork`) | variations are "a supported portal workflow, not an object in the code" (`docs/chatddx.md`) |
 | a stack and its parts | an endpoint and the engine it serves (`Inventory`, `Bench.endpoint`), and the facts (`GET /api/models`) | ops-authored files, read only |
 | a stack's **Test** | nothing yet: `confirm` checks an endpoint's binding (`src/chatddx/runner/gate.py:check`), and the `vllm.*` lints check a skeleton | open |
-| batches: planning, confirming, kept for later | the batch planner, to plan (see "The batch planner and the worker") | |
-| **Status**, the queue, `BatchModel`, `JobModel` | the worker, to plan | |
+| batches: planning, confirming, kept for later, `BatchModel` | the batch planner (`agents/wip-batch.md`) | |
+| **Status**, the queue, `JobModel` | the worker (`agents/wip-worker.md`) | |
+| the old API's `/api/agents`, `/api/auth/` and `/api/diagnose`, for swift | the portal's swift page (see "Swift") | |
 | a run's page | `Bench.run_by_id`, `Store.run`, `Bench.described`, `Bench.scores_of`, `Bench.rendered_again`, `src/chatddx/bench/outcome.py`; `GET /api/runs/{id}` and `/items` (API phase 4) | requests are kept as fingerprints, and rendered again |
 | Django's view, change, add and delete permissions | Z1, roles to kinds, and owners and collaborators (`src/chatddx/identity/identity.py:sees`) | a convenience, not a protection (`agents/wip-identity.md`, "Authorization") |
 | Django's users and sessions | `People`, by the API's session (`src/chatddx/api/people.py`) | |
@@ -113,10 +120,10 @@ the line that says where a save goes, live checks, the confirmation before a bat
 - **P3b. Pages rendered on the server**, per request, from the bench, with islands that call the API where a page
   needs feedback without a reload.
 
-Take: **P3b.** The portal consumes the bench, as planned (`agents/wip-bench.md`, "Forces"), and is built on the API
-where it is interactive (`agents/wip-api.md`, A1, "kept open"). Both, not either.
+Decided: **P3**, with Svelte islands: P3b. The portal consumes the bench, as planned (`agents/wip-bench.md`,
+"Forces"), and is built on the API where it is interactive (`agents/wip-api.md`, A1, "kept open"). Both, not either.
 
-## The take, concretely
+## P3b, concretely
 ### One app
 - `src/chatddx/portal/`, a package beside `src/chatddx/api/`, mounted at `/` in the same FastAPI app as the API at
   `/api/` (`src/chatddx/api/app.py:app`). Its routes return HTML rendered with Jinja2 (Starlette's
@@ -127,7 +134,8 @@ where it is interactive (`agents/wip-api.md`, A1, "kept open"). Both, not either
   `POST /api/session` does.
 - Forms are plain POSTs, checked by the API's same-origin check (`src/chatddx/api/people.py:same_origin`), so there is
   no CSRF token, as there is none for the API.
-- New dependencies: `jinja2`, and `python-multipart` for FastAPI's form fields. Neither is locked today.
+- Dependencies: `jinja2`, and `python-multipart` for FastAPI's form fields, both in `pyproject.toml`, imported only
+  under `chatddx.portal` as `rich` is only under `chatddx.repl`.
 
 ### Islands
 Only where a page needs feedback that takes a round trip or live state:
@@ -135,17 +143,21 @@ Only where a page needs feedback that takes a round trip or live state:
   each scorer view's reach and the request rendered, as you pick. It calls `GET /api/threads/{id}/variation` (API
   phase 3). The old portal did this with htmx, `input changed delay:400ms`.
 - **A run as it runs**: its items as they start and end, and the deltas while you watch (API phase 4).
-- **A batch's progress** and the worker's state, once they exist.
+- **The batch form**: ticking chunks per part, with the number of trials, what is held back and each scorer's reach
+  as you tick (`agents/wip-batch.md`, "Callers").
+- **A batch's progress** and the worker's state (`agents/wip-worker.md`).
+- **Swift**: its form and its answer (see "Swift").
 - Perhaps editors for structured chunks and expectations, checked against their JSON Schema as you type.
 
+Decided: **Svelte with TypeScript**. That settles htmx too, which would have wanted an HTML fragment per interaction:
+a third surface beside the pages and the API.
+
 Take:
-- **Svelte with TypeScript**, built by Vite into static files the app serves. Svelte compiles to small bundles, one
-  per island, and the old "swift" client was Svelte (`agents/wip-api.md`, "Where it came from"). React's runtime and
-  ecosystem buy nothing for a handful of islands.
+- **Built by Vite** into static files the app serves, a bundle per island.
 - **Types from `/api/openapi.json`** (openapi-typescript), so an island's types follow the API's pydantic schemas. A
   test can check that what is generated is current.
-- **Not htmx.** It wants an HTML fragment per interaction: a third surface beside the pages and the API, which
-  already answers what the islands ask.
+- **Tailwind** for the portal's styling, as swift's and the old portal's Unfold were, and shadcn-svelte where swift's
+  components are ported (see "Swift").
 - **The toolchain comes with the first island.** Node and Vite join the flake's dev shell, and the build joins the
   package's. The pages before it need no script.
 
@@ -158,21 +170,13 @@ Take:
   runs").
 
 ## Below the UI
-What the portal needs whichever option is chosen:
-1. **Runs that outlive the request.** The API runs a trial in the request and halts it when the client goes away
-   (`agents/wip-api.md`, A6, W1). For a browser, closing a tab or leaving the page would stop a batch. The portal
-   needs W2 at least: `POST /api/runs` answers 202, `GET /api/runs/{id}/events` streams, and a stop calls
-   `Running.halt` (`src/chatddx/runner/run.py`).
-   - Progress by item can be read from the store, since a run's rows land as they are written. That works from any
-     process, and after a reconnect.
-   - Deltas aren't stored, so watching a completion as it is written needs the process that runs it.
-   - W2's runs end with the process, and two replicas of the app don't see each other's. The worker is the way out
-     (see "The batch planner and the worker").
-2. **Writes for authoring.** The bench writes configurations (`save`, `fork`, `edit`), runs (`start`) and scores
-   (`score`), and nothing else. Chunks of every part, appendices, expectations, cases and families, scorer labels and
-   languages have nothing to build on yet. Curation writes them only as the archive, from a data set's files
-   (`src/chatddx/curation/write.py`).
-3. **The batch planner** and 4. **the worker**, see below.
+What the portal needs below its pages:
+1. **Runs that outlive the request**: the worker (`agents/wip-worker.md`). A run started over HTTP runs in the
+   request and halts when the client goes away (`agents/wip-api.md`, A6, W1); for a browser that is a closed tab.
+2. **Writes for authoring**: chunks, appendices and expectations through the bench (`agents/wip-bench.md`, "Start
+   with this", 6).
+3. **The batch planner** (`agents/wip-batch.md`).
+4. **The worker's controls and status** (`agents/wip-worker.md`, "The plan", 4).
 5. **Z1**, the map from roles to kinds, waits for the portal's views (`agents/wip-bench.md`, "Phase 2", step 12;
    `agents/wip-identity.md`, "Open").
 6. **The cookie's `SameSite`.** The session cookie is `SameSite=Strict` (`src/chatddx/api/people.py:sign_in`). A
@@ -183,85 +187,83 @@ What the portal needs whichever option is chosen:
    the portal's pages that show it are those places, and want the header. Clearance's open question 6 covers it.
 
 ## The batch planner and the worker
-### Together or apart
-Take: **apart**, as two plans, in this order: the contract between them (below, settled in this file), then the
-planner, then the worker.
-- **They meet at one narrow seam**: a list of trials to run at an endpoint for an owner. The planner decides which
-  trials; the worker decides when and where they run. Neither needs the other's insides.
-- **Each is useful without the other.** The planner serves the repl's `batch`, the API and the portal's confirmation
-  page, with runs in the request (W1) or beside it (W2). The worker serves single runs from the API and the portal,
-  and sample runs.
-- **They are different kinds of work.** The planner is pure over the bench and tested without a process; its
-  questions are the catalog's: crossing, variants, mixed batches, what a kept plan is. The worker is processes,
-  concurrency and failure; its questions are the store's and the deployment's: claims, heartbeats, resuming,
-  `max_jobs` across runs, replicas in Kubernetes.
-- **The old project fused them, and it cost.** `worker/queue.py:put(owner, batch, trials)` took a batch's id, each
-  `JobModel` pointed at a `BatchModel`, and a batch's state ("queued", "running", "unfinished") was its jobs' state.
-  In remastered that state can be read from the ledger by trial, so the batch needn't know the worker.
+Moved to `agents/wip-batch.md` and `agents/wip-worker.md`, with the contract between them in
+`agents/wip-worker.md` ("The contract").
 
-### The contract
-Settled before either plan:
-1. **The unit of work**: a trial at an endpoint, for an owner, scored afterwards or not. That is `Bench.start`
-   followed by `Bench.score` (`src/chatddx/bench/view.py`).
-2. **How runs are found from what asked for them**: by trial digest and owner (`Bench.runs`; `GET /api/runs?trial=`),
-   or through a kept plan (see "The planner").
-3. **The surface an edge calls**, the same whether runs go in the app's process (W2) or to the worker: start, which
-   gives a run's id; stop; and the events, by item from the ledger, with deltas where the process has them.
+## Swift
+Decided: the portal integrates swift, and swift is ported to Svelte.
 
-### The planner
-What the old `bench/plan.py` did (`crossed`, `Plan.of`) in remastered's terms:
-- **In**: a configuration, for each part the chunks to try (its own among them), an endpoint, cases by tag or by id,
-  and a seed.
-- **Crossing**: the product of the parts' choices, each a `TriedVariation` (`Bench.variation`), with the same skeleton
-  digest kept once, as the old `crossed` kept one cell per fingerprint.
-- **For each variation at the endpoint**: the findings (`Bench.findings`), warnings and never refusals
-  (`docs/chatddx.md`, "Compromises"); what the gate refuses, held back with why (`src/chatddx/runner/gate.py`); and
-  each scorer view's reach (`Bench.reach`).
-- **Out**: the trials, one per variation, each with the cases and one seed. A trial holds its cases, where the old one
-  was a cell, a case and a seed.
+### What it is
+- **LigninDDX/swift-dx-guide** (public): a Lovable project, edited in Lovable and by hand (the latest commit
+  2026-09-19), in React 18 with TypeScript, Vite, Tailwind and shadcn/ui (49 components in `src/components/ui/`),
+  react-query and sonner, with a flake of its own. Beside the UI components it is about 1,450 lines, most of them in
+  `src/pages/Index.tsx` (285), `src/components/DiagnosisResults.tsx` (293), `ManagementSection.tsx` (170) and
+  `DiagnosisCard.tsx` (138).
+- **One page**, "Emergency Differential Diagnostics": a clinician describes the patient's symptoms and history in free
+  text, picks an agent, and gets a differential (each diagnosis with its probability, whether it is critical, a short
+  rationale, and optionally red flags and a workup) and a management plan (workups by type and priority, empirical
+  treatment, the disposition), with its sources linked and a disclaimer.
+- **What it calls**, at `VITE_API_URL`, with the session's cookie: `GET /api/agents?output_type=DDXManagement`, the
+  person's agents whose output is the management plan; `GET /api/auth/`, 200 or 401, read as whether one is signed in;
+  and `POST /api/diagnose {symptoms, model}`, which answered with the plan as JSON. Signing in, and its "Admin" link,
+  go to Django's admin.
+- **Where its backend went**: the old project's "ChatDDX Swift API" (`src/chatddx/django/api.py` before 110f9a5) ran
+  the agent on the text. It was a submodule of the old project for a day (9647f1d to ac8967e, 2026-06-03 to 06-04);
+  the old project had a SvelteKit "swift mvp" client before that (7c7ac74, 8e89253). At 110f9a5 (2026-09-26) the API
+  was remade and `/api/agents` and `/api/diagnose` went; at 504792c only `/api/auth/` is left
+  (`src/chatddx/django/urls.py`). Swift's latest still calls the other two.
 
-Open, for the planner's plan:
-- **Is a plan kept?** The old portal kept a batch to run later, and gave it a page that never changes.
-  - L1. Not kept: a plan is shown, then its trials start. Nothing groups the runs but their trials.
-  - L2. A component of a new kind, `plan`: its trials and endpoint, by digest.
-  - L3. L2, kept on a catalog thread when kept for later: named, owned, shared and deleted as configurations are.
-  Leaning L3, since it reuses the catalog for what a person keeps. It touches `docs/factors.md` (a new kind) and is
-  the user's call.
-- **Mixed batches**: English and Swedish cases in one plan, one trial per language under its variant, or refused
-  (`agents/wip-variants.md`, "Questions for the user").
-- **Several endpoints in one plan**, which the old portal didn't offer.
+### What remastered has for it
+- **The answer it renders** is the sample's management plan (`src/chatddx/data/sample/schemas/management_plan_v1.json`,
+  the `plan` recipes): `acute_warning`, `diagnoses` (diagnosis, probability, critical, short rationale), `management`
+  (workup, empirical treatment, disposition) and `sources`. Swift also reads a diagnosis's `description`,
+  `red_flags` and `workup`, which the schema doesn't have.
+- **Its agents** are configurations whose output is that schema: `GET /api/threads?kind=configuration`, filtered by
+  their output's schema, which the API doesn't offer yet.
+- **The answer** is read as the repl and the API read it (`chatddx.scorers.answer.read`;
+  `src/chatddx/bench/outcome.py`), and served from a run's items (`agents/wip-api.md`, A9).
+- **One case, one seed, waited for**: through the worker with item events (`agents/wip-worker.md`, K3, E2).
+- **Signing in** is the portal's: on one origin the page is rendered signed in, and `/api/auth/` isn't needed.
 
-### The worker
-What it adds over W2:
-- Runs that survive a closed tab and a restarted app, and are seen from every replica.
-- `max_jobs` held across runs on one endpoint (`agents/wip-runner.md`, "Afterwards", "`max_jobs` across runs").
-- Pause, resume and stop for an owner's work, as the old **Status** page had.
-- Resuming an unfinished run (`agents/wip-runner.md`, "Afterwards", "Resuming").
+### Free text
+The question that blocks it. A case is a source's vignette, by id, fetched from the World and never stored
+(`agents/wip-api.md`, "Left out"), and cases are to "enter the system de-identified from a predefined source"
+(`docs/chatddx.md`, "Requirements"). Swift's text is typed by a clinician, may be about a real patient, and comes from
+no source.
+- **X1. A source that holds the text** for as long as its run, in memory, keyed by its fingerprint. The run is a run
+  of a case like any other, recorded with the fingerprint only; its completion is case-derived and lands in the
+  ledger. The endpoint must be cleared for that source.
+- **X2. Not recorded**: swift's requests go to the endpoint outside the ledger. Against the rig's purpose, to record
+  each exchange (`docs/chatddx.md`, "Purpose").
+- **X3. No free text**: swift picks a case instead. Loses what swift is for.
 
-Open, for the worker's plan: where it keeps what is asked of it. "The append-only store has no place for a queue"
-(`agents/wip-api.md`, A6, W3).
-- Q1. A table of jobs updated in place, as the old `JobModel`: against "nothing is updated" (`docs/chatddx.md`).
-- Q2. An append-only log of what is asked (run this trial at this endpoint for this owner; pause; resume; stop),
-  claimed by inserting a unique row, with the rest read from the ledger: asked and unclaimed is queued, claimed and
-  unfinished is under way or lost, finished is done.
-- Q3. A queue outside the store (Redis, a Kubernetes Job per run): another moving part, and state the store doesn't
-  hold.
+Take: X1, with clearance deciding which endpoints a typed text may reach (`agents/wip-clearance.md`, "Open", 5 and
+6). The user's call.
 
-Leaning Q2, since it fits the store's rules.
+### Ported to Svelte
+Take:
+- **A page of the portal**, rendered on the server, with one island: the form (the text, and the configurations to
+  pick from) and the answer (`DiagnosisResults`, `DiagnosisCard`, `ManagementSection`), about 900 lines of React.
+- **shadcn-svelte** for the components swift uses (card, button, textarea, select, alert, label, and sonner's
+  toasts), on the same Tailwind tokens, so its look carries over.
+- **Its repository** stops being where swift is made, and its Lovable project with it. The user's call.
 
 ## Phases
 Assuming the takes.
-0. **Before the first page.** `chatddx.portal` mounted beside the API; Jinja2 and python-multipart; the decision on
-   `SameSite`; `Cache-Control: no-store` where case-derived content is shown.
+0. **Before the first page.** `chatddx.portal` mounted beside the API; the decision on `SameSite`;
+   `Cache-Control: no-store` where case-derived content is shown. Jinja2 and python-multipart are in.
 1. **Signing in, and pages to read**: runs and a run's page, configurations with their versions and recipe, families
    with their expectations (the vignette in its own place, A9), endpoints and models. No script.
 2. **The variation being tried**, and its island, on the API's phase 3.
-3. **Starting and watching a run**: W2, and the run's island, on the API's phases 4 and 5.
-4. **Authoring**: the bench's writes for chunks, appendices, expectations, labels and languages (see "Below the UI",
-   2), and their pages.
-5. **Batches**: the planner's plan and its pages; then the worker's plan, a batch's page and the status.
-6. **Z1**, and what deleting hides.
-7. **Docs**: material for a `docs/portal.md`, kept here as `agents/wip-bench.md` keeps the bench's.
+3. **Starting and watching a run**: the worker (`agents/wip-worker.md`), and the run's island, on the API's phases 4
+   and 5.
+4. **Swift**, once its free text is decided (see "Swift").
+5. **Authoring**: the bench's writes for chunks, appendices, expectations, labels and languages
+   (`agents/wip-bench.md`, "Start with this", 6), and their pages.
+6. **Batches**: the planner's pages (`agents/wip-batch.md`), then a batch's page and the worker's status
+   (`agents/wip-worker.md`).
+7. **Z1**, and what deleting hides.
+8. **Docs**: material for a `docs/portal.md`, kept here as `agents/wip-bench.md` keeps the bench's.
 
 ## Open
 - **One process or two.** `chatddx api` serving the portal too, or a `chatddx portal` of its own on the same app.
@@ -275,6 +277,9 @@ Assuming the takes.
 - The session cookie is `SameSite=Strict`, so a link into the portal from another site opens signed out (see "Below
   the UI", 6).
 - A run in a request halts when the client goes away (A6, W1): right for the repl and a program, wrong for a browser
-  tab.
-- The bench can't write a chunk, an appendix or an expectation, and the portal is where they are to be written.
-- Neither `jinja2` nor `python-multipart` is a dependency; FastAPI's form fields need the second.
+  tab (`agents/wip-worker.md`).
+- The bench can't write a chunk, an appendix or an expectation, and the portal is where they are to be written
+  (`agents/wip-bench.md`, "Start with this", 6).
+- Neither `jinja2` nor `python-multipart` was a dependency; FastAPI's form fields need the second. Both are now.
+- Swift is React, not Svelte: the Svelte client the old API served was replaced by swift-dx-guide, a Lovable project.
+  Its latest still calls `/api/agents` and `/api/diagnose`, which the old API dropped at 110f9a5.
