@@ -5,8 +5,10 @@ from collections.abc import Sequence
 from pathlib import Path
 
 import psycopg
+import uvicorn
 from rich.console import Console
 
+from chatddx.api.app import app
 from chatddx.bench import Bench
 from chatddx.core import settings
 from chatddx.core.rig import rig
@@ -192,6 +194,17 @@ def _repl(args: argparse.Namespace) -> None:
         loop(Repl(Bench(conn, person, world.inventory, facts), Console()), args.history)
 
 
+def _api(args: argparse.Namespace) -> None:
+    world = _world("api", args.world)
+    facts = Facts.load(BUNDLED, *world.facts, *(args.facts or ()))
+    bind: str = args.bind or settings.host()
+    host, _, port = bind.rpartition(":")
+    if not host or not port.isdigit():
+        raise SystemExit(f"api: bind to HOST:PORT, not {bind!r}")
+    served = app(world.inventory, facts, settings.database())
+    uvicorn.run(served, host=host.strip("[]"), port=int(port))
+
+
 def _fake_vllm(args: argparse.Namespace) -> None:
     run(args.model, args.argv, delay=args.delay, runaway=args.runaway)
 
@@ -360,6 +373,28 @@ def main(argv: Sequence[str] | None = None) -> None:
         help=f"where the lines you type are kept ({HISTORY})",
     )
     shell.set_defaults(run=_repl)
+
+    api = commands.add_parser(
+        "api",
+        help="serve the chatddx API over HTTP, with its documentation at /api/docs",
+    )
+    _ = api.add_argument(
+        "--world",
+        type=Path,
+        help="the World directory whose endpoints, vignettes and facts the API uses "
+        + "(CHATDDX_WORLD)",
+    )
+    _ = api.add_argument(
+        "--facts",
+        type=Path,
+        action="append",
+        help="more model facts, beside the bundled ones and the World's, as init-data "
+        + "was given",
+    )
+    _ = api.add_argument(
+        "--bind", help=f"where to listen, as HOST:PORT ($HOST, else {settings.host()})"
+    )
+    api.set_defaults(run=_api)
 
     fake = commands.add_parser(
         "fake-vllm",

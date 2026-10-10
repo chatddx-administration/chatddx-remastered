@@ -1,0 +1,58 @@
+from collections.abc import Iterator
+
+import psycopg
+import pytest
+from fastapi import FastAPI
+from fastapi.testclient import TestClient
+from psycopg.conninfo import make_conninfo
+
+from chatddx.api.app import app
+from chatddx.conftest import WORLD, create_database, drop_database
+from chatddx.core import settings
+from chatddx.facts import BUNDLED, Facts
+from chatddx.identity import Person
+from chatddx.inventory import Inventory
+from chatddx.store import People
+from chatddx.store.store import Connection
+
+PASSWORD = "correct horse battery staple"
+
+
+@pytest.fixture
+def db(curated: str) -> Iterator[str]:
+    name = create_database(template=curated)
+    try:
+        yield name
+    finally:
+        drop_database(name)
+
+
+@pytest.fixture
+def conn(db: str) -> Iterator[Connection]:
+    with psycopg.connect(settings.database(), dbname=db, autocommit=True) as c:
+        yield c
+
+
+@pytest.fixture
+def alice(conn: Connection) -> Person:
+    people = People(conn)
+    found = people.find("alice")
+    assert found is not None
+    people.set_password(found.id, PASSWORD)
+    return found
+
+
+@pytest.fixture
+def served(db: str) -> FastAPI:
+    return app(
+        Inventory.load(WORLD / "inventory.toml"),
+        Facts.load(BUNDLED),
+        make_conninfo(settings.database(), dbname=db),
+    )
+
+
+# Over HTTPS, since the session cookie is only ever sent over it.
+@pytest.fixture
+def client(served: FastAPI) -> Iterator[TestClient]:
+    with TestClient(served, base_url="https://testserver") as c:
+        yield c
