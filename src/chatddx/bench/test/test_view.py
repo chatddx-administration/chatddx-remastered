@@ -54,6 +54,61 @@ def test_a_case_is_found_by_its_name_or_as_owner_slash_name(bench: Bench) -> Non
         _ = bench.family("nope")
 
 
+def test_threads_cases_and_runs_are_found_by_id_among_what_the_person_sees(
+    conn: Connection, alice: Person, bob: Person, bench: Bench, plan: Plan
+) -> None:
+    mine, _ = bench.thread("configuration", FREE_TEXT)
+    assert bench.thread_by_id(mine.thread) == (mine, bench.about(mine.thread))
+    assert bench.thread_by_id(mine.thread, "configuration")[0] == mine
+    with pytest.raises(NotFound, match=f"no reasoning {mine.thread} for alice"):
+        _ = bench.thread_by_id(mine.thread, "reasoning")
+    with pytest.raises(NotFound, match="no thread 0 for alice"):
+        _ = bench.thread_by_id(0)
+    bobs = Bench(conn, bob, bench.inventory, bench.facts)
+    with pytest.raises(NotFound, match=f"no thread {mine.thread} for bob"):
+        _ = bobs.thread_by_id(mine.thread)
+    Catalog(conn).note(
+        Subject(thread=mine.thread), Entry(field=EntryField.DELETED), alice.id
+    )
+    with pytest.raises(NotFound):
+        _ = bench.thread_by_id(mine.thread)
+
+    family = bench.family("Dutchfall11w")
+    assert bench.family_by_id(family.id) == family
+    with pytest.raises(NotFound, match=f"no case {family.id} for bob"):
+        _ = bobs.family_by_id(family.id)
+    with pytest.raises(NotFound, match="no case 0 for alice"):
+        _ = bench.family_by_id(0)
+
+    made = trial(conn, plan, FREE_TEXT, "DutchFall10w")
+    own, theirs = ran(conn, alice, made), ran(conn, bob, made)
+    assert bench.run_by_id(own).run == own
+    with pytest.raises(NotFound, match=f"no run {theirs} of yours"):
+        _ = bench.run_by_id(theirs)
+
+
+def test_a_variation_is_made_from_a_configuration_s_id_and_digests(
+    bench: Bench,
+) -> None:
+    engine = bench.endpoint(QWEN)
+    named = bench.configuration(FREE_TEXT, engine)
+    off = bench.chunk("reasoning", "off", engine)
+    thread = named.configuration.thread
+
+    assert bench.variation(thread) == named
+    varied = bench.variation(thread, {"reasoning": off})
+    assert bench.skeleton(varied) == bench.skeleton(named.set("reasoning", off, "off"))
+    with pytest.raises(ValueError, match="isn't a stored chunk of prompt"):
+        _ = bench.variation(thread, {"prompt": off})
+    with pytest.raises(ValueError, match="no part 'stack'"):
+        _ = bench.variation(thread, {"stack": off})
+    with pytest.raises(ValueError, match="can be taken out"):
+        _ = bench.variation(thread, {"prompt": None})
+    chunk = bench.thread("reasoning", "off", bench.model(engine))[0].thread
+    with pytest.raises(NotFound, match=f"no configuration {chunk} for alice"):
+        _ = bench.variation(chunk)
+
+
 def test_a_person_finds_their_runs_and_those_that_reach_a_digest(
     conn: Connection, alice: Person, bob: Person, bench: Bench, plan: Plan
 ) -> None:

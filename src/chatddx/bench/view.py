@@ -1,4 +1,4 @@
-from collections.abc import Collection, Iterable
+from collections.abc import Collection, Iterable, Mapping
 from dataclasses import dataclass, field
 from typing import Literal
 from uuid import UUID
@@ -222,6 +222,19 @@ class Bench:
                 )
         raise NotFound(f"no {word} {name!r} for {self.person.login}")
 
+    # The head of a thread the person sees, by its id, with what the catalog says of it;
+    # with `word`, only of the kinds it names.
+    def thread_by_id(self, id: int, word: str | None = None) -> tuple[Edit, About]:
+        about = self.about(id)
+        thread = self._rows.thread(id)
+        if (
+            thread is None
+            or not about.shows(self.person.id)
+            or (word is not None and thread.kind not in KINDS[word])
+        ):
+            raise NotFound(f"no {word or 'thread'} {id} for {self.person.login}")
+        return self.catalog.head(id), about
+
     def about(self, thread: int) -> About:
         return self.catalog.about(Subject(thread=thread))
 
@@ -263,6 +276,22 @@ class Bench:
     def chunk(self, part: str, name: str, engine: str | None = None) -> str:
         model = None if engine is None else self.model(engine)
         return self.thread(part, name, model)[0].digest
+
+    # A configuration by its thread's id, with `parts` replaced: each by the chunk of
+    # that digest, or taken out for None.
+    def variation(
+        self, configuration: int, parts: Mapping[str, str | None] | None = None
+    ) -> TriedVariation:
+        edit, about = self.thread_by_id(configuration, "configuration")
+        name = about.name or self.catalog.title(configuration)
+        found = TriedVariation(edit, name, self.catalog.recipe(configuration))
+        for part, digest in (parts or {}).items():
+            if part not in PARTS:
+                raise ValueError(f"no part {part!r}: the parts are {', '.join(PARTS)}")
+            if digest is not None and self._rows.kind(digest) not in KINDS[part]:
+                raise ValueError(f"{digest} isn't a stored chunk of {part}")
+            found = found.set(part, digest, self.title(digest))
+        return found
 
     def skeleton(self, variation: TriedVariation) -> Skeleton:
         recipe = variation.varied
@@ -314,6 +343,13 @@ class Bench:
         return self._named(
             [(f, f.name, f.about) for f in self.families()], name, "case"
         )
+
+    def family_by_id(self, id: int) -> Family:
+        about = self.catalog.about(Subject(family=id))
+        case = self._case(id) if about.shows(self.person.id) else None
+        if case is None:
+            raise NotFound(f"no case {id} for {self.person.login}")
+        return Family(id, about, case)
 
     def tags(self) -> list[str]:
         return sorted({tag for _, about in self._families() for tag in about.tags})
@@ -536,6 +572,14 @@ class Bench:
                 raise NotFound(f"no run of yours starts with {prefix!r}")
             case found:
                 raise Ambiguous(f"{len(found)} runs of yours start with {prefix!r}")
+
+    # A live run the person owns, by its whole id.
+    def run_by_id(self, run: UUID) -> RunStarted:
+        about = self.catalog.about(Subject(run=run))
+        found = self.store.started([run])
+        if about.owner != self.person.id or about.deleted or not found:
+            raise NotFound(f"no run {run} of yours")
+        return found[0]
 
     # The person's runs whose trial is built on `digest`.
     def reaching(self, digest: str) -> list[RunStarted]:

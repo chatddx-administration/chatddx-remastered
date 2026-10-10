@@ -28,7 +28,9 @@ def skeleton(plan: Plan, recipe: str) -> Skeleton:
 
 
 def call(
-    content: str | None = None, error: str | None = None, tokens: tuple[int, int] = (0, 0)
+    content: str | None = None,
+    error: str | None = None,
+    tokens: tuple[int, int] = (0, 0),
 ) -> Call:
     message: JsonValue = {"role": "assistant", "content": content}
     used: JsonValue = {"prompt_tokens": tokens[0], "completion_tokens": tokens[1]}
