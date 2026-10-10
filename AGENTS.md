@@ -44,14 +44,7 @@ AGENT: <verb>
   understand, a path in a comment can act as a link for agents and humans alike. A comment linking two or more pieces of
   code this way with a short explanation is allowed.
 
-```
-AGENT: CHANGE
-The quote opens with `"` and closes with a backtick, so a stray backtick renders.
----
 * `agents/*` are exempt from the "Humans write, agents propose" rule and agents are free to use it for whatever purpose
-  they deem fit.
-```
-* `agents/*` are exempt from the "Humans write, agents propose` rule and agents are free to use it for whatever purpose
   they deem fit.
 
 ## Misc
