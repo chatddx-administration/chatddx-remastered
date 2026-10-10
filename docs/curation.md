@@ -172,12 +172,11 @@ writes an entry per gift and per share and no thread.
 Wiping covers all a person owns, their runs and their own threads included, not only what loading gave them.
 
 ## Tests
-src/chatddx/curation/test/. The sample is loaded whole once, by the test that checks it loads cleanly; the tests of
-loading's mechanics load three of its cases, one of them Swedish, so they stay quick. The sample World's vignettes
-are pinned to the old chatddx at 7893656.
+The database is made once per session, and each test of the packages whose conftest overrides `template` with `curated`
+(api, bench, repl) gets a copy of it (src/chatddx/conftest.py, `curated`, `db`). Curation's own tests, the runner's and
+the store's start from the migrated store instead (src/chatddx/conftest.py, `migrated`).
 
-Every other package's tests share one database the sample is loaded into, with alice and her giftbag, made once per
-session (src/chatddx/conftest.py, `curated`).
+Despite this, the `curation`'s tests are still slow and thus marked `slow`.
 
 ## Terms
 
@@ -228,10 +227,3 @@ name today; what recording it would take is in agents/wip-variants.md.
 - **The runner and the engine import don't run the inventory check** that loading does.
 
 ## Proposed amendments
-- CHANGE: "## Tests": "so they stay quick" reads as quicker than loading the whole sample; at 0.3 to 2 s each they
-  are the slowest solidified tests and are marked `slow` (src/chatddx/curation/test/test_init.py,
-  src/chatddx/curation/test/test_repair.py).
-- CHANGE: "Every other package's tests share one database the sample is loaded into": the database is made once per
-  session, and each test of the packages whose conftest overrides `template` with `curated` (api, bench, repl) gets a
-  copy of it (src/chatddx/conftest.py, `curated`, `db`). Curation's own tests, the runner's and the store's start from
-  the migrated store instead (src/chatddx/conftest.py, `migrated`).

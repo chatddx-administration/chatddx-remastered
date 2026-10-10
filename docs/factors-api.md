@@ -28,7 +28,7 @@ Paths are relative to `src/chatddx/factors/` unless they start with `src/` or `d
 ## Package
 
 `chatddx.factors` re-exports `Bundle`, `Code`, `Component`, `Finding`, `Fingerprint`, `Registry`, `StructuralError`
-and the modules `cases`, `engine`, `request`, `scoring` and `trial`. Import `chatddx.factors.lint` and
+and the modules `cases`, `engine`, `kinds`, `request`, `scoring` and `trial`. Import `chatddx.factors.lint` and
 `chatddx.factors.select` by path.
 
 The package imports no other chatddx package. It depends on pydantic, and `lint.py` also depends on `jsonschema` and
@@ -73,10 +73,10 @@ Raised for the problems listed under "Conventions".
 ### `class Component(Frozen)`
 The base of every component kind.
 
+| `registry: ClassVar[dict[str, type[Component]]]` | Kind name → class, filled when a subclass is defined. |
 | Member | Description |
 | --- | --- |
 | `schema_version: ClassVar[int] = 1` | The kind's schema version, written as `v`. Bump it when an existing field's meaning or default changes. |
-| `registry: ClassVar[dict[str, type[Component]]]` | Kind name → class, filled when a subclass is defined. |
 | `kind_name -> str` | The kind, for example `"chunk.prompt"`. |
 | `canonical_doc() -> dict[str, JsonValue]` | The canonical JSON document, `v` included (see "Canonical form"). |
 | `canonical -> bytes` | Cached. `canonical_bytes(canonical_doc())`, or the stored bytes for a component read by `Registry.add_raw`. |
@@ -88,7 +88,8 @@ The base of every component kind.
 Every component refuses U+0000 in any string or object key of its canonical form, because the store's `jsonb` column
 can't hold it (`Component._storable`, `ValidationError`).
 
-A subclass declares `kind: Literal["<kind>"] = "<kind>"`. The default is the kind name.
+A subclass declares `kind: Literal["<kind>"] = "<kind>"`. The default is the kind name, and the class is listed in
+`kinds.py:KINDS`, the only kinds stored bytes are read as.
 
 ### Canonical form
 
@@ -110,7 +111,6 @@ A subclass declares `kind: Literal["<kind>"] = "<kind>"`. The default is the kin
 | `distinct(values: tuple[T, ...]) -> tuple[T, ...]` | The values unchanged. `ValueError("duplicates are not allowed")` otherwise. |
 | `sha256_digest(data: bytes) -> str` | `"sha256:" + hexdigest`. |
 | `resolve(get: Resolver, digest: str, cls: type[C]) -> C` | `get(digest)`. `StructuralError` when it isn't a `cls`; whatever `get` raises when it's missing. |
-| `parse_component(data: bytes) -> Component` | Parses a JSON object by its `kind`. `StructuralError` when it isn't an object, the kind is unknown, or `v` isn't the class's `schema_version`. `ValidationError` for bad fields. Doesn't check any digest. The result has today's canonical form, not `data`. |
 
 ### References
 
@@ -184,6 +184,16 @@ A self-contained package that can be verified offline.
 3. raises `StructuralError("roots missing from bundle: …")` when a root is absent;
 4. runs `Registry.check()` over everything.
 
+## kind.py
+ `parse_component(data: bytes) -> Component`:
+ Parses a JSON object by its `kind`. `StructuralError` when it isn't an object, the kind is unknown, or `v` isn't the
+ class's `schema_version`. `ValidationError` for bad fields. Doesn't check any digest. The result has today's canonical
+ form, not `data`. Reading only the kinds `KINDS` lists.
+
+`KINDS: tuple[type[Component], ...]`: every kind of component, in the order of "Component kinds".
+
+`BY_KIND: dict[str, type[Component]]`: kind name → class, `TypeError` at import for a kind listed twice.
+
 ## Component kinds
 
 | Kind | Class | References (path: kinds) | `cross_check` |
@@ -212,6 +222,9 @@ A self-contained package that can be verified offline.
 | `judge` | `scoring.py:Judge` | `/skeleton`: `skeleton`; `/engine`: `engine.local`, `engine.remote` | the skeleton's purpose is `judge` |
 | `scorer` | `scoring.py:Scorer` | `/expectation_schema`: `expectation_schema`; `/views/<i>/judge`: `judge` | |
 | `scoring` | `scoring.py:Scoring` | `/scorer`: `scorer`; `/expectations/<i>`: `expectation` | every expectation uses the scorer's expectation schema; at most one expectation per case |
+
+`kinds.py:KINDS` lists them in this order, and a test checks that every component class the package defines is listed
+(src/chatddx/factors/test/test_factors.py, `test_every_kind_defined_is_written_down`).
 
 A compilation's `<part>` is one of `instructions`, `few_shot`, `prompt`, `output`, `sampling`, `reasoning`,
 `passthrough`, `translations` and `toolset`, pointing to the chunk kind of the same name.
@@ -931,18 +944,3 @@ Behavior described here that `docs/factors.md` doesn't state. The first three ar
 - `JsonPointer` (`base.py`) is defined but unused.
 
 ## Proposed amendments
-- REMOVE from "`class Component(Frozen)`" the row "`registry: ClassVar[dict[str, type[Component]]]` | Kind name →
-  class, filled when a subclass is defined.": a subclass no longer registers itself, and only refuses a `kind`
-  without a literal default (src/chatddx/factors/base.py:Component.__pydantic_init_subclass__).
-- CHANGE "A subclass declares `kind: Literal["<kind>"] = "<kind>"`. The default is the kind name." → "… The default
-  is the kind name, and the class is listed in `kinds.py:KINDS`, the only kinds stored bytes are read as."
-- MOVE the `parse_component` row from "base.py", "Helpers" to a new section "kinds.py", after "bundle.py", with: "
-  `KINDS: tuple[type[Component], ...]`: every kind of component, in the order of "Component kinds". `BY_KIND:
-  dict[str, type[Component]]`: kind name → class, `TypeError` at import for a kind listed twice.
-  `parse_component(data: bytes) -> Component`: as before, reading only the kinds `KINDS` lists"
-  (src/chatddx/factors/kinds.py). Add it to "Contents".
-- ADD after the "Component kinds" table: "`kinds.py:KINDS` lists them in this order, and a test checks that every
-  component class the package defines is listed (src/chatddx/factors/test/test_factors.py,
-  `test_every_kind_defined_is_written_down`)."
-- CHANGE under "Package", "and the modules `cases`, `engine`, `request`, `scoring` and `trial`" → "and the modules
-  `cases`, `engine`, `kinds`, `request`, `scoring` and `trial`" (src/chatddx/factors/__init__.py).

@@ -3,32 +3,17 @@ This document contains project-wide instructions written by humans for agents. A
 
 ## Environment
 * `.env-container` is complete and should match your environment as is.
-* Human devenv is declared in flake.nix's devShell
-* `store` uses PostgreSQL 16:
-  - pg_ident.conf: chatddx <os-user> chatddx / chatddx <os-user> chatddx_writer
-  - pg_hba.conf:   local all all peer map=chatddx
-  - Setup database and roles with `src/chatddx/store/setup.sql`
-  - in a fresh cloud container PostgreSQL 16 is installed but stopped, and `pg_hba.conf` /
-    `pg_ident.conf` lack the `chatddx` map. Setup: add `map=chatddx` to the `local all all peer` line, append
-    `chatddx root chatddx` and `chatddx root chatddx_writer` to `pg_ident.conf`, `service postgresql start`, then
-    `su postgres -c "psql -f src/chatddx/store/setup.sql"` and `chatddx migrate` (`src/chatddx/store/setup.sql`).
-    A `service postgresql start` is needed on every session.
+* Human devenv is declared in flake.nix's devShell (`.env-devshell`)
+* `store` uses PostgreSQL 16: see `scripts/dev-db.sh` for bootstrap.
 * Base the fake vLLM on 0.24.0, extend/amend continuously as new facts are discovered, questions arise or sample data is needed.
 * `chatddx.core.settings` is the project-wide source of truth.
-* Nothing loads `.env`: export `.env-container`'s variables in the shell that runs `chatddx` or `pytest`, as
-  `set -a; . ./.env-container; set +a`.
-* To try the repl or the runner by hand, serve each endpoint of the sample World with `chatddx fake-vllm` and the
-  arguments `chatddx.inventory.start_up` gives for it, after seeding it with
-  `chatddx init-data alice --world worlds/sample/inventory.toml --factors worlds/sample/factors.toml --giftbag`:
-  no command prints an endpoint's start-up, only worlds/sample/inventory.toml's comment says where to find it
-  (src/chatddx/inventory/serving.py:start_up).
-  The tests serve the fake in a thread instead (src/chatddx/repl/test/conftest.py, `fake`).
 
 ## Typechecking
 * Errors and warnings that indicate issues beyond the scope of the current task should remain, never hide them.
 
 ## Testing
-* Baseline is `pytest`
+* Baseline is `pytest`" runs every test and takes ~50s; `pytest -m 'not slow'` is the quick run, under <30s.
+  A test whose call takes 0.2 s or more is marked `@pytest.mark.slow` (pyproject.toml, `[tool.pytest]`).
 
 ## Docs
 For docs in (`docs/*`), the same rule applies as to this document: Humans write, agents propose.
@@ -43,20 +28,3 @@ For docs in (`docs/*`), the same rule applies as to this document: Humans write,
 * For placeholder usernames in docs and tests, use alice, bob, carol... or semantic names (archive, guest, nobody, other, collaborator-one, admin).
 
 ## Proposed amendments
-- CHANGE: "To try the repl or the runner by hand" seeds the sample World with
-  `chatddx init-data alice --giftbag`: `CHATDDX_WORLD` (`.env-container`) names `worlds/sample`, whose `factors.toml` is
-  loaded with the data (src/chatddx/inventory/world.py, src/chatddx/cli.py:_init_data). `--world DIR` names another.
-- CHANGE: "Baseline is `pytest`" runs every test, some 50 s; `pytest -m 'not slow'` is the quick run, under 30 s. A
-  test whose call takes 0.2 s or more is marked `@pytest.mark.slow` (pyproject.toml, `[tool.pytest]`). The time goes
-  to the database: copies of a template (src/chatddx/conftest.py:Copies) and the bench's and init-data's queries.
-- ADD: each test module declares `pytestmark = pytest.mark.solidified` when docs/ describes what it tests, or
-  `pytest.mark.wip` when agents/wip-*.md plans it, and collection refuses a test that is neither or both
-  (src/chatddx/conftest.py:pytest_collection_modifyitems). Solidifying a package flips its modules' marks;
-  `-m solidified` and `-m wip` run either half.
-- ADD: a test's database is `db`, a copy of `template`: the migrated store, or `curated`, the sample as init-data
-  lands it, where a package's conftest overrides `template` (api, bench, repl). Where the code under test commits as it
-  writes, the conftest overrides `autocommit` with True (api, bench, repl, runner). Copies are made ahead and dropped
-  behind on threads (src/chatddx/conftest.py:Copies), so a failed drop surfaces at the end of the session.
-- CHANGE: "To try the repl or the runner by hand" serves the sample World's fakes with `chatddx fake-engines`, after
-  init-data; "no command prints an endpoint's start-up" no longer holds for the fakes (src/chatddx/cli.py:_fake_engines,
-  agents/README.md, "The sample World").
