@@ -20,8 +20,8 @@ https://github.com/chatddx-administration/chatddx/blob/504792cbeb09508f2c52912be
      what replaces it.
 2. **Decisions**, in the order they block (see "Options"): A1, who it is for; A2, the framework; A3, signing in.
    A4–A12 shape the endpoints. Decided so far: A9, S3.
-3. **The plan** (see "The plan") assumes the takes. Its phase 0 is below the edges and needs none of A1–A3, so it can
-   start first.
+3. **The plan** (see "The plan") assumes the takes. Its phase 0, below the edges, is built (see "Phase 0: built").
+   Phase 1 waits on A1–A3.
 
 ## The old API
 ### Where it came from
@@ -132,6 +132,8 @@ What would surprise someone who knows HTTP but not the repl, and what replaces i
     (A10).
 
 ## What remastered offers it
+As things stood at 1dd791a, before phase 0. "Phase 0: built" says what has changed since.
+
 ### The bench
 - `Bench(conn, person, inventory, facts)`, one per caller and built per request, as the old one was
   (`agents/wip-bench.md`, "Forces" and S5).
@@ -421,7 +423,8 @@ could default to `HOST`, which would give that variable a reader.
    6. In the runner, `Running.halt()`, which can be called from another thread and hangs up the calls in flight, on
       serial runs too. `send` takes a `halt` already.
 
-   Tests: the bench's (`src/chatddx/bench/test/`) and the runner's, with the repl's passing unchanged.
+   Tests: the bench's (`src/chatddx/bench/test/`) and the runner's, with the repl's passing unchanged. Built (see
+   "Phase 0: built").
 1. **The app.** The dependency (A2), `app.py`, `people.py`, `/session`, `/me`, the error mapping, `/api/docs` and
    `chatddx api`. Tests with `TestClient`: 401 without a session; a bearer and a cookie both work; a cookie's POST
    needs its CSRF check; the error bodies; the OpenAPI document is served.
@@ -436,6 +439,32 @@ could default to `HOST`, which would give that variable a reader.
 
 The tests live in `src/chatddx/api/test/` and use the seeded sample (`src/chatddx/conftest.py:seeded`), as the bench's
 and the repl's do. The guard needs no change.
+
+### Phase 0: built
+Each step is one commit; the suite went from 468 tests to 477, and basedpyright and ruff stay clean.
+1. **The outcome, usage and the shown request** (fe2717b).
+   - `src/chatddx/bench/outcome.py`: `outcome(skeleton, item)` gives an `Outcome` (stopped, errored, unread,
+     completed, invalid or valid) and why, and `usage(item)` the prompt and completion tokens. They are pure, as
+     `variation.py` is, and tested without a database (`src/chatddx/bench/test/test_outcome.py`).
+   - `Bench.served(engine)`, the model name a request carries, and `Bench.request(variation, engine, seed)`, the
+     request with `PLACEHOLDERS` for the slots and for the model without an engine.
+   - The repl keeps only presentation: its `outcome` adds a style per outcome (`STYLES`, in `render.py`), and
+     `_abridged`, which hides the output's schema and the tools' parameters, stays in `inspecting.py`.
+2. **Lookups by id** (2ad6a85): `Bench.thread_by_id(id, word=None)`, `family_by_id(id)` and `run_by_id(run)`, by the
+   rules the listings apply. Each raises `NotFound` otherwise, and `thread_by_id` with a word also for a thread of
+   another kind, which is A10's 404.
+3. **A variation from an id and digests** (2ad6a85): `Bench.variation(configuration, parts)`. An unknown part, or a
+   digest that isn't a stored chunk of its part, is a `ValueError`, as are `TriedVariation.set`'s refusals: A10's
+   422. Each part's label is the chunk's title, since the API shows no labels.
+4. **Fork and edit** (f06f049): `Bench.fork(variation, name)` always makes a new configuration; `Bench.edit(thread,
+   variation)` adds a version to one the person owns, or nothing ("unchanged"), and is `NotFound` ("no
+   configuration N of yours") for one they don't. `Bench.save` picks between them by name, as before.
+5. **Ambiguous expectations** (e66bc43): `Bench.expectation` and `Bench.scoring` raise `Ambiguous` for the catalog's
+   "has expectations to choose from". The catalog's own error stays a plain `LookupError`.
+6. **`Running.halt()`** (0e55b5d), callable from another thread. Serial calls, canaries and concurrent calls all
+   watch its event; the calls under way are recorded as stopped, no end canaries go out, and `send` returns. Each
+   `send` has its own event. Built alongside it: a concurrent send no longer sets that event when nothing is left
+   in flight, which would have hung up the end canaries now that they watch it.
 
 ## Left out
 - **Free-text vignettes** (`RunIn.vignette`, the swift client's `symptoms`). A case is a source's vignette, by id,
