@@ -242,8 +242,8 @@ Decided: F2. fastapi and uvicorn are dependencies like `rich`, and the test clie
 
 ### A3. Signing in
 - `POST /api/session {login, password}` → `People.authenticate`, then `open_session`. It returns the token and also
-  sets it as an `HttpOnly`, `SameSite=Strict` cookie. `DELETE /api/session` closes it, and `GET /api/me` gives the
-  person.
+  sets it as an `HttpOnly`, `SameSite=Lax` cookie (`Strict` until the portal: `agents/wip-portal.md`). `DELETE
+  /api/session` closes it, and `GET /api/me` gives the person.
 - A request carries the token as `Authorization: Bearer …` (programs) or as the cookie (browsers). A cookie's unsafe
   requests get a CSRF check; a bearer's don't need one.
 - There is no guest: without a valid session, 401.
@@ -487,8 +487,8 @@ bearer, a cross-site DELETE refused, signing out, and `/api/docs`.
   per request waits for phase 2, the first that needs one.
 - **Signing in** (`people.py`):
   - `POST /api/session {login, password}` gives 201 with `{token, person}` and sets the token as
-    `__Host-chatddx-session`: `HttpOnly`, `Secure`, `SameSite=Strict`, `Path=/`, and `Max-Age` the session's lifetime.
-    A wrong login or password is 401, as one.
+    `__Host-chatddx-session`: `HttpOnly`, `Secure`, `SameSite=Strict` (`Lax` since, for the portal), `Path=/`, and
+    `Max-Age` the session's lifetime. A wrong login or password is 401, as one.
   - `DELETE /api/session` closes the session the request acts in (204) and drops the cookie.
   - `GET /api/me` gives `{id, login, name, roles}`, and changes nothing.
   - A request acts in the session of its `Authorization: Bearer` token, else of its cookie. Without either, or with
@@ -551,8 +551,8 @@ Open from phase 1:
 
 ## Left out
 - **Free-text vignettes** (`RunIn.vignette`, the swift client's `symptoms`). A case is a source's vignette, by id,
-  fetched from the World and never stored. Running pasted text would take a source that holds it. Swift is to be
-  integrated with the portal (`agents/wip-portal.md`, "Swift"), which plans this.
+  fetched from the World and never stored. Decided for swift since: a typed text is a file in a directory source, and
+  its case is written like any other (`agents/wip-portal.md`, "Swift", "Typed cases").
 - **`/api/auth/`** for a proxy's forward auth. Once Keycloak is in front, that is the proxy's job.
 - **Endpoints with a credential.** As in the repl, the secret comes from an environment variable
   (`src/chatddx/runner/gate.py:secret`), not from the person's secrets.

@@ -18,9 +18,9 @@ https://github.com/chatddx-administration/chatddx/blob/504792cbeb09508f2c52912be
    worker is the worker's contract (`agents/wip-worker.md`, "The contract").
 2. **What it is in remastered** (see "The planner"): pure over the bench, a `Bench.plan` giving a value, with the
    crossing itself a pure function. No queue, no process. Take.
-3. **Decisions** (see "Options"): P1, whether a plan is kept; P2, what is crossed; P3, mixed languages; P4, which
-   cases, and adding cases later.
-4. **Its callers**: the portal's batch form and confirmation, then the repl's `batch` and the API (see "Callers").
+3. **Decided: a plan is a component of a new kind, `plan`, kept on a catalog thread** (P1, see "Kept plans").
+4. **Open** (see "Options"): P2, what is crossed; P3, mixed languages; P4, which cases.
+5. **Its callers**: the portal's batch form and confirmation, then the repl's `batch` and the API (see "Callers").
 
 ## The old planner
 ### What it was
@@ -78,22 +78,26 @@ Take:
   its findings (`Bench.findings`), and the gate's refusal if any, which holds it back. For the plan: the cases, and
   each scorer view's reach over them (`Bench.reach`).
 - **Out**: a `Plan` value: the trials it would run, one per variation not held back, each with the cases and the
-  seeds; what is held back and why; the cases; the reach. Nothing is stored.
+  seeds; what is held back and why; the cases; the reach. Nothing is stored until it is run or kept (see "Kept
+  plans").
+
+## Kept plans
+Decided: **a plan is a component of a new kind, `plan`, kept on a catalog thread**, as a configuration's skeletons
+are. The old portal's batch, kept to run later and shown on a page that never changed, is a plan's thread and its
+head.
+
+Take, for its shape:
+- **What it pins**: its trials and the endpoint, by digest, and what was crossed to get them (the configuration's
+  edit, the chunks per part, the cases asked for), so its page can say what it varies. What was held back, and the
+  reach, are worked out again when it is shown.
+- **The thread**: named, owned, shared and deleted as other threads are (`docs/catalog.md`). Adding cases, as the old
+  `unheld` did, is a new edit: new trials, since a trial's cases are part of its digest.
+- **Which plans are threaded**: every plan the portal runs or keeps, so a person's batches can be listed, as the old
+  portal listed them. The repl's ad-hoc `batch` stores its trial without a thread, as D7 keeps ad-hoc trials off
+  threads so as not to flood the catalog (`agents/wip-repl.md`).
+- **Docs**: the kind is proposed in `docs/factors.md`, and the thread kind in `docs/catalog.md`.
 
 ## Options
-### P1. Is a plan kept?
-The old portal kept a batch to run later, and its page never changed.
-- **L1. Not kept.** A plan is shown, then its trials are asked of the worker. Nothing groups the runs but their
-  trials, so a batch has no page of its own.
-- **L2. A component of a new kind, `plan`**: its trials and endpoint, by digest. Runs are found from it by their
-  trials.
-- **L3. L2, kept on a catalog thread** when kept for later: named, owned, shared and deleted as configurations are.
-  Adding cases is a new edit of the thread: new trials, since the cases are part of a trial's digest.
-
-Take: L3, since it keeps a plan as the catalog keeps everything a person keeps. D7 keeps ad-hoc trials off threads so
-as not to flood the catalog; a kept plan is deliberate, as a configuration is. A new kind changes `docs/factors.md`,
-so it is the user's call.
-
 ### P2. What is crossed
 - The recipe's parts, as before. Take.
 - Endpoints too: a plan over several endpoints, which the old form didn't offer. Each endpoint picks its model's
@@ -106,13 +110,13 @@ user.
 
 ### P4. Which cases
 - By tag, as before, and by family id, as the API names things (`agents/wip-api.md`, A4).
-- Adding cases to a kept plan, as the old `unheld` did: under L3, an edit.
+- Adding cases to a kept plan, as the old `unheld` did: a new edit (see "Kept plans").
 
 ## What it hands the worker
-Per trial, an ask: the trial, the endpoint, the owner, scored or not (`agents/wip-worker.md`, "The contract").
-**Run it now** asks at once; **Keep it for later** keeps the plan (P1) and asks when it is run from its page. A kept
-plan's state (none run, queued, under way, stopped, unfinished, done) is read from the worker's asks and the ledger
-by trial, so the planner keeps none.
+Per trial, a job: the trial, the endpoint, the owner, scored or not, and the plan it came from
+(`agents/wip-worker.md`, "The contract"). **Run it now** keeps the plan and queues its jobs at once; **Keep it for
+later** keeps it, and queues them when it is run from its page. A plan's state (none run, queued, under way, stopped,
+unfinished, done) is read from the worker's jobs and the ledger, so the planner keeps none.
 
 ## Callers
 - **The portal**: the batch form, an island, since ticking chunks wants the number of trials, what is held back and
@@ -128,7 +132,7 @@ Assuming the takes.
 1. **Crossing**: `crossed` in `src/chatddx/bench/plan.py`, with tests without a database.
 2. **Planning**: `Bench.plan` and `Plan`, tested on the curated sample (`src/chatddx/conftest.py:curated`).
 3. **The API's read**, beside `variation`.
-4. **Kept plans**, once P1 is decided: the kind, its thread kind, and the catalog's entries.
+4. **Kept plans**: the `plan` kind and its thread kind (see "Kept plans"), with the proposed amendments.
 5. **The portal's pages** (`agents/wip-portal.md`, "Phases", 5).
 6. **Asking the worker**, once it exists (`agents/wip-worker.md`, "The plan", 3).
 

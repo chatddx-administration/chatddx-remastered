@@ -88,9 +88,10 @@ development path. Roles could then come from Keycloak's realm roles instead of t
 
 ## Open
 - **Web framework.** Decided for the API: FastAPI (`agents/wip-api.md`, A2). The API signs people in with sessions,
-  by bearer token or by a `__Host-` cookie that is `HttpOnly`, `Secure` and `SameSite=Strict`, and checks that a
+  by bearer token or by a `__Host-` cookie that is `HttpOnly`, `Secure` and `SameSite=Lax`, and checks that a
   cookie's unsafe requests come from the site's own pages (`src/chatddx/api/people.py`; `agents/wip-api.md`, "Phase
-  1: built"). Open: login rate limiting, and whether the portal shares the API's cookie.
+  1: built"). The portal shares that cookie, as one app with the API (`agents/wip-portal.md`, "P3b, concretely").
+  Open: login rate limiting.
 - **Z1's map from role to kinds** isn't written; it needs the portal's views to mean anything.
 - **Who may administer people.** `Role.ADMIN` exists, but nothing checks it; the CLI connects as `DB_USER`, so anyone
   with database access can add people.
