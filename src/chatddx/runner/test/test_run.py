@@ -1,4 +1,5 @@
 import socket
+import threading
 from collections.abc import Callable, Generator, Iterator
 from contextlib import contextmanager
 from dataclasses import dataclass, field
@@ -151,6 +152,13 @@ class Heard:
 
     def of[E](self, kind: type[E]) -> list[E]:
         return [e for e in self.events if isinstance(e, kind)]
+
+
+# Runs `f` on a thread of its own, as a server's request thread would halt a run.
+def elsewhere(f: Callable[[], None]) -> None:
+    thread = threading.Thread(target=f)
+    thread.start()
+    thread.join()
 
 
 def reasoning(ended: ItemEnded) -> str:
@@ -534,6 +542,41 @@ def test_another_interrupt_while_calls_hang_up_leaves_them_out(
     assert item.call.error == STOPPED
 
 
+@pytest.mark.usefixtures("slow")
+@pytest.mark.parametrize("concurrency", [1, 2])
+def test_a_halt_from_another_thread_hangs_up_the_calls_in_flight_and_returns(
+    conn: Connection,
+    inventory: Inventory,
+    alice: Person,
+    plan: Plan,
+    concurrency: int,
+) -> None:
+    running = Runner(conn, inventory, alice).start(
+        trial(plan),
+        plan.registry,
+        QWEN,
+        Execution(concurrency=concurrency),
+        canaries=CANARIES,
+    )
+    deltas: list[Streamed] = []
+
+    def halt(event: Event) -> None:
+        if isinstance(event, Streamed):
+            deltas.append(event)
+            if len(deltas) == 2:
+                elsewhere(running.halt)
+
+    running.send(Heard(then=halt))
+    findings = running.finish()
+    stored = Store(conn).run(running.run)
+    assert [i.call.error for i in stored.items] == [STOPPED] * concurrency
+    assert all(i.call.prompt_tokens is not None for i in stored.items)
+    assert [c.phase for c in stored.canaries] == ["start", "start"]
+    assert ("run.incomplete", f"{4 - concurrency} items missing") in [
+        (f.code, f.message) for f in findings
+    ]
+
+
 @pytest.mark.usefixtures("fake")
 def test_a_call_that_fails_on_its_thread_fails_the_send(
     conn: Connection,
@@ -846,6 +889,39 @@ def test_an_interrupt_during_a_canary_records_it_as_stopped(
     )
     with pytest.raises(KeyboardInterrupt):
         running.send()
+    _ = running.finish()
+    stored = Store(conn).run(running.run)
+    assert [(c.phase, c.canary, c.call.error) for c in stored.canaries] == [
+        ("start", 0, STOPPED)
+    ]
+    assert stored.items == ()
+
+
+@pytest.mark.usefixtures("fake")
+def test_a_halt_during_a_canary_records_it_as_stopped_and_sends_no_items(
+    conn: Connection,
+    inventory: Inventory,
+    alice: Person,
+    plan: Plan,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    real = sending.send
+    running = Runner(conn, inventory, alice).start(
+        trial(plan), plan.registry, QWEN, canaries=CANARIES
+    )
+
+    def halted(*args: Any, **kwargs: Any) -> Any:
+        heard: list[object] = []
+
+        def on_delta(delta: object) -> None:
+            heard.append(delta)
+            if len(heard) == 2:
+                elsewhere(running.halt)
+
+        return real(*args, **{**kwargs, "on_delta": on_delta})
+
+    monkeypatch.setattr(sending, "send", halted)
+    running.send()
     _ = running.finish()
     stored = Store(conn).run(running.run)
     assert [(c.phase, c.canary, c.call.error) for c in stored.canaries] == [

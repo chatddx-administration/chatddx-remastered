@@ -178,6 +178,7 @@ class Running:
         self._canaries: list[CanaryCall] = []
         self._findings: list[Finding] = []
         self._stopping: bool = False
+        self._halt: threading.Event = threading.Event()
         self._finished: bool = False
 
     @property
@@ -192,6 +193,13 @@ class Running:
     def stop(self) -> None:
         self._stopping = True
 
+    # Ends `send` as `stop` does, but hangs up the calls under way, at their next chunk,
+    # and records them as stopped. Unlike a KeyboardInterrupt, it may come from another
+    # thread, and `send` returns rather than raises.
+    def halt(self) -> None:
+        self._stopping = True
+        self._halt.set()
+
     # The start canaries go one at a time before the items, and the end canaries after
     # them, so they bracket the items whatever the concurrency.
     # A KeyboardInterrupt during a call records the call as stopped and is raised
@@ -200,6 +208,10 @@ class Running:
     # another one while they hang up leaves them out of the log.
     def send(self, on_event: Callable[[Event], None] | None = None) -> None:
         emit: Callable[[Event], None] = on_event or _ignore
+        # A halt is per send, and one that came before it still holds.
+        self._halt = threading.Event()
+        if self._stopping:
+            self._halt.set()
         self._probe("start", emit)
         items = self._prepared(emit)
         if self._started.execution.concurrency == 1:
@@ -232,10 +244,13 @@ class Running:
                     canary.render(model=model),
                     execution=started.execution,
                     secret=self._secret,
+                    halt=self._halt,
                 )
             except sending.Stopped as stopped:
                 self._stopping = True
                 self._probed(phase, index, stopped.call, emit)
+                if self._halt.is_set():
+                    return
                 raise KeyboardInterrupt from None
             self._probed(phase, index, call, emit)
 
@@ -297,10 +312,13 @@ class Running:
                 secret=self._secret,
                 on_delta=_streamed(item.key, emit),
                 on_tool=_ran(item.key, emit),
+                halt=self._halt,
             )
             self._append(item.key, item.vignette, exchange, emit)
             if exchange.stopped:
                 self._stopping = True
+                if self._halt.is_set():
+                    return
                 raise KeyboardInterrupt
 
     # Calls go out on worker threads, and everything else stays on the caller's: the
@@ -313,7 +331,7 @@ class Running:
         results: queue.SimpleQueue[Streamed | ToolRan | Future[Exchange]] = (
             queue.SimpleQueue()
         )
-        halt = threading.Event()
+        halt = self._halt
         in_flight: dict[Future[Exchange], _Prepared] = {}
         pool = ThreadPoolExecutor(execution.concurrency, "chatddx-runner")
 
@@ -361,7 +379,8 @@ class Running:
                     self._append(item.key, item.vignette, done.result(), emit)
             raise
         finally:
-            halt.set()
+            if in_flight:
+                halt.set()
             pool.shutdown(wait=False)
 
     def finish(self) -> list[Finding]:
