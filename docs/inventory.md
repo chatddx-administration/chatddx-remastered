@@ -218,4 +218,9 @@ it, and the import would then confirm what was started rather than describe it.
 - **The capacity holds per run.** Two runs on one endpoint can send twice as many requests between them. vLLM queues
   what's over its limit, so nothing fails, but the batching differs from what each run's execution says.
 
+```
+AGENT: REMOVE
+The old system's section, empty since a5864d9 replaced it.
+---
+```
 ## Proposed amendments

@@ -309,4 +309,9 @@ Behavior described here that `docs/inventory.md` doesn't state:
 - The duplicate-name error names the inventory's own file, also when the clash is between two included files.
 - `cleared_for` gives an empty set for an endpoint that doesn't exist.
 
+```
+AGENT: REMOVE
+The old system's section, empty since a5864d9 replaced it.
+---
+```
 ## Proposed amendments

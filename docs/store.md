@@ -121,4 +121,9 @@ These are known shortcomings of the store's design. Some have more details in do
   append-only, and digests and seals depend on the bytes. docs/factors.md, "Splitting expectations", already considers
   a bump of the scorer's schema version.
 
+```
+AGENT: REMOVE
+The old system's section, empty since a5864d9 replaced it.
+---
+```
 ## Proposed amendments

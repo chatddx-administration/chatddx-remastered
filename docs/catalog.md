@@ -377,4 +377,9 @@ two families.
   Neither is stored. An entry on the run, or a title made from the closest configuration and what the variation
   changes from it, would say it shorter.
 
+```
+AGENT: REMOVE
+The old system's section, empty since a5864d9 replaced it.
+---
+```
 ## Proposed amendments

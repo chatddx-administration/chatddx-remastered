@@ -201,7 +201,7 @@ Why this layout:
   `score`), but only through what the view finds.
 
 ## Phase 0: out of the repl
-Done (fdee878).
+Done.
 - `src/chatddx/repl/bench.py` moved to `src/chatddx/bench/bench.py` unchanged. `src/chatddx/bench/__init__.py` exports
   its public names, as `chatddx.store` does.
 - The repl, its tests and `src/chatddx/cli.py` import from `chatddx.bench`. The bench imported nothing from the shell,
@@ -408,12 +408,12 @@ Sub-decisions:
 1. **The visibility predicate is `identity`'s**: `src/chatddx/identity/identity.py:sees(person, owner,
    collaborators)`, the owner or a collaborator. `src/chatddx/catalog/model.py:About.shows` adds that what is shown
    is live, and calls it. So the catalog now imports `chatddx.identity` as well as `chatddx.factors`, which
-   `docs/catalog-api.md` now says (a3431e1); `model.py`'s row in its table is proposed. Tested in
+   `docs/catalog-api.md` says, in `model.py`'s row too. Tested in
    `src/chatddx/identity/test/test_identity.py`, and through the catalog's visibility tests.
 2. **`Reads` is the bench's**: `src/chatddx/store/reads.py` moved to `src/chatddx/bench/reads.py`, and its tests to
    `src/chatddx/bench/test/test_reads.py`. `chatddx.store` no longer exports it. It was then folded into `Bench`
    (step 9).
-   `docs/store.md` and `docs/store-api.md` dropped it (a3431e1); what they said is kept in "Material for the bench's
+   `docs/store.md` and `docs/store-api.md` dropped it (356c96d); what they said is kept in "Material for the bench's
    docs".
 3. **One rule for what is left to score**: `Reads.outstanding` is gone, unused since 4c. `Bench.unscored` (per run) and
    `Bench.outstanding` (the person's finished runs, with what each is left to be scored by) are the one answer. The
@@ -489,7 +489,7 @@ Sub-decisions:
     the person's roles and the kind.
 
 ## Material for the bench's docs
-Taken out of `docs/store.md` ("Looking things up for someone") and `docs/store-api.md` ("reads.py") at a3431e1, when
+Taken out of `docs/store.md` ("Looking things up for someone") and `docs/store-api.md` ("reads.py") at 356c96d, when
 `Reads` left the store. It is updated to the code as it is now: `outstanding` is gone (phase 2, step 3), what is left
 to score is `Bench.unscored`'s, and `Reads` is folded into `Bench` (step 9).
 

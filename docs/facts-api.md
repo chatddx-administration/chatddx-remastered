@@ -314,4 +314,9 @@ Behavior described here that `docs/facts.md` doesn't state:
 - `--facts` is repeated for several files (`--facts A --facts B`).
 - `reasons` and `check_pairs` raise `StructuralError` for components the registry doesn't hold.
 
+```
+AGENT: REMOVE
+The old system's section, empty since a5864d9 replaced it.
+---
+```
 ## Proposed amendments

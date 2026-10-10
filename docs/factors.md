@@ -734,4 +734,9 @@ The JSON Schema of each component kind could say which kinds each reference may 
 a picker of the right kind for every reference, straight from the schema. References used to say this, and stopped
 because nothing read it. The JSON Schema plays no part in any digest, so adding it back changes no digest.
 
+```
+AGENT: REMOVE
+The old system's section, empty since a5864d9 replaced it.
+---
+```
 ## Proposed amendments

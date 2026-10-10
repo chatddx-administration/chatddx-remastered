@@ -943,4 +943,9 @@ Behavior described here that `docs/factors.md` doesn't state.
 - `Canary.render` sends the canary's seed whatever the temperature.
 - `JsonPointer` (`base.py`) is defined but unused.
 
+```
+AGENT: REMOVE
+The old system's section, empty since a5864d9 replaced it.
+---
+```
 ## Proposed amendments

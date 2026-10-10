@@ -1,5 +1,14 @@
 # Ledger API
 
+```
+AGENT: CHANGE
+The other API docs dropped their "as of" in a5864d9; this is the last one.
+---
+Reference for the `chatddx.ledger` package and the `ledger` database schema. It was written from
+`src/chatddx/ledger/*`, `docs/ledger.md` and `src/chatddx/store/migrations/000{4,5,6}-*-ledger.sql`. What the ledger
+is and why it is shaped this way is in `docs/ledger.md`; this file says what each name accepts, returns and raises.
+Factor types it uses (`Code`, `Fingerprint`, `Finding`, `Execution`, `Registry`, …) are in `docs/factors-api.md`.
+```
 Reference for the `chatddx.ledger` package and the `ledger` database schema, as of 401b696. It was written from
 `src/chatddx/ledger/*`, `docs/ledger.md` and `src/chatddx/store/migrations/000{4,5,6}-*-ledger.sql`. What the ledger
 is and why it is shaped this way is in `docs/ledger.md`; this file says what each name accepts, returns and raises.

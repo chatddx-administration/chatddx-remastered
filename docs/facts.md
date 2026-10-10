@@ -138,4 +138,9 @@ These are open questions of design. Where the code falls short of this document,
 - **A refused default is accepted.** A default that lands on a refusal loads, and whether the model reasons by default
   is then unknown.
 
+```
+AGENT: REMOVE
+The old system's section, empty since a5864d9 replaced it.
+---
+```
 ## Proposed amendments

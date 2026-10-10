@@ -319,4 +319,9 @@ Behavior described here that `docs/store.md` doesn't state:
 - `public.migration` is created by `migrate`, not by a migration file, and is readable only by the admin.
 - `migrations()` raises `ValueError` for a file name with fewer than three `-`-separated parts.
 
+```
+AGENT: REMOVE
+The old system's section, empty since a5864d9 replaced it.
+---
+```
 ## Proposed amendments
