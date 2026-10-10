@@ -9,9 +9,9 @@ from .base import (
     Frozen,
     StructuralError,
     canonical_bytes,
-    parse_component,
     sha256_digest,
 )
+from .kinds import parse_component
 
 
 class Registry:

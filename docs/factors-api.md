@@ -931,3 +931,18 @@ Behavior described here that `docs/factors.md` doesn't state. The first three ar
 - `JsonPointer` (`base.py`) is defined but unused.
 
 ## Proposed amendments
+- REMOVE from "`class Component(Frozen)`" the row "`registry: ClassVar[dict[str, type[Component]]]` | Kind name →
+  class, filled when a subclass is defined.": a subclass no longer registers itself, and only refuses a `kind`
+  without a literal default (src/chatddx/factors/base.py:Component.__pydantic_init_subclass__).
+- CHANGE "A subclass declares `kind: Literal["<kind>"] = "<kind>"`. The default is the kind name." → "… The default
+  is the kind name, and the class is listed in `kinds.py:KINDS`, the only kinds stored bytes are read as."
+- MOVE the `parse_component` row from "base.py", "Helpers" to a new section "kinds.py", after "bundle.py", with: "
+  `KINDS: tuple[type[Component], ...]`: every kind of component, in the order of "Component kinds". `BY_KIND:
+  dict[str, type[Component]]`: kind name → class, `TypeError` at import for a kind listed twice.
+  `parse_component(data: bytes) -> Component`: as before, reading only the kinds `KINDS` lists"
+  (src/chatddx/factors/kinds.py). Add it to "Contents".
+- ADD after the "Component kinds" table: "`kinds.py:KINDS` lists them in this order, and a test checks that every
+  component class the package defines is listed (src/chatddx/factors/test/test_factors.py,
+  `test_every_kind_defined_is_written_down`)."
+- CHANGE under "Package", "and the modules `cases`, `engine`, `request`, `scoring` and `trial`" → "and the modules
+  `cases`, `engine`, `kinds`, `request`, `scoring` and `trial`" (src/chatddx/factors/__init__.py).

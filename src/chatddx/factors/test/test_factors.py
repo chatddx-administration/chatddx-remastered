@@ -10,7 +10,6 @@ from chatddx.factors.base import (
     Fingerprint,
     StructuralError,
     canonical_bytes,
-    parse_component,
     resolve,
     sha256_digest,
 )
@@ -27,6 +26,7 @@ from chatddx.factors.engine import (
     RemoteEngine,
     check_chat_template,
 )
+from chatddx.factors.kinds import BY_KIND, KINDS, parse_component
 from chatddx.factors.lint import lint
 from chatddx.factors.request import (
     MANAGED_KEYS,
@@ -138,7 +138,25 @@ def test_adding_a_defaulted_field_keeps_digests() -> None:
     assert {k: v for k, v in old.items() if k != "kind"} == {
         k: v for k, v in new.items() if k != "kind"
     }
-    del Component.registry["test.evolve.old"], Component.registry["test.evolve.new"]
+    with pytest.raises(
+        StructuralError, match="unknown component kind 'test.evolve.old'"
+    ):
+        _ = parse_component(Old(a=1).canonical)
+
+
+def subclasses(cls: type[Component]) -> set[type[Component]]:
+    found = set(cls.__subclasses__())
+    return found.union(*(subclasses(c) for c in found))
+
+
+def test_every_kind_defined_is_written_down() -> None:
+    defined = {
+        c
+        for c in subclasses(Component)
+        if c.__module__.startswith("chatddx.factors.") and ".test." not in c.__module__
+    }
+    assert set(KINDS) == defined
+    assert len(BY_KIND) == len(KINDS)
 
 
 def test_json_data_keeps_its_order(reg: Registry) -> None:

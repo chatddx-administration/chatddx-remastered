@@ -160,21 +160,15 @@ Resolver = Callable[[str], "Component"]
 class Component(Frozen):
     # Bump when an existing field's meaning or default changes; additive fields don't.
     schema_version: ClassVar[int] = 1
-    registry: ClassVar[dict[str, type["Component"]]] = {}
 
+    # Stored bytes are read only as the kinds src/chatddx/factors/kinds.py:KINDS lists.
     @classmethod
     @override
     def __pydantic_init_subclass__(cls, **kwargs: Any) -> None:
         super().__pydantic_init_subclass__(**kwargs)
         field = cls.model_fields.get("kind")
-        if field is None:
-            return
-        kind = field.default
-        if not isinstance(kind, str):
+        if field is not None and not isinstance(field.default, str):
             raise TypeError(f"{cls.__name__}.kind needs a literal default")
-        if kind in Component.registry and Component.registry[kind] is not cls:
-            raise TypeError(f"duplicate component kind {kind!r}")
-        Component.registry[kind] = cls
 
     # The store keeps each component as jsonb, which can't hold U+0000
     # (src/chatddx/store/migrations/0001-t0-factor.sql).
@@ -230,21 +224,6 @@ def resolve[C: Component](get: Resolver, digest: str, cls: type[C]) -> C:
             f"{digest} is a {component.kind_name}, not a {cls.__name__}"
         )
     return component
-
-
-def parse_component(data: bytes) -> Component:
-    loaded: object = json.loads(data)
-    if not isinstance(loaded, dict):
-        raise StructuralError("component is not a JSON object")
-    doc = cast(dict[str, object], loaded)
-    kind = doc.get("kind")
-    cls = Component.registry.get(kind) if isinstance(kind, str) else None
-    if cls is None:
-        raise StructuralError(f"unknown component kind {kind!r}")
-    v = doc.pop("v", None)
-    if v != cls.schema_version:
-        raise StructuralError(f"{kind} v{v} is not readable by v{cls.schema_version}")
-    return cls.model_validate(doc)
 
 
 class Fingerprint(Frozen):

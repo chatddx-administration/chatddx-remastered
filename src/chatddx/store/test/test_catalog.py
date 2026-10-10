@@ -15,9 +15,10 @@ from chatddx.catalog import (
     Survey,
 )
 from chatddx.factors import request
-from chatddx.factors.base import Component, StructuralError, resolve
+from chatddx.factors.base import StructuralError, resolve
 from chatddx.factors.bundle import Registry
 from chatddx.factors.cases import Appendix, Case, Vignette
+from chatddx.factors.kinds import BY_KIND
 from chatddx.factors.lint import lint
 from chatddx.factors.request import (
     Compilation,
@@ -904,7 +905,7 @@ def test_kinds_and_fields_match_the_database(admin: Connection) -> None:
             for c in checks
             if all(f"'{n}'" in c for n in names) and c.count("'") == 2 * len(names)
         ]
-    assert THREAD_KINDS == Component.registry.keys() - {"case", "compilation"}
+    assert THREAD_KINDS == BY_KIND.keys() - {"case", "compilation"}
 
 
 def test_reader_reads_the_catalog(conn: Connection) -> None:

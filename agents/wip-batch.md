@@ -88,6 +88,8 @@ are. The old portal's batch, kept to run later and shown on a page that never ch
 head.
 
 Take, for its shape:
+- **Where it lives**: `src/chatddx/factors/batch.py`, listed in `factors/kinds.py:KINDS` and
+  `catalog/model.py:THREAD_KINDS` (`agents/wip-objects.md`, "The pragmatic take").
 - **What it pins**: its trials by digest; the endpoint by its name in the inventory, as a case names its source; and
   what was crossed, the base skeleton and the chunks tried per part, by digest, so its page can say what it varies.
   What was held back, and the reach, are worked out again when it is shown.
