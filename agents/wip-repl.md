@@ -26,8 +26,7 @@ The shell is built: `chatddx repl` chooses and inspects (4a), runs and scores (4
    and the worker are planned in `agents/wip-portal.md`, `agents/wip-batch.md` and `agents/wip-worker.md`, and sample
    runs in `agents/wip-sample-data.md`.
 
-The docs' proposed amendments for what the shell changed are in `docs/factors.md`, `docs/catalog.md`, `docs/store.md`
-and `docs/ledger.md`, and the surprises met while building it in `AGENTS.md` (see "6. Docs").
+Where the docs stand on what the shell changed, and what is left to suggest, is in "6. Docs".
 
 ## Background
 The old repl is a thin UI (`src/chatddx/repl/`, ~1,600 lines and ~1,500 of tests) on top of four layers that do
@@ -81,7 +80,7 @@ Take: the runner may stream as a transport choice.
 - `Call.request` stays the fingerprint of the rendered body.
 - A test pins it: on the fake, the reassembled stream equals the completion it gives unstreamed.
 
-This needs a proposed amendment to `docs/factors.md`, "Rendering".
+`docs/factors.md`, "Rendering", says so.
 
 ### D3. Seeds
 The old repl:
@@ -459,21 +458,22 @@ Built in the runner (`agents/wip-runner.md`, "Phase 5").
 It comes last: `plan-web` can't call its tool on vLLM 0.24 anyway (G8; `docs/vllm.md`, item 10).
 
 ### 6. Docs
-Agents propose and humans write `docs/*` (`AGENTS.md`, "Docs"). The manual's draft stays in `agents/` until it's
-adopted. Proposals:
+Agents propose and humans write `docs/*`, with suggestions inline above what they would change (`AGENTS.md`,
+"Docs"). The manual's draft stays in `agents/` until it's adopted. Where the shell's changes stand:
 - a new `docs/repl.md`, the old manual rewritten. Outstanding: it starts from the cross-check with
   `agents/wip-repl-manual.md` (see "Start with this");
-- `docs/factors.md`, "Rendering": streaming (D2). In the docs since their rewrite (4e526e6). Proposed since: the
-  shell runs the lints ("Lints");
-- `docs/catalog.md`, "Owners": the runner writes a run's owner (D7). Proposed, with how an unsaved variation's run
-  is titled ("Titles", "Smaller issues");
-- `docs/store.md`, "Known gaps": the listings of phase 3. In the docs as "Looking things up for someone". Proposed
-  since: the shell is built, it works out what is left to score per run, and the tests' databases wait for their
-  sessions to end ("Tests");
-- `docs/ledger.md`, `RunStarted`, and `agents/wip-clearance.md`: the endpoint and the interim gate (D1). In the docs
-  ("Run start"). Proposed since: `replay` rebuilds a run's first requests ("Some of what happened isn't checked");
-- `AGENTS.md`: the surprises met while building the shell, proposed: nothing loads `.env`, test file names must be
-  unique across packages, and how to serve the sample World's fakes by hand.
+- `docs/factors.md`: streaming (D2) is in "Rendering". Not in the docs: that the shell runs the lints ("Lints"), to
+  suggest once the shell is solidified;
+- `docs/catalog.md`: the runner writes a run's owner (D7, "Owners"), and a run of a variation nobody saved has a title
+  ("Titles"); both in the docs;
+- `docs/store.md`: the listings of phase 3, and what is left to score per run, left the store with `Reads`
+  (`agents/wip-bench.md`, "Material for the bench's docs"). The tests' databases waiting for their sessions to end is
+  in `docs/store-api.md`, "Tests";
+- `docs/ledger.md`, `RunStarted`, and `agents/wip-clearance.md`: the endpoint and the interim gate (D1, "Run start"),
+  and `replay` rebuilding a run's first requests ("Some of what happened isn't checked"); all in the docs;
+- the surprises met while building the shell: loading the environment is in `AGENTS.md`, "Environment", and serving
+  the sample World's fakes in README and `docs/vllm.md` (`chatddx fake-engines`). Test file names no longer need to be
+  unique across packages, since every test directory is a package.
 
 ## Left out
 What the port left to others, and where each is planned:
@@ -497,5 +497,5 @@ What the port left to others, and where each is planned:
   `facts.sampling_unmatched` and the `vllm.*` lints. `use`, `on` and `cell` should say so straight away.
 - **The same vignette under two names** can't be in two families: adopting a vignette another family holds, by id or
   by fingerprint, is refused (`src/chatddx/catalog/families.py:check_adoptable`), so a batch runs it once.
-- **`return_token_ids` on remote engines** is still undecided (`docs/factors.md`, "Proposed amendments"). The fake
+- **`return_token_ids` on remote engines** is still undecided (`docs/factors.md`, "Smaller issues"). The fake
   and vLLM accept it.

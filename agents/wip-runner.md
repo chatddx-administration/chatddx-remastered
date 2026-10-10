@@ -227,8 +227,8 @@ In `rounds.py`, which `run.py` calls for every item, with tools or without:
 ### From phase 6
 - **No canary set is seeded.** The sample data has none, so a caller brings its own. Seeding one would take a
   `canary_set` table in the data set's `factors.toml` (`docs/curation.md`, "What a data set can't hold yet").
-- **Canary outputs aren't compared** (`docs/chatddx.md`, "Possible design issues", and its proposed amendment on
-  what counts as the same output).
+- **Canary outputs aren't compared** (`docs/chatddx.md`, "Possible design issues", with its options for what
+  counts as the same output).
 - **Canary calls stream without events**, since `Streamed` carries an item key.
 
 ### Afterwards
@@ -255,7 +255,7 @@ In `rounds.py`, which `run.py` calls for every item, with tools or without:
   canary.
 
 ## Still open from elsewhere
-- **`return_token_ids` on remote engines** (`docs/factors.md`, "Proposed amendments"): a non-vLLM API may refuse
+- **`return_token_ids` on remote engines** (`docs/factors.md`, "Smaller issues"): a non-vLLM API may refuse
   it. `render` sends it for every engine.
 - **Concurrent writers** (`docs/catalog.md`, "Concurrent writers"). The runner writes only its own run's rows and one
   owner entry.
