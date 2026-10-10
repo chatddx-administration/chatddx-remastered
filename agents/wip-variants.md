@@ -63,7 +63,6 @@ be derived. A guards nothing that B doesn't, and C and D cost more for less.
   variation of their configuration?
 - **Forks.** Should a person's fork of a variant stay a variant of the same thing, as a giftbag fork is today by its
   name?
-- **Mixed batches.** With picking by the cases' language, does a batch of English and Swedish cases run as one trial
-  per language, each under its variant, or is it refused?
+- **Mixed batches**: moved to `agents/wip-batch.md` (P3).
 - **Names for people.** With variants recorded, should init-data still put the language and model in the name, for
   people to read, or drop them and let the portal show them?

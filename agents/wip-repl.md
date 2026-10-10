@@ -22,7 +22,9 @@ The shell is built: `chatddx repl` chooses and inspects (4a), runs and scores (4
    heeded; two tool calls in one response run together on one line.
 6. **Left from 4c**: an unsaved cell's runs are titled by their whole recipe; only an item's first request is rendered
    again.
-7. **Left out** of the port (see "Left out"): `chatddx samples`, endpoints with a credential, and judges.
+7. **Left out** of the port (see "Left out"): endpoints with a credential, and judges. The portal, the batch planner
+   and the worker are planned in `agents/wip-portal.md`, `agents/wip-batch.md` and `agents/wip-worker.md`, and sample
+   runs in `agents/wip-sample-data.md`.
 
 The docs' proposed amendments for what the shell changed are in `docs/factors.md`, `docs/catalog.md`, `docs/store.md`
 and `docs/ledger.md`, and the surprises met while building it in `AGENTS.md` (see "6. Docs").
@@ -474,12 +476,20 @@ adopted. Proposals:
   unique across packages, and how to serve the sample World's fakes by hand.
 
 ## Left out
-- **The portal's own code**: the worker, `bench/plan.py`'s crossing and `bench/held.py`.
-- **`chatddx samples`**, the old typical, broken and rich runs (`agents/wip-sample-data.md`, "Left behind").
-  It's small once the runner exists.
+What the port left to others, and where each is planned:
+- **The portal** (`agents/wip-portal.md`), and what the old layers held for it:
+  - `bench/plan.py`'s crossing is the batch planner (`agents/wip-batch.md`). Until it exists, `batch` runs one
+    variation over the tagged cases; it could take a plan then. Batch order moved there too.
+  - The worker (`agents/wip-worker.md`), planned apart from the planner around one contract.
+  - `bench/held.py`, what holds a configuration, for the portal's pages that delete: the repl's part is
+    `Bench.reaching` and `Bench.scored_by`.
+- **Sample runs** (`chatddx samples`, the old typical, broken and rich runs): not the repl's. They are test data for
+  every edge, the repl's, the API's and the portal's, and are planned with the sample data
+  (`agents/wip-sample-data.md`, "Sample runs").
 - **Endpoints with a credential**, refused until secrets have a home. The sample World and the real one have none.
 - **Judges** for the free-text notes: `score` shows judged views as "not yet".
-- **The injected transport** (`FakeTransport`): tests run the real fake server instead.
+- **The injected transport** (`FakeTransport`): tests run the real fake server instead, and sample runs have it
+  answer from a script.
 
 ## Risks and smaller open points
 - **A configuration on another model's endpoint.** The old `show` said what each slice became on the stack.
@@ -487,6 +497,5 @@ adopted. Proposals:
   `facts.sampling_unmatched` and the `vllm.*` lints. `use`, `on` and `cell` should say so straight away.
 - **The same vignette under two names** can't be in two families: adopting a vignette another family holds, by id or
   by fingerprint, is refused (`src/chatddx/catalog/families.py:check_adoptable`), so a batch runs it once.
-- **Batch order** is by case digest, since `Trial` sorts its cases, not by name.
 - **`return_token_ids` on remote engines** is still undecided (`docs/factors.md`, "Proposed amendments"). The fake
   and vLLM accept it.

@@ -373,3 +373,10 @@ two families.
   changes from it, would say it shorter.
 
 ## Proposed amendments
+- ADD under "Configurations and variations", after its first two paragraphs: "A *batch* is a plan thread
+  (docs/factors.md, "Plan"): the variations of a configuration that a person runs together over the same cases, kept to
+  run again or later. Adding cases to a batch is an edit of its thread, since a plan's trials pin their cases."
+  Decided (`agents/wip-batch.md`, "Kept plans"). Plans need no exception under "Threads and edits": every kind but
+  cases and compilations has threads.
+- ADD to the table under "Titles", after "Trial": "| Plan | How many variations, its base, how many cases, and its
+  endpoint. | `4 variations of plan, 20 cases, at qwen3-8b@pelle` |" (`agents/wip-batch.md`, "Kept plans").

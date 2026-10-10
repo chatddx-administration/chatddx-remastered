@@ -19,6 +19,22 @@ https://github.com/chatddx-administration/chatddx/blob/504792cbeb09508f2c52912be
    `bench/bench.py`.
 5. **The API's phase 0** added to the bench: lookups by id, a variation from an id and digests, `fork` and `edit`,
    `Ambiguous` for several expectations, and `outcome.py` (`agents/wip-api.md`, "Phase 0: built").
+6. **Next: writes for authoring.** The bench writes configurations (`save`, `fork`, `edit`), runs (`start`) and
+   scores (`score`), and nothing else. The portal is where chunks, appendices and expectations are written
+   (`docs/chatddx.md`, "Requirements"; `agents/wip-portal.md`), for the person, so the writes are the bench's (B3).
+   Curation writes them only as the archive, from a data set's files (`src/chatddx/curation/write.py`). Not planned
+   yet; what the docs already ask of them:
+   - **Chunks** of every part (`PARTS`, `src/chatddx/bench/variation.py`): a new thread, or an edit of one the person
+     owns, as `fork` and `edit` are for configurations. A new version is offered the previous version's language
+     (`docs/catalog.md`, "Languages").
+   - **Appendices**, bound to one vignette and stored as written, with CRLF normalized before they are digested
+     (`docs/factors.md`, "Appendix"); and the cases that order them in a family.
+   - **Expectations**, one case's reference answer, held to an expectation schema (`docs/factors.md`, "Expectation"),
+     and read back through `Bench.expectation`.
+   - **Cases and families**, for swift's typed cases: the text, its `Case` and a family for the person, in one
+     transaction (`agents/wip-portal.md`, "Swift", "Typed cases").
+   - Beside them: a scorer's labels carried to its next edit (`docs/catalog.md`, "Scorer labels"), and deleting
+     (`docs/catalog.md`, "Deleting").
 
 ## Decided
 - **B3**: the bench is a person-scoped view (see "Phase 1" for the options). The split:
@@ -336,7 +352,7 @@ How the old bench maps onto remastered:
 | `outcome.py:unheeded` | nothing yet | `agents/wip-runner.md`, "Afterwards" |
 | `cell_read`, `Drifted` | `Bench.rendered_again`: whether a run's first requests render the same now | |
 | `secret`, `NoSecret` | an endpoint's `credential`, only a name | refused for now (`agents/wip-repl.md`, "Left out") |
-| `Plan`, `crossed` (`bench/plan.py`), `held` (`bench/held.py`) | not ported: the portal's (`agents/wip-repl.md`, "Left out") | `Bench.reaching` and `Bench.scored_by` cover the repl's part of `held` |
+| `Plan`, `crossed` (`bench/plan.py`), `held` (`bench/held.py`) | not ported: `Plan` and `crossed` are the batch planner's (`agents/wip-batch.md`), `held` the portal's (`agents/wip-portal.md`) | `Bench.reaching` and `Bench.scored_by` cover the repl's part of `held` |
 
 ### Forces
 - **Authorization is a convenience, not a protection** (`agents/wip-identity.md`, "Authorization"). What a person sees

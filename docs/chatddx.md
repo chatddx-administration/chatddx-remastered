@@ -287,3 +287,17 @@ Each code is described where it's produced: `docs/factors.md`, "Lints"; `docs/le
   The agent's take is (c)
 
 ## Proposed amendments
+- ADD to the glossary, after "Trial": "- **Plan:** the trials a batch runs, crossed from one configuration's
+  variations over the same cases, at one endpoint, and kept on a catalog thread (docs/factors.md, "Plan")."
+  Decided with the batch planner's port (`agents/wip-batch.md`, "Kept plans"); the old crossing is
+  https://github.com/chatddx-administration/chatddx/blob/504792cbeb09508f2c52912be29a3d8809d2fa1d/src/chatddx/bench/plan.py.
+- ADD to the glossary, after "Run and Score": "- **Worker:** the process that runs the trials queued for it, outside
+  the request that asked for them." and "- **Job:** a trial queued for the worker, at an endpoint, for an owner,
+  scored afterwards or not." (`agents/wip-worker.md`, "The contract"; the old worker:
+  https://github.com/chatddx-administration/chatddx/blob/504792cbeb09508f2c52912be29a3d8809d2fa1d/src/chatddx/worker/worker.py).
+- CHANGE under "Work in progress", "Storage", "nothing is updated;" → "nothing is updated, but people and the worker's
+  queue, which are state rather than factors or records (docs/store.md);". Decided for the queue
+  (`agents/wip-worker.md`, "K2. The queue"); people are updated already (`src/chatddx/store/people.py`).
+- CHANGE under "Target stack", "Orchestrator", "factors and records are append-only; nothing is updated." →
+  "factors and records are append-only; only people and the worker's queue are updated." (`agents/wip-worker.md`,
+  "K2. The queue").
