@@ -635,19 +635,10 @@ No columns but `id`, `by` and `at`.
 | `source_id` | `text NOT NULL` | `vignette.id` |
 | `fingerprint` | `jsonb NOT NULL` | `vignette.fingerprint`, as its canonical JSON |
 
-```
-AGENT: CHANGE
-a5864d9 merged the index sentence into the trigger's and lost the trigger: `catalog.check_binding()` runs from trigger
-`binding_anchor` (src/chatddx/store/migrations/0012-t2-catalog.sql:88), not from the indexes.
----
 Indexes `binding_family (family, id)`, `binding_source (source, source_id)` and `binding_content (source,
 fingerprint)` (0013). Trigger `binding_anchor` (0012, BEFORE INSERT): `catalog.check_binding()` raises `family <n>: a
 new binding must keep the source, and the id or the fingerprint` unless the new binding has the previous one's source
 and its `source_id` or its `fingerprint`.
-```
-Indexes `binding_family (family, id)`, `binding_source (source, source_id)` and `binding_content (source,
-fingerprint)` (0013): `catalog.check_binding()` raises `family <n>: a new binding must keep the source, and the id or the
-fingerprint` unless the new binding has the previous one's source and its `source_id` or its `fingerprint`.
 
 ### `catalog.entry`
 `(Subject, Entry)` rows.
@@ -767,10 +758,3 @@ Behavior described here that `docs/catalog.md` doesn't state, or states otherwis
 - The tier-2 binding check accepts a binding identical to the previous one, and the tier-2 label check words its error
   differently from `check_label`.
 - `latest` keeps each key at the position of its first row.
-
-```
-AGENT: REMOVE
-The old system's section, empty since a5864d9 replaced it.
----
-```
-## Proposed amendments

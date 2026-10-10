@@ -138,11 +138,6 @@ items below (`src/chatddx/fake_vllm/test/`).
 20. `include_reasoning: false` leaves the reasoning out of the response, when a parser separates it
   (https://github.com/vllm-project/vllm/blob/v0.24.0/vllm/entrypoints/openai/chat_completion/serving.py#L882-L883).
 
-```
-AGENT: ADD
-Item 21, after 20. `src/chatddx/importers/o11n.py:_template` reports a gpt-oss engine whose environment doesn't set
-`VLLM_SYSTEM_START_DATE` (`engine.harmony_date`, in docs/inventory.md, "Importing from a host").
----
 21. A gpt-oss chat completion starts with Harmony's system message, which holds the current date unless
   `VLLM_SYSTEM_START_DATE` is set, so the same request is a different prompt each day
   (https://github.com/vllm-project/vllm/blob/v0.24.0/vllm/entrypoints/openai/parser/harmony_utils.py#L132-L138,
@@ -150,24 +145,14 @@ Item 21, after 20. `src/chatddx/importers/o11n.py:_template` reports a gpt-oss e
   https://github.com/vllm-project/vllm/blob/v0.24.0/vllm/entrypoints/openai/parser/harmony_utils.py#L332-L339,
   for every chat request,
   https://github.com/vllm-project/vllm/blob/v0.24.0/vllm/entrypoints/serve/render/serving.py#L557-L563).
-```
-```
-AGENT: ADD
-Item 22. `src/chatddx/importers/o11n.py:_template` reports it from o11n's report (`engine.chat_template_unused`, in
-docs/inventory.md, "Importing from a host").
----
+
 22. A model whose `model_type` is `gpt_oss` is rendered with Harmony and never with its chat template,
   `--chat-template` included
   (https://github.com/vllm-project/vllm/blob/v0.24.0/vllm/entrypoints/serve/render/serving.py#L234,
   https://github.com/vllm-project/vllm/blob/v0.24.0/vllm/entrypoints/serve/render/serving.py#L377-L400). So a
   gpt-oss engine's `chat_template` pins nothing, and what shapes its prompt is the `openai-harmony` package in the
   runtime closure.
-```
-```
-AGENT: ADD
-Item 23. o11n passes the snapshot's directory (Kompismoln/o11n 84612b2), and
-`src/chatddx/importers/o11n.py:imported` takes it as the host's location for the model.
----
+
 23. With `HF_HUB_OFFLINE`, a model given as a Hugging Face ID is resolved to its snapshot with
   `snapshot_download(repo_id, revision, local_files_only=True)` and no file patterns
   (https://github.com/vllm-project/vllm/blob/v0.24.0/vllm/engine/arg_utils.py#L759-L766,
@@ -176,23 +161,16 @@ Item 23. o11n passes the snapshot's directory (Kompismoln/o11n 84612b2), and
   (`<repo>/trees/<commit>.json`), and offline it refuses a snapshot that lacks any listed file the call's patterns
   select, with `IncompleteSnapshotError` (huggingface_hub `_snapshot_download.py:_raise_if_incomplete_snapshot`). So
   a snapshot downloaded with `--exclude` doesn't start from its ID.
-```
 
 ## The fake vLLM
 A request goes `server.py` → `chat.py:accept`, which refuses it or picks the served model → `chat.py:respond`, which
 decides a `Reply` → `chat.py:completion` or `chat.py:stream`, which shape it. `served.py:Served` is the server's
 set-up, read once from the command line. Paths are relative to `src/chatddx/fake_vllm/`.
 
-```
-AGENT: ADD
-`chatddx fake-engines` is documented nowhere; its tests are `test/test_fake_engines.py`
-(`src/chatddx/cli.py:_fake_engines`, `server.py:run_all`, `served.py:CLOSURE`).
----
 `chatddx fake-engines [--world DIR] [--delay S] [--runaway] [ENDPOINT …]` serves the endpoints named, or every
 endpoint of the World, each on a server of its own where its start-up says, till Ctrl-C, with `fake-vllm`'s `--delay`
 and `--runaway`. It refuses an endpoint whose engine's runtime closure isn't `chatddx fake-vllm`. The engines come from
 the store, where init-data put them.
-```
 
 Each entry is one emulated behaviour, then a line with:
 - what it follows: `item N` above, `vLLM, no item` where it copies vLLM without an item to pin it yet, or `fake`
@@ -295,27 +273,12 @@ sample models, served as the old inventory served them, and checks each answer a
   fake · `chat.py:_shown_schema`, `chat.py:_shown` · `test_held_or_shown_a_schema_it_answers_with_a_document_that_holds`
 - **The document.** An instance of the schema, as JSON indented by 2.
   fake · `chat.py:respond` · `test_held_or_shown_a_schema_it_answers_with_a_document_that_holds`
-```
-AGENT: CHANGE
-`examples` is read before the unions, since a string's `pattern` isn't followed and `fake <key>` may not match it, as
-for a note's `language` in the sample's `targets.json`; and a union's branch is read with the keywords beside it,
-since a branch may only add `required` beside `type` and `properties`, as `targets.json` does for a target's `text` or
-`pattern` (`chat.py:instance`, `test_what_it_writes_holds_to_the_sample_s_schemas`).
----
 - **Schema instances.** Local `$ref`s are followed. Then `const`, the first `enum`, the first of `examples`, the first
   non-null branch of `anyOf`/`oneOf`/`allOf` read together with the keywords beside it, as JSON Schema applies them,
   the first non-null of a type list. Objects get every property (a schema with `properties` and no `type` is an
   object), arrays `minItems` items (3 without it, at least 1) capped by `maxItems` (3 without it), strings
   `fake <key>` (`fake <key> <n>` in an array), integers and numbers `minimum` (else their place in an array, else 1),
   booleans `false`. Past 12 levels it gives `null`.
-  item 4 · `chat.py:instance`, `chat.py:_resolve` · `test_what_it_writes_holds_to_the_sample_s_schemas`,
-  `test_what_it_writes_follows_references_unions_and_counts`
-```
-- **Schema instances.** Local `$ref`s are followed. Then `const`, the first `enum`, the first non-null branch of
-  `anyOf`/`oneOf`/`allOf`, the first non-null of a type list. Objects get every property (a schema with
-  `properties` and no `type` is an object), arrays `minItems` items (3 without it, at least 1) capped by `maxItems`
-  (3 without it), strings `fake <key>` (`fake <key> <n>` in an array), integers and numbers `minimum` (else their
-  place in an array, else 1), booleans `false`. Past 12 levels it gives `null`.
   item 4 · `chat.py:instance`, `chat.py:_resolve` · `test_what_it_writes_holds_to_the_sample_s_schemas`,
   `test_what_it_writes_follows_references_unions_and_counts`
 
@@ -401,19 +364,8 @@ since a branch may only add `required` beside `type` and `properties`, as `targe
   vLLM, no item · `server.py:got`, `server.py:_Handler.do_POST` · `test_it_serves_nothing_else`
 - **Pace.** `--delay S` between streamed tokens (0.03 by default on the command line, none for `server.server`).
   fake · `server.py:_Handler._next_token`, `src/chatddx/cli.py` · `test_a_client_that_hangs_up_is_heard_at_once_and_its_request_aborted`
-```
-AGENT: CHANGE
-The hang-up is logged through the logger `chatddx.fake_vllm.server`: the command prints the log as before, and a test
-reads it with `caplog`, since a request's thread may log after its client has moved on
-(`server.py:_Handler.log_message`, `run_all`).
----
 - **Hang-up.** A client that hangs up mid-stream is heard from the socket while the next token waits, and the stream
   stops, logged, through the logger `chatddx.fake_vllm.server`, as `aborted: the client hung up after N tokens`.
-  vLLM, no item · `server.py:_Handler._next_token`, `server.py:_Handler._sent` ·
-  `test_a_client_that_hangs_up_is_heard_at_once_and_its_request_aborted`
-```
-- **Hang-up.** A client that hangs up mid-stream is heard from the socket while the next token waits, and the stream
-  stops, logged as `aborted: the client hung up after N tokens`.
   vLLM, no item · `server.py:_Handler._next_token`, `server.py:_Handler._sent` ·
   `test_a_client_that_hangs_up_is_heard_at_once_and_its_request_aborted`
 - **Won't start.** A refused set-up exits with `the fake vLLM won't start: …`.
@@ -458,10 +410,3 @@ reads it with `caplog`, since a request's thread may log after its client has mo
    - **<behaviour>.** <what the fake does>.
      <item N | vLLM, no item | fake> · `<module>.py:<name>` · `<test>` | untested
    ```
-
-```
-AGENT: REMOVE
-The old system's section. Its proposals are inline above their subjects now, so it is empty.
----
-```
-## Proposed amendments

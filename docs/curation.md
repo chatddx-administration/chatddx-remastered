@@ -239,10 +239,3 @@ name today; what recording it would take is in agents/wip-variants.md.
 - **A rename isn't followed into the data.** After repair-data, loading says the old id is missing until the data set
   names the new one.
 - **The runner and the engine import don't run the inventory check** that loading does.
-
-```
-AGENT: REMOVE
-The old system's section, empty since a5864d9 replaced it.
----
-```
-## Proposed amendments

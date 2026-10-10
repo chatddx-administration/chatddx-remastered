@@ -257,10 +257,3 @@ Most of the plan is compared with what happened (see "What a record holds"), but
 - **Findings have no mechanism of their own.** The runner and the scoring pass keep those they see in the finish record,
   and the checks give the rest when called. They might benefit from a separate mechanism, as lints are for factors, but
   nothing is planned or decided.
-
-```
-AGENT: REMOVE
-The old system's section, empty since a5864d9 replaced it.
----
-```
-## Proposed amendments

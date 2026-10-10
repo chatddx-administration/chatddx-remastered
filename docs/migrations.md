@@ -104,10 +104,3 @@ it, if any. A new schema gets its own section with all three tiers.
   - Language tags and kinds on `catalog.language`, and no language for a skeleton already known to be compiled
     (`src/chatddx/catalog/language.py:check_language`).
   - Insert-only triggers on every table.
-
-```
-AGENT: REMOVE
-The old system's section, empty since a5864d9 replaced it.
----
-```
-## Proposed amendments
