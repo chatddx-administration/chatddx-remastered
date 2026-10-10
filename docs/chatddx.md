@@ -279,6 +279,13 @@ Each code is described where it's produced: `docs/factors.md`, "Lints"; `docs/le
 
 ## Possible design issues
 
+```
+AGENT: REMOVE
+The last line, "The agent's take is (c)", is an agent's opinion in human-written text. The take stands, as this
+block: (c), since (b) alone misses changed weights, and (a) alone sees an output change without saying whether the
+template or tokenizer changed.
+---
+```
 **Canary drift is not implemented:** nothing compares canary outputs between phases or runs. What counts as the
   same canary output is undecided:
   (a) the digest of each choice's message, as the old `compare_canaries` compared

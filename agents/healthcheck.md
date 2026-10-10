@@ -54,8 +54,8 @@ Weaker:
     migration table stops at 0012; the tier-0 list (:170) omits 0013.
   - Dead pointers to proposals since accepted or dropped: `docs/catalog-api.md:740`, `docs/factors-api.md:933`,
     `docs/ledger-api.md:563`, `docs/curation.md:77` and :119.
-  - "As of" baselines in catalog-api, factors-api, facts-api, store-api and inventory-api name commits that were
-    squashed away; only ledger-api's 401b696 exists.
+  - "As of" baselines in catalog-api, factors-api, facts-api, store-api and inventory-api name commits that aren't
+    on main, only on leftover `claude/*` branches; only ledger-api's 401b696 is on main.
   - `docs/vllm.md` holds 7 proposals (from :384), all already implemented: they await a human yes.
 - Plans drift more than docs:
   - `agents/wip-runner.md:43` says Kompismoln has no `[cleared]` table; it has (`worlds/kompismoln/inventory.toml:15`).
@@ -113,7 +113,8 @@ canary drift and export don't exist yet. Everything so far is rig.
 ## Surprises
 
 - The full suite took 63 s in the container, against "~50 s" in AGENTS.md; the quick run stays under 30 s.
-- 12 leftover `claude/*` branches on origin look like pre-squash snapshots of merged work; glance before deleting.
+- 12 leftover `claude/*` branches on origin look like pre-squash snapshots of merged work; five docs' "as of"
+  baselines live only on them, so re-point those (suggested in docs/) before deleting.
 - `CHATDDX_REVISION` is read in `src/chatddx/core/rig.py:14`, bypassing `chatddx.core.settings`.
 - `docs/chatddx.md:290` has "The agent's take is (c)" inside the human-written body.
 - `worlds/sample/inventory.toml:1` cites `src/chatddx/data/sample/cases.toml`, now `cases-en.toml`/`cases-sv.toml`.

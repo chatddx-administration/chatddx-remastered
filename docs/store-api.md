@@ -1,5 +1,12 @@
 # Store API
 
+```
+AGENT: CHANGE
+e9bdca7 is on no commit of main, only on the leftover branch claude/keen-bell-2kwmiv, and goes when that branch is
+deleted. 4e526e6, which squashed it into main, has the same src/chatddx/store/.
+---
+as of 4e526e6
+```
 Reference for the `chatddx.store` package, its migrations, `public.migration` and the `identity` database schema, as
 of e9bdca7. It was written from `src/chatddx/store/*` (`migrations/` and `setup.sql` included), `docs/store.md` and
 `docs/migrations.md`. What the store is and why it is shaped this way is in `docs/store.md`; this file says what each
@@ -167,6 +174,13 @@ of entries with one of `fields` naming the person, ever, as `Catalog.involving` 
 | `pending(conn, tier: int = TOP_TIER) -> list[Migration]` | The migrations at or below `tier` whose names aren't in `public.migration`; all of them when the table doesn't exist. Writes nothing. |
 | `migrate(conn, tier: int = TOP_TIER) -> list[str]` | Creates `public.migration` if it doesn't exist and reads `pending`, in one transaction; then applies each pending migration in its own transaction, running the file and recording `(name, tier)`. Returns the names applied, in file-name order. A failing migration raises its psycopg error; the ones before it stay applied. |
 
+```
+AGENT: CHANGE
+0013-t0-catalog-binding-content.sql (1dd791a) is tier 0 too.
+---
+File-name order isn't tier order: `migrate(conn, 0)` applies `0001`, `0004`, `0007`, `0010` and `0013`, and a later
+`migrate(conn, 2)` the eight others.
+```
 File-name order isn't tier order: `migrate(conn, 0)` applies `0001`, `0004`, `0007` and `0010`, and a later
 `migrate(conn, 2)` the eight others. Lowering the tier undoes nothing.
 
@@ -254,6 +268,12 @@ them).
 ## Migrations
 `migrations/NNNN-tT-<schema>[-<what>].sql`, applied by `migrate`:
 
+```
+AGENT: ADD
+The table stops at 0012; 0013 came with 1dd791a and is documented in docs/migrations.md, "Tier 0". A row after 0012:
+---
+| `0013-t0-catalog-binding-content.sql` | 0 | `catalog`: index `binding_content` on `binding` | `docs/catalog-api.md`, "Database: schema `catalog`" |
+```
 | File | Tier | Schema | Documented in |
 | --- | --- | --- | --- |
 | `0001-t0-factor.sql` | 0 | `factor`: `component`, `component_ref` | `docs/factors-api.md`, "Database: schema `factor`" |
@@ -274,6 +294,28 @@ How to name and list a new migration is in `docs/migrations.md`.
 ## Tests
 `src/chatddx/conftest.py`, shared by every package's tests:
 
+```
+AGENT: CHANGE
+Behind src/chatddx/conftest.py since 1dd791a and 657716a: create_database and drop_database take the admin conninfo
+first, _settled polls every 0.01 s, databases come from Copies, and db is a copy of template, which curated can
+replace. New rows: copies, curated, template, autocommit. Changed rows: create_database, drop_database, _settled,
+migrated, db, conn.
+---
+| Name | Description |
+| --- | --- |
+| `create_database(admin: str, template: str \| None = None) -> str` | Creates `chatddx_test_<12 hex>` over the admin conninfo `admin`, from `template` when given, and returns its name. With a template, it first waits for the template's sessions to end (`_settled`), since copying a database that has sessions fails. |
+| `drop_database(admin: str, name: str) -> None` | Waits for the database's sessions to end (`_settled`), then `DROP DATABASE … WITH (FORCE)` over `admin`. |
+| `_settled(admin: Connection, name: str) -> None` | Polls `pg_stat_activity` until no session is on `name`, every 0.01 s for at most 500 polls, then returns either way. A session closed a moment ago may still be ending on the server, and `WITH (FORCE)` as the admin can't end a session of the writer's: it fails with "permission denied to terminate process". |
+| `connect(name: str, admin: bool = False) -> Connection` | A connection to that database, as the writer or the admin. |
+| `Copies`, `copies` (session fixture) | Makes copies of a template ahead (`AHEAD = 6`) and drops them behind, on three threads, so that a test waits for its database only when they fall behind. `take(template)` hands one out, `give_back(name)` drops it, `forget(template)` drops a template's unused copies before the template is dropped, and `close` drops the rest at the end of the session. |
+| `migrated` (session fixture) | A database migrated to `TOP_TIER`; dropped at the end. |
+| `curated` (session fixture) | A copy of `migrated` holding the sample as init-data lands it from the sample World, shared with alice, with her giftbag (`docs/curation.md`, "Tests"). Loaded once, and only when a test asks for it. |
+| `template` | What `db` is a copy of: `migrated`. The api, bench and repl tests override it with `curated`. |
+| `db` | A copy of `template` per test, from `copies`, dropped afterwards. |
+| `autocommit` | `False`. The api, bench, repl and runner tests override it with `True`, since their code commits as it writes. |
+| `conn`, `admin` | Connections to `db` as the writer, in autocommit mode when `autocommit` is, and as the admin. |
+| `empty_db`, `empty` | An unmigrated database per test, and an admin connection to it. |
+```
 | Name | Description |
 | --- | --- |
 | `create_database(template: str \| None = None) -> str` | Creates `chatddx_test_<12 hex>` as the admin, from `template` when given, and returns its name. With a template, it first waits for the template's sessions to end (`_settled`), since copying a database that has sessions fails. |

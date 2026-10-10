@@ -155,6 +155,31 @@ whose template vLLM doesn't read and whose prompts hold the current date unless 
 server that wasn't seen, isn't running, runs other arguments than its configuration, doesn't answer, reports another
 vLLM version than its package, or doesn't answer under the engine's digest.
 
+```
+AGENT: ADD
+The paragraph above names what the import reports but not its codes, which no doc lists
+(src/chatddx/importers/o11n.py:_template, _serving), though its tests are solidified. docs/chatddx.md, "Findings and
+errors", would then point here beside "Lints", "Findings" and "Checking pairs". Note that endpoint.unreachable means
+something else in the inventory's check.
+---
+The import's findings have the engine's digest as subject:
+- `engine.chat_template_unused` (info): vLLM renders the model with Harmony and doesn't read the chat template, so
+  its hash pins nothing (docs/vllm.md).
+- `engine.harmony_date` (warning): such an engine's environment doesn't set `VLLM_SYSTEM_START_DATE`, so every prompt
+  holds the current date.
+- `engine.chat_template_unread` (info): the report has no template text, so the template wasn't checked. When it has,
+  the template is checked against the engine (`engine.chat_template`, `engine.chat_template_date`;
+  docs/factors-api.md, "engine.py").
+- `engine.chat_template_not_the_model_s` (info): the template isn't the model's own at its revision.
+- `endpoint.process` (warning): the server's process wasn't seen.
+- `endpoint.not_running` (warning): the server isn't running.
+- `endpoint.argv` (warning): the running server's arguments aren't its configuration's, so it may predate it.
+- `endpoint.unreachable` (warning): the server didn't answer. In the inventory's check the same code means the
+  endpoint's address can't be worked out, as `url_of` refuses it (docs/inventory-api.md, "check.py").
+- `endpoint.version` (warning): the server says it is another vLLM version than its package.
+- `endpoint.served_name` (warning): the server doesn't answer under the engine's digest.
+```
+
 ## Terms
 
 | Term | Meaning |
