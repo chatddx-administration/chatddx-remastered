@@ -15,8 +15,8 @@ https://github.com/chatddx-administration/chatddx/blob/504792cbeb09508f2c52912be
    bench, and islands in Svelte with TypeScript that call the API. How it is built otherwise is a take (see "P3b,
    concretely").
 2. **Decided: swift is realized in the portal**, as a page of its own, not ported: swift-dx-guide retires, its look
-   isn't kept, and much of what it does will change. The cases typed in it are kept as files in a directory source
-   (see "Swift").
+   isn't kept, and much of what it does will change. The cases typed in it are kept. Reopened: in a directory the app
+   writes, or in the database. Take: the database (see "Swift", "Typed cases").
 3. **Decided: the session cookie is `SameSite=Lax`**, so a link into the portal from another site opens signed in.
    Built (`src/chatddx/api/people.py:sign_in`).
 4. **Most of the work is below the UI** (see "Below the UI"): the bench's writes for authoring
@@ -69,7 +69,7 @@ From its manual (`docs/portal.md`), which reads as a functional spec:
 | a stack's **Test** | nothing yet: `confirm` checks an endpoint's binding (`src/chatddx/runner/gate.py:check`), and the `vllm.*` lints check a skeleton | open |
 | batches: planning, confirming, kept for later, `BatchModel` | the batch planner (`agents/wip-batch.md`) | |
 | **Status**, the queue, `JobModel` | the worker (`agents/wip-worker.md`) | |
-| the old API's `/api/agents`, `/api/auth/` and `/api/diagnose`, for swift | the portal's swift page, and a directory source for its typed cases (see "Swift") | |
+| the old API's `/api/agents`, `/api/auth/` and `/api/diagnose`, for swift | the portal's swift page, and a source for its typed cases (see "Swift") | |
 | a run's page | `Bench.run_by_id`, `Store.run`, `Bench.described`, `Bench.scores_of`, `Bench.rendered_again`, `src/chatddx/bench/outcome.py`; `GET /api/runs/{id}` and `/items` (API phase 4) | requests are kept as fingerprints, and rendered again |
 | Django's view, change, add and delete permissions | Z1, roles to kinds, and owners and collaborators (`src/chatddx/identity/identity.py:sees`) | a convenience, not a protection (`agents/wip-identity.md`, "Authorization") |
 | Django's users and sessions | `People`, by the API's session (`src/chatddx/api/people.py`) | |
@@ -178,8 +178,7 @@ Decided:
   configuration, and reads the answer. Its look isn't kept, and much of what it does will change. It is mainly for
   testing.
 - **swift-dx-guide retires** (LigninDDX/swift-dx-guide), and its Lovable project with it.
-- **The cases typed in it are kept**, as files in a directory source of the World, since that is viable (see "Typed
-  cases").
+- **The cases typed in it are kept** (see "Typed cases"; where is reopened).
 
 ### What the prototype showed
 - **One page**: free text about a patient, an agent picked, and back a differential (each diagnosis with its
@@ -192,30 +191,50 @@ Decided:
   answers (`chatddx.scorers.answer.read`) and served from a run's items (`agents/wip-api.md`, A9).
 
 ### Typed cases
-A case is otherwise a vignette in a source the World names, fetched by id and never stored in the database. A typed
-case becomes one:
-- **A directory source**, declared in the inventory like any other (`docs/inventory.md`, "Sources";
-  `src/chatddx/inventory/sources.py:DirectorySource`), sensitive, and cleared for the endpoints swift runs on
-  (`docs/inventory.md`, "Clearance"). Reading works as it is: the runner fetches a vignette by its id when it runs.
-- **One file per typed text**, under a new id, created and never overwritten, so the source's files are only added
-  to, as the store's rows are.
-- **The case and its family**, written through the bench for the person who typed it (`agents/wip-bench.md`, "Start
-  with this", 6): a `Case` with the source, the id and the fingerprint of the bytes, and a family in the catalog. The
-  text never enters the database, as no vignette does.
+A case is otherwise a vignette in a source the World names, fetched by id when a run is sent, and never stored in the
+ledger, which keeps only its fingerprint (`docs/chatddx.md`, glossary, "Fingerprint"). A typed case becomes one, in a
+source the portal writes. Whichever source:
+- **The source** is declared in the inventory, sensitive, and cleared for the endpoints swift runs on
+  (`docs/inventory.md`, "Sources" and "Clearance").
+- **Each text is added under a new id** and never changed.
+- **The case and its family** are written through the bench for the person who typed it (`agents/wip-bench.md`,
+  "Start with this", 6): a `Case` with the source, the id and the fingerprint of the bytes, and a family.
 - **A run like any other**: one case and one seed, through the worker (`agents/wip-worker.md`). Its completion is
-  case-derived and lands in the ledger.
+  case-derived and lands in the ledger; the vignette doesn't.
 
-What it needs that isn't there:
-- **A writer.** `Source` lists and fetches, and builds every case at once (`Source.cases`); writing a file and
-  building one case by id are new.
-- **The directory in reach of both the app and the worker**: in Kubernetes a shared volume, mounted where both run,
-  and backed up apart from the database.
-- **A source the app writes.** The World is otherwise written by ops (`docs/chatddx.md`, glossary, "World"). This one
-  is written by the portal and read like the others.
+Reopened: where the texts are kept.
+- **D1. A directory the app writes**, a `DirectorySource` (`src/chatddx/inventory/sources.py`), one file per text.
+  Reading works as it is (`src/chatddx/runner/run.py`, where an item's vignette is fetched).
+- **D2. A table in the database**, in a schema of its own, read through a source kind of its own. The inventory
+  expects one: "Another kind of source, such as a database, would be added beside directories as a kind of its own"
+  (`docs/inventory.md`, "Sources").
 
-Open: a family per typed case, or one per person with tags; the text's language (a family's entry); whether a typed
-case can be deleted, since its file must stay for the runs that fingerprint it; and whether the configurations offered
-are those whose output is the management plan, which `GET /api/threads` can't filter for yet.
+| | D1, a directory | D2, the database |
+|---|---|---|
+| Deployment | a volume for the app, shared with the worker when it runs apart (`agents/wip-worker.md`, K1) and with every replica: in Kubernetes a ReadWriteMany volume | nothing new: a schema and its migrations, as the queue's |
+| Backups | apart from the database | with it |
+| Vetting | a second place holding sensitive text, beside the database that holds the ledger (`agents/wip-clearance.md`, "Takes": databases count as endpoints) | the database, vetted already for the ledger |
+| Writing the text, the case and the family | a file, then rows: no transaction spans both, so a failure between them leaves a file without a case | one transaction |
+| Code | a writer, and one case built by id (`Source.cases` builds them all) | the same, plus the source kind; the inventory imports no store, so fetching a database source goes through the store where the runner and the bench fetch today |
+| Purging spam | ops delete files | a delete the table's insert-only triggers would otherwise refuse, kept to the admin |
+| Reading a text by hand | a file | a query |
+| A flood | fills its own volume | fills the database everything shares, unless held back by quotas |
+
+Take: **D2.** Its costs are code, written once: a schema, a source kind, and a delete kept to the admin. D1's are a
+moving part in every deployment, a second backup, and a second place to vet for sensitive text. The flood is the one
+point for D1, and quotas, which are needed either way, take it away.
+
+**Protection, either way.** The demo is on the public web, but the portal has no guest: every request needs a session
+(`agents/wip-api.md`, A3), and people are added by an admin (`chatddx person add`). So:
+- a person's typed cases and runs are held to a quota, and a text to a size, with a NUL refused, since the database
+  can't keep one (`docs/store.md`, "Known gaps");
+- signing in is rate limited, which is open (`agents/wip-identity.md`, "Open");
+- a flood's real cost is the inference and the ledger rows each run adds, not the text, so the quota is on runs as
+  much as on texts.
+
+Open: a family per typed case, or one per person with tags; the text's language (a family's entry); whether the
+demo needs anyone to type without an account, which would bring back a guest (A3 has none); and whether the
+configurations offered are those whose output is the management plan, which `GET /api/threads` can't filter for yet.
 
 ## Phases
 Assuming the takes.
@@ -226,7 +245,8 @@ Assuming the takes.
 2. **The variation being tried**, and its island, on the API's phase 3.
 3. **Starting and watching a run**: the worker (`agents/wip-worker.md`), and the run's island, on the API's phases 4
    and 5.
-4. **Swift**: the source's writer, the bench's writes for cases and families, and the page (see "Swift").
+4. **Swift**: the typed cases' source and its writer, the bench's writes for cases and families, quotas, and the page
+   (see "Swift").
 5. **Authoring**: the bench's writes for chunks, appendices, expectations, labels and languages
    (`agents/wip-bench.md`, "Start with this", 6), and their pages.
 6. **Batches**: the planner's pages (`agents/wip-batch.md`), then a batch's page and the worker's status

@@ -722,3 +722,25 @@ a picker of the right kind for every reference, straight from the schema. Refere
 because nothing read it. The JSON Schema plays no part in any digest, so adding it back changes no digest.
 
 ## Proposed amendments
+- ADD under "Trials", after "Execution": "### Plan
+  Principal author: researchers.
+
+  A plan is what a batch runs: the trials crossed from one configuration's variations over the same cases, at one
+  endpoint. It holds:
+  - the trials;
+  - the endpoint they run at, by its name in the inventory, as a case names its source;
+  - what was crossed: the skeleton the variations vary from, and the chunks tried for each recipe part.
+
+  Each of its trials is run as a run of its own, so a plan's runs are found by its trials. Renaming the endpoint
+  leaves a plan naming one the inventory doesn't have, as renaming a source leaves its cases." Decided: a plan is a
+  component of a new kind, kept on a catalog thread (`agents/wip-batch.md`, "Kept plans"). The old crossing:
+  https://github.com/chatddx-administration/chatddx/blob/504792cbeb09508f2c52912be29a3d8809d2fa1d/src/chatddx/bench/plan.py; the trials it holds: `src/chatddx/factors/trial.py:Trial`.
+- ADD under "What a factor is", after the paragraph on compilations: "Plans are components but not factors either:
+  each says which trials a batch runs, and no component refers to one, so they change no digest and no output (see
+  "Plan")." (`agents/wip-batch.md`, "Kept plans").
+- CHANGE under "Kinds", "**Instruments and provenance**: canary sets and compilations, components that aren't
+  factors." → "**Instruments, provenance and plans**: canary sets, compilations and plans, components that aren't
+  factors."
+- CHANGE under "Not factors", "Instruments and provenance: canary sets and compilations are components, but not
+  factors." → "Instruments, provenance and plans: canary sets, compilations and plans are components, but not
+  factors."

@@ -87,15 +87,16 @@ are. The old portal's batch, kept to run later and shown on a page that never ch
 head.
 
 Take, for its shape:
-- **What it pins**: its trials and the endpoint, by digest, and what was crossed to get them (the configuration's
-  edit, the chunks per part, the cases asked for), so its page can say what it varies. What was held back, and the
-  reach, are worked out again when it is shown.
+- **What it pins**: its trials by digest; the endpoint by its name in the inventory, as a case names its source; and
+  what was crossed, the base skeleton and the chunks tried per part, by digest, so its page can say what it varies.
+  What was held back, and the reach, are worked out again when it is shown.
 - **The thread**: named, owned, shared and deleted as other threads are (`docs/catalog.md`). Adding cases, as the old
   `unheld` did, is a new edit: new trials, since a trial's cases are part of its digest.
 - **Which plans are threaded**: every plan the portal runs or keeps, so a person's batches can be listed, as the old
   portal listed them. The repl's ad-hoc `batch` stores its trial without a thread, as D7 keeps ad-hoc trials off
   threads so as not to flood the catalog (`agents/wip-repl.md`).
-- **Docs**: the kind is proposed in `docs/factors.md`, and the thread kind in `docs/catalog.md`.
+- **Docs**: proposed in `docs/factors.md` ("Plan", and plans as components that aren't factors),
+  `docs/catalog.md` (a batch is a plan thread, and a plan's title) and `docs/chatddx.md` (the glossary).
 
 ## Options
 ### P2. What is crossed

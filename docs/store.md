@@ -112,3 +112,18 @@ These are known shortcomings of the store's design. Some have more details in do
   rows of the old version, nor load a closure that holds one. The rows can't be rewritten either: the tables are
   append-only, and digests and seals depend on the bytes. docs/factors.md, "Splitting expectations", already considers
   a bump of the scorer's schema version.
+
+## Proposed amendments
+- CHANGE in the introduction, "the catalog (docs/catalog.md). Everything but identity is append-only" → "the catalog
+  (docs/catalog.md) and the worker's queue. Everything but identity and the queue is append-only". Decided
+  (`agents/wip-worker.md`, "K2. The queue").
+- ADD under "What the store does", after "The catalog": "### The queue
+  The worker's queue is state, not factors or records, and is updated in place, as people are: each job's status as
+  the worker claims, runs and ends it, each owner's controls (paused, stopping), and the workers, with when each was
+  last seen. A worker claims the next queued job by locking its row, so two workers never take the same one. A job
+  points at the run it started; what the run did is the ledger's, read from there and not copied into the job."
+  (`agents/wip-worker.md`, "K2. The queue"; the old worker claimed the same way:
+  https://github.com/chatddx-administration/chatddx/blob/504792cbeb09508f2c52912be29a3d8809d2fa1d/src/chatddx/worker/worker.py#L239-L253).
+- CHANGE in "Roles and connections", the writer's "May", "create, read and update people." → "create, read and update
+  people; read, add to and update the worker's queue." Granted per table, as identity's are (docs/migrations.md,
+  "identity", "Tier 1").

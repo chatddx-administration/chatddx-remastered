@@ -162,7 +162,8 @@ Still the runner's, and met here:
 Assuming the takes.
 0. **Below the worker**: resuming (`src/chatddx/runner/`), and `Bench.start` taking an execution.
 1. **The queue**: the `worker` schema, its jobs, controls and workers, at every tier; the store's reads and writes
-   for them; tests on the store. A proposed amendment to `docs/store.md` and `docs/chatddx.md` for the exception.
+   for them; tests on the store. The exception is proposed in `docs/store.md` and `docs/chatddx.md`; once the
+   migrations land, `docs/migrations.md` gets a `worker` section, and its "identity, the one mutable schema" changes.
 2. **The worker**: `src/chatddx/worker/`, a loop that claims jobs, builds a bench per run, starts, sends, finishes and
    scores, beats, and finds what is lost; `chatddx worker`. Tests run it in a thread against the fake vLLM, as the
    repl's tests serve the fake (`src/chatddx/repl/test/conftest.py:fake`).
