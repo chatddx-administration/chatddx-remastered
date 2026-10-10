@@ -61,7 +61,7 @@ def test_signing_in_gives_a_token_and_a_cookie_that_each_say_who_you_are(
     for attribute in (
         "httponly",
         "secure",
-        "samesite=strict",
+        "samesite=lax",
         "path=/",
         "max-age=43200",
     ):
