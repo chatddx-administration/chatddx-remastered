@@ -283,8 +283,8 @@ Items are `docs/vllm.md`'s; 13–20 are among its proposed amendments.
 Left behind:
 - the httpx transport (`FakeTransport`): the runner speaks HTTP through the stdlib (`src/chatddx/runner/wire.py`),
   and its tests run the real fake server;
-- `chatddx samples` and `src/chatddx/dev/samples/` (`typical`, `broken`, `rich`): runs for the old history, which wait
-  for the runner.
+- `chatddx samples` and `src/chatddx/dev/samples/` (`typical`, `broken`, `rich`): runs for the old history. The
+  runner exists now; see "Sample runs".
 
 Not faked yet:
 - abbreviated flags aren't expanded, and bare arguments aren't refused: the fake can't tell a flag that takes a
@@ -298,6 +298,61 @@ Not faked yet:
   the reasoning;
 - nothing yet runs the factors' `vllm.*` lints and the fake on the same cases, which would catch the two drifting
   apart.
+
+## Sample runs
+Not built. Everything here is a take.
+
+### The old ones
+`chatddx samples OWNER` (`src/chatddx/dev/samples/` at 504792c, 7ab7808) made three runs to look at, each answered by a
+script rather than by the fake's own answers:
+- **typical**: `plan` on `qwen3-8b-awq@fake`, `DutchFall10w`: thought through once and answered in one go, held to
+  the plan's schema.
+- **broken**: `plan-web` on `qwen3-8b-awq@fake`, `Dutchfall11w`: the search fails (503), the next call has an argument
+  `web_search` doesn't take, and the server goes away halfway through the plan.
+- **rich**: `plan-web` on `gpt-oss-20b@fake` with reasoning high and the tool contract, `Dutchfall14w`: thinking
+  before every step, four rounds of searches, two made at once, an argument of the wrong type, a search that finds
+  nothing, a word to the user beside the calls, and the answer through the answer tool.
+
+Each script (`*.toml`) named a configuration, a stack, a case, a seed and what the cell set, then the turns: reasoning,
+content, tool calls, and whether the server broke off after. Its `web` table canned what each search found. The runs
+went through the old bench and `Sending` with an injected httpx transport (`Scripted`) and a patched `httpx2.get`, so
+everything but the model's words and the web was genuine. Five tests checked them (`src/chatddx/dev/tests/test_samples.py`).
+
+### Who they are for
+Every edge: the repl's `replay` and `runs`, the API's runs and items, and the portal's run pages all want runs that
+are genuine records of what can go wrong, without a real engine. So they aren't the repl's (`agents/wip-repl.md`, "Left
+out"), nor the portal's.
+
+### Where they belong
+Take, by piece:
+- **The scripts**: `worlds/sample/runs/*.toml`, beside the vignettes. Their reasoning and answers paraphrase the
+  vignettes, so they are case-derived. The sample World's source is declared sensitive, as a real one would be, and
+  kept out of the package (`worlds/sample/inventory.toml`); the scripts go with it.
+- **Answering from a script**: the fake vLLM, as `serving(…, script=…)` and `chatddx fake-vllm --script PATH`. It
+  answers each chat request with the script's next turn, streamed as `chat.py` streams, and can go away before the
+  finish. The fake is to grow as sample data needs it (`AGENTS.md`, "Environment"), and stays a leaf: it reads a
+  script, not the bench.
+- **The web**: patched in the process that runs the tools, as before: `web_search` reaches DuckDuckGo through
+  `urllib.request.urlopen` (`src/chatddx/tools/web_search.py`), and the tools run in the runner's process. A setting for
+  the search URL would let the fake serve the web instead, but nothing else needs one.
+- **The driver**: `src/chatddx/samples/`, an edge over the bench, as `agents/wip-bench.md` ("The landscape, at phase
+  1") lists it. For each script: the variation (`Bench.configuration`, `Bench.variation`), the scripted fake served in
+  a thread at the endpoint's address, `Bench.start` with the case and seed, `Running.send`, `Running.finish` and
+  `Bench.score`.
+- **For hand use**: `chatddx samples LOGIN [--sample NAME]`, after `init-data`. It serves the scripted fake itself, so
+  no fake needs to be running.
+- **For tests**: a session-scoped `sampled` database in `src/chatddx/conftest.py`, made from `curated` with alice's
+  sample runs in it, and copied for each test as `curated` is. The repl's, the API's and the portal's tests read
+  genuine runs without running them each time.
+
+### To settle while porting
+- **The scripts' names are the old ones.** Configurations are per-model variants now (`plan (en, Qwen/Qwen3-8B-AWQ)`),
+  what the cell set is a recipe's parts (the coercion is the output's contract), and endpoints replace stacks.
+- **The turns must hold to remastered's contracts**: an answer through the answer tool, which the compiler offers last
+  under `required`, and what vLLM 0.24 does with reasoning and tools (`docs/vllm.md`). The fake's own checks
+  (`accept`) still apply to the request.
+- **A batch sample**, several cases in one run, once the portal's batch pages need one.
+- **Scores**: each sample is scored under every scorer that applies, so the scores are genuine too.
 
 ## Old → new
 
