@@ -8,7 +8,7 @@ from rich.live import Live
 from rich.table import Table
 from rich.text import Text
 
-from chatddx.bench import Graded
+from chatddx.bench import Graded, Outcome, outcome as ended, usage
 from chatddx.catalog.titles import short
 from chatddx.factors.base import Finding
 from chatddx.factors.request import Skeleton, tool_calls
@@ -23,6 +23,15 @@ REFUSED = "red"
 VALID = "green"
 LATER = "yellow"
 THINKING = "#5f87af"
+
+STYLES: dict[Outcome, str] = {
+    "stopped": REFUSED,
+    "errored": REFUSED,
+    "unread": REFUSED,
+    "completed": "",
+    "invalid": REFUSED,
+    "valid": VALID,
+}
 
 TOKENS = len("tokens")
 
@@ -72,19 +81,6 @@ def value_of(value: float | None) -> str:
 def clipped_line(text: str, width: int = 60) -> str:
     line = text.splitlines()[0] if text else ""
     return line if len(line) <= width else line[: width - 1] + "…"
-
-
-def usage(item: RunItem) -> tuple[int, int]:
-    used = [
-        u
-        for call in item.calls
-        if call.response is not None
-        and isinstance(u := call.response.get("usage"), dict)
-    ]
-    return (
-        sum(n for u in used if isinstance(n := u.get("prompt_tokens"), int)),
-        sum(n for u in used if isinstance(n := u.get("completion_tokens"), int)),
-    )
 
 
 # A run's events as they stream: the thinking, labelled, then the answer, each tool
@@ -236,19 +232,8 @@ class Tally:
 
 # How an item went: a word for it, its style, and what to say of it.
 def outcome(skeleton: Skeleton, item: RunItem) -> tuple[str, str, str | None]:
-    last = item.calls[-1]
-    answer = read(skeleton, last.response)
-    if last.error == STOPPED:
-        return "stopped", REFUSED, None
-    if answer.value is None:
-        if last.error is not None:
-            return "errored", REFUSED, last.error
-        return "unread", REFUSED, answer.problem
-    if skeleton.output_schema is None:
-        return "completed", "", last.error
-    if answer.problem is not None:
-        return "invalid", REFUSED, last.error or answer.problem
-    return "valid", VALID, last.error
+    word, why = ended(skeleton, item)
+    return word, STYLES[word], why
 
 
 # An item's answer as the scorers read it: the call's error, whether the answer holds to

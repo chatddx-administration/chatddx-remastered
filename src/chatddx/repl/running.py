@@ -6,7 +6,7 @@ from typing import Any, Self
 
 from rich.text import Text
 
-from chatddx.bench import TriedVariation
+from chatddx.bench import TriedVariation, usage
 from chatddx.catalog.titles import short
 from chatddx.ledger import RunItem
 from chatddx.runner.gate import Refused
@@ -23,7 +23,6 @@ from .render import (
     show_scores,
     show_summary,
     show_table,
-    usage,
 )
 from .shell import MAX_SEED, Repl, drawn_seed
 

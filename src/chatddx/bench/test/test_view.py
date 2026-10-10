@@ -190,6 +190,21 @@ def test_a_variation_compiles_to_a_skeleton_of_its_own(bench: Bench) -> None:
     }
 
 
+def test_a_variation_s_request_shows_placeholders_for_what_it_is_sent_with(
+    bench: Bench,
+) -> None:
+    engine = bench.endpoint(QWEN)
+    variation = bench.configuration(FREE_TEXT, engine)
+
+    unplaced = bench.request(variation, None, 7)
+    placed = bench.request(variation, engine, 7)
+    assert (unplaced["model"], placed["model"]) == ("‹model›", engine)
+    assert "‹vignette›" in str(placed["messages"])
+    assert placed["seed"] == 7
+    with pytest.raises(ValueError, match="not an engine"):
+        _ = bench.served(variation.configuration.digest)
+
+
 def test_several_configurations_of_one_name_are_refused_a_save(bench: Bench) -> None:
     variation = bench.configuration(FREE_TEXT, bench.endpoint(QWEN))
     _ = Catalog(bench.conn).create(

@@ -11,8 +11,8 @@ from chatddx.catalog import About
 from chatddx.catalog.titles import describe, short
 from chatddx.factors.base import Component, resolve
 from chatddx.factors.cases import Case
-from chatddx.factors.engine import LocalEngine, RemoteEngine
-from chatddx.factors.request import Reasoning, Skeleton, SlotName, render
+from chatddx.factors.engine import LocalEngine
+from chatddx.factors.request import Reasoning, Skeleton
 from chatddx.facts import INTENTS, Effort, ModelFacts, Refusal, Refused
 from chatddx.inventory import url_of
 
@@ -27,13 +27,6 @@ from .render import (
     writes,
 )
 from .shell import Repl
-
-PLACEHOLDERS: dict[SlotName, str] = {
-    "vignette": "‹vignette›",
-    "appendices": "‹appendices›",
-    "completion": "‹completion›",
-    "expectation": "‹expectation›",
-}
 
 _DIGEST = re.compile(r"^sha256:[0-9a-f]{64}$")
 
@@ -79,8 +72,7 @@ def _show_cell(repl: Repl, tags: tuple[str, ...] = ()) -> None:
         table.add_column(column)
 
     if cell.endpoint and cell.engine:
-        engine = bench.get(cell.engine)
-        served = _served_name(engine)
+        served = bench.served(cell.engine)
         url = url_of(bench.inventory, bench.get, cell.endpoint)
         where = f"{bench.title(cell.engine)}, served as {served} at {url}"
         table.add_row("endpoint", cell.endpoint, where)
@@ -101,8 +93,7 @@ def _show_cell(repl: Repl, tags: tuple[str, ...] = ()) -> None:
         return
 
     skeleton = bench.skeleton(variation)
-    served = "‹model›" if cell.engine is None else _served_name(bench.get(cell.engine))
-    request = render(skeleton, model=served, seed=repl.seed, fills=PLACEHOLDERS)
+    request = bench.request(variation, cell.engine, repl.seed)
 
     messages = request.pop("messages")
     assert isinstance(messages, list)
@@ -129,14 +120,6 @@ def _show_cell(repl: Repl, tags: tuple[str, ...] = ()) -> None:
             repl.console.print("no findings", style=LABEL)
 
     _show_scorers(repl, variation, families, tags)
-
-
-def _served_name(engine: Component) -> str:
-    match engine:
-        case LocalEngine() | RemoteEngine():
-            return engine.served_model_name
-        case _:
-            return "?"
 
 
 def _chunk(repl: Repl, variation: TriedVariation, part: str) -> Text:

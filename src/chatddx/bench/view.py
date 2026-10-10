@@ -18,7 +18,13 @@ from chatddx.factors.base import (
 from chatddx.factors.bundle import Registry
 from chatddx.factors.cases import Case, prepare_case
 from chatddx.factors.engine import LocalEngine, RemoteEngine
-from chatddx.factors.request import Skeleton, compile_request, compiled, render
+from chatddx.factors.request import (
+    Skeleton,
+    SlotName,
+    compile_request,
+    compiled,
+    render,
+)
 from chatddx.factors.scoring import Expectation, Scorer, Scoring
 from chatddx.factors.select import reaches
 from chatddx.factors.trial import Trial
@@ -47,6 +53,14 @@ KINDS: dict[str, tuple[str, ...]] = {
     "canary_set": ("canary_set",),
     "model": ("model",),
     "engine": ("engine.local", "engine.remote"),
+}
+
+# What stands in for each slot in a request rendered to be looked at.
+PLACEHOLDERS: dict[SlotName, str] = {
+    "vignette": "‹vignette›",
+    "appendices": "‹appendices›",
+    "completion": "‹completion›",
+    "expectation": "‹expectation›",
 }
 
 
@@ -256,6 +270,23 @@ class Bench:
             return resolve(self.get, variation.configuration.digest, Skeleton)
         registry = self.store.load(s.digest for s in iter_refs(recipe))
         return compile_request(recipe, registry.get)
+
+    # The model name a request to the engine carries.
+    def served(self, engine: str) -> str:
+        found = self.get(engine)
+        if not isinstance(found, LocalEngine | RemoteEngine):
+            raise StructuralError(f"{engine} is a {found.kind_name}, not an engine")
+        return found.served_model_name
+
+    # The request the variation renders on `engine`, with placeholders for the slots, and
+    # for the model when there is no engine.
+    def request(
+        self, variation: TriedVariation, engine: str | None, seed: int
+    ) -> dict[str, JsonValue]:
+        model = "‹model›" if engine is None else self.served(engine)
+        return render(
+            self.skeleton(variation), model=model, seed=seed, fills=PLACEHOLDERS
+        )
 
     def families(self, tags: Iterable[str] = ()) -> list[Family]:
         wanted = set(tags)
