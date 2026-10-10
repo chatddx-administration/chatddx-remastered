@@ -18,6 +18,11 @@ def database(admin: bool = False) -> str:
 SESSION_TTL = timedelta(hours=12)
 
 
+# Where `chatddx api` listens, as HOST:PORT.
+def host() -> str:
+    return os.environ.get("HOST", "localhost:8000")
+
+
 def world() -> Path | None:
     value = os.environ.get("CHATDDX_WORLD")
     return Path(value) if value else None

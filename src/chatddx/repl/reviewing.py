@@ -3,7 +3,7 @@ from collections import Counter
 from rich.table import Table
 from rich.text import Text
 
-from chatddx.bench import Graded
+from chatddx.bench import Graded, usage
 from chatddx.catalog.titles import short
 from chatddx.factors.base import resolve
 from chatddx.factors.request import Skeleton
@@ -23,7 +23,6 @@ from .render import (
     show_scores,
     show_summary,
     show_table,
-    usage,
     value_of,
 )
 from .shell import Repl

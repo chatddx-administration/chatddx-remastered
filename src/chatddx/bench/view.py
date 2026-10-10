@@ -1,4 +1,4 @@
-from collections.abc import Collection, Iterable
+from collections.abc import Collection, Iterable, Mapping
 from dataclasses import dataclass, field
 from typing import Literal
 from uuid import UUID
@@ -18,7 +18,13 @@ from chatddx.factors.base import (
 from chatddx.factors.bundle import Registry
 from chatddx.factors.cases import Case, prepare_case
 from chatddx.factors.engine import LocalEngine, RemoteEngine
-from chatddx.factors.request import Skeleton, compile_request, compiled, render
+from chatddx.factors.request import (
+    Skeleton,
+    SlotName,
+    compile_request,
+    compiled,
+    render,
+)
 from chatddx.factors.scoring import Expectation, Scorer, Scoring
 from chatddx.factors.select import reaches
 from chatddx.factors.trial import Trial
@@ -47,6 +53,14 @@ KINDS: dict[str, tuple[str, ...]] = {
     "canary_set": ("canary_set",),
     "model": ("model",),
     "engine": ("engine.local", "engine.remote"),
+}
+
+# What stands in for each slot in a request rendered to be looked at.
+PLACEHOLDERS: dict[SlotName, str] = {
+    "vignette": "‹vignette›",
+    "appendices": "‹appendices›",
+    "completion": "‹completion›",
+    "expectation": "‹expectation›",
 }
 
 
@@ -135,9 +149,10 @@ class Bench:
     # The heads of the live threads the person owns or collaborates on, of the kinds
     # `word` names.
     def threads(self, word: str) -> list[tuple[Edit, About]]:
-        return [found for kind in KINDS[word] for found in self._visible(kind)]
+        return [found for kind in KINDS[word] for found in self.visible(kind)]
 
-    def _visible(self, kind: str) -> list[tuple[Edit, About]]:
+    # The heads of the live threads of `kind` the person owns or collaborates on.
+    def visible(self, kind: str) -> list[tuple[Edit, About]]:
         return self.catalog.visible(kind, self.person.id)
 
     def names(self, word: str) -> list[str]:
@@ -148,7 +163,7 @@ class Bench:
     def thread(
         self, word: str, name: str, model: str | None = None
     ) -> tuple[Edit, str]:
-        seen = {kind: self._visible(kind) for kind in KINDS[word]}
+        seen = {kind: self.visible(kind) for kind in KINDS[word]}
         addresses = {
             kind: {
                 address
@@ -208,6 +223,19 @@ class Bench:
                 )
         raise NotFound(f"no {word} {name!r} for {self.person.login}")
 
+    # The head of a thread the person sees, by its id, with what the catalog says of it;
+    # with `word`, only of the kinds it names.
+    def thread_by_id(self, id: int, word: str | None = None) -> tuple[Edit, About]:
+        about = self.about(id)
+        thread = self._rows.thread(id)
+        if (
+            thread is None
+            or not about.shows(self.person.id)
+            or (word is not None and thread.kind not in KINDS[word])
+        ):
+            raise NotFound(f"no {word or 'thread'} {id} for {self.person.login}")
+        return self.catalog.head(id), about
+
     def about(self, thread: int) -> About:
         return self.catalog.about(Subject(thread=thread))
 
@@ -250,12 +278,45 @@ class Bench:
         model = None if engine is None else self.model(engine)
         return self.thread(part, name, model)[0].digest
 
+    # A configuration by its thread's id, with `parts` replaced: each by the chunk of
+    # that digest, or taken out for None.
+    def variation(
+        self, configuration: int, parts: Mapping[str, str | None] | None = None
+    ) -> TriedVariation:
+        edit, about = self.thread_by_id(configuration, "configuration")
+        name = about.name or self.catalog.title(configuration)
+        found = TriedVariation(edit, name, self.catalog.recipe(configuration))
+        for part, digest in (parts or {}).items():
+            if part not in PARTS:
+                raise ValueError(f"no part {part!r}: the parts are {', '.join(PARTS)}")
+            if digest is not None and self._rows.kind(digest) not in KINDS[part]:
+                raise ValueError(f"{digest} isn't a stored chunk of {part}")
+            found = found.set(part, digest, self.title(digest))
+        return found
+
     def skeleton(self, variation: TriedVariation) -> Skeleton:
         recipe = variation.varied
         if not variation.parts or recipe is None:
             return resolve(self.get, variation.configuration.digest, Skeleton)
         registry = self.store.load(s.digest for s in iter_refs(recipe))
         return compile_request(recipe, registry.get)
+
+    # The model name a request to the engine carries.
+    def served(self, engine: str) -> str:
+        found = self.get(engine)
+        if not isinstance(found, LocalEngine | RemoteEngine):
+            raise StructuralError(f"{engine} is a {found.kind_name}, not an engine")
+        return found.served_model_name
+
+    # The request the variation renders on `engine`, with placeholders for the slots, and
+    # for the model when there is no engine.
+    def request(
+        self, variation: TriedVariation, engine: str | None, seed: int
+    ) -> dict[str, JsonValue]:
+        model = "‹model›" if engine is None else self.served(engine)
+        return render(
+            self.skeleton(variation), model=model, seed=seed, fills=PLACEHOLDERS
+        )
 
     def families(self, tags: Iterable[str] = ()) -> list[Family]:
         wanted = set(tags)
@@ -284,6 +345,13 @@ class Bench:
             [(f, f.name, f.about) for f in self.families()], name, "case"
         )
 
+    def family_by_id(self, id: int) -> Family:
+        about = self.catalog.about(Subject(family=id))
+        case = self._case(id) if about.shows(self.person.id) else None
+        if case is None:
+            raise NotFound(f"no case {id} for {self.person.login}")
+        return Family(id, about, case)
+
     def tags(self) -> list[str]:
         return sorted({tag for _, about in self._families() for tag in about.tags})
 
@@ -298,10 +366,18 @@ class Bench:
         return sorted({e.expectation_schema for e in held})
 
     # The expectation the case is scored against for the person under `schema`
-    # (`Catalog.expectation_for`): a LookupError when there are several to choose from.
+    # (`Catalog.expectation_for`): Ambiguous when there are several to choose from.
     def expectation(self, case: str, schema: str) -> Expectation | None:
-        digest = self.catalog.expectation_for(case, self.person.id, schema)
+        digest = self._expectation_for(case, schema)
         return None if digest is None else resolve(self.get, digest, Expectation)
+
+    # Several to choose from is the one LookupError
+    # src/chatddx/catalog/threads.py:expectation_for raises.
+    def _expectation_for(self, case: str, schema: str) -> str | None:
+        try:
+            return self.catalog.expectation_for(case, self.person.id, schema)
+        except LookupError as e:
+            raise Ambiguous(str(e)) from None
 
     def trial(
         self, skeleton: Skeleton, engine: str, cases: list[str], seed: int
@@ -364,12 +440,7 @@ class Bench:
         found = [
             expectation
             for case in trial.cases
-            if (
-                expectation := self.catalog.expectation_for(
-                    case, self.person.id, schema
-                )
-            )
-            is not None
+            if (expectation := self._expectation_for(case, schema)) is not None
         ]
         return Scoring(scorer=scorer, expectations=tuple(found)) if found else None
 
@@ -407,12 +478,28 @@ class Bench:
     # Keeps the variation as the person's own configuration, under `name`: a new version
     # of their thread of that name, or else a fork of the configuration's thread.
     def save(self, variation: TriedVariation, name: str) -> Saved:
-        skeleton = self.skeleton(variation)
         mine = self.catalog.find("skeleton", name, owner=self.person.id)
         if len(mine) > 1:
             raise Ambiguous(
                 f"{self.person.login} has {len(mine)} configurations named {name!r}"
             )
+        return self.edit(mine[0], variation) if mine else self.fork(variation, name)
+
+    # Keeps the variation as a new configuration of the person's own, named `name` and
+    # forked from the configuration's edit it varies.
+    def fork(self, variation: TriedVariation, name: str) -> Saved:
+        return self._kept(variation, None, name)
+
+    # Keeps the variation as a new version of `thread`, a configuration the person owns;
+    # nothing is written when it is the head already.
+    def edit(self, thread: int, variation: TriedVariation) -> Saved:
+        _, about = self.thread_by_id(thread, "configuration")
+        if about.owner != self.person.id:
+            raise NotFound(f"no configuration {thread} of yours")
+        return self._kept(variation, thread, about.name or self.catalog.title(thread))
+
+    def _kept(self, variation: TriedVariation, thread: int | None, name: str) -> Saved:
+        skeleton = self.skeleton(variation)
         with self.conn.transaction():
             compilation = (
                 self._compile(variation) or variation.configuration.compilation
@@ -420,7 +507,7 @@ class Bench:
             edit, kept = self.catalog.keep(
                 skeleton.digest,
                 self.person.id,
-                mine[0] if mine else None,
+                thread,
                 name=name,
                 compilation=compilation,
                 forked_from=variation.configuration.id,
@@ -505,6 +592,14 @@ class Bench:
                 raise NotFound(f"no run of yours starts with {prefix!r}")
             case found:
                 raise Ambiguous(f"{len(found)} runs of yours start with {prefix!r}")
+
+    # A live run the person owns, by its whole id.
+    def run_by_id(self, run: UUID) -> RunStarted:
+        about = self.catalog.about(Subject(run=run))
+        found = self.store.started([run])
+        if about.owner != self.person.id or about.deleted or not found:
+            raise NotFound(f"no run {run} of yours")
+        return found[0]
 
     # The person's runs whose trial is built on `digest`.
     def reaching(self, digest: str) -> list[RunStarted]:
