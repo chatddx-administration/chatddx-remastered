@@ -178,7 +178,7 @@ applied (default tier `TOP_TIER`), or `would apply <name>` for each one `pending
 ## Roles and connections
 
 `src/chatddx/core/settings.py:database(admin: bool = False) -> str` makes a libpq connection string from `DB_HOST`,
-`DB_NAME`, and `DB_ADMIN` or `DB_USER` (`KeyError` when one isn't set; `.env-example`).
+`DB_NAME`, and `DB_ADMIN` or `DB_USER` (`KeyError` when one isn't set; `.env`).
 
 | Role | Created by | Can |
 | --- | --- | --- |
@@ -313,3 +313,5 @@ Behavior described here that `docs/store.md` doesn't state:
 - `People` reads roles back as `Role`, so a role the tier-2 CHECK would refuse raises `ValueError` below tier 2.
 - `public.migration` is created by `migrate`, not by a migration file, and is readable only by the admin.
 - `migrations()` raises `ValueError` for a file name with fewer than three `-`-separated parts.
+
+## Proposed amendments

@@ -40,7 +40,7 @@ and the repl (src/chatddx/inventory/world.py, src/chatddx/cli.py). A World may a
 when git may hold them.
 
 `CHATDDX_WORLD` names the deployment's World directory and is the default `--world` of `init-data` and the `repl`
-(src/chatddx/core/settings.py:world, `.env-example`). The runner is handed its inventory by the bench, as before.
+(src/chatddx/core/settings.py:world, `.env`). The runner is handed its inventory by the bench, as before.
 
 A World may point into another. An include or a source's path can reach another World's directory, so one World can
 take another's vignettes or endpoints without copying them.
@@ -50,8 +50,8 @@ This repository has two, in `worlds/`:
   factors of the fake models and engines. Both endpoints are cleared for the sample. A test fails when its engines
   change and its endpoints don't.
 - Kompismoln's World: the hosts pelle and malborg. Its inventory is written by hand and takes the sample World's
-  vignettes; its endpoints, hosts and factors are what the engine import writes from the hosts' reports. Nothing in
-  it is cleared, so the runner refuses to send the sample to its endpoints.
+  vignettes; its endpoints, hosts and factors are what the engine import writes from the hosts' reports. Both
+  endpoints are cleared for the sample.
 
 ## Sources
 A source is where a set of vignettes is fetched from, by id. Today a source is a directory with one file per vignette,
@@ -118,7 +118,8 @@ that doesn't say where it keeps the model or the template, and for an engine who
 the endpoint decides that, just as the start-up owns the arguments that pin the model and the template
 (docs/factors.md, "Local engine").
 
-The fake vLLM can be started from a start-up, and then serves the endpoint's engine (docs/vllm.md, "The fake vLLM").
+The fake vLLM can be started from a start-up (`chatddx fake-engines`), and then serves the endpoint's engine
+(docs/vllm.md, "The fake vLLM").
 
 ### Reaching an engine
 An endpoint is reached at its address, or a remote engine's endpoint at the engine's. Before case-derived content goes

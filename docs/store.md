@@ -2,8 +2,10 @@
 
 The store is chatddx's database: PostgreSQL, reached through psycopg with plain SQL migrations and no ORM. Each module
 that keeps data has a schema of its own: the factors (docs/factors.md), the ledger (docs/ledger.md), identity
-(docs/identity.md) and the catalog (docs/catalog.md). Everything but identity is append-only, and the database
-enforces it at tier 2.
+(docs/identity.md) and the catalog (docs/catalog.md).
+
+Catalog, factors and ledger are append-only, and the database enforces it at tier 2.
+Identity and the worker queue allow updates.
 
 This document describes what the store keeps, how the database guards it, and how it is reached. Names, rules and
 errors are in the API, docs/store-api.md. Each schema's tables are described with its module's API, and its
@@ -36,6 +38,12 @@ but never removes them; it checks passwords and keeps sessions, and disabling a 
 The catalog decides what its rows mean (docs/catalog.md). The store reads the rows it asks for and writes what it
 decided, all of one change at once.
 
+### The queue
+The worker's queue is state, not factors or records, and is updated in place, as people are: each job's status as
+the worker claims, runs and ends it, each owner's controls (paused, stopping), and the workers, with when each was
+last seen. A worker claims the next queued job by locking its row, so two workers never take the same one. A job
+points at the run it started; what the run did is the ledger's, read from there and not copied into the job.
+
 ## Tiers
 Integrity comes in three tiers, and a deployment applies migrations up to a chosen tier. Each schema has migrations
 at every tier:
@@ -50,9 +58,9 @@ order: a later schema's tier 0 runs after an earlier schema's tier 2. The comman
 admin, up to the top tier unless told otherwise, and can list what it would apply instead.
 
 ## Roles and connections
-Connections are set up from the environment (.env-example), through the project's settings. Roles belong to the
-cluster rather than to a database, so every database in a cluster shares them. Grants don't bind the admin or a
-superuser, which is why the app connects as the writer and not as the admin.
+Connections are set up from the environment (.env), through the project's settings. Roles belong to the cluster rather
+than to a database, so every database in a cluster shares them. Grants don't bind the admin or a superuser, which is
+why the app connects as the writer and not as the admin.
 
 At tier 0 there are no grants, so a tier-0 deployment has to connect as the admin.
 Tier-2 triggers bind the admin too, and only a superuser who disables triggers gets around them.
@@ -60,7 +68,7 @@ Tier-2 triggers bind the admin too, and only a superuser who disables triggers g
 | Role | Used by | Created by | May |
 | --- | --- | --- | --- |
 | Admin | `chatddx migrate` and the tests. | Setup script. | Own the database and schemas; create databases and roles. |
-| Writer | The app. | Setup script. | Read and add to factors, ledger and catalog; create, read and update people. |
+| Writer | The app. | Setup script. | Read and add to factors, ledger and catalog; create, read and update people and the worker queue. |
 | Reader | Nothing yet. | Tier 1. | Read the factors, the catalog and people, but not passwords. |
 
 The reader can't read the ledger or sessions.
@@ -114,16 +122,3 @@ These are known shortcomings of the store's design. Some have more details in do
   a bump of the scorer's schema version.
 
 ## Proposed amendments
-- CHANGE in the introduction, "the catalog (docs/catalog.md). Everything but identity is append-only" → "the catalog
-  (docs/catalog.md) and the worker's queue. Everything but identity and the queue is append-only". Decided
-  (`agents/wip-worker.md`, "K2. The queue").
-- ADD under "What the store does", after "The catalog": "### The queue
-  The worker's queue is state, not factors or records, and is updated in place, as people are: each job's status as
-  the worker claims, runs and ends it, each owner's controls (paused, stopping), and the workers, with when each was
-  last seen. A worker claims the next queued job by locking its row, so two workers never take the same one. A job
-  points at the run it started; what the run did is the ledger's, read from there and not copied into the job."
-  (`agents/wip-worker.md`, "K2. The queue"; the old worker claimed the same way:
-  https://github.com/chatddx-administration/chatddx/blob/504792cbeb09508f2c52912be29a3d8809d2fa1d/src/chatddx/worker/worker.py#L239-L253).
-- CHANGE in "Roles and connections", the writer's "May", "create, read and update people." → "create, read and update
-  people; read, add to and update the worker's queue." Granted per table, as identity's are (docs/migrations.md,
-  "identity", "Tier 1").

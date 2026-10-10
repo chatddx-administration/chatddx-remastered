@@ -41,12 +41,15 @@ It must be possible to deliver the cage together with the results, for scientifi
 - **Schema op:** a named, versioned rewrite an output chunk applies to its schema at
   compile time, so the skeleton sends and shows the rewritten schema. Today the only one is `inline_refs@1`.
 - **Trial:** The smallest unit of an scientific intent (i.e. Experiment): skeleton + engine + cases + text-cleanup steps + seeds.
+- **Batch:** trials run together, crossed from one configuration's variations over the same cases, at one endpoint. Kept on a catalog thread.
 - **Replicate:** one seed of a trial, identified by its index.
 - **Item key:** (case, replicate index), which identifies one request of a run.
 - **Execution:** how a run issues requests: order, concurrency, timeout and retries.
 - **View:** the part of an output and of an expectation that a scorer scores, and how.
 - **Compilation:** A provenance (component) that says which recipe and compiler produced a skeleton
 - **Run** and **Score:** a stage log.
+- **Worker:** the process that runs the trials queued for it, outside the request that asked for them.
+- **Job:** a trial queued for the worker, at an endpoint, for an owner, scored afterwards or not.
 - **Record** / **ledger:** events logged while running or scoring.
 - **Seal:** the hash over a log's started row and item rows, kept in its finished row.
 - **Finding:** a warning or info produced when something declared doesn't match what was observed, or when a setting is risky.
@@ -113,7 +116,7 @@ and re-applying it when its origin moves), and `catalog.edit.based_on`.
 - How sensitivity is enforced: factors and ledgers provide the means but not the enforcment itself.
 - Storage: How components and records map to Postgres, table structures are suggested for clarity but not prescribed. In general:
     - factor and records are insert-only
-    - nothing is updated;
+    - nothing on the rig is updated (people and the worker are outside of the rig)
     - version chains between digests belong to planned catalog pipeline.
 
 ## Target stack
@@ -129,7 +132,7 @@ No comparison between the 3070 and the 5090; each hardware class is its own cage
 
 Returns model identifiers: the run check compares the returned `model` with the declared one (`ledger.run:check_run`). `system_fingerprint` is kept in the raw response but not checked.
 
-- **Orchestrator.** Runs in Kubernetes, writes the start-ups and hosts the portal. A postgres database stores user-managed data: factors and records are append-only; nothing is updated.
+- **Orchestrator.** Runs in Kubernetes, writes the start-ups and hosts the portal. A postgres database stores user-managed data: factors, records and the catalog are append-only.
 
 ## Compromises
 The code doesn't declare how reproducible a run is. It is *observed*:
@@ -287,17 +290,3 @@ Each code is described where it's produced: `docs/factors.md`, "Lints"; `docs/le
   The agent's take is (c)
 
 ## Proposed amendments
-- ADD to the glossary, after "Trial": "- **Plan:** the trials a batch runs, crossed from one configuration's
-  variations over the same cases, at one endpoint, and kept on a catalog thread (docs/factors.md, "Plan")."
-  Decided with the batch planner's port (`agents/wip-batch.md`, "Kept plans"); the old crossing is
-  https://github.com/chatddx-administration/chatddx/blob/504792cbeb09508f2c52912be29a3d8809d2fa1d/src/chatddx/bench/plan.py.
-- ADD to the glossary, after "Run and Score": "- **Worker:** the process that runs the trials queued for it, outside
-  the request that asked for them." and "- **Job:** a trial queued for the worker, at an endpoint, for an owner,
-  scored afterwards or not." (`agents/wip-worker.md`, "The contract"; the old worker:
-  https://github.com/chatddx-administration/chatddx/blob/504792cbeb09508f2c52912be29a3d8809d2fa1d/src/chatddx/worker/worker.py).
-- CHANGE under "Work in progress", "Storage", "nothing is updated;" → "nothing is updated, but people and the worker's
-  queue, which are state rather than factors or records (docs/store.md);". Decided for the queue
-  (`agents/wip-worker.md`, "K2. The queue"); people are updated already (`src/chatddx/store/people.py`).
-- CHANGE under "Target stack", "Orchestrator", "factors and records are append-only; nothing is updated." →
-  "factors and records are append-only; only people and the worker's queue are updated." (`agents/wip-worker.md`,
-  "K2. The queue").

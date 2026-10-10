@@ -1,9 +1,9 @@
+import pytest
+
 from chatddx.inventory import Inventory
-from chatddx.repl.test.sample import FREE_TEXT, GPT_OSS, QWEN, Say
+from chatddx.repl.test.sample import FREE_TEXT, GPT_OSS, QWEN, Say, line_of
 
-
-def line_of(written: str, start: str) -> str:
-    return [line for line in written.splitlines() if line.strip().startswith(start)][-1]
+pytestmark = pytest.mark.wip
 
 
 def test_endpoints_are_listed_with_their_engines_and_clearance(

@@ -1,12 +1,7 @@
 from pydantic import JsonValue
 
-from chatddx.factors.base import (
-    Component,
-    canonical_bytes,
-    iter_refs,
-    parse_component,
-    resolve,
-)
+from chatddx.factors.base import Component, canonical_bytes, iter_refs, resolve
+from chatddx.factors.kinds import parse_component
 from chatddx.factors.request import Compilation, Recipe
 from chatddx.factors.scoring import Expectation
 

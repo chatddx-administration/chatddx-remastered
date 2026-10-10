@@ -1,6 +1,5 @@
 from collections.abc import Iterator
 
-import psycopg
 import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
@@ -8,7 +7,7 @@ from psycopg.conninfo import make_conninfo
 
 from chatddx.api.app import app
 from chatddx.bench import Bench
-from chatddx.conftest import WORLD, create_database, drop_database
+from chatddx.conftest import WORLD
 from chatddx.core import settings
 from chatddx.facts import BUNDLED, Facts
 from chatddx.identity import Person
@@ -20,18 +19,13 @@ PASSWORD = "correct horse battery staple"
 
 
 @pytest.fixture
-def db(curated: str) -> Iterator[str]:
-    name = create_database(template=curated)
-    try:
-        yield name
-    finally:
-        drop_database(name)
+def template(curated: str) -> str:
+    return curated
 
 
 @pytest.fixture
-def conn(db: str) -> Iterator[Connection]:
-    with psycopg.connect(settings.database(), dbname=db, autocommit=True) as c:
-        yield c
+def autocommit() -> bool:
+    return True
 
 
 @pytest.fixture

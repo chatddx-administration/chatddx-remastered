@@ -413,3 +413,11 @@ sample models, served as the old inventory served them, and checks each answer a
   `enum`, the first of `examples`,", since a string's `pattern` isn't followed and `fake <key>` may not match it, as
   for a note's `language` in the sample's `targets.json` (`src/chatddx/fake_vllm/chat.py:instance`,
   `src/chatddx/fake_vllm/test/test_fake_vllm.py:test_what_it_writes_holds_to_the_sample_s_schemas`).
+- ADD under "The fake vLLM", after its first paragraph: "`chatddx fake-engines [--world DIR] [ENDPOINT …]` serves the
+  World's fake engines, each on a server of its own where its endpoint's start-up says, till Ctrl-C. An engine is a
+  fake when its runtime's closure is `chatddx fake-vllm`; the engines come from the store, where init-data put them."
+  (src/chatddx/cli.py:_fake_engines, src/chatddx/fake_vllm/server.py:run_all,
+  src/chatddx/fake_vllm/served.py:CLOSURE, src/chatddx/fake_vllm/test/test_fake_engines.py).
+- CHANGE under "The fake vLLM", "Hang-up", "logged as" → "logged, through the logger `chatddx.fake_vllm.server`, as":
+  the command prints the log as before, and a test reads it with `caplog`, since a request's thread may log after
+  its client has moved on (src/chatddx/fake_vllm/server.py:_Handler.log_message, `run_all`).

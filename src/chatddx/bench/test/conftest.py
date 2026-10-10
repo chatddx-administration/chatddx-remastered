@@ -1,12 +1,7 @@
-from collections.abc import Iterator
-
-import psycopg
 import pytest
 
 from chatddx.bench import Bench
-from chatddx.conftest import WORLD, create_database, drop_database, sample_plan
-from chatddx.core import settings
-from chatddx.curation import Plan
+from chatddx.conftest import WORLD
 from chatddx.facts import BUNDLED, Facts
 from chatddx.identity import Person
 from chatddx.inventory import Inventory
@@ -14,24 +9,14 @@ from chatddx.store import People
 from chatddx.store.store import Connection
 
 
-@pytest.fixture(scope="module")
-def plan() -> Plan:
-    return sample_plan()
+@pytest.fixture
+def template(curated: str) -> str:
+    return curated
 
 
 @pytest.fixture
-def db(curated: str) -> Iterator[str]:
-    name = create_database(template=curated)
-    try:
-        yield name
-    finally:
-        drop_database(name)
-
-
-@pytest.fixture
-def conn(db: str) -> Iterator[Connection]:
-    with psycopg.connect(settings.database(), dbname=db, autocommit=True) as c:
-        yield c
+def autocommit() -> bool:
+    return True
 
 
 @pytest.fixture

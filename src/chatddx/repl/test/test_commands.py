@@ -1,6 +1,10 @@
+import pytest
+
 from chatddx.repl.commands import COMMANDS, complete, handle
 from chatddx.repl.shell import Repl
 from chatddx.repl.test.sample import PLAN, QWEN, Say, tried
+
+pytestmark = pytest.mark.wip
 
 
 def test_the_prompt_shows_the_cell(repl: Repl, say: Say):

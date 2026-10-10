@@ -72,6 +72,10 @@ version it came from. Trying a variation costs nothing in the catalog, since any
 A variation worth keeping becomes an edit of its thread, or a fork. Configurations are organised by their lineage, the
 recipe parts they use, what is said about them and their runs, not by their names, which are optional.
 
+A *batch* is kept on a thread of its own (docs/factors.md, "Batch"): the variations of a configuration that a person
+runs together over the same cases, kept to run again or later. Adding cases to a batch is an edit of its thread, since a
+batch's trials pin their cases.
+
 ### Recipes
 A recipe has no thread of its own; its history is kept on the skeleton thread it compiles to. Each edit of a skeleton
 thread can name the compilation that produced its skeleton, and the compilation holds the recipe (docs/factors.md,
@@ -205,6 +209,7 @@ Each kind is described by:
 | Local engine | Its model, server and GPU. | `google/gemma-3-12b-it on vllm 0.24.0 (NVIDIA GeForce RTX 5090)` |
 | Remote engine | Its model and host. | `gpt-4o at api.openai.com` |
 | Trial | Its skeleton, its engine, and how many cases and seeds it has. | `plan on qwen3-8b@pelle, 20 cases, 1 seed` |
+| Batch | Variation count, its base, case count, and endpoint. | `4 variations of plan, 20 cases, at qwen3-8b@pelle` |
 | Judge | Its skeleton and engine. | `judge grader on qwen3-8b@pelle` |
 | Scorer | Its code. | `scorer chatddx 0.0.0+dev` |
 | Scoring | Its scorer and how many expectations it has. | `plan against 20 expectations` |
@@ -373,10 +378,3 @@ two families.
   changes from it, would say it shorter.
 
 ## Proposed amendments
-- ADD under "Configurations and variations", after its first two paragraphs: "A *batch* is a plan thread
-  (docs/factors.md, "Plan"): the variations of a configuration that a person runs together over the same cases, kept to
-  run again or later. Adding cases to a batch is an edit of its thread, since a plan's trials pin their cases."
-  Decided (`agents/wip-batch.md`, "Kept plans"). Plans need no exception under "Threads and edits": every kind but
-  cases and compilations has threads.
-- ADD to the table under "Titles", after "Trial": "| Plan | How many variations, its base, how many cases, and its
-  endpoint. | `4 variations of plan, 20 cases, at qwen3-8b@pelle` |" (`agents/wip-batch.md`, "Kept plans").

@@ -29,6 +29,8 @@ from chatddx.ledger import (
 from chatddx.store import Store, migrate
 from chatddx.store.store import Connection
 
+pytestmark = pytest.mark.solidified
+
 
 def call(model: str) -> Call:
     return Call(

@@ -37,12 +37,6 @@ Being a factor and being a component are separate questions. A factor is held in
    vignette edited at its source, GPU arithmetic that isn't deterministic. Fingerprints, returned model names, drift
    findings and canaries reveal them (docs/ledger.md, "Findings").
 
-Canary sets are components but not factors. They are *instruments*: fixed probe requests that measure observed factors
-without changing any output (see "Canary sets").
-
-Compilations are components but not factors either. They are *provenance*: each says how a skeleton was made, and no
-component refers to one, so they change no digest and no output (see "Compilation").
-
 A trial's outputs therefore depend on the trial's pinned factors and on its run's recorded and observed factors. Two
 runs of the same trial are interchangeable only when those agree too (see "Open design issues").
 
@@ -56,7 +50,17 @@ runs of the same trial are interchangeable only when those agree too (see "Open 
 - Inventory: [docs/inventory.md].
 - Knowledge about models (reasoning levels, recommended sampling, output caveats, specs): the model facts
   (docs/facts.md). Facts help write chunks and check them, but no digest depends on them.
-- Instruments and provenance: canary sets and compilations are components, but not factors.
+
+#### Components but not factors
+Most components are factors, these are the exceptions:
+- Canary sets are *instruments*: fixed probe requests that measure observed factors without changing any output
+  (see "Canary sets").
+
+- Compilations are *provenance*: each says how a skeleton was made, and no component refers to one, so they change
+  no digest and no output (see "Compilation").
+
+- Batches: each says which trials a batch runs, and no component refers to one, so they change no digest and no
+  output.
 
 ## How components work
 
@@ -96,7 +100,7 @@ applies, and they fall into a few groups:
 - **Grading**: expectations and the schemas they follow, scorers, and judges: how answers are scored.
 - **Roots**: trials and scorings. A trial ties a request, an engine and cases into one experimental condition; a scoring
   ties a scorer to the expectations it grades against. Pinning a root pins everything it references.
-- **Instruments and provenance**: canary sets and compilations, components that aren't factors.
+- **Instruments, provenance and batches**: canary sets, compilations and batches, components that aren't factors.
 
 The sections below take each kind in turn.
 
@@ -509,6 +513,18 @@ A run's calls, and a score's judge calls, show whether the settings were followe
 attempts than its retries allow, when items were sent out of order, or when more calls were in flight than allowed
 (docs/ledger.md, "Run" and "Score"). Timeouts aren't checked.
 
+### Batch
+Principal author: researchers.
+
+A batch is trials run together: those crossed from one configuration's variations over the same cases, at one
+endpoint. It holds:
+- the trials
+- the endpoint they run at, by its name in the inventory, as a case names its source
+- what was crossed: the skeleton the variations vary from, and the chunks tried for each recipe part.
+
+Each of its trials is run as a run of its own, so a batch's runs are found by its trials. Renaming the endpoint
+leaves a batch naming one the inventory doesn't have, as renaming a source leaves its cases.
+
 ## Scoring
 
 ### Expectation schema
@@ -593,13 +609,10 @@ name.
 ## Canary sets
 Principal author: developers.
 
-A canary set is a list of fixed, non-sensitive probe requests. Each canary holds literal messages, request options, none
-of them the rig's, and an optional seed. A run names the canary set it uses. Canaries are rendered as skeletons are,
-without slots.
-
-A canary set is an instrument, not a factor: it changes no output and no score, and it is there to detect observed
-factors, such as an engine that changed between runs. It is a component so that the same set can be compared across
-runs.
+Canary probes detect observed factors, such as an engine that changed between runs. A canary set is a list of fixed,
+non-sensitive probe requests. Each canary holds literal messages, request options, none of them the rig's, and an
+optional seed. A run names the canary set it uses. Canaries are rendered as skeletons are, without slots. They are
+components so that the same set can be compared across runs.
 
 ## Lints
 Lints warn about settings that are valid but risky. They run on demand, and no component stores their findings.
@@ -722,25 +735,3 @@ a picker of the right kind for every reference, straight from the schema. Refere
 because nothing read it. The JSON Schema plays no part in any digest, so adding it back changes no digest.
 
 ## Proposed amendments
-- ADD under "Trials", after "Execution": "### Plan
-  Principal author: researchers.
-
-  A plan is what a batch runs: the trials crossed from one configuration's variations over the same cases, at one
-  endpoint. It holds:
-  - the trials;
-  - the endpoint they run at, by its name in the inventory, as a case names its source;
-  - what was crossed: the skeleton the variations vary from, and the chunks tried for each recipe part.
-
-  Each of its trials is run as a run of its own, so a plan's runs are found by its trials. Renaming the endpoint
-  leaves a plan naming one the inventory doesn't have, as renaming a source leaves its cases." Decided: a plan is a
-  component of a new kind, kept on a catalog thread (`agents/wip-batch.md`, "Kept plans"). The old crossing:
-  https://github.com/chatddx-administration/chatddx/blob/504792cbeb09508f2c52912be29a3d8809d2fa1d/src/chatddx/bench/plan.py; the trials it holds: `src/chatddx/factors/trial.py:Trial`.
-- ADD under "What a factor is", after the paragraph on compilations: "Plans are components but not factors either:
-  each says which trials a batch runs, and no component refers to one, so they change no digest and no output (see
-  "Plan")." (`agents/wip-batch.md`, "Kept plans").
-- CHANGE under "Kinds", "**Instruments and provenance**: canary sets and compilations, components that aren't
-  factors." → "**Instruments, provenance and plans**: canary sets, compilations and plans, components that aren't
-  factors."
-- CHANGE under "Not factors", "Instruments and provenance: canary sets and compilations are components, but not
-  factors." → "Instruments, provenance and plans: canary sets, compilations and plans are components, but not
-  factors."

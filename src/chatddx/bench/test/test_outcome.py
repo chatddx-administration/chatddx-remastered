@@ -6,7 +6,6 @@ import pytest
 from pydantic import JsonValue
 
 from chatddx.bench import outcome, usage
-from chatddx.conftest import sample_plan
 from chatddx.curation import Plan
 from chatddx.factors.base import Fingerprint, resolve
 from chatddx.factors.request import Skeleton
@@ -14,12 +13,9 @@ from chatddx.fake_vllm.chat import instance
 from chatddx.ledger import Call, ItemKey, RunItem, ToolRun, Turn
 from chatddx.runner.send import STOPPED
 
+pytestmark = pytest.mark.wip
+
 NOW = datetime(2026, 1, 1, tzinfo=UTC)
-
-
-@pytest.fixture(scope="module")
-def plan() -> Plan:
-    return sample_plan()
 
 
 def skeleton(plan: Plan, recipe: str) -> Skeleton:

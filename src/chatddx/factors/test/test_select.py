@@ -4,6 +4,8 @@ from pydantic import JsonValue, ValidationError
 from chatddx.factors.scoring import View
 from chatddx.factors.select import parse_selector, reaches, select, split
 
+pytestmark = pytest.mark.solidified
+
 PLAN: JsonValue = {
     "diagnoses": [
         {"diagnosis": "ACS", "critical": True},

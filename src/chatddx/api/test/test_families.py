@@ -1,11 +1,14 @@
 from typing import Any
 
+import pytest
 from fastapi.testclient import TestClient
 
 from chatddx.bench import Bench
 from chatddx.bench.test.sample import another_expectation
 from chatddx.curation import load_cases
 from chatddx.curation.plan import SAMPLE
+
+pytestmark = pytest.mark.wip
 
 
 def dutchfall(signed: TestClient) -> dict[str, Any]:

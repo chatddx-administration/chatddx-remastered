@@ -1,14 +1,8 @@
-import socket
-from collections.abc import Iterator
-from pathlib import Path
 from uuid import UUID
 
-import psycopg
 import pytest
 
 from chatddx.catalog import Subject
-from chatddx.conftest import sample_plan
-from chatddx.core import settings
 from chatddx.curation import Plan, load_cases
 from chatddx.curation.plan import SAMPLE
 from chatddx.factors.base import Code, resolve
@@ -19,39 +13,12 @@ from chatddx.identity import Person
 from chatddx.inventory import Inventory
 from chatddx.runner.run import Runner
 from chatddx.runner.score import NO_EXPECTATION, score_run
-from chatddx.runner.test.test_run import DELAY, QWEN, faked, rows, trial, world
-from chatddx.store import Catalog, People, Store
+from chatddx.runner.test.conftest import DELAY, QWEN, faked
+from chatddx.runner.test.test_run import rows, trial
+from chatddx.store import Catalog, Store
 from chatddx.store.store import Connection
 
-
-@pytest.fixture(scope="module")
-def plan() -> Plan:
-    return sample_plan()
-
-
-@pytest.fixture
-def conn(db: str) -> Iterator[Connection]:
-    with psycopg.connect(settings.database(), dbname=db, autocommit=True) as c:
-        yield c
-
-
-@pytest.fixture
-def alice(conn: Connection) -> Person:
-    return People(conn).add("alice", "Alice")
-
-
-@pytest.fixture
-def inventory(tmp_path: Path) -> Inventory:
-    with socket.socket() as s:
-        s.bind(("127.0.0.1", 0))
-        port = int(s.getsockname()[1])
-    return world(tmp_path, port)
-
-
-@pytest.fixture
-def fake(inventory: Inventory, plan: Plan) -> Iterator[None]:
-    with faked(inventory, plan):
-        yield
+pytestmark = pytest.mark.wip
 
 
 # Each case's targets as init-data lands them (src/chatddx/curation/write.py).
@@ -145,6 +112,7 @@ def test_cases_without_an_expectation_get_no_value_and_are_noted(
     )
 
 
+@pytest.mark.slow
 def test_an_answer_that_can_t_be_read_is_noted_and_scored_without_one(
     conn: Connection, inventory: Inventory, alice: Person, plan: Plan
 ) -> None:

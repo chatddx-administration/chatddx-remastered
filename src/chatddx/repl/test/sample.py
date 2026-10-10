@@ -14,3 +14,7 @@ type Say = Callable[..., str]
 def tried(repl: Repl) -> TriedVariation:
     assert repl.cell.variation is not None
     return repl.cell.variation
+
+
+def line_of(written: str, start: str) -> str:
+    return [line for line in written.splitlines() if line.strip().startswith(start)][-1]

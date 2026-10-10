@@ -1,4 +1,8 @@
+import pytest
+
 from chatddx.catalog import made_for, variant_name, variants_for
+
+pytestmark = pytest.mark.solidified
 
 QWEN = "Qwen/Qwen3-8B-AWQ"
 GPT_OSS = "openai/gpt-oss-20b"

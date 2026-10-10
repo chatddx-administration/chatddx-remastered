@@ -1,4 +1,5 @@
 import json
+import logging
 import select
 import socket
 import threading
@@ -6,10 +7,12 @@ import time
 from collections.abc import Generator, Sequence
 from contextlib import contextmanager
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
-from typing import Any, cast
+from typing import Any, cast, override
 
 from .chat import Failure, accept, completion, respond, stream
 from .served import VERSION, Refused, Served
+
+LOG = logging.getLogger(__name__)
 
 
 def models(served: Sequence[Served]) -> dict[str, Any]:
@@ -109,6 +112,17 @@ class _Handler(BaseHTTPRequestHandler):
             return False
         return True
 
+    # Logged, not written to stderr: a request's thread can outlive its client, so what it logs
+    # goes to whoever listens then; `run` prints it.
+    @override
+    def log_message(self, format: str, *args: Any) -> None:
+        LOG.info(
+            "%s - - [%s] %s",
+            self.address_string(),
+            self.log_date_time_string(),
+            format % args,
+        )
+
     def _json(self, status: int, body: Any) -> None:
         content = b"" if body is None else json.dumps(body).encode()
         self.send_response(status)
@@ -167,15 +181,35 @@ def run(model: str, argv: Sequence[str], delay: float, runaway: bool) -> None:
         served = Served.of(model, argv)
     except Refused as e:
         raise SystemExit(f"the fake vLLM won't start: {e}") from None
-    fake = server([served], delay=delay, runaway=runaway)
-    host, port = fake.server_address[:2]
-    names = ", ".join(served.names)
-    print(
-        f"the fake vLLM {VERSION}, serving {model} as {names} at http://{host!s}:{port}/v1"
-    )
+    run_all([served], delay, runaway)
+
+
+# Each model on a server of its own, at its own address, till Ctrl-C.
+def run_all(served: Sequence[Served], delay: float, runaway: bool) -> None:
+    fakes = [server([s], delay=delay, runaway=runaway) for s in served]
+    printed = logging.StreamHandler()
+    LOG.addHandler(printed)
+    LOG.setLevel(logging.INFO)
+    for s, fake in zip(served, fakes, strict=True):
+        host, port = fake.server_address[:2]
+        names = ", ".join(s.names)
+        print(
+            f"the fake vLLM {VERSION}, serving {s.model} as {names} "
+            + f"at http://{host!s}:{port}/v1"
+        )
+    first, *others = fakes
+    for fake in others:
+        threading.Thread(
+            target=fake.serve_forever, kwargs={"poll_interval": 0.01}, daemon=True
+        ).start()
     try:
-        fake.serve_forever()
+        first.serve_forever()
     except KeyboardInterrupt:
         pass
     finally:
-        fake.server_close()
+        for fake in others:
+            fake.shutdown()
+        for fake in fakes:
+            fake.server_close()
+        LOG.removeHandler(printed)
+        LOG.setLevel(logging.NOTSET)

@@ -32,6 +32,8 @@ from chatddx.fake_vllm.chat import (
 )
 from chatddx.fake_vllm.served import VERSION, Refused, Served
 
+pytestmark = pytest.mark.solidified
+
 QWEN = "Qwen/Qwen3-8B-AWQ"
 GPT_OSS = "openai/gpt-oss-20b"
 TOOLS = ("--enable-auto-tool-choice", "--tool-call-parser")

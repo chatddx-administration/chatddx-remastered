@@ -1,3 +1,4 @@
+import logging
 import socket
 import threading
 import time
@@ -14,6 +15,8 @@ from chatddx.fake_vllm.server import serving
 from chatddx.ledger import fingerprint_request
 from chatddx.runner.send import STOPPED, Delta, Stopped, send
 from chatddx.runner.test.test_wire import SERVED, body, whole
+
+pytestmark = pytest.mark.wip
 
 
 def at(host: str, port: int) -> str:
@@ -56,8 +59,9 @@ def test_a_call_records_the_body_s_fingerprint_and_the_answer_without_the_prompt
 
 
 def test_a_runaway_is_cut_short_and_what_came_is_kept(
-    capsys: pytest.CaptureFixture[str],
+    caplog: pytest.LogCaptureFixture,
 ) -> None:
+    caplog.set_level(logging.INFO, "chatddx.fake_vllm.server")
     with serving([SERVED], "127.0.0.1", 0, runaway=True) as address:
         call = send(at(*address), body(temperature=0))
         cut = send(
@@ -74,7 +78,7 @@ def test_a_runaway_is_cut_short_and_what_came_is_kept(
     assert cut.error == "stopped: nothing but whitespace for 5 tokens"
     assert let_run.error is None
     assert choice(let_run.response)["finish_reason"] == "length"
-    assert "aborted: the client hung up" in capsys.readouterr().err
+    assert "aborted: the client hung up" in caplog.text
 
 
 def test_an_interrupt_mid_stream_records_what_came_as_stopped(url: str) -> None:
@@ -147,6 +151,7 @@ def test_only_a_call_that_got_no_answer_is_tried_again(url: str) -> None:
     assert rejected.error is not None and rejected.error.startswith("HTTP 404: ")
 
 
+@pytest.mark.slow
 def test_a_call_past_its_timeout_is_cut_short() -> None:
     with serving([SERVED], "127.0.0.1", 0, delay=0.05) as address:
         call = send(at(*address), body(), execution=Execution(timeout_s=0.3))

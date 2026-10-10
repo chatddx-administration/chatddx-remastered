@@ -75,11 +75,11 @@ https://github.com/chatddx-administration/chatddx/blob/504792cbeb09508f2c52912be
 
 ## The contract
 What edges and the planner hand the worker, and what they get back. Take:
-1. **The unit asked for**: a trial at an endpoint, for an owner, scored afterwards or not, and the plan it came from
+1. **The unit asked for**: a trial at an endpoint, for an owner, scored afterwards or not, and the batch it came from
    if any (`agents/wip-batch.md`). That is `Bench.start` followed by `Bench.score` (`src/chatddx/bench/view.py`), and
    what `POST /api/runs` asks today (`agents/wip-api.md`, "The plan").
 2. **How its runs are found**: by trial digest and owner (`Bench.runs`; `GET /api/runs?trial=`), or through a kept
-   plan (`agents/wip-batch.md`, "Kept plans").
+   batch (`agents/wip-batch.md`, "Kept batches").
 3. **The surface an edge calls**: queue, which gives the job's id; stop; and the events, by item from the ledger, with
    deltas where they can be had (K3). A job's state is the queue's; what its run did is the ledger's, read from there
    and not copied.
@@ -110,7 +110,7 @@ progress"; `docs/store.md`), as identity's people and sessions are. Take, for it
 - **A schema of its own** (`worker`), with migrations at every tier (`docs/store.md`, "Tiers") and the writer's
   grants to update it. Tier 2 keeps the factors, the ledger and the catalog append-only, and leaves the queue out, as
   it leaves identity.
-- **A job**: the owner, the trial and endpoint, whether to score, the plan it came from if any
+- **A job**: the owner, the trial and endpoint, whether to score, the batch it came from if any
   (`agents/wip-batch.md`), its status (queued, under way, finished, stopped, failed, lost), why, the run it started,
   and when it was queued, claimed, last beat and ended.
 - **Claimed** with `SELECT … FOR UPDATE SKIP LOCKED`, as the old worker claimed (`worker.py:_taken`).

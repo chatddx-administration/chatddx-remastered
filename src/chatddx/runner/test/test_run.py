@@ -1,19 +1,14 @@
-import socket
 import threading
-from collections.abc import Callable, Generator, Iterator
-from contextlib import contextmanager
+from collections.abc import Callable
 from dataclasses import dataclass, field
-from pathlib import Path
 from typing import Any, cast
 
-import psycopg
 import pytest
 from psycopg import sql
 from pydantic import ValidationError
 
 from chatddx.catalog import Subject
-from chatddx.conftest import WORLDS, connect, sample_plan
-from chatddx.core import settings
+from chatddx.conftest import WORLD, connect
 from chatddx.core.rig import rig
 from chatddx.curation import Plan
 from chatddx.factors.base import Code, Fingerprint, resolve
@@ -30,10 +25,8 @@ from chatddx.factors.request import (
     tool_calls,
 )
 from chatddx.factors.trial import Canary, CanarySet, Execution, Trial
-from chatddx.fake_vllm.served import Served
-from chatddx.fake_vllm.server import serving
 from chatddx.identity import Person
-from chatddx.inventory import DirectorySource, Inventory, start_up
+from chatddx.inventory import DirectorySource, Inventory
 from chatddx.ledger import (
     Endpoint,
     ItemKey,
@@ -56,69 +49,15 @@ from chatddx.runner.run import (
     ToolRan,
 )
 from chatddx.runner.send import STOPPED
+from chatddx.runner.test.conftest import QWEN
 from chatddx.runner.test.tools import component
-from chatddx.store import Catalog, People, Store
+from chatddx.store import Catalog, Store
 from chatddx.store.store import Connection
 
-WORLD = WORLDS / "sample"
-QWEN = "qwen3-8b-awq@fake"
+pytestmark = pytest.mark.wip
+
 GPT_OSS = "gpt-oss-20b@fake"
 CASES = ("DutchFall10w", "casesfromedn1")
-# Slow enough that calls sent together overlap: a fake answer is some 40 tokens.
-DELAY = 0.005
-
-
-@pytest.fixture(scope="module")
-def plan() -> Plan:
-    return sample_plan()
-
-
-@pytest.fixture
-def conn(db: str) -> Iterator[Connection]:
-    with psycopg.connect(settings.database(), dbname=db, autocommit=True) as c:
-        yield c
-
-
-@pytest.fixture
-def alice(conn: Connection) -> Person:
-    return People(conn).add("alice", "Alice")
-
-
-def world(tmp_path: Path, port: int) -> Inventory:
-    text = (WORLD / "inventory.toml").read_text()
-    text = text.replace('path = "vignettes"', f'path = "{WORLD / "vignettes"}"')
-    path = tmp_path / "inventory.toml"
-    _ = path.write_text(
-        text.replace("12099", str(port)).replace("12100", str(port + 1))
-    )
-    return Inventory.load(path)
-
-
-@pytest.fixture
-def inventory(tmp_path: Path) -> Inventory:
-    with socket.socket() as s:
-        s.bind(("127.0.0.1", 0))
-        port = int(s.getsockname()[1])
-    return world(tmp_path, port)
-
-
-@contextmanager
-def faked(inventory: Inventory, plan: Plan, delay: float = 0.0) -> Generator[None]:
-    startup = start_up(inventory, plan.registry.get, QWEN)
-    with serving([Served.of(startup.argv[0], startup.argv[1:])], delay=delay):
-        yield
-
-
-@pytest.fixture
-def fake(inventory: Inventory, plan: Plan) -> Iterator[None]:
-    with faked(inventory, plan):
-        yield
-
-
-@pytest.fixture
-def slow(inventory: Inventory, plan: Plan) -> Iterator[None]:
-    with faked(inventory, plan, DELAY):
-        yield
 
 
 def trial(
@@ -441,7 +380,8 @@ def test_items_are_sent_in_the_execution_s_order(
     assert Store(conn).run(running.run).started.execution == execution
 
 
-@pytest.mark.usefixtures("slow")
+@pytest.mark.slow
+@pytest.mark.usefixtures("delayed")
 def test_calls_are_in_flight_together_up_to_the_execution_s_concurrency(
     conn: Connection, inventory: Inventory, alice: Person, plan: Plan
 ) -> None:
@@ -478,7 +418,8 @@ def test_a_concurrency_above_the_endpoint_s_max_jobs_is_refused(
     assert rows(db, "run_stage") == 0
 
 
-@pytest.mark.usefixtures("slow")
+@pytest.mark.slow
+@pytest.mark.usefixtures("delayed")
 def test_stopping_a_concurrent_run_ends_it_after_the_calls_in_flight(
     conn: Connection, inventory: Inventory, alice: Person, plan: Plan
 ) -> None:
@@ -499,7 +440,7 @@ def test_stopping_a_concurrent_run_ends_it_after_the_calls_in_flight(
     ]
 
 
-@pytest.mark.usefixtures("slow")
+@pytest.mark.usefixtures("delayed")
 def test_an_interrupt_hangs_up_every_call_in_flight_and_records_them_as_stopped(
     conn: Connection, inventory: Inventory, alice: Person, plan: Plan
 ) -> None:
@@ -523,7 +464,7 @@ def test_an_interrupt_hangs_up_every_call_in_flight_and_records_them_as_stopped(
     assert all(i.call.prompt_tokens is not None for i in items)
 
 
-@pytest.mark.usefixtures("slow")
+@pytest.mark.usefixtures("delayed")
 def test_another_interrupt_while_calls_hang_up_leaves_them_out(
     conn: Connection, inventory: Inventory, alice: Person, plan: Plan
 ) -> None:
@@ -542,7 +483,8 @@ def test_another_interrupt_while_calls_hang_up_leaves_them_out(
     assert item.call.error == STOPPED
 
 
-@pytest.mark.usefixtures("slow")
+@pytest.mark.slow
+@pytest.mark.usefixtures("delayed")
 @pytest.mark.parametrize("concurrency", [1, 2])
 def test_a_halt_from_another_thread_hangs_up_the_calls_in_flight_and_returns(
     conn: Connection,

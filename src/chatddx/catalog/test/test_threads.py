@@ -8,6 +8,8 @@ from chatddx.factors.request import Instructions, Sampling
 from chatddx.factors.scoring import Expectation, ExpectationSchema
 from chatddx.factors.test.sample import generation_recipe, world
 
+pytestmark = pytest.mark.solidified
+
 
 def test_heads_and_names_skip_deleted_threads() -> None:
     reg = Registry()

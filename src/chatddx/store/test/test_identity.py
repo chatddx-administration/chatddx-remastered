@@ -8,6 +8,8 @@ from chatddx.identity import Role
 from chatddx.store import People
 from chatddx.store.store import Connection
 
+pytestmark = pytest.mark.solidified
+
 
 def test_people(conn: Connection) -> None:
     people = People(conn)
