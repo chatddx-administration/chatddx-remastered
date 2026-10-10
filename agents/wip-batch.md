@@ -98,7 +98,7 @@ Take, for its shape:
 - **Which batches are threaded**: every batch the portal runs or keeps, so a person's batches can be listed, as the
   old portal listed them. The repl's ad-hoc `batch` stores its trial without a thread, as D7 keeps ad-hoc trials off
   threads so as not to flood the catalog (`agents/wip-repl.md`).
-- **Docs**: proposed in `docs/factors.md` ("Batch", and batches as components that aren't factors),
+- **Docs**: already in `docs/factors.md` ("Batch", and batches as components that aren't factors),
   `docs/catalog.md` (a batch's thread, and its title) and `docs/chatddx.md` (the glossary).
 
 ## Options
@@ -136,7 +136,7 @@ Assuming the takes.
 1. **Crossing**: `crossed` in `src/chatddx/bench/plan.py`, with tests without a database.
 2. **Planning**: `Bench.plan` and `Batch`, tested on the curated sample (`src/chatddx/conftest.py:curated`).
 3. **The API's read**, beside `variation`.
-4. **Kept batches**: the `batch` kind and its thread kind (see "Kept batches"), with the proposed amendments.
+4. **Kept batches**: the `batch` kind and its thread kind (see "Kept batches"), as the docs describe them.
 5. **The portal's pages** (`agents/wip-portal.md`, "Phases", 5).
 6. **Asking the worker**, once it exists (`agents/wip-worker.md`, "The plan", 3).
 

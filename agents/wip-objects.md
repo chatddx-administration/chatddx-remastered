@@ -49,7 +49,7 @@ Pinned factors are all objects, which is why the two looked the same. The except
 
 ## The pragmatic take
 Take: keep every kind in `factors`, and put batches there too (`factors/batch.py`, beside `trial.py`; the batch's
-proposed section in `docs/factors.md` already sits under "Trials"). Don't extract the object layer, don't move kinds,
+section in `docs/factors.md` already sits under "Trials"). Don't extract the object layer, don't move kinds,
 and don't rename the schema. The reasons:
 - **Reproducibility needs the set of kinds to stay closed.** What the research needs from this layer is that digests
   never change, and that a bundle still loads offline years from now. With every kind in one package, every reader
@@ -80,7 +80,7 @@ Decided, built:
   bytes are read back. A kind defined only in a test is no longer read back, and no longer needs undoing.
 - `src/chatddx/store/test/test_catalog.py:test_kinds_and_fields_match_the_database` compares `THREAD_KINDS` with
   `BY_KIND`.
-- Proposed in `docs/factors-api.md` ("Proposed amendments").
+- Described in `docs/factors-api.md`, "kinds.py".
 
 Why the tag stays: the class is visible in Python, but not in the stored bytes. `kind` does three jobs:
 1. **Reading bytes back.** Stored JSON and bundles have to say what they are, as git's object header and OCI's media

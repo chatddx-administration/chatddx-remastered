@@ -137,5 +137,3 @@ These are open questions of design. Where the code falls short of this document,
   warning, though a missing part otherwise means "unknown".
 - **A refused default is accepted.** A default that lands on a refusal loads, and whether the model reasons by default
   is then unknown.
-
-## Proposed amendments

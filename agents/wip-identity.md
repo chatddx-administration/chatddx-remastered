@@ -1,6 +1,6 @@
 # Identity: work in progress
 
-Material for `docs/identity.md`. Split out of the former `agents/wip-bookkeeping.md`; checked against d10c96d.
+Material for `docs/identity.md`. Split out of the former `agents/wip-bookkeeping.md`.
 `docs/identity.md` was a draft too, and was folded back in here with its proposed amendments applied (see "What holds
 now").
 "Decided" means the user said so; "Take" is the agent's recommendation and still open.

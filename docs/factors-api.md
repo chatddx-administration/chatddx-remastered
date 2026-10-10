@@ -1,6 +1,6 @@
 # Factors API
 
-Reference for the `chatddx.factors` package and the `factor` database schema, as of 09c170d. It was written from
+Reference for the `chatddx.factors` package and the `factor` database schema. It was written from
 `src/chatddx/factors/*`, `docs/factors.md` and `src/chatddx/store/migrations/000{1,2,3}-*-factor.sql`. What factors
 are and why they are shaped this way is in `docs/factors.md`; this file says what each name accepts, returns and
 raises.
@@ -930,7 +930,7 @@ From `docs/factors.md`, "Open design issues", where they concern this API:
 - Nothing checks that a compilation's recipe compiles to its skeleton.
 
 ## Beyond docs/factors.md
-Behavior described here that `docs/factors.md` doesn't state. The first three are proposed as amendments there.
+Behavior described here that `docs/factors.md` doesn't state.
 - `vllm.grammar_before_reasoning`: `--default-chat-template-kwargs` makes the model's default unknown, and the
   finding isn't reported beside `vllm.tools_refused`.
 - `Registry.add_raw` pins a loaded component's `canonical` and `digest` to the stored ones.
@@ -942,5 +942,3 @@ Behavior described here that `docs/factors.md` doesn't state. The first three ar
 - `Case.appendices` may list the same appendix twice.
 - `Canary.render` sends the canary's seed whatever the temperature.
 - `JsonPointer` (`base.py`) is defined but unused.
-
-## Proposed amendments

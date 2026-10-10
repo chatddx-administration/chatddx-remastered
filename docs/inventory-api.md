@@ -1,6 +1,6 @@
 # Inventory API
 
-Reference for the `chatddx.inventory` package, as of db74bd3. It was written from `src/chatddx/inventory/*` and
+Reference for the `chatddx.inventory` package. It was written from `src/chatddx/inventory/*` and
 `docs/inventory.md`. There are no inventory migrations, because the inventory isn't stored. What the inventory is and
 why it is shaped this way is in `docs/inventory.md`; this file says what each name accepts, returns and raises.
 Factor types it uses (`Digest`, `Sha256Hex`, `Resolver`, `LocalEngine`, `RemoteEngine`, `ModelArtifact`, `Case`,
@@ -308,5 +308,3 @@ Behavior described here that `docs/inventory.md` doesn't state:
 - `DirectorySource.fetch` passes through `OSError`s other than a missing file.
 - The duplicate-name error names the inventory's own file, also when the clash is between two included files.
 - `cleared_for` gives an empty set for an endpoint that doesn't exist.
-
-## Proposed amendments

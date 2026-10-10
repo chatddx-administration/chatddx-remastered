@@ -120,5 +120,3 @@ These are known shortcomings of the store's design. Some have more details in do
   rows of the old version, nor load a closure that holds one. The rows can't be rewritten either: the tables are
   append-only, and digests and seals depend on the bytes. docs/factors.md, "Splitting expectations", already considers
   a bump of the scorer's schema version.
-
-## Proposed amendments

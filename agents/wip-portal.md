@@ -221,8 +221,8 @@ Take, for its shape:
   curation (`src/chatddx/curation/write.py`). One function that takes the store and the vignette would serve them
   all; a directory source still fetches itself.
 - **One case by id.** `Source.cases` builds every case at once; the writer builds the one it adds.
-- **Docs**, once built: proposed amendments to `docs/inventory.md` (the source kind), `docs/store.md` (the schema)
-  and `docs/migrations.md`.
+- **Docs**, once built: suggestions (`AGENTS.md`, "Docs") for `docs/inventory.md` (the source kind), `docs/store.md`
+  (the schema) and `docs/migrations.md`.
 
 **Protection.** The demo is on the public web, but the portal has no guest: every request needs a session
 (`agents/wip-api.md`, A3), and people are added by an admin (`chatddx person add`). So:

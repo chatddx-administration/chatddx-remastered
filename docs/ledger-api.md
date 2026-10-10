@@ -1,6 +1,6 @@
 # Ledger API
 
-Reference for the `chatddx.ledger` package and the `ledger` database schema, as of 401b696. It was written from
+Reference for the `chatddx.ledger` package and the `ledger` database schema. It was written from
 `src/chatddx/ledger/*`, `docs/ledger.md` and `src/chatddx/store/migrations/000{4,5,6}-*-ledger.sql`. What the ledger
 is and why it is shaped this way is in `docs/ledger.md`; this file says what each name accepts, returns and raises.
 Factor types it uses (`Code`, `Fingerprint`, `Finding`, `Execution`, `Registry`, …) are in `docs/factors-api.md`.
@@ -559,9 +559,6 @@ From `docs/ledger.md`, "Open design issues", where they concern this API:
 - `ScoreStarted` has no endpoint, so judge calls don't record where they went.
 - Records don't travel in a `Bundle`.
 - Findings have no mechanism of their own beyond the finished rows and the check functions.
-
-`docs/ledger.md` also lists "Missing expectations aren't flagged"; `check_score` does warn (`score.no_expectation`),
-and its removal is proposed there.
 
 ## Beyond docs/ledger.md
 Behavior described here that `docs/ledger.md` doesn't state:

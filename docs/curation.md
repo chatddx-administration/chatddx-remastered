@@ -74,7 +74,7 @@ it after it, such as `management-plan (en)`.
 
 Texts come in two kinds. Instructions, few-shot and prompts are written in each language they are used in, as cases
 are. Outputs and toolsets bring text with code, guidance and schemas, and may be written in one language and
-translated into the others by a translations chunk of each (docs/factors.md, proposed amendments); a native one can
+translated into the others by a translations chunk of each (docs/factors.md, "Translations"); a native one can
 still be written in a language of its own.
 
 A recipe that names a text is made in each language that has it, named after the language, such as
@@ -116,7 +116,7 @@ The World is `--world DIR`, or by default the directory `CHATDDX_WORLD` names. T
 endpoints, vignettes and facts.
 
 A loading ends with the inventory checked against the engines just planned, all at once: what starting or reaching
-each endpoint would refuse, and what is likely a slip (docs/inventory.md, proposed amendments).
+each endpoint would refuse, and what is likely a slip (docs/inventory.md, "Checks happen when an entry is used").
 
 ## Loading
 `chatddx init-data USER [--world DIR] [--source NAME] [--giftbag] [--data DIR] [--factors FILE …] [--facts PATH …]`
@@ -239,5 +239,3 @@ name today; what recording it would take is in agents/wip-variants.md.
 - **A rename isn't followed into the data.** After repair-data, loading says the old id is missing until the data set
   names the new one.
 - **The runner and the engine import don't run the inventory check** that loading does.
-
-## Proposed amendments

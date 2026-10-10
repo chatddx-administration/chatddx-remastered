@@ -376,5 +376,3 @@ two families.
   "diagnoses-tool (Qwen/Qwen3-8B-AWQ)+reasoning=off": the configuration it came from and the parts set over it.
   Neither is stored. An entry on the run, or a title made from the closest configuration and what the variation
   changes from it, would say it shorter.
-
-## Proposed amendments

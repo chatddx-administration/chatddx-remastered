@@ -274,8 +274,9 @@ Structurally malformed input raises instead. Constructing a component, canary or
 
 The one hard block is clearance: sending case-derived content to an engine that isn't cleared, judge engines included, must be refused. Clearance has a dedicated pipeline and the factors do not enforce it; the runner must.
 
-Each code is described where it's produced: `docs/factors.md`, "Lints"; `docs/ledger.md`, "Findings"; and, for the
-`facts.*` codes, `docs/facts.md`, "Checking pairs".
+Each code is described where it's produced: `docs/factors.md`, "Lints"; `docs/ledger.md`, "Findings"; for the
+`facts.*` codes, `docs/facts.md`, "Checking pairs"; and for the engine import's, `docs/inventory.md`, "Importing from
+a host".
 
 ## Possible design issues
 
@@ -287,6 +288,4 @@ Each code is described where it's produced: `docs/factors.md`, "Lints"; `docs/le
   changed weights; or
   (c) both, with (b) under a code of its own. None needs a new field, since `CanaryCall.call`
   holds the response and the prompt-token fingerprint.
-  The agent's take is (c)
-
-## Proposed amendments
+  A human report that the agent's take is (c)

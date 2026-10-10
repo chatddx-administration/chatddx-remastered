@@ -47,7 +47,7 @@ replaced the planned `import-engine` run on a host, which would have read `nvidi
      `original/` and `metal/`, the weights in other formats, which vLLM never reads: it takes the root's
      `*.safetensors` listed in the index
      (https://github.com/vllm-project/vllm/blob/v0.24.0/vllm/model_executor/model_loader/default_loader.py#L208-L232).
-     Malborg's cache was downloaded again without them (52d728b): the other files' hashes are the same, and the model's
+     Malborg's cache was downloaded again without them: the other files' hashes are the same, and the model's
      digest went from `c642e8` to `1c249b`, the engine's from `9a5ca7` to `598792`. vLLM then wouldn't start: given a
      model ID offline, it resolves it with huggingface_hub, which refuses a snapshot missing any file of its commit
      (`docs/vllm.md`, proposed item 23). o11n now gives vLLM the snapshot's directory (Kompismoln/o11n 84612b2), and
@@ -57,22 +57,22 @@ replaced the planned `import-engine` run on a host, which would have read `nvidi
      facts know (`src/chatddx/curation/plan.py:plan_factors`, which plans models and engines first). A served model
      without facts and a known model without an engine are reported as skipped. The sample's seeding is unchanged:
      its engines serve the two models the facts know. With it came `facts.sampling_unmatched`, a pair lint for a
-     skeleton whose sampling was written for another model (`src/chatddx/facts/lint.py:_sampled_for`); `docs/facts.md`
-     has proposed amendments for both.
+     skeleton whose sampling was written for another model (`src/chatddx/facts/lint.py:_sampled_for`);
+     `docs/curation.md` ("Per model") and `docs/facts.md` ("Checking pairs") describe both.
 3. **Done: `chatddx import-engine`** (`docs/inventory.md`, "Importing from a host"). The digests it writes are the
    ones init-data loads.
-4. **Imported** (chatddx-remastered 5760e10), and every value checks out: the digests recompute, the lints are clean,
+4. **Imported**, and every value checks out: the digests recompute, the lints are clean,
    and `start_up` gives o11n's command line. But the runtime root was named after its server and built with the host's
    package set, so the closures differed between the hosts for the same packages and would have moved with every
    update of o11n's nixpkgs. Fixed in o11n b84e960 (`vllm-runtime`, from the container's package set) and imported
-   again (973dd61): both hosts now report the same runtime root.
-5. **Seeded and checked** (52d728b). `init-data alice --world worlds/kompismoln/inventory.toml --factors
+   again: both hosts now report the same runtime root.
+5. **Seeded and checked**. `init-data alice --world worlds/kompismoln/inventory.toml --factors
    worlds/kompismoln/factors.toml` creates the two models and engines, their lints are clean, and each World endpoint
    serves the engine it names: `qwen3-8b@pelle` `sha256:a6845f87…`, `gpt-oss-20b@malborg` `sha256:598792a2…`. With o11n
-   84612b2 deployed, importing again (9eab37a) changed only `worlds/kompismoln/endpoints.toml`'s model locations, from
+   84612b2 deployed, importing again changed only `worlds/kompismoln/endpoints.toml`'s model locations, from
    repo IDs to snapshot directories; the factors and digests stayed the same.
 6. **Served under their digests.** Each engine's digest is first in its server's `servedModelNames` (responses carry
-   the first name), and the import of 9eab37a reports no `endpoint.served_name`: both servers answer under their
+   the first name), and the last import reports no `endpoint.served_name`: both servers answer under their
    digests, so `confirm` passes. The served names aren't part of the digest, and the import changed none.
 7. **Optionally, check against Hugging Face** (4B as a check, not a source), offline. huggingface_hub keeps the
    commit's file listing from the download (`<repo>/trees/<commit>.json`): the hub's SHA-256 for each LFS file and
@@ -249,7 +249,7 @@ Where tool and scorer code lives is settled (see "Decided"):
 ## The fake vLLM
 `src/chatddx/fake_vllm/` is the old fake (`src/chatddx/dev/fake_vllm.py` at 7893656), ported to vLLM 0.24 and to
 how remastered names engines. `chatddx fake-vllm [--delay S] [--runaway] MODEL [vllm serve's flags]` serves it.
-Items are `docs/vllm.md`'s; 13–20 are among its proposed amendments.
+Items are `docs/vllm.md`'s.
 - **`served.py`**: what `vllm serve MODEL` with its flags sets up (`Served.of`). Flags are read as vLLM reads them:
   `_` for `-`, the last one wins, `--config=FILE` is ignored, and `--config FILE` is refused because the fake can't
   read YAML. It reads `--served-model-name` (so an engine is served by its digest), `--max-model-len`,
@@ -278,7 +278,7 @@ Items are `docs/vllm.md`'s; 13–20 are among its proposed amendments.
   for both sample models, served as the old inventory served them, and check each answer against its contract and
   schema, and they run a tool round through `next_request`.
 - **Checked against vLLM v0.24.0's source.** This found that item 5 is imprecise: `required` and named tool choices
-  need both tool flags, like `auto`. `docs/vllm.md` has proposed amendments for that and for items 13–20.
+  need both tool flags, like `auto`. `docs/vllm.md`'s item 5 says so now, and items 13–20 are in it.
 
 Left behind:
 - the httpx transport (`FakeTransport`): the runner speaks HTTP through the stdlib (`src/chatddx/runner/wire.py`),
@@ -519,7 +519,7 @@ Decided: Olof's comments on the cases are the foundation for a free-text expecta
   `$.notes[?@.author == 'Olof'].comment` (or `.answer`), and `Judge.fills` puts it in the `expectation` slot
   (`src/chatddx/scorers/test/test_scorers.py:test_a_judge_reads_a_case_s_notes_beside_the_targets_the_patterns_read`).
   The fake vLLM writes a schema's first `examples` value, so its notes hold to the language pattern (`docs/vllm.md`,
-  proposed amendments). Re-running `init-data` updates the targets schema, the four scorers that consume it and all
+  "Schema instances"). Re-running `init-data` updates the targets schema, the four scorers that consume it and all
   99 expectations, as their digests pin the schema's.
 - **Next, in order:**
   1. a judge-purpose prompt: what a judge is asked about an answer, given a note, and how it scores. It needs Olof.
