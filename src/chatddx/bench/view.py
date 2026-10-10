@@ -149,9 +149,10 @@ class Bench:
     # The heads of the live threads the person owns or collaborates on, of the kinds
     # `word` names.
     def threads(self, word: str) -> list[tuple[Edit, About]]:
-        return [found for kind in KINDS[word] for found in self._visible(kind)]
+        return [found for kind in KINDS[word] for found in self.visible(kind)]
 
-    def _visible(self, kind: str) -> list[tuple[Edit, About]]:
+    # The heads of the live threads of `kind` the person owns or collaborates on.
+    def visible(self, kind: str) -> list[tuple[Edit, About]]:
         return self.catalog.visible(kind, self.person.id)
 
     def names(self, word: str) -> list[str]:
@@ -162,7 +163,7 @@ class Bench:
     def thread(
         self, word: str, name: str, model: str | None = None
     ) -> tuple[Edit, str]:
-        seen = {kind: self._visible(kind) for kind in KINDS[word]}
+        seen = {kind: self.visible(kind) for kind in KINDS[word]}
         addresses = {
             kind: {
                 address

@@ -5,13 +5,14 @@ from urllib.parse import urlsplit
 from fastapi import APIRouter, Depends, HTTPException, Request, Response
 from fastapi.security import APIKeyCookie, HTTPAuthorizationCredentials, HTTPBearer
 
+from chatddx.bench import Bench
 from chatddx.core import settings
 from chatddx.identity import Person
 from chatddx.store import People
 from chatddx.store.store import Connection
 
 from .schemas import Me, SignedIn, SignIn
-from .state import connection
+from .state import connection, state
 
 # `__Host-` has browsers keep the cookie to this host, over HTTPS, for every path.
 COOKIE = "__Host-chatddx-session"
@@ -24,7 +25,7 @@ _cookie = APIKeyCookie(
 
 router = APIRouter(tags=["people"])
 
-type Conn = Annotated[Connection, Depends(connection)]
+type ConnDep = Annotated[Connection, Depends(connection)]
 
 
 @dataclass(frozen=True)
@@ -58,7 +59,7 @@ def same_origin(request: Request) -> None:
 # The session a request acts in: its bearer token, else its cookie.
 def session(
     request: Request,
-    conn: Conn,
+    conn: ConnDep,
     bearer: Annotated[HTTPAuthorizationCredentials | None, Depends(_bearer)],
     cookie: Annotated[str | None, Depends(_cookie)],
 ) -> Session:
@@ -79,9 +80,20 @@ def signed_in(held: Annotated[Session, Depends(session)]) -> Person:
     return held.person
 
 
+# What the person signed in sees, on the request's connection.
+def bench(
+    request: Request, conn: ConnDep, person: Annotated[Person, Depends(signed_in)]
+) -> Bench:
+    held = state(request)
+    return Bench(conn, person, held.inventory, held.facts)
+
+
+type BenchDep = Annotated[Bench, Depends(bench)]
+
+
 @router.post("/session", status_code=201)
 def sign_in(
-    request: Request, response: Response, given: SignIn, conn: Conn
+    request: Request, response: Response, given: SignIn, conn: ConnDep
 ) -> SignedIn:
     same_origin(request)
     people = People(conn)
@@ -102,7 +114,7 @@ def sign_in(
 
 @router.delete("/session", status_code=204)
 def sign_out(
-    response: Response, held: Annotated[Session, Depends(session)], conn: Conn
+    response: Response, held: Annotated[Session, Depends(session)], conn: ConnDep
 ) -> None:
     People(conn).close_session(held.token)
     response.delete_cookie(COOKIE, secure=True, httponly=True, samesite="strict")

@@ -9,7 +9,7 @@ from chatddx.facts import Facts
 from chatddx.inventory import Inventory
 from chatddx.runner.gate import Refused
 
-from . import people
+from . import families, people, threads, world
 from .state import AppState
 
 # agents/wip-api.md, A10.
@@ -32,7 +32,8 @@ def app(inventory: Inventory, facts: Facts, conninfo: str) -> FastAPI:
         redoc_url=None,
     )
     made.state.chatddx = AppState(conninfo, inventory, facts)
-    made.include_router(people.router, prefix="/api")
+    for module in (people, threads, families, world):
+        made.include_router(module.router, prefix="/api")
     for error, status in STATUSES.items():
         made.add_exception_handler(error, _status(status))
     return made
