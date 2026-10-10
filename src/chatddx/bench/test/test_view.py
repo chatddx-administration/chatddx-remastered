@@ -196,13 +196,20 @@ def test_a_case_is_held_to_the_expectation_scoring_picks(
     assert theirs.expectation(case, schema) is None
 
 
-def test_several_expectations_to_choose_from_are_refused(bench: Bench) -> None:
-    case = bench.family("Dutchfall11w").case
+def test_several_expectations_to_choose_from_are_ambiguous(
+    conn: Connection, alice: Person, bench: Bench, plan: Plan
+) -> None:
+    made = trial(conn, plan, FREE_TEXT, "DutchFall10w")
+    [case] = made.cases
     _ = another_expectation(bench, case, {"diagnosis": {"pattern": "sepsis"}})
     [schema] = bench.expectation_schemas(case)
+    scorer = plan.named("scorer", "free-text").digest
+    started = bench.run_by_id(ran(conn, alice, made))
 
-    with pytest.raises(LookupError, match="has expectations to choose from"):
+    with pytest.raises(Ambiguous, match="has expectations to choose from"):
         _ = bench.expectation(case, schema)
+    with pytest.raises(Ambiguous, match="has expectations to choose from"):
+        _ = bench.scoring(started, scorer)
 
 
 def test_a_per_model_configuration_is_picked_by_the_engine_s_model(

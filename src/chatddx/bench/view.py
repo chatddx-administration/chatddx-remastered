@@ -365,10 +365,18 @@ class Bench:
         return sorted({e.expectation_schema for e in held})
 
     # The expectation the case is scored against for the person under `schema`
-    # (`Catalog.expectation_for`): a LookupError when there are several to choose from.
+    # (`Catalog.expectation_for`): Ambiguous when there are several to choose from.
     def expectation(self, case: str, schema: str) -> Expectation | None:
-        digest = self.catalog.expectation_for(case, self.person.id, schema)
+        digest = self._expectation_for(case, schema)
         return None if digest is None else resolve(self.get, digest, Expectation)
+
+    # Several to choose from is the one LookupError
+    # src/chatddx/catalog/threads.py:expectation_for raises.
+    def _expectation_for(self, case: str, schema: str) -> str | None:
+        try:
+            return self.catalog.expectation_for(case, self.person.id, schema)
+        except LookupError as e:
+            raise Ambiguous(str(e)) from None
 
     def trial(
         self, skeleton: Skeleton, engine: str, cases: list[str], seed: int
@@ -431,12 +439,7 @@ class Bench:
         found = [
             expectation
             for case in trial.cases
-            if (
-                expectation := self.catalog.expectation_for(
-                    case, self.person.id, schema
-                )
-            )
-            is not None
+            if (expectation := self._expectation_for(case, schema)) is not None
         ]
         return Scoring(scorer=scorer, expectations=tuple(found)) if found else None
 
