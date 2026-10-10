@@ -1,14 +1,11 @@
-import socket
 from collections.abc import Iterator
 from pathlib import Path
 
-import psycopg
 import pytest
 from rich.console import Console
 
 from chatddx.bench import Bench
-from chatddx.conftest import WORLD, create_database, drop_database
-from chatddx.core import settings
+from chatddx.conftest import free_world
 from chatddx.facts import BUNDLED, Facts
 from chatddx.fake_vllm.served import Served
 from chatddx.fake_vllm.server import serving
@@ -21,33 +18,18 @@ from chatddx.store.store import Connection
 
 
 @pytest.fixture
-def db(curated: str) -> Iterator[str]:
-    name = create_database(template=curated)
-    try:
-        yield name
-    finally:
-        drop_database(name)
+def template(curated: str) -> str:
+    return curated
 
 
 @pytest.fixture
-def conn(db: str) -> Iterator[Connection]:
-    with psycopg.connect(settings.database(), dbname=db, autocommit=True) as c:
-        yield c
+def autocommit() -> bool:
+    return True
 
 
-# The sample World, its endpoints on ports nothing else listens on.
 @pytest.fixture
 def world(tmp_path: Path) -> Inventory:
-    with socket.socket() as s:
-        s.bind(("127.0.0.1", 0))
-        port = int(s.getsockname()[1])
-    text = (WORLD / "inventory.toml").read_text()
-    text = text.replace('path = "vignettes"', f'path = "{WORLD / "vignettes"}"')
-    path = tmp_path / "inventory.toml"
-    _ = path.write_text(
-        text.replace("12099", str(port)).replace("12100", str(port + 1))
-    )
-    return Inventory.load(path)
+    return free_world(tmp_path)
 
 
 # The fake vLLM serving the Qwen endpoint's engine, as its start-up says.

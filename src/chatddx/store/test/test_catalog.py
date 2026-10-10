@@ -39,6 +39,8 @@ from chatddx.store import Catalog, People, Store
 from chatddx.store.catalog import Rows
 from chatddx.store.store import Connection
 
+pytestmark = pytest.mark.solidified
+
 
 def stored_world(
     conn: Connection,
@@ -350,6 +352,7 @@ def test_names_are_optional_and_removable(conn: Connection) -> None:
             )
 
 
+@pytest.mark.slow
 def test_titles_fall_back_to_what_a_thread_holds(conn: Connection) -> None:
     catalog, store, reg, ids, alice = stored_world(conn)
     base = generation_recipe(reg)

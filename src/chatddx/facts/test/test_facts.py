@@ -31,6 +31,8 @@ from chatddx.facts import (
     lints,
 )
 
+pytestmark = pytest.mark.solidified
+
 QWEN = "Qwen/Qwen3-8B-AWQ"
 GPT_OSS = "openai/gpt-oss-20b"
 

@@ -87,6 +87,8 @@ from chatddx.factors.trial import (
     suggest_seeds,
 )
 
+pytestmark = pytest.mark.solidified
+
 
 @pytest.fixture
 def reg() -> Registry:

@@ -6,6 +6,8 @@ from chatddx.bench import TriedVariation
 from chatddx.catalog import Edit
 from chatddx.factors.request import Recipe
 
+pytestmark = pytest.mark.wip
+
 
 def digest(c: str) -> str:
     return "sha256:" + c * 64

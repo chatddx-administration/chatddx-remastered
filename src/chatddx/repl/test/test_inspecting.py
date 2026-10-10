@@ -1,6 +1,10 @@
+import pytest
+
 from chatddx.bench import Bench
 from chatddx.bench.test.sample import another_expectation
-from chatddx.repl.test.sample import FREE_TEXT, GPT_OSS, PLAN, QWEN, Say
+from chatddx.repl.test.sample import FREE_TEXT, GPT_OSS, PLAN, QWEN, Say, line_of
+
+pytestmark = pytest.mark.wip
 
 INTENTS = [
     "default",
@@ -13,10 +17,6 @@ INTENTS = [
     "xhigh",
     "budget",
 ]
-
-
-def line_of(written: str, start: str) -> str:
-    return [line for line in written.splitlines() if line.strip().startswith(start)][-1]
 
 
 def row_names(table: str) -> list[str]:
@@ -32,6 +32,7 @@ def test_show_needs_something_in_the_cell(say: Say):
     assert "the cell is empty: use CONFIGURATION, on ENDPOINT" in say("show")
 
 
+@pytest.mark.slow
 def test_show_sets_each_part_beside_what_it_is_and_renders_the_request(say: Say):
     written = say(f"cell {FREE_TEXT} {QWEN}", "show")
 
@@ -46,6 +47,7 @@ def test_show_sets_each_part_beside_what_it_is_and_renders_the_request(say: Say)
     )
 
 
+@pytest.mark.slow
 def test_show_says_what_is_set_and_what_the_configuration_has(say: Say):
     written = say(f"cell {FREE_TEXT} {QWEN}", "set reasoning off", "show")
 
@@ -54,6 +56,7 @@ def test_show_says_what_is_set_and_what_the_configuration_has(say: Say):
     assert '"enable_thinking": false' in written
 
 
+@pytest.mark.slow
 def test_show_says_what_the_lints_say_of_the_pair(say: Say):
     written = say(f"cell plan-web {QWEN}", "show")
 
@@ -61,6 +64,7 @@ def test_show_says_what_the_lints_say_of_the_pair(say: Say):
     assert "with web_search" in line_of(written, "toolset")
 
 
+@pytest.mark.slow
 def test_show_leaves_the_output_s_schema_to_show_output(say: Say):
     written = say(f"cell {PLAN} {QWEN}", "show")
 
@@ -69,6 +73,7 @@ def test_show_leaves_the_output_s_schema_to_show_output(say: Say):
     assert "IndividualDiagnosis" in say("show output")
 
 
+@pytest.mark.slow
 def test_show_says_the_seed_isn_t_sent_when_sampling_is_greedy(say: Say):
     written = say(f"cell {FREE_TEXT} {QWEN}", "set sampling greedy", "show")
 
@@ -76,6 +81,7 @@ def test_show_says_the_seed_isn_t_sent_when_sampling_is_greedy(say: Say):
     assert '"seed"' not in written
 
 
+@pytest.mark.slow
 def test_show_says_which_cases_each_scorer_can_hold_the_cell_to(say: Say):
     written = say(f"cell {PLAN} {QWEN}", "show")
 
@@ -91,6 +97,7 @@ def test_show_says_which_cases_each_scorer_can_hold_the_cell_to(say: Say):
     assert "99 have it" in line_of(written, "free-text  text")
 
 
+@pytest.mark.slow
 def test_show_tag_counts_only_the_cases_with_any_of_the_tags(say: Say):
     written = say(f"cell {PLAN} {QWEN}", "show tag edn")
 
@@ -122,6 +129,7 @@ def test_show_case_says_its_vignette_expectation_and_tags(say: Say):
     assert "no runs of yours with this case" in written
 
 
+@pytest.mark.slow
 def test_show_case_says_when_scoring_has_expectations_to_choose_from(
     bench: Bench, say: Say
 ):

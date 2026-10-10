@@ -12,7 +12,10 @@ from chatddx.inventory.test.memory import MemorySource
 from chatddx.store import Catalog, People
 from chatddx.store.store import Connection, Store
 
+pytestmark = pytest.mark.solidified
 
+
+@pytest.mark.slow
 def test_repair_moves_the_archive_s_families_to_their_vignettes_new_places(
     conn: Connection,
 ) -> None:
@@ -75,6 +78,7 @@ def test_repair_moves_the_archive_s_families_to_their_vignettes_new_places(
     )
 
 
+@pytest.mark.slow
 def test_repair_leaves_other_people_s_families_alone(conn: Connection) -> None:
     alice = People(conn).add("alice", "Alice")
     _ = init(conn, sample_plan(), SOME, vignettes(), alice)
@@ -94,6 +98,7 @@ def test_repair_leaves_other_people_s_families_alone(conn: Connection) -> None:
     ]
 
 
+@pytest.mark.slow
 def test_repair_data_command(
     db: str,
     few: Path,

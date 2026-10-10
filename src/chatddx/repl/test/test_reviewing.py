@@ -8,6 +8,8 @@ from chatddx.conftest import WORLD
 from chatddx.inventory import DirectorySource, Inventory
 from chatddx.repl.test.sample import FREE_TEXT, PLAN, QWEN, Say
 
+pytestmark = pytest.mark.wip
+
 
 def rows(written: str) -> list[str]:
     return [line for line in written.splitlines() if " × " in line]
@@ -19,6 +21,7 @@ def test_runs_says_when_there_are_none(say: Say):
     assert "alice has no runs" in say("replay")
 
 
+@pytest.mark.slow
 @pytest.mark.usefixtures("fake")
 def test_runs_lists_the_latest_first_with_how_each_went(say: Say):
     _ = say(
@@ -40,6 +43,7 @@ def test_runs_lists_the_latest_first_with_how_each_went(say: Say):
     assert "casesfromedn1" in only
 
 
+@pytest.mark.slow
 @pytest.mark.usefixtures("fake")
 def test_replay_shows_a_run_again_as_it_streamed(say: Say):
     live = say(f"cell {FREE_TEXT} {QWEN}", "run Dutchfall11w").splitlines()
@@ -56,6 +60,7 @@ def test_replay_shows_a_run_again_as_it_streamed(say: Say):
     assert "[thinking] I am the fake vLLM" in replayed[3]
 
 
+@pytest.mark.slow
 @pytest.mark.usefixtures("fake")
 def test_replay_shows_a_batch_again_by_its_lines(say: Say):
     _ = say(f"cell {PLAN} {QWEN}", "batch edn")
@@ -67,6 +72,7 @@ def test_replay_shows_a_batch_again_by_its_lines(say: Say):
     assert "plan          plan" in replayed
 
 
+@pytest.mark.slow
 @pytest.mark.usefixtures("fake")
 def test_replay_takes_a_run_by_the_start_of_its_id(bench: Bench, say: Say):
     _ = say(f"cell {FREE_TEXT} {QWEN}", "run Dutchfall11w", "run casesfromedn1")
@@ -76,6 +82,7 @@ def test_replay_takes_a_run_by_the_start_of_its_id(bench: Bench, say: Say):
     assert "no run of yours starts with 'zzzz'" in say("replay zzzz")
 
 
+@pytest.mark.slow
 @pytest.mark.usefixtures("fake")
 def test_replay_says_when_the_request_would_render_otherwise_now(
     bench: Bench, world: Inventory, tmp_path: Path, say: Say
@@ -109,6 +116,7 @@ def test_an_unfinished_run_is_listed_so_and_left_unscored(bench: Bench, say: Say
     assert "nothing to score" in say("score")
 
 
+@pytest.mark.slow
 @pytest.mark.usefixtures("fake")
 def test_show_sums_up_the_runs_with_what_it_shows(say: Say):
     _ = say(f"cell {FREE_TEXT} {QWEN}", "run Dutchfall11w", "run Dutchfall11w 8")

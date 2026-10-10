@@ -5,7 +5,6 @@ import pytest
 from jsonschema import validators
 from pydantic import JsonValue
 
-from chatddx.conftest import sample_plan
 from chatddx.core.rig import rig
 from chatddx.curation import Plan
 from chatddx.factors.base import Code, Fingerprint, resolve
@@ -21,12 +20,9 @@ from chatddx.ledger import Call
 from chatddx.runner.rounds import Toolbox, load
 from chatddx.runner.test import tools
 
+pytestmark = pytest.mark.wip
+
 FUNCTIONS = {"lookup": tools.lookup, "broken": tools.broken, "counted": tools.counted}
-
-
-@pytest.fixture(scope="module")
-def plan() -> Plan:
-    return sample_plan()
 
 
 def toolbox() -> Toolbox:

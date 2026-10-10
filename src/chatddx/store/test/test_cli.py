@@ -6,7 +6,10 @@ from chatddx.core import settings
 from chatddx.identity import Role
 from chatddx.store import People
 
+pytestmark = pytest.mark.solidified
 
+
+@pytest.mark.slow
 def test_migrate_command(
     empty_db: str, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:

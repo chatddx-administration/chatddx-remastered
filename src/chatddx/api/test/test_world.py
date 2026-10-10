@@ -1,9 +1,12 @@
+import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 from pydantic import HttpUrl
 
 from chatddx.api.state import AppState
 from chatddx.inventory import EndpointSpec
+
+pytestmark = pytest.mark.wip
 
 QWEN = "qwen3-8b-awq@fake"
 GHOST = "sha256:" + "0" * 64

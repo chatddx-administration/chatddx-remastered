@@ -16,6 +16,8 @@ from chatddx.repl.test.sample import FREE_TEXT, GPT_OSS, PLAN, QWEN, Say
 from chatddx.runner.run import Event, Running, Streamed
 from chatddx.store import Store
 
+pytestmark = pytest.mark.wip
+
 
 def test_seed_draws_a_short_seed_or_holds_one(repl: Repl, say: Say):
     written = say("seed")
@@ -48,6 +50,7 @@ def ran(bench: Bench) -> list[Run]:
     return [Store(bench.conn).run(r.run) for r in bench.runs()]
 
 
+@pytest.mark.slow
 @pytest.mark.usefixtures("fake")
 def test_run_streams_a_run_of_the_cell_and_scores_it(bench: Bench, say: Say):
     written = say(f"cell {FREE_TEXT} {QWEN}", "run Dutchfall11w")
@@ -70,6 +73,7 @@ def test_run_streams_a_run_of_the_cell_and_scores_it(bench: Bench, say: Say):
     assert [s.score for s in Store(bench.conn).scores_of(run.started.run)]
 
 
+@pytest.mark.slow
 @pytest.mark.usefixtures("fake")
 def test_each_run_is_recorded_as_a_run_of_its_trial(bench: Bench, say: Say):
     written = say(f"cell {FREE_TEXT} {QWEN}", "run Dutchfall11w", "run Dutchfall11w")
@@ -88,6 +92,7 @@ def test_run_needs_a_whole_cell(bench: Bench, say: Say):
     assert ran(bench) == []
 
 
+@pytest.mark.slow
 @pytest.mark.usefixtures("fake")
 def test_run_takes_a_seed_of_its_own(repl: Repl, bench: Bench, say: Say):
     written = say(
@@ -102,6 +107,7 @@ def test_run_takes_a_seed_of_its_own(repl: Repl, bench: Bench, say: Say):
     assert resolve(bench.get, run.started.trial, Trial).seeds == (42,)
 
 
+@pytest.mark.slow
 @pytest.mark.usefixtures("fake")
 def test_a_structured_answer_is_checked_and_its_views_read(say: Say):
     written = say(f"cell {PLAN} {QWEN}", "run casesfromedn1")
@@ -113,6 +119,7 @@ def test_a_structured_answer_is_checked_and_its_views_read(say: Say):
     assert "not named" in line_of(written, "              warning")
 
 
+@pytest.mark.slow
 @pytest.mark.usefixtures("fake")
 def test_a_tool_contract_shows_the_call_the_answer_is_given_through(say: Say):
     written = say(f"cell diagnoses-tool {QWEN}", "run casesfromedn1")
@@ -139,6 +146,7 @@ def test_run_is_refused_an_endpoint_that_doesn_t_answer(bench: Bench, say: Say):
     assert ran(bench) == []
 
 
+@pytest.mark.slow
 def test_a_run_that_runs_away_is_cut_short_and_what_came_scored(
     world: Inventory, bench: Bench, say: Say
 ):
@@ -156,6 +164,7 @@ def test_a_run_that_runs_away_is_cut_short_and_what_came_scored(
 
 
 # A structure cut short isn't salvaged, so its answer can't be read.
+@pytest.mark.slow
 def test_a_structured_answer_cut_short_is_unread(
     world: Inventory, bench: Bench, say: Say
 ):
@@ -168,6 +177,7 @@ def test_a_structured_answer_cut_short_is_unread(
     assert "no answer" in written
 
 
+@pytest.mark.slow
 @pytest.mark.usefixtures("fake")
 def test_a_greedy_cell_runs_without_its_seed(say: Say):
     written = say(f"cell {FREE_TEXT} {QWEN}", "set sampling greedy", "run Dutchfall11w")
@@ -177,6 +187,7 @@ def test_a_greedy_cell_runs_without_its_seed(say: Say):
     assert "seed=7" not in written
 
 
+@pytest.mark.slow
 @pytest.mark.usefixtures("fake")
 def test_batch_runs_the_cell_on_each_case_tagged_a_line_to_each(bench: Bench, say: Say):
     written = say(f"cell {FREE_TEXT} {QWEN}", "batch edn")
@@ -198,6 +209,7 @@ def test_batch_says_what_it_can_t_run(say: Say):
     assert "no case tagged nowhere for alice" in say("batch nowhere")
 
 
+@pytest.mark.slow
 @pytest.mark.usefixtures("fake")
 def test_batch_runs_the_cases_with_any_of_its_tags(bench: Bench, say: Say):
     written = say(f"cell {FREE_TEXT} {QWEN}", "batch edn nowhere dutch-fall")
@@ -240,6 +252,7 @@ def press_at(monkeypatch: pytest.MonkeyPatch, at: int, presses: int = 1) -> None
     monkeypatch.setattr(Transcript, "event", evented)
 
 
+@pytest.mark.slow
 @pytest.mark.usefixtures("fake")
 def test_ctrl_c_stops_a_run_as_it_streams_and_it_is_recorded_as_stopped(
     bench: Bench, say: Say, monkeypatch: pytest.MonkeyPatch
@@ -257,6 +270,7 @@ def test_ctrl_c_stops_a_run_as_it_streams_and_it_is_recorded_as_stopped(
     assert run.finished is not None
 
 
+@pytest.mark.slow
 @pytest.mark.usefixtures("fake")
 def test_ctrl_c_lets_the_case_under_way_finish_then_stops_the_batch(
     bench: Bench, say: Say, monkeypatch: pytest.MonkeyPatch
@@ -272,6 +286,7 @@ def test_ctrl_c_lets_the_case_under_way_finish_then_stops_the_batch(
     assert run.finished is not None
 
 
+@pytest.mark.slow
 @pytest.mark.usefixtures("fake")
 def test_ctrl_c_again_stops_the_case_under_way_too(
     bench: Bench, say: Say, monkeypatch: pytest.MonkeyPatch
@@ -287,6 +302,7 @@ def test_ctrl_c_again_stops_the_case_under_way_too(
     assert "stopped after 1 of 20 cases" in written
 
 
+@pytest.mark.slow
 @pytest.mark.usefixtures("fake")
 def test_ctrl_c_waits_for_a_run_to_be_written_down_and_scored(
     bench: Bench, say: Say, monkeypatch: pytest.MonkeyPatch

@@ -45,6 +45,8 @@ from chatddx.ledger import (
     fingerprint_request,
 )
 
+pytestmark = pytest.mark.solidified
+
 
 @pytest.fixture
 def reg() -> Registry:

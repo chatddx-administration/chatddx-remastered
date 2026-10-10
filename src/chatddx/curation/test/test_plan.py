@@ -9,6 +9,8 @@ from chatddx.curation.plan import SAMPLE
 from chatddx.factors.request import Compilation, Skeleton
 from chatddx.facts import BUNDLED, Facts
 
+pytestmark = pytest.mark.solidified
+
 
 # A data set of `files`, by name, planned.
 def plan(tmp_path: Path, **files: str) -> Plan:

@@ -1,3 +1,4 @@
+import pytest
 from pydantic import HttpUrl
 
 from chatddx.catalog import Entry, EntryField, Subject, titles
@@ -25,6 +26,8 @@ from chatddx.factors.request import (
 )
 from chatddx.factors.scoring import ExpectationSchema
 from chatddx.factors.test.sample import RIG, generation_recipe, world
+
+pytestmark = pytest.mark.solidified
 
 
 def titler(reg: Registry) -> Title:

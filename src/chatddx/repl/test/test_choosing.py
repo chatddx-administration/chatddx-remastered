@@ -11,6 +11,8 @@ from chatddx.repl.test.sample import FREE_TEXT, GPT_OSS, PLAN, QWEN, Say, tried
 from chatddx.store import Catalog, People
 from chatddx.store.store import Connection
 
+pytestmark = pytest.mark.wip
+
 
 @pytest.fixture
 def bob(conn: Connection) -> Person:
@@ -77,6 +79,7 @@ def test_setting_the_configuration_s_own_chunk_unsets_it(repl: Repl, say: Say):
     assert repl.prompt == f"alice {FREE_TEXT}×{QWEN} #7> "
 
 
+@pytest.mark.slow
 def test_none_takes_an_optional_part_out(repl: Repl, bench: Bench, say: Say):
     web = "plan-web (en, Qwen/Qwen3-8B-AWQ)"
     written = say(f"cell {web} {QWEN}", "set toolset none", "show")
@@ -114,6 +117,7 @@ def test_set_says_what_it_can_t_set(say: Say):
     assert "a configuration always has a prompt: only instructions" in written
 
 
+@pytest.mark.slow
 def test_save_keeps_the_cell_as_a_configuration_of_one_s_own(
     repl: Repl, bench: Bench, conn: Connection, say: Say
 ):

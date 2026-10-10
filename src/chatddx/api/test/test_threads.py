@@ -1,5 +1,6 @@
 from typing import Any
 
+import pytest
 from fastapi.testclient import TestClient
 
 from chatddx.bench.test.sample import FREE_TEXT
@@ -7,6 +8,8 @@ from chatddx.catalog import Entry, EntryField, Subject
 from chatddx.identity import Person
 from chatddx.store import Catalog
 from chatddx.store.store import Connection
+
+pytestmark = pytest.mark.wip
 
 
 def configuration(signed: TestClient, owner: str) -> dict[str, Any]:

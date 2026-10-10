@@ -11,6 +11,8 @@ from chatddx.fake_vllm.served import Served
 from chatddx.fake_vllm.server import serving
 from chatddx.runner.wire import Rejected, assemble, chunks, events, post, request
 
+pytestmark = pytest.mark.wip
+
 SERVED = Served.of(
     "Qwen/Qwen3-8B-AWQ",
     [

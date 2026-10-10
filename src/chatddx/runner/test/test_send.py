@@ -15,6 +15,8 @@ from chatddx.ledger import fingerprint_request
 from chatddx.runner.send import STOPPED, Delta, Stopped, send
 from chatddx.runner.test.test_wire import SERVED, body, whole
 
+pytestmark = pytest.mark.wip
+
 
 def at(host: str, port: int) -> str:
     return f"http://{host}:{port}/v1/"
@@ -147,6 +149,7 @@ def test_only_a_call_that_got_no_answer_is_tried_again(url: str) -> None:
     assert rejected.error is not None and rejected.error.startswith("HTTP 404: ")
 
 
+@pytest.mark.slow
 def test_a_call_past_its_timeout_is_cut_short() -> None:
     with serving([SERVED], "127.0.0.1", 0, delay=0.05) as address:
         call = send(at(*address), body(), execution=Execution(timeout_s=0.3))

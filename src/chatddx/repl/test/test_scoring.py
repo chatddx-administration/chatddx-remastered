@@ -10,6 +10,8 @@ from chatddx.repl.shell import Repl
 from chatddx.repl.test.sample import FREE_TEXT, QWEN, Say
 from chatddx.store import Catalog, Store
 
+pytestmark = pytest.mark.wip
+
 
 def lines(written: str) -> list[list[str]]:
     return [line.split() for line in written.splitlines()]
@@ -35,6 +37,7 @@ def retarget(bench: Bench, case: str, data: JsonValue) -> None:
     _ = catalog.edit(thread, changed, bench.person.id)
 
 
+@pytest.mark.slow
 @pytest.mark.usefixtures("fake")
 def test_score_scores_the_runs_a_changed_expectation_leaves_and_sums_them_up(
     bench: Bench, say: Say
@@ -52,6 +55,7 @@ def test_score_scores_the_runs_a_changed_expectation_leaves_and_sums_them_up(
     assert "nothing to score" in say("score")
 
 
+@pytest.mark.slow
 @pytest.mark.usefixtures("fake")
 def test_score_run_says_what_came_of_one_run(bench: Bench, say: Say):
     _ = say(f"cell {FREE_TEXT} {QWEN}", "run Dutchfall11w")
@@ -70,6 +74,7 @@ def test_score_run_says_what_came_of_one_run(bench: Bench, say: Say):
     assert ["differential", "1"] in [row[:2] for row in lines(written)]
 
 
+@pytest.mark.slow
 @pytest.mark.usefixtures("fake")
 def test_the_runs_left_to_score_complete(repl: Repl, bench: Bench, say: Say):
     _ = say(f"cell {FREE_TEXT} {QWEN}", "run Dutchfall11w")

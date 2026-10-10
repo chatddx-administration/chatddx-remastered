@@ -14,6 +14,8 @@ from chatddx.fake_vllm.chat import ANSWER
 from chatddx.fake_vllm.served import VERSION, Served
 from chatddx.fake_vllm.server import serving as fake_serving
 
+pytestmark = pytest.mark.solidified
+
 QWEN = "Qwen/Qwen3-8B-AWQ"
 SERVED = Served.of(
     QWEN,

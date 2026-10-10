@@ -23,6 +23,8 @@ from chatddx.importers.o11n import (
 )
 from chatddx.inventory import Inventory, check, start_up
 
+pytestmark = pytest.mark.solidified
+
 STORE = "/nix/store/" + "s" * 32
 SNAPSHOTS = "/srv/models/huggingface/models--{}/snapshots/{}"
 COMMIT = "4da05a8edb55c6046cce958586c33b61da07bb79"
@@ -320,7 +322,9 @@ def serving(body: bytes) -> Generator[str]:
             _ = self.wfile.write(body)
 
     http = ThreadingHTTPServer(("127.0.0.1", 0), Handler)
-    threading.Thread(target=http.serve_forever, daemon=True).start()
+    threading.Thread(
+        target=http.serve_forever, kwargs={"poll_interval": 0.01}, daemon=True
+    ).start()
     try:
         yield f"http://127.0.0.1:{http.server_address[1]}/"
     finally:

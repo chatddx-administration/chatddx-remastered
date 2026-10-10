@@ -26,6 +26,8 @@ from chatddx.scorers.patterns import (
 )
 from chatddx.scorers.scorer import Scored, function, score
 
+pytestmark = pytest.mark.wip
+
 SCHEMA = "sha256:" + "0" * 64
 PATTERNS = "chatddx.scorers.patterns:score"
 
@@ -388,6 +390,7 @@ def test_a_judge_reads_a_case_s_notes_beside_the_targets_the_patterns_read() -> 
     assert fills(f"{olof}.answer")["expectation"] == note["answer"]
 
 
+@pytest.mark.slow
 def test_a_dont_miss_is_held_to_what_each_output_can_say() -> None:
     targets: JsonValue = {
         "diagnosis": {"pattern": "pneumonia"},

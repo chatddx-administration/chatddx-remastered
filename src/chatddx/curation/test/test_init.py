@@ -1,6 +1,5 @@
 import shutil
 from collections import Counter
-from collections.abc import Iterator
 from dataclasses import replace
 from pathlib import Path
 
@@ -17,6 +16,8 @@ from chatddx.inventory import Inventory
 from chatddx.inventory.test.memory import MemorySource
 from chatddx.store import Catalog, People
 from chatddx.store.store import Connection
+
+pytestmark = pytest.mark.solidified
 
 REVISION = "f" * 40
 # The fake engines say what they are: no commit, no Nix closure.
@@ -56,14 +57,12 @@ def tally(lines: list[str]) -> Counter[str]:
     return Counter(what(line) for line in lines)
 
 
-# Its own patch, so it's undone last, after the database fixtures that read DB_NAME.
 @pytest.fixture(autouse=True)
-def revision() -> Iterator[None]:
-    with pytest.MonkeyPatch.context() as patch:
-        patch.setenv("CHATDDX_REVISION", REVISION)
-        yield
+def revision(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("CHATDDX_REVISION", REVISION)
 
 
+@pytest.mark.slow
 def test_init_data_loads_the_archive(conn: Connection) -> None:
     alice = People(conn).add("alice", "Alice")
     plan = sample_plan()
@@ -141,6 +140,7 @@ def test_init_data_loads_the_archive(conn: Connection) -> None:
     assert not [line for line in again if line.endswith(", in en")]
 
 
+@pytest.mark.slow
 def test_init_data_lints_what_it_lands(
     conn: Connection, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -162,6 +162,7 @@ def test_init_data_lints_what_it_lands(
     ]
 
 
+@pytest.mark.slow
 def test_init_data_updates_and_gives_forks(conn: Connection, tmp_path: Path) -> None:
     alice = People(conn).add("alice", "Alice")
     _ = init(conn, sample_plan(), SOME, vignettes(), alice)
@@ -229,6 +230,7 @@ def test_init_data_updates_and_gives_forks(conn: Connection, tmp_path: Path) -> 
     assert "[archive case] Dutchfall11w: missing at source 'sample'" in lines
 
 
+@pytest.mark.slow
 def test_init_data_withdraws_only_the_tags_the_archive_gave(
     conn: Connection, tmp_path: Path
 ) -> None:
@@ -253,6 +255,7 @@ def test_init_data_withdraws_only_the_tags_the_archive_gave(
     assert catalog.about(Subject(family=family)).tags == {"alice's", "falls"}
 
 
+@pytest.mark.slow
 def test_init_data_says_how_a_vignette_moved_at_its_source(conn: Connection) -> None:
     alice = People(conn).add("alice", "Alice")
     _ = init(conn, sample_plan(), SOME, vignettes(), alice)
@@ -291,6 +294,7 @@ def test_init_data_says_how_a_vignette_moved_at_its_source(conn: Connection) -> 
     assert not [line for line in lines if "not in the data" in line]
 
 
+@pytest.mark.slow
 def test_init_data_command(
     db: str,
     few: Path,
@@ -363,6 +367,7 @@ def test_init_data_command(
     ]
 
 
+@pytest.mark.slow
 def test_a_world_brings_its_engines_and_their_models_facts(
     db: str,
     few: Path,
@@ -415,6 +420,7 @@ off = { temperature = 1.0, top_k = 64, top_p = 0.95 }
     )
 
 
+@pytest.mark.slow
 def test_wipe_data_deletes_and_unshares_and_init_data_gives_it_back(
     db: str,
     few: Path,

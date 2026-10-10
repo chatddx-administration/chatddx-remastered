@@ -3,17 +3,13 @@ import json
 import pytest
 from pydantic import JsonValue
 
-from chatddx.conftest import sample_plan
 from chatddx.curation import Plan
 from chatddx.factors.base import resolve
 from chatddx.factors.request import Skeleton
 from chatddx.fake_vllm.chat import instance
 from chatddx.scorers.answer import Answer, read
 
-
-@pytest.fixture(scope="module")
-def plan() -> Plan:
-    return sample_plan()
+pytestmark = pytest.mark.wip
 
 
 def skeleton(plan: Plan, recipe: str) -> Skeleton:

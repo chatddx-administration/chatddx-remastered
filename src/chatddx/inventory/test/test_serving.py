@@ -35,6 +35,8 @@ from chatddx.inventory import (
     url_of,
 )
 
+pytestmark = pytest.mark.solidified
+
 WORLD = WORLDS / "sample" / "inventory.toml"
 TEMPLATE = hashlib.sha256(b"{{ messages }}").hexdigest()
 
@@ -349,7 +351,7 @@ def keyed_models(secret: str, model: str) -> Generator[str]:
             pass
 
     with ThreadingHTTPServer(("127.0.0.1", 0), Models) as server:
-        thread = Thread(target=server.serve_forever)
+        thread = Thread(target=server.serve_forever, kwargs={"poll_interval": 0.01})
         thread.start()
         try:
             yield f"http://127.0.0.1:{server.server_port}/v1/"

@@ -9,6 +9,8 @@ from chatddx.factors.cases import Case, Vignette
 from chatddx.inventory import DirectorySource, Inventory
 from chatddx.inventory.test.memory import MemorySource
 
+pytestmark = pytest.mark.solidified
+
 
 def vignettes(root: Path) -> Path:
     directory = root / "vignettes"

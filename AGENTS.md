@@ -46,3 +46,14 @@ For docs in (`docs/*`), the same rule applies as to this document: Humans write,
 - CHANGE: "To try the repl or the runner by hand" seeds the sample World with
   `chatddx init-data alice --giftbag`: `CHATDDX_WORLD` (`.env-example`) names `worlds/sample`, whose `factors.toml` is
   loaded with the data (src/chatddx/inventory/world.py, src/chatddx/cli.py:_init_data). `--world DIR` names another.
+- CHANGE: "Baseline is `pytest`" runs every test, some 50 s; `pytest -m 'not slow'` is the quick run, under 30 s. A
+  test whose call takes 0.2 s or more is marked `@pytest.mark.slow` (pyproject.toml, `[tool.pytest]`). The time goes
+  to the database: copies of a template (src/chatddx/conftest.py:Copies) and the bench's and init-data's queries.
+- ADD: each test module declares `pytestmark = pytest.mark.solidified` when docs/ describes what it tests, or
+  `pytest.mark.wip` when agents/wip-*.md plans it, and collection refuses a test that is neither or both
+  (src/chatddx/conftest.py:pytest_collection_modifyitems). Solidifying a package flips its modules' marks;
+  `-m solidified` and `-m wip` run either half.
+- ADD: a test's database is `db`, a copy of `template`: the migrated store, or `curated`, the sample as init-data
+  lands it, where a package's conftest overrides `template` (api, bench, repl). Where the code under test commits as it
+  writes, the conftest overrides `autocommit` with True (api, bench, repl, runner). Copies are made ahead and dropped
+  behind on threads (src/chatddx/conftest.py:Copies), so a failed drop surfaces at the end of the session.
