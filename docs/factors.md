@@ -609,12 +609,10 @@ name.
 ## Canary sets
 Principal author: developers.
 
-Canary probes detect observed factors, such as an engine that changed between runs. They are components so that the
-same set can be compared across runs.
-
-A canary set is a list of fixed, non-sensitive probe requests. Each canary holds literal messages, request options, none
-of them the rig's, and an optional seed. A run names the canary set it uses. Canaries are rendered as skeletons are,
-without slots.
+Canary probes detect observed factors, such as an engine that changed between runs. A canary set is a list of fixed,
+non-sensitive probe requests. Each canary holds literal messages, request options, none of them the rig's, and an
+optional seed. A run names the canary set it uses. Canaries are rendered as skeletons are, without slots. They are
+components so that the same set can be compared across runs.
 
 ## Lints
 Lints warn about settings that are valid but risky. They run on demand, and no component stores their findings.

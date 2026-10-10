@@ -2,7 +2,7 @@
 This document contains project-wide instructions written by humans for agents. Agents may append proposed amendments and should always report surprises.
 
 ## Environment
-* `.env-container` is complete and should match your environment as is.
+* `set -a; . ./.env-container; set +a`.
 * Human devenv is declared in flake.nix's devShell (`.env-devshell`)
 * `store` uses PostgreSQL 16:
   - pg_ident.conf: chatddx <os-user> chatddx / chatddx <os-user> chatddx_writer

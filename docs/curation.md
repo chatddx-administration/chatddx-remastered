@@ -176,19 +176,18 @@ src/chatddx/curation/test/, marked `solidified`.
 
 - `test_plan.py` plans data sets and needs no database.
 - `test_init.py` and `test_repair.py` load into a database of their own: a copy of the migrated, empty store, made
-  for each test (src/chatddx/conftest.py, `migrated`, `db`). Their vignettes are one line of text each
-  (src/chatddx/curation/test/sample.py:vignettes), or a World in a temporary directory that holds those lines
-  (src/chatddx/curation/test/conftest.py, `world`), never the sample World's.
+  for each test (src/chatddx/conftest.py, `migrated`, `db`). Their vignettes are mostly one line of text each.
+  The command test also loads the sample world and Kompismoln's.
 - The sample is loaded whole once, by the test that checks it loads cleanly
   (`test_init_data_loads_the_archive`). The tests of loading's mechanics load three of its cases, one of them Swedish
   (src/chatddx/curation/test/sample.py:FEW).
-- Even three cases take 0.3 to 2 s a test, since every record of the data set is still written. So every test that
+- Even three cases take 0.2 to 2 s a test, since every record of the data set is still written. So every test that
   loads is marked `slow`: 11 of the 24. The quick run (`pytest -m "not slow"`) keeps the planning tests and the pin
   of the vignettes.
 - The sample World's vignettes are pinned to the old chatddx at 7893656
   (`test_the_sample_world_holds_the_vignettes_at_7893656`).
 
-Other packages' tests start from the sample as init-data lands it from the sample World, with alice and her giftbag.
+`api`, `bench` and `repl` start from the sample as init-data lands it from the sample World, with alice and her giftbag.
 It is loaded once per session, and only when one of those tests asks for it (src/chatddx/conftest.py, `curated`).
 Each test of the packages whose conftest overrides `template` with `curated` (api, bench, repl) gets a copy of it.
 The runner's and the store's tests start from the migrated store, as curation's do.
@@ -242,10 +241,3 @@ name today; what recording it would take is in agents/wip-variants.md.
 - **The runner and the engine import don't run the inventory check** that loading does.
 
 ## Proposed amendments
-- CHANGE: "## Tests": "so they stay quick" reads as quicker than loading the whole sample; at 0.3 to 2 s each they
-  are the slowest solidified tests and are marked `slow` (src/chatddx/curation/test/test_init.py,
-  src/chatddx/curation/test/test_repair.py).
-- CHANGE: "Every other package's tests share one database the sample is loaded into": the database is made once per
-  session, and each test of the packages whose conftest overrides `template` with `curated` (api, bench, repl) gets a
-  copy of it (src/chatddx/conftest.py, `curated`, `db`). Curation's own tests, the runner's and the store's start from
-  the migrated store instead (src/chatddx/conftest.py, `migrated`).

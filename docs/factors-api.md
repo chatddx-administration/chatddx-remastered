@@ -12,6 +12,7 @@ Paths are relative to `src/chatddx/factors/` unless they start with `src/` or `d
 - [Conventions](#conventions)
 - [base.py](#basepy): common types, `Component`, canonical form, `Fingerprint`, `Code`, `Finding`
 - [bundle.py](#bundlepy): `Registry`, `Bundle`
+- [kinds.py](#kindspy): registry of all kinds
 - [Component kinds](#component-kinds): every kind, its class, references and cross-checks
 - [cases.py](#casespy): vignettes, appendices, cases, text cleanup, `prepare_case`
 - [request.py](#requestpy): chunks, recipes, compilation, skeletons, rendering, tool rounds
@@ -184,10 +185,10 @@ A self-contained package that can be verified offline.
 4. runs `Registry.check()` over everything.
 
 ## kinds.py
- `parse_component(data: bytes) -> Component`:
+`parse_component(data: bytes) -> Component`:
  Parses a JSON object by its `kind`. `StructuralError` when it isn't an object, the kind is unknown, or `v` isn't the
  class's `schema_version`. `ValidationError` for bad fields. Doesn't check any digest. The result has today's canonical
- form, not `data`. Reading only the kinds `KINDS` lists.
+ form, not `data`. It reads only the kinds in `KINDS` lists.
 
 `KINDS: tuple[type[Component], ...]`: every kind of component, in the order of "Component kinds".
 
