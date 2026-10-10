@@ -73,7 +73,6 @@ Raised for the problems listed under "Conventions".
 ### `class Component(Frozen)`
 The base of every component kind.
 
-| `registry: ClassVar[dict[str, type[Component]]]` | Kind name → class, filled when a subclass is defined. |
 | Member | Description |
 | --- | --- |
 | `schema_version: ClassVar[int] = 1` | The kind's schema version, written as `v`. Bump it when an existing field's meaning or default changes. |
@@ -184,7 +183,7 @@ A self-contained package that can be verified offline.
 3. raises `StructuralError("roots missing from bundle: …")` when a root is absent;
 4. runs `Registry.check()` over everything.
 
-## kind.py
+## kinds.py
  `parse_component(data: bytes) -> Component`:
  Parses a JSON object by its `kind`. `StructuralError` when it isn't an object, the kind is unknown, or `v` isn't the
  class's `schema_version`. `ValidationError` for bad fields. Doesn't check any digest. The result has today's canonical

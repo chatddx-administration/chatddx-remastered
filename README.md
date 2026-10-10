@@ -1,0 +1,129 @@
+# ChatDDX
+
+LLMs aren't deterministic like traditional programs: the same question can get a different answer, and a model behind
+an API can change overnight. Nor do they have what makes a human's judgement trustworthy: reputation, introspection
+and accountability. A model can't tell why it answered as it did, and can't be held to account when it's wrong. That
+poses a range of challenges for LLM assistance in emergency care, starting with knowing how accurate it is, in a way
+others can reproduce and examine.
+
+## What ChatDDX is
+ChatDDX is a rig that measures how accurately LLMs produce differential diagnoses and management plans from
+emergency-care case vignettes. Everything that can change an answer or its score (prompts, sampling, engines, model
+weights, cases, seeds, expectations, scorers) is a factor, pinned by its digest. That way the environment of a run,
+"the cage", can be rebuilt and delivered with its results. A ledger records each exchange: what was planned, what was
+sent and what came back. Vignettes are sensitive: they are fingerprinted, never stored, and are sent only to endpoints
+cleared for them. Answers are scored by strict pattern matching, and later by LLM judges. Models run locally on vLLM or
+remotely behind OpenAI-compatible APIs. See [docs/chatddx.md](docs/chatddx.md).
+
+## Developing
+On a basic Linux machine, such as Ubuntu on WSL, with the development environment from Nix.
+
+### Nix with flakes
+```sh
+nix --version
+```
+If Nix is missing, install [Lix](https://lix.systems/install/):
+`curl -sSf -L https://install.lix.systems/lix | sh -s -- install`. On WSL, turn on systemd first: add `systemd=true`
+under `[boot]` in `/etc/wsl.conf` and run `wsl --shutdown` from Windows.
+
+Flakes must be enabled:
+```sh
+nix show-config | grep experimental-features   # should list flakes and nix-command
+```
+If they aren't:
+```sh
+mkdir -p ~/.config/nix && echo 'experimental-features = nix-command flakes' >> ~/.config/nix/nix.conf
+```
+
+### Git and the repository
+```sh
+git --version || sudo apt install -y git
+git clone https://github.com/chatddx-administration/chatddx-remastered.git   # or git@github.com:… over SSH
+cd chatddx-remastered
+```
+
+### The development shell
+The shell reads `.env` when you enter it. `.env-devshell` has what it needs, with the database at `dev-db`'s socket:
+```sh
+cp .env-devshell .env
+```
+Enter the shell from the repository's root. The first time, it builds the Python environment, which takes a while:
+```sh
+nix develop
+echo ${IN_NIX_SHELL:-outside}   # "impure" inside the shell, "outside" otherwise
+exit                            # or Ctrl-D, back to your own shell
+```
+With [nix-direnv](https://github.com/nix-community/nix-direnv), `direnv allow` enters it whenever you `cd` in.
+
+The commands below run inside the shell.
+
+### The database
+`dev-db` runs PostgreSQL 16 from `./dev-db/`, on a socket only. The first start creates the cluster, the roles and
+the `chatddx` database:
+```sh
+dev-db start
+dev-db status
+dev-db enter    # psql as chatddx
+dev-db stop     # it keeps running after you leave the shell until you stop it
+dev-db reset    # stop and delete everything; the next start begins empty
+```
+Then apply the migrations:
+```sh
+chatddx migrate
+```
+
+### Tests
+```sh
+pytest                  # everything, about 50 s
+pytest -m "not slow"    # the quick run, under 30 s
+pytest -m solidified    # what docs/ describes; -m wip for what agents/wip-*.md plans
+```
+
+### The sample World
+`worlds/sample` serves two fake vLLM engines on this machine. Load the sample data and share it with alice:
+```sh
+chatddx init-data alice --giftbag
+```
+In a second shell (`nix develop` there too), serve each endpoint's fake engine as its start-up says, till Ctrl-C:
+```sh
+chatddx fake-engines
+```
+Then, in the first:
+```sh
+curl -s http://127.0.0.1:12099/v1/models   # served under the engine's digest
+chatddx repl alice
+```
+```text
+cell plan qwen3-8b-awq@fake
+run DutchFall10w
+quit
+```
+The run streams the fake's answer, scores it and records it.
+
+### Kompismoln's hosts
+On the Kompismoln VPN, ask pelle and malborg what they serve:
+```sh
+curl -s http://pelle.km:12009/v1/models
+curl -s http://malborg.km:12009/v1/models
+chatddx import-engine http://pelle.km:12008/ http://malborg.km:12008/ \
+  --factors /tmp/factors.toml --endpoints /tmp/endpoints.toml
+git diff --no-index worlds/kompismoln/factors.toml /tmp/factors.toml
+git diff --no-index worlds/kompismoln/endpoints.toml /tmp/endpoints.toml
+```
+No diff means the hosts still serve the engines `worlds/kompismoln` pins. Both are cleared for the sample's
+vignettes, so a case can run on them:
+```sh
+chatddx init-data alice --world worlds/kompismoln
+chatddx repl alice --world worlds/kompismoln
+```
+```text
+cell plan qwen3-8b@pelle
+run DutchFall10w
+quit
+```
+
+## License
+Copyright Alexander Holmbäck and Olof Silfver, all rights reserved. You may view, inspect and run ChatDDX free of
+charge for evaluation, internal testing and non-commercial academic research. You may not copy, modify, publish,
+distribute, sublicense or sell it, in whole or in part, without their written permission. It comes without warranty.
+See [LICENSE](LICENSE).

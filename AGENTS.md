@@ -4,7 +4,10 @@ This document contains project-wide instructions written by humans for agents. A
 ## Environment
 * `.env-container` is complete and should match your environment as is.
 * Human devenv is declared in flake.nix's devShell (`.env-devshell`)
-* `store` uses PostgreSQL 16: see `scripts/dev-db.sh` for bootstrap.
+* `store` uses PostgreSQL 16:
+  - pg_ident.conf: chatddx <os-user> chatddx / chatddx <os-user> chatddx_writer
+  - pg_hba.conf:   local all all peer map=chatddx
+  - Setup database and roles with `src/chatddx/store/setup.sql`
 * Base the fake vLLM on 0.24.0, extend/amend continuously as new facts are discovered, questions arise or sample data is needed.
 * `chatddx.core.settings` is the project-wide source of truth.
 
@@ -12,7 +15,7 @@ This document contains project-wide instructions written by humans for agents. A
 * Errors and warnings that indicate issues beyond the scope of the current task should remain, never hide them.
 
 ## Testing
-* Baseline is `pytest`" runs every test and takes ~50s; `pytest -m 'not slow'` is the quick run, under <30s.
+* Baseline is `pytest` which runs every test and takes ~50s; `pytest -m 'not slow'` is the quick run, <30s.
   A test whose call takes 0.2 s or more is marked `@pytest.mark.slow` (pyproject.toml, `[tool.pytest]`).
 
 ## Docs
