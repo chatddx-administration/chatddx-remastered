@@ -20,8 +20,8 @@ https://github.com/chatddx-administration/chatddx/blob/504792cbeb09508f2c52912be
      what replaces it.
 2. **Decisions**, in the order they block (see "Options"): A1, who it is for; A2, the framework; A3, signing in.
    A4–A12 shape the endpoints. Decided so far: A1 kept open, A2 (F2), A3, and A9 (S3).
-3. **The plan** (see "The plan") assumes the takes. Phases 0–2 are built (see "Phase 0: built", "Phase 1: built"
-   and "Phase 2: built"). Phase 3, the variations, is next.
+3. **The plan** (see "The plan") assumes the takes. Phases 0–3 are built (see "Phase 0: built" through "Phase 3:
+   built"). Phase 4, the runs, is next.
 
 ## The old API
 ### Where it came from
@@ -548,6 +548,51 @@ Open from phase 1:
   `Sec-Fetch-Site`, which today's browsers all send. If it bites: the public origin as a setting.
 - **A connection per request**, opened and closed each time. A pool (`psycopg_pool`) when that costs.
 - **Login rate limiting**, as A3 left it.
+
+### Phase 3: built
+The suite went from 501 tests to 512, and basedpyright and ruff stay clean. It was also tried by hand: `chatddx api`
+under uvicorn, on the sample seeded with `init-data alice --giftbag`, driven with curl through a variation with a part
+replaced at an endpoint and a tag, a fork, the same edit twice (201, then 200), and the refusals.
+- **The parts** (`schemas.py:Parts`) are named alike in a query and in a body: each a chunk's digest, empty or null to
+  take an optional part out; a part not given is the configuration's own. `test_variations.py` holds `Parts` to
+  `PARTS`.
+- **`GET /api/threads/{thread}/variation`**, with the parts as query parameters, and `endpoint`, `tag` (any of them)
+  and `seed`. A parameter it doesn't name is 422, so a misspelt part is refused rather than ignored. It gives:
+  - `head`, the edit the parts are replaced over, which is the head when the request comes (A5);
+  - the compiled `skeleton`'s digest and whether it is `greedy`;
+  - `parts`: each one's digest, title, `summary` and whether it is `replaced`; null without a recipe. The plan's
+    "description" is `summary`, what `catalog.titles.describe` says, as the repl's `is` column does, since a chunk's
+    thread has a description of its own;
+  - `seed`, drawn from the trial's whole range when not given, and given back so that a run can send the same;
+  - `request`, rendered with placeholders and whole: the repl's abridging is presentation;
+  - `findings`, the lints at `endpoint` over the cases with any of the tags, else every case the person sees; null
+    without an endpoint. Where no case has the tags, the pair's checks still apply, where the repl says "no case
+    tagged";
+  - `reach`, for each scorer view: the scorer's thread, its name, the view and its label, whether it is offered, the
+    number of cases, and the families it misses by id. For the ids, the bench's `Reach` now holds the scorer's thread
+    and the missing families rather than their names, and the repl shows the names.
+- **`POST /api/threads/{thread}/forks {name, parts}`**: 201, with `Location: /api/threads/{new}` and the new thread as
+  `GET` gives it. Any configuration the person sees can be forked. The name can't be empty; it needn't be unique, so
+  forking twice under one name makes two configurations. `Location` is a path, which a proxy that rewrites `Host`
+  can't get wrong.
+- **`POST /api/threads/{thread}/edits {parts}`**: 201 with the new head's edit, or 200 with the head when it is that
+  already. An edit has no URL of its own, so there's no `Location`. Another's configuration is 404, "no configuration
+  N of yours", as the bench says.
+- **Errors.** A variation the bench refuses is 422 (A10): a digest that isn't a chunk of its part, a part that can't
+  be taken out, or parts that don't compile together (`StructuralError`, such as "no translation for …").
+  `threads.py:refused` catches the `ValueError` around building and keeping a variation only. An unknown `endpoint`,
+  or one whose engine isn't stored, is 422 too, since it is a parameter rather than what the path names.
+- **Tests**: `test_variations.py`; `sign_in` moved to the API tests' `conftest.py`, since both modules sign in by
+  cookie.
+
+Open from phase 3:
+- **An unsaved variation's language is unknown**, so its lints say `language.unknown` over any cases, as the repl's do
+  (`agents/wip-repl.md`, "An unsaved cell's language is unknown"). Saved, the same skeleton has one.
+- **A look takes 0.3–0.5 s** on the sample, with 99 cases. It builds the skeleton four times, for itself, the
+  request, the lints and the reach, as the repl's `show` does; what the time goes to isn't measured.
+- **A part given twice in a query**: the last one counts.
+- **An edit has no precondition.** It replaces its parts over the head when it comes (A5's drift). An `If-Match` on
+  the head, or the head's edit in the body, would refuse one that moved.
 
 ## Left out
 - **Free-text vignettes** (`RunIn.vignette`, the swift client's `symptoms`). A case is a source's vignette, by id,

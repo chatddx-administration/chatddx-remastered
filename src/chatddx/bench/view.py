@@ -78,12 +78,13 @@ class Family:
 # What one view of a scorer gets from a variation's answers and the cases' expectations.
 @dataclass(frozen=True)
 class Reach:
+    thread: int
     scorer: str
     view: int
     label: str
     offered: bool
     cases: int
-    missing: list[str]
+    missing: list[Family]
 
     @property
     def have(self) -> int:
@@ -462,7 +463,7 @@ class Bench:
             name = about.name or self.catalog.title(edit.thread)
             for i, view in enumerate(scorer.views):
                 offered = reaches(schema, view.output)
-                missing: list[str] = []
+                missing: list[Family] = []
                 for f in families if offered else []:
                     key = (f.case, scorer.expectation_schema)
                     if key not in data:
@@ -470,9 +471,11 @@ class Bench:
                         data[key] = None if read is None else read.data
                     held = data[key]
                     if held is None or not view.expectation_items(held):
-                        missing.append(f.name)
+                        missing.append(f)
                 label = labels.get(i, f"view {i}")
-                found.append(Reach(name, i, label, offered, len(families), missing))
+                found.append(
+                    Reach(edit.thread, name, i, label, offered, len(families), missing)
+                )
         return found
 
     # Keeps the variation as the person's own configuration, under `name`: a new version

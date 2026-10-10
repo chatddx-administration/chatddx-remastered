@@ -152,7 +152,9 @@ def _show_scorers(
         else:
             said = Text(f"{reach.have} have it")
             if reach.missing:
-                _ = said.append(f"; missing: {some(reach.missing)}", style=LATER)
+                _ = said.append(
+                    f"; missing: {some(f.name for f in reach.missing)}", style=LATER
+                )
         table.add_row(reach.scorer, reach.label, said)
 
     repl.console.print(table)
