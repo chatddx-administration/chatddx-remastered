@@ -127,3 +127,6 @@ These are known shortcomings of the store's design. Some have more details in do
 - CHANGE in "Roles and connections", the writer's "May", "create, read and update people." → "create, read and update
   people; read, add to and update the worker's queue." Granted per table, as identity's are (docs/migrations.md,
   "identity", "Tier 1").
+- CHANGE under "Roles and connections", "(.env-example)" → "(.env-container in a container, .env-devshell in the
+  Nix development shell, which reads it as .env)": `.env-example` was split in two, the devshell's with `DB_HOST` at
+  `dev-db`'s socket (.env-container, .env-devshell, flake.nix's shellHook, scripts/dev-db.sh).

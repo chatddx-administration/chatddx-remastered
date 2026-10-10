@@ -16,9 +16,10 @@ https://github.com/chatddx-administration/chatddx/blob/504792cbeb09508f2c52912be
 ## Start with this
 1. **Decided: planned apart from the worker**, as this file and `agents/wip-worker.md`. What the planner hands the
    worker is the worker's contract (`agents/wip-worker.md`, "The contract").
-2. **What it is in remastered** (see "The planner"): pure over the bench, a `Bench.plan` giving a value, with the
+2. **What it is in remastered** (see "The planner"): pure over the bench, a `Bench.plan` giving a `Batch`, with the
    crossing itself a pure function. No queue, no process. Take.
-3. **Decided: a plan is a component of a new kind, `plan`, kept on a catalog thread** (P1, see "Kept plans").
+3. **Decided: a batch is a component of a new kind, `batch`, kept on a catalog thread** (P1, see "Kept batches").
+   It was first named `plan`; decided: renamed `batch`.
 4. **Open** (see "Options"): P2, what is crossed; P3, mixed languages; P4, which cases.
 5. **Its callers**: the portal's batch form and confirmation, then the repl's `batch` and the API (see "Callers").
 
@@ -61,7 +62,7 @@ https://github.com/chatddx-administration/chatddx/blob/504792cbeb09508f2c52912be
   axis to cross.
 - **Names are per model and per language** (`agents/wip-variants.md`): `Bench.configuration(name, engine)` picks a
   configuration's variant by the endpoint's model.
-- **A trial is a digest**, stored when it runs and never threaded (`agents/wip-repl.md`, D7). A plan that keeps its
+- **A trial is a digest**, stored when it runs and never threaded (`agents/wip-repl.md`, D7). A batch that keeps its
   trials' digests can't drift, so `Drifted` has no counterpart.
 - **Batch order** is by case digest, since `Trial` sorts its cases, not by name (moved from `agents/wip-repl.md`,
   "Risks").
@@ -73,17 +74,17 @@ Take:
 - **Crossing**: `crossed(variation, choices) -> list[TriedVariation]`, the product of the parts' choices over the
   configuration's variation, one kept per skeleton digest. Pure, in `src/chatddx/bench/plan.py`, tested without a
   database as `variation.py` is.
-- **Planning**: `Bench.plan(…) -> Plan`, since the bench stays one class and edges call `bench.*` only
+- **Planning**: `Bench.plan(…) -> Batch`, since the bench stays one class and edges call `bench.*` only
   (`agents/wip-bench.md`, "Modules"). For each variation at the endpoint: its skeleton digest, whether it is greedy,
-  its findings (`Bench.findings`), and the gate's refusal if any, which holds it back. For the plan: the cases, and
+  its findings (`Bench.findings`), and the gate's refusal if any, which holds it back. For the batch: the cases, and
   each scorer view's reach over them (`Bench.reach`).
-- **Out**: a `Plan` value: the trials it would run, one per variation not held back, each with the cases and the
+- **Out**: a `Batch` value: the trials it would run, one per variation not held back, each with the cases and the
   seeds; what is held back and why; the cases; the reach. Nothing is stored until it is run or kept (see "Kept
-  plans").
+  batches").
 
-## Kept plans
-Decided: **a plan is a component of a new kind, `plan`, kept on a catalog thread**, as a configuration's skeletons
-are. The old portal's batch, kept to run later and shown on a page that never changed, is a plan's thread and its
+## Kept batches
+Decided: **a batch is a component of a new kind, `batch`, kept on a catalog thread**, as a configuration's skeletons
+are. The old portal's batch, kept to run later and shown on a page that never changed, is a batch's thread and its
 head.
 
 Take, for its shape:
@@ -92,16 +93,16 @@ Take, for its shape:
   What was held back, and the reach, are worked out again when it is shown.
 - **The thread**: named, owned, shared and deleted as other threads are (`docs/catalog.md`). Adding cases, as the old
   `unheld` did, is a new edit: new trials, since a trial's cases are part of its digest.
-- **Which plans are threaded**: every plan the portal runs or keeps, so a person's batches can be listed, as the old
-  portal listed them. The repl's ad-hoc `batch` stores its trial without a thread, as D7 keeps ad-hoc trials off
+- **Which batches are threaded**: every batch the portal runs or keeps, so a person's batches can be listed, as the
+  old portal listed them. The repl's ad-hoc `batch` stores its trial without a thread, as D7 keeps ad-hoc trials off
   threads so as not to flood the catalog (`agents/wip-repl.md`).
-- **Docs**: proposed in `docs/factors.md` ("Plan", and plans as components that aren't factors),
-  `docs/catalog.md` (a batch is a plan thread, and a plan's title) and `docs/chatddx.md` (the glossary).
+- **Docs**: proposed in `docs/factors.md` ("Batch", and batches as components that aren't factors),
+  `docs/catalog.md` (a batch's thread, and its title) and `docs/chatddx.md` (the glossary).
 
 ## Options
 ### P2. What is crossed
 - The recipe's parts, as before. Take.
-- Endpoints too: a plan over several endpoints, which the old form didn't offer. Each endpoint picks its model's
+- Endpoints too: a batch over several endpoints, which the old form didn't offer. Each endpoint picks its model's
   variant of the configuration, so the variations differ by endpoint.
 
 ### P3. Mixed languages
@@ -111,35 +112,35 @@ user.
 
 ### P4. Which cases
 - By tag, as before, and by family id, as the API names things (`agents/wip-api.md`, A4).
-- Adding cases to a kept plan, as the old `unheld` did: a new edit (see "Kept plans").
+- Adding cases to a kept batch, as the old `unheld` did: a new edit (see "Kept batches").
 
 ## What it hands the worker
-Per trial, a job: the trial, the endpoint, the owner, scored or not, and the plan it came from
-(`agents/wip-worker.md`, "The contract"). **Run it now** keeps the plan and queues its jobs at once; **Keep it for
-later** keeps it, and queues them when it is run from its page. A plan's state (none run, queued, under way, stopped,
+Per trial, a job: the trial, the endpoint, the owner, scored or not, and the batch it came from
+(`agents/wip-worker.md`, "The contract"). **Run it now** keeps the batch and queues its jobs at once; **Keep it for
+later** keeps it, and queues them when it is run from its page. A batch's state (none run, queued, under way, stopped,
 unfinished, done) is read from the worker's jobs and the ledger, so the planner keeps none.
 
 ## Callers
 - **The portal**: the batch form, an island, since ticking chunks wants the number of trials, what is held back and
-  each scorer's reach as you tick; the confirmation and a kept plan's page, rendered on the server
+  each scorer's reach as you tick; the confirmation and a kept batch's page, rendered on the server
   (`agents/wip-portal.md`, "Islands").
 - **The repl**: `batch TAG…` runs one variation over the tagged cases with one seed, as one trial and one run
-  (`agents/wip-repl.md`, "Built: 4b"). It could take a plan, perhaps as several parts given at once.
-- **The API**: a plan read like `GET /api/threads/{id}/variation`, with several chunks per part
+  (`agents/wip-repl.md`, "Built: 4b"). It could take a batch, perhaps as several parts given at once.
+- **The API**: a batch read like `GET /api/threads/{id}/variation`, with several chunks per part
   (`agents/wip-api.md`, "The plan"); then asking for it.
 
 ## The plan
 Assuming the takes.
 1. **Crossing**: `crossed` in `src/chatddx/bench/plan.py`, with tests without a database.
-2. **Planning**: `Bench.plan` and `Plan`, tested on the curated sample (`src/chatddx/conftest.py:curated`).
+2. **Planning**: `Bench.plan` and `Batch`, tested on the curated sample (`src/chatddx/conftest.py:curated`).
 3. **The API's read**, beside `variation`.
-4. **Kept plans**: the `plan` kind and its thread kind (see "Kept plans"), with the proposed amendments.
+4. **Kept batches**: the `batch` kind and its thread kind (see "Kept batches"), with the proposed amendments.
 5. **The portal's pages** (`agents/wip-portal.md`, "Phases", 5).
 6. **Asking the worker**, once it exists (`agents/wip-worker.md`, "The plan", 3).
 
 ## Open
-- **How many trials a plan may hold** before the form warns, since crossing multiplies.
-- **Seeds**: one drawn per plan, as before, or several for replicates (`src/chatddx/factors/trial.py:suggest_seeds`).
+- **How many trials a batch may hold** before the form warns, since crossing multiplies.
+- **Seeds**: one drawn per batch, as before, or several for replicates (`src/chatddx/factors/trial.py:suggest_seeds`).
 - **The order of the variations**, the configuration's own first, as the old crossing put it.
 - **A batch sample run** for the portal's pages (`agents/wip-sample-data.md`, "Sample runs").
 

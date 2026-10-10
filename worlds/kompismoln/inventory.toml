@@ -8,3 +8,10 @@ include = ["endpoints.toml"]
 [source.sample]
 path = "../sample/vignettes"
 sensitive = true
+
+# The sensitive sources each endpoint may receive case-derived content from; the runner refuses anything else. Both
+# are cleared for the sample until the clearance pipeline grants it (agents/wip-clearance.md, "Vetted endpoints").
+
+[cleared]
+"qwen3-8b@pelle" = ["sample"]
+"gpt-oss-20b@malborg" = ["sample"]

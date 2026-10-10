@@ -310,3 +310,5 @@ Behavior described here that `docs/inventory.md` doesn't state:
 - `cleared_for` gives an empty set for an endpoint that doesn't exist.
 
 ## Proposed amendments
+- CHANGE in the Worlds table, `worlds/kompismoln/`'s `[cleared]`, "none" → "both endpoints for `sample`"
+  (worlds/kompismoln/inventory.toml; agents/wip-clearance.md, "Vetted endpoints").

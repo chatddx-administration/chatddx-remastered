@@ -479,7 +479,7 @@ adopted. Proposals:
 What the port left to others, and where each is planned:
 - **The portal** (`agents/wip-portal.md`), and what the old layers held for it:
   - `bench/plan.py`'s crossing is the batch planner (`agents/wip-batch.md`). Until it exists, `batch` runs one
-    variation over the tagged cases; it could take a plan then. Batch order moved there too.
+    variation over the tagged cases; it could take a batch then. Batch order moved there too.
   - The worker (`agents/wip-worker.md`), planned apart from the planner around one contract.
   - `bench/held.py`, what holds a configuration, for the portal's pages that delete: the repl's part is
     `Bench.reaching` and `Bench.scored_by`.

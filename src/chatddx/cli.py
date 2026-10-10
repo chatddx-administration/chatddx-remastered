@@ -16,7 +16,8 @@ from chatddx.curation import init, load_cases, plan_factors, repair, wipe
 from chatddx.curation.plan import SAMPLE
 from chatddx.curation.write import ARCHIVE
 from chatddx.facts import BUNDLED, Facts
-from chatddx.fake_vllm.server import run
+from chatddx.fake_vllm.served import CLOSURE, Refused, Served
+from chatddx.fake_vllm.server import run, run_all
 from chatddx.identity import Role
 from chatddx.importers.o11n import (
     Imported,
@@ -25,11 +26,12 @@ from chatddx.importers.o11n import (
     imported,
     read,
 )
-from chatddx.inventory import World, check
+from chatddx.inventory import World, check, start_up
 from chatddx.repl.loop import HISTORY, loop
 from chatddx.repl.shell import Repl
 from chatddx.store.migrate import TOP_TIER, migrate, pending
 from chatddx.store.people import People
+from chatddx.store.store import Store
 
 
 def _migrate(args: argparse.Namespace) -> None:
@@ -207,6 +209,27 @@ def _api(args: argparse.Namespace) -> None:
 
 def _fake_vllm(args: argparse.Namespace) -> None:
     run(args.model, args.argv, delay=args.delay, runaway=args.runaway)
+
+
+def _fake_engines(args: argparse.Namespace) -> None:
+    world = _world("fake-engines", args.world)
+    served: list[Served] = []
+    with psycopg.connect(settings.database()) as conn:
+        for name in args.endpoint or world.inventory.endpoints:
+            try:
+                startup = start_up(world.inventory, Store(conn).get, name)
+            except LookupError as e:
+                raise SystemExit(f"fake-engines: {e}") from None
+            if startup.closure != CLOSURE:
+                raise SystemExit(
+                    f"fake-engines: endpoint {name!r} runs in {startup.closure}, not the "
+                    + "fake vLLM"
+                )
+            try:
+                served.append(Served.of(startup.argv[0], startup.argv[1:]))
+            except Refused as e:
+                raise SystemExit(f"fake-engines: {name} won't start: {e}") from None
+    run_all(served, delay=args.delay, runaway=args.runaway)
 
 
 def main(argv: Sequence[str] | None = None) -> None:
@@ -417,6 +440,29 @@ def main(argv: Sequence[str] | None = None) -> None:
         + "--enable-auto-tool-choice, --tool-call-parser, --host and --port",
     )
     fake.set_defaults(run=_fake_vllm)
+
+    fakes = commands.add_parser(
+        "fake-engines",
+        help="serve the World's fake engines, each where its endpoint's start-up says, "
+        + "till Ctrl-C",
+    )
+    _ = fakes.add_argument(
+        "--world",
+        type=Path,
+        help="the World directory whose endpoints to serve (CHATDDX_WORLD)",
+    )
+    _ = fakes.add_argument(
+        "--delay", type=float, default=0.03, help="seconds between streamed tokens"
+    )
+    _ = fakes.add_argument(
+        "--runaway", action="store_true", help="as fake-vllm's --runaway"
+    )
+    _ = fakes.add_argument(
+        "endpoint",
+        nargs="*",
+        help="the endpoints to serve, each a fake's (every endpoint of the World)",
+    )
+    fakes.set_defaults(run=_fake_engines)
 
     args = parser.parse_args(argv)
     args.run(args)

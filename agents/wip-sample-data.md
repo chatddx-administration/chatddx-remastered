@@ -163,7 +163,7 @@ them as a World would:
   that they decode as UTF-8, and pins one fingerprint over all their fingerprints, so leaving 7893656 takes a
   deliberate edit.
 
-`init-data` takes the World from `--world DIR`, or `CHATDDX_WORLD`, which `.env-example` sets to `worlds/sample`.
+`init-data` takes the World from `--world DIR`, or `CHATDDX_WORLD`, which `.env-container` and `.env-devshell` set to `worlds/sample`.
 
 ### What changed in the hand edit
 - `instruction.ddx` and `instruction.bare` collapse into `prompt.case`; bare is the same prompt with `output.raw`.

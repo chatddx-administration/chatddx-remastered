@@ -1,4 +1,5 @@
 import json
+import logging
 import socket
 import time
 import urllib.error
@@ -130,10 +131,10 @@ def test_served_it_runs_away_when_told_to() -> None:
 
 
 def test_a_client_that_hangs_up_is_heard_at_once_and_its_request_aborted(
-    capsys: pytest.CaptureFixture[str],
+    caplog: pytest.LogCaptureFixture,
 ) -> None:
+    caplog.set_level(logging.INFO, "chatddx.fake_vllm.server")
     request = json.dumps(body(stream=True)).encode()
-    logged = ""
     with serving(delay=5.0) as address:
         with socket.create_connection(address) as client:
             client.sendall(
@@ -143,12 +144,10 @@ def test_a_client_that_hangs_up_is_heard_at_once_and_its_request_aborted(
             )
             assert b"200 OK" in client.recv(4096)
         hung_up = time.monotonic()
-        while "aborted" not in logged and time.monotonic() - hung_up < 2:
+        while "aborted" not in caplog.text and time.monotonic() - hung_up < 2:
             time.sleep(0.01)
-            logged += capsys.readouterr().err
-    logged += capsys.readouterr().err
-    assert "aborted: the client hung up after 0 tokens" in logged
-    assert "Traceback" not in logged
+    assert "aborted: the client hung up after 0 tokens" in caplog.text
+    assert "Traceback" not in caplog.text
 
 
 def test_the_command_won_t_start_what_vllm_wouldn_t() -> None:

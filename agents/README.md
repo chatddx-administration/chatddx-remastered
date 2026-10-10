@@ -43,10 +43,9 @@ cd chatddx-remastered
 ```
 
 ### The development shell
-The shell reads `.env` when you enter it. Make one from `.env-example`, with the database at `dev-db`'s socket:
+The shell reads `.env` when you enter it. `.env-devshell` has what it needs, with the database at `dev-db`'s socket:
 ```sh
-cp .env-example .env
-sed -i 's|^DB_HOST=.*|DB_HOST=$REPO_ROOT/dev-db/pgsock|' .env
+cp .env-devshell .env
 ```
 Enter the shell from the repository's root. The first time, it builds the Python environment, which takes a while:
 ```sh
@@ -85,19 +84,11 @@ pytest -m solidified    # what docs/ describes; -m wip for what agents/wip-*.md 
 ```sh
 chatddx init-data alice --giftbag
 ```
-Print the command that starts an endpoint's engine:
+In a second shell (`nix develop` there too), serve each endpoint's fake engine as its start-up says, till Ctrl-C:
 ```sh
-python - qwen3-8b-awq@fake <<'EOF'
-import shlex, sys, psycopg
-from chatddx.core import settings
-from chatddx.inventory import World, start_up
-from chatddx.store import Store
-with psycopg.connect(settings.database()) as conn:
-    s = start_up(World.load(settings.world()).inventory, Store(conn).get, sys.argv[1])
-print(s.closure, shlex.join(s.argv))
-EOF
+chatddx fake-engines
 ```
-Run the printed command in a second shell (`nix develop` there too). It serves until Ctrl-C. Then, in the first:
+Then, in the first:
 ```sh
 curl -s http://127.0.0.1:12099/v1/models   # served under the engine's digest
 chatddx repl alice
@@ -119,8 +110,17 @@ chatddx import-engine http://pelle.km:12008/ http://malborg.km:12008/ \
 git diff --no-index worlds/kompismoln/factors.toml /tmp/factors.toml
 git diff --no-index worlds/kompismoln/endpoints.toml /tmp/endpoints.toml
 ```
-No diff means the hosts still serve the engines `worlds/kompismoln` pins. Their endpoints aren't cleared for the
-sample's vignettes, so the runner won't send them cases.
+No diff means the hosts still serve the engines `worlds/kompismoln` pins. Both are cleared for the sample's
+vignettes, so a case can run on them:
+```sh
+chatddx init-data alice --world worlds/kompismoln
+chatddx repl alice --world worlds/kompismoln
+```
+```text
+cell plan qwen3-8b@pelle
+run DutchFall10w
+quit
+```
 
 ## License
 Copyright Alexander Holmbäck and Olof Silfver, all rights reserved. You may view, inspect and run ChatDDX free of

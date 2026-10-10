@@ -201,3 +201,11 @@ it, and the import would then confirm what was started rather than describe it.
   what's over its limit, so nothing fails, but the batching differs from what each run's execution says.
 
 ## Proposed amendments
+- CHANGE "(src/chatddx/core/settings.py:world, `.env-example`)" → "(src/chatddx/core/settings.py:world,
+  `.env-container`, `.env-devshell`)": `.env-example` was split in two, one for a container and one for the Nix
+  development shell (.env-container, .env-devshell).
+- CHANGE under "The start-up", "The fake vLLM can be started from a start-up" → "The fake vLLM can be started from a
+  start-up, as `chatddx fake-engines` starts each fake of a World's": src/chatddx/cli.py:_fake_engines.
+- CHANGE under the Worlds in this repository, Kompismoln's: "Nothing in it is cleared, so the runner refuses to send
+  the sample to its endpoints." → "Both endpoints are cleared for the sample." Decided (worlds/kompismoln/inventory.toml,
+  `[cleared]`; agents/wip-clearance.md, "Vetted endpoints").

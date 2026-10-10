@@ -5,6 +5,9 @@ from dataclasses import dataclass
 from typing import Any, cast
 
 VERSION = "0.24.0+fake"
+# The closure a fake engine's runtime names: the command that serves it
+# (worlds/sample/factors.toml).
+CLOSURE = "chatddx fake-vllm"
 
 # The context a model takes when --max-model-len doesn't say.
 CONTEXT: dict[str, int] = {

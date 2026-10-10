@@ -15,6 +15,10 @@ ledger provide the means; the runner enforces.
 Until clearance has a database grant, a World inventory's `[cleared]` table (`docs/inventory.md`, "Clearance") says
 which sensitive sources each endpoint may receive case-derived content from.
 
+Decided: Kompismoln's endpoints, `qwen3-8b@pelle` and `gpt-oss-20b@malborg`, are cleared for the sample World's
+vignettes, in `worlds/kompismoln/inventory.toml`. Kompismoln will need to be cleared for the sample World in the
+clearance pipeline when it is up, as the table goes.
+
 Before a run writes anything, the runner refuses (`src/chatddx/runner/gate.py:check`):
 - an endpoint serving another engine than the trial's;
 - a sensitive source the endpoint isn't cleared for;

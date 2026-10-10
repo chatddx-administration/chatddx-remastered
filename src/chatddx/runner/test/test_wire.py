@@ -1,4 +1,5 @@
 import json
+import logging
 import time
 import urllib.request
 from collections.abc import Iterator
@@ -102,17 +103,16 @@ def test_an_error_answer_comes_back_with_its_status_and_body(url: str) -> None:
 
 
 def test_closing_a_stream_hangs_up_and_the_engine_hears_it(
-    capsys: pytest.CaptureFixture[str],
+    caplog: pytest.LogCaptureFixture,
 ) -> None:
+    caplog.set_level(logging.INFO, "chatddx.fake_vllm.server")
     with serving([SERVED], "127.0.0.1", 0, delay=5.0) as (host, port):
         with post(f"http://{host}:{port}/v1", body() | STREAM) as stream:
             assert next(iter(stream))["choices"]
-        logged = ""
         hung_up = time.monotonic()
-        while "aborted" not in logged and time.monotonic() - hung_up < 2:
+        while "aborted" not in caplog.text and time.monotonic() - hung_up < 2:
             time.sleep(0.01)
-            logged += capsys.readouterr().err
-    assert "aborted: the client hung up" in logged
+    assert "aborted: the client hung up" in caplog.text
 
 
 def test_server_sent_events_are_read_as_the_standard_has_them() -> None:

@@ -313,3 +313,7 @@ Behavior described here that `docs/store.md` doesn't state:
 - `People` reads roles back as `Role`, so a role the tier-2 CHECK would refuse raises `ValueError` below tier 2.
 - `public.migration` is created by `migrate`, not by a migration file, and is readable only by the admin.
 - `migrations()` raises `ValueError` for a file name with fewer than three `-`-separated parts.
+
+## Proposed amendments
+- CHANGE under "Roles and connections", "`.env-example`" → "`.env-container`, `.env-devshell`": `.env-example` was
+  split in two, one for a container and one for the Nix development shell (.env-container, .env-devshell).

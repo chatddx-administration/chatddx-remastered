@@ -2,7 +2,7 @@
 This document contains project-wide instructions written by humans for agents. Agents may append proposed amendments and should always report surprises.
 
 ## Environment
-* `.env-example` is complete and should match your environment as is.
+* `.env-container` is complete and should match your environment as is.
 * Human devenv is declared in flake.nix's devShell
 * `store` uses PostgreSQL 16:
   - pg_ident.conf: chatddx <os-user> chatddx / chatddx <os-user> chatddx_writer
@@ -15,8 +15,8 @@ This document contains project-wide instructions written by humans for agents. A
     A `service postgresql start` is needed on every session.
 * Base the fake vLLM on 0.24.0, extend/amend continuously as new facts are discovered, questions arise or sample data is needed.
 * `chatddx.core.settings` is the project-wide source of truth.
-* Nothing loads `.env`: export `.env-example`'s variables in the shell that runs `chatddx` or `pytest`, as
-  `set -a; . ./.env-example; set +a`.
+* Nothing loads `.env`: export `.env-container`'s variables in the shell that runs `chatddx` or `pytest`, as
+  `set -a; . ./.env-container; set +a`.
 * To try the repl or the runner by hand, serve each endpoint of the sample World with `chatddx fake-vllm` and the
   arguments `chatddx.inventory.start_up` gives for it, after seeding it with
   `chatddx init-data alice --world worlds/sample/inventory.toml --factors worlds/sample/factors.toml --giftbag`:
@@ -44,7 +44,7 @@ For docs in (`docs/*`), the same rule applies as to this document: Humans write,
 
 ## Proposed amendments
 - CHANGE: "To try the repl or the runner by hand" seeds the sample World with
-  `chatddx init-data alice --giftbag`: `CHATDDX_WORLD` (`.env-example`) names `worlds/sample`, whose `factors.toml` is
+  `chatddx init-data alice --giftbag`: `CHATDDX_WORLD` (`.env-container`) names `worlds/sample`, whose `factors.toml` is
   loaded with the data (src/chatddx/inventory/world.py, src/chatddx/cli.py:_init_data). `--world DIR` names another.
 - CHANGE: "Baseline is `pytest`" runs every test, some 50 s; `pytest -m 'not slow'` is the quick run, under 30 s. A
   test whose call takes 0.2 s or more is marked `@pytest.mark.slow` (pyproject.toml, `[tool.pytest]`). The time goes
@@ -57,3 +57,6 @@ For docs in (`docs/*`), the same rule applies as to this document: Humans write,
   lands it, where a package's conftest overrides `template` (api, bench, repl). Where the code under test commits as it
   writes, the conftest overrides `autocommit` with True (api, bench, repl, runner). Copies are made ahead and dropped
   behind on threads (src/chatddx/conftest.py:Copies), so a failed drop surfaces at the end of the session.
+- CHANGE: "To try the repl or the runner by hand" serves the sample World's fakes with `chatddx fake-engines`, after
+  init-data; "no command prints an endpoint's start-up" no longer holds for the fakes (src/chatddx/cli.py:_fake_engines,
+  agents/README.md, "The sample World").
