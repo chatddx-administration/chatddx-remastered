@@ -407,6 +407,11 @@ class Catalog:
     ) -> dict[str, dict[int, str]]:
         return threads.expectation_choices(self._rows, cases, person, schema)
 
+    def expectations_shared(
+        self, cases: Sequence[str], person: int, schema: str
+    ) -> dict[str, list[tuple[Edit, About]]]:
+        return threads.expectations_shared(self._rows, cases, person, schema)
+
     def forks(self, thread: int) -> list[int]:
         return threads.forks(self._rows, thread)
 

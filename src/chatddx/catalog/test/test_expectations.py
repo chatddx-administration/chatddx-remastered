@@ -117,3 +117,19 @@ def test_a_person_owns_one_live_expectation_thread_per_case_and_schema() -> None
     with pytest.raises(ValueError, match=f"already, in thread {second.thread}"):
         check(rows, mine.thread, entry=restored)
     check(rows, second.thread, entry=deleted)
+
+
+def test_a_person_is_offered_the_live_expectations_shared_with_them() -> None:
+    s = Sample()
+    rows = s.rows
+    archive = owned(rows, rows.start(s.expecting("ACS")), ARCHIVE, ALICE)
+    bobs = owned(rows, rows.start(s.expecting("PE")), BOB, ALICE)
+    _ = owned(rows, rows.start(s.expecting("ACS", "dissection")), ALICE)
+    _ = owned(rows, rows.start(s.expecting("PE", under=s.other_schema)), BOB, ALICE)
+    _ = owned(rows, rows.start(s.expecting("asthma")), BOB)
+    gone = owned(rows, rows.start(s.expecting("croup")), ARCHIVE, ALICE)
+    rows.note(Subject(thread=gone.thread), Entry(field=EntryField.DELETED))
+
+    offered = threads.expectations_shared(rows, [s.case], ALICE, s.schema)[s.case]
+    assert [(e, a.owner) for e, a in offered] == [(archive, ARCHIVE), (bobs, BOB)]
+    assert threads.expectations_shared(rows, [s.case], BOB, s.schema) == {s.case: []}

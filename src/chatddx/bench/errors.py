@@ -12,3 +12,8 @@ class NotFound(LookupError):
 # More than one thing the person sees goes by that name or id.
 class Ambiguous(LookupError):
     pass
+
+
+# The write would undo what the person has, unless they say so.
+class Conflict(ValueError):
+    pass

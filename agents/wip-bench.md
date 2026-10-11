@@ -71,7 +71,21 @@ restores or hands over changes what a person is scored against, and a correction
 proposal ("What has moved on", docs/catalog.md) rather than under them.
 
 A person who only sees shared expectations has none. `chatddx init-data` gives its user forks of the archive's when
-asked to (the giftbag, docs/curation.md); otherwise they take them.
+asked to (the giftbag, docs/curation.md), keeping any expectation of their own for a case and schema rather than
+failing on the rule below; otherwise they take them.
+
+### Taking
+Taking an expectation forks it: a thread of the person's own, from the shared one's head. Forking changes no digest, so
+what they are scored against is the shared expectation until either thread moves on, and a correction made to the
+origin reaches them as a proposal. A person can take:
+- **for many cases at once**, under one schema and in one transaction, an expectation for each case they have none of
+  their own for, from any owner or one named. The cases left are named, each with why: theirs is kept, or several
+  owners share one, or nobody does. Nothing they have is changed, so taking again only adds what was shared since.
+- **one thread**, an expectation shared with them, which, when they have their own of its case under its schema, is a
+  conflict unless they say to replace theirs. Replacing deletes theirs and forks the shared one in one transaction.
+
+What a person could take for a case are the live expectation threads of it under the schema that are shared with them
+and not their own.
 
 A person owns at most one live expectation thread per case and expectation schema. The catalog refuses what would make
 two: a second thread, an edit that moves another onto that case and schema, naming them the owner of another, or a
@@ -104,7 +118,7 @@ For a variation, the bench gives:
   reads, and which of the given families have no expectation it picks something from, or several to choose from.
 
 ## Writes for the person
-The bench writes configurations, runs and scores for the person, and nothing else:
+The bench writes configurations, runs, scores and taken expectations for the person, and nothing else:
 - **Forking** keeps a variation as a new configuration of the person's own, forked from the edit it varies.
 - **Editing** keeps it as a new version of a configuration the person owns. Nothing is written when it is the head
   already.
@@ -114,12 +128,14 @@ The bench writes configurations, runs and scores for the person, and nothing els
   (agents/wip-runner.md). Nothing is sent until the edge sends it.
 - **Scoring** scores a finished run under each scorer that applies to it, or some of them, as each scoring would be
   built now, through the scoring pass.
+- **Taking** forks expectations shared with the person, for many cases or one thread (see "Taking").
 
 An unsaved skeleton has what it was compiled from stored, by the running code, when it is saved or started
 (docs/catalog.md, "Recipes"). The runner and the scoring pass write each row as it lands, so starting and scoring need
 the bench's connection in autocommit mode.
 
-Chunks, appendices, expectations, cases and families aren't written by the bench yet (see "Outstanding").
+Chunks, appendices, cases and families aren't written by the bench yet, nor expectations except by taking (see
+"Outstanding").
 
 ## Runs and scores
 - A person's runs are their own, newest first, found by the start of their id, or by a component their trial is built
@@ -141,9 +157,11 @@ Chunks, appendices, expectations, cases and families aren't written by the bench
 The bench's errors are `LookupError`s an edge can tell apart: `NotFound`, for what the person doesn't see or the store
 doesn't hold, and `Ambiguous`, for a name, an id's start or a case's expectations that give several. A variation the
 bench refuses is a `ValueError`: an unknown part, a digest that isn't a stored chunk of its part, a part that can't be
-taken out. The messages are worded for a person, without the edge's terms; an edge adds its own hint where it has one,
-as the repl does for a name its endpoint would pick a model for. The API maps them to 404, 409 and 422
-(agents/wip-api.md, "Errors").
+taken out. So is taking an expectation of one's own. `Conflict`, a `ValueError` too, is a write that would undo what
+the person has unless they say so: taking one thread when they have their own of its case under its schema. The
+messages are worded for a person, without the edge's terms; an edge adds its own hint where it has one, as the repl
+does for a name its endpoint would pick a model for. The API answers `NotFound` with 404, `Ambiguous` and `Conflict`
+with 409, and the other refusals with 422 (agents/wip-api.md, "Errors").
 
 ## "Cell"
 "Cell" is the repl's word for a variation being tried together with an endpoint (agents/wip-repl.md). The bench and
@@ -187,14 +205,12 @@ What is still open. It doesn't move to `docs/`.
 ### Start with this
 1. **Adopting the docs.** This file and `agents/wip-bench-api.md`, as `docs/bench.md` and `docs/bench-api.md`.
 2. **Writes for authoring** (below), planned in `agents/wip-authoring.md`. The portal's authoring and swift wait on
-   them.
+   them. Taking expectations, its phase 1, is built.
 
 ### Writes for authoring
-Planned in `agents/wip-authoring.md`: chunks, recipes, appendices and the cases that order them, expectations and
-taking them, what is said about a thread, and following an origin. Until taking exists, the giftbag is the only way to
-own an expectation: `chatddx init-data` without `--giftbag` leaves its user nothing to be scored against. And once
-people write expectations, `--giftbag` for one who wrote their own for a sample case is refused by the catalog's rule,
-which fails `init-data`; it should keep theirs, as it keeps a fork they already have.
+Planned in `agents/wip-authoring.md`: chunks, recipes, appendices and the cases that order them, expectations, what is
+said about a thread, and following an origin. Taking expectations is built ("Taking"), and the giftbag keeps a
+person's own.
 
 ### Takes
 A take is the agent's recommendation, built on but not decided.

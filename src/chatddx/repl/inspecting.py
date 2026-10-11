@@ -393,7 +393,15 @@ def _show_case(repl: Repl, name: str | None) -> None:
             continue
 
         if expectation is None:
-            table.add_row(label, Text("none of yours", style=LATER))
+            said = Text("none of yours", style=LATER)
+            owners = {
+                bench.login(a.owner) for _, a in bench.shared(family.case, schema)
+            }
+            if owners:
+                _ = said.append(
+                    f"; shared by {some(sorted(owners))}: take", style=LABEL
+                )
+            table.add_row(label, said)
         else:
             _add_rows(repl, table, label, expectation.data, depth=3)
 

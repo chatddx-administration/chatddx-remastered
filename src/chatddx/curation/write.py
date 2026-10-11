@@ -267,6 +267,10 @@ class _Init:
             if any(not about.deleted for about in mine.values()):
                 self.lines.append(f"[giftbag {kind}] {name}: kept")
                 continue
+            # The catalog holds a person to one expectation per case and schema.
+            if kind == "expectation" and self._expecting(user, thread):
+                self.lines.append(f"[giftbag {kind}] {name}: kept their own")
+                continue
             # A fork `wipe` deleted comes back rather than a new one piling up.
             if mine:
                 restored = max(mine)
@@ -287,6 +291,14 @@ class _Init:
                 name=about.name,
             )
             self.lines.append(f"[giftbag {kind}] {name}: forked {short(head.digest)}")
+
+    # Whether the person owns a live expectation of the archive thread's case under its
+    # schema.
+    def _expecting(self, user: Person, thread: int) -> bool:
+        head = self.store.get(self.catalog.head(thread).digest)
+        assert isinstance(head, Expectation)
+        case, schema = head.case, head.expectation_schema
+        return bool(self.catalog.expectation_choices([case], user.id, schema)[case])
 
 
 def _what(catalog: Catalog, subject: Subject) -> str:

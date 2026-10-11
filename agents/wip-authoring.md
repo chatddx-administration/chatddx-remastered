@@ -14,8 +14,9 @@ portal is the first edge to need them (agents/wip-portal.md, "Below the UI", "Ph
    expectation is carried to a replacement case only when confirmed (A4), only the owner shares (A9), and every edit
    names the head it was made on (A10), and a take keeps a person's own expectation, with replacing one a write of
    its own (A5). The rest are takes.
-2. **Taking expectations comes first** (phase 1). A person is scored against their own expectations only, so one who
-   wasn't given the giftbag has nothing to be scored against until they can take some.
+2. **Taking expectations is built** (phase 1): `Bench.take` and `Bench.take_from`, the giftbag keeping a person's own,
+   the repl's `take`, and the API's `POST /api/takes` and `POST /api/threads/{thread}/takes` (agents/wip-bench.md,
+   "Taking"). Phase 2 comes next.
 3. **One set of writes for every kind people author** (A1), with builders only where a kind binds to a family's
    vignette: appendices and cases (A2).
 4. **No write refuses on a lint** (A6): what was written comes back with its lints. Refusals stay the components' and
@@ -27,7 +28,7 @@ portal is the first edge to need them (agents/wip-portal.md, "Below the UI", "Ph
 | Chunks: instructions, few-shot, prompt, output, sampling, reasoning, passthrough, translations, toolset | researchers | `docs/chatddx.md`, "Requirements"; `docs/factors.md`, "Requests" | by curation, as the archive; forks of them by the giftbag |
 | Recipes, made into configurations | researchers | `docs/chatddx.md`, "Requirements" | only a variation of a configuration the person sees, forked or edited (`Bench.fork`, `Bench.edit`) |
 | Appendices, and the cases that order them | clinicians | `docs/factors.md`, "Case" and "Appendix" | nothing: a data set can't hold appendices (`docs/curation.md`, "What a data set can't hold yet") |
-| Expectations, and taking one shared | clinicians | `docs/factors.md`, "Expectation"; `agents/wip-bench.md`, "What a person is scored against" | by curation, as the archive; forks of them by the giftbag |
+| Expectations, and taking one shared | clinicians | `docs/factors.md`, "Expectation"; `agents/wip-bench.md`, "What a person is scored against" | by curation, as the archive; forks of them by the giftbag; taken, by any person (phase 1) |
 | A text's language, offered the previous version's | — | `docs/catalog.md`, "Languages" | by curation, from a data set's texts |
 | Names, descriptions, tags, collaborators; deleting and restoring | — | `docs/catalog.md`, "Entries" and "Deleting"; `docs/chatddx.md`, "Intended evolution of configurations" | a name, when a configuration is forked (`Bench.fork`); the rest by curation |
 | Accepting a proposal once a fork's origin moved on | — | `docs/catalog.md`, "Forks" | nothing: `Catalog.proposal` has no caller |
@@ -133,7 +134,7 @@ Decided: K, with replacing named. A bulk write that can't destroy anything is sa
 one that can is a choice made case by case.
 
 Beside it, the giftbag keeps a person's own expectation for a case and schema, as it keeps a fork they already have,
-rather than fail `init-data` on the catalog's rule (agents/wip-bench.md, "Outstanding").
+rather than fail `init-data` on the catalog's rule (agents/wip-bench.md, "What a person is scored against").
 
 ### A6. What was written comes back with its lints
 Each write returns what it wrote and the lints of it, as findings: an expectation whose data fails its schema or can't
@@ -326,8 +327,8 @@ yet. Take: none are offered until a kind of resource exists, with its own pins, 
 
 ## Phases
 Each with its tests in `src/chatddx/bench/test/` and the API's.
-1. **Taking**: taking expectations for cases or families, and the giftbag keeping a person's own; the repl's and the
-   API's.
+1. **Taking**, built: taking expectations for cases or families, and the giftbag keeping a person's own; the repl's
+   and the API's.
 2. **Chunks and expectations**: new, fork and edit for every kind people author, with a language for texts, lints
    returned, kinds checked, and an edit's head.
 3. **What is said about a thread**: name, description, tags, collaborators, deleting and restoring.

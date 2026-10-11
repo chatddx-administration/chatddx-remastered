@@ -1,4 +1,4 @@
-from collections.abc import Mapping, Sequence
+from collections.abc import Callable, Mapping, Sequence
 
 from pydantic import JsonValue
 
@@ -130,15 +130,40 @@ def picked(case: str, choices: Mapping[int, str]) -> str | None:
 def expectation_choices(
     rows: Reader, cases: Sequence[str], person: int, schema: str
 ) -> dict[str, dict[int, str]]:
+    found: dict[str, dict[int, str]] = {c: {} for c in cases}
+    for case, edit, _ in _expecting(rows, cases, schema, lambda a: a.owned_by(person)):
+        found[case][edit.thread] = edit.digest
+    return found
+
+
+# For each case, the heads of the live threads shared with the person whose head is an
+# expectation of it in `schema`, with what is said of each: what they could take.
+def expectations_shared(
+    rows: Reader, cases: Sequence[str], person: int, schema: str
+) -> dict[str, list[tuple[Edit, About]]]:
+    found: dict[str, list[tuple[Edit, About]]] = {c: [] for c in cases}
+    shared = _expecting(
+        rows, cases, schema, lambda a: a.shows(person) and a.owner != person
+    )
+    for case, edit, about in shared:
+        found[case].append((edit, about))
+    return found
+
+
+# The threads `keep` keeps whose head is an expectation of one of `cases` in `schema`,
+# each with its case, its head and what is said of it, in thread id order.
+def _expecting(
+    rows: Reader, cases: Sequence[str], schema: str, keep: Callable[[About], bool]
+) -> list[tuple[str, Edit, About]]:
     held = heads_holding(rows, rows.expectations(cases))
     known = abouts(rows, [Subject(thread=t) for t in held])
-    own = {t: e for t, e in held.items() if known[Subject(thread=t)].owned_by(person)}
-    read = dict(rows.components([e.digest for e in own.values()]))
-    found: dict[str, dict[int, str]] = {c: {} for c in cases}
-    for t, e in own.items():
-        expectation = resolve(read.__getitem__, e.digest, Expectation)
+    kept = {t: e for t, e in held.items() if keep(known[Subject(thread=t)])}
+    read = dict(rows.components([e.digest for e in kept.values()]))
+    found: list[tuple[str, Edit, About]] = []
+    for t in sorted(kept):
+        expectation = resolve(read.__getitem__, kept[t].digest, Expectation)
         if expectation.expectation_schema == schema:
-            found[expectation.case][t] = e.digest
+            found.append((expectation.case, kept[t], known[Subject(thread=t)]))
     return found
 
 

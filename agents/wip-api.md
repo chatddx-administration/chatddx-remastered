@@ -82,14 +82,14 @@ A configuration made per language or model is a thread under its full name, unti
 
 ## What a person sees
 - **Threads** of a kind, by the word the repl uses for it: configuration, each part, tool, scorer, judge,
-  expectation schema, canary set, model or engine. A thread gives its kind, name, title, owner, tags and head, and on
-  its own also its description, collaborators, language, the edit it was forked from, and for a configuration its
-  recipe. Its versions come oldest first.
+  expectation, expectation schema, canary set, model or engine. A thread gives its kind, name, title, owner, tags and
+  head, and on its own also its description, collaborators, language, the edit it was forked from, and for a
+  configuration its recipe. Its versions come oldest first.
 - **Families**, each with the case of its current vignette, filtered by tag or name. A family on its own adds its
   description and collaborators, the case's appendices, and, under each expectation schema the person sees, the
   expectation its case is scored against: their own, so a schema under which they only see shared ones has none
   (`agents/wip-bench.md`, "What a person is scored against"). Several to choose from don't fail the request; that
-  schema says so instead.
+  schema says so instead. Each schema also lists the expectation threads shared with the person they could take.
 - **A family's vignette**, fetched from the World's source, and whether it still is the text the case was made from
   (unknown under a keyed fingerprint). It is case-derived (see "Case-derived content").
 - **Tags** on the families the person sees.
@@ -134,6 +134,16 @@ version of the person's configuration of that name if there is one, and a new co
 - **Edit** a configuration of their own, with parts replaced over its head: a new version, or nothing when the
   variation is the head already, which is answered as such. Another's configuration can't be edited, and is "not
   found" as "no configuration N of yours".
+
+## Taking expectations
+A person is scored against their own expectations only, so they take the shared ones (`agents/wip-bench.md`,
+"Taking"):
+- **For many cases**, by family, under one schema, from any owner or one named. The answer says, for each family,
+  whether its case was taken, and into which thread, or was kept as theirs, has several owners' to choose from, or
+  has none shared. Nothing of theirs changes, so the request is safe to repeat. A family the person doesn't see, or an
+  owner who doesn't exist, is unprocessable.
+- **One thread**, an expectation shared with them, into a thread of their own. When they have their own of its case
+  under its schema, it is a conflict unless the request says to replace theirs, which deletes it in the same write.
 
 ## Runs
 ### Starting one
@@ -215,7 +225,8 @@ A refusal's body is `{"detail": "…"}`, except where a request doesn't validate
 | 401 | No session, one that has ended, or a wrong login or password. |
 | 403 | A cookie's request that changes something, or a sign-in, from another site's page. |
 | 404 | What the path names isn't there or isn't seen by the person, a thread is of another kind than the route takes, a source doesn't hold a vignette, or a configuration to edit isn't the person's. |
-| 422 | A request that doesn't validate or names a field it shouldn't; a kind that isn't one; a variation the bench refuses; a query or body naming what the person doesn't see; tags no case has; the gate's refusal of a run. |
+| 409 | Taking an expectation the person has their own of, without saying to replace it. |
+| 422 | A request that doesn't validate or names a field it shouldn't; a kind that isn't one; a variation the bench refuses; a query or body naming what the person doesn't see; tags no case has; the gate's refusal of a run; taking an expectation that is the person's already. |
 | 500 | A run that failed on its thread, for a request waiting for its answer. |
 
 An edit that changes nothing is answered 200 with the head; what is made is answered 201.
@@ -246,6 +257,7 @@ serve the app with uvicorn on a thread, and speak to it over a socket.
 | Head | A configuration's latest version, which a request's variation is built on. |
 | Fork | A new configuration of one's own, made from one the person sees. |
 | Edit | A new version of a configuration of one's own. |
+| Take | A fork of an expectation shared with the person, so that it counts. |
 | Reach | Of a scorer's view: whether a variation's output offers what it reads, and which cases have an expectation it picks from. |
 | Run | A variation sent at an endpoint on some cases with one seed, recorded as it goes. |
 | Item | One case's request in a run, with its calls. |

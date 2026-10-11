@@ -136,6 +136,19 @@ the sample's first run comes to 248 threads and families.
    renamed to or from another id, or changed, and the family repair-data would move.
 4. **Leftovers.** The archive's threads and families that the data no longer names are listed, but not deleted.
 5. **Sharing.** USER becomes a collaborator on every thread and family the run came to.
+```
+AGENT: CHANGE
+The giftbag keeps USER's own expectation of a case under a schema instead of forking the archive's beside it, which
+the catalog's one-per-case-and-schema rule refuses (src/chatddx/curation/write.py:_Init._expecting). Without this, a
+person who wrote or took their own failed init-data. It prints "[giftbag expectation] <case id>: kept their own".
+---
+6. **Giftbag.** With `--giftbag`, USER also gets a fork of every chunk, tool, skeleton and expectation thread, so
+   what has moved on in the archive is proposed to them (docs/catalog.md, "What has moved on"). The forks of the
+   expectation threads are also what USER is scored against: without them, the archive's shared expectations score
+   nothing for USER. Expectation schemas, scorers, models and engines stay the archive's. A fork they already have is
+   kept, and one they deleted comes back, unless they own an expectation of that case under that schema by then: a
+   person owns one at most (docs/catalog.md, "Owners"), so theirs is kept instead.
+```
 6. **Giftbag.** With `--giftbag`, USER also gets a fork of every chunk, tool, skeleton and expectation thread, so
    what has moved on in the archive is proposed to them (docs/catalog.md, "What has moved on"). The forks of the
    expectation threads are also what USER is scored against: without them, the archive's shared expectations score

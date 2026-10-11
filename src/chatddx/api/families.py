@@ -1,6 +1,6 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, HTTPException, Query
 
 from chatddx import bench as benches
 from chatddx.bench import Ambiguous, Bench, NotFound
@@ -9,7 +9,7 @@ from chatddx.factors.cases import Case
 
 from . import schemas
 from .people import BenchDep
-from .threads import login
+from .threads import login, refused, thread_of
 
 router = APIRouter(tags=["families"])
 
@@ -36,6 +36,9 @@ def expected(bench: Bench, case: str, schema: str) -> schemas.Expected:
         expectation=None if held is None else held.digest,
         data=None if held is None else held.data,
         ambiguous=ambiguous,
+        shared=[
+            thread_of(bench, "expectation", e, a) for e, a in bench.shared(case, schema)
+        ],
     )
 
 
@@ -83,6 +86,27 @@ def vignette(bench: BenchDep, family: int) -> schemas.Vignette:
         id=held.id,
         text=raw.decode("utf-8-sig", errors="replace"),
         drifted=None if keyed else Fingerprint.of(raw) != held.fingerprint,
+    )
+
+
+# An owner the body names that doesn't exist is the body's fault, as a family not seen is.
+@router.post("/takes")
+def takes(bench: BenchDep, given: schemas.NewTakes) -> schemas.Taken:
+    seen = {f.id: f for f in bench.families()}
+    if missing := [f for f in given.families if f not in seen]:
+        raise HTTPException(422, f"no case {missing[0]} for {bench.person.login}")
+    cases = [seen[f].case for f in given.families]
+    try:
+        with refused():
+            taken = bench.take(cases, given.expectation_schema, given.owner)
+    except NotFound as e:
+        raise HTTPException(422, str(e)) from None
+    of = dict(zip(given.families, cases, strict=True))
+    return schemas.Taken(
+        taken={f: taken.taken[c] for f, c in of.items() if c in taken.taken},
+        kept={f: taken.kept[c] for f, c in of.items() if c in taken.kept},
+        choosing={f: taken.choosing[c] for f, c in of.items() if c in taken.choosing},
+        missing=[f for f, c in of.items() if c in taken.missing],
     )
 
 

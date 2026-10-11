@@ -168,6 +168,34 @@ class Expected(_Schema):
     expectation: str | None
     data: JsonValue
     ambiguous: str | None
+    shared: list[Thread] = Field(
+        description="the expectation threads of others, shared with the person, they "
+        + "could take"
+    )
+
+
+class NewTakes(_Schema):
+    families: list[int] = Field(min_length=1, description="the cases, by family")
+    expectation_schema: str
+    owner: str | None = Field(None, description="a login: that owner's only")
+
+
+# Keyed by family.
+class Taken(_Schema):
+    taken: dict[int, int] = Field(description="the thread each was taken into")
+    kept: dict[int, int] = Field(description="the person's own, left as it is")
+    choosing: dict[int, list[int]] = Field(
+        description="shared by several owners: the threads to choose from"
+    )
+    missing: list[int] = Field(description="none shared")
+
+
+class NewTake(_Schema):
+    replace: bool = Field(
+        False,
+        description="delete the person's own expectation of the case under that "
+        + "schema, in the same write",
+    )
 
 
 class FamilyDetail(Family):

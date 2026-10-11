@@ -5,7 +5,7 @@ from typing import Annotated
 from fastapi import APIRouter, HTTPException, Query, Request, Response
 
 from chatddx import catalog
-from chatddx.bench import KINDS, PARTS, Bench, Reach, TriedVariation
+from chatddx.bench import KINDS, PARTS, Bench, Conflict, Reach, TriedVariation
 from chatddx.catalog.titles import describe
 from chatddx.factors.trial import suggest_seeds
 
@@ -90,12 +90,15 @@ def edits(bench: BenchDep, thread: int) -> list[schemas.Edit]:
     return [edit_of(bench, e) for e in bench.catalog.history(thread)]
 
 
-# A variation the bench refuses: a digest that isn't a chunk of its part, a part that
-# can't be taken out, or parts that don't compile together.
+# What the bench refuses: a digest that isn't a chunk of its part, a part that can't be
+# taken out, parts that don't compile together, or an expectation the person owns taken.
+# A conflict, the person's to settle, is 409 (src/chatddx/api/app.py, STATUSES).
 @contextmanager
 def refused() -> Generator[None]:
     try:
         yield
+    except Conflict:
+        raise
     except ValueError as e:
         raise HTTPException(422, str(e)) from None
 
@@ -187,3 +190,26 @@ def edit(
     if saved.what == "unchanged":
         response.status_code = 200
     return edit_of(bench, saved.variation.configuration)
+
+
+@router.post(
+    "/threads/{thread}/takes",
+    status_code=201,
+    responses={
+        409: {
+            "description": "The person has their own expectation of the case under "
+            + "that schema: replace it to take this one"
+        }
+    },
+)
+def take(
+    request: Request,
+    response: Response,
+    bench: BenchDep,
+    thread: int,
+    given: schemas.NewTake,
+) -> schemas.ThreadDetail:
+    with refused():
+        made = bench.take_from(thread, given.replace)
+    response.headers["Location"] = request.app.url_path_for("thread", thread=made)
+    return detail(bench, made)

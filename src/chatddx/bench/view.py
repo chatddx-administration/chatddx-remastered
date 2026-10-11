@@ -5,7 +5,16 @@ from uuid import UUID
 
 from pydantic import JsonValue
 
-from chatddx.catalog import About, Edit, Kept, Subject, latest, variants_for
+from chatddx.catalog import (
+    About,
+    Edit,
+    Entry,
+    EntryField,
+    Kept,
+    Subject,
+    latest,
+    variants_for,
+)
 from chatddx.catalog.threads import picked
 from chatddx.catalog.titles import short
 from chatddx.core.rig import rig
@@ -39,7 +48,7 @@ from chatddx.store import Catalog, People, Store
 from chatddx.store.catalog import Rows
 from chatddx.store.store import Connection
 
-from .errors import Ambiguous, NotFound
+from .errors import Ambiguous, Conflict, NotFound
 from .variation import PARTS, TriedVariation
 
 # The kinds of thread each word names: a configuration is a skeleton thread, a part is a
@@ -51,6 +60,7 @@ KINDS: dict[str, tuple[str, ...]] = {
     "scorer": ("scorer",),
     "judge": ("judge",),
     "expectation_schema": ("expectation_schema",),
+    "expectation": ("expectation",),
     "canary_set": ("canary_set",),
     "model": ("model",),
     "engine": ("engine.local", "engine.remote"),
@@ -113,6 +123,17 @@ class Saved:
     digest: str
     what: Literal["created", "a new version", "unchanged"]
     variation: TriedVariation
+
+
+# What taking expectations for some cases did with each: by case, the thread the person
+# took one into, their own thread left as it was, the shared threads of several owners
+# to pick from, and the cases nothing shared has one for.
+@dataclass(frozen=True)
+class Taken:
+    taken: dict[str, int]
+    kept: dict[str, int]
+    choosing: dict[str, list[int]]
+    missing: list[str]
 
 
 SAVED: dict[Kept, Literal["created", "a new version", "unchanged"]] = {
@@ -384,6 +405,11 @@ class Bench:
         digest = self._expectations_for([case], schema)[case]
         return None if digest is None else resolve(self.get, digest, Expectation)
 
+    # The expectation threads shared with the person for a case under `schema`, with what
+    # is said of each: what they could take.
+    def shared(self, case: str, schema: str) -> list[tuple[Edit, About]]:
+        return self.catalog.expectations_shared([case], self.person.id, schema)[case]
+
     # Several to choose from is the one LookupError
     # src/chatddx/catalog/threads.py:expectations_for raises.
     def _expectations_for(self, cases: list[str], schema: str) -> dict[str, str | None]:
@@ -588,6 +614,64 @@ class Bench:
         _ = registry.add(skeleton)
         _ = self.store.add(registry, [registry.add(compilation)])
         return compilation.digest
+
+    # For each case, a fork of the one expectation under `schema` shared with the person,
+    # by `owner` when given, unless they have one of their own; in one transaction.
+    def take(
+        self, cases: Iterable[str], schema: str, owner: str | None = None
+    ) -> Taken:
+        if self._rows.kind(schema) != "expectation_schema":
+            raise ValueError(f"{schema} isn't a stored expectation schema")
+        by = None if owner is None else self._people.find(owner)
+        if owner is not None and by is None:
+            raise NotFound(f"no person {owner!r}")
+        wanted = list(dict.fromkeys(cases))
+        own = self.catalog.expectation_choices(wanted, self.person.id, schema)
+        shared = self.catalog.expectations_shared(wanted, self.person.id, schema)
+        found = Taken({}, {}, {}, [])
+        with self.conn.transaction():
+            for case in wanted:
+                offered = [
+                    (e, a) for e, a in shared[case] if by is None or a.owner == by.id
+                ]
+                if mine := sorted(own[case]):
+                    found.kept[case] = mine[0]
+                elif not offered:
+                    found.missing.append(case)
+                elif len(offered) > 1:
+                    found.choosing[case] = [e.thread for e, _ in offered]
+                else:
+                    found.taken[case] = self._fork(*offered[0])
+        return found
+
+    # A fork of an expectation thread shared with the person. With `replace`, their own
+    # of its case under its schema is deleted first, in the same transaction; without,
+    # it is a conflict.
+    def take_from(self, thread: int, replace: bool = False) -> int:
+        edit, about = self.thread_by_id(thread, "expectation")
+        if about.owner == self.person.id:
+            raise ValueError(f"expectation {thread} is yours already")
+        held = resolve(self.get, edit.digest, Expectation)
+        case, schema = held.case, held.expectation_schema
+        choices = self.catalog.expectation_choices([case], self.person.id, schema)
+        mine = sorted(choices[case])
+        if mine and not replace:
+            raise Conflict(
+                f"{self.person.login} has their own expectation of {self.title(case)} "
+                + f"under {self.title(schema)}, in thread {mine[0]}: replace it to "
+                + "take this one"
+            )
+        gone = Entry(field=EntryField.DELETED)
+        with self.conn.transaction():
+            for own in mine:
+                self.catalog.note(Subject(thread=own), gone, self.person.id)
+            return self._fork(edit, about)
+
+    def _fork(self, head: Edit, about: About) -> int:
+        made = self.catalog.create(
+            head.digest, self.person.id, forked_from=head.id, name=about.name
+        )
+        return made.thread
 
     # The variation run on `cases` with one seed, at `endpoint`; nothing is sent until
     # `Running.send`.

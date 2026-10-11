@@ -205,6 +205,7 @@ d5ebf52, "The old bench".
 | `replay [RUN]` | `Store.run`, its responses and the request re-rendered from the trial and source | the request isn't stored |
 | `score [RUN]` | scores runs with no score under the scoring as it would be built now | |
 | `scorers` | visible scorers, their views and labels, and `reaches` against the cell's output schema | |
+| `take [from OWNER] [TAG...]` | `Bench.take` of the tagged cases, or all, under each schema they have expectations in | new: a person is scored against their own expectations only |
 
 ## Phases
 ### 1. Runner: `src/chatddx/runner/`
@@ -347,8 +348,9 @@ Takes made while building, all still open:
   lints, and per scorer view the cases it can hold the cell to: a case has it when the expectation the person reads
   under the scorer's schema (`Catalog.expectation_for`) gives the view's expectation selector something to pick. The
   old count also named patterns that don't parse; that reading is the pattern scorer's, and isn't here.
-- **`show KIND [NAME]`**: the kinds are `configuration`, the nine parts, `tool`, `scorer`, `judge`,
-  `expectation_schema`, `canary_set`, `model` and `engine`, plus `case` and `endpoint`. A component's fields, its
+- **`show KIND [NAME]`**: the kinds are `configuration`, the nine parts, `tool`, `scorer`, `judge`, `expectation`
+  (since taking, by the thread's name, the person's own first), `expectation_schema`, `canary_set`, `model` and
+  `engine`, plus `case` and `endpoint`. A component's fields, its
   catalog entries, and how many of the person's runs reach it (`Reads.reaching`). A case shows its source, the
   vignette fetched from the World, and the expectation the person reads: their own thread's head, else a shared one.
 - **`reasoning`**: a column per model the facts know, headed by the endpoints serving it, and a row per level, plus
