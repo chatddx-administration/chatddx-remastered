@@ -1,649 +1,263 @@
-# The bench: work in progress
+# Bench
 
-The bench is what one person sees and does: the threads, families and runs they see, the World's endpoints, the
-variation they are trying, and what is written on their behalf. It sits over the store, the catalog, the runner and the
-scoring pass. It was built for the repl (`agents/wip-repl.md`, phase 3 and "Built: 4a"), and moved out of it so that
-what it is could be decided apart from the shell.
+A candidate for `docs/bench.md`. Its reference is `agents/wip-bench-api.md`, a candidate for `docs/bench-api.md`;
+below, those two names mean these two files until they move. What is still open is in "Outstanding", at the end, which
+stays behind when they do. The plan this was rewritten from, with its phases, the options weighed for each decision
+and the survey of the old bench, is `agents/wip-bench.md` at c6b3d68.
 
-"The old bench" is chatddx-administration/chatddx at 504792c: `src/chatddx/bench/`. Old permalink base:
-https://github.com/chatddx-administration/chatddx/blob/504792cbeb09508f2c52912be29a3d8809d2fa1d/
+The bench is what one person sees and does, whatever the edge: the threads, families and runs they see, the World's
+endpoints, the variation they are trying, and what is written on their behalf. Its edges are the repl
+(agents/wip-repl.md) and the API (agents/wip-api.md), with the portal to come (agents/wip-portal.md). It sits over the
+store, the catalog, the World, the facts, the runner and the scoring pass, and holds no SQL of its own.
 
-"Decided" means the user said so. "Take" is the agent's recommendation and still open.
+This document describes what the bench does and why it is shaped like it is. Names, signatures and errors are in
+docs/bench-api.md.
 
-## Start with this
-1. **Decided: B3**, a person-scoped view, split between `identity` and the bench (see "Decided").
-2. **Phase 2** (see "Phase 2"): steps 1–11 are done. Step 12, Z1, waits for the portal.
-3. **Decided: H1**, a person is scored against their own expectations only, and owns at most one live expectation
-   thread per case and expectation schema (see "Phase 3"). Built; the docs carry `AGENT:` suggestions for it.
-4. **Decided: K2 with R1** (see "Keeping 'cell' or not"). "Cell" is the repl's word only, and the bench speaks of a
-   `TriedVariation` and an endpoint. A test keeps the word out of the code outside `src/chatddx/repl/`.
-5. **The bench's modules** are `errors.py`, `outcome.py`, `variation.py` and `view.py` (see "Modules"). There is no
-   `bench/bench.py`.
-6. **The API's phase 0** added to the bench: lookups by id, a variation from an id and digests, `fork` and `edit`,
-   `Ambiguous` for several expectations, and `outcome.py` (`agents/wip-api.md` at cae55ad, "Phase 0: built").
-7. **Next: writes for authoring.** The bench writes configurations (`save`, `fork`, `edit`), runs (`start`) and
-   scores (`score`), and nothing else. The portal is where chunks, appendices and expectations are written
-   (`docs/chatddx.md`, "Requirements"; `agents/wip-portal.md`), for the person, so the writes are the bench's (B3).
-   Curation writes them only as the archive, from a data set's files (`src/chatddx/curation/write.py`). Not planned
-   yet; what the docs already ask of them:
-   - **Chunks** of every part (`PARTS`, `src/chatddx/bench/variation.py`): a new thread, or an edit of one the person
-     owns, as `fork` and `edit` are for configurations. A new version is offered the previous version's language
-     (`docs/catalog.md`, "Languages").
-   - **Appendices**, bound to one vignette and stored as written, with CRLF normalized before they are digested
-     (`docs/factors.md`, "Appendix"); and the cases that order them in a family.
-   - **Expectations**, one case's reference answer, held to an expectation schema (`docs/factors.md`, "Expectation"),
-     and read back through `Bench.expectation`; and taking one shared with the person, a fork, since only their own
-     counts (H1). Each is held to the catalog's rule of one per case and schema (see "Phase 3").
-   - **Cases and families**, for swift's typed cases: the text, its `Case` and a family for the person, in one
-     transaction (`agents/wip-portal.md`, "Swift", "Typed cases").
-   - Beside them: a scorer's labels carried to its next edit (`docs/catalog.md`, "Scorer labels"), and deleting
-     (`docs/catalog.md`, "Deleting").
+## A person-scoped view
+What depends on who is asking goes through the bench; what doesn't may be read straight from the store, the World and
+the facts. An edge asks the bench which runs are the person's, and which thread a name means to them, but reads a
+component by its digest, or an endpoint's limits, from where they are kept.
 
-## Decided
-- **B3**: the bench is a person-scoped view (see "Phase 1" for the options). The split:
-  - `identity/` holds the pure rules: the map from role to kinds (Z1, `agents/wip-identity.md`, "Authorization")
-    and the predicate for "may this person see this". They are data and functions with no store access, so `identity`
-    stays a leaf.
-  - `bench/` is the view that applies those rules to what is in the store and the World. It also holds the variation
-    being tried at an endpoint (see "'Cell', translated") and the writes made for the person.
-- **The two rules for the expectation a case is held to** were to be made one if that could be done cleanly, and
-  otherwise looked at more deeply. It was clean (phase 2, step 4).
-- **H1**: a person is scored against their own expectation only; one shared with them counts once they fork it. A
-  person owns at most one live expectation thread per case and expectation schema, and should two writers at once
-  leave several, it is refused, visibly (see "Phase 3").
-- **"Cell" isn't a term of remastered**, and isn't to be used in code or docs. Its translation comes first, then a
-  reconciliation. The user later reopened this: whether "cell" is worth keeping between the bench and the edges, as
-  long as it stays out of the data model. Decided: K2 with R1 (see "Keeping 'cell' or not"), built in phase 2, step 6.
+The bench isn't a facade, and nothing checks that an edge goes through it. What it is for is that each rule about a
+person has one place, so that the edges don't copy it: in the old chatddx, what a person may read and what a name
+means to them were written again in the portal, the API, the repl and the bench.
 
-## "Cell", translated
-"Cell" is the old chatddx's term: `bench/cell.py:Cell(configuration, name, variations, stack)`, a configuration with
-slices swapped in, on a stack. It leaked into remastered with the repl's port.
+A bench is made for one person and one connection, and lasts as long as its caller: a request in the API, a process in
+the repl. It caches logins and the model each engine serves for that long.
 
-In remastered's terms, it is **a variation being tried, at an endpoint**:
-- **A variation being tried** (`docs/chatddx.md`, "Intended evolution of configurations"; `docs/catalog.md`,
-  "Configurations and variations"). It is a configuration's recipe with recipe parts replaced; with none replaced, it
-  is the configuration's head itself. Compiled, it is a skeleton nobody has saved, "just a digest". Saved, it becomes an
-  edit of the person's thread, or a fork (`Bench.save`).
-- **An endpoint** (`docs/inventory.md`, "Endpoints"): where an engine is served. The engine is a factor, and the
-  endpoint is the World's.
-- Together they give the skeleton and the engine that a trial pairs (`docs/facts.md`, "Checking pairs"). `run` and
-  `batch` add the cases and the seed, and that makes the trial.
+What the bench shows decides what is relevant to show a person, not who may read what (agents/wip-identity.md,
+"Authorization"). Protection comes from clearance, which the runner's gate enforces (src/chatddx/runner/gate.py), and
+from the database's grants.
 
-Field by field, for the bench's former `Cell`. It is now the bench's `TriedVariation`, and the repl's own `Cell`
-holds one beside the endpoint and its engine (phase 2, step 6):
+## Who decides what
+Three packages hold rules about a person, each its own part of them:
+- **Identity** holds the rules, as pure functions with no store access: who sees a subject, its owner and its
+  collaborators (`sees`), and that a person's own comes before what is shared with them (`preferred`). The map from
+  roles to the kinds each role sees is to go beside them (see "Outstanding", "Z1").
+- **The catalog** applies them to its own rows, and adds that only live subjects count: `About.shows` is live and
+  seen, `About.owned_by` live and owned. It answers what docs/catalog.md says it answers, such as the threads and
+  families a person sees and the expectation they are scored against, and refuses the writes its rules forbid.
+- **The bench** applies them to everything else: names, runs, the variation being tried, the writes made for the
+  person, and the errors an edge tells apart.
 
-| The former `Cell` | In remastered's terms |
-|---|---|
-| `configuration: Edit` | the head of the configuration, a skeleton thread, that the variation is based on |
-| `name` | the configuration's name, as the person addressed it |
-| `recipe` | the configuration's recipe (`Catalog.recipe`) |
-| `parts` | the recipe parts replaced, each with the name of the chunk thread it was taken from: what the variation varies (`docs/catalog.md`, "Forks") |
-| `varied` | the variation's recipe |
-| `label` | a short title for the variation, `NAME+PART=CHUNK`, where the catalog would give the long one of a variation nobody saved (`docs/catalog.md`, "Smaller issues") |
-| `endpoint`, `engine` | the endpoint, and the engine it serves |
+## What a person sees
+- **Threads and families** they own or collaborate on, while they are live. A kind of thread is asked for by the word
+  for it: configuration, each recipe part, tool, scorer, judge, expectation schema, canary set, model or engine. A
+  family stands for its case: the one its current vignette makes alone, else the first that holds the vignette. A
+  family without a case isn't shown.
+- **Their own runs**, while they are live. Being a collaborator on a run shows nothing.
+- **The World's endpoints** are everyone's, and read from the World. The bench gives the engine an endpoint serves,
+  once that engine is in the store.
 
-There is one tension. `docs/chatddx.md` calls variations "a supported portal workflow, not an object in the code".
-`Cell` holds the variation being tried as a value (its base, its recipe, and the parts with the names they were set
-by), because the repl shows the names and `save` forks from the base. A value in the bench isn't a catalog object.
-`TriedVariation` stays a plain value.
+### Finding things by name
+A thread or a family is found by its name, matched whole first, since names may hold a slash, as
+`plan (Qwen/Qwen3-8B-AWQ)` does; only when nothing has the whole name is it read as `OWNER/NAME`. Among those it
+names, the person's own win, else the ones shared with them. Several raise `Ambiguous`, which asks for `OWNER/NAME`;
+none raises `NotFound`.
 
-## Keeping "cell" or not
-Decided: K2 with R1 (see "Options"). Built in phase 2, step 6.
+A thread made per model or per language is found by its plain name too: `NAME (MODEL)`, `NAME (LANGUAGE)` or
+`NAME (LANGUAGE, MODEL)`, the one the model an engine serves may use (src/chatddx/catalog/variants.py). Without an
+engine, a name that only per-model threads have isn't found, and the error names them, so that an edge can say the
+endpoint picks one. A name made in several languages is ambiguous.
 
-### Where it was
-- **The repl**: the `cell CONFIGURATION ENDPOINT` command, `Repl.cell`, about ten help texts ("put a configuration in
-  the cell", "run a case on the cell", "save the cell's configuration as your own"), and messages such as "the cell
-  has no endpoint" and "a case isn't in the cell". The prompt shows what the cell holds, but not the word:
-  `alice plan+reasoning=off×qwen3-8b-awq@fake #7>`.
-- **The bench**: the value `Cell`, and the `cell` parameters of `configuration`, `chunk`, `skeleton`, `findings`,
-  `reach`, `save` and `start`.
-- **Nowhere below the bench.** The factors, the ledger, the catalog, the store, the runner and the scorers never name
-  it, and nothing stored is one. `save` stores a skeleton thread's edit and a compilation, `start` a `Trial`, and
-  scoring a `Scoring`. The cell's label isn't stored either.
-- **Nowhere in `docs/`.** In `agents/`: `agents/wip-repl.md` (28 uses), and `agents/wip-repl-manual.md`, the old
-  manual, which stays as it is.
-- In all, about 280 uses in `src/`: about 130 in the repl's code, 45 in the bench, and 105 in the repl's tests.
+By id, a thread, a family or a run is found only among what the person sees. A run is also found by the start of its
+id, among their own.
 
-### What it holds, and the words the docs have for it
-A cell is a configuration, or a variation of it being tried, together with an endpoint. Either side can be missing.
-The docs name each side, but not the two together:
-- **Configuration** and **variation** (`docs/catalog.md`, "Configurations and variations") name the skeleton's side
-  only.
-- **Endpoint** and **engine** name the other side.
-- **Pair** (`docs/facts.md`, "Checking pairs") is a trial's skeleton and engine, and is used for checking them.
-- **Trial** adds the cases, the cleanup and the seeds.
+## What a person is scored against
+A person is scored against their own expectation of a case, under the scorer's expectation schema. One shared with
+them is there to read and to take, by forking it, and counts once they have. So nothing someone else shares, edits,
+restores or hands over changes what a person is scored against, and a correction made upstream reaches them as a
+proposal ("What has moved on", docs/catalog.md) rather than under them.
 
-### Is it a good word?
-For it:
-- It is one short word for what the repl shows and acts on all the time.
-- No remastered term names the two sides together.
-- Repl users know it.
-- It can't be mistaken for any term in the code, since none is like it.
+A person who only sees shared expectations has none. `chatddx init-data` gives its user forks of the archive's when
+asked to (the giftbag, docs/curation.md); otherwise they take them.
 
-Against it:
-- It doesn't say what it holds: the user doesn't see the connection, and a newcomer won't either.
-- The docs, and so a portal built from them, speak of configurations, variations, endpoints and trials. "Cell" would
-  be a fourth word for a combination of two of those.
-- The word's everyday meanings sit right next to it. The repl prints tables, whose cells its tests read
-  (`src/chatddx/repl/test/test_inspecting.py:row_names`). Scores are to be exported and analysed in Python
-  (`docs/chatddx.md`, "On the table"), where a cell is a spreadsheet's or a notebook's.
-- A cell can hold only an endpoint, or only a configuration, which the word doesn't suggest.
-- It is a clinical word too: the sample's cases speak of "basal cell carcinoma" and "hepatocellular carcinoma"
-  (`src/chatddx/data/sample/cases-en.toml`), which the guard's test met at once.
+A person owns at most one live expectation thread per case and expectation schema. The catalog refuses what would make
+two: a second thread, an edit that moves another onto that case and schema, naming them the owner of another, or a
+restore (src/chatddx/catalog/threads.py:check_expectation). The database doesn't repeat the rule, so two writers at
+the same moment can still leave a person two to choose from. Then nothing picks one, and each place says so:
+- scoring refuses the run under that scorer, naming the threads;
+- what is left to score keeps the scorer, so the run stays listed until one of the two goes;
+- a variation's reach lists the case apart from those that have no expectation;
+- the case's expectation under that schema says it has expectations to choose from.
 
-### How it would spread
-Today it is held between the bench and one edge. It would spread through:
-- **The bench's API.** Every edge to come (the portal, an API) builds on the bench, and would take `Cell` with it,
-  into forms, routes and resources.
-- **A stored title.** `docs/catalog.md` ("Smaller issues") proposes "an entry on the run" so that an unsaved
-  variation's runs get a shorter title. Stored from the cell's label, it would carry the repl's notation into the
-  catalog.
-- **An export** whose unit is "the runs of a cell".
-- **Docs** for the bench or the repl that use it.
+## The variation being tried
+A variation being tried is a configuration with recipe parts replaced (docs/catalog.md, "Configurations and
+variations"): the configuration's head edit and recipe, the name the person called it by, and the parts replaced over
+it, each by a chunk's digest, or by nothing for an optional part taken out, with the name it was set by. With nothing
+replaced, it is the configuration's head itself. It is a plain value, not a catalog object: variations are "a
+supported portal workflow, not an object in the code" (docs/chatddx.md), and an unsaved one is just a digest. An edge
+holds it beside the endpoint it is to run at.
 
-### Options
-- **K1. Keep it between the bench and the edges, as now.** `Cell` stays the bench's value and the repl's word. Define it
-  in the bench's doc and in the repl's manual as "a configuration, or a variation of it being tried, and the endpoint
-  it runs on". Guard the data model (see "The guard"). This costs nothing now, but every edge to come learns the word
-  from the bench.
-- **K2. Keep it in the repl only.** The repl's command, help, messages, manual and its own state (`Repl.cell`) say
-  "cell". The bench speaks the docs' terms: the variation being tried as one value, and the endpoint beside it (R1
-  below). The repl translates, so repl users keep their habit, and the portal and an API start from the docs' terms. It
-  costs renaming the bench's 45 uses and the repl's calls into it.
-- **K3. Drop it everywhere.** That was the earlier decision. The repl's `cell X Y` becomes `use X on Y`, perhaps with
-  `cell` kept as a hidden alias for a while. It costs about 280 renames, and repl users relearn.
+Its label, `NAME+PART=CHUNK`, is a short title for it, where the catalog would give the long one of a variation nobody
+saved (docs/catalog.md, "Titles"). Neither is stored.
 
-Names for the bench's value, under K2 and K3:
-- **R1. Two values.** The variation being tried is one value, and the endpoint is held beside it. The bench's methods
-  take what they need, and the engine comes from the endpoint (`Bench.endpoint`). The value can't be called
-  `Variation`, which is the catalog's (`src/chatddx/catalog/model.py:Variation`, what a saved fork varies from its
-  base). It could be `TriedVariation`, held in variables named `variation`.
-- **R2. One value, `Pair`**, after the skeleton and engine that a trial pairs, with the variation it came from and the
-  endpoint. The term exists already, but a pair with one side missing reads oddly.
-- Ruled out: `Variation`, which is taken, and `Draft`, since "draft" names JSON Schema drafts in
-  `src/chatddx/factors/lint.py`.
+For a variation, the bench gives:
+- **its skeleton**: the stored head when nothing is replaced, else the varied recipe compiled, a skeleton nobody has
+  saved;
+- **the request it would send**, with placeholders for the slots, and for the model without an engine;
+- **its lints**, as a trial on an engine: the pair's checks, over any one case since they read none, and with
+  families, the languages of their cases too. An unsaved variation is linted in its recipe's language, since a
+  skeleton's language otherwise comes from its stored compilations;
+- **its reach**: for each view of each scorer the person sees, whether the variation's output offers what the view
+  reads, and which of the given families have no expectation it picks something from, or several to choose from.
 
-### The guard
-Whichever option is chosen, the word stays out of the data model:
-- Nothing below the bench names it. A test can check this by grepping the packages under the bench for the word, under
-  K1, or every package but `chatddx.repl`, under K2. Built for K2:
-  `src/chatddx/repl/test/test_vocabulary.py`, over code only (`.py` and `.sql`), since clinical data says "cell".
-- Nothing stored is one: a run's title, if one is ever stored, is a title (`docs/catalog.md`, "Titles"), not a label
-  in the repl's notation.
-- Docs below the edges don't use it. The test doesn't read docs: `docs/curation.md` ("Picking a variant by the case's
-  language", added in 1dd791a) said "the cell's engine" and "a cell's cases", and carries an `AGENT: CHANGE` for it.
+## Writes for the person
+The bench writes configurations, runs and scores for the person, and nothing else:
+- **Forking** keeps a variation as a new configuration of the person's own, forked from the edit it varies.
+- **Editing** keeps it as a new version of a configuration the person owns. Nothing is written when it is the head
+  already.
+- **Saving** by name is one of the two: a new version of the person's own configuration of that name, else a fork.
+  Several of their own by that name are refused.
+- **Starting** runs the variation at an endpoint, on some cases with one seed, through the runner
+  (agents/wip-runner.md). Nothing is sent until the edge sends it.
+- **Scoring** scores a finished run under each scorer that applies to it, or some of them, as each scoring would be
+  built now, through the scoring pass.
 
-### Take
-K2 with R1. The word's value is the repl's: a habit, a terse command, help that reads short. Its cost is spreading
-through the bench to edges that don't exist yet, whose users would learn it from scratch. K2 keeps the value and stops
-the spread at the cheapest point, since the bench is shared by every edge. The guard is then simple: "cell" appears
-nowhere outside `src/chatddx/repl/`.
+An unsaved skeleton has what it was compiled from stored, by the running code, when it is saved or started
+(docs/catalog.md, "Recipes"). The runner and the scoring pass write each row as it lands, so starting and scoring need
+the bench's connection in autocommit mode.
 
-## Modules
-`src/chatddx/bench/`, since phase 2, step 11:
+Chunks, appendices, expectations, cases and families aren't written by the bench yet (see "Outstanding").
 
-| Module | Holds | Builds on |
-|---|---|---|
-| `errors.py` | `NotFound`, `Ambiguous` | nothing |
-| `outcome.py` | `outcome`, `usage`: how a run's item ended (an `Outcome`), and the tokens it used, a pure function each | `chatddx.factors.request`, `chatddx.ledger`, `chatddx.runner.send`, `chatddx.scorers.answer` |
-| `variation.py` | `PARTS`, `OPTIONAL`, `TriedVariation`: the variation being tried, a plain value | `chatddx.catalog`, `chatddx.factors.request` |
-| `view.py` | `Bench`, the person's view: what they see, the variations they try, and what is written for them; `KINDS`, and what `Bench` returns: `Family`, `Reach`, `Graded`, `Saved` | `errors.py`, `variation.py`, the store, the catalog, the factors, the facts, the inventory, the ledger, the runner, `chatddx.identity` (`Person`, `preferred`) and `chatddx.core.rig` |
+## Runs and scores
+- A person's runs are their own, newest first, found by the start of their id, or by a component their trial is built
+  on.
+- A run is described as the repl's `run` and `batch` say it: the configuration, where it ran, its case or how many,
+  and the seed.
+- A scorer applies to a run when every one of its views reaches the run's output schema.
+- A run's scoring under a scorer is built now, from the expectation each of its cases is scored against. Cases
+  without one are left out, and a run whose cases have none has no scoring.
+- What is left to score of a run is each scorer that applies and has no score of it under the scoring built now, so a
+  changed expectation leaves the run to score again. What is left of the person's is each finished run with what it is
+  left to be scored by.
+- A run's scores are the latest under each scorer that scored it, each named by the thread the person sees holding
+  that scorer, their own first.
+- Only a request's fingerprint is kept, so whether a run's first requests would be sent the same now is told by
+  rendering them again from the trial and the vignette at its source.
 
-`__init__.py` re-exports them, so edges import from `chatddx.bench` and never by path.
+## Errors
+The bench's errors are `LookupError`s an edge can tell apart: `NotFound`, for what the person doesn't see or the store
+doesn't hold, and `Ambiguous`, for a name, an id's start or a case's expectations that give several. A variation the
+bench refuses is a `ValueError`: an unknown part, a digest that isn't a stored chunk of its part, a part that can't be
+taken out. The messages are worded for a person, without the edge's terms; an edge adds its own hint where it has one,
+as the repl does for a name its endpoint would pick a model for. The API maps them to 404, 409 and 422
+(agents/wip-api.md, "Errors").
 
-Why this layout:
-- **No `bench/bench.py`.** It repeated the package's name and said nothing about what it held. Most packages here
-  name modules by what they hold (`catalog/threads.py`, `runner/send.py`, `ledger/run.py`). `identity/identity.py`,
-  `inventory/inventory.py` and `store/store.py` repeat their package's name as `bench/bench.py` did; that is
-  happenstance, not a convention.
-- **`variation.py` is pure.** `TriedVariation` touches neither the store nor a person. It is tested without a
-  database (`src/chatddx/bench/test/test_variation.py`), and an edge can hold one without a bench.
-- **`Bench` stays one class in one module.** Its lookups, the variations it tries, and runs and scores call each
-  other through `self`: `configuration` and `chunk` use `thread`; `findings`, `reach`, `save` and `start` use
-  `skeleton`; `score` and `unscored` use `scorers_for` and `scoring`; `reach`, `score` and `scores_of` use `labels`.
-  Splitting the class by concern would take mixins, which hide where a method lives, or functions taking a bench,
-  which give edges a second surface beside `bench.*`. At d5ebf52, `view.py` has 748 lines: longer than
-  `fake_vllm/chat.py` (609), and shorter than `factors/request.py` (1037).
-- **"View"** because B3 made the bench a person-scoped view. It also writes for the person (`save`, `start`,
-  `score`), but only through what the view finds.
+## "Cell"
+"Cell" is the repl's word for a variation being tried together with an endpoint (agents/wip-repl.md). The bench and
+everything below it speak of the variation and the endpoint, and nothing stored is one: a run's title, if one is ever
+stored, is a title, not a label in the repl's notation.
 
-## Phase 0: out of the repl
-Done.
-- `src/chatddx/repl/bench.py` moved to `src/chatddx/bench/bench.py` unchanged. `src/chatddx/bench/__init__.py` exports
-  its public names, as `chatddx.store` does.
-- The repl, its tests and `src/chatddx/cli.py` import from `chatddx.bench`. The bench imported nothing from the shell,
-  so nothing else changed, and the same 433 tests passed.
+The word is kept to the repl because every edge builds on the bench, and the docs speak of configurations, variations,
+endpoints and trials: a fourth word for two of them would tell the portal's users nothing, and its everyday meanings
+sit close, from a table's cells to the sample's "basal cell carcinoma". `src/chatddx/repl/test/test_vocabulary.py`
+keeps it out of the code outside `src/chatddx/repl/`; it reads code only, since clinical data says "cell".
 
-## What the bench was at phase 0
-`Bench(conn, person, inventory, facts)` (`src/chatddx/bench/bench.py`), with the values `Cell`, `Family`, `Reach`,
-`Graded` and `Saved`.
+## Tests
+The tests start from the sample as `chatddx init-data` lands it from the sample World, with alice and her giftbag; bob
+is added with nothing. The database is made once a session and copied for each test (`src/chatddx/conftest.py`,
+`curated`). The variation and the outcome are tested without a database.
 
-The plan (`agents/wip-repl.md`, phase 3) called it "a person-scoped layer, the old `Bench`'s role. It holds the
-[variation being tried], names, completions and lookups, and nothing in it is UI." Completions ended up in the shell
-instead (`src/chatddx/repl/shell.py:Repl`). Each step of the shell added to it:
-- 4a: the person's lookups (threads by name, families and their cases, the expectation they read);
-- 4a: the skeleton of the variation being tried: the stored head, or `compile_request` on the recipe with the parts
-  replaced;
-- 4a: the provisional trial's lints, each scorer view's reach and coverage, and `save`;
-- 4b: `start` and `score`;
-- 4c: `described`, `rendered_again`, `scores_of`, `scored_by`, `unscored` and `outstanding`.
+A person can only come to own two expectations of a case under one schema through two writers at once, so that is how
+the tests make them: one restores the person's thread while the other starts a new one, each passing the catalog's
+check before the other has written.
 
-It holds a connection, the person, the World inventory, the facts, and caches of logins and of the model each engine
-serves. There is one per repl process (`src/chatddx/cli.py:_repl`), and the shell holds it rather than being one
-(`Repl.bench`), unlike the old `Repl(Bench)`.
+## Terms
 
-The bench's parts, by what each one needs:
+| Term | Meaning |
+| --- | --- |
+| Bench | What one person sees and does, whatever the edge. |
+| Edge | What a person reaches the bench through: the repl, the API, the portal to come. |
+| Sees | Owns or collaborates on, while it is live. |
+| Own | Owned by the person, while it is live. |
+| Word | What a kind of thread is asked for by: configuration, a recipe part, engine and the rest. |
+| Variation being tried | A configuration with recipe parts replaced over it, or none, that nobody has saved. |
+| Label | A variation's short title, `NAME+PART=CHUNK`. Not stored. |
+| Reach | Of a scorer's view: whether a variation's output offers what it reads, and which cases have an expectation it picks from. |
+| Taking | Forking a thread shared with the person to make it their own, as an expectation must be to count. |
+| To choose from | A case with several expectations of the person's own under one schema, which nothing picks between. |
+| Left to score | Of a finished run: a scorer that applies and has no score of it under the scoring built now. |
+| Cell | The repl's word for a variation being tried together with an endpoint. |
 
-| Part | Methods and values | Needs the person |
-|---|---|---|
-| Person-scoped reads | `threads`, `names`, `thread`, `holder`, `families`, `family`, `tags`, `expectation`, `scorers`, `run`, `scored_by`, `unscored`, `outstanding`. Most of them wrap `Reads` | yes |
-| Person-agnostic helpers | `get`, `title`, `about`, `login`, `model`, `endpoint`, `labels`, `trial`, `described`, `rendered_again` | no |
-| The variation being tried, at an endpoint | `Cell`; `configuration`, `chunk`, `skeleton`, `findings`, `reach` | for finding names, and `reach` for expectations |
-| Writes for the person | `save` (a thread or a new edit, and a compilation), `start` (through `Runner`), `score` (through `score_run`) | yes: they write owner entries |
-| Shell vocabulary | `KINDS` ("what the shell calls each kind of thread"), `NONE`, `SEEDS` and `drawn_seed` ("so the prompt stays readable"), and the wording of messages | no |
+## Outstanding
+What is still open. It doesn't move to `docs/`.
 
-`scores_of` and `owner` sit on the edge between the first two parts. `scores_of` names each scorer by the thread the
-person sees, and `owner` gives "" for the person's own.
+### Start with this
+1. **Adopting the docs.** This file and `agents/wip-bench-api.md`, as `docs/bench.md` and `docs/bench-api.md`. The
+   `AGENT:` suggestions that scoring against one's own left in `docs/catalog.md` ("Threads and edits", "Owners",
+   "Concurrent writers"), `docs/catalog-api.md` and `docs/curation.md` ("Giftbag", "Picking a variant by the case's
+   language") wait on the same word.
+2. **Writes for authoring** (below): not planned yet. The portal's authoring and swift wait on them.
+3. **The person rules left to consolidate** (below): small, and best done before the writes for authoring add more.
 
-## The landscape, at phase 1
-How things stood when B3 was chosen. Phase 2 changes it (see "Phase 2").
+### Writes for authoring
+The bench writes configurations (`save`, `fork`, `edit`), runs (`start`) and scores (`score`), and nothing else. The
+portal is where chunks, appendices and expectations are written (`docs/chatddx.md`, "Requirements";
+`agents/wip-portal.md`), for the person, so the writes are the bench's. Curation writes them only as the archive, from
+a data set's files (`src/chatddx/curation/write.py`). What the docs already ask of them:
+- **Chunks** of every part (`PARTS`, `src/chatddx/bench/variation.py`): a new thread, or an edit of one the person
+  owns, as `fork` and `edit` are for configurations. A new version is offered the previous version's language
+  (`docs/catalog.md`, "Languages").
+- **Appendices**, bound to one vignette and stored as written, with CRLF normalized before they are digested
+  (`docs/factors.md`, "Appendix"); and the cases that order them in a family.
+- **Expectations**, one case's reference answer, held to an expectation schema (`docs/factors.md`, "Expectation"),
+  and read back through `Bench.expectation`. Taking one shared with the person, a fork, is one of them, since only
+  their own counts. Each is held to the catalog's rule of one per case and schema.
+- **Cases and families**, for swift's typed cases: the text, its `Case` and a family for the person, in one
+  transaction (`agents/wip-portal.md`, "Swift", "Typed cases").
+- Beside them: a scorer's labels carried to its next edit (`docs/catalog.md`, "Scorer labels"), and deleting
+  (`docs/catalog.md`, "Deleting").
 
-### Layers
-```
-edges     repl, cli                     to come: portal, API, worker, export, `chatddx samples`
-            │   ╲ reaches through bench.store, bench.catalog, bench.reads, bench.inventory, bench.facts
-bench     Bench
-            │
-services  runner: Runner, score_run     seed: init-data
-            │
-store     Store, Catalog, People, Rows, Reads(conn, person)
-            │
-model     factors, ledger, catalog's rules, identity, facts, inventory, scorers
-```
+Until taking exists, the giftbag is the only way to own an expectation: `chatddx init-data` without `--giftbag`
+leaves its user nothing to be scored against. And once people write expectations, `--giftbag` for one who wrote their
+own for a sample case is refused by the catalog's rule, which fails `init-data`; it should keep theirs, as it keeps a
+fork they already have.
 
-This is the import graph between top-level packages, without tests:
-- `bench`: catalog, core, factors, facts, identity, inventory, ledger, runner, store.
-- `repl`: bench, catalog, factors, facts, inventory, ledger, runner, scorers. The repl doesn't import `store`, and
-  reaches the store only through the bench's attributes.
-- `runner`: catalog, core, factors, identity, inventory, ledger, scorers, store.
-- `seed`: catalog, core, factors, facts, identity, inventory, scorers, store.
-- `store`: catalog, core, factors, identity, ledger.
-- `cli`: bench, repl, seed, store, and others.
+### The person rules left to consolidate
+Found when the refactor that moved the person rules into `identity` and `About` was checked, at c6b3d68:
+- **"Live and owned" written out** where `About.owned_by` says it: `src/chatddx/catalog/threads.py:find`, with an
+  owner, and `src/chatddx/curation/write.py`, `wipe` and `_Init.leftovers`.
+- **"Is it theirs" written out** where `Bench.owner` says it: the headers of a thread and of a case in
+  `src/chatddx/repl/inspecting.py` compare owners to add "<login>'s".
+- **`OWNER/NAME` read twice**: `Bench.thread` builds every `LOGIN/NAME` to tell which kind holds a name, and
+  `Bench._named` splits the name again to find the thread.
+- **`About.owned_by` compares owners itself**, beside `sees` in `identity`. It is one comparison, so a function in
+  `identity` for it would only add a name.
 
-### Who takes a person
-- **The catalog's rules** take a person id: `src/chatddx/catalog/model.py:About.shows` (live, and owned or shared) and
-  `src/chatddx/catalog/threads.py:expectation_for`. `Catalog.visible`, `visible_families`, `expectation_for` and
-  `involving` pass it through (`src/chatddx/store/catalog.py`).
-- **`Reads(conn, person)`**, the store's person-scoped lookup, offered in "Looking things up for someone"
-  (`docs/store.md`). The same doc doubted it under "Known gaps": "Person-scoped lookup may not belong in the store.
-  `Reads` is mostly policy based on other modules' rules, which contradicts 'the store answers which rows exist; the
-  modules decide what they mean'." The bench was its only caller outside its tests.
-- **The runner** takes the person who will own the run or score: `src/chatddx/runner/run.py:Runner(conn, inventory,
-  by)` and `src/chatddx/runner/score.py:score_run(…, person)`.
-- **`Bench(conn, person, inventory, facts)`**.
-
-### How the repl uses the bench
-The repl calls the bench's methods: `title` 12 times, `skeleton` 8, `get`, `endpoint` and `model` 5 each, and most of
-the rest once or twice. It also goes around them through the bench's attributes, about 30 times:
-- the person-scoped reads: `bench.reads.runs` (4), `bench.reads.scorers` and `bench.reads.reaching`;
-- the store: `bench.store.run` (3), `bench.store.finished`, `bench.catalog.title` (2) and `bench.catalog.recipe`;
-- the World and the facts: `bench.inventory.*` (7) and `bench.facts.models` (2);
-- the person: `bench.person.login` and `bench.person.id` (6).
-
-It also calls into the data model with `bench.get` 6 times, through `resolve` and `url_of`. The repl's tests open
-`Store(bench.conn)` and `Catalog(bench.conn)` to check what was written.
-
-So the bench was a person-scoped view with helpers attached. It wasn't a facade: nothing stopped an edge from going
-around it, and the repl did so through the bench itself.
-
-### Rules held twice
-All three are resolved in phase 2.
-- **The expectation a person reads for a case.** `Bench.expectation` took the head of the person's first own thread,
-  else of the first shared one, in any schema. `src/chatddx/catalog/threads.py:expectation_for` keeps only heads in
-  the scorer's expectation schema, and refuses when there are several to choose from. `show case` read the first rule,
-  and `score` the second. Made one in step 4.
-- **What is left to score.** `Bench.unscored` worked it out per run and `Reads.outstanding` per scorer, and only the
-  bench's answer was used (`docs/store.md`, "Known gaps"). The bench works per run because `score RUN` needs one run's
-  answer, and because a run whose case has several expectations to choose from is then skipped for that scorer, rather
-  than stopping the listing. Made one in step 3.
-- **Finding things by name.**
-  - `Reads.thread` finds a thread by its whole name, then as `OWNER/NAME`. On top of that, `Bench.thread` adds
-    per-model names and the shell's kinds.
-  - `Bench.family` finds a family on its own, own first, without `OWNER/NAME`.
-
-  Made one in step 11.
-
-### The old bench
-- **Bound to a person**, by login: `Bench(identity_name, transport=None, own=())` (`src/chatddx/bench/bench.py`,
-  `Bench`). It held no connection (Django held it) and no work in progress, and kept caches of names and models.
-- **One per caller.** The API built one per request (`src/chatddx/django/api/runs.py`, `registry.py`), and so did the
-  portal, narrowed with `own` (`src/chatddx/django/portal/owners.py:bench_of`). The worker cached one per owner
-  (`src/chatddx/worker/worker.py`). The repl had one per process and subclassed it (`src/chatddx/repl/shell.py`,
-  `Repl(Bench)`).
-- **What came with it:**
-  - `cell.py`: the immutable value of what is being tried (see "'Cell', translated");
-  - `plan.py`: crossing what is being tried with variations into a batch, `Plan.of(bench, …)`;
-  - `sending.py`: `Sending(bench, trial, …)`, a run's events, then `bench.recorded`;
-  - `outcome.py`: pure functions;
-  - `held.py`: the runs, jobs and scores that hold a configuration. It imported the worker's model.
-- **What it enforced.**
-  - `ready` refused a configuration that was neither the person's nor the archive's: `NotOwn`, "save it as your own
-    first", 403 in the API.
-  - It refused a missing secret (`NoSecret`), and work in progress whose stack or configuration had changed since it
-    was planned (`Drifted`, in `cell_read`).
-  - It narrowed visibility on top of the store's rule: `SHARED_BY` kept configurations to the person's own and the
-    archive's, and `own` kept only the person's own rows.
-- **Never a facade.** Every edge but `dev/samples` went around it to the Django models:
-  - the portal, in 19 of 27 files, with its own `get_queryset`s and `readable()` checks: 80 imports from `repo` and
-    `history`, and 30 `.objects.` lines;
-  - the API in 7 of 8 files, and the repl in 9 of 11;
-  - the worker's queue throughout, and `logs/export.py` entirely.
-- **The cost was rules copied.** The old `docs/datamodel.md`
-  ([L93-L104](https://github.com/chatddx-administration/chatddx/blob/504792cbeb09508f2c52912be29a3d8809d2fa1d/docs/datamodel.md#L93-L104)):
-  "whether an identity may read a row, a trail's name for an identity and who else holds a fingerprint were each
-  re-implemented in the portal, the API, the repl and the bench: five copies of the versions list, three of the name.
-  They are the store's now […] and the apps ask it."
-
-  The fix moved the rules down into the store, not up into a facade. Remastered's `Reads` descends from that fix.
-
-How the old bench maps onto remastered:
-
-| old (504792c) | remastered | notes |
-|---|---|---|
-| `Cell`, `set` a slice (`bench/cell.py:Cell.set`) | `Cell.set` (to be renamed): replace a recipe part, then `compile_request` to an unsaved skeleton | shown by `Catalog.title_of` |
-| `save` (`bench/bench.py:Bench.save`) | `Bench.save`: a fork of the skeleton thread, or a new thread, plus name and owner entries | no "yours now too": digests aren't owned |
-| "save it as your own first" (`NotOwn`) | dropped: any digest can be run without a thread | |
-| `Ready`, `resolve`, `ready` | the compiled skeleton, plus the lints on a provisional trial (`Bench.findings`) | warnings, never refusals (`docs/chatddx.md`, "Compromises") |
-| trial: cell × case × seed (`bench.py:Trial`) | `Trial`: skeleton, engine, cases, cleanup, seeds (`Bench.trial`) | `run` is 1 case and 1 seed; `batch` is n cases and 1 seed |
-| `Sending`, `Outcome` (`bench/sending.py`, `outcome.py`) | runner events, `Call.error` | |
-| `outcome.py:unheeded` | nothing yet | `agents/wip-runner.md`, "Afterwards" |
-| `cell_read`, `Drifted` | `Bench.rendered_again`: whether a run's first requests render the same now | |
-| `secret`, `NoSecret` | an endpoint's `credential`, only a name | refused for now (`agents/wip-repl.md`, "Left out") |
-| `Plan`, `crossed` (`bench/plan.py`), `held` (`bench/held.py`) | not ported: `Plan` and `crossed` are the batch planner's (`agents/wip-batch.md`), `held` the portal's (`agents/wip-portal.md`) | `Bench.reaching` and `Bench.scored_by` cover the repl's part of `held` |
-
-### Forces
-- **Authorization is a convenience, not a protection** (`agents/wip-identity.md`, "Authorization"). What a person sees
-  decides what is relevant to show them. Protection comes from clearance, enforced by the runner's gate
-  (`src/chatddx/runner/gate.py`), and from the database's grants. So no option needs a facade for safety.
-- **Z1 isn't written.** Z1 maps roles to the kinds each role sees, and it needs the portal's views to mean anything
-  (`agents/wip-identity.md`, "Open").
-- **Edges to come.**
-  - The portal, per request, and an API.
-  - A worker, long-lived and serving many owners.
-  - An export of scores, and `chatddx samples`.
-  - The CLI's ops commands (`migrate`, `person`, `init-data`, `import-engine`). These don't act for one person: seeding
-    writes as the archive (`src/chatddx/curation/write.py:_Init`).
-- **One synchronous connection.** The store is synchronous and the bench holds one connection, so a portal would build
-  a bench per request, as the old one did.
-- **The store's principle**: "The store answers which rows exist; the modules decide what they mean" (`docs/store.md`,
-  "What the store does").
-- **Errors are the shell's.** The bench raises `LookupError` and `ValueError` worded for the shell ("for alice",
-  "picked by the endpoint in the cell"). An API maps errors to status codes, as the old one did with `NotFound`,
-  `Ambiguous` and the subclasses of `NotReady`.
-
-## Phase 1: what the bench is
-Decided: B3. The options were:
-- **B1. Helpers.** Stateless functions; person-scoped reads stay in the store. It is the smallest, but nothing owns
-  "what a person sees", so rules get copied again, as they were in the old project.
-- **B2. A facade, named rig.** Every edge goes through it, checked by an import test. It gives one place for each rule
-  and one API for every edge, but its surface is everything every edge needs, most of it passing calls through, and the
-  ops commands need an exemption. "Rig" is already the glossary's name for the whole of chatddx
-  (`docs/chatddx.md`), `src/chatddx/core/rig.py:rig()`, and a field of every `RunStarted` and `ScoreStarted` that
-  can't be renamed.
-- **B3. A person-scoped view, with a boundary.** What depends on who is asking goes through the bench, and what doesn't
-  may be read straight from the store and the World. Chosen.
-- **B4. A workbench, with a separate view.** The bench is the work in progress, and person-scoped reads are a second
-  object. Two person-scoped objects where one would do.
-
-B2 can still come later, since a B3 bench is the person-scoped half of a facade.
-
-Sub-decisions:
-- **S1. Where `Reads` lives**: the bench. Done in step 2.
-- **S2. Where the variation being tried lives**: the bench (decided).
-- **S3. The shell's vocabulary** (`KINDS`, `NONE`, `SEEDS` and `drawn_seed`, and how messages are worded) moves to
-  the repl. Done in step 7, except `KINDS`, which turned out not to be the shell's. `PARTS` and `OPTIONAL` are the
-  recipe's: since 1dd791a, `PARTS` is `src/chatddx/factors/request.py:RECIPE_PARTS`, and `OPTIONAL` the parts
-  `Recipe` doesn't require.
-- **S4. Typed errors**, such as `NotFound` and `Ambiguous`, that subclass `LookupError`, so the repl keeps catching
-  what it catches and an API can map them. Done in step 8.
-- **S5. State**: the caches of logins and models make a bench last one session. That suits a request or a repl. A
-  long-lived worker would rebuild it. Take; nothing to build.
-- **S6. Tests of its own.** Done in step 5.
-- **S7. The name**: `bench`, since B3 isn't the facade "rig" was proposed for.
-
-## Phase 2: B3
-### Done
-1. **The visibility predicate is `identity`'s**: `src/chatddx/identity/identity.py:sees(person, owner,
-   collaborators)`, the owner or a collaborator. `src/chatddx/catalog/model.py:About.shows` adds that what is shown
-   is live, and calls it. So the catalog now imports `chatddx.identity` as well as `chatddx.factors`, which
-   `docs/catalog-api.md` says, in `model.py`'s row too. Tested in
-   `src/chatddx/identity/test/test_identity.py`, and through the catalog's visibility tests.
-2. **`Reads` is the bench's**: `src/chatddx/store/reads.py` moved to `src/chatddx/bench/reads.py`, and its tests to
-   `src/chatddx/bench/test/test_reads.py`. `chatddx.store` no longer exports it. It was then folded into `Bench`
-   (step 9).
-   `docs/store.md` and `docs/store-api.md` dropped it (356c96d); what they said is kept in "Material for the bench's
-   docs".
-3. **One rule for what is left to score**: `Reads.outstanding` is gone, unused since 4c. `Bench.unscored` (per run) and
-   `Bench.outstanding` (the person's finished runs, with what each is left to be scored by) are the one answer. The
-   test that pinned "a changed expectation leaves a run to score again" now pins it on `Bench.unscored`
-   (`src/chatddx/bench/test/test_view.py`).
-4. **One rule for the expectation a case is held to**: `src/chatddx/catalog/threads.py:expectation_choices`, the
-   threads a case's expectation is chosen from: the person's own, else every one they see, in the scorer's schema.
-   `Catalog.expectations_for`, the one scoring uses, picks from them and refuses a case with several to choose from.
-   `Catalog.expectation_for`, for one case, is left with callers in tests only.
-   - `Bench.expectation(case, schema)` is the expectation it picks for the person under that schema. It raises
-     `Ambiguous` when there are several to choose from.
-   - `Bench.expectation_schemas(case)` gives the schemas of the expectations the person sees for a case.
-   - `show case` shows the expectation under each of those schemas, labelled by the schema's title when there is more
-     than one, or why there is none to show: "has expectations to choose from". With the sample's one schema, it
-     shows what it showed before.
-   - `Bench.reach` read expectations through `Bench.expectation` too, until d5ebf52. It now reads every case's at
-     once through `Catalog.expectation_choices` (`Bench._expected`), and counts a case with several to choose from as
-     missing rather than raising `Ambiguous`, as decided for the API (`agents/wip-api.md`, "Trying a variation";
-     "Outstanding", 1). So the threads to choose from are found once, but the pick among them is made twice:
-     `_expected` repeats `expectations_for`'s "exactly one distinct head", and the two handle "several" apart.
-     Scoring refuses the run under that scorer, `show case` says the case has expectations to choose from, and the
-     reach counts it missing.
-   - Since phase 3 (H1), the choices are the person's own only, the pick is made once (`threads.picked`), and the
-     reach lists a case with several apart rather than as missing (see "Phase 3").
-
-   Tests: `src/chatddx/bench/test/test_view.py`,
-   `src/chatddx/repl/test/test_inspecting.py:test_show_case_says_when_scoring_has_expectations_to_choose_from`, and
-   `src/chatddx/api/test/test_variations.py:test_a_case_with_expectations_to_choose_from_is_missing_from_the_reach`.
-5. **The bench's own tests**, in `src/chatddx/bench/test/`, on the sample as init-data lands it. That database is
-   made once, session-scoped, by `src/chatddx/conftest.py:curated`, from the sample World at `WORLD` (its directory;
-   the bench's tests load `WORLD / "inventory.toml"`). The bench's tests and the repl's pick it by overriding
-   `template`, and `db` gives each test a copy. That settles "the seeded sample fixture is defined twice"
-   (`agents/wip-repl.md`, "Left from 4a").
-
-6. **"Cell" is the repl's** (K2 with R1).
-   - The bench's `Cell` is now `src/chatddx/bench/variation.py:TriedVariation`: the configuration's head edit, the name
-     it was called by, its recipe, and the parts replaced over it. It always has a configuration. It has no endpoint,
-     and lost `using` and `on`.
-   - The bench's methods take what they need: `configuration(name, engine)`, `chunk(part, name, engine)`,
-     `skeleton(variation)`, `findings(variation, engine, seed, families)` (`cases` until d5ebf52, which lints in the
-     families' languages), `reach(variation, families)`,
-     `save(variation, name)`, which returns `Saved.variation`, and `start(variation, endpoint, cases, seed)`, which
-     finds the engine from the endpoint.
-   - The repl's own `Cell` (`src/chatddx/repl/shell.py`) holds a `TriedVariation`, the endpoint and its engine, with
-     `trying` and `on`. The repl's commands, help, messages and tests keep the word.
-   - `src/chatddx/cli.py`'s help for `chatddx repl` no longer says it.
-   - The guard: `src/chatddx/repl/test/test_vocabulary.py`.
-   - Tests: `src/chatddx/bench/test/test_view.py` covers the per-model pick and compiling a variation;
-     `src/chatddx/bench/test/test_variation.py` covers replacing parts, taking one back, and the refusals.
-7. **The shell's vocabulary is the repl's**: `NONE`, `SEEDS`, `MAX_SEED` and `drawn_seed` moved to
-   `src/chatddx/repl/shell.py`. `set PART none` is the repl's: it hands the bench no digest, and `Bench.chunk` no
-   longer knows the word. A part a configuration always has is refused as one that "can be taken out" only if it is
-   optional, rather than "can be none". `KINDS` stays: its words (configuration, the recipe's parts, engine and the
-   rest) are the docs', not the shell's, and its comment now says what it maps.
-8. **Typed errors**: `src/chatddx/bench/errors.py`, `NotFound` and `Ambiguous`, both `LookupError`s, exported by
-   `chatddx.bench`.
-   - `NotFound` is raised for a thread, family, run or endpoint's engine that the person doesn't see, or the store
-     doesn't hold. It carries `per_model`: the per-model threads under a name, when no model was given to pick one.
-   - `Ambiguous` is raised for a name or id prefix that matches several, and by `save` when the person has several
-     configurations of that name (a `ValueError` before).
-   - The repl words the hint itself: when `per_model` is set, `handle` adds ", picked by the endpoint in the cell"
-     (`src/chatddx/repl/commands.py:_said`).
-   - Not typed: what the catalog raises, such as `expectations_for`'s "has expectations to choose from", which passed
-     through `Bench.expectation` and `Bench.scoring` as a plain `LookupError` (see step 10). Since the API's phase 0,
-     the bench raises `Ambiguous` for it.
-
-9. **`Reads` is folded into `Bench`** (decided, the take on "one class or two"). `Bench.runs`, `run`, `reaching`,
-   `scorers_for` (`Reads.scorers`, renamed since `Bench.scorers` lists the scorers the person sees) and `scoring` are
-   the bench's own. The repl calls `bench.runs()` rather than `bench.reads.runs()`, and `src/chatddx/bench/reads.py`
-   is gone.
-10. **Decided, nothing to build:**
-    - The catalog keeps applying the visibility rule to its own rows (`catalog/threads.py:visible`,
-      `catalog/families.py:visible`, `catalog/threads.py:expectation_choices`), as `docs/catalog.md` says it decides
-      "what a person sees". The rule itself is `identity`'s, and the bench applies it to everything else.
-    - The catalog's own `LookupError`s stay untyped until an API needs to tell an ambiguous expectation from a
-      missing one. `Bench.expectation` and `Bench.scoring` would then raise `Ambiguous` for it. Done for the API
-      (`agents/wip-api.md` at cae55ad, "Phase 0: built", step 5); the catalog's error stays untyped.
-11. **One rule for finding things by name**: `Bench._named`. A name is matched whole first, then read as
-    `OWNER/NAME`; the person's own wins, else the one shared with them; several raise `Ambiguous`, none `NotFound`.
-    `Bench.thread` uses it for threads, and `Bench.family` for families, which can now be found as
-    `archive/Dutchfall11w`. The repl's `show case`, `run` and the rest take `OWNER/NAME` for a case with it.
-    Then the modules were laid out (see "Modules"): `bench.py` became `view.py`, and `TriedVariation` moved to
-    `variation.py`. The tests followed: `test_view.py` and `test_variation.py`.
-
-### Next
-12. **Z1**: the map from role to kinds goes in `identity`, once the portal's views give it meaning. `sees` then takes
-    the person's roles and the kind.
-
-## Phase 3: what a person is scored against
-A person could find a case's expectation to be one "to choose from" through what others did, as the receiver of a
-share. It shouldn't happen to them, so the catalog now makes sure it can't, and refuses visibly if it happens anyway.
-
-### What could trigger it
-The pick was the person's own threads for the case and schema, else every one they saw; several distinct heads were
-refused. Each way there was a write:
-- **The person's own**: a second expectation for the case instead of a new version of the first; a second fork; an
-  edit of another of their threads onto the case or schema, which nothing checked; a restore while another was live;
-  an edit of one of two threads that had the same head.
-- **Someone else's, into what the person owns**: a thread created naming them as its owner, or handed over to them;
-  `init-data --giftbag` after they wrote their own for a sample case, since they had no fork of the archive's.
-- **Someone else's, when the person owns none**: a second person sharing theirs; an edit of a shared thread that had
-  another's head, such as an untouched fork of the archive's; a restore, or an edit onto the case or schema; the
-  person losing their own, by deleting it or handing it over, and falling back to several shared ones.
-- **The question changing**: a scorer edited to another expectation schema, under which there were several.
-
-One such case among a run's twenty refused the whole run under that scorer, and `Bench.unscored` then left the
-scorer out, so the run never showed in `outstanding`.
-
-Not triggers: a family repair, since a rename carries each expectation thread over with its owner and a content
-change leaves the new case with none; and the archive alone, since `src/chatddx/curation/write.py:_Init.put` refuses
-a second archive thread for a case. At d5ebf52 only tests reached it, through the catalog directly: nothing wrote,
-shared, handed over or deleted expectations for a person but curation.
-
-### Options
-- **H1. Own only.** A shared expectation is there to read and to take, by forking it; scoring reads only what the
-  person owns. The giftbag already works so for the sample. A newcomer takes before they score, and a correction
-  upstream reaches them as a proposal ("what has moved on") rather than silently.
-- **H2. Own, else a designated source's**, such as the archive's or a role's. Nothing to set up for a newcomer, but
-  `identity` would learn who is designated, and a correction upstream changes what a person is scored against under
-  them.
-- **H3. As before, refusing**, with "take the one you mean" as the way out.
-
-Decided: H1, with the write rule below, and a visible refusal for what two writers at once can still leave.
-
-### Built
-1. **H1**: `src/chatddx/catalog/threads.py:expectation_choices` keeps the person's own live threads only
-   (`About.owned_by`). `expectations_for`, and so `Bench.expectation`, `Bench.scoring` and the reach, read nothing
-   shared. A schema whose expectations the person only sees shows as "none of yours" in `show case`, and with no
-   expectation in the API's family.
-2. **The write rule**: `threads.check_expectation`, which `Catalog.edit` and `Catalog.note` call before they write. A
-   person owns at most one live expectation thread per case and expectation schema: a second thread, an edit onto the
-   case or schema, an owner entry naming them, and a restore are refused with a `ValueError` naming the thread they
-   own. `Catalog.create` is checked through its owner entry, inside its transaction.
-3. **One pick**: `threads.picked(case, choices)` gives none, the one distinct head, or refuses naming the threads.
-   `expectations_for` and the reach (`Bench._expected`) both use it.
-4. **When several exist anyway**, which two writers at once can leave: scoring refuses, as before; the reach lists the
-   case apart, as `Reach.choosing` (`choosing` in the API, "to choose from" in the repl), not as missing; and
-   `Bench.unscored` keeps such a scorer, so `outstanding` lists the run and scoring it says why it refuses.
-5. **The person rules**: `src/chatddx/identity/identity.py:preferred`, own before shared, is what `Bench._named` and
-   `Bench.holder` use. `About.owned_by`, live and owned, is what `Bench.runs`, `Bench.run_by_id`, `Bench.edit` and
-   `expectation_choices` use.
-6. Tests: `src/chatddx/catalog/test/test_expectations.py` (moved out of `test_threads.py`, which is solidified),
-   `src/chatddx/store/test/test_expectations.py`, `src/chatddx/identity/test/test_identity.py`,
-   `src/chatddx/bench/test/test_view.py`, `src/chatddx/repl/test/test_inspecting.py` and
-   `src/chatddx/api/test/test_variations.py`. `src/chatddx/bench/test/sample.py:another_expectation` reaches several
-   the one way left: two writers at once, each passing the check.
+Curation's other owner checks, which count deleted subjects too (`_Init.put`, the giftbag,
+`src/chatddx/curation/repair.py`), recognise the archive's records rather than decide what a person sees, and stay as
+they are.
 
 ### Takes
-- **The database doesn't repeat the write rule.** It reads the latest owner, deletion and head of every expectation
-  thread of a case, as the rule that no two families share a vignette reads bindings, and that one isn't repeated
-  either (`docs/catalog.md`, "Concurrent writers"). A trigger would need a lock per owner to hold. The refusal in step
-  4 covers the race.
-- **No generic three-way pick.** A `match` states none, one and several where each is decided (`threads.picked`,
-  `Bench._named`), and "several" means distinct heads for an expectation but threads for a name: two threads of one
-  name are two things to refer to, while two of one head give one answer.
+A take is the agent's recommendation, built on but not decided.
+- **S5. A bench lasts one session.** Its caches of logins and models make it last as long as a request or a repl. A
+  long-lived worker would build one per run, or per owner, rather than keep one (agents/wip-worker.md). Nothing to
+  build.
+- **The database doesn't repeat the expectation rule.** It reads the latest owner, deletion and head of every
+  expectation thread of a case, as the rule that no two families share a vignette reads bindings, and that one isn't
+  repeated either (`docs/catalog.md`, "Concurrent writers"). A trigger would need a lock per owner to hold. The
+  refusals in "What a person is scored against" cover the race.
+- **No pick for every "several".** Where none, one or several are told apart, a `match` says what each means
+  (`src/chatddx/catalog/threads.py:picked`, `Bench._named`), and "several" isn't the same there: two threads of one
+  name are two things to refer to, while two threads of one head are one answer.
 - **Curation keeps its own check.** `_Init.put` finds the archive's one expectation thread for a case to edit, in any
-  schema and deleted or not; that is how it recognises its thread, which the catalog's rule doesn't replace.
+  schema and deleted or not. That is how it recognises its thread, which the catalog's rule doesn't replace.
+- **A facade can still come later.** A bench every edge goes through, checked by an import test, would give one API
+  for every edge, but most of it would pass calls through, and the ops commands would need an exemption. This bench is
+  the person-scoped half of one. "Rig", the name once proposed for it, is the glossary's name for the whole of chatddx
+  (`docs/chatddx.md`) and a field of every `RunStarted` and `ScoreStarted`.
 
 ### Open
-- **Taking a shared expectation**, a fork, is one of the writes for authoring ("Start with this", 7). Until then the
-  giftbag is the only way, and `init-data` without `--giftbag` leaves USER nothing to be scored against.
-- **The giftbag and a person's own expectation.** Once people write expectations, `--giftbag` for one who wrote their
-  own for a sample case is refused by the rule, and fails `init-data`. It should keep theirs, as it keeps a fork.
+- **Z1**: the map from roles to the kinds each role sees goes in `identity` once the portal's views give it meaning
+  (agents/wip-identity.md, "Open"). `sees` then takes the person's roles and the kind.
+- **An execution for `Bench.start`**, which passes none, so a run gets `Execution()`'s; the worker needs it
+  (agents/wip-worker.md, "Below the worker").
+- **A person's runs are all read**, and paged afterwards (agents/wip-api.md, "Open").
+- **Two saves of one name at once** can both create a configuration (`docs/catalog.md`, "Concurrent writers";
+  agents/wip-api.md, "Open").
 - **`Catalog.expectation_for`**, for one case, has callers in tests only.
-- **The docs** carry `AGENT:` suggestions for H1, the rule and its exception: `docs/catalog.md` ("Threads and edits",
-  "Owners", "Concurrent writers"), `docs/catalog-api.md` and `docs/curation.md` ("Giftbag").
-
-## Material for the bench's docs
-Taken out of `docs/store.md` ("Looking things up for someone") and `docs/store-api.md` ("reads.py") at 356c96d, when
-`Reads` left the store. It is updated to the code as it is now: `outstanding` is gone (phase 2, step 3), what is left
-to score is `Bench.unscored`'s, and `Reads` is folded into `Bench` (step 9).
-
-### Looking things up for someone
-The bench offers a simple lookup scoped to one person: live runs they own, and live threads and families they own or
-collaborate on, which lets a person refer to things loosely. A thread or a family is found by its name, matched whole
-first and only then read as an owner and a name, since names may hold a slash. Runs are found by the start of their
-id, or by a component their trial is built on.
-
-For a run, the bench also tells:
-- which scorers can grade its answers;
-- which scoring it would be scored under now, from the person's own expectations, as the catalog picks them;
-- which of those scorers have no score of it under that scoring, so that a run whose expectations changed after it
-  was scored is due again, and which have several expectations to choose from, so that scoring it refuses and says
-  why (`Bench.unscored`).
-
-Like authorization, this decides what is relevant to show, not who may read what (`agents/wip-identity.md`,
-"Authorization").
-
-### What `Bench` looks up for the person
-`Bench(conn: Connection, person: Person, inventory: Inventory, facts: Facts)` (`src/chatddx/bench/view.py`). Its
-lookups go through `Catalog`, `Store` and `People`:
-
-| Method | Returns / raises |
-| --- | --- |
-| `visible(kind: str) -> list[tuple[Edit, About]]` | `Catalog.visible(kind, person.id)`: the heads of the live threads of `kind` the person owns or collaborates on, in thread id order. |
-| `threads(word: str) -> list[tuple[Edit, About]]` | `visible(kind)` for each kind `KINDS[word]` names. |
-| `thread(word: str, name: str, model: str \| None = None) -> tuple[Edit, str]` | The thread called `name` among them, or else its one variant `model` may use, `NAME (LANGUAGE)`, `NAME (MODEL)` or `NAME (LANGUAGE, MODEL)` (`chatddx.catalog.variants_for`), with the name that found it; several languages raise `Ambiguous`. See below. `NotFound` carries the per-model names when no model was given. |
-| `families(tags=()) -> list[Family]` | The live families the person owns or collaborates on that have a case, with any of `tags`, by name. |
-| `family(name: str) -> Family` | The family called `name`, as below; one without a name is called `family ID`. |
-| `runs() -> list[RunStarted]` | The runs whose entries ever named the person as owner or collaborator, and whose `About` now has the person as owner and isn't deleted; newest first. A collaborator on a run doesn't see it. |
-| `run(prefix: str \| None = None) -> RunStarted` | The latest of `runs()`, or the one whose id, as `str(UUID)`, starts with `prefix`. `NotFound("<login> has no runs")`, `NotFound("no run of yours starts with '<prefix>'")` or `Ambiguous("<n> runs of yours start with '<prefix>'")`. |
-| `thread_by_id(id: int, word: str \| None = None) -> tuple[Edit, About]` | The head of thread `id`, and its `About`, when the person sees it and, with `word`, it is of a kind `KINDS[word]` names. Else `NotFound("no <word or 'thread'> <id> for <login>")`. |
-| `family_by_id(id: int) -> Family` | Family `id`, when the person sees it and it has a case. Else `NotFound("no case <id> for <login>")`. |
-| `run_by_id(run: UUID) -> RunStarted` | The run, when it is live and the person owns it, as `runs()` keeps them. Else `NotFound("no run <id> of yours")`. |
-| `variation(configuration: int, parts: Mapping[str, str \| None] \| None = None) -> TriedVariation` | The configuration `thread_by_id(configuration, "configuration")` finds, under its name or else its title, with each of `parts` replaced by the chunk of that digest, or taken out for `None`; each part is labelled by the chunk's title. `ValueError` for an unknown part, a digest that isn't a stored chunk of its part, and `TriedVariation.set`'s refusals. |
-| `expectation_schemas(case: str) -> list[str]` | The schemas of the heads of the live expectation threads of `case` the person owns or collaborates on, sorted. |
-| `expectation(case: str, schema: str) -> Expectation \| None` | The expectation `Catalog.expectations_for([case], person.id, schema)` picks for the person: the head of their own live thread, or `None`; one shared with them doesn't count. `Ambiguous` when they have several to choose from. |
-| `reaching(digest: str) -> list[RunStarted]` | The runs of `runs()` whose trial's closure holds `digest` (`Store.reaching(digest, "trial")`), newest first. |
-| `scorers_for(run: RunStarted) -> list[tuple[Edit, About]]` | The visible scorer threads whose head's every view has an `output` selector that reaches the run's skeleton's `output_schema` (`chatddx.factors.select.reaches`), the check `check_score` warns about as `view.unreachable`. |
-| `scoring(run: RunStarted, scorer: str) -> Scoring \| None` | The scoring the run would be scored under now: `Scoring(scorer, expectations)`, with, for each of the trial's cases in order, the expectation `Catalog.expectations_for(cases, person.id, <the scorer's expectation_schema>)` picks for it, cases without one left out. `None` when no case has one. `Ambiguous` when the person has several expectations to choose from for a case. Nothing is stored. |
-| `unscored(run: RunStarted) -> list[str]` | The scorers of `scorers_for(run)` with no score of the run under `scoring(run, scorer)`, so a run whose expectations changed after it was scored is due again, and those whose scoring raises `Ambiguous`, which refuse when scored. |
-
-A thread or a family is found by name among those the person sees (`Bench._named`):
-1. those the person owns: exactly one is returned, several raise;
-2. when they own none, all of them: exactly one is returned, several raise.
-
-When nothing has the whole name and it holds `/`, it is read as `<login>/<rest>`, and when a person has that login,
-step 2 runs over theirs named `<rest>`. A whole name wins over `OWNER/NAME`, since names may hold a slash, as
-`plan (Qwen/Qwen3-8B-AWQ)` does. Several raise `Ambiguous("<word> '<name>' names <n>; name one as OWNER/NAME")`;
-none raises `NotFound("no <word> '<name>' for <login>")`.
-
-`scorers_for`, `scoring` and `unscored` resolve the run's trial, its skeleton and the scorers through `Store.get`
-(`StructuralError` when one isn't stored or is of another kind).
-
-`runs` shows only the runs the person owns now; collaborating on a run shows nothing.
+- **What the old bench had and this one doesn't**: what a run left unheeded (`outcome.py:unheeded`;
+  agents/wip-runner.md, "Afterwards"); an endpoint's secret, refused for now (agents/wip-repl.md, "Left out"); a
+  batch's plan, crossing variations into one (agents/wip-batch.md); and what holds a configuration, the portal's
+  (agents/wip-portal.md), whose part for the repl `Bench.reaching` and `Bench.scored_by` cover.

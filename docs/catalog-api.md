@@ -66,8 +66,8 @@ package takes the last row for a key as the one that holds: through `model.py:la
 
 ```
 AGENT: CHANGE
-The `LookupError` and `ValueError` rows: several expectations to choose from are left only by two writers at once,
-and `check_expectation` is a new rule refused before writing (agents/wip-bench.md, "Phase 3").
+The `LookupError` and `ValueError` rows: several expectations to choose from are left only by two writers at once, and
+`check_expectation` is a new rule refused before writing (agents/wip-bench.md, "What a person is scored against").
 ---
 | `LookupError` | A thread, edit or family that doesn't exist (`no thread with id <id>`, `no edit with id <id>`, `no family with id <id>`); a digest that isn't stored where one is required (`check_adoptable`, `check_language`); `picked`, and so `expectations_for` and `expectation_for`, with several expectations to choose from. |
 | `ValueError` | A rule refused before writing: `check_threadable`, `check_based_on`, `check_expectation`, `check_adoptable`, `plan_repair`, `check_language`, `check_entry`, `check_label`, `language_tag`. |
@@ -85,7 +85,7 @@ threads and families is said in its entry; in short:
 ```
 AGENT: CHANGE
 The "skipped, through `About.shows`" row, and a row after it: the expectation a person is scored against is read from
-what they own (agents/wip-bench.md, "Phase 3").
+what they own (agents/wip-bench.md, "What a person is scored against").
 ---
 | skipped, through `About.shows` | `threads.visible`, `families.visible` |
 | skipped, through `About.owned_by` | `threads.expectation_choices`, `threads.expectations_for`, `threads.expectation_for`, `threads.check_expectation` |
@@ -316,7 +316,7 @@ them as a collaborator. Thread id order; threads without edits are left out.
 
 ```
 AGENT: CHANGE
-A person's own only (agents/wip-bench.md, "Phase 3", H1).
+A person's own only (agents/wip-bench.md, "What a person is scored against").
 ---
 ### `expectations_for(rows, cases: Sequence[str], person: int, schema: str) -> dict[str, str | None]`
 For each case, the digest of the expectation `person` scores it against: `picked` of its `expectation_choices`, the
@@ -341,7 +341,7 @@ ignore the shared ones.
 
 ```
 AGENT: CHANGE
-A person's own only (agents/wip-bench.md, "Phase 3", H1).
+A person's own only (agents/wip-bench.md, "What a person is scored against").
 ---
 ### `expectation_choices(rows, cases: Sequence[str], person: int, schema: str) -> dict[str, dict[int, str]]`
 For each case, the threads `expectations_for` picks from, each with its head digest: the threads whose head is an
@@ -631,7 +631,8 @@ with a psycopg error when the Python lets it through.
 
 ```
 AGENT: CHANGE
-The `create`, `edit` and `note` rows: both writes check the expectation rule first (agents/wip-bench.md, "Phase 3").
+The `create`, `edit` and `note` rows: both writes check the expectation rule first (agents/wip-bench.md, "What a person
+is scored against").
 ---
 | `create(digest, by, *, compilation=None, forked_from=None, name=None, owner=None) -> Edit` | `Reader.kind` (`LookupError("<digest> is not in the store")`), `threads.check_threadable`; `threads.check_expectation` through `edit` and `note` | in one transaction: the thread, its first edit (`edit`), an `owner` entry for `owner` or else `by`, and a `name` entry when given |
 | `edit(thread, digest, by, *, compilation=None, based_on=None) -> Edit` | `threads.check_based_on` when `based_on` is given; `threads.check_expectation(thread, digest)` | the edit, with the thread's kind; `LookupError("no thread with id <thread>")` when there is no thread |
@@ -820,7 +821,8 @@ Also:
 Behavior described here that `docs/catalog.md` doesn't state, or states otherwise:
 ```
 AGENT: CHANGE
-The expectation a person is scored against is read through `About.owned_by` (agents/wip-bench.md, "Phase 3").
+The expectation a person is scored against is read through `About.owned_by` (agents/wip-bench.md, "What a person is
+scored against").
 ---
 - `owner` and `collaborator` entries are read by `About.shows`, so by `visible` and `visible_families`; `owner` and
   `deleted` entries by `About.owned_by`, so by `expectation_for` and `check_expectation`.

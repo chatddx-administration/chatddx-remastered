@@ -87,8 +87,9 @@ A configuration made per language or model is a thread under its full name, unti
   recipe. Its versions come oldest first.
 - **Families**, each with the case of its current vignette, filtered by tag or name. A family on its own adds its
   description and collaborators, the case's appendices, and, under each expectation schema the person sees, the
-  expectation its case is scored against: their own, so a schema they only see one shared under has none
-  (`agents/wip-bench.md`, "Phase 3"). Several to choose from don't fail the request; that schema says so instead.
+  expectation its case is scored against: their own, so a schema under which they only see shared ones has none
+  (`agents/wip-bench.md`, "What a person is scored against"). Several to choose from don't fail the request; that
+  schema says so instead.
 - **A family's vignette**, fetched from the World's source, and whether it still is the text the case was made from
   (unknown under a keyed fingerprint). It is case-derived (see "Case-derived content").
 - **Tags** on the families the person sees.
@@ -118,7 +119,7 @@ A look at a variation gives:
   expectation it picks something from, and which have several to choose from.
 
 A case with expectations to choose from is listed apart, as `choosing`, rather than as one without
-(`agents/wip-bench.md`, "Phase 3"). An unsaved variation is linted in its recipe's
+(`agents/wip-bench.md`, "What a person is scored against"). An unsaved variation is linted in its recipe's
 language, since the language of a skeleton otherwise comes from its stored compilations, which it hasn't got yet.
 
 A variation the bench refuses is unprocessable: a digest that isn't a stored chunk of its part, a part that can't be
@@ -266,14 +267,12 @@ What is still open, carried over from the plan. It doesn't move to `docs/`.
    - Where a score's detail and the scoring's findings show, if anywhere: both can quote the answer, so a place for
      them is case-derived, and the ledger marks the scoring's findings otherwise (see "Surprises").
    - A case with expectations to choose from: decided since, with what keeps a person from having several
-     (`agents/wip-bench.md`, "Phase 3", H1). The look lists such a case as `choosing`, scoring still refuses the run
-     under that scorer, and `Bench.outstanding` lists the run with that scorer, so `runs?unscored=true` would too.
+     (`agents/wip-bench.md`, "What a person is scored against"). The look lists such a case as `choosing`, scoring still
+     refuses the run under that scorer, and `Bench.outstanding` lists the run with that scorer, so `runs?unscored=true`
+     would too.
 2. **Docs.** These two files, for `docs/api.md` and `docs/api-api.md`. Then:
    - a proposal for `agents/wip-identity.md`: the framework, and signing in as built;
-   - what the API's work changed in the bench, for `agents/wip-bench.md`'s material for the bench's docs: `Reach`
-     names the scorer's thread and the missing families; and a look's reads are batched (`Bench._cases`,
-     `Bench._expected`). `findings` taking families and the reach's handling of several are in `agents/wip-bench.md`
-     ("Phase 2", steps 4 and 6; "Phase 3").
+   - what the API's work changed in the bench: done, in `agents/wip-bench.md` and `agents/wip-bench-api.md`.
 3. **Takes** the API is built on still wait for a word (below).
 
 ### Takes the API is built on

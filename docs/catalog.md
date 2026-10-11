@@ -62,7 +62,7 @@ The catalog answers what people need to find:
 ```
 AGENT: CHANGE
 Decided: a person is scored against their own expectation only, and owns at most one per case and schema
-(agents/wip-bench.md, "Phase 3"; src/chatddx/catalog/threads.py:expectations_for).
+(agents/wip-bench.md, "What a person is scored against"; src/chatddx/catalog/threads.py:expectations_for).
 ---
 - the expectation a person scores a case against, under a given expectation schema: their own. One shared with them
   counts once they fork it. When two writers at once have left them several to choose from, the catalog says so
@@ -154,8 +154,8 @@ authorization, this decides what is relevant to show, not who may read it (docs/
 
 ```
 AGENT: ADD
-What a person is scored against, and the rule that keeps it to one (agents/wip-bench.md, "Phase 3";
-src/chatddx/catalog/threads.py:check_expectation).
+What a person is scored against, and the rule that keeps it to one (agents/wip-bench.md, "What a person is scored
+against"; src/chatddx/catalog/threads.py:check_expectation).
 ---
 Expectations are held to what a person owns, not to what they see. A person is scored against their own expectation of
 a case, and one shared with them counts once they fork it, so nothing someone else shares, edits or restores changes
@@ -362,7 +362,7 @@ These are open questions of design. Where the code falls short of this document,
 ### Concurrent writers
 ```
 AGENT: CHANGE
-The database doesn't repeat the expectation rule either (agents/wip-bench.md, "Phase 3", "Takes").
+The database doesn't repeat the expectation rule either (agents/wip-bench.md, "Outstanding", "Takes").
 ---
 The rules are checked against what is stored when a row is written. That holds with one writer at a time; with two,
 only what the database enforces is sure to hold. It repeats every such rule but two: that no two families are bound to

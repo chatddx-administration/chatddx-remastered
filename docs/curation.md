@@ -138,8 +138,8 @@ the sample's first run comes to 248 threads and families.
 5. **Sharing.** USER becomes a collaborator on every thread and family the run came to.
 ```
 AGENT: CHANGE
-A person is scored against their own expectations only (agents/wip-bench.md, "Phase 3", H1), so the giftbag's forks of
-the expectation threads are what USER is scored against.
+A person is scored against their own expectations only (agents/wip-bench.md, "What a person is scored against"), so the
+giftbag's forks of the expectation threads are what USER is scored against.
 ---
 6. **Giftbag.** With `--giftbag`, USER also gets a fork of every chunk, tool, skeleton and expectation thread, so
    what has moved on in the archive is proposed to them (docs/catalog.md, "What has moved on"). The forks of the
@@ -242,8 +242,7 @@ set has one expectation schema. A canary set is the next asked for (agents/wip-r
 ```
 AGENT: CHANGE
 "Cell" is the repl's word only, and the bench speaks of the variation being tried and the endpoint it runs on
-(agents/wip-bench.md, "Keeping 'cell' or not"). The guard (src/chatddx/repl/test/test_vocabulary.py) reads code, not
-docs.
+(agents/wip-bench.md, "Cell"). The guard (src/chatddx/repl/test/test_vocabulary.py) reads code, not docs.
 ---
 The bench picks a configuration's variant by the model the engine it runs on serves, and by language only when there
 is one (src/chatddx/catalog/variants.py). With texts in several languages, the cases a variation runs on should run the

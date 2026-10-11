@@ -40,11 +40,11 @@ the catalog's owner and collaborators (Z2).
 - Who sees what is `src/chatddx/identity/identity.py:sees`: the owner, and the collaborators. The catalog adds that
   what it shows is live (`src/chatddx/catalog/model.py:About.shows`), and what a person owns, live, is
   `About.owned_by`: their runs, what they may edit, and the expectations they are scored against
-  (`agents/wip-bench.md`, "Phase 3").
+  (`agents/wip-bench.md`, "What a person is scored against").
 - Of what a person sees, their own comes first: `src/chatddx/identity/identity.py:preferred`, which the bench uses to
   find a thread or family by name and to name a digest's thread.
 - Z1's map from role to kinds goes beside `sees`. `identity` holds both, as data and functions with no store access.
-- The bench applies them to what is in the store and the World (`agents/wip-bench.md`, "Decided").
+- The bench applies them to what is in the store and the World (`agents/wip-bench.md`, "Who decides what").
 
 ## Done
 - Migrations `0007-t0-identity.sql` (person with login, roles and active; credential; session),
@@ -84,7 +84,7 @@ Decided:
 - Authorization is a convenience that decides what is relevant to show, not a protection: by role first (Z1), then
   also by catalog owner and collaborators (Z2).
 - The rules are `identity`'s, as data and functions with no store access, and the bench applies them
-  (`agents/wip-bench.md`, "Decided").
+  (`agents/wip-bench.md`, "Who decides what").
 
 Take, for when Keycloak arrives: Keycloak (or a proxy in front, such as oauth2-proxy) authenticates and the app maps
 its username onto `person.login`, which is why logins are lowercase like Keycloak's. Password login can stay as the
