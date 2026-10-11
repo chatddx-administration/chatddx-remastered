@@ -475,6 +475,7 @@ READS = {
     "diagnoses": "diagnoses",
     "diagnoses-tool": "diagnoses",
     "free-text": "free-text",
+    "free-text-guided": "free-text",
 }
 
 

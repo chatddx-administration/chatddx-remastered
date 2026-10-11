@@ -57,6 +57,9 @@ def tally(lines: list[str]) -> Counter[str]:
     return Counter(what(line) for line in lines)
 
 
+LANGUAGES = (", in en", ", in sv")
+
+
 @pytest.fixture(autouse=True)
 def revision(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("CHATDDX_REVISION", REVISION)
@@ -119,14 +122,17 @@ def test_init_data_loads_the_archive(conn: Connection) -> None:
     assert catalog.about(Subject(thread=tool)).description == (
         "Search the web for up-to-date information"
     )
-    assert [line for line in lines if line.endswith(", in en")] == [
+    assert [line for line in lines if line.endswith(LANGUAGES)] == [
         f"[archive {r.kind}] {r.name}: created {r.digest.removeprefix('sha256:')[:6]}"
-        + ", in en"
+        + f", in {r.language}"
         for r in plan.records
         if r.language is not None
     ]
     assert catalog.language_of(plan.named("toolset", "web (en)").digest) == "en"
     assert catalog.language_of(plan.named("prompt", "case").digest) is None
+    for language in ("en", "sv"):
+        guided = f"free-text-guided ({language}, Qwen/Qwen3-8B-AWQ)"
+        assert catalog.language_of(plan.named("recipe", guided).digest) == language
 
     # The rest of the sample's cases, and their expectations, are left over.
     again = init(conn, sample_plan(), SOME, vignettes(), alice)
@@ -137,7 +143,7 @@ def test_init_data_loads_the_archive(conn: Connection) -> None:
     assert tally(again)["archive not"] == 2 * (len(CASES) - len(SOME))
     assert "[archive case] Dutchfall13w: not in the data" in again
     assert again[-len(FAKES) - 2].startswith("[share] 0 of ")
-    assert not [line for line in again if line.endswith(", in en")]
+    assert not [line for line in again if line.endswith(LANGUAGES)]
 
 
 @pytest.mark.slow

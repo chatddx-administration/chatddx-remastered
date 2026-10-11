@@ -163,34 +163,6 @@ entries = { "Fill in the plan." = "Fyll i planen." }
     assert isinstance(recipe, Compilation) and recipe.recipe.translations is None
 
 
-def test_the_sample_s_texts_are_english() -> None:
-    sample = sample_plan()
-    assert {(r.table, r.name) for r in sample.records if r.language == "en"} == {
-        ("output", f"{name} (en)")
-        for name in (
-            "management-plan",
-            "management-plan-shown",
-            "management-plan-prompted",
-            "diagnoses",
-            "diagnoses-tool",
-            "free-text",
-        )
-    } | {("toolset", "web (en)")}
-    assert {r.name for r in sample.records if r.table == "recipe"} == {
-        f"{name} (en, {model})"
-        for name in (
-            "plan",
-            "plan-shown",
-            "plan-prompted",
-            "plan-web",
-            "diagnoses",
-            "diagnoses-tool",
-            "free-text",
-        )
-        for model in ("Qwen/Qwen3-8B-AWQ", "openai/gpt-oss-20b")
-    }
-
-
 @pytest.mark.parametrize(
     ("files", "refusal"),
     [

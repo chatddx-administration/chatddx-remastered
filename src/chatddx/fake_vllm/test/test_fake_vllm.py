@@ -596,7 +596,7 @@ def test_it_answers_every_sample_skeleton_as_its_contract_asks() -> None:
         Served.of(GPT_OSS, ["--served-model-name", "gpt-oss", *GPT_OSS_ARGV]),
     ]
     skeletons = sample()
-    assert len(skeletons) == 14
+    assert len(skeletons) == 18
     for skeleton in skeletons:
         for served in engines:
             request = render(

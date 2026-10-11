@@ -1,0 +1,65 @@
+# The sample's texts in Swedish, in factors.toml's format: the instructions and the example of `free-text-guided`,
+# written in Swedish as cases are, and translations of every text of texts-en.toml's outputs and toolset, which
+# compilation passes through them, the schemas' titles and descriptions and the tool's description included.
+# Translated by an agent from texts-en.toml, and not yet reviewed by a clinician or a translator.
+
+[instructions.clinician]
+text = [
+  "Du bistår en läkare på en akutmottagning. Läs fallet och ge din bedömning.",
+  { insert = "output_guidance", before = "\n\n" },
+]
+
+[few_shot.worked-example]
+messages = [
+  { role = "user", content = "En 67-årig man har sedan en timme kraftig central bröstsmärta som strålar ut i vänster arm, med kallsvett och illamående. Blodtryck 150/90, puls 104." },
+  { role = "assistant", content = "Akut koronart syndrom\nAortadissektion\nLungemboli\nPerikardit" },
+]
+
+[translations.sample]
+description = "The sample's outputs and toolset in Swedish."
+
+[translations.sample.entries]
+"Fill in the management plan for the case." = "Fyll i handläggningsplanen för fallet."
+"Fill in the management plan for the case.\n\nAnswer with a JSON object that matches this JSON Schema, and nothing else:\n\n" = "Fyll i handläggningsplanen för fallet.\n\nSvara med ett JSON-objekt som följer detta JSON Schema, och inget annat:\n\n"
+"List the plausible diagnoses, most likely first." = "Lista de tänkbara diagnoserna, den mest sannolika först."
+"List the plausible diagnoses, one per line, most likely first." = "Lista de tänkbara diagnoserna, en per rad, den mest sannolika först."
+"Give your answer by calling this tool, with the answer as its arguments." = "Ge ditt svar genom att anropa det här verktyget, med svaret som argument."
+"You have access to a web_search tool. Use it whenever you need current facts, documentation, or anything you're not confident about from memory, instead of guessing." = "Du har tillgång till verktyget web_search. Använd det när du behöver aktuella fakta, dokumentation eller något du inte är säker på utifrån minnet, i stället för att gissa."
+"Search the web for up-to-date information" = "Sök på webben efter aktuell information"
+# schemas/management_plan_v1.json
+"management_plan_v1" = "handläggningsplan_v1"
+"IndividualDiagnosis" = "EnskildDiagnos"
+"Diagnosis" = "Diagnos"
+"Diagnosis name (ONE word if possible)." = "Diagnosens namn (ETT ord om möjligt)."
+"Probability" = "Sannolikhet"
+"The assessed likelihood of this condition." = "Den bedömda sannolikheten för detta tillstånd."
+"Critical" = "Kritisk"
+"Whether this is a high-stakes, life-threatening emergency condition." = "Om detta är ett allvarligt, livshotande akut tillstånd."
+"Short Rationale" = "Kort motivering"
+"One sentence on why this diagnosis is considered based on history/exam findings, including relevant key negatives." = "En mening om varför diagnosen övervägs utifrån anamnes och status, med relevanta viktiga negativa fynd."
+"WorkupItem" = "Utredningssteg"
+"Type" = "Typ"
+"Investigations" = "Undersökningar"
+"List of specific diagnostic investigations (e.g. ['CBC/CRP', 'Point-of-care Ultrasound'])." = "Lista över specifika diagnostiska undersökningar (t.ex. ['Blodstatus/CRP', 'Patientnära ultraljud'])."
+"Priority" = "Prioritet"
+"EmpiricalTreatmentItem" = "EmpiriskBehandling"
+"Indication" = "Indikation"
+"The specific suspected condition prompting this intervention (e.g., 'If suspecting Sepsis')." = "Det specifika misstänkta tillstånd som föranleder åtgärden (t.ex. 'Vid misstänkt sepsis')."
+"Treatment" = "Behandling"
+"Specific treatment intervention with dosages if relevant (e.g., 'Ceftriaxone 2g IV')." = "Specifik behandlingsåtgärd med dosering där det är relevant (t.ex. 'Ceftriaxon 2 g iv')."
+"Important Warnings" = "Viktiga varningar"
+"Any key contraindications, warning signs, or monitoring parameters." = "Viktiga kontraindikationer, varningstecken eller parametrar att övervaka."
+"ManagementSection" = "Handläggning"
+"Diagnostic Workup Steps" = "Diagnostisk utredning"
+"Empirical Treatments" = "Empiriska behandlingar"
+"Disposition" = "Vårdnivå"
+"Primary destination or clinical disposition (e.g., 'Admission/Observation/Home with follow-up')." = "Primär vårdnivå eller fortsatt handläggning (t.ex. 'Inläggning/Observation/Hemgång med uppföljning')."
+"Acute Warning" = "Akut varning"
+"Red flag signs of an immediate, life-threatening emergency state. Return null if none." = "Varningstecken på ett omedelbart livshotande akut tillstånd. Ange null om inga finns."
+"Differential Diagnoses" = "Differentialdiagnoser"
+"Prioritized differential diagnoses ranked by probability. Include critical rules even if low probability." = "Differentialdiagnoser rangordnade efter sannolikhet. Ta med kritiska diagnoser att utesluta även om sannolikheten är låg."
+"Medical Sources" = "Medicinska källor"
+"List of peer-reviewed guidelines or reference tools utilized (e.g. 'UpToDate', 'NICE guidelines')." = "Lista över granskade riktlinjer eller referensverktyg som använts (t.ex. 'UpToDate', 'NICE-riktlinjer')."
+# schemas/diagnoses.json
+"diagnoses" = "diagnoser"
+"The commonly used name of the diagnosis." = "Diagnosens vedertagna namn."

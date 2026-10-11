@@ -34,6 +34,13 @@ in `cases-<language>.toml` files, and the files they load, such as JSON schemas.
 (src/chatddx/data/sample/), the old chatddx's inventory hand-edited into this shape (agents/wip-sample-data.md). The
 sample holds no vignettes and no engines: those are a World's (see "The World").
 
+````
+AGENT: ADD
+The sample has Swedish texts now (src/chatddx/data/sample/texts-sv.toml).
+---
+  texts-sv.toml   the same, in Swedish: free-text-guided's instructions and example, and translations of every
+                  output and toolset text
+````
 ```
 src/chatddx/data/sample/
   factors.toml    what holds no text: models and engines (none here), sampling, reasoning, passthrough, tools,
@@ -83,6 +90,19 @@ written only in another language is taken from there, and the recipe's translati
 a recipe without them there is skipped and reported. In the language its output and toolset are written in, it needs
 no translations and is made without them. A recipe that names no text is made once, as before.
 
+```
+AGENT: CHANGE
+The sample had no instructions, few-shot, passthrough or translations, and no Swedish texts. `free-text-guided` uses
+all four and is made in both languages; the other recipes are unchanged, so their bare names stay unambiguous. The
+Swedish texts are agent-translated and unreviewed (src/chatddx/data/sample/texts-sv.toml).
+---
+The sample is written in English, and one recipe in Swedish too. Its six outputs with guidance, its toolset, and
+`free-text-guided`'s instructions and worked example are in `texts-en.toml`, and every recipe is made in English. The
+instructions and the example are written again in `texts-sv.toml`, with translations of every text its outputs and
+toolset hold, schemas included, so `free-text-guided` is made in Swedish too, its output translated. A trial of an
+English recipe on the Swedish cases is linted as mixing languages, which is what a trial of an English request on a
+Swedish case is; the sample's translations, set in a variation, carry any of its recipes into Swedish.
+```
 The sample is written in English: its six outputs with guidance and its toolset are in `texts-en.toml`, and every
 recipe is made in English. A trial of them on the Swedish cases is linted as mixing languages until the sample has
 Swedish texts, which is what a trial of an English request on a Swedish case is.
@@ -119,6 +139,15 @@ A loading ends with the inventory checked against the engines just planned, all 
 each endpoint would refuse, and what is likely a slip (docs/inventory.md, "Checks happen when an entry is used").
 
 ## Loading
+```
+AGENT: CHANGE
+The sample gained free-text-guided and its chunks: 10 more threads.
+---
+`chatddx init-data USER [--world DIR] [--source NAME] [--giftbag] [--data DIR] [--factors FILE …] [--facts PATH …]`
+loads a data set, the sample by default, for the archive, and shares it with USER, who is added when missing. It
+connects as the writer and does everything in one transaction. It prints a line for each thing it comes to, and
+the sample's first run comes to 258 threads and families.
+```
 `chatddx init-data USER [--world DIR] [--source NAME] [--giftbag] [--data DIR] [--factors FILE …] [--facts PATH …]`
 loads a data set, the sample by default, for the archive, and shares it with USER, who is added when missing. It
 connects as the writer and does everything in one transaction. It prints a line for each thing it comes to, and

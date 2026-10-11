@@ -144,6 +144,7 @@ without tools on the fake engines (`agents/wip-runner.md`).
   Tables are kinds, keys are component fields, and references name records. On top of that, `json_schema_path`
   loads a JSON file, `from_facts` writes a chunk per model, `fork_of` seeds a record as a fork, and `tags` and
   `description` are catalog entries.
+- `texts-en.toml` and `texts-sv.toml`: what holds text the model reads, by language.
 - `cases-en.toml` and `cases-sv.toml`: the 99 cases by language, 79 and 20, each with its tags and targets, without
   the `# guessed` markers.
 - `schemas/`: the two output schemas and the hand-written `targets.json`.
@@ -164,6 +165,24 @@ them as a World would:
   deliberate edit.
 
 `init-data` takes the World from `--world DIR`, or `CHATDDX_WORLD`, which `.env-container` and `.env-devshell` set to `worlds/sample`.
+
+### Beyond the old inventory
+The old inventory had no instructions chunk of its own (G3 folded `instruction.ddx` into `prompt.case`), and no
+few-shot examples, passthrough or translations, so `free-text-guided` was added to give each kind people author a
+sample thread, and the Swedish cases a request in their language:
+- `instructions.clinician`, a system message placing the output's guidance, and `few_shot.worked-example`, a made-up
+  chest-pain case answered as `free-text` asks, both in `texts-en.toml` and `texts-sv.toml`;
+- `passthrough.min-tokens`, vLLM's `min_tokens = 8`;
+- `translations.sample` in `texts-sv.toml`: every text the sample's outputs and toolset send, the schemas' titles and
+  descriptions and the tool's description included, 42 in all, so the translations carry any sample recipe into
+  Swedish (`src/chatddx/curation/test/test_sample.py`). Translated by an agent, and not yet reviewed by a clinician or
+  a translator.
+
+`free-text-guided` is made in English, a fork of `free-text`, and in Swedish, with its instructions and example
+written in Swedish and its output translated; four skeletons with the two models. Decided: one new recipe is
+bilingual and the old ones stay English, so only `free-text-guided`'s bare name is ambiguous ("made in more than one
+language") until a variant is picked by the case's language (`docs/curation.md`, "Picking a variant by the case's
+language"). A data set still has no tables for appendices, canary sets, judges or hand-written skeletons.
 
 ### What changed in the hand edit
 - `instruction.ddx` and `instruction.bare` collapse into `prompt.case`; bare is the same prompt with `output.raw`.
@@ -451,7 +470,9 @@ Each gap was tagged [maybe fix remastered]: the sample data needed something rem
   `docs/catalog.md`, "Languages"). Also decided: a model that answers in another language than it was prompted in
   loses the score, and mixing is a warning, not a hard block.
   - Done: the sample's text-bearing chunks are `en`, from its `factors.toml`, so the 20 Swedish cases' trials are
-    `language.mixed` until a Swedish translations chunk exists (`docs/curation.md`, "Languages").
+    `language.mixed` under the English recipes (`docs/curation.md`, "Languages"). `free-text-guided (sv, …)` runs
+    them in Swedish, and `translations.sample (sv)` carries any other recipe there (see "Beyond the old
+    inventory").
   - Still open: few-shot assistant examples that are JSON answers are translated as one text, so the translator
     edits the JSON by hand.
   - Side effects of the implicit language, which no doc covers yet:
