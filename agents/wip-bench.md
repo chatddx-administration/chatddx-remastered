@@ -43,9 +43,11 @@ Three packages hold rules about a person, each its own part of them:
 
 ## What a person sees
 - **Threads and families** they own or collaborate on, while they are live. A kind of thread is asked for by the word
-  for it: configuration, each recipe part, tool, scorer, judge, expectation schema, canary set, model or engine. A
-  family stands for its case: the one its current vignette makes alone, else the first that holds the vignette. A
-  family without a case isn't shown.
+  for it: configuration, each recipe part, tool, scorer, judge, expectation, expectation schema, canary set, model or
+  engine. A family stands for its case: the one its current vignette makes alone, else the first that holds the
+  vignette. A family without a case isn't shown.
+- **Their own deleted threads**, listed apart and found by id, so that they can be read and restored. Nothing else
+  finds them: not names, not lists, not what is run or scored against.
 - **Their own runs**, while they are live. Being a collaborator on a run shows nothing.
 - **The World's endpoints** are everyone's, and read from the World. The bench gives the engine an endpoint serves,
   once that engine is in the store.
@@ -132,6 +134,8 @@ The bench writes configurations, chunks, expectations, runs and scores for the p
 - **Scoring** scores a finished run under each scorer that applies to it, or some of them, as each scoring would be
   built now, through the scoring pass.
 - **Taking** forks expectations shared with the person, for many cases or one thread (see "Taking").
+- **Saying** what holds of a thread the person owns: its name, description and tags, who it is shared with, and
+  whether it is deleted (see "What is said about a thread").
 
 An unsaved skeleton has what it was compiled from stored, by the running code, when it is saved or started
 (docs/catalog.md, "Recipes"). The runner and the scoring pass write each row as it lands, so starting and scoring need
@@ -142,6 +146,19 @@ thread has moved on since, so that a change made on an older version doesn't und
 name names the head it found. The catalog checks it while it holds the thread, so it holds with several writers too.
 
 Appendices, cases, families, scorers and judges aren't written by the bench yet (see "Outstanding").
+
+### What is said about a thread
+Only its owner says what holds of a thread, as only they edit it: a collaborator may fork it, but not rename, share or
+delete it. One write says what is to hold afterwards, any of: the name, or none so the title takes over; the
+description, which is replaced but never taken away; the tags and the collaborators, each as the whole set, the
+collaborators by login; and whether it is deleted. Only what changes what holds is written, all at once, so saying
+the same again writes nothing.
+
+A deleted thread is restored before anything else is said of it, and nothing else is said of one that stays deleted.
+Restoring is held to the catalog's rules, so a second expectation of the person's own for a case and schema is
+refused, worded as the person reads it. A thread isn't shared with its owner, a name and a tag aren't empty, and a
+login that names nobody is refused. Handing a thread over to another owner isn't offered (agents/wip-authoring.md,
+A9).
 
 ### Components
 A person writes the kinds of chunk a recipe's parts take, and expectations. A configuration is written as a variation,
@@ -228,12 +245,14 @@ What is still open. It doesn't move to `docs/`.
 ### Start with this
 1. **Adopting the docs.** This file and `agents/wip-bench-api.md`, as `docs/bench.md` and `docs/bench-api.md`.
 2. **Writes for authoring** (below), planned in `agents/wip-authoring.md`. The portal's authoring and swift wait on
-   them. Taking expectations and writing chunks and expectations, its phases 1 and 2, are built.
+   them. Taking expectations, writing chunks and expectations, and what is said about a thread, its phases 1 to 3,
+   are built.
 
 ### Writes for authoring
 Planned in `agents/wip-authoring.md`: chunks, recipes, appendices and the cases that order them, expectations, what is
 said about a thread, and following an origin. Taking expectations is built ("Taking"), and the giftbag keeps a
-person's own; so are writing chunks and expectations, and an edit's head ("Writes for the person").
+person's own; so are writing chunks and expectations, an edit's head, and what is said about a thread ("Writes for
+the person").
 
 ### Takes
 A take is the agent's recommendation, built on but not decided.

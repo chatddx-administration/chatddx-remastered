@@ -64,6 +64,13 @@ package takes the last row for a key as the one that holds: through `model.py:la
 
 **Errors.**
 
+```
+AGENT: CHANGE
+The blank line between the `LookupError` and `ValueError` rows ends the table there, so the rows after it don't render
+as part of it.
+---
+the table without the blank line
+```
 | Exception | When |
 | --- | --- |
 | `LookupError` | A thread, edit or family that doesn't exist (`no thread with id <id>`, `no edit with id <id>`, `no family with id <id>`); a digest that isn't stored where one is required (`check_adoptable`, `check_language`); `picked`, and so `expectations_for` and `expectation_for`, with several expectations to choose from. |

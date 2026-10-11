@@ -99,7 +99,8 @@ A configuration made per language or model is a thread under its full name, unti
 - **Models**: what the facts know of each, and the endpoints serving it.
 - **Components**: any stored component by its digest, with its kind and title. These are the same for everyone.
 
-A thread, family or run the person doesn't see is "not found", the same as one that doesn't exist.
+A thread, family or run the person doesn't see is "not found", the same as one that doesn't exist. Their own deleted
+threads are listed apart, and each can still be read by its id, with its versions, so that it can be restored.
 
 ## Trying a variation
 A configuration's variation is the configuration with some of its parts replaced. A request states it whole each
@@ -144,6 +145,14 @@ as a component's own request gives it (`agents/wip-bench.md`, "Components"):
 Every edit names the head it was made on, and is a conflict when the thread has moved on since, so a change made on
 an older version never undoes what came after it. What is written comes back with what the lints say of it, such as
 an expectation whose data its schema refuses, which is written all the same.
+
+## What is said about a thread
+Its owner says what holds of a thread in one request, giving only what changes: its name, or none so that its title
+shows; its description; its tags and who it is shared with, each as the whole list, people by login; and whether it
+is deleted (`agents/wip-bench.md`, "What is said about a thread"). Deleting is also a request of its own. What holds
+afterwards comes back. A deleted thread is restored before anything else is said of it. Another's thread is "not
+found" as "no configuration N of yours"; a login that names nobody, an empty name or tag, and taking a description
+away are unprocessable.
 
 ## Taking expectations
 A person is scored against their own expectations only, so they take the shared ones (`agents/wip-bench.md`,
@@ -236,10 +245,10 @@ A refusal's body is `{"detail": "…"}`, except where a request doesn't validate
 | 403 | A cookie's request that changes something, or a sign-in, from another site's page. |
 | 404 | What the path names isn't there or isn't seen by the person, a thread is of another kind than the route takes, a source doesn't hold a vignette, or a configuration to edit isn't the person's. |
 | 409 | Taking an expectation the person has their own of, without saying to replace it; an edit whose head has moved on. |
-| 422 | A request that doesn't validate or names a field it shouldn't; a kind that isn't one; a variation the bench refuses; a query or body naming what the person doesn't see; tags no case has; the gate's refusal of a run; taking an expectation that is the person's already; a component the bench refuses, or parts for what isn't a configuration and a component for what is. |
+| 422 | A request that doesn't validate or names a field it shouldn't; a kind that isn't one; a variation the bench refuses; a query or body naming what the person doesn't see; tags no case has; the gate's refusal of a run; taking an expectation that is the person's already; a component the bench refuses, or parts for what isn't a configuration and a component for what is; what is said of a thread that the bench refuses, or of a deleted one. |
 | 500 | A run that failed on its thread, for a request waiting for its answer. |
 
-An edit that changes nothing is answered 200 with the head; what is made is answered 201.
+An edit that changes nothing is answered 200 with the head; what is made is answered 201; a deletion 204.
 
 ## Not covered
 - **Free-text vignettes.** A case is a source's vignette, fetched from the World and never stored. A typed text
@@ -268,6 +277,7 @@ serve the app with uvicorn on a thread, and speak to it over a socket.
 | Fork | A new configuration of one's own, made from one the person sees. |
 | Edit | A new version of a configuration of one's own. |
 | Take | A fork of an expectation shared with the person, so that it counts. |
+| Saying | Writing what holds of a thread: its name, description, tags, collaborators, and whether it is deleted. |
 | Reach | Of a scorer's view: whether a variation's output offers what it reads, and which cases have an expectation it picks from. |
 | Run | A variation sent at an endpoint on some cases with one seed, recorded as it goes. |
 | Item | One case's request in a run, with its calls. |

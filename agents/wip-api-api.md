@@ -162,6 +162,7 @@ The models' fields are in the OpenAPI document. Besides them:
 | `NewThread` | A new thread's body: `component`, a component's JSON with its `kind`; `name`, not empty; and `language`. |
 | `NewFork`, `NewEdit` | A fork's body, `name` (not empty), and `parts` for a configuration or `component` and `language` for another kind; and an edit's, `head` (required), with the same. |
 | `MadeThread(ThreadDetail)`, `MadeEdit(Edit)` | What a write answers: the thread or the edit, with `findings`. |
+| `Said` | What is said about a thread: `name`, `description`, `tags`, `collaborators` (logins) and `deleted`, each optional; a field not given stays as it is (`model_fields_set`), and a null `name` takes the name away. |
 | `NewTakes`, `Taken` | A take's body for many cases, `families` (not empty), `expectation_schema` and `owner`, and its answer, `chatddx.bench.Taken` keyed by family id. |
 | `NewTake` | A take's body for one thread, `replace`. |
 | `NewRun` | A run's body. Its validator raises `ValueError("a run takes families or tags, and not both")` unless exactly one of `families` and `tags` is given, which FastAPI answers 422. |
@@ -177,7 +178,7 @@ variation's query parameters to them with `endpoint`, `tag` and `seed`.
 | `login(bench, person: int \| None) -> str \| None` | `None` for no one, else `Bench.login`. |
 | `edit_of(bench, edit: catalog.Edit) -> schemas.Edit` | The edit, with its author's login. |
 | `thread_of(bench, kind: str, edit, about) -> schemas.Thread` | A thread from its head and `About`, titled by `Catalog.title`. |
-| `detail(bench, thread: int) -> schemas.ThreadDetail` | `Bench.thread_by_id` (`NotFound`), `Catalog.thread` for its kind and `forked_from`, `Catalog.recipe` dumped, or `None` without a compilation, and `Catalog.language_of` of the head's digest. |
+| `detail(bench, thread: int) -> schemas.ThreadDetail` | `Bench.thread_by_id(thread, deleted=True)` (`NotFound`), so the person's own deleted thread too, with `deleted`, `Catalog.thread` for its kind and `forked_from`, `Catalog.recipe` dumped, or `None` without a compilation, and `Catalog.language_of` of the head's digest. |
 | `refused() -> Generator[None]` | A context manager: a `ValueError` within, other than a `Conflict` or a `MovedOn`, is raised as `HTTPException(422)` with its message. Those two pass to `STATUSES`. |
 | `made(request, response, bench, thread: int, findings) -> schemas.MadeThread` | `detail` of the thread with the findings, and `Location` its path. |
 | `configures(bench, thread: int) -> bool` | Whether the thread, read without a person, is a configuration's. |
@@ -187,10 +188,12 @@ variation's query parameters to them with `endpoint`, `tag` and `seed`.
 
 | Route | Does |
 | --- | --- |
-| `threads`, `GET /threads` | `HTTPException(422, "no kind '<kind>': the kinds are …")` for a word not in `KINDS`. `Bench.visible` of each kind the word names, kept by `name` (whole), `owner` (a login) and any of `tag`. |
+| `threads`, `GET /threads` | `HTTPException(422, "no kind '<kind>': the kinds are …")` for a word not in `KINDS`. `Bench.visible` of each kind the word names, or with `deleted` `Bench.deleted`, kept by `name` (whole), `owner` (a login) and any of `tag`. |
 | `thread`, `GET /threads/{thread}` | `detail`. |
-| `edits`, `GET /threads/{thread}/edits` | `Bench.thread_by_id`, then `Catalog.history`. |
+| `edits`, `GET /threads/{thread}/edits` | `Bench.thread_by_id(thread, deleted=True)`, then `Catalog.history`. |
 | `variation`, `GET /threads/{thread}/variation` | Within `refused()`: `Bench.variation(thread, query.given())` and `Bench.skeleton`. The seed is `suggest_seeds(1)[0]` unless given. `Bench.families(query.tag)`. With an endpoint: `Bench.endpoint`, whose `LookupError` is `HTTPException(422)`, and `Bench.findings(variation, engine, seed, families or None)`. `Bench.request(variation, engine, seed)` and `Bench.reach(variation, families)`. `parts` is `None` for a variation without a recipe. |
+| `say`, `PATCH /threads/{thread}` | `HTTPException(422, "a description is replaced, never taken away")` for a null `description`, and `HTTPException(422, "no person '<login>'")` for a collaborator nobody is (`People.find`). Within `refused()`: `Bench.say`, with `...` for a `name` not given. 200, `detail`. |
+| `delete`, `DELETE /threads/{thread}` | Within `refused()`: `Bench.say(thread, deleted=True)`. 204, also when it was deleted already. |
 | `new`, `POST /threads` | Within `refused()`: `Bench.new(Bench.component(component), name, language)`. 201, `made`. |
 | `fork`, `POST /threads/{thread}/forks` | `check_given`. Within `refused()`, for a configuration: `Bench.fork(Bench.variation(thread, parts), name)`, with `Bench.linted` of its skeleton; else `Bench.fork_component(thread, name, component, language)`. 201, `made`, with `Location` the new thread's path (`url_path_for("thread")`). |
 | `edit`, `POST /threads/{thread}/edits` | `check_given`. Within `refused()`, for a configuration: `Bench.edit(thread, Bench.variation(thread, parts), head)`, with `Bench.linted`; else `ValueError("an edit holds a component")` without one, and `Bench.edit_component(thread, head, component, language)`. 201 with the edit's `edit_of` and findings, or 200 when it is `"unchanged"`. |
@@ -326,6 +329,7 @@ settings.database())`.
 | `test_people.py` | Signing in and out by bearer and cookie, the same-origin check, validation, the statuses, the OpenAPI document and the command. |
 | `test_threads.py`, `test_families.py`, `test_world.py` | The reads, taking expectations, and what bob doesn't see. |
 | `test_writes.py` | Chunks and expectations written new, edited and forked; what is refused, and with which status; an expectation's findings. |
+| `test_said.py` | Saying what holds of a thread, sharing it with bob and taking it back; refusals; deleting, listing and reading the deleted thread, and restoring it; a session needed. |
 | `test_variations.py` | Looks, forks and edits; that a look's queries don't grow with its cases, counted on the test's database (the fixtures create the next test's meanwhile). |
 | `test_runs.py` | Runs, over its own `served` on `world`, the sample World on free ports; `listening`, the app under uvicorn on a thread, for the two tests of a client going away. |
 

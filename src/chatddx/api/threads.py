@@ -17,6 +17,7 @@ from chatddx.bench import (
 from chatddx.catalog.titles import describe
 from chatddx.factors.base import Finding
 from chatddx.factors.trial import suggest_seeds
+from chatddx.store import People
 from chatddx.store.catalog import Rows
 
 from . import schemas
@@ -61,6 +62,9 @@ def threads(
     name: str | None = None,
     owner: Annotated[str | None, Query(description="a login")] = None,
     tag: Annotated[list[str] | None, Query(description="any of these")] = None,
+    deleted: Annotated[
+        bool, Query(description="the person's own deleted threads instead")
+    ] = False,
 ) -> list[schemas.Thread]:
     if kind not in KINDS:
         raise HTTPException(422, f"no kind {kind!r}: the kinds are {', '.join(KINDS)}")
@@ -68,7 +72,7 @@ def threads(
     return [
         thread_of(bench, held, edit, about)
         for held in KINDS[kind]
-        for edit, about in bench.visible(held)
+        for edit, about in (bench.deleted(held) if deleted else bench.visible(held))
         if (name is None or about.name == name)
         and (owner is None or login(bench, about.owner) == owner)
         and (not wanted or wanted & about.tags)
@@ -76,7 +80,7 @@ def threads(
 
 
 def detail(bench: Bench, thread: int) -> schemas.ThreadDetail:
-    edit, about = bench.thread_by_id(thread)
+    edit, about = bench.thread_by_id(thread, deleted=True)
     found = bench.catalog.thread(thread)
     recipe = bench.catalog.recipe(thread)
     return schemas.ThreadDetail(
@@ -86,6 +90,7 @@ def detail(bench: Bench, thread: int) -> schemas.ThreadDetail:
         language=bench.catalog.language_of(edit.digest),
         forked_from=found.forked_from,
         recipe=None if recipe is None else recipe.model_dump(mode="json"),
+        deleted=about.deleted,
     )
 
 
@@ -96,7 +101,7 @@ def thread(bench: BenchDep, thread: int) -> schemas.ThreadDetail:
 
 @router.get("/threads/{thread}/edits")
 def edits(bench: BenchDep, thread: int) -> list[schemas.Edit]:
-    _ = bench.thread_by_id(thread)
+    _ = bench.thread_by_id(thread, deleted=True)
     return [edit_of(bench, e) for e in bench.catalog.history(thread)]
 
 
@@ -293,3 +298,31 @@ def take(
         made = bench.take_from(thread, given.replace)
     response.headers["Location"] = request.app.url_path_for("thread", thread=made)
     return detail(bench, made)
+
+
+# A login the body names that doesn't exist is the body's fault, so 422; a thread that
+# isn't the person's is the path's, so 404.
+@router.patch("/threads/{thread}")
+def say(bench: BenchDep, thread: int, given: schemas.Said) -> schemas.ThreadDetail:
+    if "description" in given.model_fields_set and given.description is None:
+        raise HTTPException(422, "a description is replaced, never taken away")
+    people = People(bench.conn)
+    if missing := [c for c in given.collaborators or () if people.find(c) is None]:
+        raise HTTPException(422, f"no person {missing[0]!r}")
+    with refused():
+        _ = bench.say(
+            thread,
+            name=given.name if "name" in given.model_fields_set else ...,
+            description=given.description,
+            tags=given.tags,
+            collaborators=given.collaborators,
+            deleted=given.deleted,
+        )
+    return detail(bench, thread)
+
+
+@router.delete("/threads/{thread}", status_code=204)
+def delete(bench: BenchDep, thread: int) -> Response:
+    with refused():
+        _ = bench.say(thread, deleted=True)
+    return Response(status_code=204)

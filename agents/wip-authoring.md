@@ -21,10 +21,14 @@ portal is the first edge to need them (agents/wip-portal.md, "Below the UI", "Ph
    and languages, every edit naming its head (A10, configurations included), and the API's `POST /api/threads` and
    component forks and edits (agents/wip-bench.md, "Components"). The sample has a thread of every chunk kind now,
    and Swedish texts (agents/wip-sample-data.md, "Beyond the old inventory"). Two takes came with it: A7's language
-   rule and A10's lock. Phase 3 comes next.
-4. **One set of writes for every kind people author** (A1), with builders only where a kind binds to a family's
+   rule and A10's lock.
+4. **What is said about a thread is built** (phase 3): `Bench.say`, the owner's one write of a thread's name,
+   description, tags, collaborators and deletion, and the API's `PATCH` and `DELETE /api/threads/{id}`, with the
+   person's own deleted threads listed and read by id (agents/wip-bench.md, "What is said about a thread"). Phase 4,
+   following an origin, comes next.
+5. **One set of writes for every kind people author** (A1), with builders only where a kind binds to a family's
    vignette: appendices and cases (A2).
-5. **No write refuses on a lint** (A6): what was written comes back with its lints. Refusals stay the components' and
+6. **No write refuses on a lint** (A6): what was written comes back with its lints. Refusals stay the components' and
    the catalog's.
 
 ## What is asked
@@ -174,6 +178,16 @@ restoring a second expectation of one case and schema is refused. Handing a thre
 
 What deleting hides stays the portal's question (`docs/catalog.md`, "Smaller issues"); the bench hides a deleted
 thread from everything but its history and the runs that used it.
+
+Takes, built:
+- **One write says what is to hold**, any of the fields, the tags and collaborators each as the whole set, and only
+  what changes is written, at once. A form shows the whole thread and sends it back; a write per field would ask the
+  edge to tell what changed, and leave half a change when one of several fails.
+- **The owner reads their deleted threads**, listed apart and by id with their history, which is what restoring
+  needs; nothing else finds them.
+- **Restoring comes first**, and nothing else is said of a thread that stays deleted.
+- **Leaving a share isn't offered.** A collaborator can't take a shared thread out of what they see; the owner can.
+  Open: whether a collaborator may withdraw themselves, which the catalog would hold as any other collaborator entry.
 
 ### A10. Decided: an edit names the head it was made on
 Every edit names the head the person saw, configurations included, and the bench refuses it when the thread has moved
@@ -348,7 +362,7 @@ Each with its tests in `src/chatddx/bench/test/` and the API's.
    and the API's.
 2. **Chunks and expectations**, built: new, fork and edit for the chunk kinds and expectations, with a language for
    texts, lints returned, kinds checked, and an edit's head.
-3. **What is said about a thread**: name, description, tags, collaborators, deleting and restoring.
+3. **What is said about a thread**, built: name, description, tags, collaborators, deleting and restoring.
 4. **Following an origin.**
 5. **Recipes into configurations.**
 6. **Appendices and cases**: the builders, a family's cases, replacement cases, and carrying an expectation over.

@@ -64,6 +64,20 @@ class ThreadDetail(Thread):
     language: str | None
     forked_from: int | None
     recipe: JsonValue
+    deleted: bool
+
+
+# What is said about a thread, as it is to hold afterwards; a field not given stays.
+class Said(_Schema):
+    name: str | None = Field(
+        None, description="null takes the name away, and the title takes over"
+    )
+    description: str | None = Field(None, description="replaced, never taken away")
+    tags: list[str] | None = Field(None, description="its tags")
+    collaborators: list[str] | None = Field(
+        None, description="the logins it is shared with"
+    )
+    deleted: bool | None = None
 
 
 type Chunk = Annotated[

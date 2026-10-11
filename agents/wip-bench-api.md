@@ -168,7 +168,8 @@ Frozen dataclasses that `Bench` returns.
 | `threads(word: str) -> list[tuple[Edit, About]]` | `visible(kind)` for each kind `KINDS[word]` names, in that order. |
 | `names(word: str) -> list[str]` | The names of `threads(word)`, sorted, without repeats. |
 | `thread(word: str, name: str, model: str \| None = None) -> tuple[Edit, str]` | The head of the thread `name` names, and the name that found it, as below. |
-| `thread_by_id(id: int, word: str \| None = None) -> tuple[Edit, About]` | The head of thread `id`, and its `About`, when the person sees it and, with `word`, it is of a kind `KINDS[word]` names. Else `NotFound("no <word or 'thread'> <id> for <login>")`. |
+| `thread_by_id(id: int, word: str \| None = None, *, deleted: bool = False) -> tuple[Edit, About]` | The head of thread `id`, and its `About`, when the person sees it, or with `deleted` when it is their own and deleted, and, with `word`, it is of a kind `KINDS[word]` names. Else `NotFound("no <word or 'thread'> <id> for <login>")`. |
+| `deleted(kind: str) -> list[tuple[Edit, About]]` | The heads of the person's own deleted threads of `kind`, with their `About`s, in thread id order: `Catalog.heads(kind, deleted=True)` kept by owner. |
 | `about(thread: int) -> About` | `Catalog.about` of the thread. |
 | `holder(word: str, digest: str) -> tuple[Edit, About] \| None` | The first of `threads(word)` whose head is `digest`, of the person's own if any; `None` when none is. |
 
@@ -237,6 +238,7 @@ qualified, `<owner's login>/NAME` (`_qualified`, which gives nothing for a threa
 | `fork_component(thread: int, name: str, component: Component \| None = None, language: str \| None = None) -> Written` | A new thread of the person's own named `name`, forked from the head of `thread`, a thread they see (`NotFound("no <word> <thread> for <login>")`), holding `component`, else the head. |
 | `edit_component(thread: int, head: int, component: Component, language: str \| None = None) -> Written` | `component` as a new version of `thread`, which the person owns (`NotFound("no <word> <thread> of yours")`) and whose head was `head` (`MovedOn`); `unchanged` when it is the head already. |
 | `linted(digest: str) -> list[Finding]` | `lints` of the stored component alone, with `Catalog.language_of` for languages. |
+| `say(thread: int, *, name: str \| None \| EllipsisType = ..., description: str \| None = None, tags: Collection[str] \| None = None, collaborators: Collection[str] \| None = None, deleted: bool \| None = None) -> About` | What holds of `thread` afterwards, `...` and `None` leaving a field as it is; the `About` afterwards. See below. |
 | `take(cases: Iterable[str], schema: str, owner: str \| None = None) -> Taken` | For each of `cases`, once, in order: the person's own live thread of it under `schema` is kept, the lowest id of several; else, of `shared(case, schema)`, `owner`'s only when given, one is forked into a thread of their own, several are to choose from and none is missing. One transaction. `ValueError("<schema> isn't a stored expectation schema")`; `NotFound("no person '<owner>'")`. |
 | `take_from(thread: int, replace: bool = False) -> int` | Thread `thread`, an expectation the person sees, forked into a thread of their own; its id. `thread_by_id(thread, "expectation")`'s `NotFound`; `ValueError("expectation <thread> is yours already")`. When they own one of its case under its schema: `Conflict("<login> has their own expectation of <case's title> under <schema's title>, in thread <t>: replace it to take this one")`, unless `replace`, which deletes each of theirs in the same transaction. |
 | `score(run: RunStarted, scorers: Collection[str] \| None = None) -> list[Graded]` | The run scored by `score_run` under each of `scorers_for(run)`, or those of them whose digest is in `scorers`, as `scoring` builds it now. A scorer that can't score it is a `Graded` with `refused`: `none of the run's cases has an expectation`, or the message of a `LookupError` (`Ambiguous` among them), `TypeError` or `NotImplementedError` raised on the way. |
@@ -259,6 +261,17 @@ language, when given, through `Catalog.language` where the digest has none, `Val
 already: a text's language is the same wherever it is held")` where it has another, and nothing where it has the same;
 and `Catalog.keep`, with `forked_from` the head's edit for a fork and `head` for an edit. `findings` are `linted`
 after the transaction.
+
+`say` finds the thread by its owner alone, deleted or not: `NotFound("no <word> <thread> of yours")` otherwise, where
+`<word>` is its kind's word in `KINDS`, else `thread`. It refuses, before writing anything: more said of a deleted
+thread that isn't restored (`ValueError("<word> <thread> is deleted: restore it to say more of it")`), an empty name
+(`ValueError("a name can't be empty: none takes it away")`) or tag (`ValueError("a tag can't be empty")`), a login
+nobody has (`NotFound("no person '<login>'")`), the person's own login among the collaborators
+(`ValueError("<word> <thread> is yours: it is shared with others")`), and restoring an expectation thread where the
+person owns another of its case and schema (`_check_expecting`, ending `delete that one to restore this`). Then, in
+one transaction and in this order, the entries that change what holds: restoring, the name (one without a value to
+take it away), the description, a tag entry for each tag added or withdrawn, a collaborator entry for each person
+added or withdrawn, and deleting.
 
 `take` and `take_from` fork with `Catalog.create(head.digest, person.id, forked_from=head.id, name=about.name)`, so the
 fork keeps the shared thread's name and the catalog checks its one-expectation rule.
@@ -293,6 +306,7 @@ In `src/chatddx/bench/test/`, all marked `wip`.
 | `sample.py` | `SOURCE`, `FREE_TEXT`, `PLAN` and `QWEN`; `trial(conn, plan, recipe, *ids)`, a stored trial of a sample recipe on some of the sample's cases; `ran(conn, by, made, finished=True)`, a run of it recorded without sending; `another_expectation(bench, case, data)`, a second expectation of the person's own for the case, left by two writers at once. |
 | `test_view.py` | What a person sees, by name, `OWNER/NAME` and id; a variation from ids and digests; runs and what reaches a digest; what is left to score, and again after an expectation changes; the expectation a case is held to, own only; several to choose from refused by `expectation` and `scoring`, kept by `unscored` and `outstanding`, refused by `score` and listed apart by `reach`; per-model and per-language names; a variation compiled, and its request with placeholders; saving, forking and editing, a configuration's edit refused on a head that moved on; taking expectations for many cases, kept, to choose from, missing and by owner, and taking one thread, replacing the person's own only when told. |
 | `test_writes.py` | Writing chunks and expectations: new, edited and forked, as they are or changed, with their languages; what is refused, from kinds and versions to a language a text has already; an expectation's lints, and the person's one expectation per case and schema. Over the sample's `clinician` instructions. |
+| `test_said.py` | Saying names, descriptions, tags and collaborators, and nothing written when nothing changes; refusals, with nothing written; deleting, the deleted threads listed and found by id, and restoring, held to one expectation per case and schema. |
 | `test_variation.py` | Replacing parts, taking a part back by setting the configuration's own chunk, and only an optional part taken out. Without a database. |
 | `test_outcome.py` | Each outcome by an item's last call and the skeleton's output, and usage over every call. Without a database. |
 
