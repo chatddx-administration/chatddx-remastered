@@ -48,12 +48,10 @@ INSERTS_BY_KIND: dict[str, frozenset[InsertName]] = {
     "chunk.output": frozenset({"schema"}),
 }
 
-# Body keys filled at send time or fixed by the rig; no chunk or skeleton may set them.
 RUNTIME_KEYS = frozenset(
     {"model", "messages", "seed", "stream", "n", "return_token_ids"}
 )
 OUTPUT_KEYS = frozenset({"response_format", "tools", "tool_choice"})
-# Body keys the sampling and reasoning chunks manage, whether a recipe sets them or not.
 MANAGED_KEYS = frozenset(
     {
         "temperature",
@@ -162,9 +160,6 @@ def _canonical_sampling(data: object) -> object:
     if fields.get("temperature") != 0:
         return fields
     return {k: v for k, v in fields.items() if k not in GREEDY_DROPS}
-
-
-# Chunks: the parts of a request the portal authors.
 
 
 class Instructions(Component):
@@ -366,8 +361,6 @@ ToolName = Annotated[str, StringConstraints(pattern=r"^[A-Za-z0-9_-]{1,64}$")]
 EntryPoint = Annotated[str, StringConstraints(pattern=r"^[\w.]+:[\w.]+$")]
 
 
-# A function the model may call between turns. Its code is pinned like a scorer's,
-# since what it returns is what the model reads next.
 class Tool(Component):
     kind: Literal["tool"] = "tool"
     schema_version: ClassVar[int] = 2
@@ -395,7 +388,6 @@ class Toolset(Component):
         return []
 
 
-# Source text -> translation, applied to every text a recipe brings, as gettext does.
 class Translations(Component):
     kind: Literal["chunk.translations"] = "chunk.translations"
     entries: Annotated[dict[str, str], AfterValidator(sorted_keys)] = Field(
@@ -439,7 +431,6 @@ class Recipe(Frozen):
     toolset: Annotated[Digest, RefTo("chunk.toolset")] | None = None
 
 
-# A recipe's fields that name chunks, in the order people read them.
 RECIPE_PARTS = (
     "instructions",
     "few_shot",
@@ -451,9 +442,6 @@ RECIPE_PARTS = (
     "translations",
     "toolset",
 )
-
-
-# The frozen request: what a trial or judge actually references.
 
 
 class Skeleton(Component):
@@ -625,8 +613,6 @@ def _check_slots(
 
 Translate = Callable[[str], str]
 
-# Schema keywords whose string value is prose the model may read, keywords whose
-# members are named schemas, and keywords holding instance data, never translated.
 _PROSE = frozenset({"title", "description"})
 _NAMED = frozenset(
     {"properties", "patternProperties", "$defs", "definitions", "dependentSchemas"}
@@ -772,13 +758,9 @@ def _parts(recipe: Recipe, get: Resolver, tr: Callable[[str], Translate]) -> _Pa
     )
 
 
-# The parts translations translate. Instructions, few-shot and prompts are written in
-# their language.
 TRANSLATED = frozenset({"output", "appendix_layout", "toolset"})
 
 
-# The texts each part of the recipe holds, in order; whitespace is left out. A translation
-# needs those of the TRANSLATED parts.
 def texts(recipe: Recipe, get: Resolver) -> dict[str, tuple[str, ...]]:
     found: dict[str, list[str]] = {}
 
@@ -796,8 +778,6 @@ def texts(recipe: Recipe, get: Resolver) -> dict[str, tuple[str, ...]]:
     return {part: tuple(seen) for part, seen in found.items() if seen}
 
 
-# The texts a chunk holds itself, whitespace left out, which give it a language of its
-# own: a toolset's include its tools'. A translations chunk's are its translations.
 def own_texts(chunk: Component, get: Resolver) -> tuple[str, ...]:
     seen: list[str] = []
 
@@ -979,10 +959,6 @@ def render(
     if return_token_ids:
         body["return_token_ids"] = True
     return body
-
-
-# Tool rounds. A response that calls tools gets one more request: the same body, the
-# assistant's message (its reasoning left out) and one tool message per call, in order.
 
 
 class ToolCall(Frozen):

@@ -43,7 +43,6 @@ def family_of(rows: Reader, case: str) -> int | None:
 def holder(
     rows: Reader, vignette: Vignette, *, but: int | None = None
 ) -> tuple[int, bool] | None:
-    # A family that holds the place now has a binding to it, its latest.
     for family in sorted({b.family for b in rows.bindings_sharing(vignette)}):
         held = rows.bindings([family])[-1].vignette
         if family != but and (
@@ -53,8 +52,6 @@ def holder(
     return None
 
 
-# A vignette with another family's content under a new id is that one's, renamed;
-# without `by_content`, as for a source whose texts never move, it is a vignette apart.
 def check_adoptable(rows: Reader, case: str, *, by_content: bool = True) -> Vignette:
     if rows.kind(case) != "case":
         raise LookupError(f"{case} is not a stored case")

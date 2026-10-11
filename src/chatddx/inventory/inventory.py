@@ -9,9 +9,6 @@ from chatddx.factors.base import Digest, Frozen, Sha256Hex
 from .sources import DatabaseSource, DirectorySource, Source
 
 
-# Where an engine is served: the engine by digest, which is also the name it's served
-# under, and how to reach it. A local engine's endpoint names the host that runs it;
-# a remote engine's URL is its base_url, so its endpoint leaves the URL out.
 class EndpointSpec(Frozen):
     engine: Digest
     url: HttpUrl | None = None
@@ -20,15 +17,12 @@ class EndpointSpec(Frozen):
     credential: str | None = None
 
 
-# Where a host keeps what its engines pin: model artifacts by digest, chat templates by
-# their SHA-256. Locations are the host's own, given as the start-up script reads them.
 class HostSpec(Frozen):
     bind: str = "0.0.0.0"
     models: dict[Digest, str] = Field(default_factory=dict)
     templates: dict[Sha256Hex, str] = Field(default_factory=dict)
 
 
-# A source is a directory unless it says otherwise.
 def _source_kind(source: object) -> str:
     if isinstance(source, dict):
         kind = cast(dict[str, object], source).get("kind", "directory")
@@ -47,9 +41,6 @@ class Inventory(Frozen):
     sources: dict[str, AnySource] = Field(default_factory=dict)
     endpoints: dict[str, EndpointSpec] = Field(default_factory=dict)
     hosts: dict[str, HostSpec] = Field(default_factory=dict)
-    # The sensitive sources each endpoint may receive case-derived content from. Only
-    # the inventory's own file says so, never an included one, so importing endpoints
-    # again can't clear anything.
     cleared: dict[str, tuple[str, ...]] = Field(default_factory=dict)
 
     @model_validator(mode="after")
@@ -77,8 +68,6 @@ class Inventory(Frozen):
                 )
         return self
 
-    # `include` names files, relative to this one, whose endpoints and hosts are this
-    # inventory's too, such as what `chatddx import-engine` writes.
     @classmethod
     def load(cls, path: Path) -> Self:
         with path.open("rb") as f:

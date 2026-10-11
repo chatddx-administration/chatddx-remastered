@@ -9,7 +9,6 @@ from chatddx.store import People
 pytestmark = pytest.mark.wip
 
 
-# The archive's configuration moved on to greedy sampling; the edit it made.
 def _moved(bench: Bench) -> int:
     found = People(bench.conn).find("archive")
     assert found is not None

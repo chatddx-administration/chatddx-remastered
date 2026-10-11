@@ -505,7 +505,6 @@ def test_a_target_s_words_are_a_judge_s_and_its_pattern_the_pattern_scorers() ->
     }
 
 
-# Which scorer reads each configuration's output, by the output's shape.
 READS = {
     "plan": "plan",
     "plan-shown": "plan",
@@ -531,8 +530,6 @@ def test_each_sample_scorer_s_views_pick_from_the_answers_it_reads() -> None:
         assert isinstance(scorer, Scorer)
         schema = skeleton.output_schema
         answer: JsonValue = ANSWER_TEXT if schema is None else instance(schema)
-        # The fake writes every boolean false; the plan's dont-miss view reads only the
-        # diagnoses an answer marks critical.
         if isinstance(answer, dict) and isinstance(answer.get("diagnoses"), list):
             for item in cast(list[JsonValue], answer["diagnoses"]):
                 if isinstance(item, dict) and "critical" in item:

@@ -12,8 +12,6 @@ from .people import BenchDep
 router = APIRouter(tags=["world"])
 
 
-# An endpoint as the World declares it, and what the store says of its engine; what
-# can't be told is said in `problem`.
 def endpoint_of(bench: Bench, name: str, spec: EndpointSpec) -> schemas.Endpoint:
     title = model = url = problem = None
     try:
@@ -53,7 +51,6 @@ def endpoint(bench: BenchDep, name: str) -> schemas.Endpoint:
     return endpoint_of(bench, name, spec)
 
 
-# The models the facts know or an endpoint serves, with the endpoints serving each.
 @router.get("/models")
 def models(bench: BenchDep) -> list[schemas.Model]:
     serving: dict[str, list[str]] = {}

@@ -9,14 +9,12 @@ from chatddx.inventory import Inventory
 from chatddx.store.store import Connection
 
 
-# What the app is made with, loaded once.
 @dataclass(frozen=True)
 class AppState:
     conninfo: str
     inventory: Inventory
     facts: Facts
 
-    # In autocommit mode, as the runner needs.
     def connect(self) -> Connection:
         return psycopg.connect(self.conninfo, autocommit=True)
 

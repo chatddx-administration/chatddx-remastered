@@ -11,7 +11,6 @@ class Texts:
     def __init__(self, conn: Connection) -> None:
         self._conn: Connection = conn
 
-    # `text` as a vignette of `source` by `by`, under a new id, which is returned.
     def add(self, source: str, text: str, by: int) -> str:
         id = uuid4().hex
         _ = self._conn.execute(
@@ -36,8 +35,6 @@ class Texts:
         return int(row[0])
 
 
-# A vignette's raw bytes: a directory source fetches its own, and a database source's
-# are read from the store.
 def fetch_vignette(conn: Connection, inventory: Inventory, vignette: Vignette) -> bytes:
     source = inventory.source(vignette.source)
     if isinstance(source, DatabaseSource):

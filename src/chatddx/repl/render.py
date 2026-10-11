@@ -83,8 +83,6 @@ def clipped_line(text: str, width: int = 60) -> str:
     return line if len(line) <= width else line[: width - 1] + "…"
 
 
-# A run's events as they stream: the thinking, labelled, then the answer, each tool
-# call labelled by its name and followed by what it returned, and the tokens used.
 class Transcript:
     def __init__(self, console: Console):
         self.console: Console = console
@@ -96,7 +94,6 @@ class Transcript:
     def event(self, event: Event) -> None:
         match event:
             case Streamed(delta=Delta(kind=kind, text=text)) if kind != self.kind:
-                # A call's name comes first, and its arguments after it.
                 self.begin({"reasoning": "thinking", "content": None}.get(kind, text))
                 self.kind = kind
                 if kind != "tool_call":
@@ -122,8 +119,6 @@ class Transcript:
             case _:
                 pass
 
-    # A stored item told again as it streamed: each call's message, and the results of
-    # the tools it called before the next.
     def item(self, item: RunItem) -> None:
         self._message(item.call)
         for turn in item.turns:
@@ -159,8 +154,6 @@ class Transcript:
         elif text:
             self._out(self.held + text, style)
 
-    # What a part ends with that is only whitespace is left out, as a model that runs
-    # away writes nothing else.
     def begin(self, label: str | None) -> None:
         self.kind = None
         self.held = ""
@@ -180,8 +173,6 @@ class Transcript:
         self.labelled = False
 
 
-# A batch's line for one case: the tokens climb while it runs, and then it says how it
-# went.
 class Tally:
     def __init__(self, console: Console, width: int, case: str):
         self.console: Console = console
@@ -230,14 +221,11 @@ class Tally:
         return line
 
 
-# How an item went: a word for it, its style, and what to say of it.
 def outcome(skeleton: Skeleton, item: RunItem) -> tuple[str, str, str | None]:
     word, why = ended(skeleton, item)
     return word, STYLES[word], why
 
 
-# An item's answer as the scorers read it: the call's error, whether the answer holds to
-# the output's schema, and what the views pick from it.
 def show_answer(
     console: Console, skeleton: Skeleton, item: RunItem, graded: list[Graded]
 ) -> None:
@@ -260,8 +248,6 @@ def show_answer(
     _views(console, answer, graded)
 
 
-# What the scorers' views read from the answer, each selection once, but for those
-# that read the answer whole.
 def _views(console: Console, answer: Answer, graded: list[Graded]) -> None:
     seen: set[tuple[str, str | None]] = set()
     labels: set[str] = set()
@@ -318,7 +304,6 @@ def show_scores(console: Console, graded: list[Graded]) -> None:
     console.print(table)
 
 
-# Each item's value per scorer view, an item to a row.
 def show_table(
     console: Console, names: dict[str, str], items: list[RunItem], graded: list[Graded]
 ) -> None:
@@ -350,8 +335,6 @@ def show_table(
             console.print(Text(f"{g.name}: not scored: {g.refused}", LATER))
 
 
-# Per scorer view, over every score given: how many items have a value, their mean and
-# standard error, and how many have none.
 def show_summary(console: Console, graded: list[Graded]) -> None:
     held: dict[tuple[str, int], list[float | None]] = {}
     labels: dict[tuple[str, int], str] = {}

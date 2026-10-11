@@ -540,7 +540,6 @@ def test_a_call_that_fails_on_its_thread_fails_the_send(
     assert Store(conn).run(running.run).items == ()
 
 
-# The sample's source declared not sensitive, so the gate lets tools see its cases.
 def insensitive(inventory: Inventory) -> Inventory:
     sample = inventory.sources["sample"].model_copy(update={"sensitive": False})
     return inventory.model_copy(update={"sources": {"sample": sample}})

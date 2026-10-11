@@ -37,7 +37,6 @@ class Filter:
     value: JsonValue = None
 
 
-# A JSON Pointer reference token: a member name, or an array index when it's one.
 @dataclass(frozen=True)
 class Token:
     token: str
@@ -306,11 +305,6 @@ def split(op: SplitOp, items: Iterable[JsonValue]) -> list[JsonValue]:
     for item in items:
         out.extend(_lines(item) if isinstance(item, str) else [item])
     return out
-
-
-# Whether a selector can pick anything from documents that follow a schema. It errs
-# towards yes: unknown refs, unconstrained schemas and unions count as reachable, so a
-# no is certain and a yes isn't.
 
 
 def _resolve(root: JsonValue, ref: str) -> JsonValue:

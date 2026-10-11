@@ -25,8 +25,6 @@ from .model import (
 from .read import Reader, abouts, heads_holding, heads_of
 
 
-# An edit names the head it was made on, so that one made on an older head undoes
-# nothing that came after it unseen.
 def check_head(rows: Reader, thread: int, head: int) -> None:
     current = history(rows, thread)[-1]
     if current.id != head:
@@ -36,7 +34,6 @@ def check_head(rows: Reader, thread: int, head: int) -> None:
         )
 
 
-# Only an edit of a scorer thread is labelled, and only at positions its scorer has.
 def check_labels(rows: Reader, thread_id: int, digest: str, labels: Labels) -> None:
     if not labels:
         return
@@ -127,8 +124,6 @@ def expectation_for(rows: Reader, case: str, person: int, schema: str) -> str | 
     return expectations_for(rows, [case], person, schema)[case]
 
 
-# The expectation a person scores each case against: the head of their own thread. One
-# shared with them counts only once they fork it.
 def expectations_for(
     rows: Reader, cases: Sequence[str], person: int, schema: str
 ) -> dict[str, str | None]:
@@ -138,8 +133,6 @@ def expectations_for(
     }
 
 
-# The one head among a case's threads, or None. Two writers at once can leave a person
-# several, which are refused, naming the threads.
 def picked(case: str, choices: Mapping[int, str]) -> str | None:
     match sorted(set(choices.values())):
         case []:
@@ -153,8 +146,6 @@ def picked(case: str, choices: Mapping[int, str]) -> str | None:
             )
 
 
-# For each case, the person's own live threads whose head is an expectation of it in
-# `schema`, with their heads.
 def expectation_choices(
     rows: Reader, cases: Sequence[str], person: int, schema: str
 ) -> dict[str, dict[int, str]]:
@@ -164,8 +155,6 @@ def expectation_choices(
     return found
 
 
-# For each case, the heads of the live threads shared with the person whose head is an
-# expectation of it in `schema`, with what is said of each: what they could take.
 def expectations_shared(
     rows: Reader, cases: Sequence[str], person: int, schema: str
 ) -> dict[str, list[tuple[Edit, About]]]:
@@ -178,8 +167,6 @@ def expectations_shared(
     return found
 
 
-# The threads `keep` keeps whose head is an expectation of one of `cases` in `schema`,
-# each with its case, its head and what is said of it, in thread id order.
 def _expecting(
     rows: Reader, cases: Sequence[str], schema: str, keep: Callable[[About], bool]
 ) -> list[tuple[str, Edit, About]]:
@@ -195,9 +182,6 @@ def _expecting(
     return found
 
 
-# A person owns at most one live expectation thread per case and expectation schema.
-# `thread` is checked as a write would leave it: with `digest` as its head, or after
-# `entry`.
 def check_expectation(
     rows: Reader, thread: int, digest: str | None = None, entry: Entry | None = None
 ) -> None:

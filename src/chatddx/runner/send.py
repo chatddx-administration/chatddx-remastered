@@ -24,11 +24,9 @@ STOPPED = "stopped"
 class Delta:
     kind: Literal["reasoning", "content", "tool_call"]
     text: str
-    # Tokens generated so far in this call.
     tokens: int
 
 
-# A KeyboardInterrupt or a halt hung up mid-call; `call` is the call as far as it got.
 class Stopped(Exception):
     def __init__(self, call: Call) -> None:
         self.call: Call = call
@@ -68,11 +66,6 @@ def _retryable(status: int) -> bool:
     return status == 429 or status >= 500
 
 
-# Streaming is the wire's business: `Call.request` fingerprints the body as `render` or
-# `next_request` made it, without the stream's keys. Only a call that got no answer is
-# tried again, since an answer cut short is an answer.
-# A call on another thread can't be interrupted, so it hangs up once `halt` is set: at
-# its next chunk, or in its backoff.
 def send(
     url: str,
     body: Mapping[str, JsonValue],

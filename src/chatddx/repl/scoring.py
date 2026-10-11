@@ -23,8 +23,6 @@ from .running import held
 from .shell import Repl
 
 
-# Scores the runs left to score, each under the scorers it has no score from as their
-# scorings would be built now; with RUN, that run alone.
 def score(repl: Repl, prefix: str | None = None) -> None:
     bench = repl.bench
 
@@ -103,8 +101,6 @@ def scorers(repl: Repl) -> None:
     repl.console.print(table)
 
 
-# Takes the expectations shared with the person for the cases with any TAG, all without,
-# under each schema they are written in; `from OWNER` takes OWNER's only.
 def take(repl: Repl, *words: str) -> None:
     if words[:1] == ("from",) and len(words) < 2:
         repl.error("usage: take [from OWNER] [TAG...]")

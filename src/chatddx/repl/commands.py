@@ -168,14 +168,12 @@ def handle(repl: Repl, line: str) -> bool:
     return True
 
 
-# A name made per model names nothing alone until the cell's endpoint picks the model.
 def _said(e: LookupError | ValueError) -> str:
     if isinstance(e, NotFound) and e.per_model:
         return f"{e}, picked by the endpoint in the cell"
     return str(e)
 
 
-# The next word of each name that starts with the words typed so far.
 def _next_words(names: Iterable[str], typed: list[str]) -> list[str]:
     found: dict[str, None] = {}
     for name in names:

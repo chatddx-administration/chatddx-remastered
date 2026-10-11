@@ -98,7 +98,6 @@ def test_a_scorer_the_running_code_could_never_score_with_is_refused(
     assert "refused" not in bench.names("scorer")
 
 
-# Labels belong to the edit they're written with, so no one's change another's.
 @pytest.mark.slow
 def test_a_fork_keeps_its_origin_s_labels_and_renames_its_own_views(
     conn: Connection, alice: Person, bench: Bench, plan: Plan
@@ -160,7 +159,6 @@ def _renamed(conn: Connection, thread: int, labels: Labels) -> None:
     _ = Catalog(conn).keep(head.digest, _archive(conn).id, thread, labels=labels)
 
 
-# Following keeps the labels of whichever side's views the proposal keeps.
 def test_following_an_origin_keeps_the_labels_of_the_views_it_keeps(
     conn: Connection, bench: Bench
 ) -> None:
@@ -178,8 +176,6 @@ def test_following_an_origin_keeps_the_labels_of_the_views_it_keeps(
     assert bench.labels_of(kept.edit) == {0: "mine"}
 
 
-# A deploy that raises a version leaves a scorer pinned to the earlier one unscored until
-# it moves on, here by following the archive's.
 @pytest.mark.slow
 def test_a_scorer_moves_on_to_a_raised_version_by_following_its_origin(
     conn: Connection,

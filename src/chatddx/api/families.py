@@ -122,7 +122,6 @@ def cases(bench: BenchDep, family: int) -> list[schemas.FamilyCase]:
     return [case_of(bench, c, found.case) for c in bench.cases(family)]
 
 
-# A case another family holds is the body's fault, as one the person doesn't see is.
 @router.post("/families/{family}/cases", status_code=201)
 def case(bench: BenchDep, family: int, given: schemas.NewCase) -> schemas.FamilyCase:
     found = bench.family_by_id(family)
@@ -139,7 +138,6 @@ def case(bench: BenchDep, family: int, given: schemas.NewCase) -> schemas.Family
     return case_of(bench, made, found.case)
 
 
-# Case-derived: the one place the API gives a vignette.
 @router.get("/families/{family}/vignette")
 def vignette(bench: BenchDep, family: int) -> schemas.Vignette:
     found = bench.family_by_id(family)
@@ -157,7 +155,6 @@ def vignette(bench: BenchDep, family: int) -> schemas.Vignette:
     )
 
 
-# An owner the body names that doesn't exist is the body's fault, as a family not seen is.
 @router.post("/takes")
 def takes(bench: BenchDep, given: schemas.NewTakes) -> schemas.Taken:
     seen = {f.id: f for f in bench.families()}

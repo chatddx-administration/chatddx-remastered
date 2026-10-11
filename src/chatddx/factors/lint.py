@@ -19,6 +19,10 @@ from .trial import Trial
 _COMMIT = re.compile(r"^[0-9a-f]{40}$")
 _NIX_STORE = re.compile(r"^/nix/store/[0-9a-z]{32}-.+$")
 
+Languages = Callable[[str], str | None]
+Reasons = Callable[[str], bool | None]
+Validators = dict[str, Validator | str]
+
 
 def _model(c: ModelArtifact, _: Registry) -> Iterable[Finding]:
     if not _COMMIT.match(c.revision):
@@ -78,11 +82,6 @@ def _validator(schema: dict[str, JsonValue]) -> Validator | str:
     except SchemaError as e:
         return f"{_where(e)}: {e.message}"
     return cls(schema)
-
-
-# An expectation schema's validator, or why it has none, by the schema's digest, so a
-# lint checks each schema once however many expectations it lints against it.
-Validators = dict[str, Validator | str]
 
 
 def _validator_of(
@@ -231,11 +230,6 @@ def _runtime(
                 + "answer from its first token, so a model can't reason first",
                 subject=subject,
             )
-
-
-Languages = Callable[[str], str | None]
-# Whether an engine's model reasons when a request doesn't say, by the engine's digest.
-Reasons = Callable[[str], bool | None]
 
 
 def _languages(c: Trial, languages: Languages) -> Iterable[Finding]:

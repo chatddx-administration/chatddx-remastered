@@ -12,7 +12,6 @@ from chatddx.facts import BUNDLED, Facts
 pytestmark = pytest.mark.solidified
 
 
-# A data set of `files`, by name, planned.
 def plan(tmp_path: Path, **files: str) -> Plan:
     for name, text in files.items():
         _ = (tmp_path / name.replace("_", "-")).with_suffix(".toml").write_text(text)

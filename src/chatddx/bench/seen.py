@@ -42,9 +42,6 @@ from .model import KINDS, PLACEHOLDERS, Family, Graded, Reach
 from .variation import PARTS, TriedVariation
 
 
-# What one person sees: the threads, families and runs they see, the World's endpoints,
-# and the variations they try, with the checks the writes share. It writes nothing; the
-# writes take it, and `Bench` binds them (src/chatddx/bench/bench.py). Nothing here is UI.
 class Seen:
     def __init__(
         self, conn: Connection, person: Person, inventory: Inventory, facts: Facts
@@ -70,20 +67,15 @@ class Seen:
     def owner(self, about: About) -> str:
         return "" if about.owner == self.person.id else self.login(about.owner)
 
-    # The heads of the live threads the person owns or collaborates on, of the kinds
-    # `word` names.
     def threads(self, word: str) -> list[tuple[Edit, About]]:
         return [found for kind in KINDS[word] for found in self.visible(kind)]
 
-    # The heads of the live threads of `kind` the person owns or collaborates on.
     def visible(self, kind: str) -> list[tuple[Edit, About]]:
         return self.catalog.visible(kind, self.person.id)
 
     def names(self, word: str) -> list[str]:
         return sorted({a.name for _, a in self.threads(word) if a.name is not None})
 
-    # A thread by name, as `_named` finds it, or else its one variant `model` may use
-    # (`chatddx.catalog.variants_for`). Returns it with the name that found it.
     def thread(
         self, word: str, name: str, model: str | None = None
     ) -> tuple[Edit, str]:
@@ -123,15 +115,11 @@ class Seen:
             case _:
                 raise Ambiguous(f"{word} {name!r} names a {' and a '.join(kinds)}")
 
-    # A name as `OWNER/NAME`, by which it is found when nothing has the whole name.
     def _qualified(self, name: str | None, owner: int | None) -> str | None:
         if name is None or owner is None:
             return None
         return f"{self.login(owner)}/{name}"
 
-    # The one of `seen` called `name`: the person's own, else the one shared with them.
-    # A name is matched whole first, since names may hold a slash, as
-    # `plan (Qwen/Qwen3-8B-AWQ)` does; only then as `OWNER/NAME`.
     def _named[T](
         self, seen: list[tuple[T, str | None, About]], name: str, word: str
     ) -> T:
@@ -150,9 +138,6 @@ class Seen:
                     f"{word} {name!r} names {len(several)}; name one as OWNER/NAME"
                 )
 
-    # The head of a thread the person sees, by its id, with what the catalog says of it;
-    # with `word`, only of the kinds it names.
-    # With `deleted`, the person's own deleted threads are found too.
     def thread_by_id(
         self, id: int, word: str | None = None, *, deleted: bool = False
     ) -> tuple[Edit, About]:
@@ -169,8 +154,6 @@ class Seen:
             raise NotFound(f"no {word or 'thread'} {id} for {self.person.login}")
         return self.catalog.head(id), about
 
-    # The heads of the person's own deleted threads of `kind`, as `visible` gives the
-    # live ones they see.
     def deleted(self, kind: str) -> list[tuple[Edit, About]]:
         heads = self.catalog.heads(kind, deleted=True)
         known = self.catalog.abouts([Subject(thread=e.thread) for e in heads])
@@ -183,7 +166,6 @@ class Seen:
     def about(self, thread: int) -> About:
         return self.catalog.about(Subject(thread=thread))
 
-    # A thread the person sees whose head is `digest`, their own first.
     def holder(self, word: str, digest: str) -> tuple[Edit, About] | None:
         held = [((e, a), a.owner) for e, a in self.threads(word) if e.digest == digest]
         return next(iter(preferred(self.person.id, held)), None)
@@ -209,8 +191,6 @@ class Seen:
             )
         return engine
 
-    # A configuration by name, with nothing replaced yet; a per-model one is picked by
-    # the model `engine` serves.
     def configuration(self, name: str, engine: str | None = None) -> TriedVariation:
         model = None if engine is None else self.model(engine)
         edit, found = self.thread("configuration", name, model)
@@ -221,8 +201,6 @@ class Seen:
         model = None if engine is None else self.model(engine)
         return self.thread(part, name, model)[0].digest
 
-    # A configuration by its thread's id, with `parts` replaced: each by the chunk of
-    # that digest, or taken out for None.
     def variation(
         self, configuration: int, parts: Mapping[str, str | None] | None = None
     ) -> TriedVariation:
@@ -244,15 +222,12 @@ class Seen:
         registry = self.store.load(s.digest for s in iter_refs(recipe))
         return compile_request(recipe, registry.get)
 
-    # The model name a request to the engine carries.
     def served(self, engine: str) -> str:
         found = self.get(engine)
         if not isinstance(found, LocalEngine | RemoteEngine):
             raise StructuralError(f"{engine} is a {found.kind_name}, not an engine")
         return found.served_model_name
 
-    # The request the variation renders on `engine`, with placeholders for the slots, and
-    # for the model when there is no engine.
     def request(
         self, variation: TriedVariation, engine: str | None, seed: int
     ) -> dict[str, JsonValue]:
@@ -275,7 +250,6 @@ class Seen:
     def _families(self) -> list[tuple[int, About]]:
         return self.catalog.visible_families(self.person.id)
 
-    # A family's case is the one its vignette makes alone, else the first holding it.
     def _cases(self, families: list[int]) -> dict[int, str | None]:
         current = latest((b.family, b.vignette) for b in self.rows.bindings(families))
         held: dict[Vignette, list[str]] = {}
@@ -289,8 +263,6 @@ class Seen:
             found[family] = bare if bare in cases else next(iter(cases), None)
         return found
 
-    # A family by its name, as `_named` finds a thread's; one without a name is called
-    # `family ID`.
     def family(self, name: str) -> Family:
         return self._named(
             [(f, f.name, f.about) for f in self.families()], name, "case"
@@ -306,7 +278,6 @@ class Seen:
     def tags(self) -> list[str]:
         return sorted({tag for _, about in self._families() for tag in about.tags})
 
-    # The schemas of the expectations the person sees for a case.
     def expectation_schemas(self, case: str) -> list[str]:
         heads = [
             self.catalog.head(t).digest
@@ -316,19 +287,13 @@ class Seen:
         held = (resolve(self.get, d, Expectation) for d in heads)
         return sorted({e.expectation_schema for e in held})
 
-    # The expectation the case is scored against for the person under `schema`
-    # (`Catalog.expectations_for`): Ambiguous when there are several to choose from.
     def expectation(self, case: str, schema: str) -> Expectation | None:
         digest = self._expectations_for([case], schema)[case]
         return None if digest is None else resolve(self.get, digest, Expectation)
 
-    # The expectation threads shared with the person for a case under `schema`, with what
-    # is said of each: what they could take.
     def shared(self, case: str, schema: str) -> list[tuple[Edit, About]]:
         return self.catalog.expectations_shared([case], self.person.id, schema)[case]
 
-    # Several to choose from is the one LookupError
-    # src/chatddx/catalog/threads.py:expectations_for raises.
     def _expectations_for(self, cases: list[str], schema: str) -> dict[str, str | None]:
         try:
             return self.catalog.expectations_for(cases, self.person.id, schema)
@@ -348,9 +313,6 @@ class Seen:
         _ = registry.add(trial)
         return registry, trial
 
-    # What the lints say of the variation run on `engine` as a trial: the pair's checks,
-    # and with `families` the languages of their cases too. Without, any one case makes
-    # the trial, since the pair's checks don't read cases.
     def findings(
         self,
         variation: TriedVariation,
@@ -369,9 +331,6 @@ class Seen:
         registry, trial = self.trial(self.skeleton(variation), engine, some, seed)
         if families is None:
             return lints(registry, self.facts, [trial.digest])
-        # A family's case has the family's language, as Catalog.language_of finds it. The
-        # request has its recipe's, which language_of counts only once it is compiled
-        # and stored, as a variation being tried isn't.
         known = {f.case: f.about.language for f in families}
         recipe = variation.varied
 
@@ -390,8 +349,6 @@ class Seen:
             for e, a in self.threads("scorer")
         ]
 
-    # The scorer threads whose every view reaches the run's output schema, the check
-    # `check_score` warns with as `view.unreachable`.
     def scorers_for(self, run: RunStarted) -> list[tuple[Edit, About]]:
         return [
             (e, a) for e, a in self.threads("scorer") if self._applies(e.digest, run)
@@ -403,8 +360,6 @@ class Seen:
         views = resolve(self.get, scorer, Scorer).views
         return all(reaches(schema, v.output) for v in views)
 
-    # Each of the run's cases is scored against the expectation the catalog picks for
-    # the person (`Catalog.expectations_for`); none when no case has one.
     def scoring(self, run: RunStarted, scorer: str) -> Scoring | None:
         trial = resolve(self.get, run.trial, Trial)
         schema = resolve(self.get, scorer, Scorer).expectation_schema
@@ -412,8 +367,6 @@ class Seen:
         found = tuple(e for e in held.values() if e is not None)
         return Scoring(scorer=scorer, expectations=found) if found else None
 
-    # The data of the expectation each case is scored against under `schema`, for the
-    # cases that have one, and the cases with several to choose from.
     def _expected(
         self, cases: list[str], schema: str
     ) -> tuple[dict[str, JsonValue], set[str]]:
@@ -434,10 +387,6 @@ class Seen:
         }
         return data, several
 
-    # What a scorer digest's views are called for the person: as the latest edit that
-    # holds it among the scorer threads they see calls them, their own first, as
-    # `holder` picks a thread; else as the latest edit in those threads' histories that
-    # held it.
     def labels(self, scorer: str) -> dict[int, str]:
         held = self.holder("scorer", scorer)
         if held is not None:
@@ -451,7 +400,6 @@ class Seen:
         held_before = sorted(preferred(self.person.id, earlier), key=lambda e: e.id)
         return self.labels_of(held_before[-1]) if held_before else {}
 
-    # What an edit of a scorer thread calls the scorer's views.
     def labels_of(self, edit: Edit) -> dict[int, str]:
         return {
             position: label
@@ -459,9 +407,6 @@ class Seen:
             if part == "view"
         }
 
-    # For each view of each scorer: whether the variation's output offers what it reads,
-    # and which cases have an expectation it picks something from, or several to choose
-    # from.
     def reach(self, variation: TriedVariation, families: list[Family]) -> list[Reach]:
         schema = self.skeleton(variation).output_schema
         cases = [f.case for f in families]
@@ -498,8 +443,6 @@ class Seen:
                 )
         return found
 
-    # A recipe compiled by the running code, in a registry with what it refers to;
-    # nothing is stored.
     def compiled(self, recipe: Recipe) -> tuple[Registry, Compilation]:
         registry = self.store.load(s.digest for s in iter_refs(recipe))
         skeleton, compilation = compiled(recipe, registry.get, rig())
@@ -507,7 +450,6 @@ class Seen:
         _ = registry.add(compilation)
         return registry, compilation
 
-    # What the lints say of a stored component alone, with the catalog's languages.
     def linted(self, digest: str) -> list[Finding]:
         registry = self.store.load([digest])
         return lints(registry, self.facts, [digest], self.catalog.language_of)
@@ -515,7 +457,6 @@ class Seen:
     def current(self, family: int) -> Vignette:
         return self.rows.bindings([family])[-1].vignette
 
-    # The stored cases of `family` at its current vignette, the bare one first.
     def cases(self, family: int) -> list[str]:
         found = self.family_by_id(family)
         vignette = self.current(found.id)
@@ -523,7 +464,6 @@ class Seen:
         bare = Case(vignette=vignette).digest
         return sorted(held, key=lambda d: (d != bare, d))
 
-    # A thread the person sees, with the word for its kind to name it by.
     def worded(self, thread: int) -> tuple[Edit, About, str]:
         found = self.rows.thread(thread)
         kind = None if found is None else found.kind
@@ -531,8 +471,6 @@ class Seen:
         edit, about = self.thread_by_id(thread, word)
         return edit, about, word or "thread"
 
-    # A scorer the running code could never score with is refused: code it doesn't ship,
-    # a metric it doesn't publish, or parameters its schemas refuse.
     def check_scorer(self, scorer: Scorer) -> None:
         if found := problems(scorer):
             raise ValueError("; ".join(found))
@@ -544,8 +482,6 @@ class Seen:
                 f"{word} {thread} holds {kind} components, not {component.kind_name}"
             )
 
-    # The catalog's rule, worded for the person: one expectation of their own per case
-    # and schema.
     def check_expecting(
         self, expectation: Expectation, thread: int | None, then: str = "edit that one"
     ) -> None:
@@ -557,7 +493,6 @@ class Seen:
                 + f"under {self.title(schema)}, in thread {others[0]}: {then}"
             )
 
-    # The live runs the person owns, newest first. A collaborator on a run doesn't see it.
     def runs(self) -> list[RunStarted]:
         involved = [s for s in self.catalog.involving(self.person.id) if s.run]
         known = self.catalog.abouts(involved)
@@ -568,7 +503,6 @@ class Seen:
         ]
         return self.store.started(owned)
 
-    # The person's latest run, or the one whose id starts with `prefix`.
     def run(self, prefix: str | None = None) -> RunStarted:
         runs = self.runs()
         if prefix is None:
@@ -583,7 +517,6 @@ class Seen:
             case found:
                 raise Ambiguous(f"{len(found)} runs of yours start with {prefix!r}")
 
-    # A live run the person owns, by its whole id.
     def run_by_id(self, run: UUID) -> RunStarted:
         about = self.catalog.about(Subject(run=run))
         found = self.store.started([run])
@@ -591,13 +524,10 @@ class Seen:
             raise NotFound(f"no run {run} of yours")
         return found[0]
 
-    # The person's runs whose trial is built on `digest`.
     def reaching(self, digest: str) -> list[RunStarted]:
         trials = set(self.store.reaching(digest, "trial"))
         return [r for r in self.runs() if r.trial in trials]
 
-    # What ran, as `run` and `batch` said it: the configuration, where it ran, the case
-    # or how many, and the seed.
     def described(self, run: RunStarted) -> str:
         trial = resolve(self.get, run.trial, Trial)
         where = self.title(trial.engine) if run.endpoint is None else run.endpoint.name
@@ -609,7 +539,6 @@ class Seen:
         seeds = ", ".join(str(seed) for seed in trial.seeds)
         return f"{self.title(trial.skeleton)} × {where} × {cases} (seed {seeds})"
 
-    # The latest score under each scorer that scored the run.
     def scores_of(self, run: UUID) -> list[Graded]:
         found: dict[str, Graded] = {}
         for started in self.store.scores_of(run):
@@ -626,7 +555,6 @@ class Seen:
             )
         return sorted(found.values(), key=lambda g: g.name)
 
-    # The person's runs a scorer gave a score of.
     def scored_by(self, scorer: str) -> list[RunStarted]:
         return [
             run
@@ -637,9 +565,6 @@ class Seen:
             )
         ]
 
-    # The scorers that apply to a run and have no score of it under the scoring each
-    # would be built now, so a changed expectation leaves the run to score again. One
-    # whose scoring has expectations to choose from is left too, and refuses when scored.
     def unscored(self, run: RunStarted) -> list[str]:
         scored = {s.scoring for s in self.store.scores_of(run.run)}
         found: list[str] = []
@@ -653,7 +578,6 @@ class Seen:
                 found.append(edit.digest)
         return found
 
-    # The person's finished runs, newest first, with the scorers each is left to score.
     def outstanding(self) -> list[tuple[RunStarted, list[str]]]:
         runs = self.runs()
         finished = self.store.finished([r.run for r in runs])
@@ -663,9 +587,6 @@ class Seen:
             if run.run in finished and (scorers := self.unscored(run))
         ]
 
-    # Whether each item's first request, rendered again from the trial and the source,
-    # is what was sent, since only its fingerprint is kept: None when it is, else why
-    # not.
     def rendered_again(self, run: Run) -> dict[ItemKey, str | None]:
         registry = self.store.load([run.started.trial])
         trial = resolve(registry.get, run.started.trial, Trial)

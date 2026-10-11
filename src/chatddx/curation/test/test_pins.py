@@ -24,8 +24,6 @@ def _scorers(lines: list[str]) -> set[str]:
     }
 
 
-# The archive's scorers pin the version of their entry point the running code ships, so
-# a deploy moves them on only when it raises that version.
 @pytest.mark.slow
 def test_a_deploy_moves_the_archive_s_scorers_on_when_it_raises_their_version(
     conn: Connection, monkeypatch: pytest.MonkeyPatch

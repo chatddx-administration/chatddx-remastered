@@ -202,8 +202,6 @@ def _started(
 
 @contextmanager
 def held() -> Generator[None]:
-    # While a run is written down and scored, a first Ctrl-C waits for it, and only a
-    # second one goes through.
     pressed = 0
 
     def hold(_signal: int, _frame: FrameType | None) -> None:
@@ -219,8 +217,6 @@ def held() -> Generator[None]:
         _ = signal.signal(signal.SIGINT, held)
 
 
-# In a batch, a first Ctrl-C lets the case under way finish and then stops, and a
-# second stops that case too, which the runner records as stopped.
 class _Stopping:
     def __init__(self, running: Running):
         self.running: Running = running

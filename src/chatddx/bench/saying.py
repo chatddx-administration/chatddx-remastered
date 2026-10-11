@@ -9,11 +9,6 @@ from .model import KINDS
 from .seen import Seen
 
 
-# What is said about `thread`, which the person owns, as it is to hold afterwards: its
-# name, `None` for none and the title takes over; its description; its tags; who it is
-# shared with, by login; and whether it is deleted. `...` and `None` leave a field as it
-# is. Only what changes what holds is written, in one transaction, and what holds
-# afterwards is returned. A deleted thread is restored before anything else is said.
 def say(
     seen: Seen,
     thread: int,

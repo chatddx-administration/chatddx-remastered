@@ -21,8 +21,6 @@ def _utc(at: datetime) -> datetime:
     return at.astimezone(UTC)
 
 
-# The offset is part of the canonical bytes, so without this one instant would seal
-# differently depending on the writer's time zone.
 UtcDatetime = Annotated[AwareDatetime, AfterValidator(_utc)]
 
 
@@ -33,7 +31,6 @@ def in_order(started: datetime, finished: datetime) -> None:
 
 class Record(Frozen):
     case_derived: ClassVar[bool] = True
-    # Bump when an existing field's meaning or default changes; additive fields don't.
     schema_version: ClassVar[int] = 1
 
     def canonical_doc(self) -> dict[str, JsonValue]:
@@ -90,8 +87,6 @@ def check_log(
         raise StructuralError("rows belong to different logs")
 
 
-# Canonical rows keep old seals valid when a defaulted field is added, and sorting
-# makes the seal independent of the order storage returns rows in.
 def seal_rows(started: Record, **rows: Iterable[Record]) -> str:
     doc: dict[str, JsonValue] = {
         name: sorted((r.canonical_doc() for r in group), key=canonical_bytes)

@@ -17,7 +17,6 @@ from chatddx.scorers.aggregate import mean
 
 from . import schemas
 
-# An event of a run's stream: its name, one of schemas.EVENTS, and its data.
 type Named = tuple[str, BaseModel]
 
 

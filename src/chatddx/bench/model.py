@@ -9,8 +9,6 @@ from chatddx.ledger import Score
 
 from .variation import PARTS, TriedVariation
 
-# The kinds of thread each word names: a configuration is a skeleton thread, a part is a
-# chunk of that part, and an engine is local or remote.
 KINDS: dict[str, tuple[str, ...]] = {
     "configuration": ("skeleton",),
     **{part: (f"chunk.{part}",) for part in PARTS},
@@ -25,7 +23,6 @@ KINDS: dict[str, tuple[str, ...]] = {
     "engine": ("engine.local", "engine.remote"),
 }
 
-# The kinds a person writes as components. A configuration is written as a variation.
 WRITTEN: frozenset[str] = frozenset(
     {*(f"chunk.{part}" for part in PARTS), "expectation", "appendix", "scorer"}
 )
@@ -34,7 +31,6 @@ LABELLED: tuple[Part, ...] = ("view", "resource")
 
 COMPILED_LANGUAGE = "a compiled configuration's language comes from its recipe"
 
-# What stands in for each slot in a request rendered to be looked at.
 PLACEHOLDERS: dict[SlotName, str] = {
     "vignette": "‹vignette›",
     "appendices": "‹appendices›",
@@ -54,7 +50,6 @@ class Family:
         return self.about.name or f"family {self.id}"
 
 
-# What one view of a scorer gets from a variation's answers and the cases' expectations.
 @dataclass(frozen=True)
 class Reach:
     thread: int
@@ -71,7 +66,6 @@ class Reach:
         return self.cases - len(self.missing) - len(self.choosing)
 
 
-# A run's score under one scorer, or why it couldn't be scored.
 @dataclass(frozen=True)
 class Graded:
     name: str
@@ -93,9 +87,6 @@ class Saved:
     variation: TriedVariation
 
 
-# What following a fork's origin would keep: the origin's head with the fork's changes on
-# top, as a recipe or a component, and the digest it comes to, with the compilation that
-# makes it for a recipe.
 @dataclass(frozen=True)
 class Proposed:
     variation: Variation
@@ -104,9 +95,6 @@ class Proposed:
     compilation: str | None
 
 
-# What taking expectations for some cases did with each: by case, the thread the person
-# took one into, their own thread left as it was, the shared threads of several owners
-# to pick from, and the cases nothing shared has one for.
 @dataclass(frozen=True)
 class Taken:
     taken: dict[str, int]
@@ -115,13 +103,11 @@ class Taken:
     missing: list[str]
 
 
-# A component kept in a thread of the person's own, and what the lints say of it.
 @dataclass(frozen=True)
 class Written:
     edit: Edit
     what: Literal["created", "a new version", "unchanged"]
     findings: list[Finding]
-    # For an appendix's edit, each case that held the old version and its replacement.
     cases: dict[str, str] = field(default_factory=dict)
 
 

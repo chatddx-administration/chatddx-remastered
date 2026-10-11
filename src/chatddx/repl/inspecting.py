@@ -262,8 +262,6 @@ def _fields(repl: Repl, component: Component) -> Table:
     return table
 
 
-# A request body without the output's schema and the tools' parameters, which show
-# output and show tool hold.
 def _abridged(body: dict[str, JsonValue]) -> dict[str, JsonValue]:
     shown = copy.deepcopy(body)
     held = shown.get("response_format")
@@ -288,7 +286,6 @@ def _about(table: Table, about: About) -> None:
         table.add_row("language", about.language)
 
 
-# The person's runs with it, or that a scorer scored, summed up by their latest scores.
 def _runs(repl: Repl, word: str, digest: str) -> None:
     bench = repl.bench
     scorer = word == "scorer"
@@ -310,7 +307,6 @@ def _runs(repl: Repl, word: str, digest: str) -> None:
     show_summary(repl.console, graded)
 
 
-# A value as a row, or as a row per key for a mapping of plain values, `depth` deep.
 def _add_rows(
     repl: Repl, table: Table, field: str, value: JsonValue, depth: int = 1
 ) -> None:
@@ -486,8 +482,6 @@ def reasoning(repl: Repl) -> None:
     repl.console.print(table)
 
 
-# What a reasoning level writes on a model, with the sampling recommended for it, and
-# the chunk the facts write for it. The default sends nothing, so it has no chunk.
 def _level(facts: ModelFacts, effort: Effort) -> tuple[Text, str | None]:
     try:
         landed, _ = facts.reasoning.resolve(effort)

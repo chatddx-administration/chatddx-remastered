@@ -47,7 +47,6 @@ def served(db: str) -> FastAPI:
     )
 
 
-# Over HTTPS, since the session cookie is only ever sent over it.
 @pytest.fixture
 def client(served: FastAPI) -> Iterator[TestClient]:
     with TestClient(served, base_url="https://testserver") as c:

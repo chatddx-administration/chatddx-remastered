@@ -41,7 +41,6 @@ class SignedIn(_Schema):
     person: Me
 
 
-# What a scorer edit calls its views and resources, by position.
 class Labels(_Schema):
     views: list[str | None] = Field(
         default_factory=list[str | None], description="by position; null for none"
@@ -100,7 +99,6 @@ class ThreadDetail(Thread):
     deleted: bool
 
 
-# What is said about a thread, as it is to hold afterwards; a field not given stays.
 class Said(_Schema):
     name: str | None = Field(
         None, description="null takes the name away, and the title takes over"
@@ -119,7 +117,6 @@ type Chunk = Annotated[
 ]
 
 
-# The parts a variation replaces over a configuration; a part not given is its own.
 class Parts(_Schema):
     instructions: Chunk = None
     few_shot: Chunk = None
@@ -177,7 +174,6 @@ class NewThread(_Schema):
         return self
 
 
-# A configuration is forked with parts replaced, any other kind with a component.
 class NewFork(_Schema):
     name: str = Field(min_length=1)
     parts: Parts = Parts()
@@ -221,14 +217,12 @@ class Finding(_Schema):
         return cls.model_validate(finding.model_dump())
 
 
-# A path where a fork's head differs from its base, with each side's value.
 class Varied(_Schema):
     path: str
     base: JsonValue
     fork: JsonValue
 
 
-# What following a fork's origin would keep.
 class Proposal(_Schema):
     base: Edit
     origin_head: Edit
@@ -244,7 +238,6 @@ class NewFollow(_Schema):
     language: Language = None
 
 
-# What was written, with what the lints say of its component.
 class MadeThread(ThreadDetail):
     findings: list[Finding]
 
@@ -263,8 +256,6 @@ class NewCarry(_Schema):
     case: str = Field(description="another case of the expectation's family")
 
 
-# What one view of a scorer gets from the variation: whether its output offers what the
-# view reads, and the families without an expectation it picks something from.
 class Reach(_Schema):
     scorer: int
     name: str
@@ -296,8 +287,6 @@ class Family(_Schema):
     case: str
 
 
-# The expectation the person's case is scored against under one schema, or why there's
-# none to tell: several to choose from.
 class Expected(_Schema):
     expectation_schema: str
     title: str
@@ -316,7 +305,6 @@ class NewTakes(_Schema):
     owner: str | None = Field(None, description="a login: that owner's only")
 
 
-# Keyed by family.
 class Taken(_Schema):
     taken: dict[int, int] = Field(description="the thread each was taken into")
     kept: dict[int, int] = Field(description="the person's own, left as it is")
@@ -349,7 +337,6 @@ class NewAppendix(_Schema):
     name: str = Field(min_length=1)
 
 
-# A case of a family, with the expectation it is scored against under each schema.
 class FamilyCase(_Schema):
     case: str
     title: str
@@ -384,8 +371,6 @@ class Vignette(_Schema):
     source: str
     id: str
     text: str
-    # Whether the source holds another text than the case was made from; unknown for a
-    # keyed fingerprint.
     drifted: bool | None
 
 
@@ -423,8 +408,6 @@ class Metric(_Schema):
     )
 
 
-# Scoring code the running chatddx ships, which a scorer pins by its entry point and
-# version.
 class ScorerCode(_Schema):
     entry_point: str
     version: int
@@ -484,7 +467,6 @@ class Item(_Schema):
     completion_tokens: int
 
 
-# An item as it was recorded, which is case-derived.
 class ItemDetail(Item):
     why: str | None
     vignette: JsonValue
@@ -499,8 +481,6 @@ class ScoredItem(_Schema):
     value: float | None
 
 
-# A run's score under one scorer, or why it gave none: the values, without the scorer's
-# detail or findings, which may quote the answer.
 class Graded(_Schema):
     scorer: str
     name: str
@@ -525,9 +505,6 @@ class RenderedAgain(_Schema):
     replicate: int
     same: bool
     why: str | None
-
-
-# The data of each event of a run's stream, by the event's name.
 
 
 class RunStartedData(_Schema):

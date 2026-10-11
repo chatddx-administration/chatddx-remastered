@@ -63,7 +63,6 @@ def check_entry(subject: Subject, entry: Entry) -> None:
         )
 
 
-# A recipe's vote, which `language_of` counts for each compilation of a skeleton.
 def recipe_language(rows: Reader, recipe: Recipe) -> str | None:
     if recipe.translations is not None:
         return own(rows, recipe.translations)

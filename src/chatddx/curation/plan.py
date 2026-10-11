@@ -35,8 +35,6 @@ from chatddx.facts import INTENTS, Effort, Facts, Refused, model_name
 from chatddx.scorers.shipped import SCORERS, problems
 from chatddx.tools.shipped import TOOLS
 
-# The sample's tables, in the order they're planned: a table may reference only those before it.
-# Models and engines come first, so `from_facts` records are written for the models they serve.
 TABLES: dict[str, type[Component]] = {
     "model": ModelArtifact,
     "local_engine": LocalEngine,
@@ -76,7 +74,6 @@ class Planned:
     description: str | None = None
     fork_of: str | None = None
     compilation: str | None = None
-    # a scorer's view labels, by position
     labels: tuple[str | None, ...] = ()
     language: str | None = None
 
@@ -95,12 +92,9 @@ class Plan:
         raise LookupError(f"no {table} named {name!r} in the plan")
 
 
-# What a record is made for: a language, when it's written in one, and a model, when it's
-# written from the model's facts. None for either is all of them.
 Key = tuple[str | None, str | None]
 Variants = dict[Key, Planned]
 ALL: Key = (None, None)
-# The tables of chunks that hold text the model reads, kept by language in texts files.
 TEXT_TABLES = frozenset(
     {"instructions", "few_shot", "prompt", "output", "toolset", "translations"}
 )
@@ -111,7 +105,6 @@ def _named(name: str, key: Key) -> str:
     return variant_name(name, *key)
 
 
-# The variant of `variants` for `key`, else the one for all languages or all models.
 def _pick(variants: Variants, key: Key) -> Planned | None:
     language, model = key
     for k in (key, (language, None), (None, model), ALL):
@@ -218,7 +211,6 @@ def _records(
     return found
 
 
-# A data set's texts, by language, from its texts-<language>.toml files.
 def _texts(data: Path) -> dict[str, dict[str, dict[str, JsonValue]]]:
     texts: dict[str, dict[str, dict[str, JsonValue]]] = {}
     for path in sorted(data.glob("texts*.toml")):
@@ -233,9 +225,6 @@ def _texts(data: Path) -> dict[str, dict[str, dict[str, JsonValue]]]:
     return texts
 
 
-# A data set's factors.toml, and its texts-<language>.toml files, planned with `more`
-# factors files, such as a World's imported engines; each file resolves its files against
-# its own directory.
 def plan_factors(
     data: Path, facts: Facts, compiler: Code, more: Sequence[Path] = ()
 ) -> Plan:
@@ -307,8 +296,6 @@ def plan_factors(
                             ]
                         case _:
                             pass
-                # Tools and scorers pin the version of their entry point that the
-                # running code ships, unless they name one.
                 if table in SHIPPED and "version" not in body:
                     shipped = SHIPPED[table].get(str(body.get("entry_point")))
                     if shipped is not None:
@@ -353,8 +340,6 @@ def plan_factors(
 
     for table in ENGINE_TABLES:
         plan_table(table, [])
-    # A `from_facts` record is written for each model a planned engine serves and the facts
-    # know; the others are reported.
     served: dict[str, list[str]] = {}
     for r in plan.records:
         if r.kind in ("engine.local", "engine.remote"):
@@ -413,9 +398,6 @@ def plan_factors(
     return plan
 
 
-# A recipe's parts for `key`, by digest, or why it can't be made there. A part written in
-# another language than the recipe's is the output's or toolset's, which the recipe's
-# translations in its language stand in for; in its own language, it needs none.
 def _recipe(name: str, key: Key, parts: dict[str, Variants]) -> dict[str, str] | str:
     language, model = key
     chosen: dict[str, str] = {}
@@ -463,8 +445,6 @@ class SampleCase:
 _CASES = re.compile(r"^cases-(.+)\.toml$")
 
 
-# A data set's cases are in its cases-<language>.toml files, each case in its file's
-# language.
 def load_cases(data: Path) -> dict[str, SampleCase]:
     cases: dict[str, SampleCase] = {}
     where: dict[str, Path] = {}

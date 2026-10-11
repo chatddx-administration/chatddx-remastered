@@ -14,7 +14,6 @@ from chatddx.store.store import Connection
 from .schemas import Me, SignedIn, SignIn
 from .state import connection, state
 
-# `__Host-` has browsers keep the cookie to this host, over HTTPS, for every path.
 COOKIE = "__Host-chatddx-session"
 SAFE = frozenset({"GET", "HEAD", "OPTIONS"})
 
@@ -38,9 +37,6 @@ def _unsigned(detail: str = "sign in first") -> HTTPException:
     return HTTPException(401, detail, headers={"WWW-Authenticate": "Bearer"})
 
 
-# A browser sends the cookie with requests from any page, so an unsafe one must come
-# from this site's own: by Fetch Metadata where the browser sends it, else by Origin. A
-# request with neither isn't a browser's on another page's behalf.
 def same_origin(request: Request) -> None:
     if request.method in SAFE:
         return
@@ -56,7 +52,6 @@ def same_origin(request: Request) -> None:
         raise HTTPException(403, "a browser's request must come from this site's pages")
 
 
-# The session a request acts in: its bearer token, else its cookie.
 def session(
     request: Request,
     conn: ConnDep,
@@ -80,7 +75,6 @@ def signed_in(held: Annotated[Session, Depends(session)]) -> Person:
     return held.person
 
 
-# What the person signed in sees, on the request's connection.
 def bench(
     request: Request, conn: ConnDep, person: Annotated[Person, Depends(signed_in)]
 ) -> Bench:
@@ -101,8 +95,6 @@ def sign_in(
     if person is None:
         raise _unsigned("wrong login or password")
     token = people.open_session(person.id)
-    # Lax, so that a link from another site opens signed in; same_origin guards the
-    # requests that aren't safe.
     response.set_cookie(
         COOKIE,
         token,

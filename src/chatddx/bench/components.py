@@ -17,8 +17,6 @@ from .variation import PARTS
 _UNLABELLED = "only a scorer's views and resources have labels"
 
 
-# A component of a kind a person writes, from its JSON as the store gives it, `v`
-# included or not.
 def component(doc: Mapping[str, JsonValue]) -> Component:
     kind = doc.get("kind")
     if not isinstance(kind, str) or kind not in WRITTEN:
@@ -33,9 +31,6 @@ def component(doc: Mapping[str, JsonValue]) -> Component:
     return cls.model_validate(given)
 
 
-# `component` as a new thread of the person's own, named `name`; a recipe is compiled by
-# the running code and kept as a new configuration, with its compilation. A scorer is
-# kept with `labels`.
 def new(
     seen: Seen,
     component: Component | Recipe,
@@ -67,9 +62,6 @@ def new(
     return Written(edit, "created", seen.linted(compilation.skeleton))
 
 
-# A new thread of the person's own, named `name` and forked from the head of `thread`, a
-# thread they see; it starts from `component` when given, else from the head. A scorer
-# forked as it is keeps the head's labels unless given others.
 def fork_component(
     seen: Seen,
     thread: int,
@@ -94,9 +86,6 @@ def fork_component(
     )
 
 
-# `component` as a new version of `thread`, a thread the person owns whose head was
-# `head` when they saw it; nothing is written when it is the head already. A scorer is
-# kept with `labels`: without them, the head's when it is the head's scorer, else none.
 def edit_component(
     seen: Seen,
     thread: int,
@@ -162,8 +151,6 @@ def _written(
     return Written(edit, SAVED[kept], seen.linted(component.digest), replaced)
 
 
-# An appendix as the bench keeps it: its line endings LF, as browsers send CRLF, and bound
-# to the current vignette of a family the person sees.
 def bound(seen: Seen, appendix: Appendix) -> Appendix:
     vignette = appendix.vignette
     families = {b.family for b in seen.rows.bindings_sharing(vignette)}
@@ -179,8 +166,6 @@ def bound(seen: Seen, appendix: Appendix) -> Appendix:
     return Appendix(vignette=vignette, text=text)
 
 
-# Each stored case that holds the appendix `old` at `new`'s vignette, stored again with
-# `new` in its place; no expectation moves with it.
 def _replaced(seen: Seen, old: str, new: Appendix) -> dict[str, str]:
     replaced: dict[str, str] = {}
     for digest in seen.store.reaching(old, "case"):
@@ -195,8 +180,6 @@ def _replaced(seen: Seen, old: str, new: Appendix) -> dict[str, str]:
     return replaced
 
 
-# A component's language is its text's, so other threads may hold it too: one it has is
-# kept, and the person's is written only where it has none.
 def keep_language(seen: Seen, digest: str, language: str) -> None:
     held = seen.catalog.language_of(digest)
     if held is not None and held != language:

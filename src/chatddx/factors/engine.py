@@ -15,12 +15,9 @@ from .base import (
     sorted_keys,
 )
 
-# Flags the start-up script derives from the manifest itself; argv may not set them.
 OWNED_FLAGS = frozenset(
     {"--model", "--served-model-name", "--chat-template", "--tokenizer", "--revision"}
 )
-# Flags that pull arguments from elsewhere: `--config FILE` reads a YAML file the digest
-# doesn't cover, and `--config=FILE` is accepted but silently ignored (vLLM 0.24).
 UNPINNED_FLAGS = frozenset({"--config"})
 
 

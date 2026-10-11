@@ -11,34 +11,25 @@ describes what the bench does and why it is shaped like it is. Names, signatures
 The bench builds on the store, the catalog, the World, the facts, the runner and the scoring pass, and holds no SQL of
 its own.
 
+## Not bench
+- A facade, and nothing checks that an edge goes through it.
+- Authorization, what the bench shows is what is relevant to show a person, not who may read what.
+
 ## How the bench works
 
 ### A person-scoped view
-What depends on who is asking goes through the bench; what doesn't is read straight from the store, the World and the
-facts. An edge asks the bench which runs are the person's and which thread a name means to them, but reads a component
+Everything that depends on who is asking goes through the bench; what doesn't is read straight from the store,
+the World and the facts. An edge asks the bench which runs are the person's and which thread a name means to them, but reads a component
 by its digest, or an endpoint's limits, from where they are kept.
 
-The bench isn't a facade, and nothing checks that an edge goes through it. It is there so that each rule about a
-person has one place: in the old chatddx, what a person may read and what a name means to them were written again in
-the portal, the API, the repl and the bench.
-
-What the bench shows is what is relevant to show a person, not who may read what (agents/wip-identity.md,
-"Authorization"). Protection comes from clearance, which the runner's gate enforces (src/chatddx/runner/gate.py), and
-from the database's grants.
-
-### Who decides what
-Three packages hold rules about a person, each its own part of them:
-- **Identity** holds the rules, as pure functions with no store access: who sees a subject, its owner and its
-  collaborators (`sees`), and that a person's own comes before what is shared with them (`preferred`).
-- **The catalog** applies them to its own rows, and adds that only live subjects count: `About.shows` is live and
-  seen, `About.owned_by` live and owned. It answers what docs/catalog.md says it answers, such as the threads and
-  families a person sees and the expectation they are scored against, and refuses the writes its rules forbid.
-- **The bench** applies them to everything else: names, runs, the variation being tried, the writes made for the
-  person, and the errors an edge tells apart.
+### I have person-scoped function X, where does it go?
+There are three layers to where person-scoped queries and writes should be declared, here's how to decide where it goes:
+- All rules that can be expressed as a pure functions (without store access): `identity`.
+- All procedures that can be decided from the catalog's rows alone: `catalog`.
+- All operations that can't go into any of the above: `bench`.
 
 ### One person, one connection
-A bench is made for one person and one connection, and lasts as long as its caller: a request in the API, a process in
-the repl. It caches logins and the model each engine serves for that long.
+A connection lasts as long as its caller, and caches logins and the model each engine serves for that long.
 
 Each write is made in one transaction, so one that is refused leaves nothing behind. Starting and scoring are the
 exception: the runner and the scoring pass write each row as it lands, so that a run or a score that dies leaves a log
@@ -318,16 +309,6 @@ The messages are worded for a person, without the edge's terms; an edge adds its
 repl does for a name its endpoint would pick a model for. The API answers `NotFound` with 404, `Ambiguous`, `Conflict`
 and `MovedOn` with 409, `OverQuota` with 429, and the other refusals with 422 (agents/wip-api.md, "Errors").
 
-## "Cell"
-"Cell" is the repl's word for a variation being tried together with an endpoint (agents/wip-repl.md). The bench and
-everything below it speak of the variation and the endpoint, and nothing stored is one: a run's title, if one is ever
-stored, is a title, not a label in the repl's notation.
-
-The word is kept to the repl because every edge builds on the bench, and the docs speak of configurations, variations,
-endpoints and trials: a fourth word for two of them would tell the portal's users nothing, and its everyday meanings
-sit close, from a table's cells to the sample's "basal cell carcinoma". `src/chatddx/repl/test/test_vocabulary.py`
-keeps it out of the code outside `src/chatddx/repl/`; it reads code only, since clinical data says "cell".
-
 ## Tests
 The tests start from the sample as `chatddx init-data` lands it from the sample World, with alice and her giftbag; bob
 is added with nothing. The database is made once a session and copied for each test (`src/chatddx/conftest.py`,
@@ -381,50 +362,6 @@ The plans they were built from, with the options weighed for each decision and t
    pass to send judge requests. The portal's authoring and swift wait on the rest, which is built.
 5. **Takes** the bench and the API are built on still wait for a word (below).
 
-### The bench's takes
-A take is the agent's recommendation, built on but not decided.
-- **S5. A bench lasts one session.** Its caches of logins and models make it last as long as a request or a repl. A
-  long-lived worker would build one per run, or per owner, rather than keep one (agents/wip-worker.md). Nothing to
-  build.
-- **The database doesn't repeat the expectation rule.** It reads the latest owner, deletion and head of every
-  expectation thread of a case, as the rule that no two families share a vignette reads bindings, and that one isn't
-  repeated either (`docs/catalog.md`, "Concurrent writers"). A trigger would need a lock per owner to hold. The
-  refusals in "One expectation per case and schema" cover the race.
-- **No pick for every "several".** Where none, one or several are told apart, a `match` says what each means
-  (`src/chatddx/catalog/threads.py:picked`, `Seen._named`), and "several" isn't the same there: two threads of one
-  name are two things to refer to, while two threads of one head are one answer.
-- **Curation keeps its own check.** `_Init.put` finds the archive's one expectation thread for a case to edit, in any
-  schema and deleted or not. That is how it recognises its thread, which the catalog's rule doesn't replace. Its other
-  owner checks that count deleted subjects too, the giftbag's and `src/chatddx/curation/repair.py`'s, recognise the
-  archive's records the same way, rather than decide what a person sees.
-- **`About.owned_by` compares owners itself**, beside `sees` in `identity`. It is one comparison, so a function in
-  `identity` for it would only add a name.
-- **A facade can still come later.** A bench every edge goes through, checked by an import test, would give one API
-  for every edge, but most of it would pass calls through, and the ops commands would need an exemption. This bench is
-  the person-scoped half of one. "Rig", the name once proposed for it, is the glossary's name for the whole of chatddx
-  (`docs/chatddx.md`) and a field of every `RunStarted` and `ScoreStarted`.
-
-### Takes the API is built on
-The labels are the API plan's, as other plans cite them; A1 (programs and browsers alike), A2 (FastAPI), A3 (signing
-in) and A9 (case-derived content in its own places) were decided.
-- **A4. Ids in paths**, names as filters, whole ids only (N1), rather than names and owners as the repl takes them,
-  with a pick by model and 409 when several match (N2).
-- **A5. A variation stated in each request** (V1), rather than a skeleton compiled and stored first and named by its
-  digest (V2), or a variation held on the server and patched (V3, rejected: the cell again). Later, if wanted: a
-  skeleton's digest beside a configuration, for a client that holds one, and an edit's id in place of a
-  configuration, should drift matter.
-- **A6. A run runs in the request** (W1). W2 runs it in the app's process beside the request: `POST /api/runs`
-  answers 202 with the run's id, `GET /api/runs/{id}/events` streams it (a GET, so a browser's `EventSource` can
-  follow it), and `POST /api/runs/{id}/stop` stops it; runs end with the process. W3 is a worker with a queue, which
-  `agents/wip-worker.md` takes, runnable in the app's process too. The events stay the same either way.
-- **A7. The stream** asked for with `Accept`, with the events in agents/wip-api.md, "The stream".
-- **A8. Scoring at once**, with the opt-out, and a listing of what is left to score, rather than scoring only when
-  asked; no request scores everything.
-- **A10. The statuses** in agents/wip-api.md, "Errors".
-- **A11. Fork and edit as two requests** (K2), rather than save as an upsert by name (K1). The repl's `save NAME`
-  picks between them by name, as before.
-- **A12. Paths**: mounted at `/api/`, without a version.
-
 ### Open
 The bench:
 - **Z1**: the map from roles to the kinds each role sees goes in `identity` once the portal's views give it meaning
@@ -472,18 +409,3 @@ Runs, in the API:
 - **A run outlives a server that stops**, which waits for its requests. A killed one leaves the run unfinished, as
   resuming isn't built; requests that last as long as a run are agents/wip-worker.md's ("Why").
 - **Judges**: judged views show as "not yet", as in the repl.
-
-### Surprises
-- `ScoreFinished` is marked as not case-derived (`src/chatddx/ledger/score.py`, `case_derived = False`), but its
-  findings hold `answer.invalid` messages, which can quote the answer's values
-  (`src/chatddx/scorers/answer.py:_breaks`).
-- Starlette's test client doesn't tell the app that a client hung up: it runs a streamed response to its end.
-- The "cell" guard's pattern matches "cancelled" (`src/chatddx/repl/test/test_vocabulary.py:CELL`). Say "stopped",
-  which is the runner's word anyway.
-
-### Seen once
-- On a container just started, the first two full runs each ended with a setup error in a test the API doesn't touch
-  (`src/chatddx/store/test/test_catalog.py::test_changed_vignettes_are_repaired`, then
-  `src/chatddx/repl/test/test_running.py::test_ctrl_c_stops_a_run_as_it_streams_and_it_is_recorded_as_stopped`);
-  the runs after were clean. The message wasn't kept. The likeliest cause is the test databases' race, which
-  `src/chatddx/conftest.py:_settled` waits out for at most 5 s.

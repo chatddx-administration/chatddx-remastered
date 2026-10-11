@@ -20,7 +20,6 @@ def _case(id: str) -> str:
     return Case(vignette=vignette).digest
 
 
-# An expectation of the case of alice's own making, under the archive's schema for it.
 def _own(conn: Connection, alice: Person, case: str) -> tuple[str, str]:
     store, catalog = Store(conn), Catalog(conn)
     archive = People(conn).find("archive")

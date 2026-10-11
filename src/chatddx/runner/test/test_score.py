@@ -21,7 +21,6 @@ from chatddx.store.store import Connection
 pytestmark = pytest.mark.wip
 
 
-# Each case's targets as init-data lands them (src/chatddx/curation/write.py).
 def expectations(plan: Plan, made: Trial) -> tuple[str, ...]:
     schema = plan.named("expectation_schema", "targets").digest
     targets = load_cases(SAMPLE)

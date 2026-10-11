@@ -20,7 +20,6 @@ from chatddx.store.store import Connection
 pytestmark = pytest.mark.solidified
 
 REVISION = "f" * 40
-# The fake engines say what they are: no commit, no Nix closure.
 FAKES = [
     *(
         f"[lint warning] model {name}: model.revision: revision 'fake' is not a "
@@ -37,7 +36,6 @@ SAMPLE_WORLD = WORLDS / "sample"
 KOMPISMOLN = WORLDS / "kompismoln"
 
 
-# A copy of the sample with `old` replaced by `new` in one of its files.
 def changed(tmp_path: Path, file: str, old: str, new: str) -> Path:
     data = tmp_path / "data"
     _ = shutil.copytree(SAMPLE, data)

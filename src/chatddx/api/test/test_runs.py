@@ -28,7 +28,6 @@ GPT_OSS = "gpt-oss-20b@fake"
 STREAM = {"Accept": "text/event-stream"}
 
 
-# The sample World on ports nothing else listens on, where `fake` serves.
 @pytest.fixture
 def served(db: str, world: Inventory) -> FastAPI:
     return app(
@@ -36,7 +35,6 @@ def served(db: str, world: Inventory) -> FastAPI:
     )
 
 
-# The app under uvicorn, which hears a client hang up, as TestClient doesn't.
 @pytest.fixture
 def listening(served: FastAPI) -> Iterator[str]:
     with socket.socket() as s:
@@ -79,7 +77,6 @@ def events(text: str) -> list[tuple[str, dict[str, Any]]]:
     return said
 
 
-# Waits for a run its client left to be finished and scored on its thread.
 def finished(signed: TestClient, run: str) -> dict[str, Any]:
     for _ in range(500):
         shown = signed.get(f"/api/runs/{run}").json()

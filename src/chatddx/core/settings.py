@@ -17,12 +17,10 @@ def database(admin: bool = False) -> str:
 
 SESSION_TTL = timedelta(hours=12)
 
-# What a person types into a database source: a text's length, and how many a day.
 TYPED_TEXT_LIMIT = 20_000
 TYPED_PER_DAY = 50
 
 
-# Where `chatddx api` listens, as HOST:PORT.
 def host() -> str:
     return os.environ.get("HOST", "localhost:8000")
 

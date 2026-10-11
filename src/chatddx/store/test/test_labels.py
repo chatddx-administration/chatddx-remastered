@@ -51,8 +51,6 @@ def test_labels_are_refused_where_a_scorer_has_nothing_to_label(
     assert len(catalog.history(thread)) == 1
 
 
-# The database holds a label to a position its edit's scorer has, written once, in the
-# edit's transaction and by its writer.
 def test_the_database_holds_labels_to_their_edit(conn: Connection) -> None:
     catalog, _, reg, ids, alice = stored_world(conn)
     bob = People(conn).add("bob", "Bob")

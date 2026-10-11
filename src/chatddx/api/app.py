@@ -32,7 +32,6 @@ def _status(status: int) -> Callable[[Request, Exception], JSONResponse]:
     return handle
 
 
-# The data of a run's events, which no route's response names, among the schemas.
 def _with_events(made: FastAPI) -> Callable[[], dict[str, Any]]:
     described = made.openapi
 

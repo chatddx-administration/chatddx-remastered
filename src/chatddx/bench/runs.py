@@ -12,8 +12,6 @@ from .seen import Seen
 from .variation import TriedVariation
 
 
-# The variation run on `cases` with one seed, at `endpoint`; nothing is sent until
-# `Running.send`.
 def start(
     seen: Seen, variation: TriedVariation, endpoint: str, cases: list[str], seed: int
 ) -> Running:
@@ -25,8 +23,6 @@ def start(
     return running
 
 
-# A finished run scored under every scorer that applies to it, or those of `scorers`, as
-# each scoring would be built now.
 def score(
     seen: Seen, run: RunStarted, scorers: Collection[str] | None = None
 ) -> list[Graded]:

@@ -36,7 +36,6 @@ def trial(conn: Connection, plan: Plan, recipe: str, *ids: str) -> Trial:
     return made
 
 
-# A run's log without items, which is all the reads look at.
 def ran(conn: Connection, by: Person, made: Trial, finished: bool = True) -> UUID:
     started = RunStarted(
         run=uuid4(), at=datetime.now(UTC), rig=rig(), trial=made.digest
@@ -51,11 +50,6 @@ def ran(conn: Connection, by: Person, made: Trial, finished: bool = True) -> UUI
     return started.run
 
 
-# A second expectation thread of the person's own for a case, in the schema of the one
-# they read, so that there are two to choose from.
-# Two writers at once can each pass the catalog's check and leave the person a second
-# expectation of their own for the case: here one restores their thread while the other
-# starts a new one.
 def another_expectation(bench: Bench, case: str, data: JsonValue) -> str:
     [schema] = bench.expectation_schemas(case)
     held = bench.expectation(case, schema)

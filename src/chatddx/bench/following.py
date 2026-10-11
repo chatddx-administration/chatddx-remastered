@@ -9,18 +9,12 @@ from .model import COMPILED_LANGUAGE, LABELLED, Proposed, Written
 from .seen import Seen
 
 
-# What following the origin of `thread`, a fork the person sees, would keep; `None` when
-# the origin hasn't moved on since the fork's base, or the person doesn't see it any
-# more.
 def proposal(seen: Seen, thread: int) -> Proposed | None:
     _, _, word = seen.worded(thread)
     found = _proposed(seen, thread, word)
     return None if found is None else found[0]
 
 
-# The proposal for `thread`, a fork the person owns whose head was `head` when they saw
-# it, kept as an edit based on the origin's head. A text takes `language` as
-# `edit_component`'s does.
 def follow(seen: Seen, thread: int, head: int, language: str | None = None) -> Written:
     _, about, word = seen.worded(thread)
     if not about.owned_by(seen.person.id):
@@ -57,8 +51,6 @@ def follow(seen: Seen, thread: int, head: int, language: str | None = None) -> W
     return Written(edit, "a new version", seen.linted(proposed.digest))
 
 
-# A followed scorer keeps the labels of whichever side's views, and resources, the
-# proposal keeps.
 def _followed_labels(seen: Seen, thread: int, varied: Variation) -> Labels:
     fork = seen.catalog.labels(seen.catalog.head(thread).id)
     origin = seen.catalog.labels(varied.origin_head.id)

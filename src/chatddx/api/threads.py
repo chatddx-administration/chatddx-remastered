@@ -32,8 +32,6 @@ def login(bench: Bench, person: int | None) -> str | None:
     return None if person is None else bench.login(person)
 
 
-# An edit, with its labels when it is a scorer's; `kind` is its thread's, looked up
-# when not given.
 def edit_of(bench: Bench, edit: catalog.Edit, kind: str | None = None) -> schemas.Edit:
     if kind is None:
         kind = bench.catalog.thread(edit.thread).kind
@@ -116,10 +114,6 @@ def edits(bench: BenchDep, thread: int) -> list[schemas.Edit]:
     return [edit_of(bench, e, kind) for e in bench.catalog.history(thread)]
 
 
-# What the bench refuses: a digest that isn't a chunk of its part, a part that can't be
-# taken out, parts that don't compile together, a component that isn't one, or an
-# expectation the person owns taken. A conflict and a head that moved on are the
-# person's to settle, 409, and a quota is 429 (src/chatddx/api/app.py, STATUSES).
 @contextmanager
 def refused() -> Generator[None]:
     try:
@@ -169,7 +163,6 @@ def variation(
             engine = bench.endpoint(query.endpoint)
         except LookupError as e:
             raise HTTPException(422, str(e)) from None
-        # Without a case tagged so, the pair's checks still apply.
         findings = [
             schemas.Finding.of(f)
             for f in bench.findings(varied, engine, seed, families or None)
@@ -206,7 +199,6 @@ def configures(bench: Bench, thread: int) -> bool:
     return found is not None and found.kind in KINDS["configuration"]
 
 
-# Parts for a configuration, a component for any other kind, and nothing of the other.
 def check_given(configuration: bool, given: schemas.NewFork | schemas.NewEdit) -> None:
     if configuration and (given.component is not None or given.language is not None):
         raise HTTPException(
@@ -322,8 +314,6 @@ def take(
     return detail(bench, made)
 
 
-# A login the body names that doesn't exist is the body's fault, so 422; a thread that
-# isn't the person's is the path's, so 404.
 @router.patch("/threads/{thread}")
 def say(bench: BenchDep, thread: int, given: schemas.Said) -> schemas.ThreadDetail:
     if "description" in given.model_fields_set and given.description is None:

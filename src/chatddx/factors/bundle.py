@@ -28,7 +28,6 @@ class Registry:
         if sha256_digest(raw) != digest:
             raise StructuralError(f"{digest} does not match its bytes")
         component = parse_component(raw)
-        # The stored bytes decide the digest, also where today's code writes them otherwise.
         vars(component).update(canonical=raw, digest=digest)
         self._raw[digest] = raw
         self._parsed[digest] = component
@@ -71,7 +70,6 @@ class Registry:
                 elif (k := self.get(site.digest).kind_name) not in site.kinds:
                     refs.append(f"{d}{site.path}: {k} is not one of {site.kinds}")
             problems.extend(refs)
-            # cross_check resolves the component's own references, so they must hold.
             if not refs:
                 problems.extend(f"{d}: {p}" for p in component.cross_check(self.get))
         if problems:

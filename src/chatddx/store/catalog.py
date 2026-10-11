@@ -368,19 +368,12 @@ class Catalog:
                 )
         return edit
 
-    # Edits of one thread are written one at a time, so the head an edit names is still
-    # the head when it lands. The writer may not update the catalog's tables, which
-    # `FOR UPDATE` asks for; two threads whose keys collide only wait for each other.
     def _lock(self, thread: int) -> None:
         _ = self._conn.execute(
             "SELECT pg_advisory_xact_lock(hashtext('catalog.thread'), %s::int)",
             (thread % 2**31,),
         )
 
-    # `digest` kept in `thread`, by `by`, with `labels` when given: a new edit, or
-    # nothing when it's the head already, with those labels; or, without a thread, in a
-    # new one named `name` and forked from the edit `forked_from`. With `head`, the thread
-    # must not have moved on from it.
     def keep(
         self,
         digest: str,
@@ -578,14 +571,11 @@ class Catalog:
     def tags_given(self, subject: Subject) -> dict[str, int]:
         return read.tags_given(self._rows, subject)
 
-    # The subjects whose entries have ever named a person as owner or collaborator; what
-    # holds now is `about`'s.
     def involving(self, person: int) -> list[Subject]:
         return self._rows.subjects_naming(
             person, (EntryField.OWNER, EntryField.COLLABORATOR)
         )
 
-    # What the edit `edit` of a scorer thread calls its views and resources.
     def labels(self, edit: int) -> dict[tuple[Part, int], str]:
         return dict(read.labels(self._rows, edit))
 

@@ -65,7 +65,6 @@ def language_tag(value: str) -> str:
     return value
 
 
-# An edit made on a head that isn't the thread's head any more.
 class MovedOn(ValueError):
     pass
 
@@ -81,9 +80,7 @@ class EntryField(StrEnum):
 
 
 Part = Literal["view", "resource"]
-# What a scorer edit calls its views and resources, by part and position.
 Labels = Mapping[tuple[Part, int], str]
-# What keeping a digest in a thread did (src/chatddx/store/catalog.py:Catalog.keep).
 Kept = Literal["created", "edited", "unchanged"]
 
 
@@ -183,7 +180,6 @@ class Entry(_Frozen):
 
     @model_validator(mode="after")
     def _shape(self) -> Self:
-        # A name is removed by an entry without a value, and the title takes over.
         text = self.field in (
             EntryField.DESCRIPTION,
             EntryField.TAG,
@@ -265,7 +261,6 @@ def _toggle[T](members: set[T], member: T, present: bool) -> None:
         members.discard(member)
 
 
-# Rows are read back in the order they were written, so the last row for a key is the latest.
 def latest[K, V](rows: Iterable[tuple[K, V]]) -> dict[K, V]:
     return dict(rows)
 

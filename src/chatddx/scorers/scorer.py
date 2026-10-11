@@ -9,16 +9,11 @@ from pydantic import JsonValue
 from chatddx.factors.scoring import Scorer
 
 
-# One view's score: its value, or None when the view can't be scored, and what a person
-# reads to see why. The ledger keeps both (src/chatddx/ledger/score.py:ScoreItem).
 class Scored(NamedTuple):
     value: float | None
     detail: JsonValue = None
 
 
-# A scorer's entry point: for a view's metric, the items its output selector picks (None
-# when the run has no answer) and those its expectation selector picks, with the
-# scorer's params under the view's.
 class ScoreFunction(Protocol):
     def __call__(
         self,
@@ -33,7 +28,6 @@ MetricFunction = Callable[
     [list[JsonValue] | None, list[JsonValue], Mapping[str, JsonValue]], Scored
 ]
 
-# Parameters a metric or an entry point takes when it publishes no schema: none.
 NO_PARAMS: dict[str, JsonValue] = {"type": "object", "additionalProperties": False}
 
 
@@ -41,8 +35,6 @@ def _no_params() -> dict[str, JsonValue]:
     return dict(NO_PARAMS)
 
 
-# A metric as its code publishes it: what it measures, and a JSON Schema for the
-# parameters a view gives it.
 @dataclass(frozen=True)
 class Metric:
     measures: str
@@ -50,8 +42,6 @@ class Metric:
     params: dict[str, JsonValue] = field(default_factory=_no_params)
 
 
-# A scoring entry point: its metrics, the version its developers raise when what it does
-# changes, and a schema for the parameters every view shares, when it takes any.
 class Metrics:
     def __init__(
         self,
@@ -79,8 +69,6 @@ class Metrics:
             raise ValueError(f"no metric {metric!r}, only {sorted(self.metrics)}")
         return found.score(output, expected, params)
 
-    # Why this code could never score with `scorer`: a metric it doesn't publish, or
-    # parameters its schemas refuse.
     def problems(self, scorer: Scorer) -> list[str]:
         found: list[str] = []
         if unknown := sorted({v.metric for v in scorer.views} - self.names):

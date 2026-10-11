@@ -17,16 +17,11 @@ from .model import Family, Written
 from .seen import Seen
 
 
-# An appendix of `text` for `family`, a case the person sees, bound to its current
-# vignette; written with `new`, `fork_component` or `edit_component`.
 def appendix(seen: Seen, family: int, text: str) -> Appendix:
     found = seen.family_by_id(family)
     return bound(seen, Appendix(vignette=seen.current(found.id), text=text))
 
 
-# A case of `family` with `appendices` in order, each one the person sees, stored at its
-# current vignette. Nothing is written in the catalog, since a case belongs to its family
-# by its vignette.
 def case(seen: Seen, family: int, appendices: Sequence[str]) -> str:
     found = seen.family_by_id(family)
     for digest in appendices:
@@ -39,8 +34,6 @@ def case(seen: Seen, family: int, appendices: Sequence[str]) -> str:
     return made.digest
 
 
-# The replacement of `case`, left at an earlier vignette of its family by a repair: the
-# same appendix texts at the current one, stored.
 def replacement(seen: Seen, case: str) -> str:
     family = seen.catalog.family(case)
     if family is None:
@@ -58,9 +51,6 @@ def replacement(seen: Seen, case: str) -> str:
     return made.digest
 
 
-# A case the person typed: kept as a text of `source`, else of the World's one database
-# source, with its case and a family of the person's own, named `name` and in `language`
-# when given, all at once.
 def type_case(
     seen: Seen,
     text: str,
@@ -120,9 +110,6 @@ def _typed_into(seen: Seen, source: str | None) -> str:
     return source or held[0]
 
 
-# The person's expectation `thread`, whose head was `head` when they saw it, carried onto
-# `case`, another case of its case's family, with the same data: a clinician's word that
-# it still holds there.
 def carry(seen: Seen, thread: int, head: int, case: str) -> Written:
     edit, _, word = seen.worded(thread)
     if word != "expectation":

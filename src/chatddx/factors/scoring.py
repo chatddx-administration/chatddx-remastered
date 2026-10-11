@@ -82,7 +82,6 @@ class Judge(Component):
 JudgeRef = Annotated[Digest, RefTo("judge")]
 
 
-# A JSON Pointer or a JSONPath query from the subset in select.py.
 Selector = Annotated[str, AfterValidator(check_selector)]
 
 

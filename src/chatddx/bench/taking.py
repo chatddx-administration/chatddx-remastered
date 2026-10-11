@@ -9,8 +9,6 @@ from .model import Taken
 from .seen import Seen
 
 
-# For each case, a fork of the one expectation under `schema` shared with the person, by
-# `owner` when given, unless they have one of their own; in one transaction.
 def take(
     seen: Seen, cases: Iterable[str], schema: str, owner: str | None = None
 ) -> Taken:
@@ -39,9 +37,6 @@ def take(
     return found
 
 
-# A fork of an expectation thread shared with the person. With `replace`, their own of
-# its case under its schema is deleted first, in the same transaction; without, it is a
-# conflict.
 def take_from(seen: Seen, thread: int, replace: bool = False) -> int:
     edit, about = seen.thread_by_id(thread, "expectation")
     if about.owner == seen.person.id:

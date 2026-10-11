@@ -157,7 +157,6 @@ def mentions(items: list[str] | None, target: str | None) -> Scored:
     return Scored(0.0, {"reason": "not named"})
 
 
-# An answer's picked items as text. A null names nothing, as when no warning is given.
 def _texts(output: list[JsonValue] | None) -> list[str] | None:
     if output is None:
         return None
@@ -168,8 +167,6 @@ def _texts(output: list[JsonValue] | None) -> list[str] | None:
     ]
 
 
-# The target the expectation selector picks: a pattern, a target holding one, or false
-# when nothing is expected.
 def _target(expected: list[JsonValue]) -> str | None | Scored:
     if not expected:
         return Scored(None, {"reason": "no target"})

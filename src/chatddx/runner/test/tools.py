@@ -4,8 +4,6 @@ from pydantic import JsonValue
 from chatddx.factors.request import Tool
 from chatddx.tools.shipped import TOOLS, ShippedTool
 
-# Tools for the runner's tests, which mustn't reach a third party as
-# `chatddx.tools.web_search` does. They take its parameters.
 PARAMETERS: dict[str, JsonValue] = {
     "type": "object",
     "properties": {
@@ -39,7 +37,6 @@ def component(function: str, version: int = 1) -> Tool:
     )
 
 
-# The tools above as the running code would ship them, for as long as a test runs.
 def shipped(monkeypatch: pytest.MonkeyPatch) -> None:
     for function in (lookup, broken, counted):
         entry_point = f"chatddx.runner.test.tools:{function.__name__}"

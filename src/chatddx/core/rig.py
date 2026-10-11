@@ -6,8 +6,6 @@ from typing import Protocol
 from chatddx.factors.base import Code
 
 
-# The code running now, as recorded in compilations and runs. The revision comes from
-# CHATDDX_REVISION, set where the code is built or deployed; there is none otherwise.
 def rig() -> Code:
     return Code(
         distribution="chatddx",
@@ -21,9 +19,6 @@ class Versioned(Protocol):
     def version(self) -> int: ...
 
 
-# What the running code ships under a tool's or a scorer's entry point, at the version it
-# pins. Nothing else is run: an entry point the code doesn't ship is refused rather than
-# imported, so naming one picks among what developers shipped.
 def entry[T: Versioned](shipped: Mapping[str, T], entry_point: str, version: int) -> T:
     found = shipped.get(entry_point)
     running = _shown(rig())

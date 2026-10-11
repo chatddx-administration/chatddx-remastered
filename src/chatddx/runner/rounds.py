@@ -31,7 +31,6 @@ def _now() -> datetime:
     return datetime.now(UTC)
 
 
-# A failure the runner words itself, rather than one a tool raised.
 class _Refused(Exception):
     pass
 
@@ -44,8 +43,6 @@ class Toolbox:
     max_rounds: int
     code: tuple[ToolCode, ...]
 
-    # The calls a round runs. Calling the answer tool ends the item, and so does a call
-    # without a whole answer, whose tool calls may be cut short.
     def pending(self, call: Call) -> tuple[ToolCall, ...]:
         if call.error is not None or call.response is None:
             return ()
@@ -62,7 +59,6 @@ class Toolbox:
         except _Refused as e:
             error = str(e)
             result = f"error: {error}"
-        # Whatever a tool raises, the model is told and the run goes on.
         except Exception as e:  # noqa: BLE001
             error = f"{type(e).__name__}: {e}"
             result = f"error: {error}"
@@ -95,8 +91,6 @@ class Toolbox:
         return result
 
 
-# Only the tool code the running chatddx ships can be run (`entry`), at the version each
-# tool pins.
 def load(skeleton: Skeleton, get: Resolver) -> Toolbox | None:
     if skeleton.max_rounds is None:
         return None
@@ -128,9 +122,6 @@ class Exchange:
     stopped: bool = False
 
 
-# One item's calls: the first, then a round per response that calls tools. A
-# KeyboardInterrupt or `halt` stops it, keeping the rounds that have a call; a round
-# stopped while its tools run has none, so its tools are left out.
 def converse(
     url: str,
     body: Mapping[str, JsonValue],

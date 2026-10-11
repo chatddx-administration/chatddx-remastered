@@ -46,7 +46,6 @@ def test_the_sample_s_texts_are_english_and_free_text_guided_swedish_too() -> No
     } | {f"free-text-guided (sv, {model})" for model in models}
 
 
-# Every text the sample's outputs and toolset send is in its Swedish translations.
 def test_the_sample_s_translations_carry_every_recipe_into_swedish() -> None:
     sample = sample_plan()
     translations = sample.named("translations", "sample (sv)").digest

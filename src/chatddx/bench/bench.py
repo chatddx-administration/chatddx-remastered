@@ -10,10 +10,6 @@ from .seen import Seen
 from .taking import take, take_from
 
 
-# What one person sees and does: what Seen reads, and the writes, each bound from the
-# module that holds it. The functions are imported rather than their modules, since
-# `from . import` would import this package again from inside it, and `@final` spares
-# each binding an annotation.
 @final
 class Bench(Seen):
     save = save
