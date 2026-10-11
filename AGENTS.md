@@ -46,6 +46,8 @@ AGENT: <verb>
 * `agents/*` are exempt from the "Humans write, agents suggest" rule and agents are free to use it for whatever purpose
   they deem fit.
 
+* Don't reference branch commits, they'll be squashed.
+
 ## Misc
 * For placeholder usernames in docs and tests, use
   1. alice, bob, carol...
