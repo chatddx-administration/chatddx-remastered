@@ -11,8 +11,8 @@ from chatddx.factors.scoring import Expectation, Scorer
 
 from .errors import NotFound
 from .model import COMPILED_LANGUAGE, KINDS, SAVED, WRITTEN, Written
+from .seen import Seen
 from .variation import PARTS
-from .view import Seen
 
 _UNLABELLED = "only a scorer's views and resources have labels"
 

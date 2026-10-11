@@ -8,8 +8,8 @@ from chatddx.runner.score import score_run
 
 from .configurations import keep_compilation
 from .model import Graded
+from .seen import Seen
 from .variation import TriedVariation
-from .view import Seen
 
 
 # The variation run on `cases` with one seed, at `endpoint`; nothing is sent until

@@ -6,8 +6,8 @@ from .configurations import edit, fork, save
 from .following import follow, proposal
 from .runs import score, start
 from .saying import say
+from .seen import Seen
 from .taking import take, take_from
-from .view import Seen
 
 
 # What one person sees and does: what Seen reads, and the writes, each bound from the

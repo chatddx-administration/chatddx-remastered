@@ -20,7 +20,7 @@ Paths are relative to `src/chatddx/bench/` unless they start with `src/`, `docs/
 - [outcome.py](#outcomepy): `Outcome`, `outcome`, `usage`
 - [variation.py](#variationpy): `PARTS`, `OPTIONAL`, `TriedVariation`
 - [model.py](#modelpy): `KINDS` and the other constants, and the values the bench returns
-- [view.py](#viewpy): `Seen`, what the person sees, and the checks the writes share
+- [seen.py](#seenpy): `Seen`, what the person sees, and the checks the writes share
 - [bench.py](#benchpy): `Bench`, the `Seen` with the writes bound
 - The writes: [configurations.py](#configurationspy), [components.py](#componentspy), [cases.py](#casespy),
   [taking.py](#takingpy), [saying.py](#sayingpy), [following.py](#followingpy), [runs.py](#runspy)
@@ -40,19 +40,19 @@ Paths are relative to `src/chatddx/bench/` unless they start with `src/`, `docs/
 | `outcome.py` | `Outcome`, `outcome`, `usage`: how a run's item ended, and the tokens it used | `chatddx.factors.request`, `chatddx.ledger`, `chatddx.runner.send`, `chatddx.scorers.answer` |
 | `variation.py` | `PARTS`, `OPTIONAL`, `TriedVariation`: the variation being tried, a plain value | `chatddx.catalog`, `chatddx.factors.request` |
 | `model.py` | `KINDS`, `WRITTEN`, `LABELLED`, `COMPILED_LANGUAGE`, `PLACEHOLDERS`, `SAVED`; `Family`, `Reach`, `Graded`, `Saved`, `Proposed`, `Taken`, `Written` | `variation.py`, `chatddx.catalog`, `chatddx.factors.{base,request,scoring}`, `chatddx.ledger` |
-| `view.py` | `Seen`: what the person sees, and the checks the writes share | `errors.py`, `model.py`, `variation.py`, `chatddx.catalog` (and its `threads` and `titles`), `chatddx.core.rig`, `chatddx.factors.{base,bundle,cases,engine,request,scoring,select,trial}`, `chatddx.facts`, `chatddx.identity`, `chatddx.inventory`, `chatddx.ledger`, `chatddx.scorers.shipped`, `chatddx.store` |
-| `configurations.py` | `save`, `fork`, `edit`, `keep_compilation` | `view.py` |
-| `components.py` | `component`, `new`, `fork_component`, `edit_component`, `bound`, `keep_language` | `view.py`, `chatddx.factors.kinds` |
+| `seen.py` | `Seen`: what the person sees, and the checks the writes share | `errors.py`, `model.py`, `variation.py`, `chatddx.catalog` (and its `threads` and `titles`), `chatddx.core.rig`, `chatddx.factors.{base,bundle,cases,engine,request,scoring,select,trial}`, `chatddx.facts`, `chatddx.identity`, `chatddx.inventory`, `chatddx.ledger`, `chatddx.scorers.shipped`, `chatddx.store` |
+| `configurations.py` | `save`, `fork`, `edit`, `keep_compilation` | `seen.py` |
+| `components.py` | `component`, `new`, `fork_component`, `edit_component`, `bound`, `keep_language` | `seen.py`, `chatddx.factors.kinds` |
 | `cases.py` | `appendix`, `case`, `replacement`, `type_case`, `carry` | `components.py`, `chatddx.catalog.families`, `chatddx.core.settings`, `chatddx.store.Texts` |
-| `taking.py` | `take`, `take_from` | `view.py` |
-| `saying.py` | `say` | `view.py` |
+| `taking.py` | `take`, `take_from` | `seen.py` |
+| `saying.py` | `say` | `seen.py` |
 | `following.py` | `proposal`, `follow` | `components.py` |
 | `runs.py` | `start`, `score` | `configurations.py`, `chatddx.runner.{run,score}` |
-| `bench.py` | `Bench` | `view.py` and the writes |
+| `bench.py` | `Bench` | `seen.py` and the writes |
 
 Why it is laid out so:
 - **Modules are named by what they hold**, as `catalog/threads.py` and `runner/send.py` are: what the person sees in
-  `view.py`, each write in the module named for what it writes, as docs/bench.md gives each a section, and `Bench` in
+  `seen.py`, each write in the module named for what it writes, as docs/bench.md gives each a section, and `Bench` in
   `bench.py`.
 - **`variation.py`, `outcome.py` and `model.py` are pure.** None touches the store or a person, so they are tested
   without a database, and an edge can hold a `TriedVariation` without a bench.
@@ -64,9 +64,8 @@ Why it is laid out so:
   the module its binding names. It is the store's `Catalog` over `chatddx.catalog`'s functions without the passing
   through: no mixins hide where a method lives, and the functions aren't a second surface, since edges import from
   `chatddx.bench` alone.
-- **`view.py` and `Seen`**: the module holds a person-scoped view, and the class what the person sees, a name a
-  scorer's views don't have already (`chatddx.factors.scoring.View`). The bench writes for the person only through what
-  `Seen` finds.
+- **"Seen"**, what the person sees, rather than "view", which a scorer's views are already
+  (`chatddx.factors.scoring.View`). The bench writes for the person only through what `Seen` finds.
 
 ## Conventions
 
@@ -180,7 +179,7 @@ Frozen dataclasses that `Bench` returns.
 | `Written` | `edit: Edit` (what was kept), `what: "created" \| "a new version" \| "unchanged"`, `findings: list[Finding]` (`linted` of its digest), `cases: dict[str, str]` (for an appendix's edit, each case that held the old version and its replacement; else empty) | |
 | `Taken` | By case digest: `taken: dict[str, int]`, the thread each was taken into; `kept: dict[str, int]`, the person's own; `choosing: dict[str, list[int]]`, the shared threads of several owners; `missing: list[str]`, the cases with none shared | |
 
-## view.py
+## seen.py
 
 ### `class Seen`
 `Seen(conn: Connection, person: Person, inventory: Inventory, facts: Facts)`: what the person sees, and the checks the
@@ -401,7 +400,7 @@ In `src/chatddx/bench/test/`, all marked `wip`.
 | --- | --- |
 | `conftest.py` | `template` is `curated`, the sample as init-data lands it, copied for each test; `autocommit` is on; `alice` is the sample's person, `bob` a new one with nothing; `bench` is alice's, on the sample World's inventory and the bundled facts. |
 | `sample.py` | `SOURCE`, `FREE_TEXT`, `PLAN` and `QWEN`; `trial(conn, plan, recipe, *ids)`, a stored trial of a sample recipe on some of the sample's cases; `ran(conn, by, made, finished=True)`, a run of it recorded without sending; `another_expectation(bench, case, data)`, a second expectation of the person's own for the case, left by two writers at once. |
-| `test_view.py` | What a person sees, by name, `OWNER/NAME` and id; a variation from ids and digests; runs and what reaches a digest; what is left to score, and again after an expectation changes; the expectation a case is held to, own only; several to choose from refused by `expectation` and `scoring`, kept by `unscored` and `outstanding`, refused by `score` and listed apart by `reach`; per-model and per-language names; a variation compiled, and its request with placeholders; saving, forking and editing, a configuration's edit refused on a head that moved on; taking expectations for many cases, kept, to choose from, missing and by owner, and taking one thread, replacing the person's own only when told. |
+| `test_seen.py` | What a person sees, by name, `OWNER/NAME` and id; a variation from ids and digests; runs and what reaches a digest; what is left to score, and again after an expectation changes; the expectation a case is held to, own only; several to choose from refused by `expectation` and `scoring`, kept by `unscored` and `outstanding`, refused by `score` and listed apart by `reach`; per-model and per-language names; a variation compiled, and its request with placeholders; saving, forking and editing, a configuration's edit refused on a head that moved on; taking expectations for many cases, kept, to choose from, missing and by owner, and taking one thread, replacing the person's own only when told. |
 | `test_writes.py` | A recipe of the person's own made into a configuration, its language and request, and what doesn't compile; writing chunks and expectations: new, edited and forked, as they are or changed, with their languages; what is refused, from kinds and versions to a language a text has already; an expectation's lints, and the person's one expectation per case and schema. Over the sample's `clinician` instructions. |
 | `test_cases.py` | An appendix built with LF line endings, a case of it listed after the bare one, and an appendix's edit storing a replacement; an expectation carried onto another case of its family, and not onto another family's; appendices and cases refused; a late case's replacement after a repair. |
 | `test_typed.py` | A typed case kept with its case, its family, its name and language, and fetched back; the same text typed twice; what can't be typed, and the day's quota; a typed case run on the fake vLLM. |

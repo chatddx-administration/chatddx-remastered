@@ -1,7 +1,7 @@
 from .errors import Ambiguous, NotFound
 from .model import SAVED, Saved
+from .seen import Seen
 from .variation import TriedVariation
-from .view import Seen
 
 
 # Keeps the variation as the person's own configuration, under `name`: a new version of

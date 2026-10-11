@@ -6,7 +6,7 @@ from chatddx.factors.scoring import Expectation, Scorer
 from .components import keep_language
 from .errors import NotFound
 from .model import COMPILED_LANGUAGE, LABELLED, Proposed, Written
-from .view import Seen
+from .seen import Seen
 
 
 # What following the origin of `thread`, a fork the person sees, would keep; `None` when

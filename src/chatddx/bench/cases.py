@@ -14,7 +14,7 @@ from chatddx.store import Texts
 from .components import bound, edit_component
 from .errors import NotFound, OverQuota
 from .model import Family, Written
-from .view import Seen
+from .seen import Seen
 
 
 # An appendix of `text` for `family`, a case the person sees, bound to its current

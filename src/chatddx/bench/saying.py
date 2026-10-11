@@ -6,7 +6,7 @@ from chatddx.factors.scoring import Expectation
 
 from .errors import NotFound
 from .model import KINDS
-from .view import Seen
+from .seen import Seen
 
 
 # What is said about `thread`, which the person owns, as it is to hold afterwards: its

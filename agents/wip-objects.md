@@ -144,7 +144,7 @@ Open: a question for the user.
 | trial, skeleton, chunks, cases, engines, scorings… | pinned factors | `factors`, as now | nothing |
 | Execution | a recorded factor, not an object | `factors`, as now | nothing |
 | canary set | an instrument | `ledger` | `catalog/titles.py` titles canary sets, so the catalog imports the ledger. Its SQL already points at the ledger's (`catalog.entry` → `ledger.run_stage`). |
-| compilation | provenance | `catalog` | `compiled()` moves with it, while `compile_request` stays in `factors/request.py`. Every user (`catalog/{threads,titles,read}.py`, `store/{catalog,store}.py`, `curation/plan.py`, `bench/view.py`) sits at or above the catalog. |
+| compilation | provenance | `catalog` | `compiled()` moves with it, while `compile_request` stays in `factors/request.py`. Every user (`catalog/{threads,titles,read}.py`, `store/{catalog,store}.py`, `curation/plan.py`, `bench/seen.py`) sits at or above the catalog. |
 | batch | work | a package of its own below the catalog, e.g. `chatddx.batch` | The catalog threads and titles batches (`agents/wip-batch.md`, "Kept batches"), and the store reads them, so the type can't live in the bench, which sits above both. The planner (`Bench.plan`, `bench/plan.py`) stays in the bench, and the worker's jobs name a batch by digest (`agents/wip-worker.md`, "The contract"). This is the same split as a trial in `factors` and its running in `runner`. |
 
 Execution settings stay inside the start records of runs and scores (`ledger/run.py:RunStarted`,

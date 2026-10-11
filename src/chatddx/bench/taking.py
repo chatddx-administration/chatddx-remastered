@@ -6,7 +6,7 @@ from chatddx.factors.scoring import Expectation
 
 from .errors import Conflict, NotFound
 from .model import Taken
-from .view import Seen
+from .seen import Seen
 
 
 # For each case, a fork of the one expectation under `schema` shared with the person, by
