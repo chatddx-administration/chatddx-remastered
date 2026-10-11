@@ -74,15 +74,10 @@ package takes the last row for a key as the one that holds: through `model.py:la
 **Deleted subjects.** A subject is deleted when its `About.deleted` is true. What each function does with deleted
 threads and families is said in its entry; in short:
 
-```
-AGENT: CHANGE
-`threads.expectations_shared` skips deleted threads through `About.shows`.
----
-| skipped, through `About.shows` | `threads.visible`, `threads.expectations_shared`, `families.visible` |
-```
 | Deleted are | Functions |
 | --- | --- |
 | skipped, through `About.shows` | `threads.visible`, `families.visible` |
+| skipped, through `About.shows` | `threads.visible`, `threads.expectations_shared`, `families.visible` |
 | skipped, through `About.owned_by` | `threads.expectation_choices`, `threads.expectations_for`, `threads.expectation_for`, `threads.check_expectation` |
 | ranked last | `titles.title_of` |
 | included | `threads.history`, `threads.forks`, `threads.expectations_of`, `families.family_of`, `families.bindings`, `families.survey`, `families.plan_repair`, `language.language_of`, the titles of cases, `Catalog.containing` |
@@ -311,16 +306,11 @@ For each case, the threads `expectations_for` picks from, each with its head dig
 expectation of that case with `expectation_schema == schema` and which `About.owned_by(person)`. Every case given is
 a key, with `{}` when there are none. It refuses nothing.
 
-```
-AGENT: ADD
-What the bench offers a person to take (agents/wip-bench.md, "Taking"). It and `expectation_choices` share one read
-of a case's expectation threads, kept by owner (`threads._expecting`).
----
 ### `expectations_shared(rows, cases: Sequence[str], person: int, schema: str) -> dict[str, list[tuple[Edit, About]]]`
 For each case, the head and `About` of each thread whose head is an expectation of that case with
 `expectation_schema == schema`, which `About.shows(person)` and whose owner isn't `person`: what they could take.
 Thread id order. Every case given is a key, with `[]` when there are none.
-```
+
 ### `picked(case: str, choices: Mapping[int, str]) -> str | None`
 The one distinct head among a case's `expectation_choices`, or `None` for none. Threads with the same head digest
 count as one choice. Several raise `LookupError("case <case> has expectations to choose from, in threads <t1>, <t2>,
@@ -593,17 +583,11 @@ the first of `Reader.compilations` (by digest). Anything else is `describe`d, wi
 the ones that write insert the rows the package decided on. A rule the database also checks is refused by Postgres
 with a psycopg error when the Python lets it through.
 
-```
-AGENT: CHANGE
-`Catalog.expectations_shared` passes through as the others do.
----
-| `thread`, `history`, `head`, `heads`, `find`, `visible`, `expectation_for`, `expectations_for`, `expectation_choices`, `expectations_shared`, `forks`, `expectations_of`, `behind`, `variation`, `proposal` | the `threads` function of that name | |
-```
 | Method | Calls | Writes |
 | --- | --- | --- |
 | `create(digest, by, *, compilation=None, forked_from=None, name=None, owner=None) -> Edit` | `Reader.kind` (`LookupError("<digest> is not in the store")`), `threads.check_threadable`; `threads.check_expectation` through `edit` and `note` | in one transaction: the thread, its first edit (`edit`), an `owner` entry for `owner` or else `by`, and a `name` entry when given |
 | `edit(thread, digest, by, *, compilation=None, based_on=None) -> Edit` | `threads.check_based_on` when `based_on` is given; `threads.check_expectation(thread, digest)` | the edit, with the thread's kind; `LookupError("no thread with id <thread>")` when there is no thread |
-| `thread`, `history`, `head`, `heads`, `find`, `visible`, `expectation_for`, `expectations_for`, `expectation_choices`, `forks`, `expectations_of`, `behind`, `variation`, `proposal` | the `threads` function of that name | |
+| `thread`, `history`, `head`, `heads`, `find`, `visible`, `expectation_for`, `expectations_for`, `expectation_choices`, `expectations_shared`, `forks`, `expectations_of`, `behind`, `variation`, `proposal` | the `threads` function of that name | |
 | `visible_families(person)` | `families.visible` | |
 | `containing(digest) -> list[Edit]` | `Reader.edits_holding([digest])` | |
 | `recipe(thread)` | `threads.recipe` of `threads.head` | |
