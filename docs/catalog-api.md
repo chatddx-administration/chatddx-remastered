@@ -74,15 +74,9 @@ package takes the last row for a key as the one that holds: through `model.py:la
 **Deleted subjects.** A subject is deleted when its `About.deleted` is true. What each function does with deleted
 threads and families is said in its entry; in short:
 
-```
-AGENT: CHANGE
-The "skipped, through About.shows" row: expectation_choices is new (src/chatddx/catalog/threads.py).
----
-| skipped, through `About.shows` | `threads.visible`, `families.visible`, `threads.expectation_choices`, `threads.expectations_for`, `threads.expectation_for` |
-```
 | Deleted are | Functions |
 | --- | --- |
-| skipped, through `About.shows` | `threads.visible`, `families.visible`, `threads.expectations_for`, `threads.expectation_for` |
+| skipped, through `About.shows` | `threads.visible`, `families.visible`, `threads.expectation_choices`, `threads.expectations_for`, `threads.expectation_for` |
 | skipped, through `About.deleted` | `threads.heads` (unless `deleted=True`, which returns only them), `threads.find`, `threads.behind` (no deleted thread's head, and no case of a deleted family) |
 | ranked last | `titles.title_of` |
 | included | `threads.history`, `threads.forks`, `threads.expectations_of`, `families.family_of`, `families.bindings`, `families.survey`, `families.plan_repair`, `language.language_of`, the titles of cases, `Catalog.containing` |
@@ -312,17 +306,11 @@ ignore the shared ones.
 
 `expectation_for(rows, case: str, person: int, schema: str) -> str | None` is `expectations_for` of the one case.
 
-```
-AGENT: ADD
-A section after expectations_for. The reach (src/chatddx/bench/view.py:Bench._expected) counts a case with several
-expectations to choose from among those it misses, rather than refusing the whole look, so it reads the choices
-rather than the pick; expectations_for picks from them.
----
 ### `expectation_choices(rows, cases: Sequence[str], person: int, schema: str) -> dict[str, dict[int, str]]`
 For each case, the threads `expectations_for` picks from, each with its head digest: among the threads whose head is
 an expectation of that case with `expectation_schema == schema` and which `About.shows(person)`, those `person` owns,
 or all of them when they own none. Every case given is a key, with `{}` when there are none. It refuses nothing.
-```
+
 ### `forks(rows, thread: int) -> list[int]`
 The ids of the threads whose `forked_from` is any edit of `thread`, in thread id order. Direct forks only; deleted
 forks included. An unknown thread gives `[]`.
@@ -490,15 +478,9 @@ A recipe votes:
 
 A digest that isn't stored gives `None`.
 
-```
-AGENT: ADD
-A section after language_of: the recipe's vote is public now (src/chatddx/catalog/language.py:recipe_language), for
-the lints of a variation being tried, whose skeleton has no compilation stored yet
-(src/chatddx/bench/view.py:Bench.findings).
----
 ### `recipe_language(rows, recipe: Recipe) -> str | None`
 The language `recipe` votes for, as `language_of` counts each compilation's recipe; `None` when it casts no vote.
-```
+
 ### `check_language(rows, digest: str, value: str) -> str`
 Returns the digest's kind, for the row. Raises, in this order:
 - `LookupError("<digest> is not in the store")`;
@@ -589,28 +571,17 @@ the first of `Reader.compilations` (by digest). Anything else is `describe`d, wi
 the ones that write insert the rows the package decided on. A rule the database also checks is refused by Postgres
 with a psycopg error when the Python lets it through.
 
-```
-AGENT: CHANGE
-The row of `threads` functions: the store's Catalog has `expectation_choices` too.
----
-| `thread`, `history`, `head`, `heads`, `find`, `visible`, `expectation_for`, `expectations_for`, `expectation_choices`, `forks`, `expectations_of`, `behind`, `variation`, `proposal` | the `threads` function of that name | |
-```
-```
-AGENT: ADD
-A row after `language_of(digest)`.
----
-| `recipe_language(recipe)` | `language.recipe_language` | |
-```
 | Method | Calls | Writes |
 | --- | --- | --- |
 | `create(digest, by, *, compilation=None, forked_from=None, name=None, owner=None) -> Edit` | `Reader.kind` (`LookupError("<digest> is not in the store")`), `threads.check_threadable` | in one transaction: the thread, its first edit (`edit`), an `owner` entry for `owner` or else `by`, and a `name` entry when given |
 | `edit(thread, digest, by, *, compilation=None, based_on=None) -> Edit` | `threads.check_based_on` when `based_on` is given | the edit, with the thread's kind; `LookupError("no thread with id <thread>")` when there is no thread |
-| `thread`, `history`, `head`, `heads`, `find`, `visible`, `expectation_for`, `expectations_for`, `forks`, `expectations_of`, `behind`, `variation`, `proposal` | the `threads` function of that name | |
+| `thread`, `history`, `head`, `heads`, `find`, `visible`, `expectation_for`, `expectations_for`, `expectation_choices`, `forks`, `expectations_of`, `behind`, `variation`, `proposal` | the `threads` function of that name | |
 | `visible_families(person)` | `families.visible` | |
 | `containing(digest) -> list[Edit]` | `Reader.edits_holding([digest])` | |
 | `recipe(thread)` | `threads.recipe` of `threads.head` | |
 | `title(thread)`, `title_of(digest)` | `titles.title`, `titles.title_of` | |
 | `language_of(digest)` | `language.language_of` | |
+| `recipe_language(recipe)` | `language.recipe_language` | |
 | `adopt(case, by, *, owner=None) -> int` | `families.family_of`, returning its family when there is one; else `families.check_adoptable` | in one transaction: a family, its binding, an `owner` entry for `owner` or else `by` |
 | `family(case)`, `bindings(family)`, `survey(source, listing)` | `families.family_of`, `families.bindings`, `families.survey` | |
 | `repair(family, by, *, id=None, fingerprint=None) -> Repair` | `families.plan_repair` | in one transaction: the binding, `Store.add` of the plan's registry, and an edit per move |
