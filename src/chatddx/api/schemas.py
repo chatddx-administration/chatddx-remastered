@@ -209,6 +209,16 @@ class MadeThread(ThreadDetail):
 
 class MadeEdit(Edit):
     findings: list[Finding]
+    cases: dict[str, str] = Field(
+        default_factory=dict,
+        description="for an appendix: each case that held the old version, with its "
+        + "replacement",
+    )
+
+
+class NewCarry(_Schema):
+    head: int = Field(description="the edit the change was made on: the head seen")
+    case: str = Field(description="another case of the expectation's family")
 
 
 # What one view of a scorer gets from the variation: whether its output offers what the
@@ -282,6 +292,35 @@ class NewTake(_Schema):
     )
 
 
+class NewAppendix(_Schema):
+    text: str = Field(min_length=1)
+    name: str = Field(min_length=1)
+
+
+# A case of a family, with the expectation it is scored against under each schema.
+class FamilyCase(_Schema):
+    case: str
+    title: str
+    appendices: list[str]
+    default: bool = Field(description="the case the family stands for")
+    expectations: list[Expected]
+
+
+class NewCase(_Schema):
+    appendices: list[str] | None = Field(None, description="the appendices, in order")
+    replacing: str | None = Field(
+        None, description="or a case of the family left at an earlier vignette"
+    )
+
+    @model_validator(mode="after")
+    def _one(self) -> Self:
+        if (self.appendices is None) == (self.replacing is None):
+            raise ValueError(
+                "a case is built from appendices or replacing one, not both"
+            )
+        return self
+
+
 class FamilyDetail(Family):
     description: str | None
     collaborators: list[str]
@@ -332,6 +371,9 @@ class NewRun(_Schema):
     tags: list[str] | None = Field(
         None, description="or the cases of the families with any of these"
     )
+    cases: list[str] | None = Field(
+        None, description="or the cases themselves, each of a family's current ones"
+    )
     seed: int | None = Field(None, description="drawn when not given")
     score: bool = Field(
         True, description="under every scorer that applies, once it is finished"
@@ -339,8 +381,8 @@ class NewRun(_Schema):
 
     @model_validator(mode="after")
     def _cases(self) -> Self:
-        if (self.families is None) == (self.tags is None):
-            raise ValueError("a run takes families or tags, and not both")
+        if [self.families, self.tags, self.cases].count(None) != 2:
+            raise ValueError("a run takes one of families, tags or cases")
         return self
 
 

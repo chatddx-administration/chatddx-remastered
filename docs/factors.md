@@ -207,6 +207,13 @@ An appendix can't be reused across vignettes, but it can appear in several cases
 case with a lab appendix and one without. A case's appendices go in a fixed order, which is part of the case. At send
 time they are joined into one text by the skeleton's appendix layout (see "Skeleton").
 
+```
+AGENT: CHANGE
+The bench does it, for every edge (src/chatddx/bench/view.py:Bench._bound).
+---
+Browsers submit CRLF line endings, so line endings are normalized to LF before an appendix is digested, whichever edge
+writes it; nothing cleans it afterwards.
+```
 Browsers submit CRLF line endings, so the portal normalizes line endings before an appendix is digested; nothing cleans
 it afterwards.
 

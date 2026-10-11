@@ -1,6 +1,6 @@
 from typing import Annotated
 
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, HTTPException, Query, Request, Response
 
 from chatddx import bench as benches
 from chatddx.bench import Ambiguous, Bench, NotFound
@@ -9,7 +9,7 @@ from chatddx.factors.cases import Case
 
 from . import schemas
 from .people import BenchDep
-from .threads import login, refused, thread_of
+from .threads import login, made, refused, thread_of
 
 router = APIRouter(tags=["families"])
 
@@ -69,6 +69,55 @@ def family(bench: BenchDep, family: int) -> schemas.FamilyDetail:
             for s in bench.expectation_schemas(found.case)
         ],
     )
+
+
+@router.post("/families/{family}/appendices", status_code=201)
+def appendix(
+    request: Request,
+    response: Response,
+    bench: BenchDep,
+    family: int,
+    given: schemas.NewAppendix,
+) -> schemas.MadeThread:
+    with refused():
+        written = bench.new(bench.appendix(family, given.text), given.name)
+    return made(request, response, bench, written.edit.thread, written.findings)
+
+
+def case_of(bench: Bench, case: str, default: str) -> schemas.FamilyCase:
+    held = resolve(bench.get, case, Case)
+    return schemas.FamilyCase(
+        case=case,
+        title=bench.title(case),
+        appendices=list(held.appendices),
+        default=case == default,
+        expectations=[
+            expected(bench, case, s) for s in bench.expectation_schemas(case)
+        ],
+    )
+
+
+@router.get("/families/{family}/cases")
+def cases(bench: BenchDep, family: int) -> list[schemas.FamilyCase]:
+    found = bench.family_by_id(family)
+    return [case_of(bench, c, found.case) for c in bench.cases(family)]
+
+
+# A case another family holds is the body's fault, as one the person doesn't see is.
+@router.post("/families/{family}/cases", status_code=201)
+def case(bench: BenchDep, family: int, given: schemas.NewCase) -> schemas.FamilyCase:
+    found = bench.family_by_id(family)
+    try:
+        with refused():
+            if given.replacing is None:
+                made = bench.case(family, given.appendices or [])
+            elif bench.catalog.family(given.replacing) != family:
+                raise ValueError(f"{given.replacing} isn't a case of family {family}")
+            else:
+                made = bench.replacement(given.replacing)
+    except NotFound as e:
+        raise HTTPException(422, str(e)) from None
+    return case_of(bench, made, found.case)
 
 
 # Case-derived: the one place the API gives a vignette.

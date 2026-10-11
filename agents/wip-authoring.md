@@ -29,11 +29,13 @@ portal is the first edge to need them (agents/wip-portal.md, "Below the UI", "Ph
    `GET /api/threads/{id}/proposal` and `POST /api/threads/{id}/follows` (agents/wip-bench.md, "Following an
    origin").
 6. **Recipes into configurations are built** (phase 5): `Bench.new` takes a recipe, and the API's `POST
-   /api/threads` takes one in place of a component (agents/wip-bench.md, "Writes for the person"). Phase 6,
-   appendices and cases, comes next.
-7. **One set of writes for every kind people author** (A1), with builders only where a kind binds to a family's
+   /api/threads` takes one in place of a component (agents/wip-bench.md, "Writes for the person").
+7. **Appendices and cases are built** (phase 6): the appendix and case builders, a family's cases, replacement cases
+   on an appendix's edit and for a late case, carrying an expectation over, and runs that name cases
+   (agents/wip-bench.md, "Appendices and cases"). Phase 7, typed cases, comes next, with the portal's swift.
+8. **One set of writes for every kind people author** (A1), with builders only where a kind binds to a family's
    vignette: appendices and cases (A2).
-8. **No write refuses on a lint** (A6): what was written comes back with its lints. Refusals stay the components' and
+9. **No write refuses on a lint** (A6): what was written comes back with its lints. Refusals stay the components' and
    the catalog's.
 
 ## What is asked
@@ -105,11 +107,20 @@ for want of a write: it names code to run, which the published list holds back (
 
 An expectation needs no builder: an edge has its case, its schema and its data.
 
+Takes, built:
+- **Appendices go through the shared writes** (`appendix` joins `WRITTEN`), so they are new, forked and edited as any
+  kind, and the builder is what the edges call for a family and a text. Every appendix written is checked to be bound
+  to the current vignette of a family the person sees, and its line endings made LF, whichever edge sent it.
+- **A case is built of appendices the person sees**, held by a thread of theirs or shared with them.
+
 ### A3. A family's cases
 A family stands for one case today: the one its current vignette makes alone, else the first that holds it. Once
 appendices are written, a family has several, and what is run and scored is a case. Take: a family lists its cases,
 the bare one first, and an edge picks one; the one it stands for today stays its default. Runs, the reach and
 expectations take cases already.
+
+Built: a family lists its cases at its current vignette only, and the API's runs name cases among those, beside
+families and tags.
 
 ### A4. Editing an appendix
 A new version of an appendix makes every case that holds the old one behind (`docs/catalog.md`, "What has moved on"),
@@ -120,6 +131,9 @@ of its own, an edit of the expectation onto the new case with the same data, mad
 still holds, as after a repair that changed a vignette's content (`docs/catalog.md`, "Repairing").
 
 The same builder stores a late case's replacement, which `docs/catalog.md` ("Smaller issues") leaves to the portal.
+
+Built. Takes: an appendix's edit replaces only the cases at its own vignette, since a case at an earlier one awaits a
+repair's replacement instead; and carrying keeps to the expectation's family, onto any of its cases.
 
 ### A5. Taking expectations
 Taking is forking: the person's own thread, starting from the shared one's head and forked from it, so a correction
@@ -384,7 +398,8 @@ Each with its tests in `src/chatddx/bench/test/` and the API's.
 3. **What is said about a thread**, built: name, description, tags, collaborators, deleting and restoring.
 4. **Following an origin**, built.
 5. **Recipes into configurations**, built.
-6. **Appendices and cases**: the builders, a family's cases, replacement cases, and carrying an expectation over.
+6. **Appendices and cases**, built: the builders, a family's cases, replacement cases, and carrying an expectation
+   over.
 7. **Typed cases**, with the portal's swift (agents/wip-portal.md, "Typed cases", and its phase 4).
 8. **Scorers**: the published entry points, their versions and their schemas (S1, S2), the code pin moved to them,
    views, parameters (S3), and labels on edits (S4).

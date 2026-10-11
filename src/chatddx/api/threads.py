@@ -265,7 +265,7 @@ def edit(
             varied = bench.variation(thread, given.parts.given())
             saved = bench.edit(thread, varied, given.head)
             kept, what = saved.variation.configuration, saved.what
-            findings = bench.linted(saved.digest)
+            findings, cases = bench.linted(saved.digest), {}
         else:
             if given.component is None:
                 raise ValueError("an edit holds a component")
@@ -274,11 +274,13 @@ def edit(
                 thread, given.head, component, given.language
             )
             kept, what, findings = written.edit, written.what, written.findings
+            cases = written.cases
     if what == "unchanged":
         response.status_code = 200
     return schemas.MadeEdit(
         **edit_of(bench, kept).model_dump(),
         findings=[schemas.Finding.of(f) for f in findings],
+        cases=cases,
     )
 
 
@@ -365,6 +367,22 @@ def proposal(bench: BenchDep, thread: int) -> schemas.Proposal | None:
 def follow(bench: BenchDep, thread: int, given: schemas.NewFollow) -> schemas.MadeEdit:
     with refused():
         written = bench.follow(thread, given.head, given.language)
+    return schemas.MadeEdit(
+        **edit_of(bench, written.edit).model_dump(),
+        findings=[schemas.Finding.of(f) for f in written.findings],
+    )
+
+
+@router.post(
+    "/threads/{thread}/carries",
+    status_code=201,
+    responses={
+        409: {"description": "The thread has moved on since the head the edit names"}
+    },
+)
+def carry(bench: BenchDep, thread: int, given: schemas.NewCarry) -> schemas.MadeEdit:
+    with refused():
+        written = bench.carry(thread, given.head, given.case)
     return schemas.MadeEdit(
         **edit_of(bench, written.edit).model_dump(),
         findings=[schemas.Finding.of(f) for f in written.findings],

@@ -156,6 +156,14 @@ afterwards comes back. A deleted thread is restored before anything else is said
 found" as "no configuration N of yours"; a login that names nobody, an empty name or tag, and taking a description
 away are unprocessable.
 
+## Appendices and cases
+A family lists its cases at its current vignette, its default first, each with its appendices and the expectation
+it is scored against under each schema (`agents/wip-bench.md`, "Appendices and cases"). The person writes an
+appendix for a family from its text, and builds a case from appendices they see, in order, or stores the replacement
+of a case a repair left at an earlier vignette. An appendix's new version, written as any edit, answers with each case
+it replaced. An expectation is carried onto another case of its family by an edit of its own, which names the head
+it was made on.
+
 ## Following an origin
 A fork whose origin has moved on has a proposal: what following would keep, with the base, the origin's head, what
 the fork varies, and for a configuration the recipe it compiles from (`agents/wip-bench.md`, "Following an
@@ -175,9 +183,10 @@ A person is scored against their own expectations only, so they take the shared 
 
 ## Runs
 ### Starting one
-A run is a configuration's variation, at an endpoint, on the cases of some families, picked by id or by tag, with
-one seed, drawn from the trial's whole range unless given. The cases are the families' because a family is what the
-person sees and picks; the run gives back the cases' digests.
+A run is a configuration's variation, at an endpoint, on the cases of some families, picked by id or by tag, or on
+cases named by digest, each one of a family's current cases, with one seed, drawn from the trial's whole range unless
+given. A family stands for its default case, because a family is what the person sees and picks; a case with
+appendices is named. The run gives back the cases' digests.
 
 The run is started within the request, so whatever refuses it does so before anything is sent. The gate refuses an
 endpoint that doesn't serve the trial's engine, isn't cleared for a sensitive source among the cases', or lacks its
@@ -254,7 +263,7 @@ A refusal's body is `{"detail": "…"}`, except where a request doesn't validate
 | 403 | A cookie's request that changes something, or a sign-in, from another site's page. |
 | 404 | What the path names isn't there or isn't seen by the person, a thread is of another kind than the route takes, a source doesn't hold a vignette, or a configuration to edit isn't the person's. |
 | 409 | Taking an expectation the person has their own of, without saying to replace it; an edit or a follow whose head has moved on. |
-| 422 | A request that doesn't validate or names a field it shouldn't; a kind that isn't one; a variation the bench refuses; a query or body naming what the person doesn't see; tags no case has; the gate's refusal of a run; taking an expectation that is the person's already; a component the bench refuses, or parts for what isn't a configuration and a component for what is; what is said of a thread that the bench refuses, or of a deleted one; following with nothing to follow. |
+| 422 | A request that doesn't validate or names a field it shouldn't; a kind that isn't one; a variation the bench refuses; a query or body naming what the person doesn't see; tags no case has; the gate's refusal of a run; taking an expectation that is the person's already; a component the bench refuses, or parts for what isn't a configuration and a component for what is; what is said of a thread that the bench refuses, or of a deleted one; following with nothing to follow; a case of appendices or a replacement the bench refuses; carrying an expectation outside its family; a run naming a case that isn't a current one of a family the person sees. |
 | 500 | A run that failed on its thread, for a request waiting for its answer. |
 
 An edit that changes nothing is answered 200 with the head; what is made is answered 201; a deletion 204.

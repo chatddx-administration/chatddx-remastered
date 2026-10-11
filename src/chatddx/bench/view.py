@@ -1,4 +1,4 @@
-from collections.abc import Collection, Iterable, Mapping
+from collections.abc import Collection, Iterable, Mapping, Sequence
 from dataclasses import dataclass, field
 from types import EllipsisType
 from typing import Literal
@@ -18,6 +18,7 @@ from chatddx.catalog import (
     latest,
     variants_for,
 )
+from chatddx.catalog.families import rebind_case
 from chatddx.catalog.threads import picked
 from chatddx.catalog.titles import short
 from chatddx.core.rig import rig
@@ -29,7 +30,7 @@ from chatddx.factors.base import (
     resolve,
 )
 from chatddx.factors.bundle import Registry
-from chatddx.factors.cases import Case, Vignette, prepare_case
+from chatddx.factors.cases import Appendix, Case, Vignette, prepare_case
 from chatddx.factors.engine import LocalEngine, RemoteEngine
 from chatddx.factors.kinds import BY_KIND
 from chatddx.factors.request import (
@@ -67,6 +68,7 @@ KINDS: dict[str, tuple[str, ...]] = {
     "judge": ("judge",),
     "expectation_schema": ("expectation_schema",),
     "expectation": ("expectation",),
+    "appendix": ("appendix",),
     "canary_set": ("canary_set",),
     "model": ("model",),
     "engine": ("engine.local", "engine.remote"),
@@ -74,7 +76,7 @@ KINDS: dict[str, tuple[str, ...]] = {
 
 # The kinds a person writes as components. A configuration is written as a variation.
 WRITTEN: frozenset[str] = frozenset(
-    {*(f"chunk.{part}" for part in PARTS), "expectation"}
+    {*(f"chunk.{part}" for part in PARTS), "expectation", "appendix"}
 )
 
 COMPILED_LANGUAGE = "a compiled configuration's language comes from its recipe"
@@ -166,6 +168,8 @@ class Written:
     edit: Edit
     what: Literal["created", "a new version", "unchanged"]
     findings: list[Finding]
+    # For an appendix's edit, each case that held the old version and its replacement.
+    cases: dict[str, str] = field(default_factory=dict)
 
 
 SAVED: dict[Kept, Literal["created", "a new version", "unchanged"]] = {
@@ -840,8 +844,11 @@ class Bench:
             raise ValueError(f"{kind} components have no language of their own")
         if isinstance(component, Expectation):
             self._check_expecting(component, thread)
+        if isinstance(component, Appendix):
+            component = self._bound(component)
         registry = self.store.load(s.digest for s in component.refs())
         _ = registry.add(component)
+        old = None if thread is None else self.catalog.head(thread).digest
         with self.conn.transaction():
             _ = self.store.add(registry, [component.digest])
             if language is not None:
@@ -854,7 +861,108 @@ class Bench:
                 forked_from=forked_from,
                 head=head,
             )
-        return Written(edit, SAVED[kept], self.linted(component.digest))
+            replaced = (
+                self._replaced(old, component)
+                if isinstance(component, Appendix) and old and kept == "edited"
+                else {}
+            )
+        return Written(edit, SAVED[kept], self.linted(component.digest), replaced)
+
+    # An appendix as the bench keeps it: its line endings LF, as browsers send CRLF, and
+    # bound to the current vignette of a family the person sees.
+    def _bound(self, appendix: Appendix) -> Appendix:
+        vignette = appendix.vignette
+        families = {b.family for b in self._rows.bindings_sharing(vignette)}
+        if not any(
+            self._current(f) == vignette
+            and self.catalog.about(Subject(family=f)).shows(self.person.id)
+            for f in families
+        ):
+            raise ValueError(
+                "an appendix is bound to the current vignette of a case you see"
+            )
+        text = appendix.text.replace("\r\n", "\n").replace("\r", "\n")
+        return Appendix(vignette=vignette, text=text)
+
+    # Each stored case that holds the appendix `old` at `new`'s vignette, stored again
+    # with `new` in its place; no expectation moves with it.
+    def _replaced(self, old: str, new: Appendix) -> dict[str, str]:
+        replaced: dict[str, str] = {}
+        for digest in self.store.reaching(old, "case"):
+            case = resolve(self.get, digest, Case)
+            if case.vignette != new.vignette:
+                continue
+            held = tuple(new.digest if a == old else a for a in case.appendices)
+            made = Case(vignette=case.vignette, appendices=held)
+            registry = self.store.load(held)
+            _ = self.store.add(registry, [registry.add(made)])
+            replaced[digest] = made.digest
+        return replaced
+
+    def _current(self, family: int) -> Vignette:
+        return self._rows.bindings([family])[-1].vignette
+
+    # An appendix of `text` for `family`, a case the person sees, bound to its current
+    # vignette; written with `new`, `fork_component` or `edit_component`.
+    def appendix(self, family: int, text: str) -> Appendix:
+        found = self.family_by_id(family)
+        return self._bound(Appendix(vignette=self._current(found.id), text=text))
+
+    # The stored cases of `family` at its current vignette, the bare one first.
+    def cases(self, family: int) -> list[str]:
+        found = self.family_by_id(family)
+        vignette = self._current(found.id)
+        held = [d for d, _ in self._rows.bound_to([vignette], "case")]
+        bare = Case(vignette=vignette).digest
+        return sorted(held, key=lambda d: (d != bare, d))
+
+    # A case of `family` with `appendices` in order, each one the person sees, stored at
+    # its current vignette. Nothing is written in the catalog, since a case belongs to
+    # its family by its vignette.
+    def case(self, family: int, appendices: Sequence[str]) -> str:
+        found = self.family_by_id(family)
+        for digest in appendices:
+            held = self.catalog.containing(digest)
+            if not any(self.about(e.thread).shows(self.person.id) for e in held):
+                raise NotFound(f"no appendix {digest} for {self.person.login}")
+        made = Case(vignette=self._current(found.id), appendices=tuple(appendices))
+        registry = self.store.load(appendices)
+        _ = self.store.add(registry, [registry.add(made)])
+        return made.digest
+
+    # The replacement of `case`, left at an earlier vignette of its family by a repair:
+    # the same appendix texts at the current one, stored.
+    def replacement(self, case: str) -> str:
+        family = self.catalog.family(case)
+        if family is None:
+            raise NotFound(f"no case {case} for {self.person.login}")
+        found = self.family_by_id(family)
+        current = self._current(found.id)
+        held = resolve(self.get, case, Case)
+        if held.vignette == current:
+            raise ValueError(f"{case} is at its family's current vignette already")
+        made, appendices = rebind_case(held, current, self.get)
+        registry = Registry()
+        for appendix in appendices.values():
+            _ = registry.add(appendix)
+        _ = self.store.add(registry, [registry.add(made)])
+        return made.digest
+
+    # The person's expectation `thread`, whose head was `head` when they saw it, carried
+    # onto `case`, another case of its case's family, with the same data: a clinician's
+    # word that it still holds there.
+    def carry(self, thread: int, head: int, case: str) -> Written:
+        edit, _, word = self._seen(thread)
+        if word != "expectation":
+            raise ValueError(f"{word} {thread} isn't an expectation")
+        held = resolve(self.get, edit.digest, Expectation)
+        family = self.catalog.family(held.case)
+        if family is None or self.catalog.family(case) != family:
+            raise ValueError(f"{case} isn't a case of the family {held.case} is of")
+        carried = Expectation(
+            case=case, expectation_schema=held.expectation_schema, data=held.data
+        )
+        return self.edit_component(thread, head, carried)
 
     # A component's language is its text's, so other threads may hold it too: one it has
     # is kept, and the person's is written only where it has none.

@@ -175,8 +175,8 @@ def test_a_run_the_request_names_wrong_is_unprocessable(signed: TestClient) -> N
     good = asked(signed)
     chunk = thread(signed, "reasoning", OFF)
     wrong: list[tuple[dict[str, Any], str]] = [
-        ({"tags": ["edn"]}, "a run takes families or tags, and not both"),
-        ({"families": None}, "a run takes families or tags, and not both"),
+        ({"tags": ["edn"]}, "a run takes one of families, tags or cases"),
+        ({"families": None}, "a run takes one of families, tags or cases"),
         ({"families": []}, "a run takes at least one case"),
         ({"families": [999]}, "no case 999 for alice"),
         ({"families": None, "tags": ["nowhere"]}, "no case tagged nowhere for alice"),

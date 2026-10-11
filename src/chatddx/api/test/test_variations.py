@@ -318,13 +318,13 @@ def test_an_edit_is_a_new_version_of_one_s_own_configuration(
         "alice",
         variation(signed, mine, reasoning=off)["skeleton"],
     )
-    assert edited.pop("findings") == []
+    assert (edited.pop("findings"), edited.pop("cases")) == ([], {})
     assert signed.get(path).json()[-1] == edited
 
     now = edited["id"]
     again = signed.post(path, json={"head": now, "parts": {"reasoning": off}})
     assert again.status_code == 200
-    assert again.json() == {**edited, "findings": []}
+    assert again.json() == {**edited, "findings": [], "cases": {}}
     assert signed.post(path, json={"head": now}).status_code == 200
     moved = signed.post(path, json={"head": seen, "parts": {"reasoning": None}})
     assert moved.status_code == 409

@@ -43,8 +43,8 @@ Three packages hold rules about a person, each its own part of them:
 
 ## What a person sees
 - **Threads and families** they own or collaborate on, while they are live. A kind of thread is asked for by the word
-  for it: configuration, each recipe part, tool, scorer, judge, expectation, expectation schema, canary set, model or
-  engine. A family stands for its case: the one its current vignette makes alone, else the first that holds the
+  for it: configuration, each recipe part, tool, scorer, judge, expectation, appendix, expectation schema, canary set,
+  model or engine. A family stands for its case: the one its current vignette makes alone, else the first that holds the
   vignette. A family without a case isn't shown.
 - **Their own deleted threads**, listed apart and found by id, so that they can be read and restored. Nothing else
   finds them: not names, not lists, not what is run or scored against.
@@ -142,6 +142,9 @@ The bench writes configurations, chunks, expectations, runs and scores for the p
   whether it is deleted (see "What is said about a thread").
 - **Following** a fork's origin: keeping the catalog's proposal as an edit of the person's fork (see "Following an
   origin").
+- **Appendices and cases**: writing an appendix for a case the person sees, building a case of a family from its
+  appendices, storing a late case's replacement, and carrying an expectation onto another case of its family (see
+  "Appendices and cases").
 
 An unsaved skeleton has what it was compiled from stored, by the running code, when it is saved or started
 (docs/catalog.md, "Recipes"). The runner and the scoring pass write each row as it lands, so starting and scoring need
@@ -165,6 +168,24 @@ Restoring is held to the catalog's rules, so a second expectation of the person'
 refused, worded as the person reads it. A thread isn't shared with its owner, a name and a tag aren't empty, and a
 login that names nobody is refused. Handing a thread over to another owner isn't offered (agents/wip-authoring.md,
 A9).
+
+### Appendices and cases
+A family stands for one case, the one its current vignette makes alone, else the first that holds it, and lists all
+of its cases at its current vignette, that one first. What is run and scored is a case, so a run can name cases, each
+one of a family's current ones.
+
+An appendix is written like any other component, but always bound to the current vignette of a family the person
+sees, and with its line endings made LF before it is digested, since browsers send CRLF: the bench does it for every
+edge. The bench builds one from a family and a text. A case is built from a family and appendices the person sees, in
+order, at its current vignette, and stored; nothing is written in the catalog, since a case belongs to its family by
+its vignette, and an appendix bound to another vignette is refused by the case's own rule.
+
+A new version of an appendix stores each case that held the old one at that vignette again, with the new one in its
+place, so the new cases are there to pick, and says which replaced which. No expectation moves with them, since an
+appendix can change the right answer. Carrying one is a write of its own: the person's expectation, edited onto
+another case of its family with the same data, as a clinician's word that it still holds there. A case left at an
+earlier vignette by a repair is offered a replacement (docs/catalog.md, "What has moved on"), which the bench stores
+when asked.
 
 ### Following an origin
 When a fork's origin has moved on, the catalog proposes the origin's head with the fork's changes on top
@@ -264,14 +285,13 @@ What is still open. It doesn't move to `docs/`.
 ### Start with this
 1. **Adopting the docs.** This file and `agents/wip-bench-api.md`, as `docs/bench.md` and `docs/bench-api.md`.
 2. **Writes for authoring** (below), planned in `agents/wip-authoring.md`. The portal's authoring and swift wait on
-   them. Taking expectations, writing chunks and expectations, what is said about a thread, following an origin, and
-   recipes into configurations, its phases 1 to 5, are built.
+   them. Its phases 1 to 6 are built, from taking expectations to appendices and cases.
 
 ### Writes for authoring
 Planned in `agents/wip-authoring.md`: chunks, recipes, appendices and the cases that order them, expectations, what is
 said about a thread, and following an origin. Taking expectations is built ("Taking"), and the giftbag keeps a
 person's own; so are writing chunks and expectations, an edit's head, what is said about a thread, following an
-origin, and making a configuration from a recipe ("Writes for the person").
+origin, making a configuration from a recipe, and appendices and cases ("Writes for the person").
 
 ### Takes
 A take is the agent's recommendation, built on but not decided.

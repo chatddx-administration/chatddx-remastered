@@ -65,6 +65,22 @@ def _families(bench: Bench, given: schemas.NewRun) -> list[Family]:
     return [seen[f] for f in wanted]
 
 
+# A run's cases: its families' or its tags', or the cases it names, each one of the
+# current cases of a family the person sees.
+def _cases(bench: Bench, given: schemas.NewRun) -> list[str]:
+    if given.cases is None:
+        return [f.case for f in _families(bench, given)]
+    wanted = list(dict.fromkeys(given.cases))
+    if not wanted:
+        raise HTTPException(422, "a run takes at least one case")
+    seen = {f.id for f in bench.families()}
+    for case in wanted:
+        family = bench.catalog.family(case)
+        if family not in seen or case not in bench.cases(family):
+            raise HTTPException(422, f"no case {case} for {bench.person.login}")
+    return wanted
+
+
 # A run started on a connection of its own, which its thread closes when it ends.
 def _start(held: AppState, person: Person, given: schemas.NewRun) -> _Started:
     conn = held.connect()
@@ -78,7 +94,7 @@ def _start(held: AppState, person: Person, given: schemas.NewRun) -> _Started:
             _ = bench.endpoint(given.endpoint)
         except LookupError as e:
             raise HTTPException(422, str(e)) from None
-        cases = [f.case for f in _families(bench, given)]
+        cases = _cases(bench, given)
         seed = suggest_seeds(1)[0] if given.seed is None else given.seed
         with refused():
             running = bench.start(variation, given.endpoint, cases, seed)
