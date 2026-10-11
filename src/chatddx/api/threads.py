@@ -139,10 +139,9 @@ def variation(
         except LookupError as e:
             raise HTTPException(422, str(e)) from None
         # Without a case tagged so, the pair's checks still apply.
-        cases = [f.case for f in families] or None
         findings = [
             schemas.Finding.model_validate(f.model_dump())
-            for f in bench.findings(varied, engine, seed, cases)
+            for f in bench.findings(varied, engine, seed, families or None)
         ]
     parts = None
     if varied.recipe is not None:

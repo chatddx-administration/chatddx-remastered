@@ -5,7 +5,7 @@ from uuid import UUID
 
 from pydantic import JsonValue
 
-from chatddx.catalog import About, Edit, Kept, Subject, variants_for
+from chatddx.catalog import About, Edit, Kept, Subject, latest, variants_for
 from chatddx.catalog.titles import short
 from chatddx.core.rig import rig
 from chatddx.factors.base import (
@@ -16,7 +16,7 @@ from chatddx.factors.base import (
     resolve,
 )
 from chatddx.factors.bundle import Registry
-from chatddx.factors.cases import Case, prepare_case
+from chatddx.factors.cases import Case, Vignette, prepare_case
 from chatddx.factors.engine import LocalEngine, RemoteEngine
 from chatddx.factors.request import (
     Skeleton,
@@ -321,11 +321,12 @@ class Bench:
 
     def families(self, tags: Iterable[str] = ()) -> list[Family]:
         wanted = set(tags)
+        tagged = [(f, a) for f, a in self._families() if not wanted or wanted & a.tags]
+        cases = self._cases([f for f, _ in tagged])
         found = [
             Family(family, about, case)
-            for family, about in self._families()
-            if not wanted or wanted & about.tags
-            if (case := self._case(family)) is not None
+            for family, about in tagged
+            if (case := cases[family]) is not None
         ]
         return sorted(found, key=lambda f: f.name)
 
@@ -333,11 +334,18 @@ class Bench:
         return self.catalog.visible_families(self.person.id)
 
     # A family's case is the one its vignette makes alone, else the first holding it.
-    def _case(self, family: int) -> str | None:
-        vignette = self.catalog.bindings(family)[-1].vignette
-        cases = self._rows.bound_to(vignette, "case")
-        bare = Case(vignette=vignette).digest
-        return bare if bare in cases else next(iter(cases), None)
+    def _cases(self, families: list[int]) -> dict[int, str | None]:
+        current = latest((b.family, b.vignette) for b in self._rows.bindings(families))
+        held: dict[Vignette, list[str]] = {}
+        for digest, vignette in self._rows.bound_to(current.values(), "case"):
+            held.setdefault(vignette, []).append(digest)
+        found: dict[int, str | None] = {}
+        for family in families:
+            vignette = current.get(family)
+            cases = [] if vignette is None else held.get(vignette, [])
+            bare = None if vignette is None else Case(vignette=vignette).digest
+            found[family] = bare if bare in cases else next(iter(cases), None)
+        return found
 
     # A family by its name, as `_named` finds a thread's; one without a name is called
     # `family ID`.
@@ -348,7 +356,7 @@ class Bench:
 
     def family_by_id(self, id: int) -> Family:
         about = self.catalog.about(Subject(family=id))
-        case = self._case(id) if about.shows(self.person.id) else None
+        case = self._cases([id])[id] if about.shows(self.person.id) else None
         if case is None:
             raise NotFound(f"no case {id} for {self.person.login}")
         return Family(id, about, case)
@@ -367,16 +375,16 @@ class Bench:
         return sorted({e.expectation_schema for e in held})
 
     # The expectation the case is scored against for the person under `schema`
-    # (`Catalog.expectation_for`): Ambiguous when there are several to choose from.
+    # (`Catalog.expectations_for`): Ambiguous when there are several to choose from.
     def expectation(self, case: str, schema: str) -> Expectation | None:
-        digest = self._expectation_for(case, schema)
+        digest = self._expectations_for([case], schema)[case]
         return None if digest is None else resolve(self.get, digest, Expectation)
 
     # Several to choose from is the one LookupError
-    # src/chatddx/catalog/threads.py:expectation_for raises.
-    def _expectation_for(self, case: str, schema: str) -> str | None:
+    # src/chatddx/catalog/threads.py:expectations_for raises.
+    def _expectations_for(self, cases: list[str], schema: str) -> dict[str, str | None]:
         try:
-            return self.catalog.expectation_for(case, self.person.id, schema)
+            return self.catalog.expectations_for(cases, self.person.id, schema)
         except LookupError as e:
             raise Ambiguous(str(e)) from None
 
@@ -394,24 +402,34 @@ class Bench:
         return registry, trial
 
     # What the lints say of the variation run on `engine` as a trial: the pair's checks,
-    # and with `cases` the languages of those cases too. Without, any one case makes the
-    # trial, since the pair's checks don't read cases.
+    # and with `families` the languages of their cases too. Without, any one case makes
+    # the trial, since the pair's checks don't read cases.
     def findings(
         self,
         variation: TriedVariation,
         engine: str,
         seed: int,
-        cases: list[str] | None = None,
+        families: list[Family] | None = None,
     ) -> list[Finding]:
-        some = cases
-        if some is None:
-            held = (self._case(f) for f, _ in self._families())
+        if families is None:
+            held = self._cases([f for f, _ in self._families()]).values()
             first = next((c for c in held if c is not None), None)
             some = [] if first is None else [first]
+        else:
+            some = [f.case for f in families]
         if not some:
             return []
         registry, trial = self.trial(self.skeleton(variation), engine, some, seed)
-        languages = None if cases is None else self.catalog.language_of
+        if families is None:
+            return lints(registry, self.facts, [trial.digest])
+        # A family's case has the family's language, as Catalog.language_of finds it.
+        known = {f.case: f.about.language for f in families}
+
+        def languages(digest: str) -> str | None:
+            if digest in known:
+                return known[digest]
+            return self.catalog.language_of(digest)
+
         return lints(registry, self.facts, [trial.digest], languages)
 
     def scorers(self) -> list[tuple[Edit, About, Scorer]]:
@@ -438,12 +456,21 @@ class Bench:
     def scoring(self, run: RunStarted, scorer: str) -> Scoring | None:
         trial = resolve(self.get, run.trial, Trial)
         schema = resolve(self.get, scorer, Scorer).expectation_schema
-        found = [
-            expectation
-            for case in trial.cases
-            if (expectation := self._expectation_for(case, schema)) is not None
-        ]
-        return Scoring(scorer=scorer, expectations=tuple(found)) if found else None
+        held = self._expectations_for(list(trial.cases), schema)
+        found = tuple(e for e in held.values() if e is not None)
+        return Scoring(scorer=scorer, expectations=found) if found else None
+
+    # The data of the expectation each case is scored against under `schema`, for the
+    # cases that have one.
+    def _expected(self, cases: list[str], schema: str) -> dict[str, JsonValue]:
+        digests = self._expectations_for(cases, schema)
+        held = [d for d in digests.values() if d is not None]
+        read = dict(self._rows.components(held))
+        return {
+            case: resolve(read.__getitem__, digest, Expectation).data
+            for case, digest in digests.items()
+            if digest is not None
+        }
 
     def labels(self, scorer: str) -> dict[int, str]:
         return {
@@ -456,22 +483,24 @@ class Bench:
     # and which cases have an expectation it picks something from.
     def reach(self, variation: TriedVariation, families: list[Family]) -> list[Reach]:
         schema = self.skeleton(variation).output_schema
-        data: dict[tuple[str, str], JsonValue | None] = {}
+        cases = [f.case for f in families]
+        data: dict[str, dict[str, JsonValue]] = {}
         found: list[Reach] = []
         for edit, about, scorer in self.scorers():
             labels = self.labels(edit.digest)
             name = about.name or self.catalog.title(edit.thread)
+            expected = scorer.expectation_schema
             for i, view in enumerate(scorer.views):
                 offered = reaches(schema, view.output)
-                missing: list[Family] = []
-                for f in families if offered else []:
-                    key = (f.case, scorer.expectation_schema)
-                    if key not in data:
-                        read = self.expectation(f.case, scorer.expectation_schema)
-                        data[key] = None if read is None else read.data
-                    held = data[key]
-                    if held is None or not view.expectation_items(held):
-                        missing.append(f)
+                if offered and expected not in data:
+                    data[expected] = self._expected(cases, expected)
+                missing = [
+                    f
+                    for f in families
+                    if offered
+                    if (held := data[expected].get(f.case)) is None
+                    or not view.expectation_items(held)
+                ]
                 label = labels.get(i, f"view {i}")
                 found.append(
                     Reach(edit.thread, name, i, label, offered, len(families), missing)

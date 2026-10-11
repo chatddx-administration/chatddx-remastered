@@ -4,9 +4,10 @@ from pydantic import JsonValue
 from chatddx.catalog import Edit, Entry, EntryField, Subject, threads
 from chatddx.catalog.test.memory import Memory, compiled
 from chatddx.factors.bundle import Registry
+from chatddx.factors.cases import Case, Vignette
 from chatddx.factors.request import Instructions, Sampling
 from chatddx.factors.scoring import Expectation, ExpectationSchema
-from chatddx.factors.test.sample import generation_recipe, world
+from chatddx.factors.test.sample import fp, generation_recipe, world
 
 pytestmark = pytest.mark.solidified
 
@@ -134,3 +135,32 @@ def test_a_case_is_scored_against_a_person_s_own_expectation_else_a_shared_one()
     _ = owned(rows, rows.start(expecting("aortic dissection")), BOB, ALICE)
     with pytest.raises(LookupError, match="expectations to choose from, in threads"):
         _ = threads.expectation_for(rows, case, ALICE, schema)
+
+
+def test_expectations_are_picked_for_several_cases_at_once() -> None:
+    reg = Registry()
+    case = world(reg)["case"]
+    cough, rash = (
+        reg.add(Case(vignette=Vignette(source="registry", id=id, fingerprint=fp(id))))
+        for id in ("c2", "c3")
+    )
+    schema = reg.add(ExpectationSchema(json_schema={"type": "object"}))
+
+    def expecting(of: str, *ddx: str) -> str:
+        data: JsonValue = {"ddx": list(ddx)}
+        return reg.add(Expectation(case=of, expectation_schema=schema, data=data))
+
+    rows = Memory(reg)
+    shared = owned(rows, rows.start(expecting(case, "ACS")), ARCHIVE, ALICE)
+    _ = owned(rows, rows.start(expecting(cough, "asthma")), ARCHIVE, ALICE)
+    mine = owned(rows, rows.start(expecting(cough, "pneumonia")), ALICE)
+    assert threads.expectations_for(rows, [case, cough, rash], ALICE, schema) == {
+        case: shared.digest,
+        cough: mine.digest,
+        rash: None,
+    }
+
+    _ = owned(rows, rows.start(expecting(case, "PE")), BOB, ALICE)
+    _ = owned(rows, rows.start(expecting(cough, "croup")), ALICE)
+    with pytest.raises(LookupError, match=f"case {cough} has expectations to choose"):
+        _ = threads.expectations_for(rows, [rash, cough, case], ALICE, schema)

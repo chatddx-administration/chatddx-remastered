@@ -491,6 +491,18 @@ def test_families(conn: Connection) -> None:
     assert [b.vignette.id for b in rows.bindings_sharing(look)] == ["c1", "c2"]
     assert rows.bindings_sharing(look.model_copy(update={"source": "other"})) == []
 
+    assert [b.family for b in rows.bindings([handed, family, 999])] == [family, handed]
+    elsewhere = resolve(reg.get, other, Case).vignette
+    assert rows.bound_to([elsewhere, vignette, vignette], "case") == sorted(
+        [(ids["case"], vignette), (bare, vignette), (other, elsewhere)]
+    )
+    assert rows.bound_to([vignette], "appendix") == [(case.appendices[0], vignette)]
+    assert rows.bound_to([look], "case") == []
+    ghost = "sha256:" + "0" * 64
+    assert rows.components([other, ghost, bare]) == sorted(
+        [(bare, reg.get(bare)), (other, reg.get(other))]
+    )
+
 
 def test_behind_looks_through_cases(conn: Connection) -> None:
     catalog, store, reg, ids, alice = stored_world(conn)

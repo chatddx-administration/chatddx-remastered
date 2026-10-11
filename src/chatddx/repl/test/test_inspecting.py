@@ -32,7 +32,6 @@ def test_show_needs_something_in_the_cell(say: Say):
     assert "the cell is empty: use CONFIGURATION, on ENDPOINT" in say("show")
 
 
-@pytest.mark.slow
 def test_show_sets_each_part_beside_what_it_is_and_renders_the_request(say: Say):
     written = say(f"cell {FREE_TEXT} {QWEN}", "show")
 
@@ -129,7 +128,6 @@ def test_show_case_says_its_vignette_expectation_and_tags(say: Say):
     assert "no runs of yours with this case" in written
 
 
-@pytest.mark.slow
 def test_show_case_says_when_scoring_has_expectations_to_choose_from(
     bench: Bench, say: Say
 ):

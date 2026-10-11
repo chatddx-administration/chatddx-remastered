@@ -20,7 +20,7 @@ class RepairPlan:
 
 
 def bindings(rows: Reader, family: int) -> list[Binding]:
-    found = rows.bindings(family)
+    found = rows.bindings([family])
     if not found:
         raise LookupError(f"no family with id {family}")
     return found
@@ -45,7 +45,7 @@ def holder(
 ) -> tuple[int, bool] | None:
     # A family that holds the place now has a binding to it, its latest.
     for family in sorted({b.family for b in rows.bindings_sharing(vignette)}):
-        held = rows.bindings(family)[-1].vignette
+        held = rows.bindings([family])[-1].vignette
         if family != but and (
             held.id == vignette.id or held.fingerprint == vignette.fingerprint
         ):
@@ -144,13 +144,15 @@ def plan_repair(
         return appendices[appendix]
 
     cases: dict[str, str] = {}
-    for digest in rows.bound_to(old, "case"):
+    for digest, _ in rows.bound_to([old], "case"):
         case, moved = rebind_case(resolve(rows.get, digest, Case), vignette, rows.get)
         appendices |= {a: registry.add(m) for a, m in moved.items()}
         cases[digest] = registry.add(case)
     moves = [
         (t, rebind(h.digest))
-        for t, h in heads_holding(rows, rows.bound_to(old, "appendix")).items()
+        for t, h in heads_holding(
+            rows, [d for d, _ in rows.bound_to([old], "appendix")]
+        ).items()
     ]
     if vignette.id != old.id:
         for t, h in heads_holding(rows, rows.expectations(list(cases))).items():

@@ -1,5 +1,6 @@
 from typing import Any
 
+import psycopg
 import pytest
 from fastapi.testclient import TestClient
 
@@ -214,6 +215,31 @@ def test_a_variation_the_bench_refuses_is_unprocessable(
         404,
         {"detail": f"no configuration {mine['id']} for bob"},
     )
+
+
+@pytest.mark.slow
+def test_a_look_s_queries_don_t_grow_with_its_cases(
+    signed: TestClient, db: str, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    web = thread(signed, "configuration", PLAN_WEB)
+    counted = [0]
+    execute = psycopg.Cursor.execute
+
+    # Only the look's: the fixtures make the next test's database meanwhile.
+    def counting(cursor: psycopg.Cursor[Any], *args: Any, **kwargs: Any) -> Any:
+        counted[0] += cursor.connection.info.dbname == db
+        return execute(cursor, *args, **kwargs)
+
+    monkeypatch.setattr(psycopg.Cursor, "execute", counting)
+
+    def look(**params: Any) -> tuple[int, int]:
+        counted[0] = 0
+        shown = variation(signed, web, endpoint=QWEN, **params)
+        return shown["reach"][0]["cases"], counted[0]
+
+    (few, queries), (every, again) = look(tag="edn"), look()
+    assert few < every
+    assert queries == again
 
 
 @pytest.mark.slow

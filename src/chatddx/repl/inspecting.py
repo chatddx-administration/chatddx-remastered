@@ -112,8 +112,7 @@ def _show_cell(repl: Repl, tags: tuple[str, ...] = ()) -> None:
         repl.console.print("greedy: the seed isn't sent", style=LABEL)
 
     if cell.engine is not None:
-        cases = [f.case for f in families]
-        findings = bench.findings(variation, cell.engine, repl.seed, cases)
+        findings = bench.findings(variation, cell.engine, repl.seed, families)
         repl.console.print("lints", style="bold")
         repl.say_findings(findings)
         if not findings:

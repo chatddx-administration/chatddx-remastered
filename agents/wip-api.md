@@ -588,11 +588,33 @@ replaced at an endpoint and a tag, a fork, the same edit twice (201, then 200), 
 Open from phase 3:
 - **An unsaved variation's language is unknown**, so its lints say `language.unknown` over any cases, as the repl's do
   (`agents/wip-repl.md`, "An unsaved cell's language is unknown"). Saved, the same skeleton has one.
-- **A look takes 0.3–0.5 s** on the sample, with 99 cases. It builds the skeleton four times, for itself, the
-  request, the lints and the reach, as the repl's `show` does; what the time goes to isn't measured.
+- **One case with expectations to choose from refuses the whole look** with 409, since the reach asks for every
+  case's expectation as scoring would (`Bench.reach`, through `Catalog.expectations_for`). The repl's `show` stops
+  the same way. Counting such a case among the missing, or saying so per view, would let the rest show.
 - **A part given twice in a query**: the last one counts.
 - **An edit has no precondition.** It replaces its parts over the head when it comes (A5's drift). An `If-Match` on
   the head, or the head's edit in the body, would refuse one that moved.
+
+### A look's time
+A look took 0.3–0.5 s on the sample, with 99 cases. Measured through the bench at 1db04c3, it made about 1,000
+queries; building the skeleton four times took 1–4 ms of it. Three reads ran once per case: each family's case
+(`Bench._case`, 2 queries), each case's language for the lints (`Catalog.language_of`, about 5), and each case's
+expectation for the reach (`Catalog.expectation_for`, about 4, and a read of each head).
+- **Now a look's queries don't grow with its cases**: the bench's part makes 38 for 20, 30 or 99 cases (33 for
+  none), and takes about 60 ms on the sample here, from 245–310 ms. What still grows is Python's, about 0.3 ms a case, mostly parsing
+  the components read. `test_variations.py:test_a_look_s_queries_don_t_grow_with_its_cases` holds it: a look over 20
+  cases and one over 99 make as many queries, where 1db04c3 made 340 and 1,446.
+- **The catalog reads for many at once.** The `Reader`'s `bindings` and `bound_to` take collections, as most of its
+  reads do, and `components` is new. `catalog/threads.py:expectations_for` applies `expectation_for`'s rule to many
+  cases, reading the heads in one go, and `expectation_for` is one case of it. Proposed in `docs/catalog-api.md` and
+  `docs/store-api.md`.
+- **The bench**: `_cases` finds the case of many families at once, for `families`, `family_by_id` and `findings`.
+  `reach` and `scoring` read the expectations once per schema, so scoring a run of many cases, and `outstanding`,
+  are quicker too. `findings` takes the families rather than their cases, and reads their cases' languages from the
+  families it has, where it asked `Catalog.language_of` for each.
+- **Tests**: the suite went from 512 tests to 514, and from 48 s to 40 s here. Three tests that this sped up from
+  0.19–0.55 s to 0.06–0.11 s lost their slow mark. Others marked slow now measure 0.13–0.19 s here and keep it,
+  since the healthcheck's container ran the suite 1.5 times as slowly.
 
 ## Left out
 - **Free-text vignettes** (`RunIn.vignette`, the swift client's `symptoms`). A case is a source's vignette, by id,
