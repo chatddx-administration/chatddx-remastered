@@ -38,7 +38,11 @@ Authorization is a convenience, not a protection: it decides what is relevant to
 clearance and database grants, not by authorization. It goes by role first (which kinds a role sees, Z1), then also by
 the catalog's owner and collaborators (Z2).
 - Who sees what is `src/chatddx/identity/identity.py:sees`: the owner, and the collaborators. The catalog adds that
-  what it shows is live (`src/chatddx/catalog/model.py:About.shows`).
+  what it shows is live (`src/chatddx/catalog/model.py:About.shows`), and what a person owns, live, is
+  `About.owned_by`: their runs, what they may edit, and the expectations they are scored against
+  (`agents/wip-bench.md`, "Phase 3").
+- Of what a person sees, their own comes first: `src/chatddx/identity/identity.py:preferred`, which the bench uses to
+  find a thread or family by name and to name a digest's thread.
 - Z1's map from role to kinds goes beside `sees`. `identity` holds both, as data and functions with no store access.
 - The bench applies them to what is in the store and the World (`agents/wip-bench.md`, "Decided").
 

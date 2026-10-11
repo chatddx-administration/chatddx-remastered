@@ -13,13 +13,15 @@ https://github.com/chatddx-administration/chatddx/blob/504792cbeb09508f2c52912be
 ## Start with this
 1. **Decided: B3**, a person-scoped view, split between `identity` and the bench (see "Decided").
 2. **Phase 2** (see "Phase 2"): steps 1–11 are done. Step 12, Z1, waits for the portal.
-3. **Decided: K2 with R1** (see "Keeping 'cell' or not"). "Cell" is the repl's word only, and the bench speaks of a
+3. **Decided: H1**, a person is scored against their own expectations only, and owns at most one live expectation
+   thread per case and expectation schema (see "Phase 3"). Built; the docs carry `AGENT:` suggestions for it.
+4. **Decided: K2 with R1** (see "Keeping 'cell' or not"). "Cell" is the repl's word only, and the bench speaks of a
    `TriedVariation` and an endpoint. A test keeps the word out of the code outside `src/chatddx/repl/`.
-4. **The bench's modules** are `errors.py`, `outcome.py`, `variation.py` and `view.py` (see "Modules"). There is no
+5. **The bench's modules** are `errors.py`, `outcome.py`, `variation.py` and `view.py` (see "Modules"). There is no
    `bench/bench.py`.
-5. **The API's phase 0** added to the bench: lookups by id, a variation from an id and digests, `fork` and `edit`,
+6. **The API's phase 0** added to the bench: lookups by id, a variation from an id and digests, `fork` and `edit`,
    `Ambiguous` for several expectations, and `outcome.py` (`agents/wip-api.md` at cae55ad, "Phase 0: built").
-6. **Next: writes for authoring.** The bench writes configurations (`save`, `fork`, `edit`), runs (`start`) and
+7. **Next: writes for authoring.** The bench writes configurations (`save`, `fork`, `edit`), runs (`start`) and
    scores (`score`), and nothing else. The portal is where chunks, appendices and expectations are written
    (`docs/chatddx.md`, "Requirements"; `agents/wip-portal.md`), for the person, so the writes are the bench's (B3).
    Curation writes them only as the archive, from a data set's files (`src/chatddx/curation/write.py`). Not planned
@@ -30,7 +32,8 @@ https://github.com/chatddx-administration/chatddx/blob/504792cbeb09508f2c52912be
    - **Appendices**, bound to one vignette and stored as written, with CRLF normalized before they are digested
      (`docs/factors.md`, "Appendix"); and the cases that order them in a family.
    - **Expectations**, one case's reference answer, held to an expectation schema (`docs/factors.md`, "Expectation"),
-     and read back through `Bench.expectation`.
+     and read back through `Bench.expectation`; and taking one shared with the person, a fork, since only their own
+     counts (H1). Each is held to the catalog's rule of one per case and schema (see "Phase 3").
    - **Cases and families**, for swift's typed cases: the text, its `Case` and a family for the person, in one
      transaction (`agents/wip-portal.md`, "Swift", "Typed cases").
    - Beside them: a scorer's labels carried to its next edit (`docs/catalog.md`, "Scorer labels"), and deleting
@@ -45,6 +48,9 @@ https://github.com/chatddx-administration/chatddx/blob/504792cbeb09508f2c52912be
     being tried at an endpoint (see "'Cell', translated") and the writes made for the person.
 - **The two rules for the expectation a case is held to** were to be made one if that could be done cleanly, and
   otherwise looked at more deeply. It was clean (phase 2, step 4).
+- **H1**: a person is scored against their own expectation only; one shared with them counts once they fork it. A
+  person owns at most one live expectation thread per case and expectation schema, and should two writers at once
+  leave several, it is refused, visibly (see "Phase 3").
 - **"Cell" isn't a term of remastered**, and isn't to be used in code or docs. Its translation comes first, then a
   reconciliation. The user later reopened this: whether "cell" is worth keeping between the bench and the edges, as
   long as it stays out of the data model. Decided: K2 with R1 (see "Keeping 'cell' or not"), built in phase 2, step 6.
@@ -181,7 +187,7 @@ nowhere outside `src/chatddx/repl/`.
 | `errors.py` | `NotFound`, `Ambiguous` | nothing |
 | `outcome.py` | `outcome`, `usage`: how a run's item ended (an `Outcome`), and the tokens it used, a pure function each | `chatddx.factors.request`, `chatddx.ledger`, `chatddx.runner.send`, `chatddx.scorers.answer` |
 | `variation.py` | `PARTS`, `OPTIONAL`, `TriedVariation`: the variation being tried, a plain value | `chatddx.catalog`, `chatddx.factors.request` |
-| `view.py` | `Bench`, the person's view: what they see, the variations they try, and what is written for them; `KINDS`, and what `Bench` returns: `Family`, `Reach`, `Graded`, `Saved` | `errors.py`, `variation.py`, the store, the catalog, the factors, the facts, the inventory, the ledger, the runner, `chatddx.identity` (`Person`) and `chatddx.core.rig` |
+| `view.py` | `Bench`, the person's view: what they see, the variations they try, and what is written for them; `KINDS`, and what `Bench` returns: `Family`, `Reach`, `Graded`, `Saved` | `errors.py`, `variation.py`, the store, the catalog, the factors, the facts, the inventory, the ledger, the runner, `chatddx.identity` (`Person`, `preferred`) and `chatddx.core.rig` |
 
 `__init__.py` re-exports them, so edges import from `chatddx.bench` and never by path.
 
@@ -438,6 +444,8 @@ Sub-decisions:
      `_expected` repeats `expectations_for`'s "exactly one distinct head", and the two handle "several" apart.
      Scoring refuses the run under that scorer, `show case` says the case has expectations to choose from, and the
      reach counts it missing.
+   - Since phase 3 (H1), the choices are the person's own only, the pick is made once (`threads.picked`), and the
+     reach lists a case with several apart rather than as missing (see "Phase 3").
 
    Tests: `src/chatddx/bench/test/test_view.py`,
    `src/chatddx/repl/test/test_inspecting.py:test_show_case_says_when_scoring_has_expectations_to_choose_from`, and
@@ -502,6 +510,85 @@ Sub-decisions:
 12. **Z1**: the map from role to kinds goes in `identity`, once the portal's views give it meaning. `sees` then takes
     the person's roles and the kind.
 
+## Phase 3: what a person is scored against
+A person could find a case's expectation to be one "to choose from" through what others did, as the receiver of a
+share. It shouldn't happen to them, so the catalog now makes sure it can't, and refuses visibly if it happens anyway.
+
+### What could trigger it
+The pick was the person's own threads for the case and schema, else every one they saw; several distinct heads were
+refused. Each way there was a write:
+- **The person's own**: a second expectation for the case instead of a new version of the first; a second fork; an
+  edit of another of their threads onto the case or schema, which nothing checked; a restore while another was live;
+  an edit of one of two threads that had the same head.
+- **Someone else's, into what the person owns**: a thread created naming them as its owner, or handed over to them;
+  `init-data --giftbag` after they wrote their own for a sample case, since they had no fork of the archive's.
+- **Someone else's, when the person owns none**: a second person sharing theirs; an edit of a shared thread that had
+  another's head, such as an untouched fork of the archive's; a restore, or an edit onto the case or schema; the
+  person losing their own, by deleting it or handing it over, and falling back to several shared ones.
+- **The question changing**: a scorer edited to another expectation schema, under which there were several.
+
+One such case among a run's twenty refused the whole run under that scorer, and `Bench.unscored` then left the
+scorer out, so the run never showed in `outstanding`.
+
+Not triggers: a family repair, since a rename carries each expectation thread over with its owner and a content
+change leaves the new case with none; and the archive alone, since `src/chatddx/curation/write.py:_Init.put` refuses
+a second archive thread for a case. At d5ebf52 only tests reached it, through the catalog directly: nothing wrote,
+shared, handed over or deleted expectations for a person but curation.
+
+### Options
+- **H1. Own only.** A shared expectation is there to read and to take, by forking it; scoring reads only what the
+  person owns. The giftbag already works so for the sample. A newcomer takes before they score, and a correction
+  upstream reaches them as a proposal ("what has moved on") rather than silently.
+- **H2. Own, else a designated source's**, such as the archive's or a role's. Nothing to set up for a newcomer, but
+  `identity` would learn who is designated, and a correction upstream changes what a person is scored against under
+  them.
+- **H3. As before, refusing**, with "take the one you mean" as the way out.
+
+Decided: H1, with the write rule below, and a visible refusal for what two writers at once can still leave.
+
+### Built
+1. **H1**: `src/chatddx/catalog/threads.py:expectation_choices` keeps the person's own live threads only
+   (`About.owned_by`). `expectations_for`, and so `Bench.expectation`, `Bench.scoring` and the reach, read nothing
+   shared. A schema whose expectations the person only sees shows as "none of yours" in `show case`, and with no
+   expectation in the API's family.
+2. **The write rule**: `threads.check_expectation`, which `Catalog.edit` and `Catalog.note` call before they write. A
+   person owns at most one live expectation thread per case and expectation schema: a second thread, an edit onto the
+   case or schema, an owner entry naming them, and a restore are refused with a `ValueError` naming the thread they
+   own. `Catalog.create` is checked through its owner entry, inside its transaction.
+3. **One pick**: `threads.picked(case, choices)` gives none, the one distinct head, or refuses naming the threads.
+   `expectations_for` and the reach (`Bench._expected`) both use it.
+4. **When several exist anyway**, which two writers at once can leave: scoring refuses, as before; the reach lists the
+   case apart, as `Reach.choosing` (`choosing` in the API, "to choose from" in the repl), not as missing; and
+   `Bench.unscored` keeps such a scorer, so `outstanding` lists the run and scoring it says why it refuses.
+5. **The person rules**: `src/chatddx/identity/identity.py:preferred`, own before shared, is what `Bench._named` and
+   `Bench.holder` use. `About.owned_by`, live and owned, is what `Bench.runs`, `Bench.run_by_id`, `Bench.edit` and
+   `expectation_choices` use.
+6. Tests: `src/chatddx/catalog/test/test_expectations.py` (moved out of `test_threads.py`, which is solidified),
+   `src/chatddx/store/test/test_expectations.py`, `src/chatddx/identity/test/test_identity.py`,
+   `src/chatddx/bench/test/test_view.py`, `src/chatddx/repl/test/test_inspecting.py` and
+   `src/chatddx/api/test/test_variations.py`. `src/chatddx/bench/test/sample.py:another_expectation` reaches several
+   the one way left: two writers at once, each passing the check.
+
+### Takes
+- **The database doesn't repeat the write rule.** It reads the latest owner, deletion and head of every expectation
+  thread of a case, as the rule that no two families share a vignette reads bindings, and that one isn't repeated
+  either (`docs/catalog.md`, "Concurrent writers"). A trigger would need a lock per owner to hold. The refusal in step
+  4 covers the race.
+- **No generic three-way pick.** A `match` states none, one and several where each is decided (`threads.picked`,
+  `Bench._named`), and "several" means distinct heads for an expectation but threads for a name: two threads of one
+  name are two things to refer to, while two of one head give one answer.
+- **Curation keeps its own check.** `_Init.put` finds the archive's one expectation thread for a case to edit, in any
+  schema and deleted or not; that is how it recognises its thread, which the catalog's rule doesn't replace.
+
+### Open
+- **Taking a shared expectation**, a fork, is one of the writes for authoring ("Start with this", 7). Until then the
+  giftbag is the only way, and `init-data` without `--giftbag` leaves USER nothing to be scored against.
+- **The giftbag and a person's own expectation.** Once people write expectations, `--giftbag` for one who wrote their
+  own for a sample case is refused by the rule, and fails `init-data`. It should keep theirs, as it keeps a fork.
+- **`Catalog.expectation_for`**, for one case, has callers in tests only.
+- **The docs** carry `AGENT:` suggestions for H1, the rule and its exception: `docs/catalog.md` ("Threads and edits",
+  "Owners", "Concurrent writers"), `docs/catalog-api.md` and `docs/curation.md` ("Giftbag").
+
 ## Material for the bench's docs
 Taken out of `docs/store.md` ("Looking things up for someone") and `docs/store-api.md` ("reads.py") at 356c96d, when
 `Reads` left the store. It is updated to the code as it is now: `outstanding` is gone (phase 2, step 3), what is left
@@ -515,9 +602,10 @@ id, or by a component their trial is built on.
 
 For a run, the bench also tells:
 - which scorers can grade its answers;
-- which scoring it would be scored under now, from the expectations the catalog picks for the person;
+- which scoring it would be scored under now, from the person's own expectations, as the catalog picks them;
 - which of those scorers have no score of it under that scoring, so that a run whose expectations changed after it
-  was scored is due again (`Bench.unscored`).
+  was scored is due again, and which have several expectations to choose from, so that scoring it refuses and says
+  why (`Bench.unscored`).
 
 Like authorization, this decides what is relevant to show, not who may read what (`agents/wip-identity.md`,
 "Authorization").
@@ -540,11 +628,11 @@ lookups go through `Catalog`, `Store` and `People`:
 | `run_by_id(run: UUID) -> RunStarted` | The run, when it is live and the person owns it, as `runs()` keeps them. Else `NotFound("no run <id> of yours")`. |
 | `variation(configuration: int, parts: Mapping[str, str \| None] \| None = None) -> TriedVariation` | The configuration `thread_by_id(configuration, "configuration")` finds, under its name or else its title, with each of `parts` replaced by the chunk of that digest, or taken out for `None`; each part is labelled by the chunk's title. `ValueError` for an unknown part, a digest that isn't a stored chunk of its part, and `TriedVariation.set`'s refusals. |
 | `expectation_schemas(case: str) -> list[str]` | The schemas of the heads of the live expectation threads of `case` the person owns or collaborates on, sorted. |
-| `expectation(case: str, schema: str) -> Expectation \| None` | The expectation `Catalog.expectations_for([case], person.id, schema)` picks for the person, or `None`. `Ambiguous` when they have several to choose from. |
+| `expectation(case: str, schema: str) -> Expectation \| None` | The expectation `Catalog.expectations_for([case], person.id, schema)` picks for the person: the head of their own live thread, or `None`; one shared with them doesn't count. `Ambiguous` when they have several to choose from. |
 | `reaching(digest: str) -> list[RunStarted]` | The runs of `runs()` whose trial's closure holds `digest` (`Store.reaching(digest, "trial")`), newest first. |
 | `scorers_for(run: RunStarted) -> list[tuple[Edit, About]]` | The visible scorer threads whose head's every view has an `output` selector that reaches the run's skeleton's `output_schema` (`chatddx.factors.select.reaches`), the check `check_score` warns about as `view.unreachable`. |
 | `scoring(run: RunStarted, scorer: str) -> Scoring \| None` | The scoring the run would be scored under now: `Scoring(scorer, expectations)`, with, for each of the trial's cases in order, the expectation `Catalog.expectations_for(cases, person.id, <the scorer's expectation_schema>)` picks for it, cases without one left out. `None` when no case has one. `Ambiguous` when the person has several expectations to choose from for a case. Nothing is stored. |
-| `unscored(run: RunStarted) -> list[str]` | The scorers of `scorers_for(run)` with no score of the run under `scoring(run, scorer)`, so a run whose expectations changed after it was scored is due again. Scorers whose scoring can't be built are left out. |
+| `unscored(run: RunStarted) -> list[str]` | The scorers of `scorers_for(run)` with no score of the run under `scoring(run, scorer)`, so a run whose expectations changed after it was scored is due again, and those whose scoring raises `Ambiguous`, which refuse when scored. |
 
 A thread or a family is found by name among those the person sees (`Bench._named`):
 1. those the person owns: exactly one is returned, several raise;

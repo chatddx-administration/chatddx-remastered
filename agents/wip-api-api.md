@@ -174,7 +174,7 @@ variation's query parameters to them with `endpoint`, `tag` and `seed`.
 | `detail(bench, thread: int) -> schemas.ThreadDetail` | `Bench.thread_by_id` (`NotFound`), `Catalog.thread` for its kind and `forked_from`, `Catalog.recipe` dumped, or `None` without a compilation, and `Catalog.language_of` of the head's digest. |
 | `refused() -> Generator[None]` | A context manager: a `ValueError` within is raised as `HTTPException(422)` with its message. |
 | `part_of(bench, variation: TriedVariation, part: str) -> schemas.Part` | The part's digest (`TriedVariation.held`), its title (`Bench.title`), what it holds (`catalog.titles.describe`), and whether the variation replaced it. A part not held has `None` for each. |
-| `reach_of(reach: chatddx.bench.Reach) -> schemas.Reach` | The bench's reach, with the scorer's thread as `scorer`, its name as `name`, and the missing families by id. |
+| `reach_of(reach: chatddx.bench.Reach) -> schemas.Reach` | The bench's reach, with the scorer's thread as `scorer`, its name as `name`, the missing families by id, and those with expectations to choose from as `choosing`. |
 
 | Route | Does |
 | --- | --- |

@@ -6,6 +6,7 @@ from uuid import UUID
 from pydantic import JsonValue
 
 from chatddx.catalog import About, Edit, Kept, Subject, latest, variants_for
+from chatddx.catalog.threads import picked
 from chatddx.catalog.titles import short
 from chatddx.core.rig import rig
 from chatddx.factors.base import (
@@ -29,7 +30,7 @@ from chatddx.factors.scoring import Expectation, Scorer, Scoring
 from chatddx.factors.select import reaches
 from chatddx.factors.trial import Trial
 from chatddx.facts import Facts, lints, model_name
-from chatddx.identity import Person
+from chatddx.identity import Person, preferred
 from chatddx.inventory import Inventory
 from chatddx.ledger import ItemKey, Run, RunStarted, Score, fingerprint_request
 from chatddx.runner.run import Runner, Running
@@ -85,10 +86,11 @@ class Reach:
     offered: bool
     cases: int
     missing: list[Family]
+    choosing: list[Family]
 
     @property
     def have(self) -> int:
-        return self.cases - len(self.missing)
+        return self.cases - len(self.missing) - len(self.choosing)
 
 
 # A run's score under one scorer, or why it couldn't be scored.
@@ -206,23 +208,25 @@ class Bench:
     def _named[T](
         self, seen: list[tuple[T, str | None, About]], name: str, word: str
     ) -> T:
-        called = [(found, a) for found, n, a in seen if n == name]
-        own = [found for found, a in called if a.owner == self.person.id]
-        shared = [found for found, _ in called]
+        called = [(found, a.owner) for found, n, a in seen if n == name]
         if not called and "/" in name:
             login, rest = name.split("/", 1)
             owner = self._people.find(login)
             if owner is not None:
-                own = []
-                shared = [f for f, n, a in seen if n == rest and a.owner == owner.id]
-        for choices in (own, shared):
-            if len(choices) == 1:
-                return choices[0]
-            if choices:
+                called = [
+                    (f, a.owner)
+                    for f, n, a in seen
+                    if n == rest and a.owner == owner.id
+                ]
+        match preferred(self.person.id, called):
+            case [one]:
+                return one
+            case []:
+                raise NotFound(f"no {word} {name!r} for {self.person.login}")
+            case several:
                 raise Ambiguous(
-                    f"{word} {name!r} names {len(choices)}; name one as OWNER/NAME"
+                    f"{word} {name!r} names {len(several)}; name one as OWNER/NAME"
                 )
-        raise NotFound(f"no {word} {name!r} for {self.person.login}")
 
     # The head of a thread the person sees, by its id, with what the catalog says of it;
     # with `word`, only of the kinds it names.
@@ -242,9 +246,8 @@ class Bench:
 
     # A thread the person sees whose head is `digest`, their own first.
     def holder(self, word: str, digest: str) -> tuple[Edit, About] | None:
-        held = [(e, a) for e, a in self.threads(word) if e.digest == digest]
-        held.sort(key=lambda found: found[1].owner != self.person.id)
-        return next(iter(held), None)
+        held = [((e, a), a.owner) for e, a in self.threads(word) if e.digest == digest]
+        return next(iter(preferred(self.person.id, held)), None)
 
     def get(self, digest: str) -> Component:
         return self.store.get(digest)
@@ -466,19 +469,26 @@ class Bench:
         return Scoring(scorer=scorer, expectations=found) if found else None
 
     # The data of the expectation each case is scored against under `schema`, for the
-    # cases that have one; a case with several to choose from has none.
-    def _expected(self, cases: list[str], schema: str) -> dict[str, JsonValue]:
+    # cases that have one, and the cases with several to choose from.
+    def _expected(
+        self, cases: list[str], schema: str
+    ) -> tuple[dict[str, JsonValue], set[str]]:
+        heads: dict[str, str] = {}
+        several: set[str] = set()
         choices = self.catalog.expectation_choices(cases, self.person.id, schema)
-        picked = {
-            case: next(iter(heads))
-            for case, held in choices.items()
-            if len(heads := set(held.values())) == 1
+        for case, held in choices.items():
+            try:
+                digest = picked(case, held)
+            except LookupError:
+                several.add(case)
+                continue
+            if digest is not None:
+                heads[case] = digest
+        read = dict(self._rows.components(list(heads.values())))
+        data = {
+            c: resolve(read.__getitem__, d, Expectation).data for c, d in heads.items()
         }
-        read = dict(self._rows.components(list(picked.values())))
-        return {
-            case: resolve(read.__getitem__, digest, Expectation).data
-            for case, digest in picked.items()
-        }
+        return data, several
 
     def labels(self, scorer: str) -> dict[int, str]:
         return {
@@ -488,11 +498,12 @@ class Bench:
         }
 
     # For each view of each scorer: whether the variation's output offers what it reads,
-    # and which cases have an expectation it picks something from.
+    # and which cases have an expectation it picks something from, or several to choose
+    # from.
     def reach(self, variation: TriedVariation, families: list[Family]) -> list[Reach]:
         schema = self.skeleton(variation).output_schema
         cases = [f.case for f in families]
-        data: dict[str, dict[str, JsonValue]] = {}
+        data: dict[str, tuple[dict[str, JsonValue], set[str]]] = {}
         found: list[Reach] = []
         for edit, about, scorer in self.scorers():
             labels = self.labels(edit.digest)
@@ -502,16 +513,26 @@ class Bench:
                 offered = reaches(schema, view.output)
                 if offered and expected not in data:
                     data[expected] = self._expected(cases, expected)
+                held, several = data.get(expected, ({}, set[str]()))
+                choosing = [f for f in families if offered and f.case in several]
                 missing = [
                     f
                     for f in families
-                    if offered
-                    if (held := data[expected].get(f.case)) is None
-                    or not view.expectation_items(held)
+                    if offered and f.case not in several
+                    if (x := held.get(f.case)) is None or not view.expectation_items(x)
                 ]
                 label = labels.get(i, f"view {i}")
                 found.append(
-                    Reach(edit.thread, name, i, label, offered, len(families), missing)
+                    Reach(
+                        edit.thread,
+                        name,
+                        i,
+                        label,
+                        offered,
+                        len(families),
+                        missing,
+                        choosing,
+                    )
                 )
         return found
 
@@ -534,7 +555,7 @@ class Bench:
     # nothing is written when it is the head already.
     def edit(self, thread: int, variation: TriedVariation) -> Saved:
         _, about = self.thread_by_id(thread, "configuration")
-        if about.owner != self.person.id:
+        if not about.owned_by(self.person.id):
             raise NotFound(f"no configuration {thread} of yours")
         return self._kept(variation, thread, about.name or self.catalog.title(thread))
 
@@ -612,9 +633,7 @@ class Bench:
         owned = [
             s.run
             for s in involved
-            if s.run is not None
-            and (a := known[s]).owner == self.person.id
-            and not a.deleted
+            if s.run is not None and known[s].owned_by(self.person.id)
         ]
         return self.store.started(owned)
 
@@ -637,7 +656,7 @@ class Bench:
     def run_by_id(self, run: UUID) -> RunStarted:
         about = self.catalog.about(Subject(run=run))
         found = self.store.started([run])
-        if about.owner != self.person.id or about.deleted or not found:
+        if not about.owned_by(self.person.id) or not found:
             raise NotFound(f"no run {run} of yours")
         return found[0]
 
@@ -688,14 +707,16 @@ class Bench:
         ]
 
     # The scorers that apply to a run and have no score of it under the scoring each
-    # would be built now, so a changed expectation leaves the run to score again.
+    # would be built now, so a changed expectation leaves the run to score again. One
+    # whose scoring has expectations to choose from is left too, and refuses when scored.
     def unscored(self, run: RunStarted) -> list[str]:
         scored = {s.scoring for s in self.store.scores_of(run.run)}
         found: list[str] = []
         for edit, _ in self.scorers_for(run):
             try:
                 scoring = self.scoring(run, edit.digest)
-            except LookupError:
+            except Ambiguous:
+                found.append(edit.digest)
                 continue
             if scoring is not None and scoring.digest not in scored:
                 found.append(edit.digest)

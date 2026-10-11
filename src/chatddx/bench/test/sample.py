@@ -1,11 +1,13 @@
 from datetime import UTC, datetime
 from uuid import UUID, uuid4
 
+import psycopg
 from pydantic import JsonValue
 
 from chatddx.bench import Bench
 from chatddx.catalog import Entry, EntryField, Subject
 from chatddx.conftest import WORLDS
+from chatddx.core import settings
 from chatddx.core.rig import rig
 from chatddx.curation import Plan
 from chatddx.factors.scoring import Expectation
@@ -51,15 +53,27 @@ def ran(conn: Connection, by: Person, made: Trial, finished: bool = True) -> UUI
 
 # A second expectation thread of the person's own for a case, in the schema of the one
 # they read, so that there are two to choose from.
+# Two writers at once can each pass the catalog's check and leave the person a second
+# expectation of their own for the case: here one restores their thread while the other
+# starts a new one.
 def another_expectation(bench: Bench, case: str, data: JsonValue) -> str:
     [schema] = bench.expectation_schemas(case)
     held = bench.expectation(case, schema)
     assert held is not None
-    store = Store(bench.conn)
+    store, catalog, person = Store(bench.conn), Catalog(bench.conn), bench.person.id
+    [mine] = catalog.expectation_choices([case], person, schema)[case]
     registry = store.load([held.digest])
     other = registry.add(
         Expectation(case=held.case, expectation_schema=schema, data=data)
     )
     _ = store.add(registry, [other])
-    _ = Catalog(bench.conn).create(other, bench.person.id)
+    catalog.note(Subject(thread=mine), Entry(field=EntryField.DELETED), person)
+    restored = Entry(field=EntryField.DELETED, present=False)
+    dbname = bench.conn.info.dbname
+    with (
+        psycopg.connect(settings.database(), dbname=dbname, autocommit=True) as rival,
+        bench.conn.transaction(),
+    ):
+        catalog.note(Subject(thread=mine), restored, person)
+        _ = Catalog(rival).create(other, person)
     return other

@@ -177,20 +177,20 @@ def test_each_scorer_view_s_reach_names_the_families_it_misses(
 
 
 @pytest.mark.slow
-def test_a_case_with_expectations_to_choose_from_is_missing_from_the_reach(
+def test_a_case_with_expectations_to_choose_from_is_shown_apart_in_the_reach(
     signed: TestClient, bench: Bench
 ) -> None:
     plan = thread(signed, "configuration", PLAN)
     [family] = signed.get("/api/families", params={"name": "Dutchfall11w"}).json()
 
-    def differential() -> list[int]:
+    def differential() -> tuple[list[int], list[int]]:
         shown = variation(signed, plan)
         [found] = [r for r in shown["reach"] if (r["name"], r["label"]) == DIFFERENTIAL]
-        return found["missing"]
+        return found["missing"], found["choosing"]
 
-    assert differential() == []
+    assert differential() == ([], [])
     _ = another_expectation(bench, family["case"], {"diagnosis": {"pattern": "x"}})
-    assert differential() == [family["id"]]
+    assert differential() == ([], [family["id"]])
 
 
 @pytest.mark.slow

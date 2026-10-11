@@ -1,4 +1,4 @@
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 
 from pydantic import JsonValue
 
@@ -8,7 +8,17 @@ from chatddx.factors.request import Compilation, Recipe
 from chatddx.factors.scoring import Expectation
 
 from .families import stale_cases
-from .model import THREAD_KINDS, About, Behind, Edit, Subject, Thread, Variation
+from .model import (
+    THREAD_KINDS,
+    About,
+    Behind,
+    Edit,
+    Entry,
+    EntryField,
+    Subject,
+    Thread,
+    Variation,
+)
 from .read import Reader, abouts, heads_holding, heads_of
 
 
@@ -90,45 +100,72 @@ def expectation_for(rows: Reader, case: str, person: int, schema: str) -> str | 
     return expectations_for(rows, [case], person, schema)[case]
 
 
-# The expectation a person scores each case against: the head of a thread of their own,
-# else of the one thread shared with them. The first case with several heads to choose
-# from is refused, naming the threads.
+# The expectation a person scores each case against: the head of their own thread. One
+# shared with them counts only once they fork it.
 def expectations_for(
     rows: Reader, cases: Sequence[str], person: int, schema: str
 ) -> dict[str, str | None]:
-    found: dict[str, str | None] = {}
-    for case, choices in expectation_choices(rows, cases, person, schema).items():
-        match sorted(set(choices.values())):
-            case []:
-                found[case] = None
-            case [digest]:
-                found[case] = digest
-            case _:
-                raise LookupError(
-                    f"case {case} has expectations to choose from, in threads "
-                    + ", ".join(str(t) for t in sorted(choices))
-                )
-    return found
+    return {
+        case: picked(case, choices)
+        for case, choices in expectation_choices(rows, cases, person, schema).items()
+    }
 
 
-# For each case, the threads its expectation is chosen from, with their heads: the
-# person's own, else every one they see. Only threads whose head is in `schema` count.
+# The one head among a case's threads, or None. Two writers at once can leave a person
+# several, which are refused, naming the threads.
+def picked(case: str, choices: Mapping[int, str]) -> str | None:
+    match sorted(set(choices.values())):
+        case []:
+            return None
+        case [digest]:
+            return digest
+        case _:
+            raise LookupError(
+                f"case {case} has expectations to choose from, in threads "
+                + ", ".join(str(t) for t in sorted(choices))
+            )
+
+
+# For each case, the person's own live threads whose head is an expectation of it in
+# `schema`, with their heads.
 def expectation_choices(
     rows: Reader, cases: Sequence[str], person: int, schema: str
 ) -> dict[str, dict[int, str]]:
     held = heads_holding(rows, rows.expectations(cases))
     known = abouts(rows, [Subject(thread=t) for t in held])
-    read = dict(rows.components([e.digest for e in held.values()]))
-    seen: dict[str, dict[int, str]] = {c: {} for c in cases}
-    own: dict[str, dict[int, str]] = {c: {} for c in cases}
-    for t, e in held.items():
-        about = known[Subject(thread=t)]
+    own = {t: e for t, e in held.items() if known[Subject(thread=t)].owned_by(person)}
+    read = dict(rows.components([e.digest for e in own.values()]))
+    found: dict[str, dict[int, str]] = {c: {} for c in cases}
+    for t, e in own.items():
         expectation = resolve(read.__getitem__, e.digest, Expectation)
-        if about.shows(person) and expectation.expectation_schema == schema:
-            seen[expectation.case][t] = e.digest
-            if about.owner == person:
-                own[expectation.case][t] = e.digest
-    return {case: own[case] or seen[case] for case in cases}
+        if expectation.expectation_schema == schema:
+            found[expectation.case][t] = e.digest
+    return found
+
+
+# A person owns at most one live expectation thread per case and expectation schema.
+# `thread` is checked as a write would leave it: with `digest` as its head, or after
+# `entry`.
+def check_expectation(
+    rows: Reader, thread: int, digest: str | None = None, entry: Entry | None = None
+) -> None:
+    found = rows.thread(thread)
+    if found is None or found.kind != "expectation":
+        return
+    if entry is not None and entry.field not in (EntryField.OWNER, EntryField.DELETED):
+        return
+    entries = [e for _, e, _ in rows.entries([Subject(thread=thread)])]
+    about = About.of(entries if entry is None else [*entries, entry])
+    if about.owner is None or about.deleted:
+        return
+    expectation = resolve(rows.get, digest or head(rows, thread).digest, Expectation)
+    case, schema = expectation.case, expectation.expectation_schema
+    held = expectation_choices(rows, [case], about.owner, schema)[case]
+    if others := sorted(t for t in held if t != thread):
+        raise ValueError(
+            f"person {about.owner} owns an expectation of case {case} under that "
+            + f"schema already, in thread {others[0]}"
+        )
 
 
 def forks(rows: Reader, thread: int) -> list[int]:

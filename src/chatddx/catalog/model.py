@@ -247,6 +247,9 @@ class About(_Frozen):
     def shows(self, person: int) -> bool:
         return not self.deleted and sees(person, self.owner, self.collaborators)
 
+    def owned_by(self, person: int) -> bool:
+        return not self.deleted and self.owner == person
+
 
 def _toggle[T](members: set[T], member: T, present: bool) -> None:
     if present:

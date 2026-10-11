@@ -59,6 +59,15 @@ The catalog answers what people need to find:
 - the expectation threads of a case;
 - where a given component appears, in any thread;
 - what a person sees (see "Owners");
+```
+AGENT: CHANGE
+Decided: a person is scored against their own expectation only, and owns at most one per case and schema
+(agents/wip-bench.md, "Phase 3"; src/chatddx/catalog/threads.py:expectations_for).
+---
+- the expectation a person scores a case against, under a given expectation schema: their own. One shared with them
+  counts once they fork it. When two writers at once have left them several to choose from, the catalog says so
+  rather than choose (see "Concurrent writers").
+```
 - the expectation a person scores a case against, under a given expectation schema: one of their own, else the one
   shared with them. When there are several to choose from, the catalog says so rather than choose.
 
@@ -143,6 +152,17 @@ Whoever creates a thread or a family is its owner, unless they name someone else
 them a collaborator. A person sees what they own and what is shared with them, as long as it isn't deleted. Like
 authorization, this decides what is relevant to show, not who may read it (docs/identity.md, "Authorization").
 
+```
+AGENT: ADD
+What a person is scored against, and the rule that keeps it to one (agents/wip-bench.md, "Phase 3";
+src/chatddx/catalog/threads.py:check_expectation).
+---
+Expectations are held to what a person owns, not to what they see. A person is scored against their own expectation of
+a case, and one shared with them counts once they fork it, so nothing someone else shares, edits or restores changes
+what they are scored against. A person owns at most one live expectation thread per case and expectation schema: a
+second one, an edit that moves another onto that case and schema, an owner entry naming them, or a restore that would
+make two is refused.
+```
 This is the catalog's sense of owning. It is a different thing from the roles' sense, as in "clinicians own the
 vignettes" (docs/chatddx.md, "Roles mentioned").
 
@@ -340,6 +360,16 @@ These are open questions of design. Where the code falls short of this document,
 (docs/catalog-api.md, "Known gaps").
 
 ### Concurrent writers
+```
+AGENT: CHANGE
+The database doesn't repeat the expectation rule either (agents/wip-bench.md, "Phase 3", "Takes").
+---
+The rules are checked against what is stored when a row is written. That holds with one writer at a time; with two,
+only what the database enforces is sure to hold. It repeats every such rule but two: that no two families are bound to
+the same vignette, by id or by content, at once, and that a person owns at most one live expectation thread per case
+and expectation schema. So two people adopting the same vignette at the same moment can create two families, and two
+writes at the same moment can leave a person several expectations to choose from, which scoring then refuses.
+```
 The rules are checked against what is stored when a row is written. That holds with one writer at a time; with two,
 only what the database enforces is sure to hold. It repeats every such rule but one: that no two families are bound to
 the same vignette, by id or by content, at once. So two people adopting the same vignette at the same moment can create

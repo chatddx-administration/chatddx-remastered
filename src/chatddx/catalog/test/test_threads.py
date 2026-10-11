@@ -1,13 +1,10 @@
 import pytest
-from pydantic import JsonValue
 
-from chatddx.catalog import Edit, Entry, EntryField, Subject, threads
-from chatddx.catalog.test.memory import Memory, compiled
+from chatddx.catalog import Entry, EntryField, Subject, threads
+from chatddx.catalog.test.memory import ALICE, ARCHIVE, BOB, Memory, compiled, owned
 from chatddx.factors.bundle import Registry
-from chatddx.factors.cases import Case, Vignette
 from chatddx.factors.request import Instructions, Sampling
-from chatddx.factors.scoring import Expectation, ExpectationSchema
-from chatddx.factors.test.sample import fp, generation_recipe, world
+from chatddx.factors.test.sample import generation_recipe, world
 
 pytestmark = pytest.mark.solidified
 
@@ -83,17 +80,6 @@ def test_behind_names_every_thread_that_moved_on() -> None:
     assert [b.head for b in threads.behind(rows, skeleton.thread)] == [one]
 
 
-ALICE, BOB, ARCHIVE = 1, 2, 3
-
-
-def owned(rows: Memory, edit: Edit, owner: int, *shared_with: int) -> Edit:
-    subject = Subject(thread=edit.thread)
-    rows.note(subject, Entry(field=EntryField.OWNER, person=owner))
-    for person in shared_with:
-        rows.note(subject, Entry(field=EntryField.COLLABORATOR, person=person))
-    return edit
-
-
 def test_a_person_sees_the_live_threads_they_own_or_share() -> None:
     reg = Registry()
     trial = world(reg)["trial"]
@@ -105,67 +91,3 @@ def test_a_person_sees_the_live_threads_they_own_or_share() -> None:
     rows.note(Subject(thread=gone.thread), Entry(field=EntryField.DELETED))
     seen = threads.visible(rows, "trial", ALICE)
     assert [(e, a.owner) for e, a in seen] == [(archive, ARCHIVE), (mine, ALICE)]
-
-
-def test_a_case_is_scored_against_a_person_s_own_expectation_else_a_shared_one() -> (
-    None
-):
-    reg = Registry()
-    case = world(reg)["case"]
-    schema = reg.add(ExpectationSchema(json_schema={"type": "object"}))
-    other_schema = reg.add(ExpectationSchema(json_schema={"type": "array"}))
-
-    def expecting(*ddx: str, under: str = schema) -> str:
-        data: JsonValue = {"ddx": list(ddx)}
-        return reg.add(Expectation(case=case, expectation_schema=under, data=data))
-
-    rows = Memory(reg)
-    archive = owned(rows, rows.start(expecting("ACS")), ARCHIVE, ALICE)
-    _ = owned(rows, rows.start(expecting("PE")), BOB)
-    _ = owned(rows, rows.start(expecting("PE", under=other_schema)), ALICE)
-    assert threads.expectation_for(rows, case, ALICE, schema) == archive.digest
-    assert threads.expectation_for(rows, case, BOB, other_schema) is None
-
-    fork = owned(rows, rows.start(archive.digest, forked_from=archive.id), ALICE)
-    assert threads.expectation_for(rows, case, ALICE, schema) == fork.digest
-    mine = rows.save(fork.thread, expecting("ACS", "dissection"))
-    assert threads.expectation_for(rows, case, ALICE, schema) == mine.digest
-
-    rows.note(Subject(thread=fork.thread), Entry(field=EntryField.DELETED))
-    _ = owned(rows, rows.start(expecting("aortic dissection")), BOB, ALICE)
-    with pytest.raises(LookupError, match="expectations to choose from, in threads"):
-        _ = threads.expectation_for(rows, case, ALICE, schema)
-
-
-def test_expectations_are_picked_for_several_cases_at_once() -> None:
-    reg = Registry()
-    case = world(reg)["case"]
-    cough, rash = (
-        reg.add(Case(vignette=Vignette(source="registry", id=id, fingerprint=fp(id))))
-        for id in ("c2", "c3")
-    )
-    schema = reg.add(ExpectationSchema(json_schema={"type": "object"}))
-
-    def expecting(of: str, *ddx: str) -> str:
-        data: JsonValue = {"ddx": list(ddx)}
-        return reg.add(Expectation(case=of, expectation_schema=schema, data=data))
-
-    rows = Memory(reg)
-    shared = owned(rows, rows.start(expecting(case, "ACS")), ARCHIVE, ALICE)
-    _ = owned(rows, rows.start(expecting(cough, "asthma")), ARCHIVE, ALICE)
-    mine = owned(rows, rows.start(expecting(cough, "pneumonia")), ALICE)
-    assert threads.expectations_for(rows, [case, cough, rash], ALICE, schema) == {
-        case: shared.digest,
-        cough: mine.digest,
-        rash: None,
-    }
-
-    pe = owned(rows, rows.start(expecting(case, "PE")), BOB, ALICE)
-    croup = owned(rows, rows.start(expecting(cough, "croup")), ALICE)
-    with pytest.raises(LookupError, match=f"case {cough} has expectations to choose"):
-        _ = threads.expectations_for(rows, [rash, cough, case], ALICE, schema)
-    assert threads.expectation_choices(rows, [case, cough, rash], ALICE, schema) == {
-        case: {shared.thread: shared.digest, pe.thread: pe.digest},
-        cough: {mine.thread: mine.digest, croup.thread: croup.digest},
-        rash: {},
-    }

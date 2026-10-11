@@ -120,6 +120,7 @@ def reach_of(reach: Reach) -> schemas.Reach:
         offered=reach.offered,
         cases=reach.cases,
         missing=[f.id for f in reach.missing],
+        choosing=[f.id for f in reach.choosing],
     )
 
 

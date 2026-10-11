@@ -137,6 +137,7 @@ class Reach(_Schema):
     offered: bool
     cases: int
     missing: list[int]
+    choosing: list[int]
 
 
 class Variation(_Schema):

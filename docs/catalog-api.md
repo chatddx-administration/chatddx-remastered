@@ -64,6 +64,14 @@ package takes the last row for a key as the one that holds: through `model.py:la
 
 **Errors.**
 
+```
+AGENT: CHANGE
+The `LookupError` and `ValueError` rows: several expectations to choose from are left only by two writers at once,
+and `check_expectation` is a new rule refused before writing (agents/wip-bench.md, "Phase 3").
+---
+| `LookupError` | A thread, edit or family that doesn't exist (`no thread with id <id>`, `no edit with id <id>`, `no family with id <id>`); a digest that isn't stored where one is required (`check_adoptable`, `check_language`); `picked`, and so `expectations_for` and `expectation_for`, with several expectations to choose from. |
+| `ValueError` | A rule refused before writing: `check_threadable`, `check_based_on`, `check_expectation`, `check_adoptable`, `plan_repair`, `check_language`, `check_entry`, `check_label`, `language_tag`. |
+```
 | Exception | When |
 | --- | --- |
 | `LookupError` | A thread, edit or family that doesn't exist (`no thread with id <id>`, `no edit with id <id>`, `no family with id <id>`); a digest that isn't stored where one is required (`check_adoptable`, `check_language`); `expectations_for` (and so `expectation_for`) with several expectations to choose from. |
@@ -74,6 +82,14 @@ package takes the last row for a key as the one that holds: through `model.py:la
 **Deleted subjects.** A subject is deleted when its `About.deleted` is true. What each function does with deleted
 threads and families is said in its entry; in short:
 
+```
+AGENT: CHANGE
+The "skipped, through `About.shows`" row, and a row after it: the expectation a person is scored against is read from
+what they own (agents/wip-bench.md, "Phase 3").
+---
+| skipped, through `About.shows` | `threads.visible`, `families.visible` |
+| skipped, through `About.owned_by` | `threads.expectation_choices`, `threads.expectations_for`, `threads.expectation_for`, `threads.check_expectation` |
+```
 | Deleted are | Functions |
 | --- | --- |
 | skipped, through `About.shows` | `threads.visible`, `families.visible`, `threads.expectation_choices`, `threads.expectations_for`, `threads.expectation_for` |
@@ -166,6 +182,12 @@ What a subject's entries say now.
 | `deleted` | `bool` | `False` |
 | `language` | `str \| None` | `None` |
 
+```
+AGENT: ADD
+A row after `shows` (src/chatddx/catalog/model.py:About.owned_by).
+---
+| `owned_by(person: int) -> bool` | `not deleted and owner == person`. |
+```
 | Member | Description |
 | --- | --- |
 | `of(entries: Iterable[Entry]) -> Self` (classmethod) | Folds the entries in the order given. For `name`, `description`, `owner`, `deleted` and `language` the last entry wins; a `name` entry without a value clears the name. For `tag` and `collaborator` the last entry for each member wins: `present` adds it, not `present` removes it. No entries give `About()`. |
@@ -292,6 +314,17 @@ thread id order. Names aren't unique, so it may return several.
 The head and `About` of each thread of `kind` that `About.shows(person)`: live, and owned by `person` or shared with
 them as a collaborator. Thread id order; threads without edits are left out.
 
+```
+AGENT: CHANGE
+A person's own only (agents/wip-bench.md, "Phase 3", H1).
+---
+### `expectations_for(rows, cases: Sequence[str], person: int, schema: str) -> dict[str, str | None]`
+For each case, the digest of the expectation `person` scores it against: `picked` of its `expectation_choices`, the
+head of the person's own live thread, or `None`. Every case given is a key. The first case, in the order given, with
+several distinct head digests raises `picked`'s `LookupError`. Shared threads are never chosen from.
+
+`expectation_for(rows, case: str, person: int, schema: str) -> str | None` is `expectations_for` of the one case.
+```
 ### `expectations_for(rows, cases: Sequence[str], person: int, schema: str) -> dict[str, str | None]`
 For each case, the digest of the expectation `person` scores it against, among the threads whose head is an
 expectation of that case with `expectation_schema == schema` and which `About.shows(person)`:
@@ -306,11 +339,36 @@ ignore the shared ones.
 
 `expectation_for(rows, case: str, person: int, schema: str) -> str | None` is `expectations_for` of the one case.
 
+```
+AGENT: CHANGE
+A person's own only (agents/wip-bench.md, "Phase 3", H1).
+---
+### `expectation_choices(rows, cases: Sequence[str], person: int, schema: str) -> dict[str, dict[int, str]]`
+For each case, the threads `expectations_for` picks from, each with its head digest: the threads whose head is an
+expectation of that case with `expectation_schema == schema` and which `About.owned_by(person)`. Every case given is
+a key, with `{}` when there are none. It refuses nothing.
+```
 ### `expectation_choices(rows, cases: Sequence[str], person: int, schema: str) -> dict[str, dict[int, str]]`
 For each case, the threads `expectations_for` picks from, each with its head digest: among the threads whose head is
 an expectation of that case with `expectation_schema == schema` and which `About.shows(person)`, those `person` owns,
 or all of them when they own none. Every case given is a key, with `{}` when there are none. It refuses nothing.
 
+```
+AGENT: ADD
+Two functions before `forks` (src/chatddx/catalog/threads.py:picked, check_expectation).
+---
+### `picked(case: str, choices: Mapping[int, str]) -> str | None`
+The one distinct head among a case's `expectation_choices`, or `None` for none. Threads with the same head digest
+count as one choice. Several raise `LookupError("case <case> has expectations to choose from, in threads <t1>, <t2>,
+…")`, naming the threads.
+
+### `check_expectation(rows, thread: int, digest: str | None = None, entry: Entry | None = None) -> None`
+Refuses what would leave a person owning two live expectation threads of one case under one expectation schema:
+`thread` with `digest` as its head, or after `entry`. Only threads of kind `expectation` are checked, and only
+`owner` and `deleted` entries; a thread without an owner, or deleted, passes. Otherwise its owner's other live threads
+whose head is an expectation of the same case and schema raise `ValueError("person <owner> owns an expectation of case
+<case> under that schema already, in thread <t>")`, naming the first.
+```
 ### `forks(rows, thread: int) -> list[int]`
 The ids of the threads whose `forked_from` is any edit of `thread`, in thread id order. Direct forks only; deleted
 forks included. An unknown thread gives `[]`.
@@ -571,6 +629,14 @@ the first of `Reader.compilations` (by digest). Anything else is `describe`d, wi
 the ones that write insert the rows the package decided on. A rule the database also checks is refused by Postgres
 with a psycopg error when the Python lets it through.
 
+```
+AGENT: CHANGE
+The `create`, `edit` and `note` rows: both writes check the expectation rule first (agents/wip-bench.md, "Phase 3").
+---
+| `create(digest, by, *, compilation=None, forked_from=None, name=None, owner=None) -> Edit` | `Reader.kind` (`LookupError("<digest> is not in the store")`), `threads.check_threadable`; `threads.check_expectation` through `edit` and `note` | in one transaction: the thread, its first edit (`edit`), an `owner` entry for `owner` or else `by`, and a `name` entry when given |
+| `edit(thread, digest, by, *, compilation=None, based_on=None) -> Edit` | `threads.check_based_on` when `based_on` is given; `threads.check_expectation(thread, digest)` | the edit, with the thread's kind; `LookupError("no thread with id <thread>")` when there is no thread |
+| `note(subject, entry, by)` | `language.check_entry`; `threads.check_expectation(thread, entry=entry)` for a thread | the entry; a run or score subject also gets its stage column set to `'started'` |
+```
 | Method | Calls | Writes |
 | --- | --- | --- |
 | `create(digest, by, *, compilation=None, forked_from=None, name=None, owner=None) -> Edit` | `Reader.kind` (`LookupError("<digest> is not in the store")`), `threads.check_threadable` | in one transaction: the thread, its first edit (`edit`), an `owner` entry for `owner` or else `by`, and a `name` entry when given |
@@ -752,6 +818,13 @@ Also:
 
 ## Beyond docs/catalog.md
 Behavior described here that `docs/catalog.md` doesn't state, or states otherwise:
+```
+AGENT: CHANGE
+The expectation a person is scored against is read through `About.owned_by` (agents/wip-bench.md, "Phase 3").
+---
+- `owner` and `collaborator` entries are read by `About.shows`, so by `visible` and `visible_families`; `owner` and
+  `deleted` entries by `About.owned_by`, so by `expectation_for` and `check_expectation`.
+```
 - `owner` and `collaborator` entries are read by `About.shows`, so by `visible`, `visible_families` and
   `expectation_for`; `expectation_for` also reads `owner` itself.
 - Tools, appendices, judges, scorers, scorings, models, expectation schemas and canary sets have descriptions of their

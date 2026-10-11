@@ -1,6 +1,6 @@
 from collections.abc import Collection
 
-from chatddx.catalog import Binding, Edit, Entry, Part, Subject, Thread
+from chatddx.catalog import Binding, Edit, Entry, EntryField, Part, Subject, Thread
 from chatddx.factors import request
 from chatddx.factors.base import Component
 from chatddx.factors.bundle import Registry
@@ -10,6 +10,7 @@ from chatddx.factors.scoring import Expectation
 from chatddx.factors.test.sample import NOW, RIG
 
 BY = 1
+ALICE, BOB, ARCHIVE = 1, 2, 3
 
 
 def compiled(registry: Registry, recipe: Recipe) -> Compilation:
@@ -162,3 +163,11 @@ class Memory:
             if isinstance(component := self.registry.get(digest), cls):
                 found.append((digest, component))
         return found
+
+
+def owned(rows: Memory, edit: Edit, owner: int, *shared_with: int) -> Edit:
+    subject = Subject(thread=edit.thread)
+    rows.note(subject, Entry(field=EntryField.OWNER, person=owner))
+    for person in shared_with:
+        rows.note(subject, Entry(field=EntryField.COLLABORATOR, person=person))
+    return edit

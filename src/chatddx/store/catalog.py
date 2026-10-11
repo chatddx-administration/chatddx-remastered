@@ -337,6 +337,7 @@ class Catalog:
     ) -> Edit:
         if based_on is not None:
             threads.check_based_on(self._rows, thread, based_on)
+        threads.check_expectation(self._rows, thread, digest)
         row = self._conn.execute(
             f"""
             INSERT INTO catalog.edit AS e (thread, kind, digest, compilation, based_on, by)
@@ -484,6 +485,8 @@ class Catalog:
 
     def note(self, subject: Subject, entry: Entry, by: int) -> None:
         language.check_entry(subject, entry)
+        if subject.thread is not None:
+            threads.check_expectation(self._rows, subject.thread, entry=entry)
         _ = self._conn.execute(
             """
             INSERT INTO catalog.entry (

@@ -197,6 +197,19 @@ def test_a_case_is_held_to_the_expectation_scoring_picks(
     assert theirs.expectation_schemas(case) == []
     assert theirs.expectation(case, schema) is None
 
+    catalog = Catalog(conn)
+    archive = People(conn).find("archive")
+    assert archive is not None
+    [shared] = [
+        t
+        for t in catalog.expectations_of(case)
+        if catalog.about(Subject(thread=t)).owner == archive.id
+    ]
+    to_bob = Entry(field=EntryField.COLLABORATOR, person=bob.id)
+    catalog.note(Subject(thread=shared), to_bob, archive.id)
+    assert theirs.expectation_schemas(case) == [schema]
+    assert theirs.expectation(case, schema) is None
+
 
 def test_several_expectations_to_choose_from_are_ambiguous(
     conn: Connection, alice: Person, bench: Bench, plan: Plan
@@ -212,6 +225,20 @@ def test_several_expectations_to_choose_from_are_ambiguous(
         _ = bench.expectation(case, schema)
     with pytest.raises(Ambiguous, match="has expectations to choose from"):
         _ = bench.scoring(started, scorer)
+
+    assert scorer in bench.unscored(started)
+    assert [r.run for r, _ in bench.outstanding()] == [started.run]
+    [graded] = bench.score(started, [scorer])
+    assert graded.score is None
+    assert graded.refused and "has expectations to choose from" in graded.refused
+    assert Store(conn).scores_of(started.run) == []
+
+    family = bench.family("DutchFall10w")
+    variation = bench.configuration(FREE_TEXT, bench.endpoint(QWEN))
+    [held] = [
+        r for r in bench.reach(variation, [family]) if r.offered and r.scorer == "raw"
+    ]
+    assert (held.choosing, held.missing, held.have) == ([family], [], 0)
 
 
 def test_a_per_model_configuration_is_picked_by_the_engine_s_model(

@@ -1,7 +1,7 @@
 import hashlib
 import re
 import secrets
-from collections.abc import Collection
+from collections.abc import Collection, Iterable
 from enum import StrEnum
 from typing import ClassVar
 
@@ -42,6 +42,13 @@ class Person(BaseModel):
 # What is relevant to show a person: what they own, or what is shared with them.
 def sees(person: int, owner: int | None, collaborators: Collection[int]) -> bool:
     return owner == person or person in collaborators
+
+
+# Of what a person sees, each with its owner: their own when they own any, else all of
+# it.
+def preferred[T](person: int, seen: Iterable[tuple[T, int | None]]) -> list[T]:
+    found = list(seen)
+    return [t for t, owner in found if owner == person] or [t for t, _ in found]
 
 
 _hasher = PasswordHasher()

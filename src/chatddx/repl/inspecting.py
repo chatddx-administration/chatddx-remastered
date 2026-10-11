@@ -154,6 +154,11 @@ def _show_scorers(
                 _ = said.append(
                     f"; missing: {some(f.name for f in reach.missing)}", style=LATER
                 )
+            if reach.choosing:
+                _ = said.append(
+                    f"; to choose from: {some(f.name for f in reach.choosing)}",
+                    style=REFUSED,
+                )
         table.add_row(reach.scorer, reach.label, said)
 
     repl.console.print(table)
@@ -387,7 +392,9 @@ def _show_case(repl: Repl, name: str | None) -> None:
             table.add_row(label, Text(str(e), style=REFUSED))
             continue
 
-        if expectation is not None:
+        if expectation is None:
+            table.add_row(label, Text("none of yours", style=LATER))
+        else:
             _add_rows(repl, table, label, expectation.data, depth=3)
 
     repl.console.print(table)
