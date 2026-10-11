@@ -10,8 +10,9 @@ portal is the first edge to need them (agents/wip-portal.md, "Below the UI", "Ph
 ## Start with this
 1. **Decided: what of a scorer and a judge researchers write** (see "Scorers and judges"), that scorers and tools pin
    a version of their code rather than the running chatddx (S2), that free parameters are written where the code
-   publishes a schema (S3), and that labels belong to the edit they are written with (S4). The rest are takes;
-   "Questions for the user" is what the plan can't settle alone.
+   publishes a schema (S3), and that labels belong to the edit they are written with (S4). Also decided: an
+   expectation is carried to a replacement case only when confirmed (A4), only the owner shares (A9), and every edit
+   names the head it was made on (A10). The rest are takes; "Questions for the user" is what is left to settle.
 2. **Taking expectations comes first** (phase 1). A person is scored against their own expectations only, so one who
    wasn't given the giftbag has nothing to be scored against until they can take some.
 3. **One set of writes for every kind people author** (A1), with builders only where a kind binds to a family's
@@ -93,10 +94,10 @@ expectations take cases already.
 
 ### A4. Editing an appendix
 A new version of an appendix makes every case that holds the old one behind (`docs/catalog.md`, "What has moved on"),
-and expectations are keyed by their case. Take: the edit also stores each such case's replacement, the same appendices
-with the new version in its place, so that the new cases are there to pick, but moves no expectation, since an
-appendix can change the right answer (`docs/factors.md`, "Case"). Carrying an expectation to a replacement is a write
-of its own, an edit of the expectation onto the new case with the same data, made when a clinician confirms that it
+and expectations are keyed by their case. Decided: the edit also stores each such case's replacement, the same
+appendices with the new version in its place, so that the new cases are there to pick, but moves no expectation, since
+an appendix can change the right answer (`docs/factors.md`, "Case"). Carrying an expectation to a replacement is a write
+of its own, an edit of the expectation onto the new case with the same data, made only when a clinician confirms that it
 still holds, as after a repair that changed a vignette's content (`docs/catalog.md`, "Repairing").
 
 The same builder stores a late case's replacement, which `docs/catalog.md` ("Smaller issues") leaves to the portal.
@@ -109,8 +110,26 @@ same until either moves on.
 For many at once, the bench takes, under one schema and in one transaction, an expectation for each of some cases or
 families the person has none of their own for: what the giftbag does for the sample, for any person and from any
 owner. Left out, and named in what it returns:
-- a case they own one for already, which stays theirs;
+- a case they own one for already (see below);
 - a case with shared ones from several owners, since nothing picks between owners.
+
+What a take does with a case the person owns an expectation for already, and what each answer means for someone who
+scores runs:
+- **K. Keep theirs.** Taking only adds: a bulk take over a tag tops up the cases they have none for, and is safe to
+  repeat, so taking the clinicians' expectations again after more cases were shared adds the new ones and changes
+  nothing else. Nothing they scored against changes, so no run is left to score again. Corrections reach them through
+  following (A8), where each is seen before it is taken. To use someone else's answer for a case they have their own
+  for, they delete theirs first, or follow.
+- **R. Replace theirs.** Taking switches: the shared expectation becomes theirs, whatever they had. A bulk take over a
+  tag resets every case in it to the shared heads, their own corrections included, and every run scored against what
+  it replaced is left to score again. It is also two writes in one: deleting their thread and forking the shared one,
+  since an edit of theirs onto the shared head would keep the origin they forked first, and proposals would keep
+  coming from it.
+- **K, with replacing named.** Taking keeps theirs, and what it returns names each case it left; replacing one is a
+  write of its own, per case, that deletes theirs and forks the shared one in one transaction.
+
+Take: K, with replacing named. A bulk write that can't destroy anything is safe to offer as one button, and the one
+that can is a choice made case by case.
 
 Beside it, the giftbag keeps a person's own expectation for a case and schema, as it keeps a fork they already have,
 rather than fail `init-data` on the catalog's rule (agents/wip-bench.md, "Outstanding").
@@ -133,18 +152,19 @@ taken expectations and the giftbag's forks, which otherwise never see the archiv
 configurations.
 
 ### A9. What is said about a thread
-A thread's name, description, tags and collaborators, and deleting or restoring it, are entries the bench writes on
-what the person owns (`About.owned_by`), as `edit` already requires: a collaborator may fork a thread, but not edit,
-share or delete it. Sharing names a person by login. Restoring is held to the catalog's rules, so restoring a second
-expectation of one case and schema is refused. Handing a thread over to another owner isn't offered.
+A thread's name, description, tags and collaborators, and deleting or restoring it, are entries the bench writes on what
+the person owns (`About.owned_by`), as `edit` already requires: a collaborator may fork a thread, but not edit, share or
+delete it. Decided: only the owner shares. Sharing names a person by login. Restoring is held to the catalog's rules, so
+restoring a second expectation of one case and schema is refused. Handing a thread over to another owner isn't offered.
 
 What deleting hides stays the portal's question (`docs/catalog.md`, "Smaller issues"); the bench hides a deleted
 thread from everything but its history and the runs that used it.
 
-### A10. An edit names the head it was made on
-An edit may name the head the person saw, and the bench refuses it when the thread has moved on since, with an error
-of its own that the API maps to 409. It answers "An edit has no precondition" (agents/wip-api.md, "Open") for
-configurations too. Optional, so the repl's `save` keeps working as it does.
+### A10. Decided: an edit names the head it was made on
+Every edit names the head the person saw, configurations included, and the bench refuses it when the thread has moved
+on since, with an error of its own that the API maps to 409. It answers "An edit has no precondition"
+(agents/wip-api.md, "Open"). The repl's `save NAME`, which edits whichever configuration its name finds, names the head
+it found.
 
 ### A11. Who may write what
 Ownership only, as now: a person makes new threads and writes on their own. Roles aren't checked. Z1 will map roles
@@ -319,14 +339,10 @@ Each with its tests in `src/chatddx/bench/test/` and the API's.
 9. **Judges**, once the scoring pass can send judge requests (S6).
 
 ## Questions for the user
-1. **Taking one they already own.** When a person takes a shared expectation for a case they have their own for,
-   should the bench leave theirs (the take, as the giftbag does), or replace it?
-2. **Appendix edits and expectations.** Store the replacement cases and carry expectations only when confirmed (the
-   take), or carry them along at once?
-3. **A precondition on every edit** (A10), configurations included?
-4. **Sharing further.** Only the owner shares (the take), or may a collaborator share too? And should a thread ever be
-   handed to another owner?
+1. **Taking one they already own** (A5): K, R, or K with replacing named (the take)?
 
-`docs/chatddx.md` ("Roles mentioned", "Requirements") and `docs/factors.md` ("Scorer", "Judge") carry `AGENT:`
-suggestions for who writes what. The code pin (S2) and labels (S4) get theirs with the build, since they describe
-code that isn't written yet.
+Handing a thread over to another owner isn't offered (A9), as a take.
+
+`docs/chatddx.md` ("Roles mentioned", "Requirements") and `docs/factors.md` ("Scorer", "Judge") now say who writes
+what. The code pin (S2) and labels (S4) get their suggestions with the build, since they describe code that isn't
+written yet.
