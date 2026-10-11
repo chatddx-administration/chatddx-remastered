@@ -15,7 +15,6 @@ Agents may annotate it as "Docs" describes and should always report surprises.
 * Errors and warnings that indicate issues beyond the scope of the current task should remain, never hide them.
 
 ## Testing
-* Name tests `test_<subject>_<verb>_<object>[_<variation>].py`
 * Baseline is `pytest` which runs every test and takes ~50s; `pytest -m 'not slow'` is the quick run, <30s.
   A test whose call takes 0.2 s or more is marked `@pytest.mark.slow` (pyproject.toml, `[tool.pytest]`).
 

@@ -5,12 +5,13 @@ those two names mean these two files until they move. What is still open is in "
 stays behind when they do. The plan this was rewritten from, with the old API's survey and the options weighed, is
 `agents/wip-api.md` at cae55ad.
 
-The API is the bench over HTTP: what one person sees and does, for programs and browsers alike. A person signs in,
-and then sees the threads and families they own or that are shared with them, the World's endpoints and models, and
+The API is a person's view of the rig and runner over HTTP:
+They see the threads and families they own or that are shared with them, the World's endpoints and models, and
 their own runs. They try a configuration with parts replaced, fork it or add a version to their own, and run it,
-answered as JSON or as a stream of events. The endpoints, their parameters and their request and response shapes are
-in the OpenAPI document the API serves, at `/api/openapi.json`, with pages at `/api/docs`. This document describes
-what the API does and why it is shaped this way; how the package builds it, name by name, is in docs/api-api.md.
+answered as JSON or as a stream of events.
+
+The endpoints are in the OpenAPI document the API serves, at `/api/openapi.json`, with pages at `/api/docs`.
+This document describes what the API does and why it is shaped like it is.
 
 The API builds on the bench, which is what one person sees and does whatever the edge (agents/wip-bench.md), and on
 the runner, which sends a run and records it as it goes (agents/wip-runner.md), over the store, the catalog and the
@@ -255,7 +256,8 @@ serve the app with uvicorn on a thread, and speak to it over a socket.
 What is still open, carried over from the plan. It doesn't move to `docs/`.
 
 ### Start with this
-1. **Scoring is next.**
+0. **Go through open items, reiterate and confirm design decisions**
+1. **Scoring.**
    - A run's latest score under each scorer, on its own (`Bench.scores_of`).
    - Scoring a run now, under all its scorers or some (`Bench.score`), one run at a time.
    - The person's finished runs, each with the scorers it is left to be scored by (`Bench.outstanding`, as
