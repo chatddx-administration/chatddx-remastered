@@ -16,7 +16,7 @@ https://github.com/chatddx-administration/chatddx/blob/504792cbeb09508f2c52912be
 1. **Decided: the worker and the batch planner are planned apart**, as this file and `agents/wip-batch.md`. They meet
    at one contract (see "The contract"), which is a take.
 2. **The problem** (see "Why"): a run started over HTTP runs in the request and halts when the client goes away
-   (`agents/wip-api.md`, A6, W1). Right for a program, wrong for a browser tab.
+   (`agents/wip-bench.md`, "Takes the API is built on", A6, W1). Right for a program, wrong for a browser tab.
 3. **Decided: the queue is updated in place** (K2), an exception to "nothing is updated", as identity's people and
    sessions are.
 4. **Open, as takes** (see "Options"): K1, where it runs; K3, how events reach a page; K4, the unit it schedules; K5,
@@ -24,9 +24,9 @@ https://github.com/chatddx-administration/chatddx/blob/504792cbeb09508f2c52912be
 5. **What it needs below it first** (see "Below the worker"): resuming a run, and `Bench.start` taking an execution.
 
 ## Why
-- **The API runs a trial in the request** (`agents/wip-api.md`, A6, W1): `POST /api/runs` streams, or waits for the
-  record. A client that goes away halts the run (`src/chatddx/runner/run.py:Running.halt`), and it is recorded as
-  stopped.
+- **The API runs a trial in the request** (`agents/wip-bench.md`, "Takes the API is built on", A6, W1):
+  `POST /api/runs` streams, or waits for the record. A client that goes away halts the run
+  (`src/chatddx/runner/run.py:Running.halt`), and it is recorded as stopped.
 - **In a browser that is a closed tab, a reload, or a laptop going to sleep.** For a portal page that starts a batch
   of a hundred cases, it stops the batch.
 - **A long request holds a thread and a connection** for as long as the run lasts (`agents/wip-api.md`,
@@ -94,8 +94,8 @@ Why apart from the planner:
 
 ## Options
 ### K1. Where it runs
-- **W2. In the app's process**, beside the request (`agents/wip-api.md`, A6): a thread per run, kept in memory. Small,
-  but runs end with the process, and replicas don't see each other's.
+- **W2. In the app's process**, beside the request (`agents/wip-bench.md`, "Takes the API is built on", A6): a
+  thread per run, kept in memory. Small, but runs end with the process, and replicas don't see each other's.
 - **W3. A process of its own**, `chatddx worker`, reading what is asked from the store. Survives the app's restarts,
   serves every replica.
 - **W3, also runnable in the app's process**: the same worker, started as a thread by `chatddx api --worker` and by
@@ -138,7 +138,8 @@ Take: runs, with `max_jobs` shared by the runs on one endpoint through their exe
 
 ### K5. Which runs go through it
 - **Every run started over HTTP**, the portal's and the API's: one path. `POST /api/runs` answers 202 and its id
-  (W2's shape in `agents/wip-api.md`, A6), and the stream is `GET /api/runs/{id}/events`.
+  (W2's shape in `agents/wip-bench.md`, "Takes the API is built on", A6), and the stream is
+  `GET /api/runs/{id}/events`.
 - **Batches only**, single runs staying in the request.
 
 Take: every run started over HTTP. The repl keeps running in its own process, where Ctrl-C halts a run as it should.

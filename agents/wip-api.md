@@ -1,8 +1,8 @@
 # API
 
 A candidate for `docs/api.md`. Its reference is `agents/wip-api-api.md`, a candidate for `docs/api-api.md`; below,
-those two names mean these two files until they move. What is still open is in "Outstanding", at the end, which
-stays behind when they do. The plan this was rewritten from, with the old API's survey and the options weighed, is
+those two names mean these two files until they move. What is still open is in `agents/wip-bench.md`, "Outstanding",
+with the bench's. The plan this was rewritten from, with the old API's survey and the options weighed, is
 `agents/wip-api.md` at 100a078.
 
 The API is a person's view of the rig and runner over HTTP:
@@ -312,95 +312,5 @@ serve the app with uvicorn on a thread, and speak to it over a socket.
 | Case-derived | Made from a vignette, or quoting what was: the vignette, answers, tool runs. |
 
 ## Outstanding
-What is still open, carried over from the plan. It doesn't move to `docs/`.
-
-### Start with this
-0. **Go through open items, reiterate and confirm design decisions**
-1. **Scoring.**
-   - A run's latest score under each scorer, on its own (`Bench.scores_of`).
-   - Scoring a run now, under all its scorers or some (`Bench.score`), one run at a time.
-   - The person's finished runs, each with the scorers it is left to be scored by (`Bench.outstanding`, as
-     `runs?unscored=true`).
-   - Where a score's detail and the scoring's findings show, if anywhere: both can quote the answer, so a place for
-     them is case-derived, and the ledger marks the scoring's findings otherwise (see "Surprises").
-   - A case with expectations to choose from: decided since, with what keeps a person from having several
-     (`agents/wip-bench.md`, "What a person is scored against"). The look lists such a case as `choosing`, scoring still
-     refuses the run under that scorer, and `Bench.outstanding` lists the run with that scorer, so `runs?unscored=true`
-     would too.
-2. **Docs.** These two files, for `docs/api.md` and `docs/api-api.md`. Then:
-   - a proposal for `agents/wip-identity.md`: the framework, and signing in as built;
-   - what the API's work changed in the bench: done, in `agents/wip-bench.md` and `agents/wip-bench-api.md`.
-3. **Takes** the API is built on still wait for a word (below).
-
-### Takes the API is built on
-A take was the agent's recommendation, built on but not decided. The labels are the plan's, as other plans cite
-them; A1 (programs and browsers alike), A2 (FastAPI), A3 (signing in) and A9 (case-derived content in its own
-places) were decided.
-- **A4. Ids in paths**, names as filters, whole ids only (N1), rather than names and owners as the repl takes them,
-  with a pick by model and 409 when several match (N2).
-- **A5. A variation stated in each request** (V1), rather than a skeleton compiled and stored first and named by its
-  digest (V2), or a variation held on the server and patched (V3, rejected: the cell again). Later, if wanted: a
-  skeleton's digest beside a configuration, for a client that holds one, and an edit's id in place of a
-  configuration, should drift matter.
-- **A6. A run runs in the request** (W1). W2 runs it in the app's process beside the request: `POST /api/runs`
-  answers 202 with the run's id, `GET /api/runs/{id}/events` streams it (a GET, so a browser's `EventSource` can
-  follow it), and `POST /api/runs/{id}/stop` stops it; runs end with the process. W3 is a worker with a queue, which
-  `agents/wip-worker.md` takes, runnable in the app's process too. The events stay the same either way.
-- **A7. The stream** asked for with `Accept`, with the events in "The stream".
-- **A8. Scoring at once**, with the opt-out, and a listing of what is left to score, rather than scoring only when
-  asked; no request scores everything.
-- **A10. The statuses** in "Errors".
-- **A11. Fork and edit as two requests** (K2), rather than save as an upsert by name (K1). The repl's `save NAME`
-  picks between them by name, as before.
-- **A12. Paths**: mounted at `/api/`, without a version.
-
-### Open
-Signing in:
-- **A cookie over plain HTTP** isn't kept: a `Secure`, `__Host-` cookie needs HTTPS, or `localhost`.
-- **`Origin` against `Host`.** A proxy that rewrites `Host` would fail the `Origin` check for a browser that sends no
-  `Sec-Fetch-Site`, though today's browsers all send it. If it bites: the public origin as a setting.
-- **No limit on login attempts**, and **no personal tokens** for scripts that run longer than a session (a table and a
-  migration).
-- **Keycloak.** Once it is in front, a proxy authenticates and hands over the login, which maps to `person.login`,
-  and signing in is skipped (agents/wip-identity.md).
-- **Roles aren't checked**; that waits for the portal.
-
-Serving:
-- **A connection per request**, opened and closed each time; a pool (`psycopg_pool`) when that costs. A run answered
-  as JSON holds two for as long as it lasts: the request's and its own.
-- **A person's runs are all read**, and paged afterwards (`Bench.runs`). Page in the store once that is slow.
-
-Variations:
-- **A part given twice in a query**: the last one counts.
-- **An edit has no precondition**: done, as the head's edit in the body (agents/wip-authoring.md, A10).
-- **Concurrent writers.** Two requests can save the same name at once (docs/catalog.md, "Concurrent writers").
-- **Variants.** A client finds `plan (en, Qwen/Qwen3-8B-AWQ)` by its full name; agents/wip-variants.md's option B
-  would let it filter by model and language instead.
-- **An unsaved variation's runs are titled by their whole recipe**, in the API as in the repl (docs/catalog.md, "A
-  variation nobody saved has a long title").
-
-Runs:
-- **Reaching a chunk finds no run.** Filtering runs by a chunk's digest lists nothing, since a compiled skeleton
-  holds what the chunk sets rather than a reference to it; the compilation refers to both. The repl's `show reasoning
-  NAME` says "no runs of yours" the same way (`Bench.reaching`). Reaching through compilations would find them.
-- **A quiet stream sends nothing**, as while it waits for a slow first token, and a proxy's read timeout would cut
-  it. A comment line now and then would keep it open.
-- **`Accept` is read by media type alone**, so `text/event-stream;q=0` still asks for a stream.
-- **A run outlives a server that stops**, which waits for its requests. A killed one leaves the run unfinished, as
-  resuming isn't built; requests that last as long as a run are agents/wip-worker.md's ("Why").
-- **Judges**: judged views show as "not yet", as in the repl.
-
-### Surprises
-- `ScoreFinished` is marked as not case-derived (`src/chatddx/ledger/score.py`, `case_derived = False`), but its
-  findings hold `answer.invalid` messages, which can quote the answer's values
-  (`src/chatddx/scorers/answer.py:_breaks`).
-- Starlette's test client doesn't tell the app that a client hung up: it runs a streamed response to its end.
-- The "cell" guard's pattern matches "cancelled" (`src/chatddx/repl/test/test_vocabulary.py:CELL`). Say "stopped",
-  which is the runner's word anyway.
-
-### Seen once
-- On a container just started, the first two full runs each ended with a setup error in a test the API doesn't touch
-  (`src/chatddx/store/test/test_catalog.py::test_changed_vignettes_are_repaired`, then
-  `src/chatddx/repl/test/test_running.py::test_ctrl_c_stops_a_run_as_it_streams_and_it_is_recorded_as_stopped`);
-  the runs after were clean. The message wasn't kept. The likeliest cause is the test databases' race, which
-  `src/chatddx/conftest.py:_settled` waits out for at most 5 s.
+What is still open of the API, from the takes it is built on to what it has seen once, is in `agents/wip-bench.md`,
+"Outstanding", with the bench's. It doesn't move to `docs/`.

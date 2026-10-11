@@ -157,7 +157,8 @@ Take:
 ## Below the UI
 What the portal needs below its pages:
 1. **Runs that outlive the request**: the worker (`agents/wip-worker.md`). A run started over HTTP runs in the
-   request and halts when the client goes away (`agents/wip-api.md`, A6, W1); for a browser that is a closed tab.
+   request and halts when the client goes away (`agents/wip-bench.md`, "Takes the API is built on", A6, W1); for a
+   browser that is a closed tab.
 2. **Writes for authoring**: chunks, appendices and expectations, and cases and families for swift, through the bench
    (`agents/wip-authoring.md`). Taking an expectation shared with the person is one of them: a person is scored against
    their own only (`agents/wip-bench.md`, "What a person is scored against").

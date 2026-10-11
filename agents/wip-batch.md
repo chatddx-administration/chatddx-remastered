@@ -113,7 +113,8 @@ English and Swedish cases run as one trial per language, each under its variant,
 user.
 
 ### P4. Which cases
-- By tag, as before, and by family id, as the API names things (`agents/wip-api.md`, A4).
+- By tag, as before, and by family id, as the API names things (`agents/wip-bench.md`, "Takes the API is built on",
+  A4).
 - Adding cases to a kept batch, as the old `unheld` did: a new edit (see "Kept batches").
 
 ## What it hands the worker

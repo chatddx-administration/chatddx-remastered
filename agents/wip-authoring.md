@@ -229,8 +229,8 @@ Takes, built:
 ### A10. Decided: an edit names the head it was made on
 Every edit names the head the person saw, configurations included, and the bench refuses it when the thread has moved
 on since, with an error of its own that the API maps to 409. It answers "An edit has no precondition"
-(agents/wip-api.md, "Open"). The repl's `save NAME`, which edits whichever configuration its name finds, names the head
-it found.
+(agents/wip-api.md at d5ebf52, "Open"). The repl's `save NAME`, which edits whichever configuration its name finds,
+names the head it found.
 
 Take, built: the catalog checks it (`check_head`, `MovedOn`), while every edit holds its thread's advisory lock, so
 it holds with several writers without a rule in the database. The writer may not update the catalog's tables, which
