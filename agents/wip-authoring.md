@@ -8,8 +8,9 @@ portal is the first edge to need them (agents/wip-portal.md, "Below the UI", "Ph
 "Decided" means the user said so. "Take" is the agent's recommendation and still open.
 
 ## Start with this
-1. **Decided: what of a scorer and a judge researchers write** (see "Scorers and judges"). The rest are takes;
-   "Questions for the user" is what the plan can't settle alone.
+1. **Decided: what of a scorer and a judge researchers write** (see "Scorers and judges"), that scorers and tools pin
+   a version of their code rather than the running chatddx (S2), and that free parameters are written where the code
+   publishes a schema (S3). The rest are takes; "Questions for the user" is what the plan can't settle alone.
 2. **Taking expectations comes first** (phase 1). A person is scored against their own expectations only, so one who
    wasn't given the giftbag has nothing to be scored against until they can take some.
 3. **One set of writes for every kind people author** (A1), with builders only where a kind binds to a family's
@@ -156,16 +157,16 @@ kept as a new configuration of their own with its compilation, as `fork` keeps o
 the chunks by name through `Bench.chunk`.
 
 ## Scorers and judges
-Decided, for what a researcher writes and what they pick:
+Decided, for what a researcher writes and what they pick, with the code pin (S2) and free parameters (S3):
 
 | Part | Written, picked or shipped |
 | --- | --- |
 | A scorer's code and entry point | shipped: developers write them and ship them with the project |
 | Its expectation schema | picked, among the shipped ones |
 | Its views | written by researchers |
-| Its free parameters | not decided (see S3) |
+| Its free parameters | written by researchers, where the code publishes a schema for them (S3) |
 | Its resources | picked |
-| The labels of its views and resources | written by researchers |
+| The labels of its views and resources | written by researchers, with the scorer version they name (S4) |
 | A judge's skeleton | written, as a configuration whose purpose is `judge` |
 | Its engine | picked by researchers |
 | Its seeds | written by researchers |
@@ -182,15 +183,17 @@ components' JSON Schemas").
   checked as they are typed, against the output schema of a configuration they pick and against the scorer's
   expectation schema, as `Bench.reach` and the `view.unreachable` lint do already. The metric and its parameters come
   from what the code publishes (S1, S3); a split and a judge are picked.
-- **Labels them** in the same write, so the labels belong to the version they name (S4).
+- **Labels them** in the same write, so the labels belong to the version they name, and renames a view by a new
+  version of the same scorer (S4).
 - **Sees its effect** at once: the scorer applies to the runs whose output its views reach (`Bench.scorers_for`), and
   every finished run is left to be scored under the new version (`Bench.outstanding`).
 - **Writes a judge** as a configuration of purpose `judge`, with the variation workflow every configuration has, and
   a judge over it with an engine and seeds (S6).
 
 ### S1. The code publishes its entry points
-The project keeps a list of the scoring entry points it ships. Each one publishes its metrics, each with a name, what
-it measures and a JSON Schema for its parameters, and optionally a schema for the parameters every view shares. The
+The project keeps a list of the scoring entry points it ships. Each one publishes its version (S2) and its metrics,
+each with a name, what it measures and a JSON Schema for its parameters, and optionally a schema for the parameters
+every view shares. The
 portal's pickers and forms read the list, the bench refuses a scorer that names anything else, and the scoring pass
 runs nothing else. Today `chatddx.scorers.scorer.Metrics` publishes names only, and they are checked only when a run
 is scored (`chatddx.scorers.scorer.function`).
@@ -203,40 +206,70 @@ be held to a list of their own.
 
 Packaging entry points would serve as the list (`docs/factors.md`, "Finding code through packaging entry points").
 
-### S2. A scorer's code pin, and deploys
-A scorer pins the running chatddx's distribution, version and revision, and only that code is run
+### S2. Decided: scorers and tools pin a version of their code (C2)
+A scorer pins the running chatddx's distribution, version and revision today, and only that code is run
 (`chatddx.core.rig.entry`). Every deploy changes the revision, so every scorer stops scoring until it is pinned again.
 For the archive's scorers, running `init-data` again does that (`src/chatddx/curation/plan.py`); a researcher's own
-scorer has nothing that does. And a scorer pinned again is a new scorer, so every finished run is left to be scored
-again under it, though nothing in the scoring changed. Tools have the same pin, so each deploy also changes every
-skeleton that offers a tool, and every trial over one.
+scorer has nothing that does. A scorer pinned again is a new scorer, so every finished run is left to be scored again
+under it, though nothing in the scoring changed. Tools have the same pin, so each deploy also changes every skeleton
+that offers a tool, and every trial over one.
 
-- **C1. Keep the pin**, and give researchers a write that pins their scorers again to the running code, offered after
-  a deploy: their scorers and their runs go through it on every deploy.
-- **C2. Pin a version of the scoring code** that its developers raise when its behavior changes, as a cleanup step,
-  a split or a fill rule is named and versioned (`docs/factors.md`, "Text cleanup"). A deploy that doesn't change how
-  anything scores leaves every scorer's digest as it was. Which chatddx scored a run is still kept, in each score's
-  `rig` (`src/chatddx/ledger/score.py:ScoreStarted`).
+Decided: a scorer and a tool pin their entry point and the version of it the code publishes (S1), and its developers
+raise that version when what it does changes, as a cleanup step, a split or a fill rule is named and versioned
+(`docs/factors.md`, "Text cleanup"). The rejected option kept the pin and gave researchers a write that pins their
+scorers again after each deploy.
+- **What runs**: a scorer or a tool whose entry point the running code publishes at that version. Another is refused,
+  as other code is refused today. Which chatddx scored or ran is still kept, in each score's and run's `rig`
+  (`src/chatddx/ledger/score.py:ScoreStarted`, `src/chatddx/ledger/run.py:RunStarted`).
+- **What a deploy changes**: nothing, unless it raises a version. Then the scorers and tools pinned to the earlier one
+  are refused until they move on to the new one: the archive's when `init-data` runs again, a person's by following
+  its origin (A8), or by an edit.
+- **What it costs**: the `Scorer` and `Tool` schemas change, so their schema versions go up, and the store then refuses
+  their earlier versions, with every skeleton, trial, scoring and record whose closure holds one (`docs/factors.md`,
+  "Versions"). Before production, a store is rebuilt by loading its data sets again.
+- **Lints**: "scorer code without a revision" (`docs/factors.md`, "Lints") no longer applies to scorers and tools,
+  since they pin no revision. Whether a deploy sets one is seen in its records' `rig`.
+- **Docs**: `docs/factors.md` ("Code", "Tool", "Scorer", "Lints") gets suggestions with the build.
 
-Take: C2, for scorers and tools alike. It is a change to `docs/factors.md` ("Code", "Tool", "Scorer"), so it is the
-user's to decide (see "Questions for the user").
-
-### S3. Free parameters
+### S3. Decided: free parameters, where the code publishes a schema
 A view's parameters go to its metric, over the scorer's own (`scorer.params | view.params`,
 `chatddx.scorers.scorer.score`). None of the shipped metrics reads any (`chatddx.scorers.patterns`), and nothing checks
-them. Take: they are written by researchers, as the views are, but only where the code publishes a schema for them
+them. Decided: they are written by researchers, as the views are, but only where the code publishes a schema for them
 (S1): a view's, from its metric's schema, and the scorer's own only for code that publishes parameters its views share.
 Where nothing is published, nothing is offered, so today a researcher sets none. A parameter the schema refuses is
 refused by the write, as an unknown metric is, since the scorer could never score with it.
 
-### S4. Labels
+### S4. Labels belong to the scorer version they name
 A label names a view or a resource of one scorer digest, and the latest label wins, whoever wrote it
 (`src/chatddx/store/migrations/0010-t0-catalog.sql`, `catalog.label`). Once researchers write labels, one who forks a
 scorer without changing it, and so shares its digest, relabels it for everyone who sees it, the archive's included.
-Take: the labels a person sees for a scorer are their own, else those written first for that digest, as a person is
-held to their own expectation (`agents/wip-bench.md`, "What a person is scored against"). Every label row records who
-wrote it, so it is a change to how labels are read, not stored. A scorer write carries its labels, so they are
-carried to the next version by whoever moved the positions, as `docs/catalog.md` ("Scorer labels") expects.
+
+The user's suggestion: labels belong to the scorer version and are written once, with it, by whoever writes it. "The
+scorer version" can be read two ways:
+- **The component, by its digest.** A component records no writer (`factor.component` has no `by`), so "whoever writes
+  it" would be whoever labels that digest first, and everyone who stores the same scorer afterwards, by forking it
+  unchanged or by writing the same views, gets those labels. A view could never be renamed: its scorer is the same, so
+  its digest is, and the digest's labels are written already. A typo stays. Curation couldn't load a data set that
+  renames a view of an unchanged scorer, which it does today by writing a new label (`_Init.record`,
+  `src/chatddx/curation/write.py`).
+- **The edit, the version of a scorer thread.** An edit has a writer (`catalog.edit.by`), and every thread is its
+  owner's. The labels are written in the same write as the edit, by whoever makes it, and never after. A fork is the
+  forker's own edit, so it carries their labels, the origin's unless they give others. Renaming is a new edit of the
+  same scorer: the thread's history shows it, and since the digest doesn't change, no scoring, score or run left to
+  score changes with it. No one's labels change anyone else's, and no rule like the one for expectations is needed.
+
+Take: the edit. What it changes:
+- **Storage**: a label names an edit of a scorer thread instead of a scorer digest, one per edit, part and position,
+  written by the edit's writer: a migration at tier 0, and at tier 2 the position's check (as now), that the writer is
+  the edit's, and that a label is written once.
+- **Writing**: the catalog writes labels only with an edit. `create`, `edit` and `keep` take them for a scorer thread,
+  `keep` counts an edit as unchanged only when both the scorer and its labels are the head's, and `Catalog.label` goes.
+  Curation writes a data set's labels with the archive's edit, and a renamed view as a new edit of the same scorer.
+- **Reading**: a scorer digest's labels are those of the latest edit that holds it among the threads the person sees,
+  their own first, as `Bench.holder` picks a thread; for a digest that no thread's head holds any more, the latest edit
+  in their history that does; else "view N". The reach and scoring read the head edit they have already.
+- **Following an origin** (A8) carries the labels of whichever side's views the proposal keeps.
+- **Docs**: `docs/catalog.md` ("Scorer labels") and `docs/catalog-api.md` get suggestions with the build.
 
 ### S5. Resources
 A scorer's resources are strings, not references (`src/chatddx/factors/scoring.py:Scorer`), no kind of component
@@ -279,23 +312,19 @@ Each with its tests in `src/chatddx/bench/test/` and the API's.
 5. **Recipes into configurations.**
 6. **Appendices and cases**: the builders, a family's cases, replacement cases, and carrying an expectation over.
 7. **Typed cases**, with the portal's swift (agents/wip-portal.md, "Typed cases", and its phase 4).
-8. **Scorers**: the published entry points and their schemas (S1), views, parameters and labels (S3, S4), and the
-   code pin (S2).
+8. **Scorers**: the published entry points, their versions and their schemas (S1, S2), the code pin moved to them,
+   views, parameters (S3), and labels on edits (S4).
 9. **Judges**, once the scoring pass can send judge requests (S6).
 
 ## Questions for the user
-1. **The code pin** (S2): keep pinning the running chatddx and re-pin after every deploy (C1), or pin a version of
-   the scoring and tool code that developers raise when its behavior changes (C2, the take)?
-2. **Free parameters** (S3): written where the code publishes a schema for them (the take)?
-3. **Labels** (S4): a person's own, else the first written for the digest (the take), or the latest, whoever wrote it,
-   as now?
-4. **Taking one they already own.** When a person takes a shared expectation for a case they have their own for,
+1. **Labels** (S4): on the edit, the version of a scorer thread (the take), or on the scorer's digest?
+2. **Taking one they already own.** When a person takes a shared expectation for a case they have their own for,
    should the bench leave theirs (the take, as the giftbag does), or replace it?
-5. **Appendix edits and expectations.** Store the replacement cases and carry expectations only when confirmed (the
+3. **Appendix edits and expectations.** Store the replacement cases and carry expectations only when confirmed (the
    take), or carry them along at once?
-6. **A precondition on every edit** (A10), configurations included?
-7. **Sharing further.** Only the owner shares (the take), or may a collaborator share too? And should a thread ever be
+4. **A precondition on every edit** (A10), configurations included?
+5. **Sharing further.** Only the owner shares (the take), or may a collaborator share too? And should a thread ever be
    handed to another owner?
 
-Once 1–3 are settled, `docs/chatddx.md` ("Requirements", "Roles mentioned") and `docs/factors.md` ("Scorer", "Judge",
-and "Code" for C2) get `AGENT:` suggestions for who writes what, where they disagree today.
+Once 1 is settled, `docs/chatddx.md` ("Requirements", "Roles mentioned") and `docs/factors.md` ("Scorer", "Judge")
+get `AGENT:` suggestions for who writes what, where they disagree today.
