@@ -8,7 +8,8 @@ portal is the first edge to need them (agents/wip-portal.md, "Below the UI", "Ph
 "Decided" means the user said so. "Take" is the agent's recommendation and still open.
 
 ## Start with this
-1. **Nothing is decided yet.** The takes below make one plan; "Questions for the user" is what it can't settle alone.
+1. **Decided: what of a scorer and a judge researchers write** (see "Scorers and judges"). The rest are takes;
+   "Questions for the user" is what the plan can't settle alone.
 2. **Taking expectations comes first** (phase 1). A person is scored against their own expectations only, so one who
    wasn't given the giftbag has nothing to be scored against until they can take some.
 3. **One set of writes for every kind people author** (A1), with builders only where a kind binds to a family's
@@ -27,7 +28,8 @@ portal is the first edge to need them (agents/wip-portal.md, "Below the UI", "Ph
 | Names, descriptions, tags, collaborators; deleting and restoring | — | `docs/catalog.md`, "Entries" and "Deleting"; `docs/chatddx.md`, "Intended evolution of configurations" | a name, when a configuration is forked (`Bench.fork`); the rest by curation |
 | Accepting a proposal once a fork's origin moved on | — | `docs/catalog.md`, "Forks" | nothing: `Catalog.proposal` has no caller |
 | Typed cases and their families, for swift | clinicians | `agents/wip-portal.md`, "Typed cases" | nothing; needs a `source` schema |
-| A scorer's labels, carried to its next edit | — | `docs/catalog.md`, "Scorer labels" | by curation, for each scorer digest, from a data set |
+| Scorers: their views, free parameters and labels, over shipped code | researchers (decided) | `docs/catalog.md`, "Scorer labels"; "Scorers and judges" below | by curation, as the archive, with the labels of each scorer digest from a data set |
+| Judges: a judge configuration, an engine, seeds, a fill rule | researchers (decided) | `docs/factors.md`, "Judge" | nothing; no judged view can be scored yet |
 
 Not here:
 - **Trials and batches** are the batch planner's (agents/wip-batch.md).
@@ -35,7 +37,8 @@ Not here:
   none is written by hand.
 - **Tools, expectation schemas, engines, models and canary sets** are written by developers and ops, through data
   sets (`docs/chatddx.md`, "Requirements").
-- **Scorers and judges** wait on a question (see "Questions for the user", 1).
+- **Scoring code and expectation schemas** are developers', shipped with the project and picked (see "Scorers and
+  judges").
 
 ## What it builds on
 - **The catalog's writes**, generic over kinds: `create` (with an owner, a name and the edit it was forked from),
@@ -55,7 +58,8 @@ Not here:
 
 ## Takes
 ### A1. One set of writes for every kind
-Three writes, for every kind people author (the chunk kinds, skeletons, appendices and expectations):
+Three writes, for every kind people author (the chunk kinds, skeletons, appendices, expectations, scorers and
+judges, each with what of it is written and what picked, as "Scorers and judges" says for the last two):
 - **new**: a component as a new thread of the person's own, with a name;
 - **fork**: a thread the person sees as a new thread of their own, with a name, its head or a component given in its
   place;
@@ -151,6 +155,107 @@ A recipe the person makes, by the chunks' digests for each part, its purpose and
 kept as a new configuration of their own with its compilation, as `fork` keeps one. It has no origin. An edge finds
 the chunks by name through `Bench.chunk`.
 
+## Scorers and judges
+Decided, for what a researcher writes and what they pick:
+
+| Part | Written, picked or shipped |
+| --- | --- |
+| A scorer's code and entry point | shipped: developers write them and ship them with the project |
+| Its expectation schema | picked, among the shipped ones |
+| Its views | written by researchers |
+| Its free parameters | not decided (see S3) |
+| Its resources | picked |
+| The labels of its views and resources | written by researchers |
+| A judge's skeleton | written, as a configuration whose purpose is `judge` |
+| Its engine | picked by researchers |
+| Its seeds | written by researchers |
+| Its fill rule | picked |
+
+Good pickers need the code to publish what it accepts: its metrics' names and a schema for their parameters, much as
+the components' JSON Schemas could name the kinds each reference takes (`docs/factors.md`, "Reference kinds in
+components' JSON Schemas").
+
+### What a researcher does with it
+- **Starts a scorer** by forking a shipped one, or from shipped code, which needs a list of the code's entry points
+  (S1). Today only a data set names an entry point.
+- **Writes views**, each picking from what an answer offers and from what an expectation holds: the selectors can be
+  checked as they are typed, against the output schema of a configuration they pick and against the scorer's
+  expectation schema, as `Bench.reach` and the `view.unreachable` lint do already. The metric and its parameters come
+  from what the code publishes (S1, S3); a split and a judge are picked.
+- **Labels them** in the same write, so the labels belong to the version they name (S4).
+- **Sees its effect** at once: the scorer applies to the runs whose output its views reach (`Bench.scorers_for`), and
+  every finished run is left to be scored under the new version (`Bench.outstanding`).
+- **Writes a judge** as a configuration of purpose `judge`, with the variation workflow every configuration has, and
+  a judge over it with an engine and seeds (S6).
+
+### S1. The code publishes its entry points
+The project keeps a list of the scoring entry points it ships. Each one publishes its metrics, each with a name, what
+it measures and a JSON Schema for its parameters, and optionally a schema for the parameters every view shares. The
+portal's pickers and forms read the list, the bench refuses a scorer that names anything else, and the scoring pass
+runs nothing else. Today `chatddx.scorers.scorer.Metrics` publishes names only, and they are checked only when a run
+is scored (`chatddx.scorers.scorer.function`).
+
+Why it is a refusal and not a lint: the list is also a protection. `chatddx.core.rig.entry` imports whatever module an
+entry point names, of any installed package, and calls it with a view's metric, the picked items and the parameters.
+That was safe while only data sets named entry points; a scorer written over the API names its own. Checking that the
+code is the running chatddx doesn't check which function in it runs. Tools name entry points the same way, and should
+be held to a list of their own.
+
+Packaging entry points would serve as the list (`docs/factors.md`, "Finding code through packaging entry points").
+
+### S2. A scorer's code pin, and deploys
+A scorer pins the running chatddx's distribution, version and revision, and only that code is run
+(`chatddx.core.rig.entry`). Every deploy changes the revision, so every scorer stops scoring until it is pinned again.
+For the archive's scorers, running `init-data` again does that (`src/chatddx/curation/plan.py`); a researcher's own
+scorer has nothing that does. And a scorer pinned again is a new scorer, so every finished run is left to be scored
+again under it, though nothing in the scoring changed. Tools have the same pin, so each deploy also changes every
+skeleton that offers a tool, and every trial over one.
+
+- **C1. Keep the pin**, and give researchers a write that pins their scorers again to the running code, offered after
+  a deploy: their scorers and their runs go through it on every deploy.
+- **C2. Pin a version of the scoring code** that its developers raise when its behavior changes, as a cleanup step,
+  a split or a fill rule is named and versioned (`docs/factors.md`, "Text cleanup"). A deploy that doesn't change how
+  anything scores leaves every scorer's digest as it was. Which chatddx scored a run is still kept, in each score's
+  `rig` (`src/chatddx/ledger/score.py:ScoreStarted`).
+
+Take: C2, for scorers and tools alike. It is a change to `docs/factors.md` ("Code", "Tool", "Scorer"), so it is the
+user's to decide (see "Questions for the user").
+
+### S3. Free parameters
+A view's parameters go to its metric, over the scorer's own (`scorer.params | view.params`,
+`chatddx.scorers.scorer.score`). None of the shipped metrics reads any (`chatddx.scorers.patterns`), and nothing checks
+them. Take: they are written by researchers, as the views are, but only where the code publishes a schema for them
+(S1): a view's, from its metric's schema, and the scorer's own only for code that publishes parameters its views share.
+Where nothing is published, nothing is offered, so today a researcher sets none. A parameter the schema refuses is
+refused by the write, as an unknown metric is, since the scorer could never score with it.
+
+### S4. Labels
+A label names a view or a resource of one scorer digest, and the latest label wins, whoever wrote it
+(`src/chatddx/store/migrations/0010-t0-catalog.sql`, `catalog.label`). Once researchers write labels, one who forks a
+scorer without changing it, and so shares its digest, relabels it for everyone who sees it, the archive's included.
+Take: the labels a person sees for a scorer are their own, else those written first for that digest, as a person is
+held to their own expectation (`agents/wip-bench.md`, "What a person is scored against"). Every label row records who
+wrote it, so it is a change to how labels are read, not stored. A scorer write carries its labels, so they are
+carried to the next version by whoever moved the positions, as `docs/catalog.md` ("Scorer labels") expects.
+
+### S5. Resources
+A scorer's resources are strings, not references (`src/chatddx/factors/scoring.py:Scorer`), no kind of component
+holds one, and the scoring code isn't given them (`chatddx.scorers.scorer.ScoreFunction`). So there is nothing to pick
+yet. Take: none are offered until a kind of resource exists, with its own pins, and code that reads it.
+
+### S6. Judges
+- **A judge configuration** is a skeleton thread like any other, compiled from a recipe whose prompt has purpose
+  `judge`. The bench's lists of configurations hold both purposes today, and a judge configuration can be picked for a
+  run, only to be refused when the trial is built. Take: configurations are listed and found by purpose, and the
+  variation workflow lints a judge configuration as a judge, a skeleton with an engine (as `chatddx.facts.lints`
+  already does for judges), not as a trial.
+- **Its engine** is picked among the engines in the store, as a trial's is; the judge's requests are sent where that
+  engine is served, cleared for the cases, since a judge prompt can hold case text (`docs/factors.md`, "Judge").
+- **Its seeds** are written, and **its fill rule** is picked among those the code names (`FillOp`).
+- **Judged views can't be scored yet** (`chatddx.scorers.scorer.score` refuses them). Writing judges is worth doing
+  once the scoring pass sends judge requests; until then a researcher could write one and pick it in a view, and see
+  "not yet".
+
 ## The edges
 - **API**: the routes `GET /api/threads` already has, made writable for every kind people author:
   `POST /api/threads` (a kind, a component or a recipe, a name, a language), `POST /api/threads/{id}/forks` and
@@ -174,18 +279,23 @@ Each with its tests in `src/chatddx/bench/test/` and the API's.
 5. **Recipes into configurations.**
 6. **Appendices and cases**: the builders, a family's cases, replacement cases, and carrying an expectation over.
 7. **Typed cases**, with the portal's swift (agents/wip-portal.md, "Typed cases", and its phase 4).
+8. **Scorers**: the published entry points and their schemas (S1), views, parameters and labels (S3, S4), and the
+   code pin (S2).
+9. **Judges**, once the scoring pass can send judge requests (S6).
 
 ## Questions for the user
-1. **Are scorers and judges written in the portal?** The docs disagree. `docs/chatddx.md` says "Engines, models,
-   canary sets, expectation schemas and scorers are authored by ops or developers" ("Requirements"), but names
-   researchers as the authors of scorers ("Roles mentioned") and lists judges among the portal's interfaces;
-   `docs/factors.md` names researchers as the principal authors of both. If scorers are written in the portal,
-   carrying their labels to the next edit is the bench's to do; if only through data sets, curation already writes
-   them for each scorer digest.
-2. **Taking one they already own.** When a person takes a shared expectation for a case they have their own for,
+1. **The code pin** (S2): keep pinning the running chatddx and re-pin after every deploy (C1), or pin a version of
+   the scoring and tool code that developers raise when its behavior changes (C2, the take)?
+2. **Free parameters** (S3): written where the code publishes a schema for them (the take)?
+3. **Labels** (S4): a person's own, else the first written for the digest (the take), or the latest, whoever wrote it,
+   as now?
+4. **Taking one they already own.** When a person takes a shared expectation for a case they have their own for,
    should the bench leave theirs (the take, as the giftbag does), or replace it?
-3. **Appendix edits and expectations.** Store the replacement cases and carry expectations only when confirmed (the
+5. **Appendix edits and expectations.** Store the replacement cases and carry expectations only when confirmed (the
    take), or carry them along at once?
-4. **A precondition on every edit** (A10), configurations included?
-5. **Sharing further.** Only the owner shares (the take), or may a collaborator share too? And should a thread ever be
+6. **A precondition on every edit** (A10), configurations included?
+7. **Sharing further.** Only the owner shares (the take), or may a collaborator share too? And should a thread ever be
    handed to another owner?
+
+Once 1–3 are settled, `docs/chatddx.md` ("Requirements", "Roles mentioned") and `docs/factors.md` ("Scorer", "Judge",
+and "Code" for C2) get `AGENT:` suggestions for who writes what, where they disagree today.
