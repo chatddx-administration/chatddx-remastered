@@ -47,7 +47,6 @@ def test_a_person_sees_their_own_and_shared_threads_and_families(
     assert bobs.threads("configuration") == [] and bobs.families() == []
 
 
-@pytest.mark.slow
 def test_a_case_is_found_by_its_name_or_as_owner_slash_name(bench: Bench) -> None:
     found = bench.family("Dutchfall11w")
     assert bench.family("archive/Dutchfall11w") == found

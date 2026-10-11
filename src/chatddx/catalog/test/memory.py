@@ -85,6 +85,10 @@ class Memory:
     def get(self, digest: str) -> Component:
         return self.registry.get(digest)
 
+    def components(self, digests: Collection[str]) -> list[tuple[str, Component]]:
+        held = sorted(d for d in set(digests) if d in self.registry)
+        return [(d, self.registry.get(d)) for d in held]
+
     def kind(self, digest: str) -> str | None:
         return self.registry.get(digest).kind_name if digest in self.registry else None
 
@@ -114,8 +118,8 @@ class Memory:
     ) -> list[tuple[Subject, Entry, int]]:
         return [(s, e, by) for s, e, by in self._entries if s in subjects]
 
-    def bindings(self, family: int) -> list[Binding]:
-        return [b for b in self._bindings if b.family == family]
+    def bindings(self, families: Collection[int]) -> list[Binding]:
+        return [b for b in self._bindings if b.family in families]
 
     def families(self) -> list[int]:
         return sorted({b.family for b in self._bindings})
@@ -134,11 +138,13 @@ class Memory:
             )
         ]
 
-    def bound_to(self, vignette: Vignette, kind: str) -> list[str]:
+    def bound_to(
+        self, vignettes: Collection[Vignette], kind: str
+    ) -> list[tuple[str, Vignette]]:
         return [
-            d
+            (d, c.vignette)
             for d, c in [*self._stored(Case), *self._stored(Appendix)]
-            if c.kind_name == kind and c.vignette == vignette
+            if c.kind_name == kind and c.vignette in vignettes
         ]
 
     def expectations(self, cases: Collection[str]) -> list[str]:

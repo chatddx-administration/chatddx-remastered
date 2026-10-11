@@ -4,7 +4,6 @@ Agents may annotate it as "Docs" describes and should always report surprises.
 
 ## Environment
 * `set -a; . ./.env-container; set +a`.
-* Human devenv is declared in flake.nix's devShell (`.env-devshell`)
 * `store` uses PostgreSQL 16:
   - pg_ident.conf: chatddx <os-user> chatddx / chatddx <os-user> chatddx_writer
   - pg_hba.conf:   local all all peer map=chatddx
@@ -20,7 +19,7 @@ Agents may annotate it as "Docs" describes and should always report surprises.
   A test whose call takes 0.2 s or more is marked `@pytest.mark.slow` (pyproject.toml, `[tool.pytest]`).
 
 ## Docs
-For docs in (`docs/*`), the same rule applies as to this document: Humans write, agents propose.
+For docs in (`docs/*`), the same rule applies as to this document: Humans write, agents suggest.
 
 * For each change, inline your suggestion immediately above the subject to change, or above the paragraph, table or list
   item that holds it. Use the following template, itself fenced (with a longer fence when the suggestion holds one),
@@ -44,8 +43,10 @@ AGENT: <verb>
   understand, a path in a comment can act as a link for agents and humans alike. A comment linking two or more pieces of
   code this way with a short explanation is allowed.
 
-* `agents/*` are exempt from the "Humans write, agents propose" rule and agents are free to use it for whatever purpose
+* `agents/*` are exempt from the "Humans write, agents suggest" rule and agents are free to use it for whatever purpose
   they deem fit.
 
 ## Misc
-* For placeholder usernames in docs and tests, use alice, bob, carol... or semantic names (archive, guest, nobody, other, collaborator-one, admin).
+* For placeholder usernames in docs and tests, use
+  1. alice, bob, carol...
+  2. semantic names (archive, guest, nobody, other, collaborator-one, admin).

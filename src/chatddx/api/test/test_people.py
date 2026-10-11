@@ -4,12 +4,11 @@ import pytest
 import uvicorn
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
-from httpx2 import Response
 
 from chatddx import cli
 from chatddx.api.people import COOKIE
 from chatddx.api.schemas import Me
-from chatddx.api.test.conftest import PASSWORD
+from chatddx.api.test.conftest import PASSWORD, sign_in
 from chatddx.bench import Ambiguous, NotFound
 from chatddx.conftest import WORLD
 from chatddx.identity import Person
@@ -23,13 +22,6 @@ ELSEWHERE = (
     {"Origin": "https://elsewhere.example"},
     {"Sec-Fetch-Site": "cross-site", "Origin": "https://testserver"},
 )
-
-
-def sign_in(
-    client: TestClient, login: str = "alice", password: str = PASSWORD, **headers: str
-) -> Response:
-    body = {"login": login, "password": password}
-    return client.post("/api/session", json=body, headers=headers)
 
 
 def bearer(token: str) -> dict[str, str]:

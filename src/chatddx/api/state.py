@@ -16,6 +16,10 @@ class AppState:
     inventory: Inventory
     facts: Facts
 
+    # In autocommit mode, as the runner needs.
+    def connect(self) -> Connection:
+        return psycopg.connect(self.conninfo, autocommit=True)
+
 
 def state(request: Request) -> AppState:
     held = request.app.state.chatddx
@@ -23,7 +27,6 @@ def state(request: Request) -> AppState:
     return held
 
 
-# A connection of the request's own, in autocommit mode, as the runner needs.
 def connection(request: Request) -> Iterator[Connection]:
-    with psycopg.connect(state(request).conninfo, autocommit=True) as conn:
+    with state(request).connect() as conn:
         yield conn

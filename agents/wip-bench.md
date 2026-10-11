@@ -18,7 +18,7 @@ https://github.com/chatddx-administration/chatddx/blob/504792cbeb09508f2c52912be
 4. **The bench's modules** are `errors.py`, `outcome.py`, `variation.py` and `view.py` (see "Modules"). There is no
    `bench/bench.py`.
 5. **The API's phase 0** added to the bench: lookups by id, a variation from an id and digests, `fork` and `edit`,
-   `Ambiguous` for several expectations, and `outcome.py` (`agents/wip-api.md`, "Phase 0: built").
+   `Ambiguous` for several expectations, and `outcome.py` (`agents/wip-api.md` at cae55ad, "Phase 0: built").
 6. **Next: writes for authoring.** The bench writes configurations (`save`, `fork`, `edit`), runs (`start`) and
    scores (`score`), and nothing else. The portal is where chunks, appendices and expectations are written
    (`docs/chatddx.md`, "Requirements"; `agents/wip-portal.md`), for the person, so the writes are the bench's (B3).
@@ -476,7 +476,7 @@ Sub-decisions:
       "what a person sees". The rule itself is `identity`'s, and the bench applies it to everything else.
     - The catalog's own `LookupError`s stay untyped until an API needs to tell an ambiguous expectation from a
       missing one. `Bench.expectation` and `Bench.scoring` would then raise `Ambiguous` for it. Done for the API
-      (`agents/wip-api.md`, "Phase 0: built", step 5); the catalog's error stays untyped.
+      (`agents/wip-api.md` at cae55ad, "Phase 0: built", step 5); the catalog's error stays untyped.
 11. **One rule for finding things by name**: `Bench._named`. A name is matched whole first, then read as
     `OWNER/NAME`; the person's own wins, else the one shared with them; several raise `Ambiguous`, none `NotFound`.
     `Bench.thread` uses it for threads, and `Bench.family` for families, which can now be found as
@@ -525,7 +525,7 @@ lookups go through `Catalog`, `Store` and `People`:
 | `run_by_id(run: UUID) -> RunStarted` | The run, when it is live and the person owns it, as `runs()` keeps them. Else `NotFound("no run <id> of yours")`. |
 | `reaching(digest: str) -> list[RunStarted]` | The runs of `runs()` whose trial's closure holds `digest` (`Store.reaching(digest, "trial")`), newest first. |
 | `scorers_for(run: RunStarted) -> list[tuple[Edit, About]]` | The visible scorer threads whose head's every view has an `output` selector that reaches the run's skeleton's `output_schema` (`chatddx.factors.select.reaches`), the check `check_score` warns about as `view.unreachable`. |
-| `scoring(run: RunStarted, scorer: str) -> Scoring \| None` | The scoring the run would be scored under now: `Scoring(scorer, expectations)`, with, for each of the trial's cases in order, the expectation `Catalog.expectation_for(case, person.id, <the scorer's expectation_schema>)` picks, cases without one left out. `None` when no case has one. `Ambiguous` when the person has several expectations to choose from for a case. Nothing is stored. |
+| `scoring(run: RunStarted, scorer: str) -> Scoring \| None` | The scoring the run would be scored under now: `Scoring(scorer, expectations)`, with, for each of the trial's cases in order, the expectation `Catalog.expectations_for(cases, person.id, <the scorer's expectation_schema>)` picks for it, cases without one left out. `None` when no case has one. `Ambiguous` when the person has several expectations to choose from for a case. Nothing is stored. |
 | `unscored(run: RunStarted) -> list[str]` | The scorers of `scorers_for(run)` with no score of the run under `scoring(run, scorer)`, so a run whose expectations changed after it was scored is due again. Scorers whose scoring can't be built are left out. |
 
 A thread or a family is found by name among those the person sees (`Bench._named`):

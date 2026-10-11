@@ -32,7 +32,7 @@ def language_of(rows: Reader, digest: str) -> str | None:
             known = {
                 language
                 for c in compilations
-                if (language := _recipe_language(rows, c.recipe)) is not None
+                if (language := recipe_language(rows, c.recipe)) is not None
             }
             return known.pop() if len(known) == 1 else None
         case _:
@@ -63,7 +63,8 @@ def check_entry(subject: Subject, entry: Entry) -> None:
         )
 
 
-def _recipe_language(rows: Reader, recipe: Recipe) -> str | None:
+# A recipe's vote, which `language_of` counts for each compilation of a skeleton.
+def recipe_language(rows: Reader, recipe: Recipe) -> str | None:
     if recipe.translations is not None:
         return own(rows, recipe.translations)
     parts: list[str | None] = [

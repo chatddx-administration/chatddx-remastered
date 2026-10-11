@@ -3,6 +3,7 @@ from collections.abc import Iterator
 import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
+from httpx2 import Response
 from psycopg.conninfo import make_conninfo
 
 from chatddx.api.app import app
@@ -51,6 +52,13 @@ def served(db: str) -> FastAPI:
 def client(served: FastAPI) -> Iterator[TestClient]:
     with TestClient(served, base_url="https://testserver") as c:
         yield c
+
+
+def sign_in(
+    client: TestClient, login: str = "alice", password: str = PASSWORD, **headers: str
+) -> Response:
+    body = {"login": login, "password": password}
+    return client.post("/api/session", json=body, headers=headers)
 
 
 def bearer(conn: Connection, person: Person) -> dict[str, str]:

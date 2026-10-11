@@ -1,4 +1,4 @@
-from collections.abc import Collection, Mapping
+from collections.abc import Collection, Mapping, Sequence
 from typing import Any
 
 from chatddx.catalog import (
@@ -23,6 +23,7 @@ from chatddx.catalog import (
     titles,
 )
 from chatddx.factors.base import Component, Fingerprint, canonical_bytes, resolve
+from chatddx.factors.bundle import Registry
 from chatddx.factors.cases import Vignette
 from chatddx.factors.request import Compilation, Recipe
 from chatddx.factors.scoring import Scorer
@@ -80,6 +81,16 @@ class Rows:
 
     def get(self, digest: str) -> Component:
         return self._store.get(digest)
+
+    def components(self, digests: Collection[str]) -> list[tuple[str, Component]]:
+        rows = self._conn.execute(
+            """
+            SELECT digest, canonical FROM factor.component
+            WHERE digest = ANY(%s::text[]) ORDER BY digest
+            """,
+            (list(digests),),
+        ).fetchall()
+        return [(str(d), Registry().add_raw(str(d), str(c).encode())) for d, c in rows]
 
     def kind(self, digest: str) -> str | None:
         row = self._conn.execute(
@@ -184,13 +195,13 @@ class Rows:
             for thread, family, run, score in rows
         ]
 
-    def bindings(self, family: int) -> list[Binding]:
+    def bindings(self, families: Collection[int]) -> list[Binding]:
         rows = self._conn.execute(
             f"""
             SELECT {_BINDING} FROM catalog.binding b
-            WHERE b.family = %s ORDER BY b.id
+            WHERE b.family = ANY(%s::bigint[]) ORDER BY b.id
             """,
-            (family,),
+            (list(families),),
         ).fetchall()
         return [_binding(r) for r in rows]
 
@@ -220,20 +231,29 @@ class Rows:
         ).fetchall()
         return [_binding(r) for r in rows]
 
-    def bound_to(self, vignette: Vignette, kind: str) -> list[str]:
-        return [
-            str(d)
-            for (d,) in self._conn.execute(
-                """
-                SELECT digest FROM factor.component
-                WHERE kind = %s AND doc #>> '{vignette,source}' = %s
-                    AND doc #>> '{vignette,id}' = %s
-                    AND doc #> '{vignette,fingerprint}' = %s::jsonb
-                ORDER BY digest
-                """,
-                (kind, vignette.source, vignette.id, _jsonb(vignette.fingerprint)),
-            )
-        ]
+    def bound_to(
+        self, vignettes: Collection[Vignette], kind: str
+    ) -> list[tuple[str, Vignette]]:
+        wanted = list(dict.fromkeys(vignettes))
+        rows = self._conn.execute(
+            """
+            SELECT c.digest, v.i FROM factor.component c
+            JOIN unnest(%s::text[], %s::text[], %s::jsonb[]) WITH ORDINALITY
+                AS v (source, id, fingerprint, i)
+                ON c.doc #>> '{vignette,source}' = v.source
+                AND c.doc #>> '{vignette,id}' = v.id
+                AND c.doc #> '{vignette,fingerprint}' = v.fingerprint
+            WHERE c.kind = %s
+            ORDER BY c.digest
+            """,
+            (
+                [v.source for v in wanted],
+                [v.id for v in wanted],
+                [_jsonb(v.fingerprint) for v in wanted],
+                kind,
+            ),
+        ).fetchall()
+        return [(str(d), wanted[int(i) - 1]) for d, i in rows]
 
     def expectations(self, cases: Collection[str]) -> list[str]:
         return [
@@ -376,6 +396,16 @@ class Catalog:
     def expectation_for(self, case: str, person: int, schema: str) -> str | None:
         return threads.expectation_for(self._rows, case, person, schema)
 
+    def expectations_for(
+        self, cases: Sequence[str], person: int, schema: str
+    ) -> dict[str, str | None]:
+        return threads.expectations_for(self._rows, cases, person, schema)
+
+    def expectation_choices(
+        self, cases: Sequence[str], person: int, schema: str
+    ) -> dict[str, dict[int, str]]:
+        return threads.expectation_choices(self._rows, cases, person, schema)
+
     def forks(self, thread: int) -> list[int]:
         return threads.forks(self._rows, thread)
 
@@ -405,6 +435,9 @@ class Catalog:
 
     def language_of(self, digest: str) -> str | None:
         return language.language_of(self._rows, digest)
+
+    def recipe_language(self, recipe: Recipe) -> str | None:
+        return language.recipe_language(self._rows, recipe)
 
     def adopt(self, case: str, by: int, *, owner: int | None = None) -> int:
         with self._conn.transaction():

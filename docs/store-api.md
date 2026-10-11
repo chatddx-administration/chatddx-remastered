@@ -139,12 +139,15 @@ does.
 ### `class Rows`
 `Rows(conn: Connection)` implements `src/chatddx/catalog/read.py:Reader` over the tables, as
 `docs/catalog-api.md`, "read.py", lists. In SQL terms:
-- `get` is `Store.get`, and `compilations` is `Store.compilations`; `kind` reads `factor.component.kind`.
+
+- `get` is `Store.get`, and `compilations` is `Store.compilations`; `kind` reads `factor.component.kind`, and
+  `components` reads `canonical` for many digests at once.
 - Threads, edits, entries, bindings, languages and labels are read `ORDER BY id`; `families` reads `catalog.family`.
 - `edit` and `edits` don't read the edit's `kind` column; entries, languages and labels are read without `by` and
   `at`.
-- `bound_to(vignette, kind)` matches the `doc` of stored components of `kind` on `vignette.source`, `vignette.id`
-  and `vignette.fingerprint` (as canonical `jsonb`), by digest.
+- `bound_to(vignettes, kind)` matches the `doc` of stored components of `kind` on each vignette's `source`, `id` and
+  `fingerprint` (as canonical `jsonb`), joined against the vignettes `unnest`ed `WITH ORDINALITY` so that each row
+  gives back the caller's vignette; by digest.
 - `expectations(cases)` matches stored expectations on `doc ->> 'case'`, by digest.
 
 It also has `subjects_naming(person: int, fields: Collection[EntryField]) -> list[Subject]`: the distinct subjects

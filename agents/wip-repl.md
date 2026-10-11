@@ -17,7 +17,7 @@ The shell is built: `chatddx repl` chooses and inspects (4a), runs and scores (4
 2. **The takes made while building** (in "Built: 4a", "Built: 4b" and "Built: 4c") wait for the user's word, and so
    do D5–D8 and which scorers apply to a run (see "3. Reads for a person").
 3. **The bench** is a module of its own now, `src/chatddx/bench/`; what it is waits on `agents/wip-bench.md`.
-4. **Left from 4a**: an unsaved variation's language is unknown.
+4. **Left from 4a**: nothing; an unsaved variation's language is known since the API's phase 3.
 5. **Left from 4b**: a structured answer cut short is unread, as nothing salvages it; no word on reasoning that wasn't
    heeded; two tool calls in one response run together on one line.
 6. **Left from 4c**: an unsaved cell's runs are titled by their whole recipe; only an item's first request is rendered
@@ -359,7 +359,8 @@ Takes made while building, all still open:
 Left from 4a:
 - **The bench as a module of its own** (the user's remark): done, `agents/wip-bench.md`, "Phase 0".
 - **An unsaved cell's language is unknown.** `Catalog.language_of` reads the store, so after `set` the request's
-  language is `language.unknown` even where the recipe's chunks have one. The sample's chunks have none anyway (G18).
+  language was `language.unknown` even where the recipe's chunks have one. Done: `Bench.findings` takes the request's
+  language from the cell's recipe (`agents/wip-api.md`, "Trying a variation").
 - **Runs of a scorer.** Done in 4c: `show scorer NAME` counts the runs it scored.
 - **The seeded sample fixture**: done, defined once as `src/chatddx/conftest.py:seeded` (`agents/wip-bench.md`,
   "Phase 2", step 5).

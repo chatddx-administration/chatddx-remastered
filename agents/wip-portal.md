@@ -95,7 +95,7 @@ From its manual (`docs/portal.md`), which reads as a functional spec:
 ## How it is built
 Decided: **P3b**, HTML pages rendered on the server, per request, from the bench, with Svelte islands that call the
 API where a page needs feedback without a reload. The portal consumes the bench, as planned (`agents/wip-bench.md`,
-"Forces"), and is built on the API where it is interactive (`agents/wip-api.md`, A1, "kept open").
+"Forces"), and is built on the API where it is interactive (`agents/wip-api.md`, "Who it is for").
 
 Set aside:
 - **Keeping the old portal, Django and all.** Its pages are `ModelAdmin`s over the old models, which remastered
@@ -188,7 +188,7 @@ Decided:
   `POST /api/diagnose {symptoms, model}`. The old project dropped the first and the last at 110f9a5 (2026-09-26).
 - **Remastered has its answer**: the sample's management plan
   (`src/chatddx/data/sample/schemas/management_plan_v1.json`, the `plan` recipes), read as the repl and the API read
-  answers (`chatddx.scorers.answer.read`) and served from a run's items (`agents/wip-api.md`, A9).
+  answers (`chatddx.scorers.answer.read`) and served from a run's items (`agents/wip-api.md`, "Case-derived content").
 
 ### Typed cases
 Decided: **the texts typed in swift are kept in the database**, as a source of their own. A case is otherwise a
@@ -225,7 +225,7 @@ Take, for its shape:
   (the schema) and `docs/migrations.md`.
 
 **Protection.** The demo is on the public web, but the portal has no guest: every request needs a session
-(`agents/wip-api.md`, A3), and people are added by an admin (`chatddx person add`). So:
+(`agents/wip-api.md`, "Signing in"), and people are added by an admin (`chatddx person add`). So:
 - a person's typed cases and runs are held to a quota, and a text to a size, with a NUL refused, since the database
   can't keep one (`docs/store.md`, "Known gaps");
 - signing in is rate limited, which is open (`agents/wip-identity.md`, "Open");
