@@ -360,7 +360,7 @@ Left from 4a:
 - **The bench as a module of its own** (the user's remark): done, `agents/wip-bench.md`, "Phase 0".
 - **An unsaved cell's language is unknown.** `Catalog.language_of` reads the store, so after `set` the request's
   language was `language.unknown` even where the recipe's chunks have one. Done: `Bench.findings` takes the request's
-  language from the cell's recipe (`agents/wip-api.md`, "Ambiguous cases and unsaved variations").
+  language from the cell's recipe (`agents/wip-api.md`, "Trying a variation").
 - **Runs of a scorer.** Done in 4c: `show scorer NAME` counts the runs it scored.
 - **The seeded sample fixture**: done, defined once as `src/chatddx/conftest.py:seeded` (`agents/wip-bench.md`,
   "Phase 2", step 5).

@@ -95,13 +95,13 @@ against the inventory's `[cleared]` table until the clearance pipeline replaces 
    that. A `[cleared]` entry for a source that isn't sensitive is accepted and clears nothing
    (`docs/inventory.md`, "Open design issues"). Swift's typed cases will be a source in the database, written by the
    portal, where a clinician may type about a real patient (`agents/wip-portal.md`, "Swift", "Typed cases").
-6. **Edges as destinations.** The repl shows case-derived content at its terminal: `show case` prints the vignette
-   and `run` streams the completion. An API sends the same over the network to whatever signed in
-   (`agents/wip-api.md`, A9). The takes count a database and an export target as endpoints to vet, but nothing says
+6. **Edges as destinations.** The repl shows case-derived content at its terminal: `show case` prints the vignette and
+   `run` streams the completion. An API sends the same over the network to whatever signed in (`agents/wip-api.md`,
+   "Case-derived content"). The takes count a database and an export target as endpoints to vet, but nothing says
    whether an edge's client is one, nor who may read the vignette or a run's items through it. Decided for the API:
-   case-derived content is served only from its own resources (the vignette, a run's items, and the stream's deltas),
-   so a policy for edges has those few places to gate. Open: whether edges are vetted like endpoints, by what (the
-   edge, the person, or the client's address), and whether the repl falls under the same rule.
+   case-derived content is served only from its own resources (the vignette, a run's items, and the stream's deltas), so
+   a policy for edges has those few places to gate. Open: whether edges are vetted like endpoints, by what (the edge,
+   the person, or the client's address), and whether the repl falls under the same rule.
 
 ## When to build it
 Checked against the runner's phases 4–6 (`agents/wip-runner.md`, "Left"), before phase 4 was built. Nothing in the

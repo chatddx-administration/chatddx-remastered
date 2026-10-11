@@ -277,7 +277,7 @@ def run(bench: BenchDep, run: UUID) -> schemas.RunDetail:
 
 
 # Case-derived: the one place the API gives what a run's calls answered, besides the
-# stream (agents/wip-api.md, A9).
+# stream.
 @router.get("/runs/{run}/items")
 def items(bench: BenchDep, run: UUID) -> list[schemas.ItemDetail]:
     started = bench.run_by_id(run)

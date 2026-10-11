@@ -258,7 +258,7 @@ class Item(_Schema):
     completion_tokens: int
 
 
-# An item as it was recorded: case-derived (agents/wip-api.md, A9).
+# An item as it was recorded, which is case-derived.
 class ItemDetail(Item):
     why: str | None
     vignette: JsonValue

@@ -15,7 +15,6 @@ from . import families, people, runs, threads, world
 from .schemas import EVENTS
 from .state import AppState
 
-# agents/wip-api.md, A10.
 STATUSES: dict[type[Exception], int] = {NotFound: 404, Ambiguous: 409, Refused: 422}
 
 

@@ -29,8 +29,8 @@ https://github.com/chatddx-administration/chatddx/blob/504792cbeb09508f2c52912be
   stopped.
 - **In a browser that is a closed tab, a reload, or a laptop going to sleep.** For a portal page that starts a batch
   of a hundred cases, it stops the batch.
-- **A long request holds a thread and a connection** for as long as the run lasts (`agents/wip-api.md`, "Open",
-  "Long requests").
+- **A long request holds a thread and a connection** for as long as the run lasts (`agents/wip-api.md`,
+  "Outstanding", "Open").
 - **The orchestrator runs in Kubernetes** (`docs/chatddx.md`, "Target stack"): an app is restarted at each deploy, and
   may run as several replicas. A run held by one process is lost with it, and unseen from the others.
 
@@ -77,7 +77,7 @@ https://github.com/chatddx-administration/chatddx/blob/504792cbeb09508f2c52912be
 What edges and the planner hand the worker, and what they get back. Take:
 1. **The unit asked for**: a trial at an endpoint, for an owner, scored afterwards or not, and the batch it came from
    if any (`agents/wip-batch.md`). That is `Bench.start` followed by `Bench.score` (`src/chatddx/bench/view.py`), and
-   what `POST /api/runs` asks today (`agents/wip-api.md`, "The plan").
+   what `POST /api/runs` asks today (`agents/wip-api.md`, "Runs").
 2. **How its runs are found**: by trial digest and owner (`Bench.runs`; `GET /api/runs?trial=`), or through a kept
    batch (`agents/wip-batch.md`, "Kept batches").
 3. **The surface an edge calls**: queue, which gives the job's id; stop; and the events, by item from the ledger, with
@@ -185,4 +185,4 @@ Assuming the takes.
 - From `agents/wip-portal.md`: "Below the UI", 1, runs that outlive the request, and the worker's part of "The batch
   planner and the worker".
 - From `agents/wip-runner.md`, "Afterwards": "Resuming" and "`max_jobs` across runs".
-- From `agents/wip-api.md`, "Open": "Long requests".
+- From `agents/wip-api.md` at cae55ad, "Open": "Long requests".

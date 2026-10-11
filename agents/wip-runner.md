@@ -248,9 +248,9 @@ In `rounds.py`, which `run.py` calls for every item, with tools or without:
   `Running.halt()` (below), the same holds for a halt from another thread, on a serial run too.
 
 ### For the API
-- **`Running.halt()`** (`src/chatddx/runner/run.py`): built for the API's phase 0 (`agents/wip-api.md`, "Phase 0:
-  built", step 6). A server's request thread gets no KeyboardInterrupt, so `halt` sets the event every call of the
-  send watches: serial calls, canaries and concurrent calls. The calls under way are recorded as stopped, and `send`
+- **`Running.halt()`** (`src/chatddx/runner/run.py`): built for the API's phase 0 (`agents/wip-api.md` at cae55ad,
+  "Phase 0: built", step 6). A server's request thread gets no KeyboardInterrupt, so `halt` sets the event every call of
+  the send watches: serial calls, canaries and concurrent calls. The calls under way are recorded as stopped, and `send`
   returns rather than raises. Tested in `src/chatddx/runner/test/test_run.py`, at concurrency 1 and 2, and during a
   canary.
 

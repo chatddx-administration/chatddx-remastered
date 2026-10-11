@@ -68,7 +68,7 @@ def family(bench: BenchDep, family: int) -> schemas.FamilyDetail:
     )
 
 
-# Case-derived: the one place the API gives a vignette (agents/wip-api.md, A9).
+# Case-derived: the one place the API gives a vignette.
 @router.get("/families/{family}/vignette")
 def vignette(bench: BenchDep, family: int) -> schemas.Vignette:
     found = bench.family_by_id(family)

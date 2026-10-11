@@ -18,7 +18,7 @@ https://github.com/chatddx-administration/chatddx/blob/504792cbeb09508f2c52912be
 4. **The bench's modules** are `errors.py`, `outcome.py`, `variation.py` and `view.py` (see "Modules"). There is no
    `bench/bench.py`.
 5. **The API's phase 0** added to the bench: lookups by id, a variation from an id and digests, `fork` and `edit`,
-   `Ambiguous` for several expectations, and `outcome.py` (`agents/wip-api.md`, "Phase 0: built").
+   `Ambiguous` for several expectations, and `outcome.py` (`agents/wip-api.md` at cae55ad, "Phase 0: built").
 6. **Next: writes for authoring.** The bench writes configurations (`save`, `fork`, `edit`), runs (`start`) and
    scores (`score`), and nothing else. The portal is where chunks, appendices and expectations are written
    (`docs/chatddx.md`, "Requirements"; `agents/wip-portal.md`), for the person, so the writes are the bench's (B3).
@@ -476,7 +476,7 @@ Sub-decisions:
       "what a person sees". The rule itself is `identity`'s, and the bench applies it to everything else.
     - The catalog's own `LookupError`s stay untyped until an API needs to tell an ambiguous expectation from a
       missing one. `Bench.expectation` and `Bench.scoring` would then raise `Ambiguous` for it. Done for the API
-      (`agents/wip-api.md`, "Phase 0: built", step 5); the catalog's error stays untyped.
+      (`agents/wip-api.md` at cae55ad, "Phase 0: built", step 5); the catalog's error stays untyped.
 11. **One rule for finding things by name**: `Bench._named`. A name is matched whole first, then read as
     `OWNER/NAME`; the person's own wins, else the one shared with them; several raise `Ambiguous`, none `NotFound`.
     `Bench.thread` uses it for threads, and `Bench.family` for families, which can now be found as

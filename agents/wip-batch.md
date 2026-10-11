@@ -129,7 +129,7 @@ unfinished, done) is read from the worker's jobs and the ledger, so the planner 
 - **The repl**: `batch TAG…` runs one variation over the tagged cases with one seed, as one trial and one run
   (`agents/wip-repl.md`, "Built: 4b"). It could take a batch, perhaps as several parts given at once.
 - **The API**: a batch read like `GET /api/threads/{id}/variation`, with several chunks per part
-  (`agents/wip-api.md`, "The plan"); then asking for it.
+  (`agents/wip-api.md`, "Trying a variation"); then asking for it.
 
 ## The plan
 Assuming the takes.
