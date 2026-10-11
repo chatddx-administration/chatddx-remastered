@@ -162,6 +162,8 @@ The models' fields are in the OpenAPI document. Besides them:
 | `NewThread` | A new thread's body: `component`, a component's JSON with its `kind`; `name`, not empty; and `language`. |
 | `NewFork`, `NewEdit` | A fork's body, `name` (not empty), and `parts` for a configuration or `component` and `language` for another kind; and an edit's, `head` (required), with the same. |
 | `MadeThread(ThreadDetail)`, `MadeEdit(Edit)` | What a write answers: the thread or the edit, with `findings`. |
+| `Varied`, `Proposal` | A path a fork varies, with the base's and the fork's values; and what following would keep: `base` and `origin_head` (edits), `varies`, `recipe` for a configuration or `component` for another kind, `digest` and `compilation`. |
+| `NewFollow` | A follow's body: `head` (required) and `language`. |
 | `Said` | What is said about a thread: `name`, `description`, `tags`, `collaborators` (logins) and `deleted`, each optional; a field not given stays as it is (`model_fields_set`), and a null `name` takes the name away. |
 | `NewTakes`, `Taken` | A take's body for many cases, `families` (not empty), `expectation_schema` and `owner`, and its answer, `chatddx.bench.Taken` keyed by family id. |
 | `NewTake` | A take's body for one thread, `replace`. |
@@ -193,6 +195,8 @@ variation's query parameters to them with `endpoint`, `tag` and `seed`.
 | `edits`, `GET /threads/{thread}/edits` | `Bench.thread_by_id(thread, deleted=True)`, then `Catalog.history`. |
 | `variation`, `GET /threads/{thread}/variation` | Within `refused()`: `Bench.variation(thread, query.given())` and `Bench.skeleton`. The seed is `suggest_seeds(1)[0]` unless given. `Bench.families(query.tag)`. With an endpoint: `Bench.endpoint`, whose `LookupError` is `HTTPException(422)`, and `Bench.findings(variation, engine, seed, families or None)`. `Bench.request(variation, engine, seed)` and `Bench.reach(variation, families)`. `parts` is `None` for a variation without a recipe. |
 | `say`, `PATCH /threads/{thread}` | `HTTPException(422, "a description is replaced, never taken away")` for a null `description`, and `HTTPException(422, "no person '<login>'")` for a collaborator nobody is (`People.find`). Within `refused()`: `Bench.say`, with `...` for a `name` not given. 200, `detail`. |
+| `proposal`, `GET /threads/{thread}/proposal` | Within `refused()`: `Bench.proposal`. `null` when there is none. |
+| `follow`, `POST /threads/{thread}/follows` | Within `refused()`: `Bench.follow(thread, head, language)`. 201 with the edit's `edit_of` and findings. |
 | `delete`, `DELETE /threads/{thread}` | Within `refused()`: `Bench.say(thread, deleted=True)`. 204, also when it was deleted already. |
 | `new`, `POST /threads` | Within `refused()`: `Bench.new(Bench.component(component), name, language)`. 201, `made`. |
 | `fork`, `POST /threads/{thread}/forks` | `check_given`. Within `refused()`, for a configuration: `Bench.fork(Bench.variation(thread, parts), name)`, with `Bench.linted` of its skeleton; else `Bench.fork_component(thread, name, component, language)`. 201, `made`, with `Location` the new thread's path (`url_path_for("thread")`). |
@@ -329,6 +333,7 @@ settings.database())`.
 | `test_people.py` | Signing in and out by bearer and cookie, the same-origin check, validation, the statuses, the OpenAPI document and the command. |
 | `test_threads.py`, `test_families.py`, `test_world.py` | The reads, taking expectations, and what bob doesn't see. |
 | `test_writes.py` | Chunks and expectations written new, edited and forked; what is refused, and with which status; an expectation's findings. |
+| `test_following.py` | A fork with nothing to follow, then a proposal once the archive's configuration moved on, a stale head, following, and nothing proposed after. |
 | `test_said.py` | Saying what holds of a thread, sharing it with bob and taking it back; refusals; deleting, listing and reading the deleted thread, and restoring it; a session needed. |
 | `test_variations.py` | Looks, forks and edits; that a look's queries don't grow with its cases, counted on the test's database (the fixtures create the next test's meanwhile). |
 | `test_runs.py` | Runs, over its own `served` on `world`, the sample World on free ports; `listening`, the app under uvicorn on a thread, for the two tests of a client going away. |

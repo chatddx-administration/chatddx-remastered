@@ -136,6 +136,8 @@ The bench writes configurations, chunks, expectations, runs and scores for the p
 - **Taking** forks expectations shared with the person, for many cases or one thread (see "Taking").
 - **Saying** what holds of a thread the person owns: its name, description and tags, who it is shared with, and
   whether it is deleted (see "What is said about a thread").
+- **Following** a fork's origin: keeping the catalog's proposal as an edit of the person's fork (see "Following an
+  origin").
 
 An unsaved skeleton has what it was compiled from stored, by the running code, when it is saved or started
 (docs/catalog.md, "Recipes"). The runner and the scoring pass write each row as it lands, so starting and scoring need
@@ -159,6 +161,19 @@ Restoring is held to the catalog's rules, so a second expectation of the person'
 refused, worded as the person reads it. A thread isn't shared with its owner, a name and a tag aren't empty, and a
 login that names nobody is refused. Handing a thread over to another owner isn't offered (agents/wip-authoring.md,
 A9).
+
+### Following an origin
+When a fork's origin has moved on, the catalog proposes the origin's head with the fork's changes on top
+(docs/catalog.md, "Forks"). The bench shows what following would keep: the base and the origin's head, what the fork
+varies, the proposal, and the digest it comes to, a recipe compiled by the running code. Nothing is proposed when
+the origin hasn't moved on, or when the person no longer sees it, deleted or unshared, since its head is then not
+theirs to read.
+
+Following keeps the proposal as an edit of the person's own fork, based on the origin's head and naming the head
+they saw, even when it holds what the fork's head holds already, so that the fork is compared with the new base from
+then on. A configuration is kept with the compilation that makes it, and a text takes a language as an edit does; a
+compiled configuration takes none. What the lints say of it comes back with it, as with every write. Changes that no
+longer fit the origin's head are refused, saying so.
 
 ### Components
 A person writes the kinds of chunk a recipe's parts take, and expectations. A configuration is written as a variation,
@@ -245,14 +260,14 @@ What is still open. It doesn't move to `docs/`.
 ### Start with this
 1. **Adopting the docs.** This file and `agents/wip-bench-api.md`, as `docs/bench.md` and `docs/bench-api.md`.
 2. **Writes for authoring** (below), planned in `agents/wip-authoring.md`. The portal's authoring and swift wait on
-   them. Taking expectations, writing chunks and expectations, and what is said about a thread, its phases 1 to 3,
-   are built.
+   them. Taking expectations, writing chunks and expectations, what is said about a thread, and following an origin,
+   its phases 1 to 4, are built.
 
 ### Writes for authoring
 Planned in `agents/wip-authoring.md`: chunks, recipes, appendices and the cases that order them, expectations, what is
 said about a thread, and following an origin. Taking expectations is built ("Taking"), and the giftbag keeps a
-person's own; so are writing chunks and expectations, an edit's head, and what is said about a thread ("Writes for
-the person").
+person's own; so are writing chunks and expectations, an edit's head, what is said about a thread, and following an
+origin ("Writes for the person").
 
 ### Takes
 A take is the agent's recommendation, built on but not decided.

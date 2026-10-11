@@ -1,7 +1,18 @@
 from .errors import Ambiguous, Conflict, MovedOn, NotFound
 from .outcome import Outcome, outcome, usage
 from .variation import OPTIONAL, PARTS, TriedVariation
-from .view import KINDS, WRITTEN, Bench, Family, Graded, Reach, Saved, Taken, Written
+from .view import (
+    KINDS,
+    WRITTEN,
+    Bench,
+    Family,
+    Graded,
+    Proposed,
+    Reach,
+    Saved,
+    Taken,
+    Written,
+)
 
 __all__ = [
     "KINDS",
@@ -16,6 +27,7 @@ __all__ = [
     "MovedOn",
     "NotFound",
     "Outcome",
+    "Proposed",
     "Reach",
     "Saved",
     "Taken",

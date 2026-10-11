@@ -14,6 +14,7 @@ from chatddx.catalog import (
     EntryField,
     Kept,
     Subject,
+    Variation,
     latest,
     variants_for,
 )
@@ -32,6 +33,8 @@ from chatddx.factors.cases import Case, Vignette, prepare_case
 from chatddx.factors.engine import LocalEngine, RemoteEngine
 from chatddx.factors.kinds import BY_KIND
 from chatddx.factors.request import (
+    Compilation,
+    Recipe,
     Skeleton,
     SlotName,
     compile_request,
@@ -131,6 +134,17 @@ class Saved:
     digest: str
     what: Literal["created", "a new version", "unchanged"]
     variation: TriedVariation
+
+
+# What following a fork's origin would keep: the origin's head with the fork's changes on
+# top, as a recipe or a component, and the digest it comes to, with the compilation that
+# makes it for a recipe.
+@dataclass(frozen=True)
+class Proposed:
+    variation: Variation
+    proposal: Recipe | Component
+    digest: str
+    compilation: str | None
 
 
 # What taking expectations for some cases did with each: by case, the thread the person
@@ -653,11 +667,85 @@ class Bench:
         recipe = variation.varied
         if not variation.parts or recipe is None:
             return None
+        registry, compilation = self._compiled(recipe)
+        _ = self.store.add(registry, [compilation.digest])
+        return compilation.digest
+
+    # A recipe compiled by the running code, in a registry with what it refers to;
+    # nothing is stored.
+    def _compiled(self, recipe: Recipe) -> tuple[Registry, Compilation]:
         registry = self.store.load(s.digest for s in iter_refs(recipe))
         skeleton, compilation = compiled(recipe, registry.get, rig())
         _ = registry.add(skeleton)
-        _ = self.store.add(registry, [registry.add(compilation)])
-        return compilation.digest
+        _ = registry.add(compilation)
+        return registry, compilation
+
+    # What following the origin of `thread`, a fork the person sees, would keep; `None`
+    # when the origin hasn't moved on since the fork's base, or the person doesn't see
+    # it any more.
+    def proposal(self, thread: int) -> Proposed | None:
+        _, _, word = self._seen(thread)
+        found = self._proposed(thread, word)
+        return None if found is None else found[0]
+
+    # The proposal for `thread`, a fork the person owns whose head was `head` when they
+    # saw it, kept as an edit based on the origin's head. A text takes `language` as
+    # `edit_component`'s does.
+    def follow(self, thread: int, head: int, language: str | None = None) -> Written:
+        _, about, word = self._seen(thread)
+        if not about.owned_by(self.person.id):
+            raise NotFound(f"no {word} {thread} of yours")
+        found = self._proposed(thread, word)
+        if found is None:
+            raise ValueError(f"{word} {thread} has nothing to follow")
+        proposed, registry = found
+        kind = self.catalog.thread(thread).kind
+        if language is not None and proposed.compilation is not None:
+            raise ValueError(
+                "a compiled configuration's language comes from its recipe"
+            )
+        if language is not None and kind not in LANGUAGE_KINDS:
+            raise ValueError(f"{kind} components have no language of their own")
+        if isinstance(proposed.proposal, Expectation):
+            self._check_expecting(proposed.proposal, thread)
+        kept = [proposed.compilation or proposed.digest]
+        with self.conn.transaction():
+            _ = self.store.add(registry, kept)
+            if language is not None:
+                self._language(proposed.digest, language)
+            edit = self.catalog.edit(
+                thread,
+                proposed.digest,
+                self.person.id,
+                compilation=proposed.compilation,
+                based_on=proposed.variation.origin_head.id,
+                head=head,
+            )
+        return Written(edit, "a new version", self.linted(proposed.digest))
+
+    def _proposed(self, thread: int, word: str) -> tuple[Proposed, Registry] | None:
+        varied = self.catalog.variation(thread)
+        if varied is None or not varied.moved:
+            return None
+        if not self.about(varied.origin_head.thread).shows(self.person.id):
+            return None
+        try:
+            proposal = self.catalog.proposal(thread)
+            if proposal is None:
+                return None
+            if isinstance(proposal, Recipe):
+                registry, compilation = self._compiled(proposal)
+                digest = compilation.skeleton
+                proposed = Proposed(varied, proposal, digest, compilation.digest)
+            else:
+                registry = self.store.load(s.digest for s in proposal.refs())
+                digest = registry.add(proposal)
+                proposed = Proposed(varied, proposal, digest, None)
+        except ValueError as e:
+            raise ValueError(
+                f"{word} {thread}'s changes don't fit its origin's head: {e}"
+            ) from None
+        return proposed, registry
 
     # A component of a kind a person writes, from its JSON as the store gives it, `v`
     # included or not.

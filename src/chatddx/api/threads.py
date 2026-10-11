@@ -16,6 +16,7 @@ from chatddx.bench import (
 )
 from chatddx.catalog.titles import describe
 from chatddx.factors.base import Finding
+from chatddx.factors.request import Recipe
 from chatddx.factors.trial import suggest_seeds
 from chatddx.store import People
 from chatddx.store.catalog import Rows
@@ -326,3 +327,41 @@ def delete(bench: BenchDep, thread: int) -> Response:
     with refused():
         _ = bench.say(thread, deleted=True)
     return Response(status_code=204)
+
+
+@router.get("/threads/{thread}/proposal")
+def proposal(bench: BenchDep, thread: int) -> schemas.Proposal | None:
+    with refused():
+        found = bench.proposal(thread)
+    if found is None:
+        return None
+    varied, held = found.variation, found.proposal
+    recipe = isinstance(held, Recipe)
+    return schemas.Proposal(
+        base=edit_of(bench, varied.base),
+        origin_head=edit_of(bench, varied.origin_head),
+        varies=[
+            schemas.Varied(path=path, base=base, fork=fork)
+            for path, (base, fork) in varied.varies.items()
+        ],
+        recipe=held.model_dump(mode="json") if recipe else None,
+        component=None if recipe else held.model_dump(mode="json"),
+        digest=found.digest,
+        compilation=found.compilation,
+    )
+
+
+@router.post(
+    "/threads/{thread}/follows",
+    status_code=201,
+    responses={
+        409: {"description": "The thread has moved on since the head the edit names"}
+    },
+)
+def follow(bench: BenchDep, thread: int, given: schemas.NewFollow) -> schemas.MadeEdit:
+    with refused():
+        written = bench.follow(thread, given.head, given.language)
+    return schemas.MadeEdit(
+        **edit_of(bench, written.edit).model_dump(),
+        findings=[schemas.Finding.of(f) for f in written.findings],
+    )

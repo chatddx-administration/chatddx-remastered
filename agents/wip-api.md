@@ -154,6 +154,13 @@ afterwards comes back. A deleted thread is restored before anything else is said
 found" as "no configuration N of yours"; a login that names nobody, an empty name or tag, and taking a description
 away are unprocessable.
 
+## Following an origin
+A fork whose origin has moved on has a proposal: what following would keep, with the base, the origin's head, what
+the fork varies, and for a configuration the recipe it compiles from (`agents/wip-bench.md`, "Following an
+origin"). Asking for it gives nothing when there is none. Following is an edit of the person's own fork, which names
+the head it was made on and comes back with what the lints say. Following a fork with nothing to follow, or whose
+changes no longer fit, is unprocessable.
+
 ## Taking expectations
 A person is scored against their own expectations only, so they take the shared ones (`agents/wip-bench.md`,
 "Taking"):
@@ -244,8 +251,8 @@ A refusal's body is `{"detail": "…"}`, except where a request doesn't validate
 | 401 | No session, one that has ended, or a wrong login or password. |
 | 403 | A cookie's request that changes something, or a sign-in, from another site's page. |
 | 404 | What the path names isn't there or isn't seen by the person, a thread is of another kind than the route takes, a source doesn't hold a vignette, or a configuration to edit isn't the person's. |
-| 409 | Taking an expectation the person has their own of, without saying to replace it; an edit whose head has moved on. |
-| 422 | A request that doesn't validate or names a field it shouldn't; a kind that isn't one; a variation the bench refuses; a query or body naming what the person doesn't see; tags no case has; the gate's refusal of a run; taking an expectation that is the person's already; a component the bench refuses, or parts for what isn't a configuration and a component for what is; what is said of a thread that the bench refuses, or of a deleted one. |
+| 409 | Taking an expectation the person has their own of, without saying to replace it; an edit or a follow whose head has moved on. |
+| 422 | A request that doesn't validate or names a field it shouldn't; a kind that isn't one; a variation the bench refuses; a query or body naming what the person doesn't see; tags no case has; the gate's refusal of a run; taking an expectation that is the person's already; a component the bench refuses, or parts for what isn't a configuration and a component for what is; what is said of a thread that the bench refuses, or of a deleted one; following with nothing to follow. |
 | 500 | A run that failed on its thread, for a request waiting for its answer. |
 
 An edit that changes nothing is answered 200 with the head; what is made is answered 201; a deletion 204.

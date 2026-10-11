@@ -24,11 +24,13 @@ portal is the first edge to need them (agents/wip-portal.md, "Below the UI", "Ph
    rule and A10's lock.
 4. **What is said about a thread is built** (phase 3): `Bench.say`, the owner's one write of a thread's name,
    description, tags, collaborators and deletion, and the API's `PATCH` and `DELETE /api/threads/{id}`, with the
-   person's own deleted threads listed and read by id (agents/wip-bench.md, "What is said about a thread"). Phase 4,
-   following an origin, comes next.
-5. **One set of writes for every kind people author** (A1), with builders only where a kind binds to a family's
+   person's own deleted threads listed and read by id (agents/wip-bench.md, "What is said about a thread").
+5. **Following an origin is built** (phase 4): `Bench.proposal` and `Bench.follow`, and the API's
+   `GET /api/threads/{id}/proposal` and `POST /api/threads/{id}/follows` (agents/wip-bench.md, "Following an
+   origin"). Phase 5, recipes into configurations, comes next.
+6. **One set of writes for every kind people author** (A1), with builders only where a kind binds to a family's
    vignette: appendices and cases (A2).
-6. **No write refuses on a lint** (A6): what was written comes back with its lints. Refusals stay the components' and
+7. **No write refuses on a lint** (A6): what was written comes back with its lints. Refusals stay the components' and
    the catalog's.
 
 ## What is asked
@@ -169,6 +171,17 @@ Accepting the catalog's proposal for a fork the person owns: compiled when it is
 `based_on` the origin's head (`docs/catalog.md`, "Forks"). Nothing is written without a proposal. It matters first for
 taken expectations and the giftbag's forks, which otherwise never see the archive's corrections, and for forked
 configurations.
+
+Takes, built:
+- **Only an origin the person sees is followed.** A deleted or unshared origin proposes nothing, since its head is no
+  longer theirs to read, as "What has moved on" proposes no deleted thread.
+- **Following always writes an edit**, based on the origin's head, even when the proposal is the fork's head already:
+  otherwise the fork would keep being compared with its old base and keep proposing.
+- **Any kind the person owns a fork of is followed**, the giftbag's tools included, since a proposal holds only the
+  origin's head and the fork's own changes, which are stored already; nothing new comes from the person. That is how
+  S2's re-pinned scorers and tools reach a person's forks.
+- **A proposal is shown before it is followed**, with the digest following would keep, so an edge can tell a fork it
+  wouldn't change.
 
 ### A9. What is said about a thread
 A thread's name, description, tags and collaborators, and deleting or restoring it, are entries the bench writes on what
@@ -363,7 +376,7 @@ Each with its tests in `src/chatddx/bench/test/` and the API's.
 2. **Chunks and expectations**, built: new, fork and edit for the chunk kinds and expectations, with a language for
    texts, lints returned, kinds checked, and an edit's head.
 3. **What is said about a thread**, built: name, description, tags, collaborators, deleting and restoring.
-4. **Following an origin.**
+4. **Following an origin**, built.
 5. **Recipes into configurations.**
 6. **Appendices and cases**: the builders, a family's cases, replacement cases, and carrying an expectation over.
 7. **Typed cases**, with the portal's swift (agents/wip-portal.md, "Typed cases", and its phase 4).

@@ -168,6 +168,29 @@ class Finding(_Schema):
         return cls.model_validate(finding.model_dump())
 
 
+# A path where a fork's head differs from its base, with each side's value.
+class Varied(_Schema):
+    path: str
+    base: JsonValue
+    fork: JsonValue
+
+
+# What following a fork's origin would keep.
+class Proposal(_Schema):
+    base: Edit
+    origin_head: Edit
+    varies: list[Varied]
+    recipe: JsonValue = Field(description="for a configuration, what it compiles from")
+    component: JsonValue = Field(description="for another kind, its body")
+    digest: str
+    compilation: str | None
+
+
+class NewFollow(_Schema):
+    head: int = Field(description="the edit the change was made on: the head seen")
+    language: Language = None
+
+
 # What was written, with what the lints say of its component.
 class MadeThread(ThreadDetail):
     findings: list[Finding]
