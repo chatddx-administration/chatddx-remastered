@@ -433,10 +433,11 @@ Sub-decisions:
      shows what it showed before.
    - `Bench.reach` read expectations through `Bench.expectation` too, until d5ebf52. It now reads every case's at
      once through `Catalog.expectation_choices` (`Bench._expected`), and counts a case with several to choose from as
-     missing rather than raising `Ambiguous`. So the threads to choose from are found once, but the pick among them
-     is made twice: `_expected` repeats `expectations_for`'s "exactly one distinct head", and the two handle
-     "several" apart. Scoring refuses the case, `show case` says it has expectations to choose from, and the reach
-     counts it missing.
+     missing rather than raising `Ambiguous`, as decided for the API (`agents/wip-api.md`, "Trying a variation";
+     "Outstanding", 1). So the threads to choose from are found once, but the pick among them is made twice:
+     `_expected` repeats `expectations_for`'s "exactly one distinct head", and the two handle "several" apart.
+     Scoring refuses the run under that scorer, `show case` says the case has expectations to choose from, and the
+     reach counts it missing.
 
    Tests: `src/chatddx/bench/test/test_view.py`,
    `src/chatddx/repl/test/test_inspecting.py:test_show_case_says_when_scoring_has_expectations_to_choose_from`, and
