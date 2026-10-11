@@ -7,7 +7,7 @@ from fastapi.testclient import TestClient
 from chatddx.api.schemas import Parts
 from chatddx.api.test.conftest import sign_in
 from chatddx.bench import OPTIONAL, PARTS, Bench
-from chatddx.bench.test.sample import FREE_TEXT, PLAN, QWEN
+from chatddx.bench.test.sample import FREE_TEXT, PLAN, QWEN, another_expectation
 from chatddx.factors.request import Translations
 from chatddx.store import Store
 from chatddx.store.store import Connection
@@ -16,6 +16,7 @@ pytestmark = pytest.mark.wip
 
 PLAN_WEB = "plan-web (en, Qwen/Qwen3-8B-AWQ)"
 OFF = "off (Qwen/Qwen3-8B-AWQ)"
+DIFFERENTIAL = ("plan", "differential")
 
 
 def thread(
@@ -173,6 +174,39 @@ def test_each_scorer_view_s_reach_names_the_families_it_misses(
         [],
     )
     assert reach["free-text", "text"]["missing"] == []
+
+
+@pytest.mark.slow
+def test_a_case_with_expectations_to_choose_from_is_missing_from_the_reach(
+    signed: TestClient, bench: Bench
+) -> None:
+    plan = thread(signed, "configuration", PLAN)
+    [family] = signed.get("/api/families", params={"name": "Dutchfall11w"}).json()
+
+    def differential() -> list[int]:
+        shown = variation(signed, plan)
+        [found] = [r for r in shown["reach"] if (r["name"], r["label"]) == DIFFERENTIAL]
+        return found["missing"]
+
+    assert differential() == []
+    _ = another_expectation(bench, family["case"], {"diagnosis": {"pattern": "x"}})
+    assert differential() == [family["id"]]
+
+
+@pytest.mark.slow
+def test_an_unsaved_variation_is_linted_in_its_recipe_s_language(
+    signed: TestClient,
+) -> None:
+    web = thread(signed, "configuration", PLAN_WEB)
+    off = digest(signed, "reasoning", OFF)
+
+    def codes(**params: Any) -> set[str]:
+        shown = variation(signed, web, endpoint=QWEN, reasoning=off, **params)
+        assert shown["skeleton"] != web["head"]["digest"]
+        return {f["code"] for f in shown["findings"]}
+
+    assert "language.unknown" not in codes(tag="dutch-fall")
+    assert "language.mixed" in codes()
 
 
 @pytest.mark.slow

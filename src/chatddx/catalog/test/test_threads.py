@@ -160,7 +160,12 @@ def test_expectations_are_picked_for_several_cases_at_once() -> None:
         rash: None,
     }
 
-    _ = owned(rows, rows.start(expecting(case, "PE")), BOB, ALICE)
-    _ = owned(rows, rows.start(expecting(cough, "croup")), ALICE)
+    pe = owned(rows, rows.start(expecting(case, "PE")), BOB, ALICE)
+    croup = owned(rows, rows.start(expecting(cough, "croup")), ALICE)
     with pytest.raises(LookupError, match=f"case {cough} has expectations to choose"):
         _ = threads.expectations_for(rows, [rash, cough, case], ALICE, schema)
+    assert threads.expectation_choices(rows, [case, cough, rash], ALICE, schema) == {
+        case: {shared.thread: shared.digest, pe.thread: pe.digest},
+        cough: {mine.thread: mine.digest, croup.thread: croup.digest},
+        rash: {},
+    }

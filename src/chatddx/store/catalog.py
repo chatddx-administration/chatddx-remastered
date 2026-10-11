@@ -401,6 +401,11 @@ class Catalog:
     ) -> dict[str, str | None]:
         return threads.expectations_for(self._rows, cases, person, schema)
 
+    def expectation_choices(
+        self, cases: Sequence[str], person: int, schema: str
+    ) -> dict[str, dict[int, str]]:
+        return threads.expectation_choices(self._rows, cases, person, schema)
+
     def forks(self, thread: int) -> list[int]:
         return threads.forks(self._rows, thread)
 
@@ -430,6 +435,9 @@ class Catalog:
 
     def language_of(self, digest: str) -> str | None:
         return language.language_of(self._rows, digest)
+
+    def recipe_language(self, recipe: Recipe) -> str | None:
+        return language.recipe_language(self._rows, recipe)
 
     def adopt(self, case: str, by: int, *, owner: int | None = None) -> int:
         with self._conn.transaction():

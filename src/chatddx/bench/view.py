@@ -422,12 +422,17 @@ class Bench:
         registry, trial = self.trial(self.skeleton(variation), engine, some, seed)
         if families is None:
             return lints(registry, self.facts, [trial.digest])
-        # A family's case has the family's language, as Catalog.language_of finds it.
+        # A family's case has the family's language, as Catalog.language_of finds it. The
+        # request has its recipe's, which language_of counts only once it is compiled
+        # and stored, as a variation being tried isn't.
         known = {f.case: f.about.language for f in families}
+        recipe = variation.varied
 
         def languages(digest: str) -> str | None:
             if digest in known:
                 return known[digest]
+            if digest == trial.skeleton and recipe is not None:
+                return self.catalog.recipe_language(recipe)
             return self.catalog.language_of(digest)
 
         return lints(registry, self.facts, [trial.digest], languages)
@@ -461,15 +466,18 @@ class Bench:
         return Scoring(scorer=scorer, expectations=found) if found else None
 
     # The data of the expectation each case is scored against under `schema`, for the
-    # cases that have one.
+    # cases that have one; a case with several to choose from has none.
     def _expected(self, cases: list[str], schema: str) -> dict[str, JsonValue]:
-        digests = self._expectations_for(cases, schema)
-        held = [d for d in digests.values() if d is not None]
-        read = dict(self._rows.components(held))
+        choices = self.catalog.expectation_choices(cases, self.person.id, schema)
+        picked = {
+            case: next(iter(heads))
+            for case, held in choices.items()
+            if len(heads := set(held.values())) == 1
+        }
+        read = dict(self._rows.components(list(picked.values())))
         return {
             case: resolve(read.__getitem__, digest, Expectation).data
-            for case, digest in digests.items()
-            if digest is not None
+            for case, digest in picked.items()
         }
 
     def labels(self, scorer: str) -> dict[int, str]:

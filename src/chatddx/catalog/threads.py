@@ -91,12 +91,31 @@ def expectation_for(rows: Reader, case: str, person: int, schema: str) -> str | 
 
 
 # The expectation a person scores each case against: the head of a thread of their own,
-# else of the one thread shared with them. Only threads they see whose head is in
-# `schema` count; the first case with several heads to choose from is refused, naming
-# the threads.
+# else of the one thread shared with them. The first case with several heads to choose
+# from is refused, naming the threads.
 def expectations_for(
     rows: Reader, cases: Sequence[str], person: int, schema: str
 ) -> dict[str, str | None]:
+    found: dict[str, str | None] = {}
+    for case, choices in expectation_choices(rows, cases, person, schema).items():
+        match sorted(set(choices.values())):
+            case []:
+                found[case] = None
+            case [digest]:
+                found[case] = digest
+            case _:
+                raise LookupError(
+                    f"case {case} has expectations to choose from, in threads "
+                    + ", ".join(str(t) for t in sorted(choices))
+                )
+    return found
+
+
+# For each case, the threads its expectation is chosen from, with their heads: the
+# person's own, else every one they see. Only threads whose head is in `schema` count.
+def expectation_choices(
+    rows: Reader, cases: Sequence[str], person: int, schema: str
+) -> dict[str, dict[int, str]]:
     held = heads_holding(rows, rows.expectations(cases))
     known = abouts(rows, [Subject(thread=t) for t in held])
     read = dict(rows.components([e.digest for e in held.values()]))
@@ -109,20 +128,7 @@ def expectations_for(
             seen[expectation.case][t] = e.digest
             if about.owner == person:
                 own[expectation.case][t] = e.digest
-    found: dict[str, str | None] = {}
-    for case in cases:
-        choices = own[case] or seen[case]
-        match sorted(set(choices.values())):
-            case []:
-                found[case] = None
-            case [digest]:
-                found[case] = digest
-            case _:
-                raise LookupError(
-                    f"case {case} has expectations to choose from, in threads "
-                    + ", ".join(str(t) for t in sorted(choices))
-                )
-    return found
+    return {case: own[case] or seen[case] for case in cases}
 
 
 def forks(rows: Reader, thread: int) -> list[int]:

@@ -586,11 +586,6 @@ replaced at an endpoint and a tag, a fork, the same edit twice (201, then 200), 
   cookie.
 
 Open from phase 3:
-- **An unsaved variation's language is unknown**, so its lints say `language.unknown` over any cases, as the repl's do
-  (`agents/wip-repl.md`, "An unsaved cell's language is unknown"). Saved, the same skeleton has one.
-- **One case with expectations to choose from refuses the whole look** with 409, since the reach asks for every
-  case's expectation as scoring would (`Bench.reach`, through `Catalog.expectations_for`). The repl's `show` stops
-  the same way. Counting such a case among the missing, or saying so per view, would let the rest show.
 - **A part given twice in a query**: the last one counts.
 - **An edit has no precondition.** It replaces its parts over the head when it comes (A5's drift). An `If-Match` on
   the head, or the head's edit in the body, would refuse one that moved.
@@ -601,9 +596,9 @@ queries; building the skeleton four times took 1–4 ms of it. Three reads ran o
 (`Bench._case`, 2 queries), each case's language for the lints (`Catalog.language_of`, about 5), and each case's
 expectation for the reach (`Catalog.expectation_for`, about 4, and a read of each head).
 - **Now a look's queries don't grow with its cases**: the bench's part makes 38 for 20, 30 or 99 cases (33 for
-  none), and takes about 60 ms on the sample here, from 245–310 ms. What still grows is Python's, about 0.3 ms a case, mostly parsing
-  the components read. `test_variations.py:test_a_look_s_queries_don_t_grow_with_its_cases` holds it: a look over 20
-  cases and one over 99 make as many queries, where 1db04c3 made 340 and 1,446.
+  none), and takes about 60 ms on the sample here, from 245–310 ms. What still grows is Python's, about 0.3 ms a
+  case, mostly parsing the components read. `test_variations.py:test_a_look_s_queries_don_t_grow_with_its_cases`
+  holds it: a look over 20 cases and one over 99 make as many queries, where 1db04c3 made 340 and 1,446.
 - **The catalog reads for many at once.** The `Reader`'s `bindings` and `bound_to` take collections, as most of its
   reads do, and `components` is new. `catalog/threads.py:expectations_for` applies `expectation_for`'s rule to many
   cases, reading the heads in one go, and `expectation_for` is one case of it. Proposed in `docs/catalog-api.md` and
@@ -615,6 +610,21 @@ expectation for the reach (`Catalog.expectation_for`, about 4, and a read of eac
 - **Tests**: the suite went from 512 tests to 514, and from 48 s to 40 s here. Three tests that this sped up from
   0.19–0.55 s to 0.06–0.11 s lost their slow mark. Others marked slow now measure 0.13–0.19 s here and keep it,
   since the healthcheck's container ran the suite 1.5 times as slowly.
+
+### Ambiguous cases and unsaved variations
+Both were open from phase 3; the suite went from 514 tests to 517.
+- **A case with expectations to choose from is missing from the reach** (decided), where it refused the whole look
+  with 409. `catalog/threads.py:expectation_choices` gives each case's threads to choose from, and
+  `expectations_for` picks from them as before; `Bench._expected` keeps the cases with one distinct head. Scoring
+  still refuses: a run of such a case is refused by that scorer ("has expectations to choose from"), so the reach
+  shows it as one missing case where the run would score none. The repl's `show` counts it the same way, where it
+  stopped. `test_variations.py:test_a_case_with_expectations_to_choose_from_is_missing_from_the_reach`.
+- **An unsaved variation's lints know its language**, where they said `language.unknown`. `Catalog.language_of`
+  counts a skeleton's compilations, and a variation being tried has none stored, so the lints take the request's
+  language from the variation's recipe (`catalog/language.py:recipe_language`, the vote `language_of` counts), in
+  `Bench.findings`. The repl's `show` gains it too.
+  `test_variations.py:test_an_unsaved_variation_is_linted_in_its_recipe_s_language`.
+- Proposed in `docs/catalog-api.md`: `expectation_choices` and `recipe_language`.
 
 ## Left out
 - **Free-text vignettes** (`RunIn.vignette`, the swift client's `symptoms`). A case is a source's vignette, by id,

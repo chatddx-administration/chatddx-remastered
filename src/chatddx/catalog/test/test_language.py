@@ -5,7 +5,13 @@ from chatddx.catalog.test.memory import Memory, compiled
 from chatddx.factors.base import resolve
 from chatddx.factors.bundle import Registry
 from chatddx.factors.cases import Case
-from chatddx.factors.request import Prompt, Slot, Translations, texts
+from chatddx.factors.request import (
+    Prompt,
+    Slot,
+    Translations,
+    compile_request,
+    texts,
+)
 from chatddx.factors.scoring import Judge, Scoring
 from chatddx.factors.test.sample import generation_recipe, world
 
@@ -32,6 +38,18 @@ def test_a_request_is_in_the_language_its_parts_agree_on() -> None:
     assert language.language_of(rows, translated.skeleton) is None
     rows.set_language(swedish, "sv")
     assert language.language_of(rows, translated.skeleton) == "sv"
+
+
+def test_a_recipe_votes_before_it_is_compiled() -> None:
+    reg = Registry()
+    rows = Memory(reg)
+    base = generation_recipe(reg)
+    assert base.instructions is not None
+    for part in (base.instructions, base.prompt, base.output):
+        rows.set_language(part, "en")
+    skeleton = reg.add(compile_request(base, reg.get))
+    assert language.language_of(rows, skeleton) is None
+    assert language.recipe_language(rows, base) == "en"
 
 
 def test_every_compilation_of_a_skeleton_votes() -> None:
