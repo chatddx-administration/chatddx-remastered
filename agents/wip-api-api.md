@@ -159,7 +159,7 @@ The models' fields are in the OpenAPI document. Besides them:
 | `Parts` | A `Chunk` field for each recipe part, in `chatddx.bench.PARTS`' order. |
 | `Parts.given() -> dict[str, str \| None]` | The parts the request gave, by `model_fields_set`: each its digest, or `None` where it was empty or null. A part not given isn't a key. |
 | `Varying(Parts)` | A variation's query: the parts, `endpoint`, `tag` (a list, empty by default) and `seed`. |
-| `NewThread` | A new thread's body: `component`, a component's JSON with its `kind`; `name`, not empty; and `language`. |
+| `NewThread` | A new thread's body: `component`, a component's JSON with its `kind`, or `recipe`, a recipe's JSON as a configuration's `recipe` reads; `name`, not empty; and `language`. Its validator raises `ValueError("a new thread holds a component or a recipe, not both")` unless exactly one is given. |
 | `NewFork`, `NewEdit` | A fork's body, `name` (not empty), and `parts` for a configuration or `component` and `language` for another kind; and an edit's, `head` (required), with the same. |
 | `MadeThread(ThreadDetail)`, `MadeEdit(Edit)` | What a write answers: the thread or the edit, with `findings`. |
 | `Varied`, `Proposal` | A path a fork varies, with the base's and the fork's values; and what following would keep: `base` and `origin_head` (edits), `varies`, `recipe` for a configuration or `component` for another kind, `digest` and `compilation`. |
@@ -198,7 +198,7 @@ variation's query parameters to them with `endpoint`, `tag` and `seed`.
 | `proposal`, `GET /threads/{thread}/proposal` | Within `refused()`: `Bench.proposal`. `null` when there is none. |
 | `follow`, `POST /threads/{thread}/follows` | Within `refused()`: `Bench.follow(thread, head, language)`. 201 with the edit's `edit_of` and findings. |
 | `delete`, `DELETE /threads/{thread}` | Within `refused()`: `Bench.say(thread, deleted=True)`. 204, also when it was deleted already. |
-| `new`, `POST /threads` | Within `refused()`: `Bench.new(Bench.component(component), name, language)`. 201, `made`. |
+| `new`, `POST /threads` | Within `refused()`: `Bench.new(Bench.component(component), name, language)`, or with `Recipe.model_validate(recipe)`. 201, `made`. |
 | `fork`, `POST /threads/{thread}/forks` | `check_given`. Within `refused()`, for a configuration: `Bench.fork(Bench.variation(thread, parts), name)`, with `Bench.linted` of its skeleton; else `Bench.fork_component(thread, name, component, language)`. 201, `made`, with `Location` the new thread's path (`url_path_for("thread")`). |
 | `edit`, `POST /threads/{thread}/edits` | `check_given`. Within `refused()`, for a configuration: `Bench.edit(thread, Bench.variation(thread, parts), head)`, with `Bench.linted`; else `ValueError("an edit holds a component")` without one, and `Bench.edit_component(thread, head, component, language)`. 201 with the edit's `edit_of` and findings, or 200 when it is `"unchanged"`. |
 | `take`, `POST /threads/{thread}/takes` | Within `refused()`: `Bench.take_from(thread, replace)`. 201, with `Location` the new thread's path, and its `detail`. |
@@ -332,7 +332,7 @@ settings.database())`.
 | `conftest.py` | `template` is the curated sample; `autocommit`; `alice`, with `PASSWORD`; `served`, the app on the sample World's inventory; `client`, a `TestClient` over `https://testserver`; `signed`, the client with alice's bearer; `bob`, his bearer's header; `bench`, alice's; and the helpers `sign_in` and `bearer`. |
 | `test_people.py` | Signing in and out by bearer and cookie, the same-origin check, validation, the statuses, the OpenAPI document and the command. |
 | `test_threads.py`, `test_families.py`, `test_world.py` | The reads, taking expectations, and what bob doesn't see. |
-| `test_writes.py` | Chunks and expectations written new, edited and forked; what is refused, and with which status; an expectation's findings. |
+| `test_writes.py` | A configuration made from a recipe, and what is refused of one; chunks and expectations written new, edited and forked; what is refused, and with which status; an expectation's findings. |
 | `test_following.py` | A fork with nothing to follow, then a proposal once the archive's configuration moved on, a stale head, following, and nothing proposed after. |
 | `test_said.py` | Saying what holds of a thread, sharing it with bob and taking it back; refusals; deleting, listing and reading the deleted thread, and restoring it; a session needed. |
 | `test_variations.py` | Looks, forks and edits; that a look's queries don't grow with its cases, counted on the test's database (the fixtures create the next test's meanwhile). |

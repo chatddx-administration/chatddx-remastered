@@ -138,7 +138,9 @@ version of the person's configuration of that name if there is one, and a new co
 
 Chunks and expectations are written the same way, with a component where a configuration takes parts, as its JSON
 as a component's own request gives it (`agents/wip-bench.md`, "Components"):
-- **New**: a component, a name, and the language of its text when it has one, as a thread of the person's own.
+- **New**: a component, a name, and the language of its text when it has one, as a thread of the person's own; or a
+  recipe, by the chunks' digests for its parts, its purpose and its appendix layout, made into a new configuration
+  of their own with no origin.
 - **Fork** any thread of those kinds the person sees, from its head or from a component given in its place.
 - **Edit** a thread of their own with a component.
 

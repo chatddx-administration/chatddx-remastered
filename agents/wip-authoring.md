@@ -27,10 +27,13 @@ portal is the first edge to need them (agents/wip-portal.md, "Below the UI", "Ph
    person's own deleted threads listed and read by id (agents/wip-bench.md, "What is said about a thread").
 5. **Following an origin is built** (phase 4): `Bench.proposal` and `Bench.follow`, and the API's
    `GET /api/threads/{id}/proposal` and `POST /api/threads/{id}/follows` (agents/wip-bench.md, "Following an
-   origin"). Phase 5, recipes into configurations, comes next.
-6. **One set of writes for every kind people author** (A1), with builders only where a kind binds to a family's
+   origin").
+6. **Recipes into configurations are built** (phase 5): `Bench.new` takes a recipe, and the API's `POST
+   /api/threads` takes one in place of a component (agents/wip-bench.md, "Writes for the person"). Phase 6,
+   appendices and cases, comes next.
+7. **One set of writes for every kind people author** (A1), with builders only where a kind binds to a family's
    vignette: appendices and cases (A2).
-7. **No write refuses on a lint** (A6): what was written comes back with its lints. Refusals stay the components' and
+8. **No write refuses on a lint** (A6): what was written comes back with its lints. Refusals stay the components' and
    the catalog's.
 
 ## What is asked
@@ -223,6 +226,9 @@ A recipe the person makes, by the chunks' digests for each part, its purpose and
 kept as a new configuration of their own with its compilation, as `fork` keeps one. It has no origin. An edge finds
 the chunks by name through `Bench.chunk`.
 
+Built, as A1's `new`. A judge-purpose recipe is made as any other, and stays a configuration among the rest until S6
+lists configurations by purpose.
+
 ## Scorers and judges
 Decided, for what a researcher writes and what they pick, with the code pin (S2), free parameters (S3) and labels
 (S4):
@@ -377,7 +383,7 @@ Each with its tests in `src/chatddx/bench/test/` and the API's.
    texts, lints returned, kinds checked, and an edit's head.
 3. **What is said about a thread**, built: name, description, tags, collaborators, deleting and restoring.
 4. **Following an origin**, built.
-5. **Recipes into configurations.**
+5. **Recipes into configurations**, built.
 6. **Appendices and cases**: the builders, a family's cases, replacement cases, and carrying an expectation over.
 7. **Typed cases**, with the portal's swift (agents/wip-portal.md, "Typed cases", and its phase 4).
 8. **Scorers**: the published entry points, their versions and their schemas (S1, S2), the code pin moved to them,

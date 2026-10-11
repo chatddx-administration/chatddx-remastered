@@ -127,9 +127,20 @@ type Language = Annotated[
 
 
 class NewThread(_Schema):
-    component: ComponentBody
+    component: ComponentBody | None = None
+    recipe: dict[str, JsonValue] | None = Field(
+        None,
+        description="for a new configuration: the recipe's parts by digest, its "
+        + "purpose and its appendix layout, as a configuration's recipe reads",
+    )
     name: str = Field(min_length=1)
     language: Language = None
+
+    @model_validator(mode="after")
+    def _one(self) -> Self:
+        if (self.component is None) == (self.recipe is None):
+            raise ValueError("a new thread holds a component or a recipe, not both")
+        return self
 
 
 # A configuration is forked with parts replaced, any other kind with a component.

@@ -4,7 +4,9 @@ import pytest
 from pydantic import ValidationError
 
 from chatddx.bench import Bench, MovedOn, NotFound
+from chatddx.bench.test.sample import QWEN
 from chatddx.catalog import Entry, EntryField, Subject
+from chatddx.factors.request import Recipe
 from chatddx.factors.scoring import Expectation
 from chatddx.identity import Person
 from chatddx.store import Catalog
@@ -132,3 +134,45 @@ def test_a_person_writes_expectations_and_hears_what_the_lints_say(
     fork = bench.fork_component(archives, "theirs, mended", odd)
     assert catalog.thread(fork.edit.thread).forked_from == catalog.head(archives).id
     assert bench.expectation(case, schema) == odd
+
+
+def test_a_recipe_of_the_person_s_making_is_compiled_into_a_configuration(
+    bench: Bench,
+) -> None:
+    catalog, engine = bench.catalog, bench.endpoint(QWEN)
+    recipe = Recipe(
+        instructions=bench.chunk("instructions", "clinician (en)"),
+        few_shot=bench.chunk("few_shot", "worked-example (en)"),
+        prompt=bench.chunk("prompt", "case"),
+        output=bench.chunk("output", "free-text (en)"),
+        sampling=bench.chunk("sampling", "greedy"),
+        reasoning=bench.chunk("reasoning", "off", engine),
+    )
+
+    made = bench.new(recipe, "my own")
+    assert (made.what, made.findings) == ("created", [])
+    thread = made.edit.thread
+    assert catalog.thread(thread).forked_from is None
+    assert catalog.recipe(thread) == recipe
+    assert made.edit.compilation is not None
+    assert catalog.language_of(made.edit.digest) == "en"
+    found = bench.configuration("my own", engine)
+    assert found.configuration == made.edit
+    messages = bench.request(found, engine, 7)["messages"]
+    assert isinstance(messages, list) and len(messages) == 4
+
+
+def test_a_recipe_is_refused_what_doesn_t_compile(bench: Bench) -> None:
+    prompt = bench.chunk("prompt", "case")
+    output = bench.chunk("output", "free-text (en)")
+    sampling = bench.chunk("sampling", "greedy")
+    recipe = Recipe(prompt=prompt, output=output, sampling=sampling)
+
+    with pytest.raises(ValueError, match=f"{output} isn't a stored chunk of prompt"):
+        _ = bench.new(recipe.model_copy(update={"prompt": output}), "x")
+    with pytest.raises(ValueError, match=f"{ZERO} isn't a stored chunk of toolset"):
+        _ = bench.new(recipe.model_copy(update={"toolset": ZERO}), "x")
+    with pytest.raises(ValueError, match="language comes from its recipe"):
+        _ = bench.new(recipe, "x", "en")
+    with pytest.raises(ValueError, match="generation prompt in a judge recipe"):
+        _ = bench.new(recipe.model_copy(update={"purpose": "judge"}), "x")

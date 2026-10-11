@@ -211,8 +211,12 @@ def new(
     request: Request, response: Response, bench: BenchDep, given: schemas.NewThread
 ) -> schemas.MadeThread:
     with refused():
-        component = bench.component(given.component)
-        written = bench.new(component, given.name, given.language)
+        held = (
+            Recipe.model_validate(given.recipe)
+            if given.component is None
+            else bench.component(given.component)
+        )
+        written = bench.new(held, given.name, given.language)
     return made(request, response, bench, written.edit.thread, written.findings)
 
 

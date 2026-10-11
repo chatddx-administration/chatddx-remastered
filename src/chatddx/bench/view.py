@@ -77,6 +77,8 @@ WRITTEN: frozenset[str] = frozenset(
     {*(f"chunk.{part}" for part in PARTS), "expectation"}
 )
 
+COMPILED_LANGUAGE = "a compiled configuration's language comes from its recipe"
+
 # What stands in for each slot in a request rendered to be looked at.
 PLACEHOLDERS: dict[SlotName, str] = {
     "vignette": "‹vignette›",
@@ -701,9 +703,7 @@ class Bench:
         proposed, registry = found
         kind = self.catalog.thread(thread).kind
         if language is not None and proposed.compilation is not None:
-            raise ValueError(
-                "a compiled configuration's language comes from its recipe"
-            )
+            raise ValueError(COMPILED_LANGUAGE)
         if language is not None and kind not in LANGUAGE_KINDS:
             raise ValueError(f"{kind} components have no language of their own")
         if isinstance(proposed.proposal, Expectation):
@@ -762,11 +762,29 @@ class Bench:
             raise ValueError(f"{kind} is at v{cls.schema_version}, not v{doc['v']}")
         return cls.model_validate(given)
 
-    # `component` as a new thread of the person's own, named `name`.
+    # `component` as a new thread of the person's own, named `name`; a recipe is compiled
+    # by the running code and kept as a new configuration, with its compilation.
     def new(
-        self, component: Component, name: str, language: str | None = None
+        self, component: Component | Recipe, name: str, language: str | None = None
     ) -> Written:
-        return self._written(component, None, name=name, language=language)
+        if not isinstance(component, Recipe):
+            return self._written(component, None, name=name, language=language)
+        if language is not None:
+            raise ValueError(COMPILED_LANGUAGE)
+        for part in PARTS:
+            digest = getattr(component, part)
+            if digest is not None and self._rows.kind(digest) not in KINDS[part]:
+                raise ValueError(f"{digest} isn't a stored chunk of {part}")
+        registry, compilation = self._compiled(component)
+        with self.conn.transaction():
+            _ = self.store.add(registry, [compilation.digest])
+            edit = self.catalog.create(
+                compilation.skeleton,
+                self.person.id,
+                compilation=compilation.digest,
+                name=name,
+            )
+        return Written(edit, "created", self.linted(compilation.skeleton))
 
     # A new thread of the person's own, named `name` and forked from the head of
     # `thread`, a thread they see; it starts from `component` when given, else from the

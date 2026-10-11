@@ -142,3 +142,38 @@ def test_an_expectation_s_edit_says_what_the_lints_say(signed: TestClient) -> No
     )
     assert got.status_code == 422
     assert f"in thread {mine['id']}: edit that one" in got.json()["detail"]
+
+
+@pytest.mark.slow
+def test_a_recipe_of_one_s_making_is_a_new_configuration(signed: TestClient) -> None:
+    def digest(kind: str, name: str) -> str:
+        return thread(signed, kind, name, "archive")["head"]["digest"]
+
+    recipe = {
+        "instructions": digest("instructions", CLINICIAN),
+        "prompt": digest("prompt", "case"),
+        "output": digest("output", "free-text (en)"),
+        "sampling": digest("sampling", "greedy"),
+    }
+    got = signed.post("/api/threads", json={"recipe": recipe, "name": "my own"})
+    assert got.status_code == 201
+    made = got.json()
+    assert (made["kind"], made["owner"], made["forked_from"]) == (
+        "skeleton",
+        "alice",
+        None,
+    )
+    assert {k: made["recipe"][k] for k in recipe} == recipe
+    assert made["language"] == "en" and made["findings"] == []
+
+    held = body(signed, thread(signed, "instructions", CLINICIAN, "archive"))
+    for asked, said in (
+        ({"recipe": recipe, "component": held}, "a component or a recipe, not both"),
+        ({}, "a component or a recipe, not both"),
+        ({"recipe": {**recipe, "prompt": recipe["output"]}}, "isn't a stored chunk"),
+        ({"recipe": recipe, "language": "en"}, "comes from its recipe"),
+        ({"recipe": {**recipe, "stack": "x"}}, "validation error"),
+    ):
+        got = signed.post("/api/threads", json={**asked, "name": "x"})
+        assert got.status_code == 422, (asked, got.json())
+        assert said in str(got.json()["detail"])

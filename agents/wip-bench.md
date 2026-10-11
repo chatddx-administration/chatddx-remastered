@@ -129,6 +129,10 @@ The bench writes configurations, chunks, expectations, runs and scores for the p
 - **Writing a component**, a chunk or an expectation, from its JSON as the store gives it: new, as a thread of the
   person's own with a name; a fork of a thread they see, from its head or from a component given in its place; or an
   edit of a thread they own (see "Components").
+- **Making a configuration** from a recipe of the person's own, by the chunks' digests for each part, its purpose and
+  its appendix layout: compiled by the running code and kept as a new configuration with its compilation, with no
+  origin, as a fork keeps one. Each part must be a stored chunk of that part, and the recipe must compile. Its
+  language comes from its recipe, so none is given.
 - **Starting** runs the variation at an endpoint, on some cases with one seed, through the runner
   (agents/wip-runner.md). Nothing is sent until the edge sends it.
 - **Scoring** scores a finished run under each scorer that applies to it, or some of them, as each scoring would be
@@ -260,14 +264,14 @@ What is still open. It doesn't move to `docs/`.
 ### Start with this
 1. **Adopting the docs.** This file and `agents/wip-bench-api.md`, as `docs/bench.md` and `docs/bench-api.md`.
 2. **Writes for authoring** (below), planned in `agents/wip-authoring.md`. The portal's authoring and swift wait on
-   them. Taking expectations, writing chunks and expectations, what is said about a thread, and following an origin,
-   its phases 1 to 4, are built.
+   them. Taking expectations, writing chunks and expectations, what is said about a thread, following an origin, and
+   recipes into configurations, its phases 1 to 5, are built.
 
 ### Writes for authoring
 Planned in `agents/wip-authoring.md`: chunks, recipes, appendices and the cases that order them, expectations, what is
 said about a thread, and following an origin. Taking expectations is built ("Taking"), and the giftbag keeps a
-person's own; so are writing chunks and expectations, an edit's head, what is said about a thread, and following an
-origin ("Writes for the person").
+person's own; so are writing chunks and expectations, an edit's head, what is said about a thread, following an
+origin, and making a configuration from a recipe ("Writes for the person").
 
 ### Takes
 A take is the agent's recommendation, built on but not decided.
