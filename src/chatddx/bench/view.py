@@ -457,7 +457,7 @@ class Bench:
         return all(reaches(schema, v.output) for v in views)
 
     # Each of the run's cases is scored against the expectation the catalog picks for
-    # the person (`Catalog.expectation_for`); none when no case has one.
+    # the person (`Catalog.expectations_for`); none when no case has one.
     def scoring(self, run: RunStarted, scorer: str) -> Scoring | None:
         trial = resolve(self.get, run.trial, Trial)
         schema = resolve(self.get, scorer, Scorer).expectation_schema

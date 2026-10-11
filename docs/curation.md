@@ -228,6 +228,17 @@ Trials, executions, judges, scorings, canary sets, appendices and hand-written s
 set has one expectation schema. A canary set is the next asked for (agents/wip-runner.md).
 
 ### Picking a variant by the case's language
+```
+AGENT: CHANGE
+"Cell" is the repl's word only, and the bench speaks of the variation being tried and the endpoint it runs on
+(agents/wip-bench.md, "Keeping 'cell' or not"). The guard (src/chatddx/repl/test/test_vocabulary.py) reads code, not
+docs.
+---
+The bench picks a configuration's variant by the model the engine it runs on serves, and by language only when there
+is one (src/chatddx/catalog/variants.py). With texts in several languages, the cases a variation runs on should run the
+variant in their own language, so a batch of English and Swedish cases runs each under its own. A variant is known
+only by its name today; what recording it would take is in agents/wip-variants.md.
+```
 The bench picks a configuration's variant by the model the cell's engine serves, and by language only when there is
 one (src/chatddx/catalog/variants.py). With texts in several languages, a cell's cases should run the variant in
 their own language, so a batch of English and Swedish cases runs each under its own. A variant is known only by its

@@ -123,7 +123,7 @@ Against it:
   (`docs/chatddx.md`, "On the table"), where a cell is a spreadsheet's or a notebook's.
 - A cell can hold only an endpoint, or only a configuration, which the word doesn't suggest.
 - It is a clinical word too: the sample's cases speak of "basal cell carcinoma" and "hepatocellular carcinoma"
-  (`src/chatddx/data/sample/cases.toml`), which the guard's test met at once.
+  (`src/chatddx/data/sample/cases-en.toml`), which the guard's test met at once.
 
 ### How it would spread
 Today it is held between the bench and one edge. It would spread through:
@@ -164,7 +164,8 @@ Whichever option is chosen, the word stays out of the data model:
   `src/chatddx/repl/test/test_vocabulary.py`, over code only (`.py` and `.sql`), since clinical data says "cell".
 - Nothing stored is one: a run's title, if one is ever stored, is a title (`docs/catalog.md`, "Titles"), not a label
   in the repl's notation.
-- Docs below the edges don't use it.
+- Docs below the edges don't use it. The test doesn't read docs: `docs/curation.md` ("Picking a variant by the case's
+  language", added in 1dd791a) said "the cell's engine" and "a cell's cases", and carries an `AGENT: CHANGE` for it.
 
 ### Take
 K2 with R1. The word's value is the repl's: a habit, a terse command, help that reads short. Its cost is spreading
@@ -178,9 +179,9 @@ nowhere outside `src/chatddx/repl/`.
 | Module | Holds | Builds on |
 |---|---|---|
 | `errors.py` | `NotFound`, `Ambiguous` | nothing |
-| `outcome.py` | `outcome`, `usage`: how a run's item ended, and the tokens it used, a pure function each | `chatddx.factors.request`, `chatddx.ledger`, `chatddx.runner.send`, `chatddx.scorers.answer` |
+| `outcome.py` | `outcome`, `usage`: how a run's item ended (an `Outcome`), and the tokens it used, a pure function each | `chatddx.factors.request`, `chatddx.ledger`, `chatddx.runner.send`, `chatddx.scorers.answer` |
 | `variation.py` | `PARTS`, `OPTIONAL`, `TriedVariation`: the variation being tried, a plain value | `chatddx.catalog`, `chatddx.factors.request` |
-| `view.py` | `Bench`, the person's view: what they see, the variations they try, and what is written for them; `KINDS`, and what `Bench` returns: `Family`, `Reach`, `Graded`, `Saved` | `errors.py`, `variation.py`, the store, the catalog, the factors, the facts, the inventory, the ledger and the runner |
+| `view.py` | `Bench`, the person's view: what they see, the variations they try, and what is written for them; `KINDS`, and what `Bench` returns: `Family`, `Reach`, `Graded`, `Saved` | `errors.py`, `variation.py`, the store, the catalog, the factors, the facts, the inventory, the ledger, the runner, `chatddx.identity` (`Person`) and `chatddx.core.rig` |
 
 `__init__.py` re-exports them, so edges import from `chatddx.bench` and never by path.
 
@@ -195,8 +196,8 @@ Why this layout:
   other through `self`: `configuration` and `chunk` use `thread`; `findings`, `reach`, `save` and `start` use
   `skeleton`; `score` and `unscored` use `scorers_for` and `scoring`; `reach`, `score` and `scores_of` use `labels`.
   Splitting the class by concern would take mixins, which hide where a method lives, or functions taking a bench,
-  which give edges a second surface beside `bench.*`. At 615 lines, `view.py` is about the size of
-  `fake_vllm/chat.py` (609), and shorter than `factors/request.py` (961).
+  which give edges a second surface beside `bench.*`. At d5ebf52, `view.py` has 748 lines: longer than
+  `fake_vllm/chat.py` (609), and shorter than `factors/request.py` (1037).
 - **"View"** because B3 made the bench a person-scoped view. It also writes for the person (`save`, `start`,
   `score`), but only through what the view finds.
 
@@ -394,8 +395,9 @@ Sub-decisions:
 - **S1. Where `Reads` lives**: the bench. Done in step 2.
 - **S2. Where the variation being tried lives**: the bench (decided).
 - **S3. The shell's vocabulary** (`KINDS`, `NONE`, `SEEDS` and `drawn_seed`, and how messages are worded) moves to
-  the repl. `PARTS` and `OPTIONAL` are the recipe's, and could come from `src/chatddx/factors/request.py:Recipe`.
-  Done in step 7, except `KINDS`, which turned out not to be the shell's.
+  the repl. Done in step 7, except `KINDS`, which turned out not to be the shell's. `PARTS` and `OPTIONAL` are the
+  recipe's: since 1dd791a, `PARTS` is `src/chatddx/factors/request.py:RECIPE_PARTS`, and `OPTIONAL` the parts
+  `Recipe` doesn't require.
 - **S4. Typed errors**, such as `NotFound` and `Ambiguous`, that subclass `LookupError`, so the repl keeps catching
   what it catches and an API can map them. Done in step 8.
 - **S5. State**: the caches of logins and models make a bench last one session. That suits a request or a repl. A
@@ -419,20 +421,30 @@ Sub-decisions:
    `Bench.outstanding` (the person's finished runs, with what each is left to be scored by) are the one answer. The
    test that pinned "a changed expectation leaves a run to score again" now pins it on `Bench.unscored`
    (`src/chatddx/bench/test/test_view.py`).
-4. **One rule for the expectation a case is held to**: `Catalog.expectation_for`, the one scoring uses.
-   - `Bench.expectation(case, schema)` is the expectation it picks for the person under that schema. It raises a
-     `LookupError` when there are several to choose from.
+4. **One rule for the expectation a case is held to**: `src/chatddx/catalog/threads.py:expectation_choices`, the
+   threads a case's expectation is chosen from: the person's own, else every one they see, in the scorer's schema.
+   `Catalog.expectations_for`, the one scoring uses, picks from them and refuses a case with several to choose from.
+   `Catalog.expectation_for`, for one case, is left with callers in tests only.
+   - `Bench.expectation(case, schema)` is the expectation it picks for the person under that schema. It raises
+     `Ambiguous` when there are several to choose from.
    - `Bench.expectation_schemas(case)` gives the schemas of the expectations the person sees for a case.
    - `show case` shows the expectation under each of those schemas, labelled by the schema's title when there is more
      than one, or why there is none to show: "has expectations to choose from". With the sample's one schema, it
      shows what it showed before.
-   - `Bench.reach` reads expectations through `Bench.expectation` too.
+   - `Bench.reach` read expectations through `Bench.expectation` too, until d5ebf52. It now reads every case's at
+     once through `Catalog.expectation_choices` (`Bench._expected`), and counts a case with several to choose from as
+     missing rather than raising `Ambiguous`. So the threads to choose from are found once, but the pick among them
+     is made twice: `_expected` repeats `expectations_for`'s "exactly one distinct head", and the two handle
+     "several" apart. Scoring refuses the case, `show case` says it has expectations to choose from, and the reach
+     counts it missing.
 
-   Tests: `src/chatddx/bench/test/test_view.py`, and
-   `src/chatddx/repl/test/test_inspecting.py:test_show_case_says_when_scoring_has_expectations_to_choose_from`.
-5. **The bench's own tests**, in `src/chatddx/bench/test/`, on the seeded sample. The seeded fixture is defined once,
-   session-scoped, as `src/chatddx/conftest.py:seeded` (with `WORLD`, the sample World's inventory). The bench's tests
-   and the repl's copy it for each test. That settles "the seeded sample fixture is defined twice"
+   Tests: `src/chatddx/bench/test/test_view.py`,
+   `src/chatddx/repl/test/test_inspecting.py:test_show_case_says_when_scoring_has_expectations_to_choose_from`, and
+   `src/chatddx/api/test/test_variations.py:test_a_case_with_expectations_to_choose_from_is_missing_from_the_reach`.
+5. **The bench's own tests**, in `src/chatddx/bench/test/`, on the sample as init-data lands it. That database is
+   made once, session-scoped, by `src/chatddx/conftest.py:curated`, from the sample World at `WORLD` (its directory;
+   the bench's tests load `WORLD / "inventory.toml"`). The bench's tests and the repl's pick it by overriding
+   `template`, and `db` gives each test a copy. That settles "the seeded sample fixture is defined twice"
    (`agents/wip-repl.md`, "Left from 4a").
 
 6. **"Cell" is the repl's** (K2 with R1).
@@ -440,7 +452,8 @@ Sub-decisions:
      it was called by, its recipe, and the parts replaced over it. It always has a configuration. It has no endpoint,
      and lost `using` and `on`.
    - The bench's methods take what they need: `configuration(name, engine)`, `chunk(part, name, engine)`,
-     `skeleton(variation)`, `findings(variation, engine, seed, cases)`, `reach(variation, families)`,
+     `skeleton(variation)`, `findings(variation, engine, seed, families)` (`cases` until d5ebf52, which lints in the
+     families' languages), `reach(variation, families)`,
      `save(variation, name)`, which returns `Saved.variation`, and `start(variation, endpoint, cases, seed)`, which
      finds the engine from the endpoint.
    - The repl's own `Cell` (`src/chatddx/repl/shell.py`) holds a `TriedVariation`, the endpoint and its engine, with
@@ -462,7 +475,7 @@ Sub-decisions:
      configurations of that name (a `ValueError` before).
    - The repl words the hint itself: when `per_model` is set, `handle` adds ", picked by the endpoint in the cell"
      (`src/chatddx/repl/commands.py:_said`).
-   - Not typed: what the catalog raises, such as `expectation_for`'s "has expectations to choose from", which passed
+   - Not typed: what the catalog raises, such as `expectations_for`'s "has expectations to choose from", which passed
      through `Bench.expectation` and `Bench.scoring` as a plain `LookupError` (see step 10). Since the API's phase 0,
      the bench raises `Ambiguous` for it.
 
@@ -472,7 +485,7 @@ Sub-decisions:
    is gone.
 10. **Decided, nothing to build:**
     - The catalog keeps applying the visibility rule to its own rows (`catalog/threads.py:visible`,
-      `catalog/families.py:visible`, `catalog/threads.py:expectation_for`), as `docs/catalog.md` says it decides
+      `catalog/families.py:visible`, `catalog/threads.py:expectation_choices`), as `docs/catalog.md` says it decides
       "what a person sees". The rule itself is `identity`'s, and the bench applies it to everything else.
     - The catalog's own `LookupError`s stay untyped until an API needs to tell an ambiguous expectation from a
       missing one. `Bench.expectation` and `Bench.scoring` would then raise `Ambiguous` for it. Done for the API
@@ -514,7 +527,8 @@ lookups go through `Catalog`, `Store` and `People`:
 
 | Method | Returns / raises |
 | --- | --- |
-| `threads(word: str) -> list[tuple[Edit, About]]` | `Catalog.visible(kind, person.id)` for each kind `KINDS[word]` names: the heads of the live threads the person owns or collaborates on, in thread id order. |
+| `visible(kind: str) -> list[tuple[Edit, About]]` | `Catalog.visible(kind, person.id)`: the heads of the live threads of `kind` the person owns or collaborates on, in thread id order. |
+| `threads(word: str) -> list[tuple[Edit, About]]` | `visible(kind)` for each kind `KINDS[word]` names. |
 | `thread(word: str, name: str, model: str \| None = None) -> tuple[Edit, str]` | The thread called `name` among them, or else its one variant `model` may use, `NAME (LANGUAGE)`, `NAME (MODEL)` or `NAME (LANGUAGE, MODEL)` (`chatddx.catalog.variants_for`), with the name that found it; several languages raise `Ambiguous`. See below. `NotFound` carries the per-model names when no model was given. |
 | `families(tags=()) -> list[Family]` | The live families the person owns or collaborates on that have a case, with any of `tags`, by name. |
 | `family(name: str) -> Family` | The family called `name`, as below; one without a name is called `family ID`. |
@@ -523,6 +537,9 @@ lookups go through `Catalog`, `Store` and `People`:
 | `thread_by_id(id: int, word: str \| None = None) -> tuple[Edit, About]` | The head of thread `id`, and its `About`, when the person sees it and, with `word`, it is of a kind `KINDS[word]` names. Else `NotFound("no <word or 'thread'> <id> for <login>")`. |
 | `family_by_id(id: int) -> Family` | Family `id`, when the person sees it and it has a case. Else `NotFound("no case <id> for <login>")`. |
 | `run_by_id(run: UUID) -> RunStarted` | The run, when it is live and the person owns it, as `runs()` keeps them. Else `NotFound("no run <id> of yours")`. |
+| `variation(configuration: int, parts: Mapping[str, str \| None] \| None = None) -> TriedVariation` | The configuration `thread_by_id(configuration, "configuration")` finds, under its name or else its title, with each of `parts` replaced by the chunk of that digest, or taken out for `None`; each part is labelled by the chunk's title. `ValueError` for an unknown part, a digest that isn't a stored chunk of its part, and `TriedVariation.set`'s refusals. |
+| `expectation_schemas(case: str) -> list[str]` | The schemas of the heads of the live expectation threads of `case` the person owns or collaborates on, sorted. |
+| `expectation(case: str, schema: str) -> Expectation \| None` | The expectation `Catalog.expectations_for([case], person.id, schema)` picks for the person, or `None`. `Ambiguous` when they have several to choose from. |
 | `reaching(digest: str) -> list[RunStarted]` | The runs of `runs()` whose trial's closure holds `digest` (`Store.reaching(digest, "trial")`), newest first. |
 | `scorers_for(run: RunStarted) -> list[tuple[Edit, About]]` | The visible scorer threads whose head's every view has an `output` selector that reaches the run's skeleton's `output_schema` (`chatddx.factors.select.reaches`), the check `check_score` warns about as `view.unreachable`. |
 | `scoring(run: RunStarted, scorer: str) -> Scoring \| None` | The scoring the run would be scored under now: `Scoring(scorer, expectations)`, with, for each of the trial's cases in order, the expectation `Catalog.expectations_for(cases, person.id, <the scorer's expectation_schema>)` picks for it, cases without one left out. `None` when no case has one. `Ambiguous` when the person has several expectations to choose from for a case. Nothing is stored. |
