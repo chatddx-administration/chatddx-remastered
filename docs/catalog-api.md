@@ -64,17 +64,9 @@ package takes the last row for a key as the one that holds: through `model.py:la
 
 **Errors.**
 
-```
-AGENT: CHANGE
-The blank line between the `LookupError` and `ValueError` rows ends the table there, so the rows after it don't render
-as part of it.
----
-the table without the blank line
-```
 | Exception | When |
 | --- | --- |
 | `LookupError` | A thread, edit or family that doesn't exist (`no thread with id <id>`, `no edit with id <id>`, `no family with id <id>`); a digest that isn't stored where one is required (`check_adoptable`, `check_language`); `picked`, and so `expectations_for` and `expectation_for`, with several expectations to choose from. |
-
 | `ValueError` | A rule refused before writing: `check_threadable`, `check_based_on`, `check_expectation`, `check_adoptable`, `plan_repair`, `check_language`, `check_entry`, `check_label`, `language_tag`; and `MovedOn`, from `check_head`. |
 | `pydantic.ValidationError` | A model breaks its own rules: an `Entry` of the wrong shape, a `Subject` that isn't exactly one thing, a `Behind` with both or neither of `head` and `binding`; `proposal` when the merged recipe isn't a valid `Recipe`. Rules written as validators raise `ValueError`, which pydantic wraps. |
 | `chatddx.factors.base.StructuralError` (a `ValueError`) | `Reader.get` of a digest that isn't stored (both `Rows` and `test/memory.py:Memory`, through `Store.get` and `Registry.get`); `resolve` of a component of the wrong kind; `proposal` when the merged document isn't a readable component. |
