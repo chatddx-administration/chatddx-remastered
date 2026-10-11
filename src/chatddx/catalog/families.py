@@ -53,11 +53,14 @@ def holder(
     return None
 
 
-def check_adoptable(rows: Reader, case: str) -> Vignette:
+# A vignette with another family's content under a new id is that one's, renamed;
+# without `by_content`, as for a source whose texts never move, it is a vignette apart.
+def check_adoptable(rows: Reader, case: str, *, by_content: bool = True) -> Vignette:
     if rows.kind(case) != "case":
         raise LookupError(f"{case} is not a stored case")
     vignette = resolve(rows.get, case, Case).vignette
-    if (held := holder(rows, vignette)) is not None:
+    held = holder(rows, vignette)
+    if held is not None and (by_content or held[1]):
         other, same_id = held
         change = "new content" if same_id else "a new name"
         raise ValueError(

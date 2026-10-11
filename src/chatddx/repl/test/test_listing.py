@@ -17,6 +17,7 @@ def test_endpoints_are_listed_with_their_engines_and_clearance(
         "Qwen/Qwen3-8B-AWQ",
         str(world.endpoints[QWEN].url),
         "sample",
+        "typed",
     ]
     assert line_of(written, GPT_OSS).split()[2] == "openai/gpt-oss-20b"
 

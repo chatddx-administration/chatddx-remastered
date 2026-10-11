@@ -30,7 +30,7 @@ from chatddx.ledger import (
     check_run,
 )
 from chatddx.ledger.run import PHASES, Phase
-from chatddx.store import Catalog, Store
+from chatddx.store import Catalog, Store, fetch_vignette
 from chatddx.store.store import Connection
 
 from . import gate, rounds, send as sending
@@ -167,6 +167,7 @@ class Running:
         secret: str | None,
         toolbox: Toolbox | None,
     ) -> None:
+        self._conn: Connection = conn
         self._store: Store = Store(conn)
         self._inventory: Inventory = inventory
         self._registry: Registry = registry
@@ -279,8 +280,7 @@ class Running:
             emit(ItemStarted(key, seed))
             case = resolve(get, case_ref, Case)
             try:
-                source = self._inventory.source(case.vignette.source)
-                raw = source.fetch(case.vignette.id)
+                raw = fetch_vignette(self._conn, self._inventory, case.vignette)
                 prepared = prepare_case(
                     case, raw, get, skeleton.appendix_layout, trial.cleanup
                 )

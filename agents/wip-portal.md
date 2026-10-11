@@ -210,6 +210,18 @@ Why not a directory the app writes: that is a volume shared by every replica and
 database, and a second place to vet for sensitive text beside the database that holds the ledger
 (`agents/wip-clearance.md`, "Takes"). The database's costs are code, written once.
 
+Built below the page (agents/wip-authoring.md, phase 7), on the takes below and these:
+- **A family per typed case**, owned by the person who typed it, named and in a language when they say so. A family
+  follows one vignette, so one per person would hold several.
+- **Adopted by id alone**: the same text typed twice is two vignettes, where a directory source would take it for a
+  rename (`src/chatddx/catalog/families.py:check_adoptable`, `by_content`).
+- **A plain fingerprint**, as for the sample: nothing manages keys yet. Open: a keyed one, since a short text's hash
+  can be guessed by anyone who reads the factors, the reader included, while the text itself is kept from them.
+- **The World's one database source** takes what is typed, unless one is named; the sample World has `typed`,
+  cleared for its fake endpoints.
+- **Quotas** in `chatddx.core.settings`: 20 000 characters a text, 50 texts a person a day. Over the quota is
+  `OverQuota`, which the API answers 429. Runs aren't held to one yet: the worker's (`agents/wip-worker.md`).
+
 Take, for its shape:
 - **A schema of its own**, `source`, with a table of texts: the source's name, the id, the text, who typed it and
   when. Migrations at every tier (`docs/store.md`, "Tiers"): the writer may read and insert, the reader nothing, as
@@ -246,7 +258,7 @@ Assuming the takes.
 3. **Starting and watching a run**: the worker (`agents/wip-worker.md`), and the run's island, on the API's phases 4
    and 5.
 4. **Swift**: the `source` schema and the `database` source kind, the bench's writes for cases and families, quotas,
-   and the page (see "Swift").
+   and the page (see "Swift"). All but the page is built.
 5. **Authoring**: the bench's writes for chunks, appendices, expectations, labels and languages
    (`agents/wip-authoring.md`), and their pages.
 6. **Batches**: the planner's pages (`agents/wip-batch.md`), then a batch's page and the worker's status

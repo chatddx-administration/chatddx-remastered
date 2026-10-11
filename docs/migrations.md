@@ -104,3 +104,20 @@ it, if any. A new schema gets its own section with all three tiers.
   - Language tags and kinds on `catalog.language`, and no language for a skeleton already known to be compiled
     (`src/chatddx/catalog/language.py:check_language`).
   - Insert-only triggers on every table.
+```
+AGENT: ADD
+A schema of its own for database sources' texts, as typed cases need.
+---
+## source
+
+### Tier 0
+- `0014-t0-source.sql`: schema `source`: `text (source, id, text, by, at)`, keyed by source and id, the text not
+  empty, and an index on `(by, at)` for a person's latest texts (`src/chatddx/store/texts.py:Texts.typed_since`).
+
+### Tier 1
+- `0015-t1-source.sql`: PUBLIC loses all access. The writer gets SELECT, INSERT on `text`, granted explicitly, and no
+  DELETE, so only the admin deletes a text. The reader gets nothing: the texts are vignettes.
+
+### Tier 2
+- `0016-t2-source.sql`: triggers refusing UPDATE and TRUNCATE on `text`; DELETE is held back by the grants alone.
+```

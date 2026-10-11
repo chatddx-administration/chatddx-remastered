@@ -28,6 +28,8 @@ def test_migrate_command(
         "would apply 0010-t0-catalog",
         "would apply 0011-t1-catalog",
         "would apply 0013-t0-catalog-binding-content",
+        "would apply 0014-t0-source",
+        "would apply 0015-t1-source",
         "applied 0001-t0-factor",
         "applied 0002-t1-factor",
         "applied 0004-t0-ledger",
@@ -37,11 +39,14 @@ def test_migrate_command(
         "applied 0010-t0-catalog",
         "applied 0011-t1-catalog",
         "applied 0013-t0-catalog-binding-content",
+        "applied 0014-t0-source",
+        "applied 0015-t1-source",
         "nothing to apply up to tier 1",
         "applied 0003-t2-factor",
         "applied 0006-t2-ledger",
         "applied 0009-t2-identity",
         "applied 0012-t2-catalog",
+        "applied 0016-t2-source",
     ]
     with pytest.raises(SystemExit):
         main(["migrate", "--tier", "3"])

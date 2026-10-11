@@ -79,7 +79,7 @@ case-derived content, and a comment marks the first two.
 ## app.py
 
 ### `STATUSES: dict[type[Exception], int]`
-`NotFound` 404, `Ambiguous` 409, `Conflict` 409, `MovedOn` 409, `Refused` 422. Each is answered
+`NotFound` 404, `Ambiguous` 409, `Conflict` 409, `MovedOn` 409, `OverQuota` 429, `Refused` 422. Each is answered
 `{"detail": str(error)}`.
 
 ### `app(inventory: Inventory, facts: Facts, conninfo: str) -> FastAPI`
@@ -164,6 +164,7 @@ The models' fields are in the OpenAPI document. Besides them:
 | `MadeThread(ThreadDetail)`, `MadeEdit(Edit)` | What a write answers: the thread or the edit, with `findings`; an edit also with `cases`, each case an appendix's edit replaced and its replacement. |
 | `Varied`, `Proposal` | A path a fork varies, with the base's and the fork's values; and what following would keep: `base` and `origin_head` (edits), `varies`, `recipe` for a configuration or `component` for another kind, `digest` and `compilation`. |
 | `NewFollow` | A follow's body: `head` (required) and `language`. |
+| `NewTyped` | A typed case's body: `text`, and `name`, `language` and `source`, each optional. |
 | `NewAppendix` | An appendix's body: `text` and `name`, neither empty. |
 | `FamilyCase` | A case of a family: `case`, `title`, `appendices`, `default` (the case the family stands for) and `expectations`, as `FamilyDetail`'s. |
 | `NewCase` | A case's body: `appendices` in order, or `replacing`, a case of the family; its validator raises `ValueError("a case is built from appendices or replacing one, not both")` unless exactly one is given. |
@@ -219,8 +220,9 @@ variation's query parameters to them with `endpoint`, `tag` and `seed`.
 | --- | --- |
 | `families`, `GET /families` | `Bench.families(tag)`, kept by `name` (whole). |
 | `family`, `GET /families/{family}` | `Bench.family_by_id` (`NotFound`); the case's appendices; `expected` for each of `Bench.expectation_schemas(case)`. |
-| `vignette`, `GET /families/{family}/vignette` | `Bench.family_by_id`, then the case's source's `fetch` of its id, whose `LookupError` is raised as `NotFound`. The text is decoded as UTF-8, a byte-order mark dropped and what can't be decoded replaced. `drifted` is whether `Fingerprint.of` the bytes differs from the case's, or `None` for a keyed fingerprint. |
+| `vignette`, `GET /families/{family}/vignette` | `Bench.family_by_id`, then `chatddx.store.fetch_vignette` of the case's vignette, whose `LookupError` is raised as `NotFound`. The text is decoded as UTF-8, a byte-order mark dropped and what can't be decoded replaced. `drifted` is whether `Fingerprint.of` the bytes differs from the case's, or `None` for a keyed fingerprint. |
 | `takes`, `POST /takes` | `HTTPException(422, "no case <id> for <login>")` for a family not among `Bench.families()`. Within `refused()`: `Bench.take` of the families' cases, whose `NotFound` for the owner is `HTTPException(422)`. 200, with each family given its case's outcome. |
+| `typed`, `POST /families` | Within `refused()`, which lets `OverQuota` through to `STATUSES`: `Bench.type_case`. 201, with `Location` the family's path, and `family_of`. |
 | `appendix`, `POST /families/{family}/appendices` | Within `refused()`: `Bench.new(Bench.appendix(family, text), name)`. 201, `made`. |
 | `cases`, `GET /families/{family}/cases` | `Bench.family_by_id` (`NotFound`), then `case_of` each of `Bench.cases(family)`. |
 | `case`, `POST /families/{family}/cases` | `Bench.family_by_id` (`NotFound`, 404). Within `refused()`: `Bench.case(family, appendices)`, or, for `replacing`, `ValueError("<case> isn't a case of family <family>")` unless `Catalog.family` gives this one, then `Bench.replacement`. Their `NotFound` is the body's: 422. 201, `case_of`. |
@@ -347,6 +349,7 @@ settings.database())`.
 | `test_threads.py`, `test_families.py`, `test_world.py` | The reads, taking expectations, and what bob doesn't see. |
 | `test_writes.py` | A configuration made from a recipe, and what is refused of one; chunks and expectations written new, edited and forked; what is refused, and with which status; an expectation's findings. |
 | `test_cases.py` | A family's cases, an appendix written for it, a case built of it and replaced by the appendix's edit, and an expectation carried onto the replacement; cases refused; a run naming a case that isn't one. |
+| `test_typed.py` | A typed case answered as a family, its vignette read back, and bob not seeing it; what can't be typed, and 429 past the day's quota. |
 | `test_following.py` | A fork with nothing to follow, then a proposal once the archive's configuration moved on, a stale head, following, and nothing proposed after. |
 | `test_said.py` | Saying what holds of a thread, sharing it with bob and taking it back; refusals; deleting, listing and reading the deleted thread, and restoring it; a session needed. |
 | `test_variations.py` | Looks, forks and edits; that a look's queries don't grow with its cases, counted on the test's database (the fixtures create the next test's meanwhile). |

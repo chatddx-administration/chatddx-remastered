@@ -30,6 +30,20 @@ class Source(Frozen, ABC):
         return LookupError(f"no case {id!r} in source {self.name!r}")
 
 
+# A source whose vignettes are kept in the database, as people typed them; the store
+# reads them (src/chatddx/store/texts.py:fetch_vignette).
+class DatabaseSource(Source):
+    kind: Literal["database"] = "database"
+
+    @override
+    def ids(self) -> list[str]:
+        raise LookupError(f"source {self.name!r} is read through the store")
+
+    @override
+    def fetch(self, id: str) -> bytes:
+        raise LookupError(f"source {self.name!r} is read through the store")
+
+
 class DirectorySource(Source):
     kind: Literal["directory"] = "directory"
     path: Path

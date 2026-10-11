@@ -1,5 +1,6 @@
 from collections.abc import Collection, Iterable, Mapping, Sequence
 from dataclasses import dataclass, field
+from datetime import UTC, datetime, timedelta
 from types import EllipsisType
 from typing import Literal
 from uuid import UUID
@@ -21,10 +22,12 @@ from chatddx.catalog import (
 from chatddx.catalog.families import rebind_case
 from chatddx.catalog.threads import picked
 from chatddx.catalog.titles import short
+from chatddx.core import settings
 from chatddx.core.rig import rig
 from chatddx.factors.base import (
     Component,
     Finding,
+    Fingerprint,
     StructuralError,
     iter_refs,
     resolve,
@@ -47,15 +50,15 @@ from chatddx.factors.select import reaches
 from chatddx.factors.trial import Trial
 from chatddx.facts import Facts, lints, model_name
 from chatddx.identity import Person, preferred
-from chatddx.inventory import Inventory
+from chatddx.inventory import DatabaseSource, Inventory
 from chatddx.ledger import ItemKey, Run, RunStarted, Score, fingerprint_request
 from chatddx.runner.run import Runner, Running
 from chatddx.runner.score import score_run
-from chatddx.store import Catalog, People, Store
+from chatddx.store import Catalog, People, Store, Texts, fetch_vignette
 from chatddx.store.catalog import Rows
 from chatddx.store.store import Connection
 
-from .errors import Ambiguous, Conflict, NotFound
+from .errors import Ambiguous, Conflict, NotFound, OverQuota
 from .variation import PARTS, TriedVariation
 
 # The kinds of thread each word names: a configuration is a skeleton thread, a part is a
@@ -948,6 +951,70 @@ class Bench:
         _ = self.store.add(registry, [registry.add(made)])
         return made.digest
 
+    # A case the person typed: kept as a text of `source`, else of the World's one
+    # database source, with its case and a family of the person's own, named `name` and
+    # in `language` when given, all at once.
+    def type_case(
+        self,
+        text: str,
+        *,
+        name: str | None = None,
+        language: str | None = None,
+        source: str | None = None,
+    ) -> Family:
+        if not text.strip():
+            raise ValueError("a typed case holds text")
+        if "\0" in text:
+            raise ValueError("a typed case may not hold U+0000, which can't be stored")
+        if len(text) > settings.TYPED_TEXT_LIMIT:
+            raise ValueError(
+                f"a typed case holds at most {settings.TYPED_TEXT_LIMIT} characters, "
+                + f"not {len(text)}"
+            )
+        if name == "":
+            raise ValueError("a name can't be empty: none leaves the case unnamed")
+        entries = [] if name is None else [Entry(field=EntryField.NAME, value=name)]
+        if language is not None:
+            entries.append(Entry(field=EntryField.LANGUAGE, value=language))
+        into = self._typed_into(source)
+        texts = Texts(self.conn)
+        since = datetime.now(UTC) - timedelta(days=1)
+        if (
+            typed := texts.typed_since(self.person.id, since)
+        ) >= settings.TYPED_PER_DAY:
+            raise OverQuota(
+                f"{self.person.login} has typed {typed} cases in the last day, as many "
+                + "as a day takes"
+            )
+        with self.conn.transaction():
+            id = texts.add(into, text, self.person.id)
+            vignette = Vignette(
+                source=into, id=id, fingerprint=Fingerprint.of(text.encode())
+            )
+            registry = Registry()
+            case = registry.add(Case(vignette=vignette))
+            _ = self.store.add(registry, [case])
+            family = self.catalog.adopt(case, self.person.id, by_content=False)
+            for entry in entries:
+                self.catalog.note(Subject(family=family), entry, self.person.id)
+        return self.family_by_id(family)
+
+    def _typed_into(self, source: str | None) -> str:
+        held = sorted(
+            s.name
+            for s in self.inventory.sources.values()
+            if isinstance(s, DatabaseSource)
+        )
+        if source is not None and source not in held:
+            raise ValueError(f"{source!r} isn't a database source of the World's")
+        if source is None and len(held) != 1:
+            raise ValueError(
+                "the World has no database source to type cases into"
+                if not held
+                else f"name the source to type into: {', '.join(held)}"
+            )
+        return source or held[0]
+
     # The person's expectation `thread`, whose head was `head` when they saw it, carried
     # onto `case`, another case of its case's family, with the same data: a clinician's
     # word that it still holds there.
@@ -1294,9 +1361,7 @@ class Bench:
         for item in run.items:
             case = resolve(registry.get, item.key.case, Case)
             try:
-                raw = self.inventory.source(case.vignette.source).fetch(
-                    case.vignette.id
-                )
+                raw = fetch_vignette(self.conn, self.inventory, case.vignette)
                 prepared = prepare_case(
                     case, raw, registry.get, skeleton.appendix_layout, trial.cleanup
                 )

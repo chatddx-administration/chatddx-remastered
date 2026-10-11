@@ -1,12 +1,12 @@
 import tomllib
 from pathlib import Path
-from typing import Any, Self
+from typing import Annotated, Any, Self, cast
 
-from pydantic import Field, HttpUrl, model_validator
+from pydantic import Discriminator, Field, HttpUrl, Tag, model_validator
 
 from chatddx.factors.base import Digest, Frozen, Sha256Hex
 
-from .sources import DirectorySource, Source
+from .sources import DatabaseSource, DirectorySource, Source
 
 
 # Where an engine is served: the engine by digest, which is also the name it's served
@@ -28,8 +28,23 @@ class HostSpec(Frozen):
     templates: dict[Sha256Hex, str] = Field(default_factory=dict)
 
 
+# A source is a directory unless it says otherwise.
+def _source_kind(source: object) -> str:
+    if isinstance(source, dict):
+        kind = cast(dict[str, object], source).get("kind", "directory")
+        return str(kind)
+    return str(getattr(source, "kind", "directory"))
+
+
+type AnySource = Annotated[
+    Annotated[DirectorySource, Tag("directory")]
+    | Annotated[DatabaseSource, Tag("database")],
+    Discriminator(_source_kind),
+]
+
+
 class Inventory(Frozen):
-    sources: dict[str, DirectorySource] = Field(default_factory=dict)
+    sources: dict[str, AnySource] = Field(default_factory=dict)
     endpoints: dict[str, EndpointSpec] = Field(default_factory=dict)
     hosts: dict[str, HostSpec] = Field(default_factory=dict)
     # The sensitive sources each endpoint may receive case-derived content from. Only

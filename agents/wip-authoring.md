@@ -32,10 +32,13 @@ portal is the first edge to need them (agents/wip-portal.md, "Below the UI", "Ph
    /api/threads` takes one in place of a component (agents/wip-bench.md, "Writes for the person").
 7. **Appendices and cases are built** (phase 6): the appendix and case builders, a family's cases, replacement cases
    on an appendix's edit and for a late case, carrying an expectation over, and runs that name cases
-   (agents/wip-bench.md, "Appendices and cases"). Phase 7, typed cases, comes next, with the portal's swift.
-8. **One set of writes for every kind people author** (A1), with builders only where a kind binds to a family's
+   (agents/wip-bench.md, "Appendices and cases").
+8. **Typed cases are built** (phase 7), below the portal's swift page: the `source` schema and the `database`
+   source kind, `Bench.type_case`, and `POST /api/families` (agents/wip-portal.md, "Typed cases"). The page waits for
+   the portal. Phase 8, scorers, comes next.
+9. **One set of writes for every kind people author** (A1), with builders only where a kind binds to a family's
    vignette: appendices and cases (A2).
-9. **No write refuses on a lint** (A6): what was written comes back with its lints. Refusals stay the components' and
+10. **No write refuses on a lint** (A6): what was written comes back with its lints. Refusals stay the components' and
    the catalog's.
 
 ## What is asked
@@ -48,7 +51,7 @@ portal is the first edge to need them (agents/wip-portal.md, "Below the UI", "Ph
 | A text's language, offered the previous version's | — | `docs/catalog.md`, "Languages" | by curation, from a data set's texts |
 | Names, descriptions, tags, collaborators; deleting and restoring | — | `docs/catalog.md`, "Entries" and "Deleting"; `docs/chatddx.md`, "Intended evolution of configurations" | a name, when a configuration is forked (`Bench.fork`); the rest by curation |
 | Accepting a proposal once a fork's origin moved on | — | `docs/catalog.md`, "Forks" | nothing: `Catalog.proposal` has no caller |
-| Typed cases and their families, for swift | clinicians | `agents/wip-portal.md`, "Typed cases" | nothing; needs a `source` schema |
+| Typed cases and their families, for swift | clinicians | `agents/wip-portal.md`, "Typed cases" | typed, by any person (phase 7) |
 | Scorers: their views, free parameters and labels, over shipped code | researchers (decided) | `docs/catalog.md`, "Scorer labels"; "Scorers and judges" below | by curation, as the archive, with the labels of each scorer digest from a data set |
 | Judges: a judge configuration, an engine, seeds, a fill rule | researchers (decided) | `docs/factors.md`, "Judge" | nothing; no judged view can be scored yet |
 
@@ -400,7 +403,8 @@ Each with its tests in `src/chatddx/bench/test/` and the API's.
 5. **Recipes into configurations**, built.
 6. **Appendices and cases**, built: the builders, a family's cases, replacement cases, and carrying an expectation
    over.
-7. **Typed cases**, with the portal's swift (agents/wip-portal.md, "Typed cases", and its phase 4).
+7. **Typed cases**, built below the page, with the portal's swift (agents/wip-portal.md, "Typed cases", and its
+   phase 4).
 8. **Scorers**: the published entry points, their versions and their schemas (S1, S2), the code pin moved to them,
    views, parameters (S3), and labels on edits (S4).
 9. **Judges**, once the scoring pass can send judge requests (S6).

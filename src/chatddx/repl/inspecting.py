@@ -15,6 +15,7 @@ from chatddx.factors.engine import LocalEngine
 from chatddx.factors.request import Reasoning, Skeleton
 from chatddx.facts import INTENTS, Effort, ModelFacts, Refusal, Refused
 from chatddx.inventory import url_of
+from chatddx.store import fetch_vignette
 
 from .render import (
     LABEL,
@@ -366,7 +367,7 @@ def _show_case(repl: Repl, name: str | None) -> None:
     table.add_row("source", f"{vignette.source}/{vignette.id}")
 
     try:
-        raw = bench.inventory.source(vignette.source).fetch(vignette.id)
+        raw = fetch_vignette(bench.conn, bench.inventory, vignette)
         table.add_row("vignette", clipped(raw.decode(errors="replace")))
     except LookupError as e:
         table.add_row("vignette", Text(str(e), style=REFUSED))

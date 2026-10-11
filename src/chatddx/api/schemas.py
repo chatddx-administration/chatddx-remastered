@@ -292,6 +292,16 @@ class NewTake(_Schema):
     )
 
 
+class NewTyped(_Schema):
+    text: str = Field(description="the case as typed, kept as written")
+    name: str | None = None
+    language: str | None = Field(None, description="the language it is typed in")
+    source: str | None = Field(
+        None,
+        description="the database source it is kept in, when the World has several",
+    )
+
+
 class NewAppendix(_Schema):
     text: str = Field(min_length=1)
     name: str = Field(min_length=1)

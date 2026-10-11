@@ -16,7 +16,7 @@ Paths are relative to `src/chatddx/bench/` unless they start with `src/`, `docs/
 ## Contents
 - [Package](#package)
 - [Conventions](#conventions)
-- [errors.py](#errorspy): `NotFound`, `Ambiguous`, `Conflict`, `MovedOn`
+- [errors.py](#errorspy): `NotFound`, `Ambiguous`, `Conflict`, `MovedOn`, `OverQuota`
 - [outcome.py](#outcomepy): `Outcome`, `outcome`, `usage`
 - [variation.py](#variationpy): `PARTS`, `OPTIONAL`, `TriedVariation`
 - [view.py](#viewpy): `Bench`, `KINDS`, and the values `Bench` returns
@@ -25,14 +25,14 @@ Paths are relative to `src/chatddx/bench/` unless they start with `src/`, `docs/
 
 ## Package
 
-`chatddx.bench` re-exports `Ambiguous`, `Conflict`, `MovedOn`, `NotFound`, `Outcome`, `outcome`, `usage`, `OPTIONAL`,
-`PARTS`, `TriedVariation`, `KINDS`, `WRITTEN`, `Bench`, `Family`, `Graded`, `Proposed`, `Reach`, `Saved`, `Taken` and
-`Written`.
-Edges import from `chatddx.bench`, never by path; tests import their helpers from `chatddx.bench.test.sample`.
+`chatddx.bench` re-exports `Ambiguous`, `Conflict`, `MovedOn`, `NotFound`, `OverQuota`, `Outcome`, `outcome`, `usage`,
+`OPTIONAL`, `PARTS`, `TriedVariation`, `KINDS`, `WRITTEN`, `Bench`, `Family`, `Graded`, `Proposed`, `Reach`, `Saved`,
+`Taken` and `Written`. Edges import from `chatddx.bench`, never by path; tests import their helpers from
+`chatddx.bench.test.sample`.
 
 | Module | Holds | Builds on |
 | --- | --- | --- |
-| `errors.py` | `NotFound`, `Ambiguous`, `Conflict`; `MovedOn`, the catalog's | `chatddx.catalog` |
+| `errors.py` | `NotFound`, `Ambiguous`, `Conflict`, `OverQuota`; `MovedOn`, the catalog's | `chatddx.catalog` |
 | `outcome.py` | `Outcome`, `outcome`, `usage`: how a run's item ended, and the tokens it used | `chatddx.factors.request`, `chatddx.ledger`, `chatddx.runner.send`, `chatddx.scorers.answer` |
 | `variation.py` | `PARTS`, `OPTIONAL`, `TriedVariation`: the variation being tried, a plain value | `chatddx.catalog`, `chatddx.factors.request` |
 | `view.py` | `Bench`; `KINDS`, `WRITTEN`, `PLACEHOLDERS`; `Family`, `Reach`, `Graded`, `Saved`, `Taken`, `Written`, `Proposed` | `errors.py`, `variation.py`, `chatddx.catalog` (and its `threads` and `titles`), `chatddx.core.rig`, `chatddx.factors.{base,bundle,cases,engine,request,scoring,select,trial}`, `chatddx.facts`, `chatddx.identity`, `chatddx.inventory`, `chatddx.ledger`, `chatddx.runner.{run,score}`, `chatddx.store` |
@@ -85,6 +85,9 @@ from.
 ### `MovedOn`
 `chatddx.catalog.MovedOn`, a `ValueError`, re-exported: an edit named a head that isn't the thread's head any more
 (`chatddx.catalog.threads.check_head`).
+
+### `class OverQuota(ValueError)`
+The person has written as much of something as a day takes: typed cases (`chatddx.core.settings.TYPED_PER_DAY`).
 
 ### `class Conflict(ValueError)`
 The write would undo what the person has unless they say so: taking an expectation when they own one of its case under
@@ -248,6 +251,7 @@ qualified, `<owner's login>/NAME` (`_qualified`, which gives nothing for a threa
 | `cases(family: int) -> list[str]` | The stored cases bound to `family`'s current vignette (`Rows.bound_to`), the bare one first, then by digest. |
 | `case(family: int, appendices: Sequence[str]) -> str` | A `Case` of `family`'s current vignette with `appendices` in order, stored with `Store.add`, whose check refuses an appendix bound to another vignette. `NotFound("no appendix <digest> for <login>")` for one no thread the person sees holds (`Catalog.containing`). Nothing is written in the catalog. |
 | `replacement(case: str) -> str` | `case`, of a family the person sees and left at an earlier vignette, rebound to the current one (`families.rebind_case`) and stored with its rebound appendices. `NotFound("no case <case> for <login>")` for a case of no family; `ValueError("<case> is at its family's current vignette already")`. |
+| `type_case(text: str, *, name: str \| None = None, language: str \| None = None, source: str \| None = None) -> Family` | The text kept in `source`, else the inventory's one `DatabaseSource` (`Texts.add`, a new id), its `Case` with the fingerprint of its UTF-8 bytes stored, and its family adopted by id alone (`Catalog.adopt(by_content=False)`), owned by the person, with a `name` and a `language` entry when given; all in one transaction. Refused before writing: `ValueError("a typed case holds text")` for blank text, `ValueError("a typed case may not hold U+0000, which can't be stored")`, `ValueError("a typed case holds at most <TYPED_TEXT_LIMIT> characters, not <n>")`, `ValueError("a name can't be empty: none leaves the case unnamed")`, `language_tag`'s `ValueError`, `ValueError("'<source>' isn't a database source of the World's")`, `ValueError("the World has no database source to type cases into")` or `ValueError("name the source to type into: …")`, and `OverQuota("<login> has typed <n> cases in the last day, as many as a day takes")` once `Texts.typed_since` a day ago reaches `TYPED_PER_DAY`. |
 | `carry(thread: int, head: int, case: str) -> Written` | `edit_component` of the expectation `thread` onto `case`, with the same schema and data. `ValueError("<word> <thread> isn't an expectation")`, and `ValueError("<case> isn't a case of the family <old case> is of")`. |
 | `take(cases: Iterable[str], schema: str, owner: str \| None = None) -> Taken` | For each of `cases`, once, in order: the person's own live thread of it under `schema` is kept, the lowest id of several; else, of `shared(case, schema)`, `owner`'s only when given, one is forked into a thread of their own, several are to choose from and none is missing. One transaction. `ValueError("<schema> isn't a stored expectation schema")`; `NotFound("no person '<owner>'")`. |
 | `take_from(thread: int, replace: bool = False) -> int` | Thread `thread`, an expectation the person sees, forked into a thread of their own; its id. `thread_by_id(thread, "expectation")`'s `NotFound`; `ValueError("expectation <thread> is yours already")`. When they own one of its case under its schema: `Conflict("<login> has their own expectation of <case's title> under <schema's title>, in thread <t>: replace it to take this one")`, unless `replace`, which deletes each of theirs in the same transaction. |
@@ -321,6 +325,7 @@ In `src/chatddx/bench/test/`, all marked `wip`.
 | `test_view.py` | What a person sees, by name, `OWNER/NAME` and id; a variation from ids and digests; runs and what reaches a digest; what is left to score, and again after an expectation changes; the expectation a case is held to, own only; several to choose from refused by `expectation` and `scoring`, kept by `unscored` and `outstanding`, refused by `score` and listed apart by `reach`; per-model and per-language names; a variation compiled, and its request with placeholders; saving, forking and editing, a configuration's edit refused on a head that moved on; taking expectations for many cases, kept, to choose from, missing and by owner, and taking one thread, replacing the person's own only when told. |
 | `test_writes.py` | A recipe of the person's own made into a configuration, its language and request, and what doesn't compile; writing chunks and expectations: new, edited and forked, as they are or changed, with their languages; what is refused, from kinds and versions to a language a text has already; an expectation's lints, and the person's one expectation per case and schema. Over the sample's `clinician` instructions. |
 | `test_cases.py` | An appendix built with LF line endings, a case of it listed after the bare one, and an appendix's edit storing a replacement; an expectation carried onto another case of its family, and not onto another family's; appendices and cases refused; a late case's replacement after a repair. |
+| `test_typed.py` | A typed case kept with its case, its family, its name and language, and fetched back; the same text typed twice; what can't be typed, and the day's quota; a typed case run on the fake vLLM. |
 | `test_following.py` | A configuration following the archive's move with its own change on top, recompiled and based on the origin's head; a taken expectation following the archive's correction, with its lints; nothing to follow, another's thread, a head that moved on, a language for a compiled configuration, and an origin no longer shared. |
 | `test_said.py` | Saying names, descriptions, tags and collaborators, and nothing written when nothing changes; refusals, with nothing written; deleting, the deleted threads listed and found by id, and restoring, held to one expectation per case and schema. |
 | `test_variation.py` | Replacing parts, taking a part back by setting the configuration's own chunk, and only an optional part taken out. Without a database. |
@@ -342,6 +347,7 @@ Behavior described here that `docs/bench.md` doesn't state, or states otherwise:
   the scoring pass's for a connection not in autocommit mode.
 - `unscored` doesn't list a scorer under which no case of the run has an expectation.
 - `login` gives `nobody` for a subject without an owner.
+- `rendered_again` reads a vignette through `chatddx.store.fetch_vignette`, so a typed case's text from the store.
 - `_language` compares with `Catalog.language_of`, which is a chunk's own language, so the refusal is about the
   digest's language, not the thread's history.
 - `edit_component` checks the kind after ownership, so another's thread of another kind is `NotFound`, not a

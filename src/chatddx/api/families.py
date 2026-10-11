@@ -6,6 +6,7 @@ from chatddx import bench as benches
 from chatddx.bench import Ambiguous, Bench, NotFound
 from chatddx.factors.base import Fingerprint, resolve
 from chatddx.factors.cases import Case
+from chatddx.store import fetch_vignette
 
 from . import schemas
 from .people import BenchDep
@@ -71,6 +72,24 @@ def family(bench: BenchDep, family: int) -> schemas.FamilyDetail:
     )
 
 
+@router.post(
+    "/families",
+    status_code=201,
+    responses={
+        429: {"description": "The person has typed as many cases as a day takes"}
+    },
+)
+def typed(
+    request: Request, response: Response, bench: BenchDep, given: schemas.NewTyped
+) -> schemas.Family:
+    with refused():
+        found = bench.type_case(
+            given.text, name=given.name, language=given.language, source=given.source
+        )
+    response.headers["Location"] = request.app.url_path_for("family", family=found.id)
+    return family_of(bench, found)
+
+
 @router.post("/families/{family}/appendices", status_code=201)
 def appendix(
     request: Request,
@@ -126,7 +145,7 @@ def vignette(bench: BenchDep, family: int) -> schemas.Vignette:
     found = bench.family_by_id(family)
     held = resolve(bench.get, found.case, Case).vignette
     try:
-        raw = bench.inventory.source(held.source).fetch(held.id)
+        raw = fetch_vignette(bench.conn, bench.inventory, held)
     except LookupError as e:
         raise NotFound(str(e)) from None
     keyed = held.fingerprint.key_id is not None

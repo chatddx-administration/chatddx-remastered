@@ -145,6 +145,8 @@ The bench writes configurations, chunks, expectations, runs and scores for the p
 - **Appendices and cases**: writing an appendix for a case the person sees, building a case of a family from its
   appendices, storing a late case's replacement, and carrying an expectation onto another case of its family (see
   "Appendices and cases").
+- **Typing a case**: a text the person typed, kept in a database source of the World's, with its case and a family of
+  their own (see "Typed cases").
 
 An unsaved skeleton has what it was compiled from stored, by the running code, when it is saved or started
 (docs/catalog.md, "Recipes"). The runner and the scoring pass write each row as it lands, so starting and scoring need
@@ -186,6 +188,17 @@ appendix can change the right answer. Carrying one is a write of its own: the pe
 another case of its family with the same data, as a clinician's word that it still holds there. A case left at an
 earlier vignette by a repair is offered a replacement (docs/catalog.md, "What has moved on"), which the bench stores
 when asked.
+
+### Typed cases
+A case can be typed rather than fetched from a directory: the text is kept in the database, in a source of the
+`database` kind (agents/wip-portal.md, "Typed cases"), under a new id and never changed, and its case and a family of
+the person's own are written with it, all at once, named and in a language when they say so. It runs as any case: a
+vignette is fetched from its source, a directory's file or a database source's text, wherever the bench, the runner
+and the edges read one (`src/chatddx/store/texts.py:fetch_vignette`).
+
+A text is held to a length, may not hold U+0000, which can't be stored, and a person to a number of texts a day, as
+set in `chatddx.core.settings`; over the quota is `OverQuota`. The same text typed twice is two cases and two
+families.
 
 ### Following an origin
 When a fork's origin has moved on, the catalog proposes the origin's head with the fork's changes on top
@@ -235,13 +248,13 @@ what it has; a fork that changes nothing keeps its language.
 The bench's errors are `LookupError`s an edge can tell apart: `NotFound`, for what the person doesn't see or the store
 doesn't hold, and `Ambiguous`, for a name, an id's start or a case's expectations that give several. A variation the
 bench refuses is a `ValueError`: an unknown part, a digest that isn't a stored chunk of its part, a part that can't be
-taken out. So are a component that isn't one, or of a kind the person doesn't write, and taking an expectation of
-one's own. `Conflict`, a `ValueError` too, is a write that would undo what the person has unless they say so: taking
-one thread when they have their own of its case under its schema. `MovedOn`, the catalog's and a `ValueError`, is an
-edit made on a head that isn't the head any more. The messages are worded for a person, without the edge's terms; an
-edge adds its own hint where it has one, as the repl does for a name its endpoint would pick a model for. The API
-answers `NotFound` with 404, `Ambiguous`, `Conflict` and `MovedOn` with 409, and the other refusals with 422
-(agents/wip-api.md, "Errors").
+taken out. So are a component that isn't one, or of a kind the person doesn't write, and taking an expectation of one's
+own. `Conflict`, a `ValueError` too, is a write that would undo what the person has unless they say so: taking one
+thread when they have their own of its case under its schema. `MovedOn`, the catalog's and a `ValueError`, is an edit
+made on a head that isn't the head any more, and `OverQuota`, a `ValueError` too, more of something than a day takes.
+The messages are worded for a person, without the edge's terms; an edge adds its own hint where it has one, as the repl
+does for a name its endpoint would pick a model for. The API answers `NotFound` with 404, `Ambiguous`, `Conflict` and
+`MovedOn` with 409, `OverQuota` with 429, and the other refusals with 422 (agents/wip-api.md, "Errors").
 
 ## "Cell"
 "Cell" is the repl's word for a variation being tried together with an endpoint (agents/wip-repl.md). The bench and
@@ -285,13 +298,13 @@ What is still open. It doesn't move to `docs/`.
 ### Start with this
 1. **Adopting the docs.** This file and `agents/wip-bench-api.md`, as `docs/bench.md` and `docs/bench-api.md`.
 2. **Writes for authoring** (below), planned in `agents/wip-authoring.md`. The portal's authoring and swift wait on
-   them. Its phases 1 to 6 are built, from taking expectations to appendices and cases.
+   them. Its phases 1 to 7 are built, from taking expectations to typed cases.
 
 ### Writes for authoring
 Planned in `agents/wip-authoring.md`: chunks, recipes, appendices and the cases that order them, expectations, what is
 said about a thread, and following an origin. Taking expectations is built ("Taking"), and the giftbag keeps a
 person's own; so are writing chunks and expectations, an edit's head, what is said about a thread, following an
-origin, making a configuration from a recipe, and appendices and cases ("Writes for the person").
+origin, making a configuration from a recipe, appendices and cases, and typed cases ("Writes for the person").
 
 ### Takes
 A take is the agent's recommendation, built on but not decided.

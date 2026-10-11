@@ -11,6 +11,7 @@ from chatddx.bench import (
     Bench,
     Conflict,
     MovedOn,
+    OverQuota,
     Reach,
     TriedVariation,
 )
@@ -109,12 +110,12 @@ def edits(bench: BenchDep, thread: int) -> list[schemas.Edit]:
 # What the bench refuses: a digest that isn't a chunk of its part, a part that can't be
 # taken out, parts that don't compile together, a component that isn't one, or an
 # expectation the person owns taken. A conflict and a head that moved on are the
-# person's to settle, 409 (src/chatddx/api/app.py, STATUSES).
+# person's to settle, 409, and a quota is 429 (src/chatddx/api/app.py, STATUSES).
 @contextmanager
 def refused() -> Generator[None]:
     try:
         yield
-    except (Conflict, MovedOn):
+    except (Conflict, MovedOn, OverQuota):
         raise
     except ValueError as e:
         raise HTTPException(422, str(e)) from None

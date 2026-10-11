@@ -9,6 +9,10 @@
 path = "vignettes"
 sensitive = true
 
+# What people type, as swift's cases: kept in the database, sensitive by default.
+[source.typed]
+kind = "database"
+
 # Where the sample's fake engines (factors.toml) run: chatddx's fake vLLM on this machine, one per engine, as vLLM serves one model.
 # An endpoint names the engine it serves by digest, which is also the name it's served under, so changing the engine
 # means changing its endpoint here. The fake host says where it keeps what the engines pin: the fake vLLM takes a model
@@ -41,5 +45,5 @@ bind = "127.0.0.1"
 # fake engines run on this machine, so they're cleared for the sample.
 
 [cleared]
-"qwen3-8b-awq@fake" = ["sample"]
-"gpt-oss-20b@fake" = ["sample"]
+"qwen3-8b-awq@fake" = ["sample", "typed"]
+"gpt-oss-20b@fake" = ["sample", "typed"]

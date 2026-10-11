@@ -25,6 +25,7 @@ from chatddx.factors.engine import (
 from chatddx.fake_vllm.served import Served
 from chatddx.fake_vllm.server import serving
 from chatddx.inventory import (
+    DirectorySource,
     EndpointSpec,
     HostSpec,
     Inventory,
@@ -127,7 +128,9 @@ def test_an_inventory_includes_the_endpoints_and_hosts_of_other_files(
         engine,
         "::",
     )
-    assert inventory.sources["sample"].path == (tmp_path / "vignettes").resolve()
+    assert inventory.sources["sample"] == DirectorySource(
+        name="sample", path=(tmp_path / "vignettes").resolve()
+    )
     _ = path.write_text('include = ["imported.toml"]\n\n[host.pelle]\n')
     with pytest.raises(ValueError, match=r"host \['pelle'\] are in .*inventory.toml"):
         _ = Inventory.load(path)

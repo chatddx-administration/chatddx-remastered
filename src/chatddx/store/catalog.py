@@ -466,11 +466,13 @@ class Catalog:
     def recipe_language(self, recipe: Recipe) -> str | None:
         return language.recipe_language(self._rows, recipe)
 
-    def adopt(self, case: str, by: int, *, owner: int | None = None) -> int:
+    def adopt(
+        self, case: str, by: int, *, owner: int | None = None, by_content: bool = True
+    ) -> int:
         with self._conn.transaction():
             if (family := families.family_of(self._rows, case)) is not None:
                 return family
-            vignette = families.check_adoptable(self._rows, case)
+            vignette = families.check_adoptable(self._rows, case, by_content=by_content)
             row = self._conn.execute(
                 "INSERT INTO catalog.family (by) VALUES (%s) RETURNING id", (by,)
             ).fetchone()

@@ -1,4 +1,4 @@
-from .errors import Ambiguous, Conflict, MovedOn, NotFound
+from .errors import Ambiguous, Conflict, MovedOn, NotFound, OverQuota
 from .outcome import Outcome, outcome, usage
 from .variation import OPTIONAL, PARTS, TriedVariation
 from .view import (
@@ -27,6 +27,7 @@ __all__ = [
     "MovedOn",
     "NotFound",
     "Outcome",
+    "OverQuota",
     "Proposed",
     "Reach",
     "Saved",

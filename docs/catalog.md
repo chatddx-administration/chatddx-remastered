@@ -250,6 +250,15 @@ name) and the fingerprint of its content. The latest binding is the current one.
 A case belongs to the family with a binding, current or earlier, that matches its vignette exactly. So cases from
 before a repair keep their family.
 
+```
+AGENT: CHANGE
+Typed texts can be the same, and never move (src/chatddx/catalog/families.py:check_adoptable, `by_content`).
+---
+*Adopting* a case gives its family, or creates one bound to its vignette and owned by whoever adopts it, unless they
+name someone else. A vignette that would give another family's current place new content, or its content a new name,
+isn't adopted: that calls for a repair, not a new family. A source whose texts never move, as a database source's,
+adopts by id alone, since the same text typed twice is two vignettes.
+```
 *Adopting* a case gives its family, or creates one bound to its vignette and owned by whoever adopts it, unless they
 name someone else. A vignette that would give another family's current place new content, or its content a new name,
 isn't adopted: that calls for a repair, not a new family.

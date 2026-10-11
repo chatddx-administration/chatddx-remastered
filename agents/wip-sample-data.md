@@ -164,6 +164,9 @@ them as a World would:
   that they decode as UTF-8, and pins one fingerprint over all their fingerprints, so leaving 7893656 takes a
   deliberate edit.
 
+The sample World also declares `typed`, a `database` source for what people type (agents/wip-portal.md, "Typed
+cases"), cleared for both fake endpoints. It holds nothing until someone types a case.
+
 `init-data` takes the World from `--world DIR`, or `CHATDDX_WORLD`, which `.env-container` and `.env-devshell` set to `worlds/sample`.
 
 ### Beyond the old inventory
