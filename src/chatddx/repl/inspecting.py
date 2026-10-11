@@ -230,8 +230,8 @@ def _show_component(
     bench = repl.bench
     header = Text(f"{word} {name}", style="bold")
 
-    if about is not None and about.owner != bench.person.id:
-        _ = header.append(f", {bench.login(about.owner)}'s")
+    if about is not None and (owner := bench.owner(about)):
+        _ = header.append(f", {owner}'s")
 
     _ = header.append(f"  {short(digest)}", style=LABEL)
     repl.console.print(header)
@@ -353,8 +353,8 @@ def _show_case(repl: Repl, name: str | None) -> None:
     case = resolve(bench.get, family.case, Case)
     header = Text(f"case {family.name}", style="bold")
 
-    if family.about.owner != bench.person.id:
-        _ = header.append(f", {bench.login(family.about.owner)}'s")
+    if owner := bench.owner(family.about):
+        _ = header.append(f", {owner}'s")
 
     _ = header.append(f"  {short(family.case)}", style=LABEL)
     repl.console.print(header)

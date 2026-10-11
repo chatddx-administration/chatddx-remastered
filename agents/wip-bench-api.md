@@ -160,8 +160,8 @@ Frozen dataclasses that `Bench` returns.
 | `about(thread: int) -> About` | `Catalog.about` of the thread. |
 | `holder(word: str, digest: str) -> tuple[Edit, About] \| None` | The first of `threads(word)` whose head is `digest`, of the person's own if any; `None` when none is. |
 
-`thread` looks among the threads of each kind `KINDS[word]` names, where each named thread is called both `NAME` and
-`<owner's login>/NAME`:
+`thread` looks among the threads of each kind `KINDS[word]` names, where each named thread is called both `NAME` and,
+qualified, `<owner's login>/NAME` (`_qualified`, which gives nothing for a thread without a name or an owner):
 1. A name nothing is called is replaced by its one variant `model` may use, `NAME (LANGUAGE)`, `NAME (MODEL)` or
    `NAME (LANGUAGE, MODEL)` (`chatddx.catalog.variants_for`); several raise `Ambiguous("<word> '<name>' is made in
    more than one language: <names>")`.
@@ -171,8 +171,7 @@ Frozen dataclasses that `Bench` returns.
    threads are made per model under it. Without `model`, those names are its `per_model`.
 4. Otherwise the thread is found by name among those of its kind, as `_named` finds it:
    - among the threads called `name`: the person's own when they own any, else all of them;
-   - when none is called `name` and it holds `/`, it is read as `<login>/<rest>`, and when a person has that login,
-     among theirs called `<rest>`;
+   - when none is called `name`, among those whose qualified name it is, the same way;
    - exactly one is returned; several raise `Ambiguous("<word> '<name>' names <n>; name one as OWNER/NAME")`, none
      `NotFound("no <word> '<name>' for <login>")`.
 

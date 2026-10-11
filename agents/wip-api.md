@@ -3,7 +3,7 @@
 A candidate for `docs/api.md`. Its reference is `agents/wip-api-api.md`, a candidate for `docs/api-api.md`; below,
 those two names mean these two files until they move. What is still open is in "Outstanding", at the end, which
 stays behind when they do. The plan this was rewritten from, with the old API's survey and the options weighed, is
-`agents/wip-api.md` at cae55ad.
+`agents/wip-api.md` at 100a078.
 
 The API is a person's view of the rig and runner over HTTP:
 They see the threads and families they own or that are shared with them, the World's endpoints and models, and

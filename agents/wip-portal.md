@@ -100,7 +100,7 @@ API where a page needs feedback without a reload. The portal consumes the bench,
 Set aside:
 - **Keeping the old portal, Django and all.** Its pages are `ModelAdmin`s over the old models, which remastered doesn't
   have; Django would bring a second user table, session table and migration history; and querying models from the pages
-  is how the old project copied its rules into every edge (`agents/wip-bench.md` at c6b3d68, "The old bench"). What
+  is how the old project copied its rules into every edge (`agents/wip-bench.md` at d5ebf52, "The old bench"). What
   carries over is its manual, as a spec, and its ways of showing things: the version timeline, the line that says where
   a save goes, live checks, the confirmation before a batch, the run's page.
 - **A PWA.** Offline buys nothing, and what is kept offline is a destination for sensitive data

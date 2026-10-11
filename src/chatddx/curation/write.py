@@ -211,7 +211,7 @@ class _Init:
         lines: list[str] = []
         for subject in subjects:
             about = known[subject]
-            if about.owner != self.archive.id or about.deleted:
+            if not about.owned_by(self.archive.id):
                 continue
             if subject.thread is not None and subject.thread not in threads:
                 kind = self.catalog.thread(subject.thread).kind
@@ -304,7 +304,7 @@ def wipe(conn: Connection, user: Person) -> list[str]:
         catalog = Catalog(conn)
         for subject in catalog.involving(user.id):
             about = catalog.about(subject)
-            if about.owner == user.id and not about.deleted:
+            if about.owned_by(user.id):
                 catalog.note(subject, Entry(field=EntryField.DELETED), user.id)
                 deleted[_what(catalog, subject)] += 1
             if user.id in about.collaborators:

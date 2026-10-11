@@ -3,7 +3,8 @@
 A candidate for `docs/bench.md`. Its reference is `agents/wip-bench-api.md`, a candidate for `docs/bench-api.md`;
 below, those two names mean these two files until they move. What is still open is in "Outstanding", at the end, which
 stays behind when they do. The plan this was rewritten from, with its phases, the options weighed for each decision
-and the survey of the old bench, is `agents/wip-bench.md` at c6b3d68.
+and the survey of the old bench, is `agents/wip-bench.md` at d5ebf52. What was decided after it, what a person is
+scored against, is described here.
 
 The bench is what one person sees and does, whatever the edge: the threads, families and runs they see, the World's
 endpoints, the variation they are trying, and what is written on their behalf. Its edges are the repl
@@ -184,12 +185,8 @@ check before the other has written.
 What is still open. It doesn't move to `docs/`.
 
 ### Start with this
-1. **Adopting the docs.** This file and `agents/wip-bench-api.md`, as `docs/bench.md` and `docs/bench-api.md`. The
-   `AGENT:` suggestions that scoring against one's own left in `docs/catalog.md` ("Threads and edits", "Owners",
-   "Concurrent writers"), `docs/catalog-api.md` and `docs/curation.md` ("Giftbag", "Picking a variant by the case's
-   language") wait on the same word.
+1. **Adopting the docs.** This file and `agents/wip-bench-api.md`, as `docs/bench.md` and `docs/bench-api.md`.
 2. **Writes for authoring** (below): not planned yet. The portal's authoring and swift wait on them.
-3. **The person rules left to consolidate** (below): small, and best done before the writes for authoring add more.
 
 ### Writes for authoring
 The bench writes configurations (`save`, `fork`, `edit`), runs (`start`) and scores (`score`), and nothing else. The
@@ -214,21 +211,6 @@ leaves its user nothing to be scored against. And once people write expectations
 own for a sample case is refused by the catalog's rule, which fails `init-data`; it should keep theirs, as it keeps a
 fork they already have.
 
-### The person rules left to consolidate
-Found when the refactor that moved the person rules into `identity` and `About` was checked, at c6b3d68:
-- **"Live and owned" written out** where `About.owned_by` says it: `src/chatddx/catalog/threads.py:find`, with an
-  owner, and `src/chatddx/curation/write.py`, `wipe` and `_Init.leftovers`.
-- **"Is it theirs" written out** where `Bench.owner` says it: the headers of a thread and of a case in
-  `src/chatddx/repl/inspecting.py` compare owners to add "<login>'s".
-- **`OWNER/NAME` read twice**: `Bench.thread` builds every `LOGIN/NAME` to tell which kind holds a name, and
-  `Bench._named` splits the name again to find the thread.
-- **`About.owned_by` compares owners itself**, beside `sees` in `identity`. It is one comparison, so a function in
-  `identity` for it would only add a name.
-
-Curation's other owner checks, which count deleted subjects too (`_Init.put`, the giftbag,
-`src/chatddx/curation/repair.py`), recognise the archive's records rather than decide what a person sees, and stay as
-they are.
-
 ### Takes
 A take is the agent's recommendation, built on but not decided.
 - **S5. A bench lasts one session.** Its caches of logins and models make it last as long as a request or a repl. A
@@ -242,7 +224,11 @@ A take is the agent's recommendation, built on but not decided.
   (`src/chatddx/catalog/threads.py:picked`, `Bench._named`), and "several" isn't the same there: two threads of one
   name are two things to refer to, while two threads of one head are one answer.
 - **Curation keeps its own check.** `_Init.put` finds the archive's one expectation thread for a case to edit, in any
-  schema and deleted or not. That is how it recognises its thread, which the catalog's rule doesn't replace.
+  schema and deleted or not. That is how it recognises its thread, which the catalog's rule doesn't replace. Its other
+  owner checks that count deleted subjects too, the giftbag's and `src/chatddx/curation/repair.py`'s, recognise the
+  archive's records the same way, rather than decide what a person sees.
+- **`About.owned_by` compares owners itself**, beside `sees` in `identity`. It is one comparison, so a function in
+  `identity` for it would only add a name.
 - **A facade can still come later.** A bench every edge goes through, checked by an import test, would give one API
   for every edge, but most of it would pass calls through, and the ops commands would need an exemption. This bench is
   the person-scoped half of one. "Rig", the name once proposed for it, is the glossary's name for the whole of chatddx

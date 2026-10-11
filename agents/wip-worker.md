@@ -185,4 +185,4 @@ Assuming the takes.
 - From `agents/wip-portal.md`: "Below the UI", 1, runs that outlive the request, and the worker's part of "The batch
   planner and the worker".
 - From `agents/wip-runner.md`, "Afterwards": "Resuming" and "`max_jobs` across runs".
-- From `agents/wip-api.md` at cae55ad, "Open": "Long requests".
+- From `agents/wip-api.md` at 100a078, "Open": "Long requests".

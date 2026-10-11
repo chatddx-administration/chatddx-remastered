@@ -171,8 +171,8 @@ class Bench:
             kind: {
                 address
                 for _, a in found
-                if a.name is not None
-                for address in (a.name, f"{self.login(a.owner)}/{a.name}")
+                for address in (a.name, self._qualified(a.name, a.owner))
+                if address is not None
             }
             for kind, found in seen.items()
         }
@@ -202,22 +202,23 @@ class Bench:
             case _:
                 raise Ambiguous(f"{word} {name!r} names a {' and a '.join(kinds)}")
 
+    # A name as `OWNER/NAME`, by which it is found when nothing has the whole name.
+    def _qualified(self, name: str | None, owner: int | None) -> str | None:
+        if name is None or owner is None:
+            return None
+        return f"{self.login(owner)}/{name}"
+
     # The one of `seen` called `name`: the person's own, else the one shared with them.
     # A name is matched whole first, since names may hold a slash, as
-    # `plan (Qwen/Qwen3-8B-AWQ)` does; only then is it read as `OWNER/NAME`.
+    # `plan (Qwen/Qwen3-8B-AWQ)` does; only then as `OWNER/NAME`.
     def _named[T](
         self, seen: list[tuple[T, str | None, About]], name: str, word: str
     ) -> T:
-        called = [(found, a.owner) for found, n, a in seen if n == name]
-        if not called and "/" in name:
-            login, rest = name.split("/", 1)
-            owner = self._people.find(login)
-            if owner is not None:
-                called = [
-                    (f, a.owner)
-                    for f, n, a in seen
-                    if n == rest and a.owner == owner.id
-                ]
+        called = [(found, a.owner) for found, n, a in seen if n == name] or [
+            (found, a.owner)
+            for found, n, a in seen
+            if self._qualified(n, a.owner) == name
+        ]
         match preferred(self.person.id, called):
             case [one]:
                 return one

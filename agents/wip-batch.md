@@ -56,7 +56,7 @@ https://github.com/chatddx-administration/chatddx/blob/504792cbeb09508f2c52912be
 - **Readiness is findings**: warnings, never refusals (`docs/chatddx.md`, "Compromises"; `Bench.findings`). What holds
   a variation back is the gate's refusal (`src/chatddx/runner/gate.py`), or a part that can't be set
   (`TriedVariation.set`'s `ValueError`). "Save it as your own first" is gone: any digest runs (`agents/wip-bench.md`
-  at c6b3d68, "The old bench").
+  at d5ebf52, "The old bench").
 - **Seeds are explicit**: a trial has at least one, and a greedy trial still hashes its seeds; `render` sends none for
   a greedy skeleton (`agents/wip-repl.md`, D3). "Unseeded" is gone. Several seeds are replicates of one trial, not an
   axis to cross.

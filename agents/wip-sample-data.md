@@ -335,7 +335,7 @@ Take, by piece:
 - **The web**: patched in the process that runs the tools, as before: `web_search` reaches DuckDuckGo through
   `urllib.request.urlopen` (`src/chatddx/tools/web_search.py`), and the tools run in the runner's process. A setting for
   the search URL would let the fake serve the web instead, but nothing else needs one.
-- **The driver**: `src/chatddx/samples/`, an edge over the bench, as `agents/wip-bench.md` at c6b3d68 ("The landscape,
+- **The driver**: `src/chatddx/samples/`, an edge over the bench, as `agents/wip-bench.md` at d5ebf52 ("The landscape,
   at phase 1") lists it. For each script: the variation (`Bench.configuration`, `Bench.variation`), the scripted fake
   served in a thread at the endpoint's address, `Bench.start` with the case and seed, `Running.send`, `Running.finish`
   and `Bench.score`.

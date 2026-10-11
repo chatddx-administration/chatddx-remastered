@@ -80,8 +80,7 @@ def find(rows: Reader, kind: str, name: str, *, owner: int | None = None) -> lis
         i
         for i in ids
         if (a := known[Subject(thread=i)]).name == name
-        and not a.deleted
-        and (owner is None or a.owner == owner)
+        and (not a.deleted if owner is None else a.owned_by(owner))
     ]
 
 
