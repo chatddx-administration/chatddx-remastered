@@ -206,7 +206,6 @@ class Store:
             ),
         )
 
-    # Newest first, as are the other listings of runs and scores.
     def started(self, runs: Collection[UUID]) -> list[RunStarted]:
         return _newest(
             RunStarted.parse(p)
@@ -253,7 +252,6 @@ class Store:
             )
         )
 
-    # The components of a kind whose closure holds a digest, the digest itself included.
     def reaching(self, digest: str, kind: str) -> list[str]:
         rows = self._conn.execute(
             """
@@ -285,7 +283,6 @@ class Store:
     def _payloads(self, query: LiteralString, key: object) -> list[str]:
         return [str(p) for (p,) in self._conn.execute(query, (key,))]
 
-    # A finished row may be stored without its started row (migrations/0004-t0-ledger.sql).
     def _stages(
         self, query: LiteralString, log: str, key: UUID
     ) -> tuple[str, list[str]]:

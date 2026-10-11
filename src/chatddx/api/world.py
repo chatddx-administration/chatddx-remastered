@@ -2,6 +2,8 @@ from fastapi import APIRouter
 
 from chatddx.bench import Bench, NotFound
 from chatddx.inventory import EndpointSpec, url_of
+from chatddx.scorers.scorer import NO_PARAMS
+from chatddx.scorers.shipped import SCORERS
 from chatddx.store.catalog import Rows
 
 from . import schemas
@@ -10,8 +12,6 @@ from .people import BenchDep
 router = APIRouter(tags=["world"])
 
 
-# An endpoint as the World declares it, and what the store says of its engine; what
-# can't be told is said in `problem`.
 def endpoint_of(bench: Bench, name: str, spec: EndpointSpec) -> schemas.Endpoint:
     title = model = url = problem = None
     try:
@@ -51,7 +51,6 @@ def endpoint(bench: BenchDep, name: str) -> schemas.Endpoint:
     return endpoint_of(bench, name, spec)
 
 
-# The models the facts know or an endpoint serves, with the endpoints serving each.
 @router.get("/models")
 def models(bench: BenchDep) -> list[schemas.Model]:
     serving: dict[str, list[str]] = {}
@@ -84,3 +83,19 @@ def component(bench: BenchDep, digest: str) -> schemas.Component:
         title=bench.title(digest),
         body=bench.get(digest).model_dump(mode="json"),
     )
+
+
+@router.get("/scorer-code")
+def scorer_code(_: BenchDep) -> list[schemas.ScorerCode]:
+    return [
+        schemas.ScorerCode(
+            entry_point=entry_point,
+            version=code.version,
+            metrics=[
+                schemas.Metric(name=name, measures=m.measures, params=m.params)
+                for name, m in sorted(code.metrics.items())
+            ],
+            params=NO_PARAMS if code.params is None else code.params,
+        )
+        for entry_point, code in sorted(SCORERS.items())
+    ]

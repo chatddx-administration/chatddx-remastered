@@ -2,13 +2,13 @@ import pytest
 from pydantic import JsonValue
 
 from chatddx.bench import Bench
-from chatddx.catalog import Subject
+from chatddx.catalog import Entry, EntryField, Subject
 from chatddx.factors.base import resolve
 from chatddx.factors.scoring import Expectation
 from chatddx.repl.commands import complete
 from chatddx.repl.shell import Repl
-from chatddx.repl.test.sample import FREE_TEXT, QWEN, Say
-from chatddx.store import Catalog, Store
+from chatddx.repl.test.sample import FREE_TEXT, QWEN, Say, line_of
+from chatddx.store import Catalog, People, Store
 
 pytestmark = pytest.mark.wip
 
@@ -92,3 +92,64 @@ def test_the_runs_left_to_score_complete(repl: Repl, bench: Bench, say: Say):
     _ = say("score")
 
     assert repl.completions()["score:run"] == []
+
+
+def _dropped(bench: Bench, name: str) -> tuple[str, str]:
+    case = bench.family(name).case
+    [schema] = bench.expectation_schemas(case)
+    catalog, person = Catalog(bench.conn), bench.person.id
+    [mine] = catalog.expectation_choices([case], person, schema)[case]
+    catalog.note(Subject(thread=mine), Entry(field=EntryField.DELETED), person)
+    return case, schema
+
+
+@pytest.mark.slow
+def test_take_takes_the_expectations_shared_for_the_cases_without_one_of_yours(
+    bench: Bench, say: Say
+):
+    _ = _dropped(bench, "Dutchfall11w")
+    shown = say("show case Dutchfall11w")
+    assert "none of yours; shared by archive: take" in line_of(shown, "expectation")
+
+    written = say("take dutch-fall")
+    assert "take: 30 cases tagged dutch-fall, under targets" in written
+    assert "1: Dutchfall11w" in line_of(written, "taken")
+    assert "29: DutchFall10w Dutchfall12w" in line_of(written, "yours already")
+    assert "aaa | (abdominal | aortic) & aneurysm" in line_of(
+        say("show case Dutchfall11w"), "expectation.diagnosis.pattern"
+    )
+
+    written = say("take dutch-fall")
+    assert "none" in line_of(written, "taken")
+    assert "30: DutchFall10w Dutchfall11w" in line_of(written, "yours already")
+
+
+@pytest.mark.slow
+def test_take_names_the_cases_shared_by_several_owners(bench: Bench, say: Say):
+    case, schema = _dropped(bench, "Dutchfall11w")
+    store, catalog = Store(bench.conn), Catalog(bench.conn)
+    bob = People(bench.conn).add("bob", "Bob")
+    registry = store.load([schema, case])
+    theirs = registry.add(
+        Expectation(case=case, expectation_schema=schema, data={"diagnosis": "x"})
+    )
+    _ = store.add(registry, [theirs])
+    shared = catalog.create(theirs, bob.id).thread
+    to_alice = Entry(field=EntryField.COLLABORATOR, person=bench.person.id)
+    catalog.note(Subject(thread=shared), to_alice, bob.id)
+
+    written = say("take dutch-fall")
+    assert "none" in line_of(written, "taken")
+    assert "Dutchfall11w (archive bob): take from OWNER" in line_of(
+        written, "to choose from"
+    )
+
+    written = say("take from bob dutch-fall")
+    assert "under targets from bob" in written
+    assert "1: Dutchfall11w" in line_of(written, "taken")
+    assert bench.expectation(case, schema) == store.get(theirs)
+
+    written = say("take from", "take from nobody", "take no-such-tag")
+    assert "usage: take [from OWNER] [TAG...]" in written
+    assert "no person 'nobody'" in written
+    assert "no case tagged no-such-tag for alice" in written

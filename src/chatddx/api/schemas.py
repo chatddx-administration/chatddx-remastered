@@ -1,9 +1,11 @@
+from collections.abc import Mapping
 from datetime import datetime
 from typing import Annotated, ClassVar, Literal, Self
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field, JsonValue, model_validator
 
+from chatddx import catalog
 from chatddx.bench import PARTS, Outcome
 from chatddx.factors import base as factors
 from chatddx.identity import Person, Role
@@ -39,6 +41,35 @@ class SignedIn(_Schema):
     person: Me
 
 
+class Labels(_Schema):
+    views: list[str | None] = Field(
+        default_factory=list[str | None], description="by position; null for none"
+    )
+    resources: list[str | None] = Field(
+        default_factory=list[str | None], description="by position; null for none"
+    )
+
+    def given(self) -> catalog.Labels:
+        parts: tuple[tuple[catalog.Part, list[str | None]], ...] = (
+            ("view", self.views),
+            ("resource", self.resources),
+        )
+        return {
+            (part, position): label
+            for part, labels in parts
+            for position, label in enumerate(labels)
+            if label is not None
+        }
+
+    @classmethod
+    def of(cls, labels: Mapping[tuple[catalog.Part, int], str]) -> Self:
+        def listed(part: catalog.Part) -> list[str | None]:
+            held = {p: v for (k, p), v in labels.items() if k == part}
+            return [held.get(p) for p in range(max(held, default=-1) + 1)]
+
+        return cls(views=listed("view"), resources=listed("resource"))
+
+
 class Edit(_Schema):
     id: int
     digest: str
@@ -46,6 +77,7 @@ class Edit(_Schema):
     based_on: int | None
     by: str
     at: datetime
+    labels: Labels | None = Field(default=None, description="a scorer edit's")
 
 
 class Thread(_Schema):
@@ -64,6 +96,19 @@ class ThreadDetail(Thread):
     language: str | None
     forked_from: int | None
     recipe: JsonValue
+    deleted: bool
+
+
+class Said(_Schema):
+    name: str | None = Field(
+        None, description="null takes the name away, and the title takes over"
+    )
+    description: str | None = Field(None, description="replaced, never taken away")
+    tags: list[str] | None = Field(None, description="its tags")
+    collaborators: list[str] | None = Field(
+        None, description="the logins it is shared with"
+    )
+    deleted: bool | None = None
 
 
 type Chunk = Annotated[
@@ -72,7 +117,6 @@ type Chunk = Annotated[
 ]
 
 
-# The parts a variation replaces over a configuration; a part not given is its own.
 class Parts(_Schema):
     instructions: Chunk = None
     few_shot: Chunk = None
@@ -99,13 +143,59 @@ class Varying(Parts):
     seed: int | None = Field(None, description="drawn when not given")
 
 
+type ComponentBody = Annotated[
+    dict[str, JsonValue],
+    Field(
+        description="a component's JSON as GET /api/components/{digest} gives its "
+        + "body, kind included"
+    ),
+]
+type Language = Annotated[
+    str | None,
+    Field(description="the language of the text the component holds, such as 'sv'"),
+]
+
+
+class NewThread(_Schema):
+    component: ComponentBody | None = None
+    recipe: dict[str, JsonValue] | None = Field(
+        None,
+        description="for a new configuration: the recipe's parts by digest, its "
+        + "purpose and its appendix layout, as a configuration's recipe reads",
+    )
+    name: str = Field(min_length=1)
+    language: Language = None
+    labels: Labels | None = Field(None, description="for a scorer")
+
+    @model_validator(mode="after")
+    def _one(self) -> Self:
+        if (self.component is None) == (self.recipe is None):
+            raise ValueError("a new thread holds a component or a recipe, not both")
+        return self
+
+
 class NewFork(_Schema):
     name: str = Field(min_length=1)
     parts: Parts = Parts()
+    component: ComponentBody | None = Field(
+        None, description="what the fork starts from in place of the head"
+    )
+    language: Language = None
+    labels: Labels | None = Field(
+        None, description="for a scorer; a scorer forked as it is keeps the head's"
+    )
 
 
 class NewEdit(_Schema):
+    head: int = Field(description="the edit the change was made on: the head seen")
     parts: Parts = Parts()
+    component: ComponentBody | None = None
+    language: Language = None
+    labels: Labels | None = Field(
+        None,
+        description="for a scorer; without them, the head's when the scorer is the "
+        + "head's, else none",
+    )
 
 
 class Part(_Schema):
@@ -127,8 +217,45 @@ class Finding(_Schema):
         return cls.model_validate(finding.model_dump())
 
 
-# What one view of a scorer gets from the variation: whether its output offers what the
-# view reads, and the families without an expectation it picks something from.
+class Varied(_Schema):
+    path: str
+    base: JsonValue
+    fork: JsonValue
+
+
+class Proposal(_Schema):
+    base: Edit
+    origin_head: Edit
+    varies: list[Varied]
+    recipe: JsonValue = Field(description="for a configuration, what it compiles from")
+    component: JsonValue = Field(description="for another kind, its body")
+    digest: str
+    compilation: str | None
+
+
+class NewFollow(_Schema):
+    head: int = Field(description="the edit the change was made on: the head seen")
+    language: Language = None
+
+
+class MadeThread(ThreadDetail):
+    findings: list[Finding]
+
+
+class MadeEdit(Edit):
+    findings: list[Finding]
+    cases: dict[str, str] = Field(
+        default_factory=dict,
+        description="for an appendix: each case that held the old version, with its "
+        + "replacement",
+    )
+
+
+class NewCarry(_Schema):
+    head: int = Field(description="the edit the change was made on: the head seen")
+    case: str = Field(description="another case of the expectation's family")
+
+
 class Reach(_Schema):
     scorer: int
     name: str
@@ -137,6 +264,7 @@ class Reach(_Schema):
     offered: bool
     cases: int
     missing: list[int]
+    choosing: list[int]
 
 
 class Variation(_Schema):
@@ -159,14 +287,77 @@ class Family(_Schema):
     case: str
 
 
-# The expectation the person's case is scored against under one schema, or why there's
-# none to tell: several to choose from.
 class Expected(_Schema):
     expectation_schema: str
     title: str
     expectation: str | None
     data: JsonValue
     ambiguous: str | None
+    shared: list[Thread] = Field(
+        description="the expectation threads of others, shared with the person, they "
+        + "could take"
+    )
+
+
+class NewTakes(_Schema):
+    families: list[int] = Field(min_length=1, description="the cases, by family")
+    expectation_schema: str
+    owner: str | None = Field(None, description="a login: that owner's only")
+
+
+class Taken(_Schema):
+    taken: dict[int, int] = Field(description="the thread each was taken into")
+    kept: dict[int, int] = Field(description="the person's own, left as it is")
+    choosing: dict[int, list[int]] = Field(
+        description="shared by several owners: the threads to choose from"
+    )
+    missing: list[int] = Field(description="none shared")
+
+
+class NewTake(_Schema):
+    replace: bool = Field(
+        False,
+        description="delete the person's own expectation of the case under that "
+        + "schema, in the same write",
+    )
+
+
+class NewTyped(_Schema):
+    text: str = Field(description="the case as typed, kept as written")
+    name: str | None = None
+    language: str | None = Field(None, description="the language it is typed in")
+    source: str | None = Field(
+        None,
+        description="the database source it is kept in, when the World has several",
+    )
+
+
+class NewAppendix(_Schema):
+    text: str = Field(min_length=1)
+    name: str = Field(min_length=1)
+
+
+class FamilyCase(_Schema):
+    case: str
+    title: str
+    appendices: list[str]
+    default: bool = Field(description="the case the family stands for")
+    expectations: list[Expected]
+
+
+class NewCase(_Schema):
+    appendices: list[str] | None = Field(None, description="the appendices, in order")
+    replacing: str | None = Field(
+        None, description="or a case of the family left at an earlier vignette"
+    )
+
+    @model_validator(mode="after")
+    def _one(self) -> Self:
+        if (self.appendices is None) == (self.replacing is None):
+            raise ValueError(
+                "a case is built from appendices or replacing one, not both"
+            )
+        return self
 
 
 class FamilyDetail(Family):
@@ -180,8 +371,6 @@ class Vignette(_Schema):
     source: str
     id: str
     text: str
-    # Whether the source holds another text than the case was made from; unknown for a
-    # keyed fingerprint.
     drifted: bool | None
 
 
@@ -211,6 +400,23 @@ class Component(_Schema):
     body: JsonValue
 
 
+class Metric(_Schema):
+    name: str
+    measures: str
+    params: dict[str, JsonValue] = Field(
+        description="a JSON Schema for a view's params"
+    )
+
+
+class ScorerCode(_Schema):
+    entry_point: str
+    version: int
+    metrics: list[Metric]
+    params: dict[str, JsonValue] = Field(
+        description="a JSON Schema for the scorer's own params, which every view shares"
+    )
+
+
 class NewRun(_Schema):
     configuration: int
     parts: Parts = Parts()
@@ -219,6 +425,9 @@ class NewRun(_Schema):
     tags: list[str] | None = Field(
         None, description="or the cases of the families with any of these"
     )
+    cases: list[str] | None = Field(
+        None, description="or the cases themselves, each of a family's current ones"
+    )
     seed: int | None = Field(None, description="drawn when not given")
     score: bool = Field(
         True, description="under every scorer that applies, once it is finished"
@@ -226,8 +435,8 @@ class NewRun(_Schema):
 
     @model_validator(mode="after")
     def _cases(self) -> Self:
-        if (self.families is None) == (self.tags is None):
-            raise ValueError("a run takes families or tags, and not both")
+        if [self.families, self.tags, self.cases].count(None) != 2:
+            raise ValueError("a run takes one of families, tags or cases")
         return self
 
 
@@ -258,7 +467,6 @@ class Item(_Schema):
     completion_tokens: int
 
 
-# An item as it was recorded, which is case-derived.
 class ItemDetail(Item):
     why: str | None
     vignette: JsonValue
@@ -273,8 +481,6 @@ class ScoredItem(_Schema):
     value: float | None
 
 
-# A run's score under one scorer, or why it gave none: the values, without the scorer's
-# detail or findings, which may quote the answer.
 class Graded(_Schema):
     scorer: str
     name: str
@@ -299,9 +505,6 @@ class RenderedAgain(_Schema):
     replicate: int
     same: bool
     why: str | None
-
-
-# The data of each event of a run's stream, by the event's name.
 
 
 class RunStartedData(_Schema):

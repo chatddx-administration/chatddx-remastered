@@ -13,8 +13,6 @@ from .request import RUNTIME_KEYS, Skeleton, SkeletonRef
 Order = Literal["case_major@1", "replicate_major@1", "shuffled@1"]
 
 
-# Case order means nothing to a trial: the order items are sent in is the run's
-# (`Execution.order`).
 def _sorted(cases: tuple[str, ...]) -> tuple[str, ...]:
     return tuple(sorted(cases))
 
@@ -58,7 +56,6 @@ class Canary(Frozen):
             raise ValueError(f"canary body may not set {sorted(owned)}")
         return body
 
-    # As `render` does for a skeleton, but with no slots, and the seed sent when given.
     def render(
         self, *, model: str, return_token_ids: bool = True
     ) -> dict[str, JsonValue]:
@@ -79,16 +76,12 @@ class CanarySet(Component):
 CanarySetRef = Annotated[Digest, RefTo("canary_set")]
 
 
-# Execution changes outputs only on engines that aren't batch invariant, so it is
-# declared per run rather than as part of the trial.
 class Execution(Frozen):
     order: Order = "case_major@1"
     shuffle_seed: int | None = None
     concurrency: int = Field(default=1, ge=1)
     timeout_s: float | None = Field(default=None, gt=0)
     retries: int = Field(default=0, ge=0)
-    # A call answering this many tokens of nothing but whitespace in a row is cut short:
-    # a model that runs away would write them till its tokens or its context run out.
     whitespace_limit: int | None = Field(default=100, ge=1)
 
     @model_validator(mode="after")

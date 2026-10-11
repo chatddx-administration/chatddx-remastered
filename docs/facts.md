@@ -1,15 +1,13 @@
 # Facts
 
-To ask a model something, the rig needs to know things about it that a request doesn't say: how each reasoning
-level is expressed for this model, or that it's refused; which sampling its makers recommend for each level; which
-output contracts work with it and with what caveats. Facts are that knowledge, written by ops and developers, one
-model at a time.
+Facts about models are used to smooth over implementation details and make the models somewhat easier to compare:
+How each reasoning level is expressed for a model, which sampling its makers recommend for each level, which
+output contracts work with it and with what caveats.
 
-Facts are not factors (docs/factors.md, "Not factors"). They never reach the wire themselves: they write literal
-chunks before compilation, and they check chunks that are already written. No component refers to them, so no digest
-depends on them, and correcting a guessed fact changes nothing stored. A skeleton still means exactly what it sends.
+They never reach the wire themselves but write literal chunks before compilation so no digest depends on them.
+Correcting a guessed fact changes nothing stored, a skeleton still means exactly what it sends.
 
-This document describes what facts hold, what they are for and why. Names, fields, rules and finding codes are in the
+This document describes what facts hold, what they are for and why. Classes, fields, rules and finding codes are in the
 API, docs/facts-api.md. Facts build on the factors and nothing else, and the factors don't depend on them.
 
 ## Where facts come from

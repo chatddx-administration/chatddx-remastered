@@ -17,6 +17,7 @@ def test_endpoints_are_listed_with_their_engines_and_clearance(
         "Qwen/Qwen3-8B-AWQ",
         str(world.endpoints[QWEN].url),
         "sample",
+        "typed",
     ]
     assert line_of(written, GPT_OSS).split()[2] == "openai/gpt-oss-20b"
 
@@ -32,34 +33,33 @@ def test_configurations_are_listed_with_their_parts_and_whose_they_are(say: Say)
 
     assert header == [
         "configuration",
+        "instructions",
+        "few_shot",
         "prompt",
         "output",
         "sampling",
+        "passthrough",
+        "translations",
         "toolset",
         "owner",
     ]
-    assert rows == [
-        [
-            *FREE_TEXT.split(),
-            "case",
-            "free-text",
-            "(en)",
-            "recommended",
-            "(Qwen/Qwen3-8B-AWQ)",
-            "—",
-        ],
-        [
-            *FREE_TEXT.split(),
-            "case",
-            "free-text",
-            "(en)",
-            "recommended",
-            "(Qwen/Qwen3-8B-AWQ)",
-            "—",
-            "archive",
-        ],
+    row = [
+        *FREE_TEXT.split(),
+        "—",
+        "—",
+        "case",
+        "free-text",
+        "(en)",
+        "recommended",
+        "(Qwen/Qwen3-8B-AWQ)",
+        "—",
+        "—",
+        "—",
     ]
+    assert rows == [row, [*row, "archive"]]
     assert "web (en)" in line_of(written, "plan-web (en, Qwen")
+    guided = line_of(written, "free-text-guided (sv, Qwen")
+    assert "clinician (sv)" in guided and "sample (sv)" in guided
 
 
 def test_cases_are_listed_by_name_with_their_tags(say: Say):

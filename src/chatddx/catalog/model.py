@@ -1,5 +1,5 @@
 import re
-from collections.abc import Iterable
+from collections.abc import Iterable, Mapping
 from datetime import datetime
 from enum import StrEnum
 from typing import ClassVar, Literal, Self
@@ -65,6 +65,10 @@ def language_tag(value: str) -> str:
     return value
 
 
+class MovedOn(ValueError):
+    pass
+
+
 class EntryField(StrEnum):
     NAME = "name"
     DESCRIPTION = "description"
@@ -76,7 +80,7 @@ class EntryField(StrEnum):
 
 
 Part = Literal["view", "resource"]
-# What keeping a digest in a thread did (src/chatddx/store/catalog.py:Catalog.keep).
+Labels = Mapping[tuple[Part, int], str]
 Kept = Literal["created", "edited", "unchanged"]
 
 
@@ -176,7 +180,6 @@ class Entry(_Frozen):
 
     @model_validator(mode="after")
     def _shape(self) -> Self:
-        # A name is removed by an entry without a value, and the title takes over.
         text = self.field in (
             EntryField.DESCRIPTION,
             EntryField.TAG,
@@ -247,6 +250,9 @@ class About(_Frozen):
     def shows(self, person: int) -> bool:
         return not self.deleted and sees(person, self.owner, self.collaborators)
 
+    def owned_by(self, person: int) -> bool:
+        return not self.deleted and self.owner == person
+
 
 def _toggle[T](members: set[T], member: T, present: bool) -> None:
     if present:
@@ -255,7 +261,6 @@ def _toggle[T](members: set[T], member: T, present: bool) -> None:
         members.discard(member)
 
 
-# Rows are read back in the order they were written, so the last row for a key is the latest.
 def latest[K, V](rows: Iterable[tuple[K, V]]) -> dict[K, V]:
     return dict(rows)
 

@@ -8,15 +8,11 @@ PARTS = RECIPE_PARTS
 OPTIONAL = tuple(p for p in PARTS if not Recipe.model_fields[p].is_required())
 
 
-# A configuration, or a variation of it being tried: the configuration's head edit and
-# recipe, under the name the person called it by, with the recipe parts replaced over it.
 @dataclass(frozen=True)
 class TriedVariation:
     configuration: Edit
     name: str
     recipe: Recipe | None = None
-    # A chunk's digest, or None for an optional part taken out, with the name it was
-    # set by.
     parts: Mapping[str, tuple[str | None, str]] = field(
         default_factory=dict[str, tuple[str | None, str]]
     )

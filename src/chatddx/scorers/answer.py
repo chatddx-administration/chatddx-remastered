@@ -19,17 +19,11 @@ from chatddx.factors.request import (
 _FENCED = re.compile(r"```[^\n`]*\n(.*?)```", re.DOTALL)
 
 
-# What a response answered, as a scorer reads it. `value` is None when it gave no
-# answer; `problem` then says why, and otherwise where the answer breaks the output
-# schema, if it does.
 class Answer(NamedTuple):
     value: JsonValue | None
     problem: str | None = None
 
 
-# Reads a response by its skeleton's contract: a native answer is the content as JSON,
-# a tool answer the answer tool's arguments, and a text answer the content, or the
-# JSON in it when the output has a schema.
 def read(skeleton: Skeleton, response: Mapping[str, JsonValue] | None) -> Answer:
     if response is None:
         return Answer(None, "no response")
@@ -73,8 +67,6 @@ def _json(text: str, what: str) -> Answer:
     return Answer(value) if value is not None else Answer(None, f"{what} is null")
 
 
-# Best effort: the whole text, else the last fenced block that is JSON, else the last
-# JSON object or array in the text, since a model that thinks aloud answers last.
 def _embedded(text: str) -> Answer:
     whole = _json(text.strip(), "the content")
     if whole.value is not None:

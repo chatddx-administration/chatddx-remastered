@@ -11,6 +11,7 @@ from .model import (
     Edit,
     Entry,
     EntryField,
+    Labels,
     Part,
     Subject,
     Thread,
@@ -18,8 +19,6 @@ from .model import (
 )
 
 
-# Rows come back in the order they were written; nothing here picks the latest. The store
-# implements this over its tables (src/chatddx/store/catalog.py:Rows).
 class Reader(Protocol):
     def get(self, digest: str) -> Component: ...
 
@@ -41,7 +40,6 @@ class Reader(Protocol):
 
     def edits_holding(self, digests: Collection[str]) -> list[Edit]: ...
 
-    # Each entry with the person who wrote it.
     def entries(
         self, subjects: Collection[Subject]
     ) -> list[tuple[Subject, Entry, int]]: ...
@@ -52,7 +50,6 @@ class Reader(Protocol):
 
     def bindings_in(self, source: str) -> list[Binding]: ...
 
-    # The bindings in a vignette's source to its id or to its content.
     def bindings_sharing(self, vignette: Vignette) -> list[Binding]: ...
 
     def bound_to(
@@ -63,7 +60,7 @@ class Reader(Protocol):
 
     def languages(self, digests: Collection[str]) -> list[tuple[str, str]]: ...
 
-    def labels(self, scorer: str) -> list[tuple[Part, int, str]]: ...
+    def labels(self, edits: Collection[int]) -> list[tuple[int, Part, int, str]]: ...
 
 
 def heads_of(rows: Reader, threads: Collection[int]) -> dict[int, Edit]:
@@ -87,8 +84,6 @@ def abouts(rows: Reader, subjects: Collection[Subject]) -> dict[Subject, About]:
     return {s: About.of(e) for s, e in entries.items()}
 
 
-# The tags that hold on a subject now, each with who gave it: the writer of the latest
-# entry about it.
 def tags_given(rows: Reader, subject: Subject) -> dict[str, int]:
     given: dict[str, int] = {}
     for _, entry, by in rows.entries([subject]):
@@ -105,7 +100,5 @@ def about(rows: Reader, subject: Subject) -> About:
     return abouts(rows, [subject])[subject]
 
 
-def labels(rows: Reader, scorer: str) -> dict[tuple[Part, int], str]:
-    return latest(
-        ((part, position), value) for part, position, value in rows.labels(scorer)
-    )
+def labels(rows: Reader, edit: int) -> Labels:
+    return {(part, position): value for _, part, position, value in rows.labels([edit])}

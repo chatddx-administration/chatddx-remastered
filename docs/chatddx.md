@@ -70,7 +70,7 @@ It must be possible to deliver the cage together with the results, for scientifi
 ### Roles mentioned
 These roles are distinct and not overlapping, a person may inhabit more than one role.
 - **Clinicians:** Owners of vignettes and authors of Appendices and Expectations
-- **Researchers:** Authors of Sampling, Scorers and Trials
+- **Researchers:** Authors of Sampling, Judges and Trials, and of a scorer's views, free parameters and labels
 - **Developers:** Authors of schemas, canary sets, scoring and text-cleanup functions
 - **Ops**: Owners of engines and authors of the engine's components
 
@@ -79,8 +79,10 @@ These roles are distinct and not overlapping, a person may inhabit more than one
 - Conversely, simple and reliable scoring methods are needed to produce clean easily processed outputs, which will require strict and simple pattern matching.
 - Due to the sensitive nature of patient data passing through the orchestrator, a separate path is needed where data can be passed along revealing just enough for the orchestrator to fulfill its duty. Cases will enter the system de-identified from a predefined source.
 - Nothing can be expected of the vignettes: They may or may not include labs and imaging results, and may even lack basic details such as age or sex. The source exposes no revision identifier.
-- Portal interfaces for managing instructions, few-shots, prompts, output, sampling, reasoning, passthrough, recepies, appendices, expectations, trials, judges, scorings and starting and monitoring runs.
-- Engines, models, canary sets, expectation schemas and scorers are authored by ops or developers.
+- Portal interfaces for managing instructions, few-shots, prompts, output, sampling, reasoning, passthrough, recepies, appendices, expectations, trials, scorers, judges, scorings and starting and monitoring runs.
+- Engines, models, canary sets, expectation schemas and scoring code are authored by ops or developers and shipped. A
+  scorer's views, free parameters and labels are written by researchers in the portal, who pick its scoring code,
+  expectation schema and resources among those shipped.
 - a self-contained bundle that can be verified offline
 - scripts that can read the World to import factor parameters.
 - import scripts that fingerprint World inputs (model files, closure, chat template, vignettes) into factors.
@@ -106,6 +108,17 @@ Variations allow controlled experiments without the combinatorial explosion; the
 
 `src/chatddx/store/catalog.py:Catalog.variation` and `Catalog.proposal` (what a fork varies,
 and re-applying it when its origin moves), and `catalog.edit.based_on`.
+
+### Person-scoped cake
+Most of the control plane in chatddx is exercised as a person, and the functionality behind this is organized in three
+layers depending on what resources they require:
+
+- All *rules* that can be expressed as a pure functions (without store access) -> `identity`
+- All *procedures* that can be carried out from the catalog's rows alone -> `catalog`
+- All *operations* that needs to reach across the project -> `bench`
+
+This is referred to as the "Person-scoped cake". `identity` is currently underused and exploration of its usability is
+encouraged.
 
 ### On the table
 - The result from scorers needs to be aggregated and exported. Since python is well-suited for statistical analysis, processing the data into publishable results may become a requirement.
@@ -235,7 +248,7 @@ described below.
   - the run it scores;
   - the Scoring;
   - the rig's code version;
-  - the scorer code actually running (scorer_code).
+  - the version of the scorer's entry point actually running (scorer_version).
   - the execution settings of its judge calls
 2. Match each run item to its expectation. The item key's case is looked up among the scoring's expectations, whose
    case field is the same case reference. The scoring pass does it, and gives an item whose case has none no value.

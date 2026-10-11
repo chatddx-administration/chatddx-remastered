@@ -133,8 +133,11 @@ A fingerprint is a hash of content that must not be stored, such as a vignette. 
 keyed hash that names its key.
 
 ### Code
-Code is named by its distribution, its version and, optionally, its revision. Scorers and tools pin their code this way,
-compilations name their compiler, and bundles name the code that wrote them.
+Code is named by its distribution, its version and, optionally, its revision. Compilations name their compiler this
+way, bundles the code that wrote them, and runs and scores the code that ran them. Scorers and tools pin code chatddx
+ships instead: an entry point, and the version of it the code publishes, which its developers raise when what it does
+changes, as a cleanup step's name is (see "Text cleanup"). Only the code chatddx ships runs, at the version pinned, so
+a deploy changes no scorer or tool unless it raises a version.
 
 ### Storage
 Components are stored in one table for all kinds, plus one row per reference so that every reference gets a foreign key
@@ -207,8 +210,8 @@ An appendix can't be reused across vignettes, but it can appear in several cases
 case with a lab appendix and one without. A case's appendices go in a fixed order, which is part of the case. At send
 time they are joined into one text by the skeleton's appendix layout (see "Skeleton").
 
-Browsers submit CRLF line endings, so the portal normalizes line endings before an appendix is digested; nothing cleans
-it afterwards.
+Browsers submit CRLF line endings, so line endings are normalized to LF before an appendix is digested, whichever edge
+writes it; nothing cleans it afterwards.
 
 ### Text cleanup
 Text cleanup is an ordered list of steps from a closed set. Each step's name pins one behavior; a changed behavior gets
@@ -324,11 +327,14 @@ Since no other chunk can produce what a passthrough sets, a passthrough never cl
 Principal author: developers.
 
 A tool is a function the model may call between turns: a name, a description, a JSON Schema for its parameters, and the
-code that runs it. Its code is pinned like a scorer's, because what it returns is what the model reads next: a new
-implementation is a new tool, so a new skeleton and a new trial. What a tool returned is still recorded per run, since a
-tool such as a web search can answer differently from day to day: an observed factor.
+code that runs it, an entry point chatddx ships at the version it pins. Its code is pinned like a scorer's, because
+what it returns is what the model reads next: a new version is a new tool, so a new skeleton and a new trial. What a
+tool returned is still recorded per run, with the version it ran at, since a tool such as a web search can answer
+differently from day to day: an observed factor.
 
-Only the running chatddx can be run: a tool or a scorer pinned to other code is refused.
+Only code the running chatddx ships can be run, at the version pinned: a tool or a scorer that pins an entry point it
+doesn't ship, or another version, is refused. Naming an entry point picks among the shipped ones, so a scorer written
+by anyone runs only code developers shipped.
 
 ### Toolset
 Principal author: researchers.
@@ -544,16 +550,24 @@ Building an expectation doesn't check its data against its schema. Lints do (see
 to do with data that fails.
 
 ### Scorer
-Principal author: researchers.
+Principal authors: developers, who write the scoring code and ship it with the project, and researchers, who write the
+views, the free parameters where the code publishes a schema for them, and the labels, and pick the code, the
+expectation schema and the resources.
 
-A scorer pins scoring code written by developers. It declares:
+- the entry point of the scoring code chatddx ships, and the version of it it pins;
 - the code, and the function in it that does the scoring;
 - the expectation schema it consumes;
 - an ordered list of views;
 - ordered resources, such as synonym tables or ontology releases, pinned by digest;
 - free parameters.
 
-Views and resources are referred to by position; their labels live in the catalog.
+Views and resources are referred to by position; their labels live in the catalog, with the edit of the scorer's
+thread they were written with.
+
+The scoring code publishes its version and its metrics, each with what it measures and a JSON Schema for the
+parameters a view gives it, and optionally a schema for the parameters every view shares. A scorer is refused when its
+code isn't shipped at the version it pins, when a view names a metric the code doesn't publish, or when parameters
+don't fit the schema published for them; where nothing is published, no parameters are taken.
 
 The scoring function sees one view at a time: what the view picks from the answer (nothing when the run has no answer),
 what it picks from the expectation, and the parameters. It returns a value, or none, and a detail. Its interface is
@@ -563,7 +577,7 @@ The answer is read from the item's last response by the skeleton's contract: a n
 tool answer the answer function's arguments, and a text answer the content, or, when the output has a schema, the JSON
 in it. An answer that can't be read is no answer.
 
-Only the running chatddx can be run (see "Tool").
+Only shipped code runs.
 
 ### View
 A view scores one part of an output against one part of an expectation. It holds:
@@ -584,7 +598,8 @@ notes in expectations are for judges to read.
 Every scorer selects the same way, through its views.
 
 ### Judge
-Principal author: researchers.
+Principal author: researchers, who write the judge skeleton, as a configuration of purpose `judge`, and the seeds, and
+pick the engine and the fill rule.
 
 A judge is an LLM used as a metric: a judge skeleton, an engine, its own seeds, and a fill rule.
 
@@ -620,8 +635,7 @@ Keeping them out of the components means knowledge that changes between vLLM rel
 any digest.
 
 They look at:
-- pins that can move: a model revision that isn't a commit, a runtime that isn't a Nix store path, scorer code without a
-  revision;
+- pins that can move: a model revision that isn't a commit, a runtime that isn't a Nix store path;
 - views whose expectation selector can't pick anything from documents that follow the scorer's expectation schema. The
   check leans towards "reachable", so a finding is certain;
 - expectation schemas that can't be checked or break their draft, and expectations whose data fails its schema or can't
@@ -715,11 +729,8 @@ If expectations written as free text turn up, a view could split them too. Two w
   go up, and the two sides rarely need the same split.
 
 ### Finding code through packaging entry points
-Tools and scorers name their function in the component. Python packaging offers another way: the distribution declares
-its function in its own metadata, under a group for chatddx scorers or tools, and the runner looks it up there. The
-pinned distribution and version would then decide which function runs, with no field in the component. It would keep the
-choice with the code's authors, at the cost of being less visible in the factors, and tools and scorers should switch
-together.
+Today chatddx keeps the list of the code it ships in its code: `src/chatddx/scorers/shipped.py` and
+`src/chatddx/tools/shipped.py`, by the entry point a component names.
 
 ### Passthrough: an allow list, or lints
 A passthrough refuses a fixed list of options and lets everything else through. Two other ways:

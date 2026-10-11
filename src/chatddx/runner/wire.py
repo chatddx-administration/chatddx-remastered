@@ -11,7 +11,6 @@ from pydantic import JsonValue
 type Chunk = dict[str, JsonValue]
 
 
-# An error answer: an HTTP status other than 2xx, or an error sent in place of a chunk.
 class Rejected(Exception):
     def __init__(self, status: int, body: dict[str, JsonValue] | None) -> None:
         self.status: int = status
@@ -62,7 +61,6 @@ class Stream:
     def __iter__(self) -> Iterator[Chunk]:
         return chunks(self._response)
 
-    # Closing hangs up, which vLLM hears and aborts the request on.
     def close(self) -> None:
         self._response.close()
 
@@ -143,8 +141,6 @@ def _merge_call(calls: dict[int, dict[str, Any]], delta: JsonValue) -> None:
             into["arguments"] += arguments
 
 
-# Shaped as vLLM answers unstreamed. vLLM sends the prompt's token ids in the first
-# chunk only.
 def assemble(chunks: Iterable[Chunk]) -> dict[str, JsonValue]:
     head: dict[str, JsonValue] = {}
     tail: dict[str, JsonValue] = {}

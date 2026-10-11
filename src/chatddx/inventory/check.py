@@ -45,8 +45,6 @@ def _endpoint(
                 )
 
 
-# What starting, reaching or confirming an endpoint would refuse, for every endpoint at
-# once, and what nothing refuses but is likely a slip. `get` knows the engines.
 def check(inventory: Inventory, get: Resolver) -> list[Finding]:
     findings: list[Finding] = []
     local: dict[str, LocalEngine] = {}
@@ -59,8 +57,6 @@ def check(inventory: Inventory, get: Resolver) -> list[Finding]:
                 if isinstance(engine, LocalEngine):
                     local[name] = engine
 
-    # vLLM serves one model a process, so two local engines' endpoints at one address
-    # can't both be what they say.
     at: dict[str, list[str]] = {}
     for name in local:
         url = inventory.endpoint(name).url

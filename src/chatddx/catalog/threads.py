@@ -1,15 +1,50 @@
-from collections.abc import Sequence
+from collections.abc import Callable, Mapping, Sequence
 
 from pydantic import JsonValue
 
 from chatddx.factors.base import Component, canonical_bytes, iter_refs, resolve
 from chatddx.factors.kinds import parse_component
 from chatddx.factors.request import Compilation, Recipe
-from chatddx.factors.scoring import Expectation
+from chatddx.factors.scoring import Expectation, Scorer
 
 from .families import stale_cases
-from .model import THREAD_KINDS, About, Behind, Edit, Subject, Thread, Variation
+from .model import (
+    THREAD_KINDS,
+    About,
+    Behind,
+    Edit,
+    Entry,
+    EntryField,
+    Labels,
+    MovedOn,
+    Subject,
+    Thread,
+    Variation,
+    check_label,
+)
 from .read import Reader, abouts, heads_holding, heads_of
+
+
+def check_head(rows: Reader, thread: int, head: int) -> None:
+    current = history(rows, thread)[-1]
+    if current.id != head:
+        raise MovedOn(
+            f"thread {thread} has moved on since edit {head}: its head is edit "
+            + f"{current.id}"
+        )
+
+
+def check_labels(rows: Reader, thread_id: int, digest: str, labels: Labels) -> None:
+    if not labels:
+        return
+    kind = thread(rows, thread_id).kind
+    if kind != "scorer":
+        raise ValueError(f"a {kind} has no views or resources to label")
+    scorer = resolve(rows.get, digest, Scorer)
+    for (part, position), value in labels.items():
+        check_label(scorer, part, position)
+        if not value:
+            raise ValueError(f"the label of {part} {position} is empty")
 
 
 def check_threadable(kind: str) -> None:
@@ -70,8 +105,7 @@ def find(rows: Reader, kind: str, name: str, *, owner: int | None = None) -> lis
         i
         for i in ids
         if (a := known[Subject(thread=i)]).name == name
-        and not a.deleted
-        and (owner is None or a.owner == owner)
+        and (not a.deleted if owner is None else a.owned_by(owner))
     ]
 
 
@@ -90,45 +124,84 @@ def expectation_for(rows: Reader, case: str, person: int, schema: str) -> str | 
     return expectations_for(rows, [case], person, schema)[case]
 
 
-# The expectation a person scores each case against: the head of a thread of their own,
-# else of the one thread shared with them. The first case with several heads to choose
-# from is refused, naming the threads.
 def expectations_for(
     rows: Reader, cases: Sequence[str], person: int, schema: str
 ) -> dict[str, str | None]:
-    found: dict[str, str | None] = {}
-    for case, choices in expectation_choices(rows, cases, person, schema).items():
-        match sorted(set(choices.values())):
-            case []:
-                found[case] = None
-            case [digest]:
-                found[case] = digest
-            case _:
-                raise LookupError(
-                    f"case {case} has expectations to choose from, in threads "
-                    + ", ".join(str(t) for t in sorted(choices))
-                )
-    return found
+    return {
+        case: picked(case, choices)
+        for case, choices in expectation_choices(rows, cases, person, schema).items()
+    }
 
 
-# For each case, the threads its expectation is chosen from, with their heads: the
-# person's own, else every one they see. Only threads whose head is in `schema` count.
+def picked(case: str, choices: Mapping[int, str]) -> str | None:
+    match sorted(set(choices.values())):
+        case []:
+            return None
+        case [digest]:
+            return digest
+        case _:
+            raise LookupError(
+                f"case {case} has expectations to choose from, in threads "
+                + ", ".join(str(t) for t in sorted(choices))
+            )
+
+
 def expectation_choices(
     rows: Reader, cases: Sequence[str], person: int, schema: str
 ) -> dict[str, dict[int, str]]:
+    found: dict[str, dict[int, str]] = {c: {} for c in cases}
+    for case, edit, _ in _expecting(rows, cases, schema, lambda a: a.owned_by(person)):
+        found[case][edit.thread] = edit.digest
+    return found
+
+
+def expectations_shared(
+    rows: Reader, cases: Sequence[str], person: int, schema: str
+) -> dict[str, list[tuple[Edit, About]]]:
+    found: dict[str, list[tuple[Edit, About]]] = {c: [] for c in cases}
+    shared = _expecting(
+        rows, cases, schema, lambda a: a.shows(person) and a.owner != person
+    )
+    for case, edit, about in shared:
+        found[case].append((edit, about))
+    return found
+
+
+def _expecting(
+    rows: Reader, cases: Sequence[str], schema: str, keep: Callable[[About], bool]
+) -> list[tuple[str, Edit, About]]:
     held = heads_holding(rows, rows.expectations(cases))
     known = abouts(rows, [Subject(thread=t) for t in held])
-    read = dict(rows.components([e.digest for e in held.values()]))
-    seen: dict[str, dict[int, str]] = {c: {} for c in cases}
-    own: dict[str, dict[int, str]] = {c: {} for c in cases}
-    for t, e in held.items():
-        about = known[Subject(thread=t)]
-        expectation = resolve(read.__getitem__, e.digest, Expectation)
-        if about.shows(person) and expectation.expectation_schema == schema:
-            seen[expectation.case][t] = e.digest
-            if about.owner == person:
-                own[expectation.case][t] = e.digest
-    return {case: own[case] or seen[case] for case in cases}
+    kept = {t: e for t, e in held.items() if keep(known[Subject(thread=t)])}
+    read = dict(rows.components([e.digest for e in kept.values()]))
+    found: list[tuple[str, Edit, About]] = []
+    for t in sorted(kept):
+        expectation = resolve(read.__getitem__, kept[t].digest, Expectation)
+        if expectation.expectation_schema == schema:
+            found.append((expectation.case, kept[t], known[Subject(thread=t)]))
+    return found
+
+
+def check_expectation(
+    rows: Reader, thread: int, digest: str | None = None, entry: Entry | None = None
+) -> None:
+    found = rows.thread(thread)
+    if found is None or found.kind != "expectation":
+        return
+    if entry is not None and entry.field not in (EntryField.OWNER, EntryField.DELETED):
+        return
+    entries = [e for _, e, _ in rows.entries([Subject(thread=thread)])]
+    about = About.of(entries if entry is None else [*entries, entry])
+    if about.owner is None or about.deleted:
+        return
+    expectation = resolve(rows.get, digest or head(rows, thread).digest, Expectation)
+    case, schema = expectation.case, expectation.expectation_schema
+    held = expectation_choices(rows, [case], about.owner, schema)[case]
+    if others := sorted(t for t in held if t != thread):
+        raise ValueError(
+            f"person {about.owner} owns an expectation of case {case} under that "
+            + f"schema already, in thread {others[0]}"
+        )
 
 
 def forks(rows: Reader, thread: int) -> list[int]:

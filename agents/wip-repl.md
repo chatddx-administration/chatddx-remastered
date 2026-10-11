@@ -179,8 +179,8 @@ count. Still a take.
 | mean and stderr (`scoring/metrics.py`) | `scorers/aggregate.py` | display only: analysis, not a score |
 | per-identity secrets | endpoint `credential`, only a name | refused for now (see "Left out") |
 
-The old `bench/` (the cell, `save`, `NotOwn`, `Ready`, `Trial`, `Sending`, `Outcome`) maps in `agents/wip-bench.md`,
-"The old bench".
+The old `bench/` (the cell, `save`, `NotOwn`, `Ready`, `Trial`, `Sending`, `Outcome`) maps in `agents/wip-bench.md` at
+d5ebf52, "The old bench".
 
 ## Commands
 | command | backed by | what changes |
@@ -205,6 +205,7 @@ The old `bench/` (the cell, `save`, `NotOwn`, `Ready`, `Trial`, `Sending`, `Outc
 | `replay [RUN]` | `Store.run`, its responses and the request re-rendered from the trial and source | the request isn't stored |
 | `score [RUN]` | scores runs with no score under the scoring as it would be built now | |
 | `scorers` | visible scorers, their views and labels, and `reaches` against the cell's output schema | |
+| `take [from OWNER] [TAG...]` | `Bench.take` of the tagged cases, or all, under each schema they have expectations in | new: a person is scored against their own expectations only |
 
 ## Phases
 ### 1. Runner: `src/chatddx/runner/`
@@ -273,7 +274,7 @@ Built, the `Bench` with the shell in 4a (see "4. The shell"). What was built her
   it with a giftbag.
 
 `Reads` and its tests have since moved to `src/chatddx/bench/`, without the runs still to score, and `Reads` was
-folded into `Bench` (`agents/wip-bench.md`, "Phase 2").
+folded into `Bench` (`agents/wip-bench.md` at d5ebf52, "Phase 2").
 
 "Applies" is the plan's rule: every view of the scorer reaches the run's output schema. A view that picks the whole
 answer reaches any schema, so the sample's `free-text` and `raw` scorers apply to every run; the pattern scorer then
@@ -313,8 +314,8 @@ A person-scoped layer, the old `Bench`'s role, is planned in `agents/wip-bench.m
 #### Built: 4a
 `chatddx repl LOGIN [--world DIR] [--facts PATH …] [--history PATH]` (`src/chatddx/cli.py`) connects as `DB_USER` in
 autocommit mode, as the runner needs (R6), and refuses a login with no person. `rich` is a dependency now (D4).
-- **The bench**, `Cell` and `Bench`, then `bench.py` here, now `src/chatddx/bench/` (`agents/wip-bench.md`, "What
-  the bench is now").
+- **The bench**, `Cell` and `Bench`, then `bench.py` here, now `src/chatddx/bench/` (`agents/wip-bench-api.md`,
+  "Package").
 - **`shell.py`** (`Repl`: the cell, the seed, the prompt, the completion cache), **`commands.py`**, **`render.py`**
   (styles and helpers only; the streamed transcript comes with 4b), **`choosing.py`**, **`listing.py`**,
   **`inspecting.py`**, **`scoring.py`** (`scorers`), **`running.py`** (`seed`) and **`loop.py`** (readline, history,
@@ -347,8 +348,9 @@ Takes made while building, all still open:
   lints, and per scorer view the cases it can hold the cell to: a case has it when the expectation the person reads
   under the scorer's schema (`Catalog.expectation_for`) gives the view's expectation selector something to pick. The
   old count also named patterns that don't parse; that reading is the pattern scorer's, and isn't here.
-- **`show KIND [NAME]`**: the kinds are `configuration`, the nine parts, `tool`, `scorer`, `judge`,
-  `expectation_schema`, `canary_set`, `model` and `engine`, plus `case` and `endpoint`. A component's fields, its
+- **`show KIND [NAME]`**: the kinds are `configuration`, the nine parts, `tool`, `scorer`, `judge`, `expectation`
+  (since taking, by the thread's name, the person's own first), `expectation_schema`, `canary_set`, `model` and
+  `engine`, plus `case` and `endpoint`. A component's fields, its
   catalog entries, and how many of the person's runs reach it (`Reads.reaching`). A case shows its source, the
   vignette fetched from the World, and the expectation the person reads: their own thread's head, else a shared one.
 - **`reasoning`**: a column per model the facts know, headed by the endpoints serving it, and a row per level, plus
@@ -357,13 +359,13 @@ Takes made while building, all still open:
   in `show` (D3).
 
 Left from 4a:
-- **The bench as a module of its own** (the user's remark): done, `agents/wip-bench.md`, "Phase 0".
+- **The bench as a module of its own** (the user's remark): done, `agents/wip-bench.md` at d5ebf52, "Phase 0".
 - **An unsaved cell's language is unknown.** `Catalog.language_of` reads the store, so after `set` the request's
   language was `language.unknown` even where the recipe's chunks have one. Done: `Bench.findings` takes the request's
   language from the cell's recipe (`agents/wip-api.md`, "Trying a variation").
 - **Runs of a scorer.** Done in 4c: `show scorer NAME` counts the runs it scored.
-- **The seeded sample fixture**: done, defined once as `src/chatddx/conftest.py:seeded` (`agents/wip-bench.md`,
-  "Phase 2", step 5).
+- **The seeded sample fixture**: done, defined once, now as `src/chatddx/conftest.py:curated` (`agents/wip-bench.md`
+  at d5ebf52, "Phase 2", step 5).
 
 #### Built: 4b
 `run CASE [SEED]` and `batch TAG...` (`src/chatddx/repl/running.py`), on the runner and the scoring pass through
@@ -438,7 +440,7 @@ answer and its scores is shared by all of them, in `render.py`.
 
 Takes made while building, all still open:
 - **What is left to score is worked out per run** (`Bench.unscored`); `Reads.outstanding` is gone
-  (`agents/wip-bench.md`, "Phase 2", step 3).
+  (`agents/wip-bench.md` at d5ebf52, "Phase 2", step 3).
 - **The latest score per scorer** is what `runs`, `replay` and `show` read. Older ones stay in the ledger, and
   `scores_of` lists every score of a run, whoever gave it.
 - **The runs list shows means** per view, so a batch fits a line per scorer.
@@ -453,7 +455,8 @@ Left from 4c:
 ### 5. Tool rounds
 Built in the runner (`agents/wip-runner.md`, "Phase 5").
 - The `next_request` loop, with `max_rounds`, `Turn` and `ToolRun`.
-- Tools are found by `core/rig.py:entry`, and their code goes in `RunStarted.tool_code`.
+- Tools are found among the code chatddx ships (`core/rig.py:entry`, `tools/shipped.py:TOOLS`), and the version each
+  ran at goes in `RunStarted.tool_code`.
 - D1 gates tools.
 
 It comes last: `plan-web` can't call its tool on vLLM 0.24 anyway (G8; `docs/vllm.md`, item 10).
@@ -468,7 +471,7 @@ Agents propose and humans write `docs/*`, with suggestions inline above what the
 - `docs/catalog.md`: the runner writes a run's owner (D7, "Owners"), and a run of a variation nobody saved has a title
   ("Titles"); both in the docs;
 - `docs/store.md`: the listings of phase 3, and what is left to score per run, left the store with `Reads`
-  (`agents/wip-bench.md`, "Material for the bench's docs"). The tests' databases waiting for their sessions to end is
+  (`agents/wip-bench-api.md`, "Runs and scores"). The tests' databases waiting for their sessions to end is
   in `docs/store-api.md`, "Tests";
 - `docs/ledger.md`, `RunStarted`, and `agents/wip-clearance.md`: the endpoint and the interim gate (D1, "Run start"),
   and `replay` rebuilding a run's first requests ("Some of what happened isn't checked"); all in the docs;

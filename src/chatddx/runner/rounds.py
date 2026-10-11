@@ -9,7 +9,7 @@ from jsonschema.exceptions import relevance
 from jsonschema.protocols import Validator
 from pydantic import JsonValue
 
-from chatddx.core.rig import entry, rig
+from chatddx.core.rig import entry
 from chatddx.factors.base import Resolver, resolve
 from chatddx.factors.request import (
     Skeleton,
@@ -21,6 +21,7 @@ from chatddx.factors.request import (
 )
 from chatddx.factors.trial import Execution
 from chatddx.ledger import Call, ToolCode, ToolRun, Turn
+from chatddx.tools.shipped import TOOLS
 
 from . import send as sending
 from .send import Delta
@@ -30,7 +31,6 @@ def _now() -> datetime:
     return datetime.now(UTC)
 
 
-# A failure the runner words itself, rather than one a tool raised.
 class _Refused(Exception):
     pass
 
@@ -43,8 +43,6 @@ class Toolbox:
     max_rounds: int
     code: tuple[ToolCode, ...]
 
-    # The calls a round runs. Calling the answer tool ends the item, and so does a call
-    # without a whole answer, whose tool calls may be cut short.
     def pending(self, call: Call) -> tuple[ToolCall, ...]:
         if call.error is not None or call.response is None:
             return ()
@@ -61,7 +59,6 @@ class Toolbox:
         except _Refused as e:
             error = str(e)
             result = f"error: {error}"
-        # Whatever a tool raises, the model is told and the run goes on.
         except Exception as e:  # noqa: BLE001
             error = f"{type(e).__name__}: {e}"
             result = f"error: {error}"
@@ -94,7 +91,6 @@ class Toolbox:
         return result
 
 
-# Only the running chatddx can be run (`entry`), so that is the code each tool runs with.
 def load(skeleton: Skeleton, get: Resolver) -> Toolbox | None:
     if skeleton.max_rounds is None:
         return None
@@ -103,14 +99,12 @@ def load(skeleton: Skeleton, get: Resolver) -> Toolbox | None:
     code: list[ToolCode] = []
     for ref in skeleton.tools:
         tool = resolve(get, ref, Tool)
-        function = entry(tool.code, tool.entry_point)
-        if not callable(function):
-            raise TypeError(f"{tool.entry_point} names nothing to call")
-        functions[tool.name] = function
+        shipped = entry(TOOLS, tool.entry_point, tool.version)
+        functions[tool.name] = shipped.function
         parameters[tool.name] = validators.validator_for(tool.parameters)(
             tool.parameters
         )
-        code.append(ToolCode(tool=ref, code=rig()))
+        code.append(ToolCode(tool=ref, version=shipped.version))
     contract = skeleton.contract
     return Toolbox(
         functions=functions,
@@ -128,9 +122,6 @@ class Exchange:
     stopped: bool = False
 
 
-# One item's calls: the first, then a round per response that calls tools. A
-# KeyboardInterrupt or `halt` stops it, keeping the rounds that have a call; a round
-# stopped while its tools run has none, so its tools are left out.
 def converse(
     url: str,
     body: Mapping[str, JsonValue],

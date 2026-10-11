@@ -144,6 +144,7 @@ without tools on the fake engines (`agents/wip-runner.md`).
   Tables are kinds, keys are component fields, and references name records. On top of that, `json_schema_path`
   loads a JSON file, `from_facts` writes a chunk per model, `fork_of` seeds a record as a fork, and `tags` and
   `description` are catalog entries.
+- `texts-en.toml` and `texts-sv.toml`: what holds text the model reads, by language.
 - `cases-en.toml` and `cases-sv.toml`: the 99 cases by language, 79 and 20, each with its tags and targets, without
   the `# guessed` markers.
 - `schemas/`: the two output schemas and the hand-written `targets.json`.
@@ -163,7 +164,28 @@ them as a World would:
   that they decode as UTF-8, and pins one fingerprint over all their fingerprints, so leaving 7893656 takes a
   deliberate edit.
 
+The sample World also declares `typed`, a `database` source for what people type (agents/wip-portal.md, "Typed
+cases"), cleared for both fake endpoints. It holds nothing until someone types a case.
+
 `init-data` takes the World from `--world DIR`, or `CHATDDX_WORLD`, which `.env-container` and `.env-devshell` set to `worlds/sample`.
+
+### Beyond the old inventory
+The old inventory had no instructions chunk of its own (G3 folded `instruction.ddx` into `prompt.case`), and no
+few-shot examples, passthrough or translations, so `free-text-guided` was added to give each kind people author a
+sample thread, and the Swedish cases a request in their language:
+- `instructions.clinician`, a system message placing the output's guidance, and `few_shot.worked-example`, a made-up
+  chest-pain case answered as `free-text` asks, both in `texts-en.toml` and `texts-sv.toml`;
+- `passthrough.min-tokens`, vLLM's `min_tokens = 8`;
+- `translations.sample` in `texts-sv.toml`: every text the sample's outputs and toolset send, the schemas' titles and
+  descriptions and the tool's description included, 42 in all, so the translations carry any sample recipe into
+  Swedish (`src/chatddx/curation/test/test_sample.py`). Translated by an agent, and not yet reviewed by a clinician or
+  a translator.
+
+`free-text-guided` is made in English, a fork of `free-text`, and in Swedish, with its instructions and example
+written in Swedish and its output translated; four skeletons with the two models. Decided: one new recipe is
+bilingual and the old ones stay English, so only `free-text-guided`'s bare name is ambiguous ("made in more than one
+language") until a variant is picked by the case's language (`docs/curation.md`, "Picking a variant by the case's
+language"). A data set still has no tables for appendices, canary sets, judges or hand-written skeletons.
 
 ### What changed in the hand edit
 - `instruction.ddx` and `instruction.bare` collapse into `prompt.case`; bare is the same prompt with `output.raw`.
@@ -214,12 +236,13 @@ The sample's side:
 
 ## Tools and scorers
 Where tool and scorer code lives is settled (see "Decided"):
-- **Code.** A `tool` or `scorer` record without a `code` pins the running chatddx, the `Code` compilations record as
-  their compiler (`src/chatddx/curation/plan.py:plan_factors`). `src/chatddx/core/rig.py:entry` finds an entry point's
-  function, and runs only the running chatddx: other pinned code is refused, not run unpinned. Planning refuses an
-  entry point that names nothing, and a view whose metric the scorer's code doesn't know (`Metrics.names`). Since the
-  code is part of a tool's and a scorer's digest, a new version or `CHATDDX_REVISION` makes new ones, and the
-  toolset and `plan-web` skeletons with them.
+- **Code.** A `tool` or `scorer` record without a `version` pins the version of its entry point that the running
+  code ships (`src/chatddx/curation/plan.py:SHIPPED`). `src/chatddx/core/rig.py:entry` finds what an entry point
+  ships, and runs nothing else: an entry point that isn't shipped, or not at the pinned version, is refused. Planning
+  refuses those, a view whose metric the scorer's code doesn't publish, and params its schemas refuse
+  (`src/chatddx/scorers/shipped.py:problems`). Since the version is part of a tool's and a scorer's digest, only a
+  raised version makes new ones, and the toolset and `plan-web` skeletons with them; a new chatddx version or
+  `CHATDDX_REVISION` doesn't.
 - **Scorer interface, version 1** (`src/chatddx/scorers/scorer.py`). An entry point is a `ScoreFunction`: it takes a
   view's `metric`, the items its output selector picks (`None` without an answer), the items its expectation
   selector picks, and the scorer's params under the view's. It returns `Scored(value, detail)`, what a `ScoreItem`
@@ -335,10 +358,10 @@ Take, by piece:
 - **The web**: patched in the process that runs the tools, as before: `web_search` reaches DuckDuckGo through
   `urllib.request.urlopen` (`src/chatddx/tools/web_search.py`), and the tools run in the runner's process. A setting for
   the search URL would let the fake serve the web instead, but nothing else needs one.
-- **The driver**: `src/chatddx/samples/`, an edge over the bench, as `agents/wip-bench.md` ("The landscape, at phase
-  1") lists it. For each script: the variation (`Bench.configuration`, `Bench.variation`), the scripted fake served in
-  a thread at the endpoint's address, `Bench.start` with the case and seed, `Running.send`, `Running.finish` and
-  `Bench.score`.
+- **The driver**: `src/chatddx/samples/`, an edge over the bench, as `agents/wip-bench.md` at d5ebf52 ("The landscape,
+  at phase 1") lists it. For each script: the variation (`Bench.configuration`, `Bench.variation`), the scripted fake
+  served in a thread at the endpoint's address, `Bench.start` with the case and seed, `Running.send`, `Running.finish`
+  and `Bench.score`.
 - **For hand use**: `chatddx samples LOGIN [--sample NAME]`, after `init-data`. It serves the scripted fake itself, so
   no fake needs to be running.
 - **For tests**: a session-scoped `sampled` database in `src/chatddx/conftest.py`, made from `curated` with alice's
@@ -451,7 +474,9 @@ Each gap was tagged [maybe fix remastered]: the sample data needed something rem
   `docs/catalog.md`, "Languages"). Also decided: a model that answers in another language than it was prompted in
   loses the score, and mixing is a warning, not a hard block.
   - Done: the sample's text-bearing chunks are `en`, from its `factors.toml`, so the 20 Swedish cases' trials are
-    `language.mixed` until a Swedish translations chunk exists (`docs/curation.md`, "Languages").
+    `language.mixed` under the English recipes (`docs/curation.md`, "Languages"). `free-text-guided (sv, …)` runs
+    them in Swedish, and `translations.sample (sv)` carries any other recipe there (see "Beyond the old
+    inventory").
   - Still open: few-shot assistant examples that are JSON answers are translated as one text, so the translator
     edits the JSON by hand.
   - Side effects of the implicit language, which no doc covers yet:

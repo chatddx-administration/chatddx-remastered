@@ -30,7 +30,7 @@ from chatddx.ledger import (
     check_run,
 )
 from chatddx.ledger.run import PHASES, Phase
-from chatddx.store import Catalog, Store
+from chatddx.store import Catalog, Store, fetch_vignette
 from chatddx.store.store import Connection
 
 from . import gate, rounds, send as sending
@@ -101,7 +101,6 @@ def _ran(key: ItemKey, emit: Callable[[ToolRan], None]) -> Callable[[ToolRun], N
 
 class Runner:
     def __init__(self, conn: Connection, inventory: Inventory, by: Person) -> None:
-        # Each row must land as it's written, so a run that dies leaves a log to read.
         if not conn.autocommit:
             raise ValueError("the runner needs a connection in autocommit mode")
         self._conn: Connection = conn
@@ -167,6 +166,7 @@ class Running:
         secret: str | None,
         toolbox: Toolbox | None,
     ) -> None:
+        self._conn: Connection = conn
         self._store: Store = Store(conn)
         self._inventory: Inventory = inventory
         self._registry: Registry = registry
@@ -189,26 +189,15 @@ class Running:
     def started(self) -> RunStarted:
         return self._started
 
-    # Ends `send` after the calls under way, without the end canaries.
     def stop(self) -> None:
         self._stopping = True
 
-    # Ends `send` as `stop` does, but hangs up the calls under way, at their next chunk,
-    # and records them as stopped. Unlike a KeyboardInterrupt, it may come from another
-    # thread, and `send` returns rather than raises.
     def halt(self) -> None:
         self._stopping = True
         self._halt.set()
 
-    # The start canaries go one at a time before the items, and the end canaries after
-    # them, so they bracket the items whatever the concurrency.
-    # A KeyboardInterrupt during a call records the call as stopped and is raised
-    # again; one raised in `on_event` while a call streams counts as during the call.
-    # Above concurrency 1, it hangs up every call in flight and records them as stopped;
-    # another one while they hang up leaves them out of the log.
     def send(self, on_event: Callable[[Event], None] | None = None) -> None:
         emit: Callable[[Event], None] = on_event or _ignore
-        # A halt is per send, and one that came before it still holds.
         self._halt = threading.Event()
         if self._stopping:
             self._halt.set()
@@ -279,8 +268,7 @@ class Running:
             emit(ItemStarted(key, seed))
             case = resolve(get, case_ref, Case)
             try:
-                source = self._inventory.source(case.vignette.source)
-                raw = source.fetch(case.vignette.id)
+                raw = fetch_vignette(self._conn, self._inventory, case.vignette)
                 prepared = prepare_case(
                     case, raw, get, skeleton.appendix_layout, trial.cleanup
                 )
@@ -321,9 +309,6 @@ class Running:
                     return
                 raise KeyboardInterrupt
 
-    # Calls go out on worker threads, and everything else stays on the caller's: the
-    # events, the writes, and the stamp of when each item was sent, which keeps the
-    # items in schedule order for `check_execution`.
     def _send_concurrently(
         self, items: Iterator[_Prepared], emit: Callable[[Event], None]
     ) -> None:

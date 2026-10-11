@@ -27,9 +27,10 @@ Paths are relative to `src/chatddx/catalog/` unless they start with `src/` or `d
 ## Package
 
 `chatddx.catalog` re-exports `LANGUAGE`, `LANGUAGE_KINDS`, `THREAD_KINDS`, `About`, `Behind`, `Binding`, `Edit`,
-`Entry`, `EntryField`, `Kept`, `Part`, `Reader`, `Repair`, `RepairPlan`, `Subject`, `Survey`, `Thread`, `Variation`,
-`check_label`, `language_tag`, `latest`, `made_for`, `variant_name`, `variants_for`, and the modules `families`,
-`language`, `read`, `threads`, `titles` and `variants`.
+`Entry`, `EntryField`, `Kept`, `Labels`, `Part`, `Reader`, `Repair`, `RepairPlan`, `Subject`, `Survey`, `Thread`,
+`Variation`, `check_label`, `language_tag`, `latest`, `made_for`, `variant_name`, `variants_for`, and the modules
+`families`, `language`, `read`, `threads`, `titles` and `variants`.
+
 Functions are called through their module (`threads.behind(rows, thread)`); `model.py` is imported by path.
 
 | Module | Builds on |
@@ -66,8 +67,8 @@ package takes the last row for a key as the one that holds: through `model.py:la
 
 | Exception | When |
 | --- | --- |
-| `LookupError` | A thread, edit or family that doesn't exist (`no thread with id <id>`, `no edit with id <id>`, `no family with id <id>`); a digest that isn't stored where one is required (`check_adoptable`, `check_language`); `expectations_for` (and so `expectation_for`) with several expectations to choose from. |
-| `ValueError` | A rule refused before writing: `check_threadable`, `check_based_on`, `check_adoptable`, `plan_repair`, `check_language`, `check_entry`, `check_label`, `language_tag`. |
+| `LookupError` | A thread, edit or family that doesn't exist (`no thread with id <id>`, `no edit with id <id>`, `no family with id <id>`); a digest that isn't stored where one is required (`check_adoptable`, `check_language`); `picked`, and so `expectations_for` and `expectation_for`, with several expectations to choose from. |
+| `ValueError` | A rule refused before writing: `check_threadable`, `check_based_on`, `check_expectation`, `check_adoptable`, `plan_repair`, `check_language`, `check_entry`, `check_label`, `language_tag`; and `MovedOn`, from `check_head`. |
 | `pydantic.ValidationError` | A model breaks its own rules: an `Entry` of the wrong shape, a `Subject` that isn't exactly one thing, a `Behind` with both or neither of `head` and `binding`; `proposal` when the merged recipe isn't a valid `Recipe`. Rules written as validators raise `ValueError`, which pydantic wraps. |
 | `chatddx.factors.base.StructuralError` (a `ValueError`) | `Reader.get` of a digest that isn't stored (both `Rows` and `test/memory.py:Memory`, through `Store.get` and `Registry.get`); `resolve` of a component of the wrong kind; `proposal` when the merged document isn't a readable component. |
 
@@ -76,8 +77,8 @@ threads and families is said in its entry; in short:
 
 | Deleted are | Functions |
 | --- | --- |
-| skipped, through `About.shows` | `threads.visible`, `families.visible`, `threads.expectation_choices`, `threads.expectations_for`, `threads.expectation_for` |
-| skipped, through `About.deleted` | `threads.heads` (unless `deleted=True`, which returns only them), `threads.find`, `threads.behind` (no deleted thread's head, and no case of a deleted family) |
+| skipped, through `About.shows` | `threads.visible`, `threads.expectations_shared`, `families.visible` |
+| skipped, through `About.owned_by` | `threads.expectation_choices`, `threads.expectations_for`, `threads.expectation_for`, `threads.check_expectation` |
 | ranked last | `titles.title_of` |
 | included | `threads.history`, `threads.forks`, `threads.expectations_of`, `families.family_of`, `families.bindings`, `families.survey`, `families.plan_repair`, `language.language_of`, the titles of cases, `Catalog.containing` |
 
@@ -91,6 +92,7 @@ threads and families is said in its entry; in short:
 | `LANGUAGE_KINDS` | `frozenset` of the 7 kinds that can have a language of their own: `chunk.instructions`, `chunk.few_shot`, `chunk.prompt`, `chunk.output`, `chunk.toolset`, `chunk.translations`, `skeleton`. Repeated in `0012` (`language_kind_check`). |
 | `LANGUAGE` | `re.compile(r"^[a-z]{2,3}(-[A-Za-z0-9]{1,8})*$")`. Accepts `sv`, `pt-BR`, `zh-Hant-TW`; refuses `SV`, `en_US`. Repeated in `0012`. |
 | `Part` | `Literal["view", "resource"]` |
+| `Labels` | `Mapping[tuple[Part, int], str]`: what a scorer edit calls its views and resources, by part and position |
 | `Kept` | `Literal["created", "edited", "unchanged"]`: what `Catalog.keep` did |
 
 ### `language_tag(value: str) -> str`
@@ -170,13 +172,15 @@ What a subject's entries say now.
 | --- | --- |
 | `of(entries: Iterable[Entry]) -> Self` (classmethod) | Folds the entries in the order given. For `name`, `description`, `owner`, `deleted` and `language` the last entry wins; a `name` entry without a value clears the name. For `tag` and `collaborator` the last entry for each member wins: `present` adds it, not `present` removes it. No entries give `About()`. |
 | `shows(person: int) -> bool` | `not deleted and (owner == person or person in collaborators)`. |
+| `owned_by(person: int) -> bool` | `not deleted and owner == person`. |
 
 ### `latest[K, V](rows: Iterable[tuple[K, V]]) -> dict[K, V]`
 `dict(rows)`: for each key, the value of its last row. A key keeps the position of its first row.
 
 ### `check_label(scorer: Scorer, part: Part, position: int) -> None`
 `ValueError("<scorer digest> has no <part> at position <position>")` unless `0 <= position < len(scorer.views)` (for
-`view`) or `len(scorer.resources)` (for `resource`). `0012` repeats it (`catalog.check_label`).
+`view`) or `len(scorer.resources)` (for `resource`). `0018` repeats it (`catalog.check_label`), for the scorer of the
+label's edit.
 
 ### Results
 
@@ -246,7 +250,7 @@ picks the latest row. `src/chatddx/store/catalog.py:Rows` implements it over the
 | `bound_to(vignettes: Collection[Vignette], kind: str) -> list[tuple[str, Vignette]]` | The stored components of `kind` (`case` or `appendix`) whose `vignette` equals one of these, each with that vignette, by digest. |
 | `expectations(cases: Collection[str]) -> list[str]` | The stored expectations of these cases, by digest. |
 | `languages(digests: Collection[str]) -> list[tuple[str, str]]` | (digest, language) rows for these digests, by id. |
-| `labels(scorer: str) -> list[tuple[Part, int, str]]` | (part, position, label) rows for a scorer, by id. |
+| `labels(edits: Collection[int]) -> list[tuple[int, Part, int, str]]` | (edit, part, position, label) rows for these edits, by id. |
 | `bindings_sharing(vignette: Vignette) -> list[Binding]` | The bindings in the vignette's source to its id or to its fingerprint, by id. |
 
 ### Helpers
@@ -258,7 +262,7 @@ picks the latest row. `src/chatddx/store/catalog.py:Rows` implements it over the
 | `heads_holding(rows, digests: Collection[str]) -> dict[int, Edit]` | The `holders` whose head is one of the digests. |
 | `abouts(rows, subjects: Collection[Subject]) -> dict[Subject, About]` | `About.of` each subject's entries; every subject given is a key. |
 | `about(rows, subject: Subject) -> About` | `abouts` of one subject. |
-| `labels(rows, scorer: str) -> dict[tuple[Part, int], str]` | The latest label for each (part, position). `{}` for a scorer without labels, stored or not. |
+| `labels(rows, edit: int) -> Labels` | The edit's labels, by (part, position). `{}` for an edit without labels, of a scorer or not. |
 | `tags_given(rows, subject: Subject) -> dict[str, int]` | The tags that hold on the subject now, each with the writer of the latest entry about it. |
 
 ## threads.py
@@ -269,6 +273,8 @@ picks the latest row. `src/chatddx/store/catalog.py:Rows` implements it over the
 | --- | --- |
 | `check_threadable(kind: str) -> None` | `ValueError("<kind> components have no threads")` when `kind` isn't in `THREAD_KINDS`. |
 | `check_based_on(rows, thread: int, based_on: int) -> None` | `ValueError("edit <based_on> is not in the origin of thread <thread>")` unless the thread exists, is a fork, and `based_on` is an edit of its origin with an id at or after `forked_from`. `0012` repeats it (`catalog.check_based_on`, same message). |
+| `check_head(rows, thread: int, head: int) -> None` | `MovedOn("thread <thread> has moved on since edit <head>: its head is edit <current>")` when `head` isn't the thread's head; `history`'s `LookupError` for no thread. `model.py:MovedOn` is a `ValueError`. The database doesn't repeat it; `Catalog.edit` takes the thread's lock first. |
+| `check_labels(rows, thread_id: int, digest: str, labels: Labels) -> None` | Nothing for no labels. `ValueError("a <kind> has no views or resources to label")` for a thread that isn't a scorer's; `check_label` of `digest`'s scorer for each; `ValueError("the label of <part> <position> is empty")`. `0018` repeats the positions, and holds a label to its edit's transaction and writer. |
 
 ### Lookups
 
@@ -293,23 +299,33 @@ The head and `About` of each thread of `kind` that `About.shows(person)`: live, 
 them as a collaborator. Thread id order; threads without edits are left out.
 
 ### `expectations_for(rows, cases: Sequence[str], person: int, schema: str) -> dict[str, str | None]`
-For each case, the digest of the expectation `person` scores it against, among the threads whose head is an
-expectation of that case with `expectation_schema == schema` and which `About.shows(person)`:
-1. those `person` owns: one distinct head digest is returned;
-2. otherwise all of them, shared ones included: one distinct head digest is returned;
-3. nothing: `None`.
-
-Every case given is a key. The first case, in the order given, with several distinct head digests at the first step
-that has any raises `LookupError("case <case> has expectations to choose from, in threads <t1>, <t2>, …")`, naming
-the threads of that step. Threads with the same head digest count as one choice. Owning one thread is enough to
-ignore the shared ones.
+For each case, the digest of the expectation `person` scores it against: `picked` of its `expectation_choices`, the
+head of the person's own live thread, or `None`. Every case given is a key. The first case, in the order given, with
+several distinct head digests raises `picked`'s `LookupError`. Shared threads are never chosen from.
 
 `expectation_for(rows, case: str, person: int, schema: str) -> str | None` is `expectations_for` of the one case.
 
 ### `expectation_choices(rows, cases: Sequence[str], person: int, schema: str) -> dict[str, dict[int, str]]`
-For each case, the threads `expectations_for` picks from, each with its head digest: among the threads whose head is
-an expectation of that case with `expectation_schema == schema` and which `About.shows(person)`, those `person` owns,
-or all of them when they own none. Every case given is a key, with `{}` when there are none. It refuses nothing.
+For each case, the threads `expectations_for` picks from, each with its head digest: the threads whose head is an
+expectation of that case with `expectation_schema == schema` and which `About.owned_by(person)`. Every case given is
+a key, with `{}` when there are none. It refuses nothing.
+
+### `expectations_shared(rows, cases: Sequence[str], person: int, schema: str) -> dict[str, list[tuple[Edit, About]]]`
+For each case, the head and `About` of each thread whose head is an expectation of that case with
+`expectation_schema == schema`, which `About.shows(person)` and whose owner isn't `person`: what they could take.
+Thread id order. Every case given is a key, with `[]` when there are none.
+
+### `picked(case: str, choices: Mapping[int, str]) -> str | None`
+The one distinct head among a case's `expectation_choices`, or `None` for none. Threads with the same head digest
+count as one choice. Several raise `LookupError("case <case> has expectations to choose from, in threads <t1>, <t2>,
+…")`, naming the threads.
+
+### `check_expectation(rows, thread: int, digest: str | None = None, entry: Entry | None = None) -> None`
+Refuses what would leave a person owning two live expectation threads of one case under one expectation schema:
+`thread` with `digest` as its head, or after `entry`. Only threads of kind `expectation` are checked, and only
+`owner` and `deleted` entries; a thread without an owner, or deleted, passes. Otherwise its owner's other live threads
+whose head is an expectation of the same case and schema raise `ValueError("person <owner> owns an expectation of case
+<case> under that schema already, in thread <t>")`, naming the first.
 
 ### `forks(rows, thread: int) -> list[int]`
 The ids of the threads whose `forked_from` is any edit of `thread`, in thread id order. Direct forks only; deleted
@@ -573,9 +589,9 @@ with a psycopg error when the Python lets it through.
 
 | Method | Calls | Writes |
 | --- | --- | --- |
-| `create(digest, by, *, compilation=None, forked_from=None, name=None, owner=None) -> Edit` | `Reader.kind` (`LookupError("<digest> is not in the store")`), `threads.check_threadable` | in one transaction: the thread, its first edit (`edit`), an `owner` entry for `owner` or else `by`, and a `name` entry when given |
-| `edit(thread, digest, by, *, compilation=None, based_on=None) -> Edit` | `threads.check_based_on` when `based_on` is given | the edit, with the thread's kind; `LookupError("no thread with id <thread>")` when there is no thread |
-| `thread`, `history`, `head`, `heads`, `find`, `visible`, `expectation_for`, `expectations_for`, `expectation_choices`, `forks`, `expectations_of`, `behind`, `variation`, `proposal` | the `threads` function of that name | |
+| `create(digest, by, *, compilation=None, forked_from=None, name=None, owner=None, labels=None) -> Edit` | `Reader.kind` (`LookupError("<digest> is not in the store")`), `threads.check_threadable`; `threads.check_expectation` and `threads.check_labels` through `edit`, and `note` | in one transaction: the thread, its first edit with its labels (`edit`), an `owner` entry for `owner` or else `by`, and a `name` entry when given |
+| `edit(thread, digest, by, *, compilation=None, based_on=None, head=None, labels=None) -> Edit` | in one transaction: the thread's advisory lock (`pg_advisory_xact_lock(hashtext('catalog.thread'), thread mod 2³¹)`), `threads.check_head` when `head` is given, `threads.check_based_on` when `based_on` is given, `threads.check_expectation(thread, digest)`, `threads.check_labels(thread, digest, labels)` | the edit, with the thread's kind, and a `catalog.label` row for each label, by part and position; `LookupError("no thread with id <thread>")` when there is no thread |
+| `thread`, `history`, `head`, `heads`, `find`, `visible`, `expectation_for`, `expectations_for`, `expectation_choices`, `expectations_shared`, `forks`, `expectations_of`, `behind`, `variation`, `proposal` | the `threads` function of that name | |
 | `visible_families(person)` | `families.visible` | |
 | `containing(digest) -> list[Edit]` | `Reader.edits_holding([digest])` | |
 | `recipe(thread)` | `threads.recipe` of `threads.head` | |
@@ -585,14 +601,14 @@ with a psycopg error when the Python lets it through.
 | `adopt(case, by, *, owner=None) -> int` | `families.family_of`, returning its family when there is one; else `families.check_adoptable` | in one transaction: a family, its binding, an `owner` entry for `owner` or else `by` |
 | `family(case)`, `bindings(family)`, `survey(source, listing)` | `families.family_of`, `families.bindings`, `families.survey` | |
 | `repair(family, by, *, id=None, fingerprint=None) -> Repair` | `families.plan_repair` | in one transaction: the binding, `Store.add` of the plan's registry, and an edit per move |
-| `note(subject, entry, by)` | `language.check_entry` | the entry; a run or score subject also gets its stage column set to `'started'` |
+| `note(subject, entry, by)` | `language.check_entry`; `threads.check_expectation(thread, entry=entry)` for a thread | the entry; a run or score subject also gets its stage column set to `'started'` |
 | `language(digest, value, by)` | `language.check_language` | a `catalog.language` row with the kind it returned |
 | `about(subject)`, `abouts(subjects)` | `read.about`, `read.abouts` | |
 | `involving(person) -> list[Subject]` | the store only | the subjects whose `owner` or `collaborator` entries ever named the person |
 | `label(scorer, part, position, value, by)` | `check_label` of the resolved scorer | the label |
-| `labels(scorer)` | `read.labels` | |
+| `labels(edit) -> dict[tuple[Part, int], str]` | `read.labels` | |
 | `tags_given(subject)` | `read.tags_given` | |
-| `keep(digest, by, thread, *, name=None, compilation=None, forked_from=None) -> tuple[Edit, Kept]` | `threads.head`, then `create` without a thread or `edit` | a new thread, a new edit, or nothing when the head is `digest` already |
+| `keep(digest, by, thread, *, name=None, compilation=None, forked_from=None, head=None, labels=None) -> tuple[Edit, Kept]` | `create` without a thread; else, in one transaction, the thread's lock, `threads.check_head` when `head` is given, `threads.head`, and `edit` | a new thread, a new edit, or nothing when the head is `digest` already and `labels`, when given, are the head's |
 
 ## Database: schema `catalog`
 
@@ -675,19 +691,21 @@ explicitly, and `entry_language_check`, `field <> 'language' OR family IS NOT NU
 `family`, `run` and `score` where not NULL. An entry on a run or a score needs the run's or score's started row.
 
 ### `catalog.label`
-Scorer labels.
+Scorer labels, each written with an edit of a scorer thread (`0017`).
 
 | Column | Type | Holds |
 | --- | --- | --- |
-| `scorer` | `text NOT NULL`; FK `(scorer, kind)` → `factor.component (digest, kind)` | the scorer's digest |
+| `edit` | `bigint NOT NULL`; FK `(edit, kind)` → `catalog.edit (id, kind)` | the edit it was written with |
 | `kind` | `text NOT NULL DEFAULT 'scorer'`, CHECK `= 'scorer'` | constant |
 | `part` | `text NOT NULL`, CHECK `IN ('view', 'resource')` | `Part` |
 | `position` | `integer NOT NULL`, CHECK `>= 0` | the position among the scorer's views or resources |
-| `value` | `text NOT NULL` | the label |
+| `value` | `text NOT NULL`, CHECK `<> ''` | the label |
 
-Index `label_scorer (scorer)`. Trigger `label_position` (0012, BEFORE INSERT): `catalog.check_label()` raises
-`<scorer>: no <part> at position <position>` when the position is past the end of the scorer document's `views` or
-`resources` (a missing key counts as empty).
+`UNIQUE (edit, part, position)`. Trigger `label_position` (`0018`, BEFORE INSERT): `catalog.check_label()` raises
+`edit <edit>: its labels are written with it, by its writer` when `by` or `at` isn't the edit's (`at` defaults to the
+transaction's `now()`, as the edit's does), and `<digest>: no <part> at position <position>` when the position is past
+the end of the edit's scorer document's `views` or `resources` (a missing key counts as empty). `0018` also puts the
+insert-only triggers back on the table.
 
 ### `catalog.language`
 Languages kept on a component's digest.
@@ -744,30 +762,6 @@ From `docs/catalog.md`, "Open design issues", where they concern this API:
 - Why an edit was made isn't stored.
 - Titles take a query for every reference they visit, are rebuilt from names that change, and aren't unique.
 - Scorer labels aren't carried to the next scorer edit.
-
-Also:
 - An unnamed fork's title can pair two versions: when its origin has no name and has moved on, `title` describes the
   origin's current head but lists the changes from the base. A fork of `"alpha first version"` whose origin has moved
   on to `"beta second version"` is titled `"beta second version", text: "gamma fork text"`.
-
-## Beyond docs/catalog.md
-Behavior described here that `docs/catalog.md` doesn't state, or states otherwise:
-- `owner` and `collaborator` entries are read by `About.shows`, so by `visible`, `visible_families` and
-  `expectation_for`; `expectation_for` also reads `owner` itself.
-- Tools, appendices, judges, scorers, scorings, models, expectation schemas and canary sets have descriptions of their
-  own; only a compilation is described by its kind and the start of its digest.
-- "Latest wins" is also written as `[-1]` of a `Reader` list, outside `latest` and `About.of`.
-- `family_of` takes the family of the latest matching binding, which isn't necessarily the latest family.
-- A fork's title starts with its origin's title, which describes the origin's current head, not the base.
-- Threads, edits and bindings are returned with `by` and `at`; entries, labels and languages are not.
-- `history` and `behind` raise `LookupError` for a thread without edits as well as for one that doesn't exist;
-  `forks` gives `[]` for either.
-- `expectation_for` counts distinct head digests, so two threads with the same head are one choice, and it raises
-  `LookupError`.
-- `survey` reports one gone family as renamed to every listed new id with its content.
-- `plan_repair` rebuilds only the cases and appendices of the current binding.
-- A thread's title falls back to the first compilation by digest when its head names none.
-- `title_of` of a case ignores whether its family is deleted.
-- The tier-2 binding check accepts a binding identical to the previous one, and the tier-2 label check words its error
-  differently from `check_label`.
-- `latest` keeps each key at the position of its first row.

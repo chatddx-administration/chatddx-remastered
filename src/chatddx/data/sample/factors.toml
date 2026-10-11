@@ -1,6 +1,7 @@
 # The old inventory's slices, configurations and scorers (chatddx 7893656, src/chatddx/data/inventory/slices.toml,
-# configurations.toml and scorers.toml), hand-edited into remastered's shape. `chatddx init-data` loads them into
-# the archive.
+# configurations.toml and scorers.toml), hand-edited into remastered's shape, and what the old inventory had no
+# example of: instructions, few-shot examples, a passthrough and translations, in `free-text-guided`. `chatddx
+# init-data` loads them into the archive.
 #
 # Tables are kinds and keys are component fields, except:
 # - a reference names a record of the referenced kind;
@@ -18,7 +19,8 @@
 #   `description` is a field too, the one the model reads.
 #
 # Instructions, few-shot, prompts, outputs, toolsets and translations that hold text the model reads are written in
-# texts-<language>.toml, here texts-en.toml, whose name gives their language; those here hold none. A recipe that
+# texts-<language>.toml, here texts-en.toml and texts-sv.toml, whose name gives their language; those here hold
+# none. A recipe that
 # names a text is made per language that has it, named "<recipe> (<language>)", or "<recipe> (<language>, <model>)"
 # when it's made per model too.
 
@@ -76,6 +78,11 @@ from_facts = { effort = "xhigh" }
 [reasoning.on-budget-2048]
 description = "A budget worth comparing against plain on."
 from_facts = { effort = "on", budget = 2048 }
+
+# Passthrough: an engine's own request options, which no other chunk covers.
+[passthrough.min-tokens]
+description = "No answer shorter than 8 tokens: vLLM's min_tokens."
+body = { min_tokens = 8 }
 
 # Tools.
 [tool.web_search]
@@ -144,6 +151,19 @@ tags = ["ddx"]
 prompt = "case"
 output = "free-text"
 sampling = "recommended"
+
+# Made in English, and in Swedish with the instructions and the example written in it and the output translated.
+[recipe.free-text-guided]
+description = "The differential as plain lines, with instructions placing the guidance and a worked example."
+tags = ["ddx"]
+fork_of = "free-text"
+instructions = "clinician"
+few_shot = "worked-example"
+prompt = "case"
+output = "free-text"
+sampling = "recommended"
+passthrough = "min-tokens"
+translations = "sample"
 
 # Reference data for scoring.
 [expectation_schema.targets]

@@ -25,7 +25,7 @@ from chatddx.factors.request import (
     texts,
 )
 from chatddx.factors.scoring import ExpectationSchema
-from chatddx.factors.test.sample import RIG, generation_recipe, world
+from chatddx.factors.test.sample import generation_recipe, world
 
 pytestmark = pytest.mark.solidified
 
@@ -91,8 +91,8 @@ def test_recipes_are_described_by_every_part() -> None:
             name="web_search",
             description="Search the web.",
             parameters={"type": "object"},
-            code=RIG,
             entry_point="chatddx_tools.web:search",
+            version=1,
         )
     )
     tools = reg.add(Toolset(tools=(search,)))

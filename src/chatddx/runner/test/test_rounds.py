@@ -5,9 +5,8 @@ import pytest
 from jsonschema import validators
 from pydantic import JsonValue
 
-from chatddx.core.rig import rig
 from chatddx.curation import Plan
-from chatddx.factors.base import Code, Fingerprint, resolve
+from chatddx.factors.base import Fingerprint, resolve
 from chatddx.factors.request import (
     Compilation,
     Skeleton,
@@ -122,17 +121,16 @@ def test_tools_load_from_the_running_code_and_record_it(plan: Plan) -> None:
         None,
         3,
     )
-    assert [(c.tool, c.code) for c in box.code] == [(t, rig()) for t in toolset.tools]
+    assert [(c.tool, c.version) for c in box.code] == [(t, 1) for t in toolset.tools]
 
 
 def test_a_tool_that_can_t_be_run_is_refused(plan: Plan) -> None:
-    other = Code(distribution="chatddx", version="0.0.0")
     for bad, refused in (
-        (tools.component("lookup", other), "pins chatddx 0.0.0"),
-        (tools.component("NOT_A_FUNCTION"), "names nothing to call"),
+        (tools.component("lookup", 2), "lookup is at version 1 in chatddx .*, not 2"),
+        (tools.component("PARAMETERS"), "tools:PARAMETERS isn't shipped with chatddx"),
     ):
         made, _ = skeleton(plan, bad)
-        with pytest.raises((LookupError, TypeError), match=refused):
+        with pytest.raises(LookupError, match=refused):
             _ = load(made, plan.registry.get)
 
 

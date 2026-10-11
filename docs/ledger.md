@@ -4,9 +4,7 @@ The ledger says what happened: which requests a run sent and what came back, and
 written down as *records*, which are added as things happen and never changed, and the ledger is all of them.
 Records refer to components by digest and to each other by id.
 
-Factors say what an experiment is meant to be; the ledger shows what it was. It holds the recorded factors and the
-evidence of the observed ones (docs/factors.md, "What a factor is"), and checking it compares both with the pinned
-factors, so a run can be shown to have happened under the conditions it claims. This document describes what the
+It guarantees a run can be shown to have happened under the conditions it claims. This document describes what the
 ledger records and why, and what checking it shows. Names, fields, rules and finding codes are in the API,
 docs/ledger-api.md.
 

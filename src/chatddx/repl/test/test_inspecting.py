@@ -2,7 +2,9 @@ import pytest
 
 from chatddx.bench import Bench
 from chatddx.bench.test.sample import another_expectation
+from chatddx.catalog import Entry, EntryField, Subject
 from chatddx.repl.test.sample import FREE_TEXT, GPT_OSS, PLAN, QWEN, Say, line_of
+from chatddx.store import Catalog
 
 pytestmark = pytest.mark.wip
 
@@ -128,6 +130,7 @@ def test_show_case_says_its_vignette_expectation_and_tags(say: Say):
     assert "no runs of yours with this case" in written
 
 
+@pytest.mark.slow
 def test_show_case_says_when_scoring_has_expectations_to_choose_from(
     bench: Bench, say: Say
 ):
@@ -136,6 +139,21 @@ def test_show_case_says_when_scoring_has_expectations_to_choose_from(
     written = say("show case Dutchfall11w")
 
     assert "has expectations to choose from" in line_of(written, "expectation")
+
+    written = say(f"cell {PLAN} {QWEN}", "show tag dutch-fall")
+
+    assert "to choose from: Dutchfall11w" in line_of(written, "plan       differential")
+
+
+def test_show_case_says_when_none_of_the_expectations_is_yours(bench: Bench, say: Say):
+    case = bench.family("Dutchfall11w").case
+    [schema] = bench.expectation_schemas(case)
+    catalog, person = Catalog(bench.conn), bench.person.id
+    [mine] = catalog.expectation_choices([case], person, schema)[case]
+    catalog.note(Subject(thread=mine), Entry(field=EntryField.DELETED), person)
+    written = say("show case Dutchfall11w")
+
+    assert "none of yours" in line_of(written, "expectation")
 
 
 def test_show_without_a_name_shows_the_cell_s(say: Say):

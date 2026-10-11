@@ -13,7 +13,8 @@ from chatddx.factors.trial import Trial
 from chatddx.identity import Person
 from chatddx.ledger import RunItem, Score, ScoreItem, ScoreStarted, check_score
 from chatddx.scorers.answer import read
-from chatddx.scorers.scorer import Scored, ScoreFunction, function, score
+from chatddx.scorers.scorer import Scored, ScoreFunction, score
+from chatddx.scorers.shipped import function
 from chatddx.store import Catalog, Store
 from chatddx.store.store import Connection
 
@@ -24,13 +25,9 @@ def _now() -> datetime:
     return datetime.now(UTC)
 
 
-# Scores a finished run under a scoring: each item's answer, read from its last call,
-# through every view of the scoring's scorer. `registry` holds the scoring's components;
-# the run's come from the store.
 def score_run(
     conn: Connection, run: UUID, scoring: Scoring, registry: Registry, by: Person
 ) -> tuple[Score, list[Finding]]:
-    # Each row must land as it's written, so a score that dies leaves a log to read.
     if not conn.autocommit:
         raise ValueError("the scoring pass needs a connection in autocommit mode")
     store = Store(conn)
@@ -56,7 +53,7 @@ def score_run(
         run=run,
         at=_now(),
         rig=rig(),
-        scorer_code=rig(),
+        scorer_version=views.version,
         scoring=scoring.digest,
     )
     store.append(started)

@@ -171,8 +171,8 @@ def describe(component: Component, title: Title, language: str | None = None) ->
             )
         case Judge(skeleton=skeleton, engine=engine):
             return f"judge {title(skeleton)} on {title(engine)}"
-        case Scorer(code=code):
-            return f"scorer {code.distribution} {code.version}"
+        case Scorer(entry_point=entry_point, version=version):
+            return f"scorer {entry_point} v{version}"
         case Scoring(scorer=scorer, expectations=expectations):
             return f"{title(scorer)} against {_count(len(expectations), 'expectation')}"
         case Appendix(text=text):

@@ -1,20 +1,11 @@
 # Curation
 
-Most of what the store holds is authored: the chunks, recipes, tools and scorers people write, the engines a World
-serves, the cases a source holds and the targets they are scored against. Someone has to get that content into the
-store, keep it in step with the files it was written in, and take it back out of people's way. That is curation. It
-is done for one person, the archive, whose content everyone else is given a share of.
-
-Curation writes only components and what the catalog says about them (docs/catalog.md). Nothing refers to it, so no
-digest depends on how something was loaded, and loading the same files twice changes nothing. It never writes the
-ledger: runs and scores are the runner's.
+Curation loads a data set (init-data), moves families whose vignettes moved (repair-data), and takes a person's share
+back (wipe-data). Importing, exporting and verifying the store's content are its business too, and aren't written yet
+(see "Open design issues"). It's the housekeeper for data and a natural home for the planned garbage collector.
 
 This document describes what curation does and why. The code is `chatddx.curation` (src/chatddx/curation/) and its
 commands in src/chatddx/cli.py. Curation builds on the factors, the facts, the inventory, the catalog and the store.
-
-Today curation loads a data set (init-data), moves families whose vignettes moved (repair-data), and takes a
-person's share back (wipe-data). Importing, exporting and verifying the store's content are its business too, and
-aren't written yet (see "Open design issues").
 
 ## The archive
 The archive is a person, `archive`, created the first time anything is loaded. It owns everything a data set loads:
@@ -40,6 +31,8 @@ src/chatddx/data/sample/
                   expectation schemas, scorers, recipes, and chunks of slots alone
   texts-en.toml   what holds text the model reads, in English: instructions, few-shot, prompts, outputs, toolsets
                   and translations
+  texts-sv.toml   the same, in Swedish: free-text-guided's instructions and example, and translations of every
+                  output and toolset text
   cases-en.toml   the English cases
   cases-sv.toml   the Swedish cases
   schemas/
@@ -55,10 +48,12 @@ the fields:
 - **Files.** `json_schema_path` loads a JSON file, relative to the file that names it, in place of `json_schema`.
 - **Forks.** `fork_of` names a record of the same kind that this one is a variation of. It is loaded as a fork of
   that record's thread, so the catalog knows what it varies (docs/catalog.md, "Forks"). It inherits no fields.
-- **Code.** A tool or a scorer that names no `code` pins the running chatddx, as a compilation records it as its
-  compiler, and its entry point must name a function there.
+- **Code.** A tool or a scorer that names no `version` pins the version of its entry point that the running chatddx
+  ships, so loading the data again after a deploy that raises a version moves it on. Its entry point must be shipped,
+  at the version pinned, and a scorer's views must name metrics the code publishes, with params its schemas take.
 - **Catalog entries.** `tags` and `description` are entries on the record's thread, and a scorer view's `label` is a
-  label. A tool's `description` is also a field, the one the model reads.
+  label of the edit the scorer is kept with, so a renamed view is a new edit of the same scorer. A tool's
+  `description` is also a field, the one the model reads.
 - **From facts.** `from_facts` asks for a sampling or reasoning chunk per model (see "Per model").
 
 A name is defined once per kind across `factors.toml` and the World's, and a text's name may come back in each texts
@@ -83,9 +78,12 @@ written only in another language is taken from there, and the recipe's translati
 a recipe without them there is skipped and reported. In the language its output and toolset are written in, it needs
 no translations and is made without them. A recipe that names no text is made once, as before.
 
-The sample is written in English: its six outputs with guidance and its toolset are in `texts-en.toml`, and every
-recipe is made in English. A trial of them on the Swedish cases is linted as mixing languages until the sample has
-Swedish texts, which is what a trial of an English request on a Swedish case is.
+The sample is written in English, and one recipe in Swedish too. Its six outputs with guidance, its toolset, and
+`free-text-guided`'s instructions and worked example are in `texts-en.toml`, and every recipe is made in English. The
+instructions and the example are written again in `texts-sv.toml`, with translations of every text its outputs and
+toolset hold, schemas included, so `free-text-guided` is made in Swedish too, its output translated. A trial of an
+English recipe on the Swedish cases is linted as mixing languages, which is what a trial of an English request on a
+Swedish case is; the sample's translations, set in a variation, carry any of its recipes into Swedish.
 
 ### Cases
 A cases file holds `[case.<id>]` tables, keyed by the vignette's id at the source. A case has `tags`, entries on its
@@ -122,7 +120,7 @@ each endpoint would refuse, and what is likely a slip (docs/inventory.md, "Check
 `chatddx init-data USER [--world DIR] [--source NAME] [--giftbag] [--data DIR] [--factors FILE …] [--facts PATH …]`
 loads a data set, the sample by default, for the archive, and shares it with USER, who is added when missing. It
 connects as the writer and does everything in one transaction. It prints a line for each thing it comes to, and
-the sample's first run comes to 248 threads and families.
+the sample's first run comes to 258 threads and families.
 
 1. **Plan.** The data set, the World's factors and any more `--factors` are planned into components, without the
    store: references resolved, per-model records written, recipes made per language and compiled, texts and entry
@@ -137,8 +135,11 @@ the sample's first run comes to 248 threads and families.
 4. **Leftovers.** The archive's threads and families that the data no longer names are listed, but not deleted.
 5. **Sharing.** USER becomes a collaborator on every thread and family the run came to.
 6. **Giftbag.** With `--giftbag`, USER also gets a fork of every chunk, tool, skeleton and expectation thread, so
-   what has moved on in the archive is proposed to them (docs/catalog.md, "What has moved on"). Expectation schemas,
-   scorers, models and engines stay the archive's. A fork they already have is kept, and one they deleted comes back.
+   what has moved on in the archive is proposed to them (docs/catalog.md, "What has moved on"). The forks of the
+   expectation threads are also what USER is scored against: without them, the archive's shared expectations score
+   nothing for USER. Expectation schemas, scorers, models and engines stay the archive's. A fork they already have is
+   kept, and one they deleted comes back, unless they own an expectation of that case under that schema by then: a
+   person owns one at most (docs/catalog.md, "Owners"), so theirs is kept instead.
 7. **Lints.** Every component the run came to is linted, with the catalog's languages and the facts' reasons, and
    the findings are printed, not stored. For the sample the fake models and engines say they are fake, and without
    `CHATDDX_REVISION` the scorers say their code has no revision.
@@ -228,10 +229,10 @@ Trials, executions, judges, scorings, canary sets, appendices and hand-written s
 set has one expectation schema. A canary set is the next asked for (agents/wip-runner.md).
 
 ### Picking a variant by the case's language
-The bench picks a configuration's variant by the model the cell's engine serves, and by language only when there is
-one (src/chatddx/catalog/variants.py). With texts in several languages, a cell's cases should run the variant in
-their own language, so a batch of English and Swedish cases runs each under its own. A variant is known only by its
-name today; what recording it would take is in agents/wip-variants.md.
+The bench picks a configuration's variant by the model the engine it runs on serves, and by language only when there
+is one (src/chatddx/catalog/variants.py). With texts in several languages, the cases a variation runs on should run the
+variant in their own language, so a batch of English and Swedish cases runs each under its own. A variant is known
+only by its name today; what recording it would take is in agents/wip-variants.md.
 
 ### Smaller issues
 - **One source a run.** A data set's cases all come from the source `--source` names.

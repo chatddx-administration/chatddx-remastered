@@ -157,7 +157,6 @@ def _outcomes(repl: Repl, run: Run) -> Text:
     return text
 
 
-# A scorer's views, each by its mean over the run's items.
 def _means(graded: Graded) -> str:
     assert graded.score is not None
     means: list[str] = []

@@ -89,6 +89,11 @@ it, if any. A new schema gets its own section with all three tiers.
 ### Tier 1
 - `0011-t1-catalog.sql`: PUBLIC loses all access; the writer gets SELECT, INSERT and the reader SELECT, with
   default privileges.
+- `0017-t0-catalog-label-edit.sql`: `catalog.label` dropped and made again as `label (id, edit, kind, part, position,
+  value, by, at)`: `(edit, kind)` is an edit of a `scorer` thread, `UNIQUE (edit, part, position)`, and the value not
+  empty. The old rows named a scorer digest; they are dropped, since a store from before holds v1 scorers, which can't
+  be read any more, and is rebuilt from its data sets. The writer and the reader get the new table through `0011`'s
+  default privileges.
 
 ### Tier 2
 - `0012-t2-catalog.sql`: repeats the rules of `chatddx.catalog` that concurrent writers could break.
@@ -104,3 +109,21 @@ it, if any. A new schema gets its own section with all three tiers.
   - Language tags and kinds on `catalog.language`, and no language for a skeleton already known to be compiled
     (`src/chatddx/catalog/language.py:check_language`).
   - Insert-only triggers on every table.
+  - `0018-t2-catalog-label-edit.sql`: `catalog.check_label()` again, for labels on edits: a label's `by` and `at` are
+    its edit's, so it is written in the edit's transaction, by its writer (`at` defaults to the transaction's `now()`),
+    and its position is within the views or resources of the edit's scorer (`src/chatddx/catalog/model.py:check_label`,
+    `src/chatddx/catalog/threads.py:check_labels`). The trigger and the insert-only triggers go back on the new table,
+    dropped first where a store migrated to tier 0 has them from `0012`.
+
+## source
+
+### Tier 0
+- `0014-t0-source.sql`: schema `source`: `text (source, id, text, by, at)`, keyed by source and id, the text not
+  empty, and an index on `(by, at)` for a person's latest texts (`src/chatddx/store/texts.py:Texts.typed_since`).
+
+### Tier 1
+- `0015-t1-source.sql`: PUBLIC loses all access. The writer gets SELECT, INSERT on `text`, granted explicitly, and no
+  DELETE, so only the admin deletes a text. The reader gets nothing: the texts are vignettes.
+
+### Tier 2
+- `0016-t2-source.sql`: triggers refusing UPDATE and TRUNCATE on `text`; DELETE is held back by the grants alone.

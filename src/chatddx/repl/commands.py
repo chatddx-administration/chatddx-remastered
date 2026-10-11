@@ -108,6 +108,12 @@ COMMANDS: dict[str, Command] = {
         + "offers it",
         scoring.scorers,
     ),
+    "take": Command(
+        ("[from OWNER]", "[TAG...]"),
+        "take the expectations shared with you for each case with any TAG, all "
+        + "without, keeping your own; OWNER's only, from OWNER",
+        scoring.take,
+    ),
     "help": Command((), "list the commands", help_),
     "quit": Command((), "leave (or Ctrl-D)", None),
 }
@@ -162,14 +168,12 @@ def handle(repl: Repl, line: str) -> bool:
     return True
 
 
-# A name made per model names nothing alone until the cell's endpoint picks the model.
 def _said(e: LookupError | ValueError) -> str:
     if isinstance(e, NotFound) and e.per_model:
         return f"{e}, picked by the endpoint in the cell"
     return str(e)
 
 
-# The next word of each name that starts with the words typed so far.
 def _next_words(names: Iterable[str], typed: list[str]) -> list[str]:
     found: dict[str, None] = {}
     for name in names:
@@ -205,6 +209,20 @@ def complete(names: Mapping[str, list[str]], line: str) -> list[str]:
             ]
         case "show":
             return _next_words(names.get(words[0], []), words[1:])
+        case "take" if words[0] == "from" and position == 1:
+            return []
+        case "take":
+            given = words[2:-1] if words[0] == "from" else words[:-1]
+            found = [
+                tag
+                for tag in names.get("tag", [])
+                if tag.startswith(words[-1]) and tag not in given
+            ]
+            return (
+                ["from", *found]
+                if position == 0 and "from".startswith(words[-1])
+                else found
+            )
         case "set" if position >= 1:
             return _next_words(names.get(words[0], []), words[1:])
         case _ if command is not None and command.rest is not None:

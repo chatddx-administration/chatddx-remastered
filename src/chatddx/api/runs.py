@@ -65,12 +65,24 @@ def _families(bench: Bench, given: schemas.NewRun) -> list[Family]:
     return [seen[f] for f in wanted]
 
 
-# A run started on a connection of its own, which its thread closes when it ends.
+def _cases(bench: Bench, given: schemas.NewRun) -> list[str]:
+    if given.cases is None:
+        return [f.case for f in _families(bench, given)]
+    wanted = list(dict.fromkeys(given.cases))
+    if not wanted:
+        raise HTTPException(422, "a run takes at least one case")
+    seen = {f.id for f in bench.families()}
+    for case in wanted:
+        family = bench.catalog.family(case)
+        if family not in seen or case not in bench.cases(family):
+            raise HTTPException(422, f"no case {case} for {bench.person.login}")
+    return wanted
+
+
 def _start(held: AppState, person: Person, given: schemas.NewRun) -> _Started:
     conn = held.connect()
     try:
         bench = Bench(conn, person, held.inventory, held.facts)
-        # What the body names and the person doesn't see is unprocessable, not missing.
         try:
             with refused():
                 variation = bench.variation(given.configuration, given.parts.given())
@@ -78,7 +90,7 @@ def _start(held: AppState, person: Person, given: schemas.NewRun) -> _Started:
             _ = bench.endpoint(given.endpoint)
         except LookupError as e:
             raise HTTPException(422, str(e)) from None
-        cases = [f.case for f in _families(bench, given)]
+        cases = _cases(bench, given)
         seed = suggest_seeds(1)[0] if given.seed is None else given.seed
         with refused():
             running = bench.start(variation, given.endpoint, cases, seed)
@@ -98,15 +110,12 @@ def _start(held: AppState, person: Person, given: schemas.NewRun) -> _Started:
     return _Started(bench, running, skeleton, said)
 
 
-# Sends the run, then finishes and scores it, whether or not the request that started
-# it is still listening; a halt ends the sending early.
 def _send(started: _Started, score: bool, put: Put) -> None:
     bench, running = started.bench, started.running
     try:
         try:
             running.send(lambda event: put(event_of(started.skeleton, event)))
         except KeyboardInterrupt:
-            # A call was stopped, as a runaway answer is, and the run ends with it.
             pass
         findings = [schemas.Finding.of(f) for f in running.finish()]
         put(("run.finished", schemas.RunFinishedData(findings=findings)))
@@ -131,7 +140,6 @@ async def _stream(
         running.halt()
 
 
-# The events up to the run's end, and why it failed if it did.
 async def _drained(events: asyncio.Queue[Named | None]) -> str | None:
     failed: str | None = None
     while (named := await events.get()) is not None:
@@ -140,7 +148,6 @@ async def _drained(events: asyncio.Queue[Named | None]) -> str | None:
     return failed
 
 
-# Waits for the run to end, halting it if the client goes away meanwhile.
 async def _ended(
     request: Request, running: Running, events: asyncio.Queue[Named | None]
 ) -> str | None:
@@ -276,8 +283,6 @@ def run(bench: BenchDep, run: UUID) -> schemas.RunDetail:
     return detail(bench, run)
 
 
-# Case-derived: the one place the API gives what a run's calls answered, besides the
-# stream.
 @router.get("/runs/{run}/items")
 def items(bench: BenchDep, run: UUID) -> list[schemas.ItemDetail]:
     started = bench.run_by_id(run)

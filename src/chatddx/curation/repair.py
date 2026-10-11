@@ -10,9 +10,6 @@ def _count(n: int, one: str, many: str) -> str:
     return f"{n} {one if n == 1 else many}"
 
 
-# Each of the archive's families whose vignette the source shows renamed or changed is
-# moved to its new place, or with `dry`, only listed. Other people's families are theirs
-# to repair.
 def repair(
     conn: Connection, source: Source, archive: Person, dry: bool = False
 ) -> list[str]:

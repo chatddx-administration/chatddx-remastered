@@ -7,7 +7,6 @@ from chatddx.factors.trial import Trial
 from chatddx.inventory import Inventory, confirm
 
 
-# Sending case-derived content where it isn't cleared to go is the one hard block.
 class Refused(Exception):
     pass
 
@@ -48,7 +47,6 @@ def check(
     return key
 
 
-# An endpoint's credential names the environment variable holding its secret.
 def secret(inventory: Inventory, endpoint: str) -> str | None:
     credential = inventory.endpoint(endpoint).credential
     if credential is None:

@@ -308,16 +308,3 @@ From `docs/store.md`, "Known gaps", where they concern this API:
 - `RunStarted.canaries` has no foreign key.
 - A schema-version bump strands stored rows: `get`, `load`, `run` and `score` refuse another version, and the rows
   can't be rewritten.
-
-## Beyond docs/store.md
-Behavior described here that `docs/store.md` doesn't state:
-- `Store.finished` returns a set, not a newest-first list.
-- `Store.add` returns the whole closure, also the components that were already stored.
-- `Store.get` returns a new component on each call; nothing is cached.
-- `Store.run` and `Store.score` return items and canary calls in whatever order Postgres returns them.
-- `Store.reaching` includes the digest itself when it is of the kind asked for.
-- `Store.compilations` isn't listed in `docs/store.md`.
-- `People.update` with `roles=[]` clears the roles, and reactivating a person restores no sessions.
-- `People` reads roles back as `Role`, so a role the tier-2 CHECK would refuse raises `ValueError` below tier 2.
-- `public.migration` is created by `migrate`, not by a migration file, and is readable only by the admin.
-- `migrations()` raises `ValueError` for a file name with fewer than three `-`-separated parts.

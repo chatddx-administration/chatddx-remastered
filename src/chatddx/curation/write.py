@@ -1,7 +1,7 @@
 from collections import Counter
 from collections.abc import Collection, Iterable
 
-from chatddx.catalog import Entry, EntryField, Kept, Subject, Survey
+from chatddx.catalog import Entry, EntryField, Kept, Labels, Part, Subject, Survey
 from chatddx.factors.base import Fingerprint
 from chatddx.factors.cases import Case, Vignette
 from chatddx.factors.scoring import Expectation
@@ -15,7 +15,6 @@ from chatddx.store.store import Connection, Store
 from .plan import Plan, Planned, SampleCase
 
 ARCHIVE = "archive"
-# What a run says it did with each record's thread.
 VERBS: dict[Kept, str] = {
     "created": "created",
     "edited": "updated",
@@ -23,9 +22,6 @@ VERBS: dict[Kept, str] = {
 }
 
 
-# Kinds a giftbag forks for its owner: what the old giftbag held (slices with their
-# tools, configurations and cases' targets). Expectation schemas and scorers stay the
-# archive's.
 def _gifted(kind: str) -> bool:
     return kind.startswith("chunk.") or kind in ("tool", "skeleton", "expectation")
 
@@ -45,7 +41,6 @@ class _Init:
         self.landed: dict[str, list[str]] = {}
         self.lines: list[str] = []
         self.surveyed: Survey | None = None
-        # The families of the data's cases that need a repair before they're adopted.
         self.unsettled: set[int] = set()
 
     def land(self, digest: str, what: str) -> None:
@@ -67,7 +62,6 @@ class _Init:
             self.note(subject, Entry(field=EntryField.NAME, value=name))
         for tag in sorted(set(tags) - about.tags):
             self.note(subject, Entry(field=EntryField.TAG, value=tag))
-        # The data says which tags the archive gives; tags people gave are theirs.
         if dropped := about.tags - set(tags):
             given = self.catalog.tags_given(subject)
             for tag in sorted(t for t in dropped if given.get(t) == self.archive.id):
@@ -87,6 +81,7 @@ class _Init:
         name: str | None,
         compilation: str | None = None,
         fork_of: int | None = None,
+        labels: Labels | None = None,
     ) -> tuple[int, str]:
         what = f"{kind} {name}" if name is not None else kind
         if len(found) > 1:
@@ -101,11 +96,15 @@ class _Init:
             name=name,
             compilation=compilation,
             forked_from=forked_from,
+            labels=labels,
         )
         return edit.thread, VERBS[kept]
 
     def record(self, r: Planned) -> None:
         found = self.catalog.find(r.kind, r.name, owner=self.archive.id)
+        labels: dict[tuple[Part, int], str] = {
+            ("view", i): label for i, label in enumerate(r.labels) if label is not None
+        }
         thread, verb = self.put(
             r.kind,
             r.digest,
@@ -113,14 +112,11 @@ class _Init:
             r.name,
             compilation=r.compilation,
             fork_of=None if r.fork_of is None else self.threads[(r.kind, r.fork_of)],
+            labels=labels if r.kind == "scorer" else None,
         )
         self.threads[(r.kind, r.name)] = thread
         self.land(r.digest, f"{r.kind} {r.name}")
         self.sync(Subject(thread=thread), r.tags, r.description)
-        labelled = self.catalog.labels(r.digest) if r.labels else {}
-        for position, label in enumerate(r.labels):
-            if label is not None and labelled.get(("view", position)) != label:
-                self.catalog.label(r.digest, "view", position, label, self.archive.id)
         said = ""
         if r.language is not None and self.catalog.language_of(r.digest) != r.language:
             self.catalog.language(r.digest, r.language, self.archive.id)
@@ -129,8 +125,6 @@ class _Init:
             f"[archive {r.kind}] {r.name}: {verb} {short(r.digest)}{said}"
         )
 
-    # What the source says of a case that can't be adopted as the data names it: the
-    # vignette was renamed or changed there, so its family needs a repair.
     def repair_for(self, source: Source, id: str) -> str | None:
         if self.surveyed is None:
             listing = {c.vignette.id: c.vignette.fingerprint for c in source.cases()}
@@ -193,8 +187,6 @@ class _Init:
         self.sync(Subject(thread=thread))
         self.lines.append(f"[archive expectation] {id}: {verb} {short(expectation)}")
 
-    # The archive's threads and families this run didn't come to, but for those of the
-    # data's cases it reported missing or needing repair.
     def leftovers(self, cases: Collection[str]) -> None:
         threads = set(self.threads.values())
         subjects = self.catalog.involving(self.archive.id)
@@ -211,7 +203,7 @@ class _Init:
         lines: list[str] = []
         for subject in subjects:
             about = known[subject]
-            if about.owner != self.archive.id or about.deleted:
+            if not about.owned_by(self.archive.id):
                 continue
             if subject.thread is not None and subject.thread not in threads:
                 kind = self.catalog.thread(subject.thread).kind
@@ -267,7 +259,9 @@ class _Init:
             if any(not about.deleted for about in mine.values()):
                 self.lines.append(f"[giftbag {kind}] {name}: kept")
                 continue
-            # A fork `wipe` deleted comes back rather than a new one piling up.
+            if kind == "expectation" and self._expecting(user, thread):
+                self.lines.append(f"[giftbag {kind}] {name}: kept their own")
+                continue
             if mine:
                 restored = max(mine)
                 self.catalog.note(
@@ -288,6 +282,12 @@ class _Init:
             )
             self.lines.append(f"[giftbag {kind}] {name}: forked {short(head.digest)}")
 
+    def _expecting(self, user: Person, thread: int) -> bool:
+        head = self.store.get(self.catalog.head(thread).digest)
+        assert isinstance(head, Expectation)
+        case, schema = head.case, head.expectation_schema
+        return bool(self.catalog.expectation_choices([case], user.id, schema)[case])
+
 
 def _what(catalog: Catalog, subject: Subject) -> str:
     if subject.thread is not None:
@@ -295,8 +295,6 @@ def _what(catalog: Catalog, subject: Subject) -> str:
     return "family" if subject.family is not None else "run" if subject.run else "score"
 
 
-# What a person owns is deleted and what they collaborate on is unshared, each with one
-# entry and only when it holds, so wiping again writes nothing. The person stays.
 def wipe(conn: Connection, user: Person) -> list[str]:
     deleted: Counter[str] = Counter()
     unshared: Counter[str] = Counter()
@@ -304,7 +302,7 @@ def wipe(conn: Connection, user: Person) -> list[str]:
         catalog = Catalog(conn)
         for subject in catalog.involving(user.id):
             about = catalog.about(subject)
-            if about.owner == user.id and not about.deleted:
+            if about.owned_by(user.id):
                 catalog.note(subject, Entry(field=EntryField.DELETED), user.id)
                 deleted[_what(catalog, subject)] += 1
             if user.id in about.collaborators:

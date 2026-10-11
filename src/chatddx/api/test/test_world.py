@@ -25,7 +25,7 @@ def test_endpoints_say_what_they_serve_and_what_they_re_cleared_for(
         "fake",
     )
     assert (qwen["cleared_for"], qwen["max_jobs"], qwen["problem"]) == (
-        ["sample"],
+        ["sample", "typed"],
         4,
         None,
     )

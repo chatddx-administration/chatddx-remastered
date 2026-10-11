@@ -194,9 +194,6 @@ def migrated(copies: Copies) -> Iterator[str]:
         drop_database(copies.admin, name)
 
 
-# The sample as init-data lands it from the sample World: the archive's threads and
-# families, shared with alice, and her giftbag of forks. Loaded once, and copied for
-# each test by the packages whose `template` it is.
 @pytest.fixture(scope="session")
 def curated(copies: Copies, migrated: str) -> Iterator[str]:
     name = create_database(copies.admin, template=migrated)
@@ -212,8 +209,6 @@ def curated(copies: Copies, migrated: str) -> Iterator[str]:
         drop_database(copies.admin, name)
 
 
-# What `db` is a copy of; packages whose tests start from the sample override it with
-# `curated`.
 @pytest.fixture
 def template(migrated: str) -> str:
     return migrated
@@ -228,8 +223,6 @@ def db(copies: Copies, template: str) -> Iterator[str]:
         copies.give_back(name)
 
 
-# Packages whose code commits as it writes, as the runner and the bench do, override it
-# with True.
 @pytest.fixture
 def autocommit() -> bool:
     return False

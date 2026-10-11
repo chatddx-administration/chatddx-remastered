@@ -71,3 +71,37 @@ def test_a_thread_the_person_doesn_t_see_isn_t_found(
         signed.get("/api/threads", params={"kind": "configuration"}, headers=bob).json()
         == []
     )
+
+
+@pytest.mark.slow
+def test_a_person_takes_one_expectation_replacing_theirs_only_when_they_say_so(
+    signed: TestClient, bob: dict[str, str]
+) -> None:
+    [found] = signed.get("/api/families", params={"name": "Dutchfall11w"}).json()
+    [held] = signed.get(f"/api/families/{found['id']}").json()["expectations"]
+    [archives] = held["shared"]
+    taking = f"/api/threads/{archives['id']}/takes"
+
+    got = signed.post(taking, json={})
+    assert got.status_code == 409
+    assert "replace it to take this one" in got.json()["detail"]
+
+    got = signed.post(taking, json={"replace": True})
+    assert got.status_code == 201
+    made = got.json()
+    assert got.headers["Location"] == f"/api/threads/{made['id']}"
+    assert (made["owner"], made["forked_from"]) == ("alice", archives["head"]["id"])
+    [now] = signed.get(f"/api/families/{found['id']}").json()["expectations"]
+    assert now["expectation"] == archives["head"]["digest"]
+    assert now["ambiguous"] is None
+
+    got = signed.post(f"/api/threads/{made['id']}/takes", json={})
+    assert (got.status_code, got.json()) == (
+        422,
+        {"detail": f"expectation {made['id']} is yours already"},
+    )
+    got = signed.post(taking, json={}, headers=bob)
+    assert (got.status_code, got.json()) == (
+        404,
+        {"detail": f"no expectation {archives['id']} for bob"},
+    )

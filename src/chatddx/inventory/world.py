@@ -9,7 +9,6 @@ from .inventory import Inventory
 class World:
     path: Path
     inventory: Inventory
-    # Its factors and facts files: factors.toml and facts.toml, when it has them.
     factors: tuple[Path, ...] = ()
     facts: tuple[Path, ...] = ()
 

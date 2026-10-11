@@ -885,8 +885,8 @@ def web_search(reg: Registry) -> str:
                 },
                 "required": ["query"],
             },
-            code=RIG,
             entry_point="chatddx_tools.web:search",
+            version=1,
         )
     )
 
@@ -1333,8 +1333,8 @@ def test_views_are_checked_against_the_expectation_schema(reg: Registry) -> None
     )
     scorer = reg.add(
         Scorer(
-            code=RIG,
             entry_point="chatddx_scoring.match:score",
+            version=1,
             expectation_schema=closed,
             views=(
                 View(expectation="$.ddx[*]", metric="m"),

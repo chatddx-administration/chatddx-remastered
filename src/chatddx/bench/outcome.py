@@ -8,9 +8,6 @@ from chatddx.scorers.answer import read
 type Outcome = Literal["stopped", "errored", "unread", "completed", "invalid", "valid"]
 
 
-# How an item ended, by its last call, and why when there is something to say. Without
-# an answer it was stopped, errored or is unread; with one, it is completed when the
-# output has no schema, else valid or invalid by it.
 def outcome(skeleton: Skeleton, item: RunItem) -> tuple[Outcome, str | None]:
     last = item.calls[-1]
     answer = read(skeleton, last.response)
@@ -27,7 +24,6 @@ def outcome(skeleton: Skeleton, item: RunItem) -> tuple[Outcome, str | None]:
     return "valid", last.error
 
 
-# The prompt and completion tokens of an item's calls, as their responses count them.
 def usage(item: RunItem) -> tuple[int, int]:
     used = [
         u

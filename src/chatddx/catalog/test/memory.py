@@ -1,6 +1,6 @@
 from collections.abc import Collection
 
-from chatddx.catalog import Binding, Edit, Entry, Part, Subject, Thread
+from chatddx.catalog import Binding, Edit, Entry, EntryField, Part, Subject, Thread
 from chatddx.factors import request
 from chatddx.factors.base import Component
 from chatddx.factors.bundle import Registry
@@ -10,6 +10,7 @@ from chatddx.factors.scoring import Expectation
 from chatddx.factors.test.sample import NOW, RIG
 
 BY = 1
+ALICE, BOB, ARCHIVE = 1, 2, 3
 
 
 def compiled(registry: Registry, recipe: Recipe) -> Compilation:
@@ -27,7 +28,7 @@ class Memory:
         self._entries: list[tuple[Subject, Entry, int]] = []
         self._bindings: list[Binding] = []
         self._languages: list[tuple[str, str]] = []
-        self._labels: list[tuple[str, Part, int, str]] = []
+        self._labels: list[tuple[int, Part, int, str]] = []
 
     def start(
         self,
@@ -79,8 +80,8 @@ class Memory:
     def set_language(self, digest: str, value: str) -> None:
         self._languages.append((digest, value))
 
-    def add_label(self, scorer: str, part: Part, position: int, value: str) -> None:
-        self._labels.append((scorer, part, position, value))
+    def add_label(self, edit: int, part: Part, position: int, value: str) -> None:
+        self._labels.append((edit, part, position, value))
 
     def get(self, digest: str) -> Component:
         return self.registry.get(digest)
@@ -153,8 +154,8 @@ class Memory:
     def languages(self, digests: Collection[str]) -> list[tuple[str, str]]:
         return [(d, v) for d, v in self._languages if d in digests]
 
-    def labels(self, scorer: str) -> list[tuple[Part, int, str]]:
-        return [(p, i, v) for s, p, i, v in self._labels if s == scorer]
+    def labels(self, edits: Collection[int]) -> list[tuple[int, Part, int, str]]:
+        return [label for label in self._labels if label[0] in edits]
 
     def _stored[C: Component](self, cls: type[C]) -> list[tuple[str, C]]:
         found: list[tuple[str, C]] = []
@@ -162,3 +163,11 @@ class Memory:
             if isinstance(component := self.registry.get(digest), cls):
                 found.append((digest, component))
         return found
+
+
+def owned(rows: Memory, edit: Edit, owner: int, *shared_with: int) -> Edit:
+    subject = Subject(thread=edit.thread)
+    rows.note(subject, Entry(field=EntryField.OWNER, person=owner))
+    for person in shared_with:
+        rows.note(subject, Entry(field=EntryField.COLLABORATOR, person=person))
+    return edit

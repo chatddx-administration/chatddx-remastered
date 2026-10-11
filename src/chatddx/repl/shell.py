@@ -11,10 +11,8 @@ from chatddx.factors.base import Finding
 
 from .render import REFUSED, finding
 
-# What `set` takes an optional part out with.
 NONE = "none"
 
-# A drawn seed is short, so the prompt stays readable; any seed a trial takes can be held.
 SEEDS = 100_000
 MAX_SEED = 2**31 - 1
 
@@ -23,8 +21,6 @@ def drawn_seed() -> int:
     return secrets.randbelow(SEEDS)
 
 
-# What the repl runs: a configuration, or a variation of it being tried, at an endpoint,
-# with the engine the endpoint serves. Either side can be missing.
 @dataclass(frozen=True)
 class Cell:
     variation: TriedVariation | None = None
@@ -57,8 +53,6 @@ class Repl:
         held = f" {cell.label}{endpoint}" if cell.variation or cell.endpoint else ""
         return f"{self.bench.person.login}{held} #{self.seed}> "
 
-    # The names each word of a command can be: per-model names complete by their
-    # name alone too, since the cell's endpoint picks the model. Runs come fresh.
     def completions(self) -> dict[str, list[str]]:
         runs = self.bench.runs()[:20]
         return self._names() | {
@@ -96,7 +90,6 @@ class Repl:
         endpoint = self.cell.endpoint or "?"
         self.console.print(Text(f"cell: {configuration} × {endpoint}"))
 
-    # The cell as it changed, and what the lints say of its pair.
     def say_changed(self) -> None:
         self.say_cell()
         cell = self.cell

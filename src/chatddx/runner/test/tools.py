@@ -1,11 +1,9 @@
+import pytest
 from pydantic import JsonValue
 
-from chatddx.core.rig import rig
-from chatddx.factors.base import Code
 from chatddx.factors.request import Tool
+from chatddx.tools.shipped import TOOLS, ShippedTool
 
-# Tools for the runner's tests, which mustn't reach a third party as
-# `chatddx.tools.web_search` does. They take its parameters.
 PARAMETERS: dict[str, JsonValue] = {
     "type": "object",
     "properties": {
@@ -29,14 +27,17 @@ def counted(query: str, max_results: int = 5) -> int:
     return len(query) + max_results
 
 
-NOT_A_FUNCTION = "lookup"
-
-
-def component(function: str, code: Code | None = None) -> Tool:
+def component(function: str, version: int = 1) -> Tool:
     return Tool(
         name=function,
         description=f"{function}, for the runner's tests",
         parameters=PARAMETERS,
-        code=code or rig(),
         entry_point=f"chatddx.runner.test.tools:{function}",
+        version=version,
     )
+
+
+def shipped(monkeypatch: pytest.MonkeyPatch) -> None:
+    for function in (lookup, broken, counted):
+        entry_point = f"chatddx.runner.test.tools:{function.__name__}"
+        monkeypatch.setitem(TOOLS, entry_point, ShippedTool(1, function))

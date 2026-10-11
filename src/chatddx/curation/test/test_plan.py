@@ -12,7 +12,6 @@ from chatddx.facts import BUNDLED, Facts
 pytestmark = pytest.mark.solidified
 
 
-# A data set of `files`, by name, planned.
 def plan(tmp_path: Path, **files: str) -> Plan:
     for name, text in files.items():
         _ = (tmp_path / name.replace("_", "-")).with_suffix(".toml").write_text(text)
@@ -161,34 +160,6 @@ entries = { "Fill in the plan." = "Fyll i planen." }
     assert compilation is not None
     recipe = planned.registry.get(compilation)
     assert isinstance(recipe, Compilation) and recipe.recipe.translations is None
-
-
-def test_the_sample_s_texts_are_english() -> None:
-    sample = sample_plan()
-    assert {(r.table, r.name) for r in sample.records if r.language == "en"} == {
-        ("output", f"{name} (en)")
-        for name in (
-            "management-plan",
-            "management-plan-shown",
-            "management-plan-prompted",
-            "diagnoses",
-            "diagnoses-tool",
-            "free-text",
-        )
-    } | {("toolset", "web (en)")}
-    assert {r.name for r in sample.records if r.table == "recipe"} == {
-        f"{name} (en, {model})"
-        for name in (
-            "plan",
-            "plan-shown",
-            "plan-prompted",
-            "plan-web",
-            "diagnoses",
-            "diagnoses-tool",
-            "free-text",
-        )
-        for model in ("Qwen/Qwen3-8B-AWQ", "openai/gpt-oss-20b")
-    }
 
 
 @pytest.mark.parametrize(

@@ -1,15 +1,16 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, HTTPException, Query, Request, Response
 
 from chatddx import bench as benches
 from chatddx.bench import Ambiguous, Bench, NotFound
 from chatddx.factors.base import Fingerprint, resolve
 from chatddx.factors.cases import Case
+from chatddx.store import fetch_vignette
 
 from . import schemas
 from .people import BenchDep
-from .threads import login
+from .threads import login, made, refused, thread_of
 
 router = APIRouter(tags=["families"])
 
@@ -36,6 +37,9 @@ def expected(bench: Bench, case: str, schema: str) -> schemas.Expected:
         expectation=None if held is None else held.digest,
         data=None if held is None else held.data,
         ambiguous=ambiguous,
+        shared=[
+            thread_of(bench, "expectation", e, a) for e, a in bench.shared(case, schema)
+        ],
     )
 
 
@@ -68,13 +72,78 @@ def family(bench: BenchDep, family: int) -> schemas.FamilyDetail:
     )
 
 
-# Case-derived: the one place the API gives a vignette.
+@router.post(
+    "/families",
+    status_code=201,
+    responses={
+        429: {"description": "The person has typed as many cases as a day takes"}
+    },
+)
+def typed(
+    request: Request, response: Response, bench: BenchDep, given: schemas.NewTyped
+) -> schemas.Family:
+    with refused():
+        found = bench.type_case(
+            given.text, name=given.name, language=given.language, source=given.source
+        )
+    response.headers["Location"] = request.app.url_path_for("family", family=found.id)
+    return family_of(bench, found)
+
+
+@router.post("/families/{family}/appendices", status_code=201)
+def appendix(
+    request: Request,
+    response: Response,
+    bench: BenchDep,
+    family: int,
+    given: schemas.NewAppendix,
+) -> schemas.MadeThread:
+    with refused():
+        written = bench.new(bench.appendix(family, given.text), given.name)
+    return made(request, response, bench, written.edit.thread, written.findings)
+
+
+def case_of(bench: Bench, case: str, default: str) -> schemas.FamilyCase:
+    held = resolve(bench.get, case, Case)
+    return schemas.FamilyCase(
+        case=case,
+        title=bench.title(case),
+        appendices=list(held.appendices),
+        default=case == default,
+        expectations=[
+            expected(bench, case, s) for s in bench.expectation_schemas(case)
+        ],
+    )
+
+
+@router.get("/families/{family}/cases")
+def cases(bench: BenchDep, family: int) -> list[schemas.FamilyCase]:
+    found = bench.family_by_id(family)
+    return [case_of(bench, c, found.case) for c in bench.cases(family)]
+
+
+@router.post("/families/{family}/cases", status_code=201)
+def case(bench: BenchDep, family: int, given: schemas.NewCase) -> schemas.FamilyCase:
+    found = bench.family_by_id(family)
+    try:
+        with refused():
+            if given.replacing is None:
+                made = bench.case(family, given.appendices or [])
+            elif bench.catalog.family(given.replacing) != family:
+                raise ValueError(f"{given.replacing} isn't a case of family {family}")
+            else:
+                made = bench.replacement(given.replacing)
+    except NotFound as e:
+        raise HTTPException(422, str(e)) from None
+    return case_of(bench, made, found.case)
+
+
 @router.get("/families/{family}/vignette")
 def vignette(bench: BenchDep, family: int) -> schemas.Vignette:
     found = bench.family_by_id(family)
     held = resolve(bench.get, found.case, Case).vignette
     try:
-        raw = bench.inventory.source(held.source).fetch(held.id)
+        raw = fetch_vignette(bench.conn, bench.inventory, held)
     except LookupError as e:
         raise NotFound(str(e)) from None
     keyed = held.fingerprint.key_id is not None
@@ -83,6 +152,26 @@ def vignette(bench: BenchDep, family: int) -> schemas.Vignette:
         id=held.id,
         text=raw.decode("utf-8-sig", errors="replace"),
         drifted=None if keyed else Fingerprint.of(raw) != held.fingerprint,
+    )
+
+
+@router.post("/takes")
+def takes(bench: BenchDep, given: schemas.NewTakes) -> schemas.Taken:
+    seen = {f.id: f for f in bench.families()}
+    if missing := [f for f in given.families if f not in seen]:
+        raise HTTPException(422, f"no case {missing[0]} for {bench.person.login}")
+    cases = [seen[f].case for f in given.families]
+    try:
+        with refused():
+            taken = bench.take(cases, given.expectation_schema, given.owner)
+    except NotFound as e:
+        raise HTTPException(422, str(e)) from None
+    of = dict(zip(given.families, cases, strict=True))
+    return schemas.Taken(
+        taken={f: taken.taken[c] for f, c in of.items() if c in taken.taken},
+        kept={f: taken.kept[c] for f, c in of.items() if c in taken.kept},
+        choosing={f: taken.choosing[c] for f, c in of.items() if c in taken.choosing},
+        missing=[f for f, c in of.items() if c in taken.missing],
     )
 
 

@@ -90,6 +90,16 @@ def test_tags_complete_after_show_tag_each_once():
     assert complete(names, "show tag edn ") == ["dutch-fall"]
 
 
+def test_take_completes_from_and_then_each_tag_once():
+    names = {"tag": ["dutch-fall", "edn"]}
+
+    assert complete(names, "take ") == ["from", "dutch-fall", "edn"]
+    assert complete(names, "take f") == ["from"]
+    assert complete(names, "take from ") == []
+    assert complete(names, "take from bob ") == ["dutch-fall", "edn"]
+    assert complete(names, "take edn ") == ["dutch-fall"]
+
+
 def test_the_names_complete_as_the_person_sees_them(repl: Repl):
     names = repl.completions()
 

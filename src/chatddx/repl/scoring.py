@@ -1,18 +1,28 @@
+from collections.abc import Iterable
+
 from rich.table import Table
 from rich.text import Text
 
-from chatddx.bench import Graded
+from chatddx.bench import Family, Graded
 from chatddx.factors.select import reaches
 from chatddx.ledger import RunStarted
 
-from .render import LABEL, REFUSED, VALID, show_scores, show_summary, show_table
+from .render import (
+    LABEL,
+    LATER,
+    REFUSED,
+    VALID,
+    plural,
+    show_scores,
+    show_summary,
+    show_table,
+    some,
+)
 from .reviewing import said
 from .running import held
 from .shell import Repl
 
 
-# Scores the runs left to score, each under the scorers it has no score from as their
-# scorings would be built now; with RUN, that run alone.
 def score(repl: Repl, prefix: str | None = None) -> None:
     bench = repl.bench
 
@@ -65,7 +75,7 @@ def scorers(repl: Repl) -> None:
         table.add_column(column)
 
     for edit, about, scorer in bench.scorers():
-        labels = bench.labels(edit.digest)
+        labels = bench.labels_of(edit)
         name = about.name or bench.catalog.title(edit.thread)
         for i, view in enumerate(scorer.views):
             reads = view.output or "the whole answer"
@@ -89,3 +99,71 @@ def scorers(repl: Repl) -> None:
             )
 
     repl.console.print(table)
+
+
+def take(repl: Repl, *words: str) -> None:
+    if words[:1] == ("from",) and len(words) < 2:
+        repl.error("usage: take [from OWNER] [TAG...]")
+        return
+
+    owner, tags = (words[1], words[2:]) if words[:1] == ("from",) else (None, words)
+
+    bench = repl.bench
+    families = bench.families(tags)
+    tagged = f" tagged {' or '.join(tags)}" if tags else ""
+
+    if not families:
+        repl.error(f"no case{tagged} for {bench.person.login}")
+        return
+
+    under: dict[str, list[Family]] = {}
+
+    for family in families:
+        for schema in bench.expectation_schemas(family.case):
+            under.setdefault(schema, []).append(family)
+
+    if not under:
+        repl.error(f"no expectation of a case{tagged} for {bench.person.login}")
+        return
+
+    for schema, picked in under.items():
+        taken = bench.take([f.case for f in picked], schema, owner)
+        names = {f.case: f.name for f in picked}
+        by = f" from {owner}" if owner else ""
+        repl.console.print(
+            Text(
+                f"take: {plural(len(picked), 'case')}{tagged}, under "
+                + f"{bench.title(schema)}{by}",
+                style="bold",
+            )
+        )
+        table = Table(box=None, show_header=False)
+        table.add_column(style=LABEL)
+        table.add_column()
+        table.add_row(
+            "taken",
+            Text(_some(names, taken.taken), style=VALID if taken.taken else LABEL),
+        )
+        if taken.kept:
+            table.add_row("yours already", _some(names, taken.kept))
+        if taken.choosing:
+            choosing = (
+                f"{names[case]} ({' '.join(sorted(_owners(repl, threads)))})"
+                for case, threads in taken.choosing.items()
+            )
+            said = Text(some(choosing), style=LATER)
+            _ = said.append(": take from OWNER", style=LABEL)
+            table.add_row("to choose from", said)
+        if taken.missing:
+            table.add_row("none shared", _some(names, taken.missing))
+        repl.console.print(table)
+
+
+def _some(names: dict[str, str], cases: Iterable[str]) -> str:
+    listed = sorted(names[c] for c in cases)
+    return f"{len(listed)}: {some(listed)}" if listed else "none"
+
+
+def _owners(repl: Repl, threads: Iterable[int]) -> set[str]:
+    bench = repl.bench
+    return {bench.login(bench.about(t).owner) for t in threads}

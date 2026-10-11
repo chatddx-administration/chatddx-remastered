@@ -64,12 +64,14 @@ def test_a_world_takes_sources_and_endpoints_from_another(tmp_path: Path) -> Non
         + '[source.sample]\npath = "../other/vignettes"\n'
     )
     inventory = Inventory.load(world / "inventory.toml")
-    assert inventory.sources["sample"].path == directory.resolve()
+    assert inventory.sources["sample"] == DirectorySource(
+        name="sample", path=directory.resolve()
+    )
     assert list(inventory.endpoints) == ["qwen"]
 
     kompismoln = Inventory.load(WORLDS / "kompismoln" / "inventory.toml")
-    assert (
-        kompismoln.sources["sample"].path == (WORLDS / "sample" / "vignettes").resolve()
+    assert kompismoln.sources["sample"] == DirectorySource(
+        name="sample", path=(WORLDS / "sample" / "vignettes").resolve()
     )
 
 

@@ -43,7 +43,6 @@ def family_of(rows: Reader, case: str) -> int | None:
 def holder(
     rows: Reader, vignette: Vignette, *, but: int | None = None
 ) -> tuple[int, bool] | None:
-    # A family that holds the place now has a binding to it, its latest.
     for family in sorted({b.family for b in rows.bindings_sharing(vignette)}):
         held = rows.bindings([family])[-1].vignette
         if family != but and (
@@ -53,11 +52,12 @@ def holder(
     return None
 
 
-def check_adoptable(rows: Reader, case: str) -> Vignette:
+def check_adoptable(rows: Reader, case: str, *, by_content: bool = True) -> Vignette:
     if rows.kind(case) != "case":
         raise LookupError(f"{case} is not a stored case")
     vignette = resolve(rows.get, case, Case).vignette
-    if (held := holder(rows, vignette)) is not None:
+    held = holder(rows, vignette)
+    if held is not None and (by_content or held[1]):
         other, same_id = held
         change = "new content" if same_id else "a new name"
         raise ValueError(

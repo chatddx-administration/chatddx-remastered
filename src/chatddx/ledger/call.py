@@ -17,7 +17,6 @@ from .record import ItemKey, UtcDatetime, in_order
 
 class Call(Frozen):
     request: Fingerprint
-    # With retries, from the first attempt's start to the last attempt's end.
     started_at: UtcDatetime
     finished_at: UtcDatetime
     status: int | None = None
@@ -45,7 +44,6 @@ class Call(Frozen):
 def fingerprint_prompt_tokens(
     response: dict[str, JsonValue], key: tuple[str, bytes] | None = None
 ) -> tuple[dict[str, JsonValue], Fingerprint | None]:
-    # prompt_token_ids encode the case text, so only their fingerprint may be stored.
     kept = {k: v for k, v in response.items() if k != "prompt_token_ids"}
     ids = response.get("prompt_token_ids")
     if not isinstance(ids, list):
@@ -59,8 +57,6 @@ def fingerprint_request(
     return Fingerprint.of(canonical_bytes(sorted_keys(body)), key)
 
 
-# One tool the runner ran for a tool call in a response: `result` is the text the model
-# read back, `error` why the tool failed. A call naming no tool of the skeleton fails.
 class ToolRun(Frozen):
     id: str
     name: str
@@ -75,14 +71,11 @@ class ToolRun(Frozen):
         return self
 
 
-# A tool round: the tools run for the previous response's calls, and the next call.
 class Turn(Frozen):
     tools: tuple[ToolRun, ...] = Field(min_length=1)
     call: Call
 
 
-# `sent` holds when each item was sent: for a run its first call, for a score its first
-# judge call.
 def check_execution(
     execution: Execution,
     trial: Trial,
@@ -118,8 +111,6 @@ def check_execution(
             )
         )
 
-    # Ends sort before starts at the same instant: a call ending as another starts
-    # doesn't overlap it.
     events = sorted(
         [(c.started_at, 1) for c in calls] + [(c.finished_at, -1) for c in calls]
     )

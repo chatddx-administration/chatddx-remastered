@@ -1,11 +1,10 @@
 import json
 from collections.abc import Sequence
-from typing import Annotated, Literal, override
+from typing import Annotated, ClassVar, Literal, override
 
 from pydantic import AfterValidator, Field, JsonValue
 
 from .base import (
-    Code,
     Component,
     Digest,
     Frozen,
@@ -83,7 +82,6 @@ class Judge(Component):
 JudgeRef = Annotated[Digest, RefTo("judge")]
 
 
-# A JSON Pointer or a JSONPath query from the subset in select.py.
 Selector = Annotated[str, AfterValidator(check_selector)]
 
 
@@ -105,8 +103,9 @@ class View(Frozen):
 
 class Scorer(Component):
     kind: Literal["scorer"] = "scorer"
-    code: Code
+    schema_version: ClassVar[int] = 2
     entry_point: EntryPoint
+    version: int = Field(ge=1)
     expectation_schema: ExpectationSchemaRef
     views: tuple[View, ...] = Field(min_length=1)
     resources: tuple[str, ...] = ()

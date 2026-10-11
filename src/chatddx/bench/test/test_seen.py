@@ -2,7 +2,7 @@ import re
 
 import pytest
 
-from chatddx.bench import Ambiguous, Bench, NotFound
+from chatddx.bench import Ambiguous, Bench, Conflict, MovedOn, NotFound
 from chatddx.bench.test.sample import (
     FREE_TEXT,
     PLAN,
@@ -197,7 +197,21 @@ def test_a_case_is_held_to_the_expectation_scoring_picks(
     assert theirs.expectation_schemas(case) == []
     assert theirs.expectation(case, schema) is None
 
+    catalog = Catalog(conn)
+    archive = People(conn).find("archive")
+    assert archive is not None
+    [shared] = [
+        t
+        for t in catalog.expectations_of(case)
+        if catalog.about(Subject(thread=t)).owner == archive.id
+    ]
+    to_bob = Entry(field=EntryField.COLLABORATOR, person=bob.id)
+    catalog.note(Subject(thread=shared), to_bob, archive.id)
+    assert theirs.expectation_schemas(case) == [schema]
+    assert theirs.expectation(case, schema) is None
 
+
+@pytest.mark.slow
 def test_several_expectations_to_choose_from_are_ambiguous(
     conn: Connection, alice: Person, bench: Bench, plan: Plan
 ) -> None:
@@ -212,6 +226,20 @@ def test_several_expectations_to_choose_from_are_ambiguous(
         _ = bench.expectation(case, schema)
     with pytest.raises(Ambiguous, match="has expectations to choose from"):
         _ = bench.scoring(started, scorer)
+
+    assert scorer in bench.unscored(started)
+    assert [r.run for r, _ in bench.outstanding()] == [started.run]
+    [graded] = bench.score(started, [scorer])
+    assert graded.score is None
+    assert graded.refused and "has expectations to choose from" in graded.refused
+    assert Store(conn).scores_of(started.run) == []
+
+    family = bench.family("DutchFall10w")
+    variation = bench.configuration(FREE_TEXT, bench.endpoint(QWEN))
+    [held] = [
+        r for r in bench.reach(variation, [family]) if r.offered and r.scorer == "raw"
+    ]
+    assert (held.choosing, held.missing, held.have) == ([family], [], 0)
 
 
 def test_a_per_model_configuration_is_picked_by_the_engine_s_model(
@@ -299,14 +327,107 @@ def test_a_fork_is_a_new_configuration_and_an_edit_a_new_version_of_one_s_own(
     assert bench.about(thread).owner == bench.person.id
     assert forked.digest == bench.skeleton(off).digest
 
-    edited = bench.edit(thread, variation)
+    seen = forked.variation.configuration.id
+    edited = bench.edit(thread, variation, seen)
     assert (edited.what, edited.name) == ("a new version", "terse")
-    assert bench.edit(thread, variation).what == "unchanged"
+    now = edited.variation.configuration.id
+    assert bench.edit(thread, variation, now).what == "unchanged"
     assert [e.digest for e in catalog.history(thread)] == [
         forked.digest,
         variation.configuration.digest,
     ]
+    with pytest.raises(MovedOn, match=f"since edit {seen}: its head is edit {now}"):
+        _ = bench.edit(thread, off, seen)
 
     archives = bench.thread("configuration", f"archive/{FREE_TEXT}")[0].thread
     with pytest.raises(NotFound, match=f"no configuration {archives} of yours"):
-        _ = bench.edit(archives, variation)
+        _ = bench.edit(archives, variation, now)
+
+
+def _expectation_of(catalog: Catalog, case: str, owner: int) -> int:
+    [thread] = [
+        t
+        for t in catalog.expectations_of(case)
+        if catalog.about(Subject(thread=t)).owned_by(owner)
+    ]
+    return thread
+
+
+@pytest.mark.slow
+def test_a_person_takes_the_expectations_shared_with_them(
+    conn: Connection, alice: Person, bob: Person, bench: Bench, plan: Plan
+) -> None:
+    catalog, store = Catalog(conn), Store(conn)
+    archive = People(conn).find("archive")
+    assert archive is not None
+    schema = plan.named("expectation_schema", "targets").digest
+    fall, eleven, edn = (
+        bench.family(n).case for n in ("DutchFall10w", "Dutchfall11w", "casesfromedn1")
+    )
+    gone = Entry(field=EntryField.DELETED)
+    for case in (fall, edn):
+        own = _expectation_of(catalog, case, alice.id)
+        catalog.note(Subject(thread=own), gone, alice.id)
+    kept = _expectation_of(catalog, eleven, alice.id)
+
+    taken = bench.take([fall, eleven, edn, fall], schema)
+    assert (taken.kept, taken.choosing, taken.missing) == ({eleven: kept}, {}, [])
+    assert set(taken.taken) == {fall, edn}
+    origin = _expectation_of(catalog, fall, archive.id)
+    took = catalog.thread(taken.taken[fall])
+    assert took.forked_from == catalog.head(origin).id
+    assert catalog.about(Subject(thread=took.id)).owner == alice.id
+    held = bench.expectation(fall, schema)
+    assert held is not None and held.digest == catalog.head(origin).digest
+
+    again = bench.take([fall, eleven, edn], schema)
+    assert again.taken == {} and set(again.kept) == {fall, eleven, edn}
+
+    catalog.note(Subject(thread=taken.taken[fall]), gone, alice.id)
+    head = resolve(store.get, catalog.head(origin).digest, Expectation)
+    registry = store.load([head.digest])
+    theirs = registry.add(
+        Expectation(case=fall, expectation_schema=schema, data={"diagnosis": "x"})
+    )
+    _ = store.add(registry, [theirs])
+    bobs = catalog.create(theirs, bob.id).thread
+    to_alice = Entry(field=EntryField.COLLABORATOR, person=alice.id)
+    catalog.note(Subject(thread=bobs), to_alice, bob.id)
+    assert bench.take([fall], schema).choosing == {fall: [origin, bobs]}
+    assert set(bench.take([fall], schema, owner="archive").taken) == {fall}
+
+    assert bench.take([fall], schema, owner="bob").kept == {
+        fall: _expectation_of(catalog, fall, alice.id)
+    }
+    with pytest.raises(NotFound, match="no person 'nobody'"):
+        _ = bench.take([fall], schema, owner="nobody")
+    with pytest.raises(ValueError, match="isn't a stored expectation schema"):
+        _ = bench.take([fall], fall)
+
+
+def test_a_person_replaces_their_own_expectation_only_when_they_say_so(
+    conn: Connection, alice: Person, bench: Bench, plan: Plan
+) -> None:
+    catalog = Catalog(conn)
+    archive = People(conn).find("archive")
+    assert archive is not None
+    schema = plan.named("expectation_schema", "targets").digest
+    case = bench.family("Dutchfall11w").case
+    mine = _expectation_of(catalog, case, alice.id)
+    origin = _expectation_of(catalog, case, archive.id)
+
+    with pytest.raises(
+        Conflict, match=f"has their own .* in thread {mine}: replace it"
+    ):
+        _ = bench.take_from(origin)
+    with pytest.raises(ValueError, match=f"expectation {mine} is yours already"):
+        _ = bench.take_from(mine)
+    with pytest.raises(NotFound, match="no expectation"):
+        _ = bench.take_from(bench.threads("configuration")[0][0].thread)
+
+    took = bench.take_from(origin, replace=True)
+    assert catalog.about(Subject(thread=mine)).deleted
+    assert catalog.thread(took).forked_from == catalog.head(origin).id
+    assert bench.shared(case, schema)[0][0].thread == origin
+    held = bench.expectation(case, schema)
+    assert held is not None and held.digest == catalog.head(origin).digest

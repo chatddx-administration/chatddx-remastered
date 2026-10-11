@@ -40,8 +40,6 @@ class StructuralError(ValueError):
     pass
 
 
-# JSON data keeps its key order: a schema's property order is part of what a model
-# reads. Field names and settings are sorted where they are built (`sorted_keys`).
 def canonical_bytes(doc: JsonValue) -> bytes:
     return json.dumps(
         doc, separators=(",", ":"), ensure_ascii=False, allow_nan=False
@@ -58,8 +56,6 @@ def distinct[T](values: tuple[T, ...]) -> tuple[T, ...]:
     return values
 
 
-# A settings mapping's keys name options whose order means nothing, so equivalent
-# settings share a digest; their values are JSON data and keep their order.
 Settings = Annotated[dict[str, JsonValue], AfterValidator(sorted_keys)]
 
 
@@ -82,9 +78,6 @@ def _holds_nul(node: JsonValue) -> bool:
 class Frozen(BaseModel):
     model_config: ClassVar[ConfigDict] = ConfigDict(frozen=True, extra="forbid")
 
-    # Canonical form omits fields equal to their default, so adding a field whose default
-    # preserves old behavior leaves every stored digest intact. `kind` and `stage` are
-    # always kept because they discriminate unions.
     @model_serializer(mode="wrap")
     def _serialize(
         self, handler: SerializerFunctionWrapHandler, info: SerializationInfo
@@ -161,7 +154,6 @@ class Component(Frozen):
     # Bump when an existing field's meaning or default changes; additive fields don't.
     schema_version: ClassVar[int] = 1
 
-    # Stored bytes are read only as the kinds src/chatddx/factors/kinds.py:KINDS lists.
     @classmethod
     @override
     def __pydantic_init_subclass__(cls, **kwargs: Any) -> None:
@@ -198,8 +190,6 @@ class Component(Frozen):
     def digest(self) -> str:
         return sha256_digest(self.canonical)
 
-    # Pydantic's copy skips validation and keeps the cached digest; an updated copy is
-    # built anew instead, so it follows its kind's rules and gets its own digest.
     @override
     def model_copy(
         self, *, update: Mapping[str, Any] | None = None, deep: bool = False

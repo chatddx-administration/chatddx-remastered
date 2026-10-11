@@ -20,7 +20,6 @@ from chatddx.store.store import Connection
 pytestmark = pytest.mark.solidified
 
 REVISION = "f" * 40
-# The fake engines say what they are: no commit, no Nix closure.
 FAKES = [
     *(
         f"[lint warning] model {name}: model.revision: revision 'fake' is not a "
@@ -37,7 +36,6 @@ SAMPLE_WORLD = WORLDS / "sample"
 KOMPISMOLN = WORLDS / "kompismoln"
 
 
-# A copy of the sample with `old` replaced by `new` in one of its files.
 def changed(tmp_path: Path, file: str, old: str, new: str) -> Path:
     data = tmp_path / "data"
     _ = shutil.copytree(SAMPLE, data)
@@ -55,6 +53,9 @@ def tally(lines: list[str]) -> Counter[str]:
         return f"{prefix} {line.split(': ', 1)[1].split(' ')[0]}"
 
     return Counter(what(line) for line in lines)
+
+
+LANGUAGES = (", in en", ", in sv")
 
 
 @pytest.fixture(autouse=True)
@@ -108,8 +109,8 @@ def test_init_data_loads_the_archive(conn: Connection) -> None:
     assert family is not None
     assert catalog.about(Subject(family=family)).language == "en"
     assert catalog.title_of(case.digest) == "DutchFall10w"
-    scorer = plan.named("scorer", "plan")
-    assert catalog.labels(scorer.digest) == {
+    [scorer] = catalog.find("scorer", "plan", owner=archive.id)
+    assert catalog.labels(catalog.head(scorer).id) == {
         ("view", 0): "differential",
         ("view", 1): "warning",
         ("view", 2): "disposition",
@@ -119,14 +120,17 @@ def test_init_data_loads_the_archive(conn: Connection) -> None:
     assert catalog.about(Subject(thread=tool)).description == (
         "Search the web for up-to-date information"
     )
-    assert [line for line in lines if line.endswith(", in en")] == [
+    assert [line for line in lines if line.endswith(LANGUAGES)] == [
         f"[archive {r.kind}] {r.name}: created {r.digest.removeprefix('sha256:')[:6]}"
-        + ", in en"
+        + f", in {r.language}"
         for r in plan.records
         if r.language is not None
     ]
     assert catalog.language_of(plan.named("toolset", "web (en)").digest) == "en"
     assert catalog.language_of(plan.named("prompt", "case").digest) is None
+    for language in ("en", "sv"):
+        guided = f"free-text-guided ({language}, Qwen/Qwen3-8B-AWQ)"
+        assert catalog.language_of(plan.named("recipe", guided).digest) == language
 
     # The rest of the sample's cases, and their expectations, are left over.
     again = init(conn, sample_plan(), SOME, vignettes(), alice)
@@ -137,14 +141,11 @@ def test_init_data_loads_the_archive(conn: Connection) -> None:
     assert tally(again)["archive not"] == 2 * (len(CASES) - len(SOME))
     assert "[archive case] Dutchfall13w: not in the data" in again
     assert again[-len(FAKES) - 2].startswith("[share] 0 of ")
-    assert not [line for line in again if line.endswith(", in en")]
+    assert not [line for line in again if line.endswith(LANGUAGES)]
 
 
 @pytest.mark.slow
-def test_init_data_lints_what_it_lands(
-    conn: Connection, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    monkeypatch.delenv("CHATDDX_REVISION")
+def test_init_data_lints_what_it_lands(conn: Connection) -> None:
     alice = People(conn).add("alice", "Alice")
     plan = sample_plan()
     unlike = replace(SOME["Dutchfall11w"], targets={"warning": {"pattern": "shock"}})
@@ -152,13 +153,9 @@ def test_init_data_lints_what_it_lands(
     components = len({r.digest for r in plan.records}) + 2 * len(SOME)
     assert [line for line in lines if line.startswith("[lint")] == [
         *FAKES,
-        *(
-            f"[lint warning] scorer {name}: scorer.revision: scorer code has no revision"
-            for name in ("plan", "diagnoses", "free-text", "raw")
-        ),
         "[lint warning] expectation Dutchfall11w: expectation.invalid: at the root: "
         + "'diagnosis' is a required property",
-        f"[lint] {5 + len(FAKES)} findings in {components} components",
+        f"[lint] {1 + len(FAKES)} findings in {components} components",
     ]
 
 

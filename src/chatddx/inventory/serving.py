@@ -14,12 +14,9 @@ from chatddx.factors.engine import LocalEngine, ModelArtifact, RemoteEngine, fla
 
 from .inventory import Inventory
 
-# Where the start-up script decides, rather than the engine's argv.
 LISTEN_FLAGS = frozenset({"--host", "--port"})
 
 
-# What the start-up script runs for one endpoint: vllm serve's arguments, the model's
-# location first and then its revision, in the engine's runtime with its env.
 class StartUp(Frozen):
     endpoint: str
     engine: Digest
@@ -116,8 +113,6 @@ def served(url: str, timeout: float = 10.0, secret: str | None = None) -> list[s
     return [str(m.get("id")) for m in models]
 
 
-# Before case-derived content goes out: the endpoint must list the name its engine is
-# served under, the engine's digest for a local engine, its model for a remote one.
 def confirm(
     inventory: Inventory,
     get: Resolver,

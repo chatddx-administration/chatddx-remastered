@@ -1,19 +1,20 @@
 # Inventory
 
-Factors say what something is: an engine, a model, a case. The inventory says where to find it. It is a set of files
-that ops write. They say which directory holds a source's vignettes, at which address an engine is served, and where a
-host keeps the model files and chat template an engine pins. Until clearance has a pipeline of its own, the inventory
-also says which endpoints may receive content from which sensitive sources.
+The inventory is a set of files that ops write that say which directory holds a source's vignettes, at which address an
+engine is served, and where a host keeps the model files and chat template an engine pins.
 
-The inventory is not a factor (docs/factors.md, "Not factors"). No component refers to an inventory entry, so moving a
-model's files or an engine's server changes no digest. Two things that sound like locations are factors, though:
-- a source's name, which every case built from it carries;
-- a remote engine's address.
+Until clearance has a pipeline of its own, the inventory also says which endpoints may receive content from which
+sensitive sources.
+
+No component refers to an inventory entry, so moving a model's files or an engine's server changes no digest.
+Two things that sound like locations are factors, though:
+- a source's name, which every case built from it carries
+- a remote engine's address
 
 The inventory isn't stored in the database, and its history is git's. A run records the endpoint it used, by name and
 address (docs/ledger.md, "Run start").
 
-This document describes what the inventory says and why. Names, fields, rules and errors are in the API,
+This document describes what the inventory says and why. Classes, fields, rules and errors are in the API,
 docs/inventory-api.md. The inventory builds on the factors and nothing else. init-data, the engine import and the
 runner read it.
 
@@ -54,10 +55,10 @@ This repository has two, in `worlds/`:
   endpoints are cleared for the sample.
 
 ## Sources
-A source is where a set of vignettes is fetched from, by id. Today a source is a directory with one file per vignette,
-named by its id. Another kind of source, such as a database, would be added beside directories as a kind of its own,
-which the inventory then accepts too. A source is sensitive unless it says otherwise; what that requires is
-clearance's (agents/wip-clearance.md, "Sensitive sources").
+A source is where a set of vignettes is fetched from, by id. A source is a directory with one file per vignette,
+named by its id, or a database source, `kind = "database"`, whose vignettes are texts people typed, kept in the
+database under new ids as written and never changed, and read through the store. A source is a directory unless it
+says otherwise.
 
 A source lists its vignettes' ids, fetches a vignette's raw bytes, and builds a case for each vignette, without
 appendices, with the fingerprint of the raw bytes (docs/factors.md, "Case"). It refuses an id that would reach outside

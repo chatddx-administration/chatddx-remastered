@@ -68,9 +68,6 @@ def _recommended(model: ModelFacts) -> list[dict[str, JsonValue]]:
     ]
 
 
-# Sampling that is what the facts recommend for another model, and for none of this
-# model's levels, was written for that other model. Sampling that is no model's
-# recommendation, such as greedy, is the skeleton's own choice.
 def _sampled_for(
     subject: str, skeleton: Skeleton, name: str | None, facts: Facts
 ) -> Iterable[Finding]:

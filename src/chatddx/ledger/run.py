@@ -27,8 +27,6 @@ from .record import (
     UtcDatetime,
     check_log,
     check_seal,
-    code_name,
-    ran_pinned,
     seal_rows,
 )
 
@@ -40,10 +38,9 @@ def _phase_order(phases: tuple[Phase, ...]) -> tuple[Phase, ...]:
     return tuple(sorted(distinct(phases), key=PHASES.index))
 
 
-# The code a tool ran with, as the runner loaded it.
 class ToolCode(Frozen):
     tool: ToolRef
-    code: Code
+    version: int = Field(ge=1)
 
 
 def _by_tool(entries: tuple[ToolCode, ...]) -> tuple[ToolCode, ...]:
@@ -51,7 +48,6 @@ def _by_tool(entries: tuple[ToolCode, ...]) -> tuple[ToolCode, ...]:
     return tuple(sorted(entries, key=lambda e: e.tool))
 
 
-# The inventory's endpoint a run's calls went to.
 class Endpoint(Frozen):
     name: str
     url: str
@@ -59,6 +55,7 @@ class Endpoint(Frozen):
 
 class RunStarted(Record):
     case_derived: ClassVar[bool] = False
+    schema_version: ClassVar[int] = 2
     stage: Literal["started"] = "started"
     run: UUID
     at: UtcDatetime
@@ -235,7 +232,6 @@ def check_run(run: Run, registry: Registry) -> list[Finding]:
     return findings + _bracketed(run)
 
 
-# Canaries measure the engine before and after the items, so they mustn't overlap them.
 def _bracketed(run: Run) -> list[Finding]:
     item_calls = [c for i in run.items for c in i.calls]
     if not item_calls:
@@ -305,7 +301,7 @@ def _rounds(item: RunItem, skeleton: Skeleton, registry: Registry) -> list[Findi
 def _tool_code(
     started: RunStarted, skeleton: Skeleton, registry: Registry
 ) -> list[Finding]:
-    recorded = {e.tool: e.code for e in started.tool_code}
+    recorded = {e.tool: e.version for e in started.tool_code}
     if stray := sorted(recorded.keys() - set(skeleton.tools)):
         raise StructuralError(
             f"tool code recorded for tools the skeleton lacks: {stray}"
@@ -316,10 +312,10 @@ def _tool_code(
         ran = recorded.get(ref)
         if ran is None:
             message = f"the code tool {tool.name!r} ran with isn't recorded"
-        elif not ran_pinned(tool.code, ran):
+        elif ran != tool.version:
             message = (
-                f"tool {tool.name!r} ran with {code_name(ran)}, not the code it pins "
-                + f"({code_name(tool.code)})"
+                f"tool {tool.name!r} ran at version {ran} of {tool.entry_point}, not "
+                + f"the version it pins ({tool.version})"
             )
         else:
             continue

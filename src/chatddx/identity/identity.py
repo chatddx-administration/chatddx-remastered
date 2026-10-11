@@ -1,7 +1,7 @@
 import hashlib
 import re
 import secrets
-from collections.abc import Collection
+from collections.abc import Collection, Iterable
 from enum import StrEnum
 from typing import ClassVar
 
@@ -39,13 +39,16 @@ class Person(BaseModel):
         return login
 
 
-# What is relevant to show a person: what they own, or what is shared with them.
 def sees(person: int, owner: int | None, collaborators: Collection[int]) -> bool:
     return owner == person or person in collaborators
 
 
+def preferred[T](person: int, seen: Iterable[tuple[T, int | None]]) -> list[T]:
+    found = list(seen)
+    return [t for t, owner in found if owner == person] or [t for t, _ in found]
+
+
 _hasher = PasswordHasher()
-# Verified against when a login doesn't exist, so that an unknown login takes as long as a wrong password.
 _DUMMY_HASH = _hasher.hash(secrets.token_urlsafe())
 
 

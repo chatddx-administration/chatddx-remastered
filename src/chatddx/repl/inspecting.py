@@ -15,6 +15,7 @@ from chatddx.factors.engine import LocalEngine
 from chatddx.factors.request import Reasoning, Skeleton
 from chatddx.facts import INTENTS, Effort, ModelFacts, Refusal, Refused
 from chatddx.inventory import url_of
+from chatddx.store import fetch_vignette
 
 from .render import (
     LABEL,
@@ -154,6 +155,11 @@ def _show_scorers(
                 _ = said.append(
                     f"; missing: {some(f.name for f in reach.missing)}", style=LATER
                 )
+            if reach.choosing:
+                _ = said.append(
+                    f"; to choose from: {some(f.name for f in reach.choosing)}",
+                    style=REFUSED,
+                )
         table.add_row(reach.scorer, reach.label, said)
 
     repl.console.print(table)
@@ -225,8 +231,8 @@ def _show_component(
     bench = repl.bench
     header = Text(f"{word} {name}", style="bold")
 
-    if about is not None and about.owner != bench.person.id:
-        _ = header.append(f", {bench.login(about.owner)}'s")
+    if about is not None and (owner := bench.owner(about)):
+        _ = header.append(f", {owner}'s")
 
     _ = header.append(f"  {short(digest)}", style=LABEL)
     repl.console.print(header)
@@ -256,8 +262,6 @@ def _fields(repl: Repl, component: Component) -> Table:
     return table
 
 
-# A request body without the output's schema and the tools' parameters, which show
-# output and show tool hold.
 def _abridged(body: dict[str, JsonValue]) -> dict[str, JsonValue]:
     shown = copy.deepcopy(body)
     held = shown.get("response_format")
@@ -282,7 +286,6 @@ def _about(table: Table, about: About) -> None:
         table.add_row("language", about.language)
 
 
-# The person's runs with it, or that a scorer scored, summed up by their latest scores.
 def _runs(repl: Repl, word: str, digest: str) -> None:
     bench = repl.bench
     scorer = word == "scorer"
@@ -304,7 +307,6 @@ def _runs(repl: Repl, word: str, digest: str) -> None:
     show_summary(repl.console, graded)
 
 
-# A value as a row, or as a row per key for a mapping of plain values, `depth` deep.
 def _add_rows(
     repl: Repl, table: Table, field: str, value: JsonValue, depth: int = 1
 ) -> None:
@@ -348,8 +350,8 @@ def _show_case(repl: Repl, name: str | None) -> None:
     case = resolve(bench.get, family.case, Case)
     header = Text(f"case {family.name}", style="bold")
 
-    if family.about.owner != bench.person.id:
-        _ = header.append(f", {bench.login(family.about.owner)}'s")
+    if owner := bench.owner(family.about):
+        _ = header.append(f", {owner}'s")
 
     _ = header.append(f"  {short(family.case)}", style=LABEL)
     repl.console.print(header)
@@ -361,7 +363,7 @@ def _show_case(repl: Repl, name: str | None) -> None:
     table.add_row("source", f"{vignette.source}/{vignette.id}")
 
     try:
-        raw = bench.inventory.source(vignette.source).fetch(vignette.id)
+        raw = fetch_vignette(bench.conn, bench.inventory, vignette)
         table.add_row("vignette", clipped(raw.decode(errors="replace")))
     except LookupError as e:
         table.add_row("vignette", Text(str(e), style=REFUSED))
@@ -387,7 +389,17 @@ def _show_case(repl: Repl, name: str | None) -> None:
             table.add_row(label, Text(str(e), style=REFUSED))
             continue
 
-        if expectation is not None:
+        if expectation is None:
+            said = Text("none of yours", style=LATER)
+            owners = {
+                bench.login(a.owner) for _, a in bench.shared(family.case, schema)
+            }
+            if owners:
+                _ = said.append(
+                    f"; shared by {some(sorted(owners))}: take", style=LABEL
+                )
+            table.add_row(label, said)
+        else:
             _add_rows(repl, table, label, expectation.data, depth=3)
 
     repl.console.print(table)
@@ -470,8 +482,6 @@ def reasoning(repl: Repl) -> None:
     repl.console.print(table)
 
 
-# What a reasoning level writes on a model, with the sampling recommended for it, and
-# the chunk the facts write for it. The default sends nothing, so it has no chunk.
 def _level(facts: ModelFacts, effort: Effort) -> tuple[Text, str | None]:
     try:
         landed, _ = facts.reasoning.resolve(effort)

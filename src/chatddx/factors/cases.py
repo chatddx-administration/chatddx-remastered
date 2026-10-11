@@ -103,7 +103,6 @@ def prepare_case(
             ),
         )
     try:
-        # UTF-8 is the contract with sources; a byte-order mark belongs to the encoding.
         text = raw.decode("utf-8-sig")
     except UnicodeDecodeError as e:
         vignette = f"{case.vignette.source}/{case.vignette.id}"

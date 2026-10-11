@@ -7,8 +7,8 @@ that keeps data has a schema of its own: the factors (docs/factors.md), the ledg
 Catalog, factors and ledger are append-only, and the database enforces it at tier 2.
 Identity and the worker queue allow updates.
 
-This document describes what the store keeps, how the database guards it, and how it is reached. Names, rules and
-errors are in the API, docs/store-api.md. Each schema's tables are described with its module's API, and its
+This document describes what the store keeps, how the database guards it, and how it is reached. Classes, fields, rules
+and errors are in the API, docs/store-api.md. Each schema's tables are described with its module's API, and its
 migrations in docs/migrations.md.
 
 ## What the store does
@@ -29,6 +29,11 @@ Ledger records are written as they happen, those that belong together at once, a
 place is taken is refused. A run's or a score's log is read back whole, and validated as it is read. Runs and scores
 are listed newest first: those of a trial, those of a run, or those asked for; and the store tells which runs have
 finished.
+
+### Texts
+The texts of database sources (docs/inventory.md, "Sources") are kept as people typed them, each under a new id, and
+never changed. The writer adds and reads them; only the admin deletes one, to purge spam; the reader can't read them,
+since they are vignettes.
 
 ### People
 People, their passwords and their sessions are identity's (docs/identity.md). The store adds people and changes them,

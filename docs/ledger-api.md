@@ -136,7 +136,6 @@ row isn't part of it.
 | `in_order(started, finished) -> None` | `ValueError("finished before it started")` when `finished < started`. Equal times pass. |
 | `check_log(stages, order, ids) -> None` | `StructuralError` when the stage names aren't a prefix of `order` (`"stages [...] do not follow (...)"`) or the ids differ (`"rows belong to different logs"`); `in_order` between the first stage and each later one. |
 | `check_seal(log, subject) -> list[Finding]` | `[ledger.seal]` when the log has a finished row whose seal differs from `log.seal()`, else `[]`. |
-| `ran_pinned(pinned: Code, ran: Code) -> bool` | Same `distribution` and `version`, and the same `revision` when `pinned` has one. |
 | `code_name(code: Code) -> str` | `"<distribution> <version>[ <revision>]"`, for messages. |
 
 ## call.py
@@ -210,14 +209,14 @@ Internal; `check_run` and `check_score` call it. `calls` are the calls to count;
 | `RUN_STAGES` | `("started", "finished")` |
 
 ### `class ToolCode(Frozen)`
-The code a tool ran with, as the runner loaded it: `tool: ToolRef`, `code: Code`.
+The version of a tool's entry point the runner ran it at: `tool: ToolRef`, `version: int` (from 1).
 
 ### `class Endpoint(Frozen)`
 The World inventory's endpoint a run's calls went to (`docs/inventory.md`, "Endpoints"): `name: str`, `url: str`.
 Neither is checked.
 
 ### `class RunStarted(Record)`, stage `started`
-Opens a run with its recorded factors. Not case-derived.
+Opens a run with its recorded factors. Not case-derived. `schema_version` 2: `tool_code` holds versions.
 
 | Field | Type | Default |
 | --- | --- | --- |
@@ -311,8 +310,7 @@ Returns findings, in this order:
 3. `case.drift` for each item whose `vignette` differs from its case's `vignette.fingerprint`;
 4. `tools.unanswered` for each item whose last call still has tool calls other than the answer function's (skeletons
    with tools only);
-5. `tools.code` for each tool of the skeleton whose code isn't recorded or isn't what `Tool.code` pins
-   (`ran_pinned`);
+5. `tools.code` for each tool of the skeleton whose version isn't recorded or isn't the one `Tool.version` pins;
 6. `attestation.model` for each item: one per distinct wrong model name, and one when some call has a response but no
    model name. The declared name is the engine's `served_model_name`: a local engine's digest, a remote engine's
    `model`. Calls without a response aren't checked;
@@ -344,7 +342,8 @@ too, where the two differ. Later calls aren't compared; items of `b` missing fro
 | `call` | `Call` | required |
 
 ### `class ScoreStarted(Record)`, stage `started`
-Not case-derived.
+Not case-derived. `schema_version` 2. Its `scorer_code: Code` is `scorer_version: int` (from 1): the version of the
+scorer's entry point the scoring pass ran.
 
 | Field | Type | Default |
 | --- | --- | --- |
@@ -404,7 +403,7 @@ Returns findings, in this order:
    `output_schema` (`chatddx.factors.select.reaches`), subject the scorer digest;
 2. `judge.incomplete` for each item with a value whose view's judge was called with fewer distinct seeds than it
    has;
-3. `score.scorer_code` when `scorer_code` isn't what `Scorer.code` pins (`ran_pinned`);
+3. `score.scorer_code` when `scorer_version` isn't the version `Scorer.version` pins;
 4. `score.run_unfinished` when the run has no finished row, or finished after the score started;
 5. `ledger.seal`, subject the score id;
 6. `score.no_expectation` when some cases of the run's items have no expectation in the scoring. One finding, with
@@ -422,7 +421,7 @@ All are warnings. Item-key subjects are `str(ItemKey)`.
 | `run.incomplete` | `check_run` | none | `<n> items missing`, `<n> canary calls missing` |
 | `case.drift` | `check_run` | item key | `the vignette read differs from the case's` |
 | `tools.unanswered` | `check_run` | item key | `the last response still calls <names> after <k> of <max_rounds> rounds` |
-| `tools.code` | `check_run` | tool digest | `the code tool '<name>' ran with isn't recorded`, or `tool '<name>' ran with <code>, not the code it pins (<code>)` |
+| `tools.code` | `check_run` | tool digest | `the code tool '<name>' ran with isn't recorded`, or `tool '<name>' ran at version <v> of <entry point>, not the version it pins (<v>)` |
 | `attestation.model` | `check_run` | item key | `engine returned model '<got>', declared '<want>'`, or `engine returned no model name, declared '<want>'` |
 | `attestation.prompt_tokens` | `check_run` | none | `<n> items have no prompt token fingerprint` |
 | `canary.phase` | `check_run` | none | `<n> start canary calls hadn't finished when the first item was sent`, `<n> end canary calls started before the last item call finished` |
@@ -433,7 +432,7 @@ All are warnings. Item-key subjects are `str(ItemKey)`.
 | `attestation.prompt_tokens_drift` | `compare_prompt_tokens` | item key | `the engine read different prompt tokens for the same item` |
 | `view.unreachable` | `check_score` | scorer digest | `view <i>'s output selector '<output>' reaches nothing in the run's output schema` |
 | `judge.incomplete` | `check_score` | item key | `view <v>'s value rests on <called> of <declared> judge seeds` |
-| `score.scorer_code` | `check_score` | score id | `the scorer code that ran (<code>) isn't the code the scorer pins (<code>)` |
+| `score.scorer_code` | `check_score` | score id | `the scorer code ran at version <v> of <entry point>, not the version the scorer pins (<v>)` |
 | `score.run_unfinished` | `check_score` | score id | `the run hasn't finished`, or `the score started before the run finished` |
 | `score.no_expectation` | `check_score` | score id | `<n> of the run's cases have no expectation in the scoring` |
 | `score.incomplete` | `check_score` | none | `<n> items missing` |
@@ -559,18 +558,3 @@ From `docs/ledger.md`, "Open design issues", where they concern this API:
 - `ScoreStarted` has no endpoint, so judge calls don't record where they went.
 - Records don't travel in a `Bundle`.
 - Findings have no mechanism of their own beyond the finished rows and the check functions.
-
-## Beyond docs/ledger.md
-Behavior described here that `docs/ledger.md` doesn't state:
-- `Record.parse` raises `json.JSONDecodeError` for text that isn't JSON, and `ValidationError` for bad fields.
-- Item-key subjects are `str(ItemKey)`: `case='sha256:…' replicate=0`.
-- `Run.finish` and `Score.finish` don't check `at` against the started row or whether the log is finished already; a
-  `Run` or `Score` built with the result refuses an early or second finished row.
-- A run's seal document has a `canaries` group even when the run has none.
-- `fingerprint_prompt_tokens` drops `prompt_token_ids` even when it isn't a list, and then returns no fingerprint.
-- `attestation.prompt_tokens` counts failed calls without a response too.
-- `compare_prompt_tokens` walks `a`'s items; unmatched items on either side are skipped silently.
-- `check_score` measures `score.no_expectation` and `score.incomplete` against the run's items, not the trial's.
-- `check_run` asserts that the trial's engine is local or remote (`AssertionError`).
-- The database doesn't require a finished row to have a started row, and its component foreign keys don't check
-  kinds.

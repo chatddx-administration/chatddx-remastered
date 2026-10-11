@@ -299,17 +299,3 @@ From `docs/facts.md`, "Open design issues":
 - Unknown reasoning fails `facts.reasoning_unmatched`: a model without writes at any level, or a skeleton using a
   level nothing is known about, gets the warning.
 - A `default` that lands on a refusal loads, and `reasons_by_default` then says `None`.
-
-## Beyond docs/facts.md
-Behavior described here that `docs/facts.md` doesn't state:
-- `facts.reasoning_unmatched` compares `chat_template_kwargs` whole: a key that isn't about reasoning makes a skeleton unmatched.
-- An entry of `{}` is a write that sets nothing, not "effort and/or chat template kwargs".
-- `reasoning_chunk` resolves the level before it checks the budget; `sampling_chunk` refuses a level that lands on a
-  refusal even when sampling for it would be known.
-- `sampling_chunk` overrides may set any `Sampling` field, and `None` removes a recommended value.
-- Recommendations for levels that collapse are never read by `sampling_chunk`, but count in
-  `facts.sampling_unmatched`.
-- A `ContractFact` with an empty note gives `facts.output_note` with an empty message.
-- `Facts.load` refuses the same file given twice, as facts in more than one file.
-- `--facts` is repeated for several files (`--facts A --facts B`).
-- `reasons` and `check_pairs` raise `StructuralError` for components the registry doesn't hold.

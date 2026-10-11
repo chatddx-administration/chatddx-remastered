@@ -5,15 +5,26 @@ from fastapi.testclient import TestClient
 
 from chatddx.bench import Bench
 from chatddx.bench.test.sample import another_expectation
+from chatddx.catalog import Entry, EntryField, Subject
 from chatddx.curation import load_cases
 from chatddx.curation.plan import SAMPLE
+from chatddx.store import Catalog
 
 pytestmark = pytest.mark.wip
 
 
-def dutchfall(signed: TestClient) -> dict[str, Any]:
-    [found] = signed.get("/api/families", params={"name": "Dutchfall11w"}).json()
+def dutchfall(signed: TestClient, name: str = "Dutchfall11w") -> dict[str, Any]:
+    [found] = signed.get("/api/families", params={"name": name}).json()
     return found
+
+
+def dropped(signed: TestClient, bench: Bench, family: dict[str, Any]) -> dict[str, Any]:
+    [held] = signed.get(f"/api/families/{family['id']}").json()["expectations"]
+    catalog, person, case = Catalog(bench.conn), bench.person.id, family["case"]
+    choices = catalog.expectation_choices([case], person, held["expectation_schema"])
+    [mine] = choices[case]
+    catalog.note(Subject(thread=mine), Entry(field=EntryField.DELETED), person)
+    return held
 
 
 def test_cases_are_listed_with_their_tags_and_language(signed: TestClient) -> None:
@@ -28,6 +39,7 @@ def test_cases_are_listed_with_their_tags_and_language(signed: TestClient) -> No
     assert tagged and all(tags[0] in f["tags"] for f in tagged)
 
 
+@pytest.mark.slow
 def test_a_case_is_shown_with_the_expectation_it_is_scored_against(
     signed: TestClient, bench: Bench
 ) -> None:
@@ -42,6 +54,43 @@ def test_a_case_is_shown_with_the_expectation_it_is_scored_against(
     [held] = signed.get(f"/api/families/{found['id']}").json()["expectations"]
     assert (held["expectation"], held["data"]) == (None, None)
     assert "has expectations to choose from" in held["ambiguous"]
+
+
+@pytest.mark.slow
+def test_a_person_takes_the_expectations_shared_with_them_for_many_cases(
+    signed: TestClient, bench: Bench
+) -> None:
+    eleven, ten = dutchfall(signed), dutchfall(signed, "DutchFall10w")
+    held = dropped(signed, bench, eleven)
+    [archives] = held["shared"]
+    assert archives["owner"] == "archive"
+    schema = held["expectation_schema"]
+    body = {"families": [eleven["id"], ten["id"]], "expectation_schema": schema}
+
+    got = signed.post("/api/takes", json=body)
+    assert got.status_code == 200
+    taken = got.json()
+    [made] = taken["taken"].values()
+    assert list(taken["taken"]) == [str(eleven["id"])]
+    assert list(taken["kept"]) == [str(ten["id"])]
+    assert (taken["choosing"], taken["missing"]) == ({}, [])
+    shown = signed.get(f"/api/threads/{made}").json()
+    assert (shown["owner"], shown["forked_from"]) == ("alice", archives["head"]["id"])
+    [held] = signed.get(f"/api/families/{eleven['id']}").json()["expectations"]
+    assert held["expectation"] == archives["head"]["digest"]
+
+    again = signed.post("/api/takes", json={**body, "owner": "archive"}).json()
+    assert again["taken"] == {} and len(again["kept"]) == 2
+
+    for wrong, said in (
+        ({**body, "families": [eleven["id"], 0]}, "no case 0 for alice"),
+        ({**body, "owner": "nobody"}, "no person 'nobody'"),
+        ({**body, "expectation_schema": eleven["case"]}, "isn't a stored expectation"),
+    ):
+        got = signed.post("/api/takes", json=wrong)
+        assert got.status_code == 422
+        assert said in got.json()["detail"]
+    assert signed.post("/api/takes", json={**body, "families": []}).status_code == 422
 
 
 def test_a_case_s_vignette_is_fetched_from_its_source(signed: TestClient) -> None:

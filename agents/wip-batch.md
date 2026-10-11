@@ -48,15 +48,15 @@ https://github.com/chatddx-administration/chatddx/blob/504792cbeb09508f2c52912be
 
 ### What changes in remastered
 - **The cell is two things**: the variation being tried (`src/chatddx/bench/variation.py:TriedVariation`) and the
-  endpoint beside it (`agents/wip-bench.md`, K2 with R1). "Cell" stays the repl's word.
+  endpoint beside it (`agents/wip-bench.md`, "Cell"). "Cell" stays the repl's word.
 - **Slices are recipe parts** (`PARTS`, `OPTIONAL` in `src/chatddx/bench/variation.py`); the coercion is the output's
   contract (`agents/wip-repl.md`, D6).
 - **A trial holds the cases**: one trial per variation, not one per cell and case. A run holds an item per case and
   replicate.
 - **Readiness is findings**: warnings, never refusals (`docs/chatddx.md`, "Compromises"; `Bench.findings`). What holds
   a variation back is the gate's refusal (`src/chatddx/runner/gate.py`), or a part that can't be set
-  (`TriedVariation.set`'s `ValueError`). "Save it as your own first" is gone: any digest runs (`agents/wip-bench.md`,
-  "The old bench").
+  (`TriedVariation.set`'s `ValueError`). "Save it as your own first" is gone: any digest runs (`agents/wip-bench.md`
+  at d5ebf52, "The old bench").
 - **Seeds are explicit**: a trial has at least one, and a greedy trial still hashes its seeds; `render` sends none for
   a greedy skeleton (`agents/wip-repl.md`, D3). "Unseeded" is gone. Several seeds are replicates of one trial, not an
   axis to cross.
@@ -75,7 +75,7 @@ Take:
   configuration's variation, one kept per skeleton digest. Pure, in `src/chatddx/bench/plan.py`, tested without a
   database as `variation.py` is.
 - **Planning**: `Bench.plan(…) -> Batch`, since the bench stays one class and edges call `bench.*` only
-  (`agents/wip-bench.md`, "Modules"). For each variation at the endpoint: its skeleton digest, whether it is greedy,
+  (`agents/wip-bench-api.md`, "Package"). For each variation at the endpoint: its skeleton digest, whether it is greedy,
   its findings (`Bench.findings`), and the gate's refusal if any, which holds it back. For the batch: the cases, and
   each scorer view's reach over them (`Bench.reach`).
 - **Out**: a `Batch` value: the trials it would run, one per variation not held back, each with the cases and the
@@ -113,7 +113,8 @@ English and Swedish cases run as one trial per language, each under its variant,
 user.
 
 ### P4. Which cases
-- By tag, as before, and by family id, as the API names things (`agents/wip-api.md`, A4).
+- By tag, as before, and by family id, as the API names things (`agents/wip-bench.md`, "Takes the API is built on",
+  A4).
 - Adding cases to a kept batch, as the old `unheld` did: a new edit (see "Kept batches").
 
 ## What it hands the worker
