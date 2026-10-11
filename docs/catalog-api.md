@@ -64,16 +64,9 @@ package takes the last row for a key as the one that holds: through `model.py:la
 
 **Errors.**
 
-```
-AGENT: CHANGE
-The LookupError row: expectations_for (src/chatddx/catalog/threads.py) raises it too, and expectation_for is one
-case of it.
----
-| `LookupError` | A thread, edit or family that doesn't exist (`no thread with id <id>`, `no edit with id <id>`, `no family with id <id>`); a digest that isn't stored where one is required (`check_adoptable`, `check_language`); `expectations_for` (and so `expectation_for`) with several expectations to choose from. |
-```
 | Exception | When |
 | --- | --- |
-| `LookupError` | A thread, edit or family that doesn't exist (`no thread with id <id>`, `no edit with id <id>`, `no family with id <id>`); a digest that isn't stored where one is required (`check_adoptable`, `check_language`); `expectation_for` with several expectations to choose from. |
+| `LookupError` | A thread, edit or family that doesn't exist (`no thread with id <id>`, `no edit with id <id>`, `no family with id <id>`); a digest that isn't stored where one is required (`check_adoptable`, `check_language`); `expectations_for` (and so `expectation_for`) with several expectations to choose from. |
 | `ValueError` | A rule refused before writing: `check_threadable`, `check_based_on`, `check_adoptable`, `plan_repair`, `check_language`, `check_entry`, `check_label`, `language_tag`. |
 | `pydantic.ValidationError` | A model breaks its own rules: an `Entry` of the wrong shape, a `Subject` that isn't exactly one thing, a `Behind` with both or neither of `head` and `binding`; `proposal` when the merged recipe isn't a valid `Recipe`. Rules written as validators raise `ValueError`, which pydantic wraps. |
 | `chatddx.factors.base.StructuralError` (a `ValueError`) | `Reader.get` of a digest that isn't stored (both `Rows` and `test/memory.py:Memory`, through `Store.get` and `Registry.get`); `resolve` of a component of the wrong kind; `proposal` when the merged document isn't a readable component. |
@@ -81,15 +74,9 @@ case of it.
 **Deleted subjects.** A subject is deleted when its `About.deleted` is true. What each function does with deleted
 threads and families is said in its entry; in short:
 
-```
-AGENT: CHANGE
-The "skipped, through About.shows" row: expectations_for is new beside expectation_for.
----
-| skipped, through `About.shows` | `threads.visible`, `families.visible`, `threads.expectations_for`, `threads.expectation_for` |
-```
 | Deleted are | Functions |
 | --- | --- |
-| skipped, through `About.shows` | `threads.visible`, `families.visible`, `threads.expectation_for` |
+| skipped, through `About.shows` | `threads.visible`, `families.visible`, `threads.expectations_for`, `threads.expectation_for` |
 | skipped, through `About.deleted` | `threads.heads` (unless `deleted=True`, which returns only them), `threads.find`, `threads.behind` (no deleted thread's head, and no case of a deleted family) |
 | ranked last | `titles.title_of` |
 | included | `threads.history`, `threads.forks`, `threads.expectations_of`, `families.family_of`, `families.bindings`, `families.survey`, `families.plan_repair`, `language.language_of`, the titles of cases, `Catalog.containing` |
@@ -240,26 +227,10 @@ What the rules read. Lists come back in the order the rows were written; for com
 picks the latest row. `src/chatddx/store/catalog.py:Rows` implements it over the tables, and
 `test/memory.py:Memory` over a `Registry` and lists.
 
-```
-AGENT: ADD
-A row after `get`. A variation's look, and the case listing under it, read each family's binding, each vignette's
-cases and each expectation one at a time, about ten queries per case. They now read them for many at once
-(src/chatddx/bench/view.py:Bench._cases, Bench._expected; threads.expectations_for), and the expectations' heads
-come through this.
----
-| `components(digests: Collection[str]) -> list[tuple[str, Component]]` | (digest, component) for those of the digests that are stored, by digest. |
-```
-```
-AGENT: CHANGE
-The `bindings` and `bound_to` rows, for the same reads: they take collections, as most of the Reader's reads do.
-`bound_to` gives back the caller's vignette with each digest, to tell which one it matched.
----
-| `bindings(families: Collection[int]) -> list[Binding]` | The families' bindings, by id; none for an unknown family. |
-| `bound_to(vignettes: Collection[Vignette], kind: str) -> list[tuple[str, Vignette]]` | The stored components of `kind` (`case` or `appendix`) whose `vignette` equals one of these, each with that vignette, by digest. |
-```
 | Method | Returns |
 | --- | --- |
 | `get(digest: str) -> Component` | The stored component. `StructuralError` when it isn't stored. |
+| `components(digests: Collection[str]) -> list[tuple[str, Component]]` | (digest, component) for those of the digests that are stored, by digest. |
 | `kind(digest: str) -> str \| None` | Its kind, or `None` when it isn't stored. |
 | `compilations(skeleton: str) -> list[Compilation]` | The stored compilations whose `skeleton` is this one, by compilation digest. |
 | `thread(id: int) -> Thread \| None` | |
@@ -269,10 +240,10 @@ The `bindings` and `bound_to` rows, for the same reads: they take collections, a
 | `edits(threads: Collection[int]) -> list[Edit]` | The edits of these threads, by id. |
 | `edits_holding(digests: Collection[str]) -> list[Edit]` | The edits, in any thread, whose digest is one of these, by id. |
 | `entries(subjects: Collection[Subject]) -> list[tuple[Subject, Entry, int]]` | The entries about these subjects, by id, each with the person who wrote it. |
-| `bindings(family: int) -> list[Binding]` | The family's bindings, by id; `[]` for an unknown family. |
+| `bindings(families: Collection[int]) -> list[Binding]` | The families' bindings, by id; none for an unknown family. |
 | `families() -> list[int]` | Every family's id. `Rows` reads `catalog.family`; `Memory` lists the families that have bindings. |
 | `bindings_in(source: str) -> list[Binding]` | Every binding, of any family, in a source, by id. |
-| `bound_to(vignette: Vignette, kind: str) -> list[str]` | The stored components of `kind` (`case` or `appendix`) whose `vignette` equals this one, by digest. |
+| `bound_to(vignettes: Collection[Vignette], kind: str) -> list[tuple[str, Vignette]]` | The stored components of `kind` (`case` or `appendix`) whose `vignette` equals one of these, each with that vignette, by digest. |
 | `expectations(cases: Collection[str]) -> list[str]` | The stored expectations of these cases, by digest. |
 | `languages(digests: Collection[str]) -> list[tuple[str, str]]` | (digest, language) rows for these digests, by id. |
 | `labels(scorer: str) -> list[tuple[Part, int, str]]` | (part, position, label) rows for a scorer, by id. |
@@ -321,12 +292,6 @@ thread id order. Names aren't unique, so it may return several.
 The head and `About` of each thread of `kind` that `About.shows(person)`: live, and owned by `person` or shared with
 them as a collaborator. Thread id order; threads without edits are left out.
 
-```
-AGENT: CHANGE
-The rule is unchanged; it is applied to many cases at once (src/chatddx/catalog/threads.py:expectations_for), which
-reads the heads in one go, and expectation_for is one case of it. Bench.reach and Bench.scoring call it once per
-schema rather than once per case.
----
 ### `expectations_for(rows, cases: Sequence[str], person: int, schema: str) -> dict[str, str | None]`
 For each case, the digest of the expectation `person` scores it against, among the threads whose head is an
 expectation of that case with `expectation_schema == schema` and which `About.shows(person)`:
@@ -340,17 +305,6 @@ the threads of that step. Threads with the same head digest count as one choice.
 ignore the shared ones.
 
 `expectation_for(rows, case: str, person: int, schema: str) -> str | None` is `expectations_for` of the one case.
-```
-### `expectation_for(rows, case: str, person: int, schema: str) -> str | None`
-The digest of the expectation `person` scores `case` against, among the threads whose head is an expectation of
-`case` with `expectation_schema == schema` and which `About.shows(person)`:
-1. those `person` owns: one distinct head digest is returned;
-2. otherwise all of them, shared ones included: one distinct head digest is returned;
-3. nothing: `None`.
-
-Several distinct head digests at the first step that has any raise `LookupError("case <case> has expectations to
-choose from, in threads <t1>, <t2>, …")`, naming the threads of that step. Threads with the same head digest count as
-one choice. Owning one thread is enough to ignore the shared ones.
 
 ### `forks(rows, thread: int) -> list[int]`
 The ids of the threads whose `forked_from` is any edit of `thread`, in thread id order. Direct forks only; deleted
@@ -609,17 +563,11 @@ the first of `Reader.compilations` (by digest). Anything else is `describe`d, wi
 the ones that write insert the rows the package decided on. A rule the database also checks is refused by Postgres
 with a psycopg error when the Python lets it through.
 
-```
-AGENT: CHANGE
-The row of `threads` functions: the store's Catalog has `expectations_for` too.
----
-| `thread`, `history`, `head`, `heads`, `find`, `visible`, `expectation_for`, `expectations_for`, `forks`, `expectations_of`, `behind`, `variation`, `proposal` | the `threads` function of that name | |
-```
 | Method | Calls | Writes |
 | --- | --- | --- |
 | `create(digest, by, *, compilation=None, forked_from=None, name=None, owner=None) -> Edit` | `Reader.kind` (`LookupError("<digest> is not in the store")`), `threads.check_threadable` | in one transaction: the thread, its first edit (`edit`), an `owner` entry for `owner` or else `by`, and a `name` entry when given |
 | `edit(thread, digest, by, *, compilation=None, based_on=None) -> Edit` | `threads.check_based_on` when `based_on` is given | the edit, with the thread's kind; `LookupError("no thread with id <thread>")` when there is no thread |
-| `thread`, `history`, `head`, `heads`, `find`, `visible`, `expectation_for`, `forks`, `expectations_of`, `behind`, `variation`, `proposal` | the `threads` function of that name | |
+| `thread`, `history`, `head`, `heads`, `find`, `visible`, `expectation_for`, `expectations_for`, `forks`, `expectations_of`, `behind`, `variation`, `proposal` | the `threads` function of that name | |
 | `visible_families(person)` | `families.visible` | |
 | `containing(digest) -> list[Edit]` | `Reader.edits_holding([digest])` | |
 | `recipe(thread)` | `threads.recipe` of `threads.head` | |
