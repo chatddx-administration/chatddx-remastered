@@ -367,13 +367,6 @@ writes at the same moment can leave a person several expectations to choose from
 - **A skeleton edit may leave out its compilation** even when one exists, and nothing can require it.
 - **A language on a skeleton that is compiled later** is ignored from then on, since the skeleton's language comes from
   its recipe.
-```
-AGENT: REMOVE
-The bench stores it when asked (src/chatddx/bench/view.py:Bench.replacement), and an appendix's edit stores the
-replacements of the cases that held its old version.
-```
-- **A late case has no stored replacement.** A case stored at a vignette's old place after a repair is offered a
-  replacement that nothing has stored; the portal would have to build it.
 - **What deleting hides in the portal**: everywhere, or only in pickers, while the runs that used it stay visible.
 - **Who changed an entry, a label or a language isn't shown.** Every row records who wrote it and when, but for these
   only what holds now is shown.
