@@ -12,7 +12,8 @@ portal is the first edge to need them (agents/wip-portal.md, "Below the UI", "Ph
    a version of their code rather than the running chatddx (S2), that free parameters are written where the code
    publishes a schema (S3), and that labels belong to the edit they are written with (S4). Also decided: an
    expectation is carried to a replacement case only when confirmed (A4), only the owner shares (A9), and every edit
-   names the head it was made on (A10). The rest are takes; "Questions for the user" is what is left to settle.
+   names the head it was made on (A10), and a take keeps a person's own expectation, with replacing one a write of
+   its own (A5). The rest are takes.
 2. **Taking expectations comes first** (phase 1). A person is scored against their own expectations only, so one who
    wasn't given the giftbag has nothing to be scored against until they can take some.
 3. **One set of writes for every kind people author** (A1), with builders only where a kind binds to a family's
@@ -128,8 +129,8 @@ scores runs:
 - **K, with replacing named.** Taking keeps theirs, and what it returns names each case it left; replacing one is a
   write of its own, per case, that deletes theirs and forks the shared one in one transaction.
 
-Take: K, with replacing named. A bulk write that can't destroy anything is safe to offer as one button, and the one
-that can is a choice made case by case.
+Decided: K, with replacing named. A bulk write that can't destroy anything is safe to offer as one button, and the
+one that can is a choice made case by case.
 
 Beside it, the giftbag keeps a person's own expectation for a case and schema, as it keeps a fork they already have,
 rather than fail `init-data` on the catalog's rule (agents/wip-bench.md, "Outstanding").
@@ -339,9 +340,7 @@ Each with its tests in `src/chatddx/bench/test/` and the API's.
 9. **Judges**, once the scoring pass can send judge requests (S6).
 
 ## Questions for the user
-1. **Taking one they already own** (A5): K, R, or K with replacing named (the take)?
-
-Handing a thread over to another owner isn't offered (A9), as a take.
+None left open. Handing a thread over to another owner isn't offered (A9), as a take.
 
 `docs/chatddx.md` ("Roles mentioned", "Requirements") and `docs/factors.md` ("Scorer", "Judge") now say who writes
 what. The code pin (S2) and labels (S4) get their suggestions with the build, since they describe code that isn't
