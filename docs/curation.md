@@ -136,20 +136,11 @@ the sample's first run comes to 248 threads and families.
    renamed to or from another id, or changed, and the family repair-data would move.
 4. **Leftovers.** The archive's threads and families that the data no longer names are listed, but not deleted.
 5. **Sharing.** USER becomes a collaborator on every thread and family the run came to.
-```
-AGENT: CHANGE
-A person is scored against their own expectations only (agents/wip-bench.md, "What a person is scored against"), so the
-giftbag's forks of the expectation threads are what USER is scored against.
----
 6. **Giftbag.** With `--giftbag`, USER also gets a fork of every chunk, tool, skeleton and expectation thread, so
    what has moved on in the archive is proposed to them (docs/catalog.md, "What has moved on"). The forks of the
    expectation threads are also what USER is scored against: without them, the archive's shared expectations score
    nothing for USER. Expectation schemas, scorers, models and engines stay the archive's. A fork they already have is
    kept, and one they deleted comes back.
-```
-6. **Giftbag.** With `--giftbag`, USER also gets a fork of every chunk, tool, skeleton and expectation thread, so
-   what has moved on in the archive is proposed to them (docs/catalog.md, "What has moved on"). Expectation schemas,
-   scorers, models and engines stay the archive's. A fork they already have is kept, and one they deleted comes back.
 7. **Lints.** Every component the run came to is linted, with the catalog's languages and the facts' reasons, and
    the findings are printed, not stored. For the sample the fake models and engines say they are fake, and without
    `CHATDDX_REVISION` the scorers say their code has no revision.
@@ -239,20 +230,10 @@ Trials, executions, judges, scorings, canary sets, appendices and hand-written s
 set has one expectation schema. A canary set is the next asked for (agents/wip-runner.md).
 
 ### Picking a variant by the case's language
-```
-AGENT: CHANGE
-"Cell" is the repl's word only, and the bench speaks of the variation being tried and the endpoint it runs on
-(agents/wip-bench.md, "Cell"). The guard (src/chatddx/repl/test/test_vocabulary.py) reads code, not docs.
----
 The bench picks a configuration's variant by the model the engine it runs on serves, and by language only when there
 is one (src/chatddx/catalog/variants.py). With texts in several languages, the cases a variation runs on should run the
 variant in their own language, so a batch of English and Swedish cases runs each under its own. A variant is known
 only by its name today; what recording it would take is in agents/wip-variants.md.
-```
-The bench picks a configuration's variant by the model the cell's engine serves, and by language only when there is
-one (src/chatddx/catalog/variants.py). With texts in several languages, a cell's cases should run the variant in
-their own language, so a batch of English and Swedish cases runs each under its own. A variant is known only by its
-name today; what recording it would take is in agents/wip-variants.md.
 
 ### Smaller issues
 - **One source a run.** A data set's cases all come from the source `--source` names.
