@@ -47,19 +47,10 @@ are rarely edited, but threads are where names attach for everything except case
 The same component may appear in several threads, and more than once in one: reverting is an edit that points back at
 an earlier version.
 
-```
-AGENT: CHANGE
-An edit can name the head it was made on, and is refused when the thread moved on since (agents/wip-authoring.md,
-A10); the bench names one for every edit a person makes.
----
 A thread is created with its first version and its owner, and its name when one is given. It moves only when someone
 saves an edit, and nothing moves along with it. An edit can name the head it was made on, and is then refused when
 the thread has moved on since, so that a change made on an older version doesn't undo what came after it unseen.
 Edits of one thread are written one at a time, so that holds with several writers too.
-```
-A thread is created with its first version and its owner, and its name when one is given. It moves only when someone
-saves an edit, and nothing moves along with it. When a prompt's thread moves on, the skeletons, trials and scorings
-built on the old prompt stay as they are; the catalog tells which of them could be updated (see "What has moved on").
 
 The catalog answers what people need to find:
 - a thread's versions, and its current one;
@@ -362,15 +353,6 @@ only what the database enforces is sure to hold. It repeats every such rule but 
 the same vignette, by id or by content, at once, and that a person owns at most one live expectation thread per case
 and expectation schema. So two people adopting the same vignette at the same moment can create two families, and two
 writes at the same moment can leave a person several expectations to choose from, which scoring then refuses.
-```
-AGENT: ADD
-To end this section. The head an edit names is held without the database repeating it: every edit takes its thread's
-advisory lock (src/chatddx/store/catalog.py:Catalog._lock). The writer may not update the catalog's tables, so
-`FOR UPDATE` isn't open to it.
----
-An edit that names its head holds with several writers without the database repeating the rule: each edit of a thread
-waits for the one before it to land.
-```
 
 ### Smaller issues
 - **Identical vignettes.** Two vignettes with the same content under different ids in one source look like a rename:
@@ -403,3 +385,7 @@ waits for the one before it to land.
   "diagnoses-tool (Qwen/Qwen3-8B-AWQ)+reasoning=off": the configuration it came from and the parts set over it.
   Neither is stored. An entry on the run, or a title made from the closest configuration and what the variation
   changes from it, would say it shorter.
+- **An edit that names its head holds with several writers without the database repeating the rule**:
+  each edit of a thread waits for the one before it to land. The head an edit names is held without the database
+  repeating it: every edit takes its thread's advisory lock (src/chatddx/store/catalog.py:Catalog._lock).
+  The writer may not update the catalog's tables, so `FOR UPDATE` isn't open to it.

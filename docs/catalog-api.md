@@ -67,13 +67,8 @@ package takes the last row for a key as the one that holds: through `model.py:la
 | Exception | When |
 | --- | --- |
 | `LookupError` | A thread, edit or family that doesn't exist (`no thread with id <id>`, `no edit with id <id>`, `no family with id <id>`); a digest that isn't stored where one is required (`check_adoptable`, `check_language`); `picked`, and so `expectations_for` and `expectation_for`, with several expectations to choose from. |
-```
-AGENT: CHANGE
-`check_head` refuses with `MovedOn`, a `ValueError` of its own, so that an edge can tell it apart.
----
+
 | `ValueError` | A rule refused before writing: `check_threadable`, `check_based_on`, `check_expectation`, `check_adoptable`, `plan_repair`, `check_language`, `check_entry`, `check_label`, `language_tag`; and `MovedOn`, from `check_head`. |
-```
-| `ValueError` | A rule refused before writing: `check_threadable`, `check_based_on`, `check_expectation`, `check_adoptable`, `plan_repair`, `check_language`, `check_entry`, `check_label`, `language_tag`. |
 | `pydantic.ValidationError` | A model breaks its own rules: an `Entry` of the wrong shape, a `Subject` that isn't exactly one thing, a `Behind` with both or neither of `head` and `binding`; `proposal` when the merged recipe isn't a valid `Recipe`. Rules written as validators raise `ValueError`, which pydantic wraps. |
 | `chatddx.factors.base.StructuralError` (a `ValueError`) | `Reader.get` of a digest that isn't stored (both `Rows` and `test/memory.py:Memory`, through `Store.get` and `Registry.get`); `resolve` of a component of the wrong kind; `proposal` when the merged document isn't a readable component. |
 
@@ -82,11 +77,6 @@ threads and families is said in its entry; in short:
 
 | Deleted are | Functions |
 | --- | --- |
-```
-AGENT: REMOVE
-The row below it says the same with `threads.expectations_shared` added, so this one is left over.
-```
-| skipped, through `About.shows` | `threads.visible`, `families.visible` |
 | skipped, through `About.shows` | `threads.visible`, `threads.expectations_shared`, `families.visible` |
 | skipped, through `About.owned_by` | `threads.expectation_choices`, `threads.expectations_for`, `threads.expectation_for`, `threads.check_expectation` |
 | ranked last | `titles.title_of` |
@@ -279,14 +269,9 @@ picks the latest row. `src/chatddx/store/catalog.py:Rows` implements it over the
 
 | Function | Raises |
 | --- | --- |
-```
-AGENT: ADD
-An edit can name the head it was made on (agents/wip-authoring.md, A10).
----
-| `check_head(rows, thread: int, head: int) -> None` | `MovedOn("thread <thread> has moved on since edit <head>: its head is edit <current>")` when `head` isn't the thread's head; `history`'s `LookupError` for no thread. `model.py:MovedOn` is a `ValueError`. The database doesn't repeat it; `Catalog.edit` takes the thread's lock first. |
-```
 | `check_threadable(kind: str) -> None` | `ValueError("<kind> components have no threads")` when `kind` isn't in `THREAD_KINDS`. |
 | `check_based_on(rows, thread: int, based_on: int) -> None` | `ValueError("edit <based_on> is not in the origin of thread <thread>")` unless the thread exists, is a fork, and `based_on` is an edit of its origin with an id at or after `forked_from`. `0012` repeats it (`catalog.check_based_on`, same message). |
+| `check_head(rows, thread: int, head: int) -> None` | `MovedOn("thread <thread> has moved on since edit <head>: its head is edit <current>")` when `head` isn't the thread's head; `history`'s `LookupError` for no thread. `model.py:MovedOn` is a `ValueError`. The database doesn't repeat it; `Catalog.edit` takes the thread's lock first. |
 
 ### Lookups
 
@@ -602,13 +587,7 @@ with a psycopg error when the Python lets it through.
 | Method | Calls | Writes |
 | --- | --- | --- |
 | `create(digest, by, *, compilation=None, forked_from=None, name=None, owner=None) -> Edit` | `Reader.kind` (`LookupError("<digest> is not in the store")`), `threads.check_threadable`; `threads.check_expectation` through `edit` and `note` | in one transaction: the thread, its first edit (`edit`), an `owner` entry for `owner` or else `by`, and a `name` entry when given |
-```
-AGENT: CHANGE
-`edit` takes the head it was made on, and every edit of a thread is written one at a time.
----
 | `edit(thread, digest, by, *, compilation=None, based_on=None, head=None) -> Edit` | in one transaction: the thread's advisory lock (`pg_advisory_xact_lock(hashtext('catalog.thread'), thread mod 2³¹)`), `threads.check_head` when `head` is given, `threads.check_based_on` when `based_on` is given, `threads.check_expectation(thread, digest)` | the edit, with the thread's kind; `LookupError("no thread with id <thread>")` when there is no thread |
-```
-| `edit(thread, digest, by, *, compilation=None, based_on=None) -> Edit` | `threads.check_based_on` when `based_on` is given; `threads.check_expectation(thread, digest)` | the edit, with the thread's kind; `LookupError("no thread with id <thread>")` when there is no thread |
 | `thread`, `history`, `head`, `heads`, `find`, `visible`, `expectation_for`, `expectations_for`, `expectation_choices`, `expectations_shared`, `forks`, `expectations_of`, `behind`, `variation`, `proposal` | the `threads` function of that name | |
 | `visible_families(person)` | `families.visible` | |
 | `containing(digest) -> list[Edit]` | `Reader.edits_holding([digest])` | |
@@ -626,13 +605,7 @@ AGENT: CHANGE
 | `label(scorer, part, position, value, by)` | `check_label` of the resolved scorer | the label |
 | `labels(scorer)` | `read.labels` | |
 | `tags_given(subject)` | `read.tags_given` | |
-```
-AGENT: CHANGE
-`keep` takes the head it was made on too, checked before "unchanged" is decided.
----
 | `keep(digest, by, thread, *, name=None, compilation=None, forked_from=None, head=None) -> tuple[Edit, Kept]` | `create` without a thread; else, in one transaction, the thread's lock, `threads.check_head` when `head` is given, `threads.head`, and `edit` | a new thread, a new edit, or nothing when the head is `digest` already |
-```
-| `keep(digest, by, thread, *, name=None, compilation=None, forked_from=None) -> tuple[Edit, Kept]` | `threads.head`, then `create` without a thread or `edit` | a new thread, a new edit, or nothing when the head is `digest` already |
 
 ## Database: schema `catalog`
 
