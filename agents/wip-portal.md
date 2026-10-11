@@ -19,9 +19,8 @@ https://github.com/chatddx-administration/chatddx/blob/504792cbeb09508f2c52912be
    their own (see "Swift", "Typed cases").
 3. **Decided: the session cookie is `SameSite=Lax`**, so a link into the portal from another site opens signed in.
    Built (`src/chatddx/api/people.py:sign_in`).
-4. **Most of the work is below the UI** (see "Below the UI"): the bench's writes for authoring (`agents/wip-bench.md`,
-   "Outstanding", "Writes for authoring"), the worker (`agents/wip-worker.md`), the batch planner
-   (`agents/wip-batch.md`), and Z1.
+4. **Most of the work is below the UI** (see "Below the UI"): the bench's writes for authoring
+   (`agents/wip-authoring.md`), the worker (`agents/wip-worker.md`), the batch planner (`agents/wip-batch.md`), and Z1.
 5. **Decided: the batch planner and the worker are planned apart**, in `agents/wip-batch.md` and
    `agents/wip-worker.md`, around one contract (`agents/wip-worker.md`, "The contract").
 6. **Sample runs**, genuine runs answered by a script, are test data for every edge, the portal's among them
@@ -159,8 +158,8 @@ What the portal needs below its pages:
 1. **Runs that outlive the request**: the worker (`agents/wip-worker.md`). A run started over HTTP runs in the
    request and halts when the client goes away (`agents/wip-api.md`, A6, W1); for a browser that is a closed tab.
 2. **Writes for authoring**: chunks, appendices and expectations, and cases and families for swift, through the bench
-   (`agents/wip-bench.md`, "Outstanding", "Writes for authoring"). Taking an expectation shared with the person is one
-   of them: a person is scored against their own only (`agents/wip-bench.md`, "What a person is scored against").
+   (`agents/wip-authoring.md`). Taking an expectation shared with the person is one of them: a person is scored against
+   their own only (`agents/wip-bench.md`, "What a person is scored against").
 3. **The batch planner** (`agents/wip-batch.md`).
 4. **The worker's controls and status** (`agents/wip-worker.md`, "The plan", 4).
 5. **Z1**, the map from roles to kinds, waits for the portal's views (`agents/wip-bench.md`, "Outstanding", "Open";
@@ -201,9 +200,9 @@ only its fingerprint (`docs/chatddx.md`, glossary, "Fingerprint"). A typed case 
   "Clearance").
 - **Each text is added under a new id**, as typed, and never changed. Text cleanup applies when a run prepares it, as
   for any vignette (`docs/factors.md`, "Preparing a case").
-- **The case and its family** are written through the bench for the person who typed it (`agents/wip-bench.md`,
-  "Outstanding", "Writes for authoring"): a `Case` with the source, the id and the fingerprint of the bytes, and a
-  family. The text, the case and the family are written in one transaction.
+- **The case and its family** are written through the bench for the person who typed it (`agents/wip-authoring.md`): a
+  `Case` with the source, the id and the fingerprint of the bytes, and a family. The text, the case and the family are
+  written in one transaction.
 - **A run like any other**: one case and one seed, through the worker (`agents/wip-worker.md`). Its completion is
   case-derived and lands in the ledger; the vignette doesn't.
 
@@ -249,7 +248,7 @@ Assuming the takes.
 4. **Swift**: the `source` schema and the `database` source kind, the bench's writes for cases and families, quotas,
    and the page (see "Swift").
 5. **Authoring**: the bench's writes for chunks, appendices, expectations, labels and languages
-   (`agents/wip-bench.md`, "Outstanding", "Writes for authoring"), and their pages.
+   (`agents/wip-authoring.md`), and their pages.
 6. **Batches**: the planner's pages (`agents/wip-batch.md`), then a batch's page and the worker's status
    (`agents/wip-worker.md`).
 7. **Z1**, and what deleting hides.
@@ -269,7 +268,7 @@ Assuming the takes.
 - A run in a request halts when the client goes away (A6, W1): right for the repl and a program, wrong for a browser
   tab (`agents/wip-worker.md`).
 - The bench can't write a chunk, an appendix or an expectation, and the portal is where they are to be written
-  (`agents/wip-bench.md`, "Outstanding", "Writes for authoring").
+  (`agents/wip-authoring.md`).
 - Neither `jinja2` nor `python-multipart` was a dependency; FastAPI's form fields need the second. Both are now.
 - Swift is React, not Svelte: the old project's SvelteKit client was replaced by swift-dx-guide, a Lovable project.
   Its latest still calls `/api/agents` and `/api/diagnose`, which the old API dropped at 110f9a5.

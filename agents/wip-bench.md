@@ -186,30 +186,15 @@ What is still open. It doesn't move to `docs/`.
 
 ### Start with this
 1. **Adopting the docs.** This file and `agents/wip-bench-api.md`, as `docs/bench.md` and `docs/bench-api.md`.
-2. **Writes for authoring** (below): not planned yet. The portal's authoring and swift wait on them.
+2. **Writes for authoring** (below), planned in `agents/wip-authoring.md`. The portal's authoring and swift wait on
+   them.
 
 ### Writes for authoring
-The bench writes configurations (`save`, `fork`, `edit`), runs (`start`) and scores (`score`), and nothing else. The
-portal is where chunks, appendices and expectations are written (`docs/chatddx.md`, "Requirements";
-`agents/wip-portal.md`), for the person, so the writes are the bench's. Curation writes them only as the archive, from
-a data set's files (`src/chatddx/curation/write.py`). What the docs already ask of them:
-- **Chunks** of every part (`PARTS`, `src/chatddx/bench/variation.py`): a new thread, or an edit of one the person
-  owns, as `fork` and `edit` are for configurations. A new version is offered the previous version's language
-  (`docs/catalog.md`, "Languages").
-- **Appendices**, bound to one vignette and stored as written, with CRLF normalized before they are digested
-  (`docs/factors.md`, "Appendix"); and the cases that order them in a family.
-- **Expectations**, one case's reference answer, held to an expectation schema (`docs/factors.md`, "Expectation"),
-  and read back through `Bench.expectation`. Taking one shared with the person, a fork, is one of them, since only
-  their own counts. Each is held to the catalog's rule of one per case and schema.
-- **Cases and families**, for swift's typed cases: the text, its `Case` and a family for the person, in one
-  transaction (`agents/wip-portal.md`, "Swift", "Typed cases").
-- Beside them: a scorer's labels carried to its next edit (`docs/catalog.md`, "Scorer labels"), and deleting
-  (`docs/catalog.md`, "Deleting").
-
-Until taking exists, the giftbag is the only way to own an expectation: `chatddx init-data` without `--giftbag`
-leaves its user nothing to be scored against. And once people write expectations, `--giftbag` for one who wrote their
-own for a sample case is refused by the catalog's rule, which fails `init-data`; it should keep theirs, as it keeps a
-fork they already have.
+Planned in `agents/wip-authoring.md`: chunks, recipes, appendices and the cases that order them, expectations and
+taking them, what is said about a thread, and following an origin. Until taking exists, the giftbag is the only way to
+own an expectation: `chatddx init-data` without `--giftbag` leaves its user nothing to be scored against. And once
+people write expectations, `--giftbag` for one who wrote their own for a sample case is refused by the catalog's rule,
+which fails `init-data`; it should keep theirs, as it keeps a fork they already have.
 
 ### Takes
 A take is the agent's recommendation, built on but not decided.
