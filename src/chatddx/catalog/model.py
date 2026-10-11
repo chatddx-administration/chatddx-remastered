@@ -65,6 +65,11 @@ def language_tag(value: str) -> str:
     return value
 
 
+# An edit made on a head that isn't the thread's head any more.
+class MovedOn(ValueError):
+    pass
+
+
 class EntryField(StrEnum):
     NAME = "name"
     DESCRIPTION = "description"

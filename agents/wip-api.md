@@ -135,6 +135,16 @@ version of the person's configuration of that name if there is one, and a new co
   variation is the head already, which is answered as such. Another's configuration can't be edited, and is "not
   found" as "no configuration N of yours".
 
+Chunks and expectations are written the same way, with a component where a configuration takes parts, as its JSON
+as a component's own request gives it (`agents/wip-bench.md`, "Components"):
+- **New**: a component, a name, and the language of its text when it has one, as a thread of the person's own.
+- **Fork** any thread of those kinds the person sees, from its head or from a component given in its place.
+- **Edit** a thread of their own with a component.
+
+Every edit names the head it was made on, and is a conflict when the thread has moved on since, so a change made on
+an older version never undoes what came after it. What is written comes back with what the lints say of it, such as
+an expectation whose data its schema refuses, which is written all the same.
+
 ## Taking expectations
 A person is scored against their own expectations only, so they take the shared ones (`agents/wip-bench.md`,
 "Taking"):
@@ -225,8 +235,8 @@ A refusal's body is `{"detail": "…"}`, except where a request doesn't validate
 | 401 | No session, one that has ended, or a wrong login or password. |
 | 403 | A cookie's request that changes something, or a sign-in, from another site's page. |
 | 404 | What the path names isn't there or isn't seen by the person, a thread is of another kind than the route takes, a source doesn't hold a vignette, or a configuration to edit isn't the person's. |
-| 409 | Taking an expectation the person has their own of, without saying to replace it. |
-| 422 | A request that doesn't validate or names a field it shouldn't; a kind that isn't one; a variation the bench refuses; a query or body naming what the person doesn't see; tags no case has; the gate's refusal of a run; taking an expectation that is the person's already. |
+| 409 | Taking an expectation the person has their own of, without saying to replace it; an edit whose head has moved on. |
+| 422 | A request that doesn't validate or names a field it shouldn't; a kind that isn't one; a variation the bench refuses; a query or body naming what the person doesn't see; tags no case has; the gate's refusal of a run; taking an expectation that is the person's already; a component the bench refuses, or parts for what isn't a configuration and a component for what is. |
 | 500 | A run that failed on its thread, for a request waiting for its answer. |
 
 An edit that changes nothing is answered 200 with the head; what is made is answered 201.
@@ -327,8 +337,7 @@ Serving:
 
 Variations:
 - **A part given twice in a query**: the last one counts.
-- **An edit has no precondition.** It replaces its parts over the head when it comes. An `If-Match` on the head, or
-  the head's edit in the body, would refuse one that moved.
+- **An edit has no precondition**: done, as the head's edit in the body (agents/wip-authoring.md, A10).
 - **Concurrent writers.** Two requests can save the same name at once (docs/catalog.md, "Concurrent writers").
 - **Variants.** A client finds `plan (en, Qwen/Qwen3-8B-AWQ)` by its full name; agents/wip-variants.md's option B
   would let it filter by model and language instead.

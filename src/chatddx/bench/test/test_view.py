@@ -2,7 +2,7 @@ import re
 
 import pytest
 
-from chatddx.bench import Ambiguous, Bench, Conflict, NotFound
+from chatddx.bench import Ambiguous, Bench, Conflict, MovedOn, NotFound
 from chatddx.bench.test.sample import (
     FREE_TEXT,
     PLAN,
@@ -211,6 +211,7 @@ def test_a_case_is_held_to_the_expectation_scoring_picks(
     assert theirs.expectation(case, schema) is None
 
 
+@pytest.mark.slow
 def test_several_expectations_to_choose_from_are_ambiguous(
     conn: Connection, alice: Person, bench: Bench, plan: Plan
 ) -> None:
@@ -326,17 +327,21 @@ def test_a_fork_is_a_new_configuration_and_an_edit_a_new_version_of_one_s_own(
     assert bench.about(thread).owner == bench.person.id
     assert forked.digest == bench.skeleton(off).digest
 
-    edited = bench.edit(thread, variation)
+    seen = forked.variation.configuration.id
+    edited = bench.edit(thread, variation, seen)
     assert (edited.what, edited.name) == ("a new version", "terse")
-    assert bench.edit(thread, variation).what == "unchanged"
+    now = edited.variation.configuration.id
+    assert bench.edit(thread, variation, now).what == "unchanged"
     assert [e.digest for e in catalog.history(thread)] == [
         forked.digest,
         variation.configuration.digest,
     ]
+    with pytest.raises(MovedOn, match=f"since edit {seen}: its head is edit {now}"):
+        _ = bench.edit(thread, off, seen)
 
     archives = bench.thread("configuration", f"archive/{FREE_TEXT}")[0].thread
     with pytest.raises(NotFound, match=f"no configuration {archives} of yours"):
-        _ = bench.edit(archives, variation)
+        _ = bench.edit(archives, variation, now)
 
 
 def _expectation_of(catalog: Catalog, case: str, owner: int) -> int:
@@ -348,6 +353,7 @@ def _expectation_of(catalog: Catalog, case: str, owner: int) -> int:
     return thread
 
 
+@pytest.mark.slow
 def test_a_person_takes_the_expectations_shared_with_them(
     conn: Connection, alice: Person, bob: Person, bench: Bench, plan: Plan
 ) -> None:

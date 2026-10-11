@@ -16,10 +16,15 @@ portal is the first edge to need them (agents/wip-portal.md, "Below the UI", "Ph
    its own (A5). The rest are takes.
 2. **Taking expectations is built** (phase 1): `Bench.take` and `Bench.take_from`, the giftbag keeping a person's own,
    the repl's `take`, and the API's `POST /api/takes` and `POST /api/threads/{thread}/takes` (agents/wip-bench.md,
-   "Taking"). Phase 2 comes next.
-3. **One set of writes for every kind people author** (A1), with builders only where a kind binds to a family's
+   "Taking").
+3. **Chunks and expectations are built** (phase 2): `Bench.new`, `fork_component` and `edit_component` with lints
+   and languages, every edit naming its head (A10, configurations included), and the API's `POST /api/threads` and
+   component forks and edits (agents/wip-bench.md, "Components"). The sample has a thread of every chunk kind now,
+   and Swedish texts (agents/wip-sample-data.md, "Beyond the old inventory"). Two takes came with it: A7's language
+   rule and A10's lock. Phase 3 comes next.
+4. **One set of writes for every kind people author** (A1), with builders only where a kind binds to a family's
    vignette: appendices and cases (A2).
-4. **No write refuses on a lint** (A6): what was written comes back with its lints. Refusals stay the components' and
+5. **No write refuses on a lint** (A6): what was written comes back with its lints. Refusals stay the components' and
    the catalog's.
 
 ## What is asked
@@ -76,6 +81,9 @@ A configuration keeps taking a variation where another kind takes a component, a
 
 Why: the catalog's writes are generic over kinds already, and what differs between kinds is what a component is, which
 its model checks. A write per kind would say the same thing nine times.
+
+Built for the chunk kinds and expectations (`chatddx.bench.WRITTEN`). A scorer is refused until its phase, and not only
+for want of a write: it names code to run, which the published list holds back (S1).
 
 ### A2. Builders where a kind binds to a vignette
 - **An appendix** is built by the bench from a family and a text: bound to the family's current vignette, with its line
@@ -147,6 +155,11 @@ A text's language goes with the write that makes the text, and the catalog check
 language on its own. An edge offers it and the person keeps it or changes it, as `docs/catalog.md` ("Languages")
 says. A fork that changes nothing keeps its language, being the same digest.
 
+Take, built: a language is kept on the digest, and the latest wins, so a person giving one to a text someone else
+holds too would change it for them, as labels did before S4. So the bench writes one only where the text has none,
+and refuses one that differs from the text's own; the person writes another text, or leaves it. Correcting a wrong
+language stays curation's for now, and what a person may correct is open: a text only their own threads hold, say.
+
 ### A8. Following an origin
 Accepting the catalog's proposal for a fork the person owns: compiled when it is a recipe, then an edit with
 `based_on` the origin's head (`docs/catalog.md`, "Forks"). Nothing is written without a proposal. It matters first for
@@ -167,6 +180,10 @@ Every edit names the head the person saw, configurations included, and the bench
 on since, with an error of its own that the API maps to 409. It answers "An edit has no precondition"
 (agents/wip-api.md, "Open"). The repl's `save NAME`, which edits whichever configuration its name finds, names the head
 it found.
+
+Take, built: the catalog checks it (`check_head`, `MovedOn`), while every edit holds its thread's advisory lock, so
+it holds with several writers without a rule in the database. The writer may not update the catalog's tables, which
+`FOR UPDATE` asks for.
 
 ### A11. Who may write what
 Ownership only, as now: a person makes new threads and writes on their own. Roles aren't checked. Z1 will map roles
@@ -329,8 +346,8 @@ yet. Take: none are offered until a kind of resource exists, with its own pins, 
 Each with its tests in `src/chatddx/bench/test/` and the API's.
 1. **Taking**, built: taking expectations for cases or families, and the giftbag keeping a person's own; the repl's
    and the API's.
-2. **Chunks and expectations**: new, fork and edit for every kind people author, with a language for texts, lints
-   returned, kinds checked, and an edit's head.
+2. **Chunks and expectations**, built: new, fork and edit for the chunk kinds and expectations, with a language for
+   texts, lints returned, kinds checked, and an edit's head.
 3. **What is said about a thread**: name, description, tags, collaborators, deleting and restoring.
 4. **Following an origin.**
 5. **Recipes into configurations.**

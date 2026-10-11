@@ -99,13 +99,40 @@ class Varying(Parts):
     seed: int | None = Field(None, description="drawn when not given")
 
 
+type ComponentBody = Annotated[
+    dict[str, JsonValue],
+    Field(
+        description="a component's JSON as GET /api/components/{digest} gives its "
+        + "body, kind included"
+    ),
+]
+type Language = Annotated[
+    str | None,
+    Field(description="the language of the text the component holds, such as 'sv'"),
+]
+
+
+class NewThread(_Schema):
+    component: ComponentBody
+    name: str = Field(min_length=1)
+    language: Language = None
+
+
+# A configuration is forked with parts replaced, any other kind with a component.
 class NewFork(_Schema):
     name: str = Field(min_length=1)
     parts: Parts = Parts()
+    component: ComponentBody | None = Field(
+        None, description="what the fork starts from in place of the head"
+    )
+    language: Language = None
 
 
 class NewEdit(_Schema):
+    head: int = Field(description="the edit the change was made on: the head seen")
     parts: Parts = Parts()
+    component: ComponentBody | None = None
+    language: Language = None
 
 
 class Part(_Schema):
@@ -125,6 +152,15 @@ class Finding(_Schema):
     @classmethod
     def of(cls, finding: factors.Finding) -> Self:
         return cls.model_validate(finding.model_dump())
+
+
+# What was written, with what the lints say of its component.
+class MadeThread(ThreadDetail):
+    findings: list[Finding]
+
+
+class MadeEdit(Edit):
+    findings: list[Finding]
 
 
 # What one view of a scorer gets from the variation: whether its output offers what the

@@ -6,7 +6,7 @@ from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 from pydantic.json_schema import models_json_schema
 
-from chatddx.bench import Ambiguous, Conflict, NotFound
+from chatddx.bench import Ambiguous, Conflict, MovedOn, NotFound
 from chatddx.facts import Facts
 from chatddx.inventory import Inventory
 from chatddx.runner.gate import Refused
@@ -19,6 +19,7 @@ STATUSES: dict[type[Exception], int] = {
     NotFound: 404,
     Ambiguous: 409,
     Conflict: 409,
+    MovedOn: 409,
     Refused: 422,
 }
 

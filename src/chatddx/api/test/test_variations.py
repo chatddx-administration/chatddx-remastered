@@ -287,6 +287,7 @@ def test_a_fork_is_a_configuration_of_one_s_own(signed: TestClient) -> None:
     assert got.status_code == 201
     made = got.json()
     assert got.headers["location"] == f"/api/threads/{made['id']}"
+    assert made.pop("findings") == []
     assert signed.get(got.headers["location"]).json() == made
     assert (made["kind"], made["name"], made["owner"]) == ("skeleton", "terse", "alice")
     assert made["forked_from"] == archives["head"]["id"]
@@ -308,21 +309,31 @@ def test_an_edit_is_a_new_version_of_one_s_own_configuration(
     mine = thread(signed, "configuration", FREE_TEXT)
     off = digest(signed, "reasoning", OFF)
     path = f"/api/threads/{mine['id']}/edits"
+    seen = mine["head"]["id"]
 
-    got = signed.post(path, json={"parts": {"reasoning": off}})
+    got = signed.post(path, json={"head": seen, "parts": {"reasoning": off}})
     assert got.status_code == 201
     edited = got.json()
     assert (edited["by"], edited["digest"]) == (
         "alice",
         variation(signed, mine, reasoning=off)["skeleton"],
     )
+    assert edited.pop("findings") == []
     assert signed.get(path).json()[-1] == edited
 
-    again = signed.post(path, json={"parts": {"reasoning": off}})
-    assert (again.status_code, again.json()) == (200, edited)
-    assert signed.post(path, json={}).status_code == 200
+    now = edited["id"]
+    again = signed.post(path, json={"head": now, "parts": {"reasoning": off}})
+    assert again.status_code == 200
+    assert again.json() == {**edited, "findings": []}
+    assert signed.post(path, json={"head": now}).status_code == 200
+    moved = signed.post(path, json={"head": seen, "parts": {"reasoning": None}})
+    assert moved.status_code == 409
+    assert (
+        f"has moved on since edit {seen}: its head is edit {now}"
+        in (moved.json()["detail"])
+    )
 
-    back = signed.post(path, json={"parts": {"reasoning": None}})
+    back = signed.post(path, json={"head": now, "parts": {"reasoning": None}})
     assert back.status_code == 201
     assert [e["digest"] for e in signed.get(path).json()][-3:] == [
         mine["head"]["digest"],
@@ -335,16 +346,19 @@ def test_only_one_s_own_configuration_is_edited_and_a_seen_one_forked(
     signed: TestClient, bob: dict[str, str]
 ) -> None:
     archives = thread(signed, "configuration", FREE_TEXT, "archive")
-    got = signed.post(f"/api/threads/{archives['id']}/edits", json={})
+    got = signed.post(
+        f"/api/threads/{archives['id']}/edits", json={"head": archives["head"]["id"]}
+    )
     assert (got.status_code, got.json()) == (
         404,
         {"detail": f"no configuration {archives['id']} of yours"},
     )
 
     mine = thread(signed, "configuration", FREE_TEXT)
+    head = mine["head"]["id"]
     for path, body in (
         (f"/api/threads/{mine['id']}/forks", {"name": "bob's"}),
-        (f"/api/threads/{mine['id']}/edits", {}),
+        (f"/api/threads/{mine['id']}/edits", {"head": head}),
     ):
         got = signed.post(path, json=body, headers=bob)
         assert (got.status_code, got.json()) == (
@@ -357,13 +371,14 @@ def test_only_one_s_own_configuration_is_edited_and_a_seen_one_forked(
     unvalidated: list[tuple[str, dict[str, Any], list[str]]] = [
         (forks, {"name": ""}, ["body", "name"]),
         (forks, {"parts": {}}, ["body", "name"]),
-        (edits, {"parts": {"stack": off}}, ["body", "parts", "stack"]),
+        (edits, {"head": head, "parts": {"stack": off}}, ["body", "parts", "stack"]),
+        (edits, {"parts": {}}, ["body", "head"]),
     ]
     for path, body, where in unvalidated:
         got = signed.post(path, json=body)
         assert got.status_code == 422
         assert [e["loc"] for e in got.json()["detail"]] == [where]
-    got = signed.post(edits, json={"parts": {"prompt": off}})
+    got = signed.post(edits, json={"head": head, "parts": {"prompt": off}})
     assert (got.status_code, got.json()) == (
         422,
         {"detail": f"{off} isn't a stored chunk of prompt"},

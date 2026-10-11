@@ -5,9 +5,19 @@ from typing import Annotated
 from fastapi import APIRouter, HTTPException, Query, Request, Response
 
 from chatddx import catalog
-from chatddx.bench import KINDS, PARTS, Bench, Conflict, Reach, TriedVariation
+from chatddx.bench import (
+    KINDS,
+    PARTS,
+    Bench,
+    Conflict,
+    MovedOn,
+    Reach,
+    TriedVariation,
+)
 from chatddx.catalog.titles import describe
+from chatddx.factors.base import Finding
 from chatddx.factors.trial import suggest_seeds
+from chatddx.store.catalog import Rows
 
 from . import schemas
 from .people import BenchDep
@@ -91,13 +101,14 @@ def edits(bench: BenchDep, thread: int) -> list[schemas.Edit]:
 
 
 # What the bench refuses: a digest that isn't a chunk of its part, a part that can't be
-# taken out, parts that don't compile together, or an expectation the person owns taken.
-# A conflict, the person's to settle, is 409 (src/chatddx/api/app.py, STATUSES).
+# taken out, parts that don't compile together, a component that isn't one, or an
+# expectation the person owns taken. A conflict and a head that moved on are the
+# person's to settle, 409 (src/chatddx/api/app.py, STATUSES).
 @contextmanager
 def refused() -> Generator[None]:
     try:
         yield
-    except Conflict:
+    except (Conflict, MovedOn):
         raise
     except ValueError as e:
         raise HTTPException(422, str(e)) from None
@@ -162,6 +173,43 @@ def variation(
     )
 
 
+def made(
+    request: Request,
+    response: Response,
+    bench: Bench,
+    thread: int,
+    findings: list[Finding],
+) -> schemas.MadeThread:
+    response.headers["Location"] = request.app.url_path_for("thread", thread=thread)
+    found = [schemas.Finding.of(f) for f in findings]
+    return schemas.MadeThread(**detail(bench, thread).model_dump(), findings=found)
+
+
+def configures(bench: Bench, thread: int) -> bool:
+    found = Rows(bench.conn).thread(thread)
+    return found is not None and found.kind in KINDS["configuration"]
+
+
+# Parts for a configuration, a component for any other kind, and nothing of the other.
+def check_given(configuration: bool, given: schemas.NewFork | schemas.NewEdit) -> None:
+    if configuration and (given.component is not None or given.language is not None):
+        raise HTTPException(
+            422, "a configuration is written with parts, not a component"
+        )
+    if not configuration and given.parts.given():
+        raise HTTPException(422, "only a configuration has parts")
+
+
+@router.post("/threads", status_code=201)
+def new(
+    request: Request, response: Response, bench: BenchDep, given: schemas.NewThread
+) -> schemas.MadeThread:
+    with refused():
+        component = bench.component(given.component)
+        written = bench.new(component, given.name, given.language)
+    return made(request, response, bench, written.edit.thread, written.findings)
+
+
 @router.post("/threads/{thread}/forks", status_code=201)
 def fork(
     request: Request,
@@ -169,27 +217,59 @@ def fork(
     bench: BenchDep,
     thread: int,
     given: schemas.NewFork,
-) -> schemas.ThreadDetail:
+) -> schemas.MadeThread:
+    configuration = configures(bench, thread)
+    check_given(configuration, given)
     with refused():
-        saved = bench.fork(bench.variation(thread, given.parts.given()), given.name)
-    made = saved.variation.configuration.thread
-    response.headers["Location"] = request.app.url_path_for("thread", thread=made)
-    return detail(bench, made)
+        if configuration:
+            varied = bench.variation(thread, given.parts.given())
+            saved = bench.fork(varied, given.name)
+            forked = saved.variation.configuration.thread
+            findings = bench.linted(saved.digest)
+        else:
+            component = (
+                None if given.component is None else bench.component(given.component)
+            )
+            written = bench.fork_component(
+                thread, given.name, component, given.language
+            )
+            forked, findings = written.edit.thread, written.findings
+    return made(request, response, bench, forked, findings)
 
 
 @router.post(
     "/threads/{thread}/edits",
     status_code=201,
-    responses={200: {"description": "Unchanged: it is the head already"}},
+    responses={
+        200: {"description": "Unchanged: it is the head already"},
+        409: {"description": "The thread has moved on since the head the edit names"},
+    },
 )
 def edit(
     response: Response, bench: BenchDep, thread: int, given: schemas.NewEdit
-) -> schemas.Edit:
+) -> schemas.MadeEdit:
+    configuration = configures(bench, thread)
+    check_given(configuration, given)
     with refused():
-        saved = bench.edit(thread, bench.variation(thread, given.parts.given()))
-    if saved.what == "unchanged":
+        if configuration:
+            varied = bench.variation(thread, given.parts.given())
+            saved = bench.edit(thread, varied, given.head)
+            kept, what = saved.variation.configuration, saved.what
+            findings = bench.linted(saved.digest)
+        else:
+            if given.component is None:
+                raise ValueError("an edit holds a component")
+            component = bench.component(given.component)
+            written = bench.edit_component(
+                thread, given.head, component, given.language
+            )
+            kept, what, findings = written.edit, written.what, written.findings
+    if what == "unchanged":
         response.status_code = 200
-    return edit_of(bench, saved.variation.configuration)
+    return schemas.MadeEdit(
+        **edit_of(bench, kept).model_dump(),
+        findings=[schemas.Finding.of(f) for f in findings],
+    )
 
 
 @router.post(

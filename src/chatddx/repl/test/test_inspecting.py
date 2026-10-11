@@ -130,6 +130,7 @@ def test_show_case_says_its_vignette_expectation_and_tags(say: Say):
     assert "no runs of yours with this case" in written
 
 
+@pytest.mark.slow
 def test_show_case_says_when_scoring_has_expectations_to_choose_from(
     bench: Bench, say: Say
 ):

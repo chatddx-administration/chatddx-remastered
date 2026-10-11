@@ -118,12 +118,15 @@ For a variation, the bench gives:
   reads, and which of the given families have no expectation it picks something from, or several to choose from.
 
 ## Writes for the person
-The bench writes configurations, runs, scores and taken expectations for the person, and nothing else:
+The bench writes configurations, chunks, expectations, runs and scores for the person, and nothing else:
 - **Forking** keeps a variation as a new configuration of the person's own, forked from the edit it varies.
 - **Editing** keeps it as a new version of a configuration the person owns. Nothing is written when it is the head
   already.
 - **Saving** by name is one of the two: a new version of the person's own configuration of that name, else a fork.
   Several of their own by that name are refused.
+- **Writing a component**, a chunk or an expectation, from its JSON as the store gives it: new, as a thread of the
+  person's own with a name; a fork of a thread they see, from its head or from a component given in its place; or an
+  edit of a thread they own (see "Components").
 - **Starting** runs the variation at an endpoint, on some cases with one seed, through the runner
   (agents/wip-runner.md). Nothing is sent until the edge sends it.
 - **Scoring** scores a finished run under each scorer that applies to it, or some of them, as each scoring would be
@@ -134,8 +137,26 @@ An unsaved skeleton has what it was compiled from stored, by the running code, w
 (docs/catalog.md, "Recipes"). The runner and the scoring pass write each row as it lands, so starting and scoring need
 the bench's connection in autocommit mode.
 
-Chunks, appendices, cases and families aren't written by the bench yet, nor expectations except by taking (see
-"Outstanding").
+Every edit names the head the person made it on, configurations included, and is refused as `MovedOn` when the
+thread has moved on since, so that a change made on an older version doesn't undo what came after it unseen. Saving by
+name names the head it found. The catalog checks it while it holds the thread, so it holds with several writers too.
+
+Appendices, cases, families, scorers and judges aren't written by the bench yet (see "Outstanding").
+
+### Components
+A person writes the kinds of chunk a recipe's parts take, and expectations. A configuration is written as a variation,
+and the other kinds come with their own writes or are written by curation alone: a scorer, for one, names code to run,
+which only a published list will hold (agents/wip-authoring.md, S1). A component of another kind than the thread's is
+refused before the database would refuse it, and so is a second expectation of the person's own for a case and schema,
+worded as the person reads it.
+
+Each write gives what it kept and what the lints say of the component: an expectation whose data its schema refuses is
+written, and said so. The person's referenced components must be stored already, so a toolset can't bring a tool of
+its own.
+
+A text is written with its language, when the person gives one, and only a text can have one. A language belongs to
+the text, wherever it is held, so the bench writes one only where the text has none, and refuses one that differs from
+what it has; a fork that changes nothing keeps its language.
 
 ## Runs and scores
 - A person's runs are their own, newest first, found by the start of their id, or by a component their trial is built
@@ -157,11 +178,13 @@ Chunks, appendices, cases and families aren't written by the bench yet, nor expe
 The bench's errors are `LookupError`s an edge can tell apart: `NotFound`, for what the person doesn't see or the store
 doesn't hold, and `Ambiguous`, for a name, an id's start or a case's expectations that give several. A variation the
 bench refuses is a `ValueError`: an unknown part, a digest that isn't a stored chunk of its part, a part that can't be
-taken out. So is taking an expectation of one's own. `Conflict`, a `ValueError` too, is a write that would undo what
-the person has unless they say so: taking one thread when they have their own of its case under its schema. The
-messages are worded for a person, without the edge's terms; an edge adds its own hint where it has one, as the repl
-does for a name its endpoint would pick a model for. The API answers `NotFound` with 404, `Ambiguous` and `Conflict`
-with 409, and the other refusals with 422 (agents/wip-api.md, "Errors").
+taken out. So are a component that isn't one, or of a kind the person doesn't write, and taking an expectation of
+one's own. `Conflict`, a `ValueError` too, is a write that would undo what the person has unless they say so: taking
+one thread when they have their own of its case under its schema. `MovedOn`, the catalog's and a `ValueError`, is an
+edit made on a head that isn't the head any more. The messages are worded for a person, without the edge's terms; an
+edge adds its own hint where it has one, as the repl does for a name its endpoint would pick a model for. The API
+answers `NotFound` with 404, `Ambiguous`, `Conflict` and `MovedOn` with 409, and the other refusals with 422
+(agents/wip-api.md, "Errors").
 
 ## "Cell"
 "Cell" is the repl's word for a variation being tried together with an endpoint (agents/wip-repl.md). The bench and
@@ -205,12 +228,12 @@ What is still open. It doesn't move to `docs/`.
 ### Start with this
 1. **Adopting the docs.** This file and `agents/wip-bench-api.md`, as `docs/bench.md` and `docs/bench-api.md`.
 2. **Writes for authoring** (below), planned in `agents/wip-authoring.md`. The portal's authoring and swift wait on
-   them. Taking expectations, its phase 1, is built.
+   them. Taking expectations and writing chunks and expectations, its phases 1 and 2, are built.
 
 ### Writes for authoring
 Planned in `agents/wip-authoring.md`: chunks, recipes, appendices and the cases that order them, expectations, what is
 said about a thread, and following an origin. Taking expectations is built ("Taking"), and the giftbag keeps a
-person's own.
+person's own; so are writing chunks and expectations, and an edit's head ("Writes for the person").
 
 ### Takes
 A take is the agent's recommendation, built on but not decided.

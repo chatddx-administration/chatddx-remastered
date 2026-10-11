@@ -15,11 +15,23 @@ from .model import (
     Edit,
     Entry,
     EntryField,
+    MovedOn,
     Subject,
     Thread,
     Variation,
 )
 from .read import Reader, abouts, heads_holding, heads_of
+
+
+# An edit names the head it was made on, so that one made on an older head undoes
+# nothing that came after it unseen.
+def check_head(rows: Reader, thread: int, head: int) -> None:
+    current = history(rows, thread)[-1]
+    if current.id != head:
+        raise MovedOn(
+            f"thread {thread} has moved on since edit {head}: its head is edit "
+            + f"{current.id}"
+        )
 
 
 def check_threadable(kind: str) -> None:

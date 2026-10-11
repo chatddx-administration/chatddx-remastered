@@ -334,25 +334,41 @@ class Catalog:
         *,
         compilation: str | None = None,
         based_on: int | None = None,
+        head: int | None = None,
     ) -> Edit:
-        if based_on is not None:
-            threads.check_based_on(self._rows, thread, based_on)
-        threads.check_expectation(self._rows, thread, digest)
-        row = self._conn.execute(
-            f"""
-            INSERT INTO catalog.edit AS e (thread, kind, digest, compilation, based_on, by)
-            SELECT t.id, t.kind, %s, %s, %s, %s FROM catalog.thread t WHERE t.id = %s
-            RETURNING {_EDIT}
-            """,
-            (digest, compilation, based_on, by, thread),
-        ).fetchone()
+        with self._conn.transaction():
+            self._lock(thread)
+            if head is not None:
+                threads.check_head(self._rows, thread, head)
+            if based_on is not None:
+                threads.check_based_on(self._rows, thread, based_on)
+            threads.check_expectation(self._rows, thread, digest)
+            row = self._conn.execute(
+                f"""
+                INSERT INTO catalog.edit AS e
+                    (thread, kind, digest, compilation, based_on, by)
+                SELECT t.id, t.kind, %s, %s, %s, %s FROM catalog.thread t
+                WHERE t.id = %s
+                RETURNING {_EDIT}
+                """,
+                (digest, compilation, based_on, by, thread),
+            ).fetchone()
         if row is None:
             raise LookupError(f"no thread with id {thread}")
         return _edit(row)
 
+    # Edits of one thread are written one at a time, so the head an edit names is still
+    # the head when it lands. The writer may not update the catalog's tables, which
+    # `FOR UPDATE` asks for; two threads whose keys collide only wait for each other.
+    def _lock(self, thread: int) -> None:
+        _ = self._conn.execute(
+            "SELECT pg_advisory_xact_lock(hashtext('catalog.thread'), %s::int)",
+            (thread % 2**31,),
+        )
+
     # `digest` kept in `thread`, by `by`: a new edit, or nothing when it's the head
     # already; or, without a thread, in a new one named `name` and forked from the edit
-    # `forked_from`.
+    # `forked_from`. With `head`, the thread must not have moved on from it.
     def keep(
         self,
         digest: str,
@@ -362,16 +378,21 @@ class Catalog:
         name: str | None = None,
         compilation: str | None = None,
         forked_from: int | None = None,
+        head: int | None = None,
     ) -> tuple[Edit, Kept]:
         if thread is None:
             created = self.create(
                 digest, by, compilation=compilation, forked_from=forked_from, name=name
             )
             return created, "created"
-        head = self.head(thread)
-        if head.digest == digest:
-            return head, "unchanged"
-        return self.edit(thread, digest, by, compilation=compilation), "edited"
+        with self._conn.transaction():
+            self._lock(thread)
+            if head is not None:
+                threads.check_head(self._rows, thread, head)
+            current = self.head(thread)
+            if current.digest == digest:
+                return current, "unchanged"
+            return self.edit(thread, digest, by, compilation=compilation), "edited"
 
     def thread(self, id: int) -> Thread:
         return threads.thread(self._rows, id)

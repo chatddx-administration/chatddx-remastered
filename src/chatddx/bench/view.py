@@ -6,6 +6,7 @@ from uuid import UUID
 from pydantic import JsonValue
 
 from chatddx.catalog import (
+    LANGUAGE_KINDS,
     About,
     Edit,
     Entry,
@@ -28,6 +29,7 @@ from chatddx.factors.base import (
 from chatddx.factors.bundle import Registry
 from chatddx.factors.cases import Case, Vignette, prepare_case
 from chatddx.factors.engine import LocalEngine, RemoteEngine
+from chatddx.factors.kinds import BY_KIND
 from chatddx.factors.request import (
     Skeleton,
     SlotName,
@@ -65,6 +67,11 @@ KINDS: dict[str, tuple[str, ...]] = {
     "model": ("model",),
     "engine": ("engine.local", "engine.remote"),
 }
+
+# The kinds a person writes as components. A configuration is written as a variation.
+WRITTEN: frozenset[str] = frozenset(
+    {*(f"chunk.{part}" for part in PARTS), "expectation"}
+)
 
 # What stands in for each slot in a request rendered to be looked at.
 PLACEHOLDERS: dict[SlotName, str] = {
@@ -134,6 +141,14 @@ class Taken:
     kept: dict[str, int]
     choosing: dict[str, list[int]]
     missing: list[str]
+
+
+# A component kept in a thread of the person's own, and what the lints say of it.
+@dataclass(frozen=True)
+class Written:
+    edit: Edit
+    what: Literal["created", "a new version", "unchanged"]
+    findings: list[Finding]
 
 
 SAVED: dict[Kept, Literal["created", "a new version", "unchanged"]] = {
@@ -571,22 +586,32 @@ class Bench:
             raise Ambiguous(
                 f"{self.person.login} has {len(mine)} configurations named {name!r}"
             )
-        return self.edit(mine[0], variation) if mine else self.fork(variation, name)
+        if not mine:
+            return self.fork(variation, name)
+        return self.edit(mine[0], variation, self.catalog.head(mine[0]).id)
 
     # Keeps the variation as a new configuration of the person's own, named `name` and
     # forked from the configuration's edit it varies.
     def fork(self, variation: TriedVariation, name: str) -> Saved:
         return self._kept(variation, None, name)
 
-    # Keeps the variation as a new version of `thread`, a configuration the person owns;
-    # nothing is written when it is the head already.
-    def edit(self, thread: int, variation: TriedVariation) -> Saved:
+    # Keeps the variation as a new version of `thread`, a configuration the person owns
+    # whose head was `head` when they saw it; nothing is written when it is the head
+    # already.
+    def edit(self, thread: int, variation: TriedVariation, head: int) -> Saved:
         _, about = self.thread_by_id(thread, "configuration")
         if not about.owned_by(self.person.id):
             raise NotFound(f"no configuration {thread} of yours")
-        return self._kept(variation, thread, about.name or self.catalog.title(thread))
+        name = about.name or self.catalog.title(thread)
+        return self._kept(variation, thread, name, head)
 
-    def _kept(self, variation: TriedVariation, thread: int | None, name: str) -> Saved:
+    def _kept(
+        self,
+        variation: TriedVariation,
+        thread: int | None,
+        name: str,
+        head: int | None = None,
+    ) -> Saved:
         skeleton = self.skeleton(variation)
         with self.conn.transaction():
             compilation = (
@@ -599,6 +624,7 @@ class Bench:
                 name=name,
                 compilation=compilation,
                 forked_from=variation.configuration.id,
+                head=head,
             )
         what = SAVED[kept]
         recipe = self.catalog.recipe(edit.thread)
@@ -614,6 +640,135 @@ class Bench:
         _ = registry.add(skeleton)
         _ = self.store.add(registry, [registry.add(compilation)])
         return compilation.digest
+
+    # A component of a kind a person writes, from its JSON as the store gives it, `v`
+    # included or not.
+    def component(self, doc: Mapping[str, JsonValue]) -> Component:
+        kind = doc.get("kind")
+        if not isinstance(kind, str) or kind not in WRITTEN:
+            raise ValueError(
+                f"{kind!r} isn't a kind a person writes: the kinds are "
+                + ", ".join(sorted(WRITTEN))
+            )
+        cls = BY_KIND[kind]
+        given = {k: v for k, v in doc.items() if k != "v"}
+        if doc.get("v", cls.schema_version) != cls.schema_version:
+            raise ValueError(f"{kind} is at v{cls.schema_version}, not v{doc['v']}")
+        return cls.model_validate(given)
+
+    # `component` as a new thread of the person's own, named `name`.
+    def new(
+        self, component: Component, name: str, language: str | None = None
+    ) -> Written:
+        return self._written(component, None, name=name, language=language)
+
+    # A new thread of the person's own, named `name` and forked from the head of
+    # `thread`, a thread they see; it starts from `component` when given, else from the
+    # head.
+    def fork_component(
+        self,
+        thread: int,
+        name: str,
+        component: Component | None = None,
+        language: str | None = None,
+    ) -> Written:
+        edit, _, word = self._seen(thread)
+        held = self.get(edit.digest) if component is None else component
+        self._check_kind(thread, word, held)
+        return self._written(
+            held, None, name=name, language=language, forked_from=edit.id
+        )
+
+    # `component` as a new version of `thread`, a thread the person owns whose head was
+    # `head` when they saw it; nothing is written when it is the head already.
+    def edit_component(
+        self,
+        thread: int,
+        head: int,
+        component: Component,
+        language: str | None = None,
+    ) -> Written:
+        _, about, word = self._seen(thread)
+        if not about.owned_by(self.person.id):
+            raise NotFound(f"no {word} {thread} of yours")
+        self._check_kind(thread, word, component)
+        return self._written(component, thread, language=language, head=head)
+
+    # What the lints say of a stored component alone, with the catalog's languages.
+    def linted(self, digest: str) -> list[Finding]:
+        registry = self.store.load([digest])
+        return lints(registry, self.facts, [digest], self.catalog.language_of)
+
+    def _written(
+        self,
+        component: Component,
+        thread: int | None,
+        *,
+        name: str | None = None,
+        language: str | None = None,
+        forked_from: int | None = None,
+        head: int | None = None,
+    ) -> Written:
+        kind = component.kind_name
+        if kind not in WRITTEN:
+            raise ValueError(f"a person doesn't write {kind} components")
+        if language is not None and kind not in LANGUAGE_KINDS:
+            raise ValueError(f"{kind} components have no language of their own")
+        if isinstance(component, Expectation):
+            self._check_expecting(component, thread)
+        registry = self.store.load(s.digest for s in component.refs())
+        _ = registry.add(component)
+        with self.conn.transaction():
+            _ = self.store.add(registry, [component.digest])
+            if language is not None:
+                self._language(component.digest, language)
+            edit, kept = self.catalog.keep(
+                component.digest,
+                self.person.id,
+                thread,
+                name=name,
+                forked_from=forked_from,
+                head=head,
+            )
+        return Written(edit, SAVED[kept], self.linted(component.digest))
+
+    # A component's language is its text's, so other threads may hold it too: one it has
+    # is kept, and the person's is written only where it has none.
+    def _language(self, digest: str, language: str) -> None:
+        held = self.catalog.language_of(digest)
+        if held is not None and held != language:
+            raise ValueError(
+                f"{self.title(digest)} is in {held} already: a text's language is the "
+                + "same wherever it is held"
+            )
+        if held is None:
+            self.catalog.language(digest, language, self.person.id)
+
+    # A thread the person sees, with the word for its kind to name it by.
+    def _seen(self, thread: int) -> tuple[Edit, About, str]:
+        found = self._rows.thread(thread)
+        kind = None if found is None else found.kind
+        word = next((w for w, held in KINDS.items() if kind in held), None)
+        edit, about = self.thread_by_id(thread, word)
+        return edit, about, word or "thread"
+
+    def _check_kind(self, thread: int, word: str, component: Component) -> None:
+        kind = self.catalog.thread(thread).kind
+        if kind != component.kind_name:
+            raise ValueError(
+                f"{word} {thread} holds {kind} components, not {component.kind_name}"
+            )
+
+    # The catalog's rule, worded for the person: one expectation of their own per case
+    # and schema.
+    def _check_expecting(self, expectation: Expectation, thread: int | None) -> None:
+        case, schema = expectation.case, expectation.expectation_schema
+        held = self.catalog.expectation_choices([case], self.person.id, schema)[case]
+        if others := sorted(t for t in held if t != thread):
+            raise ValueError(
+                f"{self.person.login} has their own expectation of {self.title(case)} "
+                + f"under {self.title(schema)}, in thread {others[0]}: edit that one"
+            )
 
     # For each case, a fork of the one expectation under `schema` shared with the person,
     # by `owner` when given, unless they have one of their own; in one transaction.

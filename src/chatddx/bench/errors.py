@@ -1,5 +1,9 @@
 from collections.abc import Iterable
 
+from chatddx.catalog import MovedOn
+
+__all__ = ["Ambiguous", "Conflict", "MovedOn", "NotFound"]
+
 
 # Nothing the person sees goes by that name or id. `per_model` holds the threads made
 # per model under the name, when no model was given to pick one by.
