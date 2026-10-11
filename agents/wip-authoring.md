@@ -9,8 +9,9 @@ portal is the first edge to need them (agents/wip-portal.md, "Below the UI", "Ph
 
 ## Start with this
 1. **Decided: what of a scorer and a judge researchers write** (see "Scorers and judges"), that scorers and tools pin
-   a version of their code rather than the running chatddx (S2), and that free parameters are written where the code
-   publishes a schema (S3). The rest are takes; "Questions for the user" is what the plan can't settle alone.
+   a version of their code rather than the running chatddx (S2), that free parameters are written where the code
+   publishes a schema (S3), and that labels belong to the edit they are written with (S4). The rest are takes;
+   "Questions for the user" is what the plan can't settle alone.
 2. **Taking expectations comes first** (phase 1). A person is scored against their own expectations only, so one who
    wasn't given the giftbag has nothing to be scored against until they can take some.
 3. **One set of writes for every kind people author** (A1), with builders only where a kind binds to a family's
@@ -157,7 +158,8 @@ kept as a new configuration of their own with its compilation, as `fork` keeps o
 the chunks by name through `Bench.chunk`.
 
 ## Scorers and judges
-Decided, for what a researcher writes and what they pick, with the code pin (S2) and free parameters (S3):
+Decided, for what a researcher writes and what they pick, with the code pin (S2), free parameters (S3) and labels
+(S4):
 
 | Part | Written, picked or shipped |
 | --- | --- |
@@ -239,7 +241,7 @@ them. Decided: they are written by researchers, as the views are, but only where
 Where nothing is published, nothing is offered, so today a researcher sets none. A parameter the schema refuses is
 refused by the write, as an unknown metric is, since the scorer could never score with it.
 
-### S4. Labels belong to the scorer version they name
+### S4. Decided: labels belong to the edit they are written with
 A label names a view or a resource of one scorer digest, and the latest label wins, whoever wrote it
 (`src/chatddx/store/migrations/0010-t0-catalog.sql`, `catalog.label`). Once researchers write labels, one who forks a
 scorer without changing it, and so shares its digest, relabels it for everyone who sees it, the archive's included.
@@ -258,7 +260,7 @@ scorer version" can be read two ways:
   same scorer: the thread's history shows it, and since the digest doesn't change, no scoring, score or run left to
   score changes with it. No one's labels change anyone else's, and no rule like the one for expectations is needed.
 
-Take: the edit. What it changes:
+Decided: the edit. What it changes:
 - **Storage**: a label names an edit of a scorer thread instead of a scorer digest, one per edit, part and position,
   written by the edit's writer: a migration at tier 0, and at tier 2 the position's check (as now), that the writer is
   the edit's, and that a label is written once.
@@ -317,14 +319,14 @@ Each with its tests in `src/chatddx/bench/test/` and the API's.
 9. **Judges**, once the scoring pass can send judge requests (S6).
 
 ## Questions for the user
-1. **Labels** (S4): on the edit, the version of a scorer thread (the take), or on the scorer's digest?
-2. **Taking one they already own.** When a person takes a shared expectation for a case they have their own for,
+1. **Taking one they already own.** When a person takes a shared expectation for a case they have their own for,
    should the bench leave theirs (the take, as the giftbag does), or replace it?
-3. **Appendix edits and expectations.** Store the replacement cases and carry expectations only when confirmed (the
+2. **Appendix edits and expectations.** Store the replacement cases and carry expectations only when confirmed (the
    take), or carry them along at once?
-4. **A precondition on every edit** (A10), configurations included?
-5. **Sharing further.** Only the owner shares (the take), or may a collaborator share too? And should a thread ever be
+3. **A precondition on every edit** (A10), configurations included?
+4. **Sharing further.** Only the owner shares (the take), or may a collaborator share too? And should a thread ever be
    handed to another owner?
 
-Once 1 is settled, `docs/chatddx.md` ("Requirements", "Roles mentioned") and `docs/factors.md` ("Scorer", "Judge")
-get `AGENT:` suggestions for who writes what, where they disagree today.
+`docs/chatddx.md` ("Roles mentioned", "Requirements") and `docs/factors.md` ("Scorer", "Judge") carry `AGENT:`
+suggestions for who writes what. The code pin (S2) and labels (S4) get theirs with the build, since they describe
+code that isn't written yet.

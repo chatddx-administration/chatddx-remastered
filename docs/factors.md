@@ -544,6 +544,15 @@ Building an expectation doesn't check its data against its schema. Lints do (see
 to do with data that fails.
 
 ### Scorer
+```
+AGENT: CHANGE
+Decided: who writes which part of a scorer (agents/wip-authoring.md, "Scorers and judges"); docs/chatddx.md
+("Requirements") said developers or ops wrote scorers.
+---
+Principal authors: developers, who write the scoring code and ship it with the project, and researchers, who write the
+views, the free parameters where the code publishes a schema for them, and the labels, and pick the code, the
+expectation schema and the resources.
+```
 Principal author: researchers.
 
 A scorer pins scoring code written by developers. It declares:
@@ -584,6 +593,13 @@ notes in expectations are for judges to read.
 Every scorer selects the same way, through its views.
 
 ### Judge
+```
+AGENT: CHANGE
+Decided: which parts of a judge researchers write and which they pick (agents/wip-authoring.md, "Scorers and judges").
+---
+Principal author: researchers, who write the judge skeleton, as a configuration of purpose `judge`, and the seeds, and
+pick the engine and the fill rule.
+```
 Principal author: researchers.
 
 A judge is an LLM used as a metric: a judge skeleton, an engine, its own seeds, and a fill rule.
