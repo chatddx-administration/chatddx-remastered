@@ -1,48 +1,26 @@
-from collections.abc import Collection, Iterable, Mapping, Sequence
-from dataclasses import dataclass, field
-from datetime import UTC, datetime, timedelta
-from types import EllipsisType
-from typing import Literal
+from collections.abc import Iterable, Mapping
 from uuid import UUID
 
 from pydantic import JsonValue
 
-from chatddx.catalog import (
-    LANGUAGE_KINDS,
-    About,
-    Edit,
-    Entry,
-    EntryField,
-    Kept,
-    Labels,
-    Part,
-    Subject,
-    Variation,
-    latest,
-    variants_for,
-)
-from chatddx.catalog.families import rebind_case
+from chatddx.catalog import About, Edit, Subject, latest, variants_for
 from chatddx.catalog.threads import picked
 from chatddx.catalog.titles import short
-from chatddx.core import settings
 from chatddx.core.rig import rig
 from chatddx.factors.base import (
     Component,
     Finding,
-    Fingerprint,
     StructuralError,
     iter_refs,
     resolve,
 )
 from chatddx.factors.bundle import Registry
-from chatddx.factors.cases import Appendix, Case, Vignette, prepare_case
+from chatddx.factors.cases import Case, Vignette, prepare_case
 from chatddx.factors.engine import LocalEngine, RemoteEngine
-from chatddx.factors.kinds import BY_KIND
 from chatddx.factors.request import (
     Compilation,
     Recipe,
     Skeleton,
-    SlotName,
     compile_request,
     compiled,
     render,
@@ -52,145 +30,22 @@ from chatddx.factors.select import reaches
 from chatddx.factors.trial import Trial
 from chatddx.facts import Facts, lints, model_name
 from chatddx.identity import Person, preferred
-from chatddx.inventory import DatabaseSource, Inventory
-from chatddx.ledger import ItemKey, Run, RunStarted, Score, fingerprint_request
-from chatddx.runner.run import Runner, Running
-from chatddx.runner.score import score_run
+from chatddx.inventory import Inventory
+from chatddx.ledger import ItemKey, Run, RunStarted, fingerprint_request
 from chatddx.scorers.shipped import problems
-from chatddx.store import Catalog, People, Store, Texts, fetch_vignette
+from chatddx.store import Catalog, People, Store, fetch_vignette
 from chatddx.store.catalog import Rows
 from chatddx.store.store import Connection
 
-from .errors import Ambiguous, Conflict, NotFound, OverQuota
+from .errors import Ambiguous, NotFound
+from .model import KINDS, PLACEHOLDERS, Family, Graded, Reach
 from .variation import PARTS, TriedVariation
 
-# The kinds of thread each word names: a configuration is a skeleton thread, a part is a
-# chunk of that part, and an engine is local or remote.
-KINDS: dict[str, tuple[str, ...]] = {
-    "configuration": ("skeleton",),
-    **{part: (f"chunk.{part}",) for part in PARTS},
-    "tool": ("tool",),
-    "scorer": ("scorer",),
-    "judge": ("judge",),
-    "expectation_schema": ("expectation_schema",),
-    "expectation": ("expectation",),
-    "appendix": ("appendix",),
-    "canary_set": ("canary_set",),
-    "model": ("model",),
-    "engine": ("engine.local", "engine.remote"),
-}
 
-# The kinds a person writes as components. A configuration is written as a variation.
-WRITTEN: frozenset[str] = frozenset(
-    {*(f"chunk.{part}" for part in PARTS), "expectation", "appendix", "scorer"}
-)
-
-LABELLED: tuple[Part, ...] = ("view", "resource")
-
-COMPILED_LANGUAGE = "a compiled configuration's language comes from its recipe"
-_UNLABELLED = "only a scorer's views and resources have labels"
-
-# What stands in for each slot in a request rendered to be looked at.
-PLACEHOLDERS: dict[SlotName, str] = {
-    "vignette": "‹vignette›",
-    "appendices": "‹appendices›",
-    "completion": "‹completion›",
-    "expectation": "‹expectation›",
-}
-
-
-@dataclass(frozen=True)
-class Family:
-    id: int
-    about: About
-    case: str
-
-    @property
-    def name(self) -> str:
-        return self.about.name or f"family {self.id}"
-
-
-# What one view of a scorer gets from a variation's answers and the cases' expectations.
-@dataclass(frozen=True)
-class Reach:
-    thread: int
-    scorer: str
-    view: int
-    label: str
-    offered: bool
-    cases: int
-    missing: list[Family]
-    choosing: list[Family]
-
-    @property
-    def have(self) -> int:
-        return self.cases - len(self.missing) - len(self.choosing)
-
-
-# A run's score under one scorer, or why it couldn't be scored.
-@dataclass(frozen=True)
-class Graded:
-    name: str
-    scorer: Scorer
-    labels: dict[int, str]
-    score: Score | None = None
-    findings: list[Finding] = field(default_factory=list[Finding])
-    refused: str | None = None
-
-    def label(self, view: int) -> str:
-        return self.labels.get(view, f"view {view}")
-
-
-@dataclass(frozen=True)
-class Saved:
-    name: str
-    digest: str
-    what: Literal["created", "a new version", "unchanged"]
-    variation: TriedVariation
-
-
-# What following a fork's origin would keep: the origin's head with the fork's changes on
-# top, as a recipe or a component, and the digest it comes to, with the compilation that
-# makes it for a recipe.
-@dataclass(frozen=True)
-class Proposed:
-    variation: Variation
-    proposal: Recipe | Component
-    digest: str
-    compilation: str | None
-
-
-# What taking expectations for some cases did with each: by case, the thread the person
-# took one into, their own thread left as it was, the shared threads of several owners
-# to pick from, and the cases nothing shared has one for.
-@dataclass(frozen=True)
-class Taken:
-    taken: dict[str, int]
-    kept: dict[str, int]
-    choosing: dict[str, list[int]]
-    missing: list[str]
-
-
-# A component kept in a thread of the person's own, and what the lints say of it.
-@dataclass(frozen=True)
-class Written:
-    edit: Edit
-    what: Literal["created", "a new version", "unchanged"]
-    findings: list[Finding]
-    # For an appendix's edit, each case that held the old version and its replacement.
-    cases: dict[str, str] = field(default_factory=dict)
-
-
-SAVED: dict[Kept, Literal["created", "a new version", "unchanged"]] = {
-    "created": "created",
-    "edited": "a new version",
-    "unchanged": "unchanged",
-}
-
-
-# What one person sees and does: the threads, families and runs they see, the World's
-# endpoints, and the variations they try and save. Nothing here is UI.
-class Bench:
+# What one person sees: the threads, families and runs they see, the World's endpoints,
+# and the variations they try, with the checks the writes share. It writes nothing; the
+# writes take it, and `Bench` binds them (src/chatddx/bench/bench.py). Nothing here is UI.
+class View:
     def __init__(
         self, conn: Connection, person: Person, inventory: Inventory, facts: Facts
     ) -> None:
@@ -200,8 +55,8 @@ class Bench:
         self.facts: Facts = facts
         self.store: Store = Store(conn)
         self.catalog: Catalog = Catalog(conn)
-        self._rows: Rows = Rows(conn)
-        self._people: People = People(conn)
+        self.rows: Rows = Rows(conn)
+        self.people: People = People(conn)
         self._logins: dict[int, str] = {}
         self._models: dict[str, str | None] = {}
 
@@ -209,7 +64,7 @@ class Bench:
         if person is None:
             return "nobody"
         if person not in self._logins:
-            self._logins[person] = self._people.get(person).login
+            self._logins[person] = self.people.get(person).login
         return self._logins[person]
 
     def owner(self, about: About) -> str:
@@ -302,7 +157,7 @@ class Bench:
         self, id: int, word: str | None = None, *, deleted: bool = False
     ) -> tuple[Edit, About]:
         about = self.about(id)
-        thread = self._rows.thread(id)
+        thread = self.rows.thread(id)
         seen = about.shows(self.person.id) or (
             deleted and about.deleted and about.owner == self.person.id
         )
@@ -347,7 +202,7 @@ class Bench:
 
     def endpoint(self, name: str) -> str:
         engine = self.inventory.endpoint(name).engine
-        if self._rows.kind(engine) is None:
+        if self.rows.kind(engine) is None:
             raise NotFound(
                 f"endpoint {name!r} serves engine {short(engine)}, which isn't in the "
                 + "store: load its World with init-data"
@@ -377,7 +232,7 @@ class Bench:
         for part, digest in (parts or {}).items():
             if part not in PARTS:
                 raise ValueError(f"no part {part!r}: the parts are {', '.join(PARTS)}")
-            if digest is not None and self._rows.kind(digest) not in KINDS[part]:
+            if digest is not None and self.rows.kind(digest) not in KINDS[part]:
                 raise ValueError(f"{digest} isn't a stored chunk of {part}")
             found = found.set(part, digest, self.title(digest))
         return found
@@ -422,9 +277,9 @@ class Bench:
 
     # A family's case is the one its vignette makes alone, else the first holding it.
     def _cases(self, families: list[int]) -> dict[int, str | None]:
-        current = latest((b.family, b.vignette) for b in self._rows.bindings(families))
+        current = latest((b.family, b.vignette) for b in self.rows.bindings(families))
         held: dict[Vignette, list[str]] = {}
-        for digest, vignette in self._rows.bound_to(current.values(), "case"):
+        for digest, vignette in self.rows.bound_to(current.values(), "case"):
             held.setdefault(vignette, []).append(digest)
         found: dict[int, str | None] = {}
         for family in families:
@@ -573,7 +428,7 @@ class Bench:
                 continue
             if digest is not None:
                 heads[case] = digest
-        read = dict(self._rows.components(list(heads.values())))
+        read = dict(self.rows.components(list(heads.values())))
         data = {
             c: resolve(read.__getitem__, d, Expectation).data for c, d in heads.items()
         }
@@ -590,7 +445,7 @@ class Bench:
         seen = {e.thread: a.owner for e, a in self.threads("scorer")}
         earlier = [
             (e, seen[e.thread])
-            for e in self._rows.edits_holding([scorer])
+            for e in self.rows.edits_holding([scorer])
             if e.thread in seen
         ]
         held_before = sorted(preferred(self.person.id, earlier), key=lambda e: e.id)
@@ -643,477 +498,34 @@ class Bench:
                 )
         return found
 
-    # Keeps the variation as the person's own configuration, under `name`: a new version
-    # of their thread of that name, or else a fork of the configuration's thread.
-    def save(self, variation: TriedVariation, name: str) -> Saved:
-        mine = self.catalog.find("skeleton", name, owner=self.person.id)
-        if len(mine) > 1:
-            raise Ambiguous(
-                f"{self.person.login} has {len(mine)} configurations named {name!r}"
-            )
-        if not mine:
-            return self.fork(variation, name)
-        return self.edit(mine[0], variation, self.catalog.head(mine[0]).id)
-
-    # Keeps the variation as a new configuration of the person's own, named `name` and
-    # forked from the configuration's edit it varies.
-    def fork(self, variation: TriedVariation, name: str) -> Saved:
-        return self._kept(variation, None, name)
-
-    # Keeps the variation as a new version of `thread`, a configuration the person owns
-    # whose head was `head` when they saw it; nothing is written when it is the head
-    # already.
-    def edit(self, thread: int, variation: TriedVariation, head: int) -> Saved:
-        _, about = self.thread_by_id(thread, "configuration")
-        if not about.owned_by(self.person.id):
-            raise NotFound(f"no configuration {thread} of yours")
-        name = about.name or self.catalog.title(thread)
-        return self._kept(variation, thread, name, head)
-
-    def _kept(
-        self,
-        variation: TriedVariation,
-        thread: int | None,
-        name: str,
-        head: int | None = None,
-    ) -> Saved:
-        skeleton = self.skeleton(variation)
-        with self.conn.transaction():
-            compilation = (
-                self._compile(variation) or variation.configuration.compilation
-            )
-            edit, kept = self.catalog.keep(
-                skeleton.digest,
-                self.person.id,
-                thread,
-                name=name,
-                compilation=compilation,
-                forked_from=variation.configuration.id,
-                head=head,
-            )
-        what = SAVED[kept]
-        recipe = self.catalog.recipe(edit.thread)
-        return Saved(name, skeleton.digest, what, TriedVariation(edit, name, recipe))
-
-    # Stores what an unsaved skeleton was compiled from, by the running code.
-    def _compile(self, variation: TriedVariation) -> str | None:
-        recipe = variation.varied
-        if not variation.parts or recipe is None:
-            return None
-        registry, compilation = self._compiled(recipe)
-        _ = self.store.add(registry, [compilation.digest])
-        return compilation.digest
-
     # A recipe compiled by the running code, in a registry with what it refers to;
     # nothing is stored.
-    def _compiled(self, recipe: Recipe) -> tuple[Registry, Compilation]:
+    def compiled(self, recipe: Recipe) -> tuple[Registry, Compilation]:
         registry = self.store.load(s.digest for s in iter_refs(recipe))
         skeleton, compilation = compiled(recipe, registry.get, rig())
         _ = registry.add(skeleton)
         _ = registry.add(compilation)
         return registry, compilation
 
-    # What following the origin of `thread`, a fork the person sees, would keep; `None`
-    # when the origin hasn't moved on since the fork's base, or the person doesn't see
-    # it any more.
-    def proposal(self, thread: int) -> Proposed | None:
-        _, _, word = self._seen(thread)
-        found = self._proposed(thread, word)
-        return None if found is None else found[0]
-
-    # The proposal for `thread`, a fork the person owns whose head was `head` when they
-    # saw it, kept as an edit based on the origin's head. A text takes `language` as
-    # `edit_component`'s does.
-    def follow(self, thread: int, head: int, language: str | None = None) -> Written:
-        _, about, word = self._seen(thread)
-        if not about.owned_by(self.person.id):
-            raise NotFound(f"no {word} {thread} of yours")
-        found = self._proposed(thread, word)
-        if found is None:
-            raise ValueError(f"{word} {thread} has nothing to follow")
-        proposed, registry = found
-        kind = self.catalog.thread(thread).kind
-        if language is not None and proposed.compilation is not None:
-            raise ValueError(COMPILED_LANGUAGE)
-        if language is not None and kind not in LANGUAGE_KINDS:
-            raise ValueError(f"{kind} components have no language of their own")
-        if isinstance(proposed.proposal, Expectation):
-            self._check_expecting(proposed.proposal, thread)
-        labels = None
-        if isinstance(proposed.proposal, Scorer):
-            self._check_scorer(proposed.proposal)
-            labels = self._followed_labels(thread, proposed.variation)
-        kept = [proposed.compilation or proposed.digest]
-        with self.conn.transaction():
-            _ = self.store.add(registry, kept)
-            if language is not None:
-                self._language(proposed.digest, language)
-            edit = self.catalog.edit(
-                thread,
-                proposed.digest,
-                self.person.id,
-                compilation=proposed.compilation,
-                based_on=proposed.variation.origin_head.id,
-                head=head,
-                labels=labels,
-            )
-        return Written(edit, "a new version", self.linted(proposed.digest))
-
-    # A followed scorer keeps the labels of whichever side's views, and resources, the
-    # proposal keeps.
-    def _followed_labels(self, thread: int, varied: Variation) -> Labels:
-        fork = self.catalog.labels(self.catalog.head(thread).id)
-        origin = self.catalog.labels(varied.origin_head.id)
-        kept: dict[tuple[Part, int], str] = {}
-        for part in LABELLED:
-            side = fork if f"/{part}s" in varied.varies else origin
-            kept |= {k: v for k, v in side.items() if k[0] == part}
-        return kept
-
-    def _proposed(self, thread: int, word: str) -> tuple[Proposed, Registry] | None:
-        varied = self.catalog.variation(thread)
-        if varied is None or not varied.moved:
-            return None
-        if not self.about(varied.origin_head.thread).shows(self.person.id):
-            return None
-        try:
-            proposal = self.catalog.proposal(thread)
-            if proposal is None:
-                return None
-            if isinstance(proposal, Recipe):
-                registry, compilation = self._compiled(proposal)
-                digest = compilation.skeleton
-                proposed = Proposed(varied, proposal, digest, compilation.digest)
-            else:
-                registry = self.store.load(s.digest for s in proposal.refs())
-                digest = registry.add(proposal)
-                proposed = Proposed(varied, proposal, digest, None)
-        except ValueError as e:
-            raise ValueError(
-                f"{word} {thread}'s changes don't fit its origin's head: {e}"
-            ) from None
-        return proposed, registry
-
-    # A component of a kind a person writes, from its JSON as the store gives it, `v`
-    # included or not.
-    def component(self, doc: Mapping[str, JsonValue]) -> Component:
-        kind = doc.get("kind")
-        if not isinstance(kind, str) or kind not in WRITTEN:
-            raise ValueError(
-                f"{kind!r} isn't a kind a person writes: the kinds are "
-                + ", ".join(sorted(WRITTEN))
-            )
-        cls = BY_KIND[kind]
-        given = {k: v for k, v in doc.items() if k != "v"}
-        if doc.get("v", cls.schema_version) != cls.schema_version:
-            raise ValueError(f"{kind} is at v{cls.schema_version}, not v{doc['v']}")
-        return cls.model_validate(given)
-
-    # `component` as a new thread of the person's own, named `name`; a recipe is compiled
-    # by the running code and kept as a new configuration, with its compilation. A
-    # scorer is kept with `labels`.
-    def new(
-        self,
-        component: Component | Recipe,
-        name: str,
-        language: str | None = None,
-        labels: Labels | None = None,
-    ) -> Written:
-        if not isinstance(component, Recipe):
-            return self._written(
-                component, None, name=name, language=language, labels=labels
-            )
-        if language is not None:
-            raise ValueError(COMPILED_LANGUAGE)
-        if labels is not None:
-            raise ValueError(_UNLABELLED)
-        for part in PARTS:
-            digest = getattr(component, part)
-            if digest is not None and self._rows.kind(digest) not in KINDS[part]:
-                raise ValueError(f"{digest} isn't a stored chunk of {part}")
-        registry, compilation = self._compiled(component)
-        with self.conn.transaction():
-            _ = self.store.add(registry, [compilation.digest])
-            edit = self.catalog.create(
-                compilation.skeleton,
-                self.person.id,
-                compilation=compilation.digest,
-                name=name,
-            )
-        return Written(edit, "created", self.linted(compilation.skeleton))
-
-    # A new thread of the person's own, named `name` and forked from the head of
-    # `thread`, a thread they see; it starts from `component` when given, else from the
-    # head. A scorer forked as it is keeps the head's labels unless given others.
-    def fork_component(
-        self,
-        thread: int,
-        name: str,
-        component: Component | None = None,
-        language: str | None = None,
-        labels: Labels | None = None,
-    ) -> Written:
-        edit, _, word = self._seen(thread)
-        held = self.get(edit.digest) if component is None else component
-        self._check_kind(thread, word, held)
-        if labels is None and isinstance(held, Scorer) and held.digest == edit.digest:
-            labels = self.catalog.labels(edit.id)
-        return self._written(
-            held,
-            None,
-            name=name,
-            language=language,
-            forked_from=edit.id,
-            labels=labels,
-        )
-
-    # `component` as a new version of `thread`, a thread the person owns whose head was
-    # `head` when they saw it; nothing is written when it is the head already. A scorer
-    # is kept with `labels`: without them, the head's when it is the head's scorer, else
-    # none.
-    def edit_component(
-        self,
-        thread: int,
-        head: int,
-        component: Component,
-        language: str | None = None,
-        labels: Labels | None = None,
-    ) -> Written:
-        _, about, word = self._seen(thread)
-        if not about.owned_by(self.person.id):
-            raise NotFound(f"no {word} {thread} of yours")
-        self._check_kind(thread, word, component)
-        return self._written(
-            component, thread, language=language, head=head, labels=labels
-        )
-
     # What the lints say of a stored component alone, with the catalog's languages.
     def linted(self, digest: str) -> list[Finding]:
         registry = self.store.load([digest])
         return lints(registry, self.facts, [digest], self.catalog.language_of)
 
-    def _written(
-        self,
-        component: Component,
-        thread: int | None,
-        *,
-        name: str | None = None,
-        language: str | None = None,
-        forked_from: int | None = None,
-        head: int | None = None,
-        labels: Labels | None = None,
-    ) -> Written:
-        kind = component.kind_name
-        if kind not in WRITTEN:
-            raise ValueError(f"a person doesn't write {kind} components")
-        if language is not None and kind not in LANGUAGE_KINDS:
-            raise ValueError(f"{kind} components have no language of their own")
-        if labels is not None and not isinstance(component, Scorer):
-            raise ValueError(_UNLABELLED)
-        if isinstance(component, Scorer):
-            self._check_scorer(component)
-        if isinstance(component, Expectation):
-            self._check_expecting(component, thread)
-        if isinstance(component, Appendix):
-            component = self._bound(component)
-        registry = self.store.load(s.digest for s in component.refs())
-        _ = registry.add(component)
-        old = None if thread is None else self.catalog.head(thread).digest
-        with self.conn.transaction():
-            _ = self.store.add(registry, [component.digest])
-            if language is not None:
-                self._language(component.digest, language)
-            edit, kept = self.catalog.keep(
-                component.digest,
-                self.person.id,
-                thread,
-                name=name,
-                forked_from=forked_from,
-                head=head,
-                labels=labels,
-            )
-            replaced = (
-                self._replaced(old, component)
-                if isinstance(component, Appendix) and old and kept == "edited"
-                else {}
-            )
-        return Written(edit, SAVED[kept], self.linted(component.digest), replaced)
-
-    # An appendix as the bench keeps it: its line endings LF, as browsers send CRLF, and
-    # bound to the current vignette of a family the person sees.
-    def _bound(self, appendix: Appendix) -> Appendix:
-        vignette = appendix.vignette
-        families = {b.family for b in self._rows.bindings_sharing(vignette)}
-        if not any(
-            self._current(f) == vignette
-            and self.catalog.about(Subject(family=f)).shows(self.person.id)
-            for f in families
-        ):
-            raise ValueError(
-                "an appendix is bound to the current vignette of a case you see"
-            )
-        text = appendix.text.replace("\r\n", "\n").replace("\r", "\n")
-        return Appendix(vignette=vignette, text=text)
-
-    # Each stored case that holds the appendix `old` at `new`'s vignette, stored again
-    # with `new` in its place; no expectation moves with it.
-    def _replaced(self, old: str, new: Appendix) -> dict[str, str]:
-        replaced: dict[str, str] = {}
-        for digest in self.store.reaching(old, "case"):
-            case = resolve(self.get, digest, Case)
-            if case.vignette != new.vignette:
-                continue
-            held = tuple(new.digest if a == old else a for a in case.appendices)
-            made = Case(vignette=case.vignette, appendices=held)
-            registry = self.store.load(held)
-            _ = self.store.add(registry, [registry.add(made)])
-            replaced[digest] = made.digest
-        return replaced
-
-    def _current(self, family: int) -> Vignette:
-        return self._rows.bindings([family])[-1].vignette
-
-    # An appendix of `text` for `family`, a case the person sees, bound to its current
-    # vignette; written with `new`, `fork_component` or `edit_component`.
-    def appendix(self, family: int, text: str) -> Appendix:
-        found = self.family_by_id(family)
-        return self._bound(Appendix(vignette=self._current(found.id), text=text))
+    def current(self, family: int) -> Vignette:
+        return self.rows.bindings([family])[-1].vignette
 
     # The stored cases of `family` at its current vignette, the bare one first.
     def cases(self, family: int) -> list[str]:
         found = self.family_by_id(family)
-        vignette = self._current(found.id)
-        held = [d for d, _ in self._rows.bound_to([vignette], "case")]
+        vignette = self.current(found.id)
+        held = [d for d, _ in self.rows.bound_to([vignette], "case")]
         bare = Case(vignette=vignette).digest
         return sorted(held, key=lambda d: (d != bare, d))
 
-    # A case of `family` with `appendices` in order, each one the person sees, stored at
-    # its current vignette. Nothing is written in the catalog, since a case belongs to
-    # its family by its vignette.
-    def case(self, family: int, appendices: Sequence[str]) -> str:
-        found = self.family_by_id(family)
-        for digest in appendices:
-            held = self.catalog.containing(digest)
-            if not any(self.about(e.thread).shows(self.person.id) for e in held):
-                raise NotFound(f"no appendix {digest} for {self.person.login}")
-        made = Case(vignette=self._current(found.id), appendices=tuple(appendices))
-        registry = self.store.load(appendices)
-        _ = self.store.add(registry, [registry.add(made)])
-        return made.digest
-
-    # The replacement of `case`, left at an earlier vignette of its family by a repair:
-    # the same appendix texts at the current one, stored.
-    def replacement(self, case: str) -> str:
-        family = self.catalog.family(case)
-        if family is None:
-            raise NotFound(f"no case {case} for {self.person.login}")
-        found = self.family_by_id(family)
-        current = self._current(found.id)
-        held = resolve(self.get, case, Case)
-        if held.vignette == current:
-            raise ValueError(f"{case} is at its family's current vignette already")
-        made, appendices = rebind_case(held, current, self.get)
-        registry = Registry()
-        for appendix in appendices.values():
-            _ = registry.add(appendix)
-        _ = self.store.add(registry, [registry.add(made)])
-        return made.digest
-
-    # A case the person typed: kept as a text of `source`, else of the World's one
-    # database source, with its case and a family of the person's own, named `name` and
-    # in `language` when given, all at once.
-    def type_case(
-        self,
-        text: str,
-        *,
-        name: str | None = None,
-        language: str | None = None,
-        source: str | None = None,
-    ) -> Family:
-        if not text.strip():
-            raise ValueError("a typed case holds text")
-        if "\0" in text:
-            raise ValueError("a typed case may not hold U+0000, which can't be stored")
-        if len(text) > settings.TYPED_TEXT_LIMIT:
-            raise ValueError(
-                f"a typed case holds at most {settings.TYPED_TEXT_LIMIT} characters, "
-                + f"not {len(text)}"
-            )
-        if name == "":
-            raise ValueError("a name can't be empty: none leaves the case unnamed")
-        entries = [] if name is None else [Entry(field=EntryField.NAME, value=name)]
-        if language is not None:
-            entries.append(Entry(field=EntryField.LANGUAGE, value=language))
-        into = self._typed_into(source)
-        texts = Texts(self.conn)
-        since = datetime.now(UTC) - timedelta(days=1)
-        if (
-            typed := texts.typed_since(self.person.id, since)
-        ) >= settings.TYPED_PER_DAY:
-            raise OverQuota(
-                f"{self.person.login} has typed {typed} cases in the last day, as many "
-                + "as a day takes"
-            )
-        with self.conn.transaction():
-            id = texts.add(into, text, self.person.id)
-            vignette = Vignette(
-                source=into, id=id, fingerprint=Fingerprint.of(text.encode())
-            )
-            registry = Registry()
-            case = registry.add(Case(vignette=vignette))
-            _ = self.store.add(registry, [case])
-            family = self.catalog.adopt(case, self.person.id, by_content=False)
-            for entry in entries:
-                self.catalog.note(Subject(family=family), entry, self.person.id)
-        return self.family_by_id(family)
-
-    def _typed_into(self, source: str | None) -> str:
-        held = sorted(
-            s.name
-            for s in self.inventory.sources.values()
-            if isinstance(s, DatabaseSource)
-        )
-        if source is not None and source not in held:
-            raise ValueError(f"{source!r} isn't a database source of the World's")
-        if source is None and len(held) != 1:
-            raise ValueError(
-                "the World has no database source to type cases into"
-                if not held
-                else f"name the source to type into: {', '.join(held)}"
-            )
-        return source or held[0]
-
-    # The person's expectation `thread`, whose head was `head` when they saw it, carried
-    # onto `case`, another case of its case's family, with the same data: a clinician's
-    # word that it still holds there.
-    def carry(self, thread: int, head: int, case: str) -> Written:
-        edit, _, word = self._seen(thread)
-        if word != "expectation":
-            raise ValueError(f"{word} {thread} isn't an expectation")
-        held = resolve(self.get, edit.digest, Expectation)
-        family = self.catalog.family(held.case)
-        if family is None or self.catalog.family(case) != family:
-            raise ValueError(f"{case} isn't a case of the family {held.case} is of")
-        carried = Expectation(
-            case=case, expectation_schema=held.expectation_schema, data=held.data
-        )
-        return self.edit_component(thread, head, carried)
-
-    # A component's language is its text's, so other threads may hold it too: one it has
-    # is kept, and the person's is written only where it has none.
-    def _language(self, digest: str, language: str) -> None:
-        held = self.catalog.language_of(digest)
-        if held is not None and held != language:
-            raise ValueError(
-                f"{self.title(digest)} is in {held} already: a text's language is the "
-                + "same wherever it is held"
-            )
-        if held is None:
-            self.catalog.language(digest, language, self.person.id)
-
     # A thread the person sees, with the word for its kind to name it by.
-    def _seen(self, thread: int) -> tuple[Edit, About, str]:
-        found = self._rows.thread(thread)
+    def seen(self, thread: int) -> tuple[Edit, About, str]:
+        found = self.rows.thread(thread)
         kind = None if found is None else found.kind
         word = next((w for w, held in KINDS.items() if kind in held), None)
         edit, about = self.thread_by_id(thread, word)
@@ -1121,11 +533,11 @@ class Bench:
 
     # A scorer the running code could never score with is refused: code it doesn't ship,
     # a metric it doesn't publish, or parameters its schemas refuse.
-    def _check_scorer(self, scorer: Scorer) -> None:
+    def check_scorer(self, scorer: Scorer) -> None:
         if found := problems(scorer):
             raise ValueError("; ".join(found))
 
-    def _check_kind(self, thread: int, word: str, component: Component) -> None:
+    def check_kind(self, thread: int, word: str, component: Component) -> None:
         kind = self.catalog.thread(thread).kind
         if kind != component.kind_name:
             raise ValueError(
@@ -1134,7 +546,7 @@ class Bench:
 
     # The catalog's rule, worded for the person: one expectation of their own per case
     # and schema.
-    def _check_expecting(
+    def check_expecting(
         self, expectation: Expectation, thread: int | None, then: str = "edit that one"
     ) -> None:
         case, schema = expectation.case, expectation.expectation_schema
@@ -1144,177 +556,6 @@ class Bench:
                 f"{self.person.login} has their own expectation of {self.title(case)} "
                 + f"under {self.title(schema)}, in thread {others[0]}: {then}"
             )
-
-    # What is said about `thread`, which the person owns, as it is to hold afterwards: its
-    # name, `None` for none and the title takes over; its description; its tags; who it is
-    # shared with, by login; and whether it is deleted. `...` and `None` leave a field as
-    # it is. Only what changes what holds is written, in one transaction, and what holds
-    # afterwards is returned. A deleted thread is restored before anything else is said.
-    def say(
-        self,
-        thread: int,
-        *,
-        name: str | None | EllipsisType = ...,
-        description: str | None = None,
-        tags: Collection[str] | None = None,
-        collaborators: Collection[str] | None = None,
-        deleted: bool | None = None,
-    ) -> About:
-        found = self._rows.thread(thread)
-        kind = None if found is None else found.kind
-        word = next((w for w, held in KINDS.items() if kind in held), "thread")
-        about = self.about(thread)
-        if found is None or about.owner != self.person.id:
-            raise NotFound(f"no {word} {thread} of yours")
-        changing = (name, description, tags, collaborators) != (..., None, None, None)
-        if about.deleted and deleted is not False and changing:
-            raise ValueError(
-                f"{word} {thread} is deleted: restore it to say more of it"
-            )
-        if name == "":
-            raise ValueError("a name can't be empty: none takes it away")
-        if tags is not None and "" in tags:
-            raise ValueError("a tag can't be empty")
-        sharing: set[int] = (
-            set()
-            if collaborators is None
-            else {self._sharing(c) for c in collaborators}
-        )
-        if self.person.id in sharing:
-            raise ValueError(f"{word} {thread} is yours: it is shared with others")
-
-        said: list[Entry] = []
-        if deleted is False and about.deleted:
-            head = self.get(self.catalog.head(thread).digest)
-            if isinstance(head, Expectation):
-                self._check_expecting(head, thread, "delete that one to restore this")
-            said.append(Entry(field=EntryField.DELETED, present=False))
-        if not isinstance(name, EllipsisType) and name != about.name:
-            said.append(
-                Entry(field=EntryField.NAME, present=False)
-                if name is None
-                else Entry(field=EntryField.NAME, value=name)
-            )
-        if description is not None and description != about.description:
-            said.append(Entry(field=EntryField.DESCRIPTION, value=description))
-        if tags is not None:
-            said += [
-                Entry(field=EntryField.TAG, value=t, present=t in tags)
-                for t in sorted(about.tags.symmetric_difference(tags))
-            ]
-        if collaborators is not None:
-            said += [
-                Entry(field=EntryField.COLLABORATOR, person=c, present=c in sharing)
-                for c in sorted(about.collaborators.symmetric_difference(sharing))
-            ]
-        if deleted and not about.deleted:
-            said.append(Entry(field=EntryField.DELETED))
-        with self.conn.transaction():
-            for entry in said:
-                self.catalog.note(Subject(thread=thread), entry, self.person.id)
-        return self.about(thread)
-
-    def _sharing(self, login: str) -> int:
-        found = self._people.find(login)
-        if found is None:
-            raise NotFound(f"no person {login!r}")
-        return found.id
-
-    # For each case, a fork of the one expectation under `schema` shared with the person,
-    # by `owner` when given, unless they have one of their own; in one transaction.
-    def take(
-        self, cases: Iterable[str], schema: str, owner: str | None = None
-    ) -> Taken:
-        if self._rows.kind(schema) != "expectation_schema":
-            raise ValueError(f"{schema} isn't a stored expectation schema")
-        by = None if owner is None else self._people.find(owner)
-        if owner is not None and by is None:
-            raise NotFound(f"no person {owner!r}")
-        wanted = list(dict.fromkeys(cases))
-        own = self.catalog.expectation_choices(wanted, self.person.id, schema)
-        shared = self.catalog.expectations_shared(wanted, self.person.id, schema)
-        found = Taken({}, {}, {}, [])
-        with self.conn.transaction():
-            for case in wanted:
-                offered = [
-                    (e, a) for e, a in shared[case] if by is None or a.owner == by.id
-                ]
-                if mine := sorted(own[case]):
-                    found.kept[case] = mine[0]
-                elif not offered:
-                    found.missing.append(case)
-                elif len(offered) > 1:
-                    found.choosing[case] = [e.thread for e, _ in offered]
-                else:
-                    found.taken[case] = self._fork(*offered[0])
-        return found
-
-    # A fork of an expectation thread shared with the person. With `replace`, their own
-    # of its case under its schema is deleted first, in the same transaction; without,
-    # it is a conflict.
-    def take_from(self, thread: int, replace: bool = False) -> int:
-        edit, about = self.thread_by_id(thread, "expectation")
-        if about.owner == self.person.id:
-            raise ValueError(f"expectation {thread} is yours already")
-        held = resolve(self.get, edit.digest, Expectation)
-        case, schema = held.case, held.expectation_schema
-        choices = self.catalog.expectation_choices([case], self.person.id, schema)
-        mine = sorted(choices[case])
-        if mine and not replace:
-            raise Conflict(
-                f"{self.person.login} has their own expectation of {self.title(case)} "
-                + f"under {self.title(schema)}, in thread {mine[0]}: replace it to "
-                + "take this one"
-            )
-        gone = Entry(field=EntryField.DELETED)
-        with self.conn.transaction():
-            for own in mine:
-                self.catalog.note(Subject(thread=own), gone, self.person.id)
-            return self._fork(edit, about)
-
-    def _fork(self, head: Edit, about: About) -> int:
-        made = self.catalog.create(
-            head.digest, self.person.id, forked_from=head.id, name=about.name
-        )
-        return made.thread
-
-    # The variation run on `cases` with one seed, at `endpoint`; nothing is sent until
-    # `Running.send`.
-    def start(
-        self, variation: TriedVariation, endpoint: str, cases: list[str], seed: int
-    ) -> Running:
-        skeleton = self.skeleton(variation)
-        registry, trial = self.trial(skeleton, self.endpoint(endpoint), cases, seed)
-        runner = Runner(self.conn, self.inventory, self.person)
-        running = runner.start(trial, registry, endpoint)
-        _ = self._compile(variation)
-        return running
-
-    # A finished run scored under every scorer that applies to it, or those of
-    # `scorers`, as each scoring would be built now.
-    def score(
-        self, run: RunStarted, scorers: Collection[str] | None = None
-    ) -> list[Graded]:
-        found: list[Graded] = []
-        for edit, about in self.scorers_for(run):
-            if scorers is not None and edit.digest not in scorers:
-                continue
-            name = about.name or self.catalog.title(edit.thread)
-            scorer = resolve(self.get, edit.digest, Scorer)
-            labels = self.labels_of(edit)
-            try:
-                scoring = self.scoring(run, edit.digest)
-                if scoring is None:
-                    raise LookupError("none of the run's cases has an expectation")
-                registry = self.store.load([scoring.scorer, *scoring.expectations])
-                score, findings = score_run(
-                    self.conn, run.run, scoring, registry, self.person
-                )
-            except (LookupError, TypeError, NotImplementedError) as e:
-                found.append(Graded(name, scorer, labels, refused=str(e)))
-                continue
-            found.append(Graded(name, scorer, labels, score, findings))
-        return found
 
     # The live runs the person owns, newest first. A collaborator on a run doesn't see it.
     def runs(self) -> list[RunStarted]:

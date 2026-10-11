@@ -1,10 +1,8 @@
+from .bench import Bench
 from .errors import Ambiguous, Conflict, MovedOn, NotFound, OverQuota
-from .outcome import Outcome, outcome, usage
-from .variation import OPTIONAL, PARTS, TriedVariation
-from .view import (
+from .model import (
     KINDS,
     WRITTEN,
-    Bench,
     Family,
     Graded,
     Proposed,
@@ -13,6 +11,8 @@ from .view import (
     Taken,
     Written,
 )
+from .outcome import Outcome, outcome, usage
+from .variation import OPTIONAL, PARTS, TriedVariation
 
 __all__ = [
     "KINDS",

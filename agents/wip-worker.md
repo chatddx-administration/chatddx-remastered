@@ -76,7 +76,7 @@ https://github.com/chatddx-administration/chatddx/blob/504792cbeb09508f2c52912be
 ## The contract
 What edges and the planner hand the worker, and what they get back. Take:
 1. **The unit asked for**: a trial at an endpoint, for an owner, scored afterwards or not, and the batch it came from
-   if any (`agents/wip-batch.md`). That is `Bench.start` followed by `Bench.score` (`src/chatddx/bench/view.py`), and
+   if any (`agents/wip-batch.md`). That is `Bench.start` followed by `Bench.score` (`src/chatddx/bench/runs.py`), and
    what `POST /api/runs` asks today (`agents/wip-api.md`, "Runs").
 2. **How its runs are found**: by trial digest and owner (`Bench.runs`; `GET /api/runs?trial=`), or through a kept
    batch (`agents/wip-batch.md`, "Kept batches").

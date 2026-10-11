@@ -1,0 +1,94 @@
+from chatddx.catalog import LANGUAGE_KINDS, Labels, Part, Variation
+from chatddx.factors.bundle import Registry
+from chatddx.factors.request import Recipe
+from chatddx.factors.scoring import Expectation, Scorer
+
+from .components import keep_language
+from .errors import NotFound
+from .model import COMPILED_LANGUAGE, LABELLED, Proposed, Written
+from .view import View
+
+
+# What following the origin of `thread`, a fork the person sees, would keep; `None` when
+# the origin hasn't moved on since the fork's base, or the person doesn't see it any
+# more.
+def proposal(view: View, thread: int) -> Proposed | None:
+    _, _, word = view.seen(thread)
+    found = _proposed(view, thread, word)
+    return None if found is None else found[0]
+
+
+# The proposal for `thread`, a fork the person owns whose head was `head` when they saw
+# it, kept as an edit based on the origin's head. A text takes `language` as
+# `edit_component`'s does.
+def follow(view: View, thread: int, head: int, language: str | None = None) -> Written:
+    _, about, word = view.seen(thread)
+    if not about.owned_by(view.person.id):
+        raise NotFound(f"no {word} {thread} of yours")
+    found = _proposed(view, thread, word)
+    if found is None:
+        raise ValueError(f"{word} {thread} has nothing to follow")
+    proposed, registry = found
+    kind = view.catalog.thread(thread).kind
+    if language is not None and proposed.compilation is not None:
+        raise ValueError(COMPILED_LANGUAGE)
+    if language is not None and kind not in LANGUAGE_KINDS:
+        raise ValueError(f"{kind} components have no language of their own")
+    if isinstance(proposed.proposal, Expectation):
+        view.check_expecting(proposed.proposal, thread)
+    labels = None
+    if isinstance(proposed.proposal, Scorer):
+        view.check_scorer(proposed.proposal)
+        labels = _followed_labels(view, thread, proposed.variation)
+    kept = [proposed.compilation or proposed.digest]
+    with view.conn.transaction():
+        _ = view.store.add(registry, kept)
+        if language is not None:
+            keep_language(view, proposed.digest, language)
+        edit = view.catalog.edit(
+            thread,
+            proposed.digest,
+            view.person.id,
+            compilation=proposed.compilation,
+            based_on=proposed.variation.origin_head.id,
+            head=head,
+            labels=labels,
+        )
+    return Written(edit, "a new version", view.linted(proposed.digest))
+
+
+# A followed scorer keeps the labels of whichever side's views, and resources, the
+# proposal keeps.
+def _followed_labels(view: View, thread: int, varied: Variation) -> Labels:
+    fork = view.catalog.labels(view.catalog.head(thread).id)
+    origin = view.catalog.labels(varied.origin_head.id)
+    kept: dict[tuple[Part, int], str] = {}
+    for part in LABELLED:
+        side = fork if f"/{part}s" in varied.varies else origin
+        kept |= {k: v for k, v in side.items() if k[0] == part}
+    return kept
+
+
+def _proposed(view: View, thread: int, word: str) -> tuple[Proposed, Registry] | None:
+    varied = view.catalog.variation(thread)
+    if varied is None or not varied.moved:
+        return None
+    if not view.about(varied.origin_head.thread).shows(view.person.id):
+        return None
+    try:
+        proposal = view.catalog.proposal(thread)
+        if proposal is None:
+            return None
+        if isinstance(proposal, Recipe):
+            registry, compilation = view.compiled(proposal)
+            digest = compilation.skeleton
+            proposed = Proposed(varied, proposal, digest, compilation.digest)
+        else:
+            registry = view.store.load(s.digest for s in proposal.refs())
+            digest = registry.add(proposal)
+            proposed = Proposed(varied, proposal, digest, None)
+    except ValueError as e:
+        raise ValueError(
+            f"{word} {thread}'s changes don't fit its origin's head: {e}"
+        ) from None
+    return proposed, registry

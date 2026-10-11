@@ -12,7 +12,7 @@ for what:
 - init-data names it `NAME (LANGUAGE)`, `NAME (MODEL)` or `NAME (LANGUAGE, MODEL)`
   (`src/chatddx/catalog/variants.py:variant_name`, `src/chatddx/curation/plan.py:_named`);
 - the bench reads the name back to find the variant a plain name means for the engine's model, and refuses one made
-  in several languages (`variants.py:made_for`, `variants_for`; `src/chatddx/bench/view.py:Bench.thread`);
+  in several languages (`variants.py:made_for`, `variants_for`; `src/chatddx/bench/view.py:View.thread`);
 - the repl offers the plain name beside the variants in completion (`src/chatddx/repl/shell.py:_per_model`).
 
 ## Why names alone are fragile

@@ -19,7 +19,11 @@ Paths are relative to `src/chatddx/bench/` unless they start with `src/`, `docs/
 - [errors.py](#errorspy): `NotFound`, `Ambiguous`, `Conflict`, `MovedOn`, `OverQuota`
 - [outcome.py](#outcomepy): `Outcome`, `outcome`, `usage`
 - [variation.py](#variationpy): `PARTS`, `OPTIONAL`, `TriedVariation`
-- [view.py](#viewpy): `Bench`, `KINDS`, and the values `Bench` returns
+- [model.py](#modelpy): `KINDS` and the other constants, and the values the bench returns
+- [view.py](#viewpy): `View`, what the person sees, and the checks the writes share
+- [bench.py](#benchpy): `Bench`, the `View` with the writes bound
+- The writes: [configurations.py](#configurationspy), [components.py](#componentspy), [cases.py](#casespy),
+  [taking.py](#takingpy), [saying.py](#sayingpy), [following.py](#followingpy), [runs.py](#runspy)
 - [Tests](#tests)
 - [Beyond docs/bench.md](#beyond-docsbenchmd)
 
@@ -35,27 +39,43 @@ Paths are relative to `src/chatddx/bench/` unless they start with `src/`, `docs/
 | `errors.py` | `NotFound`, `Ambiguous`, `Conflict`, `OverQuota`; `MovedOn`, the catalog's | `chatddx.catalog` |
 | `outcome.py` | `Outcome`, `outcome`, `usage`: how a run's item ended, and the tokens it used | `chatddx.factors.request`, `chatddx.ledger`, `chatddx.runner.send`, `chatddx.scorers.answer` |
 | `variation.py` | `PARTS`, `OPTIONAL`, `TriedVariation`: the variation being tried, a plain value | `chatddx.catalog`, `chatddx.factors.request` |
-| `view.py` | `Bench`; `KINDS`, `WRITTEN`, `LABELLED`, `COMPILED_LANGUAGE`, `PLACEHOLDERS`; `Family`, `Reach`, `Graded`, `Saved`, `Taken`, `Written`, `Proposed` | `errors.py`, `variation.py`, `chatddx.catalog` (and its `threads` and `titles`), `chatddx.core.rig`, `chatddx.factors.{base,bundle,cases,engine,request,scoring,select,trial}`, `chatddx.facts`, `chatddx.identity`, `chatddx.inventory`, `chatddx.ledger`, `chatddx.runner.{run,score}`, `chatddx.scorers.shipped`, `chatddx.store` |
+| `model.py` | `KINDS`, `WRITTEN`, `LABELLED`, `COMPILED_LANGUAGE`, `PLACEHOLDERS`, `SAVED`; `Family`, `Reach`, `Graded`, `Saved`, `Proposed`, `Taken`, `Written` | `variation.py`, `chatddx.catalog`, `chatddx.factors.{base,request,scoring}`, `chatddx.ledger` |
+| `view.py` | `View`: what the person sees, and the checks the writes share | `errors.py`, `model.py`, `variation.py`, `chatddx.catalog` (and its `threads` and `titles`), `chatddx.core.rig`, `chatddx.factors.{base,bundle,cases,engine,request,scoring,select,trial}`, `chatddx.facts`, `chatddx.identity`, `chatddx.inventory`, `chatddx.ledger`, `chatddx.scorers.shipped`, `chatddx.store` |
+| `configurations.py` | `save`, `fork`, `edit`, `keep_compilation` | `view.py` |
+| `components.py` | `component`, `new`, `fork_component`, `edit_component`, `bound`, `keep_language` | `view.py`, `chatddx.factors.kinds` |
+| `cases.py` | `appendix`, `case`, `replacement`, `type_case`, `carry` | `components.py`, `chatddx.catalog.families`, `chatddx.core.settings`, `chatddx.store.Texts` |
+| `taking.py` | `take`, `take_from` | `view.py` |
+| `saying.py` | `say` | `view.py` |
+| `following.py` | `proposal`, `follow` | `components.py` |
+| `runs.py` | `start`, `score` | `configurations.py`, `chatddx.runner.{run,score}` |
+| `bench.py` | `Bench` | `view.py` and the writes |
 
 Why it is laid out so:
-- **Modules are named by what they hold**, as `catalog/threads.py` and `runner/send.py` are. There is no
-  `bench/bench.py`.
-- **`variation.py` and `outcome.py` are pure.** Neither touches the store or a person, so they are tested without a
-  database, and an edge can hold a `TriedVariation` without a bench.
-- **`Bench` is one class in one module.** Its methods call each other through `self`: `configuration` and `chunk` use
-  `thread`; `findings`, `reach`, `request`, `start` and the writes use `skeleton`; `score` and `unscored` use
-  `scorers_for` and `scoring`; `reach` and `score` use `labels_of`, and `scores_of` `labels`. Splitting it by concern
-  would take mixins, which hide where a method lives, or functions taking a bench, which give edges a second surface
-  beside `bench.*`.
-- **"View"**, since the bench is a person-scoped view. It also writes for the person, but only through what the view
+- **Modules are named by what they hold**, as `catalog/threads.py` and `runner/send.py` are: what the person sees in
+  `view.py`, each write in the module named for what it writes, as docs/bench.md gives each a section, and `Bench` in
+  `bench.py`.
+- **`variation.py`, `outcome.py` and `model.py` are pure.** None touches the store or a person, so they are tested
+  without a database, and an edge can hold a `TriedVariation` without a bench.
+- **`View` writes nothing, and each write takes one.** A write reaches another only by importing its module, so the
+  imports say which builds on which: `cases.py` on `components.py`, since carrying is an edit and an appendix is bound
+  as it is written; `following.py` on `components.py`, for a text's language; `runs.py` on `configurations.py`, for a
+  started variation's compilation. The other writes build on the `View` alone.
+- **`Bench` binds the writes as its own methods**, so an edge calls `bench.*` for everything, and a write's home is
+  the module its binding names. It is the store's `Catalog` over `chatddx.catalog`'s functions without the passing
+  through: no mixins hide where a method lives, and the functions aren't a second surface, since edges import from
+  `chatddx.bench` alone.
+- **"View"**, since what it holds is a person-scoped view. The bench writes for the person only through what the view
   finds.
 
 ## Conventions
 
-**One person, one connection.** `Bench(conn, person, inventory, facts)` keeps them as `conn`, `person`, `inventory` and
-`facts`, with a `Store` and a `Catalog` on the connection as `store` and `catalog`. Edges read through these what
-doesn't depend on the person. `start` and `score` need `conn` in autocommit mode: the runner and the scoring pass
-raise `ValueError` otherwise.
+**One person, one connection.** `Bench(conn, person, inventory, facts)`, the `View`'s, keeps them as `conn`, `person`,
+`inventory` and `facts`, with a `Store`, a `Catalog`, `Rows` and `People` on the connection as `store`, `catalog`,
+`rows` and `people`. Edges read through these what doesn't depend on the person. `start` and `score` need `conn` in
+autocommit mode: the runner and the scoring pass raise `ValueError` otherwise.
+
+**Writes.** Each write is a function of the module that holds it, with the `View` as its first parameter, which
+`Bench` binds, so an edge calls `bench.take(cases, schema)`. Below, a write's signature is as `Bench` gives it.
 
 **Caches.** The login of each person id and the model each engine serves are cached for the bench's life.
 
@@ -68,9 +88,9 @@ first (`chatddx.identity.preferred`).
 **Errors.** `NotFound` and `Ambiguous`, both `LookupError`s, are raised for what the person sees or names. A refused
 variation is a `ValueError`, and so are `Conflict`, a write the person must say they want, `MovedOn`, an edit made on a
 head that moved on, and `OverQuota`, more than a day takes. `StructuralError`, a `ValueError`, comes from `Store.get`
-and `resolve` when a digest isn't stored or is of another kind. The errors of the
-catalog, the inventory, the runner and its gate pass through unless an entry says otherwise. Messages name the person by
-login and the thing by the word for it, for a person to read; nothing in the bench is UI.
+and `resolve` when a digest isn't stored or is of another kind. The errors of the catalog, the inventory, the runner
+and its gate pass through unless an entry says otherwise. Messages name the person by login and the thing by the word
+for it, for a person to read; nothing in the bench is UI.
 
 ## errors.py
 
@@ -133,7 +153,7 @@ A frozen dataclass: a configuration, or a variation of it being tried.
 | `set(part: str, digest: str \| None, name: str) -> TriedVariation` | A copy with `part` set to `digest`, by `name`. Setting a part to the recipe's own digest takes it out of `parts`. `ValueError("<name> has no recipe to set its <part> in")` without a recipe; `ValueError("a configuration always has a <part>: only <OPTIONAL> can be taken out")` for `None` and a part not in `OPTIONAL`. |
 | `varied: Recipe \| None` (property) | The recipe with `parts` replaced over it, validated as a `Recipe`; `None` without a recipe. |
 
-## view.py
+## model.py
 
 ### Constants
 
@@ -144,6 +164,7 @@ A frozen dataclass: a configuration, or a variation of it being tried.
 | `LABELLED: tuple[Part, ...]` | `("view", "resource")`, the parts of a scorer that have labels. |
 | `COMPILED_LANGUAGE: str` | `"a compiled configuration's language comes from its recipe"`, what `new` and `follow` refuse a language with. |
 | `PLACEHOLDERS: dict[SlotName, str]` | What stands in for each slot of a request rendered to be looked at: `‹vignette›`, `‹appendices›`, `‹completion›`, `‹expectation›`. |
+| `SAVED: dict[Kept, ...]` | What `Saved.what` and `Written.what` call each of the catalog's `Kept`: `created`, `a new version` for `edited`, and `unchanged`. |
 
 ### Values
 Frozen dataclasses that `Bench` returns.
@@ -158,8 +179,11 @@ Frozen dataclasses that `Bench` returns.
 | `Written` | `edit: Edit` (what was kept), `what: "created" \| "a new version" \| "unchanged"`, `findings: list[Finding]` (`linted` of its digest), `cases: dict[str, str]` (for an appendix's edit, each case that held the old version and its replacement; else empty) | |
 | `Taken` | By case digest: `taken: dict[str, int]`, the thread each was taken into; `kept: dict[str, int]`, the person's own; `choosing: dict[str, list[int]]`, the shared threads of several owners; `missing: list[str]`, the cases with none shared | |
 
-### `class Bench`
-`Bench(conn: Connection, person: Person, inventory: Inventory, facts: Facts)`.
+## view.py
+
+### `class View`
+`View(conn: Connection, person: Person, inventory: Inventory, facts: Facts)`: what the person sees, and the checks the
+writes share. It writes nothing.
 
 #### People
 
@@ -180,6 +204,7 @@ Frozen dataclasses that `Bench` returns.
 | `deleted(kind: str) -> list[tuple[Edit, About]]` | The heads of the person's own deleted threads of `kind`, with their `About`s, in thread id order: `Catalog.heads(kind, deleted=True)` kept by owner. |
 | `about(thread: int) -> About` | `Catalog.about` of the thread. |
 | `holder(word: str, digest: str) -> tuple[Edit, About] \| None` | The first of `threads(word)` whose head is `digest`, of the person's own if any; `None` when none is. |
+| `seen(thread: int) -> tuple[Edit, About, str]` | `thread_by_id(thread, <word>)`, where `<word>` is the word in `KINDS` for the thread's kind, with that word, else `thread`. |
 
 `thread` looks among the threads of each kind `KINDS[word]` names, where each named thread is called both `NAME` and,
 qualified, `<owner's login>/NAME` (`_qualified`, which gives nothing for a thread without a name or an owner):
@@ -214,6 +239,8 @@ qualified, `<owner's login>/NAME` (`_qualified`, which gives nothing for a threa
 | `family(name: str) -> Family` | The one of `families()` that `name` names, found among them as `thread` finds one among a kind's threads (its step 4), with `case` as the word. |
 | `family_by_id(id: int) -> Family` | Family `id`, when the person sees it and it has a case. Else `NotFound("no case <id> for <login>")`. |
 | `tags() -> list[str]` | The tags of the families the person sees, sorted, without repeats. |
+| `current(family: int) -> Vignette` | The vignette of `family`'s latest binding. |
+| `cases(family: int) -> list[str]` | The stored cases bound to `family`'s current vignette (`Rows.bound_to`), the bare one first, then by digest. |
 | `expectation_schemas(case: str) -> list[str]` | The schemas of the heads of the expectation threads of `case` the person sees, sorted, without repeats. Shared ones count here. |
 | `expectation(case: str, schema: str) -> Expectation \| None` | The expectation `Catalog.expectations_for([case], person.id, schema)` picks: the head of the person's own live thread, or `None`. `Ambiguous` with the catalog's message, `case <case> has expectations to choose from, in threads <t1>, <t2>, …`, when there are several. |
 | `shared(case: str, schema: str) -> list[tuple[Edit, About]]` | `Catalog.expectations_shared([case], person.id, schema)`: the heads of the live expectation threads of `case` under `schema` the person sees and doesn't own, in thread id order, each with its `About`. What they could take. |
@@ -232,74 +259,7 @@ qualified, `<owner's login>/NAME` (`_qualified`, which gives nothing for a threa
 | `scorers() -> list[tuple[Edit, About, Scorer]]` | `threads("scorer")`, each with its head resolved. |
 | `labels(scorer: str) -> dict[int, str]` | What a scorer digest's views are called for the person: `labels_of` the head `holder("scorer", scorer)` gives, else of the latest edit that held it in a scorer thread they see (`Rows.edits_holding`), their own threads first; `{}` when none did. |
 | `labels_of(edit: Edit) -> dict[int, str]` | The view labels the edit of a scorer thread was written with (`Catalog.labels`), by the view's position. |
-| `reach(variation: TriedVariation, families: list[Family]) -> list[Reach]` | A `Reach` for each view of each of `scorers()`, named by the thread's name or else its title, and labelled by `labels_of` its head. `offered` when the view's `output` selector reaches the skeleton's `output_schema` (`chatddx.factors.select.reaches`). For an offered view, `choosing` holds the families whose case has several expectations of the person's own under the scorer's schema, and `missing` the others whose case has none or whose expectation gives the view no items (`View.expectation_items`); both are empty for a view not offered. |
-
-#### Writes for the person
-
-| Method | Returns / raises |
-| --- | --- |
-| `save(variation: TriedVariation, name: str) -> Saved` | `edit` of the person's one live configuration named `name` (`Catalog.find`), on the head it finds, else `fork`. `Ambiguous("<login> has <n> configurations named '<name>'")` for several. |
-| `fork(variation: TriedVariation, name: str) -> Saved` | A new configuration of the person's own, named `name`, forked from `variation.configuration`. |
-| `edit(thread: int, variation: TriedVariation, head: int) -> Saved` | A new version of `thread`, a configuration the person owns whose head was edit `head` when they saw it, named by its name or else its title; `unchanged` when the skeleton is its head already. `thread_by_id`'s `NotFound`, `NotFound("no configuration <thread> of yours")` for one the person sees but doesn't own, and `MovedOn` when the head isn't `head` any more. |
-| `start(variation: TriedVariation, endpoint: str, cases: list[str], seed: int) -> Running` | The variation's trial on the engine `endpoint(endpoint)` gives, started by a `Runner` for the person at that endpoint. Nothing is sent until `Running.send`. `endpoint`'s errors, the runner's and its gate's. |
-| `component(doc: Mapping[str, JsonValue]) -> Component` | The component `doc` holds, as `GET /api/components` gives its body: of the model `BY_KIND[doc["kind"]]`, with `v`, when given, its schema version. `ValueError("<kind!r> isn't a kind a person writes: the kinds are …")` for a kind not in `WRITTEN`, `ValueError("<kind> is at v<n>, not v<v>")`, and the model's `ValidationError`. |
-| `new(component: Component \| Recipe, name: str, language: str \| None = None, labels: Labels \| None = None) -> Written` | `component` as a new thread of the person's own named `name`, without an origin, a scorer with `labels`. A `Recipe` is compiled by the running code (`_compiled`) and kept with `Catalog.create(skeleton, compilation=…)` in one transaction, `what` `"created"`: `ValueError(COMPILED_LANGUAGE)` for a language, `ValueError("only a scorer's views and resources have labels")` for labels, `ValueError("<digest> isn't a stored chunk of <part>")` for a part that isn't, and the compiler's errors, such as `StructuralError("generation prompt in a judge recipe")`. |
-| `fork_component(thread: int, name: str, component: Component \| None = None, language: str \| None = None, labels: Labels \| None = None) -> Written` | A new thread of the person's own named `name`, forked from the head of `thread`, a thread they see (`NotFound("no <word> <thread> for <login>")`), holding `component`, else the head. A scorer forked as it is, with no labels given, keeps the head's (`Catalog.labels`). |
-| `edit_component(thread: int, head: int, component: Component, language: str \| None = None, labels: Labels \| None = None) -> Written` | `component` as a new version of `thread`, which the person owns (`NotFound("no <word> <thread> of yours")`) and whose head was `head` (`MovedOn`); `unchanged` when it is the head already, which for a scorer given labels means its labels too. A scorer edited without labels keeps none, unless it is the head's, which is then `unchanged`. |
-| `linted(digest: str) -> list[Finding]` | `lints` of the stored component alone, with `Catalog.language_of` for languages. |
-| `say(thread: int, *, name: str \| None \| EllipsisType = ..., description: str \| None = None, tags: Collection[str] \| None = None, collaborators: Collection[str] \| None = None, deleted: bool \| None = None) -> About` | What holds of `thread` afterwards, `...` and `None` leaving a field as it is; the `About` afterwards. See below. |
-| `proposal(thread: int) -> Proposed \| None` | What following the origin of `thread`, a thread the person sees (`NotFound("no <word> <thread> for <login>")`), would keep. `None` when `Catalog.variation` gives none or one that hasn't `moved`, when the origin's thread isn't one the person `shows`, and when `Catalog.proposal` is `None`. A recipe is compiled by the running code (`compiled` with `rig()`), nothing stored. `ValueError("<word> <thread>'s changes don't fit its origin's head: …")` wraps a `ValueError` of the proposal or its compiling. |
-| `follow(thread: int, head: int, language: str \| None = None) -> Written` | The proposal kept, in one transaction: stored with the closure of its references, `language` as `_written` gives one, and `Catalog.edit(thread, digest, compilation=…, based_on=<origin's head>, head=head)`. `what` is `"a new version"`, also when the digest is the head's. `NotFound("no <word> <thread> of yours")` for one the person doesn't own, `ValueError("<word> <thread> has nothing to follow")` without a proposal, `ValueError("a compiled configuration's language comes from its recipe")`, `ValueError("<kind> components have no language of their own")`, `_check_expecting`'s, `_check_scorer`'s, and `MovedOn`. A scorer keeps the labels of whichever side's views, and resources, the proposal keeps (`_followed_labels`): the fork head's for a part `Variation.varies`, else the origin head's. |
-| `appendix(family: int, text: str) -> Appendix` | An appendix of `text` bound to the current vignette of `family` (`family_by_id`'s `NotFound`), through `_bound`; nothing stored. |
-| `cases(family: int) -> list[str]` | The stored cases bound to `family`'s current vignette (`Rows.bound_to`), the bare one first, then by digest. |
-| `case(family: int, appendices: Sequence[str]) -> str` | A `Case` of `family`'s current vignette with `appendices` in order, stored with `Store.add`, whose check refuses an appendix bound to another vignette. `NotFound("no appendix <digest> for <login>")` for one no thread the person sees holds (`Catalog.containing`). Nothing is written in the catalog. |
-| `replacement(case: str) -> str` | `case`, of a family the person sees and left at an earlier vignette, rebound to the current one (`families.rebind_case`) and stored with its rebound appendices. `NotFound("no case <case> for <login>")` for a case of no family; `ValueError("<case> is at its family's current vignette already")`. |
-| `type_case(text: str, *, name: str \| None = None, language: str \| None = None, source: str \| None = None) -> Family` | The text kept in `source`, else the inventory's one `DatabaseSource` (`Texts.add`, a new id), its `Case` with the fingerprint of its UTF-8 bytes stored, and its family adopted by id alone (`Catalog.adopt(by_content=False)`), owned by the person, with a `name` and a `language` entry when given; all in one transaction. Refused before writing: `ValueError("a typed case holds text")` for blank text, `ValueError("a typed case may not hold U+0000, which can't be stored")`, `ValueError("a typed case holds at most <TYPED_TEXT_LIMIT> characters, not <n>")`, `ValueError("a name can't be empty: none leaves the case unnamed")`, `language_tag`'s `ValueError`, `ValueError("'<source>' isn't a database source of the World's")`, `ValueError("the World has no database source to type cases into")` or `ValueError("name the source to type into: …")`, and `OverQuota("<login> has typed <n> cases in the last day, as many as a day takes")` once `Texts.typed_since` a day ago reaches `TYPED_PER_DAY`. |
-| `carry(thread: int, head: int, case: str) -> Written` | `edit_component` of the expectation `thread` onto `case`, with the same schema and data. `ValueError("<word> <thread> isn't an expectation")`, and `ValueError("<case> isn't a case of the family <old case> is of")`. |
-| `take(cases: Iterable[str], schema: str, owner: str \| None = None) -> Taken` | For each of `cases`, once, in order: the person's own live thread of it under `schema` is kept, the lowest id of several; else, of `shared(case, schema)`, `owner`'s only when given, one is forked into a thread of their own, several are to choose from and none is missing. One transaction. `ValueError("<schema> isn't a stored expectation schema")`; `NotFound("no person '<owner>'")`. |
-| `take_from(thread: int, replace: bool = False) -> int` | Thread `thread`, an expectation the person sees, forked into a thread of their own; its id. `thread_by_id(thread, "expectation")`'s `NotFound`; `ValueError("expectation <thread> is yours already")`. When they own one of its case under its schema: `Conflict("<login> has their own expectation of <case's title> under <schema's title>, in thread <t>: replace it to take this one")`, unless `replace`, which deletes each of theirs in the same transaction. |
-| `score(run: RunStarted, scorers: Collection[str] \| None = None) -> list[Graded]` | The run scored by `score_run` under each of `scorers_for(run)`, or those of them whose digest is in `scorers`, as `scoring` builds it now. A scorer that can't score it is a `Graded` with `refused`: `none of the run's cases has an expectation`, or the message of a `LookupError` (`Ambiguous` among them), `TypeError` or `NotImplementedError` raised on the way. |
-
-`fork`, `edit` and `save` write, in one transaction, the skeleton's edit through `Catalog.keep` (`forked_from` the
-varied edit, for a fork), and, for a variation with parts replaced, the compilation of its skeleton by the running code
-(`compiled` with `rig()`), which is the edit's compilation; otherwise the edit keeps the configuration's. The returned
-`Saved.variation` is the saved configuration, with `Catalog.recipe` of its thread. `start` stores that compilation too,
-after the run has started.
-
-`new`, `fork_component` and `edit_component` write through `_written`. The forks and edits first refuse a component
-of another kind than the thread's, `ValueError("<word> <thread> holds <kind> components, not <kind>")`, where `<word>`
-is the thread's kind's word in `KINDS`, else `thread`. `_written` refuses, before anything is stored: a kind not in
-`WRITTEN` (`ValueError("a person doesn't write <kind> components")`), a language for a kind not in `LANGUAGE_KINDS`
-(`ValueError("<kind> components have no language of their own")`), labels for anything but a scorer
-(`ValueError("only a scorer's views and resources have labels")`), a scorer the running code could never score with
-(`_check_scorer`: `chatddx.scorers.shipped.problems` joined by `; `, such as `<entry point> isn't shipped with …`,
-`<entry point> is at version <n> in …, not <v>`, `… knows no metric …` and `view <i>'s params for <metric> …`), and an
-expectation of a case and schema the person owns one of in another thread (`ValueError("<login> has their own
-expectation of <case> under <schema>, in thread <t>: edit that one")`). An appendix is then passed through `_bound`,
-which refuses one not bound to the current vignette of a family the person sees (`ValueError("an appendix is bound
-to the current vignette of a case you see")`) and rebuilds it with its line endings LF. Then, in one transaction: the
-component with the closure of its references, which `Store.load` must find stored (`StructuralError("not in the
-store: […]")` otherwise) and `Store.add` checks; its language, when given, through `Catalog.language` where the
-digest has none, `ValueError("<title> is in <language> already: a text's language is the same wherever it is held")`
-where it has another, and nothing where it has the same; `Catalog.keep`, with `forked_from` the head's edit for a
-fork, `head` for an edit, and the labels, which it checks against the scorer's positions (`ValueError("<digest> has
-no <part> at position <n>")`, `ValueError("the label of <part> <n> is empty")`); and, for an appendix's edit, each case
-`Store.reaching` finds holding the old head at the same vignette, stored with the new version in its place
-(`_replaced`), as `Written.cases`. `findings` are `linted` after the transaction.
-
-`say` finds the thread by its owner alone, deleted or not: `NotFound("no <word> <thread> of yours")` otherwise, where
-`<word>` is its kind's word in `KINDS`, else `thread`. It refuses, before writing anything: more said of a deleted
-thread that isn't restored (`ValueError("<word> <thread> is deleted: restore it to say more of it")`), an empty name
-(`ValueError("a name can't be empty: none takes it away")`) or tag (`ValueError("a tag can't be empty")`), a login
-nobody has (`NotFound("no person '<login>'")`), the person's own login among the collaborators
-(`ValueError("<word> <thread> is yours: it is shared with others")`), and restoring an expectation thread where the
-person owns another of its case and schema (`_check_expecting`, ending `delete that one to restore this`). Then, in
-one transaction and in this order, the entries that change what holds: restoring, the name (one without a value to
-take it away), the description, a tag entry for each tag added or withdrawn, a collaborator entry for each person
-added or withdrawn, and deleting.
-
-`take` and `take_from` fork with `Catalog.create(head.digest, person.id, forked_from=head.id, name=about.name)`, so the
-fork keeps the shared thread's name and the catalog checks its one-expectation rule.
+| `reach(variation: TriedVariation, families: list[Family]) -> list[Reach]` | A `Reach` for each view of each of `scorers()`, named by the thread's name or else its title, and labelled by `labels_of` its head. `offered` when the view's `output` selector reaches the skeleton's `output_schema` (`chatddx.factors.select.reaches`). For an offered view, `choosing` holds the families whose case has several expectations of the person's own under the scorer's schema, and `missing` the others whose case has none or whose expectation gives the view no items (`chatddx.factors.scoring.View.expectation_items`); both are empty for a view not offered. |
 
 #### Runs and scores
 
@@ -321,6 +281,117 @@ fork keeps the shared thread's name and the catalog checks its one-expectation r
 `scorers_for`, `scoring`, `unscored`, `outstanding`, `scores_of`, `scored_by` and `described` resolve the run's
 trial, its skeleton and the scorers through `Store.get` (`StructuralError` when one isn't stored or is of another
 kind).
+
+#### Checks the writes share
+
+| Method | Returns / raises |
+| --- | --- |
+| `compiled(recipe: Recipe) -> tuple[Registry, Compilation]` | The recipe compiled by the running code (`chatddx.factors.request.compiled` with `rig()`), in a registry with what it refers to, loaded from the store; nothing is stored. The compiler's errors. |
+| `linted(digest: str) -> list[Finding]` | `lints` of the stored component alone, with `Catalog.language_of` for languages. |
+| `check_kind(thread: int, word: str, component: Component) -> None` | `ValueError("<word> <thread> holds <kind> components, not <kind>")` for a component of another kind than the thread's. |
+| `check_expecting(expectation: Expectation, thread: int \| None, then: str = "edit that one") -> None` | `ValueError("<login> has their own expectation of <case's title> under <schema's title>, in thread <t>: <then>")` when the person owns a live expectation thread of its case and schema other than `thread`, `<t>` the lowest id of them. |
+| `check_scorer(scorer: Scorer) -> None` | `ValueError` of `chatddx.scorers.shipped.problems` joined by `; `, when it finds any: a scorer the running code could never score with, such as `<entry point> isn't shipped with …`, `<entry point> is at version <n> in …, not <v>`, `… knows no metric …` and `view <i>'s params for <metric> …`. |
+
+## bench.py
+
+### `class Bench(View)`
+`@final`. The `View`, with each write below bound as a method of the same name: `save`, `fork` and `edit` from
+`configurations.py`; `component` (as a static method), `new`, `fork_component` and `edit_component` from
+`components.py`; `appendix`, `case`, `replacement`, `type_case` and `carry` from `cases.py`; `take` and `take_from`
+from `taking.py`; `say` from `saying.py`; `proposal` and `follow` from `following.py`; and `start` and `score` from
+`runs.py`.
+
+## configurations.py
+
+| Write | Returns / raises |
+| --- | --- |
+| `save(variation: TriedVariation, name: str) -> Saved` | `edit` of the person's one live configuration named `name` (`Catalog.find`), on the head it finds, else `fork`. `Ambiguous("<login> has <n> configurations named '<name>'")` for several. |
+| `fork(variation: TriedVariation, name: str) -> Saved` | A new configuration of the person's own, named `name`, forked from `variation.configuration`. |
+| `edit(thread: int, variation: TriedVariation, head: int) -> Saved` | A new version of `thread`, a configuration the person owns whose head was edit `head` when they saw it, named by its name or else its title; `unchanged` when the skeleton is its head already. `thread_by_id`'s `NotFound`, `NotFound("no configuration <thread> of yours")` for one the person sees but doesn't own, and `MovedOn` when the head isn't `head` any more. |
+| `keep_compilation(variation: TriedVariation) -> str \| None` | For a variation with parts replaced, the compilation of its skeleton by the running code (`View.compiled`), stored; its digest. `None` otherwise. |
+
+`fork`, `edit` and `save` write, in one transaction, the skeleton's edit through `Catalog.keep` (`forked_from` the
+varied edit, for a fork), and, for a variation with parts replaced, the compilation of its skeleton by the running code
+(`keep_compilation`), which is the edit's compilation; otherwise the edit keeps the configuration's. The returned
+`Saved.variation` is the saved configuration, with `Catalog.recipe` of its thread. `start` stores that compilation
+too, after the run has started.
+
+## components.py
+
+| Write | Returns / raises |
+| --- | --- |
+| `component(doc: Mapping[str, JsonValue]) -> Component` | Takes no `View`. The component `doc` holds, as `GET /api/components` gives its body: of the model `BY_KIND[doc["kind"]]`, with `v`, when given, its schema version. `ValueError("<kind!r> isn't a kind a person writes: the kinds are …")` for a kind not in `WRITTEN`, `ValueError("<kind> is at v<n>, not v<v>")`, and the model's `ValidationError`. |
+| `new(component: Component \| Recipe, name: str, language: str \| None = None, labels: Labels \| None = None) -> Written` | `component` as a new thread of the person's own named `name`, without an origin, a scorer with `labels`. A `Recipe` is compiled by the running code (`View.compiled`) and kept with `Catalog.create(skeleton, compilation=…)` in one transaction, `what` `"created"`: `ValueError(COMPILED_LANGUAGE)` for a language, `ValueError("only a scorer's views and resources have labels")` for labels, `ValueError("<digest> isn't a stored chunk of <part>")` for a part that isn't, and the compiler's errors, such as `StructuralError("generation prompt in a judge recipe")`. |
+| `fork_component(thread: int, name: str, component: Component \| None = None, language: str \| None = None, labels: Labels \| None = None) -> Written` | A new thread of the person's own named `name`, forked from the head of `thread`, a thread they see (`NotFound("no <word> <thread> for <login>")`), holding `component`, else the head. A scorer forked as it is, with no labels given, keeps the head's (`Catalog.labels`). |
+| `edit_component(thread: int, head: int, component: Component, language: str \| None = None, labels: Labels \| None = None) -> Written` | `component` as a new version of `thread`, which the person owns (`NotFound("no <word> <thread> of yours")`) and whose head was `head` (`MovedOn`); `unchanged` when it is the head already, which for a scorer given labels means its labels too. A scorer edited without labels keeps none, unless it is the head's, which is then `unchanged`. |
+| `bound(appendix: Appendix) -> Appendix` | The appendix with its line endings LF, when it is bound to the current vignette of a family the person sees; else `ValueError("an appendix is bound to the current vignette of a case you see")`. |
+| `keep_language(digest: str, language: str) -> None` | The language written for `digest` through `Catalog.language` where it has none, `ValueError("<title> is in <language> already: a text's language is the same wherever it is held")` where it has another, and nothing where it has the same. |
+
+`new`, `fork_component` and `edit_component` write through `_written`. The forks and edits first refuse a component
+of another kind than the thread's (`View.check_kind`), where `<word>` is the thread's kind's word in `KINDS`, else
+`thread`. `_written` refuses, before anything is stored: a kind not in `WRITTEN` (`ValueError("a person doesn't write
+<kind> components")`), a language for a kind not in `LANGUAGE_KINDS` (`ValueError("<kind> components have no language
+of their own")`), labels for anything but a scorer (`ValueError("only a scorer's views and resources have labels")`),
+a scorer the running code could never score with (`View.check_scorer`), and an expectation of a case and schema the
+person owns one of in another thread (`View.check_expecting`). An appendix is then passed through `bound`. Then, in
+one transaction: the component with the closure of its references, which `Store.load` must find stored
+(`StructuralError("not in the store: […]")` otherwise) and `Store.add` checks; its language, when given, through
+`keep_language`; `Catalog.keep`, with `forked_from` the head's edit for a fork, `head` for an edit, and the labels,
+which it checks against the scorer's positions (`ValueError("<digest> has no <part> at position <n>")`,
+`ValueError("the label of <part> <n> is empty")`); and, for an appendix's edit, each case `Store.reaching` finds
+holding the old head at the same vignette, stored with the new version in its place (`_replaced`), as
+`Written.cases`. `findings` are `linted` after the transaction.
+
+## cases.py
+
+| Write | Returns / raises |
+| --- | --- |
+| `appendix(family: int, text: str) -> Appendix` | An appendix of `text` bound to the current vignette of `family` (`family_by_id`'s `NotFound`), through `bound`; nothing stored. |
+| `case(family: int, appendices: Sequence[str]) -> str` | A `Case` of `family`'s current vignette with `appendices` in order, stored with `Store.add`, whose check refuses an appendix bound to another vignette. `NotFound("no appendix <digest> for <login>")` for one no thread the person sees holds (`Catalog.containing`). Nothing is written in the catalog. |
+| `replacement(case: str) -> str` | `case`, of a family the person sees and left at an earlier vignette, rebound to the current one (`families.rebind_case`) and stored with its rebound appendices. `NotFound("no case <case> for <login>")` for a case of no family; `ValueError("<case> is at its family's current vignette already")`. |
+| `type_case(text: str, *, name: str \| None = None, language: str \| None = None, source: str \| None = None) -> Family` | The text kept in `source`, else the inventory's one `DatabaseSource` (`Texts.add`, a new id), its `Case` with the fingerprint of its UTF-8 bytes stored, and its family adopted by id alone (`Catalog.adopt(by_content=False)`), owned by the person, with a `name` and a `language` entry when given; all in one transaction. Refused before writing: `ValueError("a typed case holds text")` for blank text, `ValueError("a typed case may not hold U+0000, which can't be stored")`, `ValueError("a typed case holds at most <TYPED_TEXT_LIMIT> characters, not <n>")`, `ValueError("a name can't be empty: none leaves the case unnamed")`, `language_tag`'s `ValueError`, `ValueError("'<source>' isn't a database source of the World's")`, `ValueError("the World has no database source to type cases into")` or `ValueError("name the source to type into: …")`, and `OverQuota("<login> has typed <n> cases in the last day, as many as a day takes")` once `Texts.typed_since` a day ago reaches `TYPED_PER_DAY`. |
+| `carry(thread: int, head: int, case: str) -> Written` | `edit_component` of the expectation `thread` onto `case`, with the same schema and data. `ValueError("<word> <thread> isn't an expectation")`, and `ValueError("<case> isn't a case of the family <old case> is of")`. |
+
+## taking.py
+
+| Write | Returns / raises |
+| --- | --- |
+| `take(cases: Iterable[str], schema: str, owner: str \| None = None) -> Taken` | For each of `cases`, once, in order: the person's own live thread of it under `schema` is kept, the lowest id of several; else, of `shared(case, schema)`, `owner`'s only when given, one is forked into a thread of their own, several are to choose from and none is missing. One transaction. `ValueError("<schema> isn't a stored expectation schema")`; `NotFound("no person '<owner>'")`. |
+| `take_from(thread: int, replace: bool = False) -> int` | Thread `thread`, an expectation the person sees, forked into a thread of their own; its id. `thread_by_id(thread, "expectation")`'s `NotFound`; `ValueError("expectation <thread> is yours already")`. When they own one of its case under its schema: `Conflict("<login> has their own expectation of <case's title> under <schema's title>, in thread <t>: replace it to take this one")`, unless `replace`, which deletes each of theirs in the same transaction. |
+
+`take` and `take_from` fork with `Catalog.create(head.digest, person.id, forked_from=head.id, name=about.name)`, so the
+fork keeps the shared thread's name and the catalog checks its one-expectation rule.
+
+## saying.py
+
+| Write | Returns / raises |
+| --- | --- |
+| `say(thread: int, *, name: str \| None \| EllipsisType = ..., description: str \| None = None, tags: Collection[str] \| None = None, collaborators: Collection[str] \| None = None, deleted: bool \| None = None) -> About` | What holds of `thread` afterwards, `...` and `None` leaving a field as it is; the `About` afterwards. See below. |
+
+`say` finds the thread by its owner alone, deleted or not: `NotFound("no <word> <thread> of yours")` otherwise, where
+`<word>` is its kind's word in `KINDS`, else `thread`. It refuses, before writing anything: more said of a deleted
+thread that isn't restored (`ValueError("<word> <thread> is deleted: restore it to say more of it")`), an empty name
+(`ValueError("a name can't be empty: none takes it away")`) or tag (`ValueError("a tag can't be empty")`), a login
+nobody has (`NotFound("no person '<login>'")`), the person's own login among the collaborators
+(`ValueError("<word> <thread> is yours: it is shared with others")`), and restoring an expectation thread where the
+person owns another of its case and schema (`View.check_expecting`, ending `delete that one to restore this`). Then, in
+one transaction and in this order, the entries that change what holds: restoring, the name (one without a value to
+take it away), the description, a tag entry for each tag added or withdrawn, a collaborator entry for each person
+added or withdrawn, and deleting.
+
+## following.py
+
+| Write | Returns / raises |
+| --- | --- |
+| `proposal(thread: int) -> Proposed \| None` | What following the origin of `thread`, a thread the person sees (`NotFound("no <word> <thread> for <login>")`), would keep. `None` when `Catalog.variation` gives none or one that hasn't `moved`, when the origin's thread isn't one the person `shows`, and when `Catalog.proposal` is `None`. A recipe is compiled by the running code (`View.compiled`), nothing stored. `ValueError("<word> <thread>'s changes don't fit its origin's head: …")` wraps a `ValueError` of the proposal or its compiling. |
+| `follow(thread: int, head: int, language: str \| None = None) -> Written` | The proposal kept, in one transaction: stored with the closure of its references, `language` through `keep_language`, and `Catalog.edit(thread, digest, compilation=…, based_on=<origin's head>, head=head)`. `what` is `"a new version"`, also when the digest is the head's. `NotFound("no <word> <thread> of yours")` for one the person doesn't own, `ValueError("<word> <thread> has nothing to follow")` without a proposal, `ValueError("a compiled configuration's language comes from its recipe")`, `ValueError("<kind> components have no language of their own")`, `check_expecting`'s, `check_scorer`'s, and `MovedOn`. A scorer keeps the labels of whichever side's views, and resources, the proposal keeps (`_followed_labels`): the fork head's for a part `Variation.varies`, else the origin head's. |
+
+## runs.py
+
+| Write | Returns / raises |
+| --- | --- |
+| `start(variation: TriedVariation, endpoint: str, cases: list[str], seed: int) -> Running` | The variation's trial on the engine `endpoint(endpoint)` gives, started by a `Runner` for the person at that endpoint. Nothing is sent until `Running.send`. `endpoint`'s errors, the runner's and its gate's. |
+| `score(run: RunStarted, scorers: Collection[str] \| None = None) -> list[Graded]` | The run scored by `score_run` under each of `scorers_for(run)`, or those of them whose digest is in `scorers`, as `scoring` builds it now. A scorer that can't score it is a `Graded` with `refused`: `none of the run's cases has an expectation`, or the message of a `LookupError` (`Ambiguous` among them), `TypeError` or `NotImplementedError` raised on the way. |
 
 ## Tests
 In `src/chatddx/bench/test/`, all marked `wip`.
@@ -355,7 +426,7 @@ Behavior described here that `docs/bench.md` doesn't state, or states otherwise:
 - `score` turns a `LookupError`, `TypeError` or `NotImplementedError` into a refusal, but not a `ValueError`, such as
   the scoring pass's for a connection not in autocommit mode.
 - `login` gives `nobody` for a subject without an owner.
-- `_language` compares with `Catalog.language_of`, which is a chunk's own language, so the refusal is about the
+- `keep_language` compares with `Catalog.language_of`, which is a chunk's own language, so the refusal is about the
   digest's language, not the thread's history.
 - `edit_component` checks the kind after ownership, so another's thread of another kind is `NotFound`, not a
   `ValueError`. `carry` checks that the thread is an expectation before it checks ownership, so another's thread of
