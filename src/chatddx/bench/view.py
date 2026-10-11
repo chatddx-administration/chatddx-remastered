@@ -45,7 +45,7 @@ from .variation import PARTS, TriedVariation
 # What one person sees: the threads, families and runs they see, the World's endpoints,
 # and the variations they try, with the checks the writes share. It writes nothing; the
 # writes take it, and `Bench` binds them (src/chatddx/bench/bench.py). Nothing here is UI.
-class View:
+class Seen:
     def __init__(
         self, conn: Connection, person: Person, inventory: Inventory, facts: Facts
     ) -> None:
@@ -524,7 +524,7 @@ class View:
         return sorted(held, key=lambda d: (d != bare, d))
 
     # A thread the person sees, with the word for its kind to name it by.
-    def seen(self, thread: int) -> tuple[Edit, About, str]:
+    def worded(self, thread: int) -> tuple[Edit, About, str]:
         found = self.rows.thread(thread)
         kind = None if found is None else found.kind
         word = next((w for w, held in KINDS.items() if kind in held), None)

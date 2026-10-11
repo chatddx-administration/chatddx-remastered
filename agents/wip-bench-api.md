@@ -20,8 +20,8 @@ Paths are relative to `src/chatddx/bench/` unless they start with `src/`, `docs/
 - [outcome.py](#outcomepy): `Outcome`, `outcome`, `usage`
 - [variation.py](#variationpy): `PARTS`, `OPTIONAL`, `TriedVariation`
 - [model.py](#modelpy): `KINDS` and the other constants, and the values the bench returns
-- [view.py](#viewpy): `View`, what the person sees, and the checks the writes share
-- [bench.py](#benchpy): `Bench`, the `View` with the writes bound
+- [view.py](#viewpy): `Seen`, what the person sees, and the checks the writes share
+- [bench.py](#benchpy): `Bench`, the `Seen` with the writes bound
 - The writes: [configurations.py](#configurationspy), [components.py](#componentspy), [cases.py](#casespy),
   [taking.py](#takingpy), [saying.py](#sayingpy), [following.py](#followingpy), [runs.py](#runspy)
 - [Tests](#tests)
@@ -40,7 +40,7 @@ Paths are relative to `src/chatddx/bench/` unless they start with `src/`, `docs/
 | `outcome.py` | `Outcome`, `outcome`, `usage`: how a run's item ended, and the tokens it used | `chatddx.factors.request`, `chatddx.ledger`, `chatddx.runner.send`, `chatddx.scorers.answer` |
 | `variation.py` | `PARTS`, `OPTIONAL`, `TriedVariation`: the variation being tried, a plain value | `chatddx.catalog`, `chatddx.factors.request` |
 | `model.py` | `KINDS`, `WRITTEN`, `LABELLED`, `COMPILED_LANGUAGE`, `PLACEHOLDERS`, `SAVED`; `Family`, `Reach`, `Graded`, `Saved`, `Proposed`, `Taken`, `Written` | `variation.py`, `chatddx.catalog`, `chatddx.factors.{base,request,scoring}`, `chatddx.ledger` |
-| `view.py` | `View`: what the person sees, and the checks the writes share | `errors.py`, `model.py`, `variation.py`, `chatddx.catalog` (and its `threads` and `titles`), `chatddx.core.rig`, `chatddx.factors.{base,bundle,cases,engine,request,scoring,select,trial}`, `chatddx.facts`, `chatddx.identity`, `chatddx.inventory`, `chatddx.ledger`, `chatddx.scorers.shipped`, `chatddx.store` |
+| `view.py` | `Seen`: what the person sees, and the checks the writes share | `errors.py`, `model.py`, `variation.py`, `chatddx.catalog` (and its `threads` and `titles`), `chatddx.core.rig`, `chatddx.factors.{base,bundle,cases,engine,request,scoring,select,trial}`, `chatddx.facts`, `chatddx.identity`, `chatddx.inventory`, `chatddx.ledger`, `chatddx.scorers.shipped`, `chatddx.store` |
 | `configurations.py` | `save`, `fork`, `edit`, `keep_compilation` | `view.py` |
 | `components.py` | `component`, `new`, `fork_component`, `edit_component`, `bound`, `keep_language` | `view.py`, `chatddx.factors.kinds` |
 | `cases.py` | `appendix`, `case`, `replacement`, `type_case`, `carry` | `components.py`, `chatddx.catalog.families`, `chatddx.core.settings`, `chatddx.store.Texts` |
@@ -56,25 +56,26 @@ Why it is laid out so:
   `bench.py`.
 - **`variation.py`, `outcome.py` and `model.py` are pure.** None touches the store or a person, so they are tested
   without a database, and an edge can hold a `TriedVariation` without a bench.
-- **`View` writes nothing, and each write takes one.** A write reaches another only by importing its module, so the
+- **`Seen` writes nothing, and each write takes one.** A write reaches another only by importing its module, so the
   imports say which builds on which: `cases.py` on `components.py`, since carrying is an edit and an appendix is bound
   as it is written; `following.py` on `components.py`, for a text's language; `runs.py` on `configurations.py`, for a
-  started variation's compilation. The other writes build on the `View` alone.
+  started variation's compilation. The other writes build on the `Seen` alone.
 - **`Bench` binds the writes as its own methods**, so an edge calls `bench.*` for everything, and a write's home is
   the module its binding names. It is the store's `Catalog` over `chatddx.catalog`'s functions without the passing
   through: no mixins hide where a method lives, and the functions aren't a second surface, since edges import from
   `chatddx.bench` alone.
-- **"View"**, since what it holds is a person-scoped view. The bench writes for the person only through what the view
-  finds.
+- **`view.py` and `Seen`**: the module holds a person-scoped view, and the class what the person sees, a name a
+  scorer's views don't have already (`chatddx.factors.scoring.View`). The bench writes for the person only through what
+  `Seen` finds.
 
 ## Conventions
 
-**One person, one connection.** `Bench(conn, person, inventory, facts)`, the `View`'s, keeps them as `conn`, `person`,
+**One person, one connection.** `Bench(conn, person, inventory, facts)`, the `Seen`'s, keeps them as `conn`, `person`,
 `inventory` and `facts`, with a `Store`, a `Catalog`, `Rows` and `People` on the connection as `store`, `catalog`,
 `rows` and `people`. Edges read through these what doesn't depend on the person. `start` and `score` need `conn` in
 autocommit mode: the runner and the scoring pass raise `ValueError` otherwise.
 
-**Writes.** Each write is a function of the module that holds it, with the `View` as its first parameter, which
+**Writes.** Each write is a function of the module that holds it, with a `Seen` as its first parameter, which
 `Bench` binds, so an edge calls `bench.take(cases, schema)`. Below, a write's signature is as `Bench` gives it.
 
 **Caches.** The login of each person id and the model each engine serves are cached for the bench's life.
@@ -181,8 +182,8 @@ Frozen dataclasses that `Bench` returns.
 
 ## view.py
 
-### `class View`
-`View(conn: Connection, person: Person, inventory: Inventory, facts: Facts)`: what the person sees, and the checks the
+### `class Seen`
+`Seen(conn: Connection, person: Person, inventory: Inventory, facts: Facts)`: what the person sees, and the checks the
 writes share. It writes nothing.
 
 #### People
@@ -204,7 +205,7 @@ writes share. It writes nothing.
 | `deleted(kind: str) -> list[tuple[Edit, About]]` | The heads of the person's own deleted threads of `kind`, with their `About`s, in thread id order: `Catalog.heads(kind, deleted=True)` kept by owner. |
 | `about(thread: int) -> About` | `Catalog.about` of the thread. |
 | `holder(word: str, digest: str) -> tuple[Edit, About] \| None` | The first of `threads(word)` whose head is `digest`, of the person's own if any; `None` when none is. |
-| `seen(thread: int) -> tuple[Edit, About, str]` | `thread_by_id(thread, <word>)`, where `<word>` is the word in `KINDS` for the thread's kind, with that word, else `thread`. |
+| `worded(thread: int) -> tuple[Edit, About, str]` | `thread_by_id(thread, <word>)`, where `<word>` is the word in `KINDS` for the thread's kind, with that word, else `thread`. |
 
 `thread` looks among the threads of each kind `KINDS[word]` names, where each named thread is called both `NAME` and,
 qualified, `<owner's login>/NAME` (`_qualified`, which gives nothing for a thread without a name or an owner):
@@ -294,8 +295,8 @@ kind).
 
 ## bench.py
 
-### `class Bench(View)`
-`@final`. The `View`, with each write below bound as a method of the same name: `save`, `fork` and `edit` from
+### `class Bench(Seen)`
+`@final`. The `Seen`, with each write below bound as a method of the same name: `save`, `fork` and `edit` from
 `configurations.py`; `component` (as a static method), `new`, `fork_component` and `edit_component` from
 `components.py`; `appendix`, `case`, `replacement`, `type_case` and `carry` from `cases.py`; `take` and `take_from`
 from `taking.py`; `say` from `saying.py`; `proposal` and `follow` from `following.py`; and `start` and `score` from
@@ -308,7 +309,7 @@ from `taking.py`; `say` from `saying.py`; `proposal` and `follow` from `followin
 | `save(variation: TriedVariation, name: str) -> Saved` | `edit` of the person's one live configuration named `name` (`Catalog.find`), on the head it finds, else `fork`. `Ambiguous("<login> has <n> configurations named '<name>'")` for several. |
 | `fork(variation: TriedVariation, name: str) -> Saved` | A new configuration of the person's own, named `name`, forked from `variation.configuration`. |
 | `edit(thread: int, variation: TriedVariation, head: int) -> Saved` | A new version of `thread`, a configuration the person owns whose head was edit `head` when they saw it, named by its name or else its title; `unchanged` when the skeleton is its head already. `thread_by_id`'s `NotFound`, `NotFound("no configuration <thread> of yours")` for one the person sees but doesn't own, and `MovedOn` when the head isn't `head` any more. |
-| `keep_compilation(variation: TriedVariation) -> str \| None` | For a variation with parts replaced, the compilation of its skeleton by the running code (`View.compiled`), stored; its digest. `None` otherwise. |
+| `keep_compilation(variation: TriedVariation) -> str \| None` | For a variation with parts replaced, the compilation of its skeleton by the running code (`Seen.compiled`), stored; its digest. `None` otherwise. |
 
 `fork`, `edit` and `save` write, in one transaction, the skeleton's edit through `Catalog.keep` (`forked_from` the
 varied edit, for a fork), and, for a variation with parts replaced, the compilation of its skeleton by the running code
@@ -320,20 +321,20 @@ too, after the run has started.
 
 | Write | Returns / raises |
 | --- | --- |
-| `component(doc: Mapping[str, JsonValue]) -> Component` | Takes no `View`. The component `doc` holds, as `GET /api/components` gives its body: of the model `BY_KIND[doc["kind"]]`, with `v`, when given, its schema version. `ValueError("<kind!r> isn't a kind a person writes: the kinds are …")` for a kind not in `WRITTEN`, `ValueError("<kind> is at v<n>, not v<v>")`, and the model's `ValidationError`. |
-| `new(component: Component \| Recipe, name: str, language: str \| None = None, labels: Labels \| None = None) -> Written` | `component` as a new thread of the person's own named `name`, without an origin, a scorer with `labels`. A `Recipe` is compiled by the running code (`View.compiled`) and kept with `Catalog.create(skeleton, compilation=…)` in one transaction, `what` `"created"`: `ValueError(COMPILED_LANGUAGE)` for a language, `ValueError("only a scorer's views and resources have labels")` for labels, `ValueError("<digest> isn't a stored chunk of <part>")` for a part that isn't, and the compiler's errors, such as `StructuralError("generation prompt in a judge recipe")`. |
+| `component(doc: Mapping[str, JsonValue]) -> Component` | Takes no `Seen`. The component `doc` holds, as `GET /api/components` gives its body: of the model `BY_KIND[doc["kind"]]`, with `v`, when given, its schema version. `ValueError("<kind!r> isn't a kind a person writes: the kinds are …")` for a kind not in `WRITTEN`, `ValueError("<kind> is at v<n>, not v<v>")`, and the model's `ValidationError`. |
+| `new(component: Component \| Recipe, name: str, language: str \| None = None, labels: Labels \| None = None) -> Written` | `component` as a new thread of the person's own named `name`, without an origin, a scorer with `labels`. A `Recipe` is compiled by the running code (`Seen.compiled`) and kept with `Catalog.create(skeleton, compilation=…)` in one transaction, `what` `"created"`: `ValueError(COMPILED_LANGUAGE)` for a language, `ValueError("only a scorer's views and resources have labels")` for labels, `ValueError("<digest> isn't a stored chunk of <part>")` for a part that isn't, and the compiler's errors, such as `StructuralError("generation prompt in a judge recipe")`. |
 | `fork_component(thread: int, name: str, component: Component \| None = None, language: str \| None = None, labels: Labels \| None = None) -> Written` | A new thread of the person's own named `name`, forked from the head of `thread`, a thread they see (`NotFound("no <word> <thread> for <login>")`), holding `component`, else the head. A scorer forked as it is, with no labels given, keeps the head's (`Catalog.labels`). |
 | `edit_component(thread: int, head: int, component: Component, language: str \| None = None, labels: Labels \| None = None) -> Written` | `component` as a new version of `thread`, which the person owns (`NotFound("no <word> <thread> of yours")`) and whose head was `head` (`MovedOn`); `unchanged` when it is the head already, which for a scorer given labels means its labels too. A scorer edited without labels keeps none, unless it is the head's, which is then `unchanged`. |
 | `bound(appendix: Appendix) -> Appendix` | The appendix with its line endings LF, when it is bound to the current vignette of a family the person sees; else `ValueError("an appendix is bound to the current vignette of a case you see")`. |
 | `keep_language(digest: str, language: str) -> None` | The language written for `digest` through `Catalog.language` where it has none, `ValueError("<title> is in <language> already: a text's language is the same wherever it is held")` where it has another, and nothing where it has the same. |
 
 `new`, `fork_component` and `edit_component` write through `_written`. The forks and edits first refuse a component
-of another kind than the thread's (`View.check_kind`), where `<word>` is the thread's kind's word in `KINDS`, else
+of another kind than the thread's (`Seen.check_kind`), where `<word>` is the thread's kind's word in `KINDS`, else
 `thread`. `_written` refuses, before anything is stored: a kind not in `WRITTEN` (`ValueError("a person doesn't write
 <kind> components")`), a language for a kind not in `LANGUAGE_KINDS` (`ValueError("<kind> components have no language
 of their own")`), labels for anything but a scorer (`ValueError("only a scorer's views and resources have labels")`),
-a scorer the running code could never score with (`View.check_scorer`), and an expectation of a case and schema the
-person owns one of in another thread (`View.check_expecting`). An appendix is then passed through `bound`. Then, in
+a scorer the running code could never score with (`Seen.check_scorer`), and an expectation of a case and schema the
+person owns one of in another thread (`Seen.check_expecting`). An appendix is then passed through `bound`. Then, in
 one transaction: the component with the closure of its references, which `Store.load` must find stored
 (`StructuralError("not in the store: […]")` otherwise) and `Store.add` checks; its language, when given, through
 `keep_language`; `Catalog.keep`, with `forked_from` the head's edit for a fork, `head` for an edit, and the labels,
@@ -374,7 +375,7 @@ thread that isn't restored (`ValueError("<word> <thread> is deleted: restore it 
 (`ValueError("a name can't be empty: none takes it away")`) or tag (`ValueError("a tag can't be empty")`), a login
 nobody has (`NotFound("no person '<login>'")`), the person's own login among the collaborators
 (`ValueError("<word> <thread> is yours: it is shared with others")`), and restoring an expectation thread where the
-person owns another of its case and schema (`View.check_expecting`, ending `delete that one to restore this`). Then, in
+person owns another of its case and schema (`Seen.check_expecting`, ending `delete that one to restore this`). Then, in
 one transaction and in this order, the entries that change what holds: restoring, the name (one without a value to
 take it away), the description, a tag entry for each tag added or withdrawn, a collaborator entry for each person
 added or withdrawn, and deleting.
@@ -383,7 +384,7 @@ added or withdrawn, and deleting.
 
 | Write | Returns / raises |
 | --- | --- |
-| `proposal(thread: int) -> Proposed \| None` | What following the origin of `thread`, a thread the person sees (`NotFound("no <word> <thread> for <login>")`), would keep. `None` when `Catalog.variation` gives none or one that hasn't `moved`, when the origin's thread isn't one the person `shows`, and when `Catalog.proposal` is `None`. A recipe is compiled by the running code (`View.compiled`), nothing stored. `ValueError("<word> <thread>'s changes don't fit its origin's head: …")` wraps a `ValueError` of the proposal or its compiling. |
+| `proposal(thread: int) -> Proposed \| None` | What following the origin of `thread`, a thread the person sees (`NotFound("no <word> <thread> for <login>")`), would keep. `None` when `Catalog.variation` gives none or one that hasn't `moved`, when the origin's thread isn't one the person `shows`, and when `Catalog.proposal` is `None`. A recipe is compiled by the running code (`Seen.compiled`), nothing stored. `ValueError("<word> <thread>'s changes don't fit its origin's head: …")` wraps a `ValueError` of the proposal or its compiling. |
 | `follow(thread: int, head: int, language: str \| None = None) -> Written` | The proposal kept, in one transaction: stored with the closure of its references, `language` through `keep_language`, and `Catalog.edit(thread, digest, compilation=…, based_on=<origin's head>, head=head)`. `what` is `"a new version"`, also when the digest is the head's. `NotFound("no <word> <thread> of yours")` for one the person doesn't own, `ValueError("<word> <thread> has nothing to follow")` without a proposal, `ValueError("a compiled configuration's language comes from its recipe")`, `ValueError("<kind> components have no language of their own")`, `check_expecting`'s, `check_scorer`'s, and `MovedOn`. A scorer keeps the labels of whichever side's views, and resources, the proposal keeps (`_followed_labels`): the fork head's for a part `Variation.varies`, else the origin head's. |
 
 ## runs.py

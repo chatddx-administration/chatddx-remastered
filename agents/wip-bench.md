@@ -391,7 +391,7 @@ A take is the agent's recommendation, built on but not decided.
   repeated either (`docs/catalog.md`, "Concurrent writers"). A trigger would need a lock per owner to hold. The
   refusals in "One expectation per case and schema" cover the race.
 - **No pick for every "several".** Where none, one or several are told apart, a `match` says what each means
-  (`src/chatddx/catalog/threads.py:picked`, `View._named`), and "several" isn't the same there: two threads of one
+  (`src/chatddx/catalog/threads.py:picked`, `Seen._named`), and "several" isn't the same there: two threads of one
   name are two things to refer to, while two threads of one head are one answer.
 - **Curation keeps its own check.** `_Init.put` finds the archive's one expectation thread for a case to edit, in any
   schema and deleted or not. That is how it recognises its thread, which the catalog's rule doesn't replace. Its other

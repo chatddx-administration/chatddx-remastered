@@ -7,15 +7,15 @@ from .following import follow, proposal
 from .runs import score, start
 from .saying import say
 from .taking import take, take_from
-from .view import View
+from .view import Seen
 
 
-# What one person sees and does: the View's reads, and the writes, each bound from the
+# What one person sees and does: what Seen reads, and the writes, each bound from the
 # module that holds it. The functions are imported rather than their modules, since
 # `from . import` would import this package again from inside it, and `@final` spares
 # each binding an annotation.
 @final
-class Bench(View):
+class Bench(Seen):
     save = save
     fork = fork
     edit = edit

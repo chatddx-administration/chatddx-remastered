@@ -12,7 +12,7 @@ from chatddx.factors.scoring import Expectation, Scorer
 from .errors import NotFound
 from .model import COMPILED_LANGUAGE, KINDS, SAVED, WRITTEN, Written
 from .variation import PARTS
-from .view import View
+from .view import Seen
 
 _UNLABELLED = "only a scorer's views and resources have labels"
 
@@ -37,7 +37,7 @@ def component(doc: Mapping[str, JsonValue]) -> Component:
 # the running code and kept as a new configuration, with its compilation. A scorer is
 # kept with `labels`.
 def new(
-    view: View,
+    seen: Seen,
     component: Component | Recipe,
     name: str,
     language: str | None = None,
@@ -45,7 +45,7 @@ def new(
 ) -> Written:
     if not isinstance(component, Recipe):
         return _written(
-            view, component, None, name=name, language=language, labels=labels
+            seen, component, None, name=name, language=language, labels=labels
         )
     if language is not None:
         raise ValueError(COMPILED_LANGUAGE)
@@ -53,38 +53,38 @@ def new(
         raise ValueError(_UNLABELLED)
     for part in PARTS:
         digest = getattr(component, part)
-        if digest is not None and view.rows.kind(digest) not in KINDS[part]:
+        if digest is not None and seen.rows.kind(digest) not in KINDS[part]:
             raise ValueError(f"{digest} isn't a stored chunk of {part}")
-    registry, compilation = view.compiled(component)
-    with view.conn.transaction():
-        _ = view.store.add(registry, [compilation.digest])
-        edit = view.catalog.create(
+    registry, compilation = seen.compiled(component)
+    with seen.conn.transaction():
+        _ = seen.store.add(registry, [compilation.digest])
+        edit = seen.catalog.create(
             compilation.skeleton,
-            view.person.id,
+            seen.person.id,
             compilation=compilation.digest,
             name=name,
         )
-    return Written(edit, "created", view.linted(compilation.skeleton))
+    return Written(edit, "created", seen.linted(compilation.skeleton))
 
 
 # A new thread of the person's own, named `name` and forked from the head of `thread`, a
 # thread they see; it starts from `component` when given, else from the head. A scorer
 # forked as it is keeps the head's labels unless given others.
 def fork_component(
-    view: View,
+    seen: Seen,
     thread: int,
     name: str,
     component: Component | None = None,
     language: str | None = None,
     labels: Labels | None = None,
 ) -> Written:
-    edit, _, word = view.seen(thread)
-    held = view.get(edit.digest) if component is None else component
-    view.check_kind(thread, word, held)
+    edit, _, word = seen.worded(thread)
+    held = seen.get(edit.digest) if component is None else component
+    seen.check_kind(thread, word, held)
     if labels is None and isinstance(held, Scorer) and held.digest == edit.digest:
-        labels = view.catalog.labels(edit.id)
+        labels = seen.catalog.labels(edit.id)
     return _written(
-        view,
+        seen,
         held,
         None,
         name=name,
@@ -98,24 +98,24 @@ def fork_component(
 # `head` when they saw it; nothing is written when it is the head already. A scorer is
 # kept with `labels`: without them, the head's when it is the head's scorer, else none.
 def edit_component(
-    view: View,
+    seen: Seen,
     thread: int,
     head: int,
     component: Component,
     language: str | None = None,
     labels: Labels | None = None,
 ) -> Written:
-    _, about, word = view.seen(thread)
-    if not about.owned_by(view.person.id):
+    _, about, word = seen.worded(thread)
+    if not about.owned_by(seen.person.id):
         raise NotFound(f"no {word} {thread} of yours")
-    view.check_kind(thread, word, component)
+    seen.check_kind(thread, word, component)
     return _written(
-        view, component, thread, language=language, head=head, labels=labels
+        seen, component, thread, language=language, head=head, labels=labels
     )
 
 
 def _written(
-    view: View,
+    seen: Seen,
     component: Component,
     thread: int | None,
     *,
@@ -133,21 +133,21 @@ def _written(
     if labels is not None and not isinstance(component, Scorer):
         raise ValueError(_UNLABELLED)
     if isinstance(component, Scorer):
-        view.check_scorer(component)
+        seen.check_scorer(component)
     if isinstance(component, Expectation):
-        view.check_expecting(component, thread)
+        seen.check_expecting(component, thread)
     if isinstance(component, Appendix):
-        component = bound(view, component)
-    registry = view.store.load(s.digest for s in component.refs())
+        component = bound(seen, component)
+    registry = seen.store.load(s.digest for s in component.refs())
     _ = registry.add(component)
-    old = None if thread is None else view.catalog.head(thread).digest
-    with view.conn.transaction():
-        _ = view.store.add(registry, [component.digest])
+    old = None if thread is None else seen.catalog.head(thread).digest
+    with seen.conn.transaction():
+        _ = seen.store.add(registry, [component.digest])
         if language is not None:
-            keep_language(view, component.digest, language)
-        edit, kept = view.catalog.keep(
+            keep_language(seen, component.digest, language)
+        edit, kept = seen.catalog.keep(
             component.digest,
-            view.person.id,
+            seen.person.id,
             thread,
             name=name,
             forked_from=forked_from,
@@ -155,21 +155,21 @@ def _written(
             labels=labels,
         )
         replaced = (
-            _replaced(view, old, component)
+            _replaced(seen, old, component)
             if isinstance(component, Appendix) and old and kept == "edited"
             else {}
         )
-    return Written(edit, SAVED[kept], view.linted(component.digest), replaced)
+    return Written(edit, SAVED[kept], seen.linted(component.digest), replaced)
 
 
 # An appendix as the bench keeps it: its line endings LF, as browsers send CRLF, and bound
 # to the current vignette of a family the person sees.
-def bound(view: View, appendix: Appendix) -> Appendix:
+def bound(seen: Seen, appendix: Appendix) -> Appendix:
     vignette = appendix.vignette
-    families = {b.family for b in view.rows.bindings_sharing(vignette)}
+    families = {b.family for b in seen.rows.bindings_sharing(vignette)}
     if not any(
-        view.current(f) == vignette
-        and view.catalog.about(Subject(family=f)).shows(view.person.id)
+        seen.current(f) == vignette
+        and seen.catalog.about(Subject(family=f)).shows(seen.person.id)
         for f in families
     ):
         raise ValueError(
@@ -181,28 +181,28 @@ def bound(view: View, appendix: Appendix) -> Appendix:
 
 # Each stored case that holds the appendix `old` at `new`'s vignette, stored again with
 # `new` in its place; no expectation moves with it.
-def _replaced(view: View, old: str, new: Appendix) -> dict[str, str]:
+def _replaced(seen: Seen, old: str, new: Appendix) -> dict[str, str]:
     replaced: dict[str, str] = {}
-    for digest in view.store.reaching(old, "case"):
-        case = resolve(view.get, digest, Case)
+    for digest in seen.store.reaching(old, "case"):
+        case = resolve(seen.get, digest, Case)
         if case.vignette != new.vignette:
             continue
         held = tuple(new.digest if a == old else a for a in case.appendices)
         made = Case(vignette=case.vignette, appendices=held)
-        registry = view.store.load(held)
-        _ = view.store.add(registry, [registry.add(made)])
+        registry = seen.store.load(held)
+        _ = seen.store.add(registry, [registry.add(made)])
         replaced[digest] = made.digest
     return replaced
 
 
 # A component's language is its text's, so other threads may hold it too: one it has is
 # kept, and the person's is written only where it has none.
-def keep_language(view: View, digest: str, language: str) -> None:
-    held = view.catalog.language_of(digest)
+def keep_language(seen: Seen, digest: str, language: str) -> None:
+    held = seen.catalog.language_of(digest)
     if held is not None and held != language:
         raise ValueError(
-            f"{view.title(digest)} is in {held} already: a text's language is the "
+            f"{seen.title(digest)} is in {held} already: a text's language is the "
             + "same wherever it is held"
         )
     if held is None:
-        view.catalog.language(digest, language, view.person.id)
+        seen.catalog.language(digest, language, seen.person.id)

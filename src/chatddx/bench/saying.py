@@ -6,7 +6,7 @@ from chatddx.factors.scoring import Expectation
 
 from .errors import NotFound
 from .model import KINDS
-from .view import View
+from .view import Seen
 
 
 # What is said about `thread`, which the person owns, as it is to hold afterwards: its
@@ -15,7 +15,7 @@ from .view import View
 # is. Only what changes what holds is written, in one transaction, and what holds
 # afterwards is returned. A deleted thread is restored before anything else is said.
 def say(
-    view: View,
+    seen: Seen,
     thread: int,
     *,
     name: str | None | EllipsisType = ...,
@@ -24,11 +24,11 @@ def say(
     collaborators: Collection[str] | None = None,
     deleted: bool | None = None,
 ) -> About:
-    found = view.rows.thread(thread)
+    found = seen.rows.thread(thread)
     kind = None if found is None else found.kind
     word = next((w for w, held in KINDS.items() if kind in held), "thread")
-    about = view.about(thread)
-    if found is None or about.owner != view.person.id:
+    about = seen.about(thread)
+    if found is None or about.owner != seen.person.id:
         raise NotFound(f"no {word} {thread} of yours")
     changing = (name, description, tags, collaborators) != (..., None, None, None)
     if about.deleted and deleted is not False and changing:
@@ -38,16 +38,16 @@ def say(
     if tags is not None and "" in tags:
         raise ValueError("a tag can't be empty")
     sharing: set[int] = (
-        set() if collaborators is None else {_sharing(view, c) for c in collaborators}
+        set() if collaborators is None else {_sharing(seen, c) for c in collaborators}
     )
-    if view.person.id in sharing:
+    if seen.person.id in sharing:
         raise ValueError(f"{word} {thread} is yours: it is shared with others")
 
     said: list[Entry] = []
     if deleted is False and about.deleted:
-        head = view.get(view.catalog.head(thread).digest)
+        head = seen.get(seen.catalog.head(thread).digest)
         if isinstance(head, Expectation):
-            view.check_expecting(head, thread, "delete that one to restore this")
+            seen.check_expecting(head, thread, "delete that one to restore this")
         said.append(Entry(field=EntryField.DELETED, present=False))
     if not isinstance(name, EllipsisType) and name != about.name:
         said.append(
@@ -69,14 +69,14 @@ def say(
         ]
     if deleted and not about.deleted:
         said.append(Entry(field=EntryField.DELETED))
-    with view.conn.transaction():
+    with seen.conn.transaction():
         for entry in said:
-            view.catalog.note(Subject(thread=thread), entry, view.person.id)
-    return view.about(thread)
+            seen.catalog.note(Subject(thread=thread), entry, seen.person.id)
+    return seen.about(thread)
 
 
-def _sharing(view: View, login: str) -> int:
-    found = view.people.find(login)
+def _sharing(seen: Seen, login: str) -> int:
+    found = seen.people.find(login)
     if found is None:
         raise NotFound(f"no person {login!r}")
     return found.id
