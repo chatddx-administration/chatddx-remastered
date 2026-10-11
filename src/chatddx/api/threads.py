@@ -140,7 +140,7 @@ def variation(
             raise HTTPException(422, str(e)) from None
         # Without a case tagged so, the pair's checks still apply.
         findings = [
-            schemas.Finding.model_validate(f.model_dump())
+            schemas.Finding.of(f)
             for f in bench.findings(varied, engine, seed, families or None)
         ]
     parts = None

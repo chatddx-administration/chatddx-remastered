@@ -20,8 +20,8 @@ https://github.com/chatddx-administration/chatddx/blob/504792cbeb09508f2c52912be
      what replaces it.
 2. **Decisions**, in the order they block (see "Options"): A1, who it is for; A2, the framework; A3, signing in.
    A4–A12 shape the endpoints. Decided so far: A1 kept open, A2 (F2), A3, and A9 (S3).
-3. **The plan** (see "The plan") assumes the takes. Phases 0–3 are built (see "Phase 0: built" through "Phase 3:
-   built"). Phase 4, the runs, is next.
+3. **The plan** (see "The plan") assumes the takes. Phases 0–4 are built (see "Phase 0: built" through "Phase 4:
+   built"). Phase 5, the scores, is next.
 
 ## The old API
 ### Where it came from
@@ -626,6 +626,52 @@ Both were open from phase 3; the suite went from 514 tests to 517.
   `test_variations.py:test_an_unsaved_variation_is_linted_in_its_recipe_s_language`.
 - Proposed in `docs/catalog-api.md`: `expectation_choices` and `recipe_language`.
 
+### Phase 4: built
+The suite went from 517 tests to 529, and basedpyright and ruff stay clean. It was also tried by hand:
+`chatddx fake-engines --delay 0.1` and `chatddx api`, on the sample seeded with `init-data alice --giftbag`, driven
+with curl through a run as JSON, one streamed, and each of them cut off at 0.8 s with `--max-time`: each of those two
+recorded its item as stopped, was finished and scored, and the fake logged a hang-up.
+- **`POST /api/runs`** `{configuration, parts, endpoint, families or tags, seed?, score?}` (`runs.py`):
+  - The run starts in the request, so the gate's refusals are 422 before anything is sent (A7), and so is a body
+    naming what the person doesn't see: a configuration, an endpoint or a family. That is 422 rather than 404, since
+    the path names no resource; tags no case has are 422 too. The plan's `cases` are `families`, by id: a family is
+    what the person sees and picks, and the cases' digests are in what comes back.
+  - It is then sent on a thread of its own, on a connection of its own (W1), and finished, and scored under every
+    scorer that applies unless `"score": false` (A8), whether or not anyone is listening.
+  - 201 with `Location`, either way. With `Accept: text/event-stream` the body is the run's events as they come,
+    with `Cache-Control: no-cache` and `X-Accel-Buffering: no` for a proxy; otherwise it is the run, as `GET` gives
+    it, once finished and scored.
+  - A client that goes away halts the run (`Running.halt`): a stream's at once, as Starlette cancels the response,
+    and a JSON request's within half a second (`runs.py:HEARD`), as it asks `Request.is_disconnected`. The calls in
+    flight are recorded as stopped.
+  - The seed is drawn from the trial's whole range when not given.
+- **The events** (`events.py`, `schemas.EVENTS`) are A7's. `item.ended` gives the item's outcome, why, and usage, but
+  not the whole item, which `/items` gives. `error` comes if the run's thread fails once the stream has begun; a JSON
+  request answers 500 with the same detail. Their data models are in the OpenAPI document's schemas
+  (`app.py:_with_events`), since no route's response names them.
+- **Reads**: `GET /api/runs` with `limit` (1–200, 20 by default), `offset`, `trial`, `reaching` and `scored_by`
+  (`unscored` waits for phase 5); `GET /api/runs/{id}`, `/items` and `/rendered-again`. Ids are whole UUIDs, and
+  another's run is 404.
+  - A run gives what ran (trial, skeleton, engine, endpoint, cases, seeds and `described`), when it started and
+    finished, its rig, `noted` (what it noted as it went, kept on its finish), `findings` (`check_run`, now), each
+    item's outcome and usage, and the latest score under each scorer.
+- **Case-derived content** (A9). An item's `why` can quote the answer, since a schema check names the value it
+  refused (`scorers/answer.py:_breaks`), so it is in `/items` and the stream only. A score gives each item's value
+  and each view's mean, but not the scorer's detail or the scoring's findings, which can quote it likewise.
+- **Tests**: `test_runs.py`. The `world` and `fake` fixtures, and `faked`, which can slow the fake, moved from the
+  repl's conftest to `src/chatddx/conftest.py`. TestClient runs a stream to its end whether or not its reader hangs
+  up, so the two tests of halting serve the app under uvicorn on a thread, and use httpx2.
+
+Open from phase 4:
+- **Reaching a chunk finds no run.** `reaching=` a chunk's digest lists nothing, since a compiled skeleton holds what
+  the chunk sets rather than a reference to it; the compilation refers to both. The repl's `show reasoning NAME` says
+  "no runs of yours" the same way (`Bench.reaching`). Reaching through compilations would find them.
+- **A score's detail and findings** show nowhere yet: phase 5, with A9.
+- **A stream that is quiet for long**, waiting for a slow first token, sends nothing meanwhile, and a proxy's read
+  timeout would cut it. A comment line now and then would keep it open.
+- **A server that stops** waits for its requests, so a run under way is finished first. A killed one leaves it
+  unfinished, as resuming isn't built (`agents/wip-worker.md`).
+
 ## Left out
 - **Free-text vignettes** (`RunIn.vignette`, the swift client's `symptoms`). A case is a source's vignette, by id,
   fetched from the World and never stored. Decided for swift since: a typed text is kept in the database, as a
@@ -639,7 +685,7 @@ Both were open from phase 3; the suite went from 514 tests to 517.
 
 ## Open
 - **A stream through a proxy** needs buffering off. The old API sent `Cache-Control: no-cache` and
-  `X-Accel-Buffering: no`.
+  `X-Accel-Buffering: no`, and so does this one since phase 4.
 - **Long requests**: moved to `agents/wip-worker.md` ("Why").
 - **`Bench.runs` reads every run the person owns**, and the listing pages afterwards. Page in the store once that is
   slow.
@@ -654,3 +700,6 @@ Both were open from phase 3; the suite went from 514 tests to 517.
 - `.env-example`'s `HOST=localhost:8000` was read by nothing in `src/`. `chatddx api` reads it since phase 1.
 - The "cell" guard's pattern matches "cancelled" (`src/chatddx/repl/test/test_vocabulary.py:CELL`).
 - The old `docs/api.md` is missing at 504792c; it was removed at 7db5dac.
+- `ScoreFinished` is marked as not case-derived (`ledger/score.py`, `case_derived = False`), but its findings hold
+  `answer.invalid` messages, which can quote the answer's values (`scorers/answer.py:_breaks`).
+- Starlette's TestClient doesn't tell the app that a client hung up: it runs a streamed response to its end.

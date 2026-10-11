@@ -1,8 +1,9 @@
 import socket
 import time
 from collections import defaultdict, deque
-from collections.abc import Iterator
+from collections.abc import Generator, Iterator
 from concurrent.futures import Future, ThreadPoolExecutor
+from contextlib import contextmanager
 from pathlib import Path
 from uuid import uuid4
 
@@ -15,14 +16,18 @@ from chatddx.core import settings
 from chatddx.core.rig import rig
 from chatddx.curation import Plan, init, load_cases, plan_factors
 from chatddx.curation.plan import SAMPLE
+from chatddx.factors.base import Resolver
 from chatddx.facts import BUNDLED, Facts
+from chatddx.fake_vllm.served import Served
+from chatddx.fake_vllm.server import serving
 from chatddx.identity import identity
-from chatddx.inventory import Inventory, World
-from chatddx.store import People, migrate
+from chatddx.inventory import Inventory, World, start_up
+from chatddx.store import People, Store, migrate
 from chatddx.store.store import Connection
 
 WORLDS = settings.PROJECT_ROOT / "worlds"
 WORLD = WORLDS / "sample"
+QWEN = "qwen3-8b-awq@fake"
 
 
 # The markers split the tests in two: what docs/ describes, and what agents/wip-*.md plans.
@@ -66,6 +71,28 @@ def free_world(tmp_path: Path) -> Inventory:
         text.replace("12099", str(port)).replace("12100", str(port + 1))
     )
     return Inventory.load(path)
+
+
+@pytest.fixture
+def world(tmp_path: Path) -> Inventory:
+    return free_world(tmp_path)
+
+
+# The fake vLLM serving an endpoint's engine, as its start-up says; `delay` is how long
+# it takes over each token.
+@contextmanager
+def faked(
+    world: Inventory, get: Resolver, endpoint: str = QWEN, delay: float = 0.0
+) -> Generator[None]:
+    startup = start_up(world, get, endpoint)
+    with serving([Served.of(startup.argv[0], startup.argv[1:])], delay=delay):
+        yield
+
+
+@pytest.fixture
+def fake(world: Inventory, conn: Connection) -> Iterator[None]:
+    with faked(world, Store(conn).get):
+        yield
 
 
 # Module-scoped, as tests add to its registry.

@@ -1,9 +1,11 @@
 from datetime import datetime
 from typing import Annotated, ClassVar, Literal, Self
+from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, Field, JsonValue
+from pydantic import BaseModel, ConfigDict, Field, JsonValue, model_validator
 
-from chatddx.bench import PARTS
+from chatddx.bench import PARTS, Outcome
+from chatddx.factors import base as factors
 from chatddx.identity import Person, Role
 
 
@@ -120,6 +122,10 @@ class Finding(_Schema):
     message: str
     subject: str | None
 
+    @classmethod
+    def of(cls, finding: factors.Finding) -> Self:
+        return cls.model_validate(finding.model_dump())
+
 
 # What one view of a scorer gets from the variation: whether its output offers what the
 # view reads, and the families without an expectation it picks something from.
@@ -203,3 +209,162 @@ class Component(_Schema):
     kind: str
     title: str
     body: JsonValue
+
+
+class NewRun(_Schema):
+    configuration: int
+    parts: Parts = Parts()
+    endpoint: str
+    families: list[int] | None = Field(None, description="the cases to run, by family")
+    tags: list[str] | None = Field(
+        None, description="or the cases of the families with any of these"
+    )
+    seed: int | None = Field(None, description="drawn when not given")
+    score: bool = Field(
+        True, description="under every scorer that applies, once it is finished"
+    )
+
+    @model_validator(mode="after")
+    def _cases(self) -> Self:
+        if (self.families is None) == (self.tags is None):
+            raise ValueError("a run takes families or tags, and not both")
+        return self
+
+
+class Rig(_Schema):
+    distribution: str
+    version: str
+    revision: str | None
+
+
+class Run(_Schema):
+    id: UUID
+    at: datetime
+    trial: str
+    skeleton: str
+    engine: str
+    endpoint: str | None
+    cases: list[str]
+    seeds: list[int]
+    described: str
+    finished: bool
+
+
+class Item(_Schema):
+    case: str
+    replicate: int
+    outcome: Outcome
+    prompt_tokens: int
+    completion_tokens: int
+
+
+# An item as it was recorded: case-derived (agents/wip-api.md, A9).
+class ItemDetail(Item):
+    why: str | None
+    vignette: JsonValue
+    call: JsonValue
+    turns: JsonValue
+
+
+class ScoredItem(_Schema):
+    case: str
+    replicate: int
+    view: int
+    value: float | None
+
+
+# A run's score under one scorer, or why it gave none: the values, without the scorer's
+# detail or findings, which may quote the answer.
+class Graded(_Schema):
+    scorer: str
+    name: str
+    score: UUID | None
+    labels: list[str]
+    means: list[float | None]
+    items: list[ScoredItem]
+    refused: str | None
+
+
+class RunDetail(Run):
+    rig: Rig
+    finished_at: datetime | None
+    noted: list[Finding]
+    findings: list[Finding]
+    items: list[Item]
+    scores: list[Graded]
+
+
+class RenderedAgain(_Schema):
+    case: str
+    replicate: int
+    same: bool
+    why: str | None
+
+
+# The data of each event of a run's stream, by the event's name.
+
+
+class RunStartedData(_Schema):
+    run: UUID
+    trial: str
+    skeleton: str
+    endpoint: str
+    cases: list[str]
+    seed: int
+    greedy: bool
+
+
+class ItemStartedData(_Schema):
+    case: str
+    replicate: int
+    seed: int
+
+
+class ItemDeltaData(_Schema):
+    case: str
+    replicate: int
+    kind: Literal["reasoning", "content", "tool_call"]
+    text: str
+    tokens: int
+
+
+class ItemToolData(_Schema):
+    case: str
+    replicate: int
+    tool: JsonValue
+
+
+class ItemEndedData(Item):
+    why: str | None
+
+
+class CanaryEndedData(_Schema):
+    phase: str
+    canary: int
+    call: JsonValue
+
+
+class RunFinishedData(_Schema):
+    findings: list[Finding]
+
+
+class RunScoredData(_Schema):
+    scores: list[Graded]
+
+
+class ErrorData(_Schema):
+    detail: str
+
+
+EVENTS: dict[str, type[_Schema]] = {
+    "run.started": RunStartedData,
+    "item.started": ItemStartedData,
+    "item.delta": ItemDeltaData,
+    "item.tool": ItemToolData,
+    "item.ended": ItemEndedData,
+    "canary.ended": CanaryEndedData,
+    "run.noted": Finding,
+    "run.finished": RunFinishedData,
+    "run.scored": RunScoredData,
+    "error": ErrorData,
+}
