@@ -30,15 +30,11 @@ place is taken is refused. A run's or a score's log is read back whole, and vali
 are listed newest first: those of a trial, those of a run, or those asked for; and the store tells which runs have
 finished.
 
-```
-AGENT: ADD
-The `source` schema (src/chatddx/store/migrations/0014-t0-source.sql to 0016).
----
 ### Texts
 The texts of database sources (docs/inventory.md, "Sources") are kept as people typed them, each under a new id, and
 never changed. The writer adds and reads them; only the admin deletes one, to purge spam; the reader can't read them,
 since they are vignettes.
-```
+
 ### People
 People, their passwords and their sessions are identity's (docs/identity.md). The store adds people and changes them,
 but never removes them; it checks passwords and keeps sessions, and disabling a person ends their sessions.

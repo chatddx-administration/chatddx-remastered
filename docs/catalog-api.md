@@ -26,19 +26,11 @@ Paths are relative to `src/chatddx/catalog/` unless they start with `src/` or `d
 
 ## Package
 
-```
-AGENT: CHANGE
-`Labels` is exported too (agents/wip-authoring.md, S4).
----
 `chatddx.catalog` re-exports `LANGUAGE`, `LANGUAGE_KINDS`, `THREAD_KINDS`, `About`, `Behind`, `Binding`, `Edit`,
 `Entry`, `EntryField`, `Kept`, `Labels`, `Part`, `Reader`, `Repair`, `RepairPlan`, `Subject`, `Survey`, `Thread`,
 `Variation`, `check_label`, `language_tag`, `latest`, `made_for`, `variant_name`, `variants_for`, and the modules
 `families`, `language`, `read`, `threads`, `titles` and `variants`.
-```
-`chatddx.catalog` re-exports `LANGUAGE`, `LANGUAGE_KINDS`, `THREAD_KINDS`, `About`, `Behind`, `Binding`, `Edit`,
-`Entry`, `EntryField`, `Kept`, `Part`, `Reader`, `Repair`, `RepairPlan`, `Subject`, `Survey`, `Thread`, `Variation`,
-`check_label`, `language_tag`, `latest`, `made_for`, `variant_name`, `variants_for`, and the modules `families`,
-`language`, `read`, `threads`, `titles` and `variants`.
+
 Functions are called through their module (`threads.behind(rows, thread)`); `model.py` is imported by path.
 
 | Module | Builds on |
@@ -94,18 +86,13 @@ threads and families is said in its entry; in short:
 
 ### Names and constants
 
-```
-AGENT: ADD
-A row after `Part`: the labels an edit is written with (agents/wip-authoring.md, S4).
----
-| `Labels` | `Mapping[tuple[Part, int], str]`: what a scorer edit calls its views and resources, by part and position |
-```
 | Name | Value |
 | --- | --- |
 | `THREAD_KINDS` | `frozenset` of the 22 kinds that have threads: `chunk.instructions`, `chunk.few_shot`, `chunk.prompt`, `chunk.output`, `chunk.sampling`, `chunk.reasoning`, `chunk.passthrough`, `chunk.translations`, `chunk.toolset`, `tool`, `skeleton`, `trial`, `judge`, `scorer`, `scoring`, `appendix`, `expectation`, `model`, `engine.local`, `engine.remote`, `expectation_schema`, `canary_set`. Every component kind but `case` and `compilation`. Repeated in `0012` (`thread_kind_check`). |
 | `LANGUAGE_KINDS` | `frozenset` of the 7 kinds that can have a language of their own: `chunk.instructions`, `chunk.few_shot`, `chunk.prompt`, `chunk.output`, `chunk.toolset`, `chunk.translations`, `skeleton`. Repeated in `0012` (`language_kind_check`). |
 | `LANGUAGE` | `re.compile(r"^[a-z]{2,3}(-[A-Za-z0-9]{1,8})*$")`. Accepts `sv`, `pt-BR`, `zh-Hant-TW`; refuses `SV`, `en_US`. Repeated in `0012`. |
 | `Part` | `Literal["view", "resource"]` |
+| `Labels` | `Mapping[tuple[Part, int], str]`: what a scorer edit calls its views and resources, by part and position |
 | `Kept` | `Literal["created", "edited", "unchanged"]`: what `Catalog.keep` did |
 
 ### `language_tag(value: str) -> str`
@@ -190,18 +177,10 @@ What a subject's entries say now.
 ### `latest[K, V](rows: Iterable[tuple[K, V]]) -> dict[K, V]`
 `dict(rows)`: for each key, the value of its last row. A key keeps the position of its first row.
 
-```
-AGENT: CHANGE
-The database check moved with the table (agents/wip-authoring.md, S4).
----
 ### `check_label(scorer: Scorer, part: Part, position: int) -> None`
 `ValueError("<scorer digest> has no <part> at position <position>")` unless `0 <= position < len(scorer.views)` (for
 `view`) or `len(scorer.resources)` (for `resource`). `0018` repeats it (`catalog.check_label`), for the scorer of the
 label's edit.
-```
-### `check_label(scorer: Scorer, part: Part, position: int) -> None`
-`ValueError("<scorer digest> has no <part> at position <position>")` unless `0 <= position < len(scorer.views)` (for
-`view`) or `len(scorer.resources)` (for `resource`). `0012` repeats it (`catalog.check_label`).
 
 ### Results
 
@@ -252,12 +231,6 @@ What the rules read. Lists come back in the order the rows were written; for com
 picks the latest row. `src/chatddx/store/catalog.py:Rows` implements it over the tables, and
 `test/memory.py:Memory` over a `Registry` and lists.
 
-```
-AGENT: CHANGE
-The `labels` row: labels are read by the edits they were written with (agents/wip-authoring.md, S4).
----
-| `labels(edits: Collection[int]) -> list[tuple[int, Part, int, str]]` | (edit, part, position, label) rows for these edits, by id. |
-```
 | Method | Returns |
 | --- | --- |
 | `get(digest: str) -> Component` | The stored component. `StructuralError` when it isn't stored. |
@@ -277,17 +250,11 @@ The `labels` row: labels are read by the edits they were written with (agents/wi
 | `bound_to(vignettes: Collection[Vignette], kind: str) -> list[tuple[str, Vignette]]` | The stored components of `kind` (`case` or `appendix`) whose `vignette` equals one of these, each with that vignette, by digest. |
 | `expectations(cases: Collection[str]) -> list[str]` | The stored expectations of these cases, by digest. |
 | `languages(digests: Collection[str]) -> list[tuple[str, str]]` | (digest, language) rows for these digests, by id. |
-| `labels(scorer: str) -> list[tuple[Part, int, str]]` | (part, position, label) rows for a scorer, by id. |
+| `labels(edits: Collection[int]) -> list[tuple[int, Part, int, str]]` | (edit, part, position, label) rows for these edits, by id. |
 | `bindings_sharing(vignette: Vignette) -> list[Binding]` | The bindings in the vignette's source to its id or to its fingerprint, by id. |
 
 ### Helpers
 
-```
-AGENT: CHANGE
-The `labels` row: an edit's labels, written once, so nothing is superseded (agents/wip-authoring.md, S4).
----
-| `labels(rows, edit: int) -> Labels` | The edit's labels, by (part, position). `{}` for an edit without labels, of a scorer or not. |
-```
 | Function | Returns |
 | --- | --- |
 | `heads_of(rows, threads: Collection[int]) -> dict[int, Edit]` | Thread → its latest edit, sorted by thread id. Threads without edits are left out. |
@@ -295,24 +262,19 @@ The `labels` row: an edit's labels, written once, so nothing is superseded (agen
 | `heads_holding(rows, digests: Collection[str]) -> dict[int, Edit]` | The `holders` whose head is one of the digests. |
 | `abouts(rows, subjects: Collection[Subject]) -> dict[Subject, About]` | `About.of` each subject's entries; every subject given is a key. |
 | `about(rows, subject: Subject) -> About` | `abouts` of one subject. |
-| `labels(rows, scorer: str) -> dict[tuple[Part, int], str]` | The latest label for each (part, position). `{}` for a scorer without labels, stored or not. |
+| `labels(rows, edit: int) -> Labels` | The edit's labels, by (part, position). `{}` for an edit without labels, of a scorer or not. |
 | `tags_given(rows, subject: Subject) -> dict[str, int]` | The tags that hold on the subject now, each with the writer of the latest entry about it. |
 
 ## threads.py
 
 ### Checks
 
-```
-AGENT: ADD
-A row: the labels an edit is written with (agents/wip-authoring.md, S4).
----
-| `check_labels(rows, thread_id: int, digest: str, labels: Labels) -> None` | Nothing for no labels. `ValueError("a <kind> has no views or resources to label")` for a thread that isn't a scorer's; `check_label` of `digest`'s scorer for each; `ValueError("the label of <part> <position> is empty")`. `0018` repeats the positions, and holds a label to its edit's transaction and writer. |
-```
 | Function | Raises |
 | --- | --- |
 | `check_threadable(kind: str) -> None` | `ValueError("<kind> components have no threads")` when `kind` isn't in `THREAD_KINDS`. |
 | `check_based_on(rows, thread: int, based_on: int) -> None` | `ValueError("edit <based_on> is not in the origin of thread <thread>")` unless the thread exists, is a fork, and `based_on` is an edit of its origin with an id at or after `forked_from`. `0012` repeats it (`catalog.check_based_on`, same message). |
 | `check_head(rows, thread: int, head: int) -> None` | `MovedOn("thread <thread> has moved on since edit <head>: its head is edit <current>")` when `head` isn't the thread's head; `history`'s `LookupError` for no thread. `model.py:MovedOn` is a `ValueError`. The database doesn't repeat it; `Catalog.edit` takes the thread's lock first. |
+| `check_labels(rows, thread_id: int, digest: str, labels: Labels) -> None` | Nothing for no labels. `ValueError("a <kind> has no views or resources to label")` for a thread that isn't a scorer's; `check_label` of `digest`'s scorer for each; `ValueError("the label of <part> <position> is empty")`. `0018` repeats the positions, and holds a label to its edit's transaction and writer. |
 
 ### Lookups
 
@@ -625,20 +587,10 @@ the first of `Reader.compilations` (by digest). Anything else is `describe`d, wi
 the ones that write insert the rows the package decided on. A rule the database also checks is refused by Postgres
 with a psycopg error when the Python lets it through.
 
-```
-AGENT: CHANGE
-The rows for `create`, `edit`, `keep`, `label` and `labels`: labels are written with an edit, and `label` goes
-(agents/wip-authoring.md, S4).
----
-| `create(digest, by, *, compilation=None, forked_from=None, name=None, owner=None, labels=None) -> Edit` | `Reader.kind` (`LookupError("<digest> is not in the store")`), `threads.check_threadable`; `threads.check_expectation` and `threads.check_labels` through `edit`, and `note` | in one transaction: the thread, its first edit with its labels (`edit`), an `owner` entry for `owner` or else `by`, and a `name` entry when given |
-| `edit(thread, digest, by, *, compilation=None, based_on=None, head=None, labels=None) -> Edit` | in one transaction: the thread's advisory lock (`pg_advisory_xact_lock(hashtext('catalog.thread'), thread mod 2³¹)`), `threads.check_head` when `head` is given, `threads.check_based_on` when `based_on` is given, `threads.check_expectation(thread, digest)`, `threads.check_labels(thread, digest, labels)` | the edit, with the thread's kind, and a `catalog.label` row for each label, by part and position; `LookupError("no thread with id <thread>")` when there is no thread |
-| `labels(edit) -> dict[tuple[Part, int], str]` | `read.labels` | |
-| `keep(digest, by, thread, *, name=None, compilation=None, forked_from=None, head=None, labels=None) -> tuple[Edit, Kept]` | `create` without a thread; else, in one transaction, the thread's lock, `threads.check_head` when `head` is given, `threads.head`, and `edit` | a new thread, a new edit, or nothing when the head is `digest` already and `labels`, when given, are the head's |
-```
 | Method | Calls | Writes |
 | --- | --- | --- |
-| `create(digest, by, *, compilation=None, forked_from=None, name=None, owner=None) -> Edit` | `Reader.kind` (`LookupError("<digest> is not in the store")`), `threads.check_threadable`; `threads.check_expectation` through `edit` and `note` | in one transaction: the thread, its first edit (`edit`), an `owner` entry for `owner` or else `by`, and a `name` entry when given |
-| `edit(thread, digest, by, *, compilation=None, based_on=None, head=None) -> Edit` | in one transaction: the thread's advisory lock (`pg_advisory_xact_lock(hashtext('catalog.thread'), thread mod 2³¹)`), `threads.check_head` when `head` is given, `threads.check_based_on` when `based_on` is given, `threads.check_expectation(thread, digest)` | the edit, with the thread's kind; `LookupError("no thread with id <thread>")` when there is no thread |
+| `create(digest, by, *, compilation=None, forked_from=None, name=None, owner=None, labels=None) -> Edit` | `Reader.kind` (`LookupError("<digest> is not in the store")`), `threads.check_threadable`; `threads.check_expectation` and `threads.check_labels` through `edit`, and `note` | in one transaction: the thread, its first edit with its labels (`edit`), an `owner` entry for `owner` or else `by`, and a `name` entry when given |
+| `edit(thread, digest, by, *, compilation=None, based_on=None, head=None, labels=None) -> Edit` | in one transaction: the thread's advisory lock (`pg_advisory_xact_lock(hashtext('catalog.thread'), thread mod 2³¹)`), `threads.check_head` when `head` is given, `threads.check_based_on` when `based_on` is given, `threads.check_expectation(thread, digest)`, `threads.check_labels(thread, digest, labels)` | the edit, with the thread's kind, and a `catalog.label` row for each label, by part and position; `LookupError("no thread with id <thread>")` when there is no thread |
 | `thread`, `history`, `head`, `heads`, `find`, `visible`, `expectation_for`, `expectations_for`, `expectation_choices`, `expectations_shared`, `forks`, `expectations_of`, `behind`, `variation`, `proposal` | the `threads` function of that name | |
 | `visible_families(person)` | `families.visible` | |
 | `containing(digest) -> list[Edit]` | `Reader.edits_holding([digest])` | |
@@ -654,9 +606,9 @@ The rows for `create`, `edit`, `keep`, `label` and `labels`: labels are written 
 | `about(subject)`, `abouts(subjects)` | `read.about`, `read.abouts` | |
 | `involving(person) -> list[Subject]` | the store only | the subjects whose `owner` or `collaborator` entries ever named the person |
 | `label(scorer, part, position, value, by)` | `check_label` of the resolved scorer | the label |
-| `labels(scorer)` | `read.labels` | |
+| `labels(edit) -> dict[tuple[Part, int], str]` | `read.labels` | |
 | `tags_given(subject)` | `read.tags_given` | |
-| `keep(digest, by, thread, *, name=None, compilation=None, forked_from=None, head=None) -> tuple[Edit, Kept]` | `create` without a thread; else, in one transaction, the thread's lock, `threads.check_head` when `head` is given, `threads.head`, and `edit` | a new thread, a new edit, or nothing when the head is `digest` already |
+| `keep(digest, by, thread, *, name=None, compilation=None, forked_from=None, head=None, labels=None) -> tuple[Edit, Kept]` | `create` without a thread; else, in one transaction, the thread's lock, `threads.check_head` when `head` is given, `threads.head`, and `edit` | a new thread, a new edit, or nothing when the head is `digest` already and `labels`, when given, are the head's |
 
 ## Database: schema `catalog`
 
@@ -738,10 +690,6 @@ CHECK (0010): `num_nonnulls(thread, family, run, score) = 1`, `(run IS NULL) = (
 explicitly, and `entry_language_check`, `field <> 'language' OR family IS NOT NULL`. Partial indexes on `thread`,
 `family`, `run` and `score` where not NULL. An entry on a run or a score needs the run's or score's started row.
 
-```
-AGENT: CHANGE
-The table `0017` makes in place of `0010`'s, and `0018`'s trigger (agents/wip-authoring.md, S4).
----
 ### `catalog.label`
 Scorer labels, each written with an edit of a scorer thread (`0017`).
 
@@ -758,21 +706,6 @@ Scorer labels, each written with an edit of a scorer thread (`0017`).
 transaction's `now()`, as the edit's does), and `<digest>: no <part> at position <position>` when the position is past
 the end of the edit's scorer document's `views` or `resources` (a missing key counts as empty). `0018` also puts the
 insert-only triggers back on the table.
-```
-### `catalog.label`
-Scorer labels.
-
-| Column | Type | Holds |
-| --- | --- | --- |
-| `scorer` | `text NOT NULL`; FK `(scorer, kind)` → `factor.component (digest, kind)` | the scorer's digest |
-| `kind` | `text NOT NULL DEFAULT 'scorer'`, CHECK `= 'scorer'` | constant |
-| `part` | `text NOT NULL`, CHECK `IN ('view', 'resource')` | `Part` |
-| `position` | `integer NOT NULL`, CHECK `>= 0` | the position among the scorer's views or resources |
-| `value` | `text NOT NULL` | the label |
-
-Index `label_scorer (scorer)`. Trigger `label_position` (0012, BEFORE INSERT): `catalog.check_label()` raises
-`<scorer>: no <part> at position <position>` when the position is past the end of the scorer document's `views` or
-`resources` (a missing key counts as empty).
 
 ### `catalog.language`
 Languages kept on a component's digest.
@@ -853,16 +786,8 @@ Behavior described here that `docs/catalog.md` doesn't state, or states otherwis
 - `plan_repair` rebuilds only the cases and appendices of the current binding.
 - A thread's title falls back to the first compilation by digest when its head names none.
 - `title_of` of a case ignores whether its family is deleted.
-```
-AGENT: CHANGE
-The tier-2 label check also holds a label to its edit's transaction, which the Python doesn't need to
-(agents/wip-authoring.md, S4).
----
 - The tier-2 binding check accepts a binding identical to the previous one, and the tier-2 label check words its error
   differently from `check_label`, and holds a label to its edit's transaction and writer, which `Catalog.edit` always
   meets.
-```
-- The tier-2 binding check accepts a binding identical to the previous one, and the tier-2 label check words its error
-  differently from `check_label`.
 - `latest` keeps each key at the position of its first row.
   `deleted` entries by `About.owned_by`, so by `expectation_for` and `check_expectation`.

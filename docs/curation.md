@@ -57,22 +57,12 @@ the fields:
 - **Files.** `json_schema_path` loads a JSON file, relative to the file that names it, in place of `json_schema`.
 - **Forks.** `fork_of` names a record of the same kind that this one is a variation of. It is loaded as a fork of
   that record's thread, so the catalog knows what it varies (docs/catalog.md, "Forks"). It inherits no fields.
-```
-AGENT: CHANGE
-Tools and scorers pin a version of shipped code (agents/wip-authoring.md, S1, S2), and labels are written with the
-edit (agents/wip-authoring.md, S4).
----
 - **Code.** A tool or a scorer that names no `version` pins the version of its entry point that the running chatddx
   ships, so loading the data again after a deploy that raises a version moves it on. Its entry point must be shipped,
   at the version pinned, and a scorer's views must name metrics the code publishes, with params its schemas take.
 - **Catalog entries.** `tags` and `description` are entries on the record's thread, and a scorer view's `label` is a
   label of the edit the scorer is kept with, so a renamed view is a new edit of the same scorer. A tool's
   `description` is also a field, the one the model reads.
-```
-- **Code.** A tool or a scorer that names no `code` pins the running chatddx, as a compilation records it as its
-  compiler, and its entry point must name a function there.
-- **Catalog entries.** `tags` and `description` are entries on the record's thread, and a scorer view's `label` is a
-  label. A tool's `description` is also a field, the one the model reads.
 - **From facts.** `from_facts` asks for a sampling or reasoning chunk per model (see "Per model").
 
 A name is defined once per kind across `factors.toml` and the World's, and a text's name may come back in each texts

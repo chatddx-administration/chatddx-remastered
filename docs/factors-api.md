@@ -396,10 +396,6 @@ share a digest.
 `body: Settings`, required. It may not set `RUNTIME_KEYS`, `OUTPUT_KEYS`, `MANAGED_KEYS` or `BYPASS_KEYS`
 (`ValidationError("passthrough may not set […]")`).
 
-```
-AGENT: CHANGE
-A tool pins an entry point chatddx ships and its version, at schema version 2 (agents/wip-authoring.md, S1, S2).
----
 #### `Tool`, kind `tool`, v2
 | Field | Type | Default |
 | --- | --- | --- |
@@ -412,18 +408,6 @@ A tool pins an entry point chatddx ships and its version, at schema version 2 (a
 The tool is called with a call's arguments as keyword arguments and returns text. The runner does the calling
 (`src/chatddx/core/rig.py:entry` finds what `src/chatddx/tools/shipped.py:TOOLS` ships under the entry point, and
 refuses one that isn't shipped, or not at the version pinned).
-```
-#### `Tool`, kind `tool`
-| Field | Type | Default |
-| --- | --- | --- |
-| `name` | `ToolName` | required |
-| `description` | `str`, at least 1 character | required |
-| `parameters` | `dict[str, JsonValue]` | required; a JSON Schema |
-| `code` | `Code` | required |
-| `entry_point` | `EntryPoint` | required |
-
-The tool is called with a call's arguments as keyword arguments and returns text. The runner does the calling
-(`src/chatddx/core/rig.py:entry` finds the function, and refuses a pin that isn't the running code).
 
 #### `Toolset`, kind `chunk.toolset`
 | Field | Type | Default |
@@ -713,10 +697,6 @@ and `appendices` slots come from `prepare_case`.
 - `output_items(answer: JsonValue) -> list[JsonValue]`: `select(answer, output)`, then `split` when set.
 - `expectation_items(data: JsonValue) -> list[JsonValue]`: `select(data, expectation)`.
 
-```
-AGENT: CHANGE
-A scorer pins an entry point chatddx ships and its version, at schema version 2 (agents/wip-authoring.md, S1, S2, S3).
----
 ### `class Scorer(Component)`, kind `scorer`, v2
 | Field | Type | Default |
 | --- | --- | --- |
@@ -729,27 +709,13 @@ A scorer pins an entry point chatddx ships and its version, at schema version 2 
 
 `judges -> tuple[str, ...]`: the distinct judges the views name, in view order.
 
-The entry point's interface (version 1) belongs to `src/chatddx/scorers/scorer.py:ScoreFunction`, and the answer it
-reads to `src/chatddx/scorers/answer.py:read`. What `src/chatddx/scorers/shipped.py:SCORERS` ships under an entry
-point is a `Metrics`: its version, its metrics, each with what it measures and a JSON Schema for a view's params, and
-optionally a schema for the scorer's own params. `shipped.problems` says why a scorer can't be scored by it: an entry
-point not shipped, another version, a metric it doesn't publish, or params a schema refuses (none where no schema is
-published).
-```
-### `class Scorer(Component)`, kind `scorer`
-| Field | Type | Default |
-| --- | --- | --- |
-| `code` | `Code` | required |
-| `entry_point` | `EntryPoint` | required |
-| `expectation_schema` | `ExpectationSchemaRef` | required |
-| `views` | `tuple[View, ...]`, at least one | required; referred to by position |
-| `resources` | `tuple[str, ...]` | `()`; meant to be digests, referred to by position |
-| `params` | `Settings` | `{}` |
+The entry point's interface belongs to `src/chatddx/scorers/scorer.py:ScoreFunction`, and the answer it reads to
+`src/chatddx/scorers/answer.py:read`.
 
-`judges -> tuple[str, ...]`: the distinct judges the views name, in view order.
-
-The entry point's interface (version 1) belongs to `src/chatddx/scorers/scorer.py:ScoreFunction`, and the answer it
-reads to `src/chatddx/scorers/answer.py:read`.
+`src/chatddx/scorers/shipped.py:SCORERS` ships a `Metrics` with version, metrics, what it measures, a JSON Schema for a
+view's params, and optionally a schema for the scorer's own params. `shipped.problems` says why a scorer can't be
+scored by it: an entry point not shipped, another version, a metric it doesn't publish, or params a schema refuses
+(none where no schema is published).
 
 ### `class Scoring(Component)`, kind `scoring`
 `scorer: ScorerRef`, `expectations: tuple[ExpectationRef, ...]` (at least one; the order is kept and is part of the
@@ -811,16 +777,10 @@ Lints are plain functions, run on demand. Knowledge that changes between vLLM re
 without changing any digest.
 
 #### Model artifacts, local engines, scorers
-```
-AGENT: REMOVE
-The `scorer.revision` row: a scorer pins no revision (agents/wip-authoring.md, S2).
----
-```
 | Code | Level | Subject | When |
 | --- | --- | --- | --- |
 | `model.revision` | warning | model | `revision` isn't a 40-character lowercase hex commit |
 | `engine.closure` | warning | local engine | `runtime.closure` isn't `/nix/store/<32 chars>-<name>` |
-| `scorer.revision` | warning | scorer | `code.revision` is `None` |
 | `view.unreachable` | warning | scorer | a view's `expectation` selector can't reach anything in the expectation schema (`reaches`), one finding per view |
 
 #### Expectation schemas and expectations
@@ -874,18 +834,12 @@ Checks against the model facts (`facts.*`) are in `src/chatddx/facts/lint.py`.
 
 ## Finding codes
 
-```
-AGENT: REMOVE
-The `scorer.revision` row (agents/wip-authoring.md, S2).
----
-```
 | Code | Level | Reported by |
 | --- | --- | --- |
 | `bundle.recanonicalized` | warning | `Bundle.load` |
 | `case.drift` | warning | `prepare_case` |
 | `engine.chat_template` | warning | `check_chat_template` |
 | `engine.chat_template_date` | warning | `check_chat_template` |
-| `model.revision` | warning | `lint` |
 | `engine.closure` | warning | `lint` |
 | `scorer.revision` | warning | `lint` |
 | `view.unreachable` | warning | `lint` |

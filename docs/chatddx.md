@@ -237,13 +237,7 @@ described below.
   - the run it scores;
   - the Scoring;
   - the rig's code version;
-```
-AGENT: CHANGE
-The scorer pins a version of shipped code, and the score records the version that ran (agents/wip-authoring.md, S2).
----
   - the version of the scorer's entry point actually running (scorer_version).
-```
-  - the scorer code actually running (scorer_code).
   - the execution settings of its judge calls
 2. Match each run item to its expectation. The item key's case is looked up among the scoring's expectations, whose
    case field is the same case reference. The scoring pass does it, and gives an item whose case has none no value.

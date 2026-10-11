@@ -53,22 +53,11 @@ This repository has two, in `worlds/`:
   vignettes; its endpoints, hosts and factors are what the engine import writes from the hosts' reports. Both
   endpoints are cleared for the sample.
 
-```
-AGENT: CHANGE
-The database kind exists now (src/chatddx/inventory/sources.py:DatabaseSource, src/chatddx/store/texts.py), for the
-texts people type, as swift's cases (agents/wip-portal.md, "Typed cases").
----
 ## Sources
 A source is where a set of vignettes is fetched from, by id. A source is a directory with one file per vignette,
 named by its id, or a database source, `kind = "database"`, whose vignettes are texts people typed, kept in the
 database under new ids as written and never changed, and read through the store. A source is a directory unless it
 says otherwise.
-```
-## Sources
-A source is where a set of vignettes is fetched from, by id. Today a source is a directory with one file per vignette,
-named by its id. Another kind of source, such as a database, would be added beside directories as a kind of its own,
-which the inventory then accepts too. A source is sensitive unless it says otherwise; what that requires is
-clearance's (agents/wip-clearance.md, "Sensitive sources").
 
 A source lists its vignettes' ids, fetches a vignette's raw bytes, and builds a case for each vignette, without
 appendices, with the fingerprint of the raw bytes (docs/factors.md, "Case"). It refuses an id that would reach outside
