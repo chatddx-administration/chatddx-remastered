@@ -5,7 +5,7 @@ from pydantic import JsonValue
 from chatddx.factors.base import Component, canonical_bytes, iter_refs, resolve
 from chatddx.factors.kinds import parse_component
 from chatddx.factors.request import Compilation, Recipe
-from chatddx.factors.scoring import Expectation
+from chatddx.factors.scoring import Expectation, Scorer
 
 from .families import stale_cases
 from .model import (
@@ -15,10 +15,12 @@ from .model import (
     Edit,
     Entry,
     EntryField,
+    Labels,
     MovedOn,
     Subject,
     Thread,
     Variation,
+    check_label,
 )
 from .read import Reader, abouts, heads_holding, heads_of
 
@@ -32,6 +34,20 @@ def check_head(rows: Reader, thread: int, head: int) -> None:
             f"thread {thread} has moved on since edit {head}: its head is edit "
             + f"{current.id}"
         )
+
+
+# Only an edit of a scorer thread is labelled, and only at positions its scorer has.
+def check_labels(rows: Reader, thread_id: int, digest: str, labels: Labels) -> None:
+    if not labels:
+        return
+    kind = thread(rows, thread_id).kind
+    if kind != "scorer":
+        raise ValueError(f"a {kind} has no views or resources to label")
+    scorer = resolve(rows.get, digest, Scorer)
+    for (part, position), value in labels.items():
+        check_label(scorer, part, position)
+        if not value:
+            raise ValueError(f"the label of {part} {position} is empty")
 
 
 def check_threadable(kind: str) -> None:

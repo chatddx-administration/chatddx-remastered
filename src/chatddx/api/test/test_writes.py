@@ -71,7 +71,7 @@ def test_a_write_is_refused_what_isn_t_the_person_s(
     refusals: list[tuple[str, dict[str, Any], int, str]] = [
         (
             "/api/threads",
-            {"component": {"kind": "scorer"}, "name": "x"},
+            {"component": {"kind": "tool"}, "name": "x"},
             422,
             "isn't a kind",
         ),

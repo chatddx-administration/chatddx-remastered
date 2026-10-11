@@ -5,7 +5,7 @@ import pytest
 from chatddx.catalog import Subject
 from chatddx.curation import Plan, load_cases
 from chatddx.curation.plan import SAMPLE
-from chatddx.factors.base import Code, resolve
+from chatddx.factors.base import resolve
 from chatddx.factors.cases import Case
 from chatddx.factors.scoring import Expectation, Scorer, Scoring
 from chatddx.factors.trial import Execution, Trial
@@ -166,8 +166,9 @@ def test_scoring_is_refused_before_anything_is_written(
         }
     )
     refused(judged, NotImplementedError, "need a judge")
-    other = free_text.model_copy(
-        update={"code": Code(distribution="chatddx", version="0.0.0")}
+    refused(
+        free_text.model_copy(update={"version": 2}),
+        LookupError,
+        "patterns:score is at version 1 in chatddx .*, not 2",
     )
-    refused(other, LookupError, "pins chatddx 0.0.0")
     assert rows(db, "score_stage") == 0

@@ -32,7 +32,14 @@ def login(bench: Bench, person: int | None) -> str | None:
     return None if person is None else bench.login(person)
 
 
-def edit_of(bench: Bench, edit: catalog.Edit) -> schemas.Edit:
+# An edit, with its labels when it is a scorer's; `kind` is its thread's, looked up
+# when not given.
+def edit_of(bench: Bench, edit: catalog.Edit, kind: str | None = None) -> schemas.Edit:
+    if kind is None:
+        kind = bench.catalog.thread(edit.thread).kind
+    labels = None
+    if kind == "scorer":
+        labels = schemas.Labels.of(bench.catalog.labels(edit.id))
     return schemas.Edit(
         id=edit.id,
         digest=edit.digest,
@@ -40,6 +47,7 @@ def edit_of(bench: Bench, edit: catalog.Edit) -> schemas.Edit:
         based_on=edit.based_on,
         by=bench.login(edit.by),
         at=edit.at,
+        labels=labels,
     )
 
 
@@ -53,7 +61,7 @@ def thread_of(
         title=bench.catalog.title(edit.thread),
         owner=login(bench, about.owner),
         tags=sorted(about.tags),
-        head=edit_of(bench, edit),
+        head=edit_of(bench, edit, kind),
     )
 
 
@@ -104,7 +112,8 @@ def thread(bench: BenchDep, thread: int) -> schemas.ThreadDetail:
 @router.get("/threads/{thread}/edits")
 def edits(bench: BenchDep, thread: int) -> list[schemas.Edit]:
     _ = bench.thread_by_id(thread, deleted=True)
-    return [edit_of(bench, e) for e in bench.catalog.history(thread)]
+    kind = bench.catalog.thread(thread).kind
+    return [edit_of(bench, e, kind) for e in bench.catalog.history(thread)]
 
 
 # What the bench refuses: a digest that isn't a chunk of its part, a part that can't be
@@ -169,7 +178,7 @@ def variation(
     if varied.recipe is not None:
         parts = [part_of(bench, varied, p) for p in PARTS]
     return schemas.Variation(
-        head=edit_of(bench, varied.configuration),
+        head=edit_of(bench, varied.configuration, "skeleton"),
         skeleton=skeleton.digest,
         greedy=skeleton.greedy,
         parts=parts,
@@ -205,6 +214,8 @@ def check_given(configuration: bool, given: schemas.NewFork | schemas.NewEdit) -
         )
     if not configuration and given.parts.given():
         raise HTTPException(422, "only a configuration has parts")
+    if configuration and given.labels is not None:
+        raise HTTPException(422, "only a scorer has labels")
 
 
 @router.post("/threads", status_code=201)
@@ -217,7 +228,8 @@ def new(
             if given.component is None
             else bench.component(given.component)
         )
-        written = bench.new(held, given.name, given.language)
+        labels = None if given.labels is None else given.labels.given()
+        written = bench.new(held, given.name, given.language, labels)
     return made(request, response, bench, written.edit.thread, written.findings)
 
 
@@ -241,8 +253,9 @@ def fork(
             component = (
                 None if given.component is None else bench.component(given.component)
             )
+            labels = None if given.labels is None else given.labels.given()
             written = bench.fork_component(
-                thread, given.name, component, given.language
+                thread, given.name, component, given.language, labels
             )
             forked, findings = written.edit.thread, written.findings
     return made(request, response, bench, forked, findings)
@@ -271,8 +284,9 @@ def edit(
             if given.component is None:
                 raise ValueError("an edit holds a component")
             component = bench.component(given.component)
+            labels = None if given.labels is None else given.labels.given()
             written = bench.edit_component(
-                thread, given.head, component, given.language
+                thread, given.head, component, given.language, labels
             )
             kept, what, findings = written.edit, written.what, written.findings
             cases = written.cases

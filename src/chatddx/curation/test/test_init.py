@@ -111,8 +111,8 @@ def test_init_data_loads_the_archive(conn: Connection) -> None:
     assert family is not None
     assert catalog.about(Subject(family=family)).language == "en"
     assert catalog.title_of(case.digest) == "DutchFall10w"
-    scorer = plan.named("scorer", "plan")
-    assert catalog.labels(scorer.digest) == {
+    [scorer] = catalog.find("scorer", "plan", owner=archive.id)
+    assert catalog.labels(catalog.head(scorer).id) == {
         ("view", 0): "differential",
         ("view", 1): "warning",
         ("view", 2): "disposition",
@@ -147,10 +147,7 @@ def test_init_data_loads_the_archive(conn: Connection) -> None:
 
 
 @pytest.mark.slow
-def test_init_data_lints_what_it_lands(
-    conn: Connection, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    monkeypatch.delenv("CHATDDX_REVISION")
+def test_init_data_lints_what_it_lands(conn: Connection) -> None:
     alice = People(conn).add("alice", "Alice")
     plan = sample_plan()
     unlike = replace(SOME["Dutchfall11w"], targets={"warning": {"pattern": "shock"}})
@@ -158,13 +155,9 @@ def test_init_data_lints_what_it_lands(
     components = len({r.digest for r in plan.records}) + 2 * len(SOME)
     assert [line for line in lines if line.startswith("[lint")] == [
         *FAKES,
-        *(
-            f"[lint warning] scorer {name}: scorer.revision: scorer code has no revision"
-            for name in ("plan", "diagnoses", "free-text", "raw")
-        ),
         "[lint warning] expectation Dutchfall11w: expectation.invalid: at the root: "
         + "'diagnosis' is a required property",
-        f"[lint] {5 + len(FAKES)} findings in {components} components",
+        f"[lint] {1 + len(FAKES)} findings in {components} components",
     ]
 
 

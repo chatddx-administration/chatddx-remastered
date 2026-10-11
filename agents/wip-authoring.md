@@ -35,10 +35,14 @@ portal is the first edge to need them (agents/wip-portal.md, "Below the UI", "Ph
    (agents/wip-bench.md, "Appendices and cases").
 8. **Typed cases are built** (phase 7), below the portal's swift page: the `source` schema and the `database`
    source kind, `Bench.type_case`, and `POST /api/families` (agents/wip-portal.md, "Typed cases"). The page waits for
-   the portal. Phase 8, scorers, comes next.
-9. **One set of writes for every kind people author** (A1), with builders only where a kind binds to a family's
+   the portal.
+9. **Scorers are built** (phase 8): the scoring and tool code shipped as lists with versions (S1), scorers and tools
+   pinned to them (S2), parameters held to the schemas the code publishes (S3), labels on edits (S4), and the bench's
+   and the API's scorer writes, with `GET /api/scorer-code` for the pickers (agents/wip-bench.md, "Scorers"). The takes
+   it made are under each section, as "Built". Judges (phase 9) wait for the scoring pass to send judge requests.
+10. **One set of writes for every kind people author** (A1), with builders only where a kind binds to a family's
    vignette: appendices and cases (A2).
-10. **No write refuses on a lint** (A6): what was written comes back with its lints. Refusals stay the components' and
+11. **No write refuses on a lint** (A6): what was written comes back with its lints. Refusals stay the components' and
    the catalog's.
 
 ## What is asked
@@ -52,7 +56,7 @@ portal is the first edge to need them (agents/wip-portal.md, "Below the UI", "Ph
 | Names, descriptions, tags, collaborators; deleting and restoring | — | `docs/catalog.md`, "Entries" and "Deleting"; `docs/chatddx.md`, "Intended evolution of configurations" | a name, when a configuration is forked (`Bench.fork`); the rest by curation |
 | Accepting a proposal once a fork's origin moved on | — | `docs/catalog.md`, "Forks" | nothing: `Catalog.proposal` has no caller |
 | Typed cases and their families, for swift | clinicians | `agents/wip-portal.md`, "Typed cases" | typed, by any person (phase 7) |
-| Scorers: their views, free parameters and labels, over shipped code | researchers (decided) | `docs/catalog.md`, "Scorer labels"; "Scorers and judges" below | by curation, as the archive, with the labels of each scorer digest from a data set |
+| Scorers: their views, free parameters and labels, over shipped code | researchers (decided) | `docs/catalog.md`, "Scorer labels"; "Scorers and judges" below | by curation, as the archive, with each edit's labels from a data set; by any person (phase 8) |
 | Judges: a judge configuration, an engine, seeds, a fill rule | researchers (decided) | `docs/factors.md`, "Judge" | nothing; no judged view can be scored yet |
 
 Not here:
@@ -297,6 +301,20 @@ be held to a list of their own.
 
 Packaging entry points would serve as the list (`docs/factors.md`, "Finding code through packaging entry points").
 
+Built, as takes:
+- **A list in the code, not packaging entry points**: `chatddx.scorers.shipped.SCORERS` and
+  `chatddx.tools.shipped.TOOLS`, each by the entry point a component names and holding the code itself, so nothing is
+  imported by name any more (`chatddx.core.rig.entry` looks it up). Packaging metadata changes only when the package is
+  installed again, and tests add their own tools to the list for as long as they run
+  (`src/chatddx/runner/test/tools.py:shipped`). Packaging entry points still fit code from other distributions, which
+  nothing runs today. A test holds each listed name to the object at that path, so the names don't lie.
+- **What scoring code publishes**: `chatddx.scorers.scorer.Metrics(version, metrics, params)`, each `Metric` with what
+  it `measures` and a JSON Schema for a view's `params` (`NO_PARAMS`, allowing none, by default), and an optional
+  schema for the scorer's own. A tool publishes its version and its function (`ShippedTool`); its parameters are the
+  `Tool` component's, which the model reads.
+- **`GET /api/scorer-code`** lists the scoring code for the portal's pickers. Tools have no route: developers write
+  them, through data sets.
+
 ### S2. Decided: scorers and tools pin a version of their code (C2)
 A scorer pins the running chatddx's distribution, version and revision today, and only that code is run
 (`chatddx.core.rig.entry`). Every deploy changes the revision, so every scorer stops scoring until it is pinned again.
@@ -322,6 +340,17 @@ scorers again after each deploy.
   since they pin no revision. Whether a deploy sets one is seen in its records' `rig`.
 - **Docs**: `docs/factors.md` ("Code", "Tool", "Scorer", "Lints") gets suggestions with the build.
 
+Built, as takes:
+- **The version is an integer from 1**, beside the entry point: `Scorer` and `Tool` at v2 drop `code` and hold
+  `entry_point` and `version`. A scorer is titled `scorer <entry point> v<version>`.
+- **The ledger keeps the version that ran**: `ScoreStarted.scorer_version` and `ToolCode.version` in `RunStarted`, both
+  at v2, in place of the code; `score.scorer_code` and `tools.code` compare it with the pinned version. The rig is still
+  in each record.
+- **Curation pins the version the running code ships** unless a data set names one, as it pinned the running code
+  before, so `init-data` again moves the archive's scorers and tools on after a deploy that raises a version, and
+  nothing on after one that doesn't (`src/chatddx/curation/test/test_pins.py`). A data set naming code that isn't
+  shipped, or a version that isn't, is refused.
+
 ### S3. Decided: free parameters, where the code publishes a schema
 A view's parameters go to its metric, over the scorer's own (`scorer.params | view.params`,
 `chatddx.scorers.scorer.score`). None of the shipped metrics reads any (`chatddx.scorers.patterns`), and nothing checks
@@ -329,6 +358,9 @@ them. Decided: they are written by researchers, as the views are, but only where
 (S1): a view's, from its metric's schema, and the scorer's own only for code that publishes parameters its views share.
 Where nothing is published, nothing is offered, so today a researcher sets none. A parameter the schema refuses is
 refused by the write, as an unknown metric is, since the scorer could never score with it.
+
+Built: the bench refuses such a scorer as it is written or followed (`chatddx.scorers.shipped.problems`), and the
+scoring pass refuses it the same way.
 
 ### S4. Decided: labels belong to the edit they are written with
 A label names a view or a resource of one scorer digest, and the latest label wins, whoever wrote it
@@ -361,6 +393,20 @@ Decided: the edit. What it changes:
   in their history that does; else "view N". The reach and scoring read the head edit they have already.
 - **Following an origin** (A8) carries the labels of whichever side's views the proposal keeps.
 - **Docs**: `docs/catalog.md` ("Scorer labels") and `docs/catalog-api.md` get suggestions with the build.
+
+Built, as takes:
+- **"Written once"** is the database's: a label is unique per edit, part and position, and written in its edit's
+  transaction by its writer, which the trigger tells by the edit's `at` (the transaction's `now()`)
+  (`src/chatddx/store/migrations/0018-t2-catalog-label-edit.sql`). The old table is dropped, not moved: a store from
+  before holds v1 scorers, which can't be read any more.
+- **Labels not given**: a scorer forked as it is keeps its origin head's; an edit keeps the head's when it is the head's
+  scorer, which is then unchanged, and has none when the scorer changed, since positions may have moved. An empty
+  label is refused.
+- **Following, per part**: views and resources each take the labels of the side whose part the proposal keeps. A
+  fork's renamed view is lost when the proposal keeps the origin's views; carrying it would need positions that hold
+  across the two sides.
+- **Labels in the API** are lists by position, `{"views": [...], "resources": [...]}`, with `null` for none, on a
+  scorer edit and in a scorer's writes.
 
 ### S5. Resources
 A scorer's resources are strings, not references (`src/chatddx/factors/scoring.py:Scorer`), no kind of component
@@ -405,13 +451,12 @@ Each with its tests in `src/chatddx/bench/test/` and the API's.
    over.
 7. **Typed cases**, built below the page, with the portal's swift (agents/wip-portal.md, "Typed cases", and its
    phase 4).
-8. **Scorers**: the published entry points, their versions and their schemas (S1, S2), the code pin moved to them,
-   views, parameters (S3), and labels on edits (S4).
+8. **Scorers**, built: the published entry points, their versions and their schemas (S1, S2), the code pin moved to
+   them, views, parameters (S3), and labels on edits (S4).
 9. **Judges**, once the scoring pass can send judge requests (S6).
 
 ## Questions for the user
 None left open. Handing a thread over to another owner isn't offered (A9), as a take.
 
 `docs/chatddx.md` ("Roles mentioned", "Requirements") and `docs/factors.md` ("Scorer", "Judge") now say who writes
-what. The code pin (S2) and labels (S4) get their suggestions with the build, since they describe code that isn't
-written yet.
+what. The code pin (S2) and labels (S4) have their suggestions in `docs/` with the build of phase 8.

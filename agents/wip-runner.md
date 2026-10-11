@@ -151,9 +151,9 @@ land in the caller's frame while the runner sat suspended at a `yield`. The even
 
 ### Phase 5: tool rounds
 In `rounds.py`, which `run.py` calls for every item, with tools or without:
-- **`load(skeleton, get)`** finds each tool's function with `core/rig.py:entry`, so a tool that pins other code than
-  the running chatddx, or names nothing to call, is refused before anything is written. Each tool's code goes in
-  `RunStarted.tool_code` as the running code.
+- **`load(skeleton, get)`** finds each tool's function among the tool code chatddx ships (`core/rig.py:entry`,
+  `tools/shipped.py:TOOLS`), so a tool whose entry point isn't shipped, or not at the version it pins, is refused
+  before anything is written. The version each tool ran at goes in `RunStarted.tool_code`.
 - **`converse`** sends an item's first call, then a round per response that calls tools, up to `max_rounds`. A
   round runs the tools in the calls' order, then sends their results through `next_request`, and is recorded as a
   `Turn`. The rounds end in any of these cases, and `check_run` notes what a last response still calls
@@ -193,8 +193,8 @@ In `rounds.py`, which `run.py` calls for every item, with tools or without:
   complete. `check_score` now warns about it (`score.no_expectation`), since any writer's score can be checked for it.
 - **Where the reading lives.** D5's take was that scorer entry points call the reader, so the scorer's code pins it.
   Interface version 1 hands the entry point what the view's selectors pick, not the response, so the pass calls the
-  reader instead. It is still pinned: only the running chatddx can score (`core/rig.py:entry`), and the reader is
-  part of it.
+  reader instead. It is still pinned: only scoring code the running chatddx ships can score, at the version a scorer
+  pins (`scorers/shipped.py:function`), and the reader is part of chatddx, recorded in each score's `rig`.
 
 ### Phase 6: canaries
 - **`Canary.render(model=)`** (`factors/trial.py`) makes a canary's request as `render` makes a skeleton's: its

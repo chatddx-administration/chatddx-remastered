@@ -11,7 +11,7 @@ from chatddx.catalog import Subject
 from chatddx.conftest import WORLD, connect
 from chatddx.core.rig import rig
 from chatddx.curation import Plan
-from chatddx.factors.base import Code, Fingerprint, resolve
+from chatddx.factors.base import Fingerprint, resolve
 from chatddx.factors.cases import Case, Vignette, prepare_case
 from chatddx.factors.engine import LocalEngine
 from chatddx.factors.request import (
@@ -589,7 +589,7 @@ def test_a_round_runs_the_tools_a_response_calls_and_sends_back_their_results(
     stored = Store(conn).run(running.run)
     skeleton = resolve(plan.registry.get, made.skeleton, Skeleton)
     assert stored.started.tool_code == tuple(
-        ToolCode(tool=t, code=rig()) for t in sorted(skeleton.tools)
+        ToolCode(tool=t, version=1) for t in sorted(skeleton.tools)
     )
     [item] = stored.items
     assert [[(r.name, r.result, r.error) for r in t.tools] for t in item.turns] == [
@@ -662,12 +662,11 @@ def test_rounds_end_after_max_rounds_and_the_calls_left_are_noted(
 
 
 @pytest.mark.usefixtures("fake")
-def test_a_tool_that_doesn_t_run_the_running_code_is_refused(
+def test_a_tool_at_a_version_the_running_code_doesn_t_ship_is_refused(
     conn: Connection, db: str, inventory: Inventory, alice: Person, plan: Plan
 ) -> None:
-    other = Code(distribution="chatddx", version="0.0.0")
-    made = tooled(plan, FREE_TEXT, component("lookup", other))
-    with pytest.raises(LookupError, match="pins chatddx 0.0.0"):
+    made = tooled(plan, FREE_TEXT, component("lookup", 2))
+    with pytest.raises(LookupError, match="at version 1 in chatddx .*, not 2"):
         _ = Runner(conn, insensitive(inventory), alice).start(made, plan.registry, QWEN)
     assert rows(db, "run_stage") == 0
 

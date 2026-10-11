@@ -120,15 +120,15 @@ For a variation, the bench gives:
   reads, and which of the given families have no expectation it picks something from, or several to choose from.
 
 ## Writes for the person
-The bench writes configurations, chunks, expectations, runs and scores for the person, and nothing else:
+The bench writes configurations, chunks, expectations, scorers, runs and scores for the person, and nothing else:
 - **Forking** keeps a variation as a new configuration of the person's own, forked from the edit it varies.
 - **Editing** keeps it as a new version of a configuration the person owns. Nothing is written when it is the head
   already.
 - **Saving** by name is one of the two: a new version of the person's own configuration of that name, else a fork.
   Several of their own by that name are refused.
-- **Writing a component**, a chunk or an expectation, from its JSON as the store gives it: new, as a thread of the
-  person's own with a name; a fork of a thread they see, from its head or from a component given in its place; or an
-  edit of a thread they own (see "Components").
+- **Writing a component**, a chunk, an expectation or a scorer, from its JSON as the store gives it: new, as a thread
+  of the person's own with a name; a fork of a thread they see, from its head or from a component given in its place;
+  or an edit of a thread they own (see "Components"). A scorer is written with its labels (see "Scorers").
 - **Making a configuration** from a recipe of the person's own, by the chunks' digests for each part, its purpose and
   its appendix layout: compiled by the running code and kept as a new configuration with its compilation, with no
   origin, as a fork keeps one. Each part must be a stored chunk of that part, and the recipe must compile. Its
@@ -156,7 +156,7 @@ Every edit names the head the person made it on, configurations included, and is
 thread has moved on since, so that a change made on an older version doesn't undo what came after it unseen. Saving by
 name names the head it found. The catalog checks it while it holds the thread, so it holds with several writers too.
 
-Appendices, cases, families, scorers and judges aren't written by the bench yet (see "Outstanding").
+Judges aren't written by the bench yet (see "Outstanding").
 
 ### What is said about a thread
 Only its owner says what holds of a thread, as only they edit it: a collaborator may fork it, but not rename, share or
@@ -214,11 +214,10 @@ compiled configuration takes none. What the lints say of it comes back with it, 
 longer fit the origin's head are refused, saying so.
 
 ### Components
-A person writes the kinds of chunk a recipe's parts take, and expectations. A configuration is written as a variation,
-and the other kinds come with their own writes or are written by curation alone: a scorer, for one, names code to run,
-which only a published list will hold (agents/wip-authoring.md, S1). A component of another kind than the thread's is
-refused before the database would refuse it, and so is a second expectation of the person's own for a case and schema,
-worded as the person reads it.
+A person writes the kinds of chunk a recipe's parts take, expectations and scorers. A configuration is written as a
+variation, and the other kinds come with their own writes or are written by curation alone. A component of another
+kind than the thread's is refused before the database would refuse it, and so is a second expectation of the person's
+own for a case and schema, worded as the person reads it.
 
 Each write gives what it kept and what the lints say of the component: an expectation whose data its schema refuses is
 written, and said so. The person's referenced components must be stored already, so a toolset can't bring a tool of
@@ -227,6 +226,21 @@ its own.
 A text is written with its language, when the person gives one, and only a text can have one. A language belongs to
 the text, wherever it is held, so the bench writes one only where the text has none, and refuses one that differs from
 what it has; a fork that changes nothing keeps its language.
+
+### Scorers
+A scorer names scoring code the running chatddx ships, by its entry point and the version it pins, and the views the
+person writes over it: each picks from an answer and from an expectation, and names a metric the code publishes, with
+parameters only where the code publishes a schema for them. A scorer the running code could never score with is
+refused as it is written: code it doesn't ship, at a version it doesn't ship, a metric it doesn't publish, or
+parameters its schemas refuse. A view that can't pick anything from the scorer's expectation schema is written, and
+said so.
+
+What a scorer's views and resources are called belongs to the edit they are written with, by its writer. A fork of a
+scorer as it is keeps its origin's labels unless given others, and renaming a view is a new edit of the same scorer, so
+no score and no run left to score changes with it, and no one else's labels do. A scorer edited without labels has
+none, unless it is the head's, which is then nothing new. A scorer digest is called what the person's view calls it:
+the labels of the head that holds it, their own first, else of the latest edit that held it in a thread they see.
+Following an origin keeps the labels of whichever side's views the proposal keeps.
 
 ## Runs and scores
 - A person's runs are their own, newest first, found by the start of their id, or by a component their trial is built
@@ -298,13 +312,14 @@ What is still open. It doesn't move to `docs/`.
 ### Start with this
 1. **Adopting the docs.** This file and `agents/wip-bench-api.md`, as `docs/bench.md` and `docs/bench-api.md`.
 2. **Writes for authoring** (below), planned in `agents/wip-authoring.md`. The portal's authoring and swift wait on
-   them. Its phases 1 to 7 are built, from taking expectations to typed cases.
+   them. Its phases 1 to 8 are built, from taking expectations to scorers; judges remain.
 
 ### Writes for authoring
 Planned in `agents/wip-authoring.md`: chunks, recipes, appendices and the cases that order them, expectations, what is
 said about a thread, and following an origin. Taking expectations is built ("Taking"), and the giftbag keeps a
 person's own; so are writing chunks and expectations, an edit's head, what is said about a thread, following an
-origin, making a configuration from a recipe, appendices and cases, and typed cases ("Writes for the person").
+origin, making a configuration from a recipe, appendices and cases, typed cases, and scorers ("Writes for the
+person"). Judges wait for the scoring pass to send judge requests.
 
 ### Takes
 A take is the agent's recommendation, built on but not decided.

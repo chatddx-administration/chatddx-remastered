@@ -7,7 +7,6 @@ from uuid import UUID
 from pydantic import AfterValidator, AwareDatetime, Field, JsonValue
 
 from chatddx.factors.base import (
-    Code,
     Finding,
     Frozen,
     StructuralError,
@@ -125,15 +124,3 @@ def check_seal(log: Log, subject: str) -> list[Finding]:
             )
         ]
     return []
-
-
-def ran_pinned(pinned: Code, ran: Code) -> bool:
-    return (ran.distribution, ran.version) == (
-        pinned.distribution,
-        pinned.version,
-    ) and (pinned.revision is None or ran.revision == pinned.revision)
-
-
-def code_name(code: Code) -> str:
-    revision = "" if code.revision is None else f" {code.revision}"
-    return f"{code.distribution} {code.version}{revision}"

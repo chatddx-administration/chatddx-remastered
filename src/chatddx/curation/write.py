@@ -1,7 +1,7 @@
 from collections import Counter
 from collections.abc import Collection, Iterable
 
-from chatddx.catalog import Entry, EntryField, Kept, Subject, Survey
+from chatddx.catalog import Entry, EntryField, Kept, Labels, Part, Subject, Survey
 from chatddx.factors.base import Fingerprint
 from chatddx.factors.cases import Case, Vignette
 from chatddx.factors.scoring import Expectation
@@ -87,6 +87,7 @@ class _Init:
         name: str | None,
         compilation: str | None = None,
         fork_of: int | None = None,
+        labels: Labels | None = None,
     ) -> tuple[int, str]:
         what = f"{kind} {name}" if name is not None else kind
         if len(found) > 1:
@@ -101,11 +102,17 @@ class _Init:
             name=name,
             compilation=compilation,
             forked_from=forked_from,
+            labels=labels,
         )
         return edit.thread, VERBS[kept]
 
+    # A scorer's labels are its edit's, so a renamed view is a new edit of the same
+    # scorer.
     def record(self, r: Planned) -> None:
         found = self.catalog.find(r.kind, r.name, owner=self.archive.id)
+        labels: dict[tuple[Part, int], str] = {
+            ("view", i): label for i, label in enumerate(r.labels) if label is not None
+        }
         thread, verb = self.put(
             r.kind,
             r.digest,
@@ -113,14 +120,11 @@ class _Init:
             r.name,
             compilation=r.compilation,
             fork_of=None if r.fork_of is None else self.threads[(r.kind, r.fork_of)],
+            labels=labels if r.kind == "scorer" else None,
         )
         self.threads[(r.kind, r.name)] = thread
         self.land(r.digest, f"{r.kind} {r.name}")
         self.sync(Subject(thread=thread), r.tags, r.description)
-        labelled = self.catalog.labels(r.digest) if r.labels else {}
-        for position, label in enumerate(r.labels):
-            if label is not None and labelled.get(("view", position)) != label:
-                self.catalog.label(r.digest, "view", position, label, self.archive.id)
         said = ""
         if r.language is not None and self.catalog.language_of(r.digest) != r.language:
             self.catalog.language(r.digest, r.language, self.archive.id)

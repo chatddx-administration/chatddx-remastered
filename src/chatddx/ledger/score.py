@@ -26,8 +26,6 @@ from .record import (
     UtcDatetime,
     check_log,
     check_seal,
-    code_name,
-    ran_pinned,
     seal_rows,
 )
 from .run import Run
@@ -41,12 +39,13 @@ class JudgeCall(Frozen):
 
 class ScoreStarted(Record):
     case_derived: ClassVar[bool] = False
+    schema_version: ClassVar[int] = 2
     stage: Literal["started"] = "started"
     score: UUID
     run: UUID
     at: UtcDatetime
     rig: Code
-    scorer_code: Code
+    scorer_version: int = Field(ge=1)
     scoring: ScoringRef
     execution: Execution = Execution()
 
@@ -134,13 +133,13 @@ def check_score(score: Score, run: Run, registry: Registry) -> list[Finding]:
         if item.key not in run_keys:
             raise StructuralError(f"score item {item.key} is not in the run")
         findings.extend(_judged(item, scorer.views[item.view].judge, judges))
-    pinned, ran = scorer.code, started.scorer_code
-    if not ran_pinned(pinned, ran):
+    if (ran := started.scorer_version) != scorer.version:
         findings.append(
             Finding(
                 code="score.scorer_code",
-                message=f"the scorer code that ran ({code_name(ran)}) isn't the code "
-                + f"the scorer pins ({code_name(pinned)})",
+                message=f"the scorer code ran at version {ran} of "
+                + f"{scorer.entry_point}, not the version the scorer pins "
+                + f"({scorer.version})",
                 subject=str(started.score),
             )
         )

@@ -17,6 +17,15 @@ is the only sensitive data, so the reader role may read all of it.
 ## How the catalog works
 
 ### Append-only, and the latest wins
+```
+AGENT: CHANGE
+A label no longer changes: it is written once, with its edit (agents/wip-authoring.md, S4).
+---
+Nothing in the catalog is changed or removed. Every change is a new row. For anything that can change (a thread's
+current version, a name, a binding, a language), the latest row is what holds now and the earlier rows are its
+history. "Latest" means written last, in the order the database numbered the rows; the time a row records is only for
+display.
+```
 Nothing in the catalog is changed or removed. Every change is a new row. For anything that can change (a thread's
 current version, a name, a binding, a language, a label), the latest row is what holds now and the earlier rows are its
 history. "Latest" means written last, in the order the database numbered the rows; the time a row records is only for
@@ -157,6 +166,14 @@ vignettes" (docs/chatddx.md, "Roles mentioned").
 A run's owner is whoever started it, and a score's whoever scored it: the runner and the scoring pass write the
 owner entry as they start, and a person's runs are the runs they own.
 
+```
+AGENT: CHANGE
+A label is written once, with its edit, so nothing about it is superseded (agents/wip-authoring.md, S4).
+---
+Every row in the catalog records who wrote it and when. A thread's versions and a family's bindings are shown with
+them, and a scorer edit's labels with the edit; for entries and languages, only what holds now is shown (see "Open
+design issues").
+```
 Every row in the catalog records who wrote it and when. A thread's versions and a family's bindings are shown with
 them; for entries, labels and languages, only what holds now is shown (see "Open design issues").
 
@@ -219,6 +236,12 @@ Each kind is described by:
 | Trial | Its skeleton, its engine, and how many cases and seeds it has. | `plan on qwen3-8b@pelle, 20 cases, 1 seed` |
 | Batch | Variation count, its base, case count, and endpoint. | `4 variations of plan, 20 cases, at qwen3-8b@pelle` |
 | Judge | Its skeleton and engine. | `judge grader on qwen3-8b@pelle` |
+```
+AGENT: CHANGE
+A scorer pins an entry point and its version, not chatddx's version (agents/wip-authoring.md, S2).
+---
+| Scorer | Its entry point and version. | `scorer chatddx.scorers.patterns:score v1` |
+```
 | Scorer | Its code. | `scorer chatddx 0.0.0+dev` |
 | Scoring | Its scorer and how many expectations it has. | `plan against 20 expectations` |
 | Expectation schema | Its title or its properties. | `Targets` |
@@ -229,6 +252,24 @@ Titles aren't unique: two unnamed components can be described alike, and names a
 the names they're built from change, so an export for publication should freeze the titles it uses.
 
 ## Scorer labels
+```
+AGENT: CHANGE
+Decided: labels belong to the edit they are written with (agents/wip-authoring.md, S4). Built in phase 8.
+---
+A scorer refers to its views and resources by position (docs/factors.md, "Scorer"). Their *labels* name them: a label
+is for one edit of a scorer thread, one part (a view or a resource) and one position, and it must name a view or
+resource the edit's scorer has. Labels are written with their edit, by its writer, and never after, so no one's labels
+change anyone else's, and the archive's stay as its data sets give them.
+
+Renaming a view is a new edit of the same scorer: the thread's history shows it, and since the scorer's digest doesn't
+change, no scoring, score or run left to score changes with it. A fork of a scorer as it is keeps its origin's labels
+unless given others; a scorer edited without labels keeps the head's only when it is the head's scorer, since a
+position only means something within one scorer, and following an origin keeps the labels of whichever side's views
+the proposal keeps. Keeping a scorer whose labels differ from the head's is a new edit, even with the same digest.
+
+A scorer digest is called what the person's view calls it: the labels of the head that holds it, among the threads
+they see, their own first; else of the latest edit in their history that held it; else "view N".
+```
 A scorer refers to its views and resources by position (docs/factors.md, "Scorer"). Their *labels* name them: a label
 is for one scorer, one part (a view or a resource) and one position, the latest label wins, and it must name a view or
 resource the scorer has.
@@ -322,6 +363,15 @@ The catalog is a schema of its own (docs/store.md; tables in docs/migrations.md,
 threads, edits, entries, labels, families, bindings and languages. The writer role writes it and the reader role may
 read all of it. Rows are never changed or deleted.
 
+```
+AGENT: CHANGE
+A label is held to a scorer thread's edit, written with it (agents/wip-authoring.md, S4).
+---
+The database keeps an edit on its thread's kind and on a stored component of that kind, a fork on a version of the same
+kind, a skeleton edit's compilation on one of that very skeleton, a label on an edit of a scorer thread, once per part
+and position, written in the edit's transaction by its writer, and a language on a stored component of the kind it
+records. At tier 2 it repeats the rules above that two writers at once could break.
+```
 The database keeps an edit on its thread's kind and on a stored component of that kind, a fork on a version of the same
 kind, a skeleton edit's compilation on one of that very skeleton, a label on a scorer, and a language on a stored
 component of the kind it records. At tier 2 it repeats the rules above that two writers at once could break.
@@ -377,12 +427,26 @@ writes at the same moment can leave a person several expectations to choose from
 - **A language on a skeleton that is compiled later** is ignored from then on, since the skeleton's language comes from
   its recipe.
 - **What deleting hides in the portal**: everywhere, or only in pickers, while the runs that used it stay visible.
+```
+AGENT: CHANGE
+A label is its edit's, so who wrote it is who made the edit.
+---
+- **Who changed an entry or a language isn't shown.** Every row records who wrote it and when, but for these only
+  what holds now is shown.
+```
 - **Who changed an entry, a label or a language isn't shown.** Every row records who wrote it and when, but for these
   only what holds now is shown.
 - **Why an edit was made isn't stored.** It can be worked out by comparing consecutive versions' references.
 - **Titles take a query for every reference they visit,** are rebuilt from names that change, and aren't unique.
 - **An unnamed fork's title can pair two versions.** When the origin has no name and has moved on, the title describes
   the origin's current head, while what the fork varies is measured from the base.
+```
+AGENT: CHANGE
+Labels go with each edit now; what is left is a fork's rename that following drops.
+---
+- **Following can drop a fork's renamed view.** Labels follow the views the proposal keeps, so a fork that only
+  renamed a view, and follows an origin whose views it keeps, takes the origin's labels.
+```
 - **Scorer labels aren't carried to the next scorer edit.** That waits for the portal.
 - **Judges aren't checked for language.** A judge's language could be compared with the cases its scoring grades, the
   way lints check a trial's. An English judge grading Swedish answers may be intended, so it would be a notice rather

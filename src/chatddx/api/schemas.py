@@ -1,9 +1,11 @@
+from collections.abc import Mapping
 from datetime import datetime
 from typing import Annotated, ClassVar, Literal, Self
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field, JsonValue, model_validator
 
+from chatddx import catalog
 from chatddx.bench import PARTS, Outcome
 from chatddx.factors import base as factors
 from chatddx.identity import Person, Role
@@ -39,6 +41,36 @@ class SignedIn(_Schema):
     person: Me
 
 
+# What a scorer edit calls its views and resources, by position.
+class Labels(_Schema):
+    views: list[str | None] = Field(
+        default_factory=list[str | None], description="by position; null for none"
+    )
+    resources: list[str | None] = Field(
+        default_factory=list[str | None], description="by position; null for none"
+    )
+
+    def given(self) -> catalog.Labels:
+        parts: tuple[tuple[catalog.Part, list[str | None]], ...] = (
+            ("view", self.views),
+            ("resource", self.resources),
+        )
+        return {
+            (part, position): label
+            for part, labels in parts
+            for position, label in enumerate(labels)
+            if label is not None
+        }
+
+    @classmethod
+    def of(cls, labels: Mapping[tuple[catalog.Part, int], str]) -> Self:
+        def listed(part: catalog.Part) -> list[str | None]:
+            held = {p: v for (k, p), v in labels.items() if k == part}
+            return [held.get(p) for p in range(max(held, default=-1) + 1)]
+
+        return cls(views=listed("view"), resources=listed("resource"))
+
+
 class Edit(_Schema):
     id: int
     digest: str
@@ -46,6 +78,7 @@ class Edit(_Schema):
     based_on: int | None
     by: str
     at: datetime
+    labels: Labels | None = Field(default=None, description="a scorer edit's")
 
 
 class Thread(_Schema):
@@ -135,6 +168,7 @@ class NewThread(_Schema):
     )
     name: str = Field(min_length=1)
     language: Language = None
+    labels: Labels | None = Field(None, description="for a scorer")
 
     @model_validator(mode="after")
     def _one(self) -> Self:
@@ -151,6 +185,9 @@ class NewFork(_Schema):
         None, description="what the fork starts from in place of the head"
     )
     language: Language = None
+    labels: Labels | None = Field(
+        None, description="for a scorer; a scorer forked as it is keeps the head's"
+    )
 
 
 class NewEdit(_Schema):
@@ -158,6 +195,11 @@ class NewEdit(_Schema):
     parts: Parts = Parts()
     component: ComponentBody | None = None
     language: Language = None
+    labels: Labels | None = Field(
+        None,
+        description="for a scorer; without them, the head's when the scorer is the "
+        + "head's, else none",
+    )
 
 
 class Part(_Schema):
@@ -371,6 +413,25 @@ class Component(_Schema):
     kind: str
     title: str
     body: JsonValue
+
+
+class Metric(_Schema):
+    name: str
+    measures: str
+    params: dict[str, JsonValue] = Field(
+        description="a JSON Schema for a view's params"
+    )
+
+
+# Scoring code the running chatddx ships, which a scorer pins by its entry point and
+# version.
+class ScorerCode(_Schema):
+    entry_point: str
+    version: int
+    metrics: list[Metric]
+    params: dict[str, JsonValue] = Field(
+        description="a JSON Schema for the scorer's own params, which every view shares"
+    )
 
 
 class NewRun(_Schema):

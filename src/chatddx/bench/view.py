@@ -14,6 +14,8 @@ from chatddx.catalog import (
     Entry,
     EntryField,
     Kept,
+    Labels,
+    Part,
     Subject,
     Variation,
     latest,
@@ -54,6 +56,7 @@ from chatddx.inventory import DatabaseSource, Inventory
 from chatddx.ledger import ItemKey, Run, RunStarted, Score, fingerprint_request
 from chatddx.runner.run import Runner, Running
 from chatddx.runner.score import score_run
+from chatddx.scorers.shipped import problems
 from chatddx.store import Catalog, People, Store, Texts, fetch_vignette
 from chatddx.store.catalog import Rows
 from chatddx.store.store import Connection
@@ -79,10 +82,13 @@ KINDS: dict[str, tuple[str, ...]] = {
 
 # The kinds a person writes as components. A configuration is written as a variation.
 WRITTEN: frozenset[str] = frozenset(
-    {*(f"chunk.{part}" for part in PARTS), "expectation", "appendix"}
+    {*(f"chunk.{part}" for part in PARTS), "expectation", "appendix", "scorer"}
 )
 
+LABELLED: tuple[Part, ...] = ("view", "resource")
+
 COMPILED_LANGUAGE = "a compiled configuration's language comes from its recipe"
+_UNLABELLED = "only a scorer's views and resources have labels"
 
 # What stands in for each slot in a request rendered to be looked at.
 PLACEHOLDERS: dict[SlotName, str] = {
@@ -573,10 +579,28 @@ class Bench:
         }
         return data, several
 
+    # What a scorer digest's views are called for the person: as the latest edit that
+    # holds it among the scorer threads they see calls them, their own first, as
+    # `holder` picks a thread; else as the latest edit in those threads' histories that
+    # held it.
     def labels(self, scorer: str) -> dict[int, str]:
+        held = self.holder("scorer", scorer)
+        if held is not None:
+            return self.labels_of(held[0])
+        seen = {e.thread: a.owner for e, a in self.threads("scorer")}
+        earlier = [
+            (e, seen[e.thread])
+            for e in self._rows.edits_holding([scorer])
+            if e.thread in seen
+        ]
+        held_before = sorted(preferred(self.person.id, earlier), key=lambda e: e.id)
+        return self.labels_of(held_before[-1]) if held_before else {}
+
+    # What an edit of a scorer thread calls the scorer's views.
+    def labels_of(self, edit: Edit) -> dict[int, str]:
         return {
             position: label
-            for (part, position), label in self.catalog.labels(scorer).items()
+            for (part, position), label in self.catalog.labels(edit.id).items()
             if part == "view"
         }
 
@@ -589,7 +613,7 @@ class Bench:
         data: dict[str, tuple[dict[str, JsonValue], set[str]]] = {}
         found: list[Reach] = []
         for edit, about, scorer in self.scorers():
-            labels = self.labels(edit.digest)
+            labels = self.labels_of(edit)
             name = about.name or self.catalog.title(edit.thread)
             expected = scorer.expectation_schema
             for i, view in enumerate(scorer.views):
@@ -715,6 +739,10 @@ class Bench:
             raise ValueError(f"{kind} components have no language of their own")
         if isinstance(proposed.proposal, Expectation):
             self._check_expecting(proposed.proposal, thread)
+        labels = None
+        if isinstance(proposed.proposal, Scorer):
+            self._check_scorer(proposed.proposal)
+            labels = self._followed_labels(thread, proposed.variation)
         kept = [proposed.compilation or proposed.digest]
         with self.conn.transaction():
             _ = self.store.add(registry, kept)
@@ -727,8 +755,20 @@ class Bench:
                 compilation=proposed.compilation,
                 based_on=proposed.variation.origin_head.id,
                 head=head,
+                labels=labels,
             )
         return Written(edit, "a new version", self.linted(proposed.digest))
+
+    # A followed scorer keeps the labels of whichever side's views, and resources, the
+    # proposal keeps.
+    def _followed_labels(self, thread: int, varied: Variation) -> Labels:
+        fork = self.catalog.labels(self.catalog.head(thread).id)
+        origin = self.catalog.labels(varied.origin_head.id)
+        kept: dict[tuple[Part, int], str] = {}
+        for part in LABELLED:
+            side = fork if f"/{part}s" in varied.varies else origin
+            kept |= {k: v for k, v in side.items() if k[0] == part}
+        return kept
 
     def _proposed(self, thread: int, word: str) -> tuple[Proposed, Registry] | None:
         varied = self.catalog.variation(thread)
@@ -770,14 +810,23 @@ class Bench:
         return cls.model_validate(given)
 
     # `component` as a new thread of the person's own, named `name`; a recipe is compiled
-    # by the running code and kept as a new configuration, with its compilation.
+    # by the running code and kept as a new configuration, with its compilation. A
+    # scorer is kept with `labels`.
     def new(
-        self, component: Component | Recipe, name: str, language: str | None = None
+        self,
+        component: Component | Recipe,
+        name: str,
+        language: str | None = None,
+        labels: Labels | None = None,
     ) -> Written:
         if not isinstance(component, Recipe):
-            return self._written(component, None, name=name, language=language)
+            return self._written(
+                component, None, name=name, language=language, labels=labels
+            )
         if language is not None:
             raise ValueError(COMPILED_LANGUAGE)
+        if labels is not None:
+            raise ValueError(_UNLABELLED)
         for part in PARTS:
             digest = getattr(component, part)
             if digest is not None and self._rows.kind(digest) not in KINDS[part]:
@@ -795,35 +844,48 @@ class Bench:
 
     # A new thread of the person's own, named `name` and forked from the head of
     # `thread`, a thread they see; it starts from `component` when given, else from the
-    # head.
+    # head. A scorer forked as it is keeps the head's labels unless given others.
     def fork_component(
         self,
         thread: int,
         name: str,
         component: Component | None = None,
         language: str | None = None,
+        labels: Labels | None = None,
     ) -> Written:
         edit, _, word = self._seen(thread)
         held = self.get(edit.digest) if component is None else component
         self._check_kind(thread, word, held)
+        if labels is None and isinstance(held, Scorer) and held.digest == edit.digest:
+            labels = self.catalog.labels(edit.id)
         return self._written(
-            held, None, name=name, language=language, forked_from=edit.id
+            held,
+            None,
+            name=name,
+            language=language,
+            forked_from=edit.id,
+            labels=labels,
         )
 
     # `component` as a new version of `thread`, a thread the person owns whose head was
-    # `head` when they saw it; nothing is written when it is the head already.
+    # `head` when they saw it; nothing is written when it is the head already. A scorer
+    # is kept with `labels`: without them, the head's when it is the head's scorer, else
+    # none.
     def edit_component(
         self,
         thread: int,
         head: int,
         component: Component,
         language: str | None = None,
+        labels: Labels | None = None,
     ) -> Written:
         _, about, word = self._seen(thread)
         if not about.owned_by(self.person.id):
             raise NotFound(f"no {word} {thread} of yours")
         self._check_kind(thread, word, component)
-        return self._written(component, thread, language=language, head=head)
+        return self._written(
+            component, thread, language=language, head=head, labels=labels
+        )
 
     # What the lints say of a stored component alone, with the catalog's languages.
     def linted(self, digest: str) -> list[Finding]:
@@ -839,12 +901,17 @@ class Bench:
         language: str | None = None,
         forked_from: int | None = None,
         head: int | None = None,
+        labels: Labels | None = None,
     ) -> Written:
         kind = component.kind_name
         if kind not in WRITTEN:
             raise ValueError(f"a person doesn't write {kind} components")
         if language is not None and kind not in LANGUAGE_KINDS:
             raise ValueError(f"{kind} components have no language of their own")
+        if labels is not None and not isinstance(component, Scorer):
+            raise ValueError(_UNLABELLED)
+        if isinstance(component, Scorer):
+            self._check_scorer(component)
         if isinstance(component, Expectation):
             self._check_expecting(component, thread)
         if isinstance(component, Appendix):
@@ -863,6 +930,7 @@ class Bench:
                 name=name,
                 forked_from=forked_from,
                 head=head,
+                labels=labels,
             )
             replaced = (
                 self._replaced(old, component)
@@ -1051,6 +1119,12 @@ class Bench:
         edit, about = self.thread_by_id(thread, word)
         return edit, about, word or "thread"
 
+    # A scorer the running code could never score with is refused: code it doesn't ship,
+    # a metric it doesn't publish, or parameters its schemas refuse.
+    def _check_scorer(self, scorer: Scorer) -> None:
+        if found := problems(scorer):
+            raise ValueError("; ".join(found))
+
     def _check_kind(self, thread: int, word: str, component: Component) -> None:
         kind = self.catalog.thread(thread).kind
         if kind != component.kind_name:
@@ -1227,7 +1301,7 @@ class Bench:
                 continue
             name = about.name or self.catalog.title(edit.thread)
             scorer = resolve(self.get, edit.digest, Scorer)
-            labels = self.labels(edit.digest)
+            labels = self.labels_of(edit)
             try:
                 scoring = self.scoring(run, edit.digest)
                 if scoring is None:

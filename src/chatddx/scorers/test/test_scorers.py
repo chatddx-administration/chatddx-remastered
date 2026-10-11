@@ -1,3 +1,4 @@
+import importlib
 import json
 from typing import Any, cast
 
@@ -6,10 +7,9 @@ from jsonschema import validators
 from pydantic import JsonValue
 
 from chatddx.conftest import sample_plan
-from chatddx.core.rig import entry, rig
 from chatddx.curation import load_cases
 from chatddx.curation.plan import SAMPLE
-from chatddx.factors.base import Code, resolve
+from chatddx.factors.base import resolve
 from chatddx.factors.bundle import Registry
 from chatddx.factors.request import Skeleton, SlotName
 from chatddx.factors.scoring import Judge, Scorer, View
@@ -24,7 +24,8 @@ from chatddx.scorers.patterns import (
     reciprocal_rank,
     score as patterns,
 )
-from chatddx.scorers.scorer import Scored, function, score
+from chatddx.scorers.scorer import Metric, Metrics, Scored, score
+from chatddx.scorers.shipped import SCORERS, function, problems
 
 pytestmark = pytest.mark.wip
 
@@ -179,8 +180,8 @@ def test_each_aggregate_is_inspect_s(
 
 def plan_scorer(**changes: Any) -> Scorer:
     fields: dict[str, Any] = {
-        "code": rig(),
         "entry_point": PATTERNS,
+        "version": 1,
         "expectation_schema": SCHEMA,
         "views": (
             View(
@@ -249,18 +250,56 @@ def test_free_text_is_split_by_the_view_before_it_is_scored() -> None:
     ]
 
 
-def test_only_the_running_code_and_its_metrics_are_run() -> None:
-    other = Code(distribution="chatddx", version="0.0.1", revision=None)
-    with pytest.raises(LookupError, match="pins chatddx 0.0.1, but chatddx"):
-        _ = function(plan_scorer(code=other))
-    with pytest.raises(LookupError, match="names nothing"):
-        _ = function(plan_scorer(entry_point="chatddx.scorers.patterns:absent"))
-    with pytest.raises(TypeError, match="isn't a function"):
+def test_only_the_shipped_code_at_its_version_and_its_metrics_are_run() -> None:
+    with pytest.raises(LookupError, match="is at version 1 in chatddx .*, not 2"):
+        _ = function(plan_scorer(version=2))
+    with pytest.raises(LookupError, match="isn't shipped with chatddx .*, only "):
         _ = function(plan_scorer(entry_point="chatddx.scorers.patterns:_WORD"))
     unknown = (View(metric="recall"),)
     with pytest.raises(LookupError, match="knows no metric recall"):
         _ = function(plan_scorer(views=unknown))
-    assert entry(rig(), PATTERNS) is patterns
+
+
+# A view's params go to its metric, and the scorer's own to every view; each is held to
+# the schema the code publishes for it, and the shipped metrics publish none.
+def test_params_are_held_to_the_schemas_the_code_publishes(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    assert problems(plan_scorer(params={"top": 3})) == [
+        "the scorer's params don't fit: Additional properties are not allowed "
+        + "('top' was unexpected)"
+    ]
+    given = plan_scorer(views=(View(metric="mentions", params={"top": 3}),))
+    assert problems(given) == [
+        "view 0's params for mentions don't fit: Additional properties are not "
+        + "allowed ('top' was unexpected)"
+    ]
+
+    def top(output: list[JsonValue] | None, _: list[JsonValue], params: Any) -> Scored:
+        return Scored(float(len(output or []) >= params["top"]))
+
+    ranked = Metric(
+        "1 when at least top items are given",
+        top,
+        {"type": "object", "properties": {"top": {"type": "integer", "minimum": 1}}},
+    )
+    code = Metrics(1, {"top": ranked}, {"type": "object"})
+    monkeypatch.setitem(SCORERS, PATTERNS, code)
+    views = (View(output="$.diagnoses[*]", metric="top", params={"top": 2}),)
+    assert problems(plan_scorer(views=views, params={"any": "thing"})) == []
+    zero = (View(metric="top", params={"top": 0}),)
+    assert problems(plan_scorer(views=zero)) == [
+        "view 0's params for top at /top: 0 is less than the minimum of 1"
+    ]
+    scorer = plan_scorer(views=views)
+    assert score(scorer, function(scorer), ANSWER, TARGETS) == [Scored(1.0)]
+
+
+def test_each_shipped_entry_point_names_the_code_it_ships() -> None:
+    for entry_point, code in SCORERS.items():
+        module, _, attribute = entry_point.partition(":")
+        assert getattr(importlib.import_module(module), attribute) is code
+    assert SCORERS[PATTERNS] is patterns
 
 
 def test_a_judged_view_can_t_be_scored_yet() -> None:

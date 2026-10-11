@@ -1,6 +1,7 @@
-import importlib
 import os
+from collections.abc import Mapping
 from importlib import metadata
+from typing import Protocol
 
 from chatddx.factors.base import Code
 
@@ -15,23 +16,26 @@ def rig() -> Code:
     )
 
 
-# What a tool's or a scorer's entry point names, in the code it pins. Only the running
-# chatddx can be run: pinned code that isn't it is refused rather than run unpinned.
-def entry(code: Code, entry_point: str) -> object:
-    running = rig()
-    if code != running:
+class Versioned(Protocol):
+    @property
+    def version(self) -> int: ...
+
+
+# What the running code ships under a tool's or a scorer's entry point, at the version it
+# pins. Nothing else is run: an entry point the code doesn't ship is refused rather than
+# imported, so naming one picks among what developers shipped.
+def entry[T: Versioned](shipped: Mapping[str, T], entry_point: str, version: int) -> T:
+    found = shipped.get(entry_point)
+    running = _shown(rig())
+    if found is None:
         raise LookupError(
-            f"{entry_point} pins {_shown(code)}, but {_shown(running)} is running"
+            f"{entry_point} isn't shipped with {running}, only "
+            + (", ".join(sorted(shipped)) or "nothing")
         )
-    module, _, attribute = entry_point.partition(":")
-    try:
-        found: object = importlib.import_module(module)
-        for part in attribute.split("."):
-            found = getattr(found, part)
-    except (ImportError, AttributeError) as e:
+    if found.version != version:
         raise LookupError(
-            f"{entry_point} names nothing in {_shown(code)}: {e}"
-        ) from None
+            f"{entry_point} is at version {found.version} in {running}, not {version}"
+        )
     return found
 
 

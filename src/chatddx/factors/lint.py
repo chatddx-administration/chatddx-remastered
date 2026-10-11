@@ -39,12 +39,6 @@ def _engine(c: LocalEngine, _: Registry) -> Iterable[Finding]:
 
 
 def _scorer(c: Scorer, registry: Registry) -> Iterable[Finding]:
-    if c.code.revision is None:
-        yield Finding(
-            code="scorer.revision",
-            message="scorer code has no revision",
-            subject=c.digest,
-        )
     schema = resolve(registry.get, c.expectation_schema, ExpectationSchema).json_schema
     for i, view in enumerate(c.views):
         if not reaches(schema, view.expectation):

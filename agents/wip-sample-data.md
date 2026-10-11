@@ -236,12 +236,13 @@ The sample's side:
 
 ## Tools and scorers
 Where tool and scorer code lives is settled (see "Decided"):
-- **Code.** A `tool` or `scorer` record without a `code` pins the running chatddx, the `Code` compilations record as
-  their compiler (`src/chatddx/curation/plan.py:plan_factors`). `src/chatddx/core/rig.py:entry` finds an entry point's
-  function, and runs only the running chatddx: other pinned code is refused, not run unpinned. Planning refuses an
-  entry point that names nothing, and a view whose metric the scorer's code doesn't know (`Metrics.names`). Since the
-  code is part of a tool's and a scorer's digest, a new version or `CHATDDX_REVISION` makes new ones, and the
-  toolset and `plan-web` skeletons with them.
+- **Code.** A `tool` or `scorer` record without a `version` pins the version of its entry point that the running
+  code ships (`src/chatddx/curation/plan.py:SHIPPED`). `src/chatddx/core/rig.py:entry` finds what an entry point
+  ships, and runs nothing else: an entry point that isn't shipped, or not at the pinned version, is refused. Planning
+  refuses those, a view whose metric the scorer's code doesn't publish, and params its schemas refuse
+  (`src/chatddx/scorers/shipped.py:problems`). Since the version is part of a tool's and a scorer's digest, only a
+  raised version makes new ones, and the toolset and `plan-web` skeletons with them; a new chatddx version or
+  `CHATDDX_REVISION` doesn't.
 - **Scorer interface, version 1** (`src/chatddx/scorers/scorer.py`). An entry point is a `ScoreFunction`: it takes a
   view's `metric`, the items its output selector picks (`None` without an answer), the items its expectation
   selector picks, and the scorer's params under the view's. It returns `Scored(value, detail)`, what a `ScoreItem`

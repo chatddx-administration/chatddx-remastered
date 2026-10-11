@@ -5,7 +5,7 @@ from dataclasses import dataclass
 
 from pydantic import JsonValue
 
-from .scorer import Metric, Metrics, Scored
+from .scorer import Metric, MetricFunction, Metrics, Scored
 
 _TOKEN = re.compile(r"\(|\)|&|\||[^\s&|()]+")
 _WORD = re.compile(r"\w+")
@@ -195,7 +195,7 @@ def _target(expected: list[JsonValue]) -> str | None | Scored:
     return text
 
 
-def _by_pattern(find: Callable[[list[str] | None, str], Scored]) -> Metric:
+def _by_pattern(find: Callable[[list[str] | None, str], Scored]) -> MetricFunction:
     def metric(
         output: list[JsonValue] | None,
         expected: list[JsonValue],
@@ -223,7 +223,22 @@ def _mentions(
 
 
 score = Metrics(
-    reciprocal_rank=_by_pattern(reciprocal_rank),
-    first_mention=_by_pattern(first_mention),
-    mentions=_mentions,
+    1,
+    {
+        "reciprocal_rank": Metric(
+            "1 over the rank of the first item that matches the target's pattern; 0 "
+            + "when none does",
+            _by_pattern(reciprocal_rank),
+        ),
+        "first_mention": Metric(
+            "where in the text the target's pattern is first matched, in characters; "
+            + "none when it never is",
+            _by_pattern(first_mention),
+        ),
+        "mentions": Metric(
+            "1 when an item matches the target's pattern, or when nothing is named "
+            + "and nothing is expected; else 0",
+            _mentions,
+        ),
+    },
 )

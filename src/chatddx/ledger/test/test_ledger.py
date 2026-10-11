@@ -173,7 +173,7 @@ def test_run_and_score_checks(reg: Registry) -> None:
                     run=run_id,
                     at=NOW,
                     rig=RIG,
-                    scorer_code=RIG,
+                    scorer_version=1,
                     scoring=ids["scoring"],
                 ),
             ),
@@ -213,16 +213,15 @@ def test_run_and_score_checks(reg: Registry) -> None:
             run,
             reg,
         )
-    other_code = RIG.model_copy(update={"version": "0.0.1"})
-    elsewhere = score(ok).started.model_copy(update={"scorer_code": other_code})
+    elsewhere = score(ok).started.model_copy(update={"scorer_version": 2})
     assert [
         (f.code, f.message)
         for f in check_score(Score(stages=(elsewhere,), items=(ok,)), run, reg)
     ] == [
         (
             "score.scorer_code",
-            "the scorer code that ran (chatddx 0.0.1 abc123) isn't the code the scorer "
-            + "pins (chatddx 0.0.0+dev abc123)",
+            "the scorer code ran at version 2 of chatddx_scoring.match:score, not the "
+            + "version the scorer pins (1)",
         )
     ]
     with pytest.raises(StructuralError, match="view 2 is out of range"):
@@ -306,9 +305,9 @@ def test_where_a_run_went_and_its_cutoff_are_added_without_moving_old_seals() ->
 def test_records_carry_their_schema_version() -> None:
     started = RunStarted(run=uuid4(), at=NOW, rig=RIG, trial="sha256:" + "0" * 64)
     doc = json.loads(started.canonical)
-    assert doc["v"] == 1 and doc["stage"] == "started"
-    doc["v"] = 2
-    with pytest.raises(StructuralError, match="RunStarted v2 is not readable by v1"):
+    assert doc["v"] == 2 and doc["stage"] == "started"
+    doc["v"] = 1
+    with pytest.raises(StructuralError, match="RunStarted v1 is not readable by v2"):
         _ = RunStarted.parse(json.dumps(doc))
     with pytest.raises(StructuralError, match="not a JSON object"):
         _ = RunStarted.parse("[]")
@@ -445,7 +444,7 @@ def test_judge_calls_are_checked_against_the_score_execution(reg: Registry) -> N
             run=run_id,
             at=NOW,
             rig=RIG,
-            scorer_code=RIG,
+            scorer_version=1,
             scoring=ids["scoring"],
             execution=execution,
         )
@@ -539,8 +538,8 @@ def test_tool_rounds_are_checked(reg: Registry) -> None:
             name="web_search",
             description="Search the web.",
             parameters={"type": "object"},
-            code=RIG,
             entry_point="chatddx_tools.web:search",
+            version=1,
         )
     )
     answer = reg.add(
@@ -565,7 +564,7 @@ def test_tool_rounds_are_checked(reg: Registry) -> None:
         at=NOW,
         rig=RIG,
         trial=trial,
-        tool_code=(ToolCode(tool=web, code=RIG),),
+        tool_code=(ToolCode(tool=web, version=1),),
     )
     vignette = resolve(reg.get, ids["case"], Case).vignette.fingerprint
 
@@ -620,26 +619,27 @@ def test_tool_rounds_are_checked(reg: Registry) -> None:
     assert code_findings() == [
         ("tools.code", "the code tool 'web_search' ran with isn't recorded")
     ]
-    elsewhere = RIG.model_copy(update={"version": "0.0.1"})
-    assert code_findings(ToolCode(tool=web, code=elsewhere)) == [
+    assert code_findings(ToolCode(tool=web, version=2)) == [
         (
             "tools.code",
-            "tool 'web_search' ran with chatddx 0.0.1 abc123, not the code it pins "
-            + "(chatddx 0.0.0+dev abc123)",
+            "tool 'web_search' ran at version 2 of chatddx_tools.web:search, not the "
+            + "version it pins (1)",
         )
     ]
     with pytest.raises(StructuralError, match="the skeleton lacks"):
-        _ = code_findings(ToolCode(tool=web, code=RIG), ToolCode(tool=answer, code=RIG))
+        _ = code_findings(
+            ToolCode(tool=web, version=1), ToolCode(tool=answer, version=1)
+        )
     with pytest.raises(ValidationError, match="duplicates"):
         _ = RunStarted(
             run=run_id,
             at=NOW,
             rig=RIG,
             trial=trial,
-            tool_code=(ToolCode(tool=web, code=RIG),) * 2,
+            tool_code=(ToolCode(tool=web, version=1),) * 2,
         )
     zero = "sha256:" + "0" * 64
-    either = (ToolCode(tool=web, code=RIG), ToolCode(tool=zero, code=RIG))
+    either = (ToolCode(tool=web, version=1), ToolCode(tool=zero, version=1))
     reordered = started.model_validate(
         {**started.model_dump(), "tool_code": either[::-1]}
     )
@@ -693,8 +693,8 @@ def test_score_views_are_checked_against_the_output_schema(reg: Registry) -> Non
     expectation_schema = resolve(reg.get, scoring.scorer, Scorer).expectation_schema
     scorer = reg.add(
         Scorer(
-            code=RIG.model_copy(update={"revision": None}),
             entry_point="chatddx_scoring.match:score",
+            version=1,
             expectation_schema=expectation_schema,
             views=(
                 View(output="$.ddx[*]", metric="m"),
@@ -713,7 +713,7 @@ def test_score_views_are_checked_against_the_output_schema(reg: Registry) -> Non
                 run=run_id,
                 at=NOW,
                 rig=RIG,
-                scorer_code=RIG,
+                scorer_version=1,
                 scoring=unreachable,
             ),
         )

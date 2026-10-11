@@ -2,6 +2,8 @@ from fastapi import APIRouter
 
 from chatddx.bench import Bench, NotFound
 from chatddx.inventory import EndpointSpec, url_of
+from chatddx.scorers.scorer import NO_PARAMS
+from chatddx.scorers.shipped import SCORERS
 from chatddx.store.catalog import Rows
 
 from . import schemas
@@ -84,3 +86,19 @@ def component(bench: BenchDep, digest: str) -> schemas.Component:
         title=bench.title(digest),
         body=bench.get(digest).model_dump(mode="json"),
     )
+
+
+@router.get("/scorer-code")
+def scorer_code(_: BenchDep) -> list[schemas.ScorerCode]:
+    return [
+        schemas.ScorerCode(
+            entry_point=entry_point,
+            version=code.version,
+            metrics=[
+                schemas.Metric(name=name, measures=m.measures, params=m.params)
+                for name, m in sorted(code.metrics.items())
+            ],
+            params=NO_PARAMS if code.params is None else code.params,
+        )
+        for entry_point, code in sorted(SCORERS.items())
+    ]

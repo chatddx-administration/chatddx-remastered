@@ -1,7 +1,7 @@
 import json
 import re
 import tomllib
-from collections.abc import Collection, Sequence
+from collections.abc import Collection, Mapping, Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, cast
@@ -9,7 +9,7 @@ from typing import Any, cast
 from pydantic import JsonValue, ValidationError
 
 from chatddx.catalog import language_tag, variant_name
-from chatddx.core.rig import entry
+from chatddx.core.rig import Versioned, entry
 from chatddx.factors.base import Code, Component
 from chatddx.factors.bundle import Registry
 from chatddx.factors.engine import LocalEngine, ModelArtifact, RemoteEngine
@@ -32,7 +32,8 @@ from chatddx.factors.request import (
 )
 from chatddx.factors.scoring import ExpectationSchema, Scorer
 from chatddx.facts import INTENTS, Effort, Facts, Refused, model_name
-from chatddx.scorers.scorer import function
+from chatddx.scorers.shipped import SCORERS, problems
+from chatddx.tools.shipped import TOOLS
 
 # The sample's tables, in the order they're planned: a table may reference only those before it.
 # Models and engines come first, so `from_facts` records are written for the models they serve.
@@ -54,6 +55,8 @@ TABLES: dict[str, type[Component]] = {
     "scorer": Scorer,
 }
 ENGINE_TABLES = ("model", "local_engine", "remote_engine")
+# The tables whose records pin shipped code, with what the running code ships.
+SHIPPED: dict[str, Mapping[str, Versioned]] = {"tool": TOOLS, "scorer": SCORERS}
 # References outside recipes, by table and field: each names records of another table.
 REFERENCES: dict[str, dict[str, str]] = {
     "toolset": {"tools": "tool"},
@@ -178,10 +181,10 @@ def _labels(table: str, body: dict[str, JsonValue]) -> tuple[str | None, ...]:
 def _check_runs(component: Component) -> None:
     match component:
         case Tool():
-            if not callable(entry(component.code, component.entry_point)):
-                raise TypeError(f"{component.entry_point} isn't a function")
+            _ = entry(TOOLS, component.entry_point, component.version)
         case Scorer():
-            _ = function(component)
+            if found := problems(component):
+                raise LookupError("; ".join(found))
         case _:
             pass
 
@@ -304,11 +307,12 @@ def plan_factors(
                             ]
                         case _:
                             pass
-                # Tools and scorers pin the code that runs them: the running chatddx,
-                # which compilations record as their compiler, unless they name other
-                # code.
-                if table in ("tool", "scorer") and "code" not in body:
-                    body["code"] = compiler.model_dump(mode="json")
+                # Tools and scorers pin the version of their entry point that the
+                # running code ships, unless they name one.
+                if table in SHIPPED and "version" not in body:
+                    shipped = SHIPPED[table].get(str(body.get("entry_point")))
+                    if shipped is not None:
+                        body["version"] = shipped.version
                 labels = _labels(table, body)
                 for model in models if "from_facts" in body else [None]:
                     key = (language, model)
@@ -319,11 +323,10 @@ def plan_factors(
                         continue
                     except ValidationError as e:
                         raise ValueError(f"{where}: {table}.{name}: {e}") from None
-                    if getattr(component, "code", None) == compiler:
-                        try:
-                            _check_runs(component)
-                        except (LookupError, TypeError) as e:
-                            raise ValueError(f"{table}.{name}: {e}") from None
+                    try:
+                        _check_runs(component)
+                    except LookupError as e:
+                        raise ValueError(f"{table}.{name}: {e}") from None
                     holds = bool(own_texts(component, plan.registry.get))
                     if language is None and holds and table in TEXT_TABLES:
                         raise ValueError(

@@ -133,6 +133,17 @@ A fingerprint is a hash of content that must not be stored, such as a vignette. 
 keyed hash that names its key.
 
 ### Code
+```
+AGENT: CHANGE
+Scorers and tools pin an entry point chatddx ships and its version now, not the running code (agents/wip-authoring.md,
+S2).
+---
+Code is named by its distribution, its version and, optionally, its revision. Compilations name their compiler this
+way, bundles the code that wrote them, and runs and scores the code that ran them. Scorers and tools pin code chatddx
+ships instead: an entry point, and the version of it the code publishes, which its developers raise when what it does
+changes, as a cleanup step's name is (see "Text cleanup"). Only the code chatddx ships runs, at the version pinned, so
+a deploy changes no scorer or tool unless it raises a version.
+```
 Code is named by its distribution, its version and, optionally, its revision. Scorers and tools pin their code this way,
 compilations name their compiler, and bundles name the code that wrote them.
 
@@ -323,11 +334,30 @@ Since no other chunk can produce what a passthrough sets, a passthrough never cl
 ### Tool
 Principal author: developers.
 
+```
+AGENT: CHANGE
+A tool pins an entry point chatddx ships and its version, and only shipped code runs (agents/wip-authoring.md, S1,
+S2).
+---
+A tool is a function the model may call between turns: a name, a description, a JSON Schema for its parameters, and the
+code that runs it, an entry point chatddx ships at the version it pins. Its code is pinned like a scorer's, because
+what it returns is what the model reads next: a new version is a new tool, so a new skeleton and a new trial. What a
+tool returned is still recorded per run, with the version it ran at, since a tool such as a web search can answer
+differently from day to day: an observed factor.
+```
 A tool is a function the model may call between turns: a name, a description, a JSON Schema for its parameters, and the
 code that runs it. Its code is pinned like a scorer's, because what it returns is what the model reads next: a new
 implementation is a new tool, so a new skeleton and a new trial. What a tool returned is still recorded per run, since a
 tool such as a web search can answer differently from day to day: an observed factor.
 
+```
+AGENT: CHANGE
+Naming an entry point picks among what chatddx ships; nothing else is imported.
+---
+Only code the running chatddx ships can be run, at the version pinned: a tool or a scorer that pins an entry point it
+doesn't ship, or another version, is refused. Naming an entry point picks among the shipped ones, so a scorer written
+by anyone runs only code developers shipped.
+```
 Only the running chatddx can be run: a tool or a scorer pinned to other code is refused.
 
 ### Toolset
@@ -548,6 +578,12 @@ Principal authors: developers, who write the scoring code and ship it with the p
 views, the free parameters where the code publishes a schema for them, and the labels, and pick the code, the
 expectation schema and the resources.
 
+```
+AGENT: CHANGE
+The scorer's code is an entry point chatddx ships and its version (agents/wip-authoring.md, S2).
+---
+- the entry point of the scoring code chatddx ships, and the version of it it pins;
+```
 A scorer pins scoring code written by developers. It declares:
 - the code, and the function in it that does the scoring;
 - the expectation schema it consumes;
@@ -555,8 +591,24 @@ A scorer pins scoring code written by developers. It declares:
 - ordered resources, such as synonym tables or ontology releases, pinned by digest;
 - free parameters.
 
+```
+AGENT: CHANGE
+Labels belong to the edit they are written with (agents/wip-authoring.md, S4).
+---
+Views and resources are referred to by position; their labels live in the catalog, with the edit of the scorer's
+thread they were written with.
+```
 Views and resources are referred to by position; their labels live in the catalog.
 
+```
+AGENT: ADD
+What scoring code publishes, and what a scorer written over it is held to (agents/wip-authoring.md, S1, S3).
+---
+The scoring code publishes its version and its metrics, each with what it measures and a JSON Schema for the
+parameters a view gives it, and optionally a schema for the parameters every view shares. A scorer is refused when its
+code isn't shipped at the version it pins, when a view names a metric the code doesn't publish, or when parameters
+don't fit the schema published for them; where nothing is published, no parameters are taken.
+```
 The scoring function sees one view at a time: what the view picks from the answer (nothing when the run has no answer),
 what it picks from the expectation, and the parameters. It returns a value, or none, and a detail. Its interface is
 versioned.
@@ -565,6 +617,12 @@ The answer is read from the item's last response by the skeleton's contract: a n
 tool answer the answer function's arguments, and a text answer the content, or, when the output has a schema, the JSON
 in it. An answer that can't be read is no answer.
 
+```
+AGENT: CHANGE
+Only shipped code runs (agents/wip-authoring.md, S1).
+---
+Only code the running chatddx ships can be run (see "Tool").
+```
 Only the running chatddx can be run (see "Tool").
 
 ### View
@@ -623,6 +681,12 @@ Keeping them out of the components means knowledge that changes between vLLM rel
 any digest.
 
 They look at:
+```
+AGENT: CHANGE
+Scorers pin no revision any more (agents/wip-authoring.md, S2); which chatddx scored is in each score's rig.
+---
+- pins that can move: a model revision that isn't a commit, a runtime that isn't a Nix store path;
+```
 - pins that can move: a model revision that isn't a commit, a runtime that isn't a Nix store path, scorer code without a
   revision;
 - views whose expectation selector can't pick anything from documents that follow the scorer's expectation schema. The
@@ -718,6 +782,13 @@ If expectations written as free text turn up, a view could split them too. Two w
   go up, and the two sides rarely need the same split.
 
 ### Finding code through packaging entry points
+```
+AGENT: ADD
+The list chatddx ships is kept in its code (agents/wip-authoring.md, S1).
+---
+Today chatddx keeps the list of the code it ships in its code: `src/chatddx/scorers/shipped.py` and
+`src/chatddx/tools/shipped.py`, by the entry point a component names.
+```
 Tools and scorers name their function in the component. Python packaging offers another way: the distribution declares
 its function in its own metadata, under a group for chatddx scorers or tools, and the runner looks it up there. The
 pinned distribution and version would then decide which function runs, with no field in the component. It would keep the

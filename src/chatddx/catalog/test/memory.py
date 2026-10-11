@@ -28,7 +28,7 @@ class Memory:
         self._entries: list[tuple[Subject, Entry, int]] = []
         self._bindings: list[Binding] = []
         self._languages: list[tuple[str, str]] = []
-        self._labels: list[tuple[str, Part, int, str]] = []
+        self._labels: list[tuple[int, Part, int, str]] = []
 
     def start(
         self,
@@ -80,8 +80,8 @@ class Memory:
     def set_language(self, digest: str, value: str) -> None:
         self._languages.append((digest, value))
 
-    def add_label(self, scorer: str, part: Part, position: int, value: str) -> None:
-        self._labels.append((scorer, part, position, value))
+    def add_label(self, edit: int, part: Part, position: int, value: str) -> None:
+        self._labels.append((edit, part, position, value))
 
     def get(self, digest: str) -> Component:
         return self.registry.get(digest)
@@ -154,8 +154,8 @@ class Memory:
     def languages(self, digests: Collection[str]) -> list[tuple[str, str]]:
         return [(d, v) for d, v in self._languages if d in digests]
 
-    def labels(self, scorer: str) -> list[tuple[Part, int, str]]:
-        return [(p, i, v) for s, p, i, v in self._labels if s == scorer]
+    def labels(self, edits: Collection[int]) -> list[tuple[int, Part, int, str]]:
+        return [label for label in self._labels if label[0] in edits]
 
     def _stored[C: Component](self, cls: type[C]) -> list[tuple[str, C]]:
         found: list[tuple[str, C]] = []

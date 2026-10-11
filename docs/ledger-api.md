@@ -131,6 +131,12 @@ row isn't part of it.
 
 ### Internal helpers
 
+```
+AGENT: REMOVE
+The rows for `ran_pinned` and `code_name`: a scorer and a tool pin a version, which is compared as it is
+(agents/wip-authoring.md, S2).
+---
+```
 | Function | Returns / raises |
 | --- | --- |
 | `in_order(started, finished) -> None` | `ValueError("finished before it started")` when `finished < started`. Equal times pass. |
@@ -209,6 +215,13 @@ Internal; `check_run` and `check_score` call it. `calls` are the calls to count;
 | `RunStage` | `RunStarted \| RunFinished`, discriminated by `stage` |
 | `RUN_STAGES` | `("started", "finished")` |
 
+```
+AGENT: CHANGE
+A tool pins an entry point and its version, so the version it ran at is what is recorded (agents/wip-authoring.md, S2).
+---
+### `class ToolCode(Frozen)`
+The version of a tool's entry point the runner ran it at: `tool: ToolRef`, `version: int` (from 1).
+```
 ### `class ToolCode(Frozen)`
 The code a tool ran with, as the runner loaded it: `tool: ToolRef`, `code: Code`.
 
@@ -216,6 +229,13 @@ The code a tool ran with, as the runner loaded it: `tool: ToolRef`, `code: Code`
 The World inventory's endpoint a run's calls went to (`docs/inventory.md`, "Endpoints"): `name: str`, `url: str`.
 Neither is checked.
 
+```
+AGENT: CHANGE
+`ToolCode` changed, so `RunStarted` is at v2 and the store refuses v1 runs (agents/wip-authoring.md, S2).
+---
+### `class RunStarted(Record)`, stage `started`
+Opens a run with its recorded factors. Not case-derived. `schema_version` 2: `tool_code` holds versions.
+```
 ### `class RunStarted(Record)`, stage `started`
 Opens a run with its recorded factors. Not case-derived.
 
@@ -311,6 +331,12 @@ Returns findings, in this order:
 3. `case.drift` for each item whose `vignette` differs from its case's `vignette.fingerprint`;
 4. `tools.unanswered` for each item whose last call still has tool calls other than the answer function's (skeletons
    with tools only);
+```
+AGENT: CHANGE
+The version is compared (agents/wip-authoring.md, S2).
+---
+5. `tools.code` for each tool of the skeleton whose version isn't recorded or isn't the one `Tool.version` pins;
+```
 5. `tools.code` for each tool of the skeleton whose code isn't recorded or isn't what `Tool.code` pins
    (`ran_pinned`);
 6. `attestation.model` for each item: one per distinct wrong model name, and one when some call has a response but no
@@ -343,6 +369,15 @@ too, where the two differ. Later calls aren't compared; items of `b` missing fro
 | `seed_index` | `int`, ≥ 0 | required; the seed's position among the judge's seeds |
 | `call` | `Call` | required |
 
+```
+AGENT: CHANGE
+The scorer's version takes the code's place, so `ScoreStarted` is at v2; which chatddx scored is in `rig`
+(agents/wip-authoring.md, S2).
+---
+### `class ScoreStarted(Record)`, stage `started`
+Not case-derived. `schema_version` 2. Its `scorer_code: Code` is `scorer_version: int` (from 1): the version of the
+scorer's entry point the scoring pass ran.
+```
 ### `class ScoreStarted(Record)`, stage `started`
 Not case-derived.
 
@@ -404,6 +439,12 @@ Returns findings, in this order:
    `output_schema` (`chatddx.factors.select.reaches`), subject the scorer digest;
 2. `judge.incomplete` for each item with a value whose view's judge was called with fewer distinct seeds than it
    has;
+```
+AGENT: CHANGE
+The version is compared (agents/wip-authoring.md, S2).
+---
+3. `score.scorer_code` when `scorer_version` isn't the version `Scorer.version` pins;
+```
 3. `score.scorer_code` when `scorer_code` isn't what `Scorer.code` pins (`ran_pinned`);
 4. `score.run_unfinished` when the run has no finished row, or finished after the score started;
 5. `ledger.seal`, subject the score id;
@@ -417,6 +458,13 @@ Returns findings, in this order:
 
 All are warnings. Item-key subjects are `str(ItemKey)`.
 
+```
+AGENT: CHANGE
+The rows for `tools.code` and `score.scorer_code`: versions are compared (agents/wip-authoring.md, S2).
+---
+| `tools.code` | `check_run` | tool digest | `the code tool '<name>' ran with isn't recorded`, or `tool '<name>' ran at version <v> of <entry point>, not the version it pins (<v>)` |
+| `score.scorer_code` | `check_score` | score id | `the scorer code ran at version <v> of <entry point>, not the version the scorer pins (<v>)` |
+```
 | Code | Reported by | Subject | Message |
 | --- | --- | --- | --- |
 | `run.incomplete` | `check_run` | none | `<n> items missing`, `<n> canary calls missing` |

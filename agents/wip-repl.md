@@ -455,7 +455,8 @@ Left from 4c:
 ### 5. Tool rounds
 Built in the runner (`agents/wip-runner.md`, "Phase 5").
 - The `next_request` loop, with `max_rounds`, `Turn` and `ToolRun`.
-- Tools are found by `core/rig.py:entry`, and their code goes in `RunStarted.tool_code`.
+- Tools are found among the code chatddx ships (`core/rig.py:entry`, `tools/shipped.py:TOOLS`), and the version each
+  ran at goes in `RunStarted.tool_code`.
 - D1 gates tools.
 
 It comes last: `plan-web` can't call its tool on vLLM 0.24 anyway (G8; `docs/vllm.md`, item 10).

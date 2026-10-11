@@ -80,7 +80,8 @@ From its manual (`docs/portal.md`), which reads as a functional spec:
   "Intended evolution of configurations").
 - Appendices written in the portal, with CRLF normalized before they are digested (`docs/factors.md`, "Appendix").
 - Copying a scorer's labels to its next edit, "since it knows how the positions moved" (`docs/catalog.md`, "Scorer
-  labels" and "Smaller issues").
+  labels" and "Smaller issues"). Labels now belong to the edit they are written with, so the scorer's editor sends
+  each view's label with the views, and moves them with the views it moves (agents/wip-authoring.md, S4).
 - Offering a new version the previous version's language (`docs/catalog.md`, "Languages").
 - Building a stored replacement for a late case (`docs/catalog.md`, "Smaller issues").
 - What deleting hides: everywhere, or only in pickers (`docs/catalog.md`, "Deleting" and "Smaller issues").
@@ -259,8 +260,9 @@ Assuming the takes.
    and 5.
 4. **Swift**: the `source` schema and the `database` source kind, the bench's writes for cases and families, quotas,
    and the page (see "Swift"). All but the page is built.
-5. **Authoring**: the bench's writes for chunks, appendices, expectations, labels and languages
-   (`agents/wip-authoring.md`), and their pages.
+5. **Authoring**: the bench's writes for chunks, appendices, expectations, scorers, labels and languages
+   (`agents/wip-authoring.md`), and their pages. The writes are built; a scorer's pickers read
+   `GET /api/scorer-code`.
 6. **Batches**: the planner's pages (`agents/wip-batch.md`), then a batch's page and the worker's status
    (`agents/wip-worker.md`).
 7. **Z1**, and what deleting hides.

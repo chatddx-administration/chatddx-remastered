@@ -15,7 +15,7 @@ from chatddx.catalog import (
     Survey,
 )
 from chatddx.factors import request
-from chatddx.factors.base import StructuralError, resolve
+from chatddx.factors.base import resolve
 from chatddx.factors.bundle import Registry
 from chatddx.factors.cases import Appendix, Case, Vignette
 from chatddx.factors.kinds import BY_KIND
@@ -308,7 +308,7 @@ def test_entries(conn: Connection) -> None:
             run=run,
             at=NOW,
             rig=RIG,
-            scorer_code=RIG,
+            scorer_version=1,
             scoring=ids["scoring"],
         )
     )
@@ -810,35 +810,6 @@ def test_subject_is_one_thing() -> None:
         _ = Subject(thread=1, run=uuid4())
     with pytest.raises(ValidationError):
         _ = Subject(thread=1, family=1)
-
-
-def test_labels(conn: Connection) -> None:
-    catalog, _, reg, ids, alice = stored_world(conn)
-    scorer = resolve(reg.get, ids["scoring"], Scoring).scorer
-    catalog.label(scorer, "view", 0, "top-1 match", alice.id)
-    catalog.label(scorer, "view", 1, "judge", alice.id)
-    catalog.label(scorer, "view", 1, "judge grade", alice.id)
-    catalog.label(scorer, "resource", 0, "synonyms", alice.id)
-    assert catalog.labels(scorer) == {
-        ("view", 0): "top-1 match",
-        ("view", 1): "judge grade",
-        ("resource", 0): "synonyms",
-    }
-    with pytest.raises(ValueError, match="position 2"):
-        catalog.label(scorer, "view", 2, "x", alice.id)
-    with pytest.raises(StructuralError):
-        catalog.label(ids["trial"], "view", 0, "x", alice.id)
-    with (
-        pytest.raises(errors.RaiseException, match="no resource at position 1"),
-        conn.transaction(),
-    ):
-        _ = conn.execute(
-            """
-            INSERT INTO catalog.label (scorer, part, position, value, by)
-            VALUES (%s, 'resource', 1, 'x', %s)
-            """,
-            (scorer, alice.id),
-        )
 
 
 def test_database_guards_the_catalog(conn: Connection, admin: Connection) -> None:

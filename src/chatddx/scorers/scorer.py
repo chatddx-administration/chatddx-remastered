@@ -1,9 +1,11 @@
 from collections.abc import Callable, Mapping
-from typing import NamedTuple, Protocol, cast
+from dataclasses import dataclass, field
+from typing import NamedTuple, Protocol
 
+from jsonschema import validators
+from jsonschema.exceptions import relevance
 from pydantic import JsonValue
 
-from chatddx.core.rig import entry
 from chatddx.factors.scoring import Scorer
 
 
@@ -27,18 +29,43 @@ class ScoreFunction(Protocol):
     ) -> Scored: ...
 
 
-Metric = Callable[
+MetricFunction = Callable[
     [list[JsonValue] | None, list[JsonValue], Mapping[str, JsonValue]], Scored
 ]
 
+# Parameters a metric or an entry point takes when it publishes no schema: none.
+NO_PARAMS: dict[str, JsonValue] = {"type": "object", "additionalProperties": False}
 
+
+def _no_params() -> dict[str, JsonValue]:
+    return dict(NO_PARAMS)
+
+
+# A metric as its code publishes it: what it measures, and a JSON Schema for the
+# parameters a view gives it.
+@dataclass(frozen=True)
+class Metric:
+    measures: str
+    score: MetricFunction
+    params: dict[str, JsonValue] = field(default_factory=_no_params)
+
+
+# A scoring entry point: its metrics, the version its developers raise when what it does
+# changes, and a schema for the parameters every view shares, when it takes any.
 class Metrics:
-    def __init__(self, **metrics: Metric) -> None:
-        self._metrics: dict[str, Metric] = metrics
+    def __init__(
+        self,
+        version: int,
+        metrics: Mapping[str, Metric],
+        params: dict[str, JsonValue] | None = None,
+    ) -> None:
+        self.version: int = version
+        self.metrics: dict[str, Metric] = dict(metrics)
+        self.params: dict[str, JsonValue] | None = params
 
     @property
     def names(self) -> frozenset[str]:
-        return frozenset(self._metrics)
+        return frozenset(self.metrics)
 
     def __call__(
         self,
@@ -47,25 +74,41 @@ class Metrics:
         expected: list[JsonValue],
         params: Mapping[str, JsonValue],
     ) -> Scored:
-        found = self._metrics.get(metric)
+        found = self.metrics.get(metric)
         if found is None:
-            raise ValueError(f"no metric {metric!r}, only {sorted(self._metrics)}")
-        return found(output, expected, params)
+            raise ValueError(f"no metric {metric!r}, only {sorted(self.metrics)}")
+        return found.score(output, expected, params)
 
-
-def function(scorer: Scorer) -> ScoreFunction:
-    found = entry(scorer.code, scorer.entry_point)
-    if not callable(found):
-        raise TypeError(f"{scorer.entry_point} isn't a function")
-    names = getattr(found, "names", None)
-    if isinstance(names, frozenset):
-        known = cast(frozenset[str], names)
-        if unknown := sorted({v.metric for v in scorer.views} - known):
-            raise LookupError(
+    # Why this code could never score with `scorer`: a metric it doesn't publish, or
+    # parameters its schemas refuse.
+    def problems(self, scorer: Scorer) -> list[str]:
+        found: list[str] = []
+        if unknown := sorted({v.metric for v in scorer.views} - self.names):
+            found.append(
                 f"{scorer.entry_point} knows no metric {', '.join(unknown)}, "
-                + f"only {', '.join(sorted(known))}"
+                + f"only {', '.join(sorted(self.names))}"
             )
-    return cast(ScoreFunction, found)
+        shared = self.params if self.params is not None else NO_PARAMS
+        if (refused := _refused(shared, scorer.params)) is not None:
+            found.append(f"the scorer's params {refused}")
+        for i, view in enumerate(scorer.views):
+            metric = self.metrics.get(view.metric)
+            if metric is None:
+                continue
+            if (refused := _refused(metric.params, view.params)) is not None:
+                found.append(f"view {i}'s params for {view.metric} {refused}")
+        return found
+
+
+def _refused(
+    schema: dict[str, JsonValue], params: Mapping[str, JsonValue]
+) -> str | None:
+    check = validators.validator_for(schema)(schema)
+    error = max(check.iter_errors(dict(params)), key=relevance, default=None)
+    if error is None:
+        return None
+    where = "/".join(str(p) for p in error.absolute_path)
+    return f"at /{where}: {error.message}" if where else f"don't fit: {error.message}"
 
 
 def score(

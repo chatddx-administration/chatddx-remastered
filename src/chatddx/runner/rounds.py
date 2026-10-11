@@ -9,7 +9,7 @@ from jsonschema.exceptions import relevance
 from jsonschema.protocols import Validator
 from pydantic import JsonValue
 
-from chatddx.core.rig import entry, rig
+from chatddx.core.rig import entry
 from chatddx.factors.base import Resolver, resolve
 from chatddx.factors.request import (
     Skeleton,
@@ -21,6 +21,7 @@ from chatddx.factors.request import (
 )
 from chatddx.factors.trial import Execution
 from chatddx.ledger import Call, ToolCode, ToolRun, Turn
+from chatddx.tools.shipped import TOOLS
 
 from . import send as sending
 from .send import Delta
@@ -94,7 +95,8 @@ class Toolbox:
         return result
 
 
-# Only the running chatddx can be run (`entry`), so that is the code each tool runs with.
+# Only the tool code the running chatddx ships can be run (`entry`), at the version each
+# tool pins.
 def load(skeleton: Skeleton, get: Resolver) -> Toolbox | None:
     if skeleton.max_rounds is None:
         return None
@@ -103,14 +105,12 @@ def load(skeleton: Skeleton, get: Resolver) -> Toolbox | None:
     code: list[ToolCode] = []
     for ref in skeleton.tools:
         tool = resolve(get, ref, Tool)
-        function = entry(tool.code, tool.entry_point)
-        if not callable(function):
-            raise TypeError(f"{tool.entry_point} names nothing to call")
-        functions[tool.name] = function
+        shipped = entry(TOOLS, tool.entry_point, tool.version)
+        functions[tool.name] = shipped.function
         parameters[tool.name] = validators.validator_for(tool.parameters)(
             tool.parameters
         )
-        code.append(ToolCode(tool=ref, code=rig()))
+        code.append(ToolCode(tool=ref, version=shipped.version))
     contract = skeleton.contract
     return Toolbox(
         functions=functions,

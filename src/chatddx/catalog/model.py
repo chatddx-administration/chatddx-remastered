@@ -1,5 +1,5 @@
 import re
-from collections.abc import Iterable
+from collections.abc import Iterable, Mapping
 from datetime import datetime
 from enum import StrEnum
 from typing import ClassVar, Literal, Self
@@ -81,6 +81,8 @@ class EntryField(StrEnum):
 
 
 Part = Literal["view", "resource"]
+# What a scorer edit calls its views and resources, by part and position.
+Labels = Mapping[tuple[Part, int], str]
 # What keeping a digest in a thread did (src/chatddx/store/catalog.py:Catalog.keep).
 Kept = Literal["created", "edited", "unchanged"]
 

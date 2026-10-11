@@ -9,24 +9,23 @@ from chatddx.catalog import (
     Entry,
     EntryField,
     Kept,
+    Labels,
     Part,
     Repair,
     Subject,
     Survey,
     Thread,
     Variation,
-    check_label,
     families,
     language,
     read,
     threads,
     titles,
 )
-from chatddx.factors.base import Component, Fingerprint, canonical_bytes, resolve
+from chatddx.factors.base import Component, Fingerprint, canonical_bytes
 from chatddx.factors.bundle import Registry
 from chatddx.factors.cases import Vignette
 from chatddx.factors.request import Compilation, Recipe
-from chatddx.factors.scoring import Scorer
 
 from .store import Connection, Store
 
@@ -278,15 +277,15 @@ class Rows:
         ).fetchall()
         return [(str(d), str(v)) for d, v in rows]
 
-    def labels(self, scorer: str) -> list[tuple[Part, int, str]]:
+    def labels(self, edits: Collection[int]) -> list[tuple[int, Part, int, str]]:
         rows = self._conn.execute(
             """
-            SELECT part, position, value FROM catalog.label
-            WHERE scorer = %s ORDER BY id
+            SELECT edit, part, position, value FROM catalog.label
+            WHERE edit = ANY(%s::bigint[]) ORDER BY id
             """,
-            (scorer,),
+            (list(edits),),
         ).fetchall()
-        return [(part, int(position), str(value)) for part, position, value in rows]
+        return [(int(e), part, int(p), str(v)) for e, part, p, v in rows]
 
 
 class Catalog:
@@ -303,6 +302,7 @@ class Catalog:
         forked_from: int | None = None,
         name: str | None = None,
         owner: int | None = None,
+        labels: Labels | None = None,
     ) -> Edit:
         named = None if name is None else Entry(field=EntryField.NAME, value=name)
         owned = Entry(field=EntryField.OWNER, person=by if owner is None else owner)
@@ -320,7 +320,7 @@ class Catalog:
                 (kind, forked_from, by),
             ).fetchone()
             assert row is not None
-            edit = self.edit(row[0], digest, by, compilation=compilation)
+            edit = self.edit(row[0], digest, by, compilation=compilation, labels=labels)
             self.note(Subject(thread=edit.thread), owned, by)
             if named is not None:
                 self.note(Subject(thread=edit.thread), named, by)
@@ -335,6 +335,7 @@ class Catalog:
         compilation: str | None = None,
         based_on: int | None = None,
         head: int | None = None,
+        labels: Labels | None = None,
     ) -> Edit:
         with self._conn.transaction():
             self._lock(thread)
@@ -343,6 +344,7 @@ class Catalog:
             if based_on is not None:
                 threads.check_based_on(self._rows, thread, based_on)
             threads.check_expectation(self._rows, thread, digest)
+            threads.check_labels(self._rows, thread, digest, labels or {})
             row = self._conn.execute(
                 f"""
                 INSERT INTO catalog.edit AS e
@@ -353,9 +355,18 @@ class Catalog:
                 """,
                 (digest, compilation, based_on, by, thread),
             ).fetchone()
-        if row is None:
-            raise LookupError(f"no thread with id {thread}")
-        return _edit(row)
+            if row is None:
+                raise LookupError(f"no thread with id {thread}")
+            edit = _edit(row)
+            for (part, position), value in sorted((labels or {}).items()):
+                _ = self._conn.execute(
+                    """
+                    INSERT INTO catalog.label (edit, part, position, value, by)
+                    VALUES (%s, %s, %s, %s, %s)
+                    """,
+                    (edit.id, part, position, value, by),
+                )
+        return edit
 
     # Edits of one thread are written one at a time, so the head an edit names is still
     # the head when it lands. The writer may not update the catalog's tables, which
@@ -366,9 +377,10 @@ class Catalog:
             (thread % 2**31,),
         )
 
-    # `digest` kept in `thread`, by `by`: a new edit, or nothing when it's the head
-    # already; or, without a thread, in a new one named `name` and forked from the edit
-    # `forked_from`. With `head`, the thread must not have moved on from it.
+    # `digest` kept in `thread`, by `by`, with `labels` when given: a new edit, or
+    # nothing when it's the head already, with those labels; or, without a thread, in a
+    # new one named `name` and forked from the edit `forked_from`. With `head`, the thread
+    # must not have moved on from it.
     def keep(
         self,
         digest: str,
@@ -379,10 +391,16 @@ class Catalog:
         compilation: str | None = None,
         forked_from: int | None = None,
         head: int | None = None,
+        labels: Labels | None = None,
     ) -> tuple[Edit, Kept]:
         if thread is None:
             created = self.create(
-                digest, by, compilation=compilation, forked_from=forked_from, name=name
+                digest,
+                by,
+                compilation=compilation,
+                forked_from=forked_from,
+                name=name,
+                labels=labels,
             )
             return created, "created"
         with self._conn.transaction():
@@ -390,9 +408,12 @@ class Catalog:
             if head is not None:
                 threads.check_head(self._rows, thread, head)
             current = self.head(thread)
-            if current.digest == digest:
+            if current.digest == digest and (
+                labels is None or self.labels(current.id) == dict(labels)
+            ):
                 return current, "unchanged"
-            return self.edit(thread, digest, by, compilation=compilation), "edited"
+            edit = self.edit(thread, digest, by, compilation=compilation, labels=labels)
+            return edit, "edited"
 
     def thread(self, id: int) -> Thread:
         return threads.thread(self._rows, id)
@@ -564,20 +585,9 @@ class Catalog:
             person, (EntryField.OWNER, EntryField.COLLABORATOR)
         )
 
-    def label(
-        self, scorer: str, part: Part, position: int, value: str, by: int
-    ) -> None:
-        check_label(resolve(self._rows.get, scorer, Scorer), part, position)
-        _ = self._conn.execute(
-            """
-            INSERT INTO catalog.label (scorer, part, position, value, by)
-            VALUES (%s, %s, %s, %s, %s)
-            """,
-            (scorer, part, position, value, by),
-        )
-
-    def labels(self, scorer: str) -> dict[tuple[Part, int], str]:
-        return read.labels(self._rows, scorer)
+    # What the edit `edit` of a scorer thread calls its views and resources.
+    def labels(self, edit: int) -> dict[tuple[Part, int], str]:
+        return dict(read.labels(self._rows, edit))
 
     # src/chatddx/store/migrations/0012-t2-catalog.sql keeps each
     # binding's source, and its id or fingerprint.

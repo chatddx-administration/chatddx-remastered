@@ -1,6 +1,6 @@
 import json
 from collections.abc import Callable, Iterable, Mapping, Sequence
-from typing import Annotated, Literal, NamedTuple, cast, override
+from typing import Annotated, ClassVar, Literal, NamedTuple, cast, override
 from urllib.parse import unquote
 
 from pydantic import (
@@ -370,11 +370,12 @@ EntryPoint = Annotated[str, StringConstraints(pattern=r"^[\w.]+:[\w.]+$")]
 # since what it returns is what the model reads next.
 class Tool(Component):
     kind: Literal["tool"] = "tool"
+    schema_version: ClassVar[int] = 2
     name: ToolName
     description: str = Field(min_length=1)
     parameters: dict[str, JsonValue]
-    code: Code
     entry_point: EntryPoint
+    version: int = Field(ge=1)
 
 
 ToolRef = Annotated[Digest, RefTo("tool")]

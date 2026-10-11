@@ -11,6 +11,7 @@ from .model import (
     Edit,
     Entry,
     EntryField,
+    Labels,
     Part,
     Subject,
     Thread,
@@ -63,7 +64,8 @@ class Reader(Protocol):
 
     def languages(self, digests: Collection[str]) -> list[tuple[str, str]]: ...
 
-    def labels(self, scorer: str) -> list[tuple[Part, int, str]]: ...
+    # Each label with the edit it was written with.
+    def labels(self, edits: Collection[int]) -> list[tuple[int, Part, int, str]]: ...
 
 
 def heads_of(rows: Reader, threads: Collection[int]) -> dict[int, Edit]:
@@ -105,7 +107,5 @@ def about(rows: Reader, subject: Subject) -> About:
     return abouts(rows, [subject])[subject]
 
 
-def labels(rows: Reader, scorer: str) -> dict[tuple[Part, int], str]:
-    return latest(
-        ((part, position), value) for part, position, value in rows.labels(scorer)
-    )
+def labels(rows: Reader, edit: int) -> Labels:
+    return {(part, position): value for _, part, position, value in rows.labels([edit])}

@@ -84,8 +84,8 @@ def test_a_write_is_refused_what_isn_t_the_person_s_to_write(
         _ = bench.edit_component(origin, head, mine)
     with pytest.raises(ValueError, match="holds chunk.instructions components, not"):
         _ = bench.fork_component(origin, "odd", bench.component(sampling))
-    with pytest.raises(ValueError, match="'scorer' isn't a kind a person writes"):
-        _ = bench.component({"kind": "scorer"})
+    with pytest.raises(ValueError, match="'tool' isn't a kind a person writes"):
+        _ = bench.component({"kind": "tool"})
     with pytest.raises(ValueError, match="'skeleton' isn't a kind a person writes"):
         _ = bench.component({"kind": "skeleton"})
     with pytest.raises(ValueError, match="chunk.instructions is at v1, not v2"):

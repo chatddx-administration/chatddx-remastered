@@ -77,7 +77,7 @@ def scorers(repl: Repl) -> None:
         table.add_column(column)
 
     for edit, about, scorer in bench.scorers():
-        labels = bench.labels(edit.digest)
+        labels = bench.labels_of(edit)
         name = about.name or bench.catalog.title(edit.thread)
         for i, view in enumerate(scorer.views):
             reads = view.output or "the whole answer"
