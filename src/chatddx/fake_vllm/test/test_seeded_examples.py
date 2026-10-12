@@ -5,7 +5,7 @@ import pytest
 
 from chatddx.fake_vllm.test.test_fake_vllm import body, qwen, reply
 
-pytestmark = pytest.mark.wip
+pytestmark = pytest.mark.solidified
 
 
 def test_a_schema_s_examples_are_picked_by_the_seed_unless_greedy() -> None:

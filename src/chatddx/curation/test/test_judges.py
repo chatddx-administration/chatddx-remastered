@@ -7,7 +7,7 @@ from chatddx.factors.lint import lint
 from chatddx.factors.scoring import Judge
 from chatddx.test.world import QWEN, QWEN_MODEL, REMOTE, copied, edit, world_plan
 
-pytestmark = pytest.mark.wip
+pytestmark = pytest.mark.solidified
 
 SCORER = """
 [scorer.judged]
