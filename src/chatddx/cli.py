@@ -88,13 +88,13 @@ def _init_data(args: argparse.Namespace) -> None:
     except ValueError as e:
         raise SystemExit(f"init-data: {e}") from None
     try:
-        source = world.inventory.source(args.source)
+        source = world.inventory.listing(args.source)
     except LookupError as e:
         raise SystemExit(f"init-data: {world.path}: {e}") from None
     if not set(cases) & set(source.ids()):
         raise SystemExit(
             f"init-data: none of the data's {len(cases)} cases is in source "
-            + f"{args.source!r} of {world.path}; the sample World has them"
+            + f"{source.name!r} of {world.path}"
         )
     lines: list[str] = []
     with psycopg.connect(settings.database()) as conn:
@@ -118,7 +118,7 @@ def _init_data(args: argparse.Namespace) -> None:
 def _repair_data(args: argparse.Namespace) -> None:
     world = _world("repair-data", args.world)
     try:
-        source = world.inventory.source(args.source)
+        source = world.inventory.listing(args.source)
     except LookupError as e:
         raise SystemExit(f"repair-data: {world.path}: {e}") from None
     with psycopg.connect(settings.database()) as conn:
@@ -278,9 +278,8 @@ def main(argv: Sequence[str] | None = None) -> None:
     )
     _ = init.add_argument(
         "--source",
-        default="sample",
-        help="the vignette source's name, in the World's inventory and the cases "
-        + "(sample)",
+        help="the name of the World's source that holds the cases' vignettes, needed "
+        + "when more than one source lists its vignettes",
     )
     _ = init.add_argument(
         "--giftbag", action="store_true", help="also give the user forks of their own"
@@ -318,7 +317,9 @@ def main(argv: Sequence[str] | None = None) -> None:
         help="the World directory whose source holds the vignettes (CHATDDX_WORLD)",
     )
     _ = repair_parser.add_argument(
-        "--source", default="sample", help="the source's name in the World (sample)"
+        "--source",
+        help="the name of the World's source to survey, needed when more than one "
+        + "source lists its vignettes",
     )
     _ = repair_parser.add_argument(
         "--dry-run", action="store_true", help="list the repairs without making them"

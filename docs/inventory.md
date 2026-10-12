@@ -60,10 +60,29 @@ named by its id, or a database source, `kind = "database"`, whose vignettes are 
 database under new ids as written and never changed, and read through the store. A source is a directory unless it
 says otherwise.
 
+```
+AGENT: CHANGE
+Only a directory source lists and fetches; a database source is read through the store, and the commands that list a
+source refuse one.
+---
+A directory source lists its vignettes' ids, fetches a vignette's raw bytes, and builds a case for each vignette,
+without appendices, with the fingerprint of the raw bytes (docs/factors.md, "Case"). It refuses an id that would reach
+outside it. What happens to the bytes next is the case's preparation (docs/factors.md, "Preparing a case"). A
+database source lists nothing: its texts are read through the store, by id, so init-data and repair-data, which list
+a source, refuse one.
+```
 A source lists its vignettes' ids, fetches a vignette's raw bytes, and builds a case for each vignette, without
 appendices, with the fingerprint of the raw bytes (docs/factors.md, "Case"). It refuses an id that would reach outside
 it. What happens to the bytes next is the case's preparation (docs/factors.md, "Preparing a case").
 
+```
+AGENT: CHANGE
+`--source` is needed only when more than one source lists its vignettes.
+---
+A source's name is part of every case built from it, and so of their digests. Renaming a source makes new cases;
+moving its directory changes nothing. init-data loads the cases of a source a World names, or of its only source that
+lists its vignettes.
+```
 A source's name is part of every case built from it, and so of their digests. Renaming a source makes new cases;
 moving its directory changes nothing. init-data loads the cases of a source a World names.
 

@@ -6,7 +6,7 @@ from pydantic import Discriminator, Field, HttpUrl, Tag, model_validator
 
 from chatddx.factors.base import Digest, Frozen, Sha256Hex
 
-from .sources import DatabaseSource, DirectorySource, Source
+from .sources import DatabaseSource, DirectorySource, ListingSource
 
 
 class EndpointSpec(Frozen):
@@ -105,11 +105,33 @@ class Inventory(Frozen):
             }
         )
 
-    def source(self, name: str) -> Source:
+    def source(self, name: str) -> AnySource:
         source = self.sources.get(name)
         if source is None:
             raise LookupError(f"no source {name!r} in the inventory")
         return source
+
+    def listing(self, name: str | None = None) -> ListingSource:
+        if name is None:
+            listed = sorted(
+                n for n, s in self.sources.items() if isinstance(s, ListingSource)
+            )
+            if len(listed) != 1:
+                raise LookupError(
+                    f"{len(listed)} sources list their vignettes ({', '.join(listed)}), "
+                    + "so one must be named"
+                    if listed
+                    else "no source in the inventory lists its vignettes"
+                )
+            name = listed[0]
+        match self.source(name):
+            case ListingSource() as source:
+                return source
+            case other:
+                raise LookupError(
+                    f"source {name!r} is a {other.kind} source, whose vignettes are "
+                    + "read through the store, not listed"
+                )
 
     def endpoint(self, name: str) -> EndpointSpec:
         spec = self.endpoints.get(name)

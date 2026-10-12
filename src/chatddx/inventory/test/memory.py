@@ -1,9 +1,9 @@
 from typing import override
 
-from chatddx.inventory import Source
+from chatddx.inventory import ListingSource
 
 
-class MemorySource(Source):
+class MemorySource(ListingSource):
     vignettes: dict[str, bytes]
 
     @override

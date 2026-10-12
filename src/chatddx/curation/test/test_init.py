@@ -327,9 +327,20 @@ def test_init_data_command(
     empty = tmp_path / "empty"
     (empty / "vignettes").mkdir(parents=True)
     _ = (empty / "inventory.toml").write_text('[source.sample]\npath = "vignettes"\n')
+    two = tmp_path / "two"
+    (two / "vignettes").mkdir(parents=True)
+    _ = (two / "inventory.toml").write_text(
+        '[source.sample]\npath = "vignettes"\n[source.more]\npath = "vignettes"\n'
+        + '[source.typed]\nkind = "database"\n'
+    )
     for argv, refusal in [
         (["--world", str(tmp_path)], "is no World: it holds no inventory.toml"),
-        (["--world", str(empty)], "none of the data's 3 cases is in source 'sample'"),
+        (
+            ["--world", str(empty)],
+            "none of the data's 3 cases is in source 'sample' of",
+        ),
+        (["--world", str(two)], r"2 sources list their vignettes \(more, sample\)"),
+        (["--world", str(two), "--source", "typed"], "'typed' is a database source"),
         (["--source", "other"], "no source 'other'"),
         (["--facts", str(SAMPLE / "factors.toml")], "facts have only 'model' tables"),
     ]:
@@ -480,7 +491,7 @@ def test_wipe_data_deletes_and_unshares_and_init_data_gives_it_back(
 
 
 def test_the_sample_world_holds_the_vignettes_at_7893656() -> None:
-    source = Inventory.load(SAMPLE_WORLD / "inventory.toml").source("sample")
+    source = Inventory.load(SAMPLE_WORLD / "inventory.toml").listing("sample")
     assert source.sensitive
     assert source.ids() == sorted(CASES)
     for id in source.ids():

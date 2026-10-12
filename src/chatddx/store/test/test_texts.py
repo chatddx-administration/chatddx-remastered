@@ -37,8 +37,6 @@ def test_a_database_source_s_texts_are_kept_and_fetched_through_the_store(
     filed = Vignette(source="files", id="c1", fingerprint=unknown)
     assert fetch_vignette(conn, inventory, typed) == b"chest pain"
     assert fetch_vignette(conn, inventory, filed) == b"cough"
-    with pytest.raises(LookupError, match="is read through the store"):
-        _ = inventory.source("typed").fetch(id)
 
 
 @pytest.mark.parametrize("autocommit", [True])

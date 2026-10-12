@@ -126,3 +126,17 @@ def test_repair_data_command(
     assert capsys.readouterr().out == "[repair] nothing to repair at source 'sample'\n"
     with pytest.raises(SystemExit, match="no source 'other'"):
         main(["repair-data", "--source", "other"])
+
+    inventory = world / "inventory.toml"
+    _ = inventory.write_text(
+        inventory.read_text()
+        + '[source.more]\npath = "vignettes"\n[source.typed]\nkind = "database"\n'
+    )
+    for argv, refusal in [
+        ([], r"2 sources list their vignettes \(more, sample\), so one must be named"),
+        (["--source", "typed"], "source 'typed' is a database source"),
+    ]:
+        with pytest.raises(SystemExit, match=refusal):
+            main(["repair-data", *argv])
+    main(["repair-data", "--source", "sample"])
+    assert capsys.readouterr().out == "[repair] nothing to repair at source 'sample'\n"

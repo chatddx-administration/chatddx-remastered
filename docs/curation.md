@@ -128,6 +128,17 @@ the sample's first run comes to 258 threads and families.
 2. **Records.** Each planned record becomes a thread named after it. A record the archive already has, by kind and
    name, is validated when its digest is unchanged and gets a new edit when it changed; a compiled skeleton's edit
    records its compilation. Its tags, description, view labels and language are brought in line with the data.
+```
+AGENT: CHANGE
+`--source` defaults to the World's only source that lists its vignettes, not to `sample`, and a database source is
+refused.
+---
+3. **Cases.** Each case is read from the World's source, the one `--source` names or the only one that lists its
+   vignettes (a database source lists none), and adopted into a family named after its id, with its tags and its
+   file's language, and gets an expectation thread. A case the source doesn't have, or one whose family can't adopt
+   it, is reported, with what a survey of the source says happened to it: renamed to or from another id, or changed,
+   and the family repair-data would move.
+```
 3. **Cases.** Each case is read from the World's source, by `--source` (`sample`), and adopted into a family named
    after its id, with its tags and its file's language, and gets an expectation thread. A case the source doesn't
    have, or one whose family can't adopt it, is reported, with what a survey of the source says happened to it:
@@ -156,6 +167,15 @@ A vignette can be renamed or edited at its source. Its family then needs a repai
 new place (docs/catalog.md, "Repairing"). Loading only reports this, since a repair also moves the threads of everyone
 who used those cases.
 
+```
+AGENT: CHANGE
+Which source is surveyed, as for loading.
+---
+`chatddx repair-data [--world DIR] [--source NAME] [--dry-run]` surveys the source, the one `--source` names or the
+World's only source that lists its vignettes, and repairs each of the archive's families it finds renamed or changed
+there, printing what moved. A family that isn't the archive's is named and left to its owner. With `--dry-run`, it
+only lists them.
+```
 `chatddx repair-data [--world DIR] [--source NAME] [--dry-run]` surveys the source and repairs each of the archive's
 families it finds renamed or changed there, printing what moved. A family that isn't the archive's is named and left
 to its owner. With `--dry-run`, it only lists them.

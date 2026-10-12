@@ -201,7 +201,7 @@ def curated(copies: Copies, migrated: str) -> Iterator[str]:
         with connect(name) as conn:
             alice = People(conn).add("alice", "Alice")
             cases = load_cases(SAMPLE)
-            source = World.load(WORLD).inventory.source("sample")
+            source = World.load(WORLD).inventory.listing("sample")
             _ = init(conn, sample_plan(), cases, source, alice, giftbag=True)
         yield name
     finally:

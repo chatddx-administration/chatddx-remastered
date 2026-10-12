@@ -28,7 +28,8 @@ vignettes, and other Worlds may copy that, so the name sets a precedent:
   own data, which its vignettes are. `bootstrap` and `starter_kit` name a single use, but a data set is loaded again
   to update it. `demo` names a purpose it doesn't have.
 
-Loading it stays explicit: `chatddx init-data alice --world worlds/test --data worlds/test/_data --source test`.
+Loading it stays explicit: `chatddx init-data alice --world worlds/test --data worlds/test/_data`. Its one directory
+source is the default `--source`.
 
 ## Principles
 1. **Every record is read by a test.** The table under "What it exercises" names, for each record, the test that
@@ -223,8 +224,10 @@ sample, Kompismoln), each with its data set:
 
 ## Fixes before the move
 Found while surveying, each to be talked through with the user and then fixed and tested on its own:
-- **`init-data --source typed` ends in a traceback.** In `src/chatddx/cli.py:_init_data`, `source.ids()` runs outside
-  the `try`, and `DatabaseSource.ids` raises `LookupError`.
+- **Done (decided): `init-data --source typed` ended in a traceback.** A database source lists nothing now:
+  `ListingSource` (`src/chatddx/inventory/sources.py`) holds `ids`, `fetch` and `cases`, `init` and `repair` take one,
+  and `Inventory.listing` refuses a database source. `--source` defaults to the World's only listing source, for
+  init-data and repair-data alike. The docs have AGENT suggestions.
 - **`free-text-guided (sv, …)` is planned as a fork of nothing.** In `src/chatddx/curation/plan.py:plan_factors`,
   `base()` gives `None` when the origin has no variant in the fork's language, and says nothing. Either the fork
   takes the origin's variant in another language, or it is reported. That's a question for the user.

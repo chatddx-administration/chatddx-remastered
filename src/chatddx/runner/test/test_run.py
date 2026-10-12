@@ -610,7 +610,7 @@ def test_a_round_runs_the_tools_a_response_calls_and_sends_back_their_results(
     ]
 
     case = resolve(plan.registry.get, made.cases[0], Case)
-    raw = open_world.source("sample").fetch(case.vignette.id)
+    raw = open_world.listing("sample").fetch(case.vignette.id)
     fills = prepare_case(
         case, raw, plan.registry.get, skeleton.appendix_layout, made.cleanup
     ).fills

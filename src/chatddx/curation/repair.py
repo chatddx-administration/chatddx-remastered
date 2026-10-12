@@ -1,7 +1,7 @@
 from chatddx.catalog import Subject
 from chatddx.factors.base import Fingerprint
 from chatddx.identity import Person
-from chatddx.inventory import Source
+from chatddx.inventory import ListingSource
 from chatddx.store.catalog import Catalog
 from chatddx.store.store import Connection
 
@@ -11,7 +11,7 @@ def _count(n: int, one: str, many: str) -> str:
 
 
 def repair(
-    conn: Connection, source: Source, archive: Person, dry: bool = False
+    conn: Connection, source: ListingSource, archive: Person, dry: bool = False
 ) -> list[str]:
     lines: list[str] = []
     at = f"at source {source.name!r}"
