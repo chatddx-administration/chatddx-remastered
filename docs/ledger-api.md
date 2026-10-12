@@ -308,6 +308,14 @@ Returns findings, in this order:
 1. `ledger.seal`, subject the run id;
 2. `run.incomplete` when finished: one for missing items, one for missing planned canary calls;
 3. `case.drift` for each item whose `vignette` differs from its case's `vignette.fingerprint`;
+AGENT: add
+The finding for failed calls, as the user decided: one per item or canary call, with the call's error. It goes in
+as 4, and the rest move down one.
+---
+4. `call.failed` for each item whose last call has an `error`, subject the item key, then for each canary call with
+   one, subject `<phase>/<position>`; the message is the error. Earlier calls of an item can't have one: a failed call
+   ends its rounds;
+
 4. `tools.unanswered` for each item whose last call still has tool calls other than the answer function's (skeletons
    with tools only);
 5. `tools.code` for each tool of the skeleton whose version isn't recorded or isn't the one `Tool.version` pins;
@@ -415,6 +423,11 @@ Returns findings, in this order:
 ## Finding codes
 
 All are warnings. Item-key subjects are `str(ItemKey)`.
+
+AGENT: add
+A row for the new finding, after `case.drift`.
+---
+| `call.failed` | `check_run` | item key, or `<phase>/<position>` for a canary call | the call's `error` |
 
 | Code | Reported by | Subject | Message |
 | --- | --- | --- | --- |

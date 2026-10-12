@@ -284,9 +284,12 @@ def test_an_interrupt_mid_call_records_the_call_as_stopped(
     with pytest.raises(KeyboardInterrupt):
         running.send(Heard(then=interrupt))
     running.send()
-    _ = running.finish()
+    findings = running.finish()
     [item] = Store(conn).run(running.run).items
     assert item.call.error == STOPPED and item.call.prompt_tokens is not None
+    assert ("call.failed", STOPPED, str(item.key)) in [
+        (f.code, f.message, f.subject) for f in findings
+    ]
 
 
 def test_nothing_is_sent_or_written_where_the_gate_refuses(
@@ -872,12 +875,15 @@ def test_an_interrupt_during_a_canary_records_it_as_stopped(
     )
     with pytest.raises(KeyboardInterrupt):
         running.send()
-    _ = running.finish()
+    findings = running.finish()
     stored = Store(conn).run(running.run)
     assert [(c.phase, c.canary, c.call.error) for c in stored.canaries] == [
         ("start", 0, STOPPED)
     ]
     assert stored.items == ()
+    assert [(f.message, f.subject) for f in findings if f.code == "call.failed"] == [
+        (STOPPED, "start/0")
+    ]
 
 
 @pytest.mark.usefixtures("fake")

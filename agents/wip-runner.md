@@ -268,8 +268,10 @@ In `rounds.py`, which `run.py` calls for every item, with tools or without:
   repo's `bench/outcome.py` has none.
 - **Resuming** and **`max_jobs` across runs**: moved to `agents/wip-worker.md` ("Below the worker"), their first
   caller.
-- **A summary of failed calls.** `check_run` says nothing about `Call.error`. A run whose every call was cut short
-  checks clean, and only the items show it. A UI can count them, or the runner could note them.
+- **Failed calls** (decided: one finding per call). `check_run` warns `call.failed` for each item whose last call has
+  an error, and each canary call with one, subject the item key or `<phase>/<position>`, with the error as the
+  message (`ledger/run.py:check_run`). The ledger docs have AGENT suggestions; the tests are the runner's
+  (`runner/test/test_run.py`), `wip` until the docs take it.
 - **A halted call waits for its response's headers.** A halt now ends a stalled stream at once (see "Phase 2"), but
   a call still waiting for the engine to answer at all, under an execution with no `timeout_s`, waits on. vLLM sends
   its headers before it starts generating. The bench sends no `Execution` (`bench/runs.py:start`), so every run from
@@ -277,7 +279,8 @@ In `rounds.py`, which `run.py` calls for every item, with tools or without:
 
 ### Found in a check against the code
 Fixed in the runner pass: an unreadable case's `ItemStarted` without an `ItemEnded`, the calls a worker's exception
-dropped, `rendered_again`'s copy of the prepare and render, and a halt waiting on a stalled stream. Still open:
+dropped, `rendered_again`'s copy of the prepare and render, a halt waiting on a stalled stream, and failed calls that
+`check_run` didn't mention (see "Afterwards"). Still open:
 - **Rejected engine bodies are stored verbatim** (`send.py`, `call(e.status, str(e), e.body)`), raised by
   `agents/healthcheck.md` ("Before real patient data", 1). Closed, with the user's agreement, as no change: they're
   stored in run items, which are case-derived records like the completions beside them

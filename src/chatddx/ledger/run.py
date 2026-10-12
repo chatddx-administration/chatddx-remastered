@@ -192,6 +192,20 @@ def check_run(run: Run, registry: Registry) -> list[Finding]:
                     subject=str(item.key),
                 )
             )
+    for item in run.items:
+        if (error := item.calls[-1].error) is not None:
+            findings.append(
+                Finding(code="call.failed", message=error, subject=str(item.key))
+            )
+    for canary in run.canaries:
+        if (error := canary.call.error) is not None:
+            findings.append(
+                Finding(
+                    code="call.failed",
+                    message=error,
+                    subject=f"{canary.phase}/{canary.canary}",
+                )
+            )
     skeleton = resolve(registry.get, trial.skeleton, Skeleton)
     for item in run.items:
         findings.extend(_rounds(item, skeleton, registry))
