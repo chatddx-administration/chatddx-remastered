@@ -3,17 +3,10 @@ import pytest
 from chatddx.bench import Bench
 from chatddx.bench.test.helpers import another_expectation
 from chatddx.catalog import Entry, EntryField, Subject
-from chatddx.repl.test.helpers import (
-    CASES,
-    Say,
-    line_of,
-    pattern,
-    row,
-    tagged,
-    targets_of,
-)
+from chatddx.repl.test.helpers import Say, line_of, pattern, row, tagged, targets_of
 from chatddx.store import Catalog
 from chatddx.test.world import (
+    CASES,
     GPT_OSS,
     LINES,
     MISTRAL,

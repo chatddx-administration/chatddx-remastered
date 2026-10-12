@@ -8,7 +8,7 @@ from pydantic import HttpUrl
 
 from chatddx.core import settings
 from chatddx.core.rig import rig
-from chatddx.curation import Plan, plan_factors
+from chatddx.curation import Plan, load_cases, plan_factors
 from chatddx.factors.base import Resolver
 from chatddx.facts import BUNDLED, Facts
 from chatddx.fake_vllm.served import Served
@@ -18,6 +18,7 @@ from chatddx.inventory import Inventory, World, start_up
 WORLDS = settings.PROJECT_ROOT / "worlds"
 TEST = WORLDS / "test"
 DATA = TEST / "_data"
+CASES = load_cases(DATA)
 
 QWEN_MODEL = "Qwen/Qwen3-8B-AWQ"
 GPT_OSS_MODEL = "openai/gpt-oss-20b"
@@ -34,6 +35,7 @@ LINES = f"lines (en, {QWEN_MODEL})"
 NATIVE = f"native (en, {QWEN_MODEL})"
 NATIVE_TOOLS = f"native-tools (en, {QWEN_MODEL})"
 TOOL_ANSWER = "tool-answer (en)"
+OFF = f"off ({QWEN_MODEL})"
 
 FAKE_LINTS = [
     *(
@@ -49,10 +51,13 @@ FAKE_LINTS = [
 ]
 
 
+def world_facts(world: Path = TEST) -> Facts:
+    return Facts.load(BUNDLED, *World.load(world).facts)
+
+
 def world_plan(world: Path = TEST, data: Path = DATA) -> Plan:
-    loaded = World.load(world)
-    facts = Facts.load(BUNDLED, *loaded.facts)
-    return plan_factors(data, facts, rig(), more=list(loaded.factors))
+    more = list(World.load(world).factors)
+    return plan_factors(data, world_facts(world), rig(), more=more)
 
 
 def free_ports(n: int) -> list[int]:

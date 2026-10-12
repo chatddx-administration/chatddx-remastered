@@ -7,14 +7,13 @@ from httpx2 import Response
 from psycopg.conninfo import make_conninfo
 
 from chatddx.api.app import app
-from chatddx.api.test.helpers import world_facts
 from chatddx.bench import Bench
 from chatddx.core import settings
 from chatddx.identity import Person
 from chatddx.inventory import Inventory
 from chatddx.store import People
 from chatddx.store.store import Connection
-from chatddx.test.world import TEST
+from chatddx.test.world import TEST, world_facts
 
 PASSWORD = "correct horse battery staple"
 

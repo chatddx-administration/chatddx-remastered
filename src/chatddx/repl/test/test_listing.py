@@ -7,8 +7,9 @@ from chatddx.bench import Bench
 from chatddx.inventory import Inventory
 from chatddx.repl.commands import handle
 from chatddx.repl.shell import Repl
-from chatddx.repl.test.helpers import CASES, Say, line_of
+from chatddx.repl.test.helpers import Say, line_of
 from chatddx.test.world import (
+    CASES,
     GPT_OSS,
     GPT_OSS_MODEL,
     LINES,

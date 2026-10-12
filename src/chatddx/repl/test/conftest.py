@@ -2,14 +2,13 @@ import pytest
 from rich.console import Console
 
 from chatddx.bench import Bench
-from chatddx.facts import BUNDLED, Facts
-from chatddx.inventory import Inventory, World
+from chatddx.inventory import Inventory
 from chatddx.repl.commands import handle
 from chatddx.repl.shell import Repl
 from chatddx.repl.test.helpers import Say
 from chatddx.store import People
 from chatddx.store.store import Connection
-from chatddx.test.world import TEST
+from chatddx.test.world import world_facts
 
 
 @pytest.fixture
@@ -26,7 +25,7 @@ def autocommit() -> bool:
 def bench(conn: Connection, world: Inventory) -> Bench:
     alice = People(conn).find("alice")
     assert alice is not None
-    return Bench(conn, alice, world, Facts.load(BUNDLED, *World.load(TEST).facts))
+    return Bench(conn, alice, world, world_facts())
 
 
 @pytest.fixture

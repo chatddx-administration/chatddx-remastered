@@ -3,11 +3,8 @@ from collections.abc import Callable
 from pydantic import JsonValue
 
 from chatddx.bench import TriedVariation
-from chatddx.curation import load_cases
 from chatddx.repl.shell import Repl
-from chatddx.test.world import DATA
-
-CASES = load_cases(DATA)
+from chatddx.test.world import CASES
 
 type Say = Callable[..., str]
 

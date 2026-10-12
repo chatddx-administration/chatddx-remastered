@@ -2,8 +2,9 @@ import pytest
 
 from chatddx.repl.commands import COMMANDS, complete, handle
 from chatddx.repl.shell import Repl
-from chatddx.repl.test.helpers import CASES, Say, tried
+from chatddx.repl.test.helpers import Say, tried
 from chatddx.test.world import (
+    CASES,
     GPT_OSS,
     GPT_OSS_MODEL,
     MISTRAL,

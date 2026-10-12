@@ -1,8 +1,7 @@
-from chatddx.curation import load_cases
 from chatddx.inventory.test.memory import MemorySource
-from chatddx.test.world import DATA
+from chatddx.test.world import CASES
 
-CASES = load_cases(DATA)
+__all__ = ["CASES", "vignettes"]
 
 
 def vignettes(**changed: bytes) -> MemorySource:

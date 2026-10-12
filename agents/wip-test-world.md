@@ -9,21 +9,32 @@ plans a World built for the tests, `worlds/test/`, and moving every test onto it
 
 ## Where it stands
 - The fixes found on the way are in (see "Fixes before the move").
-- **The World is built**: `worlds/test/` and `worlds/test/_data/`, as "What it exercises" lists them. Its own tests
-  are `src/chatddx/curation/test/test_the_test_world.py`, marked `wip`: it plans 68 records, 24 of them skeletons,
-  with the 12 skips and 7 lint warnings it is built to give, binds each endpoint to its engine, loads cleanly with a
-  giftbag in 1.6 s and validates on a re-run; and its vignettes hold what their ids say. The shared paths and
-  `world_plan` are in `src/chatddx/test/world.py`, and the root conftest ships the test tools for the session.
-- Next: the harness, then the move.
+- **The World is built**: `worlds/test/` and `worlds/test/_data/`, as "What it exercises" lists them. It plans 68
+  records, 24 of them skeletons, with the 12 skips and 7 lint warnings it is built to give, and loads cleanly with a
+  giftbag in 1.6 s.
+- **The harness is built** (see "The harness").
+- **The move is done.** Every test runs on the test World but the sample's own (see "What stays on the sample"):
+  620 pass, 522 of them in the quick run, which takes 23 s. The whole run took 59-69 s before the move and 62-65 s
+  after, on a machine whose runs spread wider than that.
+- Next: **the tests of what only the test World reaches** (see "Not read yet"), so that every row of "What it
+  exercises" is read, as principle 1 asks.
 
-Found while building it:
+Found on the way:
 - **`qwen3@fake` and `gpt-oss@fake` are the sample's fake engines**: a name is no part of a digest, and their
   fields are the same, so a store loaded with both Worlds holds one engine under two names.
-- **The fakes refuse what the `vllm.*` lints predict.** Run in-process on every skeleton, `qwen3-bare@fake` and
-  `mistral@fake` refuse a thinking budget with a 400, `qwen3-bare@fake` refuses every request with tools, and
-  `mistral@fake` answers tool requests in text.
-  `test_worlds.py` can check that the fake refuses a pair exactly when a `vllm.*` lint says vLLM would, which is the
-  check `agents/wip-sample-data.md` ("The fake vLLM", "Not faked yet") lists as missing.
+- **The fakes refuse what the `vllm.*` lints predict.** `test_worlds.py` checks it on every skeleton and fake
+  endpoint of every World: `qwen3-bare@fake` and `mistral@fake` refuse a thinking budget, `qwen3-bare@fake` refuses
+  every request with tools, and `mistral@fake` answers tool requests in text.
+- **The API lets a person make a configuration that is the archive's under another name.** Alice's hand-made recipe
+  of clinician, case, lines and greedy compiled to `lines-instructed (en)`'s skeleton, and was saved as a thread of
+  her own with no finding; an expectation the same as one she holds is refused. `api/test/test_writes.py` now makes
+  one that is new.
+- **`reasoned (en, Qwen/Qwen3-8B-AWQ)` shows its reasoning as `on (Qwen/Qwen3-8B-AWQ)`**: for Qwen3 `high` collapses
+  to `on`, the two chunks have one digest, and a title picks one name.
+- **Many `slow` tests aren't slow any more**: 40 of the 98 marked take under 0.2 s a call now, most of them 0.14-0.19 s,
+  and two unmarked ones that the move didn't touch, `api/test/test_people.py::test_the_api_describes_itself` and
+  `api/test/test_variations.py::test_a_request_names_the_recipe_s_parts`, take 0.26-0.28 s. The markers are as they
+  were (see "Open").
 
 ## Decided
 - **A test World, `worlds/test/`, with its data set inside it, at `worlds/test/_data/`.**
@@ -56,14 +67,14 @@ source is the default `--source`.
    counts, skip lines and lint lines appear only in the test World's own test.
 3. **What `curated` loads holds no mistakes.** Its only findings are the ones the design calls for. Broken data
    (an invalid expectation, an unreachable view, a misplaced clearance) is an edit a test makes to a copy of the
-   World, as `changed()` in `src/chatddx/curation/test/test_init.py` does to the sample now.
-4. **The test World's own test pins its design**: the records per table, the skip lines, the lint lines, the World's
-   findings, and that each endpoint names the digest of the engine planned under its name. A change to the World
-   fails there first, with the new values in the message. It is `test_init_data_loads_the_archive`
-   (`src/chatddx/curation/test/test_init.py`), moved off the sample.
-5. **Names are spelled once.** One module holds the names tests use: endpoints, recipes, cases and tags. It
-   replaces `QWEN`, `PLAN` and `FREE_TEXT` in `src/chatddx/conftest.py`, `bench/test/sample.py`,
-   `repl/test/sample.py` and `runner/test/conftest.py`.
+   World (`copied` and `edit` in `src/chatddx/test/world.py`).
+4. **The test World's own test pins its design**: the records per table, the skip lines, the lint lines and the
+   World's findings (`src/chatddx/curation/test/test_the_test_world.py`), and `test_worlds.py` that each endpoint
+   names the digest of the engine planned under its name. A change to the World fails there first, with the new
+   values in the message.
+5. **Names are spelled once.** `src/chatddx/test/world.py` holds the names tests share: models, endpoints, the
+   recipes most tests run, and the cases. Case and tag ids are written as they are, since each says what it is.
+   Helpers one package's tests share stay in its `test/helpers.py`.
 6. **Tests don't pin layout by accident.** Repl tests that pin column widths through the length of a scorer's name
    (`repl/test/test_inspecting.py`, `test_reviewing.py`, `test_running.py`) match on cells instead.
 
@@ -189,9 +200,9 @@ Built (`src/chatddx/test/world.py`, `src/chatddx/conftest.py`):
   today (`from chatddx.conftest import …`), which works only because it sits inside the package. So what they import
   goes in a plain module, `src/chatddx/test/world.py`: the Worlds' paths, the names tests share (models, endpoints,
   the recipes most tests run), `world_plan`, `free_world`, `freed`, `faked`, `copied` and `edit`. The conftest keeps
-  the fixtures built on them, and the move ends the imports from it.
-- **`world_plan(world, data)`** plans a data set with a World's engines and facts, as init-data does; `sample_plan`
-  is `world_plan` of the sample.
+  the fixtures built on them.
+- **`world_plan(world, data)`** plans a data set with a World's engines and facts, as init-data does, and
+  `world_facts(world)` gives those facts; `test_sample.py`'s `sample_plan` is `world_plan` of the sample.
 - **`curated` loads the test World** for alice with her giftbag, and `plan`, `world` and `fake` are the test World's.
 - **`free_world` rewrites the parsed inventory**, giving each local endpoint a free port of its own; it used to replace
   the strings `12099`, `12100` and `path = "vignettes"` in a copy of the file. `freed` writes such a copy, for the
@@ -200,61 +211,56 @@ Built (`src/chatddx/test/world.py`, `src/chatddx/conftest.py`):
   data above.
 - **The root conftest ships the test tools** for the session.
 
-Still to do in the move:
-- **One `world` fixture.** curation's returns a `Path`, the root one an `Inventory`.
-- **The curation tests' `few` and `FEW` go.** The test World is already small enough to load whole.
-
-While the tests move, the sample's template is `curated_sample`, and each package not yet moved pins its fixtures to
-the sample in its conftest, or in its test module when it has no conftest, marked "Pinned to the sample until this
-package's tests move to the test World". A package's move deletes its pins; the last one deletes `curated_sample`.
+`connect` and the other database helpers are still imported from the root conftest; what the tests import of the
+Worlds comes from `src/chatddx/test/world.py`. While the tests moved, the sample's template was `curated_sample` and
+each package not yet moved pinned its fixtures to the sample; both went with the last package.
 
 ## The move
-In this order, with `pytest` green after each package and one commit per package:
-1. **inventory**: `test_serving.py`'s World tests.
-2. **fake_vllm**: `free_world` users. The "every skeleton" test becomes generic (see "What stays on the sample").
-3. **scorers**: `test_answer.py` and the second half of `test_scorers.py`. The sample's targets-schema and notes
-   tests go to the sample module.
-4. **runner**: `CASES`, the `insensitive()` override (`runner/test/test_run.py`), and `test_score.py`'s
-   `load_cases(SAMPLE)`.
-5. **curation**: `test_init.py`, `test_plan.py`, `test_repair.py`, `test_giftbag.py`, `test_pins.py`.
-   `test_init_data_loads_the_archive` becomes the test World's own test.
-6. **bench**: `sample.py` (`SOURCE` hard-codes `worlds/sample/vignettes`), `test_seen.py`, `test_outcome.py`
-   (the exact `diagnoses.json` error), `test_scorers.py`, `test_writes.py`.
-7. **api**: `test_world.py` (exact endpoints and values), `test_variations.py` (reach and lint properties),
-   `test_runs.py`, `test_scorers.py`, `test_families.py`.
-8. **repl**: last and largest. `test_listing.py`, `test_inspecting.py`, `test_running.py`, `test_reviewing.py`
-   and `test_scoring.py` pin the sample's counts (99, 20, 30, 49, 50), its texts and its column widths.
+Done, a package at a time with `pytest` green after each: inventory, fake_vllm, scorers, runner, curation, then
+bench, api and repl, which three subagents moved side by side. curation's `few`, `FEW` and its own `world` fixture
+went, its tests loading the test World's nine cases whole, and the packages' `sample.py` helper modules became
+`helpers.py` (bench, repl) and `cases.py` (curation).
 
-Then **new tests** for what only the test World reaches: the pair lints and gate refusals on `qwen3-bare@fake`,
-`mistral@fake` and `unknown@remote`, the World's facts, the Mistral fake, a score that isn't 0, `dont_miss` reach,
-and the vignette quirks under the cleanup ops. Every row of "What it exercises" ends up read.
+The tests that asserted what was true of the sample by chance assert the test World's design now:
+- the cases without a `dont_miss` are the ones missing from its reach (`api/test/test_variations.py`,
+  `repl/test/test_inspecting.py`), derived from the data;
+- the configurations table shows a reasoning column (`repl/test/test_listing.py`);
+- a batch over `targets` scores `matched`'s hit (`repl/test/test_running.py`);
+- counts, tags, languages and case names come from the data set, and rows are matched by cell, not padding.
 
-Some tests assert what is true of the sample by chance. They are rewritten to assert the test World's design:
-- "no case has a `dont_miss`" (`api/test/test_variations.py`, `repl/test/test_inspecting.py`);
-- "no recipe uses reasoning" (`repl/test/test_listing.py`);
-- "every fake answer misses every pattern";
-- "`DutchFall10w` sorts first" (`curation/test/test_init.py`, `repl/test/test_listing.py`).
+### Not read yet
+What only the test World reaches, and no test reads yet:
+- the gate's refusals on `qwen3-bare@fake` (not cleared for `typed`) and `unknown@remote` (cleared for nothing, and
+  its secret unset);
+- the pair lints asserted by code: `vllm.tools_refused`, `vllm.thinking_budget_refused` and
+  `vllm.grammar_before_reasoning` on `qwen3-bare@fake`, `vllm.temperature_clamped` (`clamped`),
+  `facts.output_refused` (`tool-answer` on `mistral@fake`), `facts.missing` and `schema.ref_unverified` on
+  `unknown@remote` and its absence for `native-inlined`, `facts.reasoning_unmatched` and `facts.budget_refused`
+  (Qwen's `reasoned` and `budgeted` on `gpt-oss@fake`), and `language.unknown` (`raw`). `test_worlds.py` uses the
+  `vllm.*` ones to tell refusals apart but asserts none;
+- the judge skeleton, which `scorers/test/test_scorers.py`'s judge tests could use instead of a synthetic one;
+- the toolset's guidance placed in `headed`'s prompt, `lines-guided (sv)`'s translated output and appendix
+  layout ("Bilagor:"), and the passthrough;
+- the vignettes' quirks under the cleanup ops (`prepare_case` with `newlines.lf@1`, `unicode.nfc@1`, `strip@1`,
+  `blank_lines.collapse@1`).
 
 ## What stays on the sample
 `src/chatddx/curation/test/test_sample.py`, the sample's pins:
-- **Vignettes**: they are 7893656's (now `test_the_sample_world_holds_the_vignettes_at_7893656`).
+- **Vignettes**: they are 7893656's (`test_the_sample_world_holds_the_vignettes_at_7893656`).
 - **Cases**: 79 English and 20 Swedish, and the language of `casesfromedn1` and `Dutchfall11w`.
-- **Records**: the English and Swedish sets, the eight recipes per model, and the translations' coverage (the
-  module's two tests now).
-- **Targets**: every target reads; the targets schema's rules; Olof's notes on three cases, as written (from
-  `scorers/test/test_scorers.py`).
-- **Kompismoln**: it takes the sample's vignettes (`inventory/test/test_inventory.py`).
+- **Records**: the English and Swedish sets, the eight recipes per model, and the translations' coverage.
+- **Targets**: the targets schema's rules and Olof's notes on three cases, as written.
+- **A load**: with only its four skips and its fakes' lints, `plan-shown` varying `plan`'s output.
+- **Kompismoln**: it takes the sample's vignettes.
 
-`src/chatddx/curation/test/test_worlds.py` runs the checks that should hold for every World in `worlds/` (test,
-sample, Kompismoln), each with its data set:
-- it plans and loads. Each World's exact skips and lints are pinned by its own test: the test World's in
-  `test_init.py`, the sample's in `test_sample.py`;
-- each endpoint names the digest of the engine planned under its name (now `test_serving.py`'s sample-only test);
-- `init-data --world` binds each endpoint and seeds no other World's fakes (now in `test_init_data_command`);
-- every skeleton is answered as its contract asks by each fake endpoint (now
-  `test_it_answers_every_sample_skeleton…`), unless a `vllm.*` lint says vLLM refuses the pair, in which case the
-  fake refuses it too;
-- the fake's instances hold to the data set's schemas (now `test_what_it_writes_holds_to_the_sample_s_schemas`).
+`src/chatddx/curation/test/test_worlds.py` checks every World in `worlds/` (test, sample, Kompismoln) with its data set,
+and fails when a new World isn't given one:
+- each endpoint names the digest of the engine planned under its name, and the World's check finds nothing;
+- init-data binds each World's endpoints and leaves the others' engines out;
+- every target's pattern reads;
+- each fake endpoint answers each skeleton as its contract asks, or refuses it exactly when a `vllm.*` lint says
+  vLLM would;
+- what the fake writes holds to each data set's schemas.
 
 ## Fixes before the move
 Found while surveying, each to be talked through with the user and then fixed and tested on its own:
@@ -273,11 +279,10 @@ Found while surveying, each to be talked through with the user and then fixed an
   `agents/wip-authoring.md` ("Lints") decided, and two docs lagged: `docs/factors-api.md` and `docs/curation.md` have
   AGENT suggestions dropping it. `test_init.py`'s `revision` fixture, which kept the lint quiet, went too.
 
-## Docs, when it's done
-- `docs/curation.md`, "Tests" and "Data sets": AGENT suggestions for the test World and `_data`.
-- `docs/inventory.md`, "Worlds": an AGENT suggestion for the third World and the `_data` convention.
-- `agents/wip-sample-data.md`: the tests no longer use the sample, except `test_sample.py` and `test_worlds.py`.
-- Timings before and after: 600 tests in 58.6 s before. Loading the whole sample in `curated` took 2.7 s of it.
+## Docs
+- `docs/curation.md`, "Data sets" and "Tests", and `docs/inventory.md`, "Worlds": AGENT suggestions for the test
+  World and `_data`.
+- `agents/wip-sample-data.md`: its test references point where the tests are now.
 
 ## Open
 - **Should `init-data` take `--data` from the World's `_data/` when there is one?** It would make the convention
@@ -288,3 +293,8 @@ Found while surveying, each to be talked through with the user and then fixed an
   quicker than the sample's, and the curation tests drop to it from loading the sample's records.
 - **Making the remote engine reachable.** Take: not in this run. Its base URL is in its digest, so a free port per
   test would mean a new engine per test.
+- **The `slow` markers.** AGENTS.md marks a test whose call takes 0.2 s or more. 40 marked tests are under it now and
+  two unmarked ones over it (see "Where it stands"), most within a run's noise. Take: re-mark by a few timed runs
+  rather than one, once the new tests are in.
+- **`another_expectation` is imported across packages**: from `bench/test/helpers.py` by the API's and the repl's
+  tests, as from `bench/test/sample.py` before. Take: leave it; it builds on the bench they all drive.

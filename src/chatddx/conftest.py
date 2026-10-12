@@ -2,7 +2,6 @@ import time
 from collections import defaultdict, deque
 from collections.abc import Iterator
 from concurrent.futures import Future, ThreadPoolExecutor
-from pathlib import Path
 from uuid import uuid4
 
 import psycopg
@@ -11,19 +10,13 @@ from argon2 import PasswordHasher
 from psycopg import sql
 
 from chatddx.core import settings
-from chatddx.curation import Plan, init, load_cases
-from chatddx.curation.plan import SAMPLE
+from chatddx.curation import Plan, init
 from chatddx.identity import identity
 from chatddx.inventory import Inventory, World
 from chatddx.runner.test import tools as test_tools
 from chatddx.store import People, Store, migrate
 from chatddx.store.store import Connection
-from chatddx.test.world import DATA, TEST, WORLDS, faked, free_world, world_plan
-
-__all__ = ["WORLDS", "faked", "free_world"]
-
-WORLD = WORLDS / "sample"
-SAMPLE_QWEN = "qwen3-8b-awq@fake"
+from chatddx.test.world import CASES, TEST, faked, free_world, world_plan
 
 
 # The markers split the tests in two: what docs/ describes, and what agents/wip-*.md plans.
@@ -37,11 +30,6 @@ def pytest_collection_modifyitems(items: list[pytest.Item]) -> None:
         raise pytest.UsageError(
             "each test is either solidified or wip: " + ", ".join(unsplit)
         )
-
-
-# The sample data's per-model records are planned for the models its World's engines serve.
-def sample_plan(data: Path = SAMPLE) -> Plan:
-    return world_plan(WORLD, data)
 
 
 # The test World's tools are the runner's test tools (worlds/test/_data/factors.toml), shipped
@@ -174,28 +162,18 @@ def migrated(copies: Copies) -> Iterator[str]:
         drop_database(copies.admin, name)
 
 
-def _curated(copies: Copies, migrated: str, world: Path, data: Path) -> Iterator[str]:
+@pytest.fixture(scope="session")
+def curated(copies: Copies, migrated: str) -> Iterator[str]:
     name = create_database(copies.admin, template=migrated)
     try:
         with connect(name) as conn:
             alice = People(conn).add("alice", "Alice")
-            plan = world_plan(world, data)
-            source = World.load(world).inventory.listing()
-            _ = init(conn, plan, load_cases(data), source, alice, giftbag=True)
+            source = World.load(TEST).inventory.listing()
+            _ = init(conn, world_plan(), CASES, source, alice, giftbag=True)
         yield name
     finally:
         copies.forget(name)
         drop_database(copies.admin, name)
-
-
-@pytest.fixture(scope="session")
-def curated(copies: Copies, migrated: str) -> Iterator[str]:
-    yield from _curated(copies, migrated, TEST, DATA)
-
-
-@pytest.fixture(scope="session")
-def curated_sample(copies: Copies, migrated: str) -> Iterator[str]:
-    yield from _curated(copies, migrated, WORLD, SAMPLE)
 
 
 @pytest.fixture

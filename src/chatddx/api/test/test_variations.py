@@ -6,14 +6,13 @@ from fastapi.testclient import TestClient
 
 from chatddx.api.schemas import Parts
 from chatddx.api.test.conftest import sign_in
-from chatddx.api.test.helpers import OFF
 from chatddx.bench import OPTIONAL, PARTS, Bench
 from chatddx.bench.test.helpers import another_expectation
 from chatddx.curation import load_cases
 from chatddx.factors.request import Translations
 from chatddx.store import Store
 from chatddx.store.store import Connection
-from chatddx.test.world import DATA, LINES, NATIVE, NATIVE_TOOLS, QWEN
+from chatddx.test.world import DATA, LINES, NATIVE, NATIVE_TOOLS, OFF, QWEN
 
 pytestmark = pytest.mark.wip
 

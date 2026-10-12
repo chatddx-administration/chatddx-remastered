@@ -5,18 +5,21 @@ import pytest
 from jsonschema import validators
 from pydantic import JsonValue
 
-from chatddx.conftest import sample_plan
 from chatddx.core.rig import rig
-from chatddx.curation import init, load_cases
+from chatddx.curation import Plan, init, load_cases
 from chatddx.curation.plan import SAMPLE
 from chatddx.factors.base import Fingerprint
 from chatddx.factors.request import Compilation, compiled
 from chatddx.inventory import DirectorySource, Inventory, World
 from chatddx.store import Catalog, People
 from chatddx.store.store import Connection
-from chatddx.test.world import WORLDS
+from chatddx.test.world import WORLDS, world_plan
 
 pytestmark = pytest.mark.wip
+
+
+def sample_plan() -> Plan:
+    return world_plan(WORLDS / "sample", SAMPLE)
 
 
 def test_the_sample_s_texts_are_english_and_free_text_guided_swedish_too() -> None:

@@ -13,13 +13,20 @@ from fastapi.testclient import TestClient
 from psycopg.conninfo import make_conninfo
 
 from chatddx.api.app import app
-from chatddx.api.test.helpers import OFF, world_facts
 from chatddx.api.test.test_variations import digest, thread
 from chatddx.core import settings
 from chatddx.inventory import Inventory
 from chatddx.store import Store
 from chatddx.store.store import Connection
-from chatddx.test.world import GPT_OSS, LINES, NATIVE_TOOLS, QWEN, faked
+from chatddx.test.world import (
+    GPT_OSS,
+    LINES,
+    NATIVE_TOOLS,
+    OFF,
+    QWEN,
+    faked,
+    world_facts,
+)
 
 pytestmark = pytest.mark.wip
 

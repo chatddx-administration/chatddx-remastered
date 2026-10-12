@@ -9,8 +9,6 @@ from chatddx.store import People
 from chatddx.store.store import Connection
 from chatddx.test.world import faked, free_world
 
-from . import tools
-
 # Slow enough that calls sent together overlap: a fake answer is some 40 tokens.
 DELAY = 0.005
 
@@ -18,11 +16,6 @@ DELAY = 0.005
 @pytest.fixture
 def autocommit() -> bool:
     return True
-
-
-@pytest.fixture(autouse=True)
-def shipped_tools(monkeypatch: pytest.MonkeyPatch) -> None:
-    tools.shipped(monkeypatch)
 
 
 @pytest.fixture

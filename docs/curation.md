@@ -20,6 +20,17 @@ from a person's: a re-run recognises its own records by kind, name and the archi
 The archive is never wiped.
 
 ## Data sets
+```
+AGENT: CHANGE
+The test World carries a data set of its own (agents/wip-test-world.md).
+---
+A data set is a directory of authored files: a `factors.toml`, the texts in `texts-<language>.toml` files, the cases
+in `cases-<language>.toml` files, and the files they load, such as JSON schemas. chatddx ships one, the sample
+(src/chatddx/data/sample/), the old chatddx's inventory hand-edited into this shape (agents/wip-sample-data.md). The
+sample holds no vignettes and no engines: those are a World's (see "The World"). The test World carries the tests'
+data set beside its vignettes, in `worlds/test/_data/`: the leading `_` says the World doesn't read it, and
+init-data takes it with `--data`.
+```
 A data set is a directory of authored files: a `factors.toml`, the texts in `texts-<language>.toml` files, the cases
 in `cases-<language>.toml` files, and the files they load, such as JSON schemas. chatddx ships one, the sample
 (src/chatddx/data/sample/), the old chatddx's inventory hand-edited into this shape (agents/wip-sample-data.md). The
@@ -180,6 +191,37 @@ writes an entry per gift and per share and no thread.
 Wiping covers all a person owns, their runs and their own threads included, not only what loading gave them.
 
 ## Tests
+```
+AGENT: CHANGE
+The tests run on the test World rather than the sample (agents/wip-test-world.md). Replaces the section's text, from
+here to "## Terms".
+---
+src/chatddx/curation/test/, marked `solidified`, but for the tests of the test World itself and of every World, which
+agents/wip-test-world.md plans and which are marked `wip`.
+
+- The tests run on the test World (worlds/test/, its data set in worlds/test/_data/), built so that each of its
+  records exercises something a test reads. Its paths, the names tests share and the helpers they import are in
+  src/chatddx/test/world.py; the fixtures built on them are in src/chatddx/conftest.py.
+- `test_plan.py` plans data sets and needs no database.
+- `test_init.py`, `test_repair.py`, `test_giftbag.py` and `test_pins.py` load the test World's data set whole into
+  a database of their own: a copy of the migrated, empty store, made for each test (src/chatddx/conftest.py,
+  `migrated`, `db`), with a stand-in source whose vignettes are a line of text each
+  (src/chatddx/curation/test/cases.py). The command tests read the test World itself, or a copy they edit.
+- A load writes every record of the data set, so every test that loads is marked `slow`.
+- `test_the_test_world.py` pins what the test World plans, skips and lints, and the quirks its vignettes carry.
+- `test_worlds.py` checks every World in `worlds/`: each endpoint serves the engine planned under its name,
+  init-data binds each World's endpoints and leaves the others' engines out, every target's pattern reads, the fake
+  vLLM answers each skeleton as its contract asks or refuses it exactly when a `vllm.*` lint says vLLM would, and what
+  it writes holds to each data set's schemas.
+- `test_sample.py` holds what is true of the sample alone: its vignettes pinned to the old chatddx at 7893656, its 79
+  English and 20 Swedish cases, its records and translations, its targets schema and Olof's notes, and a load of it
+  with only its four skips and its fakes' lints.
+
+`api`, `bench` and `repl` start from the test World as init-data lands it, with alice and her giftbag. It is loaded
+once per session, and only when one of those tests asks for it (src/chatddx/conftest.py, `curated`). Each test of the
+packages whose conftest overrides `template` with `curated` (api, bench, repl) gets a copy of it. The runner's and the
+store's tests start from the migrated store, as curation's do.
+```
 src/chatddx/curation/test/, marked `solidified`.
 
 - `test_plan.py` plans data sets and needs no database.
