@@ -1,4 +1,7 @@
 import json
+import os
+import socket
+import threading
 import urllib.error
 import urllib.request
 from collections.abc import Iterable, Iterator, Mapping
@@ -16,6 +19,10 @@ class Rejected(Exception):
         self.status: int = status
         self.body: dict[str, JsonValue] | None = body
         super().__init__(f"HTTP {status}: {_message(body)}")
+
+
+class Unfinished(ConnectionError):
+    pass
 
 
 def _message(body: Mapping[str, JsonValue] | None) -> str:
@@ -53,6 +60,12 @@ def request(
 class Stream:
     def __init__(self, response: HTTPResponse) -> None:
         self._response: HTTPResponse = response
+        self._guard: threading.Lock = threading.Lock()
+        # A socket of its own on the connection, so that another thread can shut it down
+        # without racing the response's close for its descriptor.
+        self._socket: socket.socket | None = socket.socket(
+            fileno=os.dup(response.fileno())
+        )
 
     @property
     def status(self) -> int:
@@ -61,8 +74,21 @@ class Stream:
     def __iter__(self) -> Iterator[Chunk]:
         return chunks(self._response)
 
+    def interrupt(self) -> None:
+        with self._guard:
+            if self._socket is None:
+                return
+            try:
+                self._socket.shutdown(socket.SHUT_RDWR)
+            except OSError:
+                pass
+
     def close(self) -> None:
-        self._response.close()
+        with self._guard:
+            self._response.close()
+            if self._socket is not None:
+                self._socket.close()
+                self._socket = None
 
     def __enter__(self) -> Self:
         return self
@@ -120,6 +146,7 @@ def chunks(lines: Iterable[bytes]) -> Iterator[Chunk]:
         if "error" in chunk:
             raise Rejected(200, chunk)
         yield chunk
+    raise Unfinished("the stream ended before [DONE]")
 
 
 def _merge_call(calls: dict[int, dict[str, Any]], delta: JsonValue) -> None:

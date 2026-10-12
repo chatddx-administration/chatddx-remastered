@@ -1,5 +1,4 @@
 import json
-import threading
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 from datetime import UTC, datetime
@@ -131,7 +130,7 @@ def converse(
     secret: str | None,
     on_delta: Callable[[Delta], None],
     on_tool: Callable[[ToolRun], None],
-    halt: threading.Event | None = None,
+    halt: sending.Halt | None = None,
     started_at: datetime | None = None,
 ) -> Exchange:
     def send(request: Mapping[str, JsonValue], at: datetime | None = None) -> Call:

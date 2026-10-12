@@ -1,6 +1,7 @@
 import threading
 import time
-from collections.abc import Callable, Iterator, Mapping
+from collections.abc import Callable, Generator, Iterator, Mapping
+from contextlib import AbstractContextManager, contextmanager, nullcontext
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from typing import Literal
@@ -31,6 +32,39 @@ class Stopped(Exception):
     def __init__(self, call: Call) -> None:
         self.call: Call = call
         super().__init__(STOPPED)
+
+
+class Halt:
+    def __init__(self) -> None:
+        self._set: threading.Event = threading.Event()
+        self._guard: threading.Lock = threading.Lock()
+        self._streams: set[wire.Stream] = set()
+
+    def set(self) -> None:
+        with self._guard:
+            self._set.set()
+            streams = list(self._streams)
+        for stream in streams:
+            stream.interrupt()
+
+    def is_set(self) -> bool:
+        return self._set.is_set()
+
+    def wait(self, timeout: float) -> bool:
+        return self._set.wait(timeout)
+
+    @contextmanager
+    def watching(self, stream: wire.Stream) -> Generator[None]:
+        with self._guard:
+            self._streams.add(stream)
+            halted = self._set.is_set()
+        if halted:
+            stream.interrupt()
+        try:
+            yield
+        finally:
+            with self._guard:
+                self._streams.discard(stream)
 
 
 def _now() -> datetime:
@@ -75,7 +109,7 @@ def send(
     on_delta: Callable[[Delta], None] | None = None,
     key: tuple[str, bytes] | None = None,
     backoff: float = 1.0,
-    halt: threading.Event | None = None,
+    halt: Halt | None = None,
     started_at: datetime | None = None,
 ) -> Call:
     execution = execution or Execution()
@@ -136,7 +170,10 @@ def send(
     )
     tokens = blank = 0
     error: str | None = None
-    with stream:
+    watching: AbstractContextManager[None] = (
+        nullcontext() if halt is None else halt.watching(stream)
+    )
+    with stream, watching:
         try:
             for chunk in stream:
                 received.append(chunk)
@@ -157,5 +194,7 @@ def send(
         except KeyboardInterrupt:
             raise Stopped(call(stream.status, STOPPED)) from None
         except (wire.Rejected, OSError, ValueError) as e:
+            if halt is not None and halt.is_set():
+                raise Stopped(call(stream.status, STOPPED)) from None
             error = f"{type(e).__name__}: {e}"
     return call(stream.status, error)

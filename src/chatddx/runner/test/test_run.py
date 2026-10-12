@@ -1,4 +1,6 @@
+import signal
 import threading
+import time
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from typing import Any, cast
@@ -60,6 +62,7 @@ from chatddx.test.world import (
     QWEN,
     TEST,
     TOOL_ANSWER,
+    faked,
 )
 
 pytestmark = pytest.mark.wip
@@ -470,6 +473,25 @@ def test_an_interrupt_hangs_up_every_call_in_flight_and_records_them_as_stopped(
     items = Store(conn).run(running.run).items
     assert [i.call.error for i in items] == [STOPPED, STOPPED]
     assert all(i.call.prompt_tokens is not None for i in items)
+
+
+def test_an_interrupt_ends_stalled_calls_at_once(
+    conn: Connection, inventory: Inventory, alice: Person, plan: Plan
+) -> None:
+    with faked(inventory, plan.registry.get, delay=5.0):
+        running = Runner(conn, inventory, alice).start(
+            trial(plan), plan.registry, QWEN, Execution(concurrency=2)
+        )
+        main = threading.main_thread().ident
+        assert main is not None
+        threading.Timer(0.05, signal.pthread_kill, (main, signal.SIGINT)).start()
+        began = time.monotonic()
+        with pytest.raises(KeyboardInterrupt):
+            running.send()
+        assert time.monotonic() - began < 2
+    _ = running.finish()
+    items = Store(conn).run(running.run).items
+    assert [i.call.error for i in items] == [STOPPED, STOPPED]
 
 
 @pytest.mark.usefixtures("delayed")

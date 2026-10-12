@@ -1,5 +1,4 @@
 import queue
-import threading
 from collections.abc import Callable, Iterator
 from concurrent.futures import Future, ThreadPoolExecutor
 from dataclasses import dataclass
@@ -169,7 +168,7 @@ class Running:
         self._canaries: list[CanaryCall] = []
         self._findings: list[Finding] = []
         self._stopping: bool = False
-        self._halt: threading.Event = threading.Event()
+        self._halt: sending.Halt = sending.Halt()
         self._finished: bool = False
 
     @property
@@ -189,7 +188,7 @@ class Running:
 
     def send(self, on_event: Callable[[Event], None] | None = None) -> None:
         emit: Callable[[Event], None] = on_event or _ignore
-        self._halt = threading.Event()
+        self._halt = sending.Halt()
         if self._stopping:
             self._halt.set()
         self._probe("start", emit)
