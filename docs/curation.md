@@ -20,34 +20,12 @@ from a person's: a re-run recognises its own records by kind, name and the archi
 The archive is never wiped.
 
 ## Data sets
-```
-AGENT: CHANGE
-The test World carries a data set of its own (agents/wip-test-world.md).
----
 A data set is a directory of authored files: a `factors.toml`, the texts in `texts-<language>.toml` files, the cases
 in `cases-<language>.toml` files, and the files they load, such as JSON schemas. chatddx ships one, the sample
 (src/chatddx/data/sample/), the old chatddx's inventory hand-edited into this shape (agents/wip-sample-data.md). The
 sample holds no vignettes and no engines: those are a World's (see "The World"). The test World carries the tests'
 data set beside its vignettes, in `worlds/test/_data/`: the leading `_` says the World doesn't read it, and
 init-data takes it with `--data`.
-```
-A data set is a directory of authored files: a `factors.toml`, the texts in `texts-<language>.toml` files, the cases
-in `cases-<language>.toml` files, and the files they load, such as JSON schemas. chatddx ships one, the sample
-(src/chatddx/data/sample/), the old chatddx's inventory hand-edited into this shape (agents/wip-sample-data.md). The
-sample holds no vignettes and no engines: those are a World's (see "The World").
-
-```
-src/chatddx/data/sample/
-  factors.toml    what holds no text: models and engines (none here), sampling, reasoning, passthrough, tools,
-                  expectation schemas, scorers, recipes, and chunks of slots alone
-  texts-en.toml   what holds text the model reads, in English: instructions, few-shot, prompts, outputs, toolsets
-                  and translations
-  texts-sv.toml   the same, in Swedish: free-text-guided's instructions and example, and translations of every
-                  output and toolset text
-  cases-en.toml   the English cases
-  cases-sv.toml   the Swedish cases
-  schemas/
-```
 
 ### Factors
 Both kinds of file hold one table per kind of component, keyed by name, whose keys are the component's fields
@@ -191,11 +169,6 @@ writes an entry per gift and per share and no thread.
 Wiping covers all a person owns, their runs and their own threads included, not only what loading gave them.
 
 ## Tests
-```
-AGENT: CHANGE
-The tests run on the test World rather than the sample (agents/wip-test-world.md). Replaces the section's text, from
-here to "## Terms".
----
 src/chatddx/curation/test/, marked `solidified`, but for the tests of the test World itself and of every World, which
 agents/wip-test-world.md plans and which are marked `wip`.
 
@@ -221,26 +194,6 @@ agents/wip-test-world.md plans and which are marked `wip`.
 once per session, and only when one of those tests asks for it (src/chatddx/conftest.py, `curated`). Each test of the
 packages whose conftest overrides `template` with `curated` (api, bench, repl) gets a copy of it. The runner's and the
 store's tests start from the migrated store, as curation's do.
-```
-src/chatddx/curation/test/, marked `solidified`.
-
-- `test_plan.py` plans data sets and needs no database.
-- `test_init.py` and `test_repair.py` load into a database of their own: a copy of the migrated, empty store, made
-  for each test (src/chatddx/conftest.py, `migrated`, `db`). Their vignettes are mostly one line of text each.
-  The command test also loads the sample world and Kompismoln's.
-- The sample is loaded whole once, by the test that checks it loads cleanly
-  (`test_init_data_loads_the_archive`). The tests of loading's mechanics load three of its cases, one of them Swedish
-  (src/chatddx/curation/test/sample.py:FEW).
-- Even three cases take 0.2 to 2 s a test, since every record of the data set is still written. So every test that
-  loads is marked `slow`: 11 of the 24. The quick run (`pytest -m "not slow"`) keeps the planning tests and the pin
-  of the vignettes.
-- The sample World's vignettes are pinned to the old chatddx at 7893656
-  (`test_the_sample_world_holds_the_vignettes_at_7893656`).
-
-`api`, `bench` and `repl` start from the sample as init-data lands it from the sample World, with alice and her giftbag.
-It is loaded once per session, and only when one of those tests asks for it (src/chatddx/conftest.py, `curated`).
-Each test of the packages whose conftest overrides `template` with `curated` (api, bench, repl) gets a copy of it.
-The runner's and the store's tests start from the migrated store, as curation's do.
 
 ## Terms
 

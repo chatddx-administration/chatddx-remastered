@@ -35,20 +35,11 @@ endpoints and sources that exist, and that each source is named by its table. An
 checked when an entry is used (see "Checks happen when an entry is used").
 
 ### Worlds
-```
-AGENT: CHANGE
-A World may carry a data set, which it doesn't read (agents/wip-test-world.md, "Why `_data`").
----
 A World is handed over as its directory, `--world DIR`, and read as its `inventory.toml` and, when present,
 `factors.toml` and `facts.toml`, facts about models the bundled ones don't know, loaded beside them by init-data
 and the repl (src/chatddx/inventory/world.py, src/chatddx/cli.py). A World may also hold its source's vignettes,
 when git may hold them, and a data set whose cases name them, in `_data/`: the leading `_` marks what the World
 doesn't read and doesn't own, and init-data takes it with `--data`.
-```
-A World is handed over as its directory, `--world DIR`, and read as its `inventory.toml` and, when present,
-`factors.toml` and `facts.toml`, facts about models the bundled ones don't know, loaded beside them by init-data
-and the repl (src/chatddx/inventory/world.py, src/chatddx/cli.py). A World may also hold its source's vignettes,
-when git may hold them.
 
 `CHATDDX_WORLD` names the deployment's World directory and is the default `--world` of `init-data` and the `repl`
 (src/chatddx/core/settings.py:world, `.env`). The runner is handed its inventory by the bench, as before.
@@ -56,10 +47,6 @@ when git may hold them.
 A World may point into another. An include or a source's path can reach another World's directory, so one World can
 take another's vignettes or endpoints without copying them.
 
-```
-AGENT: CHANGE
-The test World is the third (agents/wip-test-world.md). Replaces this list and the line that introduces it.
----
 This repository has three, in `worlds/`:
 - The test World: what the tests run on, built so that each record exercises something a test reads. Four fake
   endpoints on this machine (one with no reasoning parser and no tool flags, one serving a made-up model whose facts
@@ -72,14 +59,6 @@ This repository has three, in `worlds/`:
   endpoints are cleared for the sample.
 
 src/chatddx/curation/test/test_worlds.py fails when a World's engines change and its endpoints don't.
-```
-This repository has two, in `worlds/`:
-- The sample World: the sample's vignettes, an endpoint for each fake engine on this machine, the fake host, and the
-  factors of the fake models and engines. Both endpoints are cleared for the sample. A test fails when its engines
-  change and its endpoints don't.
-- Kompismoln's World: the hosts pelle and malborg. Its inventory is written by hand and takes the sample World's
-  vignettes; its endpoints, hosts and factors are what the engine import writes from the hosts' reports. Both
-  endpoints are cleared for the sample.
 
 ## Sources
 A source is where a set of vignettes is fetched from, by id. A source is a directory with one file per vignette,
