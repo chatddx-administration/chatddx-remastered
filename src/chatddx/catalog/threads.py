@@ -209,6 +209,11 @@ def forks(rows: Reader, thread: int) -> list[int]:
     return [t.id for t in rows.threads_forked_from(edits)]
 
 
+def origin(rows: Reader, id: int) -> int | None:
+    forked_from = thread(rows, id).forked_from
+    return None if forked_from is None else edit(rows, forked_from).thread
+
+
 def expectations_of(rows: Reader, case: str) -> list[int]:
     return list(heads_holding(rows, rows.expectations([case])))
 

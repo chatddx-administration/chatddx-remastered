@@ -113,7 +113,7 @@ Recipes. A recipe whose sampling is `recommended` is made per model; the others 
 | `tool-answer-tools` | `greedy`, toolset `lookup` | `tool_choice: required`, the answer tool offered last, a tool that fails |
 | `lines` | `recommended` | free text per model |
 | `lines-tools` | `greedy`, toolset `lookup` | text after tool rounds |
-| `lines-guided` | instructions `clinician` (developer role, `output_guidance` insert), few-shot `worked-example` (one exchange), passthrough `min-tokens`, translations `sv`, `appendix_layout` | made in en and sv; a translated output |
+| `lines-guided` | a fork of `lines`; instructions `clinician` (developer role, `output_guidance` insert), few-shot `worked-example` (one exchange), passthrough `min-tokens`, translations `sv`, `appendix_layout` | made in en and sv; a translated output; a fork across languages, `lines-guided (sv, …)` of `lines (en, …)` |
 | `lines-instructed` | instructions `clinician`, no translations | `[skipped]`: "needs translations in sv" |
 | `headed` | instructions `clinician`; the prompt `headed`, which holds text and a `tool_guidance` insert and exists in en only; toolset `lookup` | the toolset's guidance placed in the prompt; `[skipped]`: "it has no prompt in sv" |
 | `raw` | `greedy` | `language.unknown` |
@@ -228,9 +228,13 @@ Found while surveying, each to be talked through with the user and then fixed an
   `ListingSource` (`src/chatddx/inventory/sources.py`) holds `ids`, `fetch` and `cases`, `init` and `repair` take one,
   and `Inventory.listing` refuses a database source. `--source` defaults to the World's only listing source, for
   init-data and repair-data alike. The docs have AGENT suggestions.
-- **`free-text-guided (sv, …)` is planned as a fork of nothing.** In `src/chatddx/curation/plan.py:plan_factors`,
-  `base()` gives `None` when the origin has no variant in the fork's language, and says nothing. Either the fork
-  takes the origin's variant in another language, or it is reported. That's a question for the user.
+- **Done (decided): `free-text-guided (sv, …)` was planned as a fork of nothing.** A variant now forks its origin in
+  the origin's one language when it has no variant in the variant's (`src/chatddx/curation/plan.py:plan_factors`,
+  `base`), so `free-text-guided (sv, …)` forks `free-text (en, …)`. An origin written in several languages, none the
+  variant's, is refused. A variant whose origin has none for its model is loaded as no fork and reported, as is one
+  made without a model whose origin is made per model. A re-run of init-data reports a held thread whose origin
+  differs from the data's (`src/chatddx/curation/write.py:_Init.forked`, `Catalog.origin`), since an origin is set
+  only when a thread is created; archives loaded before this keep their Swedish variants unforked, and say so.
 - **`scorer.revision` is documented but never raised**: in `docs/factors-api.md` (lint table) and
   `docs/curation.md` ("Loading", step 7). Suggest removing it from the docs (AGENT: REMOVE), or implement it.
 

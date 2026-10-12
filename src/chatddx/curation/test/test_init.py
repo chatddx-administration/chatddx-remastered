@@ -228,6 +228,33 @@ def test_init_data_updates_and_gives_forks(conn: Connection, tmp_path: Path) -> 
 
 
 @pytest.mark.slow
+def test_init_data_says_when_a_thread_is_held_as_another_fork_than_the_data_s(
+    conn: Connection, tmp_path: Path
+) -> None:
+    alice = People(conn).add("alice", "Alice")
+    web = '[recipe.plan-web]\ndescription = "The management plan, with a web search '
+    web += 'to call."\ntags = ["ddx"]\n'
+    before = changed(tmp_path / "before", "factors.toml", 'fork_of = "free-text"\n', "")
+    after = changed(tmp_path / "after", "factors.toml", web + 'fork_of = "plan"\n', web)
+    _ = init(conn, sample_plan(before), SOME, vignettes(), alice)
+    lines = init(conn, sample_plan(after), SOME, vignettes(), alice)
+    models = ("Qwen/Qwen3-8B-AWQ", "openai/gpt-oss-20b")
+    assert sorted(line for line in lines if "; the data forks it from " in line) == [
+        *(
+            f"[archive skeleton] free-text-guided ({lang}, {m}): held as no fork; "
+            + f"the data forks it from free-text (en, {m})"
+            for lang in ("en", "sv")
+            for m in models
+        ),
+        *(
+            f"[archive skeleton] plan-web (en, {m}): held as a fork of plan (en, {m}); "
+            + "the data forks it from nothing"
+            for m in models
+        ),
+    ]
+
+
+@pytest.mark.slow
 def test_init_data_withdraws_only_the_tags_the_archive_gave(
     conn: Connection, tmp_path: Path
 ) -> None:

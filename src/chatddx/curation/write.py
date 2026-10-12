@@ -124,6 +124,21 @@ class _Init:
         self.lines.append(
             f"[archive {r.kind}] {r.name}: {verb} {short(r.digest)}{said}"
         )
+        if found:
+            self.forked(r, thread)
+
+    # A thread's origin is set when it is created (put), so a re-run only reports one
+    # that differs from the data's.
+    def forked(self, r: Planned, thread: int) -> None:
+        held = self.catalog.origin(thread)
+        planned = None if r.fork_of is None else self.threads[(r.kind, r.fork_of)]
+        if held == planned:
+            return
+        was = "no fork" if held is None else f"a fork of {self.catalog.title(held)}"
+        wants = "nothing" if r.fork_of is None else r.fork_of
+        self.lines.append(
+            f"[archive {r.kind}] {r.name}: held as {was}; the data forks it from {wants}"
+        )
 
     def repair_for(self, source: ListingSource, id: str) -> str | None:
         if self.surveyed is None:

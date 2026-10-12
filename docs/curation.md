@@ -46,6 +46,20 @@ the fields:
 - **References by name.** A toolset's tools, a scorer's expectation schema, a local engine's model and a recipe's
   parts name records, not digests.
 - **Files.** `json_schema_path` loads a JSON file, relative to the file that names it, in place of `json_schema`.
+```
+AGENT: CHANGE
+Says which variant of the origin a variant forks, and what a re-run says about a held thread's origin
+(src/chatddx/curation/plan.py:plan_factors, `base`; src/chatddx/curation/write.py:_Init.forked).
+---
+- **Forks.** `fork_of` names a record of the same kind that this one is a variation of. It is loaded as a fork of
+  that record's thread, so the catalog knows what it varies (docs/catalog.md, "Forks"). It inherits no fields. Each
+  variant forks the origin's variant in its language and for its model. An origin written in one language only is
+  forked in that language, as a part is taken from it (see "Texts"), so `free-text-guided (sv, …)` forks
+  `free-text (en, …)`; an origin written in several languages, none of them the variant's, is refused. A variant
+  whose origin has none for its model, or is made per model where the variant isn't, is loaded as no fork and
+  reported. A thread's origin is set when the thread is created, so a re-run only reports a held thread whose origin
+  differs from the data's.
+```
 - **Forks.** `fork_of` names a record of the same kind that this one is a variation of. It is loaded as a fork of
   that record's thread, so the catalog knows what it varies (docs/catalog.md, "Forks"). It inherits no fields.
 - **Code.** A tool or a scorer that names no `version` pins the version of its entry point that the running chatddx
