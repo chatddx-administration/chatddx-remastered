@@ -10,7 +10,7 @@ from chatddx.curation import Plan
 from chatddx.factors.base import resolve
 from chatddx.factors.scoring import Scorer
 from chatddx.identity import Person
-from chatddx.scorers import patterns
+from chatddx.scorers import metrics
 from chatddx.scorers.scorer import Metrics
 from chatddx.scorers.shipped import SCORERS
 from chatddx.store import Catalog, People
@@ -19,7 +19,7 @@ from chatddx.test.world import LINES
 
 pytestmark = pytest.mark.wip
 
-PATTERNS = "chatddx.scorers.patterns:score"
+SHIPPED = "chatddx.scorers.metrics:score"
 
 
 # The archive's scorer of that name, with its JSON as an edge gets it.
@@ -39,7 +39,7 @@ def test_a_person_writes_a_scorer_over_shipped_code_with_its_labels(
     conn: Connection, alice: Person, bench: Bench, plan: Plan
 ) -> None:
     _, doc = _archive_s(bench, "whole")
-    assert (doc["entry_point"], doc["version"]) == (PATTERNS, 1)
+    assert (doc["entry_point"], doc["version"]) == (SHIPPED, 1)
     ranked: JsonValue = {
         "split": "lines@1",
         "expectation": "/diagnosis",
@@ -71,7 +71,7 @@ def test_a_scorer_the_running_code_could_never_score_with_is_refused(
     [view] = doc["views"]
     refusals: list[tuple[dict[str, JsonValue], str]] = [
         ({"entry_point": "chatddx.scorers.patterns:_WORD"}, "isn't shipped with"),
-        ({"version": 2}, "patterns:score is at version 1 in chatddx .*, not 2"),
+        ({"version": 2}, "metrics:score is at version 1 in chatddx .*, not 2"),
         ({"views": [{**view, "metric": "recall"}]}, "knows no metric recall"),
         (
             {"views": [{**view, "params": {"top": 3}}]},
@@ -185,7 +185,7 @@ def test_a_scorer_moves_on_to_a_raised_version_by_following_its_origin(
 ) -> None:
     origin, doc = _archive_s(bench, "whole")
     fork = bench.fork_component(origin, "my whole")
-    monkeypatch.setitem(SCORERS, PATTERNS, Metrics(2, patterns.score.metrics))
+    monkeypatch.setitem(SCORERS, SHIPPED, Metrics(2, metrics.score.metrics))
     raised = bench.component({**doc, "version": 2})
     registry = bench.store.load(s.digest for s in raised.refs())
     _ = bench.store.add(registry, [registry.add(raised)])
@@ -197,7 +197,7 @@ def test_a_scorer_moves_on_to_a_raised_version_by_following_its_origin(
     started = bench.run_by_id(ran(conn, alice, made))
     [graded] = bench.score(started, [fork.edit.digest])
     assert graded.refused is not None
-    assert "patterns:score is at version 2 in chatddx" in graded.refused
+    assert "metrics:score is at version 2 in chatddx" in graded.refused
 
     followed = bench.follow(fork.edit.thread, fork.edit.id)
     assert resolve(bench.get, followed.edit.digest, Scorer).version == 2

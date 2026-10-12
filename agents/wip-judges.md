@@ -13,7 +13,9 @@ prepare-and-render, `runner/prepare.py:Items`, whose `case` a judge's fills will
 picked by seed (`fake_vllm/chat.py:instance`; `docs/vllm.md` has AGENT suggestions). J2, J5 and J9 are decided.
 Phase 2 is built: judges in a data set, the test World's judges, the refusal of tools and `judge.greedy_seeds`
 (`curation/plan.py`, `curation/test/test_judges.py`; `docs/curation.md` and `docs/factors-api.md` have AGENT
-suggestions). Next: phase 3, which brings the test World's judged scorer. Phase 4 needs J1, J6, J7 and J8.
+suggestions). Phase 3 is built too: the scorer interface's version 2, `verdict` and `points`
+(`scorers/verdicts.py`), the one shipped entry point `chatddx.scorers.metrics:score`, and J4's `verdicts.asked`.
+Next: phase 4, which needs J1, J6, J7 and J8, and brings the test World's judged scorers.
 
 ## Decided
 - **The pipeline before the prompt.** The judge pipeline is built and tested on the test World (`worlds/test/`,
@@ -185,10 +187,16 @@ The fake changes with it: a non-greedy request whose schema has `examples` is an
    World's records above but its scorers, which need phase 3's metrics, and the test World's own test. Loading pins
    lints as `test/world.py:FACTOR_LINTS` and `FACT_LINTS`, since the remote judge's `facts.missing` comes after the
    factors' lints.
-3. **Judged metrics.** The scorer interface's version 2, `chatddx/scorers/verdicts.py`, verdict reading and
-   nothing-to-judge (J2–J4), tested on synthetic responses without a database.
+3. **Judged metrics** (built). The scorer interface's version 2: a metric also takes the verdicts, and `Metric.judged`
+   says which do, which `Metrics.problems` holds views to. The pattern and judged metrics ship together as
+   `chatddx.scorers.metrics:score` at version 1, so a scorer can mix them; the data sets name it, and every scorer's
+   digest moved. `verdicts.asked` gives a judge's fills, or no value with the reason when there's nothing to judge
+   (J4). A verdict is read with `answer.read` (J3) in the pass. Tested on synthetic verdicts
+   (`scorers/test/test_scorers.py`); the API lists whether a metric is judged.
 4. **The pass.** Start, send, halt and finish, with the gate on judge endpoints, `ScoreStarted.endpoints`, the
-   vignette refetched, and `check_score`'s model check (J1, J6–J8). Tested on the test World's fakes.
+   vignette refetched, and `check_score`'s model check (J1, J6–J8). Tested on the test World's fakes. The test World's
+   scorers `judged` and `judged-remote` come with it: added before the pass, every `lines` run would list `judged`
+   as refused.
 5. **The callers.** The bench scores judged scorers and reports a gate refusal as refused; the repl and the API show
    judged values where they say "not yet" now.
 6. **After the pipeline.** The sample's judge, on Olof's prompt; a run on pelle or malborg to see real engines write

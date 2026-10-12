@@ -14,21 +14,22 @@ from chatddx.factors.select import reaches
 from chatddx.factors.test.sample import world
 from chatddx.fake_vllm.chat import ANSWER as ANSWER_TEXT, instance
 from chatddx.scorers.aggregate import AGGREGATES
+from chatddx.scorers.metrics import score as shipped
 from chatddx.scorers.patterns import (
     Pattern,
     first_mention,
     mentions,
     reciprocal_rank,
-    score as patterns,
 )
 from chatddx.scorers.scorer import Metric, Metrics, Scored, score
 from chatddx.scorers.shipped import SCORERS, function, problems
+from chatddx.scorers.verdicts import asked
 from chatddx.test.world import DATA, world_plan
 
 pytestmark = pytest.mark.wip
 
 SCHEMA = "sha256:" + "0" * 64
-PATTERNS = "chatddx.scorers.patterns:score"
+SHIPPED = "chatddx.scorers.metrics:score"
 
 
 @pytest.mark.parametrize(
@@ -168,7 +169,7 @@ def test_each_aggregate_is_inspect_s(
 
 def plan_scorer(**changes: Any) -> Scorer:
     fields: dict[str, Any] = {
-        "entry_point": PATTERNS,
+        "entry_point": SHIPPED,
         "version": 1,
         "expectation_schema": SCHEMA,
         "views": (
@@ -203,7 +204,7 @@ TARGETS: JsonValue = {
 def test_a_scorer_scores_each_of_its_views_through_its_entry_point() -> None:
     scorer = plan_scorer()
     run = function(scorer)
-    assert run is patterns
+    assert run is shipped
     assert score(scorer, run, ANSWER, TARGETS) == [
         Scored(0.5, {"answer": "2. Pneumonia"}),
         Scored(0.0, {"reason": "not named"}),
@@ -263,7 +264,9 @@ def test_params_are_held_to_the_schemas_the_code_publishes(
         + "allowed ('top' was unexpected)"
     ]
 
-    def top(output: list[JsonValue] | None, _: list[JsonValue], params: Any) -> Scored:
+    def top(
+        output: list[JsonValue] | None, _: list[JsonValue], params: Any, _v: Any
+    ) -> Scored:
         return Scored(float(len(output or []) >= params["top"]))
 
     ranked = Metric(
@@ -272,7 +275,7 @@ def test_params_are_held_to_the_schemas_the_code_publishes(
         {"type": "object", "properties": {"top": {"type": "integer", "minimum": 1}}},
     )
     code = Metrics(1, {"top": ranked}, {"type": "object"})
-    monkeypatch.setitem(SCORERS, PATTERNS, code)
+    monkeypatch.setitem(SCORERS, SHIPPED, code)
     views = (View(output="$.diagnoses[*]", metric="top", params={"top": 2}),)
     assert problems(plan_scorer(views=views, params={"any": "thing"})) == []
     zero = (View(metric="top", params={"top": 0}),)
@@ -287,13 +290,91 @@ def test_each_shipped_entry_point_names_the_code_it_ships() -> None:
     for entry_point, code in SCORERS.items():
         module, _, attribute = entry_point.partition(":")
         assert getattr(importlib.import_module(module), attribute) is code
-    assert SCORERS[PATTERNS] is patterns
+    assert SCORERS[SHIPPED] is shipped
 
 
-def test_a_judged_view_can_t_be_scored_yet() -> None:
-    scorer = plan_scorer(views=(View(metric="mentions", judge="sha256:" + "1" * 64),))
-    with pytest.raises(NotImplementedError, match="need a judge"):
-        _ = score(scorer, function(scorer), ANSWER, TARGETS)
+JUDGE = "sha256:" + "1" * 64
+MEETS = View(metric="verdict", judge=JUDGE, params={"at": "/meets"})
+POINTS = View(metric="points", judge=JUDGE, params={"at": "/points", "max": 2})
+
+
+def test_a_view_names_a_judge_exactly_when_its_metric_reads_verdicts() -> None:
+    assert problems(plan_scorer(views=(View(metric="mentions", judge=JUDGE),))) == [
+        "view 0 names a judge, which mentions doesn't read"
+    ]
+    unjudged = MEETS.model_copy(update={"judge": None})
+    assert problems(plan_scorer(views=(unjudged,))) == [
+        "view 0's metric verdict reads a judge's verdicts"
+    ]
+    assert problems(plan_scorer(views=(MEETS, POINTS))) == []
+    assert problems(plan_scorer(views=(MEETS.model_copy(update={"params": {}}),))) == [
+        "view 0's params for verdict don't fit: 'at' is a required property"
+    ]
+
+
+def test_a_judged_view_is_scored_from_its_judge_s_verdicts() -> None:
+    differential = View(
+        output="$.diagnoses[*].diagnosis",
+        expectation="/diagnosis",
+        metric="reciprocal_rank",
+    )
+    scorer = plan_scorer(views=(differential, MEETS, POINTS))
+    run = function(scorer)
+    with pytest.raises(NotImplementedError, match=r"views \[1, 2\] need a judge"):
+        _ = score(scorer, run, ANSWER, TARGETS)
+    verdicts: dict[int, list[JsonValue | None]] = {
+        1: [{"meets": True}, {"meets": False}, None, {"meets": "yes"}],
+        2: [{"points": 2}, {"points": 1}],
+    }
+    assert score(scorer, run, ANSWER, TARGETS, verdicts) == [
+        Scored(0.5, {"answer": "2. Pneumonia"}),
+        Scored(0.5, {"seeds": [1.0, 0.0, None, None]}),
+        Scored(0.75, {"seeds": [1.0, 0.5]}),
+    ]
+    assert score(scorer, run, ANSWER, TARGETS, {1: [None], 2: [{}]})[1:] == [
+        Scored(None, {"seeds": [None], "reason": "no seed gave a verdict"}),
+        Scored(None, {"seeds": [None], "reason": "no seed gave a verdict"}),
+    ]
+
+
+def test_a_judge_is_asked_only_when_it_has_what_it_reads() -> None:
+    plan = world_plan()
+    judge = resolve(plan.registry.get, plan.named("judge", "verdict").digest, Judge)
+    skeleton = resolve(plan.registry.get, judge.skeleton, Skeleton)
+    view = View(
+        expectation="$.notes[?@.author == 'carol'].comment",
+        metric="verdict",
+        judge=judge.digest,
+        params={"at": "/meets"},
+    )
+    noted = cast(dict[str, Any], load_cases(DATA)["noted"].targets)
+    unnoted = {k: v for k, v in noted.items() if k != "notes"}
+    assert asked(judge, skeleton, view, "Sepsis", noted) == {
+        "completion": "Sepsis",
+        "expectation": noted["notes"][0]["comment"],
+    }
+    assert asked(judge, skeleton, view, None, noted) == Scored(
+        None, {"reason": "no answer"}
+    )
+    emptied = view.model_copy(update={"output": "/nothing"})
+    assert asked(judge, skeleton, emptied, {"x": 1}, noted) == Scored(
+        None, {"reason": "nothing in the answer to judge"}
+    )
+    assert asked(judge, skeleton, view, "Sepsis", unnoted) == Scored(
+        None, {"reason": "no target"}
+    )
+    unread = Skeleton.model_validate(
+        skeleton.model_dump()
+        | {
+            "messages": [
+                {"role": "user", "content": ["Safe?\n", {"slot": "completion"}]}
+            ]
+        }
+    )
+    assert asked(judge, unread, view, "Sepsis", unnoted) == {
+        "completion": "Sepsis",
+        "expectation": "",
+    }
 
 
 # ------------------------------------------------------------------ the test World

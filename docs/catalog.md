@@ -197,6 +197,12 @@ compilation, as for a hand-written skeleton, it is shown by its purpose and the 
 
 Each kind is described by:
 
+AGENT: change
+The shipped entry point is `chatddx.scorers.metrics:score` now (agents/wip-judges.md, J2), so the Scorer row's
+example becomes `scorer chatddx.scorers.metrics:score v1`.
+---
+| Scorer | Its entry point and version. | `scorer chatddx.scorers.metrics:score v1` |
+
 | Component | Described by | Example |
 | --- | --- | --- |
 | Chunk | Its values or the opening words of its text. | `temperature 1.0, top_p 1.0` or `"{vignette}{appendices}"` |

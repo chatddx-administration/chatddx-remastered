@@ -168,6 +168,6 @@ def test_scoring_is_refused_before_anything_is_written(
     refused(
         free_text.model_copy(update={"version": 2}),
         LookupError,
-        "patterns:score is at version 1 in chatddx .*, not 2",
+        "metrics:score is at version 1 in chatddx .*, not 2",
     )
     assert rows(db, "score_stage") == 0

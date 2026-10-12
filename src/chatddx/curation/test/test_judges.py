@@ -11,7 +11,7 @@ pytestmark = pytest.mark.wip
 
 SCORER = """
 [scorer.judged]
-entry_point = "chatddx.scorers.patterns:score"
+entry_point = "chatddx.scorers.metrics:score"
 expectation_schema = "targets"
 views = [{ expectation = "/notes", metric = "verdict", judge = "verdict" }]
 """

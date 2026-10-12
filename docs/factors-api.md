@@ -722,6 +722,20 @@ and `appendices` slots come from `prepare_case`.
 The entry point's interface belongs to `src/chatddx/scorers/scorer.py:ScoreFunction`, and the answer it reads to
 `src/chatddx/scorers/answer.py:read`.
 
+AGENT: change
+The scorer interface's version 2 (agents/wip-judges.md, J2, decided): a metric also takes a judged view's verdicts,
+and the one shipped entry point publishes the pattern and the judged metrics, so a scorer can mix them.
+---
+`src/chatddx/scorers/shipped.py:SCORERS` ships one `Metrics`, `chatddx.scorers.metrics:score`, with version, metrics,
+what each measures, a JSON Schema for a view's params, whether it reads a judge's verdicts, and optionally a schema
+for the scorer's own params. Its metrics are the pattern metrics (`scorers/patterns.py`) and the judged metrics
+(`scorers/verdicts.py`): `verdict`, the share of the judge's seeds whose verdict holds `true` at `at`, a JSON
+Pointer, and `points`, their mean of the number at `at` over `max`. A judged metric is given the verdicts, one per
+seed in seed order, each none where it couldn't be read; seeds with none are left out, and the detail lists each
+seed's value. `shipped.problems` says why a scorer can't be scored by it: an entry point not shipped, another
+version, a metric it doesn't publish, params a schema refuses (none where no schema is published), or a view whose
+judge and metric disagree, one naming a judge whose metric reads no verdicts or the other way round.
+
 `src/chatddx/scorers/shipped.py:SCORERS` ships a `Metrics` with version, metrics, what it measures, a JSON Schema for a
 view's params, and optionally a schema for the scorer's own params. `shipped.problems` says why a scorer can't be
 scored by it: an entry point not shipped, another version, a metric it doesn't publish, or params a schema refuses

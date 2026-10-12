@@ -5,7 +5,7 @@ from dataclasses import dataclass
 
 from pydantic import JsonValue
 
-from .scorer import Metric, MetricFunction, Metrics, Scored
+from .scorer import Metric, MetricFunction, Scored, Verdicts
 
 _TOKEN = re.compile(r"\(|\)|&|\||[^\s&|()]+")
 _WORD = re.compile(r"\w+")
@@ -197,6 +197,7 @@ def _by_pattern(find: Callable[[list[str] | None, str], Scored]) -> MetricFuncti
         output: list[JsonValue] | None,
         expected: list[JsonValue],
         _params: Mapping[str, JsonValue],
+        _verdicts: Verdicts | None,
     ) -> Scored:
         target = _target(expected)
         if isinstance(target, Scored):
@@ -212,6 +213,7 @@ def _mentions(
     output: list[JsonValue] | None,
     expected: list[JsonValue],
     _params: Mapping[str, JsonValue],
+    _verdicts: Verdicts | None,
 ) -> Scored:
     target = _target(expected)
     if isinstance(target, Scored):
@@ -219,23 +221,20 @@ def _mentions(
     return mentions(_texts(output), target)
 
 
-score = Metrics(
-    1,
-    {
-        "reciprocal_rank": Metric(
-            "1 over the rank of the first item that matches the target's pattern; 0 "
-            + "when none does",
-            _by_pattern(reciprocal_rank),
-        ),
-        "first_mention": Metric(
-            "where in the text the target's pattern is first matched, in characters; "
-            + "none when it never is",
-            _by_pattern(first_mention),
-        ),
-        "mentions": Metric(
-            "1 when an item matches the target's pattern, or when nothing is named "
-            + "and nothing is expected; else 0",
-            _mentions,
-        ),
-    },
-)
+METRICS: dict[str, Metric] = {
+    "reciprocal_rank": Metric(
+        "1 over the rank of the first item that matches the target's pattern; 0 "
+        + "when none does",
+        _by_pattern(reciprocal_rank),
+    ),
+    "first_mention": Metric(
+        "where in the text the target's pattern is first matched, in characters; "
+        + "none when it never is",
+        _by_pattern(first_mention),
+    ),
+    "mentions": Metric(
+        "1 when an item matches the target's pattern, or when nothing is named "
+        + "and nothing is expected; else 0",
+        _mentions,
+    ),
+}

@@ -14,6 +14,10 @@ class Scored(NamedTuple):
     detail: JsonValue = None
 
 
+# A judged view's verdicts, one per seed of its judge, each none when it couldn't be read.
+type Verdicts = list[JsonValue | None]
+
+
 class ScoreFunction(Protocol):
     def __call__(
         self,
@@ -21,11 +25,13 @@ class ScoreFunction(Protocol):
         output: list[JsonValue] | None,
         expected: list[JsonValue],
         params: Mapping[str, JsonValue],
+        verdicts: Verdicts | None = None,
     ) -> Scored: ...
 
 
 MetricFunction = Callable[
-    [list[JsonValue] | None, list[JsonValue], Mapping[str, JsonValue]], Scored
+    [list[JsonValue] | None, list[JsonValue], Mapping[str, JsonValue], Verdicts | None],
+    Scored,
 ]
 
 NO_PARAMS: dict[str, JsonValue] = {"type": "object", "additionalProperties": False}
@@ -40,6 +46,7 @@ class Metric:
     measures: str
     score: MetricFunction
     params: dict[str, JsonValue] = field(default_factory=_no_params)
+    judged: bool = False
 
 
 class Metrics:
@@ -63,11 +70,12 @@ class Metrics:
         output: list[JsonValue] | None,
         expected: list[JsonValue],
         params: Mapping[str, JsonValue],
+        verdicts: Verdicts | None = None,
     ) -> Scored:
         found = self.metrics.get(metric)
         if found is None:
             raise ValueError(f"no metric {metric!r}, only {sorted(self.metrics)}")
-        return found.score(output, expected, params)
+        return found.score(output, expected, params, verdicts)
 
     def problems(self, scorer: Scorer) -> list[str]:
         found: list[str] = []
@@ -83,6 +91,14 @@ class Metrics:
             metric = self.metrics.get(view.metric)
             if metric is None:
                 continue
+            if metric.judged and view.judge is None:
+                found.append(
+                    f"view {i}'s metric {view.metric} reads a judge's verdicts"
+                )
+            if view.judge is not None and not metric.judged:
+                found.append(
+                    f"view {i} names a judge, which {view.metric} doesn't read"
+                )
             if (refused := _refused(metric.params, view.params)) is not None:
                 found.append(f"view {i}'s params for {view.metric} {refused}")
         return found
@@ -100,16 +116,24 @@ def _refused(
 
 
 def score(
-    scorer: Scorer, run: ScoreFunction, answer: JsonValue | None, data: JsonValue
+    scorer: Scorer,
+    run: ScoreFunction,
+    answer: JsonValue | None,
+    data: JsonValue,
+    verdicts: Mapping[int, Verdicts] | None = None,
 ) -> list[Scored]:
-    if judged := [i for i, v in enumerate(scorer.views) if v.judge is not None]:
-        raise NotImplementedError(f"views {judged} need a judge, which can't run yet")
+    judged = verdicts or {}
+    if unjudged := [
+        i for i, v in enumerate(scorer.views) if v.judge is not None and i not in judged
+    ]:
+        raise NotImplementedError(f"views {unjudged} need a judge, which can't run yet")
     return [
         run(
             view.metric,
             None if answer is None else view.output_items(answer),
             view.expectation_items(data),
             scorer.params | view.params,
+            judged.get(i),
         )
-        for view in scorer.views
+        for i, view in enumerate(scorer.views)
     ]

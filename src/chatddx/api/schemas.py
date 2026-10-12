@@ -406,6 +406,9 @@ class Metric(_Schema):
     params: dict[str, JsonValue] = Field(
         description="a JSON Schema for a view's params"
     )
+    judged: bool = Field(
+        description="whether it reads a judge's verdicts, so that its view names a judge"
+    )
 
 
 class ScorerCode(_Schema):

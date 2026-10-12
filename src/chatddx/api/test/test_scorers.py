@@ -7,21 +7,28 @@ from chatddx.test.world import LINES
 
 pytestmark = pytest.mark.wip
 
-PATTERNS = "chatddx.scorers.patterns:score"
+SHIPPED = "chatddx.scorers.metrics:score"
 
 
 def test_the_scoring_code_shipped_is_listed_with_what_its_metrics_take(
     signed: TestClient,
 ) -> None:
     [code] = signed.get("/api/scorer-code").json()
-    assert (code["entry_point"], code["version"]) == (PATTERNS, 1)
-    assert [m["name"] for m in code["metrics"]] == [
-        "first_mention",
-        "mentions",
-        "reciprocal_rank",
+    assert (code["entry_point"], code["version"]) == (SHIPPED, 1)
+    assert [(m["name"], m["judged"]) for m in code["metrics"]] == [
+        ("first_mention", False),
+        ("mentions", False),
+        ("points", True),
+        ("reciprocal_rank", False),
+        ("verdict", True),
     ]
     nothing = {"type": "object", "additionalProperties": False}
-    assert all(m["params"] == nothing and m["measures"] for m in code["metrics"])
+    assert all(m["measures"] for m in code["metrics"])
+    assert all(m["params"] == nothing for m in code["metrics"] if not m["judged"])
+    assert [m["params"]["required"] for m in code["metrics"] if m["judged"]] == [
+        ["at", "max"],
+        ["at"],
+    ]
     assert code["params"] == nothing
 
 

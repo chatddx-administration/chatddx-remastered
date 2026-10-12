@@ -224,7 +224,7 @@ json_schema_path = "schemas/targets.json"
 # One scorer per output shape: `answer` reads answer.json, `list` list.json, `lines` and `whole` free text.
 [scorer.answer]
 description = "The answer's differential, warning, disposition and critical diagnoses, against the targets."
-entry_point = "chatddx.scorers.patterns:score"
+entry_point = "chatddx.scorers.metrics:score"
 expectation_schema = "targets"
 views = [
   { label = "differential", output = "$.diagnoses[*].diagnosis", expectation = "/diagnosis", metric = "reciprocal_rank" },
@@ -235,7 +235,7 @@ views = [
 
 [scorer.list]
 description = "The listed differential, against the diagnosis and the one not to miss."
-entry_point = "chatddx.scorers.patterns:score"
+entry_point = "chatddx.scorers.metrics:score"
 expectation_schema = "targets"
 views = [
   { label = "differential", output = "$.diagnoses[*]", expectation = "/diagnosis", metric = "reciprocal_rank" },
@@ -244,7 +244,7 @@ views = [
 
 [scorer.lines]
 description = "Free text, whole and line by line, against the diagnosis and the one not to miss."
-entry_point = "chatddx.scorers.patterns:score"
+entry_point = "chatddx.scorers.metrics:score"
 expectation_schema = "targets"
 views = [
   { label = "text", expectation = "/diagnosis", metric = "first_mention" },
@@ -254,6 +254,6 @@ views = [
 
 [scorer.whole]
 description = "Free text, whole, against the diagnosis."
-entry_point = "chatddx.scorers.patterns:score"
+entry_point = "chatddx.scorers.metrics:score"
 expectation_schema = "targets"
 views = [{ label = "text", expectation = "/diagnosis", metric = "first_mention" }]
