@@ -1,8 +1,3 @@
-```
-AGENT: add
-A draft of the runner's API reference, for a human to rewrite, in the shape of docs/ledger-api.md. It was written from
-src/chatddx/runner/* at this commit; docs/runner.md is its concepts draft.
----
 # Runner API
 
 Reference for the `chatddx.runner` package. It was written from `src/chatddx/runner/*` and `docs/runner.md`. What a
@@ -391,4 +386,3 @@ From `docs/runner.md`, "Open design issues", where they concern this API:
 - `Grader.start` refuses judge calls above concurrency 1, and confirms every judge's endpoint, even when no item
   needs a judge.
 - `send` again after a worker's exception isn't tested.
-```

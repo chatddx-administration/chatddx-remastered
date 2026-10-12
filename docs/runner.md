@@ -1,9 +1,3 @@
-```
-AGENT: add
-A draft of the runner's doc, for a human to rewrite: what agents/wip-runner.md and agents/wip-judges.md built, as the
-code has it at this commit, in the shape of docs/ledger.md. Names, signatures and messages are in docs/runner-api.md.
-Once it's taken, the runner's tests move from `wip` to `solidified`, and the wip notes keep only what's still open.
----
 # Runner
 
 The runner sends a trial's requests to an engine and writes what happened to the ledger. The scoring pass grades a
@@ -207,4 +201,3 @@ Drift of a vignette is noted as preparing a case notes it (docs/factors.md, "Pre
 - **Every engine is asked for the prompt's token ids** (docs/factors.md, "Smaller issues").
 - **No finding for reasoning that wasn't heeded**, as the old chatddx had.
 - **Resuming a run and `max_jobs` across runs** belong to the worker.
-```
