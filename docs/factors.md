@@ -466,6 +466,12 @@ engine that uses it, and finding the engines that share a closure means scanning
 ### Remote engine
 Principal author: ops.
 
+AGENT: change
+A remote engine's address moved to the inventory, and the engine names its provider (agents/wip-judges.md, decided).
+---
+A remote engine is an API we don't control. It declares only the API, its provider and the requested model; where it
+is served is the inventory's (docs/inventory.md, "Endpoints"), and its chat template is not pinned.
+
 A remote engine is an API we don't control. It declares only the API, its address and the requested model; its chat
 template is not pinned. What the API does on a given day is an observed factor. Of what it returns, only the model name
 is checked today (docs/ledger.md).

@@ -238,6 +238,11 @@ Nothing connects.
 The URL the endpoint's engine is reached at. Raises `LookupError` for a missing endpoint or an engine `get` doesn't
 know, as `start_up`, and:
 
+AGENT: change
+A remote engine's address moved to the inventory, and the engine names its provider (agents/wip-judges.md, decided). The remote row becomes the local one's.
+---
+| remote | `str(url)` | `endpoint '<name>' serves a remote engine but has no url` |
+
 | Engine | Returns | Raises |
 | --- | --- | --- |
 | remote | `str(base_url)` | `endpoint '<name>' has url <url>, but its remote engine's base_url is <base_url>` when the endpoint gives another URL |

@@ -1,7 +1,7 @@
 from pathlib import Path
 
 import pytest
-from pydantic import HttpUrl, JsonValue, ValidationError
+from pydantic import JsonValue, ValidationError
 
 from chatddx.factors.bundle import Registry
 from chatddx.factors.engine import FileDigest, LocalEngine, ModelArtifact, RemoteEngine
@@ -175,9 +175,7 @@ def test_facts_check_pairs(facts: Facts) -> None:
 
     unknown = engine("someone/unknown")
     assert findings(skeleton(TextOutput()), unknown) == {"facts.missing": "info"}
-    remote = reg.add(
-        RemoteEngine(base_url=HttpUrl("https://example.org/v1"), model=GPT_OSS)
-    )
+    remote = reg.add(RemoteEngine(provider="example", model=GPT_OSS))
     assert findings(effort, remote) == {}
 
 
@@ -187,9 +185,7 @@ def test_facts_check_that_a_pair_s_sampling_is_for_its_model(facts: Facts) -> No
     user = Message(role="user", content=(Slot(slot="vignette"),))
 
     def findings(engine_model: str, **body: JsonValue) -> dict[str, str]:
-        engine = reg.add(
-            RemoteEngine(base_url=HttpUrl("https://example.org/v1"), model=engine_model)
-        )
+        engine = reg.add(RemoteEngine(provider="example", model=engine_model))
         skeleton = reg.add(Skeleton(messages=(user,), body=body, contract=TextOutput()))
         trial = reg.add(
             Trial(skeleton=skeleton, engine=engine, cases=(ids["case"],), seeds=(1,))

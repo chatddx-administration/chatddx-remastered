@@ -594,6 +594,11 @@ tool, or has no whole answer, or after `max_rounds` rounds.
 `served_model_name -> str`: the engine's digest.
 
 ### `class RemoteEngine(Component)`, kind `engine.remote`
+AGENT: change
+A remote engine's address moved to the inventory, and the engine names its provider (agents/wip-judges.md, decided).
+---
+`api: Api = "chat.completions"`, `provider: str` (not empty), `model: str`.
+
 `api: Api = "chat.completions"`, `base_url: HttpUrl` (pydantic normalizes it), `model: str`.
 `served_model_name -> str`: `model`.
 

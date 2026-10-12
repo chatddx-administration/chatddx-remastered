@@ -26,9 +26,10 @@ url = "http://127.0.0.1:12204/v1/"
 host = "fake"
 max_jobs = 2
 
-# A remote engine is reached at its own base_url, with the secret in $CHATDDX_TEST_REMOTE.
+# A remote engine, at an address that resolves nowhere, with the secret in $CHATDDX_TEST_REMOTE.
 [endpoint."unknown@remote"]
-engine = "sha256:d2a3077dd6331f56005ebc9ea478968959788d32b5643d021c2ecef426c520ae"
+engine = "sha256:a9cc8614b691bd2c838770bf17ad6fd1c2a87aded80ab0b49d74c7de2def3bdd"
+url = "https://remote.invalid/v1/"
 credential = "CHATDDX_TEST_REMOTE"
 
 [host.fake]

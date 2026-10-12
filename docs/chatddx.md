@@ -234,6 +234,12 @@ described below.
   - adds seed only if the sampling isn't greedy;
   - adds return_token_ids: true.
 9. Send the request to the engine's /v1/chat/completions.
+AGENT: change
+A remote engine's address moved to the inventory, and the engine names its provider (agents/wip-judges.md, decided).
+This line and the next become one:
+---
+  - The World inventory's endpoint gives the URL, for a local engine and a remote one (`docs/inventory.md`, "Endpoints").
+
   - For a remote engine the URL is RemoteEngine.base_url.
   - For a local engine, the World inventory's endpoint gives the URL (`docs/inventory.md`, "Endpoints").
   - Canaries are sent the same way, from their literal bodies (`Canary.render`), one at a time before the first

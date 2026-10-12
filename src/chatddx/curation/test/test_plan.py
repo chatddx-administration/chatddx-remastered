@@ -24,11 +24,11 @@ def test_from_facts_records_follow_the_models_the_engines_serve(
     _ = factors.write_text(
         """
 [remote_engine."qwen@api"]
-base_url = "https://api.example/v1/"
+provider = "example"
 model = "Qwen/Qwen3-8B-AWQ"
 
 [remote_engine."gemma@api"]
-base_url = "https://api.example/v1/"
+provider = "example"
 model = "google/gemma-3-27b-it"
 
 [prompt.case]
@@ -64,7 +64,7 @@ sampling = "recommended"
 
 ENGINE = """
 [remote_engine."qwen@api"]
-base_url = "https://api.example/v1/"
+provider = "example"
 model = "Qwen/Qwen3-8B-AWQ"
 """
 NEUTRAL = """
@@ -166,7 +166,7 @@ def test_a_fork_forks_its_origin_in_the_one_language_it_has(tmp_path: Path) -> N
         factors=ENGINE
         + """
 [remote_engine."gpt-oss@api"]
-base_url = "https://api.example/v1/"
+provider = "example"
 model = "openai/gpt-oss-20b"
 """
         + NEUTRAL

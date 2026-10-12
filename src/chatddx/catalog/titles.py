@@ -186,8 +186,8 @@ def describe(component: Component, title: Title, language: str | None = None) ->
         case LocalEngine(model=model, runtime=runtime, hardware=hardware):
             runs = f"{runtime.server} {runtime.version} ({hardware.gpu})"
             return f"{title(model)} on {runs}"
-        case RemoteEngine(model=model, base_url=url):
-            return f"{model} at {url.host}"
+        case RemoteEngine(model=model, provider=provider):
+            return f"{model} from {provider}"
         case ExpectationSchema(json_schema=schema):
             return _schema(schema) or f"expectation schema {short(component.digest)}"
         case CanarySet(canaries=canaries):

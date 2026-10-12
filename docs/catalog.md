@@ -197,6 +197,15 @@ compilation, as for a hand-written skeleton, it is shown by its purpose and the 
 
 Each kind is described by:
 
+AGENT: change
+A remote engine's address moved to the inventory, and the engine names its provider (agents/wip-judges.md, decided). The Remote engine row:
+---
+| Remote engine | Its model and provider. | `gpt-4o from openai` |
+
+AGENT: remove
+The table has two Scorer rows; the one whose example is `scorer chatddx.scorers.patterns:score v1` names an entry point
+that no longer ships (agents/wip-judges.md, J2).
+---
 | Component | Described by | Example |
 | --- | --- | --- |
 | Chunk | Its values or the opening words of its text. | `temperature 1.0, top_p 1.0` or `"{vignette}{appendices}"` |

@@ -3,7 +3,7 @@ import json
 from typing import Literal
 
 import pytest
-from pydantic import HttpUrl, JsonValue, ValidationError
+from pydantic import JsonValue, ValidationError
 
 from chatddx.factors.base import (
     Component,
@@ -1210,13 +1210,9 @@ def test_cleanup_ops_are_pinned() -> None:
 
 
 def test_remote_engine_identity() -> None:
-    a = RemoteEngine(base_url=HttpUrl("https://a100.example.org/v1"), model="gemma")
-    assert (
-        a.digest
-        != RemoteEngine(
-            base_url=HttpUrl("https://a100.example.org/v1"), model="gemma-2"
-        ).digest
-    )
+    a = RemoteEngine(provider="example", model="gemma")
+    assert a.digest != RemoteEngine(provider="example", model="gemma-2").digest
+    assert a.digest != RemoteEngine(provider="other", model="gemma").digest
 
 
 def test_chat_template_check(reg: Registry) -> None:
@@ -1392,9 +1388,7 @@ def test_skeleton_and_engine_compatibility(reg: Registry) -> None:
         "--reasoning-parser",
         "qwen3",
     )
-    remote = reg.add(
-        RemoteEngine(base_url=HttpUrl("https://example.org/v1"), model="gemma")
-    )
+    remote = reg.add(RemoteEngine(provider="example", model="gemma"))
     user = Message(role="user", content=(Slot(slot="vignette"),))
     schema: dict[str, JsonValue] = {
         "type": "object",

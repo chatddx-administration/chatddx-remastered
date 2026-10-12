@@ -302,8 +302,8 @@ Found while surveying, each to be talked through with the user and then fixed an
 - **The plan's size.** Every curation test writes every record, so a bigger plan makes curation slower. Built, it
   plans 68 records to the sample's 60 (24 skeletons to 18), with 9 cases to 99. Take: keep it; its own load is
   quicker than the sample's, and the curation tests drop to it from loading the sample's records.
-- **Making the remote engine reachable.** Take: not in this run. Its base URL is in its digest, so a free port per
-  test would mean a new engine per test.
+- **Making the remote engine reachable.** Its URL is its endpoint's now, not part of its digest, so `free_world`
+  could give it a free port as it does the fakes. Take: not until a test needs a remote engine to answer.
 - **The `slow` markers.** AGENTS.md marks a test whose call takes 0.2 s or more. 40 marked tests are under it now and
   two unmarked ones over it (see "Where it stands"), most within a run's noise. Take: re-mark by a few timed runs
   rather than one, once the new tests are in.

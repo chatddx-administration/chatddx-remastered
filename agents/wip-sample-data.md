@@ -112,7 +112,8 @@ without tools on the fake engines (`agents/wip-runner.md`).
 - Tools and scorers pin chatddx's own code, as compilations record their compiler: `Code` from `rig()` and an
   `entry_point` in chatddx. Packaging entry points can come later, for tools and scorers together.
 - Engine locations live in the World inventory (decision 2A): endpoints and hosts (`docs/inventory.md`). A remote
-  engine keeps `base_url` in its digest.
+  engine kept `base_url` in its digest until the user moved it to its endpoint, with a `provider` on the engine
+  (`agents/wip-judges.md`, "Decided").
 - Engine values come from the hosts (decision 4A), with the fake engines first, whose values are ours (4D). No
   placeholders.
 - The scorer interface, version 1, is the old one fed through remastered's views: the entry point takes a view's
