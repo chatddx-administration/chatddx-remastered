@@ -348,6 +348,15 @@ too, where the two differ. Later calls aren't compared; items of `b` missing fro
 Not case-derived. `schema_version` 2. Its `scorer_code: Code` is `scorer_version: int` (from 1): the version of the
 scorer's entry point the scoring pass ran.
 
+```
+AGENT: change
+The table still has the `scorer_code` row, which the text above replaces, and lacks `endpoints`, which landed in
+`ScoreItem`'s table below. The two rows, in place of `scorer_code`'s and after `execution`'s:
+---
+| `scorer_version` | `int`, ≥ 1 | required; the version of the scorer's entry point that ran |
+| `endpoints` | `tuple[JudgeEndpoint, ...]` | `()`; each judge's endpoint, `JudgeEndpoint(judge: JudgeRef, endpoint: Endpoint)` |
+```
+
 | Field | Type | Default |
 | --- | --- | --- |
 | `stage` | `Literal["started"]` | `"started"` |
@@ -361,6 +370,11 @@ scorer's entry point the scoring pass ran.
 
 ### `class ScoreItem(Record)`
 One run item graded by one view. Case-derived.
+
+```
+AGENT: remove
+The `endpoints` row below is `ScoreStarted`'s (see the suggestion above); a score item has no such field.
+```
 
 | Field | Type | Default |
 | --- | --- | --- |
@@ -561,6 +575,10 @@ From `docs/ledger.md`, "Open design issues", where they concern this API:
 - `Call.system_fingerprint` is never compared.
 - The finished row is outside the seal: its `at` and `findings` can change without `ledger.seal`.
 - `Call` accepts a response that still holds `prompt_token_ids`.
+```
+AGENT: remove
+`ScoreStarted.endpoints` records where each judge's calls went.
+```
 - `ScoreStarted` has no endpoint, so judge calls don't record where they went.
 - Records don't travel in a `Bundle`.
 - Findings have no mechanism of their own beyond the finished rows and the check functions.

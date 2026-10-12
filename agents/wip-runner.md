@@ -38,14 +38,17 @@ It was checked:
   scorer with the cases' targets. Every answer was read; the fake's diagnoses aren't in the targets, so the views gave
   0 ("not listed"), and `dont-miss` none ("no target").
 
-Next, in the order the user decided:
-1. **A runner pass**, on what judges would inherit (see "Found in a check against the code"): one prepare-and-render
-   for run items, a halt that ends a stalled stream, an unreadable case's events, the calls dropped beside a worker's
-   exception, and failed calls in `check_run`.
-2. **Judges**, phases 1–5 of `agents/wip-judges.md`, which reshape the gate and the scoring pass.
-3. **Solidifying** runs and scores together into `docs/runner.md` and `docs/runner-api.md`, drafted for the user to
-   rewrite. The runner's tests move from `wip` to `solidified`, and what is left of "Left" goes into the docs' smaller
-   issues.
+In the order the user decided:
+1. **A runner pass**, on what judges would inherit (see "Found in a check against the code"): done.
+2. **Judges**, phases 1–5 of `agents/wip-judges.md`: done.
+3. **Solidifying** runs and scores together: `docs/runner.md` and `docs/runner-api.md` are drafted, each as one AGENT
+   suggestion for the user to rewrite, checked against the code. What is left of "Left" is in `docs/runner.md`, "Open
+   design issues", and `docs/runner-api.md`, "Known gaps". Once the docs are taken, the runner's tests
+   (`runner/test/test_{wire,send,rounds,run,score}.py`) move from `wip` to `solidified`, and this file keeps only
+   what the docs don't say: the decision below, and what's left for other files.
+
+**Needs a decision: a round stopped while its tools run** (see "Left", "From phase 5"). A halt keeps the round, by
+sending its call and hanging it up at once; an interrupt drops it, tools that reached a third party included.
 
 **The real engines are cleared for the sample** (decided: `agents/wip-clearance.md`, "Vetted endpoints").
 `worlds/kompismoln/inventory.toml` clears `qwen3-8b@pelle` and `gpt-oss-20b@malborg` for `sample`.

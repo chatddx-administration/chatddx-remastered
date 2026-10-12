@@ -17,7 +17,9 @@ suggestions). Phase 3 is built too: the scorer interface's version 2, `verdict` 
 (`scorers/verdicts.py`), the one shipped entry point `chatddx.scorers.metrics:score`, and J4's `verdicts.asked`.
 Phases 4 and 5 are built too: the scoring pass sends judge calls (`runner/score.py:Grader`, `Grading`), and the
 bench, the repl and the API score judged scorers like any other. A remote engine's address is its endpoint's now,
-and the engine names its `provider` (see "Decided"; the docs have AGENT suggestions). Next: "Open".
+and the engine names its `provider` (see "Decided"; the docs have AGENT suggestions). 1B and 2A are built (see
+"Open"). The runner's doc drafts cover judges (`docs/runner.md`, "Judges" and "What applies to a run";
+`docs/runner-api.md`, "score.py"). Next: "Open", and "For Olof, later".
 
 ## Decided
 - **The pipeline before the prompt.** The judge pipeline is built and tested on the test World (`worlds/test/`,

@@ -235,6 +235,10 @@ described below.
   - adds return_token_ids: true.
 9. Send the request to the engine's /v1/chat/completions.
   - The World inventory's endpoint gives the URL, for a local engine and a remote one (`docs/inventory.md`, "Endpoints").
+  ```
+  AGENT: remove
+  The line before says the same for both kinds of engine, since a remote engine's address moved to its endpoint.
+  ```
   - For a local engine, the World inventory's endpoint gives the URL (`docs/inventory.md`, "Endpoints").
   - Canaries are sent the same way, from their literal bodies (`Canary.render`), one at a time before the first
     item and after the last, at the phases `verify_at` names. Nothing compares canary outputs yet (see "Possible
