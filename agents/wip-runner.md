@@ -4,32 +4,12 @@ The runner and the scoring pass are solidified. `docs/runner.md` says what a run
 `docs/runner-api.md` says what each name takes, returns and raises. Their tests in `src/chatddx/runner/test/` are
 `solidified`, and their open issues are the docs' "Open design issues" and "Known gaps".
 
-This file keeps what the docs don't: work under way, and what belongs to other files. Its phases, decisions and
-by-hand checks are in its history; other notes still cite those sections ("Decided", "Phase 5", "The scoring pass",
-"Afterwards", "Left"), and `docs/runner.md` describes what they built.
+This file keeps only what belongs to other files. Its phases, decisions and by-hand checks are in its history; other
+notes still cite those sections ("Decided", "Phase 5", "The scoring pass", "Afterwards", "Left"), and
+`docs/runner.md` describes what they built. The last decisions taken there: a round's call is optional, and run items
+kept version 1 for it (`docs/ledger.md`, "Tool rounds" and "Canonical form and versions").
 
 "Decided" means the user said so. "Take" is the agent's recommendation and still open.
-
-## Under way
-### A round stopped while its tools run
-Decided: A, a round's call is optional. Built:
-- **The ledger.** `Turn.call` is optional (`ledger/call.py`) and left out of the canonical form when missing, so every
-  stored round reads and seals as before. `RunItem` refuses a round without its call before the last, and `calls`
-  skips it. `check_run` accepts a last round without a call that ran some or all of the calls the response made, and
-  notes `tools.stopped` in place of `tools.unanswered` (`ledger/run.py:_rounds`).
-- **The runner.** `rounds.py:converse` keeps the round under way as the last of its turns, replaced whole as it grows,
-  so an interrupt or a halt mid-round keeps the tools that ran. A halt runs no further tool and sends no request after
-  them, where it used to send the round's call and hang it up. An interrupt inside a tool records it as stopped:
-  `Toolbox.run` raises `ToolStopped` with the run.
-- **Callers.** The bench's `outcome` calls such an item `stopped`; the repl's transcript skips the missing call.
-- **Run items keep version 1** (a take). The rule says a changed default needs a new version, but every run item
-  written before reads the same, and a reader that requires the call refuses one without it rather than misreading
-  it. A bump would make every stored run item unreadable (`docs/store.md`, "Known gaps"). `docs/ledger.md` has an
-  AGENT suggestion amending the rule.
-
-The docs have AGENT suggestions: `docs/ledger.md`, `docs/ledger-api.md`, `docs/runner.md`, `docs/runner-api.md` and
-`docs/chatddx.md` (`tools.stopped`). The tests are `wip` until those are taken: `ledger/test/test_unsent_rounds.py`
-and `runner/test/test_stopped_rounds.py`. Then they join `test_ledger.py` and `test_run.py`.
 
 ## Elsewhere
 - **`chatddx samples`** back on the runner: `agents/wip-sample-data.md`, "Sample runs".

@@ -38,6 +38,15 @@ what was declared (see "Run" and "Score").
 A record is written out in one fixed way, as a component is (docs/factors.md, "Canonical form and digest"), so the same
 record always gives the same bytes, and a seal over records is as stable as a digest over a component.
 
+```
+AGENT: add
+The paragraph the sentence below was meant to follow, which it replaced: the rule its "either" refers to.
+---
+Each record type has a schema version, under the components' rule (docs/factors.md, "Versions"): adding a field with a
+backward-compatible default needs no new version; changing an existing field's meaning or default does. Records written
+under another version are refused rather than guessed at, so after a bump the store can't return the old ones
+(docs/store.md, "Known gaps").
+```
 Making a required field optional needs no new version either, when every record written before reads the same: run
 items kept version 1 when a tool round's call became optional (see "Tool rounds").
 
