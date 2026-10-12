@@ -3,7 +3,6 @@ from pathlib import Path
 import pytest
 from pydantic import ValidationError
 
-from chatddx.conftest import WORLDS
 from chatddx.factors.base import Fingerprint
 from chatddx.factors.cases import Case, Vignette
 from chatddx.inventory import DirectorySource, Inventory
@@ -15,8 +14,8 @@ pytestmark = pytest.mark.solidified
 def vignettes(root: Path) -> Path:
     directory = root / "vignettes"
     directory.mkdir()
-    _ = (directory / "Dutchfall11w.txt").write_bytes(b"A 72-year-old man.\n")
-    _ = (directory / "casesfromedn1.txt").write_bytes("60-årig kvinna.".encode())
+    _ = (directory / "noted.txt").write_bytes(b"A 72-year-old man.\n")
+    _ = (directory / "svenska.txt").write_bytes("60-årig kvinna.".encode())
     _ = (directory / "notes.md").write_text("not a vignette")
     return directory
 
@@ -24,29 +23,29 @@ def vignettes(root: Path) -> Path:
 def test_sources_are_declared_in_the_inventory(tmp_path: Path) -> None:
     directory = vignettes(tmp_path)
     path = tmp_path / "inventory.toml"
-    _ = path.write_text('[source.sample]\npath = "vignettes"\n')
-    source = Inventory.load(path).source("sample")
+    _ = path.write_text('[source.test]\npath = "vignettes"\n')
+    source = Inventory.load(path).source("test")
     assert isinstance(source, DirectorySource)
     assert (source.name, source.path, source.sensitive) == (
-        "sample",
+        "test",
         directory.resolve(),
         True,
     )
     with pytest.raises(LookupError, match="no source 'other'"):
         _ = Inventory.load(path).source("other")
 
-    _ = path.write_text('[source.sample]\npath = "vignettes"\nsensitive = false\n')
-    assert not Inventory.load(path).source("sample").sensitive
+    _ = path.write_text('[source.test]\npath = "vignettes"\nsensitive = false\n')
+    assert not Inventory.load(path).source("test").sensitive
     _ = path.write_text('[machine.pelle]\naddress = "pelle.km"\n')
     with pytest.raises(
         ValueError, match="only 'include', 'source', 'endpoint', 'host' and 'cleared'"
     ):
         _ = Inventory.load(path)
-    _ = path.write_text('[source.sample]\nkind = "s3"\npath = "x"\n')
+    _ = path.write_text('[source.test]\nkind = "s3"\npath = "x"\n')
     with pytest.raises(ValidationError):
         _ = Inventory.load(path)
-    _ = path.write_text('[source.sample]\nname = "other"\npath = "vignettes"\n')
-    with pytest.raises(ValidationError, match="source 'sample' is named 'other'"):
+    _ = path.write_text('[source.test]\nname = "other"\npath = "vignettes"\n')
+    with pytest.raises(ValidationError, match="source 'test' is named 'other'"):
         _ = Inventory.load(path)
 
 
@@ -61,24 +60,19 @@ def test_a_world_takes_sources_and_endpoints_from_another(tmp_path: Path) -> Non
     world.mkdir()
     _ = (world / "inventory.toml").write_text(
         'include = ["../other/endpoints.toml"]\n\n'
-        + '[source.sample]\npath = "../other/vignettes"\n'
+        + '[source.test]\npath = "../other/vignettes"\n'
     )
     inventory = Inventory.load(world / "inventory.toml")
-    assert inventory.sources["sample"] == DirectorySource(
-        name="sample", path=directory.resolve()
+    assert inventory.sources["test"] == DirectorySource(
+        name="test", path=directory.resolve()
     )
     assert list(inventory.endpoints) == ["qwen"]
 
-    kompismoln = Inventory.load(WORLDS / "kompismoln" / "inventory.toml")
-    assert kompismoln.sources["sample"] == DirectorySource(
-        name="sample", path=(WORLDS / "sample" / "vignettes").resolve()
-    )
-
 
 def test_directory_sources_list_fetch_and_make_cases(tmp_path: Path) -> None:
-    source = DirectorySource(name="sample", path=vignettes(tmp_path))
-    assert source.ids() == ["Dutchfall11w", "casesfromedn1"]
-    assert source.fetch("Dutchfall11w") == b"A 72-year-old man.\n"
+    source = DirectorySource(name="test", path=vignettes(tmp_path))
+    assert source.ids() == ["noted", "svenska"]
+    assert source.fetch("noted") == b"A 72-year-old man.\n"
     with pytest.raises(LookupError, match="no case 'Missing'"):
         _ = source.fetch("Missing")
     for id in ("../inventory", "sub/case", ".."):
@@ -87,15 +81,15 @@ def test_directory_sources_list_fetch_and_make_cases(tmp_path: Path) -> None:
     assert source.cases() == [
         Case(
             vignette=Vignette(
-                source="sample",
-                id="Dutchfall11w",
+                source="test",
+                id="noted",
                 fingerprint=Fingerprint.of(b"A 72-year-old man.\n"),
             ),
         ),
         Case(
             vignette=Vignette(
-                source="sample",
-                id="casesfromedn1",
+                source="test",
+                id="svenska",
                 fingerprint=Fingerprint.of("60-årig kvinna.".encode()),
             ),
         ),

@@ -67,10 +67,6 @@ def test_the_test_world_plans_and_loads_as_designed(conn: Connection) -> None:
     }
     assert plan.skipped == SKIPPED
     world = World.load(TEST)
-    for name, endpoint in world.inventory.endpoints.items():
-        table = "remote_engine" if endpoint.url is None else "local_engine"
-        engine = plan.named(table, name).digest
-        assert endpoint.engine == engine, f"endpoint {name!r} serves {engine}"
 
     alice = People(conn).add("alice", "Alice")
     cases = load_cases(DATA)

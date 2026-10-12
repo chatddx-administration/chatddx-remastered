@@ -3,6 +3,8 @@ import pytest
 from chatddx.conftest import sample_plan
 from chatddx.core.rig import rig
 from chatddx.factors.request import Compilation, compiled
+from chatddx.inventory import DirectorySource, Inventory
+from chatddx.test.world import WORLDS
 
 pytestmark = pytest.mark.wip
 
@@ -57,3 +59,10 @@ def test_the_sample_s_translations_carry_every_recipe_into_swedish() -> None:
         recipe = held.recipe.model_copy(update={"translations": translations})
         skeleton, _ = compiled(recipe, sample.registry.get, rig())
         assert skeleton.digest != r.digest, r.name
+
+
+def test_kompismoln_takes_the_sample_s_vignettes() -> None:
+    kompismoln = Inventory.load(WORLDS / "kompismoln" / "inventory.toml")
+    assert kompismoln.sources["sample"] == DirectorySource(
+        name="sample", path=(WORLDS / "sample" / "vignettes").resolve()
+    )
