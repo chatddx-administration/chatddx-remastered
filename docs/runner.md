@@ -104,18 +104,10 @@ A run can be stopped three ways:
 - **A halt** does the same from another thread, as a server's request thread must when its client leaves, and returns
   rather than raises.
 
-```
-AGENT: change
-A round stopped while its tools run is kept now, without its call.
----
 A halt ends a stream that waits on a stalled engine at once, by shutting the connection down, and ends the pause
 between attempts. A round stopped while its tools run is kept without its call: the tools that ran, one an interrupt
 stops while it runs recorded as stopped, and no request after them (docs/ledger.md, "Tool rounds"). A halt runs no
 more tools. A stopped run sends no end canaries, so checking it counts them missing.
-```
-A halt ends a stream that waits on a stalled engine at once, by shutting the connection down, and ends the pause
-between attempts. A round stopped while its tools run keeps the rounds before it (see "Open design issues"). A stopped
-run sends no end canaries, so checking it counts them missing.
 
 A worker's unexpected failure is raised on the caller's thread once the other calls under way are halted and
 recorded.
@@ -188,14 +180,6 @@ Drift of a vignette is noted as preparing a case notes it (docs/factors.md, "Pre
 ## Open design issues
 
 ### What a stop leaves out
-```
-AGENT: remove
-Decided and built: a round's call is optional (see "Stopping").
-```
-- **A round stopped while its tools run.** A round needs its call (docs/ledger.md, "Tool rounds"), so tools that ran
-  without one aren't recorded, even one that reached a third party. A halt sends the round's call anyway and hangs it
-  up at once, so its round is kept; an interrupt doesn't. Either a round's call becomes optional, a change to what
-  stored rows may hold, or an interrupt does what a halt does.
 - **A call still waiting for its engine to answer at all**, under an execution with no timeout, waits on after a halt;
   only a stream can be shut down. vLLM answers at once and streams after. The bench sends no execution, so its runs
   have no timeout.

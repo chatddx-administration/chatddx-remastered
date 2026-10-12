@@ -164,13 +164,8 @@ Canaries, prompt-token fingerprints and comparing completions show which one app
  - `engine.chat_template`, `engine.chat_template_date`;
  - `bundle.recanonicalized`;
  - `case.drift`
- ```
- AGENT: add
- After `tools.unanswered`: a round stopped before its call.
- ---
- - `tools.stopped`
- ```
  - `tools.unanswered`
+ - `tools.stopped`
  - `judge.incomplete`
  - `score.incomplete`
  - `execution.retries`

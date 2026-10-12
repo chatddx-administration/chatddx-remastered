@@ -55,17 +55,9 @@ Only records have `v`, `canonical` and `parse`.
 
 **Errors.**
 
-```
-AGENT: change
-`ValidationError` also covers a round without its call that isn't the item's last. In the first row's list, after
-"a round without tools":
----
-a round without its call before an item's last round,
-```
-
 | Exception | When |
 | --- | --- |
-| `pydantic.ValidationError` | A record or log breaks its own rules: a naive time, a call, tool run or log that finishes before it starts, stages out of order, rows of different logs, a duplicate phase or tool, `verify_at` without canaries, a tool run without `result`, a round without tools, an infinite or NaN score value. Rules written as validators raise `ValueError` or `StructuralError`, which pydantic wraps. |
+| `pydantic.ValidationError` | A record or log breaks its own rules: a naive time, a call, tool run or log that finishes before it starts, stages out of order, rows of different logs, a duplicate phase or tool, `verify_at` without canaries, a tool run without `result`, a round without tools, a round without its call before an item's last round, an infinite or NaN score value. Rules written as validators raise `ValueError` or `StructuralError`, which pydantic wraps. |
 | `chatddx.factors.base.StructuralError` (a `ValueError`) | `Record.parse` of another version or of JSON that isn't an object; `check_run`, `check_score` and `compare_prompt_tokens` when the rows don't fit the components, or a component is missing or of the wrong kind (`resolve`, `Registry.get`). |
 | `json.JSONDecodeError` | `Record.parse` of bytes that aren't JSON. |
 | `AssertionError` | `check_run` when the trial's engine isn't `engine.local` or `engine.remote`; a checked registry rules it out. |
@@ -191,17 +183,10 @@ The arguments aren't kept: they are in the previous call's response.
 ### `class Turn(Frozen)`
 A tool round.
 
-```
-AGENT: change
-The `call` row: a round stopped while its tools run has none.
----
-| `call` | `Call \| None` | `None`; the request sent with the results, or none when the run stopped before it. Only an item's last turn may lack one (`RunItem`). |
-```
-
 | Field | Type | Default |
 | --- | --- | --- |
 | `tools` | `tuple[ToolRun, ...]`, at least one | required |
-| `call` | `Call` | required; the request sent with the results |
+| `call` | `Call \| None` | `None`; the request sent with the results, or none when the run stopped before it. Only an item's last turn may lack one (`RunItem`). |
 
 ### `check_execution(execution: Execution, trial: Trial, calls: Sequence[Call], sent: Mapping[ItemKey, datetime]) -> list[Finding]`
 Internal; `check_run` and `check_score` call it. `calls` are the calls to count; `sent` says when each item was sent.
@@ -257,14 +242,8 @@ One request of the trial and what came back. Case-derived.
 | `call` | `Call` | required; the first request |
 | `turns` | `tuple[Turn, ...]` | `()`; the tool rounds |
 
-```
-AGENT: change
-A turn without a call adds none, and only the last turn may lack one.
----
 `calls -> tuple[Call, ...]`: `call`, then each turn's call, when it has one. A turn without a call before the last is
 refused: `only the last round may lack its call`.
-```
-`calls -> tuple[Call, ...]`: `call`, then each turn's call.
 
 ### `class CanaryCall(Record)`
 One canary of the run's set, sent at one phase. Not case-derived.
@@ -313,13 +292,6 @@ the skeleton, its tools and the engine through `registry`.
 
 Raises `StructuralError`:
 
-```
-AGENT: change
-The `a round runs tools for calls the response didn't make` row: a turn without a call may run only some of them.
----
-| `<key>: a round runs tools for calls the response didn't make` | A turn's set of `(id, name)` differs from the previous call's tool calls (`chatddx.factors.request.tool_calls`), leaving out calls to the answer function of a `tool` contract; for a turn without a call, it has one the previous call didn't make. |
-```
-
 | Message | When |
 | --- | --- |
 | `canary calls in a run without canaries` | Any canary call when `canaries` is `None`. |
@@ -330,16 +302,9 @@ The `a round runs tools for calls the response didn't make` row: a turn without 
 | `<key>: tool rounds, but the skeleton has no tools` | An item with turns on a skeleton without tools. |
 | `<key>: more than <max_rounds> rounds` | More turns than `skeleton.max_rounds`. |
 | `<key>: no tool named '<name>'` | A tool run whose name isn't a tool of the skeleton, and which has no `error`. |
-| `<key>: a round runs tools for calls the response didn't make` | A turn's set of `(id, name)` differs from the previous call's tool calls (`chatddx.factors.request.tool_calls`), leaving out calls to the answer function of a `tool` contract. |
+| `<key>: a round runs tools for calls the response didn't make` | A turn's set of `(id, name)` differs from the previous call's tool calls (`chatddx.factors.request.tool_calls`), leaving out calls to the answer function of a `tool` contract; for a turn without a call, it has one the previous call didn't make. |
 | `tool code recorded for tools the skeleton lacks: […]` | A `tool_code` entry for a tool not in `skeleton.tools`. |
 
-```
-AGENT: change
-Item 5: an item whose last turn has no call is noted `tools.stopped`, in place of `tools.unanswered`.
----
-5. `tools.unanswered` for each item whose last call still has tool calls other than the answer function's, or
-   `tools.stopped` when its last turn has no call (skeletons with tools only);
-```
 Returns findings, in this order:
 1. `ledger.seal`, subject the run id;
 2. `run.incomplete` when finished: one for missing items, one for missing planned canary calls;
@@ -347,8 +312,8 @@ Returns findings, in this order:
 4. `call.failed` for each item whose last call has an `error`, subject the item key, then for each canary call with
    one, subject `<phase>/<position>`; the message is the error. Earlier calls of an item can't have one: a failed call
    ends its rounds;
-5. `tools.unanswered` for each item whose last call still has tool calls other than the answer function's (skeletons
-    with tools only);
+5. `tools.unanswered` for each item whose last call still has tool calls other than the answer function's, or
+   `tools.stopped` when its last turn has no call (skeletons with tools only);
 6.  `tools.code` for each tool of the skeleton whose version isn't recorded or isn't the one `Tool.version` pins;
 7.  `attestation.model` for each item: one per distinct wrong model name, and one when some call has a response but no
     model name. The declared name is the engine's `served_model_name`: a local engine's digest, a remote engine's
@@ -457,19 +422,13 @@ Returns findings, in this order:
 
 All are warnings. Item-key subjects are `str(ItemKey)`.
 
-```
-AGENT: add
-A row after `tools.unanswered`'s.
----
-| `tools.stopped` | `check_run` | item key | `round <r> stopped after <k> of <n> tool calls, before its call` |
-```
-
 | Code | Reported by | Subject | Message |
 | --- | --- | --- | --- |
 | `run.incomplete` | `check_run` | none | `<n> items missing`, `<n> canary calls missing` |
 | `case.drift` | `check_run` | item key | `the vignette read differs from the case's` |
 | `call.failed` | `check_run` | item key, or `<phase>/<position>` for a canary call | the call's `error` |
 | `tools.unanswered` | `check_run` | item key | `the last response still calls <names> after <k> of <max_rounds> rounds` |
+| `tools.stopped` | `check_run` | item key | `round <r> stopped after <k> of <n> tool calls, before its call` |
 | `tools.code` | `check_run` | tool digest | `the code tool '<name>' ran with isn't recorded`, or `tool '<name>' ran at version <v> of <entry point>, not the version it pins (<v>)` |
 | `attestation.model` | `check_run`, `check_score` | item key | `engine returned model '<got>', declared '<want>'`, or `engine returned no model name, declared '<want>'`; for a judge call, `judge engine returned …` |
 | `attestation.prompt_tokens` | `check_run` | none | `<n> items have no prompt token fingerprint` |
