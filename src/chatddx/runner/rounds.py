@@ -34,6 +34,12 @@ class _Refused(Exception):
     pass
 
 
+class ToolStopped(Exception):
+    def __init__(self, run: ToolRun) -> None:
+        self.run: ToolRun = run
+        super().__init__(sending.STOPPED)
+
+
 @dataclass(frozen=True)
 class Toolbox:
     functions: Mapping[str, Callable[..., object]]
@@ -61,6 +67,17 @@ class Toolbox:
         except Exception as e:  # noqa: BLE001
             error = f"{type(e).__name__}: {e}"
             result = f"error: {error}"
+        except KeyboardInterrupt:
+            raise ToolStopped(
+                ToolRun(
+                    id=call.id,
+                    name=call.name,
+                    started_at=started,
+                    finished_at=_now(),
+                    result=f"error: {sending.STOPPED}",
+                    error=sending.STOPPED,
+                )
+            ) from None
         return ToolRun(
             id=call.id,
             name=call.name,
@@ -144,10 +161,15 @@ def converse(
             started_at=at,
         )
 
+    def halted() -> bool:
+        return halt is not None and halt.is_set()
+
     try:
         first = send(body, started_at)
     except sending.Stopped as stopped:
         return Exchange(stopped.call, stopped=True)
+    # The round under way is always the last of turns, replaced whole as it grows, so an
+    # interrupt between two statements finds it as far as it got.
     turns: list[Turn] = []
     previous = first
     try:
@@ -155,20 +177,29 @@ def converse(
             calls = toolbox.pending(previous)
             if not calls:
                 break
-            if halt is not None and halt.is_set():
-                return Exchange(first, tuple(turns), stopped=True)
-            runs: list[ToolRun] = []
+            at = len(turns)
+            runs: tuple[ToolRun, ...] = ()
             for call in calls:
-                runs.append(toolbox.run(call))
-                on_tool(runs[-1])
+                if halted():
+                    return Exchange(first, tuple(turns), stopped=True)
+                try:
+                    run = toolbox.run(call)
+                except ToolStopped as e:
+                    turns[at:] = [Turn(tools=(*runs, e.run))]
+                    return Exchange(first, tuple(turns), stopped=True)
+                runs = (*runs, run)
+                turns[at:] = [Turn(tools=runs)]
+                on_tool(run)
+            if halted():
+                return Exchange(first, tuple(turns), stopped=True)
             assert previous.response is not None
             body = next_request(body, previous.response, {r.id: r.result for r in runs})
             try:
                 previous = send(body)
             except sending.Stopped as stopped:
-                turns.append(Turn(tools=tuple(runs), call=stopped.call))
+                turns[at:] = [Turn(tools=runs, call=stopped.call)]
                 return Exchange(first, tuple(turns), stopped=True)
-            turns.append(Turn(tools=tuple(runs), call=previous))
+            turns[at:] = [Turn(tools=runs, call=previous)]
     except KeyboardInterrupt:
         return Exchange(first, tuple(turns), stopped=True)
     return Exchange(first, tuple(turns))

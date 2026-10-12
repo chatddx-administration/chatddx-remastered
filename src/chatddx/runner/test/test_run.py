@@ -65,7 +65,7 @@ from chatddx.test.world import (
     faked,
 )
 
-pytestmark = pytest.mark.wip
+pytestmark = pytest.mark.solidified
 
 CASES = ("crlf", "svenska")
 
@@ -649,7 +649,7 @@ def test_a_round_runs_the_tools_a_response_calls_and_sends_back_their_results(
             )
         ],
     ]
-    last = item.turns[-1].call
+    last = item.calls[-1]
     assert last.response is not None and tool_calls(last.response) == ()
     assert all(c.status == 200 and c.prompt_tokens is not None for c in item.calls)
     assert [(e.key, e.run.name) for e in heard.of(ToolRan)] == [
@@ -668,7 +668,7 @@ def test_a_round_runs_the_tools_a_response_calls_and_sends_back_their_results(
     assert item.call.response is not None
     results = {r.id: r.result for r in item.turns[0].tools}
     second = next_request(body, item.call.response, results)
-    assert item.turns[0].call.request == fingerprint_request(second)
+    assert item.calls[1].request == fingerprint_request(second)
 
 
 @pytest.mark.usefixtures("fake")
@@ -683,7 +683,7 @@ def test_calling_the_answer_tool_ends_the_item(
     assert running.finish() == []
     [item] = Store(conn).run(running.run).items
     assert [[r.name for r in t.tools] for t in item.turns] == [["lookup"]]
-    last = item.turns[-1].call.response
+    last = item.calls[-1].response
     assert last is not None and [c.name for c in tool_calls(last)] == ["final_result"]
 
 
@@ -714,33 +714,6 @@ def test_a_tool_at_a_version_the_running_code_doesn_t_ship_is_refused(
     with pytest.raises(LookupError, match="at version 1 in chatddx .*, not 2"):
         _ = Runner(conn, insensitive(inventory), alice).start(made, plan.registry, QWEN)
     assert rows(db, "run_stage") == 0
-
-
-@pytest.mark.usefixtures("fake")
-def test_an_interrupt_while_tools_run_keeps_the_rounds_that_have_a_call(
-    conn: Connection, inventory: Inventory, alice: Person, plan: Plan
-) -> None:
-    made = tooled(plan, LINES, component("lookup"), component("broken"))
-    running = Runner(conn, insensitive(inventory), alice).start(
-        made, plan.registry, QWEN
-    )
-    ran: list[ToolRan] = []
-
-    def interrupt(event: Event) -> None:
-        if isinstance(event, ToolRan):
-            ran.append(event)
-            if len(ran) == 2:
-                raise KeyboardInterrupt
-
-    with pytest.raises(KeyboardInterrupt):
-        running.send(Heard(then=interrupt))
-    findings = running.finish()
-    [item] = Store(conn).run(running.run).items
-    assert [[r.name for r in t.tools] for t in item.turns] == [["lookup"]]
-    assert (
-        "tools.unanswered",
-        "the last response still calls broken after 1 of 5 rounds",
-    ) in [(f.code, f.message) for f in findings]
 
 
 @pytest.mark.usefixtures("fake")

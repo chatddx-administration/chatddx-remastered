@@ -24,7 +24,7 @@ from chatddx.store import Catalog, Store
 from chatddx.store.store import Connection
 from chatddx.test.world import DATA, LINES, NATIVE, QWEN, REMOTE, TOOL_ANSWER, faked
 
-pytestmark = pytest.mark.wip
+pytestmark = pytest.mark.solidified
 
 
 def expectations(plan: Plan, made: Trial) -> tuple[str, ...]:

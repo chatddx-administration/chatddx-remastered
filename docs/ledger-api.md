@@ -55,6 +55,14 @@ Only records have `v`, `canonical` and `parse`.
 
 **Errors.**
 
+```
+AGENT: change
+`ValidationError` also covers a round without its call that isn't the item's last. In the first row's list, after
+"a round without tools":
+---
+a round without its call before an item's last round,
+```
+
 | Exception | When |
 | --- | --- |
 | `pydantic.ValidationError` | A record or log breaks its own rules: a naive time, a call, tool run or log that finishes before it starts, stages out of order, rows of different logs, a duplicate phase or tool, `verify_at` without canaries, a tool run without `result`, a round without tools, an infinite or NaN score value. Rules written as validators raise `ValueError` or `StructuralError`, which pydantic wraps. |
@@ -183,6 +191,13 @@ The arguments aren't kept: they are in the previous call's response.
 ### `class Turn(Frozen)`
 A tool round.
 
+```
+AGENT: change
+The `call` row: a round stopped while its tools run has none.
+---
+| `call` | `Call \| None` | `None`; the request sent with the results, or none when the run stopped before it. Only an item's last turn may lack one (`RunItem`). |
+```
+
 | Field | Type | Default |
 | --- | --- | --- |
 | `tools` | `tuple[ToolRun, ...]`, at least one | required |
@@ -242,6 +257,13 @@ One request of the trial and what came back. Case-derived.
 | `call` | `Call` | required; the first request |
 | `turns` | `tuple[Turn, ...]` | `()`; the tool rounds |
 
+```
+AGENT: change
+A turn without a call adds none, and only the last turn may lack one.
+---
+`calls -> tuple[Call, ...]`: `call`, then each turn's call, when it has one. A turn without a call before the last is
+refused: `only the last round may lack its call`.
+```
 `calls -> tuple[Call, ...]`: `call`, then each turn's call.
 
 ### `class CanaryCall(Record)`
@@ -291,6 +313,13 @@ the skeleton, its tools and the engine through `registry`.
 
 Raises `StructuralError`:
 
+```
+AGENT: change
+The `a round runs tools for calls the response didn't make` row: a turn without a call may run only some of them.
+---
+| `<key>: a round runs tools for calls the response didn't make` | A turn's set of `(id, name)` differs from the previous call's tool calls (`chatddx.factors.request.tool_calls`), leaving out calls to the answer function of a `tool` contract; for a turn without a call, it has one the previous call didn't make. |
+```
+
 | Message | When |
 | --- | --- |
 | `canary calls in a run without canaries` | Any canary call when `canaries` is `None`. |
@@ -304,6 +333,13 @@ Raises `StructuralError`:
 | `<key>: a round runs tools for calls the response didn't make` | A turn's set of `(id, name)` differs from the previous call's tool calls (`chatddx.factors.request.tool_calls`), leaving out calls to the answer function of a `tool` contract. |
 | `tool code recorded for tools the skeleton lacks: […]` | A `tool_code` entry for a tool not in `skeleton.tools`. |
 
+```
+AGENT: change
+Item 5: an item whose last turn has no call is noted `tools.stopped`, in place of `tools.unanswered`.
+---
+5. `tools.unanswered` for each item whose last call still has tool calls other than the answer function's, or
+   `tools.stopped` when its last turn has no call (skeletons with tools only);
+```
 Returns findings, in this order:
 1. `ledger.seal`, subject the run id;
 2. `run.incomplete` when finished: one for missing items, one for missing planned canary calls;
@@ -420,6 +456,13 @@ Returns findings, in this order:
 ## Finding codes
 
 All are warnings. Item-key subjects are `str(ItemKey)`.
+
+```
+AGENT: add
+A row after `tools.unanswered`'s.
+---
+| `tools.stopped` | `check_run` | item key | `round <r> stopped after <k> of <n> tool calls, before its call` |
+```
 
 | Code | Reported by | Subject | Message |
 | --- | --- | --- | --- |

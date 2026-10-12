@@ -73,7 +73,7 @@ class ToolRun(Frozen):
 
 class Turn(Frozen):
     tools: tuple[ToolRun, ...] = Field(min_length=1)
-    call: Call
+    call: Call | None = None
 
 
 def check_execution(

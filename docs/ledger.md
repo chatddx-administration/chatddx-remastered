@@ -38,6 +38,14 @@ what was declared (see "Run" and "Score").
 A record is written out in one fixed way, as a component is (docs/factors.md, "Canonical form and digest"), so the same
 record always gives the same bytes, and a seal over records is as stable as a digest over a component.
 
+```
+AGENT: add
+After this paragraph: why run items kept their version when a tool round's call became optional. Every run item
+written before reads the same, and one without a call is refused by a reader that requires it rather than misread.
+---
+Making a required field optional needs no new version either, when every record written before reads the same: run
+items kept version 1 when a tool round's call became optional (see "Tool rounds").
+```
 Each record type has a schema version, under the components' rule (docs/factors.md, "Versions"): adding a field with a
 backward-compatible default needs no new version; changing an existing field's meaning or default does. Records written
 under another version are refused rather than guessed at, so after a bump the store can't return the old ones
@@ -100,6 +108,14 @@ vignette as it was read from its source (to detect drift; docs/factors.md, "Prep
 tool rounds that followed.
 
 ### Tool rounds
+```
+AGENT: change
+A round's call is optional now (decided: agents/wip-runner.md, "A round stopped while its tools run").
+---
+When the skeleton offers tools and a response calls some, the runner runs them and sends another request
+(docs/factors.md, "Tool rounds"). Each round records the tools run for the previous response's calls and the call that
+followed, unless the run stopped before it.
+```
 When the skeleton offers tools and a response calls some, the runner runs them and sends another request
 (docs/factors.md, "Tool rounds"). Each round records the tools run for the previous response's calls and the call that
 followed.
@@ -109,6 +125,14 @@ shaped the next request. When the tool failed, including a call that names no to
 why; the text is then what the model was told in its place. The arguments aren't repeated: they are in the previous
 response.
 
+```
+AGENT: change
+A round stopped while its tools run is kept, so a tool that reached a third party is on record.
+---
+A round stopped while its tools run is recorded without a call: the tools that ran, a tool stopped while running
+recorded as stopped, and nothing for the tools not run. Only an item's last round can lack its call, and checking the
+run notes it.
+```
 A round stopped while its tools run has no call, so it isn't recorded, and neither are its tools, even one that
 reached a third party.
 

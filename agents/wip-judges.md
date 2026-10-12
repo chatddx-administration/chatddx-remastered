@@ -8,7 +8,7 @@ into values. The judge prompt, what a judge is asked and how it answers, is Olof
 "Decided" means the user said so. "Take" is the agent's recommendation and still open.
 
 ## Start with this
-The runner pass before it is done (`agents/wip-runner.md`, "Start with this"), and so is phase 1: one
+The runner pass before it is done (`docs/runner.md` describes the runner as built), and so is phase 1: one
 prepare-and-render, `runner/prepare.py:Items`, whose `case` a judge's fills will use, and the fake's schema examples
 picked by seed (`fake_vllm/chat.py:instance`; `docs/vllm.md` has AGENT suggestions). J2, J5 and J9 are decided.
 Phase 2 is built: judges in a data set, the test World's judges, the refusal of tools and `judge.greedy_seeds`
@@ -18,8 +18,8 @@ suggestions). Phase 3 is built too: the scorer interface's version 2, `verdict` 
 Phases 4 and 5 are built too: the scoring pass sends judge calls (`runner/score.py:Grader`, `Grading`), and the
 bench, the repl and the API score judged scorers like any other. A remote engine's address is its endpoint's now,
 and the engine names its `provider` (see "Decided"; the docs have AGENT suggestions). 1B and 2A are built (see
-"Open"). The runner's doc drafts cover judges (`docs/runner.md`, "Judges" and "What applies to a run";
-`docs/runner-api.md`, "score.py"). Next: "Open", and "For Olof, later".
+"Open"). The runner's docs cover judges (`docs/runner.md`, "Judges" and "What applies to a run";
+`docs/runner-api.md`, "score.py"), and `runner/test/test_score.py` is `solidified`. Next: "Open", and "For Olof, later".
 
 ## Decided
 - **The pipeline before the prompt.** The judge pipeline is built and tested on the test World (`worlds/test/`,

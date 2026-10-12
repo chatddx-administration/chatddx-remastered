@@ -211,6 +211,18 @@ Raises `LookupError` (a vignette or source that can't be found, a replicate out 
 
 ## rounds.py
 
+```
+AGENT: add
+A class before `Toolbox`, and `run`'s row in the table below changed: an interrupt inside a tool is the one thing it
+raises.
+---
+### `class ToolStopped(Exception)`
+A tool stopped by an interrupt while it ran. `run: ToolRun` is its run, with `result` `error: stopped` and `error`
+`"stopped"`.
+
+| `run(call: ToolCall) -> ToolRun` | Runs one tool call. An error becomes the run's `error`, and its `result` is `error: <error>`. A `KeyboardInterrupt` raises `ToolStopped`. |
+```
+
 ### `class Toolbox`
 A skeleton's tools, loaded. `functions: Mapping[str, Callable]` and `parameters: Mapping[str, Validator]` by tool
 name, `answer: str | None` (the answer tool's name, when the contract is a `ToolOutput`), `max_rounds: int`,
@@ -244,6 +256,19 @@ An item's calls: `call: Call` (the first), `turns: tuple[Turn, ...] = ()` (the r
 Sends `body`, then, while `toolbox` has pending calls and fewer than `max_rounds` rounds were made, runs them in order
 (`on_tool` with each run), and sends the next request (`chatddx.factors.request.next_request`). Never raises
 `Stopped`: a stopped call ends the exchange with `stopped=True`. When stopped:
+
+```
+AGENT: change
+The table: a round stopped while its tools run is kept without its call, and a halt sends no request after them.
+---
+| When | Kept |
+| --- | --- |
+| A `Stopped` on the first call | the first call |
+| `halt` set before a round's next tool runs, or after its last | the rounds before, and the tools of this round that ran, without a call |
+| An interrupt inside a tool (`ToolStopped`) | the rounds before, and the tools of this round that ran, the stopped one last, without a call |
+| Another `KeyboardInterrupt` while a round's tools run | the rounds before, and the tools of this round that ran, without a call |
+| A `Stopped` on a round's call | the rounds before, and this round with its stopped call |
+```
 
 | When | Kept |
 | --- | --- |
@@ -378,6 +403,10 @@ codes".
 
 ## Known gaps
 From `docs/runner.md`, "Open design issues", where they concern this API:
+```
+AGENT: remove
+Decided and built: a round stopped while its tools run is kept, without its call.
+```
 - An interrupt while a round's tools run drops that round; a halt keeps it.
 - A halt can't end a call waiting for its response's headers.
 - `Toolbox.run` has no time limit.

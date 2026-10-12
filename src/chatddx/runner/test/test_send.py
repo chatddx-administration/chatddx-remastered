@@ -16,7 +16,7 @@ from chatddx.ledger import fingerprint_request
 from chatddx.runner.send import STOPPED, Delta, Halt, Stopped, send
 from chatddx.runner.test.test_wire import SERVED, body, going_away, whole
 
-pytestmark = pytest.mark.wip
+pytestmark = pytest.mark.solidified
 
 
 def at(host: str, port: int) -> str:

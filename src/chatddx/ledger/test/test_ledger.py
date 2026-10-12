@@ -11,15 +11,8 @@ from chatddx.factors.base import Fingerprint, StructuralError, resolve
 from chatddx.factors.bundle import Registry
 from chatddx.factors.cases import Case
 from chatddx.factors.engine import LocalEngine
-from chatddx.factors.request import Output, Tool, ToolOutput, Toolset, compile_request
 from chatddx.factors.scoring import Scorer, Scoring, View
-from chatddx.factors.test.sample import (
-    NOW,
-    RIG,
-    fp,
-    generation_recipe,
-    world,
-)
+from chatddx.factors.test.sample import NOW, RIG, fp, world
 from chatddx.factors.trial import Execution, Trial
 from chatddx.ledger import (
     Call,
@@ -44,6 +37,7 @@ from chatddx.ledger import (
     fingerprint_prompt_tokens,
     fingerprint_request,
 )
+from chatddx.ledger.test.rounds import ran, rounds
 
 pytestmark = pytest.mark.solidified
 
@@ -538,81 +532,10 @@ def test_request_fingerprint_is_over_canonical_bytes() -> None:
 
 
 def test_tool_rounds_are_checked(reg: Registry) -> None:
-    ids = world(reg)
-    engine = reg.get(ids["engine"])
-    assert isinstance(engine, LocalEngine)
-    web = reg.add(
-        Tool(
-            name="web_search",
-            description="Search the web.",
-            parameters={"type": "object"},
-            entry_point="chatddx_tools.web:search",
-            version=1,
-        )
-    )
-    answer = reg.add(
-        Output(
-            contract=ToolOutput(name="answer", description="Answer."),
-            json_schema={"type": "object"},
-        )
-    )
-    recipe = generation_recipe(reg).model_copy(
-        update={
-            "output": answer,
-            "toolset": reg.add(Toolset(tools=(web,), max_rounds=2)),
-        }
-    )
-    skeleton = reg.add(compile_request(recipe, reg.get))
-    trial = reg.add(
-        Trial(skeleton=skeleton, engine=ids["engine"], cases=(ids["case"],), seeds=(1,))
-    )
-    run_id = uuid4()
-    started = RunStarted(
-        run=run_id,
-        at=NOW,
-        rig=RIG,
-        trial=trial,
-        tool_code=(ToolCode(tool=web, version=1),),
-    )
-    vignette = resolve(reg.get, ids["case"], Case).vignette.fingerprint
-
-    def call(*names: str, model: str = engine.served_model_name) -> Call:
-        calls: list[JsonValue] = [
-            {
-                "id": f"c{i}",
-                "type": "function",
-                "function": {"name": n, "arguments": "{}"},
-            }
-            for i, n in enumerate(names)
-        ]
-        message: dict[str, JsonValue] = {"role": "assistant", "tool_calls": calls}
-        response, prompt_tokens = fingerprint_prompt_tokens(
-            {"model": model, "choices": [{"message": message}], "prompt_token_ids": [1]}
-        )
-        return Call(
-            request=fp("body"),
-            started_at=NOW,
-            finished_at=NOW,
-            status=200,
-            response=response,
-            prompt_tokens=prompt_tokens,
-        )
-
-    def ran(*ids_: str, name: str = "web_search") -> tuple[ToolRun, ...]:
-        return tuple(
-            ToolRun(id=i, name=name, started_at=NOW, finished_at=NOW, result="r")
-            for i in ids_
-        )
-
-    def check(first: Call, *turns: Turn) -> list[str]:
-        item = RunItem(
-            run=run_id,
-            key=ItemKey(case=ids["case"], replicate=0),
-            vignette=vignette,
-            call=first,
-            turns=turns,
-        )
-        return [f.code for f in check_run(Run(stages=(started,), items=(item,)), reg)]
+    made = rounds(reg)
+    ids, web, answer, trial = made.ids, made.web, made.answer, made.trial
+    started, run_id, vignette = made.started, made.started.run, made.vignette
+    call, check = made.call, made.check
 
     assert check(call("answer")) == []
 
