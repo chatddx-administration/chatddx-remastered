@@ -91,6 +91,7 @@ tags = ["edn"]
 targets.diagnosis.pattern = "psychosis | psychotic | psykos | psykotisk"
 targets.warning.pattern = "encephalit* | autoimmune | nmda | suicid* | catatoni*"
 targets.disposition.pattern = "psychiatr* | psykiatri* | neurolog* | admit* | admission | hospital*"
+targets.dont_miss.pattern = "encephalit* | encefalit* | nmda | autoimmun*"
 
 [case.casesfromedn20]
 tags = ["edn"]

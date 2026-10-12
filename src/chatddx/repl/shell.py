@@ -94,8 +94,20 @@ class Repl:
 
     def _per_model(self, names: list[str]) -> list[str]:
         models = self.bench.facts.models
-        alone = {made[0] for name in names if (made := made_for(name, models))}
-        return sorted({*names, *alone})
+        found: set[str] = set()
+        languages: dict[str, set[str | None]] = {}
+        for name in names:
+            made = made_for(name, models)
+            if made is None or made[2] is None:
+                found.add(name)
+            else:
+                languages.setdefault(made[0], set()).add(made[1])
+        for base, held in languages.items():
+            if len(held) == 1:
+                found.add(base)
+            else:
+                found |= {f"{base} {language}" for language in held if language}
+        return sorted(found)
 
     def say_cell(self) -> None:
         configuration = self.cell.label or "?"

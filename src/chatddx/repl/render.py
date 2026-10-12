@@ -42,12 +42,13 @@ STYLES: dict[Outcome, str] = {
     "completed": "",
     "invalid": REFUSED,
     "valid": VALID,
+    "salvaged": LATER,
 }
 
 TOKENS = len("tokens")
 
 # What the scoring pass notes of an answer, which show_answer says already.
-ANSWERED = frozenset({"answer.unread", "answer.invalid"})
+ANSWERED = frozenset({"answer.unread", "answer.invalid", "answer.salvaged"})
 
 NAMED = 10
 
@@ -357,6 +358,11 @@ def show_answer(
             console.print(Text(f"unread: {answer.problem}", style=REFUSED))
         return
 
+    if answer.salvaged:
+        console.print(
+            "salvaged: cut short, and read with its structure closed", style=LATER
+        )
+
     if skeleton.output_schema is not None:
         if answer.problem is None:
             console.print("valid", style=VALID)
@@ -466,7 +472,10 @@ def show_table(
     for g, i in columns:
         table.add_column(f"{g.name}\n{g.label(i)}")
 
-    for item in items:
+    def title(item: RunItem) -> tuple[str, int]:
+        return names.get(item.key.case, short(item.key.case)), item.key.replicate
+
+    for item in sorted(items, key=title):
         values = [held.get((g.name, i, item.key)) for g, i in columns]
         table.add_row(
             names.get(item.key.case, short(item.key.case)),

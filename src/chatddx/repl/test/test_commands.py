@@ -132,8 +132,11 @@ def test_the_names_complete_as_the_person_sees_them(repl: Repl):
     names = repl.completions()
 
     assert names["tag"] == sorted({tag for case in CASES.values() for tag in case.tags})
-    assert {NATIVE, "native"} <= set(names["configuration"])
-    assert {"off", f"off ({QWEN_MODEL})"} <= set(names["reasoning"])
+    assert "native" in names["configuration"] and NATIVE not in names["configuration"]
+    assert {"lines-guided (en)", "lines-guided (sv)"} <= set(names["configuration"])
+    assert (
+        "off" in names["reasoning"] and f"off ({QWEN_MODEL})" not in names["reasoning"]
+    )
     assert "none" not in names["reasoning"]
     assert "none" in names["set:reasoning"]
     assert "set:sampling" not in names

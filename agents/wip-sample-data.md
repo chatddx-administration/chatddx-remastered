@@ -17,7 +17,8 @@ write-ups are in git history: `git show 79ec890:agents/wip-sample-data.md`.
 Parity with the old `init-data` is reached, and the real engines are imported (below). Since then the sample is the
 example new Worlds follow, using every table a data set and a World can hold (decided; `agents/wip-repl.md`, "7.
 Completion", step 2, which lists what came): it moved to `worlds/sample/_data/`, and gained a drafted judge over
-Olof's notes, made-up appendices and the cases that send them, a canary set, a remote engine with a credential, its
+Olof's notes, made-up appendices and the cases that send them, made-up `dont_miss` targets for six cases
+(`agents/wip-repl.md`, step 2), a canary set, a remote engine with a credential, its
 model's facts, and an included `endpoints.toml`. Then sample runs, answered by the fake from scripts (below, "Sample
 runs").
 

@@ -195,3 +195,35 @@ def test_show_judge_sums_up_only_what_it_judged(bench: Bench, say: Say):
     assert "2 runs of yours at it" in written
     assert "judged 1 run of yours at it, in 5 calls" in written
     assert "no runs of yours it judged" in say("show judge remote")
+
+
+@pytest.mark.slow
+def test_score_counts_an_answer_that_never_came_apart(bench: Bench, say: Say):
+    _ = run(bench, SAMPLES["batch"])
+
+    written = say("score").splitlines()
+
+    header = next(line for line in written if "no answer" in line)
+    row = next(line for line in written if line.split()[:2] == ["lines", "text"])
+    at = header.index("no answer")
+    assert row[at : at + len("no answer")].strip() == "1"
+    assert row.split()[2] == "0"
+
+
+@pytest.mark.slow
+@pytest.mark.usefixtures("fake")
+def test_a_batch_is_replayed_and_tabled_by_case(say: Say):
+    _ = say(f"cell {LINES} {QWEN}", "batch targets")
+
+    written = say("replay").splitlines()
+
+    at = written.index(next(line for line in written if line.startswith("case ")))
+    targets = tagged("targets")
+    assert [line.split()[0] for line in written[at + 1 : at + 1 + len(targets)]] == (
+        targets
+    )
+    table = next(
+        i for i, line in enumerate(written) if i > at and line.split()[:1] == ["case"]
+    )
+    tabled = written[table + 1 : table + 1 + len(targets)]
+    assert [line.split()[0] for line in tabled] == targets

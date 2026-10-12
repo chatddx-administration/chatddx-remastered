@@ -277,6 +277,19 @@ class Grading:
     def _grade(self, item: RunItem, emit: Callable[[Event], None]) -> bool:
         last = item.calls[-1]
         answer = read(self._skeleton, last.response)
+        if answer.salvaged:
+            message = "cut short, and read with its structure closed"
+            if last.error is not None:
+                message += f"; the call ended with: {last.error}"
+            self._note(
+                Finding(
+                    level="info",
+                    code="answer.salvaged",
+                    message=message,
+                    subject=str(item.key),
+                ),
+                emit,
+            )
         if answer.problem is not None:
             message = answer.problem
             if answer.value is None and last.error is not None:

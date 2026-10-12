@@ -31,8 +31,8 @@ def test_a_native_answer_is_the_content_as_json(plan: Plan) -> None:
     made = skeleton(plan, NATIVE)
     document = instance(made.output_schema)
     assert read(made, said(json.dumps(document))) == Answer(document)
-    assert read(made, said("{")).problem is not None
-    assert read(made, said("{")).value is None
+    assert read(made, said("{x")).problem is not None
+    assert read(made, said("{x")).value is None
     assert read(made, said(None)) == Answer(None, "no content")
     assert read(made, said("null")) == Answer(None, "the content is null")
 
@@ -58,7 +58,7 @@ def test_a_tool_answer_is_the_answer_tool_s_arguments(plan: Plan) -> None:
     assert read(made, called("lookup", "{}")) == Answer(
         None, "no call to the answer tool 'final_result'"
     )
-    unread = read(made, called("final_result", "{"))
+    unread = read(made, called("final_result", "{x"))
     assert unread.value is None and unread.problem is not None
     assert unread.problem.startswith("the answer tool's arguments isn't JSON")
 
@@ -83,3 +83,38 @@ def test_a_text_answer_with_a_schema_is_the_json_in_it(plan: Plan) -> None:
 
 def test_no_response_is_no_answer(plan: Plan) -> None:
     assert read(skeleton(plan, NATIVE), None) == Answer(None, "no response")
+
+
+CUT: list[tuple[str, JsonValue]] = [
+    ('{"diagnoses": ["COPD", "PE"]\n\n\n', {"diagnoses": ["COPD", "PE"]}),
+    ('{"diagnoses": ["Gastr', {"diagnoses": ["Gastr"]}),
+    ('{"a": 1, "b": ', {"a": 1}),
+    ('{"a": 1, "b', {"a": 1}),
+    ('{"a": [1, 2, {"c": tr', {"a": [1, 2, {}]}),
+    ('{"a": "x\\u00', {"a": "x"}),
+    ('{"a": 1.', {"a": 1}),
+    ("{", {}),
+]
+
+
+@pytest.mark.parametrize(("cut", "closed"), CUT)
+def test_a_structured_answer_cut_short_is_read_with_its_structure_closed(
+    plan: Plan, cut: str, closed: JsonValue
+) -> None:
+    found = read(skeleton(plan, NATIVE), said(cut))
+    assert (found.value, found.salvaged) == (closed, True)
+    assert read(skeleton(plan, TOOL_ANSWER), called("final_result", cut)).salvaged
+
+
+@pytest.mark.parametrize("broken", ['{"a": 1} more', '{"a": x', '{"a": 1]', "nothing"])
+def test_json_that_breaks_before_its_end_isn_t_salvaged(
+    plan: Plan, broken: str
+) -> None:
+    found = read(skeleton(plan, NATIVE), said(broken))
+    assert (found.value, found.salvaged) == (None, False)
+    assert found.problem is not None and "isn't JSON" in found.problem
+
+
+def test_a_text_answer_cut_short_isn_t_salvaged(plan: Plan) -> None:
+    found = read(skeleton(plan, "prompted (en)"), said('{"diagnoses": ["Sepsis"'))
+    assert (found.value, found.salvaged) == (None, False)

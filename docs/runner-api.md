@@ -386,6 +386,13 @@ codes".
 | `case.drift` | `Running.send`, from `prepare_case` | item key | as `docs/factors-api.md` has it |
 | `answer.unread` | `Grading.send` | item key | the problem reading it, as `no response`, `no content`, `the content isn't JSON: <reason>`, with `; the call ended with: <error>` when the call has one |
 | `answer.invalid` | `Grading.send` | item key | how the answer breaks the run skeleton's `output_schema` |
+```
+AGENT: add
+A structured answer cut short is salvaged (src/chatddx/scorers/answer.py, `_closed`) and noted, as info, so the score
+says it scored one; decided in the repl's calibration on the sample.
+---
+| `answer.salvaged` | `Grading.send` | item key | `cut short, and read with its structure closed`, with `; the call ended with: <error>` when the call has one; level `info` |
+```
 | `verdict.unread` | `Grading.send` | item key | `view <i>, seed <n>: <problem>`, with `; the call ended with: <error>` when the call has one |
 | `verdict.invalid` | `Grading.send` | item key | `view <i>, seed <n>: <problem>` |
 

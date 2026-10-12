@@ -7,7 +7,9 @@ from chatddx.ledger import Call, RunItem
 from chatddx.runner.send import STOPPED
 from chatddx.scorers.answer import read
 
-type Outcome = Literal["stopped", "errored", "unread", "completed", "invalid", "valid"]
+type Outcome = Literal[
+    "stopped", "errored", "unread", "completed", "invalid", "valid", "salvaged"
+]
 
 
 def outcome(skeleton: Skeleton, item: RunItem) -> tuple[Outcome, str | None]:
@@ -20,6 +22,8 @@ def outcome(skeleton: Skeleton, item: RunItem) -> tuple[Outcome, str | None]:
         if last.error is not None:
             return "errored", last.error
         return "unread", answer.problem
+    if answer.salvaged:
+        return "salvaged", answer.problem or last.error
     if skeleton.output_schema is None:
         return "completed", last.error
     if answer.problem is not None:

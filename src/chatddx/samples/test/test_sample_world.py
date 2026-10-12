@@ -19,7 +19,7 @@ OUTCOMES = {
         "Dutchfall12w": ("errored", "HTTP 503: the engine is loading"),
         "Dutchfall13w": VALID,
         "Dutchfall14w": VALID,
-        "Dutchfall15w": ("errored", UNFINISHED),
+        "Dutchfall15w": ("salvaged", UNFINISHED),
     },
     "broken": {"Dutchfall13w": ("completed", UNFINISHED)},
     "invalid": {
@@ -28,7 +28,7 @@ OUTCOMES = {
     "judged": {"Dutchfall11w": ("completed", None)},
     "remote": {"Dutchfall14w": ("completed", None)},
     "runaway": {
-        "Dutchfall14w": ("errored", "stopped: nothing but whitespace for 100 tokens")
+        "Dutchfall14w": ("salvaged", "stopped: nothing but whitespace for 100 tokens")
     },
     "stopped": {"casesfromedn2": ("stopped", None)},
     "typical": {"DutchFall10w": VALID},

@@ -162,9 +162,8 @@ def test_a_run_that_runs_away_is_cut_short_and_what_came_scored(
     assert item.call.error == "stopped: nothing but whitespace for 100 tokens"
 
 
-# A structure cut short isn't salvaged, so its answer can't be read.
 @pytest.mark.slow
-def test_a_structured_answer_cut_short_is_unread(
+def test_a_structured_answer_cut_short_is_salvaged(
     world: Inventory, bench: Bench, say: Say
 ):
     startup = start_up(world, bench.get, QWEN)
@@ -172,10 +171,10 @@ def test_a_structured_answer_cut_short_is_unread(
         written = say(f"cell {NATIVE} {QWEN}", "run svenska")
 
     assert "stopped: nothing but whitespace for 100 tokens" in written
-    assert "unread: the content isn't JSON" in written
+    assert "salvaged: cut short, and read with its structure closed" in written
     assert re.search(r"\(\d+ out\)", written)
-    assert "no answer" in written
-    assert "answer.unread" not in written
+    assert "no answer" not in written
+    assert "answer.salvaged" not in written
 
 
 @pytest.mark.slow
@@ -189,14 +188,14 @@ def test_a_batch_says_each_finding_once_with_how_often_it_came(
 
     stop = "stopped: nothing but whitespace for 100 tokens"
     assert f"[warning] call.failed: {stop} (×{len(targets)})" in written
-    assert ["answer", "differential", "0", "—", "—", str(len(targets))] in cells(
-        written
-    )
     assert written.count("call.failed") == 1
-    assert "answer.unread" in written
-    errored = [c for c in cells(written) if c[2:3] == ["errored"]]
-    assert sorted(c[0] for c in errored) == targets
-    assert all(int(c[1]) > 0 for c in errored)
+    assert (
+        "[info] answer.salvaged: cut short, and read with its structure closed; the "
+        + f"call ended with: {stop} (×{len(targets)})"
+    ) in written
+    salvaged = [c for c in cells(written) if c[2:3] == ["salvaged"]]
+    assert sorted(c[0] for c in salvaged) == targets
+    assert all(int(c[1]) > 0 for c in salvaged)
 
 
 @pytest.mark.slow

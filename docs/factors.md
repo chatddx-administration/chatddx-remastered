@@ -572,6 +572,18 @@ The scoring function sees one view at a time: what the view picks from the answe
 what it picks from the expectation, and the parameters. It returns a value, or none, and a detail. Its interface is
 versioned.
 
+```
+AGENT: amend
+A structured answer cut short is read with its structure closed (src/chatddx/scorers/answer.py, `Answer.salvaged`;
+src/chatddx/bench/outcome.py, outcome `salvaged`), as the old chatddx's D5 salvage did; decided in the repl's
+calibration on the sample.
+---
+The answer is read from the item's last response by the skeleton's contract: a native answer is the content as JSON, a
+tool answer the answer function's arguments, and a text answer the content, or, when the output has a schema, the JSON
+in it. A native or tool answer cut short is salvaged: read with what it holds up to its last complete value, a string
+it stopped in closed, and its structure closed; JSON that breaks before its end isn't salvaged. An answer that can't
+be read is no answer.
+```
 The answer is read from the item's last response by the skeleton's contract: a native answer is the content as JSON, a
 tool answer the answer function's arguments, and a text answer the content, or, when the output has a schema, the JSON
 in it. An answer that can't be read is no answer.

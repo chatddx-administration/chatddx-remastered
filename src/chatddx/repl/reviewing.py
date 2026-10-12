@@ -137,7 +137,7 @@ def _lines(repl: Repl, skeleton: Skeleton, items: tuple[RunItem, ...]) -> None:
     header = f"{'case':<{width}}  {'tokens':>{TOKENS}}  outcome"
     repl.console.print(Text(header, style="bold"))
 
-    for item in items:
+    for item in sorted(items, key=lambda i: (names[i.key.case], i.key.replicate)):
         word, style, why = outcome(skeleton, item)
         line = Text(f"{names[item.key.case]:<{width}}  {usage(item)[1]:>{TOKENS}}")
         _ = line.append(f"  {word}", style=style)

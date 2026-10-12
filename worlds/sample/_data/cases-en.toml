@@ -13,6 +13,7 @@ tags = ["dutch-fall"]
 targets.diagnosis.pattern = "biliary & (colic | stone*)"
 targets.warning.pattern = "dissection | cholangitis | cholecystitis | pancreatitis | perforat*"
 targets.disposition.pattern = "discharge* | home | outpatient | observation"
+targets.dont_miss.pattern = "dissection"
 
 [case.Dutchfall11w]
 tags = ["dutch-fall"]
@@ -56,6 +57,7 @@ tags = ["dutch-fall"]
 targets.diagnosis.pattern = "pancreatitis"
 targets.warning.pattern = "necro* | organ & failure | shock | acute & coronary | myocardial & infarction"
 targets.disposition.pattern = "admit* | admission | hospital*"
+targets.dont_miss.pattern = "myocardial & infarction | acute & coronary | acs | stemi"
 
 [case.Dutchfall13w]
 tags = ["dutch-fall"]
@@ -68,12 +70,14 @@ tags = ["dutch-fall"]
 targets.diagnosis.pattern = "copd | (exacerbation | obstructive) & pulmonary"
 targets.warning.pattern = "hypoxi* | hypercapni* | respiratory & failure | pulmonary & embolism"
 targets.disposition.pattern = "admit* | admission | hospital*"
+targets.dont_miss.pattern = "pulmonary & embolism | pe"
 
 [case.Dutchfall15w]
 tags = ["dutch-fall"]
 targets.diagnosis.pattern = "gastroenteritis"
 targets.warning.pattern = "appendicitis | perforat* | peritonitis | sepsis | dehydrat*"
 targets.disposition.pattern = "discharge* | home | outpatient | observation"
+targets.dont_miss.pattern = "appendicitis"
 
 [case.Dutchfall16w]
 tags = ["dutch-fall"]
@@ -158,6 +162,7 @@ tags = ["dutch-fall"]
 targets.diagnosis.pattern = "pneumonia"
 targets.warning.pattern = "pulmonary & embolism | pe | pneumothorax | sepsis"
 targets.disposition.pattern = "discharge* | home | outpatient"
+targets.dont_miss.pattern = "pulmonary & embolism | pe"
 
 [case.Dutchfall27w]
 tags = ["dutch-fall"]

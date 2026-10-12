@@ -30,8 +30,7 @@ What's open, in order:
 3. **Takes waiting for the user's word**, listed in "Decisions so far".
 4. **Defects found in the check** (see "Where it stands at 5d4bff1" and "The old manual, checked"): step 1 of "7.
    Completion" fixed those that needed no data and no decision; the rest wait for the calibration.
-5. **Left from 4b and 4c**, still true: a structured answer cut short is unread, as nothing salvages it; no word on
-   reasoning that wasn't heeded; two tool calls in one response run together on one line as they stream (`replay`
+5. **Left from 4b and 4c**, still true: no word on reasoning that wasn't heeded; two tool calls in one response run together on one line as they stream (`replay`
    splits them, so the two differ); an unsaved cell's runs are titled by their whole recipe; only an item's first
    request is rendered again.
 
@@ -510,9 +509,7 @@ Takes made while building, all still open:
   said after it.
 
 Left from 4b:
-- **A structured answer cut short is unread.** A runaway on `plan` stops inside the JSON, which isn't salvaged
-  (`agents/wip-runner.md`, "The scoring pass"), so every view scores "no answer". The old repl closed the structure
-  where it stopped (D5's salvage); free text keeps what came.
+- **A structured answer cut short is unread.** Salvaged since: see "Round 1, on the sample runs", item 11.
 - **No word on reasoning that wasn't heeded**, as the old `bench/outcome.py:unheeded` gave (`agents/wip-runner.md`,
   "Afterwards"), and no `[thinking in content]`: the runner can't tell reasoning a parser missed.
 - **Two tool calls in one response run together** on one transcript line: a call's first delta is taken as its
@@ -646,6 +643,10 @@ test_the_sample_uses_every_table_a_data_set_and_a_world_hold` holds it to that. 
 - **Made-up appendices**, labelled so: `labs` and `ultrasound` for `Dutchfall11w`, whose ultrasound changes the right
   answer from the targets' aneurysm to an infected, blocked kidney, held to targets of their own in two cases; and
   `blood-gas` for `casesfromedn1`, in Swedish, which confirms its targets.
+- **Made-up `dont_miss` targets**, so the `dont-miss` views score: `DutchFall10w` (dissection), `Dutchfall12w`
+  (myocardial infarction), `Dutchfall14w` and `Dutchfall26w` (pulmonary embolism), `Dutchfall15w` (appendicitis) and
+  `casesfromedn2` (autoimmune encephalitis), each the dangerous diagnosis the case's warning or vignette already
+  points to (round 1, item 10).
 - **A canary set**, `basics`: two greedy probes and a seeded one. No run sends it yet: `Bench.start` passes no canary
   set.
 - **A remote engine with a credential**: `mistral-small@remote`, Mistral Small 3.2 from provider `fake`, whose
@@ -737,12 +738,28 @@ For the user, each with a take, most telling first:
    joined only when they hold `with`, so `run noted x` still says the seed is wrong), and completes it word by
    word. `show case FAMILY` lists the family's appendices and its cases that send them, marking those with an
    expectation of their own; `show case TITLE` shows the case's appendices, its own expectation and its runs.
-10. **No case has a `dont_miss` target**, so the `dont-miss` view of `plan`, `diagnoses` and `free-text` never has a
-    value. Take: Olof gives a few, or some are made up and labelled so, as the appendices are.
-11. **A structured answer cut short** (left from 4b): the `runaway` sample lacks only its closing brace and is
-    unread. Take: salvaged by closing the structure, said so in the outcome.
-12. **A batch's lines** come in the trial's case order, by digest (14w, 12w, 13w, 15w). Take: sorted by case title
-    on the screen; the sending order stays the trial's.
+10. **No case has a `dont_miss` target.** Decided: made up, and built: six cases have one (step 2, "Made-up
+    `dont_miss` targets"), so `plan`, `diagnoses` and `free-text` score their `dont-miss` views on the sample.
+11. **A structured answer cut short.** Decided: closed, and built. A native or tool answer that isn't JSON is
+    read again closed where it stopped (`scorers/answer.py:_closed`): cut after its last complete value, a string
+    it stopped in closed, its arrays and objects closed; JSON that breaks before its end isn't salvaged, nor a text
+    answer. `Answer.salvaged` marks it, the outcome is `salvaged` (with the call's error, or how it breaks the
+    schema), the scoring pass scores it and notes `answer.salvaged` (info), and `replay` says `salvaged: cut short,
+    and read with its structure closed`. On the sample, `runaway` and `batch`'s Dutchfall15w are salvaged.
+12. **A batch's lines.** Decided: sorted by case, and built. A batch's score table and `replay`'s lines go by case
+    title; the lines a batch draws as it runs keep the order the cases are sent in.
+
+Found since, from the user's use:
+- **Completion offered per-model names word by word**, so `cell free-text ` offered `(en,` beside the endpoints.
+  Since `on` picks the variant, completion offers a per-model name by what it's made from (`free-text`), and
+  `NAME LANG` for one made in several languages (`free-text-guided en`, `sv`), whose bare name isn't offered
+  (`shell.py:_per_model`). A variant is still taken by its whole name, typed.
+- **How a run's language is chosen** (the user's question): by the configuration picked; nothing picks it from the
+  cases. docs/catalog.md, "Languages", says the request follows the case (a Swedish case runs under a Swedish
+  configuration), and `language.mixed` warns when a trial's cases aren't the request's language, but the cell holds
+  one configuration, so a batch over `edn` under an English one runs Swedish cases in English. A take, for the user:
+  the cell holds a name without a language, as it holds one without a model, and each case is run under that name's
+  variant in its language; a batch over cases of several languages is then a run per language.
 
 Not shown by the sample, so not calibrated yet: a judge two endpoints serve (each judge's engine has one), and a
 canary set sent with a run (`Bench.start` passes none; `show canary_set basics` shows it).
