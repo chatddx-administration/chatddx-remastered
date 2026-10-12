@@ -672,6 +672,63 @@ With the user, on the sample, once it has its judge. What waits for it, since it
   keeping another model's variant, `configurations`' rows per model and owner.
 - **Left from 4b and 4c**, as the user weighs them.
 
+##### Round 1, on the sample runs
+Started (the user: "start the calibration on the sample runs"): `chatddx samples alice` on a fresh database, then
+`runs`, `replay` of each, `score`, `scorers`, `show` of the judges, endpoints, a scorer and a case, and a live `run`
+and `batch` on `fake-engines` with the judges called.
+
+Fixed, as plain defects:
+- **`replay` of a stopped run says `stopped`** (`render.py:show_answer`), where it said `unread: no content` or
+  nothing.
+- **`show judge NAME` counts the runs it judged and its calls**, summing up only its own views, where it counted
+  every run its scorer scored and showed the other judge's view (`inspecting.py:_judged`).
+- **`show endpoint NAME` counts the judge calls made at it** (`inspecting.py:_judge_calls`), from the scores'
+  `JudgeEndpoint`s.
+- **`batch` says what it was recorded as**, as `run` does.
+- **`scorers` names a judged view's judge** (`verdict, judged by verdict`), and `show` titles digests nested in
+  JSON, so `show scorer notes` names its judges.
+
+For the user, each with a take, most telling first:
+1. **What applies to a run.** Every replay carries three or four `no target` rows: `notes` applies to every case, and
+   no case has a `dont_miss` (item 10). A plan run is scored by `free-text` and `raw` ("unguided free text", whose
+   `first_mention` is the diagnosis's offset in the JSON, 210) and by `diagnoses`, whose differential lists the
+   plan's diagnosis objects as JSON; a batch's table is nine columns, `notes` `—` in all but one row. Take: a view
+   reading the whole answer applies to text outputs only, and a scorer applies when its views are offered
+   (`reaches`), so `scorers`' "the cell" and applicability agree; `replay`'s and `run`'s tables leave out `no
+   target` rows, saying once which views had none, while the summary still counts them.
+2. **A score's meaning on the screen.** `first_mention` is a character offset, 0 when named first, beside 0–1 scores
+   where 1 is best, so its best reads as a failure. Take: a value that isn't 0–1 shows with its unit (`@44`).
+3. **The detail column** is the detail's JSON: `{"answer": "1. {\"diagnosis\"…`, `{"seeds": [1.0]}`. Take: an
+   answer or a reason as plain text; a judged view as its seeds' values and the judge's `why` (item 4).
+4. **Judged views.** The judge's `why`, calls and endpoint show nowhere, and scoring is silent while judges are
+   called, so with real judges the repl looks hung. Take: `replay` and `run` say each judge call's `why` under the
+   scores, and scoring has a live line per judge call, as `batch` has per case.
+5. **An answer that didn't come** scores 0 under `reciprocal_rank` and `mentions` but no value under
+   `first_mention` and the judged views, so a 503 pulls a batch's mean down. Take: no value, reason `no answer`, for
+   every view, and the summary splitting `no answer` from `no target`. A failed call is the engine's, not the
+   model's, but the user may weigh it otherwise.
+6. **`configurations`** is 64 rows on the sample, every recipe × 3 models × alice's fork and archive's, names
+   clipped. Take: a row per name and language, the models as a column, a fork's owner as `yours, from archive`;
+   `configurations NAME` for the per-model rows.
+7. **`use` before `on`** is refused ("picked by the endpoint in the cell"), and `on` keeps another model's variant,
+   with only a sampling warning. Take: the cell holds the name, and `on` picks that name's variant for the model,
+   saying so.
+8. **A language in a name.** `use free-text-guided` is refused as made in two languages; the whole per-model name
+   must be typed. Take: `use free-text-guided sv`, the model from the endpoint.
+9. **Cases with appendices** can't be run or shown: `run` takes a family, and `show case Dutchfall11w` lists neither
+   its appendices nor the cases that send them, and counts the bare case's runs only. Take: `run` and `show case`
+   take a case's title, `Dutchfall11w with ultrasound` (`samples/run.py:case` moves into the bench), and `show case`
+   lists the family's appendices and cases, each with its own targets.
+10. **No case has a `dont_miss` target**, so the `dont-miss` view of `plan`, `diagnoses` and `free-text` never has a
+    value. Take: Olof gives a few, or some are made up and labelled so, as the appendices are.
+11. **A structured answer cut short** (left from 4b): the `runaway` sample lacks only its closing brace and is
+    unread. Take: salvaged by closing the structure, said so in the outcome.
+12. **A batch's lines** come in the trial's case order, by digest (14w, 12w, 13w, 15w). Take: sorted by case title
+    on the screen; the sending order stays the trial's.
+
+Not shown by the sample, so not calibrated yet: a judge two endpoints serve (each judge's engine has one), and a
+canary set sent with a run (`Bench.start` passes none; `show canary_set basics` shows it).
+
 #### 4. The manual
 `docs/repl.md`, drafted in `agents/` from the calibrated shell, with examples on the sample, and proposed for
 adoption with the solidify pass on the repl's tests, which are `wip`.

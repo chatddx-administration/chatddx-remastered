@@ -258,11 +258,12 @@ def show_answer(
     last = item.calls[-1]
     answer = read(skeleton, last.response)
 
-    if last.error is not None and last.error != STOPPED:
+    if last.error is not None:
         console.print(Text(last.error, style=REFUSED))
 
     if answer.value is None:
-        console.print(Text(f"unread: {answer.problem}", style=REFUSED))
+        if last.error != STOPPED:
+            console.print(Text(f"unread: {answer.problem}", style=REFUSED))
         return
 
     if skeleton.output_schema is not None:
@@ -385,6 +386,8 @@ def show_summary(console: Console, graded: list[Graded]) -> None:
     shown: set[str] = set()
 
     for (name, i), found in held.items():
+        if not found:
+            continue
         values = [v for v in found if v is not None]
         without = len(found) - len(values)
         table.add_row(

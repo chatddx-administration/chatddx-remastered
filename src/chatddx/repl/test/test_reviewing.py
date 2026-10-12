@@ -6,9 +6,12 @@ import pytest
 from chatddx.bench import Bench
 from chatddx.inventory import DirectorySource, Inventory
 from chatddx.repl.test.helpers import Say, cells, tagged
+from chatddx.samples import RUNS, run, samples
 from chatddx.test.world import LINES, NATIVE, QWEN, TEST
 
 pytestmark = pytest.mark.wip
+
+SAMPLES = {s.name: s for s in samples(TEST / RUNS)}
 
 
 def rows(written: str) -> list[str]:
@@ -153,5 +156,39 @@ def test_show_finds_the_runs_through_what_compiled_or_scored_them(say: Say):
 
     assert "1 run of yours with it" in say("show output")
     assert "1 run of yours with it" in say("show prompt case")
-    assert "1 run of yours with it" in say("show judge verdict")
+    assert "1 run of yours it judged" in say("show judge verdict")
     assert "1 run of yours with it" in say("show expectation_schema targets")
+
+
+@pytest.mark.slow
+def test_replay_says_a_run_was_stopped(bench: Bench, say: Say):
+    _ = run(bench, SAMPLES["stopped"])
+
+    written = say("replay")
+
+    assert ["stopped"] in cells(written)
+    assert "unread" not in written
+
+
+@pytest.mark.slow
+def test_show_judge_sums_up_only_what_it_judged(bench: Bench, say: Say):
+    _ = run(bench, SAMPLES["judged"])
+    _ = run(bench, SAMPLES["valid"])
+
+    written = say("show judge verdict")
+
+    assert "1 run of yours it judged, in 2 calls" in written
+    assert ["judged", "note-comment", "1", "1", "0"] in cells(written)
+    assert ["note-answer", "1", "1", "0"] in cells(written)
+    assert "note-graded" not in written and "differential" not in written
+
+    written = say("show judge graded")
+
+    assert "1 run of yours it judged, in 3 calls" in written
+    assert ["judged", "note-graded", "1", "0.5", "0"] in cells(written)
+
+    written = say(f"show endpoint {QWEN}")
+
+    assert "2 runs of yours at it" in written
+    assert "judged 1 run of yours at it, in 5 calls" in written
+    assert "no runs of yours it judged" in say("show judge remote")

@@ -202,6 +202,11 @@ def test_show_writes_what_is_json_as_json(say: Say):
     assert '"additionalProperties": false' in written
     assert "chatddx.runner.test.tools:lookup" in line_of(written, "entry_point")
 
+    written = say("show scorer judged")
+
+    assert '"judge": "verdict"' in written and '"judge": "graded"' in written
+    assert "sha256:" not in written
+
 
 def test_show_says_what_it_can_t_show(say: Say):
     assert "no kind 'frobnicate'" in say("show frobnicate")
@@ -243,6 +248,8 @@ def test_scorers_say_whether_the_cell_s_output_offers_each_view(say: Say):
 
     assert "reciprocal_rank" in row(written, "answer")
     assert "$.diagnoses[?@.critical == true].diagnosis" in written
+    assert "verdict, judged by verdict" in row(written, "note-comment")
+    assert "points, judged by graded" in row(written, "note-graded")
 
     written = say(f"cell {LINES} {QWEN}", "scorers")
 

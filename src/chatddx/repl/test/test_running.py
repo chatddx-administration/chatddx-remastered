@@ -222,6 +222,7 @@ def test_batch_runs_the_cell_on_each_case_tagged_a_line_to_each(bench: Bench, sa
 
     [run] = ran(bench)
     assert len(run.items) == len(targets)
+    assert "recorded as run 1 of trial" in written
     assert ["lines", "text", "1", "0", "0", str(len(targets) - 1)] in cells(written)
 
 

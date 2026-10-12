@@ -89,13 +89,7 @@ def run(repl: Repl, name: str, seed: str | None = None) -> None:
     repl.say_findings(scored_findings(graded, read=True))
     repl.say_findings(findings)
     held.said()
-    trial = running.started.trial
-    runs = [r for r in bench.runs() if r.trial == trial]
-    repl.console.print(
-        f"recorded as run {len(runs)} of trial {short(trial)}, "
-        + f"run {str(running.run)[:8]}",
-        style=LABEL,
-    )
+    _recorded(repl, running)
 
 
 def batch(repl: Repl, *tags: str) -> None:
@@ -176,6 +170,17 @@ def batch(repl: Repl, *tags: str) -> None:
     show_summary(repl.console, graded)
     repl.say_findings([*scored_findings(graded), *findings], tally=True)
     held.said()
+    _recorded(repl, running)
+
+
+def _recorded(repl: Repl, running: Running) -> None:
+    trial = running.started.trial
+    runs = [r for r in repl.bench.runs() if r.trial == trial]
+    repl.console.print(
+        f"recorded as run {len(runs)} of trial {short(trial)}, "
+        + f"run {str(running.run)[:8]}",
+        style=LABEL,
+    )
 
 
 def _seed_of(repl: Repl, value: str) -> int | None:

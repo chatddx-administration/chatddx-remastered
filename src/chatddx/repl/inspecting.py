@@ -17,6 +17,7 @@ from chatddx.factors.request import Reasoning, Skeleton
 from chatddx.factors.scoring import Expectation, Scoring
 from chatddx.facts import INTENTS, Effort, ModelFacts, Refusal, Refused
 from chatddx.inventory import url_of
+from chatddx.ledger import RunStarted
 from chatddx.store import fetch_vignette
 
 from .render import (
@@ -291,6 +292,10 @@ def _about(table: Table, about: About) -> None:
 
 
 def _runs(repl: Repl, word: str, digest: str) -> None:
+    if word == "judge":
+        _judged(repl, digest)
+        return
+
     bench = repl.bench
     scored = word in SCORED
     runs = bench.scored_by(digest) if scored else bench.reaching(digest)
@@ -318,15 +323,50 @@ def _runs(repl: Repl, word: str, digest: str) -> None:
     show_summary(repl.console, graded)
 
 
+def _judged(repl: Repl, judge: str) -> None:
+    bench = repl.bench
+    judged: list[Graded] = []
+    runs = 0
+
+    for run in bench.scored_by(judge):
+        graded = [_by_judge(g, judge) for g in bench.scores_of(run.run) if g.score]
+        graded = [g for g in graded if g.score and g.score.items]
+        runs += bool(graded)
+        judged += graded
+
+    if not runs:
+        repl.console.print("no runs of yours it judged", style=LABEL)
+        return
+
+    calls = sum(
+        c.judge == judge
+        for g in judged
+        if g.score
+        for i in g.score.items
+        for c in i.judge_calls
+    )
+    repl.console.print(
+        f"{plural(runs, 'run')} of yours it judged, in {plural(calls, 'call')}",
+        style=LABEL,
+    )
+    show_summary(repl.console, judged)
+
+
+def _by_judge(graded: Graded, judge: str) -> Graded:
+    assert graded.score is not None
+    items = tuple(
+        i for i in graded.score.items if any(c.judge == judge for c in i.judge_calls)
+    )
+    return replace(graded, score=graded.score.model_copy(update={"items": items}))
+
+
 def _scored_with(repl: Repl, graded: Graded, digest: str) -> bool:
     assert graded.score is not None
     scoring = resolve(repl.bench.get, graded.score.started.scoring, Scoring)
-    scorer = graded.scorer
     return digest in (
         scoring.scorer,
         *scoring.expectations,
-        scorer.expectation_schema,
-        *scorer.judges,
+        graded.scorer.expectation_schema,
     )
 
 
@@ -363,7 +403,8 @@ def _text(repl: Repl, value: JsonValue) -> Text:
         case list() if all(isinstance(i, (str, int, float)) for i in value):
             return Text(" ".join(str(i) for i in value))
         case dict() | list():
-            return Text(clipped(json.dumps(value, indent=2, ensure_ascii=False)))
+            titled = _titled(repl, value)
+            return Text(clipped(json.dumps(titled, indent=2, ensure_ascii=False)))
         case _:
             return Text(json.dumps(value))
 
@@ -435,6 +476,18 @@ def _show_case(repl: Repl, name: str | None) -> None:
     _runs(repl, "case", family.case)
 
 
+def _titled(repl: Repl, value: JsonValue) -> JsonValue:
+    match value:
+        case str() if _DIGEST.match(value):
+            return repl.bench.title(value)
+        case dict():
+            return {k: _titled(repl, v) for k, v in value.items()}
+        case list():
+            return [_titled(repl, v) for v in value]
+        case _:
+            return value
+
+
 def _show_endpoint(repl: Repl, name: str | None) -> None:
     bench = repl.bench
     name = name or repl.cell.endpoint
@@ -463,11 +516,31 @@ def _show_endpoint(repl: Repl, name: str | None) -> None:
     table.add_row("cleared for", " ".join(sorted(bench.inventory.cleared_for(name))))
     repl.console.print(table)
 
-    runs = [r for r in bench.runs() if r.endpoint and r.endpoint.name == name]
+    ran = bench.runs()
+    runs = [r for r in ran if r.endpoint and r.endpoint.name == name]
     if not runs:
         repl.console.print("no runs of yours at this endpoint", style=LABEL)
     else:
         repl.console.print(f"{plural(len(runs), 'run')} of yours at it", style=LABEL)
+
+    judged = [n for n in (_judge_calls(repl, r, name) for r in ran) if n]
+    if judged:
+        repl.console.print(
+            f"judged {plural(len(judged), 'run')} of yours at it, in "
+            + plural(sum(judged), "call"),
+            style=LABEL,
+        )
+
+
+def _judge_calls(repl: Repl, run: RunStarted, endpoint: str) -> int:
+    store = repl.bench.store
+    calls = 0
+    for started in store.scores_of(run.run):
+        at = {j.judge for j in started.endpoints if j.endpoint.name == endpoint}
+        if at:
+            items = store.score(started.score).items
+            calls += sum(c.judge in at for i in items for c in i.judge_calls)
+    return calls
 
 
 def reasoning(repl: Repl) -> None:

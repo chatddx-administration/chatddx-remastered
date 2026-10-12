@@ -87,7 +87,9 @@ def scorers(repl: Repl) -> None:
             reads = view.output or "the whole answer"
             if view.split is not None:
                 reads += f", {view.split}"
-            metric = view.metric if view.judge is None else f"{view.metric}, judged"
+            metric = view.metric
+            if view.judge is not None:
+                metric += f", judged by {bench.title(view.judge)}"
             if variation is None:
                 offered = Text("—", style=LABEL)
             elif reaches(schema, view.output):
