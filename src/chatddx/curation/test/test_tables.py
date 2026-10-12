@@ -69,7 +69,7 @@ def test_init_data_lands_appendices_the_cases_that_send_them_and_canary_sets(
     archive = People(conn).find("archive")
     assert archive is not None
 
-    [thread] = catalog.find("appendix", "labs for whitespace", owner=archive.id)
+    [thread] = catalog.find("appendix", "labs", owner=archive.id)
     appendix = store.get(catalog.head(thread).digest)
     assert (
         isinstance(appendix, Appendix)
@@ -82,6 +82,7 @@ def test_init_data_lands_appendices_the_cases_that_send_them_and_canary_sets(
     assert store.get(sent.digest) == sent
     assert catalog.family(sent.digest) == catalog.family(bare.digest)
     assert f"[archive case] whitespace with labs: created {sent.digest[7:13]}" in lines
+    assert catalog.title_of(sent.digest) == "whitespace with labs"
 
     [schema] = [r.digest for r in plan.records if r.kind == "expectation_schema"]
     [mine] = catalog.expectation_choices([sent.digest], alice.id, schema)[sent.digest]

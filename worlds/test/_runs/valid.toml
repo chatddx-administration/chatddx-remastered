@@ -1,0 +1,8 @@
+description = "A structured answer held to its schema."
+configuration = "native"
+endpoint = "qwen3@fake"
+cases = ["matched"]
+
+[[turn]]
+reasoning = "Matched by design."
+content = '{"diagnoses": [{"diagnosis": "Fake diagnosis A", "critical": false}], "acute_warning": "fake acute warning", "disposition": "fake disposition"}'

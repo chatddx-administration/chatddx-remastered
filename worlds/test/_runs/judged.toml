@@ -1,0 +1,7 @@
+description = "An answer to the case with notes, judged."
+configuration = "lines"
+endpoint = "qwen3@fake"
+cases = ["noted"]
+
+[[turn]]
+content = "Septic shock\nPyelonephritis"

@@ -1,0 +1,13 @@
+description = "Two cases: the server refuses the first and goes away from the second."
+configuration = "lines"
+endpoint = "qwen3@fake"
+cases = ["crlf", "svenska"]
+scored = false
+
+[[turn]]
+status = 503
+content = "loading"
+
+[[turn]]
+content = "Pneumonia\nBronchitis"
+hang_up = 1

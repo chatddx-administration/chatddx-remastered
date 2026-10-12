@@ -1,0 +1,10 @@
+description = "A structured answer that runs away: gpt-oss writes nothing but newlines before the closing brace, and the runner cuts it short, unread."
+configuration = "diagnoses"
+endpoint = "gpt-oss-20b@fake"
+cases = ["Dutchfall14w"]
+seed = 17
+
+[[turn]]
+reasoning = "Breathlessness in known COPD with a viral trigger."
+content = '{"diagnoses": ["COPD exacerbation", "Pneumonia", "Pulmonary embolism"]'
+runaway = 150

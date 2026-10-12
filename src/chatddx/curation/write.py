@@ -224,8 +224,12 @@ class _Init:
             appendix = Appendix(vignette=vignette, text=clean(text, ["newlines.lf@1"]))
             digest = registry.add(appendix)
             _ = self.store.add(registry, [digest])
-            found = self.catalog.find("appendix", named, owner=self.archive.id)
-            thread, verb = self.put("appendix", digest, found, named)
+            found = [
+                t
+                for t in self.catalog.find("appendix", name, owner=self.archive.id)
+                if self.binds(t, vignette)
+            ]
+            thread, verb = self.put("appendix", digest, found, name)
             self.threads[("appendix", named)] = thread
             self.land(digest, f"appendix {named}")
             self.sync(Subject(thread=thread))
@@ -244,6 +248,16 @@ class _Init:
             self.lines.append(f"[archive case] {named}: {verb} {short(digest)}")
             if ordered.targets is not None:
                 self.expect(named, digest, ordered.targets, schema)
+
+    # An appendix is named as its case's file names it, so two cases' may share a name;
+    # each is its vignette's, by the vignette's source and id.
+    def binds(self, thread: int, vignette: Vignette) -> bool:
+        held = self.store.get(self.catalog.head(thread).digest)
+        assert isinstance(held, Appendix)
+        return (held.vignette.source, held.vignette.id) == (
+            vignette.source,
+            vignette.id,
+        )
 
     def stored(self, digest: str) -> bool:
         try:

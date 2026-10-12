@@ -1,0 +1,8 @@
+description = "A run on the remote engine, whose endpoint asks for a key: Mistral Small doesn't reason, and answers at once."
+configuration = "free-text"
+endpoint = "mistral-small@remote"
+cases = ["Dutchfall14w"]
+seed = 41
+
+[[turn]]
+content = "COPD exacerbation\nPneumonia\nPulmonary embolism\nHeart failure"

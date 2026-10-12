@@ -48,8 +48,9 @@ test run passes (548).
   API", "Judges"), `agents/wip-authoring.md` (S6), `agents/wip-judges.md` ("What exists", "Refused" and "Not there")
   and `agents/wip-sample-data.md` ("Then the small parity items", "Parked").
 - **Endpoints with a credential** aren't refused: the gate reads the secret from the environment variable the
-  credential names and the wire sends it as a bearer (`runner/gate.py:secret`, `runner/wire.py`). No World a person
-  runs by hand has one; the test World's `unknown@remote` is unreachable.
+  credential names and the wire sends it as a bearer (`runner/gate.py:secret`, `runner/wire.py`). The sample World's
+  `mistral-small@remote` has one, served here by `fake-engines`' stand-in; the test World's `unknown@remote` is
+  unreachable.
 - **D8** was rebuilt by the bench: a person is scored against their own expectation only, and a shared one counts
   once taken (`catalog/threads.py:expectation_choices`; `agents/wip-bench.md`, "What a person is scored against").
   "Else the one thread shared with them" is gone.
@@ -627,7 +628,8 @@ Built. The sample is two parts that a new World follows: the data set (`worlds/s
 (`worlds/sample/`), laid out as Kompismoln's is. `src/chatddx/curation/test/test_sample.py:
 test_the_sample_uses_every_table_a_data_set_and_a_world_hold` holds it to that. What came:
 - **Data sets hold appendices and canary sets** (`curation/plan.py`, `curation/write.py`). A cases file names a case's
-  `appendices`, texts by name, each landed as an archive thread `<name> for <id>`, and `[[case.<id>.with]]`, cases of
+  `appendices`, texts by name, each landed as an archive thread of its own name, told apart by its vignette
+  (`curation/write.py:binds`), and `[[case.<id>.with]]`, cases of
   the family that send them in the order named, each with `targets` of its own when it has them. `canary_set` is a
   table of `factors.toml`. The test World holds one of each (`whitespace`'s `labs`, `probe`), read by
   `curation/test/test_tables.py`.
@@ -653,8 +655,9 @@ test_the_sample_uses_every_table_a_data_set_and_a_world_hold` holds it to that. 
   stand-in is cleared for the sample, as it runs here. The model adds a third variant of every per-model recipe.
 - **The World's endpoints and host** moved to an included `endpoints.toml`, as an engine import writes them.
 
-Still to come for "every repl command has something to show": sample runs (`agents/wip-sample-data.md`, "Sample
-runs"), which need the fake's `--script`.
+- **Sample runs**, so that every repl command has something to show: `chatddx samples alice` runs the sample World's
+  ten, answered by the fake from scripts (`agents/wip-sample-data.md`, "Sample runs"). A case that sends appendices
+  is titled `Dutchfall11w with ultrasound`.
 
 #### 3. Calibration
 With the user, on the sample, once it has its judge. What waits for it, since it depends on what the sample gives:
@@ -689,11 +692,10 @@ What the port left to others, and where each is planned:
   - The worker (`agents/wip-worker.md`), planned apart from the planner around one contract.
   - `bench/held.py`, what holds a configuration, for the portal's pages that delete: the repl's part is
     `Bench.reaching` and `Bench.scored_by`.
-- **Sample runs** (`chatddx samples`, the old typical, broken and rich runs): not the repl's. They are test data for
-  every edge, the repl's, the API's and the portal's, and are planned with the sample data
-  (`agents/wip-sample-data.md`, "Sample runs").
-- **Endpoints with a credential** were refused here until secrets had a home; the gate reads one now. The sample World
-  and the real one have none.
+- **Sample runs** (`chatddx samples`): not the repl's. They are test data for every edge, the repl's, the API's and
+  the portal's, and are built with the sample data (`agents/wip-sample-data.md`, "Sample runs").
+- **Endpoints with a credential** were refused here until secrets had a home; the gate reads one now. The sample World's
+  remote engine has one; the real World has none.
 - **Judges** for the free-text notes were left out; they score now, and showing them is "7. Completion"'s.
 - **The injected transport** (`FakeTransport`): tests run the real fake server instead, and sample runs have it
   answer from a script.

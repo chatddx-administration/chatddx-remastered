@@ -400,6 +400,32 @@ reads `VLLM_API_KEY`, is open.
 - **Several models.** `server.server` serves several `Served`, picked by name; `chatddx fake-vllm` serves one.
   fake · `server.py:server`, `chat.py:pick` · `test_it_answers_every_sample_skeleton_as_its_contract_asks`
 
+```
+AGENT: add
+The fake's scripts (src/chatddx/fake_vllm/script.py), which the sample runs are answered from
+(src/chatddx/samples/, `chatddx samples`).
+---
+### Scripts
+`chatddx fake-vllm --script PATH`, or `serving(…, script=…)`, answers each chat request with the next `[[turn]]` of a
+TOML script instead of deciding the reply itself, after the same checks. A turn has `reasoning`, `content`,
+`tool_calls` (each a `name` and `arguments`, a table or a JSON string), `finish`, `runaway` (newlines after the
+content), `hang_up` (events sent before the server goes away) and `status` (an error answered instead, `content` its
+message); a request past the last turn gets 500. A file may hold other keys; the fake reads only `turn`.
+- **Turns in order.** Each request takes the next turn, streamed or not, as `chat.py:stream` and
+  `chat.py:completion` shape a reply. Its finish is `finish`, else `length` after a runaway, `tool_calls` with calls,
+  `stop` otherwise.
+  fake · `script.py:Script.next`, `chat.py:scripted`, `server.py:_Handler._reply` ·
+  `test_each_request_is_answered_with_the_script_s_next_turn`
+- **Reasoning placed.** A turn's reasoning goes where the server puts it: separated with a reasoning parser, else in
+  the content, in `<think>` or Harmony's channels.
+  vLLM, no item · `chat.py:_placed` · `test_a_scripted_thought_goes_where_the_server_puts_reasoning`
+- **Checked first.** A request the fake refuses gets its refusal and takes no turn.
+  fake · `server.py:_Handler._reply` · `test_a_scripted_request_still_meets_vllm_s_checks`
+- **Read whole.** A script without turns, a turn with a key it doesn't know, or a value of the wrong kind is refused
+  when it is read.
+  fake · `script.py:turn`, `script.py:Script.of` · `test_a_script_says_what_it_can_t_read`
+
+```
 ### Not emulated
 - Abbreviated flags (item 8) aren't expanded, and bare arguments (item 11) aren't refused: the fake can't tell a flag
   that takes a value from one that doesn't.

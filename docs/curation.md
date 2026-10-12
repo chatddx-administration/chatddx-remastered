@@ -112,10 +112,12 @@ Swedish case is; the sample's translations, set in a variation, carry any of its
 AGENT: add
 A case's appendices and the cases that send them (src/chatddx/curation/plan.py, `load_cases`; the sample's
 Dutchfall11w and casesfromedn1). Appendices are bound to the vignette as it is read when loading, so they are written
-beside their case rather than planned, and take no language of their own (docs/catalog.md, "Languages").
+beside their case rather than planned, and take no language of their own (docs/catalog.md, "Languages"). An
+appendix's thread is found by its name and vignette (src/chatddx/curation/write.py, `binds`), so a case that sends one
+is titled `Dutchfall11w with ultrasound`.
 ---
-A case may have appendices, `[case.<id>.appendices]`, texts by name, each kept as a thread of its own named
-`<name> for <id>`, and cases that send them after the vignette, `[[case.<id>.with]]`, each naming its `appendices` in
+A case may have appendices, `[case.<id>.appendices]`, texts by name, each kept as a thread named by its name and told
+apart by its vignette, and cases that send them after the vignette, `[[case.<id>.with]]`, each naming its `appendices` in
 order and, optionally, `targets` of its own, since an appendix can change the right answer (docs/factors.md, "Case").
 Line endings are made LF before an appendix is digested, as every edge does.
 ```

@@ -1,0 +1,7 @@
+description = "A case sent with its appendix."
+configuration = "lines"
+endpoint = "qwen3@fake"
+cases = ["whitespace with labs"]
+
+[[turn]]
+content = "Perforated appendicitis"

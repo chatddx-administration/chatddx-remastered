@@ -9,7 +9,8 @@ from contextlib import contextmanager
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from typing import Any, cast, override
 
-from .chat import Failure, accept, completion, respond, stream
+from .chat import Failure, Reply, accept, completion, respond, scripted, stream
+from .script import Script
 from .served import VERSION, Refused, Served
 
 LOG = logging.getLogger(__name__)
@@ -63,6 +64,7 @@ class _Handler(BaseHTTPRequestHandler):
     served: tuple[Served, ...] = ()
     delay: float = 0.0
     runaway: bool = False
+    script: Script | None = None
 
     def do_GET(self) -> None:
         if self._authorized():
@@ -77,11 +79,14 @@ class _Handler(BaseHTTPRequestHandler):
         length = int(self.headers.get("Content-Length", 0))
         try:
             served, body = _request(self.served, self.rfile.read(length))
+            reply = self._reply(served, body)
         except Failure as f:
             self._json(f.status, f.body())
             return
-        reply = respond(served, body, self.runaway)
         if not body.get("stream"):
+            if reply.hang_up is not None:
+                self.log_message("went away, as the script says, before answering")
+                return
             self._json(200, completion(served, body, reply))
             return
 
@@ -91,10 +96,33 @@ class _Handler(BaseHTTPRequestHandler):
         self.end_headers()
         sent = 0
         for i, (event, generated) in enumerate(stream(served, body, reply)):
+            if i and reply.hang_up is not None and sent >= reply.hang_up:
+                self.log_message("went away, as the script says, after %d tokens", sent)
+                return
             if (i and not self._next_token()) or not self._sent(event.encode()):
                 self.log_message("aborted: the client hung up after %d tokens", sent)
                 return
             sent = generated
+
+    def _reply(self, served: Served, body: dict[str, Any]) -> Reply:
+        if self.script is None:
+            return respond(served, body, self.runaway)
+        held = self.script.next()
+        if held is None:
+            raise Failure(
+                "the script has no turn left for this request",
+                "InternalServerError",
+                500,
+            )
+        n, turn = held
+        self.log_message("turn %d of %d of the script", n, len(self.script.turns))
+        if turn.status is not None:
+            raise Failure(
+                turn.content or f"the script answers {turn.status}",
+                "InternalServerError" if turn.status >= 500 else "BadRequestError",
+                turn.status,
+            )
+        return scripted(served, body, turn)
 
     # With --api-key, vLLM asks for one of its keys as a bearer on /v1 only, so /health and
     # /version answer anyone.
@@ -154,13 +182,19 @@ def server(
     port: int | None = None,
     delay: float = 0.0,
     runaway: bool = False,
+    script: Script | None = None,
 ) -> ThreadingHTTPServer:
     if not served:
         raise ValueError("the fake vLLM needs a model to serve")
     handler = type(
         "Handler",
         (_Handler,),
-        {"served": tuple(served), "delay": delay, "runaway": runaway},
+        {
+            "served": tuple(served),
+            "delay": delay,
+            "runaway": runaway,
+            "script": script,
+        },
     )
     address = (
         served[0].host if host is None else host,
@@ -178,8 +212,9 @@ def serving(
     port: int | None = None,
     delay: float = 0.0,
     runaway: bool = False,
+    script: Script | None = None,
 ) -> Generator[tuple[str, int]]:
-    fake = server(served, host, port, delay, runaway)
+    fake = server(served, host, port, delay, runaway, script)
     thread = threading.Thread(
         target=fake.serve_forever, kwargs={"poll_interval": 0.01}, daemon=True
     )
@@ -191,17 +226,28 @@ def serving(
         fake.server_close()
 
 
-def run(model: str, argv: Sequence[str], delay: float, runaway: bool) -> None:
+def run(
+    model: str,
+    argv: Sequence[str],
+    delay: float,
+    runaway: bool,
+    script: Script | None = None,
+) -> None:
     try:
         served = Served.of(model, argv)
     except Refused as e:
         raise SystemExit(f"the fake vLLM won't start: {e}") from None
-    run_all([served], delay, runaway)
+    run_all([served], delay, runaway, script)
 
 
 # Each model on a server of its own, at its own address, till Ctrl-C.
-def run_all(served: Sequence[Served], delay: float, runaway: bool) -> None:
-    fakes = [server([s], delay=delay, runaway=runaway) for s in served]
+def run_all(
+    served: Sequence[Served],
+    delay: float,
+    runaway: bool,
+    script: Script | None = None,
+) -> None:
+    fakes = [server([s], delay=delay, runaway=runaway, script=script) for s in served]
     printed = logging.StreamHandler()
     LOG.addHandler(printed)
     LOG.setLevel(logging.INFO)
