@@ -15,9 +15,7 @@ Phase 2 is built: judges in a data set, the test World's judges, the refusal of 
 (`curation/plan.py`, `curation/test/test_judges.py`; `docs/curation.md` and `docs/factors-api.md` have AGENT
 suggestions). Phase 3 is built too: the scorer interface's version 2, `verdict` and `points`
 (`scorers/verdicts.py`), the one shipped entry point `chatddx.scorers.metrics:score`, and J4's `verdicts.asked`.
-Next: phase 4, which needs J1, and brings the test World's judged scorers. J1 waits on the user, who asked whether
-pick, gate and record is a precedent for the trials' engines too, since tying an endpoint to a digest may have been
-a mistake.
+Next: phase 4, which brings the test World's judged scorers, then the remote engine's `base_url` (see "Decided").
 
 ## Decided
 - **The pipeline before the prompt.** The judge pipeline is built and tested on the test World (`worlds/test/`,
@@ -42,6 +40,11 @@ a mistake.
   judge that doesn't read the expectation runs on every case.
 - **J10: a judge skeleton with tools is refused, and a greedy judge with several seeds is linted** (see "J10. What a
   judge skeleton may be").
+- **J1: pick, gate, record**, as runs do with their trial's engine (see "J1. Where judge calls go").
+- **After phase 4: a remote engine's `base_url` moves to the inventory, and the engine names its `provider`.** The
+  only endpoint tied to a digest today is `RemoteEngine.base_url` (decision 2A kept it there), so a remote API that
+  moves makes a new engine, and new trials, judges and scorers with it. A local engine's location is the inventory's
+  alone; a remote's will be too, and its `provider` keeps two providers of one model name apart.
 - **J6: the scoring pass takes the runner's shape**, as the take has it (see "J6. The scoring pass as a job").
 - **J7: closed.** Vignettes will probably never go to a judge, so nothing fetches them for one. The pass refuses a
   judge whose skeleton has the `vignette` or `appendices` slot, before anything is written, and the test World's
@@ -73,7 +76,7 @@ a mistake.
 
 ## Takes
 ### J1. Where judge calls go
-A judge names an engine; a call needs an endpoint. Take:
+Decided, as this take has it. A judge names an engine; a call needs an endpoint. Take:
 - the scoring pass takes an endpoint per judge, by default the one endpoint in the inventory that serves the judge's
   engine, and refuses when there is none or more than one and the caller named none;
 - each endpoint goes through the run's gate (`runner/gate.py:check`), generalized from a trial to an engine, a set of
