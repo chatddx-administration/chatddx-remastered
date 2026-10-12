@@ -8,8 +8,9 @@ into values. The judge prompt, what a judge is asked and how it answers, is Olof
 "Decided" means the user said so. "Take" is the agent's recommendation and still open.
 
 ## Start with this
-Nothing in this file is built. It comes after a runner pass (`agents/wip-runner.md`, "Start with this"), whose
-shared prepare-and-render is phase 1's groundwork. Next: the user settles the takes J1–J11, then phase 2.
+The runner pass before it is done (`agents/wip-runner.md`, "Start with this"), and with it half of phase 1: one
+prepare-and-render, `runner/prepare.py:Items`, whose `case` a judge's fills will use. J2, J5 and J9 are decided. Next:
+the rest of phase 1 (the fake's schema answers picked by seed), then phase 2, which needs J10.
 
 ## Decided
 - **The pipeline before the prompt.** The judge pipeline is built and tested on the test World (`worlds/test/`,
@@ -17,6 +18,15 @@ shared prepare-and-render is phase 1's groundwork. Next: the user settles the ta
   judge pipeline needs goes into the test World first.
 - **Free-text expectations** are as `agents/wip-sample-data.md` decided: clinicians' notes are expectation data, kept
   apart as `comment` and `answer`, in the targets schema, as written, with their author and language.
+- **J2: the scorer interface's next version, for every scorer.** One shape of metric takes what a view picks and,
+  for a judged view, the judge's verdicts, so one scorer can hold pattern views and judged views side by side. There
+  is no stored state to keep, so nothing holds the interface back. The pattern metrics compute what they did, and
+  where the judged metrics live is phase 3's (see "J2. Judged metrics").
+- **J5: a call per view**, as the model has it now. A verdict per aspect is a judge per aspect, each with a prompt
+  that asks one thing, which keeps each judge's job simple; cost is the price, and several aspects of one answer may
+  not be common. Views that share a judge and pick the same things send the same request, each its own; a lint could
+  say so later.
+- **J9: judges in the data set** (see "J9. Judges in a data set").
 
 ## What exists
 - **Factors** (`src/chatddx/factors/scoring.py`): `Judge` (a skeleton of purpose `judge`, an engine, seeds, a fill
@@ -54,14 +64,14 @@ A judge names an engine; a call needs an endpoint. Take:
   their digests.
 
 ### J2. Judged metrics
-The pattern metrics take what a view picks (`scorers/scorer.py:ScoreFunction`, interface version 1); a judged view's
-metric reads verdicts instead. Take:
-- a second shape of metric, beside the first: it takes the verdicts, one per seed in seed order, each a value or
-  none, and the params, and returns `Scored`. `Metrics` publishes which of its metrics are judged, and
-  `Metrics.problems` refuses a judged metric on a view without a judge, and the other way round;
-- the judged metrics ship in an entry point of their own, `chatddx.scorers.verdicts:score` at version 1. The pattern
-  scorers keep their entry point, version and digests, and a scorer with judged views is a scorer of its own over the
-  same expectation schema, scored beside the pattern scorer;
+Decided: interface version 2 for every scorer (see "Decided"). The pattern metrics take what a view picks
+(`scorers/scorer.py:ScoreFunction`, version 1). The rest is a take:
+- `ScoreFunction` also takes the verdicts: none for an unjudged view, else one per seed in seed order, each a value or
+  none. `Metrics` publishes which of its metrics are judged, and `Metrics.problems` refuses a judged metric on a view
+  without a judge, and the other way round;
+- the judged metrics are written in `chatddx/scorers/verdicts.py`, and the shipped entry point publishes them beside
+  the pattern metrics, so a scorer can mix them. The pattern metrics compute what they did; whether the entry point's
+  version moves is settled when it's built, and moving it re-plans every scorer, which no stored state minds;
 - two metrics to start: `verdict`, the share of seeds whose verdict holds `true` at a JSON Pointer in the params
   (`/meets`), and `points`, the mean over seeds of a number at a pointer, divided by a `max` in the params;
 - seeds are combined by the mean over the seeds that gave a readable verdict, with each seed's value in the detail.
@@ -79,16 +89,8 @@ either selector picks nothing: a case with targets but no notes, or a note witho
 fills an empty pick with an empty string. `check_score` already leaves a value-less item out of `judge.incomplete`.
 
 ### J5. One call, several views
-Olof may want a verdict per aspect (diagnosis, actions, disposition) from one call. A score item is one view's one
-value, and its judge calls are its own. Options:
-- **A.** A view per aspect, each sending its own calls: as many calls per seed as aspects.
-- **B.** Views with the same judge and the same fills share calls: the pass sends each distinct request once per
-  seed and run item, and every score item that rests on it records it.
-- **C.** A view with several values: a change to `ScoreItem`.
-
-Take: B. It changes no stored shape, so it can wait, but the test World exercises it from the start, so that the
-pipeline holds whichever verdict Olof picks. A shared call is stored once per score item; `check_score` counts it
-once for the execution checks, or the concurrency check would see it twice.
+Decided: a call per view (see "Decided"). The options were a call per view, views with the same judge and picks
+sharing calls, and a view with several values (a change to `ScoreItem`).
 
 ### J6. The scoring pass as a job
 `score_run` is synchronous, sends nothing, and has no events or halt. The API scores in the run's thread right after
@@ -107,8 +109,8 @@ once for the execution checks, or the concurrency check would see it twice.
 ### J7. The vignette in a judge prompt
 A judge prompt with the `vignette` or `appendices` slot needs the case fetched again and prepared as the trial
 prepared it (`docs/factors.md`, "Smaller issues"). Take:
-- the runner (`run.py:Running._prepared`) and `bench/seen.py:Seen.rendered_again` already repeat the same fetch,
-  prepare and render; one function for it comes first, and the judges use it too;
+- one function fetches, prepares and renders an item for the runner and `bench/seen.py:Seen.rendered_again`
+  (`runner/prepare.py:Items`, built); a judge's fills come from its `case`;
 - the judge's fills use the trial's cleanup and the judge skeleton's appendix layout;
 - a vignette whose fingerprint isn't the run item's gets no call and a `case.drift` finding: the judge would read
   another case than the model did.
@@ -120,7 +122,7 @@ does, when the pass is built. The prompt-token check needs the judge request reb
 read it; later. Neither changes what is stored.
 
 ### J9. Judges in a data set
-Take:
+Decided: in the data set, as this take has it:
 - `[judge.NAME]` in a data set's `factors.toml`: `recipe` (the variant made for the engine's model, when the recipe
   is made per model), `engine` (an engine's name in the World), `seeds` and `fill`;
 - a scorer's view names a judge by name, as a scorer names its expectation schema;
@@ -148,33 +150,32 @@ Each read by a test, as `agents/wip-test-world.md` asks ("Principles", 1), and p
 | Record | Exercises | Read by |
 |---|---|---|
 | `verdict.json` with `examples`: one meets, one doesn't | seeds that disagree (J2), with the fake below | the pass's tests |
-| output `rubric`, `schemas/rubric.json`: `diagnosis`, `actions`, `disposition` (0–2 each), `why` | a verdict per aspect; shared calls (J5) | the pass's tests |
+| output `grade`, `schemas/grade.json`: `points` (0–2), `why` | a verdict on a scale (`points`) | the pass's tests |
 | recipe `judge` (exists, greedy) | a judge with one seed | the pass's tests |
-| recipe `judge-rubric`: the `judge` prompt, output `rubric`, sampling `recommended` | a sampled judge made per model | the pass's tests |
+| recipe `judge-graded`: the `judge` prompt, output `grade`, sampling `recommended` | a sampled judge made per model | the pass's tests |
 | judge `verdict`: recipe `judge`, `qwen3@fake`, seeds `[1]` | the plain case | the pass's tests |
-| judge `rubric`: recipe `judge-rubric`, `qwen3@fake`, seeds `[1, 2, 3]` | seeds combined; one call feeding three views | the pass's tests |
+| judge `graded`: recipe `judge-graded`, `qwen3@fake`, seeds `[1, 2, 3]` | seeds combined | the pass's tests |
 | judge `remote`: recipe `judge`, `unknown@remote`, seeds `[1]` | the gate's "isn't cleared" and "needs the secret" for a judge (J1); `facts.missing` on a judge | the gate's tests, the lints' |
-| scorer `judged`, with the views below | judged metrics (J2); nothing to judge on every case but `noted` (J4) | the pass's tests, curation's |
+| scorer `judged`, with the views below | judged and pattern views in one scorer (J2); nothing to judge on every case but `noted` (J4) | the pass's tests, curation's |
 | scorer `judged-remote`: one view under `remote` | a judged score refused before anything is written | the gate's tests |
 
-The scorer `judged` is `chatddx.scorers.verdicts:score` over the schema `targets`, with five views:
+The scorer `judged`, over the schema `targets` and the answer shape `lines`, has four views:
+- the differential against the diagnosis, a pattern view as the `lines` scorer has it;
 - carol's comment, then carol's answer, each under the judge `verdict`, metric `verdict` at `/meets`;
-- carol's comment three times under the judge `rubric`, metric `points` at `/diagnosis`, `/actions` and
-  `/disposition`, with `max = 2`.
+- carol's comment under the judge `graded`, metric `points` at `/points`, with `max = 2`.
 
 The fake changes with it: a non-greedy request whose schema has `examples` is answered with the example its seed picks
 (`docs/vllm.md`, "Schema instances", amended). A greedy one keeps the first.
 
 ## Phases
-1. **Groundwork.** One prepare-and-render for the runner, `rendered_again` and judges (J7). The fake's schema answers
-   picked by seed.
+1. **Groundwork.** One prepare-and-render for the runner, `rendered_again` and judges (J7; built). The fake's schema
+   answers picked by seed.
 2. **Curation.** The `judge` table, judged views by name, the refusals and the lint (J9, J10). The test World's
    records above, and the test World's own test.
-3. **Judged metrics.** `chatddx.scorers.verdicts`, verdict reading and nothing-to-judge (J2–J4), tested on synthetic
-   responses without a database.
-4. **The pass.** Start, send, halt and finish, with the gate on judge endpoints, `ScoreStarted.endpoints`, shared
-   calls, the vignette refetched, and `check_score`'s counting and model check (J1, J5–J8). Tested on the test World's
-   fakes.
+3. **Judged metrics.** The scorer interface's version 2, `chatddx/scorers/verdicts.py`, verdict reading and
+   nothing-to-judge (J2–J4), tested on synthetic responses without a database.
+4. **The pass.** Start, send, halt and finish, with the gate on judge endpoints, `ScoreStarted.endpoints`, the
+   vignette refetched, and `check_score`'s model check (J1, J6–J8). Tested on the test World's fakes.
 5. **The callers.** The bench scores judged scorers and reports a gate refusal as refused; the repl and the API show
    judged values where they say "not yet" now.
 6. **After the pipeline.** The sample's judge, on Olof's prompt; a run on pelle or malborg to see real engines write
