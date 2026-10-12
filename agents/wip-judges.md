@@ -8,7 +8,8 @@ into values. The judge prompt, what a judge is asked and how it answers, is Olof
 "Decided" means the user said so. "Take" is the agent's recommendation and still open.
 
 ## Start with this
-Nothing in this file is built. Next: the user settles the takes J1–J11, then phase 1.
+Nothing in this file is built. It comes after a runner pass (`agents/wip-runner.md`, "Start with this"), whose
+shared prepare-and-render is phase 1's groundwork. Next: the user settles the takes J1–J11, then phase 2.
 
 ## Decided
 - **The pipeline before the prompt.** The judge pipeline is built and tested on the test World (`worlds/test/`,

@@ -38,7 +38,14 @@ It was checked:
   scorer with the cases' targets. Every answer was read; the fake's diagnoses aren't in the targets, so the views gave
   0 ("not listed"), and `dont-miss` none ("no target").
 
-Next: what's left of "Left" (see "Afterwards").
+Next, in the order the user decided:
+1. **A runner pass**, on what judges would inherit (see "Found in a check against the code"): one prepare-and-render
+   for run items, a halt that ends a stalled stream, an unreadable case's events, the calls dropped beside a worker's
+   exception, and failed calls in `check_run`.
+2. **Judges**, phases 1–5 of `agents/wip-judges.md`, which reshape the gate and the scoring pass.
+3. **Solidifying** runs and scores together into `docs/runner.md` and `docs/runner-api.md`, drafted for the user to
+   rewrite. The runner's tests move from `wip` to `solidified`, and what is left of "Left" goes into the docs' smaller
+   issues.
 
 **The real engines are cleared for the sample** (decided: `agents/wip-clearance.md`, "Vetted endpoints").
 `worlds/kompismoln/inventory.toml` clears `qwen3-8b@pelle` and `gpt-oss-20b@malborg` for `sample`.
@@ -270,9 +277,10 @@ In `rounds.py`, which `run.py` calls for every item, with tools or without:
 - **A worker's unexpected exception drops the calls in flight beside it.** Above concurrency 1 they're halted and
   not recorded, and `_stopping` isn't set (`run.py:Running._send_concurrently`), so a later `send` would send them
   again.
-- **Rejected engine bodies are stored verbatim** (`send.py`, `call(e.status, str(e), e.body)`). An engine that echoes
-  its input in a validation error would put vignette text in the store (`agents/healthcheck.md`, "Before real
-  patient data", 1).
+- **Rejected engine bodies are stored verbatim** (`send.py`, `call(e.status, str(e), e.body)`), raised by
+  `agents/healthcheck.md` ("Before real patient data", 1). Closed, with the user's agreement, as no change: they're
+  stored in run items, which are case-derived records like the completions beside them
+  (`ledger/record.py:Record.case_derived`).
 - **Fingerprints are unkeyed.** `send` takes a `key`, but neither `rounds.converse` nor `Running._probe` passes one
   (`agents/healthcheck.md`, "Before real patient data", 5; `docs/chatddx.md`).
 - **`bench/seen.py:Seen.rendered_again` repeats `Running._prepared`'s fetch, prepare and render** to tell whether a

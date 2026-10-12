@@ -236,6 +236,9 @@ def test_a_case_that_can_t_be_read_or_has_changed_is_noted(
     findings = running.finish()
     noted = sorted(n.finding.code for n in heard.of(Noted))
     assert noted == ["case.drift", "case.unreadable"]
+    started = [e.key for e in heard.of(ItemStarted)]
+    assert len(started) == 2
+    assert started == [e.item.key for e in heard.of(ItemEnded)]
     stored = Store(conn).run(running.run)
     assert stored.finished is not None
     assert sorted(f.code for f in stored.finished.findings) == noted

@@ -15,7 +15,7 @@ from chatddx.factors.base import (
     resolve,
 )
 from chatddx.factors.bundle import Registry
-from chatddx.factors.cases import Case, Vignette, prepare_case
+from chatddx.factors.cases import Case, Vignette
 from chatddx.factors.engine import LocalEngine, RemoteEngine
 from chatddx.factors.request import (
     Compilation,
@@ -32,8 +32,9 @@ from chatddx.facts import Facts, lints, model_name
 from chatddx.identity import Person, preferred
 from chatddx.inventory import Inventory
 from chatddx.ledger import ItemKey, Run, RunStarted, fingerprint_request
+from chatddx.runner.prepare import Items
 from chatddx.scorers.shipped import problems
-from chatddx.store import Catalog, People, Store, fetch_vignette
+from chatddx.store import Catalog, People, Store
 from chatddx.store.catalog import Rows
 from chatddx.store.store import Connection
 
@@ -589,30 +590,17 @@ class Seen:
 
     def rendered_again(self, run: Run) -> dict[ItemKey, str | None]:
         registry = self.store.load([run.started.trial])
-        trial = resolve(registry.get, run.started.trial, Trial)
-        skeleton = resolve(registry.get, trial.skeleton, Skeleton)
-        engine = registry.get(trial.engine)
-        assert isinstance(engine, LocalEngine | RemoteEngine)
+        items = Items(self.conn, self.inventory, registry.get, run.started.trial)
         found: dict[ItemKey, str | None] = {}
         for item in run.items:
-            case = resolve(registry.get, item.key.case, Case)
             try:
-                raw = fetch_vignette(self.conn, self.inventory, case.vignette)
-                prepared = prepare_case(
-                    case, raw, registry.get, skeleton.appendix_layout, trial.cleanup
-                )
+                prepared = items.item(item.key)
             except (LookupError, StructuralError) as e:
                 found[item.key] = str(e)
                 continue
-            body = render(
-                skeleton,
-                model=engine.served_model_name,
-                seed=trial.seeds[item.key.replicate],
-                fills=prepared.fills,
-            )
-            if prepared.fingerprint != item.vignette:
+            if prepared.vignette != item.vignette:
                 found[item.key] = "the vignette at the source isn't the one sent"
-            elif fingerprint_request(body) != item.call.request:
+            elif fingerprint_request(prepared.body) != item.call.request:
                 found[item.key] = "the request renders otherwise now"
             else:
                 found[item.key] = None
