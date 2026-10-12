@@ -128,7 +128,8 @@ Outputs, each in `texts-en.toml` unless it holds no text:
 | `tool-answer` | tool, `list.json`, with a description | a named `tool_choice`; a second output shape |
 | `lines` | text, guidance | free text; `lines@1` |
 | `raw` | text, no guidance (in `factors.toml`) | `language.unknown`, with the prompt `case` |
-| `verdict` | native, `verdict.json` | a judge's output |
+| `verdict` | native, `verdict.json`, whose `meets` has the examples `true` and `false` | a judge's output; seeds that disagree on the fake |
+| `grade` | native, `grade.json`: `points` 0–2, with three examples, and `why` | a judge's verdict on a scale |
 
 Recipes. A recipe whose sampling is `recommended` is made per model; the others are made once:
 
@@ -150,6 +151,12 @@ Recipes. A recipe whose sampling is `recommended` is made per model; the others 
 | `budgeted` | `greedy`, reasoning `on-budget` | `vllm.thinking_budget_refused` on `qwen3-bare@fake`; `facts.budget_refused`; skipped where the facts refuse a budget |
 | `clamped` | sampling `near-greedy` (temperature 0.005) | `vllm.temperature_clamped` |
 | `judge` | purpose `judge`; the prompt `judge` with the `completion` and `expectation` slots; output `verdict` | a judge skeleton, for the judge tests in `scorers/test/test_scorers.py` |
+| `judge-graded` | purpose `judge`, the prompt `judge`, output `grade`, `recommended` | a sampled judge's skeleton, made per model |
+
+Judges (`agents/wip-judges.md`, "The test World's additions"), read by `curation/test/test_judges.py`:
+- `verdict`: `judge` on `qwen3@fake`, seed 1;
+- `graded`: `judge-graded`'s variant for Qwen3 on `qwen3@fake`, seeds 1, 2 and 3;
+- `remote`: `judge` on `unknown@remote`, which gives `facts.missing`, and which the gate is to refuse.
 
 Other records:
 - **Sampling**: `recommended` (`from_facts`), `greedy` and `near-greedy`. The bench's and repl's tests swap in

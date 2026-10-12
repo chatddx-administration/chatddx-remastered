@@ -196,6 +196,11 @@ A self-contained package that can be verified offline.
 
 ## Component kinds
 
+AGENT: change
+The `judge` row's `cross_check`, with the refusal of tools (agents/wip-judges.md, J10, decided).
+---
+| `judge` | `scoring.py:Judge` | `/skeleton`: `skeleton`; `/engine`: `engine.local`, `engine.remote` | the skeleton's purpose is `judge`, and it has no tools |
+
 | Kind | Class | References (path: kinds) | `cross_check` |
 | --- | --- | --- | --- |
 | `model` | `engine.py:ModelArtifact` | | |
@@ -670,6 +675,11 @@ schema when the expectation is built; lints check it.
   items.
 
 ### `class Judge(Component)`, kind `judge`
+AGENT: change
+A judge can't run tools (agents/wip-judges.md, J10, decided), so its skeleton may not have any.
+---
+| `skeleton` | `SkeletonRef` | required; purpose `judge`, and no tools (`cross_check`) |
+
 | Field | Type | Default |
 | --- | --- | --- |
 | `skeleton` | `SkeletonRef` | required; purpose `judge` (`cross_check`) |
@@ -824,6 +834,14 @@ On any other engine (a remote engine, or another vLLM version):
 | --- | --- | --- |
 | `schema.ref_unverified` | warning | a `native` or `tool` skeleton's output schema holds `$ref`. `inline_refs@1` removes it. |
 
+AGENT: add
+A lint for judges alone (agents/wip-judges.md, J10, decided).
+---
+#### Judges
+| Code | Level | When |
+| --- | --- | --- |
+| `judge.greedy_seeds` | warning | the judge's skeleton is greedy and it has more than one seed, so every seed sends the same request |
+
 #### Languages, for trials, with `languages`
 | Code | Level | When |
 | --- | --- | --- |
@@ -833,6 +851,11 @@ On any other engine (a remote engine, or another vLLM version):
 Checks against the model facts (`facts.*`) are in `src/chatddx/facts/lint.py`.
 
 ## Finding codes
+
+AGENT: add
+A row for the judges' lint, after `schema.ref_unverified`:
+---
+| `judge.greedy_seeds` | warning | `lint` |
 
 | Code | Level | Reported by |
 | --- | --- | --- |

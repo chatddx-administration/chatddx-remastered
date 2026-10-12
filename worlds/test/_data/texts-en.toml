@@ -61,6 +61,11 @@ contract = { kind = "native" }
 json_schema_path = "schemas/verdict.json"
 guidance = "Say whether the answer meets what was expected, and why."
 
+[output.grade]
+contract = { kind = "native" }
+json_schema_path = "schemas/grade.json"
+guidance = "Grade how well the answer meets what was expected, from 0 to 2, and say why."
+
 [toolset.lookup]
 tools = ["lookup", "broken"]
 max_rounds = 2

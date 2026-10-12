@@ -269,6 +269,15 @@ def _pair(
     yield from _runtime(c.digest, skeleton, registry.get(c.engine), by_default)
 
 
+def _judge(c: Judge, registry: Registry) -> Iterable[Finding]:
+    if resolve(registry.get, c.skeleton, Skeleton).greedy and len(c.seeds) > 1:
+        yield Finding(
+            code="judge.greedy_seeds",
+            message=f"the judge is greedy, so its {len(c.seeds)} seeds send one request",
+            subject=c.digest,
+        )
+
+
 def lint(
     registry: Registry,
     digests: Iterable[str] | None = None,
@@ -295,6 +304,7 @@ def lint(
                     findings.extend(_languages(c, languages))
             case Judge() as c:
                 findings.extend(_pair(c, registry, reasons))
+                findings.extend(_judge(c, registry))
             case _:
                 pass
     return findings

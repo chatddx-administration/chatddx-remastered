@@ -14,7 +14,9 @@ from chatddx.store import Catalog, People
 from chatddx.store.store import Connection
 from chatddx.test.world import (
     DATA,
-    FAKE_LINTS,
+    FACT_LINTS,
+    FACTOR_LINTS,
+    LINTS,
     MODELS,
     NATIVE,
     NATIVE_TOOLS,
@@ -56,18 +58,18 @@ def test_init_data_loads_the_archive(conn: Connection) -> None:
             "archive created": threads + len(CASES),
             "skipped": len(plan.skipped),
             "share": 1,
-            "lint": len(FAKE_LINTS) + 1,
+            "lint": len(LINTS) + 1,
         }
     )
     shared = threads + len(CASES)
     assert (
-        lines[-len(FAKE_LINTS) - 2]
+        lines[-len(LINTS) - 2]
         == f"[share] {shared} of {shared} archive threads and families with alice"
     )
     components = len({r.digest for r in plan.records}) + 2 * len(CASES)
-    assert lines[-len(FAKE_LINTS) - 1 :] == [
-        *FAKE_LINTS,
-        f"[lint] {len(FAKE_LINTS)} findings in {components} components",
+    assert lines[-len(LINTS) - 1 :] == [
+        *LINTS,
+        f"[lint] {len(LINTS)} findings in {components} components",
     ]
 
     catalog = Catalog(conn)
@@ -119,7 +121,7 @@ def test_init_data_loads_the_archive(conn: Connection) -> None:
     }
     assert tally(again)["archive not"] == 2 * (len(CASES) - len(some))
     assert "[archive case] matched: not in the data" in again
-    assert again[-len(FAKE_LINTS) - 2].startswith("[share] 0 of ")
+    assert again[-len(LINTS) - 2].startswith("[share] 0 of ")
     assert not [line for line in again if line.endswith(LANGUAGES)]
 
 
@@ -131,10 +133,11 @@ def test_init_data_lints_what_it_lands(conn: Connection) -> None:
     lines = init(conn, plan, {**CASES, "noted": unlike}, vignettes(), alice)
     components = len({r.digest for r in plan.records}) + 2 * len(CASES)
     assert [line for line in lines if line.startswith("[lint")] == [
-        *FAKE_LINTS,
+        *FACTOR_LINTS,
         "[lint warning] expectation noted: expectation.invalid: at the root: "
         + "'diagnosis' is a required property",
-        f"[lint] {1 + len(FAKE_LINTS)} findings in {components} components",
+        *FACT_LINTS,
+        f"[lint] {1 + len(LINTS)} findings in {components} components",
     ]
 
 

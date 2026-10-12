@@ -11,7 +11,9 @@ into values. The judge prompt, what a judge is asked and how it answers, is Olof
 The runner pass before it is done (`agents/wip-runner.md`, "Start with this"), and so is phase 1: one
 prepare-and-render, `runner/prepare.py:Items`, whose `case` a judge's fills will use, and the fake's schema examples
 picked by seed (`fake_vllm/chat.py:instance`; `docs/vllm.md` has AGENT suggestions). J2, J5 and J9 are decided.
-Next: phase 2, then phase 3. Phase 4 needs J1, J6, J7 and J8.
+Phase 2 is built: judges in a data set, the test World's judges, the refusal of tools and `judge.greedy_seeds`
+(`curation/plan.py`, `curation/test/test_judges.py`; `docs/curation.md` and `docs/factors-api.md` have AGENT
+suggestions). Next: phase 3, which brings the test World's judged scorer. Phase 4 needs J1, J6, J7 and J8.
 
 ## Decided
 - **The pipeline before the prompt.** The judge pipeline is built and tested on the test World (`worlds/test/`,
@@ -179,8 +181,10 @@ The fake changes with it: a non-greedy request whose schema has `examples` is an
 1. **Groundwork** (built). One prepare-and-render for the runner, `rendered_again` and judges (J7). The fake's
    schema examples picked by seed, as its text answer is rotated, the first when greedy
    (`fake_vllm/test/test_seeded_examples.py`).
-2. **Curation.** The `judge` table, judged views by name, the refusals and the lint (J9, J10). The test World's
-   records above, and the test World's own test.
+2. **Curation** (built). The `judge` table, judged views by name, the refusals and the lint (J9, J10). The test
+   World's records above but its scorers, which need phase 3's metrics, and the test World's own test. Loading pins
+   lints as `test/world.py:FACTOR_LINTS` and `FACT_LINTS`, since the remote judge's `facts.missing` comes after the
+   factors' lints.
 3. **Judged metrics.** The scorer interface's version 2, `chatddx/scorers/verdicts.py`, verdict reading and
    nothing-to-judge (J2–J4), tested on synthetic responses without a database.
 4. **The pass.** Start, send, halt and finish, with the gate on judge endpoints, `ScoreStarted.endpoints`, the
