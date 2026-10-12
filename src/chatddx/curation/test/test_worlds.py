@@ -4,7 +4,7 @@ from pathlib import Path
 import pytest
 from jsonschema.validators import validator_for
 
-from chatddx.curation import Plan
+from chatddx.curation import Plan, load_cases
 from chatddx.curation.plan import SAMPLE
 from chatddx.factors.base import resolve
 from chatddx.factors.engine import LocalEngine
@@ -21,6 +21,7 @@ from chatddx.fake_vllm.chat import Failure, accept, completion, instance, respon
 from chatddx.fake_vllm.served import CLOSURE, Served
 from chatddx.inventory import World, check, start_up
 from chatddx.scorers.answer import read
+from chatddx.scorers.patterns import Pattern
 from chatddx.test.world import DATA, WORLDS, world_plan
 
 pytestmark = pytest.mark.wip
@@ -112,3 +113,12 @@ def test_each_fake_answers_each_skeleton_or_refuses_it_as_vllm_would(
 def test_what_the_fake_writes_holds_to_each_data_set_s_schemas(path: Path) -> None:
     schema = json.loads(path.read_text())
     assert not list(validator_for(schema)(schema).iter_errors(instance(schema)))
+
+
+@pytest.mark.parametrize("data", sorted(set(DATA_SETS.values())), ids=lambda p: p.name)
+def test_every_target_s_pattern_reads(data: Path) -> None:
+    for case in load_cases(data).values():
+        assert isinstance(case.targets, dict)
+        for target in case.targets.values():
+            if isinstance(target, dict) and "pattern" in target:
+                _ = Pattern(str(target["pattern"]))
