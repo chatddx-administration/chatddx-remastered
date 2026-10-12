@@ -35,6 +35,25 @@ def admit(
     whose: str,
     timeout: float = 10.0,
 ) -> str | None:
+    bar(inventory, get, endpoint, engine, cases, tools, whose)
+    key = secret(inventory, endpoint)
+    try:
+        confirm(inventory, get, endpoint, timeout, key)
+    except (LookupError, OSError) as e:
+        raise Refused(f"endpoint {endpoint!r} can't be confirmed: {e}") from None
+    return key
+
+
+# What refuses an endpoint for as long as the World is as it is; admit adds what may pass later.
+def bar(
+    inventory: Inventory,
+    get: Resolver,
+    endpoint: str,
+    engine: str,
+    cases: Iterable[str],
+    tools: bool,
+    whose: str,
+) -> None:
     try:
         spec = inventory.endpoint(endpoint)
         sources = sorted({resolve(get, c, Case).vignette.source for c in cases})
@@ -56,12 +75,6 @@ def admit(
             f"the skeleton's tools would get content from source {', '.join(sensitive)}, "
             + "which is sensitive, and tools can't be cleared yet"
         )
-    key = secret(inventory, endpoint)
-    try:
-        confirm(inventory, get, endpoint, timeout, key)
-    except (LookupError, OSError) as e:
-        raise Refused(f"endpoint {endpoint!r} can't be confirmed: {e}") from None
-    return key
 
 
 def secret(inventory: Inventory, endpoint: str) -> str | None:

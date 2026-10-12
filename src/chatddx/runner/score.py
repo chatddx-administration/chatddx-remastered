@@ -1,4 +1,4 @@
-from collections.abc import Callable, Mapping
+from collections.abc import Callable, Iterable, Mapping
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from uuid import UUID, uuid4
@@ -7,7 +7,7 @@ from pydantic import JsonValue
 
 from chatddx.catalog import Entry, EntryField, Subject
 from chatddx.core.rig import rig
-from chatddx.factors.base import Component, Finding, resolve
+from chatddx.factors.base import Component, Finding, Resolver, resolve
 from chatddx.factors.bundle import Registry
 from chatddx.factors.engine import LocalEngine, RemoteEngine
 from chatddx.factors.request import Skeleton, Slot, render
@@ -76,6 +76,26 @@ def _serving(inventory: Inventory, engine: str) -> str:
     return named[0]
 
 
+def judge_at(
+    inventory: Inventory | None,
+    get: Resolver,
+    ref: str,
+    cases: Iterable[str],
+    named: str | None = None,
+) -> tuple[Judge, Skeleton, str]:
+    judge = resolve(get, ref, Judge)
+    skeleton = resolve(get, judge.skeleton, Skeleton)
+    if read_case := sorted(_slots(skeleton) & {"vignette", "appendices"}):
+        raise ValueError(
+            f"judge {ref} reads the {' and '.join(read_case)}, which no judge is given"
+        )
+    if inventory is None:
+        raise ValueError("judged views need the World's inventory")
+    name = named or _serving(inventory, judge.engine)
+    gate.bar(inventory, get, name, judge.engine, cases, False, "judge")
+    return judge, skeleton, name
+
+
 class Grader:
     def __init__(
         self, conn: Connection, inventory: Inventory | None, by: Person
@@ -113,16 +133,11 @@ class Grader:
         judging: dict[str, _Judging] = {}
         at: list[JudgeEndpoint] = []
         for ref in scorer.judges:
-            judge = resolve(get, ref, Judge)
-            skeleton = resolve(get, judge.skeleton, Skeleton)
-            if read_case := sorted(_slots(skeleton) & {"vignette", "appendices"}):
-                raise ValueError(
-                    f"judge {ref} reads the {' and '.join(read_case)}, which no judge "
-                    + "is given"
-                )
-            if self._inventory is None:
-                raise ValueError("judged views need the World's inventory")
-            name = (endpoints or {}).get(ref) or _serving(self._inventory, judge.engine)
+            named = (endpoints or {}).get(ref)
+            judge, skeleton, name = judge_at(
+                self._inventory, get, ref, trial.cases, named
+            )
+            assert self._inventory is not None
             secret = gate.admit(
                 self._inventory, get, name, judge.engine, trial.cases, False, "judge"
             )

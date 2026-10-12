@@ -219,20 +219,19 @@ The fake changes with it: a non-greedy request whose schema has `examples` is an
 5. **The callers** (built). The bench passes its inventory, reports a gate refusal or a judge it can't run as
    refused, and lists a run's scores by name, as stored scores are listed. The test World's scorer `judged` mixes a
    pattern view with three judged views over carol's note; its labels start with `note-`, as `answer` is a scorer's
-   name too. `judged-remote` was dropped (see "Open").
+   name too. `judged-remote` applies to no run, as its judge's endpoint isn't cleared (see "Open").
 6. **After the pipeline.** The sample's judge, on Olof's prompt; a run on pelle or malborg to see real engines write
    valid verdicts; the judge measured against Olof's own grading.
 
 ## Open
-- **A scorer that can't be scored stays left to score.** A judged scorer whose endpoint the gate refuses is
-  outstanding on every run it applies to (`Seen.outstanding`), and each score of the run says why again. That's why
-  the test World holds no `judged-remote`: its every `lines` run would never be done. Take: a refusal that holds for
-  the World as it is (an endpoint not cleared, a judge reading the vignette) leaves the scorer out of what applies
-  to a run; one that may pass later (an endpoint that doesn't answer) keeps it outstanding.
-- **Every judged scoring confirms its judges' endpoints** (`confirm`, 10 s timeout), on every run, even when no item
-  needs a judge. An endpoint that hangs holds the scoring up to 10 s a judge. It made
-  `api/test/test_runs.py:test_a_request_its_client_leaves_halts_the_run_too` fail once in four full runs, while the
-  fake was shutting down; the fake now serves until the run is scored.
+- **A scorer barred by the World applies to no run** (decided, 1B; built). A judged scorer whose judge the World
+  refuses for as long as it is as it is (a judge reading the vignette or appendices, no endpoint serving its engine,
+  or an endpoint not cleared for the run's sources) is left out of what applies to a run (`Seen._applies`, through
+  `runner/score.py:judge_at` and `gate.bar`), so it isn't outstanding. What may pass later (the secret unset, an
+  endpoint that doesn't answer) keeps it outstanding, and each score says why. The test World's `judged-remote`
+  applies to no run (`bench/test/test_seen.py`).
+- **Every judged scoring confirms its judges' endpoints** (decided, 2A: kept). `confirm` runs on every judged
+  scoring, even when no item needs a judge, and an endpoint that hangs holds the scoring up to 10 s a judge.
 - **Concurrent judge calls**, as the runner's phase 4 did for items.
 
 ## For Olof, later

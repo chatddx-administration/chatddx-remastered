@@ -32,7 +32,9 @@ from chatddx.facts import Facts, lints, model_name
 from chatddx.identity import Person, preferred
 from chatddx.inventory import Inventory
 from chatddx.ledger import ItemKey, Run, RunStarted, fingerprint_request
+from chatddx.runner.gate import Refused
 from chatddx.runner.prepare import Items
+from chatddx.runner.score import judge_at
 from chatddx.scorers.shipped import problems
 from chatddx.store import Catalog, People, Store
 from chatddx.store.catalog import Rows
@@ -358,8 +360,15 @@ class Seen:
     def _applies(self, scorer: str, run: RunStarted) -> bool:
         trial = resolve(self.get, run.trial, Trial)
         schema = resolve(self.get, trial.skeleton, Skeleton).output_schema
-        views = resolve(self.get, scorer, Scorer).views
-        return all(reaches(schema, v.output) for v in views)
+        found = resolve(self.get, scorer, Scorer)
+        if not all(reaches(schema, v.output) for v in found.views):
+            return False
+        try:
+            for judge in found.judges:
+                _ = judge_at(self.inventory, self.get, judge, trial.cases)
+        except (ValueError, Refused):
+            return False
+        return True
 
     def scoring(self, run: RunStarted, scorer: str) -> Scoring | None:
         trial = resolve(self.get, run.trial, Trial)

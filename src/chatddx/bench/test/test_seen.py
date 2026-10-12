@@ -12,7 +12,7 @@ from chatddx.identity import Person
 from chatddx.runner.score import score_run
 from chatddx.store import Catalog, People, Store
 from chatddx.store.store import Connection
-from chatddx.test.world import DATA, LINES, MODELS, NATIVE, QWEN, QWEN_MODEL
+from chatddx.test.world import DATA, LINES, MODELS, NATIVE, QWEN, QWEN_MODEL, REMOTE
 
 pytestmark = pytest.mark.wip
 
@@ -429,3 +429,28 @@ def test_a_person_replaces_their_own_expectation_only_when_they_say_so(
     assert bench.shared(case, schema)[0][0].thread == origin
     held = bench.expectation(case, schema)
     assert held is not None and held.digest == catalog.head(origin).digest
+
+
+def test_a_judged_scorer_applies_where_the_world_lets_its_judges_run(
+    conn: Connection,
+    alice: Person,
+    bench: Bench,
+    plan: Plan,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.delenv("CHATDDX_TEST_REMOTE", raising=False)
+    run = ran(conn, alice, trial(conn, plan, LINES, "noted"))
+    started = bench.run(str(run))
+    applies = {a.name for _, a in bench.scorers_for(started)}
+    assert "judged" in applies and "judged-remote" not in applies
+    assert plan.named("scorer", "judged-remote").digest not in bench.unscored(started)
+
+    cleared = bench.inventory.model_copy(
+        update={"cleared": bench.inventory.cleared | {REMOTE: ("test",)}}
+    )
+    opened = Bench(conn, alice, cleared, bench.facts)
+    assert "judged-remote" in {a.name for _, a in opened.scorers_for(started)}
+    [refused] = [g for g in opened.score(started) if g.name == "judged-remote"]
+    assert refused.refused == (
+        f"endpoint {REMOTE!r} needs the secret in $CHATDDX_TEST_REMOTE, which isn't set"
+    )
