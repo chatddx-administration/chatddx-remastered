@@ -215,28 +215,15 @@ Raises `LookupError` (a vignette or source that can't be found, a replicate out 
 A tool stopped by an interrupt while it ran. `run: ToolRun` is its run, with `result` `error: stopped` and `error`
 `"stopped"`.
 
-```
-AGENT: remove
-This row was meant to replace the `run` row of `Toolbox`'s table below (see the suggestion there), not to stand here.
-```
-| `run(call: ToolCall) -> ToolRun` | Runs one tool call. An error becomes the run's `error`, and its `result` is `error: <error>`. A `KeyboardInterrupt` raises `ToolStopped`. |
-
 ### `class Toolbox`
 A skeleton's tools, loaded. `functions: Mapping[str, Callable]` and `parameters: Mapping[str, Validator]` by tool
 name, `answer: str | None` (the answer tool's name, when the contract is a `ToolOutput`), `max_rounds: int`,
 `code: tuple[ToolCode, ...]` (each tool's digest and the version of its code).
 
-```
-AGENT: change
-The `run` row: it raises `ToolStopped` on an interrupt, so "Never raises" no longer holds.
----
-| `run(call: ToolCall) -> ToolRun` | Runs one tool call. An error becomes the run's `error`, and its `result` is `error: <error>`. A `KeyboardInterrupt` raises `ToolStopped`. |
-```
-
 | Member | Description |
 | --- | --- |
 | `pending(call: Call) -> tuple[ToolCall, ...]` | The tool calls of the call's response; none when the call has an error or no response, or calls the answer tool. |
-| `run(call: ToolCall) -> ToolRun` | Runs one tool call. Never raises: an error becomes the run's `error`, and its `result` is `error: <error>`. |
+| `run(call: ToolCall) -> ToolRun` | Runs one tool call. An error becomes the run's `error`, and its `result` is `error: <error>`. A `KeyboardInterrupt` raises `ToolStopped`. |
 
 `run`'s errors:
 

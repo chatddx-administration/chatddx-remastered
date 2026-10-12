@@ -1,6 +1,5 @@
 # Agent instructions
 This document contains project-wide instructions written by humans for agents.
-Agents may annotate it as "Docs" describes and should always report surprises.
 
 ## Environment
 * `set -a; . ./.env-container; set +a`.
@@ -19,10 +18,10 @@ Agents may annotate it as "Docs" describes and should always report surprises.
   A test whose call takes 0.2 s or more is marked `@pytest.mark.slow` (pyproject.toml, `[tool.pytest]`).
 
 ## Docs
-For docs in (`docs/*`), the same rule applies as to this document: Humans write, agents suggest.
+All docs except `agents/*` are governed by the rule "Humans write, agents suggest."
 
-* For each change, inline your suggestion immediately above the subject to change with the template below.
-  The backticks are part of the template, use 4 backticks for the suggestion if the suggestion contains a code-block.
+* A suggestion is inserted as a fenced code-block immediately above the subject to change.
+  The backticks are part of the template, use 4 backticks as envelope if the suggestion contains a code-block.
 ```
 AGENT: <verb>
 <short explanation>
