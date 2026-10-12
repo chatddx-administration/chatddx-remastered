@@ -130,7 +130,7 @@ without tools on the fake engines (`agents/wip-runner.md`).
 - The vignette files are a fake-sensitive source (G11). Fingerprints are over the raw bytes.
 - The expectation schema is hand-written into the new sample data.
 - The `# guessed` markers on targets are dropped on import, and the data is treated as live.
-- The sample data lives in the repo (`src/chatddx/data/sample/`), with the vignettes named by the World inventory.
+- The sample data lives in the repo (`worlds/sample/_data/`), with the vignettes named by the World inventory.
 - The 99 vignettes are copied into the repo and kept under VCS. They aren't sensitive, but are treated as if they
   were.
 - Model-dependent chunks come per model, from the facts.
@@ -141,7 +141,7 @@ without tools on the fake engines (`agents/wip-runner.md`).
   directory.
 
 ## The sample data now
-`src/chatddx/data/sample/` holds:
+`worlds/sample/_data/` holds:
 - `factors.toml`: chunks and recipes, from the old slices and configurations. Its header comment gives the format.
   Tables are kinds, keys are component fields, and references name records. On top of that, `json_schema_path`
   loads a JSON file, `from_facts` writes a chunk per model, `fork_of` seeds a record as a fork, and `tags` and
@@ -532,8 +532,8 @@ Decided: Olof's comments on the cases are the foundation for a free-text expecta
   case, what to do, and the disposition. `Dutchfall11w` and `casesfromedn1` end in a "Chatddx:" block too, the short
   answer they'd want ChatDDx to give. 13d317d also renamed `DutchFall10w` to `Dutchfall10w`, with the same bytes.
 - **Done (decided): the comments are expectation data**, not vignette text, since a vignette and its appendices are
-  sent to the model. They're `notes` in the targets (`src/chatddx/data/sample/schemas/targets.json`,
-  `src/chatddx/data/sample/cases-*.toml`), as the user decided:
+  sent to the model. They're `notes` in the targets (`worlds/sample/_data/schemas/targets.json`,
+  `worlds/sample/_data/cases-*.toml`), as the user decided:
   1. **Kept apart.** A note's `comment` is the reading of the case, its optional `answer` the "Chatddx:" block, so a
      judge can be given either.
   2. **The targets schema is extended**, rather than a schema of its own: `notes` is an optional list beside the

@@ -619,7 +619,7 @@ Decided: first, before the sample. Built:
   being an error.
 
 #### 2. The sample as a complete example
-The sample is two parts that a new World follows: the data set (`src/chatddx/data/sample/`), which init-data loads
+The sample is two parts that a new World follows: the data set (`worlds/sample/_data/`), which init-data loads
 into any World, and the World (`worlds/sample/`), which says where its sources and endpoints are and holds its own
 engines; Kompismoln's World is the first to follow it. Complete means every table either can hold is used at least
 once, each with a comment saying what it is for, and every repl command has something of the sample's to show.

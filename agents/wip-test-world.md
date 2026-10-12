@@ -1,6 +1,6 @@
 # The test World: work in progress
 
-The tests run on the sample today: its data set (`src/chatddx/data/sample/`) and its World (`worlds/sample/`). The
+The tests run on the sample today: its data set (`worlds/sample/_data/`) and its World (`worlds/sample/`). The
 sample is live data with work queued on it (`agents/wip-sample-data.md`: the real engines, judges from Olof's notes,
 maybe revised targets, sample runs), and it exercises only part of what a data set and a World can say. This file
 plans a World built for the tests, `worlds/test/`, and moving every test onto it but the sample's own.

@@ -16,6 +16,14 @@ targets.diagnosis.pattern = "pneumonia"
 tags = ["bytes"]
 targets.diagnosis.pattern = "appendicitis"
 
+# An appendix, and a case of the family that sends it after the vignette, held to targets of its own.
+[case.whitespace.appendices]
+labs = "CRP 180 mg/L, leukocytes 16."
+
+[[case.whitespace.with]]
+appendices = ["labs"]
+targets.diagnosis.pattern = "appendicitis & perforat*"
+
 [case.matched]
 tags = ["targets"]
 targets.diagnosis.pattern = "fake & diagnosis*"

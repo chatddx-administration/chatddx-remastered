@@ -66,8 +66,12 @@ def test_repair_moves_the_archive_s_families_to_their_vignettes_new_places(
     ]
     assert [line.split(": ")[1].split(" ")[0] for line in cases] == [
         verb
-        for id in renamed
-        for verb in ("validated", "created" if id == "crlf" else "validated")
+        for id, case in renamed.items()
+        for verb in (
+            "validated",
+            "created" if id == "crlf" else "validated",
+            *("validated" for o in case.ordered for _ in range(1 + bool(o.targets))),
+        )
     ]
     assert not [line for line in lines if "not in the data" in line]
     assert catalog.about(Subject(family=families["noted"])).name == "noted2"

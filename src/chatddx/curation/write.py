@@ -1,9 +1,11 @@
 from collections import Counter
 from collections.abc import Collection, Iterable
 
+from pydantic import JsonValue
+
 from chatddx.catalog import Entry, EntryField, Kept, Labels, Part, Subject, Survey
-from chatddx.factors.base import Fingerprint
-from chatddx.factors.cases import Case, Vignette
+from chatddx.factors.base import Fingerprint, StructuralError
+from chatddx.factors.cases import Appendix, Case, Vignette, clean
 from chatddx.factors.scoring import Expectation
 from chatddx.facts import lints
 from chatddx.identity import Person
@@ -176,10 +178,7 @@ class _Init:
         )
         registry = self.plan.registry
         digest = registry.add(case)
-        expectation = registry.add(
-            Expectation(case=digest, expectation_schema=schema, data=sample.targets)
-        )
-        _ = self.store.add(registry, [digest, expectation])
+        _ = self.store.add(registry, [digest])
         family = self.catalog.family(digest)
         verb = "validated" if family is not None else "created"
         if family is None:
@@ -193,16 +192,65 @@ class _Init:
         self.land(digest, f"case {id}")
         self.sync(Subject(family=family), sample.tags, None, sample.language, name=id)
         self.lines.append(f"[archive case] {id}: {verb} {short(digest)}")
+        self.expect(id, digest, sample.targets, schema)
+        self.appended(id, case.vignette, sample, schema)
+
+    def expect(self, named: str, case: str, data: JsonValue, schema: str) -> None:
+        registry = self.plan.registry
+        expectation = registry.add(
+            Expectation(case=case, expectation_schema=schema, data=data)
+        )
+        _ = self.store.add(registry, [expectation])
         found = [
             t
-            for t in self.catalog.expectations_of(digest)
+            for t in self.catalog.expectations_of(case)
             if self.catalog.about(Subject(thread=t)).owner == self.archive.id
         ]
         thread, verb = self.put("expectation", expectation, found, None)
-        self.threads[("expectation", id)] = thread
-        self.land(expectation, f"expectation {id}")
+        self.threads[("expectation", named)] = thread
+        self.land(expectation, f"expectation {named}")
         self.sync(Subject(thread=thread))
-        self.lines.append(f"[archive expectation] {id}: {verb} {short(expectation)}")
+        self.lines.append(f"[archive expectation] {named}: {verb} {short(expectation)}")
+
+    # An appendix is bound to the vignette its case was just read at, so it's built here
+    # rather than planned.
+    def appended(
+        self, id: str, vignette: Vignette, sample: SampleCase, schema: str
+    ) -> None:
+        registry = self.plan.registry
+        bound: dict[str, str] = {}
+        for name, text in sample.appendices.items():
+            named = f"{name} for {id}"
+            appendix = Appendix(vignette=vignette, text=clean(text, ["newlines.lf@1"]))
+            digest = registry.add(appendix)
+            _ = self.store.add(registry, [digest])
+            found = self.catalog.find("appendix", named, owner=self.archive.id)
+            thread, verb = self.put("appendix", digest, found, named)
+            self.threads[("appendix", named)] = thread
+            self.land(digest, f"appendix {named}")
+            self.sync(Subject(thread=thread))
+            self.lines.append(f"[archive appendix] {named}: {verb} {short(digest)}")
+            bound[name] = digest
+        for ordered in sample.ordered:
+            named = f"{id} with {', '.join(ordered.appendices)}"
+            case = Case(
+                vignette=vignette,
+                appendices=tuple(bound[name] for name in ordered.appendices),
+            )
+            digest = registry.add(case)
+            verb = "validated" if self.stored(digest) else "created"
+            _ = self.store.add(registry, [digest])
+            self.land(digest, f"case {named}")
+            self.lines.append(f"[archive case] {named}: {verb} {short(digest)}")
+            if ordered.targets is not None:
+                self.expect(named, digest, ordered.targets, schema)
+
+    def stored(self, digest: str) -> bool:
+        try:
+            _ = self.store.get(digest)
+        except StructuralError:
+            return False
+        return True
 
     def leftovers(self, cases: Collection[str]) -> None:
         threads = set(self.threads.values())

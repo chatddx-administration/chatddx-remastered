@@ -12,7 +12,6 @@ from chatddx.bench import Bench
 from chatddx.core import settings
 from chatddx.core.rig import rig
 from chatddx.curation import init, load_cases, plan_factors, repair, wipe
-from chatddx.curation.plan import SAMPLE
 from chatddx.curation.write import ARCHIVE
 from chatddx.facts import BUNDLED, Facts
 from chatddx.fake_vllm.served import CLOSURE, Refused, Served
@@ -66,6 +65,10 @@ def _person_password(args: argparse.Namespace) -> None:
     print(f"password set for {args.login}")
 
 
+# A World's data set, which the World itself doesn't read: init-data's by default.
+DATA = "_data"
+
+
 def _world(command: str, path: Path | None) -> World:
     path = path or settings.world()
     if path is None:
@@ -78,7 +81,11 @@ def _world(command: str, path: Path | None) -> World:
 
 def _init_data(args: argparse.Namespace) -> None:
     world = _world("init-data", args.world)
-    data: Path = args.data
+    data: Path = args.data or world.path / DATA
+    if not data.is_dir():
+        raise SystemExit(
+            f"init-data: {world.path} has no {DATA}/: give a data set with --data DIR"
+        )
     more = [*world.factors, *(args.factors or ())]
     try:
         facts = Facts.load(BUNDLED, *world.facts, *(args.facts or ()))
@@ -288,9 +295,8 @@ def main(argv: Sequence[str] | None = None) -> None:
     _ = init.add_argument(
         "--data",
         type=Path,
-        default=SAMPLE,
         help="what to load: a directory with factors.toml and cases-<language>.toml "
-        + "(the sample data in the package)",
+        + f"(the World's {DATA}/)",
     )
     _ = init.add_argument(
         "--factors",

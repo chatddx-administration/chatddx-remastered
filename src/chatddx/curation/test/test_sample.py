@@ -7,13 +7,12 @@ from pydantic import JsonValue
 
 from chatddx.core.rig import rig
 from chatddx.curation import Plan, init, load_cases
-from chatddx.curation.plan import SAMPLE
 from chatddx.factors.base import Fingerprint
 from chatddx.factors.request import Compilation, compiled
 from chatddx.inventory import DirectorySource, Inventory, World
 from chatddx.store import Catalog, People
 from chatddx.store.store import Connection
-from chatddx.test.world import WORLDS, world_plan
+from chatddx.test.world import SAMPLE, WORLDS, world_plan
 
 pytestmark = pytest.mark.wip
 

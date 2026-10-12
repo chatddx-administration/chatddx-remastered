@@ -112,6 +112,13 @@ git diff --no-index worlds/kompismoln/endpoints.toml /tmp/endpoints.toml
 ```
 No diff means the hosts still serve the engines `worlds/kompismoln` pins. Both are cleared for the sample's
 vignettes, so a case can run on them:
+```
+AGENT: amend
+The sample data set moved from the package to the sample World's _data/, which init-data reads by default; Kompismoln's
+World has none of its own, so it names the sample's.
+---
+chatddx init-data alice --world worlds/kompismoln --data worlds/sample/_data
+```
 ```sh
 chatddx init-data alice --world worlds/kompismoln
 chatddx repl alice --world worlds/kompismoln
