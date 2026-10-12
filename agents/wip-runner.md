@@ -7,9 +7,9 @@ pieces that already existed:
 - the World inventory with `url_of` and `confirm`;
 - the fake vLLM.
 
-This file split off from `agents/wip-repl.md`, whose shell is being built. The repl is the runner's first caller,
-not its only one: a portal, a worker and `chatddx samples` (`agents/wip-sample-data.md`, "Left behind") would call it
-too.
+This file split off from `agents/wip-repl.md`. The bench is the runner's caller today (`bench/runs.py`: `start` and
+`score`), for the repl and the API. A worker, a portal and `chatddx samples` (`agents/wip-sample-data.md`, "Left
+behind") would call it too.
 
 "Decided" means the user said so. "Take" is the agent's recommendation and still open.
 
@@ -20,10 +20,10 @@ concurrency, with tool rounds and between its canaries, and leaves a finished ru
 a scoring, and `check_score` comes back clean.
 
 It was checked:
-- by the tests in `src/chatddx/runner/test/`;
-- by hand: the `chatddx fake-vllm --runaway` process, started from `worlds/sample/inventory.toml`'s gpt-oss endpoint,
-  ran three cases on `plan (openai/gpt-oss-20b)`. Each call was cut at 100 tokens of whitespace, the fake heard each
-  hang-up, and the run recorded its endpoint and cutoff.
+- by the tests in `src/chatddx/runner/test/`, which run on the test World (`worlds/test/`, `agents/wip-test-world.md`);
+- by hand, on the sample before the tests moved: the `chatddx fake-vllm --runaway` process, started from
+  `worlds/sample/inventory.toml`'s gpt-oss endpoint, ran three cases on `plan (openai/gpt-oss-20b)`. Each call was cut
+  at 100 tokens of whitespace, the fake heard each hang-up, and the run recorded its endpoint and cutoff.
 - by hand, for phase 4: the `chatddx fake-vllm --delay 0.01` process, started from the qwen endpoint, ran 4 cases × 2
   seeds shuffled at concurrency 4. The run took 1.0 s for 3.9 s of calls, and `check_run` came back clean. A SIGINT
   0.3 s in hung up the 4 calls in flight, the fake heard 4 hang-ups, and the 4 were recorded as stopped.
@@ -40,8 +40,8 @@ It was checked:
 
 Next: what's left of "Left" (see "Afterwards").
 
-**Real engines aren't cleared yet.** `worlds/kompismoln/inventory.toml` has no `[cleared]` table, so the gate refuses
-`pelle` and `malborg` for the sample. Clearing them is a human's statement to make.
+**The real engines are cleared for the sample** (decided: `agents/wip-clearance.md`, "Vetted endpoints").
+`worlds/kompismoln/inventory.toml` clears `qwen3-8b@pelle` and `gpt-oss-20b@malborg` for `sample`.
 
 ## Decided
 - **Clearance (wip-repl D1).** An interim list in the World inventory says which sources an endpoint is cleared
@@ -57,6 +57,8 @@ Next: what's left of "Left" (see "Afterwards").
     - `Execution.whitespace_limit` bounds only a runaway, and saves the time one burns till its tokens run out;
     - `whitespace_limit = None` turns the cutoff off for a run.
   - If the cutoff turns out not to earn its place, removing it is a one-field change.
+  - The R's that are traceable are where they were built: R1, R3, R4 and R7 (phase 0), R5, R6, R8 and R9 (phase 3).
+    R2 and R10 aren't written down anywhere, in this file or its history; what they decided needs restating.
 
 ## What was built
 ### Phase 0: outside `runner/`
@@ -64,14 +66,16 @@ Next: what's left of "Left" (see "Afterwards").
   (`factors/engine.py`).
 - **R1.** `Inventory.cleared` and `cleared_for` (`inventory/inventory.py`). The table is read only from the
   inventory's own file and checked against its endpoints and sources. `worlds/sample/inventory.toml` clears both fake
-  endpoints for `sample`.
+  endpoints for `sample` and `typed`. `worlds/test/inventory.toml` clears its fakes for `test` and `typed`, but
+  `qwen3-bare@fake` for `test` only, and `unknown@remote` for nothing.
 - **R3.** `RunStarted.endpoint` (`ledger/run.py:Endpoint`): the endpoint's name and URL, left out by default.
 - **R7.** `Execution.whitespace_limit`, 100 by default (`factors/trial.py`).
 - **Test helpers.**
   - The database fixtures moved from `store/test/conftest.py` to `src/chatddx/conftest.py`.
-  - The fake in a thread is `chatddx.fake_vllm.server.serving`, used by the fake's own tests, the inventory's and
-    the runner's.
-  - `sample_plan` is defined once, in `src/chatddx/conftest.py`, and the runner's tests use it.
+  - The fake in a thread is `chatddx.fake_vllm.server.serving`. `chatddx.test.world:faked` starts the test World's
+    fakes with it, for the runner's tests among others; `test_wire.py` and `test_send.py` use `serving` directly.
+  - The runner's tests take the root conftest's `plan`, the test World's (`chatddx.test.world:world_plan`), and the
+    test tools it ships for the session (`shipped_test_tools`, from `runner/test/tools.py:shipped`).
 
 ### Phase 1: `wire.py`
 - **`post`** sends to `/v1/chat/completions` and returns a `Stream` of parsed SSE chunks. Closing the stream hangs
@@ -108,17 +112,18 @@ goes only into the `Authorization` header; a test checks that no stored row hold
 
 **`Runner(conn, inventory, by)`** refuses a connection that isn't in autocommit mode (R6). `.start(trial, registry,
 endpoint, execution)`:
-1. Runs the gate, then refuses a `concurrency` above the endpoint's `max_jobs` (phase 4).
-2. Loads the skeleton's tools (phase 5).
-3. `Store.add`s the trial's closure, and the canary set's (phase 6).
-4. Appends `RunStarted`, with `rig()`, the execution, the canary set and its phases, the tools' code and the
+1. Runs the gate, loads the skeleton's tools (phase 5), then refuses a `concurrency` above the endpoint's `max_jobs`
+   (phase 4).
+2. `Store.add`s the trial's closure, and the canary set's (phase 6).
+3. Appends `RunStarted`, with `rig()`, the execution, the canary set and its phases, the tools' code and the
    endpoint. The row is built before anything is written, so phases without a canary set are refused first.
-5. Writes the run's owner entry.
+4. Writes the run's owner entry.
 
 **`Running.send(on_event)`** sends the items in `Execution.schedule` order:
 - each item is `fetch`, `prepare_case`, `render` with `engine.served_model_name`, then `send`, then appending a
   `RunItem`;
-- a case that can't be read is a `case.unreadable` finding, and the run goes on (R8);
+- a case that can't be read is a `case.unreadable` finding, and the run goes on (R8). Its `ItemStarted` gets no
+  `ItemEnded` (see "Left");
 - `stop()` ends after the item under way;
 - a KeyboardInterrupt during a call appends that item as stopped and is raised again (R9).
 
@@ -144,7 +149,8 @@ land in the caller's frame while the runner sat suspended at a `yield`. The even
 - **Stopping.** `stop()` lets the calls in flight finish. A KeyboardInterrupt can't reach a worker, so the runner sets
   `send`'s `halt`. Each call then hangs up at its next chunk or in its backoff, and is recorded as stopped before the
   interrupt is raised again. Another KeyboardInterrupt while they hang up leaves them out of the log. A worker's
-  unexpected exception is raised on the caller's thread, from its future.
+  unexpected exception is raised on the caller's thread, from its future, and the other calls in flight are halted
+  and left out of the log (see "Left").
 - **Concurrency 1** keeps the serial path: a KeyboardInterrupt there hangs up at once, even mid-read.
 - **Events carry the item's key** (`Streamed`), since deltas of items in flight interleave. That changed the serial
   path's events too, so a caller sees one shape whatever the concurrency.
@@ -165,14 +171,20 @@ In `rounds.py`, which `run.py` calls for every item, with tools or without:
   told `error: …` in place of a result, and the error is recorded, when the call names no tool of the skeleton, the
   arguments aren't a JSON object that fits the tool's `parameters`, or the tool raises or returns anything but text.
   A failing tool doesn't stop the run.
-- **Stopping.** A KeyboardInterrupt or a halt keeps the rounds that have a call. A round stopped while its tools run
-  has none, so its tools are left out (see "Left"). Above concurrency 1, an item's rounds run on its worker, and a
-  halt is also checked before a round's tools.
+- **Stopping.** A KeyboardInterrupt or a halt keeps the rounds that have a call.
+  - A KeyboardInterrupt while a round's tools run leaves the round without a call, so its tools are left out (see
+    "Left").
+  - A halt is checked before a round's tools. A halt while they run lets them finish, then sends the round's call,
+    which `send` hangs up at its first chunk, so the round is kept. No test covers this.
+  - Above concurrency 1, an item's rounds run on its worker.
 - **`ToolRan`** carries the item's key and the `ToolRun`, after each tool.
-- **The gate keeps refusing tools on a sensitive source.** The tests run on the sample with its source declared not
-  sensitive, and with tools that don't leave the host (`runner/test/tools.py`).
-- **`plan-web` runs without a round on the fake.** A native contract with tools sends `tool_choice: auto` beside a
-  `response_format`, which then holds the whole answer (G8; `docs/vllm.md`, item 10).
+- **The gate keeps refusing tools on a sensitive source.** The tests run on the test World's `test` source declared
+  not sensitive (`runner/test/test_run.py:insensitive`), and with tools that don't leave the host
+  (`runner/test/tools.py`).
+- **`plan-web` ran without a round on the fake**, by hand on the sample. A native contract with tools sends
+  `tool_choice: auto` beside a `response_format`, which then holds the whole answer (G8 in
+  `agents/wip-sample-data.md`; `docs/vllm.md`, item 10). The test World's like is `native-tools`, which the runner's
+  tests use only for the gate's refusal.
 
 ### The scoring pass
 - **`chatddx.scorers.answer.read(skeleton, response)`** reads the answer a scorer scores, by the skeleton's contract
@@ -181,11 +193,11 @@ In `rounds.py`, which `run.py` calls for every item, with tools or without:
   the last fenced block that is JSON, else the last JSON object or array). It returns the value, or none with why,
   and where the value breaks the output schema. No truncated structure is salvaged.
 - **`runner/score.py:score_run(conn, run, scoring, registry, by)`** scores a finished run. It refuses before writing
-  a run that hasn't finished, a view with a judge, and a scorer whose code can't run (`scorers/scorer.py:function`).
+  a run that hasn't finished, a view with a judge, and a scorer whose code can't run (`scorers/shipped.py:function`).
   It stores the scoring, then reads the run's trial and the scoring back from the store. Each item's answer is read
   from its last call, after any tool rounds, and goes through every view (`scorers/scorer.py:score`). It writes
-  `ScoreStarted`, the items of each run item in one transaction, then `ScoreFinished` and the score's owner entry,
-  and returns `check_score`'s findings.
+  `ScoreStarted` and the score's owner entry, the items of each run item in one transaction, then `ScoreFinished`,
+  and returns the score with `check_score`'s findings.
 - **What the pass notes** in `ScoreFinished`: `answer.unread`, for an answer that can't be read, with the call's
   error when it has one; and `answer.invalid`, for an answer that breaks the output schema. An invalid answer is
   still scored.
@@ -195,6 +207,9 @@ In `rounds.py`, which `run.py` calls for every item, with tools or without:
   Interface version 1 hands the entry point what the view's selectors pick, not the response, so the pass calls the
   reader instead. It is still pinned: only scoring code the running chatddx ships can score, at the version a scorer
   pins (`scorers/shipped.py:function`), and the reader is part of chatddx, recorded in each score's `rig`.
+- **What the pass leaves to its caller** is in the bench: `bench/runs.py:score` scores a run under each scorer
+  `bench/seen.py:Seen.scorers_for` finds, with the scoring `Seen.scoring` makes (D8), and `Seen.outstanding` lists the
+  finished runs still to score.
 
 ### Phase 6: canaries
 - **`Canary.render(model=)`** (`factors/trial.py`) makes a canary's request as `render` makes a skeleton's: its
@@ -232,12 +247,11 @@ In `rounds.py`, which `run.py` calls for every item, with tools or without:
 - **Canary calls stream without events**, since `Streamed` carries an item key.
 
 ### Afterwards
-- **What the scoring pass leaves to its caller** is in the reads for a person (`agents/wip-repl.md`, phase 3):
-  `Reads.scorers`, `Reads.scoring` (D8) and `Reads.outstanding` (`src/chatddx/store/reads.py`).
 - **Judged views**, refused until judges run: the judge calls, recorded as `JudgeCall`s, and the scorer interface's
   next version (`agents/wip-sample-data.md`, "Free-text expectations").
-- **`chatddx samples`** back on the runner.
-- **A runner finding for reasoning that wasn't heeded**, like the old `bench/outcome.py:unheeded`.
+- **`chatddx samples`** back on the runner (`agents/wip-sample-data.md`, "Sample runs").
+- **A runner finding for reasoning that wasn't heeded**, like the old chatddx's `bench/outcome.py:unheeded`; this
+  repo's `bench/outcome.py` has none.
 - **Resuming** and **`max_jobs` across runs**: moved to `agents/wip-worker.md` ("Below the worker"), their first
   caller.
 - **A summary of failed calls.** `check_run` says nothing about `Call.error`. A run whose every call was cut short
@@ -245,7 +259,27 @@ In `rounds.py`, which `run.py` calls for every item, with tools or without:
 - **A halted call waits for its next chunk.** An engine that stalls mid-stream, under an execution with no
   `timeout_s`, keeps its worker waiting after a KeyboardInterrupt, until a second one. Shutting the worker's socket
   down from the caller's thread would end the wait, but `wire.Stream` doesn't offer that yet. Since
-  `Running.halt()` (below), the same holds for a halt from another thread, on a serial run too.
+  `Running.halt()` (below), the same holds for a halt from another thread, on a serial run too. The bench sends no
+  `Execution` (`bench/runs.py:start`), so every run from the repl and the API has no `timeout_s`.
+
+### Found in a check against the code
+- **An unreadable case's `ItemStarted` gets no `ItemEnded`** (`run.py:Running._prepared`). A caller that opens
+  something per item leaves it open: the repl's tally for the case is started and never stopped
+  (`repl/running.py:batch`'s `on_event`), and the API sends an `item.started` with no end
+  (`api/events.py:event_of`).
+- **A worker's unexpected exception drops the calls in flight beside it.** Above concurrency 1 they're halted and
+  not recorded, and `_stopping` isn't set (`run.py:Running._send_concurrently`), so a later `send` would send them
+  again.
+- **Rejected engine bodies are stored verbatim** (`send.py`, `call(e.status, str(e), e.body)`). An engine that echoes
+  its input in a validation error would put vignette text in the store (`agents/healthcheck.md`, "Before real
+  patient data", 1).
+- **Fingerprints are unkeyed.** `send` takes a `key`, but neither `rounds.converse` nor `Running._probe` passes one
+  (`agents/healthcheck.md`, "Before real patient data", 5; `docs/chatddx.md`).
+- **`bench/seen.py:Seen.rendered_again` repeats `Running._prepared`'s fetch, prepare and render** to tell whether a
+  run's requests render the same now. A change to one must follow in the other, and no comment links them.
+- **The gate's cases only the test World reaches aren't read by a test**: `qwen3-bare@fake` not cleared for
+  `typed`, and `unknown@remote` cleared for nothing, with its secret unset (`agents/wip-test-world.md`, "Not read
+  yet"). The gate's tests edit the inventory instead (`runner/test/test_run.py`).
 
 ### For the API
 - **`Running.halt()`** (`src/chatddx/runner/run.py`): built for the API's phase 0 (`agents/wip-api.md` at 100a078,
