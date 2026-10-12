@@ -3,12 +3,9 @@ import json
 from typing import Any, cast
 
 import pytest
-from jsonschema import validators
 from pydantic import JsonValue
 
-from chatddx.conftest import sample_plan
 from chatddx.curation import load_cases
-from chatddx.curation.plan import SAMPLE
 from chatddx.factors.base import resolve
 from chatddx.factors.bundle import Registry
 from chatddx.factors.request import Skeleton, SlotName
@@ -26,6 +23,7 @@ from chatddx.scorers.patterns import (
 )
 from chatddx.scorers.scorer import Metric, Metrics, Scored, score
 from chatddx.scorers.shipped import SCORERS, function, problems
+from chatddx.test.world import DATA, world_plan
 
 pytestmark = pytest.mark.wip
 
@@ -77,16 +75,6 @@ def test_a_pattern_finds_whole_words(pattern: str, text: str, at: int | None) ->
 def test_a_pattern_that_doesn_t_read_is_refused(pattern: str, problem: str) -> None:
     with pytest.raises(ValueError, match=problem):
         _ = Pattern(pattern)
-
-
-def test_every_sample_target_reads() -> None:
-    for case in load_cases(SAMPLE).values():
-        assert isinstance(case.targets, dict)
-        for kind, target in case.targets.items():
-            if kind == "notes":
-                continue
-            assert isinstance(target, dict) and isinstance(target["pattern"], str)
-            _ = Pattern(target["pattern"])
 
 
 def test_the_reciprocal_rank_is_that_of_the_first_diagnosis_found() -> None:
@@ -308,13 +296,13 @@ def test_a_judged_view_can_t_be_scored_yet() -> None:
         _ = score(scorer, function(scorer), ANSWER, TARGETS)
 
 
-# ------------------------------------------------------------------ the sample
+# ------------------------------------------------------------------ the test World
 
-TARGETS_SCHEMA = json.loads((SAMPLE / "schemas" / "targets.json").read_text())
+TARGETS_SCHEMA = json.loads((DATA / "schemas" / "targets.json").read_text())
 
 
-def sample_scorer(name: str) -> tuple[Scorer, tuple[str | None, ...]]:
-    plan = sample_plan()
+def world_scorer(name: str) -> tuple[Scorer, tuple[str | None, ...]]:
+    plan = world_plan()
     record = plan.named("scorer", name)
     scorer = plan.registry.get(record.digest)
     assert isinstance(scorer, Scorer)
@@ -322,92 +310,26 @@ def sample_scorer(name: str) -> tuple[Scorer, tuple[str | None, ...]]:
 
 
 def scored(name: str, answer: JsonValue, targets: JsonValue) -> dict[str, Scored]:
-    scorer, labels = sample_scorer(name)
+    scorer, labels = world_scorer(name)
     values = score(scorer, function(scorer), answer, targets)
     return {str(label): value for label, value in zip(labels, values, strict=True)}
 
 
-def test_the_targets_schema_takes_the_old_chatddx_s_target_kinds() -> None:
-    valid = validators.validator_for(TARGETS_SCHEMA)(TARGETS_SCHEMA).is_valid
-    pneumonia: JsonValue = {"pattern": "pneumonia"}
-    assert valid({"diagnosis": pneumonia})
-    assert valid({"diagnosis": {"text": "Community-acquired pneumonia"}})
-    assert valid(
-        {
-            "diagnosis": {"text": "Pneumonia", "pattern": "pneumonia"},
-            "warning": False,
-            "dont_miss": {"pattern": "pulmonary embolism"},
-        }
-    )
-    invalid_targets: list[JsonValue] = [
-        {"diagnosis": False},
-        {"diagnosis": pneumonia, "dont_miss": False},
-        {"diagnosis": {}},
-        {"diagnosis": {"pattern": ""}},
-        {"diagnosis": pneumonia, "critical": pneumonia},
-    ]
-    for invalid in invalid_targets:
-        assert not valid(invalid), invalid
-
-
-def test_a_case_s_notes_keep_their_author_language_comment_and_answer() -> None:
-    valid = validators.validator_for(TARGETS_SCHEMA)(TARGETS_SCHEMA).is_valid
-    note: dict[str, JsonValue] = {
-        "author": "Olof",
-        "language": "sv",
-        "comment": "Chock.",
-    }
-    pneumonia: JsonValue = {"pattern": "pneumonia"}
-    assert valid({"diagnosis": pneumonia, "notes": [note]})
-    assert valid({"diagnosis": pneumonia, "notes": [note | {"answer": "Rundodla."}]})
-    invalid_notes: list[JsonValue] = [
-        [],
-        [{k: v for k, v in note.items() if k != "author"}],
-        [note | {"language": "Swedish"}],
-        [note | {"comment": ""}],
-        [note | {"answer": ""}],
-        [note | {"date": "2026-09-28"}],
-    ]
-    for notes in invalid_notes:
-        assert not valid({"diagnosis": pneumonia, "notes": notes}), notes
-
-
-def test_the_sample_holds_olof_s_notes_on_three_cases_as_written() -> None:
-    cases = load_cases(SAMPLE)
-    valid = validators.validator_for(TARGETS_SCHEMA)(TARGETS_SCHEMA).is_valid
-    assert all(valid(case.targets) for case in cases.values())
-    noted = {
-        id: case.targets["notes"]
-        for id, case in cases.items()
-        if isinstance(case.targets, dict) and "notes" in case.targets
-    }
-    assert sorted(noted) == ["Dutchfall11w", "Dutchfall1w", "casesfromedn1"]
-    for id, notes in noted.items():
-        assert isinstance(notes, list) and len(notes) == 1
-        [note] = notes
-        assert isinstance(note, dict)
-        assert (note["author"], note["language"]) == ("Olof", "sv")
-        assert ("answer" in note) == (id != "Dutchfall1w")
-    [eleven] = cast(list[dict[str, str]], noted["Dutchfall11w"])
-    assert eleven["comment"].startswith("identifiera tecken på prechock eller chock")
-    assert eleven["answer"].endswith("påbörja empirisk bredspektrumantibiotika.")
-
-
 def test_a_judge_reads_a_case_s_notes_beside_the_targets_the_patterns_read() -> None:
-    targets = load_cases(SAMPLE)["Dutchfall11w"].targets
+    targets = load_cases(DATA)["noted"].targets
     answer: JsonValue = {
         "diagnoses": [
+            {"diagnosis": "Pneumonia", "critical": False},
             {"diagnosis": "Septic shock", "critical": True},
-            {"diagnosis": "Ruptured abdominal aortic aneurysm", "critical": True},
         ],
         "acute_warning": "Signs of shock",
-        "management": {"disposition": "Intensive care"},
+        "disposition": "Intensive care",
     }
-    assert scored("plan", answer, targets)["differential"] == Scored(
-        0.5, {"answer": "2. Ruptured abdominal aortic aneurysm"}
+    assert scored("answer", answer, targets)["differential"] == Scored(
+        0.5, {"answer": "2. Septic shock"}
     )
-    olof = "$.notes[?@.author == 'Olof']"
-    assert reaches(TARGETS_SCHEMA, f"{olof}.comment")
+    carol = "$.notes[?@.author == 'carol']"
+    assert reaches(TARGETS_SCHEMA, f"{carol}.comment")
     reg = Registry()
     ids = world(reg)
     judge = resolve(reg.get, ids["judge"], Judge)
@@ -421,12 +343,13 @@ def test_a_judge_reads_a_case_s_notes_beside_the_targets_the_patterns_read() -> 
         )
         return judge.fills(view, answer, targets)
 
-    [note] = cast(dict[str, list[dict[str, str]]], targets)["notes"]
-    assert fills(f"{olof}.comment") == {
-        "completion": "Septic shock\nRuptured abdominal aortic aneurysm",
+    [note, _] = cast(dict[str, list[dict[str, str]]], targets)["notes"]
+    assert note["author"] == "carol"
+    assert fills(f"{carol}.comment") == {
+        "completion": "Pneumonia\nSeptic shock",
         "expectation": note["comment"],
     }
-    assert fills(f"{olof}.answer")["expectation"] == note["answer"]
+    assert fills(f"{carol}.answer")["expectation"] == note["answer"]
 
 
 @pytest.mark.slow
@@ -443,22 +366,22 @@ def test_a_dont_miss_is_held_to_what_each_output_can_say() -> None:
                 {"diagnosis": "Pulmonary embolism", "critical": critical},
             ],
             "acute_warning": None,
-            "management": {"disposition": "Admit"},
+            "disposition": "Admit",
         }
 
-    assert scored("plan", plan(critical=True), targets)["dont-miss"] == Scored(
+    assert scored("answer", plan(critical=True), targets)["dont-miss"] == Scored(
         1.0, {"answer": "Pulmonary embolism"}
     )
-    named = scored("plan", plan(critical=False), targets)
+    named = scored("answer", plan(critical=False), targets)
     assert named["dont-miss"] == Scored(0.0, {"reason": "not named"})
     assert named["differential"] == Scored(1.0, {"answer": "1. Pneumonia"})
     listed: JsonValue = {"diagnoses": ["Pneumonia", "Pulmonary embolism"]}
-    assert scored("diagnoses", listed, targets)["dont-miss"].value == 1.0
+    assert scored("list", listed, targets)["dont-miss"].value == 1.0
     lines = "1. Pneumonia\n2. Pulmonary embolism"
-    assert scored("free-text", lines, targets)["dont-miss"].value == 1.0
-    assert scored("free-text", "1. Pneumonia", targets)["dont-miss"].value == 0.0
+    assert scored("lines", lines, targets)["dont-miss"].value == 1.0
+    assert scored("lines", "1. Pneumonia", targets)["dont-miss"].value == 0.0
     no_dont_miss: JsonValue = {"diagnosis": {"pattern": "pneumonia"}}
-    assert scored("plan", plan(critical=True), no_dont_miss)["dont-miss"] == Scored(
+    assert scored("answer", plan(critical=True), no_dont_miss)["dont-miss"] == Scored(
         None, {"reason": "no target"}
     )
 
@@ -468,13 +391,13 @@ def test_a_case_that_calls_for_no_warning_is_met_by_a_plan_that_raises_none() ->
     plan: dict[str, JsonValue] = {
         "diagnoses": [{"diagnosis": "Pneumonia", "critical": False}],
         "acute_warning": None,
-        "management": {"disposition": "Home"},
+        "disposition": "Home",
     }
-    assert scored("plan", plan, targets)["warning"] == Scored(
+    assert scored("answer", plan, targets)["warning"] == Scored(
         1.0, {"reason": "none named, as expected"}
     )
     raised = plan | {"acute_warning": "Signs of sepsis"}
-    assert scored("plan", raised, targets)["warning"] == Scored(
+    assert scored("answer", raised, targets)["warning"] == Scored(
         0.0, {"answer": "Signs of sepsis", "reason": "none expected"}
     )
 
@@ -484,9 +407,9 @@ def test_a_target_s_words_are_a_judge_s_and_its_pattern_the_pattern_scorers() ->
     answer: JsonValue = {
         "diagnoses": [{"diagnosis": "Pulmonary embolism"}, {"diagnosis": "Pneumonia"}],
         "acute_warning": None,
-        "management": {"disposition": "Admit"},
+        "disposition": "Admit",
     }
-    assert scored("plan", answer, words)["differential"] == Scored(
+    assert scored("answer", answer, words)["differential"] == Scored(
         None, {"reason": "the target has words, for a judge, but no pattern"}
     )
     assert reaches(TARGETS_SCHEMA, "/diagnosis/text")
@@ -506,27 +429,29 @@ def test_a_target_s_words_are_a_judge_s_and_its_pattern_the_pattern_scorers() ->
 
 
 READS = {
-    "plan": "plan",
-    "plan-shown": "plan",
-    "plan-prompted": "plan",
-    "plan-web": "plan",
-    "diagnoses": "diagnoses",
-    "diagnoses-tool": "diagnoses",
-    "free-text": "free-text",
-    "free-text-guided": "free-text",
+    "native": "answer",
+    "native-tools": "answer",
+    "native-inlined": "answer",
+    "prompted": "answer",
+    "tool-answer": "list",
+    "tool-answer-tools": "list",
+    "raw": "whole",
 }
 
 
-def test_each_sample_scorer_s_views_pick_from_the_answers_it_reads() -> None:
-    plan = sample_plan()
+def test_each_scorer_s_views_pick_from_the_answers_it_reads() -> None:
+    plan = world_plan()
     read: set[str] = set()
     for record in plan.records:
         if record.kind != "skeleton":
             continue
         skeleton = plan.registry.get(record.digest)
         assert isinstance(skeleton, Skeleton)
+        if skeleton.purpose == "judge":
+            continue
         configuration = record.name.partition(" (")[0]
-        scorer = plan.registry.get(plan.named("scorer", READS[configuration]).digest)
+        reader = READS.get(configuration, "lines")
+        scorer = plan.registry.get(plan.named("scorer", reader).digest)
         assert isinstance(scorer, Scorer)
         schema = skeleton.output_schema
         answer: JsonValue = ANSWER_TEXT if schema is None else instance(schema)
@@ -538,5 +463,5 @@ def test_each_sample_scorer_s_views_pick_from_the_answers_it_reads() -> None:
             assert view.output_items(answer), (record.name, view.output)
         values = score(scorer, function(scorer), answer, TARGETS)
         assert len(values) == len(scorer.views)
-        read.add(READS[configuration])
-    assert read == {"plan", "diagnoses", "free-text"}
+        read.add(reader)
+    assert read == {"answer", "list", "lines", "whole"}

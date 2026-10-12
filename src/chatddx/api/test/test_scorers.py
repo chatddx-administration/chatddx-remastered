@@ -3,6 +3,7 @@ from fastapi.testclient import TestClient
 
 from chatddx.api.test.test_variations import thread
 from chatddx.api.test.test_writes import body
+from chatddx.test.world import LINES
 
 pytestmark = pytest.mark.wip
 
@@ -26,7 +27,7 @@ def test_the_scoring_code_shipped_is_listed_with_what_its_metrics_take(
 
 @pytest.mark.slow
 def test_a_scorer_is_written_with_its_labels(signed: TestClient) -> None:
-    archives = thread(signed, "scorer", "diagnoses", "archive")
+    archives = thread(signed, "scorer", "list", "archive")
     assert archives["head"]["labels"] == {
         "views": ["differential", "dont-miss"],
         "resources": [],
@@ -54,7 +55,7 @@ def test_a_scorer_is_written_with_its_labels(signed: TestClient) -> None:
         ["differential", "dont-miss"],
         ["ddx"],
     ]
-    assert thread(signed, "scorer", "diagnoses", "archive") == archives
+    assert thread(signed, "scorer", "list", "archive") == archives
 
     one = {**held, "views": held["views"][:1]}
     got = signed.post(
@@ -67,11 +68,11 @@ def test_a_scorer_is_written_with_its_labels(signed: TestClient) -> None:
 
 @pytest.mark.slow
 def test_a_scorer_that_could_never_score_is_refused(signed: TestClient) -> None:
-    archives = thread(signed, "scorer", "raw", "archive")
+    archives = thread(signed, "scorer", "whole", "archive")
     held = body(signed, archives)
     [view] = held["views"]
     instructions = thread(signed, "instructions", "clinician (en)", "archive")
-    configuration = thread(signed, "configuration", "free-text (en, Qwen/Qwen3-8B-AWQ)")
+    configuration = thread(signed, "configuration", LINES)
     for at, asked, said in (
         (
             "/api/threads",

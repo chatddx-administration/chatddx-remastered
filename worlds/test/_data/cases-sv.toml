@@ -1,0 +1,13 @@
+# The test World's Swedish cases. `mislabeled`'s vignette is in English, filed here as cases can be.
+
+[case.svenska]
+tags = ["swedish"]
+targets.diagnosis.pattern = "pneumoni | lunginflammation"
+
+[case.nfd]
+tags = ["bytes", "swedish"]
+targets.diagnosis.pattern = "njursten* | uretärsten*"
+
+[case.mislabeled]
+tags = ["swedish"]
+targets.diagnosis.pattern = "fracture | fraktur"

@@ -38,6 +38,10 @@ def test_forks_vary_their_base_and_follow_it_on_request() -> None:
     origin = rows.start(recommended)
     fork = rows.start(longer, forked_from=origin.id)
     assert threads.forks(rows, origin.thread) == [fork.thread]
+    assert (threads.origin(rows, fork.thread), threads.origin(rows, origin.thread)) == (
+        origin.thread,
+        None,
+    )
     varied = threads.variation(rows, fork.thread)
     assert varied is not None
     assert (varied.varies, varied.moved) == (

@@ -1,0 +1,20 @@
+# The test World: what the tests run on, built so that each record exercises something a test reads
+# (agents/wip-test-world.md). Its data set is in _data/, which the World doesn't own; load both with `chatddx init-data
+# USER --world worlds/test --data worlds/test/_data`. Its tools are the runner's test tools, so it loads only under
+# pytest, which ships them.
+include = ["endpoints.toml"]
+
+[source.test]
+path = "vignettes"
+sensitive = true
+
+[source.typed]
+kind = "database"
+
+# The fakes are cleared for both sources but qwen3-bare@fake, which isn't cleared for typed. unknown@remote is
+# cleared for nothing.
+[cleared]
+"qwen3@fake" = ["test", "typed"]
+"gpt-oss@fake" = ["test", "typed"]
+"mistral@fake" = ["test", "typed"]
+"qwen3-bare@fake" = ["test"]

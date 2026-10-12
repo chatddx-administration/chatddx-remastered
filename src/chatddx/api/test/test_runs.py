@@ -13,26 +13,29 @@ from fastapi.testclient import TestClient
 from psycopg.conninfo import make_conninfo
 
 from chatddx.api.app import app
-from chatddx.api.test.test_variations import OFF, PLAN_WEB, digest, thread
-from chatddx.bench.test.sample import FREE_TEXT, QWEN
-from chatddx.conftest import faked
+from chatddx.api.test.test_variations import digest, thread
 from chatddx.core import settings
-from chatddx.facts import BUNDLED, Facts
 from chatddx.inventory import Inventory
 from chatddx.store import Store
 from chatddx.store.store import Connection
+from chatddx.test.world import (
+    GPT_OSS,
+    LINES,
+    NATIVE_TOOLS,
+    OFF,
+    QWEN,
+    faked,
+    world_facts,
+)
 
 pytestmark = pytest.mark.wip
 
-GPT_OSS = "gpt-oss-20b@fake"
 STREAM = {"Accept": "text/event-stream"}
 
 
 @pytest.fixture
 def served(db: str, world: Inventory) -> FastAPI:
-    return app(
-        world, Facts.load(BUNDLED), make_conninfo(settings.database(), dbname=db)
-    )
+    return app(world, world_facts(), make_conninfo(settings.database(), dbname=db))
 
 
 @pytest.fixture
@@ -58,12 +61,12 @@ def family(signed: TestClient, name: str) -> dict[str, Any]:
 
 
 def asked(
-    signed: TestClient, configuration: str = FREE_TEXT, **more: Any
+    signed: TestClient, configuration: str = LINES, **more: Any
 ) -> dict[str, Any]:
     return {
         "configuration": thread(signed, "configuration", configuration)["id"],
         "endpoint": QWEN,
-        "families": [family(signed, "Dutchfall11w")["id"]],
+        "families": [family(signed, "crlf")["id"]],
         "seed": 7,
         **more,
     }
@@ -89,7 +92,7 @@ def finished(signed: TestClient, run: str) -> dict[str, Any]:
 @pytest.mark.slow
 @pytest.mark.usefixtures("fake")
 def test_a_run_is_answered_once_it_is_finished_and_scored(signed: TestClient) -> None:
-    case = family(signed, "Dutchfall11w")["case"]
+    case = family(signed, "crlf")["case"]
     got = signed.post("/api/runs", json=asked(signed))
     assert got.status_code == 201
     made = got.json()
@@ -103,11 +106,11 @@ def test_a_run_is_answered_once_it_is_finished_and_scored(signed: TestClient) ->
     assert (item["case"], item["replicate"], item["outcome"]) == (case, 0, "completed")
     assert item["completion_tokens"] > 0
     graded = {g["name"]: g for g in made["scores"]}
-    free = graded["free-text"]
-    assert free["score"] is not None and free["refused"] is None
-    assert free["labels"] == ["text", "differential", "dont-miss"]
-    assert len(free["means"]) == 3
-    assert {(s["case"], s["view"]) for s in free["items"]} == {
+    lines = graded["lines"]
+    assert lines["score"] is not None and lines["refused"] is None
+    assert lines["labels"] == ["text", "differential", "dont-miss"]
+    assert len(lines["means"]) == 3
+    assert {(s["case"], s["view"]) for s in lines["items"]} == {
         (case, view) for view in range(3)
     }
 
@@ -115,7 +118,7 @@ def test_a_run_is_answered_once_it_is_finished_and_scored(signed: TestClient) ->
 @pytest.mark.slow
 @pytest.mark.usefixtures("fake")
 def test_a_run_streams_its_events_when_asked(signed: TestClient) -> None:
-    case = family(signed, "Dutchfall11w")["case"]
+    case = family(signed, "crlf")["case"]
     got = signed.post("/api/runs", json=asked(signed), headers=STREAM)
     assert got.status_code == 201
     assert got.headers["content-type"].startswith("text/event-stream")
@@ -142,8 +145,8 @@ def test_a_run_streams_its_events_when_asked(signed: TestClient) -> None:
 @pytest.mark.slow
 @pytest.mark.usefixtures("fake")
 def test_a_run_of_tags_runs_the_case_of_each_family_tagged(signed: TestClient) -> None:
-    tagged = signed.get("/api/families", params={"tag": "edn"}).json()
-    body = {**asked(signed), "families": None, "tags": ["edn"], "score": False}
+    tagged = signed.get("/api/families", params={"tag": "swedish"}).json()
+    body = {**asked(signed), "families": None, "tags": ["swedish"], "score": False}
     made = signed.post("/api/runs", json=body).json()
     assert sorted(i["case"] for i in made["items"]) == sorted(f["case"] for f in tagged)
     assert made["scores"] == []
@@ -156,8 +159,8 @@ def test_a_run_the_gate_refuses_is_unprocessable_and_isn_t_recorded(
 ) -> None:
     for body, said in (
         (
-            asked(signed, PLAN_WEB),
-            "the skeleton's tools would get content from source sample",
+            asked(signed, NATIVE_TOOLS),
+            "the skeleton's tools would get content from source test",
         ),
         ({**asked(signed), "endpoint": GPT_OSS}, f"endpoint '{GPT_OSS}' can't be"),
     ):
@@ -172,7 +175,7 @@ def test_a_run_the_request_names_wrong_is_unprocessable(signed: TestClient) -> N
     good = asked(signed)
     chunk = thread(signed, "reasoning", OFF)
     wrong: list[tuple[dict[str, Any], str]] = [
-        ({"tags": ["edn"]}, "a run takes one of families, tags or cases"),
+        ({"tags": ["swedish"]}, "a run takes one of families, tags or cases"),
         ({"families": None}, "a run takes one of families, tags or cases"),
         ({"families": []}, "a run takes at least one case"),
         ({"families": [999]}, "no case 999 for alice"),
@@ -198,7 +201,7 @@ def test_runs_are_listed_newest_first_and_filtered(signed: TestClient) -> None:
         json=asked(signed, seed=8, parts={"reasoning": off}, score=False),
     ).json()
     assert second["scores"] == []
-    scorer = thread(signed, "scorer", "free-text", "archive")["head"]["digest"]
+    scorer = thread(signed, "scorer", "lines", "archive")["head"]["digest"]
 
     def listed(**params: Any) -> list[str]:
         return [r["id"] for r in signed.get("/api/runs", params=params).json()]

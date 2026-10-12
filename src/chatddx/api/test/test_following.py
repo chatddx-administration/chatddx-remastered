@@ -3,8 +3,8 @@ from fastapi.testclient import TestClient
 
 from chatddx.api.test.test_variations import thread
 from chatddx.bench import Bench
-from chatddx.bench.test.sample import FREE_TEXT, QWEN
 from chatddx.store import People
+from chatddx.test.world import LINES, QWEN
 
 pytestmark = pytest.mark.wip
 
@@ -13,7 +13,7 @@ def _moved(bench: Bench) -> int:
     found = People(bench.conn).find("archive")
     assert found is not None
     archive = Bench(bench.conn, found, bench.inventory, bench.facts)
-    theirs = archive.thread("configuration", FREE_TEXT)[0].thread
+    theirs = archive.thread("configuration", LINES)[0].thread
     greedy = bench.chunk("sampling", "greedy", bench.endpoint(QWEN))
     moved = archive.variation(theirs, {"sampling": greedy})
     head = bench.catalog.head(theirs).id
@@ -24,7 +24,7 @@ def _moved(bench: Bench) -> int:
 def test_a_fork_follows_its_origin_once_it_has_moved_on(
     signed: TestClient, bench: Bench, bob: dict[str, str]
 ) -> None:
-    mine = thread(signed, "configuration", FREE_TEXT)
+    mine = thread(signed, "configuration", LINES)
     proposal, follows = (
         f"/api/threads/{mine['id']}/{to}" for to in ("proposal", "follows")
     )

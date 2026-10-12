@@ -4,12 +4,12 @@ import pytest
 from pydantic import ValidationError
 
 from chatddx.bench import Bench, MovedOn, NotFound
-from chatddx.bench.test.sample import QWEN
 from chatddx.catalog import Entry, EntryField, Subject
 from chatddx.factors.request import Recipe
 from chatddx.factors.scoring import Expectation
 from chatddx.identity import Person
 from chatddx.store import Catalog
+from chatddx.test.world import QWEN
 
 pytestmark = pytest.mark.wip
 
@@ -104,7 +104,7 @@ def test_a_person_writes_expectations_and_hears_what_the_lints_say(
     bench: Bench,
 ) -> None:
     catalog = bench.catalog
-    case = bench.family("Dutchfall11w").case
+    case = bench.family("noted").case
     [schema] = bench.expectation_schemas(case)
     [mine] = catalog.expectation_choices([case], bench.person.id, schema)[case]
     head = catalog.head(mine)
@@ -142,7 +142,7 @@ def test_a_recipe_of_the_person_s_making_is_compiled_into_a_configuration(
         instructions=bench.chunk("instructions", "clinician (en)"),
         few_shot=bench.chunk("few_shot", "worked-example (en)"),
         prompt=bench.chunk("prompt", "case"),
-        output=bench.chunk("output", "free-text (en)"),
+        output=bench.chunk("output", "lines (en)"),
         sampling=bench.chunk("sampling", "greedy"),
         reasoning=bench.chunk("reasoning", "off", engine),
     )
@@ -162,7 +162,7 @@ def test_a_recipe_of_the_person_s_making_is_compiled_into_a_configuration(
 
 def test_a_recipe_is_refused_what_doesn_t_compile(bench: Bench) -> None:
     prompt = bench.chunk("prompt", "case")
-    output = bench.chunk("output", "free-text (en)")
+    output = bench.chunk("output", "lines (en)")
     sampling = bench.chunk("sampling", "greedy")
     recipe = Recipe(prompt=prompt, output=output, sampling=sampling)
 

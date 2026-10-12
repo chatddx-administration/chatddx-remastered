@@ -1,0 +1,43 @@
+# Where the test World's engines (factors.toml) are served, and where their host keeps what they pin. Each endpoint
+# names its engine by digest, which is also the name it's served under, so changing an engine means changing its
+# endpoint here: src/chatddx/curation/test/test_the_test_world.py says which digest to write. The fakes run on this
+# machine, one per engine, as vLLM serves one model, on ports apart from the sample World's.
+
+[endpoint."qwen3@fake"]
+engine = "sha256:cc0dc8fbbc8dbb3a62d274c6ce62ee4bc9d909b05aef6263015cb46459fdc42f"
+url = "http://127.0.0.1:12201/v1/"
+host = "fake"
+max_jobs = 4
+
+[endpoint."qwen3-bare@fake"]
+engine = "sha256:b9b09a4a5b31d7dad7f54c338526f10bec546c0daf9838b6ce1a41ea464d0f58"
+url = "http://127.0.0.1:12202/v1/"
+host = "fake"
+
+[endpoint."gpt-oss@fake"]
+engine = "sha256:fc08c407478623b2afdb709752f30ecc3333de3142a0d534bdbbb378a6d8e841"
+url = "http://127.0.0.1:12203/v1/"
+host = "fake"
+max_jobs = 4
+
+[endpoint."mistral@fake"]
+engine = "sha256:372a83f6024abeb4b76ffba1340e36b2b636f11deec000414e7fca69c38c71af"
+url = "http://127.0.0.1:12204/v1/"
+host = "fake"
+max_jobs = 2
+
+# A remote engine is reached at its own base_url, with the secret in $CHATDDX_TEST_REMOTE.
+[endpoint."unknown@remote"]
+engine = "sha256:d2a3077dd6331f56005ebc9ea478968959788d32b5643d021c2ecef426c520ae"
+credential = "CHATDDX_TEST_REMOTE"
+
+[host.fake]
+bind = "127.0.0.1"
+
+[host.fake.models]
+"sha256:7781395e2ff446324a43c9d3dd81da3aa0e57ddc87a0da56e02776d3efac5e0d" = "Qwen/Qwen3-8B-AWQ"
+"sha256:355721fac51cefbde383916197f19628d37ab99694dc58eb8e21888bdafb14b5" = "openai/gpt-oss-20b"
+"sha256:d014ae42f6f759a336ab7e8122d07a3e8b710fb51a0081a4efbb090d3f64ffac" = "test/mistral-7b"
+
+[host.fake.templates]
+"e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855" = "/dev/null"

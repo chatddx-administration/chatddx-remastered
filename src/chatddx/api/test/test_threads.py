@@ -3,17 +3,17 @@ from typing import Any
 import pytest
 from fastapi.testclient import TestClient
 
-from chatddx.bench.test.sample import FREE_TEXT
 from chatddx.catalog import Entry, EntryField, Subject
 from chatddx.identity import Person
 from chatddx.store import Catalog
 from chatddx.store.store import Connection
+from chatddx.test.world import LINES
 
 pytestmark = pytest.mark.wip
 
 
 def configuration(signed: TestClient, owner: str) -> dict[str, Any]:
-    query = {"kind": "configuration", "name": FREE_TEXT, "owner": owner}
+    query = {"kind": "configuration", "name": LINES, "owner": owner}
     [found] = signed.get("/api/threads", params=query).json()
     return found
 
@@ -25,9 +25,7 @@ def test_threads_are_listed_by_kind_among_those_the_person_sees(
     assert {t["owner"] for t in listed} == {"alice", "archive"}
     assert {t["kind"] for t in listed} == {"skeleton"}
     assert all(t["title"] and t["head"]["digest"].startswith("sha256:") for t in listed)
-    named = signed.get(
-        "/api/threads", params={"kind": "configuration", "name": FREE_TEXT}
-    )
+    named = signed.get("/api/threads", params={"kind": "configuration", "name": LINES})
     assert sorted(t["owner"] for t in named.json()) == ["alice", "archive"]
 
     mine = configuration(signed, "alice")
@@ -77,7 +75,7 @@ def test_a_thread_the_person_doesn_t_see_isn_t_found(
 def test_a_person_takes_one_expectation_replacing_theirs_only_when_they_say_so(
     signed: TestClient, bob: dict[str, str]
 ) -> None:
-    [found] = signed.get("/api/families", params={"name": "Dutchfall11w"}).json()
+    [found] = signed.get("/api/families", params={"name": "crlf"}).json()
     [held] = signed.get(f"/api/families/{found['id']}").json()["expectations"]
     [archives] = held["shared"]
     taking = f"/api/threads/{archives['id']}/takes"

@@ -331,6 +331,10 @@ whose head is an expectation of the same case and schema raise `ValueError("pers
 The ids of the threads whose `forked_from` is any edit of `thread`, in thread id order. Direct forks only; deleted
 forks included. An unknown thread gives `[]`.
 
+### `origin(rows, id: int) -> int | None`
+The id of the thread that `id` was forked from: the thread of its `forked_from` edit. `None` for a thread that isn't
+a fork. `LookupError` for an unknown thread.
+
 ### `expectations_of(rows, case: str) -> list[int]`
 The ids, sorted, of the threads whose head is an expectation of `case`. Deleted threads included.
 
@@ -591,7 +595,7 @@ with a psycopg error when the Python lets it through.
 | --- | --- | --- |
 | `create(digest, by, *, compilation=None, forked_from=None, name=None, owner=None, labels=None) -> Edit` | `Reader.kind` (`LookupError("<digest> is not in the store")`), `threads.check_threadable`; `threads.check_expectation` and `threads.check_labels` through `edit`, and `note` | in one transaction: the thread, its first edit with its labels (`edit`), an `owner` entry for `owner` or else `by`, and a `name` entry when given |
 | `edit(thread, digest, by, *, compilation=None, based_on=None, head=None, labels=None) -> Edit` | in one transaction: the thread's advisory lock (`pg_advisory_xact_lock(hashtext('catalog.thread'), thread mod 2³¹)`), `threads.check_head` when `head` is given, `threads.check_based_on` when `based_on` is given, `threads.check_expectation(thread, digest)`, `threads.check_labels(thread, digest, labels)` | the edit, with the thread's kind, and a `catalog.label` row for each label, by part and position; `LookupError("no thread with id <thread>")` when there is no thread |
-| `thread`, `history`, `head`, `heads`, `find`, `visible`, `expectation_for`, `expectations_for`, `expectation_choices`, `expectations_shared`, `forks`, `expectations_of`, `behind`, `variation`, `proposal` | the `threads` function of that name | |
+| `thread`, `history`, `head`, `heads`, `find`, `visible`, `expectation_for`, `expectations_for`, `expectation_choices`, `expectations_shared`, `forks`, `origin`, `expectations_of`, `behind`, `variation`, `proposal` | the `threads` function of that name | |
 | `visible_families(person)` | `families.visible` | |
 | `containing(digest) -> list[Edit]` | `Reader.edits_holding([digest])` | |
 | `recipe(thread)` | `threads.recipe` of `threads.head` | |

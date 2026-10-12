@@ -1,6 +1,5 @@
 import hashlib
 import json
-import socket
 from collections.abc import Generator
 from contextlib import contextmanager
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -12,7 +11,6 @@ from urllib.error import HTTPError
 import pytest
 from pydantic import ValidationError
 
-from chatddx.conftest import WORLDS, sample_plan
 from chatddx.factors.bundle import Registry
 from chatddx.factors.engine import (
     FileDigest,
@@ -35,10 +33,10 @@ from chatddx.inventory import (
     start_up,
     url_of,
 )
+from chatddx.test.world import GPT_OSS, QWEN, free_world, world_plan
 
 pytestmark = pytest.mark.solidified
 
-WORLD = WORLDS / "sample" / "inventory.toml"
 TEMPLATE = hashlib.sha256(b"{{ messages }}").hexdigest()
 
 
@@ -293,47 +291,24 @@ def test_a_remote_engine_is_reached_at_its_base_url() -> None:
         _ = url_of(world(remote), reg.get, "qwen@pelle")
 
 
-def test_the_sample_world_binds_each_fake_engine_the_sample_loads() -> None:
-    inventory = Inventory.load(WORLD)
-    plan = sample_plan()
-    assert sorted(inventory.endpoints) == ["gpt-oss-20b@fake", "qwen3-8b-awq@fake"]
-    for name, endpoint in inventory.endpoints.items():
-        engine = plan.registry.get(plan.named("local_engine", name).digest)
-        assert endpoint.engine == engine.digest
-        startup = start_up(inventory, plan.registry.get, name)
-        assert startup.argv[1:5] == (
-            "--revision",
-            "fake",
-            "--served-model-name",
-            engine.digest,
-        )
-        assert startup.closure == "chatddx fake-vllm"
-    assert check(inventory, plan.registry.get) == []
-
-
-def free_port() -> int:
-    with socket.socket() as s:
-        s.bind(("127.0.0.1", 0))
-        return int(s.getsockname()[1])
-
-
-def test_a_fake_started_from_an_endpoint_serves_its_engine(tmp_path: Path) -> None:
-    port = str(free_port())
-    moved = tmp_path / "inventory.toml"
-    _ = moved.write_text(
-        WORLD.read_text().replace("12099", port).replace("12100", port)
+def test_a_fake_started_from_an_endpoint_serves_its_engine() -> None:
+    inventory = free_world()
+    plan = world_plan()
+    at = inventory.endpoint(GPT_OSS).model_copy(
+        update={"url": inventory.endpoint(QWEN).url}
     )
-    inventory = Inventory.load(moved)
-    plan = sample_plan()
-    startup = start_up(inventory, plan.registry.get, "qwen3-8b-awq@fake")
+    inventory = inventory.model_copy(
+        update={"endpoints": {**inventory.endpoints, GPT_OSS: at}}
+    )
+    startup = start_up(inventory, plan.registry.get, QWEN)
     with serving([Served.of(startup.argv[0], startup.argv[1:])]):
-        confirm(inventory, plan.registry.get, "qwen3-8b-awq@fake")
-        qwen = inventory.endpoint("qwen3-8b-awq@fake").engine
-        gpt_oss = inventory.endpoint("gpt-oss-20b@fake").engine
+        confirm(inventory, plan.registry.get, QWEN)
+        qwen = inventory.endpoint(QWEN).engine
+        gpt_oss = inventory.endpoint(GPT_OSS).engine
         with pytest.raises(LookupError, match=f"serves {qwen}, not {gpt_oss}"):
-            confirm(inventory, plan.registry.get, "gpt-oss-20b@fake")
+            confirm(inventory, plan.registry.get, GPT_OSS)
     with pytest.raises(OSError):
-        confirm(inventory, plan.registry.get, "qwen3-8b-awq@fake", timeout=1.0)
+        confirm(inventory, plan.registry.get, QWEN, timeout=1.0)
 
 
 @contextmanager

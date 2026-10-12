@@ -38,7 +38,8 @@ checked when an entry is used (see "Checks happen when an entry is used").
 A World is handed over as its directory, `--world DIR`, and read as its `inventory.toml` and, when present,
 `factors.toml` and `facts.toml`, facts about models the bundled ones don't know, loaded beside them by init-data
 and the repl (src/chatddx/inventory/world.py, src/chatddx/cli.py). A World may also hold its source's vignettes,
-when git may hold them.
+when git may hold them, and a data set whose cases name them, in `_data/`: the leading `_` marks what the World
+doesn't read and doesn't own, and init-data takes it with `--data`.
 
 `CHATDDX_WORLD` names the deployment's World directory and is the default `--world` of `init-data` and the `repl`
 (src/chatddx/core/settings.py:world, `.env`). The runner is handed its inventory by the bench, as before.
@@ -46,13 +47,18 @@ when git may hold them.
 A World may point into another. An include or a source's path can reach another World's directory, so one World can
 take another's vignettes or endpoints without copying them.
 
-This repository has two, in `worlds/`:
+This repository has three, in `worlds/`:
+- The test World: what the tests run on, built so that each record exercises something a test reads. Four fake
+  endpoints on this machine (one with no reasoning parser and no tool flags, one serving a made-up model whose facts
+  are the World's own `facts.toml`), a remote endpoint that is never reached, nine vignettes each carrying a quirk of
+  its own, and its data set in `_data/`. Its tools are the runner's test tools, so it loads only under pytest.
 - The sample World: the sample's vignettes, an endpoint for each fake engine on this machine, the fake host, and the
-  factors of the fake models and engines. Both endpoints are cleared for the sample. A test fails when its engines
-  change and its endpoints don't.
+  factors of the fake models and engines. Both endpoints are cleared for the sample.
 - Kompismoln's World: the hosts pelle and malborg. Its inventory is written by hand and takes the sample World's
   vignettes; its endpoints, hosts and factors are what the engine import writes from the hosts' reports. Both
   endpoints are cleared for the sample.
+
+src/chatddx/curation/test/test_worlds.py fails when a World's engines change and its endpoints don't.
 
 ## Sources
 A source is where a set of vignettes is fetched from, by id. A source is a directory with one file per vignette,
@@ -60,12 +66,15 @@ named by its id, or a database source, `kind = "database"`, whose vignettes are 
 database under new ids as written and never changed, and read through the store. A source is a directory unless it
 says otherwise.
 
-A source lists its vignettes' ids, fetches a vignette's raw bytes, and builds a case for each vignette, without
-appendices, with the fingerprint of the raw bytes (docs/factors.md, "Case"). It refuses an id that would reach outside
-it. What happens to the bytes next is the case's preparation (docs/factors.md, "Preparing a case").
+A directory source lists its vignettes' ids, fetches a vignette's raw bytes, and builds a case for each vignette,
+without appendices, with the fingerprint of the raw bytes (docs/factors.md, "Case"). It refuses an id that would reach
+outside it. What happens to the bytes next is the case's preparation (docs/factors.md, "Preparing a case"). A
+database source lists nothing: its texts are read through the store, by id, so init-data and repair-data, which list
+a source, refuse one.
 
 A source's name is part of every case built from it, and so of their digests. Renaming a source makes new cases;
-moving its directory changes nothing. init-data loads the cases of a source a World names.
+moving its directory changes nothing. init-data loads the cases of a source a World names, or of its only source that
+lists its vignettes.
 
 ## Endpoints
 An endpoint says where one engine is served: the engine, by digest; the server's address; the host that runs it, for a

@@ -260,14 +260,34 @@ def plan_factors(
         planned[(table, name)] = variants
         plan.records.extend(variants.values())
 
-    def base(table: str, fork_of: object, key: Key) -> str | None:
+    # Crosses into the origin's one language as _recipe does for a part.
+    def base(table: str, name: str, fork_of: object, key: Key) -> str | None:
         if fork_of is None:
             return None
         assert isinstance(fork_of, str)
         variants = planned.get((table, fork_of))
         if variants is None:
             raise ValueError(f"{table}.{fork_of} must come before its forks")
+        language, model = key
         found = _pick(variants, key)
+        written = sorted({k[0] for k in variants if k[0] is not None})
+        if found is None and language is not None and language not in written:
+            if len(written) > 1:
+                raise ValueError(
+                    f"{table}.{name}: {table}.{fork_of} has no variant in {language} "
+                    + f"to fork, and is written in {', '.join(written)}"
+                )
+            if written:
+                found = _pick(variants, (written[0], model))
+        if found is None:
+            plan.skipped.append(
+                f"{table} {_named(name, key)}: no fork of {table}.{fork_of}, which "
+                + (
+                    f"has no variant for {model}"
+                    if model is not None
+                    else "is made per model, and it isn't"
+                )
+            )
         return None if found is None else found.name
 
     def plan_table(table: str, models: list[str]) -> None:
@@ -332,7 +352,7 @@ def plan_factors(
                         digest=plan.registry.add(component),
                         tags=tags,
                         description=None if description is None else str(description),
-                        fork_of=base(table, fork_of, key),
+                        fork_of=base(table, name, fork_of, key),
                         labels=labels,
                         language=language,
                     )
@@ -391,7 +411,7 @@ def plan_factors(
                     digest=plan.registry.add(skeleton),
                     tags=tags,
                     description=None if description is None else str(description),
-                    fork_of=base("recipe", fork_of, key),
+                    fork_of=base("recipe", name, fork_of, key),
                     compilation=plan.registry.add(compilation),
                 )
         add("recipe", name, variants)

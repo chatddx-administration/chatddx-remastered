@@ -4,7 +4,7 @@ import pytest
 from pydantic import JsonValue
 
 from chatddx.bench import Bench
-from chatddx.bench.test.sample import FREE_TEXT, ran, trial
+from chatddx.bench.test.helpers import ran, trial
 from chatddx.catalog import Labels
 from chatddx.curation import Plan
 from chatddx.factors.base import resolve
@@ -15,6 +15,7 @@ from chatddx.scorers.scorer import Metrics
 from chatddx.scorers.shipped import SCORERS
 from chatddx.store import Catalog, People
 from chatddx.store.store import Connection
+from chatddx.test.world import LINES
 
 pytestmark = pytest.mark.wip
 
@@ -37,7 +38,7 @@ def _archive(conn: Connection) -> Person:
 def test_a_person_writes_a_scorer_over_shipped_code_with_its_labels(
     conn: Connection, alice: Person, bench: Bench, plan: Plan
 ) -> None:
-    _, doc = _archive_s(bench, "raw")
+    _, doc = _archive_s(bench, "whole")
     assert (doc["entry_point"], doc["version"]) == (PATTERNS, 1)
     ranked: JsonValue = {
         "split": "lines@1",
@@ -47,15 +48,15 @@ def test_a_person_writes_a_scorer_over_shipped_code_with_its_labels(
     mine = bench.component({**doc, "views": [*doc["views"], ranked]})
     assert isinstance(mine, Scorer)
 
-    made = bench.new(mine, "lines", labels={("view", 0): "text", ("view", 1): "ranked"})
+    made = bench.new(
+        mine, "ranked", labels={("view", 0): "text", ("view", 1): "ranked"}
+    )
     assert (made.what, made.findings) == ("created", [])
     assert bench.labels_of(made.edit) == {0: "text", 1: "ranked"}
     assert bench.labels(mine.digest) == {0: "text", 1: "ranked"}
 
-    started = bench.run_by_id(
-        ran(conn, alice, trial(conn, plan, FREE_TEXT, "DutchFall10w"))
-    )
-    assert "lines" in {a.name for _, a in bench.scorers_for(started)}
+    started = bench.run_by_id(ran(conn, alice, trial(conn, plan, LINES, "crlf")))
+    assert "ranked" in {a.name for _, a in bench.scorers_for(started)}
     assert mine.digest in bench.unscored(started)
 
     nowhere: JsonValue = {"expectation": "/nowhere", "metric": "mentions"}
@@ -66,7 +67,7 @@ def test_a_person_writes_a_scorer_over_shipped_code_with_its_labels(
 def test_a_scorer_the_running_code_could_never_score_with_is_refused(
     bench: Bench,
 ) -> None:
-    _, doc = _archive_s(bench, "raw")
+    _, doc = _archive_s(bench, "whole")
     [view] = doc["views"]
     refusals: list[tuple[dict[str, JsonValue], str]] = [
         ({"entry_point": "chatddx.scorers.patterns:_WORD"}, "isn't shipped with"),
@@ -102,17 +103,15 @@ def test_a_scorer_the_running_code_could_never_score_with_is_refused(
 def test_a_fork_keeps_its_origin_s_labels_and_renames_its_own_views(
     conn: Connection, alice: Person, bench: Bench, plan: Plan
 ) -> None:
-    origin, doc = _archive_s(bench, "diagnoses")
+    origin, doc = _archive_s(bench, "list")
     head = Catalog(conn).head(origin)
     theirs = bench.labels_of(head)
     assert theirs == {0: "differential", 1: "dont-miss"}
 
-    fork = bench.fork_component(origin, "my diagnoses")
+    fork = bench.fork_component(origin, "my list")
     assert fork.edit.digest == head.digest
     assert bench.labels_of(fork.edit) == theirs
-    started = bench.run_by_id(
-        ran(conn, alice, trial(conn, plan, FREE_TEXT, "DutchFall10w"))
-    )
+    started = bench.run_by_id(ran(conn, alice, trial(conn, plan, LINES, "crlf")))
     unscored = set(bench.unscored(started))
 
     scorer = bench.component(doc)
@@ -143,7 +142,7 @@ def test_a_fork_keeps_its_origin_s_labels_and_renames_its_own_views(
 def test_a_scorer_digest_is_called_what_the_person_s_threads_called_it(
     bench: Bench,
 ) -> None:
-    _, doc = _archive_s(bench, "diagnoses")
+    _, doc = _archive_s(bench, "list")
     first = bench.component({**doc, "views": doc["views"][:1]})
     made = bench.new(first, "narrow", labels={("view", 0): "first"})
     second = bench.component({**doc, "views": doc["views"][1:]})
@@ -162,7 +161,7 @@ def _renamed(conn: Connection, thread: int, labels: Labels) -> None:
 def test_following_an_origin_keeps_the_labels_of_the_views_it_keeps(
     conn: Connection, bench: Bench
 ) -> None:
-    origin, doc = _archive_s(bench, "diagnoses")
+    origin, doc = _archive_s(bench, "list")
     as_is = bench.fork_component(origin, "as is")
     one = bench.component({**doc, "views": doc["views"][:1]})
     narrow = bench.fork_component(origin, "narrow", one, labels={("view", 0): "mine"})
@@ -184,8 +183,8 @@ def test_a_scorer_moves_on_to_a_raised_version_by_following_its_origin(
     plan: Plan,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    origin, doc = _archive_s(bench, "raw")
-    fork = bench.fork_component(origin, "my raw")
+    origin, doc = _archive_s(bench, "whole")
+    fork = bench.fork_component(origin, "my whole")
     monkeypatch.setitem(SCORERS, PATTERNS, Metrics(2, patterns.score.metrics))
     raised = bench.component({**doc, "version": 2})
     registry = bench.store.load(s.digest for s in raised.refs())
@@ -194,7 +193,7 @@ def test_a_scorer_moves_on_to_a_raised_version_by_following_its_origin(
         raised.digest, _archive(conn).id, origin, labels={("view", 0): "whole"}
     )
 
-    made = trial(conn, plan, FREE_TEXT, "DutchFall10w")
+    made = trial(conn, plan, LINES, "crlf")
     started = bench.run_by_id(ran(conn, alice, made))
     [graded] = bench.score(started, [fork.edit.digest])
     assert graded.refused is not None

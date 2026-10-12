@@ -450,6 +450,9 @@ class Catalog:
     def forks(self, thread: int) -> list[int]:
         return threads.forks(self._rows, thread)
 
+    def origin(self, thread: int) -> int | None:
+        return threads.origin(self._rows, thread)
+
     def expectations_of(self, case: str) -> list[int]:
         return threads.expectations_of(self._rows, case)
 

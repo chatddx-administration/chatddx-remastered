@@ -21,10 +21,7 @@ Agents may annotate it as "Docs" describes and should always report surprises.
 ## Docs
 For docs in (`docs/*`), the same rule applies as to this document: Humans write, agents suggest.
 
-* For each change, inline your suggestion immediately above the subject to change, or above the paragraph, table or list
-  item that holds it. Use the following template, itself fenced (with a longer fence when the suggestion holds one),
-  since a bare `---` under a line makes that line a heading. The verb is ADD, CHANGE or REMOVE, and a suggestion
-  replaces its subject whole.
+* For each change, inline your suggestion immediately above the subject to change with the following template:
 ```
 AGENT: <verb>
 <short explanation>
@@ -32,12 +29,11 @@ AGENT: <verb>
 <optional suggestion for new content>
 ```
 
-* Docs refer to the code, the code speaks for itself. Always remove docstrings or comments that reference docs or
-  explain what the code does before committing.
+* Docs refer to the code, the code speaks for itself. ALWAYS remove docstrings/comments that reference docs or explain
+  what the code does before committing.
 
-* Important details that can't be learned by reading the code+tests may deserve a comment iff it is relevant to exactly
-  one line or section in the code, otherwise it should be suggested with the template above, in the doc it concerns,
-  referring to the parts of the code affected by it.
+* Important details that can't be learned by reading the code+tests may have a comment if, and only if, it is relevant
+  only to the line/section of code that follows and nothing else.
 
 * If a section of code is related to another section of code elsewhere such that reading both make them easier to
   understand, a path in a comment can act as a link for agents and humans alike. A comment linking two or more pieces of

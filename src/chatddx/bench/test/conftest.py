@@ -1,12 +1,11 @@
 import pytest
 
 from chatddx.bench import Bench
-from chatddx.conftest import WORLD
-from chatddx.facts import BUNDLED, Facts
 from chatddx.identity import Person
-from chatddx.inventory import Inventory
+from chatddx.inventory import World
 from chatddx.store import People
 from chatddx.store.store import Connection
+from chatddx.test.world import TEST, world_facts
 
 
 @pytest.fixture
@@ -33,6 +32,5 @@ def bob(conn: Connection) -> Person:
 
 @pytest.fixture
 def bench(conn: Connection, alice: Person) -> Bench:
-    return Bench(
-        conn, alice, Inventory.load(WORLD / "inventory.toml"), Facts.load(BUNDLED)
-    )
+    inventory = World.load(TEST).inventory
+    return Bench(conn, alice, inventory, world_facts())

@@ -14,7 +14,7 @@ Paths are relative to `src/chatddx/inventory/` unless they start with `src/`, `d
 - [Conventions](#conventions)
 - [The file](#the-file)
 - [inventory.py](#inventorypy): `EndpointSpec`, `HostSpec`, `Inventory`
-- [sources.py](#sourcespy): `Source`, `DirectorySource`
+- [sources.py](#sourcespy): `Source`, `DatabaseSource`, `ListingSource`, `DirectorySource`
 - [serving.py](#servingpy): `StartUp`, `start_up`, `url_of`, `served`, `confirm`
 - [world.py](#worldpy): `World`
 - [check.py](#checkpy): `check`
@@ -24,9 +24,9 @@ Paths are relative to `src/chatddx/inventory/` unless they start with `src/`, `d
 
 ## Package
 
-`chatddx.inventory` re-exports `LISTEN_FLAGS`, `DirectorySource`, `EndpointSpec`, `HostSpec`, `Inventory`, `Source`,
-`StartUp`, `World`, `check`, `confirm`, `served`, `start_up` and `url_of`. `test/memory.py:MemorySource` is imported
-by path.
+`chatddx.inventory` re-exports `LISTEN_FLAGS`, `DatabaseSource`, `DirectorySource`, `EndpointSpec`, `HostSpec`,
+`Inventory`, `ListingSource`, `Source`, `StartUp`, `World`, `check`, `confirm`, `served`, `start_up` and `url_of`.
+`test/memory.py:MemorySource` is imported by path.
 
 | Module | Builds on |
 | --- | --- |
@@ -125,12 +125,12 @@ A location is the host's own, a path or a Hugging Face repo ID, and isn't resolv
 
 | Field | Type | Default |
 | --- | --- | --- |
-| `sources` | `dict[str, DirectorySource]` | `{}` |
+| `sources` | `dict[str, DirectorySource \| DatabaseSource]` | `{}`; by `kind`, `directory` when it has none |
 | `endpoints` | `dict[str, EndpointSpec]` | `{}` |
 | `hosts` | `dict[str, HostSpec]` | `{}` |
 | `cleared` | `dict[str, tuple[str, ...]]` | `{}`; endpoint → sources |
 
-`sources` takes only `DirectorySource`: a `kind` other than `directory` is a `ValidationError`.
+A `kind` other than `directory` and `database` is a `ValidationError`.
 
 Building one checks, each a `ValueError` wrapped in `ValidationError`:
 - each source's `name` is its key: `source '<key>' is named '<name>'`;
@@ -141,7 +141,8 @@ Building one checks, each a `ValueError` wrapped in `ValidationError`:
 | Member | Returns / raises |
 | --- | --- |
 | `load(path: Path) -> Self` (classmethod) | See below. |
-| `source(name: str) -> Source` | `LookupError("no source '<name>' in the inventory")` when there is none. |
+| `source(name: str) -> DirectorySource \| DatabaseSource` | `LookupError("no source '<name>' in the inventory")` when there is none. |
+| `listing(name: str \| None = None) -> ListingSource` | The source `name` names, or with no name the only source that lists its vignettes. `LookupError("no source in the inventory lists its vignettes")` or `LookupError("<n> sources list their vignettes (<names>), so one must be named")` without a name; `source`'s `LookupError` for a name it doesn't know; `LookupError("source '<name>' is a database source, whose vignettes are read through the store, not listed")`. |
 | `endpoint(name: str) -> EndpointSpec` | `LookupError("no endpoint '<name>' in the inventory")` when there is none. |
 | `cleared_for(endpoint: str) -> frozenset[str]` | The sources `[cleared]` lists for the endpoint; empty when it lists none, also for an endpoint that doesn't exist. |
 
@@ -160,19 +161,29 @@ Building one checks, each a `ValueError` wrapped in `ValidationError`:
 
 ## sources.py
 
-### `class Source(Frozen, ABC)`
-Where a set of vignettes is fetched from, by id.
+### `class Source(Frozen)`
+Where a set of vignettes comes from.
 
 | Member | Description |
 | --- | --- |
 | `name: str` | Required. The `source` of every case built from it. |
 | `sensitive: bool = True` | Whether content from it may only go to endpoints cleared for it (`src/chatddx/runner/gate.py:check`). |
+
+### `class DatabaseSource(Source)`
+Texts people typed, kept in the store and read through it (`src/chatddx/store/texts.py`). `kind:
+Literal["database"] = "database"`. It lists and fetches nothing itself.
+
+### `class ListingSource(Source, ABC)`
+A source that lists its vignettes and fetches them by id.
+
+| Member | Description |
+| --- | --- |
 | `ids() -> list[str]` (abstract) | Its vignettes' ids, sorted. |
 | `fetch(id: str) -> bytes` (abstract) | A vignette's raw bytes. `LookupError` when there is none. |
 | `cases() -> list[Case]` | One case per id, in `ids()` order: `Case(vignette=Vignette(source=name, id=id, fingerprint=Fingerprint.of(fetch(id))))`, without appendices. Fetches every vignette. |
 | `_missing(id) -> LookupError` | `LookupError("no case '<id>' in source '<name>'")`, for subclasses to raise. |
 
-### `class DirectorySource(Source)`
+### `class DirectorySource(ListingSource)`
 
 | Field | Type | Default |
 | --- | --- | --- |
@@ -185,7 +196,7 @@ Where a set of vignettes is fetched from, by id.
 | `ids()` | The names, without `suffix`, of the entries directly in `path` that are files (`Path.is_file`, which follows symlinks) and end in `suffix`, sorted. |
 | `fetch(id)` | The bytes of `path / f"{id}{suffix}"`. `LookupError("case id '<id>' points outside source '<name>'")` for an id holding `/` or `\`, or starting with `.`; `_missing(id)` when the file doesn't exist. Other `OSError`s pass through. |
 
-### `test/memory.py:MemorySource(Source)`
+### `test/memory.py:MemorySource(ListingSource)`
 `vignettes: dict[str, bytes]`; `ids()` is its keys, sorted, and `fetch(id)` its value or `_missing(id)`.
 
 ## serving.py

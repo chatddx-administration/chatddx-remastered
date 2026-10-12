@@ -8,13 +8,12 @@ from psycopg.conninfo import make_conninfo
 
 from chatddx.api.app import app
 from chatddx.bench import Bench
-from chatddx.conftest import WORLD
 from chatddx.core import settings
-from chatddx.facts import BUNDLED, Facts
 from chatddx.identity import Person
 from chatddx.inventory import Inventory
 from chatddx.store import People
 from chatddx.store.store import Connection
+from chatddx.test.world import TEST, world_facts
 
 PASSWORD = "correct horse battery staple"
 
@@ -41,8 +40,8 @@ def alice(conn: Connection) -> Person:
 @pytest.fixture
 def served(db: str) -> FastAPI:
     return app(
-        Inventory.load(WORLD / "inventory.toml"),
-        Facts.load(BUNDLED),
+        Inventory.load(TEST / "inventory.toml"),
+        world_facts(),
         make_conninfo(settings.database(), dbname=db),
     )
 

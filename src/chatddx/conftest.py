@@ -1,10 +1,7 @@
-import socket
 import time
 from collections import defaultdict, deque
-from collections.abc import Generator, Iterator
+from collections.abc import Iterator
 from concurrent.futures import Future, ThreadPoolExecutor
-from contextlib import contextmanager
-from pathlib import Path
 from uuid import uuid4
 
 import psycopg
@@ -13,21 +10,13 @@ from argon2 import PasswordHasher
 from psycopg import sql
 
 from chatddx.core import settings
-from chatddx.core.rig import rig
-from chatddx.curation import Plan, init, load_cases, plan_factors
-from chatddx.curation.plan import SAMPLE
-from chatddx.factors.base import Resolver
-from chatddx.facts import BUNDLED, Facts
-from chatddx.fake_vllm.served import Served
-from chatddx.fake_vllm.server import serving
+from chatddx.curation import Plan, init
 from chatddx.identity import identity
-from chatddx.inventory import Inventory, World, start_up
+from chatddx.inventory import Inventory, World
+from chatddx.runner.test import tools as test_tools
 from chatddx.store import People, Store, migrate
 from chatddx.store.store import Connection
-
-WORLDS = settings.PROJECT_ROOT / "worlds"
-WORLD = WORLDS / "sample"
-QWEN = "qwen3-8b-awq@fake"
+from chatddx.test.world import CASES, TEST, faked, free_world, world_plan
 
 
 # The markers split the tests in two: what docs/ describes, and what agents/wip-*.md plans.
@@ -43,9 +32,13 @@ def pytest_collection_modifyitems(items: list[pytest.Item]) -> None:
         )
 
 
-# The sample data's per-model records are planned for the models its World's engines serve.
-def sample_plan(data: Path = SAMPLE) -> Plan:
-    return plan_factors(data, Facts.load(BUNDLED), rig(), more=[WORLD / "factors.toml"])
+# The test World's tools are the runner's test tools (worlds/test/_data/factors.toml), shipped
+# for the whole session so that planning takes their entry points.
+@pytest.fixture(scope="session", autouse=True)
+def shipped_test_tools() -> Iterator[None]:
+    with pytest.MonkeyPatch.context() as patch:
+        test_tools.shipped(patch)
+        yield
 
 
 # Passwords are hashed as cheaply as argon2 allows: the tests check what is hashed, not
@@ -59,34 +52,9 @@ def cheap_hashing() -> Iterator[None]:
         yield
 
 
-# The sample World, its endpoints on ports nothing else listens on.
-def free_world(tmp_path: Path) -> Inventory:
-    with socket.socket() as s:
-        s.bind(("127.0.0.1", 0))
-        port = int(s.getsockname()[1])
-    text = (WORLD / "inventory.toml").read_text()
-    text = text.replace('path = "vignettes"', f'path = "{WORLD / "vignettes"}"')
-    path = tmp_path / "inventory.toml"
-    _ = path.write_text(
-        text.replace("12099", str(port)).replace("12100", str(port + 1))
-    )
-    return Inventory.load(path)
-
-
 @pytest.fixture
-def world(tmp_path: Path) -> Inventory:
-    return free_world(tmp_path)
-
-
-# The fake vLLM serving an endpoint's engine, as its start-up says; `delay` is how long
-# it takes over each token.
-@contextmanager
-def faked(
-    world: Inventory, get: Resolver, endpoint: str = QWEN, delay: float = 0.0
-) -> Generator[None]:
-    startup = start_up(world, get, endpoint)
-    with serving([Served.of(startup.argv[0], startup.argv[1:])], delay=delay):
-        yield
+def world() -> Inventory:
+    return free_world()
 
 
 @pytest.fixture
@@ -98,7 +66,7 @@ def fake(world: Inventory, conn: Connection) -> Iterator[None]:
 # Module-scoped, as tests add to its registry.
 @pytest.fixture(scope="module")
 def plan() -> Plan:
-    return sample_plan()
+    return world_plan()
 
 
 # A session closed a moment ago may still be ending on the server, and neither a
@@ -200,9 +168,8 @@ def curated(copies: Copies, migrated: str) -> Iterator[str]:
     try:
         with connect(name) as conn:
             alice = People(conn).add("alice", "Alice")
-            cases = load_cases(SAMPLE)
-            source = World.load(WORLD).inventory.source("sample")
-            _ = init(conn, sample_plan(), cases, source, alice, giftbag=True)
+            source = World.load(TEST).inventory.listing()
+            _ = init(conn, world_plan(), CASES, source, alice, giftbag=True)
         yield name
     finally:
         copies.forget(name)

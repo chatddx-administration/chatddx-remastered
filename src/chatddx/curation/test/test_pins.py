@@ -1,8 +1,7 @@
 import pytest
 
-from chatddx.conftest import sample_plan
 from chatddx.curation import init
-from chatddx.curation.test.sample import SOME, vignettes
+from chatddx.curation.test.cases import CASES, vignettes
 from chatddx.factors.base import resolve
 from chatddx.factors.scoring import Scorer
 from chatddx.scorers import patterns
@@ -10,6 +9,7 @@ from chatddx.scorers.scorer import Metrics
 from chatddx.scorers.shipped import SCORERS
 from chatddx.store import Catalog, People, Store
 from chatddx.store.store import Connection
+from chatddx.test.world import world_plan
 
 pytestmark = pytest.mark.wip
 
@@ -30,19 +30,19 @@ def test_a_deploy_moves_the_archive_s_scorers_on_when_it_raises_their_version(
 ) -> None:
     alice = People(conn).add("alice", "Alice")
     monkeypatch.setenv("CHATDDX_REVISION", "e" * 40)
-    _ = init(conn, sample_plan(), SOME, vignettes(), alice)
+    _ = init(conn, world_plan(), CASES, vignettes(), alice)
 
     monkeypatch.setenv("CHATDDX_REVISION", "f" * 40)
-    assert _scorers(init(conn, sample_plan(), SOME, vignettes(), alice)) == {
+    assert _scorers(init(conn, world_plan(), CASES, vignettes(), alice)) == {
         "validated"
     }
 
     monkeypatch.setitem(SCORERS, PATTERNS, Metrics(2, patterns.score.metrics))
-    assert _scorers(init(conn, sample_plan(), SOME, vignettes(), alice)) == {"updated"}
+    assert _scorers(init(conn, world_plan(), CASES, vignettes(), alice)) == {"updated"}
     catalog, store = Catalog(conn), Store(conn)
     archive = People(conn).find("archive")
     assert archive is not None
-    [thread] = catalog.find("scorer", "diagnoses", owner=archive.id)
+    [thread] = catalog.find("scorer", "list", owner=archive.id)
     head = catalog.head(thread)
     assert resolve(store.get, head.digest, Scorer).version == 2
     assert catalog.labels(head.id) == {

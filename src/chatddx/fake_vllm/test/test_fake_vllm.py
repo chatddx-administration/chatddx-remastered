@@ -1,21 +1,13 @@
 import json
 import logging
 from collections.abc import Iterator
-from pathlib import Path
 from typing import Any
 
 import pytest
 from jsonschema.validators import validator_for
 
-from chatddx.conftest import sample_plan
-from chatddx.curation.plan import SAMPLE
 from chatddx.factors.request import (
-    NativeOutput,
-    Skeleton,
-    TextOutput,
-    ToolOutput,
     next_request,
-    render,
     tool_calls,
 )
 from chatddx.fake_vllm.chat import (
@@ -291,14 +283,6 @@ def test_only_an_exact_zero_temperature_is_greedy(
 
 
 # ------------------------------------------------------------------ outputs
-
-
-@pytest.mark.parametrize(
-    "path", sorted((SAMPLE / "schemas").glob("*.json")), ids=lambda p: p.stem
-)
-def test_what_it_writes_holds_to_the_sample_s_schemas(path: Path) -> None:
-    schema = json.loads(path.read_text())
-    assert valid(schema, instance(schema))
 
 
 def test_what_it_writes_follows_references_unions_and_counts() -> None:
@@ -577,51 +561,6 @@ def test_held_to_a_schema_it_runs_away_before_the_closing_brace() -> None:
 
 
 # ------------------------------------------------------------------ the sample
-
-
-def sample() -> list[Skeleton]:
-    plan = sample_plan()
-    found: list[Skeleton] = []
-    for r in plan.records:
-        if r.kind == "skeleton":
-            skeleton = plan.registry.get(r.digest)
-            assert isinstance(skeleton, Skeleton)
-            found.append(skeleton)
-    return found
-
-
-def test_it_answers_every_sample_skeleton_as_its_contract_asks() -> None:
-    engines = [
-        Served.of(QWEN, ["--served-model-name", "qwen", *QWEN_ARGV]),
-        Served.of(GPT_OSS, ["--served-model-name", "gpt-oss", *GPT_OSS_ARGV]),
-    ]
-    skeletons = sample()
-    assert len(skeletons) == 18
-    for skeleton in skeletons:
-        for served in engines:
-            request = render(
-                skeleton,
-                model=served.name,
-                seed=7,
-                fills={"vignette": "A 72-year-old man.", "appendices": ""},
-            )
-            response = completion(
-                served, request, respond(accept(engines, request), request)
-            )
-            message = response["choices"][0]["message"]
-            schema = skeleton.output_schema
-            match skeleton.contract:
-                case NativeOutput():
-                    assert valid(schema, json.loads(message["content"]))
-                case ToolOutput(name=name):
-                    [call] = tool_calls(response)
-                    assert call.name == name
-                    assert valid(schema, json.loads(call.arguments))
-                case TextOutput(json_schema=dict() as shown):
-                    assert valid(shown, json.loads(message["content"]))
-                case TextOutput():
-                    assert message["content"]
-            assert response["prompt_token_ids"]
 
 
 def test_a_tool_round_goes_from_the_toolset_to_the_answer_tool() -> None:

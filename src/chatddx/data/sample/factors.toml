@@ -13,8 +13,8 @@
 #   serves;
 # - `fork_of` names a record of the same kind that this one is a variation of. It's loaded as a fork of that
 #   record's thread, and doesn't inherit its fields;
-# - a tool or a scorer without a `code` pins the running chatddx, as compilations record it as their compiler, and
-#   its `entry_point` must name a function there;
+# - a tool or a scorer without a `version` pins the version its `entry_point` has in the running chatddx, which
+#   must ship it;
 # - `tags` and `description` are catalog entries, not fields, and so is a scorer view's `label`. A tool's
 #   `description` is a field too, the one the model reads.
 #

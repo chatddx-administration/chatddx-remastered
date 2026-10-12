@@ -1,0 +1,231 @@
+# The test World's data set: what holds no text, in the format of src/chatddx/data/sample/factors.toml, whose header
+# describes it. Every record exercises something a test reads (agents/wip-test-world.md, "What it exercises"), and is
+# named for it.
+
+[prompt.case]
+segments = [{ slot = "vignette" }, { slot = "appendices" }]
+
+# No guidance and no schema: a recipe of it and `case` holds no text, so its language is unknown.
+[output.raw]
+contract = { kind = "text" }
+
+[sampling.recommended]
+from_facts = { effort = "default" }
+
+[sampling.greedy]
+temperature = 0
+
+# vLLM 0.24 raises a temperature below 0.01 to 0.01.
+[sampling.near-greedy]
+temperature = 0.005
+
+[reasoning.off]
+from_facts = { effort = "off" }
+
+[reasoning.on]
+from_facts = { effort = "on" }
+
+[reasoning.high]
+from_facts = { effort = "high" }
+
+[reasoning.on-budget]
+from_facts = { effort = "on", budget = 1024 }
+
+[passthrough.min-tokens]
+body = { min_tokens = 8 }
+
+[tool.lookup]
+name = "lookup"
+description = "Look the query up."
+entry_point = "chatddx.runner.test.tools:lookup"
+
+[tool.lookup.parameters]
+type = "object"
+properties.query = { type = "string" }
+properties.max_results = { type = "integer", default = 5 }
+required = ["query"]
+additionalProperties = false
+
+[tool.broken]
+name = "broken"
+description = "Look the query up somewhere that never answers."
+entry_point = "chatddx.runner.test.tools:broken"
+
+[tool.broken.parameters]
+type = "object"
+properties.query = { type = "string" }
+properties.max_results = { type = "integer", default = 5 }
+required = ["query"]
+additionalProperties = false
+
+# Recipes, one per output contract and per way a recipe is made or skipped.
+[recipe.native]
+description = "A native contract, made per model."
+tags = ["structured"]
+prompt = "case"
+output = "native"
+sampling = "recommended"
+
+[recipe.native-tools]
+description = "A native contract with tools, which vLLM 0.24 can't call."
+tags = ["structured", "tools"]
+fork_of = "native"
+prompt = "case"
+output = "native"
+sampling = "recommended"
+toolset = "lookup"
+
+[recipe.native-inlined]
+description = "A native contract whose schema has its $refs inlined."
+tags = ["structured"]
+prompt = "case"
+output = "native-inlined"
+sampling = "greedy"
+
+[recipe.prompted]
+description = "The schema shown in the guidance, nothing enforcing it."
+tags = ["structured"]
+prompt = "case"
+output = "prompted"
+sampling = "greedy"
+
+[recipe.tool-answer]
+description = "The answer through a named answer tool."
+tags = ["structured"]
+prompt = "case"
+output = "tool-answer"
+sampling = "greedy"
+
+[recipe.tool-answer-tools]
+description = "The answer tool beside the toolset, offered last under tool_choice required."
+tags = ["structured", "tools"]
+prompt = "case"
+output = "tool-answer"
+sampling = "greedy"
+toolset = "lookup"
+
+[recipe.lines]
+description = "Free text, a diagnosis a line, made per model."
+tags = ["text"]
+prompt = "case"
+output = "lines"
+sampling = "recommended"
+
+[recipe.lines-tools]
+description = "Free text after tool rounds."
+tags = ["text", "tools"]
+prompt = "case"
+output = "lines"
+sampling = "greedy"
+toolset = "lookup"
+
+# Made in en only: its instructions are written in sv too, but it names no translations for its output there.
+[recipe.lines-instructed]
+description = "Free text under instructions."
+tags = ["text"]
+instructions = "clinician"
+prompt = "case"
+output = "lines"
+sampling = "greedy"
+
+# Made in en and sv; in sv it forks lines-instructed's en variant and translates its output and appendix layout.
+[recipe.lines-guided]
+description = "Free text under instructions, with a worked example, a passthrough and an appendix layout."
+tags = ["text"]
+fork_of = "lines-instructed"
+instructions = "clinician"
+few_shot = "worked-example"
+prompt = "case"
+output = "lines"
+sampling = "greedy"
+passthrough = "min-tokens"
+translations = "guided"
+appendix_layout = { before = "\n\nAppendices:\n", between = "\n\n" }
+
+# Made in en only: its prompt holds text, written in en alone.
+[recipe.headed]
+description = "Free text after tool rounds, the toolset's guidance placed in the prompt."
+tags = ["text", "tools"]
+instructions = "clinician"
+prompt = "headed"
+output = "lines"
+sampling = "greedy"
+toolset = "lookup"
+
+[recipe.raw]
+description = "Free text with no guidance, in no language."
+tags = ["text"]
+prompt = "case"
+output = "raw"
+sampling = "greedy"
+
+[recipe.reasoned]
+description = "Free text at high reasoning, which test/mistral-7b's facts refuse."
+tags = ["text", "reasoning"]
+prompt = "case"
+output = "lines"
+sampling = "recommended"
+reasoning = "high"
+
+[recipe.budgeted]
+description = "Free text with a thinking budget, which only Qwen3's facts allow."
+tags = ["text", "reasoning"]
+prompt = "case"
+output = "lines"
+sampling = "greedy"
+reasoning = "on-budget"
+
+[recipe.clamped]
+description = "Free text at a temperature vLLM 0.24 raises."
+tags = ["text"]
+prompt = "case"
+output = "lines"
+sampling = "near-greedy"
+
+[recipe.judge]
+description = "A judge's request: an answer against an expectation."
+tags = ["judge"]
+purpose = "judge"
+prompt = "judge"
+output = "verdict"
+sampling = "greedy"
+
+[expectation_schema.targets]
+json_schema_path = "schemas/targets.json"
+
+# One scorer per output shape: `answer` reads answer.json, `list` list.json, `lines` and `whole` free text.
+[scorer.answer]
+description = "The answer's differential, warning, disposition and critical diagnoses, against the targets."
+entry_point = "chatddx.scorers.patterns:score"
+expectation_schema = "targets"
+views = [
+  { label = "differential", output = "$.diagnoses[*].diagnosis", expectation = "/diagnosis", metric = "reciprocal_rank" },
+  { label = "warning", output = "$.acute_warning", expectation = "/warning", metric = "mentions" },
+  { label = "disposition", output = "$.disposition", expectation = "/disposition", metric = "mentions" },
+  { label = "dont-miss", output = "$.diagnoses[?@.critical == true].diagnosis", expectation = "/dont_miss", metric = "mentions" },
+]
+
+[scorer.list]
+description = "The listed differential, against the diagnosis and the one not to miss."
+entry_point = "chatddx.scorers.patterns:score"
+expectation_schema = "targets"
+views = [
+  { label = "differential", output = "$.diagnoses[*]", expectation = "/diagnosis", metric = "reciprocal_rank" },
+  { label = "dont-miss", output = "$.diagnoses[*]", expectation = "/dont_miss", metric = "mentions" },
+]
+
+[scorer.lines]
+description = "Free text, whole and line by line, against the diagnosis and the one not to miss."
+entry_point = "chatddx.scorers.patterns:score"
+expectation_schema = "targets"
+views = [
+  { label = "text", expectation = "/diagnosis", metric = "first_mention" },
+  { label = "differential", split = "lines@1", expectation = "/diagnosis", metric = "reciprocal_rank" },
+  { label = "dont-miss", split = "lines@1", expectation = "/dont_miss", metric = "mentions" },
+]
+
+[scorer.whole]
+description = "Free text, whole, against the diagnosis."
+entry_point = "chatddx.scorers.patterns:score"
+expectation_schema = "targets"
+views = [{ label = "text", expectation = "/diagnosis", metric = "first_mention" }]

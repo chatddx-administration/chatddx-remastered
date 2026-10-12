@@ -841,7 +841,6 @@ Checks against the model facts (`facts.*`) are in `src/chatddx/facts/lint.py`.
 | `engine.chat_template` | warning | `check_chat_template` |
 | `engine.chat_template_date` | warning | `check_chat_template` |
 | `engine.closure` | warning | `lint` |
-| `scorer.revision` | warning | `lint` |
 | `view.unreachable` | warning | `lint` |
 | `expectation_schema.invalid` | warning | `lint` |
 | `expectation.invalid` | warning | `lint` |

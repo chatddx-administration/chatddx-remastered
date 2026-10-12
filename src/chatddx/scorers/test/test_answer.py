@@ -8,13 +8,13 @@ from chatddx.factors.base import resolve
 from chatddx.factors.request import Skeleton
 from chatddx.fake_vllm.chat import instance
 from chatddx.scorers.answer import Answer, read
+from chatddx.test.world import LINES, NATIVE, TOOL_ANSWER
 
 pytestmark = pytest.mark.wip
 
 
 def skeleton(plan: Plan, recipe: str) -> Skeleton:
-    named = plan.named("recipe", f"{recipe} (en, Qwen/Qwen3-8B-AWQ)")
-    return resolve(plan.registry.get, named.digest, Skeleton)
+    return resolve(plan.registry.get, plan.named("recipe", recipe).digest, Skeleton)
 
 
 def said(content: str | None = None, **message: JsonValue) -> dict[str, JsonValue]:
@@ -28,7 +28,7 @@ def called(name: str, arguments: str) -> dict[str, JsonValue]:
 
 
 def test_a_native_answer_is_the_content_as_json(plan: Plan) -> None:
-    made = skeleton(plan, "plan")
+    made = skeleton(plan, NATIVE)
     document = instance(made.output_schema)
     assert read(made, said(json.dumps(document))) == Answer(document)
     assert read(made, said("{")).problem is not None
@@ -40,18 +40,22 @@ def test_a_native_answer_is_the_content_as_json(plan: Plan) -> None:
 def test_an_answer_that_breaks_the_schema_is_kept_with_where_it_breaks(
     plan: Plan,
 ) -> None:
-    made = skeleton(plan, "diagnoses")
-    broken: JsonValue = {"diagnoses": "sepsis"}
+    made = skeleton(plan, NATIVE)
+    broken: JsonValue = {
+        "diagnoses": "sepsis",
+        "acute_warning": None,
+        "disposition": "",
+    }
     found = read(made, said(json.dumps(broken)))
     assert found.value == broken
     assert found.problem == "at /diagnoses: 'sepsis' is not of type 'array'"
 
 
 def test_a_tool_answer_is_the_answer_tool_s_arguments(plan: Plan) -> None:
-    made = skeleton(plan, "diagnoses-tool")
+    made = skeleton(plan, TOOL_ANSWER)
     document = instance(made.output_schema)
     assert read(made, called("final_result", json.dumps(document))) == Answer(document)
-    assert read(made, called("web_search", "{}")) == Answer(
+    assert read(made, called("lookup", "{}")) == Answer(
         None, "no call to the answer tool 'final_result'"
     )
     unread = read(made, called("final_result", "{"))
@@ -60,13 +64,13 @@ def test_a_tool_answer_is_the_answer_tool_s_arguments(plan: Plan) -> None:
 
 
 def test_a_text_answer_is_the_content(plan: Plan) -> None:
-    made = skeleton(plan, "free-text")
+    made = skeleton(plan, LINES)
     assert read(made, said("Sepsis\nPneumonia")) == Answer("Sepsis\nPneumonia")
     assert read(made, said("  \n")) == Answer(None, "no content")
 
 
 def test_a_text_answer_with_a_schema_is_the_json_in_it(plan: Plan) -> None:
-    made = skeleton(plan, "plan-prompted")
+    made = skeleton(plan, "prompted (en)")
     document = instance(made.output_schema)
     text = json.dumps(document)
     assert read(made, said(text)) == Answer(document)
@@ -78,4 +82,4 @@ def test_a_text_answer_with_a_schema_is_the_json_in_it(plan: Plan) -> None:
 
 
 def test_no_response_is_no_answer(plan: Plan) -> None:
-    assert read(skeleton(plan, "plan"), None) == Answer(None, "no response")
+    assert read(skeleton(plan, NATIVE), None) == Answer(None, "no response")

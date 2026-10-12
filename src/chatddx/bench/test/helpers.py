@@ -6,29 +6,26 @@ from pydantic import JsonValue
 
 from chatddx.bench import Bench
 from chatddx.catalog import Entry, EntryField, Subject
-from chatddx.conftest import WORLDS
 from chatddx.core import settings
 from chatddx.core.rig import rig
 from chatddx.curation import Plan
 from chatddx.factors.scoring import Expectation
 from chatddx.factors.trial import Trial
 from chatddx.identity import Person
-from chatddx.inventory import DirectorySource
+from chatddx.inventory import World
 from chatddx.ledger import Run, RunStarted
 from chatddx.store import Catalog, Store
 from chatddx.store.store import Connection
+from chatddx.test.world import QWEN, TEST
 
-SOURCE = DirectorySource(name="sample", path=WORLDS / "sample" / "vignettes")
-FREE_TEXT = "free-text (en, Qwen/Qwen3-8B-AWQ)"
-PLAN = "plan (en, Qwen/Qwen3-8B-AWQ)"
-QWEN = "qwen3-8b-awq@fake"
+SOURCE = World.load(TEST).inventory.listing()
 
 
 def trial(conn: Connection, plan: Plan, recipe: str, *ids: str) -> Trial:
     cases = [c for c in SOURCE.cases() if c.vignette.id in ids]
     made = Trial(
         skeleton=plan.named("recipe", recipe).digest,
-        engine=plan.named("local_engine", "qwen3-8b-awq@fake").digest,
+        engine=plan.named("local_engine", QWEN).digest,
         cases=tuple(plan.registry.add(c) for c in cases),
         seeds=(7,),
     )

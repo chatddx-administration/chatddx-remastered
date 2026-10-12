@@ -1,22 +1,22 @@
 import pytest
 
 from chatddx.catalog import Entry, EntryField, Subject
-from chatddx.conftest import sample_plan
 from chatddx.curation import init
-from chatddx.curation.test.sample import SOME, vignettes
+from chatddx.curation.test.cases import CASES, vignettes
 from chatddx.factors.base import Fingerprint
 from chatddx.factors.cases import Case, Vignette
 from chatddx.factors.scoring import Expectation
 from chatddx.identity import Person
 from chatddx.store import Catalog, People, Store
 from chatddx.store.store import Connection
+from chatddx.test.world import world_plan
 
 pytestmark = pytest.mark.wip
 
 
 def _case(id: str) -> str:
     raw = vignettes().fetch(id)
-    vignette = Vignette(source="sample", id=id, fingerprint=Fingerprint.of(raw))
+    vignette = Vignette(source="test", id=id, fingerprint=Fingerprint.of(raw))
     return Case(vignette=vignette).digest
 
 
@@ -44,24 +44,22 @@ def _own(conn: Connection, alice: Person, case: str) -> tuple[str, str]:
 def test_the_giftbag_keeps_a_person_s_own_expectation(conn: Connection) -> None:
     alice = People(conn).add("alice", "Alice")
     catalog = Catalog(conn)
-    plan = sample_plan()
-    _ = init(conn, plan, SOME, vignettes(), alice)
-    eleven, fall = _case("Dutchfall11w"), _case("DutchFall10w")
-    written, schema = _own(conn, alice, eleven)
+    plan = world_plan()
+    _ = init(conn, plan, CASES, vignettes(), alice)
+    noted, crlf = _case("noted"), _case("crlf")
+    written, schema = _own(conn, alice, noted)
 
-    lines = init(conn, plan, SOME, vignettes(), alice, giftbag=True)
-    assert "[giftbag expectation] Dutchfall11w: kept their own" in lines
-    assert any(
-        l.startswith("[giftbag expectation] DutchFall10w: forked") for l in lines
-    )
+    lines = init(conn, plan, CASES, vignettes(), alice, giftbag=True)
+    assert "[giftbag expectation] noted: kept their own" in lines
+    assert any(l.startswith("[giftbag expectation] crlf: forked") for l in lines)
 
-    [fork] = catalog.expectation_choices([fall], alice.id, schema)[fall]
+    [fork] = catalog.expectation_choices([crlf], alice.id, schema)[crlf]
     catalog.note(Subject(thread=fork), Entry(field=EntryField.DELETED), alice.id)
-    again, _ = _own(conn, alice, fall)
-    lines = init(conn, plan, SOME, vignettes(), alice, giftbag=True)
-    assert "[giftbag expectation] DutchFall10w: kept their own" in lines
+    again, _ = _own(conn, alice, crlf)
+    lines = init(conn, plan, CASES, vignettes(), alice, giftbag=True)
+    assert "[giftbag expectation] crlf: kept their own" in lines
     assert catalog.about(Subject(thread=fork)).deleted
-    assert catalog.expectations_for([eleven, fall], alice.id, schema) == {
-        eleven: written,
-        fall: again,
+    assert catalog.expectations_for([noted, crlf], alice.id, schema) == {
+        noted: written,
+        crlf: again,
     }

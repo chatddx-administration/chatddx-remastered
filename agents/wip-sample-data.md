@@ -36,9 +36,9 @@ replaced the planned `import-engine` run on a host, which would have read `nvidi
    - **Malborg's Harmony date**: `VLLM_SYSTEM_START_DATE = "2026-10-07"`, in the engine's env and digest.
    - **The report endpoints**: enabled on both hosts, at `pelle.km:12008` and `malborg.km:12008`.
    - **Where the real World lives**: `worlds/kompismoln/` (`docs/inventory.md`, "Worlds"),
-     with the factors `import-engine` writes in `worlds/kompismoln/factors.toml`. `init-data --world
-     worlds/kompismoln/inventory.toml --factors worlds/kompismoln/factors.toml` seeds the sample with them, and
-     `src/chatddx/curation/test/test_init.py:test_init_data_command` checks that it binds each endpoint and seeds no fake.
+     with the factors `import-engine` writes in `worlds/kompismoln/factors.toml`, which `init-data --world
+     worlds/kompismoln` loads with the sample, and `src/chatddx/curation/test/test_worlds.py` checks that it binds
+     each endpoint and seeds no other World's engines.
    - **What a model's files are**: every file of the snapshot at the pinned commit, as the report hashes them, with a
      snapshot that holds only what vLLM needs. A list of only what vLLM reads would have to follow vLLM's loaders per
      version and model, and missing a file means missing a change: with `--generation-config auto` (the default)
@@ -66,11 +66,11 @@ replaced the planned `import-engine` run on a host, which would have read `nvidi
    package set, so the closures differed between the hosts for the same packages and would have moved with every
    update of o11n's nixpkgs. Fixed in o11n b84e960 (`vllm-runtime`, from the container's package set) and imported
    again: both hosts now report the same runtime root.
-5. **Seeded and checked**. `init-data alice --world worlds/kompismoln/inventory.toml --factors
-   worlds/kompismoln/factors.toml` creates the two models and engines, their lints are clean, and each World endpoint
-   serves the engine it names: `qwen3-8b@pelle` `sha256:a6845f87…`, `gpt-oss-20b@malborg` `sha256:598792a2…`. With o11n
-   84612b2 deployed, importing again changed only `worlds/kompismoln/endpoints.toml`'s model locations, from
-   repo IDs to snapshot directories; the factors and digests stayed the same.
+5. **Seeded and checked**. `init-data alice --world worlds/kompismoln` creates the two models and engines, their lints
+   are clean, and each World endpoint serves the engine it names: `qwen3-8b@pelle` `sha256:a6845f87…`,
+   `gpt-oss-20b@malborg` `sha256:598792a2…`. With o11n 84612b2 deployed, importing again changed only
+   `worlds/kompismoln/endpoints.toml`'s model locations, from repo IDs to snapshot directories; the factors and digests
+   stayed the same.
 6. **Served under their digests.** Each engine's digest is first in its server's `servedModelNames` (responses carry
    the first name), and the last import reports no `endpoint.served_name`: both servers answer under their
    digests, so `confirm` passes. The served names aren't part of the digest, and the import changed none.
@@ -89,7 +89,8 @@ replaced the planned `import-engine` run on a host, which would have read `nvidi
   (`src/chatddx/curation/test/test_init.py:test_wipe_data_deletes_and_unshares_and_init_data_gives_it_back`).
 - Done (decided): the old target format's `dont_miss`, `warning = false` and `text`, which no case used, are in
   `targets.json` and the sample's scorers, to show how an output, a view and a scorer meet
-  (`src/chatddx/scorers/test/test_scorers.py`, the three tests after `sample_scorer`):
+  (`src/chatddx/scorers/test/test_scorers.py`, the three tests after `world_scorer`, on the test World's scorers,
+  which are the sample's under other names):
   - `dont_miss`, the diagnosis an answer mustn't miss, is read by a `dont-miss` view (`mentions`) in three scorers:
     the plan's reads only the diagnoses the plan marks critical (`$.diagnoses[?@.critical == true].diagnosis`, the
     old `critical` view), while the list's and the free text's (`lines@1`) read any diagnosis named;
@@ -160,7 +161,7 @@ them as a World would:
 - `vignettes/` has the 99 files of 7893656's `src/chatddx/data/cases`, byte for byte (their git blob hashes match the
   old repo's). 30 of them mix CRLF and LF line endings, so `.gitattributes` marks the directory `-text` to keep git
   from converting them.
-- `src/chatddx/curation/test/test_init.py:test_the_sample_world_holds_the_vignettes_at_7893656` pins their ids, checks
+- `src/chatddx/curation/test/test_sample.py:test_the_sample_world_holds_the_vignettes_at_7893656` pins their ids, checks
   that they decode as UTF-8, and pins one fingerprint over all their fingerprints, so leaving 7893656 takes a
   deliberate edit.
 
@@ -224,9 +225,8 @@ Decisions 2A and 4D, done. Endpoints, hosts, the sample World, start-ups and `co
 The sample's side:
 - **init-data** takes `model`, `local_engine` and `remote_engine` tables, and resolves every reference by name in
   one place (`REFERENCES` in `src/chatddx/curation/plan.py`). Engines aren't gifted, as the old giftbag gave no stacks.
-- **The fake engines** (`worlds/sample/factors.toml`): the old fake stacks' models and flags. Since they're the
-  sample World's, seeding another World doesn't seed them, and seeding the sample takes `--factors
-  worlds/sample/factors.toml`. Every value is ours and says what it
+- **The fake engines** (`worlds/sample/factors.toml`): the old fake stacks' models and flags. Since they're the sample
+  World's, seeding another World doesn't seed them; `--world worlds/sample` does. Every value is ours and says what it
   is: the real repo, so its facts apply, with revision `fake` and one empty file for no weights; no GPU; the runtime
   `0.24.0+fake` run by `chatddx fake-vllm` rather than a Nix closure; an empty chat template. So `init-data`'s lints
   give each fake model `model.revision` and each fake engine `engine.closure`, four warnings on every run.
@@ -265,9 +265,9 @@ Where tool and scorer code lives is settled (see "Decided"):
   refuses them on a sensitive source, the sample's included.
 - **init-data** writes the labels, gives USER a fork of the tool as the old giftbag did (scorers stay the
   archive's), and lints the scorers on landing.
-- **Tests**: `src/chatddx/scorers/test/`, `src/chatddx/tools/test/`, and `src/chatddx/curation/test/test_init.py`. One
-  test builds an answer of each sample configuration's shape and checks that every view of the scorer reading it
-  picks something.
+- **Tests**: `src/chatddx/scorers/test/`, `src/chatddx/tools/test/`, and `src/chatddx/curation/test/test_init.py`, on
+  the test World (`agents/wip-test-world.md`), whose scorers are the sample's under other names. One test builds an
+  answer of each of its configurations' shapes and checks that every view of the scorer reading it picks something.
 
 ## The fake vLLM
 `src/chatddx/fake_vllm/` is the old fake (`src/chatddx/dev/fake_vllm.py` at 7893656), ported to vLLM 0.24 and to
@@ -297,9 +297,9 @@ Items are `docs/vllm.md`'s.
   the prompt.
 - **`server.py`**: `/v1/chat/completions`, `/v1/models` (item 14), `/version` (`0.24.0+fake`) and `/health`, with a
   delay between streamed tokens. A client that hangs up mid-stream is heard from the socket and logged.
-- **Tests**: `src/chatddx/fake_vllm/test/`. They pin each behaviour above. They also render every sample skeleton
-  for both sample models, served as the old inventory served them, and check each answer against its contract and
-  schema, and they run a tool round through `next_request`.
+- **Tests**: `src/chatddx/fake_vllm/test/`. They pin each behaviour above and run a tool round through
+  `next_request`. `src/chatddx/curation/test/test_worlds.py` renders every skeleton of every World for each of its
+  fakes, and checks each answer against its contract and schema, or the fake's refusal against the `vllm.*` lints.
 - **Checked against vLLM v0.24.0's source.** This found that item 5 is imprecise: `required` and named tool choices
   need both tool flags, like `auto`. `docs/vllm.md`'s item 5 says so now, and items 13–20 are in it.
 
@@ -319,8 +319,8 @@ Not faked yet:
 - unchecked against vLLM: gpt-oss without any parser answers `analysis…assistantfinal…`, taking Harmony's markers to
   be special tokens skipped in detokenizing; and Harmony with a tool parser but no reasoning parser still separates
   the reasoning;
-- nothing yet runs the factors' `vllm.*` lints and the fake on the same cases, which would catch the two drifting
-  apart.
+- done since: `src/chatddx/curation/test/test_worlds.py` runs the factors' `vllm.*` lints and the fake on every
+  skeleton and fake endpoint of every World, and fails when one refuses what the other doesn't.
 
 ## Sample runs
 Not built. Everything here is a take.
@@ -366,7 +366,8 @@ Take, by piece:
   no fake needs to be running.
 - **For tests**: a session-scoped `sampled` database in `src/chatddx/conftest.py`, made from `curated` with alice's
   sample runs in it, and copied for each test as `curated` is. The repl's, the API's and the portal's tests read
-  genuine runs without running them each time.
+  genuine runs without running them each time. `curated` is the test World's now (`agents/wip-test-world.md`), so the
+  test runs' scripts would be written for its cases and configurations, and the sample's for hand use.
 
 ### To settle while porting
 - **The scripts' names are the old ones.** Configurations are per-model variants now (`plan (en, Qwen/Qwen3-8B-AWQ)`),
@@ -542,7 +543,8 @@ Decided: Olof's comments on the cases are the foundation for a free-text expecta
 
   The vignettes stay as they were at 7893656, so no case needs a repair. A judged view picks a note's text with
   `$.notes[?@.author == 'Olof'].comment` (or `.answer`), and `Judge.fills` puts it in the `expectation` slot
-  (`src/chatddx/scorers/test/test_scorers.py:test_a_judge_reads_a_case_s_notes_beside_the_targets_the_patterns_read`).
+  (`src/chatddx/scorers/test/test_scorers.py:test_a_judge_reads_a_case_s_notes_beside_the_targets_the_patterns_read`,
+  on the test World's case `noted`, whose notes are carol's and dave's).
   The fake vLLM writes a schema's first `examples` value, so its notes hold to the language pattern (`docs/vllm.md`,
   "Schema instances"). Re-running `init-data` updates the targets schema, the four scorers that consume it and all
   99 expectations, as their digests pin the schema's.
@@ -554,7 +556,8 @@ Decided: Olof's comments on the cases are the foundation for a free-text expecta
   2. a judge in the sample: the skeleton, an engine (a real one; the fakes for tests), seeds, and a scorer whose
      views name it. A judge engine falls under the clearance rule (`agents/wip-clearance.md`);
   3. running judges: the scorer interface's next version for judged views, and the judge calls, recorded per score
-     item (`docs/ledger.md:JudgeCall`). `score` refuses judged views until then, and the calls go with the runner.
+     item (`src/chatddx/ledger/score.py:JudgeCall`; `docs/ledger.md`, "Judge calls"). `score` refuses judged views
+     until then, and the calls go with the runner.
 - **They can disagree with the targets.** On `Dutchfall11w`, Olof leads with shock, most likely sepsis, and uses
   ultrasound (RUSH) to rule out other causes, with blood cultures and broad empirical antibiotics. The targets,
   guessed before their markers were dropped, have AAA or dissection as the diagnosis. `Dutchfall1w` and

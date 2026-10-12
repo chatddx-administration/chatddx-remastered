@@ -1,4 +1,3 @@
-import shutil
 from collections import Counter
 from dataclasses import replace
 from pathlib import Path
@@ -7,42 +6,27 @@ import pytest
 
 from chatddx.catalog import Entry, EntryField, Subject
 from chatddx.cli import main
-from chatddx.conftest import WORLDS, connect, sample_plan
+from chatddx.conftest import connect
 from chatddx.curation import init
-from chatddx.curation.plan import SAMPLE
-from chatddx.curation.test.sample import CASES, SOME, vignettes
-from chatddx.factors.base import Fingerprint
-from chatddx.inventory import Inventory
+from chatddx.curation.test.cases import CASES, vignettes
 from chatddx.inventory.test.memory import MemorySource
 from chatddx.store import Catalog, People
 from chatddx.store.store import Connection
+from chatddx.test.world import (
+    DATA,
+    FAKE_LINTS,
+    MODELS,
+    NATIVE,
+    NATIVE_TOOLS,
+    TEST,
+    copied,
+    edit,
+    world_plan,
+)
 
 pytestmark = pytest.mark.solidified
 
-REVISION = "f" * 40
-FAKES = [
-    *(
-        f"[lint warning] model {name}: model.revision: revision 'fake' is not a "
-        + "commit and can move"
-        for name in ("qwen3-8b-awq@fake", "gpt-oss-20b@fake")
-    ),
-    *(
-        f"[lint warning] engine.local {name}: engine.closure: closure 'chatddx "
-        + "fake-vllm' is not a Nix store path"
-        for name in ("qwen3-8b-awq@fake", "gpt-oss-20b@fake")
-    ),
-]
-SAMPLE_WORLD = WORLDS / "sample"
-KOMPISMOLN = WORLDS / "kompismoln"
-
-
-def changed(tmp_path: Path, file: str, old: str, new: str) -> Path:
-    data = tmp_path / "data"
-    _ = shutil.copytree(SAMPLE, data)
-    text = (data / file).read_text()
-    assert old in text
-    _ = (data / file).write_text(text.replace(old, new))
-    return data
+LANGUAGES = (", in en", ", in sv")
 
 
 def tally(lines: list[str]) -> Counter[str]:
@@ -55,125 +39,121 @@ def tally(lines: list[str]) -> Counter[str]:
     return Counter(what(line) for line in lines)
 
 
-LANGUAGES = (", in en", ", in sv")
-
-
-@pytest.fixture(autouse=True)
-def revision(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setenv("CHATDDX_REVISION", REVISION)
+def edited(tmp_path: Path, file: str, old: str, new: str) -> Path:
+    world = copied(tmp_path)
+    edit(world / file, old, new)
+    return world
 
 
 @pytest.mark.slow
 def test_init_data_loads_the_archive(conn: Connection) -> None:
     alice = People(conn).add("alice", "Alice")
-    plan = sample_plan()
+    plan = world_plan()
     lines = init(conn, plan, CASES, vignettes(), alice)
     threads = len(plan.records) + len(CASES)
     assert tally(lines) == Counter(
         {
             "archive created": threads + len(CASES),
-            "skipped": 4,
+            "skipped": len(plan.skipped),
             "share": 1,
-            "lint": len(FAKES) + 1,
+            "lint": len(FAKE_LINTS) + 1,
         }
     )
     shared = threads + len(CASES)
     assert (
-        lines[-len(FAKES) - 2]
+        lines[-len(FAKE_LINTS) - 2]
         == f"[share] {shared} of {shared} archive threads and families with alice"
     )
     components = len({r.digest for r in plan.records}) + 2 * len(CASES)
-    assert lines[-len(FAKES) - 1 :] == [
-        *FAKES,
-        f"[lint] {len(FAKES)} findings in {components} components",
+    assert lines[-len(FAKE_LINTS) - 1 :] == [
+        *FAKE_LINTS,
+        f"[lint] {len(FAKE_LINTS)} findings in {components} components",
     ]
 
     catalog = Catalog(conn)
     archive = People(conn).find("archive")
     assert archive is not None
-    [plan_thread] = catalog.find(
-        "skeleton", "plan (en, Qwen/Qwen3-8B-AWQ)", owner=archive.id
-    )
-    [shown] = catalog.find("skeleton", "plan-shown (en, Qwen/Qwen3-8B-AWQ)")
-    variation = catalog.variation(shown)
-    assert variation is not None and set(variation.varies) == {"/recipe/output"}
-    assert variation.base.thread == plan_thread
-    about = catalog.about(Subject(thread=plan_thread))
+    [native] = catalog.find("skeleton", NATIVE, owner=archive.id)
+    [tools] = catalog.find("skeleton", NATIVE_TOOLS)
+    variation = catalog.variation(tools)
+    assert variation is not None and set(variation.varies) == {"/recipe/toolset"}
+    assert variation.base.thread == native
+    about = catalog.about(Subject(thread=native))
     assert (about.owner, about.tags, alice.id in about.collaborators) == (
         archive.id,
-        frozenset({"ddx"}),
+        frozenset({"structured"}),
         True,
     )
-    [case] = [c for c in vignettes().cases() if c.vignette.id == "DutchFall10w"]
+    [case] = [c for c in vignettes().cases() if c.vignette.id == "crlf"]
     family = catalog.family(case.digest)
     assert family is not None
     assert catalog.about(Subject(family=family)).language == "en"
-    assert catalog.title_of(case.digest) == "DutchFall10w"
-    [scorer] = catalog.find("scorer", "plan", owner=archive.id)
+    assert catalog.title_of(case.digest) == "crlf"
+    [scorer] = catalog.find("scorer", "answer", owner=archive.id)
     assert catalog.labels(catalog.head(scorer).id) == {
         ("view", 0): "differential",
         ("view", 1): "warning",
         ("view", 2): "disposition",
         ("view", 3): "dont-miss",
     }
-    [tool] = catalog.find("tool", "web_search", owner=archive.id)
-    assert catalog.about(Subject(thread=tool)).description == (
-        "Search the web for up-to-date information"
-    )
+    [tool] = catalog.find("tool", "lookup", owner=archive.id)
+    assert catalog.about(Subject(thread=tool)).description == "Look the query up."
     assert [line for line in lines if line.endswith(LANGUAGES)] == [
         f"[archive {r.kind}] {r.name}: created {r.digest.removeprefix('sha256:')[:6]}"
         + f", in {r.language}"
         for r in plan.records
         if r.language is not None
     ]
-    assert catalog.language_of(plan.named("toolset", "web (en)").digest) == "en"
+    assert catalog.language_of(plan.named("toolset", "lookup (en)").digest) == "en"
     assert catalog.language_of(plan.named("prompt", "case").digest) is None
     for language in ("en", "sv"):
-        guided = f"free-text-guided ({language}, Qwen/Qwen3-8B-AWQ)"
+        guided = f"lines-guided ({language})"
         assert catalog.language_of(plan.named("recipe", guided).digest) == language
 
-    # The rest of the sample's cases, and their expectations, are left over.
-    again = init(conn, sample_plan(), SOME, vignettes(), alice)
+    # The rest of the cases, and their expectations, are left over.
+    some = {id: CASES[id] for id in ("crlf", "svenska")}
+    again = init(conn, world_plan(), some, vignettes(), alice)
     assert {v for v in tally(again) if v.startswith("archive")} == {
         "archive validated",
         "archive not",
     }
-    assert tally(again)["archive not"] == 2 * (len(CASES) - len(SOME))
-    assert "[archive case] Dutchfall13w: not in the data" in again
-    assert again[-len(FAKES) - 2].startswith("[share] 0 of ")
+    assert tally(again)["archive not"] == 2 * (len(CASES) - len(some))
+    assert "[archive case] matched: not in the data" in again
+    assert again[-len(FAKE_LINTS) - 2].startswith("[share] 0 of ")
     assert not [line for line in again if line.endswith(LANGUAGES)]
 
 
 @pytest.mark.slow
 def test_init_data_lints_what_it_lands(conn: Connection) -> None:
     alice = People(conn).add("alice", "Alice")
-    plan = sample_plan()
-    unlike = replace(SOME["Dutchfall11w"], targets={"warning": {"pattern": "shock"}})
-    lines = init(conn, plan, {**SOME, "Dutchfall11w": unlike}, vignettes(), alice)
-    components = len({r.digest for r in plan.records}) + 2 * len(SOME)
+    plan = world_plan()
+    unlike = replace(CASES["noted"], targets={"warning": {"pattern": "shock"}})
+    lines = init(conn, plan, {**CASES, "noted": unlike}, vignettes(), alice)
+    components = len({r.digest for r in plan.records}) + 2 * len(CASES)
     assert [line for line in lines if line.startswith("[lint")] == [
-        *FAKES,
-        "[lint warning] expectation Dutchfall11w: expectation.invalid: at the root: "
+        *FAKE_LINTS,
+        "[lint warning] expectation noted: expectation.invalid: at the root: "
         + "'diagnosis' is a required property",
-        f"[lint] {1 + len(FAKES)} findings in {components} components",
+        f"[lint] {1 + len(FAKE_LINTS)} findings in {components} components",
     ]
 
 
 @pytest.mark.slow
 def test_init_data_updates_and_gives_forks(conn: Connection, tmp_path: Path) -> None:
     alice = People(conn).add("alice", "Alice")
-    _ = init(conn, sample_plan(), SOME, vignettes(), alice)
-    edited = changed(
+    _ = init(conn, world_plan(), CASES, vignettes(), alice)
+    world = edited(
         tmp_path,
-        "texts-en.toml",
-        'guidance = "Fill in the management plan for the case."',
-        'guidance = "Fill in the whole management plan."',
+        "_data/texts-en.toml",
+        'guidance = "List the plausible diagnoses, most likely first."',
+        'guidance = "List the diagnoses, most likely first."',
     )
+    plan = world_plan(world, world / "_data")
     lines = init(
         conn,
-        sample_plan(edited),
-        SOME,
-        vignettes(DutchFall10w=b"Edited at the source."),
+        plan,
+        CASES,
+        vignettes(crlf=b"Edited at the source."),
         alice,
         giftbag=True,
     )
@@ -182,37 +162,35 @@ def test_init_data_updates_and_gives_forks(conn: Connection, tmp_path: Path) -> 
         for line in sorted(lines)
         if line.startswith(
             (
-                "[archive chunk.output] management-plan (en):",
-                "[archive skeleton] plan (en, ",
-                "[archive skeleton] plan-web (en, ",
+                "[archive chunk.output] tool-answer (en):",
+                "[archive skeleton] tool-answer (en):",
+                "[archive skeleton] tool-answer-tools (en):",
             )
         )
     ]
-    assert len([line for line in lines if "updated" in line]) == 5
-    assert any(
-        line.startswith("[archive case] DutchFall10w: needs repair") for line in lines
-    )
+    assert len([line for line in lines if "updated" in line]) == 3
+    assert any(line.startswith("[archive case] crlf: needs repair") for line in lines)
     forked = [line for line in lines if line.startswith("[giftbag")]
     assert forked and all(line.split(": ")[1].startswith("forked") for line in forked)
     assert not any(
         line.startswith(("[giftbag expectation_schema", "[giftbag scorer"))
         for line in forked
     )
-    assert any(line.startswith("[giftbag tool] web_search: forked") for line in forked)
+    assert any(line.startswith("[giftbag tool] lookup: forked") for line in forked)
 
     catalog = Catalog(conn)
     archive = People(conn).find("archive")
     assert archive is not None
-    output = "management-plan (en)"
+    output = "tool-answer (en)"
     [archived] = catalog.find("chunk.output", output, owner=archive.id)
     assert len(catalog.find("chunk.output", output, owner=alice.id)) == 1
     owners = [catalog.about(Subject(thread=t)).owner for t in catalog.forks(archived)]
     assert owners.count(alice.id) == 1
     again = init(
         conn,
-        sample_plan(edited),
-        SOME,
-        vignettes(DutchFall10w=b"Edited at the source."),
+        plan,
+        CASES,
+        vignettes(crlf=b"Edited at the source."),
         alice,
         giftbag=True,
     )
@@ -220,11 +198,34 @@ def test_init_data_updates_and_gives_forks(conn: Connection, tmp_path: Path) -> 
         "kept"
     }
 
-    gone = MemorySource(name="sample", vignettes={})
-    lines = init(
-        conn, sample_plan(edited), {"Dutchfall11w": SOME["Dutchfall11w"]}, gone, alice
-    )
-    assert "[archive case] Dutchfall11w: missing at source 'sample'" in lines
+    gone = MemorySource(name="test", vignettes={})
+    lines = init(conn, plan, {"noted": CASES["noted"]}, gone, alice)
+    assert "[archive case] noted: missing at source 'test'" in lines
+
+
+@pytest.mark.slow
+def test_init_data_says_when_a_thread_is_held_as_another_fork_than_the_data_s(
+    conn: Connection, tmp_path: Path
+) -> None:
+    alice = People(conn).add("alice", "Alice")
+    factors = "_data/factors.toml"
+    guided = 'fork_of = "lines-instructed"\n'
+    before = edited(tmp_path / "before", factors, guided, "")
+    after = edited(tmp_path / "after", factors, 'fork_of = "native"\n', "")
+    _ = init(conn, world_plan(before, before / "_data"), CASES, vignettes(), alice)
+    lines = init(conn, world_plan(after, after / "_data"), CASES, vignettes(), alice)
+    assert sorted(line for line in lines if "; the data forks it from " in line) == [
+        *(
+            f"[archive skeleton] lines-guided ({language}): held as no fork; the data "
+            + "forks it from lines-instructed (en)"
+            for language in ("en", "sv")
+        ),
+        *(
+            f"[archive skeleton] native-tools (en, {model}): held as a fork of native "
+            + f"(en, {model}); the data forks it from nothing"
+            for model in sorted(MODELS)
+        ),
+    ]
 
 
 @pytest.mark.slow
@@ -232,61 +233,58 @@ def test_init_data_withdraws_only_the_tags_the_archive_gave(
     conn: Connection, tmp_path: Path
 ) -> None:
     alice = People(conn).add("alice", "Alice")
-    _ = init(conn, sample_plan(), SOME, vignettes(), alice)
+    _ = init(conn, world_plan(), CASES, vignettes(), alice)
     catalog = Catalog(conn)
-    [plan] = catalog.find("skeleton", "plan (en, Qwen/Qwen3-8B-AWQ)")
-    family = catalog.family(vignettes().cases()[0].digest)
+    [native] = catalog.find("skeleton", NATIVE)
+    [case] = [c for c in vignettes().cases() if c.vignette.id == "bom"]
+    family = catalog.family(case.digest)
     assert family is not None
-    for subject in (Subject(thread=plan), Subject(family=family)):
+    for subject in (Subject(thread=native), Subject(family=family)):
         catalog.note(subject, Entry(field=EntryField.TAG, value="alice's"), alice.id)
 
-    edited = changed(
+    described = 'description = "A native contract, made per model."\n'
+    world = edited(
         tmp_path,
-        "factors.toml",
-        'tags = ["ddx"]\nprompt = "case"\noutput = "management-plan"\n',
-        'prompt = "case"\noutput = "management-plan"\n',
+        "_data/factors.toml",
+        described + 'tags = ["structured"]\n',
+        described,
     )
-    retagged = {**SOME, "DutchFall10w": replace(SOME["DutchFall10w"], tags=("falls",))}
-    _ = init(conn, sample_plan(edited), retagged, vignettes(), alice)
-    assert catalog.about(Subject(thread=plan)).tags == {"alice's"}
+    retagged = {**CASES, "bom": replace(CASES["bom"], tags=("falls",))}
+    _ = init(conn, world_plan(world, world / "_data"), retagged, vignettes(), alice)
+    assert catalog.about(Subject(thread=native)).tags == {"alice's"}
     assert catalog.about(Subject(family=family)).tags == {"alice's", "falls"}
 
 
 @pytest.mark.slow
 def test_init_data_says_how_a_vignette_moved_at_its_source(conn: Connection) -> None:
     alice = People(conn).add("alice", "Alice")
-    _ = init(conn, sample_plan(), SOME, vignettes(), alice)
+    _ = init(conn, world_plan(), CASES, vignettes(), alice)
     catalog = Catalog(conn)
-    families = {
-        c.vignette.id: catalog.family(c.digest)
-        for c in vignettes().cases()
-        if c.vignette.id in SOME
-    }
+    families = {c.vignette.id: catalog.family(c.digest) for c in vignettes().cases()}
     texts = vignettes().vignettes
     moved = MemorySource(
-        name="sample",
+        name="test",
         vignettes={
-            **{id: text for id, text in texts.items() if id != "Dutchfall11w"},
-            "Dutchfall11W": texts["Dutchfall11w"],
-            "DutchFall10w": b"Edited at the source.",
+            **{id: text for id, text in texts.items() if id != "noted"},
+            "noted2": texts["noted"],
+            "crlf": b"Edited at the source.",
         },
     )
-    at = "at source 'sample'; repair-data rebinds family"
-    lines = init(conn, sample_plan(), SOME, moved, alice)
+    at = "at source 'test'; repair-data rebinds family"
+    lines = init(conn, world_plan(), CASES, moved, alice)
     assert [line for line in lines if "needs repair" in line] == [
-        f"[archive case] DutchFall10w: needs repair: changed {at} "
-        + str(families["DutchFall10w"]),
-        f"[archive case] Dutchfall11w: needs repair: renamed to Dutchfall11W {at} "
-        + str(families["Dutchfall11w"]),
+        f"[archive case] crlf: needs repair: changed {at} {families['crlf']}",
+        f"[archive case] noted: needs repair: renamed to noted2 {at} "
+        + str(families["noted"]),
     ]
     assert not [line for line in lines if "not in the data" in line]
 
-    renamed = {**SOME, "Dutchfall11W": SOME["Dutchfall11w"]}
-    del renamed["Dutchfall11w"]
-    lines = init(conn, sample_plan(), renamed, moved, alice)
+    renamed = {**CASES, "noted2": CASES["noted"]}
+    del renamed["noted"]
+    lines = init(conn, world_plan(), renamed, moved, alice)
     assert (
-        f"[archive case] Dutchfall11W: needs repair: renamed from Dutchfall11w {at} "
-        + str(families["Dutchfall11w"])
+        f"[archive case] noted2: needs repair: renamed from noted {at} "
+        + str(families["noted"])
     ) in lines
     assert not [line for line in lines if "not in the data" in line]
 
@@ -294,26 +292,27 @@ def test_init_data_says_how_a_vignette_moved_at_its_source(conn: Connection) -> 
 @pytest.mark.slow
 def test_init_data_command(
     db: str,
-    few: Path,
-    world: Path,
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
     capsys: pytest.CaptureFixture[str],
 ) -> None:
     monkeypatch.setenv("DB_NAME", db)
-    data = ["--data", str(few), "--factors", str(SAMPLE_WORLD / "factors.toml")]
-    main(["init-data", "alice", "--world", str(world), "--giftbag", *data])
+    data = ["--data", str(DATA)]
+    main(["init-data", "alice", "--world", str(TEST), "--giftbag", *data])
     out = capsys.readouterr().out.splitlines()
     assert out[0] == "[person] alice: added"
-    assert out[1].startswith("[archive model] qwen3-8b-awq@fake: created")
+    assert out[1].startswith("[archive model] qwen3-8b-awq: created")
     assert any(line.startswith("[archive chunk.prompt] case: created") for line in out)
-    assert any(line.startswith("[giftbag skeleton] plan (") for line in out)
+    assert any(line.startswith("[giftbag skeleton] native (") for line in out)
+    assert [line for line in out if line.startswith("[world")] == [
+        f"[world] 0 findings in 5 endpoints of {TEST}"
+    ]
     with connect(db) as conn:
         assert conn.execute("SELECT count(*) FROM catalog.family").fetchone() == (
-            len(SOME),
+            len(CASES),
         )
 
-    monkeypatch.setenv("CHATDDX_WORLD", str(world))
+    monkeypatch.setenv("CHATDDX_WORLD", str(TEST))
     main(["init-data", "alice", *data])
     out = capsys.readouterr().out.splitlines()
     assert not [line for line in out if line.startswith("[person]")]
@@ -326,12 +325,23 @@ def test_init_data_command(
 
     empty = tmp_path / "empty"
     (empty / "vignettes").mkdir(parents=True)
-    _ = (empty / "inventory.toml").write_text('[source.sample]\npath = "vignettes"\n')
+    _ = (empty / "inventory.toml").write_text('[source.test]\npath = "vignettes"\n')
+    two = tmp_path / "two"
+    (two / "vignettes").mkdir(parents=True)
+    _ = (two / "inventory.toml").write_text(
+        '[source.test]\npath = "vignettes"\n[source.more]\npath = "vignettes"\n'
+        + '[source.typed]\nkind = "database"\n'
+    )
     for argv, refusal in [
         (["--world", str(tmp_path)], "is no World: it holds no inventory.toml"),
-        (["--world", str(empty)], "none of the data's 3 cases is in source 'sample'"),
+        (
+            ["--world", str(empty)],
+            f"none of the data's {len(CASES)} cases is in source 'test' of",
+        ),
+        (["--world", str(two)], r"2 sources list their vignettes \(more, test\)"),
+        (["--world", str(two), "--source", "typed"], "'typed' is a database source"),
         (["--source", "other"], "no source 'other'"),
-        (["--facts", str(SAMPLE / "factors.toml")], "facts have only 'model' tables"),
+        (["--facts", str(DATA / "factors.toml")], "facts have only 'model' tables"),
     ]:
         with pytest.raises(SystemExit, match=refusal):
             main(["init-data", "alice", *data, *argv])
@@ -339,80 +349,37 @@ def test_init_data_command(
     with pytest.raises(SystemExit, match="give a World with --world DIR"):
         main(["init-data", "alice", *data])
 
-    main(["init-data", "alice", "--world", str(SAMPLE_WORLD), "--data", str(few)])
-    assert [
-        line
-        for line in capsys.readouterr().out.splitlines()
-        if line.startswith("[world")
-    ] == [f"[world] 0 findings in 2 endpoints of {SAMPLE_WORLD}"]
-
-    main(["init-data", "alice", "--world", str(KOMPISMOLN), "--data", str(few)])
-    real = Inventory.load(KOMPISMOLN / "inventory.toml")
-    out = capsys.readouterr().out.splitlines()
-    for name in real.endpoints:
-        assert any(
-            line.startswith(f"[archive engine.local] {name}: created") for line in out
-        )
-    assert [line for line in out if line.startswith("[world")] == [
-        f"[world] 0 findings in 2 endpoints of {KOMPISMOLN}"
-    ]
-    # The sample World's fake engines aren't Kompismoln's.
-    assert sorted(line for line in out if "@fake" in line) == [
-        f"[archive {kind}] {name}@fake: not in the data"
-        for kind in ("engine.local", "model")
-        for name in ("gpt-oss-20b", "qwen3-8b-awq")
-    ]
-
 
 @pytest.mark.slow
 def test_a_world_brings_its_engines_and_their_models_facts(
     db: str,
-    few: Path,
-    world: Path,
+    tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
     capsys: pytest.CaptureFixture[str],
 ) -> None:
     monkeypatch.setenv("DB_NAME", db)
-    _ = (world / "factors.toml").write_text(
-        """
-[remote_engine."gemma@api"]
-base_url = "https://api.example/v1/"
-model = "google/gemma-3-27b-it"
-"""
-    )
-    _ = (world / "facts.toml").write_text(
-        """
-[model."google/gemma-3-27b-it"]
-family = "gemma3"
-
-[model."google/gemma-3-27b-it".reasoning]
-default = "off"
-off = {}
-
-[model."google/gemma-3-27b-it".sampling.recommended]
-off = { temperature = 1.0, top_k = 64, top_p = 0.95 }
-"""
-    )
+    world = copied(tmp_path)
     ghost = "sha256:" + "c" * 64
     with (world / "inventory.toml").open("a") as f:
         _ = f.write(f'\n[endpoint.ghost]\nengine = "{ghost}"\n')
-    main(["init-data", "alice", "--world", str(world), "--data", str(few)])
+    main(["init-data", "alice", "--world", str(world), "--data", str(world / "_data")])
     out = capsys.readouterr().out.splitlines()
     assert any(
-        line.startswith("[archive engine.remote] gemma@api: created") for line in out
+        line.startswith("[archive engine.remote] unknown@remote: created")
+        for line in out
     )
     assert out[-2:] == [
         f"[world warning] ghost: endpoint.engine_unknown: {ghost} is not in the registry",
-        f"[world] 1 finding in 1 endpoint of {world}",
+        f"[world] 1 finding in 6 endpoints of {world}",
     ]
     assert any(
         line.startswith(
-            "[archive chunk.sampling] recommended (google/gemma-3-27b-it): created"
+            "[archive chunk.sampling] recommended (test/mistral-7b): created"
         )
         for line in out
     )
     assert any(
-        line.startswith("[archive skeleton] plan (en, google/gemma-3-27b-it): created")
+        line.startswith("[archive skeleton] native (en, test/mistral-7b): created")
         for line in out
     )
 
@@ -420,8 +387,6 @@ off = { temperature = 1.0, top_k = 64, top_p = 0.95 }
 @pytest.mark.slow
 def test_wipe_data_deletes_and_unshares_and_init_data_gives_it_back(
     db: str,
-    few: Path,
-    world: Path,
     monkeypatch: pytest.MonkeyPatch,
     capsys: pytest.CaptureFixture[str],
 ) -> None:
@@ -438,8 +403,8 @@ def test_wipe_data_deletes_and_unshares_and_init_data_gives_it_back(
         assert threads is not None and entries is not None
         return threads[0], entries[0]
 
-    argv = ["init-data", "alice", "--world", str(world), "--giftbag"]
-    argv += ["--data", str(few), "--factors", str(SAMPLE_WORLD / "factors.toml")]
+    argv = ["init-data", "alice", "--world", str(TEST), "--giftbag"]
+    argv += ["--data", str(DATA)]
     loaded = run(*argv)
     gifts = sum(line.startswith("[giftbag ") for line in loaded)
     shares = int(next(line for line in loaded if line.startswith("[share]")).split()[1])
@@ -473,22 +438,7 @@ def test_wipe_data_deletes_and_unshares_and_init_data_gives_it_back(
         _ = run("wipe-data", "alice")
         assert rows() == (threads, entries + (2 * cycle + 1) * cost)
 
-    with pytest.raises(SystemExit, match="'archive' holds the sample data"):
+    with pytest.raises(SystemExit, match="'archive' holds what init-data loads"):
         main(["wipe-data", "archive"])
     with pytest.raises(SystemExit, match="no person with login 'nobody'"):
         main(["wipe-data", "nobody"])
-
-
-def test_the_sample_world_holds_the_vignettes_at_7893656() -> None:
-    source = Inventory.load(SAMPLE_WORLD / "inventory.toml").source("sample")
-    assert source.sensitive
-    assert source.ids() == sorted(CASES)
-    for id in source.ids():
-        _ = source.fetch(id).decode()
-    listing = "".join(
-        f"{c.vignette.id} {c.vignette.fingerprint.hex}\n" for c in source.cases()
-    )
-    assert (
-        Fingerprint.of(listing.encode()).hex
-        == "ce41d6b218347d2b792c86160969f937c6926c8bff255b8644c7159402d7028c"
-    )

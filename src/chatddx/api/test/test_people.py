@@ -10,9 +10,9 @@ from chatddx.api.people import COOKIE
 from chatddx.api.schemas import Me
 from chatddx.api.test.conftest import PASSWORD, sign_in
 from chatddx.bench import Ambiguous, NotFound
-from chatddx.conftest import WORLD
 from chatddx.identity import Person
 from chatddx.runner.gate import Refused
+from chatddx.test.world import TEST
 
 pytestmark = pytest.mark.wip
 
@@ -129,7 +129,7 @@ def test_the_bench_s_errors_and_the_gate_s_refusals_have_their_status(
     for error, status in (
         (NotFound("no case 'nope' for alice"), 404),
         (Ambiguous("case 'plan' names 2"), 409),
-        (Refused("endpoint 'x' isn't cleared for source sample"), 422),
+        (Refused("endpoint 'x' isn't cleared for source test"), 422),
     ):
         path = f"/api/test/{type(error).__name__}"
         served.add_api_route(path, raising(error))
@@ -159,12 +159,12 @@ def test_chatddx_api_serves_where_it_is_told(
         heard.append((served, host, port))
 
     monkeypatch.setattr(uvicorn, "run", run)
-    cli.main(["api", "--world", str(WORLD), "--bind", bind])
+    cli.main(["api", "--world", str(TEST), "--bind", bind])
     [(served, host, port)] = heard
     assert isinstance(served, FastAPI) and (host, port) == where
 
     monkeypatch.setenv("HOST", "0.0.0.0:8123")
-    cli.main(["api", "--world", str(WORLD)])
+    cli.main(["api", "--world", str(TEST)])
     assert heard[-1][1:] == ("0.0.0.0", 8123)
     with pytest.raises(SystemExit, match="bind to HOST:PORT"):
-        cli.main(["api", "--world", str(WORLD), "--bind", "localhost"])
+        cli.main(["api", "--world", str(TEST), "--bind", "localhost"])

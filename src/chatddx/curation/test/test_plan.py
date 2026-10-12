@@ -2,12 +2,11 @@ from pathlib import Path
 
 import pytest
 
-from chatddx.conftest import sample_plan
 from chatddx.core.rig import rig
 from chatddx.curation import Plan, load_cases, plan_factors
-from chatddx.curation.plan import SAMPLE
 from chatddx.factors.request import Compilation, Skeleton
 from chatddx.facts import BUNDLED, Facts
+from chatddx.test.world import DATA
 
 pytestmark = pytest.mark.solidified
 
@@ -61,7 +60,6 @@ sampling = "recommended"
         + "by engine.remote gemma@api",
         "from_facts records for openai/gpt-oss-20b: no planned engine serves it",
     ]
-    assert not [s for s in sample_plan().skipped if s.startswith("from_facts records")]
 
 
 ENGINE = """
@@ -162,6 +160,98 @@ entries = { "Fill in the plan." = "Fyll i planen." }
     assert isinstance(recipe, Compilation) and recipe.recipe.translations is None
 
 
+def test_a_fork_forks_its_origin_in_the_one_language_it_has(tmp_path: Path) -> None:
+    planned = plan(
+        tmp_path,
+        factors=ENGINE
+        + """
+[remote_engine."gpt-oss@api"]
+base_url = "https://api.example/v1/"
+model = "openai/gpt-oss-20b"
+"""
+        + NEUTRAL
+        + """
+[reasoning.off]
+from_facts = { effort = "off" }
+
+[recipe.plan]
+prompt = "case"
+output = "plan"
+sampling = "recommended"
+reasoning = "off"
+
+[recipe.asked]
+fork_of = "plan"
+instructions = "physician"
+prompt = "case"
+output = "plan"
+sampling = "recommended"
+translations = "ui"
+
+[recipe.greedy]
+fork_of = "plan"
+prompt = "case"
+output = "plan"
+sampling = "greedy"
+""",
+        texts_en=ENGLISH,
+        texts_sv="""
+[instructions.physician]
+text = "Du är akutläkare."
+
+[translations.ui]
+entries = { "Fill in the plan." = "Fyll i planen." }
+""",
+    )
+    qwen, gpt_oss = "Qwen/Qwen3-8B-AWQ", "openai/gpt-oss-20b"
+    assert {r.name: r.fork_of for r in planned.records if r.table == "recipe"} == {
+        f"plan (en, {qwen})": None,
+        f"asked (en, {qwen})": f"plan (en, {qwen})",
+        f"asked (en, {gpt_oss})": None,
+        f"asked (sv, {qwen})": f"plan (en, {qwen})",
+        f"asked (sv, {gpt_oss})": None,
+        "greedy (en)": None,
+    }
+    assert [s for s in planned.skipped if ": no fork of " in s] == [
+        f"recipe asked (en, {gpt_oss}): no fork of recipe.plan, which has no variant "
+        + f"for {gpt_oss}",
+        f"recipe asked (sv, {gpt_oss}): no fork of recipe.plan, which has no variant "
+        + f"for {gpt_oss}",
+        "recipe greedy (en): no fork of recipe.plan, which is made per model, and it "
+        + "isn't",
+    ]
+
+
+def test_a_fork_whose_origin_has_other_languages_is_refused(tmp_path: Path) -> None:
+    with pytest.raises(
+        ValueError,
+        match="recipe.asked: recipe.plan has no variant in sv to fork, and is written "
+        + "in de, en",
+    ):
+        _ = plan(
+            tmp_path,
+            factors=ENGINE
+            + NEUTRAL
+            + """
+[recipe.plan]
+instructions = "intro"
+prompt = "case"
+output = "raw"
+sampling = "greedy"
+
+[recipe.asked]
+fork_of = "plan"
+instructions = "physician"
+prompt = "case"
+output = "raw"
+sampling = "greedy"
+""",
+            texts_en='[instructions.intro]\ntext = "Hello."\n',
+            texts_de='[instructions.intro]\ntext = "Hallo."\n',
+            texts_sv='[instructions.physician]\ntext = "Du är akutläkare."\n',
+        )
+
+
 @pytest.mark.parametrize(
     ("files", "refusal"),
     [
@@ -207,12 +297,10 @@ def test_texts_are_refused_where_they_say_the_wrong_thing(
 
 
 def test_cases_are_kept_by_language(tmp_path: Path) -> None:
-    cases = load_cases(SAMPLE)
-    assert len(cases) == 99
-    assert sum(c.language == "sv" for c in cases.values()) == 20
+    cases = load_cases(DATA)
     assert {c.language for c in cases.values()} == {"en", "sv"}
-    assert cases["casesfromedn1"].language == "sv"
-    assert cases["Dutchfall11w"].language == "en"
+    assert (cases["crlf"].language, cases["svenska"].language) == ("en", "sv")
+    assert cases["mislabeled"].language == "sv"
 
     case = '[case.alpha]\ntags = ["a"]\ntargets.diagnosis.pattern = "x"\n'
     _ = (tmp_path / "cases-en.toml").write_text(case)

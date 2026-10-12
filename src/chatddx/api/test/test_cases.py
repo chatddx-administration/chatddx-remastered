@@ -3,7 +3,7 @@ from typing import Any
 import pytest
 from fastapi.testclient import TestClient
 
-from chatddx.bench.test.sample import FREE_TEXT, QWEN
+from chatddx.test.world import LINES, QWEN
 
 pytestmark = pytest.mark.wip
 
@@ -19,7 +19,7 @@ def _family(signed: TestClient, name: str) -> dict[str, Any]:
 def test_a_family_s_appendices_make_its_cases_and_carry_its_expectation(
     signed: TestClient, bob: dict[str, str]
 ) -> None:
-    family = _family(signed, "Dutchfall11w")
+    family = _family(signed, "crlf")
     base = f"/api/families/{family['id']}"
     [bare] = signed.get(f"{base}/cases").json()
     assert (bare["case"], bare["default"], bare["appendices"]) == (
@@ -74,8 +74,8 @@ def test_a_family_s_appendices_make_its_cases_and_carry_its_expectation(
 
 
 def test_a_case_built_of_what_isn_t_the_family_s_is_refused(signed: TestClient) -> None:
-    family = _family(signed, "Dutchfall11w")
-    other = _family(signed, "DutchFall10w")
+    family = _family(signed, "crlf")
+    other = _family(signed, "bom")
     cases = f"/api/families/{family['id']}/cases"
     refused: list[tuple[dict[str, Any], str]] = [
         ({"appendices": [ZERO]}, f"no appendix {ZERO} for alice"),
@@ -92,7 +92,7 @@ def test_a_case_built_of_what_isn_t_the_family_s_is_refused(signed: TestClient) 
 def test_a_run_names_its_cases_among_the_current_ones(signed: TestClient) -> None:
     [configuration] = signed.get(
         "/api/threads",
-        params={"kind": "configuration", "name": FREE_TEXT, "owner": "alice"},
+        params={"kind": "configuration", "name": LINES, "owner": "alice"},
     ).json()
     asked = {"configuration": configuration["id"], "endpoint": QWEN, "cases": [ZERO]}
     got = signed.post("/api/runs", json=asked)
@@ -100,5 +100,5 @@ def test_a_run_names_its_cases_among_the_current_ones(signed: TestClient) -> Non
         422,
         {"detail": f"no case {ZERO} for alice"},
     )
-    both = {**asked, "tags": ["edn"]}
+    both = {**asked, "tags": ["swedish"]}
     assert signed.post("/api/runs", json=both).status_code == 422

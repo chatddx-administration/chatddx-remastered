@@ -23,20 +23,9 @@ The archive is never wiped.
 A data set is a directory of authored files: a `factors.toml`, the texts in `texts-<language>.toml` files, the cases
 in `cases-<language>.toml` files, and the files they load, such as JSON schemas. chatddx ships one, the sample
 (src/chatddx/data/sample/), the old chatddx's inventory hand-edited into this shape (agents/wip-sample-data.md). The
-sample holds no vignettes and no engines: those are a World's (see "The World").
-
-```
-src/chatddx/data/sample/
-  factors.toml    what holds no text: models and engines (none here), sampling, reasoning, passthrough, tools,
-                  expectation schemas, scorers, recipes, and chunks of slots alone
-  texts-en.toml   what holds text the model reads, in English: instructions, few-shot, prompts, outputs, toolsets
-                  and translations
-  texts-sv.toml   the same, in Swedish: free-text-guided's instructions and example, and translations of every
-                  output and toolset text
-  cases-en.toml   the English cases
-  cases-sv.toml   the Swedish cases
-  schemas/
-```
+sample holds no vignettes and no engines: those are a World's (see "The World"). The test World carries the tests'
+data set beside its vignettes, in `worlds/test/_data/`: the leading `_` says the World doesn't read it, and
+init-data takes it with `--data`.
 
 ### Factors
 Both kinds of file hold one table per kind of component, keyed by name, whose keys are the component's fields
@@ -47,7 +36,13 @@ the fields:
   parts name records, not digests.
 - **Files.** `json_schema_path` loads a JSON file, relative to the file that names it, in place of `json_schema`.
 - **Forks.** `fork_of` names a record of the same kind that this one is a variation of. It is loaded as a fork of
-  that record's thread, so the catalog knows what it varies (docs/catalog.md, "Forks"). It inherits no fields.
+  that record's thread, so the catalog knows what it varies (docs/catalog.md, "Forks"). It inherits no fields. Each
+  variant forks the origin's variant in its language and for its model. An origin written in one language only is
+  forked in that language, as a part is taken from it (see "Texts"), so `free-text-guided (sv, …)` forks
+  `free-text (en, …)`; an origin written in several languages, none of them the variant's, is refused. A variant
+  whose origin has none for its model, or is made per model where the variant isn't, is loaded as no fork and
+  reported. A thread's origin is set when the thread is created, so a re-run only reports a held thread whose origin
+  differs from the data's.
 - **Code.** A tool or a scorer that names no `version` pins the version of its entry point that the running chatddx
   ships, so loading the data again after a deploy that raises a version moves it on. Its entry point must be shipped,
   at the version pinned, and a scorer's views must name metrics the code publishes, with params its schemas take.
@@ -128,10 +123,11 @@ the sample's first run comes to 258 threads and families.
 2. **Records.** Each planned record becomes a thread named after it. A record the archive already has, by kind and
    name, is validated when its digest is unchanged and gets a new edit when it changed; a compiled skeleton's edit
    records its compilation. Its tags, description, view labels and language are brought in line with the data.
-3. **Cases.** Each case is read from the World's source, by `--source` (`sample`), and adopted into a family named
-   after its id, with its tags and its file's language, and gets an expectation thread. A case the source doesn't
-   have, or one whose family can't adopt it, is reported, with what a survey of the source says happened to it:
-   renamed to or from another id, or changed, and the family repair-data would move.
+3. **Cases.** Each case is read from the World's source, the one `--source` names or the only one that lists its
+   vignettes (a database source lists none), and adopted into a family named after its id, with its tags and its
+   file's language, and gets an expectation thread. A case the source doesn't have, or one whose family can't adopt
+   it, is reported, with what a survey of the source says happened to it: renamed to or from another id, or changed,
+   and the family repair-data would move.
 4. **Leftovers.** The archive's threads and families that the data no longer names are listed, but not deleted.
 5. **Sharing.** USER becomes a collaborator on every thread and family the run came to.
 6. **Giftbag.** With `--giftbag`, USER also gets a fork of every chunk, tool, skeleton and expectation thread, so
@@ -141,8 +137,7 @@ the sample's first run comes to 258 threads and families.
    kept, and one they deleted comes back, unless they own an expectation of that case under that schema by then: a
    person owns one at most (docs/catalog.md, "Owners"), so theirs is kept instead.
 7. **Lints.** Every component the run came to is linted, with the catalog's languages and the facts' reasons, and
-   the findings are printed, not stored. For the sample the fake models and engines say they are fake, and without
-   `CHATDDX_REVISION` the scorers say their code has no revision.
+   the findings are printed, not stored. For the sample the fake models and engines say they are fake.
 8. **The World.** The inventory check's findings, and a count.
 
 A tag the archive gave that the data no longer lists is withdrawn; tags people gave stay theirs. Sharing is only
@@ -156,9 +151,10 @@ A vignette can be renamed or edited at its source. Its family then needs a repai
 new place (docs/catalog.md, "Repairing"). Loading only reports this, since a repair also moves the threads of everyone
 who used those cases.
 
-`chatddx repair-data [--world DIR] [--source NAME] [--dry-run]` surveys the source and repairs each of the archive's
-families it finds renamed or changed there, printing what moved. A family that isn't the archive's is named and left
-to its owner. With `--dry-run`, it only lists them.
+`chatddx repair-data [--world DIR] [--source NAME] [--dry-run]` surveys the source, the one `--source` names or the
+World's only source that lists its vignettes, and repairs each of the archive's families it finds renamed or changed
+there, printing what moved. A family that isn't the archive's is named and left to its owner. With `--dry-run`, it
+only lists them.
 
 After a rename, the data set should name the new id; after new content, the expectations stay with the old case
 until someone confirms them for the new one (docs/catalog.md, "Repairing"), and the next loading gives the new case an
@@ -173,25 +169,31 @@ writes an entry per gift and per share and no thread.
 Wiping covers all a person owns, their runs and their own threads included, not only what loading gave them.
 
 ## Tests
-src/chatddx/curation/test/, marked `solidified`.
+src/chatddx/curation/test/, marked `solidified`, but for the tests of the test World itself and of every World, which
+agents/wip-test-world.md plans and which are marked `wip`.
 
+- The tests run on the test World (worlds/test/, its data set in worlds/test/_data/), built so that each of its
+  records exercises something a test reads. Its paths, the names tests share and the helpers they import are in
+  src/chatddx/test/world.py; the fixtures built on them are in src/chatddx/conftest.py.
 - `test_plan.py` plans data sets and needs no database.
-- `test_init.py` and `test_repair.py` load into a database of their own: a copy of the migrated, empty store, made
-  for each test (src/chatddx/conftest.py, `migrated`, `db`). Their vignettes are mostly one line of text each.
-  The command test also loads the sample world and Kompismoln's.
-- The sample is loaded whole once, by the test that checks it loads cleanly
-  (`test_init_data_loads_the_archive`). The tests of loading's mechanics load three of its cases, one of them Swedish
-  (src/chatddx/curation/test/sample.py:FEW).
-- Even three cases take 0.2 to 2 s a test, since every record of the data set is still written. So every test that
-  loads is marked `slow`: 11 of the 24. The quick run (`pytest -m "not slow"`) keeps the planning tests and the pin
-  of the vignettes.
-- The sample World's vignettes are pinned to the old chatddx at 7893656
-  (`test_the_sample_world_holds_the_vignettes_at_7893656`).
+- `test_init.py`, `test_repair.py`, `test_giftbag.py` and `test_pins.py` load the test World's data set whole into
+  a database of their own: a copy of the migrated, empty store, made for each test (src/chatddx/conftest.py,
+  `migrated`, `db`), with a stand-in source whose vignettes are a line of text each
+  (src/chatddx/curation/test/cases.py). The command tests read the test World itself, or a copy they edit.
+- A load writes every record of the data set, so every test that loads is marked `slow`.
+- `test_the_test_world.py` pins what the test World plans, skips and lints, and the quirks its vignettes carry.
+- `test_worlds.py` checks every World in `worlds/`: each endpoint serves the engine planned under its name,
+  init-data binds each World's endpoints and leaves the others' engines out, every target's pattern reads, the fake
+  vLLM answers each skeleton as its contract asks or refuses it exactly when a `vllm.*` lint says vLLM would, and what
+  it writes holds to each data set's schemas.
+- `test_sample.py` holds what is true of the sample alone: its vignettes pinned to the old chatddx at 7893656, its 79
+  English and 20 Swedish cases, its records and translations, its targets schema and Olof's notes, and a load of it
+  with only its four skips and its fakes' lints.
 
-`api`, `bench` and `repl` start from the sample as init-data lands it from the sample World, with alice and her giftbag.
-It is loaded once per session, and only when one of those tests asks for it (src/chatddx/conftest.py, `curated`).
-Each test of the packages whose conftest overrides `template` with `curated` (api, bench, repl) gets a copy of it.
-The runner's and the store's tests start from the migrated store, as curation's do.
+`api`, `bench` and `repl` start from the test World as init-data lands it, with alice and her giftbag. It is loaded
+once per session, and only when one of those tests asks for it (src/chatddx/conftest.py, `curated`). Each test of the
+packages whose conftest overrides `template` with `curated` (api, bench, repl) gets a copy of it. The runner's and the
+store's tests start from the migrated store, as curation's do.
 
 ## Terms
 
