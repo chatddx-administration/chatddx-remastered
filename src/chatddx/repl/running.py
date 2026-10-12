@@ -15,12 +15,14 @@ from .render import (
     LABEL,
     LATER,
     TOKENS,
+    JudgeLines,
     Tally,
     Transcript,
     outcome,
     plural,
     scored_findings,
     show_answer,
+    show_judged,
     show_scores,
     show_summary,
     show_table,
@@ -86,6 +88,7 @@ def run(repl: Repl, name: str, seed: str | None = None) -> None:
         show_answer(repl.console, skeleton, item, graded)
 
     show_scores(repl.console, graded)
+    show_judged(repl.console, bench, graded)
     repl.say_findings(scored_findings(graded, read=True))
     repl.say_findings(findings)
     held.said()
@@ -237,11 +240,13 @@ class Held:
         if self.stopped:
             return []
         self.scoring = True
+        lines = JudgeLines(self.console, bench)
         try:
-            return bench.score(run, scorers)
+            return bench.score(run, scorers, lines.event)
         except KeyboardInterrupt:
             return []
         finally:
+            lines.close()
             self.scoring = False
 
     def said(self) -> None:

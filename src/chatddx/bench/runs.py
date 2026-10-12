@@ -1,11 +1,11 @@
-from collections.abc import Collection
+from collections.abc import Callable, Collection
 
 from chatddx.factors.base import resolve
 from chatddx.factors.scoring import Scorer
 from chatddx.ledger import RunStarted
 from chatddx.runner.gate import Refused
 from chatddx.runner.run import Runner, Running
-from chatddx.runner.score import Grader, Grading
+from chatddx.runner.score import Event, Grader, Grading
 from chatddx.runner.send import STOPPED
 
 from .configurations import keep_compilation
@@ -28,7 +28,10 @@ def start(
 
 
 def score(
-    seen: Seen, run: RunStarted, scorers: Collection[str] | None = None
+    seen: Seen,
+    run: RunStarted,
+    scorers: Collection[str] | None = None,
+    on_event: Callable[[Event], None] | None = None,
 ) -> list[Graded]:
     found: list[Graded] = []
     stopped = False
@@ -52,7 +55,7 @@ def score(
             continue
         failed: str | None = None
         try:
-            grading.send()
+            grading.send(on_event)
         except KeyboardInterrupt:
             stopped = True
         except REFUSALS as e:

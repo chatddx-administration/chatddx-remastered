@@ -1,13 +1,14 @@
 import re
 
 import pytest
+from pydantic import JsonValue
 
 from chatddx.bench import Ambiguous, Bench, Conflict, MovedOn, NotFound
 from chatddx.bench.test.helpers import another_expectation, ran, trial
 from chatddx.catalog import Entry, EntryField, Subject
 from chatddx.curation import Plan, load_cases
 from chatddx.factors.base import resolve
-from chatddx.factors.scoring import Expectation
+from chatddx.factors.scoring import Expectation, View
 from chatddx.identity import Person
 from chatddx.runner.score import Grader, score_run
 from chatddx.store import Catalog, People, Store
@@ -136,6 +137,23 @@ def test_a_person_finds_their_runs_and_those_that_reach_a_digest(
     assert store.finished([first, second, gone]) == {first, second, gone}
 
 
+def test_a_view_of_the_whole_answer_is_offered_by_a_text_output_only(
+    conn: Connection, alice: Person, bench: Bench, plan: Plan
+) -> None:
+    whole, picked = View(metric="m"), View(output="$.diagnoses[*]", metric="m")
+    schema: JsonValue = {
+        "type": "object",
+        "properties": {"diagnoses": {"type": "array", "items": {"type": "string"}}},
+    }
+    assert whole.offered_by(None) and not whole.offered_by(schema)
+    assert not View(output="$", metric="m").offered_by(schema)
+    assert picked.offered_by(schema) and not picked.offered_by(None)
+
+    started = bench.run(str(ran(conn, alice, trial(conn, plan, NATIVE, "crlf"))))
+    assert {a.name for _, a in bench.scorers_for(started)} == {"answer", "list"}
+
+
+@pytest.mark.slow
 def test_a_run_is_left_to_score_until_scored_under_the_scoring_built_now(
     conn: Connection, alice: Person, bench: Bench, plan: Plan
 ) -> None:
@@ -451,6 +469,7 @@ def test_a_person_replaces_their_own_expectation_only_when_they_say_so(
     assert held is not None and held.digest == catalog.head(origin).digest
 
 
+@pytest.mark.slow
 def test_a_judged_scorer_applies_where_the_world_lets_its_judges_run(
     conn: Connection,
     alice: Person,

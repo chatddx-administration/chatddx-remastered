@@ -9,15 +9,24 @@ from rich.live import Live
 from rich.table import Table
 from rich.text import Text
 
-from chatddx.bench import Graded, Outcome, outcome as ended, usage
+from chatddx.bench import Bench, Graded, Outcome, outcome as ended, usage, used
 from chatddx.catalog.titles import short
-from chatddx.factors.base import Finding
+from chatddx.factors.base import Finding, resolve
 from chatddx.factors.request import Skeleton, tool_calls
-from chatddx.ledger import Call, RunItem
+from chatddx.factors.scoring import Judge, Scorer, View
+from chatddx.factors.select import select
+from chatddx.ledger import Call, ItemKey, RunItem, ScoreItem
 from chatddx.runner.run import Event, ItemEnded, Noted, Streamed, ToolRan
+from chatddx.runner.score import (
+    NO_EXPECTATION,
+    Event as ScoringEvent,
+    JudgeAnswered,
+    JudgeAsked,
+)
 from chatddx.runner.send import STOPPED, Delta
 from chatddx.scorers.aggregate import mean, stderr
 from chatddx.scorers.answer import Answer, read
+from chatddx.scorers.scorer import NO_ANSWER, NO_TARGET
 
 LABEL = "dim"
 REFUSED = "red"
@@ -40,6 +49,8 @@ TOKENS = len("tokens")
 ANSWERED = frozenset({"answer.unread", "answer.invalid"})
 
 NAMED = 10
+
+UNTARGETED: tuple[JsonValue, ...] = (NO_TARGET, NO_EXPECTATION)
 
 
 def finding(f: Finding, times: int = 1) -> Text:
@@ -247,6 +258,85 @@ class Tally:
         return line
 
 
+class JudgeLines:
+    def __init__(self, console: Console, bench: Bench) -> None:
+        self.console: Console = console
+        self.bench: Bench = bench
+        self.asked: JudgeAsked | None = None
+        self.tally: Tally | None = None
+
+    def event(self, event: ScoringEvent) -> None:
+        bench = self.bench
+        match event:
+            case JudgeAsked(key=key, scorer=scorer, view=view, judge=judge):
+                self.close()
+                seeds = len(resolve(bench.get, judge, Judge).seeds)
+                label = bench.labels(scorer).get(view, f"view {view}")
+                said = (
+                    f"judging {bench.title(key.case)}: {label} by {bench.title(judge)}, "
+                    + f"seed {event.seed_index + 1} of {seeds}"
+                )
+                self.asked = event
+                self.tally = Tally(self.console, len(said), said).__enter__()
+            case Streamed(delta=delta) if self.tally is not None:
+                self.tally.count(delta.tokens)
+            case JudgeAnswered(call=judged, verdict=verdict) if self.tally is not None:
+                assert self.asked is not None
+                scorer = resolve(bench.get, self.asked.scorer, Scorer)
+                view = scorer.views[self.asked.view]
+                said, _ = verdict_of(view, verdict)
+                word, style = (said, "") if said is not None else ("unread", REFUSED)
+                self.tally.end(used(judged.call)[1], word, style, judged.call.error)
+                self.close()
+            case _:
+                pass
+
+    def close(self) -> None:
+        if self.tally is not None:
+            self.tally.__exit__()
+            self.tally = None
+
+
+# `at` as the verdict metrics read it: src/chatddx/scorers/verdicts.py.
+def verdict_of(view: View, verdict: JsonValue | None) -> tuple[str | None, str | None]:
+    if verdict is None:
+        return None, None
+    at = view.params.get("at")
+    if not isinstance(at, str) or not isinstance(verdict, dict):
+        return clipped_line(_shown(verdict)), None
+    picked = select(verdict, at)
+    said = f"{at.rsplit('/', 1)[-1]} {_shown(picked[0]) if picked else '—'}"
+    top = at.split("/")[1] if at.startswith("/") else None
+    rest = [v for k, v in verdict.items() if k != top and isinstance(v, str)]
+    return said, " ".join(rest) or None
+
+
+def show_judged(console: Console, bench: Bench, graded: list[Graded]) -> None:
+    table = Table(box=None, show_header=False, padding=(0, 1, 0, 2))
+
+    for g in graded:
+        if g.score is None:
+            continue
+        for item in g.score.items:
+            view = g.scorer.views[item.view]
+            for n, judged in enumerate(item.judge_calls):
+                judge = resolve(bench.get, judged.judge, Judge)
+                skeleton = resolve(bench.get, judge.skeleton, Skeleton)
+                said, why = verdict_of(view, read(skeleton, judged.call.response).value)
+                table.add_row(
+                    g.label(item.view) if n == 0 else "",
+                    f"{bench.title(judged.judge)}, seed {judged.seed_index + 1}",
+                    said or Text("unread", style=REFUSED),
+                    Text(judged.call.error, style=REFUSED)
+                    if judged.call.error is not None
+                    else (why or ""),
+                )
+
+    if table.row_count:
+        console.print("judged", style="bold")
+        console.print(table)
+
+
 def outcome(skeleton: Skeleton, item: RunItem) -> tuple[str, str, str | None]:
     word, why = ended(skeleton, item)
     return word, STYLES[word], why
@@ -315,55 +405,84 @@ def show_scores(console: Console, graded: list[Graded]) -> None:
 
     console.print("scores", style="bold")
     table = Table(box=None, show_header=False, padding=(0, 1, 0, 2))
+    untargeted: dict[str, list[str]] = {}
 
     for g in graded:
         if g.score is None:
             table.add_row(g.name, "", "", Text(f"not scored: {g.refused}", LATER))
             continue
-        for n, item in enumerate(g.score.items):
+        shown = False
+        for item in g.score.items:
+            if item.detail in UNTARGETED:
+                untargeted.setdefault(g.name, []).append(g.label(item.view))
+                continue
             table.add_row(
-                g.name if n == 0 else "",
+                g.name if not shown else "",
                 g.label(item.view),
                 value_of(item.value),
                 _detail(item.detail),
             )
+            shown = True
 
-    console.print(table)
+    if table.row_count:
+        console.print(table)
+
+    _untargeted(console, untargeted)
 
 
 def show_table(
     console: Console, names: dict[str, str], items: list[RunItem], graded: list[Graded]
 ) -> None:
     scored = [g for g in graded if g.score is not None]
+    held: dict[tuple[str, int, ItemKey], ScoreItem] = {}
+
+    for g in scored:
+        assert g.score is not None
+        for s in g.score.items:
+            held[(g.name, s.view, s.key)] = s
+
+    columns: list[tuple[Graded, int]] = []
+    untargeted: dict[str, list[str]] = {}
+
+    for g in scored:
+        for i in range(len(g.scorer.views)):
+            found = [held.get((g.name, i, item.key)) for item in items]
+            if found and all(s is not None and s.detail in UNTARGETED for s in found):
+                untargeted.setdefault(g.name, []).append(g.label(i))
+            else:
+                columns.append((g, i))
+
     table = Table(box=None, header_style="bold")
     table.add_column("case")
-    columns = [(g, i) for g in scored for i in range(len(g.scorer.views))]
 
     for g, i in columns:
         table.add_column(f"{g.name}\n{g.label(i)}")
 
     for item in items:
-        values: dict[tuple[int, str], float | None] = {}
-        for g in scored:
-            assert g.score is not None
-            for s in g.score.items:
-                if s.key == item.key:
-                    values[(s.view, g.name)] = s.value
+        values = [held.get((g.name, i, item.key)) for g, i in columns]
         table.add_row(
             names.get(item.key.case, short(item.key.case)),
-            *(value_of(values.get((i, g.name))) for g, i in columns),
+            *(value_of(None if s is None else s.value) for s in values),
         )
 
     if columns and items:
         console.print(table)
+
+    _untargeted(console, untargeted, " in any case")
 
     for g in graded:
         if g.score is None:
             console.print(Text(f"{g.name}: not scored: {g.refused}", LATER))
 
 
+def _untargeted(console: Console, held: dict[str, list[str]], where: str = "") -> None:
+    if held:
+        said = "; ".join(f"{name} {', '.join(labels)}" for name, labels in held.items())
+        console.print(Text(f"no target{where}: {said}", style=LABEL))
+
+
 def show_summary(console: Console, graded: list[Graded]) -> None:
-    held: dict[tuple[str, int], list[float | None]] = {}
+    held: dict[tuple[str, int], list[ScoreItem]] = {}
     labels: dict[tuple[str, int], str] = {}
 
     for g in graded:
@@ -372,15 +491,16 @@ def show_summary(console: Console, graded: list[Graded]) -> None:
         for i in range(len(g.scorer.views)):
             _ = labels.setdefault((g.name, i), g.label(i))
             held.setdefault((g.name, i), []).extend(
-                s.value for s in g.score.items if s.view == i
+                s for s in g.score.items if s.view == i
             )
 
     if not held:
         return
 
     table = Table(box=None, header_style="bold")
+    columns = ("scorer", "view", "scored", "mean", "stderr")
 
-    for column in ("scorer", "view", "scored", "mean", "stderr", "without a value"):
+    for column in (*columns, "no answer", "no target", "no value"):
         table.add_column(column)
 
     shown: set[str] = set()
@@ -388,15 +508,24 @@ def show_summary(console: Console, graded: list[Graded]) -> None:
     for (name, i), found in held.items():
         if not found:
             continue
-        values = [v for v in found if v is not None]
-        without = len(found) - len(values)
+        values = [s.value for s in found if s.value is not None]
+        unvalued = [s.detail for s in found if s.value is None]
+        unanswered = sum(d == NO_ANSWER for d in unvalued)
+        untargeted = sum(d in UNTARGETED for d in unvalued)
         table.add_row(
             name if name not in shown else "",
             labels[(name, i)],
             str(len(values)),
             value_of(mean(values)) if values else "—",
             value_of(stderr(values)) if values else "—",
-            str(without) if without else "",
+            *(
+                str(n) if n else ""
+                for n in (
+                    unanswered,
+                    untargeted,
+                    len(unvalued) - unanswered - untargeted,
+                )
+            ),
         )
         shown.add(name)
 

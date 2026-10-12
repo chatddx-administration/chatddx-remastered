@@ -20,6 +20,7 @@ from chatddx.test.world import LINES
 pytestmark = pytest.mark.wip
 
 SHIPPED = "chatddx.scorers.metrics:score"
+RAISED = metrics.score.version + 1
 
 
 # The archive's scorer of that name, with its JSON as an edge gets it.
@@ -39,7 +40,7 @@ def test_a_person_writes_a_scorer_over_shipped_code_with_its_labels(
     conn: Connection, alice: Person, bench: Bench, plan: Plan
 ) -> None:
     _, doc = _archive_s(bench, "whole")
-    assert (doc["entry_point"], doc["version"]) == (SHIPPED, 1)
+    assert (doc["entry_point"], doc["version"]) == (SHIPPED, metrics.score.version)
     ranked: JsonValue = {
         "split": "lines@1",
         "expectation": "/diagnosis",
@@ -71,7 +72,10 @@ def test_a_scorer_the_running_code_could_never_score_with_is_refused(
     [view] = doc["views"]
     refusals: list[tuple[dict[str, JsonValue], str]] = [
         ({"entry_point": "chatddx.scorers.patterns:_WORD"}, "isn't shipped with"),
-        ({"version": 2}, "metrics:score is at version 1 in chatddx .*, not 2"),
+        (
+            {"version": RAISED},
+            f"metrics:score is at version {RAISED - 1} in chatddx .*, not {RAISED}",
+        ),
         ({"views": [{**view, "metric": "recall"}]}, "knows no metric recall"),
         (
             {"views": [{**view, "params": {"top": 3}}]},
@@ -185,8 +189,8 @@ def test_a_scorer_moves_on_to_a_raised_version_by_following_its_origin(
 ) -> None:
     origin, doc = _archive_s(bench, "whole")
     fork = bench.fork_component(origin, "my whole")
-    monkeypatch.setitem(SCORERS, SHIPPED, Metrics(2, metrics.score.metrics))
-    raised = bench.component({**doc, "version": 2})
+    monkeypatch.setitem(SCORERS, SHIPPED, Metrics(RAISED, metrics.score.metrics))
+    raised = bench.component({**doc, "version": RAISED})
     registry = bench.store.load(s.digest for s in raised.refs())
     _ = bench.store.add(registry, [registry.add(raised)])
     _ = Catalog(conn).keep(
@@ -197,8 +201,8 @@ def test_a_scorer_moves_on_to_a_raised_version_by_following_its_origin(
     started = bench.run_by_id(ran(conn, alice, made))
     [graded] = bench.score(started, [fork.edit.digest])
     assert graded.refused is not None
-    assert "metrics:score is at version 2 in chatddx" in graded.refused
+    assert f"metrics:score is at version {RAISED} in chatddx" in graded.refused
 
     followed = bench.follow(fork.edit.thread, fork.edit.id)
-    assert resolve(bench.get, followed.edit.digest, Scorer).version == 2
+    assert resolve(bench.get, followed.edit.digest, Scorer).version == RAISED
     assert bench.labels_of(followed.edit) == {0: "whole"}

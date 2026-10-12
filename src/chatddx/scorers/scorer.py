@@ -14,6 +14,10 @@ class Scored(NamedTuple):
     detail: JsonValue = None
 
 
+NO_ANSWER: JsonValue = {"reason": "no answer"}
+NO_TARGET: JsonValue = {"reason": "no target"}
+
+
 # A judged view's verdicts, one per seed of its judge, each none when it couldn't be read.
 type Verdicts = list[JsonValue | None]
 

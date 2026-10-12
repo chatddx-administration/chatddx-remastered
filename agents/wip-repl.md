@@ -689,24 +689,30 @@ Fixed, as plain defects:
   JSON, so `show scorer notes` names its judges.
 
 For the user, each with a take, most telling first:
-1. **What applies to a run.** Every replay carries three or four `no target` rows: `notes` applies to every case, and
-   no case has a `dont_miss` (item 10). A plan run is scored by `free-text` and `raw` ("unguided free text", whose
-   `first_mention` is the diagnosis's offset in the JSON, 210) and by `diagnoses`, whose differential lists the
-   plan's diagnosis objects as JSON; a batch's table is nine columns, `notes` `—` in all but one row. Take: a view
-   reading the whole answer applies to text outputs only, and a scorer applies when its views are offered
-   (`reaches`), so `scorers`' "the cell" and applicability agree; `replay`'s and `run`'s tables leave out `no
-   target` rows, saying once which views had none, while the summary still counts them.
+1. **What applies to a run.** Decided: the take, and built. A view of the whole answer is offered by a text output
+   only (`factors/scoring.py:View.offered_by`), and the bench's applicability, `show`'s reach and `scorers` use it;
+   the ledger's `view.unreachable` still reads plain reach. On the sample, a plan is scored by `plan` and `diagnoses`
+   only, a diagnoses run by `diagnoses`. `notes` leaves structured runs too: a judge of a plan against Olof's note
+   would need a view that names the part it reads, `$.management` say. `run`'s, `replay`'s and `score`'s tables leave
+   out the views with no target (`no target` or `no expectation`), said once (`no target: notes comment, …`), and a
+   batch's table the views with no target in any case. Left: `diagnoses` still applies to a plan, whose
+   `$.diagnoses[*]` are objects, and lists them as JSON; a reach that knows the items' type would leave it out.
 2. **A score's meaning on the screen.** `first_mention` is a character offset, 0 when named first, beside 0–1 scores
    where 1 is best, so its best reads as a failure. Take: a value that isn't 0–1 shows with its unit (`@44`).
 3. **The detail column** is the detail's JSON: `{"answer": "1. {\"diagnosis\"…`, `{"seeds": [1.0]}`. Take: an
    answer or a reason as plain text; a judged view as its seeds' values and the judge's `why` (item 4).
-4. **Judged views.** The judge's `why`, calls and endpoint show nowhere, and scoring is silent while judges are
-   called, so with real judges the repl looks hung. Take: `replay` and `run` say each judge call's `why` under the
-   scores, and scoring has a live line per judge call, as `batch` has per case.
-5. **An answer that didn't come** scores 0 under `reciprocal_rank` and `mentions` but no value under
-   `first_mention` and the judged views, so a 503 pulls a batch's mean down. Take: no value, reason `no answer`, for
-   every view, and the summary splitting `no answer` from `no target`. A failed call is the engine's, not the
-   model's, but the user may weigh it otherwise.
+4. **Judged views.** Decided: the take, and built. The scoring pass emits `JudgeAsked`, `Streamed` and
+   `JudgeAnswered` around each judge call (`runner/score.py`), `Bench.score` passes them on, and the repl draws a line
+   per call as `batch` does per case (`render.py:JudgeLines`): `judging noted: note-comment by verdict, seed 1 of 1
+   38  meets true`. Under the scores, `run`, `replay` and a one-item `score` list each call with what it said at the
+   view's `at` and the rest of its answer's text, the `why` (`render.py:show_judged`). Left: the judge lines aren't
+   aligned, as their labels differ in length.
+5. **An answer that didn't come.** Decided: the take, and built. `reciprocal_rank` and `mentions` give no value,
+   reason `no answer`, as `first_mention` and the judged views did; the metrics code is at version 2 for it, so a
+   scorer pinned at 1 is refused until init-data moves the archive's on and a fork follows its origin
+   (`curation/test/test_pins.py`). A judged view says `no target` before `no answer`,
+   as the pattern metrics do. The summary splits what has no value into `no answer`, `no target` and `no value`, any
+   other reason (`never named`, a verdict that couldn't be read).
 6. **`configurations`** is 64 rows on the sample, every recipe × 3 models × alice's fork and archive's, names
    clipped. Take: a row per name and language, the models as a column, a fork's owner as `yours, from archive`;
    `configurations NAME` for the per-model rows.

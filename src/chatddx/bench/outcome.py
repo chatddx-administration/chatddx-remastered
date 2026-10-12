@@ -3,7 +3,7 @@ from typing import Literal
 from pydantic import JsonValue
 
 from chatddx.factors.request import Skeleton
-from chatddx.ledger import RunItem
+from chatddx.ledger import Call, RunItem
 from chatddx.runner.send import STOPPED
 from chatddx.scorers.answer import read
 
@@ -28,18 +28,22 @@ def outcome(skeleton: Skeleton, item: RunItem) -> tuple[Outcome, str | None]:
 
 
 def usage(item: RunItem) -> tuple[int, int]:
-    prompt = completion = 0
-    for call in item.calls:
-        response = call.response or {}
-        match response.get("usage"):
-            case dict() as used:
-                if isinstance(n := used.get("prompt_tokens"), int):
-                    prompt += n
-                if isinstance(n := used.get("completion_tokens"), int):
-                    completion += n
-            case _:
-                completion += _streamed(response)
-    return prompt, completion
+    spent = [used(call) for call in item.calls]
+    return sum(p for p, _ in spent), sum(c for _, c in spent)
+
+
+def used(call: Call) -> tuple[int, int]:
+    response = call.response or {}
+    match response.get("usage"):
+        case dict() as given:
+            prompt = given.get("prompt_tokens")
+            completion = given.get("completion_tokens")
+            return (
+                prompt if isinstance(prompt, int) else 0,
+                completion if isinstance(completion, int) else 0,
+            )
+        case _:
+            return 0, _streamed(response)
 
 
 # A stream cut short ends before its usage, but its choice holds the token ids it streamed.

@@ -4,7 +4,6 @@ from rich.table import Table
 from rich.text import Text
 
 from chatddx.bench import Family, Graded
-from chatddx.factors.select import reaches
 from chatddx.ledger import RunStarted
 
 from .render import (
@@ -14,6 +13,7 @@ from .render import (
     VALID,
     plural,
     scored_findings,
+    show_judged,
     show_scores,
     show_summary,
     show_table,
@@ -66,6 +66,7 @@ def _scored(repl: Repl, started: RunStarted, graded: list[Graded]) -> None:
     items = repl.bench.store.run(started.run).items
     if len(items) == 1:
         show_scores(repl.console, graded)
+        show_judged(repl.console, repl.bench, graded)
     else:
         names = {item.key.case: repl.bench.title(item.key.case) for item in items}
         show_table(repl.console, names, list(items), graded)
@@ -92,7 +93,7 @@ def scorers(repl: Repl) -> None:
                 metric += f", judged by {bench.title(view.judge)}"
             if variation is None:
                 offered = Text("—", style=LABEL)
-            elif reaches(schema, view.output):
+            elif view.offered_by(schema):
                 offered = Text("offers it", style=VALID)
             else:
                 offered = Text("doesn't offer it", style=REFUSED)

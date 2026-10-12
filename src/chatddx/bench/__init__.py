@@ -11,7 +11,7 @@ from .model import (
     Taken,
     Written,
 )
-from .outcome import Outcome, outcome, usage
+from .outcome import Outcome, outcome, usage, used
 from .variation import OPTIONAL, PARTS, TriedVariation
 
 __all__ = [
@@ -36,4 +36,5 @@ __all__ = [
     "Written",
     "outcome",
     "usage",
+    "used",
 ]

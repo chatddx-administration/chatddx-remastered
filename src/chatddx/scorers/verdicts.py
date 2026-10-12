@@ -6,7 +6,7 @@ from chatddx.factors.request import Skeleton, Slot, SlotName
 from chatddx.factors.scoring import Judge, View
 from chatddx.factors.select import select
 
-from .scorer import Metric, Scored, Verdicts
+from .scorer import NO_ANSWER, NO_TARGET, Metric, Scored, Verdicts
 
 _AT: dict[str, JsonValue] = {
     "type": "string",
@@ -91,13 +91,13 @@ def asked(
     answer: JsonValue | None,
     expectation: JsonValue,
 ) -> dict[SlotName, str] | Scored:
-    if answer is None:
-        return Scored(None, {"reason": "no answer"})
-    if not view.output_items(answer):
-        return Scored(None, {"reason": "nothing in the answer to judge"})
     slots = {
         s.slot for m in skeleton.messages for s in m.content if isinstance(s, Slot)
     }
     if "expectation" in slots and not view.expectation_items(expectation):
-        return Scored(None, {"reason": "no target"})
+        return Scored(None, NO_TARGET)
+    if answer is None:
+        return Scored(None, NO_ANSWER)
+    if not view.output_items(answer):
+        return Scored(None, {"reason": "nothing in the answer to judge"})
     return judge.fills(view, answer, expectation)

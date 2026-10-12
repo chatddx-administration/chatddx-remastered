@@ -86,7 +86,7 @@ def test_the_reciprocal_rank_is_that_of_the_first_diagnosis_found() -> None:
     assert reciprocal_rank(differential, "sepsis") == Scored(
         0.0, {"reason": "not listed"}
     )
-    assert reciprocal_rank(None, "pneumonia") == Scored(0.0, {"reason": "no answer"})
+    assert reciprocal_rank(None, "pneumonia") == Scored(None, {"reason": "no answer"})
 
 
 @pytest.mark.parametrize(
@@ -135,7 +135,7 @@ def test_mentions_says_whether_the_target_is_named_at_all() -> None:
         0.0, {"reason": "not named"}
     )
     assert mentions([], "admit*") == Scored(0.0, {"reason": "not named"})
-    assert mentions(None, "admit*") == Scored(0.0, {"reason": "no answer"})
+    assert mentions(None, "admit*") == Scored(None, {"reason": "no answer"})
 
 
 def test_mentions_with_no_target_expects_nothing_named() -> None:
@@ -143,7 +143,7 @@ def test_mentions_with_no_target_expects_nothing_named() -> None:
     assert mentions(["Signs of sepsis."], None) == Scored(
         0.0, {"answer": "Signs of sepsis.", "reason": "none expected"}
     )
-    assert mentions(None, None) == Scored(0.0, {"reason": "no answer"})
+    assert mentions(None, None) == Scored(None, {"reason": "no answer"})
 
 
 @pytest.mark.parametrize(
@@ -170,7 +170,7 @@ def test_each_aggregate_is_inspect_s(
 def plan_scorer(**changes: Any) -> Scorer:
     fields: dict[str, Any] = {
         "entry_point": SHIPPED,
-        "version": 1,
+        "version": shipped.version,
         "expectation_schema": SCHEMA,
         "views": (
             View(
@@ -210,7 +210,7 @@ def test_a_scorer_scores_each_of_its_views_through_its_entry_point() -> None:
         Scored(0.0, {"reason": "not named"}),
         Scored(1.0, {"answer": "Admit to the medical ward"}),
     ]
-    assert [s.value for s in score(scorer, run, None, TARGETS)] == [0.0, 0.0, 0.0]
+    assert [s.value for s in score(scorer, run, None, TARGETS)] == [None, None, None]
 
 
 def test_a_view_without_a_target_or_a_readable_one_isn_t_scored() -> None:
@@ -240,8 +240,11 @@ def test_free_text_is_split_by_the_view_before_it_is_scored() -> None:
 
 
 def test_only_the_shipped_code_at_its_version_and_its_metrics_are_run() -> None:
-    with pytest.raises(LookupError, match="is at version 1 in chatddx .*, not 2"):
-        _ = function(plan_scorer(version=2))
+    at = shipped.version
+    with pytest.raises(
+        LookupError, match=f"is at version {at} in chatddx .*, not {at + 1}"
+    ):
+        _ = function(plan_scorer(version=at + 1))
     with pytest.raises(LookupError, match="isn't shipped with chatddx .*, only "):
         _ = function(plan_scorer(entry_point="chatddx.scorers.patterns:_WORD"))
     unknown = (View(metric="recall"),)
@@ -274,7 +277,7 @@ def test_params_are_held_to_the_schemas_the_code_publishes(
         top,
         {"type": "object", "properties": {"top": {"type": "integer", "minimum": 1}}},
     )
-    code = Metrics(1, {"top": ranked}, {"type": "object"})
+    code = Metrics(shipped.version, {"top": ranked}, {"type": "object"})
     monkeypatch.setitem(SCORERS, SHIPPED, code)
     views = (View(output="$.diagnoses[*]", metric="top", params={"top": 2}),)
     assert problems(plan_scorer(views=views, params={"any": "thing"})) == []

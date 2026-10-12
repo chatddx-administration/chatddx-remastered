@@ -21,6 +21,7 @@ from .render import (
     outcome,
     scored_findings,
     show_answer,
+    show_judged,
     show_scores,
     show_summary,
     show_table,
@@ -100,6 +101,7 @@ def replay(repl: Repl, prefix: str | None = None) -> None:
         Transcript(repl.console).item(item)
         show_answer(repl.console, skeleton, item, graded)
         show_scores(repl.console, graded)
+        show_judged(repl.console, repl.bench, graded)
         repl.say_findings(scored_findings(graded, read=True))
         return
 

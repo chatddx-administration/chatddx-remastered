@@ -26,7 +26,6 @@ from chatddx.factors.request import (
     render,
 )
 from chatddx.factors.scoring import Expectation, Scorer, Scoring
-from chatddx.factors.select import reaches
 from chatddx.factors.trial import Trial
 from chatddx.facts import Facts, lints, model_name
 from chatddx.identity import Person, preferred
@@ -369,7 +368,7 @@ class Seen:
         trial = resolve(self.get, run.trial, Trial)
         schema = resolve(self.get, trial.skeleton, Skeleton).output_schema
         found = resolve(self.get, scorer, Scorer)
-        if not all(reaches(schema, v.output) for v in found.views):
+        if not all(v.offered_by(schema) for v in found.views):
             return False
         try:
             for judge in found.judges:
@@ -435,7 +434,7 @@ class Seen:
             name = about.name or self.catalog.title(edit.thread)
             expected = scorer.expectation_schema
             for i, view in enumerate(scorer.views):
-                offered = reaches(schema, view.output)
+                offered = view.offered_by(schema)
                 if offered and expected not in data:
                     data[expected] = self._expected(cases, expected)
                 held, several = data.get(expected, ({}, set[str]()))

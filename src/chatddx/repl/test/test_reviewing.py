@@ -59,7 +59,10 @@ def test_replay_shows_a_run_again_as_it_streamed(say: Say):
     assert replayed[0].endswith(f": {LINES} × {QWEN} × noted (seed 7)")
     assert ", finished, at http://127.0.0.1:" in replayed[1]
     assert "is the one that was sent" in replayed[2]
-    assert replayed[3:] == live[start + 1 : end]
+    streamed = [
+        line for line in live[start + 1 : end] if not line.startswith("judging")
+    ]
+    assert replayed[3:] == streamed
     assert "[thinking] I am the fake vLLM" in replayed[3]
 
 

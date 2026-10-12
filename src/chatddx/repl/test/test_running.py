@@ -189,6 +189,9 @@ def test_a_batch_says_each_finding_once_with_how_often_it_came(
 
     stop = "stopped: nothing but whitespace for 100 tokens"
     assert f"[warning] call.failed: {stop} (×{len(targets)})" in written
+    assert ["answer", "differential", "0", "—", "—", str(len(targets))] in cells(
+        written
+    )
     assert written.count("call.failed") == 1
     assert "answer.unread" in written
     errored = [c for c in cells(written) if c[2:3] == ["errored"]]
@@ -379,3 +382,49 @@ def test_ctrl_c_waits_for_a_run_to_be_written_down_and_scored(
     [run] = ran(bench)
     assert run.finished is not None
     assert Store(bench.conn).scores_of(run.started.run)
+
+
+@pytest.mark.slow
+@pytest.mark.usefixtures("fake")
+def test_a_run_says_each_judge_call_as_it_goes_then_what_the_judges_said(say: Say):
+    written = say(f"cell {LINES} {QWEN}", "run noted")
+
+    judging = [
+        line.split() for line in written.splitlines() if line.startswith("judging")
+    ]
+    assert [(w[1], w[2], w[4], w[6], w[-2:]) for w in judging] == [
+        ("noted:", "note-comment", "verdict,", "1", ["meets", "true"]),
+        ("noted:", "note-answer", "verdict,", "1", ["meets", "true"]),
+        ("noted:", "note-graded", "graded,", "1", ["points", "0"]),
+        ("noted:", "note-graded", "graded,", "2", ["points", "1"]),
+        ("noted:", "note-graded", "graded,", "3", ["points", "2"]),
+    ]
+    judged = written[written.index("\njudged\n") :]
+    assert [
+        "note-comment",
+        "verdict,",
+        "seed",
+        "1",
+        "meets",
+        "true",
+        "fake",
+        "why",
+    ] in (cells(judged))
+    assert ["graded,", "seed", "3", "points", "2", "fake", "why"] in cells(judged)
+
+
+@pytest.mark.slow
+@pytest.mark.usefixtures("fake")
+def test_views_without_a_target_are_said_once_rather_than_scored(say: Say):
+    written = say(f"cell {LINES} {QWEN}", "run crlf")
+
+    scores = written[written.index("\nscores\n") :]
+    assert "note-" not in scores.split("no target")[0]
+    assert "no target: judged note-comment, note-answer, note-graded" in scores
+
+    written = say("batch bytes")
+
+    assert "note-" not in written.split("no target in any case")[0].split("batch:")[-1]
+    assert "no target in any case: judged note-comment, note-answer, note-graded" in (
+        written
+    )
