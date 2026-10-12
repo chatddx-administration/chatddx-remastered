@@ -36,9 +36,9 @@ replaced the planned `import-engine` run on a host, which would have read `nvidi
    - **Malborg's Harmony date**: `VLLM_SYSTEM_START_DATE = "2026-10-07"`, in the engine's env and digest.
    - **The report endpoints**: enabled on both hosts, at `pelle.km:12008` and `malborg.km:12008`.
    - **Where the real World lives**: `worlds/kompismoln/` (`docs/inventory.md`, "Worlds"),
-     with the factors `import-engine` writes in `worlds/kompismoln/factors.toml`. `init-data --world
-     worlds/kompismoln/inventory.toml --factors worlds/kompismoln/factors.toml` seeds the sample with them, and
-     `src/chatddx/curation/test/test_init.py:test_init_data_command` checks that it binds each endpoint and seeds no fake.
+     with the factors `import-engine` writes in `worlds/kompismoln/factors.toml`, which `init-data --world
+     worlds/kompismoln` loads with the sample, and `src/chatddx/curation/test/test_init.py:test_init_data_command`
+     checks that it binds each endpoint and seeds no fake.
    - **What a model's files are**: every file of the snapshot at the pinned commit, as the report hashes them, with a
      snapshot that holds only what vLLM needs. A list of only what vLLM reads would have to follow vLLM's loaders per
      version and model, and missing a file means missing a change: with `--generation-config auto` (the default)
@@ -66,11 +66,11 @@ replaced the planned `import-engine` run on a host, which would have read `nvidi
    package set, so the closures differed between the hosts for the same packages and would have moved with every
    update of o11n's nixpkgs. Fixed in o11n b84e960 (`vllm-runtime`, from the container's package set) and imported
    again: both hosts now report the same runtime root.
-5. **Seeded and checked**. `init-data alice --world worlds/kompismoln/inventory.toml --factors
-   worlds/kompismoln/factors.toml` creates the two models and engines, their lints are clean, and each World endpoint
-   serves the engine it names: `qwen3-8b@pelle` `sha256:a6845f87…`, `gpt-oss-20b@malborg` `sha256:598792a2…`. With o11n
-   84612b2 deployed, importing again changed only `worlds/kompismoln/endpoints.toml`'s model locations, from
-   repo IDs to snapshot directories; the factors and digests stayed the same.
+5. **Seeded and checked**. `init-data alice --world worlds/kompismoln` creates the two models and engines, their lints
+   are clean, and each World endpoint serves the engine it names: `qwen3-8b@pelle` `sha256:a6845f87…`,
+   `gpt-oss-20b@malborg` `sha256:598792a2…`. With o11n 84612b2 deployed, importing again changed only
+   `worlds/kompismoln/endpoints.toml`'s model locations, from repo IDs to snapshot directories; the factors and digests
+   stayed the same.
 6. **Served under their digests.** Each engine's digest is first in its server's `servedModelNames` (responses carry
    the first name), and the last import reports no `endpoint.served_name`: both servers answer under their
    digests, so `confirm` passes. The served names aren't part of the digest, and the import changed none.
@@ -224,9 +224,8 @@ Decisions 2A and 4D, done. Endpoints, hosts, the sample World, start-ups and `co
 The sample's side:
 - **init-data** takes `model`, `local_engine` and `remote_engine` tables, and resolves every reference by name in
   one place (`REFERENCES` in `src/chatddx/curation/plan.py`). Engines aren't gifted, as the old giftbag gave no stacks.
-- **The fake engines** (`worlds/sample/factors.toml`): the old fake stacks' models and flags. Since they're the
-  sample World's, seeding another World doesn't seed them, and seeding the sample takes `--factors
-  worlds/sample/factors.toml`. Every value is ours and says what it
+- **The fake engines** (`worlds/sample/factors.toml`): the old fake stacks' models and flags. Since they're the sample
+  World's, seeding another World doesn't seed them; `--world worlds/sample` does. Every value is ours and says what it
   is: the real repo, so its facts apply, with revision `fake` and one empty file for no weights; no GPU; the runtime
   `0.24.0+fake` run by `chatddx fake-vllm` rather than a Nix closure; an empty chat template. So `init-data`'s lints
   give each fake model `model.revision` and each fake engine `engine.closure`, four warnings on every run.
@@ -554,7 +553,8 @@ Decided: Olof's comments on the cases are the foundation for a free-text expecta
   2. a judge in the sample: the skeleton, an engine (a real one; the fakes for tests), seeds, and a scorer whose
      views name it. A judge engine falls under the clearance rule (`agents/wip-clearance.md`);
   3. running judges: the scorer interface's next version for judged views, and the judge calls, recorded per score
-     item (`docs/ledger.md:JudgeCall`). `score` refuses judged views until then, and the calls go with the runner.
+     item (`src/chatddx/ledger/score.py:JudgeCall`; `docs/ledger.md`, "Judge calls"). `score` refuses judged views
+     until then, and the calls go with the runner.
 - **They can disagree with the targets.** On `Dutchfall11w`, Olof leads with shock, most likely sepsis, and uses
   ultrasound (RUSH) to rule out other causes, with blood cultures and broad empirical antibiotics. The targets,
   guessed before their markers were dropped, have AAA or dissection as the diagnosis. `Dutchfall1w` and

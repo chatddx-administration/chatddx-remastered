@@ -14,7 +14,8 @@ plans a World built for the tests, `worlds/test/`, and moving every test onto it
 - **Names say what they exercise**, not what the sample called them.
 - **The test World's tools are the test tools** (`src/chatddx/runner/test/tools.py`). The root conftest ships them
   for the whole session, as `runner/test/conftest.py:shipped_tools` does for the runner's tests now, so planning
-  takes their entry points.
+  takes their entry points. So the test World loads only under pytest: `chatddx init-data` by hand refuses its
+  toolset. The sample is for hand use.
 - **The bugs found on the way are fixed separately**, before the tests move (see "Fixes before the move").
 
 ### Why `_data`
@@ -221,7 +222,7 @@ sample, Kompismoln), each with its data set:
 - the fake's instances hold to the data set's schemas (now `test_what_it_writes_holds_to_the_sample_s_schemas`).
 
 ## Fixes before the move
-Found while surveying, each fixed and tested on its own:
+Found while surveying, each to be talked through with the user and then fixed and tested on its own:
 - **`init-data --source typed` ends in a traceback.** In `src/chatddx/cli.py:_init_data`, `source.ids()` runs outside
   the `try`, and `DatabaseSource.ids` raises `LookupError`.
 - **`free-text-guided (sv, …)` is planned as a fork of nothing.** In `src/chatddx/curation/plan.py:plan_factors`,
@@ -229,13 +230,6 @@ Found while surveying, each fixed and tested on its own:
   takes the origin's variant in another language, or it is reported. That's a question for the user.
 - **`scorer.revision` is documented but never raised**: in `docs/factors-api.md` (lint table) and
   `docs/curation.md` ("Loading", step 7). Suggest removing it from the docs (AGENT: REMOVE), or implement it.
-- **Drift in `agents/wip-sample-data.md`**:
-  - the Kompismoln commands with `--world …/inventory.toml --factors …/factors.toml`, and "seeding the sample takes
-    `--factors worlds/sample/factors.toml`", both from before `--world DIR`;
-  - `docs/ledger.md:JudgeCall`, which is `src/chatddx/ledger/score.py:JudgeCall`.
-- **Drift in the sample's own files**:
-  - `worlds/sample/inventory.toml`'s header names `cases.toml`;
-  - `src/chatddx/data/sample/factors.toml`'s header says "without a `code`" where the key is `version`.
 
 ## Docs, when it's done
 - `docs/curation.md`, "Tests" and "Data sets": AGENT suggestions for the test World and `_data`.
@@ -244,9 +238,6 @@ Found while surveying, each fixed and tested on its own:
 - Timings before and after: 600 tests in 58.6 s before. Loading the whole sample in `curated` took 2.7 s of it.
 
 ## Open
-- **A consequence of the test tools.** The test World loads only where they are shipped, which is under pytest.
-  `chatddx init-data` by hand refuses its toolset. Take: accept that. The test World is for the tests, and the
-  sample is for hand use.
 - **Should `init-data` take `--data` from the World's `_data/` when there is one?** It would make the convention
   part of `World` and save each caller from spelling it out, `test_worlds.py` included. Take: not now. Revisit
   if a second World carries a data set.
