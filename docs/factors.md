@@ -580,16 +580,9 @@ Only shipped code runs.
 
 ### View
 A view scores one part of an output against one part of an expectation. It holds:
-```
-AGENT: amend
-A view of the whole answer is offered by a text output only (src/chatddx/factors/scoring.py, `View.offered_by`).
----
-- a selector into the output and one into the expectation (the whole document by default; a view of the whole answer
-  is offered by a text output only, and a structured output is read through a selector);
-```
-- a selector into the output and one into the expectation (the whole document by default);
-- optionally, how to split what the output selector picks;
-- a metric that only the scorer's code interprets, with optional parameters;
+- a selector into the output and one into the expectation
+- optionally, how to split what the output selector picks
+- a metric that only the scorer's code interprets, with optional parameters
 - optionally, the judge it uses. The view's selections are then what the judge sees (see "Judge").
 
 Selectors are written in standard notations: a JSON Pointer, which picks at most one value, or a JSONPath query from a

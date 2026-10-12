@@ -99,11 +99,7 @@ run DutchFall10w
 quit
 ```
 The run streams the fake's answer, scores it and records it.
-````
-AGENT: add
-Sample runs (src/chatddx/samples/): runs answered by the fake from the scripts in worlds/sample/_runs/, so the repl
-has every kind of run to show.
----
+
 For runs to look at, with what can go wrong among them, run the sample World's samples instead, without
 `fake-engines` running (they serve their own fakes):
 ```sh
@@ -114,7 +110,6 @@ chatddx repl alice
 runs
 replay
 ```
-````
 
 ### Kompismoln's hosts
 On the Kompismoln VPN, ask pelle and malborg what they serve:

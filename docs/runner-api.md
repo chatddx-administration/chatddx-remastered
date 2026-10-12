@@ -314,11 +314,6 @@ raised once the other calls are halted and written.
 `NO_EXPECTATION` is `{"reason": "no expectation"}`, the detail of every score item of a case the scoring has no
 expectation for.
 
-```
-AGENT: amend
-The scoring pass's judge calls as events (src/chatddx/runner/score.py), so an edge can say each call as it goes; the
-repl draws a line per call from them.
----
 `type Event = ItemScored | JudgeAsked | Streamed | JudgeAnswered | Noted`, frozen dataclasses:
 
 | Event | Fields | When |
@@ -328,8 +323,6 @@ repl draws a line per call from them.
 | `Streamed` | `key`, `delta: Delta` | A piece of the judge call under way, as the runner's. |
 | `JudgeAnswered` | `key`, `view`, `call: JudgeCall`, `verdict` | A judge call ended; `verdict` is its answer as read, or `None`. |
 | `Noted` | `finding` | A finding noted. |
-```
-`type Event = ItemScored | Noted`, `ItemScored(item: ScoreItem)` emitted for each score item written.
 
 ### `judge_at(inventory, get, ref, cases, named=None) -> tuple[Judge, Skeleton, str]`
 The judge `ref`, its skeleton, and the endpoint its calls go to: `named`, or the one endpoint serving the judge's
