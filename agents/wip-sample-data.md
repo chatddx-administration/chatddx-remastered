@@ -15,12 +15,11 @@ write-ups are in git history: `git show 79ec890:agents/wip-sample-data.md`.
 
 ## Start with this
 Parity with the old `init-data` is reached, and the real engines are imported (below). Since then the sample is the
-example new Worlds follow, using every table a data set and a World can hold (decided; `agents/wip-repl.md`, "7.
-Completion", step 2, which lists what came): it moved to `worlds/sample/_data/`, and gained a drafted judge over
-Olof's notes, made-up appendices and the cases that send them, made-up `dont_miss` targets for six cases
-(`agents/wip-repl.md`, step 2), a canary set, a remote engine with a credential, its
-model's facts, and an included `endpoints.toml`. Then sample runs, answered by the fake from scripts (below, "Sample
-runs").
+example new Worlds follow, using every table a data set and a World can hold (decided; below, "A complete example",
+which lists what came): it moved to `worlds/sample/_data/`, and gained a drafted judge over Olof's notes, made-up
+appendices and the cases that send them, made-up `dont_miss` targets for six cases, a canary set, a remote engine with
+a credential, its model's facts, and an included `endpoints.toml`. Then sample runs, answered by the fake from scripts
+(below, "Sample runs").
 
 What follows is the parity work's record. It said, in order:
 
@@ -226,6 +225,46 @@ The old checkout's vignettes were checked in a scratch database:
   the engine they serve.
 
 Tests: `src/chatddx/curation/test/`.
+
+### A complete example
+Decided, while bringing the repl to completion: the sample is the example a new World follows, complete being every
+table a data set and a World can hold used at least once; its judge prompt is drafted, and it gets made-up appendices
+and a canary set. Also decided: the data set moves from the package into the sample World, `worlds/sample/_data/`, as
+the test World keeps its own.
+
+Built. The sample is two parts that a new World follows: the data set (`worlds/sample/_data/`) and the World
+(`worlds/sample/`), laid out as Kompismoln's is. `src/chatddx/curation/test/test_sample.py:
+test_the_sample_uses_every_table_a_data_set_and_a_world_hold` holds it to that. What came:
+- **Data sets hold appendices and canary sets** (`curation/plan.py`, `curation/write.py`). A cases file names a case's
+  `appendices`, texts by name, each landed as an archive thread of its own name, told apart by its vignette
+  (`curation/write.py:binds`), and `[[case.<id>.with]]`, cases of the family that send them in the order named, each
+  with `targets` of its own when it has them. `canary_set` is a table of `factors.toml`. The test World holds one of
+  each (`whitespace`'s `labs`, `probe`), read by `curation/test/test_tables.py`.
+- **The data set's default**: init-data takes the World's `_data/` unless `--data` names another (`cli.py`, `DATA`),
+  so `init-data alice --giftbag` loads the sample, and Kompismoln names `--data worlds/sample/_data`. A take: it
+  revisits `agents/wip-test-world.md`'s "Loading it stays explicit" (see its "Why `_data`").
+- **A judge**, drafted by an agent until Olof writes his (`agents/wip-judges.md`, "For Olof, later"): instructions
+  and a prompt of purpose `judge` (the answer and the note; no vignette), the outputs `verdict` and `grade` with
+  schemas whose `examples` the fake answers by seed, and their Swedish translations; the recipes `judge` (greedy)
+  and `judge-graded` (recommended sampling, per model); the judges `verdict` on `qwen3-8b-awq@fake` and `graded` on
+  `gpt-oss-20b@fake`; the scorer `notes`, Olof's comment and answer judged as met and his comment graded. The judges
+  name the sample World's engines, so Kompismoln skips them and `notes` until it names judges of its own; its
+  `factors.toml` is the engine import's to write whole, so where those go is open.
+- **Made-up appendices**: `labs` and `ultrasound` for `Dutchfall11w`, whose ultrasound changes the right answer from
+  the targets' aneurysm to an infected, blocked kidney, held to targets of their own in two cases; and `blood-gas` for
+  `casesfromedn1`, in Swedish, which confirms its targets.
+- **Made-up `dont_miss` targets**, so the `dont-miss` views score: `DutchFall10w` (dissection), `Dutchfall12w`
+  (myocardial infarction), `Dutchfall14w` and `Dutchfall26w` (pulmonary embolism), `Dutchfall15w` (appendicitis) and
+  `casesfromedn2` (autoimmune encephalitis), each the dangerous diagnosis the case's warning or vignette already
+  points to. The data files hold no comments, so this list is where they are labelled made up, with the appendices.
+- **A canary set**, `basics`: two greedy probes and a seeded one. No run sends it yet: `Bench.start` passes no canary
+  set.
+- **A remote engine with a credential**: `mistral-small@remote`, Mistral Small 3.2 from provider `fake`, whose
+  endpoint reads its key from `CHATDDX_SAMPLE_KEY` (set in `.env-container` and `.env-devshell`), and the facts of its
+  model in the World's `facts.toml`, from its makers' model card. `chatddx fake-engines` stands in for a remote engine
+  on this machine (`cli.py:_stand_in`), and the fake vLLM takes `--api-key` (`fake_vllm/served.py`, `server.py`). The
+  stand-in is cleared for the sample, as it runs here. The model adds a third variant of every per-model recipe.
+- **The World's endpoints and host** moved to an included `endpoints.toml`, as an engine import writes them.
 
 ## Engines and endpoints
 Decisions 2A and 4D, done. Endpoints, hosts, the sample World, start-ups and `confirm` are `docs/inventory.md`'s.

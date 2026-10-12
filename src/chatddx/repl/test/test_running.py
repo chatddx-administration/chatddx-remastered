@@ -20,7 +20,7 @@ from chatddx.runner.score import Event as ScoreEvent, Grading
 from chatddx.store import Store
 from chatddx.test.world import GPT_OSS, LINES, NATIVE, QWEN, TOOL_ANSWER
 
-pytestmark = pytest.mark.wip
+pytestmark = pytest.mark.solidified
 
 
 def test_seed_draws_a_short_seed_or_holds_one(repl: Repl, say: Say):

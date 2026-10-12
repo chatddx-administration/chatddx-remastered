@@ -11,7 +11,7 @@ from chatddx.repl.test.helpers import Say, cells, line_of, pattern, tagged
 from chatddx.store import Catalog, People, Store
 from chatddx.test.world import LINES, QWEN
 
-pytestmark = pytest.mark.wip
+pytestmark = pytest.mark.solidified
 
 
 # A new version of the expectation the person reads for a case, from their own thread.

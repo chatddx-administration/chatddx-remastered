@@ -16,7 +16,7 @@ from chatddx.test.world import (
     REMOTE,
 )
 
-pytestmark = pytest.mark.wip
+pytestmark = pytest.mark.solidified
 
 
 def test_the_prompt_shows_the_cell(repl: Repl, say: Say):

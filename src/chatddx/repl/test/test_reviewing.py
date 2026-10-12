@@ -9,7 +9,7 @@ from chatddx.repl.test.helpers import Say, cells, tagged
 from chatddx.samples import RUNS, run, samples
 from chatddx.test.world import LINES, NATIVE, QWEN, TEST
 
-pytestmark = pytest.mark.wip
+pytestmark = pytest.mark.solidified
 
 SAMPLES = {s.name: s for s in samples(TEST / RUNS)}
 

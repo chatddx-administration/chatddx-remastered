@@ -85,7 +85,7 @@ against the inventory's `[cleared]` table until the clearance pipeline replaces 
    a grant can key on the endpoint's name with the digest and URL it holds, as the old `EndpointBinding` did. Today
    `[cleared]` keys on the name alone, so renaming an endpoint drops its clearance (`docs/inventory.md`, "Smaller
    issues").
-2. **Where vetting is declared.** Decided for now (`agents/wip-repl.md`, D1; `agents/wip-runner.md`, "Decided"): in
+2. **Where vetting is declared.** Decided for now (`docs/inventory.md`, "Clearance"; `agents/wip-runner.md`, "Decided"): in
    the inventory, as `[cleared]`. For the long term: the inventory keeps all location facts in one place, while a
    database grant (through the portal, logged) gives an audit trail and fits the append-only store.
 3. **Who may grant clearance**, and whether that needs its own role.

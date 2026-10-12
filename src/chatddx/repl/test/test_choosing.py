@@ -22,7 +22,7 @@ from chatddx.test.world import (
     QWEN_MODEL,
 )
 
-pytestmark = pytest.mark.wip
+pytestmark = pytest.mark.solidified
 
 
 @pytest.fixture

@@ -171,7 +171,7 @@ prompt's, for Olof. Judges aren't checked for language (`docs/catalog.md`, "Smal
 ### Hypothetical notes stay out of the sample
 Take: the sample's notes carry `author = "Olof"` into every score, and the sample is live data. Made-up notes go in
 the test World, under the placeholder authors it has. The sample got its judge before Olof's prompt exists (decided:
-`agents/wip-repl.md`, "7. Completion", step 2): a prompt drafted by an agent over his real notes, which his own
+`agents/wip-sample-data.md`, "A complete example"): a prompt drafted by an agent over his real notes, which his own
 replaces as an edit. No note is made up.
 
 ## The test World's additions

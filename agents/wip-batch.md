@@ -50,7 +50,7 @@ https://github.com/chatddx-administration/chatddx/blob/504792cbeb09508f2c52912be
 - **The cell is two things**: the variation being tried (`src/chatddx/bench/variation.py:TriedVariation`) and the
   endpoint beside it (`agents/wip-bench.md`, "Cell"). "Cell" stays the repl's word.
 - **Slices are recipe parts** (`PARTS`, `OPTIONAL` in `src/chatddx/bench/variation.py`); the coercion is the output's
-  contract (`agents/wip-repl.md`, D6).
+  contract (`agents/wip-repl.md`, "Parts").
 - **A trial holds the cases**: one trial per variation, not one per cell and case. A run holds an item per case and
   replicate.
 - **Readiness is findings**: warnings, never refusals (`docs/chatddx.md`, "Compromises"; `Bench.findings`). What holds
@@ -58,14 +58,14 @@ https://github.com/chatddx-administration/chatddx/blob/504792cbeb09508f2c52912be
   (`TriedVariation.set`'s `ValueError`). "Save it as your own first" is gone: any digest runs (`agents/wip-bench.md`
   at d5ebf52, "The old bench").
 - **Seeds are explicit**: a trial has at least one, and a greedy trial still hashes its seeds; `render` sends none for
-  a greedy skeleton (`agents/wip-repl.md`, D3). "Unseeded" is gone. Several seeds are replicates of one trial, not an
+  a greedy skeleton (`agents/wip-repl.md`, "Seeds"). "Unseeded" is gone. Several seeds are replicates of one trial, not an
   axis to cross.
 - **Names are per model and per language** (`agents/wip-variants.md`): `Bench.configuration(name, engine)` picks a
   configuration's variant by the endpoint's model.
-- **A trial is a digest**, stored when it runs and never threaded (`agents/wip-repl.md`, D7). A batch that keeps its
+- **A trial is a digest**, stored when it runs and never threaded (`agents/wip-repl.md`, "A run"). A batch that keeps its
   trials' digests can't drift, so `Drifted` has no counterpart.
-- **Batch order** is by case digest, since `Trial` sorts its cases, not by name (moved from `agents/wip-repl.md`,
-  "Risks").
+- **Batch order** is by case digest, since `Trial` sorts its cases, not by name (`agents/wip-repl.md`,
+  "A batch").
 
 ## The planner
 Take:
@@ -96,8 +96,8 @@ Take, for its shape:
 - **The thread**: named, owned, shared and deleted as other threads are (`docs/catalog.md`). Adding cases, as the old
   `unheld` did, is a new edit: new trials, since a trial's cases are part of its digest.
 - **Which batches are threaded**: every batch the portal runs or keeps, so a person's batches can be listed, as the
-  old portal listed them. The repl's ad-hoc `batch` stores its trial without a thread, as D7 keeps ad-hoc trials off
-  threads so as not to flood the catalog (`agents/wip-repl.md`).
+  old portal listed them. The repl's ad-hoc `batch` stores its trial without a thread, as the repl keeps ad-hoc trials off
+  threads so as not to flood the catalog (`agents/wip-repl.md`, "A run").
 - **Docs**: already in `docs/factors.md` ("Batch", and batches as components that aren't factors),
   `docs/catalog.md` (a batch's thread, and its title) and `docs/chatddx.md` (the glossary).
 
@@ -128,7 +128,7 @@ unfinished, done) is read from the worker's jobs and the ledger, so the planner 
   each scorer's reach as you tick; the confirmation and a kept batch's page, rendered on the server
   (`agents/wip-portal.md`, "Islands").
 - **The repl**: `batch TAG…` runs one variation over the tagged cases with one seed, as one trial and one run
-  (`agents/wip-repl.md`, "Built: 4b"). It could take a batch, perhaps as several parts given at once.
+  (`agents/wip-repl.md`, "A batch"). It could take a batch, perhaps as several parts given at once.
 - **The API**: a batch read like `GET /api/threads/{id}/variation`, with several chunks per part
   (`agents/wip-api.md`, "Trying a variation"); then asking for it.
 
@@ -149,5 +149,5 @@ Assuming the takes.
 
 ## Moved here
 - From `agents/wip-portal.md`: the planner's part of "The batch planner and the worker".
-- From `agents/wip-repl.md`, "Risks and smaller open points": batch order.
+- From the repl's plan, since reworked into `agents/wip-repl.md`: batch order.
 - From `agents/wip-variants.md`, "Questions for the user": mixed batches.

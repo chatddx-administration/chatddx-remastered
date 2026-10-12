@@ -18,7 +18,7 @@ from chatddx.test.world import (
     QWEN_MODEL,
 )
 
-pytestmark = pytest.mark.wip
+pytestmark = pytest.mark.solidified
 
 
 def test_endpoints_are_listed_with_their_engines_and_clearance(

@@ -375,8 +375,7 @@ The bench:
   (`docs/catalog.md`, "Concurrent writers").
 - **`Catalog.expectation_for`**, for one case, has callers in tests only.
 - **What the old bench had and this one doesn't**: what a run left unheeded (`outcome.py:unheeded`;
-  agents/wip-runner.md, "Afterwards"); an endpoint's secret, refused for now (agents/wip-repl.md, "Left out"); a
-  batch's plan, crossing variations into one (agents/wip-batch.md); and what holds a configuration, the portal's
+  agents/wip-runner.md, "Afterwards"); a batch's plan, crossing variations into one (agents/wip-batch.md); and what holds a configuration, the portal's
   (agents/wip-portal.md), whose part for the repl `Bench.reaching` and `Bench.scored_by` cover.
 
 Signing in, in the API:

@@ -60,7 +60,7 @@ vignettes, and other Worlds may copy that, so the name sets a precedent:
 Loading it stays explicit: `chatddx init-data alice --world worlds/test --data worlds/test/_data`. Its one directory
 source is the default `--source`.
 
-Since the sample's data set moved to `worlds/sample/_data/` (`agents/wip-repl.md`, "7. Completion", step 2), init-data
+Since the sample's data set moved to `worlds/sample/_data/` (`agents/wip-sample-data.md`, "A complete example"), init-data
 takes a World's `_data/` when `--data` names none, a take, so `--data` can be left out here too; the test World still
 loads only under pytest.
 
