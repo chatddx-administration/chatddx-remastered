@@ -128,12 +128,24 @@ def score(
     ]:
         raise NotImplementedError(f"views {unjudged} need a judge, which can't run yet")
     return [
-        run(
-            view.metric,
-            None if answer is None else view.output_items(answer),
-            view.expectation_items(data),
-            scorer.params | view.params,
-            judged.get(i),
-        )
-        for i, view in enumerate(scorer.views)
+        score_view(scorer, run, i, answer, data, judged.get(i))
+        for i in range(len(scorer.views))
     ]
+
+
+def score_view(
+    scorer: Scorer,
+    run: ScoreFunction,
+    index: int,
+    answer: JsonValue | None,
+    data: JsonValue,
+    verdicts: Verdicts | None = None,
+) -> Scored:
+    view = scorer.views[index]
+    return run(
+        view.metric,
+        None if answer is None else view.output_items(answer),
+        view.expectation_items(data),
+        scorer.params | view.params,
+        verdicts,
+    )
