@@ -2,7 +2,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from chatddx.api.test.test_variations import thread
-from chatddx.bench.test.sample import FREE_TEXT
+from chatddx.test.world import LINES
 
 pytestmark = pytest.mark.wip
 
@@ -10,7 +10,7 @@ pytestmark = pytest.mark.wip
 def test_an_owner_says_what_a_thread_is_called_and_who_it_is_shared_with(
     signed: TestClient, bob: dict[str, str]
 ) -> None:
-    mine = thread(signed, "configuration", FREE_TEXT)
+    mine = thread(signed, "configuration", LINES)
     path = f"/api/threads/{mine['id']}"
     assert signed.get(path, headers=bob).status_code == 404
 
@@ -38,8 +38,8 @@ def test_an_owner_says_what_a_thread_is_called_and_who_it_is_shared_with(
 
 
 def test_what_isn_t_the_owner_s_to_say_is_refused(signed: TestClient) -> None:
-    mine = thread(signed, "configuration", FREE_TEXT)
-    archives = thread(signed, "configuration", FREE_TEXT, "archive")
+    mine = thread(signed, "configuration", LINES)
+    archives = thread(signed, "configuration", LINES, "archive")
     path = f"/api/threads/{mine['id']}"
     for asked, status, said in (
         ({"description": None}, 422, "a description is replaced, never taken away"),
@@ -62,7 +62,7 @@ def test_what_isn_t_the_owner_s_to_say_is_refused(signed: TestClient) -> None:
 def test_an_owner_deletes_and_restores_a_thread(
     signed: TestClient, bob: dict[str, str]
 ) -> None:
-    mine = thread(signed, "configuration", FREE_TEXT)
+    mine = thread(signed, "configuration", LINES)
     path = f"/api/threads/{mine['id']}"
     listed = {"kind": "configuration"}
     _ = signed.patch(path, json={"collaborators": ["bob"]})

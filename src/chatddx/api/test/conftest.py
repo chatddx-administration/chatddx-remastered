@@ -7,33 +7,21 @@ from httpx2 import Response
 from psycopg.conninfo import make_conninfo
 
 from chatddx.api.app import app
+from chatddx.api.test.helpers import world_facts
 from chatddx.bench import Bench
-from chatddx.conftest import SAMPLE_QWEN, WORLD, faked, free_world
 from chatddx.core import settings
-from chatddx.facts import BUNDLED, Facts
 from chatddx.identity import Person
 from chatddx.inventory import Inventory
-from chatddx.store import People, Store
+from chatddx.store import People
 from chatddx.store.store import Connection
+from chatddx.test.world import TEST
 
 PASSWORD = "correct horse battery staple"
 
 
 @pytest.fixture
-def template(curated_sample: str) -> str:
-    return curated_sample
-
-
-# Pinned to the sample until this package's tests move to the test World.
-@pytest.fixture
-def world() -> Inventory:
-    return free_world(WORLD)
-
-
-@pytest.fixture
-def fake(world: Inventory, conn: Connection) -> Iterator[None]:
-    with faked(world, Store(conn).get, SAMPLE_QWEN):
-        yield
+def template(curated: str) -> str:
+    return curated
 
 
 @pytest.fixture
@@ -53,8 +41,8 @@ def alice(conn: Connection) -> Person:
 @pytest.fixture
 def served(db: str) -> FastAPI:
     return app(
-        Inventory.load(WORLD / "inventory.toml"),
-        Facts.load(BUNDLED),
+        Inventory.load(TEST / "inventory.toml"),
+        world_facts(),
         make_conninfo(settings.database(), dbname=db),
     )
 

@@ -33,7 +33,7 @@ def test_what_can_t_be_typed_is_refused_and_a_day_s_quota_held(
     for asked, said in (
         ({"text": " "}, "a typed case holds text"),
         ({"text": "a\u0000b"}, "U+0000"),
-        ({"text": TYPED, "source": "sample"}, "'sample' isn't a database source"),
+        ({"text": TYPED, "source": "test"}, "'test' isn't a database source"),
     ):
         got = signed.post("/api/families", json=asked)
         assert got.status_code == 422, (asked, got.json())

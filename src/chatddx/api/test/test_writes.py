@@ -4,7 +4,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from chatddx.api.test.test_variations import thread
-from chatddx.bench.test.sample import FREE_TEXT
+from chatddx.test.world import LINES
 
 pytestmark = pytest.mark.wip
 
@@ -63,7 +63,7 @@ def test_a_write_is_refused_what_isn_t_the_person_s(
     signed: TestClient, bob: dict[str, str]
 ) -> None:
     archives = thread(signed, "instructions", CLINICIAN, "archive")
-    mine = thread(signed, "configuration", FREE_TEXT)
+    mine = thread(signed, "configuration", LINES)
     held = body(signed, archives)
     sampling = body(signed, thread(signed, "sampling", "greedy", "archive"))
     forks = f"/api/threads/{archives['id']}/forks"
@@ -121,7 +121,7 @@ def test_a_write_is_refused_what_isn_t_the_person_s(
 
 @pytest.mark.slow
 def test_an_expectation_s_edit_says_what_the_lints_say(signed: TestClient) -> None:
-    [family] = signed.get("/api/families", params={"name": "Dutchfall11w"}).json()
+    [family] = signed.get("/api/families", params={"name": "crlf"}).json()
     [expected] = signed.get(f"/api/families/{family['id']}").json()["expectations"]
     threads = signed.get(
         "/api/threads", params={"kind": "expectation", "owner": "alice"}
@@ -152,12 +152,14 @@ def test_a_recipe_of_one_s_making_is_a_new_configuration(signed: TestClient) -> 
     recipe = {
         "instructions": digest("instructions", CLINICIAN),
         "prompt": digest("prompt", "case"),
-        "output": digest("output", "free-text (en)"),
+        "output": digest("output", "native (en)"),
         "sampling": digest("sampling", "greedy"),
     }
+    listed = signed.get("/api/threads", params={"kind": "configuration"}).json()
     got = signed.post("/api/threads", json={"recipe": recipe, "name": "my own"})
     assert got.status_code == 201
     made = got.json()
+    assert made["head"]["digest"] not in {t["head"]["digest"] for t in listed}
     assert (made["kind"], made["owner"], made["forked_from"]) == (
         "skeleton",
         "alice",

@@ -4,31 +4,59 @@ from fastapi.testclient import TestClient
 from pydantic import HttpUrl
 
 from chatddx.api.state import AppState
-from chatddx.inventory import EndpointSpec
+from chatddx.inventory import EndpointSpec, Inventory
+from chatddx.test.world import (
+    GPT_OSS,
+    GPT_OSS_MODEL,
+    MISTRAL,
+    MISTRAL_MODEL,
+    QWEN,
+    QWEN_BARE,
+    QWEN_MODEL,
+    REMOTE,
+    TEST,
+)
 
 pytestmark = pytest.mark.wip
 
-QWEN = "qwen3-8b-awq@fake"
 GHOST = "sha256:" + "0" * 64
 
 
 def test_endpoints_say_what_they_serve_and_what_they_re_cleared_for(
     signed: TestClient,
 ) -> None:
+    inventory = Inventory.load(TEST / "inventory.toml")
     listed = signed.get("/api/endpoints").json()
-    assert [e["name"] for e in listed] == ["gpt-oss-20b@fake", QWEN]
-    qwen = signed.get(f"/api/endpoints/{QWEN}").json()
-    assert qwen == listed[1]
-    assert (qwen["model"], qwen["url"], qwen["host"]) == (
-        "Qwen/Qwen3-8B-AWQ",
-        "http://127.0.0.1:12099/v1/",
-        "fake",
+    assert [e["name"] for e in listed] == sorted(inventory.endpoints)
+    for shown in listed:
+        name = shown["name"]
+        spec = inventory.endpoint(name)
+        assert signed.get(f"/api/endpoints/{name}").json() == shown
+        assert (shown["engine"], shown["host"], shown["max_jobs"]) == (
+            spec.engine,
+            spec.host,
+            spec.max_jobs,
+        )
+        assert (shown["credential"], shown["cleared_for"], shown["problem"]) == (
+            spec.credential,
+            sorted(inventory.cleared_for(name)),
+            None,
+        )
+
+    endpoints = {e["name"]: e for e in listed}
+    qwen, remote = endpoints[QWEN], endpoints[REMOTE]
+    assert (qwen["model"], qwen["url"], qwen["cleared_for"]) == (
+        QWEN_MODEL,
+        str(inventory.endpoint(QWEN).url),
+        sorted(inventory.sources),
     )
-    assert (qwen["cleared_for"], qwen["max_jobs"], qwen["problem"]) == (
-        ["sample", "typed"],
-        4,
+    engine = signed.get(f"/api/components/{remote['engine']}").json()["body"]
+    assert (remote["model"], remote["url"], remote["host"]) == (
+        engine["model"],
+        engine["base_url"],
         None,
     )
+    assert remote["credential"] is not None and remote["cleared_for"] == []
     got = signed.get("/api/endpoints/nowhere@fake")
     assert got.status_code == 404
     assert got.json() == {"detail": "no endpoint 'nowhere@fake' in the inventory"}
@@ -54,20 +82,26 @@ def test_models_are_told_by_their_facts_with_the_endpoints_serving_them(
     signed: TestClient,
 ) -> None:
     models = {m["name"]: m for m in signed.get("/api/models").json()}
-    assert models["Qwen/Qwen3-8B-AWQ"]["endpoints"] == [QWEN]
-    assert models["openai/gpt-oss-20b"]["endpoints"] == ["gpt-oss-20b@fake"]
-    assert all(m["facts"] is not None for m in models.values())
+    assert models[QWEN_MODEL]["endpoints"] == [QWEN_BARE, QWEN]
+    assert models[GPT_OSS_MODEL]["endpoints"] == [GPT_OSS]
+    assert models[MISTRAL_MODEL]["endpoints"] == [MISTRAL]
+    assert models[MISTRAL_MODEL]["facts"]["family"] == "mistral"
+    unknown = signed.get(f"/api/endpoints/{REMOTE}").json()["model"]
+    assert models[unknown]["endpoints"] == [REMOTE]
+    assert [m for m, held in models.items() if held["facts"] is None] == [unknown]
 
 
 def test_a_component_is_shown_by_its_digest(signed: TestClient) -> None:
-    [qwen] = [e for e in signed.get("/api/endpoints").json() if e["name"] == QWEN]
-    shown = signed.get(f"/api/components/{qwen['engine']}").json()
-    assert (shown["digest"], shown["kind"], shown["title"]) == (
-        qwen["engine"],
-        "engine.local",
-        qwen["title"],
-    )
-    assert shown["body"]["kind"] == "engine.local"
+    endpoints = {e["name"]: e for e in signed.get("/api/endpoints").json()}
+    for name, kind in ((QWEN, "engine.local"), (REMOTE, "engine.remote")):
+        endpoint = endpoints[name]
+        shown = signed.get(f"/api/components/{endpoint['engine']}").json()
+        assert (shown["digest"], shown["kind"], shown["title"]) == (
+            endpoint["engine"],
+            kind,
+            endpoint["title"],
+        )
+        assert shown["body"]["kind"] == kind
     got = signed.get(f"/api/components/{GHOST}")
     assert (got.status_code, got.json()) == (
         404,

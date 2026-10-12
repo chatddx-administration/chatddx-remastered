@@ -6,17 +6,18 @@ from fastapi.testclient import TestClient
 
 from chatddx.api.schemas import Parts
 from chatddx.api.test.conftest import sign_in
+from chatddx.api.test.helpers import OFF
 from chatddx.bench import OPTIONAL, PARTS, Bench
-from chatddx.bench.test.sample import FREE_TEXT, PLAN, QWEN, another_expectation
+from chatddx.bench.test.helpers import another_expectation
+from chatddx.curation import load_cases
 from chatddx.factors.request import Translations
 from chatddx.store import Store
 from chatddx.store.store import Connection
+from chatddx.test.world import DATA, LINES, NATIVE, NATIVE_TOOLS, QWEN
 
 pytestmark = pytest.mark.wip
 
-PLAN_WEB = "plan-web (en, Qwen/Qwen3-8B-AWQ)"
-OFF = "off (Qwen/Qwen3-8B-AWQ)"
-DIFFERENTIAL = ("plan", "differential")
+DIFFERENTIAL = ("answer", "differential")
 
 
 def thread(
@@ -58,7 +59,7 @@ def test_a_request_names_the_recipe_s_parts(client: TestClient) -> None:
 
 @pytest.mark.slow
 def test_a_configuration_with_nothing_replaced_is_itself(signed: TestClient) -> None:
-    mine = thread(signed, "configuration", FREE_TEXT)
+    mine = thread(signed, "configuration", LINES)
     shown = variation(signed, mine, seed=7)
     assert (shown["head"], shown["skeleton"]) == (mine["head"], mine["head"]["digest"])
     assert not shown["greedy"]
@@ -68,7 +69,7 @@ def test_a_configuration_with_nothing_replaced_is_itself(signed: TestClient) -> 
     assert {p: held[p]["digest"] for p in PARTS} == {p: recipe[p] for p in PARTS}
     assert not any(p["replaced"] for p in held.values())
     assert (held["output"]["title"], held["output"]["summary"]) == (
-        "free-text (en)",
+        "lines (en)",
         "text output",
     )
     assert held["reasoning"] == {
@@ -89,7 +90,7 @@ def test_a_configuration_with_nothing_replaced_is_itself(signed: TestClient) -> 
 def test_a_variation_replaces_parts_by_digest_or_takes_them_out(
     signed: TestClient,
 ) -> None:
-    mine = thread(signed, "configuration", FREE_TEXT)
+    mine = thread(signed, "configuration", LINES)
     off = digest(signed, "reasoning", OFF)
     shown = variation(signed, mine, reasoning=off)
     assert shown["head"] == mine["head"]
@@ -108,7 +109,7 @@ def test_a_variation_replaces_parts_by_digest_or_takes_them_out(
     assert same["skeleton"] == mine["head"]["digest"]
     assert not parts(same)["prompt"]["replaced"]
 
-    web = thread(signed, "configuration", PLAN_WEB)
+    web = thread(signed, "configuration", NATIVE_TOOLS)
     assert "tools" in variation(signed, web)["request"]
     taken = variation(signed, web, toolset="")
     toolset = parts(taken)["toolset"]
@@ -120,7 +121,7 @@ def test_a_variation_replaces_parts_by_digest_or_takes_them_out(
 def test_the_seed_is_drawn_unless_given_and_greedy_sampling_sends_none(
     signed: TestClient,
 ) -> None:
-    mine = thread(signed, "configuration", FREE_TEXT)
+    mine = thread(signed, "configuration", LINES)
     drawn = variation(signed, mine)
     assert 0 <= drawn["seed"] < 2**31
     assert drawn["request"]["seed"] == drawn["seed"]
@@ -134,16 +135,17 @@ def test_the_seed_is_drawn_unless_given_and_greedy_sampling_sends_none(
 def test_a_variation_is_rendered_and_linted_for_an_endpoint(
     signed: TestClient,
 ) -> None:
-    web = thread(signed, "configuration", PLAN_WEB)
+    web = thread(signed, "configuration", NATIVE_TOOLS)
     engine = signed.get(f"/api/endpoints/{QWEN}").json()["engine"]
     shown = variation(signed, web, endpoint=QWEN)
     assert shown["request"]["model"] == engine
     codes = {f["code"] for f in shown["findings"]}
     assert {"vllm.native_tools_uncallable", "language.mixed"} <= codes
 
-    english = variation(signed, web, endpoint=QWEN, tag="dutch-fall")
+    english = variation(signed, web, endpoint=QWEN, tag="targets")
     assert "language.mixed" not in {f["code"] for f in english["findings"]}
-    tagged = signed.get("/api/families", params={"tag": "dutch-fall"}).json()
+    tagged = signed.get("/api/families", params={"tag": "targets"}).json()
+    assert {f["language"] for f in tagged} == {"en"}
     assert {r["cases"] for r in english["reach"]} == {len(tagged)}
 
     nowhere = variation(signed, web, endpoint=QWEN, tag="nowhere")
@@ -155,36 +157,45 @@ def test_a_variation_is_rendered_and_linted_for_an_endpoint(
 def test_each_scorer_view_s_reach_names_the_families_it_misses(
     signed: TestClient,
 ) -> None:
-    families = sorted(f["id"] for f in signed.get("/api/families").json())
-    plan = variation(signed, thread(signed, "configuration", PLAN))
-    reach = {(r["name"], r["label"]): r for r in plan["reach"]}
-    differential = reach["plan", "differential"]
-    assert differential["scorer"] == thread(signed, "scorer", "plan", "archive")["id"]
+    listed = signed.get("/api/families").json()
+    families = sorted(f["id"] for f in listed)
+    native = variation(signed, thread(signed, "configuration", NATIVE))
+    reach = {(r["name"], r["label"]): r for r in native["reach"]}
+    differential = reach[DIFFERENTIAL]
+    assert differential["scorer"] == thread(signed, "scorer", "answer", "archive")["id"]
     assert (differential["offered"], differential["cases"]) == (True, len(families))
     assert differential["missing"] == []
-    assert sorted(reach["plan", "dont-miss"]["missing"]) == families
+    dont_miss = {
+        id
+        for id, case in load_cases(DATA).items()
+        if isinstance(case.targets, dict) and "dont_miss" in case.targets
+    }
+    assert dont_miss
+    assert sorted(reach["answer", "dont-miss"]["missing"]) == sorted(
+        f["id"] for f in listed if f["name"] not in dont_miss
+    )
 
-    free = variation(signed, thread(signed, "configuration", FREE_TEXT))
-    reach = {(r["name"], r["label"]): r for r in free["reach"]}
+    lines = variation(signed, thread(signed, "configuration", LINES))
+    reach = {(r["name"], r["label"]): r for r in lines["reach"]}
     assert (
-        reach["plan", "warning"]["offered"],
-        reach["plan", "warning"]["missing"],
+        reach["answer", "warning"]["offered"],
+        reach["answer", "warning"]["missing"],
     ) == (
         False,
         [],
     )
-    assert reach["free-text", "text"]["missing"] == []
+    assert reach["lines", "text"]["missing"] == []
 
 
 @pytest.mark.slow
 def test_a_case_with_expectations_to_choose_from_is_shown_apart_in_the_reach(
     signed: TestClient, bench: Bench
 ) -> None:
-    plan = thread(signed, "configuration", PLAN)
-    [family] = signed.get("/api/families", params={"name": "Dutchfall11w"}).json()
+    native = thread(signed, "configuration", NATIVE)
+    [family] = signed.get("/api/families", params={"name": "crlf"}).json()
 
     def differential() -> tuple[list[int], list[int]]:
-        shown = variation(signed, plan)
+        shown = variation(signed, native)
         [found] = [r for r in shown["reach"] if (r["name"], r["label"]) == DIFFERENTIAL]
         return found["missing"], found["choosing"]
 
@@ -197,7 +208,7 @@ def test_a_case_with_expectations_to_choose_from_is_shown_apart_in_the_reach(
 def test_an_unsaved_variation_is_linted_in_its_recipe_s_language(
     signed: TestClient,
 ) -> None:
-    web = thread(signed, "configuration", PLAN_WEB)
+    web = thread(signed, "configuration", NATIVE_TOOLS)
     off = digest(signed, "reasoning", OFF)
 
     def codes(**params: Any) -> set[str]:
@@ -205,7 +216,7 @@ def test_an_unsaved_variation_is_linted_in_its_recipe_s_language(
         assert shown["skeleton"] != web["head"]["digest"]
         return {f["code"] for f in shown["findings"]}
 
-    assert "language.unknown" not in codes(tag="dutch-fall")
+    assert "language.unknown" not in codes(tag="targets")
     assert "language.mixed" in codes()
 
 
@@ -213,7 +224,7 @@ def test_an_unsaved_variation_is_linted_in_its_recipe_s_language(
 def test_a_variation_the_bench_refuses_is_unprocessable(
     signed: TestClient, conn: Connection, bob: dict[str, str]
 ) -> None:
-    mine = thread(signed, "configuration", FREE_TEXT)
+    mine = thread(signed, "configuration", LINES)
     off = digest(signed, "reasoning", OFF)
     store = Store(conn)
     registry = store.load([])
@@ -255,7 +266,7 @@ def test_a_variation_the_bench_refuses_is_unprocessable(
 def test_a_look_s_queries_don_t_grow_with_its_cases(
     signed: TestClient, db: str, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    web = thread(signed, "configuration", PLAN_WEB)
+    web = thread(signed, "configuration", NATIVE_TOOLS)
     counted = [0]
     execute = psycopg.Cursor.execute
 
@@ -271,14 +282,14 @@ def test_a_look_s_queries_don_t_grow_with_its_cases(
         shown = variation(signed, web, endpoint=QWEN, **params)
         return shown["reach"][0]["cases"], counted[0]
 
-    (few, queries), (every, again) = look(tag="edn"), look()
+    (few, queries), (every, again) = look(tag="swedish"), look()
     assert few < every
     assert queries == again
 
 
 @pytest.mark.slow
 def test_a_fork_is_a_configuration_of_one_s_own(signed: TestClient) -> None:
-    archives = thread(signed, "configuration", FREE_TEXT, "archive")
+    archives = thread(signed, "configuration", LINES, "archive")
     off = digest(signed, "reasoning", OFF)
     path = f"/api/threads/{archives['id']}/forks"
     asked = {"name": "terse", "parts": {"reasoning": off}}
@@ -306,7 +317,7 @@ def test_a_fork_is_a_configuration_of_one_s_own(signed: TestClient) -> None:
 def test_an_edit_is_a_new_version_of_one_s_own_configuration(
     signed: TestClient,
 ) -> None:
-    mine = thread(signed, "configuration", FREE_TEXT)
+    mine = thread(signed, "configuration", LINES)
     off = digest(signed, "reasoning", OFF)
     path = f"/api/threads/{mine['id']}/edits"
     seen = mine["head"]["id"]
@@ -345,7 +356,7 @@ def test_an_edit_is_a_new_version_of_one_s_own_configuration(
 def test_only_one_s_own_configuration_is_edited_and_a_seen_one_forked(
     signed: TestClient, bob: dict[str, str]
 ) -> None:
-    archives = thread(signed, "configuration", FREE_TEXT, "archive")
+    archives = thread(signed, "configuration", LINES, "archive")
     got = signed.post(
         f"/api/threads/{archives['id']}/edits", json={"head": archives["head"]["id"]}
     )
@@ -354,7 +365,7 @@ def test_only_one_s_own_configuration_is_edited_and_a_seen_one_forked(
         {"detail": f"no configuration {archives['id']} of yours"},
     )
 
-    mine = thread(signed, "configuration", FREE_TEXT)
+    mine = thread(signed, "configuration", LINES)
     head = mine["head"]["id"]
     for path, body in (
         (f"/api/threads/{mine['id']}/forks", {"name": "bob's"}),
@@ -389,7 +400,7 @@ def test_only_one_s_own_configuration_is_edited_and_a_seen_one_forked(
 def test_trying_forking_and_editing_need_a_session(
     client: TestClient, bench: Bench
 ) -> None:
-    mine = bench.thread("configuration", FREE_TEXT)[0].thread
+    mine = bench.thread("configuration", LINES)[0].thread
     assert client.get(f"/api/threads/{mine}/variation").status_code == 401
     for path in (f"/api/threads/{mine}/forks", f"/api/threads/{mine}/edits"):
         assert client.post(path, json={"name": "x"}).status_code == 401
