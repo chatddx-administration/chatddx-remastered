@@ -21,13 +21,16 @@ Agents may annotate it as "Docs" describes and should always report surprises.
 ## Docs
 For docs in (`docs/*`), the same rule applies as to this document: Humans write, agents suggest.
 
-* For each change, inline your suggestion immediately above the subject to change with the following template:
+* For each change, inline your suggestion immediately above the subject to change with the template below.
+  If the suggestion itself contains a code-block, use 4 backticks for the suggestion.
+<suggestion template>
 ```
 AGENT: <verb>
 <short explanation>
 ---
 <optional suggestion for new content>
 ```
+</suggestion template>
 
 * Docs refer to the code, the code speaks for itself. ALWAYS remove docstrings/comments that reference docs or explain
   what the code does before committing.

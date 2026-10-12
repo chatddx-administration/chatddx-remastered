@@ -115,13 +115,14 @@ layers depending on what resources they require:
 
 - All *rules* that can be expressed as a pure functions (without store access) -> `identity`
 - All *procedures* that can be carried out from the catalog's rows alone -> `catalog`
-- All *operations* that needs to reach across the project -> `bench`
+- All *operations* that need to reach across the project -> `bench`
 
 This is referred to as the "Person-scoped cake". `identity` is currently underused and exploration of its usability is
 encouraged.
 
 ### On the table
-- The result from scorers needs to be aggregated and exported. Since python is well-suited for statistical analysis, processing the data into publishable results may become a requirement.
+- The result from scorers needs to be aggregated and exported. Since python is well-suited for statistical analysis,
+  processing the data into publishable results may become a requirement.
 - Garbage collector for true deletions of non-referenced items.
 
 ### Work in progress

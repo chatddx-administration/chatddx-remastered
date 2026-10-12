@@ -128,14 +128,8 @@ Checking a run shows whether it is what its trial produces under the conditions 
 Records that can't be an account of the plan at all stop the check: work that the trial, the canary plan or the
 skeleton couldn't have asked for means the records are wrong, not the world. Everything else is a warning, of four
 kinds:
-AGENT: change
-`check_run` warns `call.failed` for each item and canary call that ended with an error: stopped, cut short,
-rejected, unreachable, or left by the engine (agents/wip-runner.md, "Found in a check against the code").
----
 - **Complete**: the run did all it planned. Every item and canary call is there and got a whole answer, and no item
   was left waiting on its tools.
-- **Complete**: the run did all it planned. Every item and canary call is there, and no item was left waiting on its
-  tools.
 - **Conducted as declared**: the rig kept to its own plan. It followed the execution settings, kept the canaries clear
   of the items, and ran each tool with the code the tool pins.
 - **As pinned**: the world matched the pinned factors. The engine attests to the declared model and to the prompt it

@@ -196,11 +196,6 @@ A self-contained package that can be verified offline.
 
 ## Component kinds
 
-AGENT: change
-The `judge` row's `cross_check`, with the refusal of tools (agents/wip-judges.md, J10, decided).
----
-| `judge` | `scoring.py:Judge` | `/skeleton`: `skeleton`; `/engine`: `engine.local`, `engine.remote` | the skeleton's purpose is `judge`, and it has no tools |
-
 | Kind | Class | References (path: kinds) | `cross_check` |
 | --- | --- | --- | --- |
 | `model` | `engine.py:ModelArtifact` | | |
@@ -224,7 +219,7 @@ The `judge` row's `cross_check`, with the refusal of tools (agents/wip-judges.md
 | `canary_set` | `trial.py:CanarySet` | | |
 | `expectation_schema` | `scoring.py:ExpectationSchema` | | |
 | `expectation` | `scoring.py:Expectation` | `/case`: `case`; `/expectation_schema`: `expectation_schema` | |
-| `judge` | `scoring.py:Judge` | `/skeleton`: `skeleton`; `/engine`: `engine.local`, `engine.remote` | the skeleton's purpose is `judge` |
+| `judge` | `scoring.py:Judge` | `/skeleton`: `skeleton`; `/engine`: `engine.local`, `engine.remote` | the skeleton's purpose is `judge`, and it has no tools |
 | `scorer` | `scoring.py:Scorer` | `/expectation_schema`: `expectation_schema`; `/views/<i>/judge`: `judge` | |
 | `scoring` | `scoring.py:Scoring` | `/scorer`: `scorer`; `/expectations/<i>`: `expectation` | every expectation uses the scorer's expectation schema; at most one expectation per case |
 
@@ -675,14 +670,10 @@ schema when the expectation is built; lints check it.
   items.
 
 ### `class Judge(Component)`, kind `judge`
-AGENT: change
-A judge can't run tools (agents/wip-judges.md, J10, decided), so its skeleton may not have any.
----
-| `skeleton` | `SkeletonRef` | required; purpose `judge`, and no tools (`cross_check`) |
 
 | Field | Type | Default |
 | --- | --- | --- |
-| `skeleton` | `SkeletonRef` | required; purpose `judge` (`cross_check`) |
+| `skeleton` | `SkeletonRef` | required; purpose `judge`, and no tools (`cross_check`) |
 | `engine` | `EngineRef` | required |
 | `seeds` | `tuple[int, ...]`, at least one, distinct | required |
 | `fill` | `FillOp` | `"text@1"` |
@@ -722,10 +713,6 @@ and `appendices` slots come from `prepare_case`.
 The entry point's interface belongs to `src/chatddx/scorers/scorer.py:ScoreFunction`, and the answer it reads to
 `src/chatddx/scorers/answer.py:read`.
 
-AGENT: change
-The scorer interface's version 2 (agents/wip-judges.md, J2, decided): a metric also takes a judged view's verdicts,
-and the one shipped entry point publishes the pattern and the judged metrics, so a scorer can mix them.
----
 `src/chatddx/scorers/shipped.py:SCORERS` ships one `Metrics`, `chatddx.scorers.metrics:score`, with version, metrics,
 what each measures, a JSON Schema for a view's params, whether it reads a judge's verdicts, and optionally a schema
 for the scorer's own params. Its metrics are the pattern metrics (`scorers/patterns.py`) and the judged metrics
@@ -735,11 +722,6 @@ seed in seed order, each none where it couldn't be read; seeds with none are lef
 seed's value. `shipped.problems` says why a scorer can't be scored by it: an entry point not shipped, another
 version, a metric it doesn't publish, params a schema refuses (none where no schema is published), or a view whose
 judge and metric disagree, one naming a judge whose metric reads no verdicts or the other way round.
-
-`src/chatddx/scorers/shipped.py:SCORERS` ships a `Metrics` with version, metrics, what it measures, a JSON Schema for a
-view's params, and optionally a schema for the scorer's own params. `shipped.problems` says why a scorer can't be
-scored by it: an entry point not shipped, another version, a metric it doesn't publish, or params a schema refuses
-(none where no schema is published).
 
 ### `class Scoring(Component)`, kind `scoring`
 `scorer: ScorerRef`, `expectations: tuple[ExpectationRef, ...]` (at least one; the order is kept and is part of the
@@ -848,9 +830,6 @@ On any other engine (a remote engine, or another vLLM version):
 | --- | --- | --- |
 | `schema.ref_unverified` | warning | a `native` or `tool` skeleton's output schema holds `$ref`. `inline_refs@1` removes it. |
 
-AGENT: add
-A lint for judges alone (agents/wip-judges.md, J10, decided).
----
 #### Judges
 | Code | Level | When |
 | --- | --- | --- |
@@ -865,11 +844,6 @@ A lint for judges alone (agents/wip-judges.md, J10, decided).
 Checks against the model facts (`facts.*`) are in `src/chatddx/facts/lint.py`.
 
 ## Finding codes
-
-AGENT: add
-A row for the judges' lint, after `schema.ref_unverified`:
----
-| `judge.greedy_seeds` | warning | `lint` |
 
 | Code | Level | Reported by |
 | --- | --- | --- |
@@ -888,6 +862,7 @@ A row for the judges' lint, after `schema.ref_unverified`:
 | `vllm.native_tools_uncallable` | warning | `lint` |
 | `vllm.grammar_before_reasoning` | warning or info | `lint` |
 | `schema.ref_unverified` | warning | `lint` |
+| `judge.greedy_seeds` | warning | `lint` |
 | `language.unknown` | info | `lint` |
 | `language.mixed` | warning | `lint` |
 

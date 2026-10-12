@@ -308,24 +308,19 @@ Returns findings, in this order:
 1. `ledger.seal`, subject the run id;
 2. `run.incomplete` when finished: one for missing items, one for missing planned canary calls;
 3. `case.drift` for each item whose `vignette` differs from its case's `vignette.fingerprint`;
-AGENT: add
-The finding for failed calls, as the user decided: one per item or canary call, with the call's error. It goes in
-as 4, and the rest move down one.
----
 4. `call.failed` for each item whose last call has an `error`, subject the item key, then for each canary call with
    one, subject `<phase>/<position>`; the message is the error. Earlier calls of an item can't have one: a failed call
    ends its rounds;
-
-4. `tools.unanswered` for each item whose last call still has tool calls other than the answer function's (skeletons
-   with tools only);
-5. `tools.code` for each tool of the skeleton whose version isn't recorded or isn't the one `Tool.version` pins;
-6. `attestation.model` for each item: one per distinct wrong model name, and one when some call has a response but no
-   model name. The declared name is the engine's `served_model_name`: a local engine's digest, a remote engine's
-   `model`. Calls without a response aren't checked;
-7. `attestation.prompt_tokens` when some items have a call, failed calls included, without `prompt_tokens`;
-8. `execution.*` over every item call and canary call, an item counting as sent when its first call starts;
-9. `canary.phase`: start-phase calls that finish after the first item call starts, and end-phase calls that start
-   before the last item call, tool rounds included, finishes. One finding per phase. Nothing when there are no items.
+5. `tools.unanswered` for each item whose last call still has tool calls other than the answer function's (skeletons
+    with tools only);
+6.  `tools.code` for each tool of the skeleton whose version isn't recorded or isn't the one `Tool.version` pins;
+7.  `attestation.model` for each item: one per distinct wrong model name, and one when some call has a response but no
+    model name. The declared name is the engine's `served_model_name`: a local engine's digest, a remote engine's
+    `model`. Calls without a response aren't checked;
+8.  `attestation.prompt_tokens` when some items have a call, failed calls included, without `prompt_tokens`;
+9.  `execution.*` over every item call and canary call, an item counting as sent when its first call starts;
+10. `canary.phase`: start-phase calls that finish after the first item call starts, and end-phase calls that start
+    before the last item call, tool rounds included, finishes. One finding per phase. Nothing when there are no items.
 
 Canary calls get neither the model check nor the prompt-token check. Timeouts aren't checked.
 
@@ -424,15 +419,11 @@ Returns findings, in this order:
 
 All are warnings. Item-key subjects are `str(ItemKey)`.
 
-AGENT: add
-A row for the new finding, after `case.drift`.
----
-| `call.failed` | `check_run` | item key, or `<phase>/<position>` for a canary call | the call's `error` |
-
 | Code | Reported by | Subject | Message |
 | --- | --- | --- | --- |
 | `run.incomplete` | `check_run` | none | `<n> items missing`, `<n> canary calls missing` |
 | `case.drift` | `check_run` | item key | `the vignette read differs from the case's` |
+| `call.failed` | `check_run` | item key, or `<phase>/<position>` for a canary call | the call's `error` |
 | `tools.unanswered` | `check_run` | item key | `the last response still calls <names> after <k> of <max_rounds> rounds` |
 | `tools.code` | `check_run` | tool digest | `the code tool '<name>' ran with isn't recorded`, or `tool '<name>' ran at version <v> of <entry point>, not the version it pins (<v>)` |
 | `attestation.model` | `check_run` | item key | `engine returned model '<got>', declared '<want>'`, or `engine returned no model name, declared '<want>'` |
