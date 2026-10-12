@@ -245,19 +245,10 @@ Most of the plan is compared with what happened (see "What a record holds"), but
 
 ### Smaller issues
 - **Canary drift isn't checked.** Nothing compares canary outputs between phases or between runs.
-AGENT: change
-Judge calls get the model check now (agents/wip-judges.md, J8, decided).
----
 - **Only run items are fully attested.** Judge calls get the model check but no prompt check, and canary calls get
   neither.
-- **Only run items are attested.** Canary calls and judge calls get no model check and no prompt check.
 - **The system fingerprint is kept but never compared** between calls or runs.
 - **The finish record is outside the seal.** Its time and findings could change without the seal noticing.
-AGENT: remove
-A score's start record names each judge's endpoint now (`ScoreStarted.endpoints`; agents/wip-judges.md, J1, decided).
----
-- **Judge calls don't record where they went.** A score's start record has no endpoint, so the ledger can't show which
-  one received the case-derived content a judge reads, as a run's does.
 - **Records aren't in bundles.** A bundle (docs/factors.md, "Registries and bundles") carries components only; how
   records travel with the factors they reference, for example for publication, isn't specified.
 - **Findings have no mechanism of their own.** The runner and the scoring pass keep those they see in the finish record,

@@ -359,11 +359,6 @@ scorer's entry point the scoring pass ran.
 | `scoring` | `ScoringRef` | required |
 | `execution` | `Execution` | `Execution()`; for the judge calls |
 
-AGENT: add
-A row for where judge calls went (agents/wip-judges.md, J1, decided), and the class it holds, beside `Endpoint`.
----
-| `endpoints` | `tuple[JudgeEndpoint, ...]` | `()`; each judge's endpoint, `JudgeEndpoint(judge: JudgeRef, endpoint: Endpoint)` |
-
 ### `class ScoreItem(Record)`
 One run item graded by one view. Case-derived.
 
@@ -375,6 +370,7 @@ One run item graded by one view. Case-derived.
 | `value` | `float \| None`, finite | required; `None` when the item couldn't be scored. Infinity and NaN are refused. |
 | `detail` | `JsonValue` | `None`; whatever the scorer writes |
 | `judge_calls` | `tuple[JudgeCall, ...]` | `()` |
+| `endpoints` | `tuple[JudgeEndpoint, ...]` | `()`; each judge's endpoint, `JudgeEndpoint(judge: JudgeRef, endpoint: Endpoint)` |
 
 ### `class ScoreFinished(Record)`, stage `finished`
 Not case-derived. Fields as `RunFinished`, with `score: UUID` in place of `run`.
@@ -409,14 +405,9 @@ Raises `StructuralError`:
 Returns findings, in this order:
 1. `view.unreachable` for each view whose `output` selector can't reach anything in the run skeleton's
    `output_schema` (`chatddx.factors.select.reaches`), subject the scorer digest;
-AGENT: add
-The model check for judge calls (agents/wip-judges.md, J8, decided), after item 2.
----
+2. `judge.incomplete` for each item with a value whose view's judge was called with fewer distinct seeds than it has;
    then `attestation.model` for each item's judge calls, per judge: one per distinct wrong model name, and one when
    some call has a response but no model name, against the judge engine's `served_model_name`;
-
-2. `judge.incomplete` for each item with a value whose view's judge was called with fewer distinct seeds than it
-   has;
 3. `score.scorer_code` when `scorer_version` isn't the version `Scorer.version` pins;
 4. `score.run_unfinished` when the run has no finished row, or finished after the score started;
 5. `ledger.seal`, subject the score id;
@@ -430,11 +421,6 @@ The model check for judge calls (agents/wip-judges.md, J8, decided), after item 
 
 All are warnings. Item-key subjects are `str(ItemKey)`.
 
-AGENT: change
-The `attestation.model` row, which `check_score` reports too, for judge calls.
----
-| `attestation.model` | `check_run`, `check_score` | item key | `engine returned model '<got>', declared '<want>'`, or `engine returned no model name, declared '<want>'`; for a judge call, `judge engine returned …` |
-
 | Code | Reported by | Subject | Message |
 | --- | --- | --- | --- |
 | `run.incomplete` | `check_run` | none | `<n> items missing`, `<n> canary calls missing` |
@@ -442,7 +428,7 @@ The `attestation.model` row, which `check_score` reports too, for judge calls.
 | `call.failed` | `check_run` | item key, or `<phase>/<position>` for a canary call | the call's `error` |
 | `tools.unanswered` | `check_run` | item key | `the last response still calls <names> after <k> of <max_rounds> rounds` |
 | `tools.code` | `check_run` | tool digest | `the code tool '<name>' ran with isn't recorded`, or `tool '<name>' ran at version <v> of <entry point>, not the version it pins (<v>)` |
-| `attestation.model` | `check_run` | item key | `engine returned model '<got>', declared '<want>'`, or `engine returned no model name, declared '<want>'` |
+| `attestation.model` | `check_run`, `check_score` | item key | `engine returned model '<got>', declared '<want>'`, or `engine returned no model name, declared '<want>'`; for a judge call, `judge engine returned …` |
 | `attestation.prompt_tokens` | `check_run` | none | `<n> items have no prompt token fingerprint` |
 | `canary.phase` | `check_run` | none | `<n> start canary calls hadn't finished when the first item was sent`, `<n> end canary calls started before the last item call finished` |
 | `execution.retries` | `check_run`, `check_score` | none | `<n> calls took more than the <retries + 1> attempts allowed` |
