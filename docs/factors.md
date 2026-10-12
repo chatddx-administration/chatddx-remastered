@@ -466,15 +466,8 @@ engine that uses it, and finding the engines that share a closure means scanning
 ### Remote engine
 Principal author: ops.
 
-AGENT: change
-A remote engine's address moved to the inventory, and the engine names its provider (agents/wip-judges.md, decided).
----
 A remote engine is an API we don't control. It declares only the API, its provider and the requested model; where it
 is served is the inventory's (docs/inventory.md, "Endpoints"), and its chat template is not pinned.
-
-A remote engine is an API we don't control. It declares only the API, its address and the requested model; its chat
-template is not pinned. What the API does on a given day is an observed factor. Of what it returns, only the model name
-is checked today (docs/ledger.md).
 
 Canary probes at the start and end of a run apply to any engine and are planned per run, so they are not part of the
 engine.
@@ -609,15 +602,8 @@ pick the engine and the fill rule.
 
 A judge is an LLM used as a metric: a judge skeleton, an engine, its own seeds, and a fill rule.
 
-The view decides what the judge sees, and the judge decides how it is written out. The completion slot gets what the
-view's output selector picks from the answer, as the scorer read it, and the expectation slot what its expectation
-selector picks from the expectation. The fill rule, named and versioned like cleanup steps, turns those picks into text.
-AGENT: change
-Vignettes will probably never go to a judge (agents/wip-judges.md, J7, closed): the scoring pass refuses a judge
-whose skeleton reads them, before anything is written.
----
-A judge reads no vignette and no appendices: the scoring pass refuses a judge whose skeleton has either slot, though
-a judge prompt may still be written with them.
+Vignettes will probably never go to a judge: the scoring pass refuses a judge whose skeleton reads them, before anything
+is written.
 
 The vignette and the appendices are filled as for the trial (see "Preparing a case").
 
@@ -694,20 +680,8 @@ changes the shape of a trial, so it is cheapest decided before trials are stored
   prompts, are possible today. A take: keep hand-written skeletons. Provenance is whether a compilation names the
   skeleton, a question a lint can ask once the catalog or ledger is queried for it.
 - **A scoring doesn't say which cases it lacks.** Only checking a score warns, once a run is scored under it.
-AGENT: change
-The model is checked now (agents/wip-judges.md, J8, decided); the prompt tokens aren't.
----
 - **Judge calls aren't fully attested.** Their returned model is checked against the judge engine's, but their
   prompt-token fingerprint isn't, as the request would have to be rebuilt from the answer as the scorer read it.
-
-- **Judge calls aren't attested.** Their returned model and prompt-token fingerprint aren't checked the way run items
-  are.
-AGENT: remove
-No judge reads the vignette now (J7, closed), so nothing fetches it again.
----
-- **Judges that read the vignette must fetch it again.** A judge skeleton with the vignette slot makes the scorer fetch
-  the sensitive vignette again and redo the trial's cleanup. Preparing a case covers the cleanup; nothing fetches the
-  vignette.
 - **Every engine is asked for the prompt's token ids.** A remote engine that isn't vLLM may refuse the unknown option.
   Either the engine says whether it takes it, which changes the engine's digest, or the runner decides per call, which
   leaves the run without prompt-token fingerprints.

@@ -197,15 +197,6 @@ compilation, as for a hand-written skeleton, it is shown by its purpose and the 
 
 Each kind is described by:
 
-AGENT: change
-A remote engine's address moved to the inventory, and the engine names its provider (agents/wip-judges.md, decided). The Remote engine row:
----
-| Remote engine | Its model and provider. | `gpt-4o from openai` |
-
-AGENT: remove
-The table has two Scorer rows; the one whose example is `scorer chatddx.scorers.patterns:score v1` names an entry point
-that no longer ships (agents/wip-judges.md, J2).
----
 | Component | Described by | Example |
 | --- | --- | --- |
 | Chunk | Its values or the opening words of its text. | `temperature 1.0, top_p 1.0` or `"{vignette}{appendices}"` |
@@ -219,11 +210,10 @@ that no longer ships (agents/wip-judges.md, J2).
 | Expectation | Its case. | `expectation for Dutchfall11w` |
 | Model | Its repository. | `google/gemma-3-12b-it` |
 | Local engine | Its model, server and GPU. | `google/gemma-3-12b-it on vllm 0.24.0 (NVIDIA GeForce RTX 5090)` |
-| Remote engine | Its model and host. | `gpt-4o at api.openai.com` |
+| Remote engine | Its model and provider. | `gpt-4o from openai` |
 | Trial | Its skeleton, its engine, and how many cases and seeds it has. | `plan on qwen3-8b@pelle, 20 cases, 1 seed` |
 | Batch | Variation count, its base, case count, and endpoint. | `4 variations of plan, 20 cases, at qwen3-8b@pelle` |
 | Judge | Its skeleton and engine. | `judge grader on qwen3-8b@pelle` |
-| Scorer | Its entry point and version. | `scorer chatddx.scorers.patterns:score v1` |
 | Scorer | Its entry point and version. | `scorer chatddx.scorers.metrics:score v1` |
 | Expectation schema | Its title or its properties. | `Targets` |
 | Canary set | How many canaries it has. | `2 canaries` |

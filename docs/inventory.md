@@ -6,15 +6,7 @@ engine is served, and where a host keeps the model files and chat template an en
 Until clearance has a pipeline of its own, the inventory also says which endpoints may receive content from which
 sensitive sources.
 
-No component refers to an inventory entry, so moving a model's files or an engine's server changes no digest.
-AGENT: change
-A remote engine's address moved to the inventory, and the engine names its provider (agents/wip-judges.md, decided).
----
 One thing that sounds like a location is a factor, though: a source's name, which every case built from it carries.
-
-Two things that sound like locations are factors, though:
-- a source's name, which every case built from it carries
-- a remote engine's address
 
 The inventory isn't stored in the database, and its history is git's. A run records the endpoint it used, by name and
 address (docs/ledger.md, "Run start").
@@ -90,14 +82,8 @@ A local engine is served under its digest (docs/factors.md, "Local engine"), so 
 server answers as. Changing the engine changes its digest, so the endpoint has to change with it. A local engine's
 endpoint needs an address to be reached, and a host too to be started.
 
-AGENT: change
-A remote engine's address moved to the inventory, and the engine names its provider (agents/wip-judges.md, decided).
----
 A remote engine's endpoint gives its address, as a local engine's does; the engine itself names its provider and
 model. The endpoint adds what isn't part of the engine: the address, the secret and the capacity.
-
-A remote engine's address is part of its digest, so its endpoint may leave the address out; if it gives one, it must
-be the same. The endpoint adds what isn't part of the engine: the secret and the capacity.
 
 Endpoint names are free-form. The engine import names them after the server and the host, server@host, and the sample
 World follows that pattern. A run records the name, and clearance keys on it.
@@ -143,15 +129,7 @@ The fake vLLM can be started from a start-up (`chatddx fake-engines`), and then 
 (docs/vllm.md, "The fake vLLM").
 
 ### Reaching an engine
-AGENT: change
-A remote engine's address moved to the inventory, and the engine names its provider (agents/wip-judges.md, decided).
----
 An endpoint is reached at its address.
-
-An endpoint is reached at its address, or a remote engine's endpoint at the engine's. Before case-derived content goes
-out, the runner confirms the endpoint: its server must list the name the engine is served under, a local engine's
-digest or a remote engine's model (agents/wip-clearance.md, "Vetted endpoints"). A server that can't be reached
-can't be confirmed.
 
 With a World, init-data ends with the inventory check's findings and a count (see "Checks happen when an entry is
 used"). It finds that out without connecting.
