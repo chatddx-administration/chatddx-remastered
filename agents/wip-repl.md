@@ -1,32 +1,122 @@
 # The repl: plan
 
-Plan for bringing the old chatddx shell into remastered. "The old repl" is chatddx-administration/chatddx at
-504792c: `src/chatddx/repl/` and its manual `docs/repl.md`. Remastered is this repo at 249548a.
+Plan for bringing the old chatddx shell into remastered, and then past it. "The old repl" is
+chatddx-administration/chatddx at 504792c: `src/chatddx/repl/` and its manual `docs/repl.md`. The port began on this
+repo at 249548a; this file was last checked against the project at 5d4bff1.
 Old permalink base: https://github.com/chatddx-administration/chatddx/blob/504792cbeb09508f2c52912be29a3d8809d2fa1d/
 
 "Decided" means the user said so. "Take" is the agent's recommendation and still open.
 
 ## Start with this
-The shell is built: `chatddx repl` chooses and inspects (4a), runs and scores (4b), and looks back and scores again
-(4c; see "4. The shell"). What's outstanding:
-1. **Cross-check the shell with the old manual**, `agents/wip-repl-manual.md`: the old project's `docs/repl.md` at
-   504792c, copied unchanged. Go through it command by command and example by example, and note where remastered's
-   shell does otherwise: the vocabulary (D6), per-model names, `seed` without `none` (D3), scores after a batch rather
-   than on its lines, `show`'s tables, and what isn't ported. That is the ground for the new manual, `docs/repl.md`,
-   proposed in phase 6.
-2. **The takes made while building** (in "Built: 4a", "Built: 4b" and "Built: 4c") wait for the user's word, and so
-   do D5–D8 and which scorers apply to a run (see "3. Reads for a person").
-3. **The bench** is a module of its own now, `src/chatddx/bench/`; what it is waits on `agents/wip-bench.md`.
-4. **Left from 4a**: nothing; an unsaved variation's language is known since the API's phase 3.
-5. **Left from 4b**: a structured answer cut short is unread, as nothing salvages it; no word on reasoning that wasn't
-   heeded; two tool calls in one response run together on one line.
-6. **Left from 4c**: an unsaved cell's runs are titled by their whole recipe; only an item's first request is rendered
-   again.
-7. **Left out** of the port (see "Left out"): endpoints with a credential, and judges. The portal, the batch planner
-   and the worker are planned in `agents/wip-portal.md`, `agents/wip-batch.md` and `agents/wip-worker.md`, and sample
-   runs in `agents/wip-sample-data.md`.
+The port is done: `chatddx repl` chooses and inspects (4a), runs and scores (4b), and looks back and scores again
+(4c; see "4. The shell"), and judged scorers score in it since the judges' phase 5 (`agents/wip-judges.md`). What
+comes next is "7. Completion".
+
+Decided (the user, at 5d4bff1): **the repl is brought to completion**, past the old manual, so that it reaches the
+whole width of the control plane, free-text judges included. It is the API's sibling and its equal
+(`agents/wip-api.md`: "The API and its sibling, the repl, is a feature complete control plane for the rig"). This
+replaces `agents/wip-authoring.md`'s "the repl is for trying variations, and the rest is the portal's" ("The edges").
+The runner is to be prepared for it, the bench may need additions, and the sample data is to be extended.
+
+What's open, in order:
+1. **The questions in "7. Completion"**, "Questions for the user", before the build starts.
+2. **The cross-check with the old manual** is done (see "The old manual, checked"); the new manual,
+   `docs/repl.md`, is drafted from it once the completion's commands settle, since they will change `help` and most
+   sections.
+3. **Takes waiting for the user's word**, listed in "Decisions so far".
+4. **Defects found in the check** (see "Where it stands at 5d4bff1"), fixed in the completion's first phase.
+5. **Left from 4b and 4c**, still true: a structured answer cut short is unread, as nothing salvages it; no word on
+   reasoning that wasn't heeded; two tool calls in one response run together on one line as they stream (`replay`
+   splits them, so the two differ); an unsaved cell's runs are titled by their whole recipe; only an item's first
+   request is rendered again.
 
 Where the docs stand on what the shell changed, and what is left to suggest, is in "6. Docs".
+
+## Where it stands at 5d4bff1
+Checked by reading the code and plans, and by driving the shell on the sample World with the fake engines. The quick
+test run passes (548).
+
+### What this file said that no longer holds
+- **Judges** aren't left out: the scoring pass sends judge calls (`runner/score.py:Grader`), the bench scores judged
+  scorers like any other (`bench/runs.py:score`), and `scorers` marks a judged view. Phase 2's "judged views stay
+  refused" and "Left out"'s "not yet" are history. The same stale line is in `agents/wip-bench.md` ("Runs, in the
+  API", "Judges"), `agents/wip-authoring.md` (S6), `agents/wip-judges.md` ("What exists", "Refused" and "Not there")
+  and `agents/wip-sample-data.md` ("Then the small parity items", "Parked").
+- **Endpoints with a credential** aren't refused: the gate reads the secret from the environment variable the
+  credential names and the wire sends it as a bearer (`runner/gate.py:secret`, `runner/wire.py`). No World a person
+  runs by hand has one; the test World's `unknown@remote` is unreachable.
+- **D8** was rebuilt by the bench: a person is scored against their own expectation only, and a shared one counts
+  once taken (`catalog/threads.py:expectation_choices`; `agents/wip-bench.md`, "What a person is scored against").
+  "Else the one thread shared with them" is gone.
+- **`Reads`** is folded into `Bench`: `Reads.scorers`, `.scoring`, `.runs`, `.run`, `.reaching` are
+  `Bench.scorers_for`, `.scoring`, `.runs`, `.run`, `.reaching`.
+- **The bench** isn't waiting on anything: it is a module of its own, described by `agents/wip-bench.md` and
+  `agents/wip-bench-api.md`.
+- **"A configuration on another model's endpoint"** ("Risks") is said straight away since 4a's lints.
+- **The runner** is solidified (`docs/runner.md`, `docs/runner-api.md`).
+
+### Defects
+- **An interrupted scoring counts as scored.** A second Ctrl-C while `run`, `batch` or `score` scores raises out of
+  `Bench.score` before `Grading.finish`, so the score has no `ScoreFinished`; `Bench.unscored` counts every
+  `ScoreStarted` (`store.scores_of`), so the scorer is never offered again, and `runs`, `replay` and `show` read the
+  partial score as any other. The run's answer, scores and "recorded as" aren't printed either. The first press is
+  held without a word.
+- **A score's findings are never shown.** `Graded.findings` (`answer.*`, `verdict.unread`, `verdict.invalid`,
+  `judge.incomplete`, `attestation.model`) has no reader in the repl; the API's `graded_of` leaves them out too.
+- **A judged view shows as a clipped `{"seeds": [...]}`**: no verdict, no `why`, no judge call, no judge endpoint
+  (`ScoreStarted.endpoints`), in `run`, `batch`, `score`, `replay` or `runs`.
+- **`show judge NAME` always says there are no runs**: `Bench.reaching` looks through trials, which never reach a
+  judge. `show endpoint` counts runs, not judge calls. `scorers` says "judged" without naming the judge, and `show
+  scorer` gives it as a bare digest.
+- **A judge whose engine two endpoints serve bars its scorer silently**: `_serving` refuses, asking for an endpoint to
+  be named, `Seen._applies` reads that as "doesn't apply", and nothing can name one (`Grader.start` takes
+  `endpoints`; the bench, the repl and the API pass none).
+- **Scoring is silent and can't be halted**: `Bench.score` calls `score_run`, which sends with no events, so a
+  batch's judged scorers send cases × judged views × seeds calls with nothing on screen.
+- **`configurations` lists judge configurations**, which `run` refuses when the trial is built ("trial uses a judge
+  skeleton"); `agents/wip-authoring.md` S6 takes them apart by purpose. No sample configuration is a judge yet, so
+  nothing shows it.
+- **A piped session goes on after an error** and exits 0, so `printf … | chatddx repl alice` can't be used as a
+  routine that must hold.
+
+### What the repl reaches
+It reaches 4 of the 19 writes `Bench` binds (`save`, `start`, `score`, `take`) and most of the reads. It never calls
+`fork`, `edit`, `new`, `component`, `fork_component`, `edit_component`, `appendix`, `case`, `replacement`,
+`type_case`, `carry`, `take_from`, `say`, `proposal`, `follow`, `deleted` or `linted`; the API calls all of them. It
+names threads only by name, so a thread with a title and no name can't be reached. `run` takes a family's bare case,
+so a case with appendices can't be run; runs take one seed and no execution, canary set or text cleanup; `score`
+can't pick a scorer, score again, or name a judge's endpoint. The API has no scoring requests of its own
+(`agents/wip-bench.md`, "Outstanding").
+
+## Decisions so far
+Decided:
+- **D1–D4** (`agents/wip-runner.md`'s history): the interim clearance gate, streaming as a transport, seeds without
+  `seed none` and a notice on a greedy cell, and the dependencies (`rich` under `chatddx.repl` only, argparse, the
+  stdlib for HTTP). D2 is in `docs/factors.md` ("Rendering"), D7's owner and titles in `docs/catalog.md` ("Owners",
+  "Titles").
+- **The bench as a module of its own**, and the person-scoped view it is (B3, `agents/wip-bench.md`).
+- **Judges**: J1–J10, 1B (a scorer the World bars applies to no run) and 2A (every judged scoring confirms its
+  judges' endpoints) (`agents/wip-judges.md`). Olof's notes are expectation data, kept as written, beside the targets
+  (`agents/wip-sample-data.md`, "Free-text expectations").
+- **Authoring**: A4, A5, A9, A10 and S1–S4 (`agents/wip-authoring.md`, "Start with this").
+- **The repl's completion** (see "Start with this").
+
+Takes, still waiting for a word:
+- **D5** (one versioned answer reader, `answer@1`, with salvage as best effort), **D6** (the vocabulary), **D8** as
+  the bench rebuilt it.
+- **4a**: per-model names tried from a plain name; names that hold spaces, the last name taking the rest of the line;
+  the cell's lints said at once; `set` compiling at once and refusing what doesn't; `save` editing the person's own
+  thread of that name, else forking; `show`'s placeholders and per-view reach; `show KIND`'s kinds; `reasoning`'s
+  table; seeds drawn below 100,000.
+- **4b**: scores after the run, in a table, rather than on each batch line; each selection shown once, by its first
+  label; an unsaved cell's compilation stored before its run; greedy cells run, with a notice; the transcript's
+  trailing whitespace left out.
+- **4c**: what is left to score worked out per run; the latest score per scorer is the one read; `runs` shows means.
+- **What applies**: every view of a scorer reaches the run's output schema, so the whole-answer scorers (`free-text`,
+  `raw`) apply to every run and read a structured answer as its JSON text (see "3. Reads for a person").
+- **S6**: judge configurations listed and found apart, by purpose.
+- **Hypothetical notes stay out of the sample** (`agents/wip-judges.md`), which the completion's sample judge meets
+  (see "7. Completion", "Questions for the user").
 
 ## Background
 The old repl is a thin UI (`src/chatddx/repl/`, ~1,600 lines and ~1,500 of tests) on top of four layers that do
@@ -162,6 +252,9 @@ shared with them, so the archive's counts through init-data's sharing rather tha
 refused, naming the threads; none is no expectation. Only threads whose head is in the scorer's expectation schema
 count. Still a take.
 
+Rebuilt since by the bench: only the person's own thread counts, and a shared one counts once they take it
+(`catalog/threads.py:expectation_choices`; `agents/wip-bench.md`, "What a person is scored against").
+
 ## How the old pieces map
 | old (504792c) | remastered | notes |
 |---|---|---|
@@ -177,7 +270,7 @@ count. Still a take.
 | scorer, one view each (`scoring/score.py`) | scorer with views and labels (`Catalog.labels`), one per output shape | batch columns become view labels |
 | score (`ScoreModel`) | `ScoreStarted`, `ScoreItem`, `ScoreFinished` under a `Scoring` | built per run (phase 2) |
 | mean and stderr (`scoring/metrics.py`) | `scorers/aggregate.py` | display only: analysis, not a score |
-| per-identity secrets | endpoint `credential`, only a name | refused for now (see "Left out") |
+| per-identity secrets | endpoint `credential`, the name of an environment variable | read by the gate, sent as a bearer (`runner/gate.py:secret`) |
 
 The old `bench/` (the cell, `save`, `NotOwn`, `Ready`, `Trial`, `Sending`, `Outcome`) maps in `agents/wip-bench.md` at
 d5ebf52, "The old bench".
@@ -259,7 +352,8 @@ Built but for what needs a person (`agents/wip-runner.md`, "The scoring pass"): 
   3. Run `check_score`, and write the score's owner entry.
 - **Outstanding runs**: runs the person owns with no score under the `Scoring` digest that would be built now. A
   changed expectation makes a new digest, so `score` catches up, as the old one did.
-- **Judged views** stay refused (`score` raises `NotImplementedError`) and are shown as "not yet".
+- **Judged views** stay refused (`score` raises `NotImplementedError`) and are shown as "not yet". Since then judges
+  score (`agents/wip-judges.md`, phases 4 and 5).
 - **Tests**: each sample output shape against its scorer; a changed expectation makes a run outstanding.
 
 ### 3. Reads for a person
@@ -374,8 +468,8 @@ the bench (`Bench.start`, `Bench.score`).
   cell's endpoint. The gate's refusals come before anything is written, as `refused: …`: `plan-web` on the sample,
   whose source is sensitive, or an endpoint that doesn't answer. The transcript streams the thinking, labelled, the
   answer, each tool call as `[name] arguments` with its `[result]`, and the tokens used. After `finish`, the run is
-  scored under every scorer that applies (`Reads.scorers`), each as its scoring would be built now
-  (`Reads.scoring`, D8; `runner/score.py:score_run`). Then: `valid` or `invalid: …` for an output with a schema,
+  scored under every scorer that applies (`Reads.scorers`, now `Bench.scorers_for`), each as its scoring would be
+  built now (`Reads.scoring`, now `Bench.scoring`; D8; `runner/score.py:score_run`). Then: `valid` or `invalid: …` for an output with a schema,
   `unread: …` for an answer that can't be read, the call's error when it has one, what the scorers' views read, the
   scores with their reasons, `check_run`'s findings, and `recorded as run N of trial X`, N counting the person's runs
   of that trial.
@@ -479,6 +573,151 @@ Agents propose and humans write `docs/*`, with suggestions inline above what the
   the sample World's fakes in README and `docs/vllm.md` (`chatddx fake-engines`). Test file names no longer need to be
   unique across packages, since every test directory is a package.
 
+### 7. Completion
+Decided: the repl reaches the whole width of the control plane, free-text judges included (see "Start with this").
+Everything below is a take until "Questions for the user" are answered.
+
+The width, as the take reads it: every write `Bench` binds and every read an edge makes of it, so that whatever the
+API can do for a person the repl can do too; and what the docs ask a person to do that the bench doesn't hold yet,
+judges first, as far as the user says (see the questions).
+
+#### Commands
+What each bench capability becomes at the prompt. Names follow D6 and the API's words (`agents/wip-api.md`, "The
+docs' words"); the cell stays the repl's alone.
+
+| Capability | Bench | Command |
+|---|---|---|
+| threads of any kind | `threads`, `visible` | `list KIND [TAG...]`; `configurations` stays, and leaves judge configurations out (S6) |
+| a person's deleted threads | `deleted`, `thread_by_id(deleted=True)` | `deleted [KIND]`, then `show #ID` |
+| a thread's versions | `catalog.history` | `history KIND NAME` |
+| a component by digest | `get`, `title` | `show sha256:…` (a prefix, as runs take one) |
+| shipped scoring code | `scorers.shipped` | `code`: entry points, versions, metrics, which are judged, their params' schemas |
+| models | `model`, `title` | `models` |
+| a new thread | `component`, `new` | `new KIND NAME [LANGUAGE]` |
+| a fork | `fork_component`; `fork` for a configuration | `fork KIND NAME [as NEW]`; `fork NEW` forks the cell's variation |
+| an edit | `edit_component`; `edit` | `edit KIND NAME [LANGUAGE]`; `save` names the head the cell was taken from, so `MovedOn` can reach it (A10) |
+| a configuration from a recipe | `new(recipe)` | `new configuration NAME` from the cell's parts, with no origin |
+| a component's lints | `linted` | `lint KIND NAME` |
+| saying | `say` | `name`, `describe`, `tag`/`untag`, `share`/`unshare LOGIN...`, `delete`, `restore #ID` |
+| what has moved on | (new, see "The bench") | `behind`: forks whose origin moved on, cases left at an earlier vignette |
+| following | `proposal`, `follow` | `proposal KIND NAME`, `follow KIND NAME` |
+| taking one | `take_from` | `take OWNER/NAME [replace]`; `take … under SCHEMA` for many |
+| a family's cases | `cases`, `current` | `cases CASE`, each case with its appendices |
+| an appendix, a case | `appendix`, `case` | `appendix CASE [NAME] [LANGUAGE]`, `case CASE APPENDIX...` |
+| replacing, carrying | `replacement`, `carry` | `replace CASE`, `carry CASE TO` |
+| a typed case | `type_case` | `type [NAME] [LANGUAGE]` |
+| a run's cases | `start(cases)` | `run CASE...`, a case of a family named by its appendices (`CASE+APPENDIX...`) |
+| a run's seeds, execution, canaries, cleanup | (new, see "The bench") | held in the shell as the seed is: `seeds N`, `execution …`, `canaries NAME\|none`, `cleanup OP...\|none`, shown by `show` |
+| scoring some scorers, again | `score(scorers)` | `score RUN [SCORER...]`, which scores again when named |
+| what is left to score | `outstanding` | `left`, listing without scoring |
+| a judge's endpoint | (new, see "The runner") | `judge JUDGE at ENDPOINT`, held for the session |
+| a score's detail | (new, see "The bench") | `show score RUN [SCORER]`: per item and view, each seed's verdict and `why`, the judge call, its endpoint, the score's findings |
+| judges written | (authoring phase 9) | `new judge`, `fork judge`, `edit judge` |
+
+Around the commands:
+- **Text in**: a component's JSON, an appendix, a typed case and a description are several lines. `$EDITOR` when the
+  shell is interactive, filled with the head (an edit) or a kind's skeleton (new); `< PATH` when it isn't.
+- **Ids**: `#ID` where a name is taken, for threads and families, since a thread with a title and no name, and a
+  deleted one, can be reached no other way.
+- **Completion** for every new command, and the cache forgotten after each write (`Repl.forget`).
+- **`help`** grouped by what the commands are for, and `help COMMAND`.
+- **A piped session stops at its first error** and exits 1.
+- **Every write prints what was written and its lints**, as the bench returns them.
+
+#### The runner
+1. **Scoring as a handle**, as running is: the bench gives the edge a `Grading` to send with events, halt and finish,
+   and `Bench.score` stays the one call for whoever doesn't need it. Today `score_run` sends with no events.
+2. **Events for judge calls**: a call started (item, view, seed, judge, endpoint), what it streams, and its end with
+   the verdict read. Today there are `ItemScored` and `Noted` only, and `sending.send` gets no `on_delta`.
+3. **An interrupted score is finished**, as an interrupted run is: its record then says what is missing
+   (`judge.incomplete`, items missing), and only a finished score counts against what is left to score.
+4. **Judge calls at the judge endpoint's `max_jobs`** (`agents/wip-judges.md`, "Open"): a batch of 20 cases with
+   three judged views of three seeds is 180 calls.
+5. **An execution from the bench**, a timeout above all: without one a hung engine holds the shell, and a halt can't
+   end a call still waiting for its headers (`docs/runner.md`, "What a stop leaves out").
+6. **Left from 4b**: a delta that says which tool call it belongs to; a finding for reasoning that wasn't heeded;
+   salvaging a structured answer cut short, which changes what scorers read, so a new version of the answer reader;
+   rendering a later round's request again with `next_request`.
+
+#### The bench
+1. **Judges written** (`agents/wip-authoring.md`, S6 and phase 9): `judge` in `WRITTEN`, configurations found and
+   listed by purpose, and a judge configuration linted as a judge.
+2. **`start` takes seeds, an execution, a canary set and text cleanup**; the runner takes them all already.
+3. **Scoring takes judges' endpoints and gives a handle**, and `_applies` stops barring a judge two endpoints serve
+   once one can be named (1B: what may pass later keeps a scorer outstanding).
+4. **`unscored` reads finished scores only.**
+5. **What reaches a judge**: the scores whose scorer names it, and the judge calls per endpoint, for `show judge` and
+   `show endpoint`.
+6. **What has moved on for the person**, a listing over `Catalog.behind`; today only `proposal`, per fork, and
+   `replacement`, per case, read it.
+7. **A score item's verdicts**, each seed's call read through the judge's skeleton, so the repl and the API show the
+   same thing; the API's `graded_of` gives neither details nor findings today.
+8. **What is said about a family** (name, tags, description, collaborators), if wanted: `say` takes threads only, so
+   a typed case's family keeps what it was typed with.
+
+#### The sample data
+1. **A judge**: a judge prompt (the completion and the expectation; no vignette, J7), the output `verdict` with
+   `examples` so the fake answers by seed, a greedy recipe and a sampled one on a scale, made per model; judges on the
+   sample World's fake and on Kompismoln's `qwen3-8b@pelle`; a scorer over Olof's notes with a view for `comment` and
+   one for `answer`, beside a pattern view, as the test World's `judged` is. See the questions.
+2. **A canary set**, which needs a data-set table (`docs/curation.md`, "What a data set can't hold yet").
+3. **Appendices**, which need a data-set table too; see the questions.
+4. **What a person makes**: shares between alice and bob, a deleted thread, a fork behind its origin, a typed case,
+   a stopped run, an unfinished one, a judged score. These belong to sample runs (`agents/wip-sample-data.md`, "Sample
+   runs") rather than to init-data: `chatddx samples LOGIN` writes them through the bench, and the manual's examples
+   read them.
+
+The fake vLLM grows with it: `--script PATH` for the sample runs, as planned, and `--api-key`, as vLLM 0.24 has it,
+so a World can declare an endpoint with a credential and `endpoints` can say whether its secret is set. As a judge it
+needs nothing new: a schema's `examples` are picked by seed.
+
+#### What else
+- **The manual**, `docs/repl.md`, drafted in `agents/` from "The old manual, checked" once the commands settle, with
+  examples on the sample data, which is why the sample must give every command something to show.
+- **Parity held by a test**: every write `Bench` binds is reached by a repl command and an API route, as
+  `repl/test/test_vocabulary.py` holds the words, so the siblings can't drift apart.
+- **The API's side of the same gaps**: scoring requests, a score's detail and findings, judge events and endpoints.
+  The bench's additions serve both.
+- **`batch`**: the docs' Batch is crossed trials (`docs/factors.md`), the repl's is one trial over tagged cases. Either
+  the planner comes in this run and takes the name, or the repl's keeps it until then; see the questions.
+- **The test World** gets what only it should hold: two endpoints serving one judge's engine, a judge that writes an
+  invalid verdict, and appendices and a canary set once data sets hold them.
+- **Notes elsewhere** that still say judges are "not yet" (see "Where it stands at 5d4bff1").
+- **A solidify pass** on the repl, the bench and the API, whose tests are all `wip`, with `docs/bench.md`,
+  `docs/bench-api.md` and `docs/repl.md` proposed for adoption.
+- **Start-up time**: `import chatddx.cli` takes 0.85 s, with an argon2 hash at import (`agents/healthcheck.md`), which a
+  piped routine pays each time.
+
+Left out unless the user says: the worker (resuming, `max_jobs` across runs, K5), canary drift, export and
+aggregation, the clearance pipeline beyond the interim table, variants picked by language (`agents/wip-variants.md`),
+and writing tools, expectation schemas, engines, models and canary sets, which are developers' and ops' through data
+sets.
+
+#### Phases
+0. **The defects** of "Where it stands at 5d4bff1", and the stale notes in the other plans.
+1. **Judging seen**: the scoring handle with judge events and named endpoints, interrupted scores finished, and
+   `show score`, verdicts in `run`, `batch`, `score` and `replay`, and a score's findings.
+2. **Runs whole**: seeds, execution, canaries, cleanup, cases by name and by appendix.
+3. **Reading everything**: `list`, `deleted`, `history`, digests, `code`, `models`, `behind`, `#ID`.
+4. **Writing everything**: new, fork, edit and lint for every kind people write, saying, following, taking one,
+   appendices, cases, typed cases, carrying and replacing.
+5. **Judges written**: the bench's phase 9 and its commands.
+6. **The sample**: its judge, a canary set and appendices with their tables, the fake's `--script` and `--api-key`,
+   and `chatddx samples`.
+7. **The manual, the parity test and the solidify pass.**
+
+#### Questions for the user
+1. **How wide**: is the batch planner (crossed variations, the docs' Batch) in this run, and canary sets in runs? Or
+   does the width stop at what the bench holds, plus judges?
+2. **The sample's judge prompt**: a drafted prompt in the sample now, which Olof's replaces as an edit that reaches
+   giftbag forks as a proposal; or no sample judge until his, with the test World's judges made reachable by hand?
+   The notes stay his either way, so "hypothetical notes stay out of the sample" holds.
+3. **Appendices in the sample**: made-up appendices in live data, or appendices only in the test World and in what
+   sample runs make?
+4. **A score that was stopped**: does it count as given, so that only naming its scorer scores the run again, or is
+   the run left to score until a score finishes whole?
+5. **Writes that undo something** (`delete`, `take … replace`, `follow`): asked to confirm at the prompt, or not?
+
 ## Left out
 What the port left to others, and where each is planned:
 - **The portal** (`agents/wip-portal.md`), and what the old layers held for it:
@@ -490,16 +729,30 @@ What the port left to others, and where each is planned:
 - **Sample runs** (`chatddx samples`, the old typical, broken and rich runs): not the repl's. They are test data for
   every edge, the repl's, the API's and the portal's, and are planned with the sample data
   (`agents/wip-sample-data.md`, "Sample runs").
-- **Endpoints with a credential**, refused until secrets have a home. The sample World and the real one have none.
-- **Judges** for the free-text notes: `score` shows judged views as "not yet".
+- **Endpoints with a credential** were refused here until secrets had a home; the gate reads one now. The sample World
+  and the real one have none.
+- **Judges** for the free-text notes were left out; they score now, and showing them is "7. Completion"'s.
 - **The injected transport** (`FakeTransport`): tests run the real fake server instead, and sample runs have it
   answer from a script.
 
 ## Risks and smaller open points
 - **A configuration on another model's endpoint.** The old `show` said what each slice became on the stack.
   Here, model-dependent chunks are fixed at seed time, so such a mismatch shows only through
-  `facts.sampling_unmatched` and the `vllm.*` lints. `use`, `on` and `cell` should say so straight away.
+  `facts.sampling_unmatched` and the `vllm.*` lints. `use`, `on` and `cell` should say so straight away: they do,
+  since 4a.
 - **The same vignette under two names** can't be in two families: adopting a vignette another family holds, by id or
   by fingerprint, is refused (`src/chatddx/catalog/families.py:check_adoptable`), so a batch runs it once.
 - **`return_token_ids` on remote engines** is still undecided (`docs/factors.md`, "Smaller issues"). The fake
   and vLLM accept it.
+
+## The old manual, checked
+`agents/wip-repl-manual.md` against the shell at 5d4bff1, section by section. Known from building it, before the
+example-by-example pass that comes next:
+- **Words**: `endpoints` and `on ENDPOINT` for stacks, parts for slices (`instructions`, `few_shot`, `prompt`,
+  `output`, `sampling`, `reasoning`, `passthrough`, `translations`, `toolset`; no `coercion`), and per-model names
+  (`plan (en, Qwen/Qwen3-8B-AWQ)`) found by their plain name through the cell's endpoint (D6, 4a).
+- **`seed none`** is gone, and a greedy cell runs with a notice rather than being refused (D3).
+- **Scores come after a run**, in a table, rather than on each batch line (4b).
+- **`show`** renders the request with placeholders and lists the lints and each view's reach, rather than what each
+  slice becomes on the stack (4a).
+- **New since the old manual**: `take`, and `show KIND` over every kind the bench names.
