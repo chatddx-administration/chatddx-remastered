@@ -834,11 +834,6 @@ Checks against the model facts (`facts.*`) are in `src/chatddx/facts/lint.py`.
 
 ## Finding codes
 
-```
-AGENT: CHANGE
-Drops `scorer.revision`, which `lint` no longer reports since scorers pin an entry point and its version
-(agents/wip-authoring.md, "Lints"); the rest of the table is unchanged.
----
 | Code | Level | Reported by |
 | --- | --- | --- |
 | `bundle.recanonicalized` | warning | `Bundle.load` |
@@ -846,27 +841,6 @@ Drops `scorer.revision`, which `lint` no longer reports since scorers pin an ent
 | `engine.chat_template` | warning | `check_chat_template` |
 | `engine.chat_template_date` | warning | `check_chat_template` |
 | `engine.closure` | warning | `lint` |
-| `view.unreachable` | warning | `lint` |
-| `expectation_schema.invalid` | warning | `lint` |
-| `expectation.invalid` | warning | `lint` |
-| `expectation.unchecked` | warning | `lint` |
-| `vllm.temperature_clamped` | warning | `lint` |
-| `vllm.thinking_budget_refused` | warning | `lint` |
-| `vllm.tools_refused` | warning | `lint` |
-| `vllm.native_tools_uncallable` | warning | `lint` |
-| `vllm.grammar_before_reasoning` | warning or info | `lint` |
-| `schema.ref_unverified` | warning | `lint` |
-| `language.unknown` | info | `lint` |
-| `language.mixed` | warning | `lint` |
-```
-| Code | Level | Reported by |
-| --- | --- | --- |
-| `bundle.recanonicalized` | warning | `Bundle.load` |
-| `case.drift` | warning | `prepare_case` |
-| `engine.chat_template` | warning | `check_chat_template` |
-| `engine.chat_template_date` | warning | `check_chat_template` |
-| `engine.closure` | warning | `lint` |
-| `scorer.revision` | warning | `lint` |
 | `view.unreachable` | warning | `lint` |
 | `expectation_schema.invalid` | warning | `lint` |
 | `expectation.invalid` | warning | `lint` |
