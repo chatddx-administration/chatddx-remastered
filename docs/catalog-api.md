@@ -28,6 +28,13 @@ Paths are relative to `src/chatddx/catalog/` unless they start with `src/` or `d
 
 `chatddx.catalog` re-exports `LANGUAGE`, `LANGUAGE_KINDS`, `THREAD_KINDS`, `About`, `Behind`, `Binding`, `Edit`,
 `Entry`, `EntryField`, `Kept`, `Labels`, `Part`, `Reader`, `Repair`, `RepairPlan`, `Subject`, `Survey`, `Thread`,
+```
+AGENT: amend
+`language_of` (src/chatddx/catalog/variants.py) is re-exported.
+---
+`Variation`, `check_label`, `language_of`, `language_tag`, `latest`, `made_for`, `variant_name`, `variants_for`, and
+the modules
+```
 `Variation`, `check_label`, `language_tag`, `latest`, `made_for`, `variant_name`, `variants_for`, and the modules
 `families`, `language`, `read`, `threads`, `titles` and `variants`.
 
@@ -389,6 +396,20 @@ the variant that fits: `NAME (LANGUAGE)`, `NAME (MODEL)` or `NAME (LANGUAGE, MOD
 What a variant's name says it was made from and for, or None for a name that isn't a
 variant's; `models` are the models a variant may be made for.
 
+```
+AGENT: amend
+A configuration made in several languages is named with its language, `use free-text-guided sv`
+(src/chatddx/catalog/variants.py, `variants_for`, `language_of`; src/chatddx/bench/seen.py, `Seen.thread`), decided in
+the repl's calibration on the sample.
+---
+### `variants_for(name, names, model, language=None)`
+The variants of `name` among `names` that `model` may use: those made for it, or for
+every model; with `language`, only those made for it.
+
+### `language_of(name)` -> `(name, language | None)`
+The language a name ends with, as `NAME (LANGUAGE)` or `NAME LANGUAGE`, and the name before it; `(name, None)` when
+it ends with none.
+```
 ### `variants_for(name, names, model)`
 The variants of `name` among `names` that `model` may use: those made for it, or for
 every model.

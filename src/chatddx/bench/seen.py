@@ -3,7 +3,15 @@ from uuid import UUID
 
 from pydantic import JsonValue
 
-from chatddx.catalog import About, Edit, Subject, latest, variants_for
+from chatddx.catalog import (
+    About,
+    Edit,
+    Subject,
+    language_of,
+    latest,
+    made_for,
+    variants_for,
+)
 from chatddx.catalog.threads import picked
 from chatddx.catalog.titles import short
 from chatddx.core.rig import rig
@@ -99,16 +107,23 @@ class Seen:
             for kind, found in seen.items()
         }
         every = set[str]().union(*addresses.values())
+        base, language = name, None
         if name not in every:
-            match variants_for(name, every, model):
+            base, language = language_of(name)
+            match variants_for(base, every, model, language):
                 case [one]:
                     name = one
                 case []:
                     pass
                 case several:
+                    models = [] if model is None else [model]
+                    languages = sorted(
+                        {m[1] for n in several if (m := made_for(n, models)) and m[1]}
+                    )
                     raise Ambiguous(
                         f"{word} {name!r} is made in more than one language: "
-                        + f"{', '.join(several)}"
+                        + f"{', '.join(several)}; name one as "
+                        + " or ".join(f"'{base} {lang}'" for lang in languages)
                     )
         kinds = [kind for kind, held in addresses.items() if name in held]
         match kinds:
@@ -118,7 +133,8 @@ class Seen:
                 ), name
             case []:
                 said = f"no {word} {name!r} for {self.person.login}"
-                if per_model := sorted(n for n in every if n.startswith(f"{name} (")):
+                made = f"{base} ({language}, " if language else f"{base} ("
+                if per_model := sorted(n for n in every if n.startswith(made)):
                     said += f"; per model: {', '.join(per_model)}"
                 raise NotFound(said, per_model if model is None else ())
             case _:

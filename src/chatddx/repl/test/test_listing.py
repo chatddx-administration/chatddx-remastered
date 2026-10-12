@@ -38,18 +38,22 @@ def test_endpoints_are_listed_with_their_engines_and_clearance(
     assert line_of(written, QWEN_BARE).split()[-1] == "test"
 
 
-def test_configurations_are_listed_with_their_parts_and_whose_they_are(bench: Bench):
-    # Wide enough that no configuration's name wraps.
+# Wide enough that no configuration's name wraps.
+def listed(bench: Bench, line: str) -> str:
     repl = Repl(bench, console(record=True, width=400), seed=7)
-    assert handle(repl, "configurations")
-    written = repl.console.export_text()
-    header = written.splitlines()[0].split()
-    rows = [
-        line.split() for line in written.splitlines() if line.strip().startswith(LINES)
-    ]
+    assert handle(repl, line)
+    return repl.console.export_text()
 
-    assert header == [
+
+def test_configurations_are_listed_a_row_per_name_and_language_with_their_models(
+    bench: Bench,
+):
+    written = listed(bench, "configurations")
+    lines = written.splitlines()
+
+    assert lines[0].split() == [
         "configuration",
+        "models",
         "instructions",
         "few_shot",
         "prompt",
@@ -61,27 +65,36 @@ def test_configurations_are_listed_with_their_parts_and_whose_they_are(bench: Be
         "toolset",
         "owner",
     ]
-    row = [
-        *LINES.split(),
-        "—",
-        "—",
-        "case",
-        "lines",
-        "(en)",
-        "recommended",
-        f"({QWEN_MODEL})",
-        "—",
-        "—",
-        "—",
-        "—",
+    [at] = [i for i, line in enumerate(lines) if line.split()[:2] == ["lines", "(en)"]]
+    assert lines[at].split() == [
+        *("lines", "(en)", "gpt-oss-20b", "—", "—", "case", "lines", "(en)"),
+        *("recommended", "—", "—", "—", "—", "yours,", "from", "archive"),
     ]
-    assert rows == [row, [*row, "archive"]]
-    assert "lookup (en)" in line_of(written, NATIVE_TOOLS)
-    assert f"on-budget ({QWEN_MODEL})" in line_of(
-        written, f"budgeted (en, {QWEN_MODEL})"
-    )
+    assert [line.split() for line in lines[at + 1 : at + 3]] == [
+        ["mistral-7b"],
+        ["Qwen3-8B-AWQ"],
+    ]
+    assert not [line for line in lines if line.rstrip().endswith("  archive")]
+    assert "Qwen3-8B-AWQ  " in line_of(written, "budgeted (en)")
+    assert "on-budget" in line_of(written, "budgeted (en)")
+    assert "varies" in line_of(written, "reasoned (en)")
     guided = line_of(written, "lines-guided (sv)")
-    assert "clinician (sv)" in guided and "guided (sv)" in guided
+    assert "every model" in guided and "guided (sv)" in guided
+
+
+def test_configurations_name_lists_its_variants_per_model(bench: Bench):
+    written = listed(bench, "configurations lines")
+    rows = [
+        line.split() for line in written.splitlines() if line.strip().startswith(LINES)
+    ]
+
+    row = [*LINES.split(), "case", "lines", "(en)", "recommended", f"({QWEN_MODEL})"]
+    assert rows == [row, [*row, "archive"]]
+    assert len([line for line in written.splitlines() if "lines (en, " in line]) == 6
+    assert "lookup (en)" in line_of(
+        listed(bench, f"configurations {NATIVE_TOOLS}"), NATIVE_TOOLS
+    )
+    assert "no configuration 'nope' for alice" in listed(bench, "configurations nope")
 
 
 def test_cases_are_listed_by_name_with_their_tags(say: Say):

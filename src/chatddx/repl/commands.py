@@ -33,7 +33,11 @@ def help_(repl: Repl) -> None:
 
 COMMANDS: dict[str, Command] = {
     "configurations": Command(
-        (), "list the configurations you can use", listing.configurations
+        ("[NAME]",),
+        "list the configurations you can use, a row per name and language; NAME's "
+        + "per model",
+        listing.configurations,
+        rest=0,
     ),
     "endpoints": Command(
         (), "list the World's endpoints, and the engine each serves", listing.endpoints
@@ -227,6 +231,8 @@ def complete(names: Mapping[str, list[str]], line: str) -> list[str]:
             )
         case "run":
             return _next_words(names.get("case", []), words)
+        case "configurations":
+            return _next_words(names.get("configuration", []), words)
         case "set" if position >= 1:
             held = names.get(f"set:{words[0]}", names.get(words[0], []))
             return _next_words(held, words[1:])

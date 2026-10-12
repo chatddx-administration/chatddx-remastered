@@ -302,10 +302,20 @@ def test_a_configuration_made_in_several_languages_is_named_whole(
     swedish = f"native (sv, {QWEN_MODEL})"
     assert swedish not in bench.names("configuration")
     _ = bench.catalog.create(english.digest, alice.id, name=swedish)
-    several = f"made in more than one language: {NATIVE}, {swedish}"
+    several = (
+        f"made in more than one language: {NATIVE}, {swedish}; "
+        + "name one as 'native en' or 'native sv'"
+    )
     with pytest.raises(Ambiguous, match=re.escape(several)):
         _ = bench.configuration("native", engine)
     assert bench.configuration(swedish, engine).name == swedish
+    assert bench.configuration("native sv", engine).name == swedish
+    assert bench.configuration("native (en)", engine).name == NATIVE
+    with pytest.raises(NotFound) as refused:
+        _ = bench.configuration("native sv")
+    assert refused.value.per_model == (swedish,)
+    with pytest.raises(NotFound, match="no configuration 'native fi'"):
+        _ = bench.configuration("native fi", engine)
 
 
 def test_a_variation_compiles_to_a_skeleton_of_its_own(bench: Bench) -> None:

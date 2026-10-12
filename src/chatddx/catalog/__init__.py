@@ -24,7 +24,7 @@ from .model import (
     latest,
 )
 from .read import Reader
-from .variants import made_for, variant_name, variants_for
+from .variants import language_of, made_for, variant_name, variants_for
 
 __all__ = [
     "LANGUAGE",
@@ -50,6 +50,7 @@ __all__ = [
     "check_label",
     "families",
     "language",
+    "language_of",
     "language_tag",
     "latest",
     "made_for",

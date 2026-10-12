@@ -715,14 +715,20 @@ For the user, each with a take, most telling first:
    (`curation/test/test_pins.py`). A judged view says `no target` before `no answer`,
    as the pattern metrics do. The summary splits what has no value into `no answer`, `no target` and `no value`, any
    other reason (`never named`, a verdict that couldn't be read).
-6. **`configurations`** is 64 rows on the sample, every recipe × 3 models × alice's fork and archive's, names
-   clipped. Take: a row per name and language, the models as a column, a fork's owner as `yours, from archive`;
-   `configurations NAME` for the per-model rows.
-7. **`use` before `on`** is refused ("picked by the endpoint in the cell"), and `on` keeps another model's variant,
-   with only a sampling warning. Take: the cell holds the name, and `on` picks that name's variant for the model,
-   saying so.
-8. **A language in a name.** `use free-text-guided` is refused as made in two languages; the whole per-model name
-   must be typed. Take: `use free-text-guided sv`, the model from the endpoint.
+6. **`configurations`.** Decided: the take, and built (`listing.py:configurations`). A row per name and language,
+   `plan (en)`, its models one to a line (`every model` for one made for all), each part as the variants share it with
+   the model taken off (`recommended`), `varies` where they differ; a fork's owner is `yours, from archive`, and the
+   origin it forks is left out. `configurations NAME` lists NAME's variants per model and owner, as the listing was;
+   NAME may hold a language. The sample's listing is 12 rows where it was 64.
+7. **`use` before `on`.** Decided: the take, and built (`choosing.py`). The cell holds the configuration's name as
+   given (`Cell.name`): `use NAME` with no endpoint holds a per-model name until `on`; `on` picks that name's variant
+   for the endpoint's model, setting again by name what `set` set, and says so (`plan on openai/gpt-oss-20b: plan
+   (en, openai/gpt-oss-20b)`). Where a part set has no variant for the model, the cell keeps what it held, saying
+   why. A variant named whole, `use plan (en, Qwen/Qwen3-8B-AWQ)`, is held as named, so another model only warns.
+8. **A language in a name.** Decided: the take, and built. A name that isn't found as given is read with the
+   language it ends with, `free-text-guided sv` or `free-text-guided (sv)` (`catalog/variants.py:language_of`,
+   `variants_for`'s `language`, `Seen.thread`), and the model is the endpoint's. The refusal for a name made in
+   several languages says how to name one: `name one as 'free-text-guided en' or 'free-text-guided sv'`.
 9. **Cases with appendices.** Decided: the take, and built. `Bench.case_titled` finds a case by its title, the
    family's name or `FAMILY with APPENDIX, …` as `catalog/titles.py:describe_case` writes it, among the cases stored
    for the family's current vignette; `Bench.appendices_of` names a family's appendices, and `Bench.case_titles`

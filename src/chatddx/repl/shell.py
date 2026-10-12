@@ -31,16 +31,22 @@ class Cell:
     variation: TriedVariation | None = None
     endpoint: str | None = None
     engine: str | None = None
+    name: str | None = None
 
-    def trying(self, variation: TriedVariation) -> "Cell":
-        return replace(self, variation=variation)
+    def trying(self, variation: TriedVariation, name: str | None = None) -> "Cell":
+        return replace(self, variation=variation, name=name or self.name)
+
+    def holding(self, name: str) -> "Cell":
+        return replace(self, variation=None, name=name)
 
     def on(self, endpoint: str, engine: str) -> "Cell":
         return replace(self, endpoint=endpoint, engine=engine)
 
     @property
     def label(self) -> str:
-        return "" if self.variation is None else self.variation.label
+        if self.variation is None:
+            return self.name or ""
+        return self.variation.label
 
 
 class Repl:
@@ -56,7 +62,7 @@ class Repl:
     def prompt(self) -> str:
         cell = self.cell
         endpoint = f"×{cell.endpoint}" if cell.endpoint else ""
-        held = f" {cell.label}{endpoint}" if cell.variation or cell.endpoint else ""
+        held = f" {cell.label}{endpoint}" if cell.label or cell.endpoint else ""
         return f"{self.bench.person.login}{held} #{self.seed}> "
 
     def completions(self) -> dict[str, list[str]]:
