@@ -359,6 +359,11 @@ scorer's entry point the scoring pass ran.
 | `scoring` | `ScoringRef` | required |
 | `execution` | `Execution` | `Execution()`; for the judge calls |
 
+AGENT: add
+A row for where judge calls went (agents/wip-judges.md, J1, decided), and the class it holds, beside `Endpoint`.
+---
+| `endpoints` | `tuple[JudgeEndpoint, ...]` | `()`; each judge's endpoint, `JudgeEndpoint(judge: JudgeRef, endpoint: Endpoint)` |
+
 ### `class ScoreItem(Record)`
 One run item graded by one view. Case-derived.
 
@@ -404,6 +409,12 @@ Raises `StructuralError`:
 Returns findings, in this order:
 1. `view.unreachable` for each view whose `output` selector can't reach anything in the run skeleton's
    `output_schema` (`chatddx.factors.select.reaches`), subject the scorer digest;
+AGENT: add
+The model check for judge calls (agents/wip-judges.md, J8, decided), after item 2.
+---
+   then `attestation.model` for each item's judge calls, per judge: one per distinct wrong model name, and one when
+   some call has a response but no model name, against the judge engine's `served_model_name`;
+
 2. `judge.incomplete` for each item with a value whose view's judge was called with fewer distinct seeds than it
    has;
 3. `score.scorer_code` when `scorer_version` isn't the version `Scorer.version` pins;
@@ -418,6 +429,11 @@ Returns findings, in this order:
 ## Finding codes
 
 All are warnings. Item-key subjects are `str(ItemKey)`.
+
+AGENT: change
+The `attestation.model` row, which `check_score` reports too, for judge calls.
+---
+| `attestation.model` | `check_run`, `check_score` | item key | `engine returned model '<got>', declared '<want>'`, or `engine returned no model name, declared '<want>'`; for a judge call, `judge engine returned …` |
 
 | Code | Reported by | Subject | Message |
 | --- | --- | --- | --- |

@@ -185,7 +185,11 @@ def test_run_and_score_checks(reg: Registry) -> None:
         key=ItemKey(case=ids["case"], replicate=0),
         view=1,
         value=1.0,
-        judge_calls=(JudgeCall(judge=ids["judge"], seed_index=0, call=call("j")),),
+        judge_calls=(
+            JudgeCall(
+                judge=ids["judge"], seed_index=0, call=call(engine.served_model_name)
+            ),
+        ),
     )
     assert check_score(score(ok), run, reg) == []
     assert [(f.code, f.message) for f in check_score(score(ok), open_run, reg)] == [
@@ -205,7 +209,11 @@ def test_run_and_score_checks(reg: Registry) -> None:
                 ok.model_copy(
                     update={
                         "judge_calls": (
-                            JudgeCall(judge=ids["judge"], seed_index=1, call=call("j")),
+                            JudgeCall(
+                                judge=ids["judge"],
+                                seed_index=1,
+                                call=call(engine.served_model_name),
+                            ),
                         )
                     }
                 )

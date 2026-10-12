@@ -7,6 +7,7 @@ from pydantic import AwareDatetime, Field, JsonValue, model_validator
 
 from chatddx.factors.base import Code, Digest, Finding, Frozen, StructuralError, resolve
 from chatddx.factors.bundle import Registry
+from chatddx.factors.engine import LocalEngine, RemoteEngine
 from chatddx.factors.request import Skeleton
 from chatddx.factors.scoring import (
     Expectation,
@@ -28,13 +29,18 @@ from .record import (
     check_seal,
     seal_rows,
 )
-from .run import Run
+from .run import Endpoint, Run
 
 
 class JudgeCall(Frozen):
     judge: JudgeRef
     seed_index: int = Field(ge=0)
     call: Call
+
+
+class JudgeEndpoint(Frozen):
+    judge: JudgeRef
+    endpoint: Endpoint
 
 
 class ScoreStarted(Record):
@@ -48,6 +54,7 @@ class ScoreStarted(Record):
     scorer_version: int = Field(ge=1)
     scoring: ScoringRef
     execution: Execution = Execution()
+    endpoints: tuple[JudgeEndpoint, ...] = ()
 
 
 class ScoreFinished(Record):
@@ -133,6 +140,7 @@ def check_score(score: Score, run: Run, registry: Registry) -> list[Finding]:
         if item.key not in run_keys:
             raise StructuralError(f"score item {item.key} is not in the run")
         findings.extend(_judged(item, scorer.views[item.view].judge, judges))
+        findings.extend(_attested(item, judges, registry))
     if (ran := started.scorer_version) != scorer.version:
         findings.append(
             Finding(
@@ -176,6 +184,35 @@ def check_score(score: Score, run: Run, registry: Registry) -> list[Finding]:
             at = jc.call.started_at
             sent[item.key] = min(sent.get(item.key, at), at)
     return findings + check_execution(started.execution, trial, calls, sent)
+
+
+def _attested(
+    item: ScoreItem, judges: dict[str, Judge], registry: Registry
+) -> list[Finding]:
+    findings: list[Finding] = []
+    for judge in dict.fromkeys(jc.judge for jc in item.judge_calls):
+        engine = registry.get(judges[judge].engine)
+        assert isinstance(engine, LocalEngine | RemoteEngine)
+        want = engine.served_model_name
+        calls = [jc.call for jc in item.judge_calls if jc.judge == judge]
+        returned = {c.returned_model for c in calls if c.response is not None}
+        for got in sorted(m for m in returned - {want} if m is not None):
+            findings.append(
+                Finding(
+                    code="attestation.model",
+                    message=f"judge engine returned model {got!r}, declared {want!r}",
+                    subject=str(item.key),
+                )
+            )
+        if None in returned:
+            findings.append(
+                Finding(
+                    code="attestation.model",
+                    message=f"judge engine returned no model name, declared {want!r}",
+                    subject=str(item.key),
+                )
+            )
+    return findings
 
 
 def _judged(
