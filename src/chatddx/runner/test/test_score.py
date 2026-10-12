@@ -4,7 +4,6 @@ import pytest
 
 from chatddx.catalog import Subject
 from chatddx.curation import Plan, load_cases
-from chatddx.curation.plan import SAMPLE
 from chatddx.factors.base import resolve
 from chatddx.factors.cases import Case
 from chatddx.factors.scoring import Expectation, Scorer, Scoring
@@ -13,17 +12,18 @@ from chatddx.identity import Person
 from chatddx.inventory import Inventory
 from chatddx.runner.run import Runner
 from chatddx.runner.score import NO_EXPECTATION, score_run
-from chatddx.runner.test.conftest import DELAY, QWEN, faked
+from chatddx.runner.test.conftest import DELAY
 from chatddx.runner.test.test_run import rows, trial
 from chatddx.store import Catalog, Store
 from chatddx.store.store import Connection
+from chatddx.test.world import DATA, LINES, NATIVE, QWEN, TOOL_ANSWER, faked
 
 pytestmark = pytest.mark.wip
 
 
 def expectations(plan: Plan, made: Trial) -> tuple[str, ...]:
     schema = plan.named("expectation_schema", "targets").digest
-    targets = load_cases(SAMPLE)
+    targets = load_cases(DATA)
     found: list[str] = []
     for ref in made.cases:
         case = resolve(plan.registry.get, ref, Case)
@@ -57,7 +57,7 @@ def scorer(plan: Plan, name: str) -> Scorer:
 @pytest.mark.usefixtures("fake")
 @pytest.mark.parametrize(
     ("recipe", "scored_by"),
-    [("free-text", "free-text"), ("plan", "plan"), ("diagnoses-tool", "diagnoses")],
+    [(LINES, "lines"), (NATIVE, "answer"), (TOOL_ANSWER, "list")],
 )
 def test_a_run_is_scored_through_every_view_of_its_scorer(
     conn: Connection,
@@ -67,7 +67,7 @@ def test_a_run_is_scored_through_every_view_of_its_scorer(
     recipe: str,
     scored_by: str,
 ) -> None:
-    made = trial(plan, f"{recipe} (en, Qwen/Qwen3-8B-AWQ)")
+    made = trial(plan, recipe)
     run = ran(conn, inventory, alice, made, plan)
     scoring = Scoring(
         scorer=plan.named("scorer", scored_by).digest,
@@ -91,11 +91,11 @@ def test_a_run_is_scored_through_every_view_of_its_scorer(
 def test_cases_without_an_expectation_get_no_value_and_are_noted(
     conn: Connection, inventory: Inventory, alice: Person, plan: Plan
 ) -> None:
-    made = trial(plan, "free-text (en, Qwen/Qwen3-8B-AWQ)")
+    made = trial(plan, LINES)
     run = ran(conn, inventory, alice, made, plan)
     first, _ = expectations(plan, made)
     scoring = Scoring(
-        scorer=plan.named("scorer", "free-text").digest, expectations=(first,)
+        scorer=plan.named("scorer", "lines").digest, expectations=(first,)
     )
     score, findings = score_run(conn, run, scoring, plan.registry, alice)
     assert [(f.code, f.message) for f in findings] == [
@@ -115,11 +115,11 @@ def test_cases_without_an_expectation_get_no_value_and_are_noted(
 def test_an_answer_that_can_t_be_read_is_noted_and_scored_without_one(
     conn: Connection, inventory: Inventory, alice: Person, plan: Plan
 ) -> None:
-    made = trial(plan, "plan (en, Qwen/Qwen3-8B-AWQ)", seeds=(7,))
-    with faked(inventory, plan, DELAY * 10):
+    made = trial(plan, NATIVE, seeds=(7,))
+    with faked(inventory, plan.registry.get, delay=DELAY * 10):
         run = ran(conn, inventory, alice, made, plan, Execution(timeout_s=0.2))
     scoring = Scoring(
-        scorer=plan.named("scorer", "plan").digest,
+        scorer=plan.named("scorer", "answer").digest,
         expectations=expectations(plan, made),
     )
     score, findings = score_run(conn, run, scoring, plan.registry, alice)
@@ -143,7 +143,7 @@ def test_an_answer_that_can_t_be_read_is_noted_and_scored_without_one(
 def test_scoring_is_refused_before_anything_is_written(
     conn: Connection, db: str, inventory: Inventory, alice: Person, plan: Plan
 ) -> None:
-    made = trial(plan, "free-text (en, Qwen/Qwen3-8B-AWQ)")
+    made = trial(plan, LINES)
     found = expectations(plan, made)
     running = Runner(conn, inventory, alice).start(made, plan.registry, QWEN)
     running.send()
@@ -153,7 +153,7 @@ def test_scoring_is_refused_before_anything_is_written(
         with pytest.raises(error, match=match):
             _ = score_run(conn, running.run, scoring, plan.registry, alice)
 
-    free_text = scorer(plan, "free-text")
+    free_text = scorer(plan, "lines")
     refused(free_text, ValueError, "hasn't finished")
     _ = running.finish()
     judged = free_text.model_copy(

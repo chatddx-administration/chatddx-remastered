@@ -8,7 +8,7 @@ from psycopg import sql
 from pydantic import ValidationError
 
 from chatddx.catalog import Subject
-from chatddx.conftest import WORLD, connect
+from chatddx.conftest import connect
 from chatddx.core.rig import rig
 from chatddx.curation import Plan
 from chatddx.factors.base import Fingerprint, resolve
@@ -49,25 +49,32 @@ from chatddx.runner.run import (
     ToolRan,
 )
 from chatddx.runner.send import STOPPED
-from chatddx.runner.test.conftest import QWEN
 from chatddx.runner.test.tools import component
 from chatddx.store import Catalog, Store
 from chatddx.store.store import Connection
+from chatddx.test.world import (
+    GPT_OSS,
+    GPT_OSS_MODEL,
+    LINES,
+    NATIVE_TOOLS,
+    QWEN,
+    TEST,
+    TOOL_ANSWER,
+)
 
 pytestmark = pytest.mark.wip
 
-GPT_OSS = "gpt-oss-20b@fake"
-CASES = ("DutchFall10w", "casesfromedn1")
+CASES = ("crlf", "svenska")
 
 
 def trial(
     plan: Plan,
-    skeleton: str = "free-text (en, Qwen/Qwen3-8B-AWQ)",
+    skeleton: str = LINES,
     cases: tuple[str, ...] = CASES,
     seeds: tuple[int, ...] = (7, 8),
     engine: str = QWEN,
 ) -> Trial:
-    source = DirectorySource(name="sample", path=WORLD / "vignettes")
+    source = DirectorySource(name="test", path=TEST / "vignettes")
     refs = [plan.registry.add(c) for c in source.cases() if c.vignette.id in cases]
     made = Trial(
         skeleton=plan.named("recipe", skeleton).digest,
@@ -155,7 +162,7 @@ def test_a_run_sends_each_item_and_writes_its_log(
 def test_a_greedy_skeleton_is_sent_without_its_seed(
     conn: Connection, inventory: Inventory, alice: Person, plan: Plan
 ) -> None:
-    named = plan.named("recipe", "free-text (en, Qwen/Qwen3-8B-AWQ)")
+    named = plan.named("recipe", LINES)
     assert named.compilation is not None
     compiled = resolve(plan.registry.get, named.compilation, Compilation)
     greedy = compiled.recipe.model_copy(
@@ -207,11 +214,11 @@ def test_the_runner_wants_rows_committed_as_they_are_written(
 def test_a_case_that_can_t_be_read_or_has_changed_is_noted(
     conn: Connection, inventory: Inventory, alice: Person, plan: Plan
 ) -> None:
-    sample = trial(plan, cases=CASES[:1], seeds=(7,))
-    real = resolve(plan.registry.get, sample.cases[0], Case)
+    one = trial(plan, cases=CASES[:1], seeds=(7,))
+    real = resolve(plan.registry.get, one.cases[0], Case)
     missing = Case(
         vignette=Vignette(
-            source="sample", id="nowhere", fingerprint=real.vignette.fingerprint
+            source="test", id="nowhere", fingerprint=real.vignette.fingerprint
         )
     )
     changed = Case(
@@ -219,7 +226,7 @@ def test_a_case_that_can_t_be_read_or_has_changed_is_noted(
             update={"fingerprint": Fingerprint.of(b"before")}
         )
     )
-    made = sample.model_copy(
+    made = one.model_copy(
         update={"cases": tuple(plan.registry.add(c) for c in (real, missing, changed))}
     )
     _ = plan.registry.add(made)
@@ -289,16 +296,14 @@ def test_nothing_is_sent_or_written_where_the_gate_refuses(
         return str(caught.value)
 
     uncleared = inventory.model_copy(update={"cleared": {}})
-    assert "isn't cleared for source sample, which is sensitive" in refused(
+    assert "isn't cleared for source test, which is sensitive" in refused(
         trial(plan), QWEN, uncleared
     )
     assert "serves engine" in refused(trial(plan), GPT_OSS)
     assert f"endpoint {GPT_OSS!r} can't be confirmed" in refused(
-        trial(plan, "free-text (en, openai/gpt-oss-20b)", engine=GPT_OSS), GPT_OSS
+        trial(plan, f"lines (en, {GPT_OSS_MODEL})", engine=GPT_OSS), GPT_OSS
     )
-    assert "tools can't be cleared yet" in refused(
-        trial(plan, "plan-web (en, Qwen/Qwen3-8B-AWQ)"), QWEN
-    )
+    assert "tools can't be cleared yet" in refused(trial(plan, NATIVE_TOOLS), QWEN)
     assert rows(db, "run_stage") == 0
 
 
@@ -541,8 +546,8 @@ def test_a_call_that_fails_on_its_thread_fails_the_send(
 
 
 def insensitive(inventory: Inventory) -> Inventory:
-    sample = inventory.sources["sample"].model_copy(update={"sensitive": False})
-    return inventory.model_copy(update={"sources": {"sample": sample}})
+    test = inventory.sources["test"].model_copy(update={"sensitive": False})
+    return inventory.model_copy(update={"sources": {"test": test}})
 
 
 def tooled(
@@ -570,7 +575,6 @@ def tooled(
     return made
 
 
-FREE_TEXT = "free-text (en, Qwen/Qwen3-8B-AWQ)"
 ASKED = "'fake query'"
 
 
@@ -579,7 +583,7 @@ def test_a_round_runs_the_tools_a_response_calls_and_sends_back_their_results(
     conn: Connection, inventory: Inventory, alice: Person, plan: Plan
 ) -> None:
     open_world = insensitive(inventory)
-    made = tooled(plan, FREE_TEXT, component("lookup"), component("broken"))
+    made = tooled(plan, LINES, component("lookup"), component("broken"))
     running = Runner(conn, open_world, alice).start(made, plan.registry, QWEN)
     heard = Heard()
     running.send(heard)
@@ -610,7 +614,7 @@ def test_a_round_runs_the_tools_a_response_calls_and_sends_back_their_results(
     ]
 
     case = resolve(plan.registry.get, made.cases[0], Case)
-    raw = open_world.listing("sample").fetch(case.vignette.id)
+    raw = open_world.listing("test").fetch(case.vignette.id)
     fills = prepare_case(
         case, raw, plan.registry.get, skeleton.appendix_layout, made.cleanup
     ).fills
@@ -627,7 +631,7 @@ def test_a_round_runs_the_tools_a_response_calls_and_sends_back_their_results(
 def test_calling_the_answer_tool_ends_the_item(
     conn: Connection, inventory: Inventory, alice: Person, plan: Plan
 ) -> None:
-    made = tooled(plan, "diagnoses-tool (en, Qwen/Qwen3-8B-AWQ)", component("lookup"))
+    made = tooled(plan, TOOL_ANSWER, component("lookup"))
     running = Runner(conn, insensitive(inventory), alice).start(
         made, plan.registry, QWEN
     )
@@ -643,9 +647,7 @@ def test_calling_the_answer_tool_ends_the_item(
 def test_rounds_end_after_max_rounds_and_the_calls_left_are_noted(
     conn: Connection, inventory: Inventory, alice: Person, plan: Plan
 ) -> None:
-    made = tooled(
-        plan, FREE_TEXT, component("lookup"), component("broken"), max_rounds=1
-    )
+    made = tooled(plan, LINES, component("lookup"), component("broken"), max_rounds=1)
     running = Runner(conn, insensitive(inventory), alice).start(
         made, plan.registry, QWEN
     )
@@ -664,7 +666,7 @@ def test_rounds_end_after_max_rounds_and_the_calls_left_are_noted(
 def test_a_tool_at_a_version_the_running_code_doesn_t_ship_is_refused(
     conn: Connection, db: str, inventory: Inventory, alice: Person, plan: Plan
 ) -> None:
-    made = tooled(plan, FREE_TEXT, component("lookup", 2))
+    made = tooled(plan, LINES, component("lookup", 2))
     with pytest.raises(LookupError, match="at version 1 in chatddx .*, not 2"):
         _ = Runner(conn, insensitive(inventory), alice).start(made, plan.registry, QWEN)
     assert rows(db, "run_stage") == 0
@@ -674,7 +676,7 @@ def test_a_tool_at_a_version_the_running_code_doesn_t_ship_is_refused(
 def test_an_interrupt_while_tools_run_keeps_the_rounds_that_have_a_call(
     conn: Connection, inventory: Inventory, alice: Person, plan: Plan
 ) -> None:
-    made = tooled(plan, FREE_TEXT, component("lookup"), component("broken"))
+    made = tooled(plan, LINES, component("lookup"), component("broken"))
     running = Runner(conn, insensitive(inventory), alice).start(
         made, plan.registry, QWEN
     )
@@ -703,7 +705,7 @@ def test_rounds_run_on_the_workers_above_concurrency_1(
 ) -> None:
     made = tooled(
         plan,
-        FREE_TEXT,
+        LINES,
         component("lookup"),
         component("broken"),
         cases=CASES,
