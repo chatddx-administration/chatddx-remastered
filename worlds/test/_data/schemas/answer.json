@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Answer",
+  "description": "The differential, the acute warning and the disposition.",
+  "type": "object",
+  "required": ["diagnoses", "acute_warning", "disposition"],
+  "additionalProperties": false,
+  "properties": {
+    "diagnoses": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/diagnosis" }
+    },
+    "acute_warning": {
+      "description": "What needs acting on now, or null.",
+      "type": ["string", "null"]
+    },
+    "disposition": { "description": "Where the patient goes next.", "type": "string" }
+  },
+  "$defs": {
+    "diagnosis": {
+      "type": "object",
+      "required": ["diagnosis", "critical"],
+      "additionalProperties": false,
+      "properties": {
+        "diagnosis": { "type": "string" },
+        "critical": { "description": "Whether it is life-threatening.", "type": "boolean" }
+      }
+    }
+  }
+}

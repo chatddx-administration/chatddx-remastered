@@ -1,0 +1,67 @@
+# The test World's texts in English, in factors.toml's format.
+
+[instructions.clinician]
+role = "developer"
+text = [
+  "You are assisting a physician in an emergency department. Read the case and give your assessment.",
+  { insert = "output_guidance", before = "\n\n" },
+]
+
+[few_shot.worked-example]
+messages = [
+  { role = "user", content = "A 67-year-old man has had crushing central chest pain for an hour, with sweating." },
+  { role = "assistant", content = "Acute coronary syndrome\nAortic dissection\nPulmonary embolism" },
+]
+
+[prompt.headed]
+segments = ["Case:\n", { slot = "vignette" }, { slot = "appendices" }, { insert = "tool_guidance", before = "\n\n" }]
+
+[prompt.judge]
+purpose = "judge"
+segments = [
+  "Case:\n",
+  { slot = "vignette" },
+  "\n\nAnswer:\n",
+  { slot = "completion" },
+  "\n\nExpected:\n",
+  { slot = "expectation" },
+]
+
+[output.native]
+contract = { kind = "native" }
+json_schema_path = "schemas/answer.json"
+guidance = "Give the differential, the acute warning and the disposition."
+
+[output.native-inlined]
+fork_of = "native"
+contract = { kind = "native" }
+json_schema_path = "schemas/answer.json"
+schema_ops = ["inline_refs@1"]
+guidance = "Give the differential, the acute warning and the disposition."
+
+[output.prompted]
+contract = { kind = "text" }
+json_schema_path = "schemas/answer.json"
+guidance = [
+  "Answer with a JSON object that matches this JSON Schema, and nothing else:\n\n",
+  { insert = "schema" },
+]
+
+[output.tool-answer]
+contract = { kind = "tool", name = "final_result", description = "Give your answer by calling this tool." }
+json_schema_path = "schemas/list.json"
+guidance = "List the plausible diagnoses, most likely first."
+
+[output.lines]
+contract = { kind = "text" }
+guidance = "List the plausible diagnoses, one per line, most likely first."
+
+[output.verdict]
+contract = { kind = "native" }
+json_schema_path = "schemas/verdict.json"
+guidance = "Say whether the answer meets what was expected, and why."
+
+[toolset.lookup]
+tools = ["lookup", "broken"]
+max_rounds = 2
+guidance = "You can look things up with lookup, and with broken, which never answers."

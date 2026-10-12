@@ -22,6 +22,7 @@ from chatddx.fake_vllm.served import Served
 from chatddx.fake_vllm.server import serving
 from chatddx.identity import identity
 from chatddx.inventory import Inventory, World, start_up
+from chatddx.runner.test import tools as test_tools
 from chatddx.store import People, Store, migrate
 from chatddx.store.store import Connection
 
@@ -46,6 +47,15 @@ def pytest_collection_modifyitems(items: list[pytest.Item]) -> None:
 # The sample data's per-model records are planned for the models its World's engines serve.
 def sample_plan(data: Path = SAMPLE) -> Plan:
     return plan_factors(data, Facts.load(BUNDLED), rig(), more=[WORLD / "factors.toml"])
+
+
+# The test World's tools are the runner's test tools (worlds/test/_data/factors.toml), shipped
+# for the whole session so that planning takes their entry points.
+@pytest.fixture(scope="session", autouse=True)
+def shipped_test_tools() -> Iterator[None]:
+    with pytest.MonkeyPatch.context() as patch:
+        test_tools.shipped(patch)
+        yield
 
 
 # Passwords are hashed as cheaply as argon2 allows: the tests check what is hashed, not

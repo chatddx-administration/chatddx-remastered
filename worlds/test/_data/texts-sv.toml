@@ -1,0 +1,22 @@
+# The test World's texts in Swedish: lines-guided's instructions and worked example, written in Swedish, and the
+# translations that carry its English output and appendix layout into Swedish.
+
+[instructions.clinician]
+role = "developer"
+text = [
+  "Du bistår en läkare på en akutmottagning. Läs fallet och ge din bedömning.",
+  { insert = "output_guidance", before = "\n\n" },
+]
+
+[few_shot.worked-example]
+messages = [
+  { role = "user", content = "En 67-årig man har sedan en timme kraftig central bröstsmärta, med kallsvett." },
+  { role = "assistant", content = "Akut koronart syndrom\nAortadissektion\nLungemboli" },
+]
+
+[translations.guided]
+description = "lines-guided's output and appendix layout in Swedish."
+
+[translations.guided.entries]
+"List the plausible diagnoses, one per line, most likely first." = "Lista de tänkbara diagnoserna, en per rad, den mest sannolika först."
+"\n\nAppendices:\n" = "\n\nBilagor:\n"

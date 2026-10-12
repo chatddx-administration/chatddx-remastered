@@ -7,6 +7,24 @@ plans a World built for the tests, `worlds/test/`, and moving every test onto it
 
 "Decided" means the user said so. "Take" is the agent's recommendation and still open.
 
+## Where it stands
+- The fixes found on the way are in (see "Fixes before the move").
+- **The World is built**: `worlds/test/` and `worlds/test/_data/`, as "What it exercises" lists them. Its own tests
+  are `src/chatddx/curation/test/test_the_test_world.py`, marked `wip`: it plans 68 records, 24 of them skeletons,
+  with the 12 skips and 7 lint warnings it is built to give, binds each endpoint to its engine, loads cleanly with a
+  giftbag in 1.6 s and validates on a re-run; and its vignettes hold what their ids say. The shared paths and
+  `world_plan` are in `src/chatddx/test/world.py`, and the root conftest ships the test tools for the session.
+- Next: the harness, then the move.
+
+Found while building it:
+- **`qwen3@fake` and `gpt-oss@fake` are the sample's fake engines**: a name is no part of a digest, and their
+  fields are the same, so a store loaded with both Worlds holds one engine under two names.
+- **The fakes refuse what the `vllm.*` lints predict.** Run in-process on every skeleton, `qwen3-bare@fake` and
+  `mistral@fake` refuse a thinking budget with a 400, `qwen3-bare@fake` refuses every request with tools, and
+  `mistral@fake` answers tool requests in text.
+  `test_worlds.py` can check that the fake refuses a pair exactly when a `vllm.*` lint says vLLM would, which is the
+  check `agents/wip-sample-data.md` ("The fake vLLM", "Not faked yet") lists as missing.
+
 ## Decided
 - **A test World, `worlds/test/`, with its data set inside it, at `worlds/test/_data/`.**
 - **The sample keeps one test module**, `src/chatddx/curation/test/test_sample.py`, with what is true of the sample
@@ -80,7 +98,7 @@ The ports are 12201–12204, so the test World's fakes and the sample's (12099, 
 | `qwen3@fake`: Qwen/Qwen3-8B-AWQ, reasoning and tool parsers, `max_jobs = 4` | the workhorse | the sample | most tests |
 | `gpt-oss@fake`: openai/gpt-oss-20b, harmony | harmony; `facts.output_note`; reasoning the facts refuse | the sample | repl choosing, runner, fake vLLM |
 | `qwen3-bare@fake`: the same model, no reasoning parser, no tool flags, `max_jobs = 1` | two engines on one model; `vllm.grammar_before_reasoning`, `vllm.tools_refused`, `vllm.thinking_budget_refused`; a clearance for `test` and not for `typed` | nothing | new pair-lint and gate tests |
-| `mistral@fake`: the made-up `test/mistral-7b`, facts from the World's `facts.toml` | a World's facts; the fake's Mistral family; a model whose facts refuse reasoning | nothing (World facts only in `test_init.py`'s synthetic gemma) | new planning and fake tests |
+| `mistral@fake`: the made-up `test/mistral-7b`, facts from the World's `facts.toml`, no tool flags, `max_jobs = 2` | a World's facts; the fake's Mistral family, which sends tools unconstrained; facts that refuse reasoning and the tool contract (`facts.output_refused`) | nothing (World facts only in `test_init.py`'s synthetic gemma) | new planning and fake tests |
 | `unknown@remote`: a remote engine on `https://remote.invalid/v1/`, a model no facts know, `credential = "CHATDDX_TEST_REMOTE"`, cleared for nothing | remote engines; `facts.missing`; `schema.ref_unverified`; the gate's "isn't cleared" and "needs the secret" | synthetic only | new pair-lint and gate tests |
 | `[host.fake]`: one template, three model locations | start-ups | the sample | `inventory/test/test_serving.py`, `fake_engines` |
 | `facts.toml`: `test/mistral-7b`, plus a model no engine serves | "no planned engine serves it" | synthetic only | the test World's own test |
@@ -97,9 +115,9 @@ Outputs, each in `texts-en.toml` unless it holds no text:
 | `native-inlined` | the same with `schema_ops = ["inline_refs@1"]` | the inlined schema; no `schema.ref_unverified` |
 | `prompted` | text with `answer.json` and the `schema` insert | an unconstrained schema shown in the guidance |
 | `tool-answer` | tool, `list.json`, with a description | a named `tool_choice`; a second output shape |
-| `tool-answer-bare` | tool, `list.json`, no description, no guidance | the contract's minimum |
 | `lines` | text, guidance | free text; `lines@1` |
 | `raw` | text, no guidance (in `factors.toml`) | `language.unknown`, with the prompt `case` |
+| `verdict` | native, `verdict.json` | a judge's output |
 
 Recipes. A recipe whose sampling is `recommended` is made per model; the others are made once:
 
@@ -113,9 +131,9 @@ Recipes. A recipe whose sampling is `recommended` is made per model; the others 
 | `tool-answer-tools` | `greedy`, toolset `lookup` | `tool_choice: required`, the answer tool offered last, a tool that fails |
 | `lines` | `recommended` | free text per model |
 | `lines-tools` | `greedy`, toolset `lookup` | text after tool rounds |
-| `lines-guided` | a fork of `lines`; instructions `clinician` (developer role, `output_guidance` insert), few-shot `worked-example` (one exchange), passthrough `min-tokens`, translations `sv`, `appendix_layout` | made in en and sv; a translated output; a fork across languages, `lines-guided (sv, …)` of `lines (en, …)` |
-| `lines-instructed` | instructions `clinician`, no translations | `[skipped]`: "needs translations in sv" |
-| `headed` | instructions `clinician`; the prompt `headed`, which holds text and a `tool_guidance` insert and exists in en only; toolset `lookup` | the toolset's guidance placed in the prompt; `[skipped]`: "it has no prompt in sv" |
+| `lines-guided` | a fork of `lines-instructed`, `greedy`; instructions `clinician` (developer role, `output_guidance` insert), few-shot `worked-example` (one exchange), passthrough `min-tokens`, translations `guided`, `appendix_layout` | made in en and sv; a translated output and appendix layout; a fork across languages, `lines-guided (sv)` of `lines-instructed (en)` |
+| `lines-instructed` | `greedy`, instructions `clinician`, no translations | `[skipped]`: "needs translations in sv" |
+| `headed` | `greedy`, instructions `clinician`; the prompt `headed`, which holds text and a `tool_guidance` insert and exists in en only; toolset `lookup` | the toolset's guidance placed in the prompt; `[skipped]`: "it has no prompt in sv" |
 | `raw` | `greedy` | `language.unknown` |
 | `reasoned` | `recommended`, reasoning `high` | reasoning in a skeleton; `facts.reasoning_unmatched`; `[skipped]`: "the facts refuse its reasoning" for `test/mistral-7b` |
 | `budgeted` | `greedy`, reasoning `on-budget` | `vllm.thinking_budget_refused` on `qwen3-bare@fake`; `facts.budget_refused`; skipped where the facts refuse a budget |
@@ -130,6 +148,7 @@ Other records:
 - **Tools**: `lookup` and `broken` from the test tools, in the toolset `lookup` with `max_rounds = 2` and guidance.
 - **Expectation schema**: `targets`, the sample's kinds (diagnosis, warning or false, disposition, dont_miss,
   notes), requiring `diagnosis`, with no other properties allowed.
+- **Tags** on recipes: `structured`, `text`, `tools`, `reasoning` and `judge`.
 - **Scorers**, one per output shape, as the sample has them:
   - `answer`: differential, warning, disposition, and dont-miss over the diagnoses marked critical;
   - `list`: differential and dont-miss;
@@ -144,15 +163,16 @@ Nine vignettes, each named for what it carries:
 | `crlf` | en | CRLF throughout, a final bare LF, like the sample's Dutch cases | diagnosis, warning, disposition |
 | `bom` | en | a UTF-8 BOM | diagnosis |
 | `whitespace` | en | trailing spaces and a tab, a run of blank lines | diagnosis |
-| `matched` | en | plain | a diagnosis pattern the fake's answers match (`fake & diagnosis*`), so a score isn't 0 |
+| `matched` | en | plain | diagnosis, warning and disposition patterns the fake's answers match (`fake & diagnosis*`), so a score isn't 0 |
 | `dont-miss` | en | plain | `dont_miss`, `warning = false`, a disposition with text and no pattern |
-| `noted` | en | plain | notes by carol, in Swedish, one with an `answer` and one without |
+| `noted` | en | plain | notes in Swedish, carol's with an `answer` and dave's without |
 | `svenska` | sv | å, ä, ö in NFC | diagnosis |
 | `nfd` | sv | the same letters decomposed (NFD) | diagnosis |
 | `mislabeled` | sv | English text | diagnosis |
 
-Every case has a tag. Two tags overlap, and one tag holds only English cases, which the tests of tag unions and
-`language.mixed` need. The tags are set when the World is built.
+Every case has a tag: `bytes` (crlf, bom, whitespace, nfd), `targets` (crlf, matched, dont-miss, noted), and
+`swedish` (noted, svenska, nfd, mislabeled). They overlap, and `targets` holds only English cases, which the tests of
+tag unions and `language.mixed` need.
 
 Kept out of the World and made by the tests that need them:
 - a vignette that isn't UTF-8;
@@ -219,7 +239,8 @@ sample, Kompismoln), each with its data set:
 - each endpoint names the digest of the engine planned under its name (now `test_serving.py`'s sample-only test);
 - `init-data --world` binds each endpoint and seeds no other World's fakes (now in `test_init_data_command`);
 - every skeleton is answered as its contract asks by each fake endpoint (now
-  `test_it_answers_every_sample_skeleton…`);
+  `test_it_answers_every_sample_skeleton…`), unless a `vllm.*` lint says vLLM refuses the pair, in which case the
+  fake refuses it too;
 - the fake's instances hold to the data set's schemas (now `test_what_it_writes_holds_to_the_sample_s_schemas`).
 
 ## Fixes before the move
@@ -249,8 +270,8 @@ Found while surveying, each to be talked through with the user and then fixed an
 - **Should `init-data` take `--data` from the World's `_data/` when there is one?** It would make the convention
   part of `World` and save each caller from spelling it out, `test_worlds.py` included. Take: not now. Revisit
   if a second World carries a data set.
-- **The plan's size.** Every curation test writes every record, so a bigger plan makes curation slower. The design
-  above plans roughly what the sample does (some 60 records). Take: count the records once the World is built, and
-  cut recipes if it plans many more.
+- **The plan's size.** Every curation test writes every record, so a bigger plan makes curation slower. Built, it
+  plans 68 records to the sample's 60 (24 skeletons to 18), with 9 cases to 99. Take: keep it; its own load is
+  quicker than the sample's, and the curation tests drop to it from loading the sample's records.
 - **Making the remote engine reachable.** Take: not in this run. Its base URL is in its digest, so a free port per
   test would mean a new engine per test.

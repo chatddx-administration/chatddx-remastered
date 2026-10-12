@@ -1,0 +1,45 @@
+# The test World's English cases, keyed by their vignettes' ids in the source `test`. Each vignette carries what its
+# id says, and each case's targets are what the tests score: no pattern matches the fake vLLM's answers but
+# `matched`'s, which name them.
+
+[case.crlf]
+tags = ["bytes", "targets"]
+targets.diagnosis.pattern = "subdural & (hematoma | haematoma)"
+targets.warning.pattern = "anticoagula* | warfarin"
+targets.disposition.pattern = "admit* | neurosurg*"
+
+[case.bom]
+tags = ["bytes"]
+targets.diagnosis.pattern = "pneumonia"
+
+[case.whitespace]
+tags = ["bytes"]
+targets.diagnosis.pattern = "appendicitis"
+
+[case.matched]
+tags = ["targets"]
+targets.diagnosis.pattern = "fake & diagnosis*"
+targets.warning.pattern = "fake & acute & warning*"
+targets.disposition.pattern = "fake & disposition*"
+
+[case.dont-miss]
+tags = ["targets"]
+targets.diagnosis.pattern = "migraine"
+targets.dont_miss.pattern = "subarachnoid & (haemorrhage | hemorrhage)"
+targets.warning = false
+targets.disposition.text = "Home, once a bleed is ruled out."
+
+[case.noted]
+tags = ["targets", "swedish"]
+targets.diagnosis.pattern = "sepsis | septic & shock"
+
+[[case.noted.targets.notes]]
+author = "carol"
+language = "sv"
+comment = "Chock, troligen septisk. Odla, ge bred antibiotika och vätska."
+answer = "Septisk chock: odla, antibiotika, vätska."
+
+[[case.noted.targets.notes]]
+author = "dave"
+language = "sv"
+comment = "Uteslut urinvägsinfektion som fokus."
