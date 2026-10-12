@@ -15,7 +15,9 @@ Phase 2 is built: judges in a data set, the test World's judges, the refusal of 
 (`curation/plan.py`, `curation/test/test_judges.py`; `docs/curation.md` and `docs/factors-api.md` have AGENT
 suggestions). Phase 3 is built too: the scorer interface's version 2, `verdict` and `points`
 (`scorers/verdicts.py`), the one shipped entry point `chatddx.scorers.metrics:score`, and J4's `verdicts.asked`.
-Next: phase 4, which needs J1, J6, J7 and J8, and brings the test World's judged scorers.
+Next: phase 4, which needs J1, and brings the test World's judged scorers. J1 waits on the user, who asked whether
+pick, gate and record is a precedent for the trials' engines too, since tying an endpoint to a digest may have been
+a mistake.
 
 ## Decided
 - **The pipeline before the prompt.** The judge pipeline is built and tested on the test World (`worlds/test/`,
@@ -40,6 +42,12 @@ Next: phase 4, which needs J1, J6, J7 and J8, and brings the test World's judged
   judge that doesn't read the expectation runs on every case.
 - **J10: a judge skeleton with tools is refused, and a greedy judge with several seeds is linted** (see "J10. What a
   judge skeleton may be").
+- **J6: the scoring pass takes the runner's shape**, as the take has it (see "J6. The scoring pass as a job").
+- **J7: closed.** Vignettes will probably never go to a judge, so nothing fetches them for one. The pass refuses a
+  judge whose skeleton has the `vignette` or `appendices` slot, before anything is written, and the test World's
+  judge prompt loses its vignette. Purpose `judge` still allows both slots (`factors/request.py:SLOTS_BY_PURPOSE`).
+- **J8: the model is checked now**: `check_score` warns `attestation.model` for a judge call whose returned model
+  isn't the judge engine's served name. The prompt-token check waits.
 
 ## What exists
 - **Factors** (`src/chatddx/factors/scoring.py`): `Judge` (a skeleton of purpose `judge`, an engine, seeds, a fill
@@ -105,7 +113,7 @@ Decided: a call per view (see "Decided"). The options were a call per view, view
 sharing calls, and a view with several values (a change to `ScoreItem`).
 
 ### J6. The scoring pass as a job
-`score_run` is synchronous, sends nothing, and has no events or halt. The API scores in the run's thread right after
+Decided, as this take has it. `score_run` is synchronous, sends nothing, and has no events or halt. The API scores in the run's thread right after
 `finish` (`api/runs.py:_send`). Judges add cases × judged views × seeds calls. Take:
 - the scoring pass takes the runner's shape: `start` (gate and refusals before anything is written, then
   `ScoreStarted` and the owner entry), `send(on_event)`, `halt()`, `finish()`, with calls through `runner/send.py`
@@ -119,7 +127,7 @@ sharing calls, and a view with several values (a change to `ScoreItem`).
 - where scoring runs, in the request or in a worker, is worker K5's (`agents/wip-worker.md`).
 
 ### J7. The vignette in a judge prompt
-A judge prompt with the `vignette` or `appendices` slot needs the case fetched again and prepared as the trial
+Closed (see "Decided"). The take was: a judge prompt with the `vignette` or `appendices` slot needs the case fetched again and prepared as the trial
 prepared it (`docs/factors.md`, "Smaller issues"). Take:
 - one function fetches, prepares and renders an item for the runner and `bench/seen.py:Seen.rendered_again`
   (`runner/prepare.py:Items`, built); a judge's fills come from its `case`;
@@ -128,7 +136,8 @@ prepared it (`docs/factors.md`, "Smaller issues"). Take:
   another case than the model did.
 
 ### J8. Attestation
-Judge calls aren't checked the way run items are (`docs/factors.md`, "Smaller issues"). Take: `check_score` checks
+Decided, as this take has it. Judge calls aren't checked the way run items are (`docs/factors.md`, "Smaller
+issues"). Take: `check_score` checks
 each judge call's returned model against the judge engine's served name, with `attestation.model` as `check_run`
 does, when the pass is built. The prompt-token check needs the judge request rebuilt from the answer as the scorer
 read it; later. Neither changes what is stored.
