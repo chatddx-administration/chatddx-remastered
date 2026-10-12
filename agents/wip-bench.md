@@ -11,7 +11,7 @@ describes what the bench does and why it is shaped like it is. Names, signatures
 The bench builds on the store, the catalog, the World, the facts, the runner and the scoring pass, and holds no SQL of
 its own.
 
-The bench is the *operational* layer of the "person-scoped cake". Consult docs/chatddx.md's "The person-scoped cake"
+`bench` is the *operational* layer of "The person-scoped cake". Consult docs/chatddx.md's "The person-scoped cake"
 before adding functionality to the bench.
 
 ## Not bench

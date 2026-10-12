@@ -6,12 +6,15 @@ None of it changes an output or a score: no component refers to the catalog, so 
 
 Fields, classes, functions, rules and errors are in the API, docs/catalog-api.md.
 
-The catalog referers to factor components by digest, to runs and scores by their start records (docs/ledger.md), and to
-people by their identity (docs/identity.md). It holds nothing produced from a vignette, which is the only sensitive
-data, so the reader role may read all of it.
+The catalog refers to
+  - factor components by digest
+  - runs and scores by their start records (docs/ledger.md)
+  - people by their identity (docs/identity.md)
 
-The bench is the *resolving* layer of the "person-scoped cake". Consult docs/chatddx.md's "The person-scoped cake"
-before adding person-scoped functionality to the catalog.
+It holds nothing no sensitive or sensitive-derived data, so the reader role may read all of catalog.
+
+`catalog` is the *procedural* layer of "The person-scoped cake". Consult docs/chatddx.md's "The person-scoped cake"
+before adding person-scoped functionality.
 
 ## How the catalog works
 
