@@ -527,15 +527,30 @@ def test_a_halt_from_another_thread_hangs_up_the_calls_in_flight_and_returns(
     ]
 
 
-@pytest.mark.usefixtures("fake")
-def test_a_call_that_fails_on_its_thread_fails_the_send(
+@pytest.mark.usefixtures("delayed")
+def test_a_call_that_fails_on_its_thread_fails_the_send_and_keeps_the_calls_beside_it(
     conn: Connection,
     inventory: Inventory,
     alice: Person,
     plan: Plan,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    def broken(*_args: object, **_kwargs: object) -> None:
+    send = sending.send
+    streaming = threading.Event()
+    calls: list[int] = []
+
+    def broken(*args: Any, **kwargs: Any) -> Any:
+        calls.append(len(calls))
+        if len(calls) == 1:
+            on_delta = kwargs["on_delta"]
+
+            def heard(delta: sending.Delta) -> None:
+                streaming.set()
+                on_delta(delta)
+
+            kwargs["on_delta"] = heard
+            return send(*args, **kwargs)
+        assert streaming.wait(5)
         raise RuntimeError("broken")
 
     monkeypatch.setattr(sending, "send", broken)
@@ -545,7 +560,8 @@ def test_a_call_that_fails_on_its_thread_fails_the_send(
     with pytest.raises(RuntimeError, match="broken"):
         running.send()
     _ = running.finish()
-    assert Store(conn).run(running.run).items == ()
+    [item] = Store(conn).run(running.run).items
+    assert item.call.error == STOPPED
 
 
 def insensitive(inventory: Inventory) -> Inventory:

@@ -323,9 +323,10 @@ class Running:
                     continue
                 item = in_flight.pop(done)
                 self._append(item.key, item.vignette, done.result(), emit)
-        except KeyboardInterrupt:
+        except BaseException as e:
             halt.set()
-            self._stopping = True
+            if isinstance(e, KeyboardInterrupt):
+                self._stopping = True
             while in_flight:
                 done = results.get()
                 if isinstance(done, Streamed | ToolRan):
