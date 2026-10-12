@@ -1,4 +1,3 @@
-import re
 import tomllib
 from pathlib import Path
 from typing import Any, ClassVar
@@ -7,9 +6,6 @@ from pydantic import BaseModel, ConfigDict, Field, ValidationError
 
 from chatddx.fake_vllm.script import Script, Turn
 from chatddx.fake_vllm.served import Refused
-
-# As src/chatddx/curation/write.py titles a case that sends appendices.
-WITH = re.compile(r"^(?P<family>.+?) with (?P<appendices>.+)$")
 
 
 class Sample(BaseModel):
@@ -26,14 +22,6 @@ class Sample(BaseModel):
     unfinished: bool = False
     scored: bool = True
     turns: tuple[Turn, ...] = ()
-
-
-def case_of(name: str) -> tuple[str, tuple[str, ...]]:
-    found = WITH.match(name)
-    if found is None:
-        return name, ()
-    names = tuple(n.strip() for n in found["appendices"].split(","))
-    return found["family"], names
 
 
 def load(path: Path) -> Sample:

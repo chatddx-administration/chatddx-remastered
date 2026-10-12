@@ -17,6 +17,7 @@ class Command:
     text: str
     run: Callable[..., None] | None
     rest: int | None = None
+    grouped: Callable[[list[str]], list[str]] | None = None
 
     @property
     def repeats(self) -> bool:
@@ -67,8 +68,10 @@ COMMANDS: dict[str, Command] = {
     ),
     "run": Command(
         ("CASE", "[SEED]"),
-        "run a case on the cell, with SEED or the seed the repl holds, and score it",
+        "run a case on the cell, with SEED or the seed the repl holds, and score it; "
+        + "a case that sends appendices is FAMILY with APPENDIX, ...",
         running.run,
+        grouped=running.case_and_seed,
     ),
     "batch": Command(
         ("TAG...",),
@@ -143,7 +146,7 @@ def handle(repl: Repl, line: str) -> bool:
         repl.error(f"no command '{verb}': try help")
         return True
 
-    args = _joined(command, args)
+    args = command.grouped(args) if command.grouped else _joined(command, args)
     required = [param for param in command.params if not param.startswith("[")]
     most = len(args) if command.repeats else len(command.params)
 
@@ -222,6 +225,8 @@ def complete(names: Mapping[str, list[str]], line: str) -> list[str]:
                 if position == 0 and "from".startswith(words[-1])
                 else found
             )
+        case "run":
+            return _next_words(names.get("case", []), words)
         case "set" if position >= 1:
             held = names.get(f"set:{words[0]}", names.get(words[0], []))
             return _next_words(held, words[1:])

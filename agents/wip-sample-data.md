@@ -349,7 +349,7 @@ without a real engine. Everything but the model's words is genuine.
   without `[DONE]`; `status`, an error with `content` its message. A request past the last turn gets a 500. The fake
   stays a leaf: it reads a script, not the bench.
 - **The driver**: `src/chatddx/samples/`, an edge over the bench. Per sample: the variation, the cases
-  (`run.py:case`), a fresh script served at the endpoint (`fakes.py:fake_at`, the stand-in for a remote engine as
+  (`Bench.case_titled`), a fresh script served at the endpoint (`fakes.py:fake_at`, the stand-in for a remote engine as
   `fake-engines` serves it), `Bench.start`, `Running.send`, `Running.finish`, and `Bench.score` with plain fakes at
   the judges' endpoints.
 - **For hand use**: `chatddx samples LOGIN [--world PATH] [--again] [NAME…]`, after `init-data LOGIN --giftbag`. It

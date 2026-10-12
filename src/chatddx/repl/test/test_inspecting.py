@@ -256,3 +256,18 @@ def test_scorers_say_whether_the_cell_s_output_offers_each_view(say: Say):
     assert "doesn't offer it" in row(written, "answer")
     assert "offers it" in row(written, "lines")
     assert "the whole answer, lines@1" in written
+
+
+def test_show_case_lists_a_family_s_appendices_and_the_cases_that_send_them(say: Say):
+    written = say("show case whitespace")
+
+    assert "labs" in line_of(written, "appendices")
+    assert "whitespace with labs  its own expectation" in line_of(written, "cases")
+
+    written = say("show case whitespace with labs")
+
+    assert written.startswith("case whitespace with labs")
+    assert "CRP 180 mg/L, leukocytes 16." in line_of(written, "appendix labs")
+    assert "appendicitis & perforat*" in written
+    assert "cases" not in written.split("expectation")[0]
+    assert "no runs of yours with this case" in written

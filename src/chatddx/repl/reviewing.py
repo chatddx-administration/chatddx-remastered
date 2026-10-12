@@ -10,6 +10,7 @@ from chatddx.factors.request import Skeleton
 from chatddx.factors.trial import Trial
 from chatddx.ledger import Run, RunItem, RunStarted
 from chatddx.scorers.aggregate import mean
+from chatddx.scorers.shipped import unit_of
 
 from .render import (
     LABEL,
@@ -172,5 +173,7 @@ def _means(graded: Graded) -> str:
         values = [
             s.value for s in graded.score.items if s.view == i and s.value is not None
         ]
-        means.append(value_of(mean(values)) if values else "—")
+        means.append(
+            value_of(mean(values), unit_of(graded.scorer, i)) if values else "—"
+        )
     return f"{graded.name} {'/'.join(means)}"

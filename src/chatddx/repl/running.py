@@ -57,14 +57,15 @@ def run(repl: Repl, name: str, seed: str | None = None) -> None:
 
     variation, endpoint = whole
     bench = repl.bench
-    family = bench.family(name)
+    family, case = bench.case_titled(name)
     skeleton = bench.skeleton(variation)
-    running = _started(repl, variation, endpoint, [family.case], chosen)
+    running = _started(repl, variation, endpoint, [case], chosen)
 
     if running is None:
         return
 
-    title = f"trial: {variation.label} × {endpoint} × {family.name} (seed {chosen})"
+    shown = family.name if case == family.case else bench.title(case)
+    title = f"trial: {variation.label} × {endpoint} × {shown} (seed {chosen})"
     repl.console.print(Text(title, style="bold"))
     transcript = Transcript(repl.console)
     ended: list[RunItem] = []
@@ -184,6 +185,14 @@ def _recorded(repl: Repl, running: Running) -> None:
         + f"run {str(running.run)[:8]}",
         style=LABEL,
     )
+
+
+def case_and_seed(words: list[str]) -> list[str]:
+    if "with" not in words[1:]:
+        return words
+    if words[-1].isdigit():
+        return [" ".join(words[:-1]), words[-1]]
+    return [" ".join(words)]
 
 
 def _seed_of(repl: Repl, value: str) -> int | None:

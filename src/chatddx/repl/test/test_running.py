@@ -226,7 +226,7 @@ def test_batch_runs_the_cell_on_each_case_tagged_a_line_to_each(bench: Bench, sa
     [run] = ran(bench)
     assert len(run.items) == len(targets)
     assert "recorded as run 1 of trial" in written
-    assert ["lines", "text", "1", "0", "0", str(len(targets) - 1)] in cells(written)
+    assert ["lines", "text", "1", "@0", "0", str(len(targets) - 1)] in cells(written)
 
 
 def test_batch_says_what_it_can_t_run(say: Say):
@@ -428,3 +428,29 @@ def test_views_without_a_target_are_said_once_rather_than_scored(say: Say):
     assert "no target in any case: judged note-comment, note-answer, note-graded" in (
         written
     )
+
+
+@pytest.mark.slow
+@pytest.mark.usefixtures("fake")
+def test_run_takes_a_case_that_sends_appendices_by_its_title(bench: Bench, say: Say):
+    written = say(f"cell {LINES} {QWEN}", "run whitespace with labs 8")
+
+    assert f"trial: {LINES} × {QWEN} × whitespace with labs (seed 8)" in written
+    [run] = ran(bench)
+    _, case = bench.case_titled("whitespace with labs")
+    assert [item.key.case for item in run.items] == [case]
+    assert "no appendix xray of whitespace" in say("run whitespace with xray")
+
+
+@pytest.mark.slow
+@pytest.mark.usefixtures("fake")
+def test_scores_say_an_offset_with_its_unit_and_their_details_as_text(say: Say):
+    written = say(f"cell {LINES} {QWEN}", "run matched")
+
+    assert ["whole", "text", "@0", "Fake", "diagnosis", "B"] in cells(written)
+    assert ["differential", "1", "1.", "Fake", "diagnosis", "B"] in cells(written)
+
+    written = say("run noted")
+
+    assert ["note-graded", "0.5", "by", "seed:", "0,", "0.5,", "1"] in cells(written)
+    assert ["differential", "0", "not", "listed"] in cells(written)

@@ -2,9 +2,9 @@ from pathlib import Path
 
 import pytest
 
-from chatddx.bench import Bench, NotFound
+from chatddx.bench import Bench
 from chatddx.cli import main
-from chatddx.samples import RUNS, case, load, ran_before, run, samples
+from chatddx.samples import RUNS, load, ran_before, run, samples
 from chatddx.samples.test.helpers import UNFINISHED, went
 from chatddx.test.world import QWEN_MODEL as MODEL, TEST, freed
 
@@ -52,17 +52,6 @@ def test_a_sample_s_judges_are_served_as_plain_fakes(bench: Bench) -> None:
     assert judged.score is not None
     called = [c.call for i in judged.score.items for c in i.judge_calls]
     assert called and all(c.error is None for c in called)
-
-
-def test_a_sample_names_a_case_with_its_appendices(bench: Bench) -> None:
-    family = bench.family("whitespace")
-
-    assert case(bench, "whitespace") == family.case
-    sent = case(bench, "whitespace with labs")
-    assert sent != family.case and sent in bench.cases(family.id)
-    assert bench.title(sent) == "whitespace with labs"
-    with pytest.raises(NotFound, match="no appendix xray of whitespace"):
-        _ = case(bench, "whitespace with xray")
 
 
 def test_a_sample_is_its_file_s_name_and_says_what_it_can_t_read(

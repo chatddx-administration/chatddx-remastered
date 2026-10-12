@@ -51,6 +51,7 @@ class Metric:
     score: MetricFunction
     params: dict[str, JsonValue] = field(default_factory=_no_params)
     judged: bool = False
+    unit: str | None = None
 
 
 class Metrics:

@@ -15,6 +15,12 @@ def problems(scorer: Scorer) -> list[str]:
     return found.problems(scorer)
 
 
+def unit_of(scorer: Scorer, view: int) -> str:
+    code = SCORERS.get(scorer.entry_point)
+    metric = None if code is None else code.metrics.get(scorer.views[view].metric)
+    return (metric.unit or "") if metric is not None else ""
+
+
 def function(scorer: Scorer) -> Metrics:
     if found := problems(scorer):
         raise LookupError("; ".join(found))

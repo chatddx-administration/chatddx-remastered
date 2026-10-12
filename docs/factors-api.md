@@ -713,6 +713,17 @@ and `appendices` slots come from `prepare_case`.
 The entry point's interface belongs to `src/chatddx/scorers/scorer.py:ScoreFunction`, and the answer it reads to
 `src/chatddx/scorers/answer.py:read`.
 
+```
+AGENT: amend
+A metric publishes what marks a value that isn't a score from 0 to 1 (src/chatddx/scorers/scorer.py, `Metric.unit`):
+`first_mention`'s offset is `@`, so the repl writes `@44` beside scores where 1 is best (the repl's calibration on
+the sample). The metrics code is at version 2: `reciprocal_rank` and `mentions` give no value without an answer, as
+`first_mention` and the judged metrics do.
+---
+`src/chatddx/scorers/shipped.py:SCORERS` ships one `Metrics`, `chatddx.scorers.metrics:score`, with version, metrics,
+what each measures, a JSON Schema for a view's params, whether it reads a judge's verdicts, what marks a value that
+isn't a score from 0 to 1 (`unit`, `@` for `first_mention`'s offset), and optionally a schema
+```
 `src/chatddx/scorers/shipped.py:SCORERS` ships one `Metrics`, `chatddx.scorers.metrics:score`, with version, metrics,
 what each measures, a JSON Schema for a view's params, whether it reads a judge's verdicts, and optionally a schema
 for the scorer's own params. Its metrics are the pattern metrics (`scorers/patterns.py`) and the judged metrics

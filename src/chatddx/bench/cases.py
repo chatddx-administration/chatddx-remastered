@@ -1,3 +1,4 @@
+import re
 from collections.abc import Sequence
 from datetime import UTC, datetime, timedelta
 
@@ -15,6 +16,50 @@ from .components import bound, edit_component
 from .errors import NotFound, OverQuota
 from .model import Family, Written
 from .seen import Seen
+
+# A case's title, as src/chatddx/catalog/titles.py:describe_case writes it.
+WITH = re.compile(r"^(?P<family>.+?) with (?P<appendices>.+)$")
+
+
+def appendices_of(seen: Seen, family: int) -> dict[str, str]:
+    vignette = seen.current(seen.family_by_id(family).id)
+    return {
+        about.name: edit.digest
+        for edit, about in seen.visible("appendix")
+        if about.name is not None
+        and resolve(seen.get, edit.digest, Appendix).vignette == vignette
+    }
+
+
+def case_titled(seen: Seen, title: str) -> tuple[Family, str]:
+    found = WITH.match(title)
+    if found is None:
+        family = seen.family(title)
+        return family, family.case
+    family = seen.family(found["family"])
+    names = [name.strip() for name in found["appendices"].split(",")]
+    held = appendices_of(seen, family.id)
+    if missing := [name for name in names if name not in held]:
+        raise NotFound(f"no appendix {', '.join(missing)} of {family.name}")
+    vignette = seen.current(family.id)
+    made = Case(vignette=vignette, appendices=tuple(held[n] for n in names)).digest
+    if made not in seen.cases(family.id):
+        raise NotFound(f"no case {title} for {seen.person.login}")
+    return family, made
+
+
+def case_titles(seen: Seen) -> list[str]:
+    bare = {
+        Case(vignette=resolve(seen.get, edit.digest, Appendix).vignette).digest
+        for edit, _ in seen.visible("appendix")
+    }
+    return sorted(
+        seen.title(case)
+        for family in seen.families()
+        if family.case in bare
+        for case in seen.cases(family.id)
+        if case != family.case
+    )
 
 
 def appendix(seen: Seen, family: int, text: str) -> Appendix:

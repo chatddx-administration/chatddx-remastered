@@ -1,9 +1,8 @@
 from collections.abc import Callable, Generator
 from contextlib import ExitStack, contextmanager
 
-from chatddx.bench import Bench, NotFound, TriedVariation
+from chatddx.bench import Bench, TriedVariation
 from chatddx.factors.base import resolve
-from chatddx.factors.cases import Appendix, Case
 from chatddx.factors.scoring import Scorer
 from chatddx.factors.trial import Trial
 from chatddx.fake_vllm.script import Script
@@ -13,7 +12,7 @@ from chatddx.runner.run import Event, Running, Streamed
 from chatddx.runner.score import judge_at
 
 from .fakes import fake_at
-from .sample import Sample, case_of
+from .sample import Sample
 
 NONE = "none"
 
@@ -27,38 +26,17 @@ def variation(bench: Bench, sample: Sample) -> TriedVariation:
     return tried
 
 
-def case(bench: Bench, name: str) -> str:
-    family_name, appendices = case_of(name)
-    family = bench.family(family_name)
-    if not appendices:
-        return family.case
-    vignette = bench.current(family.id)
-    bound: dict[str, str] = {}
-    for edit, about in bench.visible("appendix"):
-        appendix = resolve(bench.get, edit.digest, Appendix)
-        if about.name in appendices and appendix.vignette == vignette:
-            bound[about.name] = edit.digest
-    if missing := [a for a in appendices if a not in bound]:
-        raise NotFound(f"no appendix {', '.join(missing)} of {family.name}")
-    made = Case(
-        vignette=vignette, appendices=tuple(bound[a] for a in appendices)
-    ).digest
-    if made not in bench.cases(family.id):
-        raise NotFound(f"no case {name} for {bench.person.login}")
-    return made
-
-
 def ran_before(bench: Bench, sample: Sample) -> RunStarted | None:
     skeleton = bench.skeleton(variation(bench, sample))
     engine = bench.endpoint(sample.endpoint)
-    cases = [case(bench, name) for name in sample.cases]
+    cases = [bench.case_titled(name)[1] for name in sample.cases]
     _, trial = bench.trial(skeleton, engine, cases, sample.seed)
     return next((r for r in bench.runs() if r.trial == trial.digest), None)
 
 
 def run(bench: Bench, sample: Sample) -> RunStarted:
     tried = variation(bench, sample)
-    cases = [case(bench, name) for name in sample.cases]
+    cases = [bench.case_titled(name)[1] for name in sample.cases]
     fake = fake_at(bench.inventory, bench.get, sample.endpoint)
     script = Script(sample.turns) if sample.turns else None
     with serving([fake], script=script):

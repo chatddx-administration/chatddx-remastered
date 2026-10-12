@@ -695,18 +695,20 @@ For the user, each with a take, most telling first:
    only, a diagnoses run by `diagnoses`. `notes` leaves structured runs too: a judge of a plan against Olof's note
    would need a view that names the part it reads, `$.management` say. `run`'s, `replay`'s and `score`'s tables leave
    out the views with no target (`no target` or `no expectation`), said once (`no target: notes comment, …`), and a
-   batch's table the views with no target in any case. Left: `diagnoses` still applies to a plan, whose
-   `$.diagnoses[*]` are objects, and lists them as JSON; a reach that knows the items' type would leave it out.
-2. **A score's meaning on the screen.** `first_mention` is a character offset, 0 when named first, beside 0–1 scores
-   where 1 is best, so its best reads as a failure. Take: a value that isn't 0–1 shows with its unit (`@44`).
-3. **The detail column** is the detail's JSON: `{"answer": "1. {\"diagnosis\"…`, `{"seeds": [1.0]}`. Take: an
-   answer or a reason as plain text; a judged view as its seeds' values and the judge's `why` (item 4).
+   batch's table the views with no target in any case. What's left is in "Nice to have".
+2. **A score's meaning on the screen.** Decided: the take, and built. A metric publishes what marks a value that
+   isn't a score from 0 to 1 (`scorers/scorer.py:Metric.unit`, `@` for `first_mention`'s offset, listed by the API),
+   and the repl writes a value and a mean with it (`render.py:value_of`, `shipped.py:unit_of`): `free-text text @44`,
+   `runs`' `free-text @44/0.5/—`. A stderr is written bare.
+3. **The detail column.** Decided: the take, and built (`render.py:_detail`). An answer is said as text, a reason
+   after it, dimmed; a judged view's detail as its seeds' values, `by seed: 0.5, 0, 1`, whose `why`s `judged` lists
+   under the scores (item 4). A detail of another shape is still its JSON, clipped.
 4. **Judged views.** Decided: the take, and built. The scoring pass emits `JudgeAsked`, `Streamed` and
    `JudgeAnswered` around each judge call (`runner/score.py`), `Bench.score` passes them on, and the repl draws a line
    per call as `batch` does per case (`render.py:JudgeLines`): `judging noted: note-comment by verdict, seed 1 of 1
    38  meets true`. Under the scores, `run`, `replay` and a one-item `score` list each call with what it said at the
-   view's `at` and the rest of its answer's text, the `why` (`render.py:show_judged`). Left: the judge lines aren't
-   aligned, as their labels differ in length.
+   view's `at` and the rest of its answer's text, the `why` (`render.py:show_judged`). What's left is in "Nice to
+   have".
 5. **An answer that didn't come.** Decided: the take, and built. `reciprocal_rank` and `mentions` give no value,
    reason `no answer`, as `first_mention` and the judged views did; the metrics code is at version 2 for it, so a
    scorer pinned at 1 is refused until init-data moves the archive's on and a fork follows its origin
@@ -721,10 +723,14 @@ For the user, each with a take, most telling first:
    saying so.
 8. **A language in a name.** `use free-text-guided` is refused as made in two languages; the whole per-model name
    must be typed. Take: `use free-text-guided sv`, the model from the endpoint.
-9. **Cases with appendices** can't be run or shown: `run` takes a family, and `show case Dutchfall11w` lists neither
-   its appendices nor the cases that send them, and counts the bare case's runs only. Take: `run` and `show case`
-   take a case's title, `Dutchfall11w with ultrasound` (`samples/run.py:case` moves into the bench), and `show case`
-   lists the family's appendices and cases, each with its own targets.
+9. **Cases with appendices.** Decided: the take, and built. `Bench.case_titled` finds a case by its title, the
+   family's name or `FAMILY with APPENDIX, …` as `catalog/titles.py:describe_case` writes it, among the cases stored
+   for the family's current vignette; `Bench.appendices_of` names a family's appendices, and `Bench.case_titles`
+   the titles of the cases that send them (`bench/cases.py`). The samples use it in place of their own. `run` takes
+   a title and a seed after it, `run Dutchfall11w with labs, ultrasound 5` (`running.py:case_and_seed`; words are
+   joined only when they hold `with`, so `run noted x` still says the seed is wrong), and completes it word by
+   word. `show case FAMILY` lists the family's appendices and its cases that send them, marking those with an
+   expectation of their own; `show case TITLE` shows the case's appendices, its own expectation and its runs.
 10. **No case has a `dont_miss` target**, so the `dont-miss` view of `plan`, `diagnoses` and `free-text` never has a
     value. Take: Olof gives a few, or some are made up and labelled so, as the appendices are.
 11. **A structured answer cut short** (left from 4b): the `runaway` sample lacks only its closing brace and is
@@ -762,6 +768,15 @@ What the port left to others, and where each is planned:
 - **Judges** for the free-text notes were left out; they score now, and showing them is "7. Completion"'s.
 - **The injected transport** (`FakeTransport`): tests run the real fake server instead, and sample runs have it
   answer from a script.
+
+## Nice to have
+Found in the calibration, and left for later (the user):
+- **`diagnoses` on a plan.** It still applies, since a plan's `$.diagnoses[*]` reaches into its schema, but the items
+  are objects, so its differential lists them as JSON and scores their text. A reach that knows the type of what a
+  view picks would leave it out, as `View.offered_by` leaves whole-answer views out of structured runs.
+- **The judge lines aren't aligned**: `judging noted: note-comment by verdict, seed 1 of 1` and `… note-graded by
+  graded, seed 1 of 3` differ in length, so their tokens and verdicts don't line up. The labels of a scoring's judge
+  calls are known when it starts, so their width could be too.
 
 ## Risks and smaller open points
 - **A configuration on another model's endpoint.** The old `show` said what each slice became on the stack.

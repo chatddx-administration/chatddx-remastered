@@ -11,7 +11,7 @@ from chatddx.bench import KINDS, PARTS, Family, Graded, TriedVariation
 from chatddx.catalog import About
 from chatddx.catalog.titles import describe, short
 from chatddx.factors.base import Component, resolve
-from chatddx.factors.cases import Case
+from chatddx.factors.cases import Appendix, Case
 from chatddx.factors.engine import LocalEngine
 from chatddx.factors.request import Reasoning, Skeleton
 from chatddx.factors.scoring import Expectation, Scoring
@@ -416,14 +416,15 @@ def _show_case(repl: Repl, name: str | None) -> None:
         repl.error("no case in the cell: show case NAME")
         return
 
-    family = bench.family(name)
-    case = resolve(bench.get, family.case, Case)
-    header = Text(f"case {family.name}", style="bold")
+    family, digest = bench.case_titled(name)
+    case = resolve(bench.get, digest, Case)
+    shown = family.name if digest == family.case else bench.title(digest)
+    header = Text(f"case {shown}", style="bold")
 
     if owner := bench.owner(family.about):
         _ = header.append(f", {owner}'s")
 
-    _ = header.append(f"  {short(family.case)}", style=LABEL)
+    _ = header.append(f"  {short(digest)}", style=LABEL)
     repl.console.print(header)
 
     table = Table(box=None, show_header=False)
@@ -438,11 +439,15 @@ def _show_case(repl: Repl, name: str | None) -> None:
     except LookupError as e:
         table.add_row("vignette", Text(str(e), style=REFUSED))
 
-    if case.appendices:
-        table.add_row("appendices", ", ".join(map(bench.title, case.appendices)))
+    for appendix in case.appendices:
+        text = resolve(bench.get, appendix, Appendix).text
+        table.add_row(f"appendix {bench.title(appendix)}", clipped(text))
+
+    if digest == family.case:
+        _sending(repl, table, family)
 
     _about(table, family.about)
-    schemas = bench.expectation_schemas(family.case)
+    schemas = bench.expectation_schemas(digest)
 
     if not schemas:
         table.add_row("expectation", Text("none for you", style=LATER))
@@ -454,16 +459,14 @@ def _show_case(repl: Repl, name: str | None) -> None:
             label += f" ({bench.title(schema)})"
 
         try:
-            expectation = bench.expectation(family.case, schema)
+            expectation = bench.expectation(digest, schema)
         except LookupError as e:
             table.add_row(label, Text(str(e), style=REFUSED))
             continue
 
         if expectation is None:
             said = Text("none of yours", style=LATER)
-            owners = {
-                bench.login(a.owner) for _, a in bench.shared(family.case, schema)
-            }
+            owners = {bench.login(a.owner) for _, a in bench.shared(digest, schema)}
             if owners:
                 _ = said.append(
                     f"; shared by {some(sorted(owners))}: take", style=LABEL
@@ -473,7 +476,26 @@ def _show_case(repl: Repl, name: str | None) -> None:
             _add_rows(repl, table, label, expectation.data, depth=3)
 
     repl.console.print(table)
-    _runs(repl, "case", family.case)
+    _runs(repl, "case", digest)
+
+
+def _sending(repl: Repl, table: Table, family: Family) -> None:
+    bench = repl.bench
+
+    if appendices := bench.appendices_of(family.id):
+        table.add_row("appendices", ", ".join(appendices))
+
+    cases = Text()
+
+    for case in bench.cases(family.id):
+        if case == family.case:
+            continue
+        _ = cases.append(("\n" if cases else "") + bench.title(case))
+        if bench.expectation_schemas(case):
+            _ = cases.append("  its own expectation", style=LABEL)
+
+    if cases:
+        table.add_row("cases", cases)
 
 
 def _titled(repl: Repl, value: JsonValue) -> JsonValue:

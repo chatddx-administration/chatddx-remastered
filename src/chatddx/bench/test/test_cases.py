@@ -104,3 +104,20 @@ def test_a_late_case_is_given_its_replacement(bench: Bench) -> None:
     [labs] = replacement.appendices
     assert resolve(bench.get, labs, Appendix).text == "Lab: late"
     assert replacement.digest in bench.cases(family.id)
+
+
+def test_a_case_is_found_by_its_title(bench: Bench) -> None:
+    family = bench.family("whitespace")
+
+    assert bench.case_titled("whitespace") == (family, family.case)
+    found, sent = bench.case_titled("whitespace with labs")
+    assert found == family and sent in bench.cases(family.id) and sent != family.case
+    assert bench.title(sent) == "whitespace with labs"
+    assert list(bench.appendices_of(family.id)) == ["labs"]
+    assert bench.case_titles() == ["whitespace with labs"]
+    with pytest.raises(NotFound, match="no appendix xray of whitespace"):
+        _ = bench.case_titled("whitespace with xray")
+    with pytest.raises(NotFound, match="no appendix labs of crlf"):
+        _ = bench.case_titled("crlf with labs")
+    with pytest.raises(NotFound, match="no case whitespace with labs, labs for alice"):
+        _ = bench.case_titled("whitespace with labs, labs")

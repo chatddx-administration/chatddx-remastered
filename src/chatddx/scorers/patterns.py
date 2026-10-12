@@ -231,6 +231,7 @@ METRICS: dict[str, Metric] = {
         "where in the text the target's pattern is first matched, in characters; "
         + "none when it never is",
         _by_pattern(first_mention),
+        unit="@",
     ),
     "mentions": Metric(
         "1 when an item matches the target's pattern, or when nothing is named "

@@ -1,6 +1,7 @@
 import pytest
 
 from chatddx.repl.commands import COMMANDS, complete, handle
+from chatddx.repl.running import case_and_seed
 from chatddx.repl.shell import Repl
 from chatddx.repl.test.helpers import Say, tried
 from chatddx.test.world import (
@@ -137,4 +138,18 @@ def test_the_names_complete_as_the_person_sees_them(repl: Repl):
     assert "none" in names["set:reasoning"]
     assert "set:sampling" not in names
     assert names["endpoint"] == [GPT_OSS, MISTRAL, QWEN_BARE, QWEN, REMOTE]
-    assert names["case"] == sorted(CASES)
+    assert names["case"] == [*sorted(CASES), "whitespace with labs"]
+
+
+def test_run_completes_a_case_s_title_word_by_word_and_takes_a_seed_after_it():
+    names = {"case": ["whitespace", "whitespace with labs"]}
+
+    assert complete(names, "run wh") == ["whitespace"]
+    assert complete(names, "run whitespace ") == ["with"]
+    assert complete(names, "run whitespace with ") == ["labs"]
+    assert case_and_seed(["whitespace", "with", "labs", "8"]) == [
+        "whitespace with labs",
+        "8",
+    ]
+    assert case_and_seed(["whitespace", "with", "labs"]) == ["whitespace with labs"]
+    assert case_and_seed(["noted", "x"]) == ["noted", "x"]

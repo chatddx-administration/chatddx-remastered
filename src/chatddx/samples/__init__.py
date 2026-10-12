@@ -1,5 +1,5 @@
 from .fakes import fake_at
-from .run import case, ran_before, run, variation
+from .run import ran_before, run, variation
 from .sample import Sample, load, samples
 
 RUNS = "_runs"
@@ -7,7 +7,6 @@ RUNS = "_runs"
 __all__ = [
     "RUNS",
     "Sample",
-    "case",
     "fake_at",
     "load",
     "ran_before",

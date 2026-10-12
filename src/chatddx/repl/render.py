@@ -27,6 +27,7 @@ from chatddx.runner.send import STOPPED, Delta
 from chatddx.scorers.aggregate import mean, stderr
 from chatddx.scorers.answer import Answer, read
 from chatddx.scorers.scorer import NO_ANSWER, NO_TARGET
+from chatddx.scorers.shipped import unit_of
 
 LABEL = "dim"
 REFUSED = "red"
@@ -109,10 +110,10 @@ def plural(n: int, one: str, many: str | None = None) -> str:
     return f"{n} {one if n == 1 else many or one + 's'}"
 
 
-def value_of(value: float | None) -> str:
+def value_of(value: float | None, unit: str = "") -> str:
     if value is None:
         return "—"
-    return str(int(value)) if value.is_integer() else f"{value:.3g}"
+    return unit + (str(int(value)) if value.is_integer() else f"{value:.3g}")
 
 
 def clipped_line(text: str, width: int = 60) -> str:
@@ -390,13 +391,20 @@ def _shown(value: JsonValue) -> str:
 
 
 def _detail(detail: JsonValue) -> Text:
+    if not isinstance(detail, dict):
+        return Text("" if detail is None else clipped_line(_shown(detail)))
+    text = Text()
     match detail:
-        case None:
-            return Text("")
-        case {"reason": str() as reason}:
-            return Text(reason, style=LABEL)
+        case {"answer": str() as answer}:
+            _ = text.append(clipped_line(answer))
+        case {"seeds": list() as seeds}:
+            values = [s if isinstance(s, float | int) else None for s in seeds]
+            _ = text.append("by seed: " + ", ".join(value_of(v) for v in values))
         case _:
-            return Text(clipped_line(_shown(detail)))
+            pass
+    if isinstance(reason := detail.get("reason"), str):
+        _ = text.append(f"  {reason}" if text else reason, style=LABEL)
+    return text if text or not detail else Text(clipped_line(_shown(detail)))
 
 
 def show_scores(console: Console, graded: list[Graded]) -> None:
@@ -419,7 +427,7 @@ def show_scores(console: Console, graded: list[Graded]) -> None:
             table.add_row(
                 g.name if not shown else "",
                 g.label(item.view),
-                value_of(item.value),
+                value_of(item.value, unit_of(g.scorer, item.view)),
                 _detail(item.detail),
             )
             shown = True
@@ -462,7 +470,10 @@ def show_table(
         values = [held.get((g.name, i, item.key)) for g, i in columns]
         table.add_row(
             names.get(item.key.case, short(item.key.case)),
-            *(value_of(None if s is None else s.value) for s in values),
+            *(
+                value_of(None if s is None else s.value, unit_of(g.scorer, i))
+                for s, (g, i) in zip(values, columns, strict=True)
+            ),
         )
 
     if columns and items:
@@ -484,12 +495,14 @@ def _untargeted(console: Console, held: dict[str, list[str]], where: str = "") -
 def show_summary(console: Console, graded: list[Graded]) -> None:
     held: dict[tuple[str, int], list[ScoreItem]] = {}
     labels: dict[tuple[str, int], str] = {}
+    units: dict[tuple[str, int], str] = {}
 
     for g in graded:
         if g.score is None:
             continue
         for i in range(len(g.scorer.views)):
             _ = labels.setdefault((g.name, i), g.label(i))
+            _ = units.setdefault((g.name, i), unit_of(g.scorer, i))
             held.setdefault((g.name, i), []).extend(
                 s for s in g.score.items if s.view == i
             )
@@ -516,7 +529,7 @@ def show_summary(console: Console, graded: list[Graded]) -> None:
             name if name not in shown else "",
             labels[(name, i)],
             str(len(values)),
-            value_of(mean(values)) if values else "—",
+            value_of(mean(values), units[(name, i)]) if values else "—",
             value_of(stderr(values)) if values else "—",
             *(
                 str(n) if n else ""

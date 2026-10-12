@@ -1,6 +1,15 @@
 from typing import final
 
-from .cases import appendix, carry, case, replacement, type_case
+from .cases import (
+    appendices_of,
+    appendix,
+    carry,
+    case,
+    case_titled,
+    case_titles,
+    replacement,
+    type_case,
+)
 from .components import component, edit_component, fork_component, new
 from .configurations import edit, fork, save
 from .following import follow, proposal
@@ -23,6 +32,9 @@ class Bench(Seen):
 
     appendix = appendix
     case = case
+    case_titled = case_titled
+    case_titles = case_titles
+    appendices_of = appendices_of
     replacement = replacement
     type_case = type_case
     carry = carry

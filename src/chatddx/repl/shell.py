@@ -75,7 +75,7 @@ class Repl:
             names[f"set:{part}"] = [*names[part], NONE]
         names |= {
             "endpoint": sorted(bench.inventory.endpoints),
-            "case": [f.name for f in bench.families()],
+            "case": [*(f.name for f in bench.families()), *bench.case_titles()],
             "tag": bench.tags(),
             "part": [*PARTS],
             "kind": ["tag", "case", "endpoint", *KINDS],
