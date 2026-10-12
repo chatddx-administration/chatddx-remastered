@@ -13,7 +13,7 @@ ZERO = "sha256:" + "0" * 64
 
 
 def test_an_appendix_makes_a_case_and_its_edit_a_replacement(bench: Bench) -> None:
-    family = bench.family("Dutchfall11w")
+    family = bench.family("noted")
     labs = bench.appendix(family.id, "Lab:\r\nCRP 120\rHb 98")
     assert labs.text == "Lab:\nCRP 120\nHb 98"
     made = bench.new(labs, "labs")
@@ -38,7 +38,7 @@ def test_an_expectation_is_carried_onto_another_case_of_its_family(
     bench: Bench,
 ) -> None:
     catalog = bench.catalog
-    family = bench.family("Dutchfall11w")
+    family = bench.family("noted")
     [schema] = bench.expectation_schemas(family.case)
     [mine] = catalog.expectation_choices([family.case], bench.person.id, schema)[
         family.case
@@ -55,7 +55,7 @@ def test_an_expectation_is_carried_onto_another_case_of_its_family(
     assert moved is not None and moved.data == held.data
     assert bench.expectation(family.case, schema) is None
 
-    other = bench.family("DutchFall10w").case
+    other = bench.family("crlf").case
     with pytest.raises(ValueError, match=f"{other} isn't a case of the family"):
         _ = bench.carry(mine, carried.edit.id, other)
     appendix = bench.thread("appendix", "labs")[0].thread
@@ -66,8 +66,8 @@ def test_an_expectation_is_carried_onto_another_case_of_its_family(
 def test_what_isn_t_the_person_s_to_build_on_is_refused(
     bench: Bench, bob: Person
 ) -> None:
-    family, other = bench.family("Dutchfall11w"), bench.family("DutchFall10w")
-    elsewhere = Vignette(source="sample", id="nowhere", fingerprint=Fingerprint.of(b""))
+    family, other = bench.family("noted"), bench.family("crlf")
+    elsewhere = Vignette(source="test", id="nowhere", fingerprint=Fingerprint.of(b""))
     with pytest.raises(ValueError, match="bound to the current vignette of a case"):
         _ = bench.new(Appendix(vignette=elsewhere, text="x"), "x")
     with pytest.raises(NotFound, match=f"no appendix {ZERO} for alice"):
@@ -89,7 +89,7 @@ def test_a_late_case_is_given_its_replacement(bench: Bench) -> None:
     catalog, store = Catalog(bench.conn), Store(bench.conn)
     archive = People(bench.conn).find("archive")
     assert archive is not None
-    family = bench.family("Dutchfall11w")
+    family = bench.family("noted")
     old = resolve(bench.get, family.case, Case).vignette
     _ = catalog.repair(family.id, archive.id, fingerprint=Fingerprint.of(b"anew"))
     current = catalog.bindings(family.id)[-1].vignette

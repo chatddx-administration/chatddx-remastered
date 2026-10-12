@@ -1,13 +1,13 @@
 import pytest
 
 from chatddx.bench import Bench, OverQuota
-from chatddx.bench.test.sample import FREE_TEXT, QWEN
 from chatddx.core import settings
 from chatddx.factors.base import Fingerprint, resolve
 from chatddx.factors.cases import Case
 from chatddx.identity import Person
 from chatddx.inventory import Inventory
 from chatddx.store import Store, fetch_vignette
+from chatddx.test.world import LINES, QWEN
 
 pytestmark = pytest.mark.wip
 
@@ -41,8 +41,8 @@ def test_what_can_t_be_typed_is_refused(
     ):
         with pytest.raises(ValueError, match=said):
             _ = bench.type_case(text)
-    with pytest.raises(ValueError, match="'sample' isn't a database source"):
-        _ = bench.type_case(TYPED, source="sample")
+    with pytest.raises(ValueError, match="'test' isn't a database source"):
+        _ = bench.type_case(TYPED, source="test")
     with pytest.raises(ValueError, match="is not a language tag"):
         _ = bench.type_case(TYPED, language="Swedish")
     with pytest.raises(ValueError, match="a name can't be empty"):
@@ -64,7 +64,7 @@ def test_a_typed_case_runs_as_any_case(
 ) -> None:
     on_world = Bench(bench.conn, alice, world, bench.facts)
     family = on_world.type_case(TYPED)
-    variation = on_world.configuration(FREE_TEXT, on_world.endpoint(QWEN))
+    variation = on_world.configuration(LINES, on_world.endpoint(QWEN))
     running = on_world.start(variation, QWEN, [family.case], 7)
     running.send(lambda _: None)
     assert running.finish() == []

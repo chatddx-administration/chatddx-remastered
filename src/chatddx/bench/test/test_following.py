@@ -1,12 +1,12 @@
 import pytest
 
 from chatddx.bench import Bench, MovedOn, NotFound
-from chatddx.bench.test.sample import FREE_TEXT, QWEN
 from chatddx.catalog import Entry, EntryField, Subject
 from chatddx.factors.base import resolve
 from chatddx.factors.request import Recipe
 from chatddx.factors.scoring import Expectation
 from chatddx.store import People, Store
+from chatddx.test.world import LINES, QWEN
 
 pytestmark = pytest.mark.wip
 
@@ -20,7 +20,7 @@ def archive(bench: Bench) -> Bench:
 
 def _own(bench: Bench) -> int:
     edit, about = bench.thread_by_id(
-        bench.thread("configuration", FREE_TEXT)[0].thread, "configuration"
+        bench.thread("configuration", LINES)[0].thread, "configuration"
     )
     assert about.owner == bench.person.id
     return edit.thread
@@ -31,12 +31,12 @@ def test_a_configuration_follows_its_origin_with_its_own_change_on_top(
 ) -> None:
     catalog, engine = bench.catalog, bench.endpoint(QWEN)
     mine = _own(bench)
-    theirs = archive.thread("configuration", FREE_TEXT)[0].thread
+    theirs = archive.thread("configuration", LINES)[0].thread
     assert bench.proposal(mine) is None
 
     off = bench.chunk("reasoning", "off", engine)
     greedy = bench.chunk("sampling", "greedy", engine)
-    varied = bench.configuration(FREE_TEXT, engine).set("reasoning", off, "off")
+    varied = bench.configuration(LINES, engine).set("reasoning", off, "off")
     seen = bench.edit(mine, varied, catalog.head(mine).id).variation.configuration
     moved = archive.variation(theirs, {"sampling": greedy})
     origin = archive.edit(
@@ -66,7 +66,7 @@ def test_a_taken_expectation_follows_the_archive_s_correction(
     bench: Bench, archive: Bench
 ) -> None:
     catalog, store = bench.catalog, Store(bench.conn)
-    case = bench.family("Dutchfall11w").case
+    case = bench.family("noted").case
     [schema] = bench.expectation_schemas(case)
     [mine] = catalog.expectation_choices([case], bench.person.id, schema)[case]
     [(theirs, _)] = bench.shared(case, schema)
@@ -89,7 +89,7 @@ def test_only_what_has_something_to_follow_is_followed(
 ) -> None:
     catalog = bench.catalog
     mine = _own(bench)
-    theirs = archive.thread("configuration", FREE_TEXT)[0].thread
+    theirs = archive.thread("configuration", LINES)[0].thread
     head = catalog.head(mine).id
     with pytest.raises(ValueError, match=f"configuration {mine} has nothing to follow"):
         _ = bench.follow(mine, head)

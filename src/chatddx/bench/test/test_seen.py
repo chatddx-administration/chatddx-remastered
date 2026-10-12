@@ -3,23 +3,16 @@ import re
 import pytest
 
 from chatddx.bench import Ambiguous, Bench, Conflict, MovedOn, NotFound
-from chatddx.bench.test.sample import (
-    FREE_TEXT,
-    PLAN,
-    QWEN,
-    another_expectation,
-    ran,
-    trial,
-)
+from chatddx.bench.test.helpers import another_expectation, ran, trial
 from chatddx.catalog import Entry, EntryField, Subject
 from chatddx.curation import Plan, load_cases
-from chatddx.curation.plan import SAMPLE
 from chatddx.factors.base import resolve
 from chatddx.factors.scoring import Expectation
 from chatddx.identity import Person
 from chatddx.runner.score import score_run
 from chatddx.store import Catalog, People, Store
 from chatddx.store.store import Connection
+from chatddx.test.world import DATA, LINES, MODELS, NATIVE, QWEN, QWEN_MODEL
 
 pytestmark = pytest.mark.wip
 
@@ -31,27 +24,30 @@ def test_a_person_sees_their_own_and_shared_threads_and_families(
     archive = People(conn).find("archive")
     assert archive is not None and owners == {alice.id, archive.id}
 
-    mine, _ = bench.thread("configuration", FREE_TEXT)
+    mine, _ = bench.thread("configuration", LINES)
     assert bench.about(mine.thread).owner == alice.id
-    theirs, _ = bench.thread("configuration", f"archive/{FREE_TEXT}")
+    theirs, _ = bench.thread("configuration", f"archive/{LINES}")
     assert bench.about(theirs.thread).owner == archive.id
     assert theirs.digest == mine.digest and theirs.thread != mine.thread
     with pytest.raises(NotFound, match="no configuration 'nothing' for alice"):
         _ = bench.thread("configuration", "nothing")
 
-    families = bench.families()
-    assert len(families) == len(load_cases(SAMPLE))
-    assert {f.about.language for f in families} == {"en", "sv"}
+    families, cases = bench.families(), load_cases(DATA)
+    assert len(families) == len(cases)
+    assert {f.about.language for f in families} == {c.language for c in cases.values()}
+    assert {f.name: f.about.tags for f in families} == {
+        name: set(c.tags) for name, c in cases.items()
+    }
     assert all(f.about.tags for f in families)
     bobs = Bench(conn, bob, bench.inventory, bench.facts)
     assert bobs.threads("configuration") == [] and bobs.families() == []
 
 
 def test_a_case_is_found_by_its_name_or_as_owner_slash_name(bench: Bench) -> None:
-    found = bench.family("Dutchfall11w")
-    assert bench.family("archive/Dutchfall11w") == found
-    with pytest.raises(NotFound, match="no case 'alice/Dutchfall11w' for alice"):
-        _ = bench.family("alice/Dutchfall11w")
+    found = bench.family("noted")
+    assert bench.family("archive/noted") == found
+    with pytest.raises(NotFound, match="no case 'alice/noted' for alice"):
+        _ = bench.family("alice/noted")
     with pytest.raises(NotFound, match="no case 'nope' for alice"):
         _ = bench.family("nope")
 
@@ -59,7 +55,7 @@ def test_a_case_is_found_by_its_name_or_as_owner_slash_name(bench: Bench) -> Non
 def test_threads_cases_and_runs_are_found_by_id_among_what_the_person_sees(
     conn: Connection, alice: Person, bob: Person, bench: Bench, plan: Plan
 ) -> None:
-    mine, _ = bench.thread("configuration", FREE_TEXT)
+    mine, _ = bench.thread("configuration", LINES)
     assert bench.thread_by_id(mine.thread) == (mine, bench.about(mine.thread))
     assert bench.thread_by_id(mine.thread, "configuration")[0] == mine
     with pytest.raises(NotFound, match=f"no reasoning {mine.thread} for alice"):
@@ -75,14 +71,14 @@ def test_threads_cases_and_runs_are_found_by_id_among_what_the_person_sees(
     with pytest.raises(NotFound):
         _ = bench.thread_by_id(mine.thread)
 
-    family = bench.family("Dutchfall11w")
+    family = bench.family("noted")
     assert bench.family_by_id(family.id) == family
     with pytest.raises(NotFound, match=f"no case {family.id} for bob"):
         _ = bobs.family_by_id(family.id)
     with pytest.raises(NotFound, match="no case 0 for alice"):
         _ = bench.family_by_id(0)
 
-    made = trial(conn, plan, FREE_TEXT, "DutchFall10w")
+    made = trial(conn, plan, LINES, "crlf")
     own, theirs = ran(conn, alice, made), ran(conn, bob, made)
     assert bench.run_by_id(own).run == own
     with pytest.raises(NotFound, match=f"no run {theirs} of yours"):
@@ -93,7 +89,7 @@ def test_a_variation_is_made_from_a_configuration_s_id_and_digests(
     bench: Bench,
 ) -> None:
     engine = bench.endpoint(QWEN)
-    named = bench.configuration(FREE_TEXT, engine)
+    named = bench.configuration(LINES, engine)
     off = bench.chunk("reasoning", "off", engine)
     thread = named.configuration.thread
 
@@ -114,12 +110,12 @@ def test_a_variation_is_made_from_a_configuration_s_id_and_digests(
 def test_a_person_finds_their_runs_and_those_that_reach_a_digest(
     conn: Connection, alice: Person, bob: Person, bench: Bench, plan: Plan
 ) -> None:
-    free_text = trial(conn, plan, FREE_TEXT, "DutchFall10w", "casesfromedn1")
-    planned = trial(conn, plan, PLAN, "DutchFall10w")
-    first = ran(conn, alice, free_text)
-    second = ran(conn, alice, planned)
-    _ = ran(conn, bob, free_text)
-    gone = ran(conn, alice, planned)
+    lines = trial(conn, plan, LINES, "crlf", "svenska")
+    native = trial(conn, plan, NATIVE, "crlf")
+    first = ran(conn, alice, lines)
+    second = ran(conn, alice, native)
+    _ = ran(conn, bob, lines)
+    gone = ran(conn, alice, native)
     Catalog(conn).note(Subject(run=gone), Entry(field=EntryField.DELETED), alice.id)
 
     assert [r.run for r in bench.runs()] == [second, first]
@@ -130,34 +126,34 @@ def test_a_person_finds_their_runs_and_those_that_reach_a_digest(
     with pytest.raises(NotFound, match="no run of yours"):
         _ = bench.run("zzz")
 
-    assert [r.run for r in bench.reaching(free_text.skeleton)] == [first]
-    [shared_case] = set(free_text.cases) & set(planned.cases)
+    assert [r.run for r in bench.reaching(lines.skeleton)] == [first]
+    [shared_case] = set(lines.cases) & set(native.cases)
     assert [r.run for r in bench.reaching(shared_case)] == [second, first]
     store = Store(conn)
-    assert len(store.runs_of(free_text.digest)) == 2
+    assert len(store.runs_of(lines.digest)) == 2
     assert store.finished([first, second, gone]) == {first, second, gone}
 
 
 def test_a_run_is_left_to_score_until_scored_under_the_scoring_built_now(
     conn: Connection, alice: Person, bench: Bench, plan: Plan
 ) -> None:
-    made = trial(conn, plan, FREE_TEXT, "DutchFall10w", "casesfromedn1")
+    made = trial(conn, plan, LINES, "crlf", "svenska")
     run = ran(conn, alice, made)
     _ = ran(conn, alice, made, finished=False)
     started = bench.run(str(run))
-    assert {a.name for _, a in bench.scorers_for(started)} == {"free-text", "raw"}
+    assert {a.name for _, a in bench.scorers_for(started)} == {"lines", "whole"}
 
-    scorer = plan.named("scorer", "free-text").digest
-    raw = plan.named("scorer", "raw").digest
-    assert set(bench.unscored(started)) == {scorer, raw}
-    assert [(r.run, set(s)) for r, s in bench.outstanding()] == [(run, {scorer, raw})]
+    scorer = plan.named("scorer", "lines").digest
+    whole = plan.named("scorer", "whole").digest
+    assert set(bench.unscored(started)) == {scorer, whole}
+    assert [(r.run, set(s)) for r, s in bench.outstanding()] == [(run, {scorer, whole})]
     scoring = bench.scoring(started, scorer)
     assert scoring is not None and len(scoring.expectations) == 2
     store = Store(conn)
     registry = store.load([scorer, *scoring.expectations])
     _, findings = score_run(conn, run, scoring, registry, alice)
     assert findings == []
-    assert bench.unscored(started) == [raw]
+    assert bench.unscored(started) == [whole]
     assert [s.scoring for s in store.scores_of(run)] == [scoring.digest]
 
     catalog = Catalog(conn)
@@ -177,7 +173,7 @@ def test_a_run_is_left_to_score_until_scored_under_the_scoring_built_now(
     )
     _ = store.add(registry, [edited])
     _ = catalog.edit(thread, edited, alice.id)
-    assert set(bench.unscored(started)) == {scorer, raw}
+    assert set(bench.unscored(started)) == {scorer, whole}
     rebuilt = bench.scoring(started, scorer)
     assert rebuilt is not None and edited in rebuilt.expectations
 
@@ -185,7 +181,7 @@ def test_a_run_is_left_to_score_until_scored_under_the_scoring_built_now(
 def test_a_case_is_held_to_the_expectation_scoring_picks(
     conn: Connection, alice: Person, bob: Person, bench: Bench, plan: Plan
 ) -> None:
-    case = bench.family("Dutchfall11w").case
+    case = bench.family("noted").case
     schema = plan.named("expectation_schema", "targets").digest
     assert bench.expectation_schemas(case) == [schema]
 
@@ -215,11 +211,11 @@ def test_a_case_is_held_to_the_expectation_scoring_picks(
 def test_several_expectations_to_choose_from_are_ambiguous(
     conn: Connection, alice: Person, bench: Bench, plan: Plan
 ) -> None:
-    made = trial(conn, plan, FREE_TEXT, "DutchFall10w")
+    made = trial(conn, plan, LINES, "crlf")
     [case] = made.cases
     _ = another_expectation(bench, case, {"diagnosis": {"pattern": "sepsis"}})
     [schema] = bench.expectation_schemas(case)
-    scorer = plan.named("scorer", "free-text").digest
+    scorer = plan.named("scorer", "lines").digest
     started = bench.run_by_id(ran(conn, alice, made))
 
     with pytest.raises(Ambiguous, match="has expectations to choose from"):
@@ -234,10 +230,10 @@ def test_several_expectations_to_choose_from_are_ambiguous(
     assert graded.refused and "has expectations to choose from" in graded.refused
     assert Store(conn).scores_of(started.run) == []
 
-    family = bench.family("DutchFall10w")
-    variation = bench.configuration(FREE_TEXT, bench.endpoint(QWEN))
+    family = bench.family("crlf")
+    variation = bench.configuration(LINES, bench.endpoint(QWEN))
     [held] = [
-        r for r in bench.reach(variation, [family]) if r.offered and r.scorer == "raw"
+        r for r in bench.reach(variation, [family]) if r.offered and r.scorer == "whole"
     ]
     assert (held.choosing, held.missing, held.have) == ([family], [], 0)
 
@@ -246,11 +242,11 @@ def test_a_per_model_configuration_is_picked_by_the_engine_s_model(
     bench: Bench,
 ) -> None:
     with pytest.raises(NotFound) as refused:
-        _ = bench.configuration("plan")
-    assert refused.value.per_model == (PLAN, "plan (en, openai/gpt-oss-20b)")
+        _ = bench.configuration("native")
+    assert refused.value.per_model == tuple(sorted(f"native (en, {m})" for m in MODELS))
 
-    variation = bench.configuration("plan", bench.endpoint(QWEN))
-    assert (variation.name, variation.label, variation.parts) == (PLAN, PLAN, {})
+    variation = bench.configuration("native", bench.endpoint(QWEN))
+    assert (variation.name, variation.label, variation.parts) == (NATIVE, NATIVE, {})
 
     with pytest.raises(NotFound) as refused:
         _ = bench.configuration("nope", bench.endpoint(QWEN))
@@ -261,18 +257,19 @@ def test_a_configuration_made_in_several_languages_is_named_whole(
     bench: Bench, alice: Person
 ) -> None:
     engine = bench.endpoint(QWEN)
-    english = bench.configuration("plan", engine).configuration
-    swedish = "plan (sv, Qwen/Qwen3-8B-AWQ)"
+    english = bench.configuration("native", engine).configuration
+    swedish = f"native (sv, {QWEN_MODEL})"
+    assert swedish not in bench.names("configuration")
     _ = bench.catalog.create(english.digest, alice.id, name=swedish)
-    several = f"made in more than one language: {PLAN}, {swedish}"
+    several = f"made in more than one language: {NATIVE}, {swedish}"
     with pytest.raises(Ambiguous, match=re.escape(several)):
-        _ = bench.configuration("plan", engine)
+        _ = bench.configuration("native", engine)
     assert bench.configuration(swedish, engine).name == swedish
 
 
 def test_a_variation_compiles_to_a_skeleton_of_its_own(bench: Bench) -> None:
     engine = bench.endpoint(QWEN)
-    configuration = bench.configuration(FREE_TEXT, engine)
+    configuration = bench.configuration(LINES, engine)
     off = configuration.set("reasoning", bench.chunk("reasoning", "off", engine), "off")
 
     assert bench.skeleton(configuration).digest == configuration.configuration.digest
@@ -286,7 +283,7 @@ def test_a_variation_s_request_shows_placeholders_for_what_it_is_sent_with(
     bench: Bench,
 ) -> None:
     engine = bench.endpoint(QWEN)
-    variation = bench.configuration(FREE_TEXT, engine)
+    variation = bench.configuration(LINES, engine)
 
     unplaced = bench.request(variation, None, 7)
     placed = bench.request(variation, engine, 7)
@@ -298,7 +295,7 @@ def test_a_variation_s_request_shows_placeholders_for_what_it_is_sent_with(
 
 
 def test_several_configurations_of_one_name_are_refused_a_save(bench: Bench) -> None:
-    variation = bench.configuration(FREE_TEXT, bench.endpoint(QWEN))
+    variation = bench.configuration(LINES, bench.endpoint(QWEN))
     _ = Catalog(bench.conn).create(
         variation.configuration.digest, bench.person.id, name="twice"
     )
@@ -314,7 +311,7 @@ def test_a_fork_is_a_new_configuration_and_an_edit_a_new_version_of_one_s_own(
     bench: Bench,
 ) -> None:
     engine = bench.endpoint(QWEN)
-    variation = bench.configuration(FREE_TEXT, engine)
+    variation = bench.configuration(LINES, engine)
     off = variation.set("reasoning", bench.chunk("reasoning", "off", engine), "off")
     catalog = Catalog(bench.conn)
 
@@ -339,7 +336,7 @@ def test_a_fork_is_a_new_configuration_and_an_edit_a_new_version_of_one_s_own(
     with pytest.raises(MovedOn, match=f"since edit {seen}: its head is edit {now}"):
         _ = bench.edit(thread, off, seen)
 
-    archives = bench.thread("configuration", f"archive/{FREE_TEXT}")[0].thread
+    archives = bench.thread("configuration", f"archive/{LINES}")[0].thread
     with pytest.raises(NotFound, match=f"no configuration {archives} of yours"):
         _ = bench.edit(archives, variation, now)
 
@@ -361,48 +358,46 @@ def test_a_person_takes_the_expectations_shared_with_them(
     archive = People(conn).find("archive")
     assert archive is not None
     schema = plan.named("expectation_schema", "targets").digest
-    fall, eleven, edn = (
-        bench.family(n).case for n in ("DutchFall10w", "Dutchfall11w", "casesfromedn1")
-    )
+    crlf, noted, svenska = (bench.family(n).case for n in ("crlf", "noted", "svenska"))
     gone = Entry(field=EntryField.DELETED)
-    for case in (fall, edn):
+    for case in (crlf, svenska):
         own = _expectation_of(catalog, case, alice.id)
         catalog.note(Subject(thread=own), gone, alice.id)
-    kept = _expectation_of(catalog, eleven, alice.id)
+    kept = _expectation_of(catalog, noted, alice.id)
 
-    taken = bench.take([fall, eleven, edn, fall], schema)
-    assert (taken.kept, taken.choosing, taken.missing) == ({eleven: kept}, {}, [])
-    assert set(taken.taken) == {fall, edn}
-    origin = _expectation_of(catalog, fall, archive.id)
-    took = catalog.thread(taken.taken[fall])
+    taken = bench.take([crlf, noted, svenska, crlf], schema)
+    assert (taken.kept, taken.choosing, taken.missing) == ({noted: kept}, {}, [])
+    assert set(taken.taken) == {crlf, svenska}
+    origin = _expectation_of(catalog, crlf, archive.id)
+    took = catalog.thread(taken.taken[crlf])
     assert took.forked_from == catalog.head(origin).id
     assert catalog.about(Subject(thread=took.id)).owner == alice.id
-    held = bench.expectation(fall, schema)
+    held = bench.expectation(crlf, schema)
     assert held is not None and held.digest == catalog.head(origin).digest
 
-    again = bench.take([fall, eleven, edn], schema)
-    assert again.taken == {} and set(again.kept) == {fall, eleven, edn}
+    again = bench.take([crlf, noted, svenska], schema)
+    assert again.taken == {} and set(again.kept) == {crlf, noted, svenska}
 
-    catalog.note(Subject(thread=taken.taken[fall]), gone, alice.id)
+    catalog.note(Subject(thread=taken.taken[crlf]), gone, alice.id)
     head = resolve(store.get, catalog.head(origin).digest, Expectation)
     registry = store.load([head.digest])
     theirs = registry.add(
-        Expectation(case=fall, expectation_schema=schema, data={"diagnosis": "x"})
+        Expectation(case=crlf, expectation_schema=schema, data={"diagnosis": "x"})
     )
     _ = store.add(registry, [theirs])
     bobs = catalog.create(theirs, bob.id).thread
     to_alice = Entry(field=EntryField.COLLABORATOR, person=alice.id)
     catalog.note(Subject(thread=bobs), to_alice, bob.id)
-    assert bench.take([fall], schema).choosing == {fall: [origin, bobs]}
-    assert set(bench.take([fall], schema, owner="archive").taken) == {fall}
+    assert bench.take([crlf], schema).choosing == {crlf: [origin, bobs]}
+    assert set(bench.take([crlf], schema, owner="archive").taken) == {crlf}
 
-    assert bench.take([fall], schema, owner="bob").kept == {
-        fall: _expectation_of(catalog, fall, alice.id)
+    assert bench.take([crlf], schema, owner="bob").kept == {
+        crlf: _expectation_of(catalog, crlf, alice.id)
     }
     with pytest.raises(NotFound, match="no person 'nobody'"):
-        _ = bench.take([fall], schema, owner="nobody")
+        _ = bench.take([crlf], schema, owner="nobody")
     with pytest.raises(ValueError, match="isn't a stored expectation schema"):
-        _ = bench.take([fall], fall)
+        _ = bench.take([crlf], crlf)
 
 
 def test_a_person_replaces_their_own_expectation_only_when_they_say_so(
@@ -412,7 +407,7 @@ def test_a_person_replaces_their_own_expectation_only_when_they_say_so(
     archive = People(conn).find("archive")
     assert archive is not None
     schema = plan.named("expectation_schema", "targets").digest
-    case = bench.family("Dutchfall11w").case
+    case = bench.family("noted").case
     mine = _expectation_of(catalog, case, alice.id)
     origin = _expectation_of(catalog, case, archive.id)
 

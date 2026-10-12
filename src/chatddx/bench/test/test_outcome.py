@@ -12,6 +12,7 @@ from chatddx.factors.request import Skeleton
 from chatddx.fake_vllm.chat import instance
 from chatddx.ledger import Call, ItemKey, RunItem, ToolRun, Turn
 from chatddx.runner.send import STOPPED
+from chatddx.test.world import LINES, NATIVE
 
 pytestmark = pytest.mark.wip
 
@@ -19,8 +20,7 @@ NOW = datetime(2026, 1, 1, tzinfo=UTC)
 
 
 def skeleton(plan: Plan, recipe: str) -> Skeleton:
-    named = plan.named("recipe", f"{recipe} (en, Qwen/Qwen3-8B-AWQ)")
-    return resolve(plan.registry.get, named.digest, Skeleton)
+    return resolve(plan.registry.get, plan.named("recipe", recipe).digest, Skeleton)
 
 
 def call(
@@ -54,19 +54,21 @@ def item(*calls: Call) -> RunItem:
 
 
 def test_an_item_ends_by_its_last_call_and_the_skeleton_s_output(plan: Plan) -> None:
-    free_text, diagnoses = skeleton(plan, "free-text"), skeleton(plan, "diagnoses")
-    document = json.dumps(instance(diagnoses.output_schema))
+    lines, native = skeleton(plan, LINES), skeleton(plan, NATIVE)
+    document: JsonValue = instance(native.output_schema)
+    assert isinstance(document, dict)
+    broken = {**document, "diagnoses": "sepsis"}
 
-    assert outcome(free_text, item(call("Sepsis"))) == ("completed", None)
-    assert outcome(diagnoses, item(call(document))) == ("valid", None)
-    assert outcome(diagnoses, item(call('{"diagnoses": "sepsis"}'))) == (
+    assert outcome(lines, item(call("Sepsis"))) == ("completed", None)
+    assert outcome(native, item(call(json.dumps(document)))) == ("valid", None)
+    assert outcome(native, item(call(json.dumps(broken)))) == (
         "invalid",
         "at /diagnoses: 'sepsis' is not of type 'array'",
     )
-    assert outcome(free_text, item(call(None, "HTTP 500"))) == ("errored", "HTTP 500")
-    assert outcome(free_text, item(call("  "))) == ("unread", "no content")
-    assert outcome(free_text, item(call("Sep", STOPPED))) == ("stopped", None)
-    assert outcome(free_text, item(call(None, "HTTP 500"), call("Sepsis"))) == (
+    assert outcome(lines, item(call(None, "HTTP 500"))) == ("errored", "HTTP 500")
+    assert outcome(lines, item(call("  "))) == ("unread", "no content")
+    assert outcome(lines, item(call("Sep", STOPPED))) == ("stopped", None)
+    assert outcome(lines, item(call(None, "HTTP 500"), call("Sepsis"))) == (
         "completed",
         None,
     )

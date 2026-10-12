@@ -3,16 +3,16 @@ from collections.abc import Callable
 import pytest
 
 from chatddx.bench import Bench, NotFound
-from chatddx.bench.test.sample import FREE_TEXT
 from chatddx.catalog import About, Subject
 from chatddx.identity import Person
 from chatddx.store.catalog import Rows
+from chatddx.test.world import LINES
 
 pytestmark = pytest.mark.wip
 
 
 def _mine(bench: Bench) -> int:
-    edit, _ = bench.thread("configuration", FREE_TEXT)
+    edit, _ = bench.thread("configuration", LINES)
     return edit.thread
 
 
@@ -48,7 +48,7 @@ def test_an_owner_says_what_a_thread_is_called_and_who_it_is_shared_with(
 
 def test_only_what_the_owner_may_say_is_said(bench: Bench) -> None:
     mine = _mine(bench)
-    archives = bench.thread("configuration", f"archive/{FREE_TEXT}")[0].thread
+    archives = bench.thread("configuration", f"archive/{LINES}")[0].thread
     written = _entries(bench, mine)
     refused: list[tuple[Callable[[], About], type[Exception], str]] = [
         (lambda: bench.say(mine, name=""), ValueError, "a name can't be empty"),
@@ -100,7 +100,7 @@ def test_a_restore_is_held_to_one_expectation_per_case_and_schema(
     bench: Bench,
 ) -> None:
     catalog = bench.catalog
-    case = bench.family("Dutchfall11w").case
+    case = bench.family("noted").case
     [schema] = bench.expectation_schemas(case)
     [mine] = catalog.expectation_choices([case], bench.person.id, schema)[case]
     [(archives, _)] = bench.shared(case, schema)
