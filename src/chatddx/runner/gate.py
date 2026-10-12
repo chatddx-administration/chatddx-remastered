@@ -1,4 +1,5 @@
 import os
+from collections.abc import Iterable
 
 from chatddx.factors.base import Resolver, resolve
 from chatddx.factors.cases import Case
@@ -18,23 +19,39 @@ def check(
     trial: Trial,
     timeout: float = 10.0,
 ) -> str | None:
+    tools = bool(resolve(get, trial.skeleton, Skeleton).tools)
+    return admit(
+        inventory, get, endpoint, trial.engine, trial.cases, tools, "trial", timeout
+    )
+
+
+def admit(
+    inventory: Inventory,
+    get: Resolver,
+    endpoint: str,
+    engine: str,
+    cases: Iterable[str],
+    tools: bool,
+    whose: str,
+    timeout: float = 10.0,
+) -> str | None:
     try:
         spec = inventory.endpoint(endpoint)
-        sources = sorted({resolve(get, c, Case).vignette.source for c in trial.cases})
+        sources = sorted({resolve(get, c, Case).vignette.source for c in cases})
         sensitive = [s for s in sources if inventory.source(s).sensitive]
     except LookupError as e:
         raise Refused(str(e)) from None
-    if spec.engine != trial.engine:
+    if spec.engine != engine:
         raise Refused(
-            f"endpoint {endpoint!r} serves engine {spec.engine}, the trial's is "
-            + trial.engine
+            f"endpoint {endpoint!r} serves engine {spec.engine}, the {whose}'s is "
+            + engine
         )
     if uncleared := sorted(set(sensitive) - inventory.cleared_for(endpoint)):
         raise Refused(
             f"endpoint {endpoint!r} isn't cleared for source {', '.join(uncleared)}, "
             + "which is sensitive"
         )
-    if resolve(get, trial.skeleton, Skeleton).tools and sensitive:
+    if tools and sensitive:
         raise Refused(
             f"the skeleton's tools would get content from source {', '.join(sensitive)}, "
             + "which is sensitive, and tools can't be cleared yet"

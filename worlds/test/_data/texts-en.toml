@@ -16,16 +16,10 @@ messages = [
 [prompt.headed]
 segments = ["Case:\n", { slot = "vignette" }, { slot = "appendices" }, { insert = "tool_guidance", before = "\n\n" }]
 
+# A judge reads no vignette (agents/wip-judges.md, J7).
 [prompt.judge]
 purpose = "judge"
-segments = [
-  "Case:\n",
-  { slot = "vignette" },
-  "\n\nAnswer:\n",
-  { slot = "completion" },
-  "\n\nExpected:\n",
-  { slot = "expectation" },
-]
+segments = ["Answer:\n", { slot = "completion" }, "\n\nExpected:\n", { slot = "expectation" }]
 
 [output.native]
 contract = { kind = "native" }
