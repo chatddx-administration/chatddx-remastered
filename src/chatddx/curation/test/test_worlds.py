@@ -7,7 +7,6 @@ from jsonschema.validators import validator_for
 
 from chatddx.cli import main
 from chatddx.curation import Plan, load_cases
-from chatddx.curation.plan import SAMPLE
 from chatddx.factors.base import resolve
 from chatddx.factors.engine import LocalEngine
 from chatddx.factors.lint import lint
@@ -24,7 +23,7 @@ from chatddx.fake_vllm.served import CLOSURE, Served
 from chatddx.inventory import World, check, start_up
 from chatddx.scorers.answer import read
 from chatddx.scorers.patterns import Pattern
-from chatddx.test.world import DATA, WORLDS, world_plan
+from chatddx.test.world import DATA, SAMPLE, WORLDS, world_plan
 
 pytestmark = pytest.mark.wip
 

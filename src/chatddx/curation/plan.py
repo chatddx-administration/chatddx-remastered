@@ -31,6 +31,7 @@ from chatddx.factors.request import (
     own_texts,
 )
 from chatddx.factors.scoring import ExpectationSchema, Judge, Scorer
+from chatddx.factors.trial import CanarySet
 from chatddx.facts import INTENTS, Effort, Facts, Refused, model_name
 from chatddx.scorers.shipped import SCORERS, problems
 from chatddx.tools.shipped import TOOLS
@@ -51,6 +52,7 @@ TABLES: dict[str, type[Component]] = {
     "toolset": Toolset,
     "expectation_schema": ExpectationSchema,
     "scorer": Scorer,
+    "canary_set": CanarySet,
 }
 ENGINE_TABLES = ("model", "local_engine", "remote_engine")
 # Planned after recipes and judges, as a view may name a judge.
@@ -64,7 +66,6 @@ REFERENCES: dict[str, dict[str, str]] = {
     "scorer": {"expectation_schema": "expectation_schema"},
     "local_engine": {"model": "model"},
 }
-SAMPLE = Path(__file__).parent.parent / "data" / "sample"
 
 
 @dataclass(frozen=True)
@@ -537,13 +538,51 @@ def _recipe(name: str, key: Key, parts: dict[str, Variants]) -> dict[str, str] |
 
 
 @dataclass(frozen=True)
+class Ordered:
+    appendices: tuple[str, ...]
+    targets: JsonValue = None
+
+
+@dataclass(frozen=True)
 class SampleCase:
     tags: tuple[str, ...]
     language: str
     targets: JsonValue
+    appendices: Mapping[str, str] = field(default_factory=dict[str, str])
+    ordered: tuple[Ordered, ...] = ()
 
 
 _CASES = re.compile(r"^cases-(.+)\.toml$")
+
+
+def _appendices(where: str, value: object) -> dict[str, str]:
+    match value:
+        case dict():
+            held = cast(dict[str, object], value)
+        case _:
+            raise ValueError(f"{where}: appendices are a table of texts by name")
+    if bad := sorted(n for n, t in held.items() if not (isinstance(t, str) and t)):
+        raise ValueError(f"{where}: appendices {bad} aren't texts")
+    return cast(dict[str, str], held)
+
+
+def _ordered(where: str, value: object, appendices: Mapping[str, str]) -> Ordered:
+    match value:
+        case dict():
+            held = cast(dict[str, object], value)
+        case _:
+            raise ValueError(f"{where}: a case with appendices is a table")
+    if stray := set(held) - {"appendices", "targets"}:
+        raise ValueError(f"{where}: unknown keys {sorted(stray)}")
+    names = held.get("appendices")
+    if not isinstance(names, list) or not names:
+        raise ValueError(f"{where}: name its appendices, in order")
+    listed = [str(n) for n in cast(list[object], names)]
+    if unknown := sorted(set(listed) - set(appendices)):
+        raise ValueError(f"{where}: no appendices {unknown}")
+    if len(set(listed)) != len(listed):
+        raise ValueError(f"{where}: an appendix is named twice")
+    return Ordered(tuple(listed), cast(JsonValue, held.get("targets")))
 
 
 def load_cases(data: Path) -> dict[str, SampleCase]:
@@ -564,12 +603,23 @@ def load_cases(data: Path) -> dict[str, SampleCase]:
         for id, case in tables.get("case", {}).items():
             if id in where:
                 raise ValueError(f"{path}: case.{id} is in {where[id].name} too")
-            if stray := set(case) - {"tags", "targets"}:
+            if stray := set(case) - {"tags", "targets", "appendices", "with"}:
                 raise ValueError(f"{path}: case.{id}: unknown keys {sorted(stray)}")
             where[id] = path
+            appendices = _appendices(
+                f"{path}: case.{id}.appendices", case.get("appendices", {})
+            )
+            ordered = tuple(
+                _ordered(f"{path}: case.{id}.with[{n}]", entry, appendices)
+                for n, entry in enumerate(case.get("with", []))
+            )
+            if len({o.appendices for o in ordered}) != len(ordered):
+                raise ValueError(f"{path}: case.{id}: a case with appendices is twice")
             cases[id] = SampleCase(
                 tags=tuple(case.get("tags", ())),
                 language=language,
                 targets=case.get("targets"),
+                appendices=appendices,
+                ordered=ordered,
             )
     return cases

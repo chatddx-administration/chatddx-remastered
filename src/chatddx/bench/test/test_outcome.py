@@ -81,3 +81,15 @@ def test_an_item_ends_by_its_last_call_and_the_skeleton_s_output(plan: Plan) -> 
 def test_an_item_s_usage_counts_every_call() -> None:
     assert usage(item(call("a", tokens=(10, 2)), call("b", tokens=(14, 3)))) == (24, 5)
     assert usage(item(call(None, "HTTP 500"))) == (0, 0)
+
+
+def test_a_stream_cut_short_counts_the_token_ids_it_streamed() -> None:
+    message: JsonValue = {"role": "assistant", "content": "Sep"}
+    streamed: JsonValue = {
+        "choices": [{"index": 0, "message": message, "token_ids": [1, 2, 3]}]
+    }
+    cut = call("Sep", "stopped: nothing but whitespace for 100 tokens")
+    cut = cut.model_copy(update={"response": streamed})
+
+    assert usage(item(cut)) == (0, 3)
+    assert usage(item(call("a", tokens=(10, 2)), cut)) == (10, 5)

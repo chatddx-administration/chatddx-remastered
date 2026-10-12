@@ -17,7 +17,7 @@ from .base import (
 from .cases import CaseRef
 from .engine import EngineRef
 from .request import EntryPoint, Skeleton, SkeletonRef, SlotName
-from .select import SplitOp, check_selector, select, split
+from .select import SplitOp, check_selector, parse_selector, reaches, select, split
 
 
 class ExpectationSchema(Component):
@@ -101,6 +101,11 @@ class View(Frozen):
 
     def expectation_items(self, data: JsonValue) -> list[JsonValue]:
         return select(data, self.expectation)
+
+    def offered_by(self, schema: JsonValue) -> bool:
+        if not parse_selector(self.output):
+            return schema is None
+        return reaches(schema, self.output)
 
 
 class Scorer(Component):

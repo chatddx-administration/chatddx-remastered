@@ -15,11 +15,20 @@ from chatddx.inventory import Inventory, url_of
 from chatddx.ledger import Endpoint, JudgeEndpoint, Score, check_score
 from chatddx.runner import send as sending
 from chatddx.runner.gate import Refused
-from chatddx.runner.run import Noted, Runner
-from chatddx.runner.score import NO_EXPECTATION, Event, Grader, ItemScored, score_run
+from chatddx.runner.run import Noted, Runner, Streamed
+from chatddx.runner.score import (
+    NO_EXPECTATION,
+    Event,
+    Grader,
+    ItemScored,
+    JudgeAnswered,
+    JudgeAsked,
+    score_run,
+)
 from chatddx.runner.send import STOPPED
 from chatddx.runner.test.conftest import DELAY
 from chatddx.runner.test.test_run import rows, trial
+from chatddx.scorers import metrics
 from chatddx.store import Catalog, Store
 from chatddx.store.store import Connection
 from chatddx.test.world import DATA, LINES, NATIVE, QWEN, REMOTE, TOOL_ANSWER, faked
@@ -174,9 +183,10 @@ def test_scoring_is_refused_before_anything_is_written(
         judged, LookupError, "view 0 names a judge, which first_mention doesn't read"
     )
     refused(
-        free_text.model_copy(update={"version": 2}),
+        free_text.model_copy(update={"version": metrics.score.version + 1}),
         LookupError,
-        "metrics:score is at version 1 in chatddx .*, not 2",
+        f"metrics:score is at version {metrics.score.version} in chatddx .*, "
+        + f"not {metrics.score.version + 1}",
     )
     assert rows(db, "score_stage") == 0
 
@@ -199,9 +209,8 @@ def test_a_judged_view_is_scored_from_its_judge_s_calls(
 ) -> None:
     made = trial(plan, LINES, cases=("noted", "crlf"), seeds=(7,))
     run = ran(conn, inventory, alice, made, plan)
-    grading = Grader(conn, inventory, alice).start(
-        run, scoring_of(plan, made, judged(plan)), plan.registry
-    )
+    scoring = scoring_of(plan, made, judged(plan))
+    grading = Grader(conn, inventory, alice).start(run, scoring, plan.registry)
     heard: list[Event] = []
     grading.send(heard.append)
     score, findings = grading.finish()
@@ -229,6 +238,23 @@ def test_a_judged_view_is_scored_from_its_judge_s_calls(
         for v in (1, 2, 3)
     ] == [(None, {"reason": "no target"}, ())] * 3
     assert [e.item for e in heard if isinstance(e, ItemScored)] == list(score.items)
+    asked = [e for e in heard if isinstance(e, JudgeAsked)]
+    assert [(e.key.case, e.view, e.seed_index) for e in asked] == [
+        (noted, 1, 0),
+        (noted, 2, 0),
+        (noted, 3, 0),
+        (noted, 3, 1),
+        (noted, 3, 2),
+    ]
+    assert {e.scorer for e in asked} == {scoring.scorer}
+    answered = [e for e in heard if isinstance(e, JudgeAnswered)]
+    assert [e.call for e in answered] == [
+        c for v in (1, 2, 3) for c in by[(noted, v)].judge_calls
+    ]
+    assert [e.verdict for e in answered][2:] == [
+        {"points": p, "why": "fake why"} for p in (0, 1, 2)
+    ]
+    assert any(isinstance(e, Streamed) for e in heard)
     stored = Store(conn).score(grading.score)
     assert (
         stored.items == score.items

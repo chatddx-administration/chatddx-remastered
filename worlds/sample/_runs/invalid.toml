@@ -1,0 +1,21 @@
+description = "A plan asked for as text, with the schema shown and nothing enforcing it, that the model doesn't hold to: a probability the schema doesn't know, and no sources."
+configuration = "plan-prompted"
+endpoint = "gpt-oss-20b@fake"
+cases = ["Dutchfall12w"]
+seed = 11
+
+[[turn]]
+reasoning = "Left upper abdominal pain to the back, which the patient recognises from earlier pancreatitis. Recurrent pancreatitis first; an ischaemic cause of the chest pain beside it."
+content = '''
+{
+  "acute_warning": "Chest pain with the abdominal pain: rule out an acute coronary syndrome.",
+  "diagnoses": [
+    {"diagnosis": "Pancreatitis", "probability": "very high", "critical": false, "short_rationale": "Recognised pain, as in earlier episodes."},
+    {"diagnosis": "Myocardial infarction", "probability": "low", "critical": true, "short_rationale": "Chest pain together with the abdominal pain."}
+  ],
+  "management": {
+    "workup": [{"type": "Lab", "investigations": ["Lipase", "Troponin"], "priority": "urgent"}],
+    "empirical_treatment": [{"indication": "Pancreatitis", "treatment": "IV fluids and analgesia", "important": "Monitor fluid balance."}],
+    "disposition": "Admission"
+  }
+}'''

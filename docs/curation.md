@@ -21,18 +21,22 @@ The archive is never wiped.
 
 ## Data sets
 A data set is a directory of authored files: a `factors.toml`, the texts in `texts-<language>.toml` files, the cases
-in `cases-<language>.toml` files, and the files they load, such as JSON schemas. chatddx ships one, the sample
-(src/chatddx/data/sample/), the old chatddx's inventory hand-edited into this shape (agents/wip-sample-data.md). The
-sample holds no vignettes and no engines: those are a World's (see "The World"). The test World carries the tests'
-data set beside its vignettes, in `worlds/test/_data/`: the leading `_` says the World doesn't read it, and
-init-data takes it with `--data`.
+in `cases-<language>.toml` files, and the files they load, such as JSON schemas.
+
+A World may carry one beside its vignettes, in `_data/`: the leading `_` says the World itself doesn't read it, and
+init-data loads it unless `--data` names another.
+
+The sample World carries the sample (worlds/sample/_data/), Kompismoln's World loads it with
+`--data worlds/sample/_data`.
+
+The test World carries the tests' data set (worlds/test/_data/).
 
 ### Factors
 
 Both kinds of file hold one table per kind of component, keyed by name, whose keys are the component's fields
-(docs/factors-api.md). The kinds are models, local and remote engines, instructions, few-shot, prompts, outputs,
-sampling, reasoning, passthrough, translations, tools, toolsets, expectation schemas, scorers, recipes and judges. On
-top of the fields:
+(docs/factors-api.md).
+
+On top of the fields:
 - **References by name.** A toolset's tools, a scorer's expectation schema and a view's judge, a local engine's model
   and a recipe's parts name records, not digests.
 - **Judges.** A judge names a `recipe` and an `engine` of the World, and takes the recipe's variant for the model the
@@ -86,6 +90,11 @@ English recipe on the Swedish cases is linted as mixing languages, which is what
 Swedish case is; the sample's translations, set in a variation, carry any of its recipes into Swedish.
 
 ### Cases
+A case may have appendices, `[case.<id>.appendices]`, texts by name, each kept as a thread named by its name and told
+apart by its vignette, and cases that send them after the vignette, `[[case.<id>.with]]`, each naming its `appendices` in
+order and, optionally, `targets` of its own, since an appendix can change the right answer (docs/factors.md, "Case").
+Line endings are made LF before an appendix is digested, as every edge does.
+
 A cases file holds `[case.<id>]` tables, keyed by the vignette's id at the source. A case has `tags`, entries on its
 family, and `targets`, its expectation, which must fit the data set's one expectation schema. A case is in exactly one
 file, and the file's name gives its language: every case in `cases-sv.toml` is in Swedish. The sample has 79 English
@@ -118,9 +127,9 @@ each endpoint would refuse, and what is likely a slip (docs/inventory.md, "Check
 
 ## Loading
 `chatddx init-data USER [--world DIR] [--source NAME] [--giftbag] [--data DIR] [--factors FILE …] [--facts PATH …]`
-loads a data set, the sample by default, for the archive, and shares it with USER, who is added when missing. It
-connects as the writer and does everything in one transaction. It prints a line for each thing it comes to, and
-the sample's first run comes to 258 threads and families.
+loads a data set, the World's `_data/` unless `--data` names another, for the archive, and shares it with USER,
+who is added when missing. It connects as the writer and does everything in one transaction. It prints a line for each
+thing it comes to.
 
 1. **Plan.** The data set, the World's factors and any more `--factors` are planned into components, without the
    store: references resolved, per-model records written, recipes made per language and compiled, texts and entry
@@ -130,9 +139,11 @@ the sample's first run comes to 258 threads and families.
    records its compilation. Its tags, description, view labels and language are brought in line with the data.
 3. **Cases.** Each case is read from the World's source, the one `--source` names or the only one that lists its
    vignettes (a database source lists none), and adopted into a family named after its id, with its tags and its
-   file's language, and gets an expectation thread. A case the source doesn't have, or one whose family can't adopt
-   it, is reported, with what a survey of the source says happened to it: renamed to or from another id, or changed,
-   and the family repair-data would move.
+   file's language, and gets an expectation thread.
+4. **Appendices** are bound to the vignette as read, each a thread of the archive's, and each case that sends them is
+   stored, with an expectation thread when it has targets. A case the source doesn't have, or one whose family can't
+   adopt it, is reported, with what a survey of the source says happened to it: renamed to or from another id, or
+   changed, and the family repair-data would move.
 4. **Leftovers.** The archive's threads and families that the data no longer names are listed, but not deleted.
 5. **Sharing.** USER becomes a collaborator on every thread and family the run came to.
 6. **Giftbag.** With `--giftbag`, USER also gets a fork of every chunk, tool, skeleton and expectation thread, so
@@ -191,9 +202,10 @@ agents/wip-test-world.md plans and which are marked `wip`.
   init-data binds each World's endpoints and leaves the others' engines out, every target's pattern reads, the fake
   vLLM answers each skeleton as its contract asks or refuses it exactly when a `vllm.*` lint says vLLM would, and what
   it writes holds to each data set's schemas.
-- `test_sample.py` holds what is true of the sample alone: its vignettes pinned to the old chatddx at 7893656, its 79
-  English and 20 Swedish cases, its records and translations, its targets schema and Olof's notes, and a load of it
-  with only its four skips and its fakes' lints.
+- `test_tables.py` reads a case's appendices and the cases that send them, refuses what they say wrongly, and lands
+  them and a canary set from the test World.
+- `test_sample.py` holds what is true of the sample alone: and uses every table a data set and a World can hold at least
+  once, as the example new Worlds follow.
 
 `api`, `bench` and `repl` start from the test World as init-data lands it, with alice and her giftbag. It is loaded
 once per session, and only when one of those tests asks for it (src/chatddx/conftest.py, `curated`). Each test of the
@@ -232,8 +244,8 @@ Curation is the place for the rest of the store's authored content to come and g
 - importing a data set as someone other than the archive.
 
 ### What a data set can't hold yet
-Trials, executions, scorings, canary sets, appendices and hand-written skeletons have no tables, and a data set has one
-expectation schema. A canary set is the next asked for (agents/wip-runner.md).
+Trials, executions, scorings and hand-written skeletons have no tables, and a data set has one expectation schema.
+A canary set is the next asked for (agents/wip-runner.md).
 
 ### Picking a variant by the case's language
 The bench picks a configuration's variant by the model the engine it runs on serves, and by language only when there

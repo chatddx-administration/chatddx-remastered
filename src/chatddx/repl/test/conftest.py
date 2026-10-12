@@ -1,10 +1,9 @@
 import pytest
-from rich.console import Console
 
 from chatddx.bench import Bench
 from chatddx.inventory import Inventory
 from chatddx.repl.commands import handle
-from chatddx.repl.shell import Repl
+from chatddx.repl.shell import Repl, console
 from chatddx.repl.test.helpers import Say
 from chatddx.store import People
 from chatddx.store.store import Connection
@@ -30,7 +29,7 @@ def bench(conn: Connection, world: Inventory) -> Bench:
 
 @pytest.fixture
 def repl(bench: Bench) -> Repl:
-    return Repl(bench, Console(record=True, width=200), seed=7)
+    return Repl(bench, console(record=True, width=200), seed=7)
 
 
 @pytest.fixture

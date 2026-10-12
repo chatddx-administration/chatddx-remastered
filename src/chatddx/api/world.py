@@ -93,7 +93,11 @@ def scorer_code(_: BenchDep) -> list[schemas.ScorerCode]:
             version=code.version,
             metrics=[
                 schemas.Metric(
-                    name=name, measures=m.measures, params=m.params, judged=m.judged
+                    name=name,
+                    measures=m.measures,
+                    params=m.params,
+                    judged=m.judged,
+                    unit=m.unit,
                 )
                 for name, m in sorted(code.metrics.items())
             ],

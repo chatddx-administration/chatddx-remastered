@@ -100,6 +100,17 @@ quit
 ```
 The run streams the fake's answer, scores it and records it.
 
+For runs to look at, with what can go wrong among them, run the sample World's samples instead, without
+`fake-engines` running (they serve their own fakes):
+```sh
+chatddx samples alice     # each once; --again runs them again, and names pick some
+chatddx repl alice
+```
+```text
+runs
+replay
+```
+
 ### Kompismoln's hosts
 On the Kompismoln VPN, ask pelle and malborg what they serve:
 ```sh
@@ -113,7 +124,7 @@ git diff --no-index worlds/kompismoln/endpoints.toml /tmp/endpoints.toml
 No diff means the hosts still serve the engines `worlds/kompismoln` pins. Both are cleared for the sample's
 vignettes, so a case can run on them:
 ```sh
-chatddx init-data alice --world worlds/kompismoln
+chatddx init-data alice --world worlds/kompismoln --data worlds/sample/_data
 chatddx repl alice --world worlds/kompismoln
 ```
 ```text

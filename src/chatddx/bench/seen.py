@@ -3,7 +3,15 @@ from uuid import UUID
 
 from pydantic import JsonValue
 
-from chatddx.catalog import About, Edit, Subject, latest, variants_for
+from chatddx.catalog import (
+    About,
+    Edit,
+    Subject,
+    language_of,
+    latest,
+    made_for,
+    variants_for,
+)
 from chatddx.catalog.threads import picked
 from chatddx.catalog.titles import short
 from chatddx.core.rig import rig
@@ -26,15 +34,21 @@ from chatddx.factors.request import (
     render,
 )
 from chatddx.factors.scoring import Expectation, Scorer, Scoring
-from chatddx.factors.select import reaches
 from chatddx.factors.trial import Trial
 from chatddx.facts import Facts, lints, model_name
 from chatddx.identity import Person, preferred
 from chatddx.inventory import Inventory
-from chatddx.ledger import ItemKey, Run, RunStarted, fingerprint_request
+from chatddx.ledger import (
+    ItemKey,
+    Run,
+    RunStarted,
+    ScoreStarted,
+    fingerprint_request,
+)
 from chatddx.runner.gate import Refused
 from chatddx.runner.prepare import Items
 from chatddx.runner.score import judge_at
+from chatddx.runner.send import STOPPED
 from chatddx.scorers.shipped import problems
 from chatddx.store import Catalog, People, Store
 from chatddx.store.catalog import Rows
@@ -93,16 +107,23 @@ class Seen:
             for kind, found in seen.items()
         }
         every = set[str]().union(*addresses.values())
+        base, language = name, None
         if name not in every:
-            match variants_for(name, every, model):
+            base, language = language_of(name)
+            match variants_for(base, every, model, language):
                 case [one]:
                     name = one
                 case []:
                     pass
                 case several:
+                    models = [] if model is None else [model]
+                    languages = sorted(
+                        {m[1] for n in several if (m := made_for(n, models)) and m[1]}
+                    )
                     raise Ambiguous(
                         f"{word} {name!r} is made in more than one language: "
-                        + f"{', '.join(several)}"
+                        + f"{', '.join(several)}; name one as "
+                        + " or ".join(f"'{base} {lang}'" for lang in languages)
                     )
         kinds = [kind for kind, held in addresses.items() if name in held]
         match kinds:
@@ -112,7 +133,8 @@ class Seen:
                 ), name
             case []:
                 said = f"no {word} {name!r} for {self.person.login}"
-                if per_model := sorted(n for n in every if n.startswith(f"{name} (")):
+                made = f"{base} ({language}, " if language else f"{base} ("
+                if per_model := sorted(n for n in every if n.startswith(made)):
                     said += f"; per model: {', '.join(per_model)}"
                 raise NotFound(said, per_model if model is None else ())
             case _:
@@ -347,10 +369,11 @@ class Seen:
         return lints(registry, self.facts, [trial.digest], languages)
 
     def scorers(self) -> list[tuple[Edit, About, Scorer]]:
-        return [
+        found = [
             (e, a, resolve(self.get, e.digest, Scorer))
             for e, a in self.threads("scorer")
         ]
+        return sorted(found, key=lambda s: s[1].name or self.catalog.title(s[0].thread))
 
     def scorers_for(self, run: RunStarted) -> list[tuple[Edit, About]]:
         return [
@@ -361,7 +384,7 @@ class Seen:
         trial = resolve(self.get, run.trial, Trial)
         schema = resolve(self.get, trial.skeleton, Skeleton).output_schema
         found = resolve(self.get, scorer, Scorer)
-        if not all(reaches(schema, v.output) for v in found.views):
+        if not all(v.offered_by(schema) for v in found.views):
             return False
         try:
             for judge in found.judges:
@@ -427,7 +450,7 @@ class Seen:
             name = about.name or self.catalog.title(edit.thread)
             expected = scorer.expectation_schema
             for i, view in enumerate(scorer.views):
-                offered = reaches(schema, view.output)
+                offered = view.offered_by(schema)
                 if offered and expected not in data:
                     data[expected] = self._expected(cases, expected)
                 held, several = data.get(expected, ({}, set[str]()))
@@ -536,6 +559,9 @@ class Seen:
 
     def reaching(self, digest: str) -> list[RunStarted]:
         trials = set(self.store.reaching(digest, "trial"))
+        for made in self.store.reaching(digest, "compilation"):
+            skeleton = resolve(self.get, made, Compilation).skeleton
+            trials.update(self.store.reaching(skeleton, "trial"))
         return [r for r in self.runs() if r.trial in trials]
 
     def described(self, run: RunStarted) -> str:
@@ -565,18 +591,17 @@ class Seen:
             )
         return sorted(found.values(), key=lambda g: g.name)
 
-    def scored_by(self, scorer: str) -> list[RunStarted]:
+    def scored_by(self, digest: str) -> list[RunStarted]:
+        scorings = set(self.store.reaching(digest, "scoring"))
         return [
             run
             for run in self.runs()
-            if any(
-                resolve(self.get, s.scoring, Scoring).scorer == scorer
-                for s in self.store.scores_of(run.run)
-            )
+            if any(s.scoring in scorings for s in self.store.scores_of(run.run))
         ]
 
     def unscored(self, run: RunStarted) -> list[str]:
-        scored = {s.scoring for s in self.store.scores_of(run.run)}
+        given = self.store.scores_of(run.run)
+        keys: set[ItemKey] | None = None
         found: list[str] = []
         for edit, _ in self.scorers_for(run):
             try:
@@ -584,9 +609,25 @@ class Seen:
             except Ambiguous:
                 found.append(edit.digest)
                 continue
-            if scoring is not None and scoring.digest not in scored:
+            if scoring is None:
+                continue
+            under = [s for s in given if s.scoring == scoring.digest]
+            if under and keys is None:
+                keys = {i.key for i in self.store.run(run.run).items}
+            views = len(resolve(self.get, edit.digest, Scorer).views)
+            if not any(self._whole(s, keys or set(), views) for s in under):
                 found.append(edit.digest)
         return found
+
+    def _whole(self, started: ScoreStarted, keys: set[ItemKey], views: int) -> bool:
+        score = self.store.score(started.score)
+        if score.finished is None:
+            return False
+        calls = (c.call for i in score.items for c in i.judge_calls)
+        if any(call.error == STOPPED for call in calls):
+            return False
+        expected = {(k, v) for k in keys for v in range(views)}
+        return expected <= {(i.key, i.view) for i in score.items}
 
     def outstanding(self) -> list[tuple[RunStarted, list[str]]]:
         runs = self.runs()

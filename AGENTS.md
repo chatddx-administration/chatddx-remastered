@@ -14,11 +14,11 @@ This document contains project-wide instructions written by humans for agents.
 * Errors and warnings that indicate issues beyond the scope of the current task should remain, never hide them.
 
 ## Testing
-* Baseline is `pytest` which runs every test and takes ~50s; `pytest -m 'not slow'` is the quick run, <30s.
+* Baseline is `pytest` which runs every test and takes ~60s; `pytest -m 'not slow'` is the quick run, <30s.
   A test whose call takes 0.2 s or more is marked `@pytest.mark.slow` (pyproject.toml, `[tool.pytest]`).
 
 ## Docs
-All docs except `agents/*` are governed by the rule "Humans write, agents suggest."
+All docs except `agents/*` are governed by chatddx rule one of documentation: Humans write, agents suggest.
 
 * A suggestion is inserted as a fenced code-block immediately above the subject to change.
   The backticks are part of the template, use 4 backticks as envelope if the suggestion contains a code-block.
@@ -39,8 +39,7 @@ AGENT: <verb>
   understand, a path in a comment can act as a link for agents and humans alike. A comment linking two or more pieces of
   code this way with a short explanation is allowed.
 
-* `agents/*` are exempt from the "Humans write, agents suggest" rule and agents are free to use it for whatever purpose
-  they deem fit.
+* Docs in `agents/*` can be created, removed and edited freely.
 
 * Don't reference branch commits, they'll be squashed.
 

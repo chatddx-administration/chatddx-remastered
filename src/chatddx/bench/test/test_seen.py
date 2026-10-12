@@ -1,15 +1,16 @@
 import re
 
 import pytest
+from pydantic import JsonValue
 
 from chatddx.bench import Ambiguous, Bench, Conflict, MovedOn, NotFound
 from chatddx.bench.test.helpers import another_expectation, ran, trial
 from chatddx.catalog import Entry, EntryField, Subject
 from chatddx.curation import Plan, load_cases
 from chatddx.factors.base import resolve
-from chatddx.factors.scoring import Expectation
+from chatddx.factors.scoring import Expectation, View
 from chatddx.identity import Person
-from chatddx.runner.score import score_run
+from chatddx.runner.score import Grader, score_run
 from chatddx.store import Catalog, People, Store
 from chatddx.store.store import Connection
 from chatddx.test.world import DATA, LINES, MODELS, NATIVE, QWEN, QWEN_MODEL, REMOTE
@@ -127,6 +128,8 @@ def test_a_person_finds_their_runs_and_those_that_reach_a_digest(
         _ = bench.run("zzz")
 
     assert [r.run for r in bench.reaching(lines.skeleton)] == [first]
+    output = plan.named("output", "lines (en)").digest
+    assert [r.run for r in bench.reaching(output)] == [first]
     [shared_case] = set(lines.cases) & set(native.cases)
     assert [r.run for r in bench.reaching(shared_case)] == [second, first]
     store = Store(conn)
@@ -134,6 +137,23 @@ def test_a_person_finds_their_runs_and_those_that_reach_a_digest(
     assert store.finished([first, second, gone]) == {first, second, gone}
 
 
+def test_a_view_of_the_whole_answer_is_offered_by_a_text_output_only(
+    conn: Connection, alice: Person, bench: Bench, plan: Plan
+) -> None:
+    whole, picked = View(metric="m"), View(output="$.diagnoses[*]", metric="m")
+    schema: JsonValue = {
+        "type": "object",
+        "properties": {"diagnoses": {"type": "array", "items": {"type": "string"}}},
+    }
+    assert whole.offered_by(None) and not whole.offered_by(schema)
+    assert not View(output="$", metric="m").offered_by(schema)
+    assert picked.offered_by(schema) and not picked.offered_by(None)
+
+    started = bench.run(str(ran(conn, alice, trial(conn, plan, NATIVE, "crlf"))))
+    assert {a.name for _, a in bench.scorers_for(started)} == {"answer", "list"}
+
+
+@pytest.mark.slow
 def test_a_run_is_left_to_score_until_scored_under_the_scoring_built_now(
     conn: Connection, alice: Person, bench: Bench, plan: Plan
 ) -> None:
@@ -179,6 +199,24 @@ def test_a_run_is_left_to_score_until_scored_under_the_scoring_built_now(
     assert set(bench.unscored(started)) == {scorer, *others}
     rebuilt = bench.scoring(started, scorer)
     assert rebuilt is not None and edited in rebuilt.expectations
+
+
+def test_only_a_finished_score_counts_against_what_is_left_to_score(
+    conn: Connection, alice: Person, bench: Bench, plan: Plan
+) -> None:
+    run = ran(conn, alice, trial(conn, plan, LINES, "crlf"))
+    started = bench.run_by_id(run)
+    scorer = plan.named("scorer", "lines").digest
+    scoring = bench.scoring(started, scorer)
+    assert scoring is not None
+    registry = Store(conn).load([scorer, *scoring.expectations])
+
+    grading = Grader(conn, None, alice).start(run, scoring, registry)
+    assert scorer in bench.unscored(started)
+
+    _ = grading.finish()
+    assert scorer not in bench.unscored(started)
+    assert [r.run for r in bench.scored_by(scorer)] == [run]
 
 
 def test_a_case_is_held_to_the_expectation_scoring_picks(
@@ -264,10 +302,20 @@ def test_a_configuration_made_in_several_languages_is_named_whole(
     swedish = f"native (sv, {QWEN_MODEL})"
     assert swedish not in bench.names("configuration")
     _ = bench.catalog.create(english.digest, alice.id, name=swedish)
-    several = f"made in more than one language: {NATIVE}, {swedish}"
+    several = (
+        f"made in more than one language: {NATIVE}, {swedish}; "
+        + "name one as 'native en' or 'native sv'"
+    )
     with pytest.raises(Ambiguous, match=re.escape(several)):
         _ = bench.configuration("native", engine)
     assert bench.configuration(swedish, engine).name == swedish
+    assert bench.configuration("native sv", engine).name == swedish
+    assert bench.configuration("native (en)", engine).name == NATIVE
+    with pytest.raises(NotFound) as refused:
+        _ = bench.configuration("native sv")
+    assert refused.value.per_model == (swedish,)
+    with pytest.raises(NotFound, match="no configuration 'native fi'"):
+        _ = bench.configuration("native fi", engine)
 
 
 def test_a_variation_compiles_to_a_skeleton_of_its_own(bench: Bench) -> None:
@@ -431,6 +479,7 @@ def test_a_person_replaces_their_own_expectation_only_when_they_say_so(
     assert held is not None and held.digest == catalog.head(origin).digest
 
 
+@pytest.mark.slow
 def test_a_judged_scorer_applies_where_the_world_lets_its_judges_run(
     conn: Connection,
     alice: Person,

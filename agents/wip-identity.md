@@ -5,8 +5,8 @@ Material for `docs/identity.md`. Split out of the former `agents/wip-bookkeeping
 now").
 "Decided" means the user said so; "Take" is the agent's recommendation and still open.
 
-The bench is the *rule*-based layer of the "person-scoped cake". Consult docs/chatddx.md's "The person-scoped cake"
-before adding functionality to the `identity`.
+`identity` is the *declarative* layer of the "person-scoped cake". Consult docs/chatddx.md's "The person-scoped cake"
+before adding functionality.
 
 ## Scope
 `docs/factors.md` ("Not factors") assigns people, roles, authentication and authorization to identity. Identity is

@@ -1,20 +1,23 @@
 import copy
 import json
 import re
+from dataclasses import replace
 
 from pydantic import JsonValue
 from rich.table import Table
 from rich.text import Text
 
-from chatddx.bench import KINDS, PARTS, Family, TriedVariation
+from chatddx.bench import KINDS, PARTS, Family, Graded, TriedVariation
 from chatddx.catalog import About
 from chatddx.catalog.titles import describe, short
 from chatddx.factors.base import Component, resolve
-from chatddx.factors.cases import Case
+from chatddx.factors.cases import Appendix, Case
 from chatddx.factors.engine import LocalEngine
 from chatddx.factors.request import Reasoning, Skeleton
+from chatddx.factors.scoring import Expectation, Scoring
 from chatddx.facts import INTENTS, Effort, ModelFacts, Refusal, Refused
 from chatddx.inventory import url_of
+from chatddx.ledger import RunStarted
 from chatddx.store import fetch_vignette
 
 from .render import (
@@ -30,6 +33,8 @@ from .render import (
 from .shell import Repl
 
 _DIGEST = re.compile(r"^sha256:[0-9a-f]{64}$")
+
+SCORED = frozenset({"scorer", "judge", "expectation", "expectation_schema"})
 
 
 def show(repl: Repl, kind: str | None = None, *names: str) -> None:
@@ -220,7 +225,7 @@ def _in_cell(repl: Repl, word: str) -> str | None:
     elif word in ("engine", "model"):
         repl.error(f"the cell has no endpoint: show {word} NAME")
     else:
-        repl.error(f"a {word} isn't in the cell: show {word} NAME")
+        repl.error(f"no {word} in the cell: show {word} NAME")
 
     return digest
 
@@ -287,24 +292,88 @@ def _about(table: Table, about: About) -> None:
 
 
 def _runs(repl: Repl, word: str, digest: str) -> None:
+    if word == "judge":
+        _judged(repl, digest)
+        return
+
     bench = repl.bench
-    scorer = word == "scorer"
-    runs = bench.scored_by(digest) if scorer else bench.reaching(digest)
+    scored = word in SCORED
+    runs = bench.scored_by(digest) if scored else bench.reaching(digest)
 
     if not runs:
-        said = "it scored" if scorer else f"with this {word}"
+        said = "it scored" if word == "scorer" else f"with this {word}"
         repl.console.print(f"no runs of yours {said}", style=LABEL)
         return
 
-    said = "it scored" if scorer else "with it"
+    said = "it scored" if word == "scorer" else "with it"
     repl.console.print(f"{plural(len(runs), 'run')} of yours {said}", style=LABEL)
     graded = [
-        g
-        for run in runs
-        for g in bench.scores_of(run.run)
-        if not scorer or g.scorer.digest == digest
+        g for run in runs for g in bench.scores_of(run.run) if g.score is not None
     ]
+
+    if scored:
+        graded = [g for g in graded if _scored_with(repl, g, digest)]
+
+    if word == "expectation":
+        case = resolve(bench.get, digest, Expectation).case
+        graded = [_of_case(g, case) for g in graded]
+    elif word == "case":
+        graded = [_of_case(g, digest) for g in graded]
+
     show_summary(repl.console, graded)
+
+
+def _judged(repl: Repl, judge: str) -> None:
+    bench = repl.bench
+    judged: list[Graded] = []
+    runs = 0
+
+    for run in bench.scored_by(judge):
+        graded = [_by_judge(g, judge) for g in bench.scores_of(run.run) if g.score]
+        graded = [g for g in graded if g.score and g.score.items]
+        runs += bool(graded)
+        judged += graded
+
+    if not runs:
+        repl.console.print("no runs of yours it judged", style=LABEL)
+        return
+
+    calls = sum(
+        c.judge == judge
+        for g in judged
+        if g.score
+        for i in g.score.items
+        for c in i.judge_calls
+    )
+    repl.console.print(
+        f"{plural(runs, 'run')} of yours it judged, in {plural(calls, 'call')}",
+        style=LABEL,
+    )
+    show_summary(repl.console, judged)
+
+
+def _by_judge(graded: Graded, judge: str) -> Graded:
+    assert graded.score is not None
+    items = tuple(
+        i for i in graded.score.items if any(c.judge == judge for c in i.judge_calls)
+    )
+    return replace(graded, score=graded.score.model_copy(update={"items": items}))
+
+
+def _scored_with(repl: Repl, graded: Graded, digest: str) -> bool:
+    assert graded.score is not None
+    scoring = resolve(repl.bench.get, graded.score.started.scoring, Scoring)
+    return digest in (
+        scoring.scorer,
+        *scoring.expectations,
+        graded.scorer.expectation_schema,
+    )
+
+
+def _of_case(graded: Graded, case: str) -> Graded:
+    assert graded.score is not None
+    items = tuple(i for i in graded.score.items if i.key.case == case)
+    return replace(graded, score=graded.score.model_copy(update={"items": items}))
 
 
 def _add_rows(
@@ -334,7 +403,8 @@ def _text(repl: Repl, value: JsonValue) -> Text:
         case list() if all(isinstance(i, (str, int, float)) for i in value):
             return Text(" ".join(str(i) for i in value))
         case dict() | list():
-            return Text(clipped(json.dumps(value, indent=2, ensure_ascii=False)))
+            titled = _titled(repl, value)
+            return Text(clipped(json.dumps(titled, indent=2, ensure_ascii=False)))
         case _:
             return Text(json.dumps(value))
 
@@ -343,17 +413,18 @@ def _show_case(repl: Repl, name: str | None) -> None:
     bench = repl.bench
 
     if name is None:
-        repl.error("a case isn't in the cell: show case NAME")
+        repl.error("no case in the cell: show case NAME")
         return
 
-    family = bench.family(name)
-    case = resolve(bench.get, family.case, Case)
-    header = Text(f"case {family.name}", style="bold")
+    family, digest = bench.case_titled(name)
+    case = resolve(bench.get, digest, Case)
+    shown = family.name if digest == family.case else bench.title(digest)
+    header = Text(f"case {shown}", style="bold")
 
     if owner := bench.owner(family.about):
         _ = header.append(f", {owner}'s")
 
-    _ = header.append(f"  {short(family.case)}", style=LABEL)
+    _ = header.append(f"  {short(digest)}", style=LABEL)
     repl.console.print(header)
 
     table = Table(box=None, show_header=False)
@@ -368,11 +439,15 @@ def _show_case(repl: Repl, name: str | None) -> None:
     except LookupError as e:
         table.add_row("vignette", Text(str(e), style=REFUSED))
 
-    if case.appendices:
-        table.add_row("appendices", ", ".join(map(bench.title, case.appendices)))
+    for appendix in case.appendices:
+        text = resolve(bench.get, appendix, Appendix).text
+        table.add_row(f"appendix {bench.title(appendix)}", clipped(text))
+
+    if digest == family.case:
+        _sending(repl, table, family)
 
     _about(table, family.about)
-    schemas = bench.expectation_schemas(family.case)
+    schemas = bench.expectation_schemas(digest)
 
     if not schemas:
         table.add_row("expectation", Text("none for you", style=LATER))
@@ -384,16 +459,14 @@ def _show_case(repl: Repl, name: str | None) -> None:
             label += f" ({bench.title(schema)})"
 
         try:
-            expectation = bench.expectation(family.case, schema)
+            expectation = bench.expectation(digest, schema)
         except LookupError as e:
             table.add_row(label, Text(str(e), style=REFUSED))
             continue
 
         if expectation is None:
             said = Text("none of yours", style=LATER)
-            owners = {
-                bench.login(a.owner) for _, a in bench.shared(family.case, schema)
-            }
+            owners = {bench.login(a.owner) for _, a in bench.shared(digest, schema)}
             if owners:
                 _ = said.append(
                     f"; shared by {some(sorted(owners))}: take", style=LABEL
@@ -403,7 +476,38 @@ def _show_case(repl: Repl, name: str | None) -> None:
             _add_rows(repl, table, label, expectation.data, depth=3)
 
     repl.console.print(table)
-    _runs(repl, "case", family.case)
+    _runs(repl, "case", digest)
+
+
+def _sending(repl: Repl, table: Table, family: Family) -> None:
+    bench = repl.bench
+
+    if appendices := bench.appendices_of(family.id):
+        table.add_row("appendices", ", ".join(appendices))
+
+    cases = Text()
+
+    for case in bench.cases(family.id):
+        if case == family.case:
+            continue
+        _ = cases.append(("\n" if cases else "") + bench.title(case))
+        if bench.expectation_schemas(case):
+            _ = cases.append("  its own expectation", style=LABEL)
+
+    if cases:
+        table.add_row("cases", cases)
+
+
+def _titled(repl: Repl, value: JsonValue) -> JsonValue:
+    match value:
+        case str() if _DIGEST.match(value):
+            return repl.bench.title(value)
+        case dict():
+            return {k: _titled(repl, v) for k, v in value.items()}
+        case list():
+            return [_titled(repl, v) for v in value]
+        case _:
+            return value
 
 
 def _show_endpoint(repl: Repl, name: str | None) -> None:
@@ -434,11 +538,31 @@ def _show_endpoint(repl: Repl, name: str | None) -> None:
     table.add_row("cleared for", " ".join(sorted(bench.inventory.cleared_for(name))))
     repl.console.print(table)
 
-    runs = [r for r in bench.runs() if r.endpoint and r.endpoint.name == name]
+    ran = bench.runs()
+    runs = [r for r in ran if r.endpoint and r.endpoint.name == name]
     if not runs:
         repl.console.print("no runs of yours at this endpoint", style=LABEL)
     else:
         repl.console.print(f"{plural(len(runs), 'run')} of yours at it", style=LABEL)
+
+    judged = [n for n in (_judge_calls(repl, r, name) for r in ran) if n]
+    if judged:
+        repl.console.print(
+            f"judged {plural(len(judged), 'run')} of yours at it, in "
+            + plural(sum(judged), "call"),
+            style=LABEL,
+        )
+
+
+def _judge_calls(repl: Repl, run: RunStarted, endpoint: str) -> int:
+    store = repl.bench.store
+    calls = 0
+    for started in store.scores_of(run.run):
+        at = {j.judge for j in started.endpoints if j.endpoint.name == endpoint}
+        if at:
+            items = store.score(started.score).items
+            calls += sum(c.judge in at for i in items for c in i.judge_calls)
+    return calls
 
 
 def reasoning(repl: Repl) -> None:

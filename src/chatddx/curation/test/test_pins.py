@@ -37,14 +37,15 @@ def test_a_deploy_moves_the_archive_s_scorers_on_when_it_raises_their_version(
         "validated"
     }
 
-    monkeypatch.setitem(SCORERS, SHIPPED, Metrics(2, metrics.score.metrics))
+    raised = metrics.score.version + 1
+    monkeypatch.setitem(SCORERS, SHIPPED, Metrics(raised, metrics.score.metrics))
     assert _scorers(init(conn, world_plan(), CASES, vignettes(), alice)) == {"updated"}
     catalog, store = Catalog(conn), Store(conn)
     archive = People(conn).find("archive")
     assert archive is not None
     [thread] = catalog.find("scorer", "list", owner=archive.id)
     head = catalog.head(thread)
-    assert resolve(store.get, head.digest, Scorer).version == 2
+    assert resolve(store.get, head.digest, Scorer).version == raised
     assert catalog.labels(head.id) == {
         ("view", 0): "differential",
         ("view", 1): "dont-miss",

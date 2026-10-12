@@ -1,0 +1,9 @@
+description = "A free-text answer to a case Olof wrote notes on, scored by the judges as well as the patterns."
+configuration = "free-text"
+endpoint = "qwen3-8b-awq@fake"
+cases = ["Dutchfall11w"]
+seed = 29
+
+[[turn]]
+reasoning = "Fever, tachypnoea, tachycardia and a low-normal pressure on prednisone, after failed ciprofloxacin for a urinary infection. Shock until proven otherwise; sepsis most likely, but an aneurysm has to be excluded at the bedside."
+content = "Septic shock from a urinary source\nRuptured abdominal aortic aneurysm\nPyelonephritis\nDiverticulitis\nUltrasound at the bedside (RUSH) to rule out other causes of shock, blood cultures, and broad empirical antibiotics."

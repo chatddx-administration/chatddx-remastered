@@ -127,8 +127,9 @@ say:
 4. else `"invalid"`, with the call's error or else what the schema refused, or `"valid"`, with the call's error.
 
 ### `usage(item: RunItem) -> tuple[int, int]`
-The prompt and completion tokens of all the item's calls, summed from each response's `usage`. A response without
-`usage`, or a count that isn't an `int`, adds nothing.
+The prompt and completion tokens of all the item's calls, summed from each response's `usage`. A count that isn't an
+`int` adds nothing. A response without `usage`, as a stream cut short ends before it, adds the completion's
+`token_ids` its first choice holds, and no prompt tokens.
 
 ## variation.py
 
@@ -256,7 +257,7 @@ qualified, `<owner's login>/NAME` (`_qualified`, which gives nothing for a threa
 | `request(variation: TriedVariation, engine: str \| None, seed: int) -> dict[str, JsonValue]` | The request `render` makes of the skeleton with `PLACEHOLDERS` for its slots, `seed`, and `served(engine)` as the model, or `‹model›` without an engine. |
 | `trial(skeleton: Skeleton, engine: str, cases: list[str], seed: int) -> tuple[Registry, Trial]` | A `Trial` of the skeleton, the engine, the cases and the one seed, and a registry holding it with everything it refers to, loaded from the store. Nothing is stored. |
 | `findings(variation: TriedVariation, engine: str, seed: int, families: list[Family] \| None = None) -> list[Finding]` | `lints` of the variation's trial on `engine`. Without `families`, over the first case of the families the person sees, and `[]` when there is none. With them, over their cases, with each case's language its family's, the skeleton's its recipe's (`Catalog.recipe_language`), and any other's `Catalog.language_of`; `[]` for no families. |
-| `scorers() -> list[tuple[Edit, About, Scorer]]` | `threads("scorer")`, each with its head resolved. |
+| `scorers() -> list[tuple[Edit, About, Scorer]]` | `threads("scorer")`, each with its head resolved, by the thread's name, or else its title, as `score` and `scores_of` order theirs. |
 | `labels(scorer: str) -> dict[int, str]` | What a scorer digest's views are called for the person: `labels_of` the head `holder("scorer", scorer)` gives, else of the latest edit that held it in a scorer thread they see (`Rows.edits_holding`), their own threads first; `{}` when none did. |
 | `labels_of(edit: Edit) -> dict[int, str]` | The view labels the edit of a scorer thread was written with (`Catalog.labels`), by the view's position. |
 | `reach(variation: TriedVariation, families: list[Family]) -> list[Reach]` | A `Reach` for each view of each of `scorers()`, named by the thread's name or else its title, and labelled by `labels_of` its head. `offered` when the view's `output` selector reaches the skeleton's `output_schema` (`chatddx.factors.select.reaches`). For an offered view, `choosing` holds the families whose case has several expectations of the person's own under the scorer's schema, and `missing` the others whose case has none or whose expectation gives the view no items (`chatddx.factors.scoring.View.expectation_items`); both are empty for a view not offered. |
@@ -268,14 +269,14 @@ qualified, `<owner's login>/NAME` (`_qualified`, which gives nothing for a threa
 | `runs() -> list[RunStarted]` | The runs the person owns and that aren't deleted, newest first, from the subjects whose entries ever named them (`Catalog.involving`). A collaborator on a run doesn't see it. |
 | `run(prefix: str \| None = None) -> RunStarted` | The latest of `runs()`, or the one whose id, as `str(UUID)`, starts with `prefix`. `NotFound("<login> has no runs")`, `NotFound("no run of yours starts with '<prefix>'")` or `Ambiguous("<n> runs of yours start with '<prefix>'")`. |
 | `run_by_id(run: UUID) -> RunStarted` | The run, when it has started and the person owns it, live. Else `NotFound("no run <id> of yours")`. |
-| `reaching(digest: str) -> list[RunStarted]` | The runs of `runs()` whose trial's closure holds `digest` (`Store.reaching(digest, "trial")`), newest first. |
+| `reaching(digest: str) -> list[RunStarted]` | The runs of `runs()` whose trial's closure holds `digest` (`Store.reaching(digest, "trial")`), or the skeleton of a compilation whose closure holds it (`Store.reaching(digest, "compilation")`), newest first: a skeleton holds what a chunk sets rather than the chunk, so a chunk reaches its runs through what compiled them. |
 | `described(run: RunStarted) -> str` | `<skeleton's title> × <endpoint, or the engine's title> × <the case's title, or "<n> cases"> (seed <seeds>)`. |
 | `scorers_for(run: RunStarted) -> list[tuple[Edit, About]]` | The threads of `threads("scorer")` whose head's every view reaches the run's skeleton's `output_schema`: the check `check_score` warns about as `view.unreachable`. |
 | `scoring(run: RunStarted, scorer: str) -> Scoring \| None` | The scoring the run would be scored under now: `Scoring(scorer, expectations)`, with, for each of the trial's cases in order, the expectation `Catalog.expectations_for(cases, person.id, <the scorer's expectation_schema>)` picks for it, cases without one left out. `None` when no case has one. `Ambiguous` when a case has several to choose from. Nothing is stored. |
-| `unscored(run: RunStarted) -> list[str]` | The scorers of `scorers_for(run)` with no score of the run under `scoring(run, scorer)`, so a run whose expectations changed since it was scored is due again, and those whose `scoring` raises `Ambiguous`, which `score` refuses. A scorer without a scoring isn't one. |
+| `unscored(run: RunStarted) -> list[str]` | The scorers of `scorers_for(run)` with no whole score of the run under `scoring(run, scorer)`, so a run whose expectations changed since it was scored is due again, and those whose `scoring` raises `Ambiguous`, which `score` refuses. A scorer without a scoring isn't one. A score is whole when it has finished, holds an item for each of the run's items and each of the scorer's views, and no judge call of it was stopped: a score that was stopped or never finished leaves the run to score. |
 | `outstanding() -> list[tuple[RunStarted, list[str]]]` | Each finished run of `runs()`, newest first, with its `unscored`, when there are any. |
 | `scores_of(run: UUID) -> list[Graded]` | The latest score of the run under each scorer that scored it, by name: the name of `holder("scorer", scorer)`, else the scorer's title. |
-| `scored_by(scorer: str) -> list[RunStarted]` | The runs of `runs()` with a score under a scoring of `scorer`. |
+| `scored_by(digest: str) -> list[RunStarted]` | The runs of `runs()` with a score under a scoring whose closure holds `digest` (`Store.reaching(digest, "scoring")`): its scorer, an expectation, the expectation schema, a judge. |
 | `rendered_again(run: Run) -> dict[ItemKey, str \| None]` | For each item, whether its first request, rendered again from the trial and the vignette at its source, is what was sent: `None` when it is; `the vignette at the source isn't the one sent`; `the request renders otherwise now`; or the message of the `LookupError` or `StructuralError` fetching or preparing the case raised. |
 
 `scorers_for`, `scoring`, `unscored`, `outstanding`, `scores_of`, `scored_by` and `described` resolve the run's
@@ -391,7 +392,7 @@ added or withdrawn, and deleting.
 | Write | Returns / raises |
 | --- | --- |
 | `start(variation: TriedVariation, endpoint: str, cases: list[str], seed: int) -> Running` | The variation's trial on the engine `endpoint(endpoint)` gives, started by a `Runner` for the person at that endpoint. Nothing is sent until `Running.send`. `endpoint`'s errors, the runner's and its gate's. |
-| `score(run: RunStarted, scorers: Collection[str] \| None = None) -> list[Graded]` | The run scored by `score_run` under each of `scorers_for(run)`, or those of them whose digest is in `scorers`, as `scoring` builds it now. A scorer that can't score it is a `Graded` with `refused`: `none of the run's cases has an expectation`, or the message of a `LookupError` (`Ambiguous` among them), `TypeError` or `NotImplementedError` raised on the way. |
+| `score(run: RunStarted, scorers: Collection[str] \| None = None) -> list[Graded]` | The run scored by the scoring pass (`Grader.start`, `Grading.send`, `Grading.finish`) under each of `scorers_for(run)`, or those of them whose digest is in `scorers`, as `scoring` builds it now, by name. A scorer that can't score it is a `Graded` with `refused`: `none of the run's cases has an expectation`, or the message of a `LookupError` (`Ambiguous` among them), `TypeError`, `ValueError`, `NotImplementedError` or `Refused` raised on the way; one raised while it sends is refused after its score is finished with what it has. A `KeyboardInterrupt` stops the scoring: the score under way is finished with what it has and given, and each scorer after it is refused as `stopped`; the interrupt isn't raised again. |
 
 ## Tests
 In `src/chatddx/bench/test/`, all marked `wip`.

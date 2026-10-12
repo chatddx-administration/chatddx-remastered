@@ -1,0 +1,29 @@
+description = "A management plan as it should come: thought through once, then answered in one go and held to the plan's schema."
+configuration = "plan"
+endpoint = "qwen3-8b-awq@fake"
+cases = ["DutchFall10w"]
+seed = 7
+
+[[turn]]
+reasoning = """Sudden constant upper abdominal pain radiating between the shoulder blades, known gallstones, no fever, normal stools and urine. Biliary colic is likeliest. Cholecystitis, pancreatitis and a dissection have to be ruled out before she goes home."""
+content = '''
+{
+  "acute_warning": "Fever, jaundice or pain that persists would point to cholecystitis, cholangitis or pancreatitis; tearing pain to the back with a pulse deficit to a dissection.",
+  "diagnoses": [
+    {"diagnosis": "Biliary colic", "probability": "high", "critical": false, "short_rationale": "Known gallstones and constant upper abdominal pain radiating to the back, without fever."},
+    {"diagnosis": "Cholecystitis", "probability": "medium", "critical": false, "short_rationale": "Gallstones and pain that paracetamol doesn't relieve, though she has no fever."},
+    {"diagnosis": "Pancreatitis", "probability": "low", "critical": false, "short_rationale": "Epigastric pain radiating to the back in someone with gallstones."},
+    {"diagnosis": "Aortic dissection", "probability": "low", "critical": true, "short_rationale": "Sudden pain between the shoulder blades, which must not be missed."}
+  ],
+  "management": {
+    "workup": [
+      {"type": "Lab", "investigations": ["CBC/CRP", "Liver panel", "Lipase"], "priority": "urgent"},
+      {"type": "Radiology", "investigations": ["Point-of-care ultrasound of the gallbladder"], "priority": "urgent"}
+    ],
+    "empirical_treatment": [
+      {"indication": "Biliary colic", "treatment": "NSAID, such as diclofenac 75 mg IM", "important": "Watch for fever and rising inflammation markers."}
+    ],
+    "disposition": "Home with outpatient follow-up for an elective cholecystectomy once the pain settles; observation if it doesn't."
+  },
+  "sources": ["NICE guidelines"]
+}'''

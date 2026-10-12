@@ -7,6 +7,7 @@ import pytest
 
 from chatddx.cli import main
 from chatddx.curation import Plan
+from chatddx.factors.engine import RemoteEngine
 from chatddx.fake_vllm.served import CLOSURE
 from chatddx.inventory import Inventory, World, served
 from chatddx.store import Store
@@ -40,7 +41,10 @@ def stored(conn: Connection, plan: Plan, inventory: Inventory) -> None:
 
 # Asks each endpoint what it serves once it answers, then presses Ctrl-C.
 def asking(
-    inventory: Inventory, names: list[str], heard: dict[str, list[str]]
+    inventory: Inventory,
+    names: list[str],
+    heard: dict[str, list[str]],
+    secret: str | None = None,
 ) -> threading.Thread:
     def ask() -> None:
         try:
@@ -49,7 +53,7 @@ def asking(
                 deadline = time.monotonic() + 5
                 while name not in heard and time.monotonic() < deadline:
                     try:
-                        heard[name] = served(str(endpoint.url), timeout=1)
+                        heard[name] = served(str(endpoint.url), 1, secret)
                     except OSError:
                         time.sleep(0.01)
         finally:
@@ -86,6 +90,37 @@ def test_each_endpoint_of_the_world_is_served_its_engine_till_ctrl_c(
         assert f"as {endpoint.engine} at {str(endpoint.url).rstrip('/')}" in out
 
 
+def test_a_remote_engine_on_this_machine_is_stood_in_for_asking_for_its_key(
+    db: str,
+    conn: Connection,
+    plan: Plan,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    world = freed(tmp_path)
+    inventory = Inventory.load(world / "inventory.toml")
+    stored(conn, plan, inventory)
+    monkeypatch.setenv("DB_NAME", db)
+    credential = inventory.endpoint(REMOTE).credential
+    assert credential is not None
+    monkeypatch.delenv(credential, raising=False)
+    with pytest.raises(SystemExit, match=f"asks for the key in {credential}, which"):
+        main(["fake-engines", "--world", str(world), REMOTE])
+
+    monkeypatch.setenv(credential, "key")
+    heard: dict[str, list[str]] = {}
+    asker = asking(inventory, [REMOTE], heard, "key")
+    asker.start()
+
+    main(["fake-engines", "--world", str(world), REMOTE])
+
+    asker.join()
+    remote = plan.named("remote_engine", REMOTE).digest
+    engine = Store(conn).get(remote)
+    assert isinstance(engine, RemoteEngine)
+    assert heard == {REMOTE: [engine.model]}
+
+
 def test_only_a_fake_s_endpoint_whose_engine_is_stored_is_served(
     db: str,
     conn: Connection,
@@ -100,7 +135,7 @@ def test_only_a_fake_s_endpoint_whose_engine_is_stored_is_served(
         main(["fake-engines", "--world", str(TEST), "nowhere@fake"])
 
     stored(conn, plan, World.load(TEST).inventory)
-    with pytest.raises(SystemExit, match=f"{REMOTE!r} serves a .*not ours to start"):
+    with pytest.raises(SystemExit, match=f"{REMOTE!r} isn't on this machine"):
         main(["fake-engines", "--world", str(TEST)])
 
     real = copied(tmp_path)

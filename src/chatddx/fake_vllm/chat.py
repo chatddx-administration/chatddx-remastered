@@ -6,9 +6,10 @@ import time
 import uuid
 import zlib
 from collections.abc import Iterator, Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from typing import Any, cast
 
+from .script import Turn
 from .served import Served
 
 log = logging.getLogger(__name__)
@@ -68,6 +69,7 @@ class Reply:
     finish: str
     # the newlines it goes on with after its answer, a token each
     runaway: int = 0
+    hang_up: int | None = None
 
 
 def pick(served: Sequence[Served], body: dict[str, Any]) -> Served:
@@ -300,24 +302,44 @@ def respond(served: Served, body: dict[str, Any], runaway: bool = False) -> Repl
         finish = "length"
 
     reasoning = "".join(thought) if thought_text is not None else None
-    content = "".join(answer)
+    return _placed(
+        served, body, Reply(reasoning, "".join(answer), calls, finish, newlines)
+    )
+
+
+def scripted(served: Served, body: dict[str, Any], turn: Turn) -> Reply:
+    called = len(_called(body))
+    calls = tuple(
+        Call(name, arguments, f"chatcmpl-tool-fake-{called + n}")
+        for n, (name, arguments) in enumerate(turn.calls)
+    )
+    named = isinstance(tool_choice(body), dict)
+    finish = turn.finish or (
+        "length" if turn.runaway else "tool_calls" if calls and not named else "stop"
+    )
+    reply = Reply(
+        turn.reasoning, turn.content, calls, finish, turn.runaway, turn.hang_up
+    )
+    return _placed(served, body, reply)
+
+
+def _placed(served: Served, body: dict[str, Any], reply: Reply) -> Reply:
+    reasoning, content, finish = reply.reasoning, reply.content, reply.finish
     separated = served.reasoning_parser or (
         served.family == "harmony" and served.parses_tools
     )
     if reasoning is not None and not separated:
         if served.family == "harmony":
             # Harmony's channel markers are special tokens, skipped when detokenized.
-            final = "assistantfinal" if finish != "length" or answer else ""
-            return Reply(
-                None, f"analysis{reasoning}{final}{content}", calls, finish, newlines
-            )
-        closed = "\n</think>\n\n" if finish != "length" or answer else ""
-        return Reply(
-            None, f"<think>\n{reasoning}{closed}{content}", calls, finish, newlines
-        )
+            final = "assistantfinal" if finish != "length" or content else ""
+            text = f"analysis{reasoning}{final}{content}"
+        else:
+            closed = "\n</think>\n\n" if finish != "length" or content else ""
+            text = f"<think>\n{reasoning}{closed}{content}"
+        return replace(reply, reasoning=None, content=text)
     if body.get("include_reasoning") is False:
-        reasoning = None
-    return Reply(reasoning, content, calls, finish, newlines)
+        return replace(reply, reasoning=None)
+    return reply
 
 
 def _turn(body: dict[str, Any], greedy: bool) -> int:

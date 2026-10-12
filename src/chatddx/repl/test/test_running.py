@@ -1,5 +1,6 @@
 import re
 import signal
+from collections.abc import Callable
 
 import pytest
 
@@ -11,13 +12,15 @@ from chatddx.fake_vllm.server import serving
 from chatddx.inventory import Inventory, start_up
 from chatddx.ledger import Run
 from chatddx.repl.render import Tally, Transcript
+from chatddx.repl.running import WRITING
 from chatddx.repl.shell import SEEDS, Repl
 from chatddx.repl.test.helpers import Say, cells, tagged
 from chatddx.runner.run import Event, Running, Streamed
+from chatddx.runner.score import Event as ScoreEvent, Grading
 from chatddx.store import Store
 from chatddx.test.world import GPT_OSS, LINES, NATIVE, QWEN, TOOL_ANSWER
 
-pytestmark = pytest.mark.wip
+pytestmark = pytest.mark.solidified
 
 
 def test_seed_draws_a_short_seed_or_holds_one(repl: Repl, say: Say):
@@ -159,9 +162,8 @@ def test_a_run_that_runs_away_is_cut_short_and_what_came_scored(
     assert item.call.error == "stopped: nothing but whitespace for 100 tokens"
 
 
-# A structure cut short isn't salvaged, so its answer can't be read.
 @pytest.mark.slow
-def test_a_structured_answer_cut_short_is_unread(
+def test_a_structured_answer_cut_short_is_salvaged(
     world: Inventory, bench: Bench, say: Say
 ):
     startup = start_up(world, bench.get, QWEN)
@@ -169,8 +171,31 @@ def test_a_structured_answer_cut_short_is_unread(
         written = say(f"cell {NATIVE} {QWEN}", "run svenska")
 
     assert "stopped: nothing but whitespace for 100 tokens" in written
-    assert "unread: the content isn't JSON" in written
-    assert "no answer" in written
+    assert "salvaged: cut short, and read with its structure closed" in written
+    assert re.search(r"\(\d+ out\)", written)
+    assert "no answer" not in written
+    assert "answer.salvaged" not in written
+
+
+@pytest.mark.slow
+def test_a_batch_says_each_finding_once_with_how_often_it_came(
+    world: Inventory, bench: Bench, say: Say
+):
+    startup = start_up(world, bench.get, QWEN)
+    with serving([Served.of(startup.argv[0], startup.argv[1:])], runaway=True):
+        written = say(f"cell {NATIVE} {QWEN}", "batch targets")
+    targets = tagged("targets")
+
+    stop = "stopped: nothing but whitespace for 100 tokens"
+    assert f"[warning] call.failed: {stop} (×{len(targets)})" in written
+    assert written.count("call.failed") == 1
+    assert (
+        "[info] answer.salvaged: cut short, and read with its structure closed; the "
+        + f"call ended with: {stop} (×{len(targets)})"
+    ) in written
+    salvaged = [c for c in cells(written) if c[2:3] == ["salvaged"]]
+    assert sorted(c[0] for c in salvaged) == targets
+    assert all(int(c[1]) > 0 for c in salvaged)
 
 
 @pytest.mark.slow
@@ -199,7 +224,8 @@ def test_batch_runs_the_cell_on_each_case_tagged_a_line_to_each(bench: Bench, sa
 
     [run] = ran(bench)
     assert len(run.items) == len(targets)
-    assert ["lines", "text", "1", "0", "0", str(len(targets) - 1)] in cells(written)
+    assert "recorded as run 1 of trial" in written
+    assert ["lines", "text", "1", "@0", "0", str(len(targets) - 1)] in cells(written)
 
 
 def test_batch_says_what_it_can_t_run(say: Say):
@@ -306,6 +332,39 @@ def test_ctrl_c_again_stops_the_case_under_way_too(
 
 @pytest.mark.slow
 @pytest.mark.usefixtures("fake")
+def test_ctrl_c_twice_while_scoring_finishes_the_score_and_leaves_the_rest(
+    bench: Bench, say: Say, monkeypatch: pytest.MonkeyPatch
+):
+    send = Grading.send
+
+    def pressed(self: Grading, on_event: Callable[[ScoreEvent], None] | None = None):
+        signal.raise_signal(signal.SIGINT)
+        signal.raise_signal(signal.SIGINT)
+        send(self, on_event)
+
+    monkeypatch.setattr(Grading, "send", pressed)
+    written = pressing(say, f"cell {LINES} {QWEN}", "run noted")
+
+    assert WRITING in written
+    assert "not scored: stopped" in written
+    assert "score.incomplete" in written
+    assert "scoring stopped: score scores what is left" in written
+    assert "recorded as run 1 of trial" in written
+
+    store = Store(bench.conn)
+    [run] = ran(bench)
+    [given] = store.scores_of(run.started.run)
+    assert store.score(given.score).finished is not None
+    started = bench.run_by_id(run.started.run)
+    assert len(bench.unscored(started)) == len(bench.scorers_for(started))
+
+    monkeypatch.undo()
+    assert "nothing to score" not in say("score")
+    assert bench.unscored(started) == []
+
+
+@pytest.mark.slow
+@pytest.mark.usefixtures("fake")
 def test_ctrl_c_waits_for_a_run_to_be_written_down_and_scored(
     bench: Bench, say: Say, monkeypatch: pytest.MonkeyPatch
 ):
@@ -322,3 +381,75 @@ def test_ctrl_c_waits_for_a_run_to_be_written_down_and_scored(
     [run] = ran(bench)
     assert run.finished is not None
     assert Store(bench.conn).scores_of(run.started.run)
+
+
+@pytest.mark.slow
+@pytest.mark.usefixtures("fake")
+def test_a_run_says_each_judge_call_as_it_goes_then_what_the_judges_said(say: Say):
+    written = say(f"cell {LINES} {QWEN}", "run noted")
+
+    judging = [
+        line.split() for line in written.splitlines() if line.startswith("judging")
+    ]
+    assert [(w[1], w[2], w[4], w[6], w[-2:]) for w in judging] == [
+        ("noted:", "note-comment", "verdict,", "1", ["meets", "true"]),
+        ("noted:", "note-answer", "verdict,", "1", ["meets", "true"]),
+        ("noted:", "note-graded", "graded,", "1", ["points", "0"]),
+        ("noted:", "note-graded", "graded,", "2", ["points", "1"]),
+        ("noted:", "note-graded", "graded,", "3", ["points", "2"]),
+    ]
+    judged = written[written.index("\njudged\n") :]
+    assert [
+        "note-comment",
+        "verdict,",
+        "seed",
+        "1",
+        "meets",
+        "true",
+        "fake",
+        "why",
+    ] in (cells(judged))
+    assert ["graded,", "seed", "3", "points", "2", "fake", "why"] in cells(judged)
+
+
+@pytest.mark.slow
+@pytest.mark.usefixtures("fake")
+def test_views_without_a_target_are_said_once_rather_than_scored(say: Say):
+    written = say(f"cell {LINES} {QWEN}", "run crlf")
+
+    scores = written[written.index("\nscores\n") :]
+    assert "note-" not in scores.split("no target")[0]
+    assert "no target: judged note-comment, note-answer, note-graded" in scores
+
+    written = say("batch bytes")
+
+    assert "note-" not in written.split("no target in any case")[0].split("batch:")[-1]
+    assert "no target in any case: judged note-comment, note-answer, note-graded" in (
+        written
+    )
+
+
+@pytest.mark.slow
+@pytest.mark.usefixtures("fake")
+def test_run_takes_a_case_that_sends_appendices_by_its_title(bench: Bench, say: Say):
+    written = say(f"cell {LINES} {QWEN}", "run whitespace with labs 8")
+
+    assert f"trial: {LINES} × {QWEN} × whitespace with labs (seed 8)" in written
+    [run] = ran(bench)
+    _, case = bench.case_titled("whitespace with labs")
+    assert [item.key.case for item in run.items] == [case]
+    assert "no appendix xray of whitespace" in say("run whitespace with xray")
+
+
+@pytest.mark.slow
+@pytest.mark.usefixtures("fake")
+def test_scores_say_an_offset_with_its_unit_and_their_details_as_text(say: Say):
+    written = say(f"cell {LINES} {QWEN}", "run matched")
+
+    assert ["whole", "text", "@0", "Fake", "diagnosis", "B"] in cells(written)
+    assert ["differential", "1", "1.", "Fake", "diagnosis", "B"] in cells(written)
+
+    written = say("run noted")
+
+    assert ["note-graded", "0.5", "by", "seed:", "0,", "0.5,", "1"] in cells(written)
+    assert ["differential", "0", "not", "listed"] in cells(written)

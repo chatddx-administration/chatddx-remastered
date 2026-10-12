@@ -1,6 +1,3 @@
-# The test World's texts in Swedish: lines-guided's instructions and worked example, written in Swedish, and the
-# translations that carry its English output and appendix layout into Swedish.
-
 [instructions.clinician]
 role = "developer"
 text = [

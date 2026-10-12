@@ -1,15 +1,14 @@
-# The old inventory's Swedish cases (chatddx 7893656, src/chatddx/data/cases.toml), with the `# guessed` markers
-# dropped: the targets are treated as live data. Keys are the vignettes' file names at the source, `targets` is each
-# case's expectation (schemas/targets.json), and `tags` are entries on its family, as is this file's language. The
-# English cases are in cases-en.toml. Most targets' patterns name Swedish terms beside the English ones.
-#
-# `targets.notes` are Olof's comments, added to the end of a vignette after 7893656 (chatddx 13d317d:
-# casesfromedn1; Dutchfall11w's and Dutchfall1w's are in cases-en.toml). It's taken out as written, in Swedish, with
-# the "Chatddx:" block as the note's `answer`; only the headings, line endings and trailing spaces are dropped. The
-# vignettes stay as they were at 7893656.
-
 [case.casesfromedn1]
 tags = ["edn"]
+targets.diagnosis.pattern = "copd | (exacerbation | obstructive) & pulmonary"
+targets.warning.pattern = "respiratory & failure | hypercapni* | airway | intubat* | andningssvikt | intuber*"
+targets.disposition.pattern = "icu | intensive & care | iva | intensivvård*"
+
+[case.casesfromedn1.appendices]
+blood-gas = "Blodgas efter 20 minuters maskventilation: pH 7,18, pCO2 11,2 kPa, pO2 9,8 kPa, BE +6, laktat 1,4 mmol/l."
+
+[[case.casesfromedn1.with]]
+appendices = ["blood-gas"]
 targets.diagnosis.pattern = "copd | (exacerbation | obstructive) & pulmonary"
 targets.warning.pattern = "respiratory & failure | hypercapni* | airway | intubat* | andningssvikt | intuber*"
 targets.disposition.pattern = "icu | intensive & care | iva | intensivvård*"
@@ -92,6 +91,7 @@ tags = ["edn"]
 targets.diagnosis.pattern = "psychosis | psychotic | psykos | psykotisk"
 targets.warning.pattern = "encephalit* | autoimmune | nmda | suicid* | catatoni*"
 targets.disposition.pattern = "psychiatr* | psykiatri* | neurolog* | admit* | admission | hospital*"
+targets.dont_miss.pattern = "encephalit* | encefalit* | nmda | autoimmun*"
 
 [case.casesfromedn20]
 tags = ["edn"]

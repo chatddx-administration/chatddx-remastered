@@ -1,0 +1,8 @@
+description = "A run left without its finish."
+configuration = "lines"
+endpoint = "qwen3@fake"
+cases = ["bom"]
+unfinished = true
+
+[[turn]]
+content = "Pneumonia"

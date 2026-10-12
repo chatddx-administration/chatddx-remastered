@@ -14,9 +14,14 @@ all fixed but one. Each is condensed to where its result is described now and wh
 write-ups are in git history: `git show 79ec890:agents/wip-sample-data.md`.
 
 ## Start with this
-The endgame is parity with the old `init-data`. Everything is in but the real engines: the configurations and cases,
-the tool and scorers, and the two fake engines with their endpoints (see "Engines and endpoints"). What's left, in
-order:
+Parity with the old `init-data` is reached, and the real engines are imported (below). Since then the sample is the
+example new Worlds follow, using every table a data set and a World can hold (decided; below, "A complete example",
+which lists what came): it moved to `worlds/sample/_data/`, and gained a drafted judge over Olof's notes, made-up
+appendices and the cases that send them, made-up `dont_miss` targets for six cases, a canary set, a remote engine with
+a credential, its model's facts, and an included `endpoints.toml`. Then sample runs, answered by the fake from scripts
+(below, "Sample runs").
+
+What follows is the parity work's record. It said, in order:
 
 ### 1. Import the real engines from their hosts' reports (decision 4A)
 The old `qwen3-8b-awq@pelle`, `qwen3-8b-awq@malborg` and `gpt-oss-20b@malborg` get seeded from values read on the
@@ -130,7 +135,7 @@ without tools on the fake engines (`agents/wip-runner.md`).
 - The vignette files are a fake-sensitive source (G11). Fingerprints are over the raw bytes.
 - The expectation schema is hand-written into the new sample data.
 - The `# guessed` markers on targets are dropped on import, and the data is treated as live.
-- The sample data lives in the repo (`src/chatddx/data/sample/`), with the vignettes named by the World inventory.
+- The sample data lives in the repo (`worlds/sample/_data/`), with the vignettes named by the World inventory.
 - The 99 vignettes are copied into the repo and kept under VCS. They aren't sensitive, but are treated as if they
   were.
 - Model-dependent chunks come per model, from the facts.
@@ -141,7 +146,7 @@ without tools on the fake engines (`agents/wip-runner.md`).
   directory.
 
 ## The sample data now
-`src/chatddx/data/sample/` holds:
+`worlds/sample/_data/` holds:
 - `factors.toml`: chunks and recipes, from the old slices and configurations. Its header comment gives the format.
   Tables are kinds, keys are component fields, and references name records. On top of that, `json_schema_path`
   loads a JSON file, `from_facts` writes a chunk per model, `fork_of` seeds a record as a fork, and `tags` and
@@ -220,6 +225,46 @@ The old checkout's vignettes were checked in a scratch database:
   the engine they serve.
 
 Tests: `src/chatddx/curation/test/`.
+
+### A complete example
+Decided, while bringing the repl to completion: the sample is the example a new World follows, complete being every
+table a data set and a World can hold used at least once; its judge prompt is drafted, and it gets made-up appendices
+and a canary set. Also decided: the data set moves from the package into the sample World, `worlds/sample/_data/`, as
+the test World keeps its own.
+
+Built. The sample is two parts that a new World follows: the data set (`worlds/sample/_data/`) and the World
+(`worlds/sample/`), laid out as Kompismoln's is. `src/chatddx/curation/test/test_sample.py:
+test_the_sample_uses_every_table_a_data_set_and_a_world_hold` holds it to that. What came:
+- **Data sets hold appendices and canary sets** (`curation/plan.py`, `curation/write.py`). A cases file names a case's
+  `appendices`, texts by name, each landed as an archive thread of its own name, told apart by its vignette
+  (`curation/write.py:binds`), and `[[case.<id>.with]]`, cases of the family that send them in the order named, each
+  with `targets` of its own when it has them. `canary_set` is a table of `factors.toml`. The test World holds one of
+  each (`whitespace`'s `labs`, `probe`), read by `curation/test/test_tables.py`.
+- **The data set's default**: init-data takes the World's `_data/` unless `--data` names another (`cli.py`, `DATA`),
+  so `init-data alice --giftbag` loads the sample, and Kompismoln names `--data worlds/sample/_data`. A take: it
+  revisits `agents/wip-test-world.md`'s "Loading it stays explicit" (see its "Why `_data`").
+- **A judge**, drafted by an agent until Olof writes his (`agents/wip-judges.md`, "For Olof, later"): instructions
+  and a prompt of purpose `judge` (the answer and the note; no vignette), the outputs `verdict` and `grade` with
+  schemas whose `examples` the fake answers by seed, and their Swedish translations; the recipes `judge` (greedy)
+  and `judge-graded` (recommended sampling, per model); the judges `verdict` on `qwen3-8b-awq@fake` and `graded` on
+  `gpt-oss-20b@fake`; the scorer `notes`, Olof's comment and answer judged as met and his comment graded. The judges
+  name the sample World's engines, so Kompismoln skips them and `notes` until it names judges of its own; its
+  `factors.toml` is the engine import's to write whole, so where those go is open.
+- **Made-up appendices**: `labs` and `ultrasound` for `Dutchfall11w`, whose ultrasound changes the right answer from
+  the targets' aneurysm to an infected, blocked kidney, held to targets of their own in two cases; and `blood-gas` for
+  `casesfromedn1`, in Swedish, which confirms its targets.
+- **Made-up `dont_miss` targets**, so the `dont-miss` views score: `DutchFall10w` (dissection), `Dutchfall12w`
+  (myocardial infarction), `Dutchfall14w` and `Dutchfall26w` (pulmonary embolism), `Dutchfall15w` (appendicitis) and
+  `casesfromedn2` (autoimmune encephalitis), each the dangerous diagnosis the case's warning or vignette already
+  points to. The data files hold no comments, so this list is where they are labelled made up, with the appendices.
+- **A canary set**, `basics`: two greedy probes and a seeded one. No run sends it yet: `Bench.start` passes no canary
+  set.
+- **A remote engine with a credential**: `mistral-small@remote`, Mistral Small 3.2 from provider `fake`, whose
+  endpoint reads its key from `CHATDDX_SAMPLE_KEY` (set in `.env-container` and `.env-devshell`), and the facts of its
+  model in the World's `facts.toml`, from its makers' model card. `chatddx fake-engines` stands in for a remote engine
+  on this machine (`cli.py:_stand_in`), and the fake vLLM takes `--api-key` (`fake_vllm/served.py`, `server.py`). The
+  stand-in is cleared for the sample, as it runs here. The model adds a third variant of every per-model recipe.
+- **The World's endpoints and host** moved to an included `endpoints.toml`, as an engine import writes them.
 
 ## Engines and endpoints
 Decisions 2A and 4D, done. Endpoints, hosts, the sample World, start-ups and `confirm` are `docs/inventory.md`'s.
@@ -326,60 +371,50 @@ Not faked yet:
   skeleton and fake endpoint of every World, and fails when one refuses what the other doesn't.
 
 ## Sample runs
-Not built. Everything here is a take.
+Built (the user's "build the sample runs with the fake's --script"). They are for every edge: the repl's `replay` and
+`runs`, the API's runs and items, and the portal's run pages want runs that are genuine records of what can go wrong,
+without a real engine. Everything but the model's words is genuine.
+
+- **A sample** is `<world>/_runs/<name>.toml` (`src/chatddx/samples/sample.py`): `description`, what it shows;
+  `configuration`, as `Bench.configuration` finds it on the endpoint's model (one made in several languages by its
+  whole name, `free-text-guided (sv, Qwen/Qwen3-8B-AWQ)`); `set`, parts to chunks (`none` for none); `endpoint`;
+  `cases`, a family's id or `<id> with <appendix>[, <appendix>]`, as init-data titles a case that sends appendices;
+  `seed`; `stop_after`, a halt after so many tokens of a call; `unfinished`, a run left without its finish; `scored`
+  (default true); then its `[[turn]]`s, which are the fake's.
+- **The fake answers from a script** (`src/chatddx/fake_vllm/script.py`): `serving(…, script=…)` and
+  `chatddx fake-vllm --script PATH`. Each chat request takes the next turn, after the fake's own checks (`accept`):
+  `reasoning`, placed where the server puts it (separated with a reasoning parser, else `<think>` or Harmony's
+  channels); `content`; `tool_calls`, a name and arguments (a table, or a JSON string kept as written); `finish`;
+  `runaway`, newlines after the content, finished by `length`; `hang_up`, the server going away after so many events,
+  without `[DONE]`; `status`, an error with `content` its message. A request past the last turn gets a 500. The fake
+  stays a leaf: it reads a script, not the bench.
+- **The driver**: `src/chatddx/samples/`, an edge over the bench. Per sample: the variation, the cases
+  (`Bench.case_titled`), a fresh script served at the endpoint (`fakes.py:fake_at`, the stand-in for a remote engine as
+  `fake-engines` serves it), `Bench.start`, `Running.send`, `Running.finish`, and `Bench.score` with plain fakes at
+  the judges' endpoints.
+- **For hand use**: `chatddx samples LOGIN [--world PATH] [--again] [NAME…]`, after `init-data LOGIN --giftbag`. It
+  serves its own fakes, so `fake-engines` must not be running. A sample whose trial the person ran is said, not run
+  again, unless `--again`.
+- **The sample World's ten**, each `description` saying what it shows: `typical`, `invalid`, `broken`, `runaway`,
+  `stopped`, `unfinished`, `judged`, `appendix`, `batch` (four cases, a 503 and a hang-up among them) and `remote`.
+  `src/chatddx/samples/test/test_sample_world.py` holds them to their outcomes.
+- **The test World's six**, read by `src/chatddx/samples/test/test_samples.py`: `valid`, `stopped`, `unfinished`,
+  `batch`, `judged` and `appendix`.
+
+### Not sampled
+- **Tool rounds**: the old broken and rich runs searched the web. The gate refuses tools on a sensitive source, and
+  the sample's is one, as a real one would be, so no sample can send a tool round on its cases. A take: a made-up
+  source that isn't sensitive, once calibration wants a tool round to show. The web would then be patched in the
+  process that runs the tools (`urllib.request.urlopen`, `src/chatddx/tools/web_search.py`).
+- **A canary set**: `Bench.start` passes none.
+- **A `sampled` database for tests**, `curated` with the test World's samples run: not made, since no test yet reads
+  runs it doesn't make. Still a take.
 
 ### The old ones
-`chatddx samples OWNER` (`src/chatddx/dev/samples/` at 504792c, 7ab7808) made three runs to look at, each answered by a
-script rather than by the fake's own answers:
-- **typical**: `plan` on `qwen3-8b-awq@fake`, `DutchFall10w`: thought through once and answered in one go, held to
-  the plan's schema.
-- **broken**: `plan-web` on `qwen3-8b-awq@fake`, `Dutchfall11w`: the search fails (503), the next call has an argument
-  `web_search` doesn't take, and the server goes away halfway through the plan.
-- **rich**: `plan-web` on `gpt-oss-20b@fake` with reasoning high and the tool contract, `Dutchfall14w`: thinking
-  before every step, four rounds of searches, two made at once, an argument of the wrong type, a search that finds
-  nothing, a word to the user beside the calls, and the answer through the answer tool.
-
-Each script (`*.toml`) named a configuration, a stack, a case, a seed and what the cell set, then the turns: reasoning,
-content, tool calls, and whether the server broke off after. Its `web` table canned what each search found. The runs
-went through the old bench and `Sending` with an injected httpx transport (`Scripted`) and a patched `httpx2.get`, so
-everything but the model's words and the web was genuine. Five tests checked them (`src/chatddx/dev/tests/test_samples.py`).
-
-### Who they are for
-Every edge: the repl's `replay` and `runs`, the API's runs and items, and the portal's run pages all want runs that
-are genuine records of what can go wrong, without a real engine. So they aren't the repl's (`agents/wip-repl.md`, "Left
-out"), nor the portal's.
-
-### Where they belong
-Take, by piece:
-- **The scripts**: `worlds/sample/runs/*.toml`, beside the vignettes. Their reasoning and answers paraphrase the
-  vignettes, so they are case-derived. The sample World's source is declared sensitive, as a real one would be, and
-  kept out of the package (`worlds/sample/inventory.toml`); the scripts go with it.
-- **Answering from a script**: the fake vLLM, as `serving(…, script=…)` and `chatddx fake-vllm --script PATH`. It
-  answers each chat request with the script's next turn, streamed as `chat.py` streams, and can go away before the
-  finish. The fake is to grow as sample data needs it (`AGENTS.md`, "Environment"), and stays a leaf: it reads a
-  script, not the bench.
-- **The web**: patched in the process that runs the tools, as before: `web_search` reaches DuckDuckGo through
-  `urllib.request.urlopen` (`src/chatddx/tools/web_search.py`), and the tools run in the runner's process. A setting for
-  the search URL would let the fake serve the web instead, but nothing else needs one.
-- **The driver**: `src/chatddx/samples/`, an edge over the bench, as `agents/wip-bench.md` at d5ebf52 ("The landscape,
-  at phase 1") lists it. For each script: the variation (`Bench.configuration`, `Bench.variation`), the scripted fake
-  served in a thread at the endpoint's address, `Bench.start` with the case and seed, `Running.send`, `Running.finish`
-  and `Bench.score`.
-- **For hand use**: `chatddx samples LOGIN [--sample NAME]`, after `init-data`. It serves the scripted fake itself, so
-  no fake needs to be running.
-- **For tests**: a session-scoped `sampled` database in `src/chatddx/conftest.py`, made from `curated` with alice's
-  sample runs in it, and copied for each test as `curated` is. The repl's, the API's and the portal's tests read
-  genuine runs without running them each time. `curated` is the test World's now (`agents/wip-test-world.md`), so the
-  test runs' scripts would be written for its cases and configurations, and the sample's for hand use.
-
-### To settle while porting
-- **The scripts' names are the old ones.** Configurations are per-model variants now (`plan (en, Qwen/Qwen3-8B-AWQ)`),
-  what the cell set is a recipe's parts (the coercion is the output's contract), and endpoints replace stacks.
-- **The turns must hold to remastered's contracts**: an answer through the answer tool, which the compiler offers last
-  under `required`, and what vLLM 0.24 does with reasoning and tools (`docs/vllm.md`). The fake's own checks
-  (`accept`) still apply to the request.
-- **A batch sample**, several cases in one run, once the portal's batch pages need one.
-- **Scores**: each sample is scored under every scorer that applies, so the scores are genuine too.
+`chatddx samples OWNER` (`src/chatddx/dev/samples/` at 504792c, 7ab7808) made three, through the old bench with an
+injected httpx transport: **typical** (now `typical`), **broken** (a failed search, a bad argument and a server
+going away; now `broken` and `batch`, without the tool round) and **rich** (four rounds of searches on gpt-oss; not
+sampled, see above).
 
 ## Old → new
 
@@ -532,8 +567,8 @@ Decided: Olof's comments on the cases are the foundation for a free-text expecta
   case, what to do, and the disposition. `Dutchfall11w` and `casesfromedn1` end in a "Chatddx:" block too, the short
   answer they'd want ChatDDx to give. 13d317d also renamed `DutchFall10w` to `Dutchfall10w`, with the same bytes.
 - **Done (decided): the comments are expectation data**, not vignette text, since a vignette and its appendices are
-  sent to the model. They're `notes` in the targets (`src/chatddx/data/sample/schemas/targets.json`,
-  `src/chatddx/data/sample/cases-*.toml`), as the user decided:
+  sent to the model. They're `notes` in the targets (`worlds/sample/_data/schemas/targets.json`,
+  `worlds/sample/_data/cases-*.toml`), as the user decided:
   1. **Kept apart.** A note's `comment` is the reading of the case, its optional `answer` the "Chatddx:" block, so a
      judge can be given either.
   2. **The targets schema is extended**, rather than a schema of its own: `notes` is an optional list beside the

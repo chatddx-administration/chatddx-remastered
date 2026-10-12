@@ -1,15 +1,15 @@
-# The sample's texts, in English: its instructions, examples, outputs and toolset, which hold text the model reads.
-# The format is factors.toml's. A text's language is this file's, and the same name in another texts-<language>.toml
-# is the same text in that language. A recipe that names one is made per language, and in a language without the
-# output or the toolset, it needs translations there.
-
 [instructions.clinician]
 text = [
   "You are assisting a physician in an emergency department. Read the case and give your assessment.",
   { insert = "output_guidance", before = "\n\n" },
 ]
 
-# A made-up case, answered as the free-text output asks.
+[instructions.judge]
+text = [
+  "You are an emergency physician reviewing an assistant's answer to an emergency case. You are given the answer and a note a colleague wrote on the same case: their reading of it and what they would do. The note may be in Swedish and the answer in English; judge what they say, not the language they say it in.",
+  { insert = "output_guidance", before = "\n\n" },
+]
+
 [few_shot.worked-example]
 messages = [
   { role = "user", content = "A 67-year-old man has had crushing central chest pain for an hour, spreading to the left arm, with sweating and nausea. Blood pressure 150/90, pulse 104." },
@@ -67,6 +67,27 @@ guidance = "List the plausible diagnoses, most likely first."
 description = "The differential as plain lines."
 contract = { kind = "text" }
 guidance = "List the plausible diagnoses, one per line, most likely first."
+
+[output.verdict]
+description = "A judge's verdict: whether the answer meets the note, and why."
+contract = { kind = "native" }
+json_schema_path = "schemas/verdict.json"
+guidance = "Say whether the answer meets the note: whether it reaches the same reading of the case and would lead to the same essential actions. Wording, order and extra detail don't matter; missing what the note calls for, or advice that would harm the patient, does. Give your reason in one or two sentences."
+
+[output.grade]
+description = "A judge's grade of the answer against the note, from 0 to 2, and why."
+contract = { kind = "native" }
+json_schema_path = "schemas/grade.json"
+guidance = "Grade how well the answer meets the note, from 0 to 2: 2 when it reaches the same reading of the case and the same essential actions, 1 when it gets part of the way, 0 when it misses it or would mislead. Give your reason in one or two sentences."
+
+[prompt.judge]
+purpose = "judge"
+segments = [
+  "The assistant's answer:\n\n",
+  { slot = "completion" },
+  "\n\nThe colleague's note:\n\n",
+  { slot = "expectation" }
+]
 
 [toolset.web]
 tools = ["web_search"]

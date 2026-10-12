@@ -189,7 +189,7 @@ Decided:
 - **Its backend is gone.** It calls `GET /api/agents?output_type=DDXManagement`, `GET /api/auth/` and
   `POST /api/diagnose {symptoms, model}`. The old project dropped the first and the last at 110f9a5 (2026-09-26).
 - **Remastered has its answer**: the sample's management plan
-  (`src/chatddx/data/sample/schemas/management_plan_v1.json`, the `plan` recipes), read as the repl and the API read
+  (`worlds/sample/_data/schemas/management_plan_v1.json`, the `plan` recipes), read as the repl and the API read
   answers (`chatddx.scorers.answer.read`) and served from a run's items (`agents/wip-api.md`, "Case-derived content").
 
 ### Typed cases

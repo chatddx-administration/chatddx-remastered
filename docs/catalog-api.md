@@ -28,8 +28,8 @@ Paths are relative to `src/chatddx/catalog/` unless they start with `src/` or `d
 
 `chatddx.catalog` re-exports `LANGUAGE`, `LANGUAGE_KINDS`, `THREAD_KINDS`, `About`, `Behind`, `Binding`, `Edit`,
 `Entry`, `EntryField`, `Kept`, `Labels`, `Part`, `Reader`, `Repair`, `RepairPlan`, `Subject`, `Survey`, `Thread`,
-`Variation`, `check_label`, `language_tag`, `latest`, `made_for`, `variant_name`, `variants_for`, and the modules
-`families`, `language`, `read`, `threads`, `titles` and `variants`.
+`Variation`, `check_label`, `language_of`, `language_tag`, `latest`, `made_for`, `variant_name`, `variants_for`, and
+the modules `families`, `language`, `read`, `threads`, `titles` and `variants`.
 
 Functions are called through their module (`threads.behind(rows, thread)`); `model.py` is imported by path.
 
@@ -389,9 +389,13 @@ the variant that fits: `NAME (LANGUAGE)`, `NAME (MODEL)` or `NAME (LANGUAGE, MOD
 What a variant's name says it was made from and for, or None for a name that isn't a
 variant's; `models` are the models a variant may be made for.
 
-### `variants_for(name, names, model)`
+### `variants_for(name, names, model, language=None)`
 The variants of `name` among `names` that `model` may use: those made for it, or for
-every model.
+every model; with `language`, only those made for it.
+
+### `language_of(name)` -> `(name, language | None)`
+The language a name ends with, as `NAME (LANGUAGE)` or `NAME LANGUAGE`, and the name before it; `(name, None)` when
+it ends with none.
 
 ## families.py
 

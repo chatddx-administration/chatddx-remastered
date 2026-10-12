@@ -109,7 +109,7 @@ Variations allow controlled experiments without the combinatorial explosion; the
 `src/chatddx/store/catalog.py:Catalog.variation` and `Catalog.proposal` (what a fork varies,
 and re-applying it when its origin moves), and `catalog.edit.based_on`.
 
-### Person-scoped cake
+### The person-scoped cake
 Most of the control plane in chatddx is exercised as a person, and the functionality behind this is organized in three
 layers depending on what resources they require:
 

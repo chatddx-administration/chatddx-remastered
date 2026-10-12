@@ -1,11 +1,15 @@
 from typing import Literal
 
+from pydantic import JsonValue
+
 from chatddx.factors.request import Skeleton
-from chatddx.ledger import RunItem
+from chatddx.ledger import Call, RunItem
 from chatddx.runner.send import STOPPED
 from chatddx.scorers.answer import read
 
-type Outcome = Literal["stopped", "errored", "unread", "completed", "invalid", "valid"]
+type Outcome = Literal[
+    "stopped", "errored", "unread", "completed", "invalid", "valid", "salvaged"
+]
 
 
 def outcome(skeleton: Skeleton, item: RunItem) -> tuple[Outcome, str | None]:
@@ -18,6 +22,8 @@ def outcome(skeleton: Skeleton, item: RunItem) -> tuple[Outcome, str | None]:
         if last.error is not None:
             return "errored", last.error
         return "unread", answer.problem
+    if answer.salvaged:
+        return "salvaged", answer.problem or last.error
     if skeleton.output_schema is None:
         return "completed", last.error
     if answer.problem is not None:
@@ -26,13 +32,28 @@ def outcome(skeleton: Skeleton, item: RunItem) -> tuple[Outcome, str | None]:
 
 
 def usage(item: RunItem) -> tuple[int, int]:
-    used = [
-        u
-        for call in item.calls
-        if call.response is not None
-        and isinstance(u := call.response.get("usage"), dict)
-    ]
-    return (
-        sum(n for u in used if isinstance(n := u.get("prompt_tokens"), int)),
-        sum(n for u in used if isinstance(n := u.get("completion_tokens"), int)),
-    )
+    spent = [used(call) for call in item.calls]
+    return sum(p for p, _ in spent), sum(c for _, c in spent)
+
+
+def used(call: Call) -> tuple[int, int]:
+    response = call.response or {}
+    match response.get("usage"):
+        case dict() as given:
+            prompt = given.get("prompt_tokens")
+            completion = given.get("completion_tokens")
+            return (
+                prompt if isinstance(prompt, int) else 0,
+                completion if isinstance(completion, int) else 0,
+            )
+        case _:
+            return 0, _streamed(response)
+
+
+# A stream cut short ends before its usage, but its choice holds the token ids it streamed.
+def _streamed(response: dict[str, JsonValue]) -> int:
+    match response.get("choices"):
+        case [{"token_ids": list() as ids}, *_]:
+            return len(ids)
+        case _:
+            return 0

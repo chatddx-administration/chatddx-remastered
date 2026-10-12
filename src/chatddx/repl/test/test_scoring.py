@@ -11,7 +11,7 @@ from chatddx.repl.test.helpers import Say, cells, line_of, pattern, tagged
 from chatddx.store import Catalog, People, Store
 from chatddx.test.world import LINES, QWEN
 
-pytestmark = pytest.mark.wip
+pytestmark = pytest.mark.solidified
 
 
 # A new version of the expectation the person reads for a case, from their own thread.
@@ -47,7 +47,7 @@ def test_score_scores_the_runs_a_changed_expectation_leaves_and_sums_them_up(
 
     assert written.count(f": {LINES} × {QWEN} × noted") == 2
     assert [row[:2] for row in cells(written)].count(["differential", "1"]) == 2
-    assert ["lines", "text", "2", "0", "0"] in cells(written)
+    assert ["lines", "text", "2", "@0", "0"] in cells(written)
     assert ["differential", "2", "1", "0"] in cells(written)
     assert "nothing to score" in say("score")
 

@@ -9,7 +9,7 @@ from chatddx.bench import KINDS, OPTIONAL, PARTS, Bench, TriedVariation
 from chatddx.catalog import made_for
 from chatddx.factors.base import Finding
 
-from .render import REFUSED, finding
+from .render import REFUSED, counted, finding
 
 NONE = "none"
 
@@ -21,21 +21,32 @@ def drawn_seed() -> int:
     return secrets.randbelow(SEEDS)
 
 
+# Names, vignettes and answers may hold brackets, which rich would read as markup.
+def console(record: bool = False, width: int | None = None) -> Console:
+    return Console(markup=False, record=record, width=width)
+
+
 @dataclass(frozen=True)
 class Cell:
     variation: TriedVariation | None = None
     endpoint: str | None = None
     engine: str | None = None
+    name: str | None = None
 
-    def trying(self, variation: TriedVariation) -> "Cell":
-        return replace(self, variation=variation)
+    def trying(self, variation: TriedVariation, name: str | None = None) -> "Cell":
+        return replace(self, variation=variation, name=name or self.name)
+
+    def holding(self, name: str) -> "Cell":
+        return replace(self, variation=None, name=name)
 
     def on(self, endpoint: str, engine: str) -> "Cell":
         return replace(self, endpoint=endpoint, engine=engine)
 
     @property
     def label(self) -> str:
-        return "" if self.variation is None else self.variation.label
+        if self.variation is None:
+            return self.name or ""
+        return self.variation.label
 
 
 class Repl:
@@ -44,13 +55,14 @@ class Repl:
         self.console: Console = console
         self.cell: Cell = Cell()
         self.seed: int = drawn_seed() if seed is None else seed
+        self.failed: bool = False
         self._completions: dict[str, list[str]] | None = None
 
     @property
     def prompt(self) -> str:
         cell = self.cell
         endpoint = f"×{cell.endpoint}" if cell.endpoint else ""
-        held = f" {cell.label}{endpoint}" if cell.variation or cell.endpoint else ""
+        held = f" {cell.label}{endpoint}" if cell.label or cell.endpoint else ""
         return f"{self.bench.person.login}{held} #{self.seed}> "
 
     def completions(self) -> dict[str, list[str]]:
@@ -66,10 +78,10 @@ class Repl:
         bench = self.bench
         names = {word: self._per_model(bench.names(word)) for word in KINDS}
         for part in OPTIONAL:
-            names[part] = [*names[part], NONE]
+            names[f"set:{part}"] = [*names[part], NONE]
         names |= {
             "endpoint": sorted(bench.inventory.endpoints),
-            "case": [f.name for f in bench.families()],
+            "case": [*(f.name for f in bench.families()), *bench.case_titles()],
             "tag": bench.tags(),
             "part": [*PARTS],
             "kind": ["tag", "case", "endpoint", *KINDS],
@@ -82,8 +94,20 @@ class Repl:
 
     def _per_model(self, names: list[str]) -> list[str]:
         models = self.bench.facts.models
-        alone = {made[0] for name in names if (made := made_for(name, models))}
-        return sorted({*names, *alone})
+        found: set[str] = set()
+        languages: dict[str, set[str | None]] = {}
+        for name in names:
+            made = made_for(name, models)
+            if made is None or made[2] is None:
+                found.add(name)
+            else:
+                languages.setdefault(made[0], set()).add(made[1])
+        for base, held in languages.items():
+            if len(held) == 1:
+                found.add(base)
+            else:
+                found |= {f"{base} {language}" for language in held if language}
+        return sorted(found)
 
     def say_cell(self) -> None:
         configuration = self.cell.label or "?"
@@ -98,9 +122,10 @@ class Repl:
                 self.bench.findings(cell.variation, cell.engine, self.seed)
             )
 
-    def say_findings(self, findings: Iterable[Finding]) -> None:
-        for f in findings:
-            self.console.print(finding(f))
+    def say_findings(self, findings: Iterable[Finding], tally: bool = False) -> None:
+        for f, times in counted(findings) if tally else ((f, 1) for f in findings):
+            self.console.print(finding(f, times))
 
     def error(self, message: str) -> None:
+        self.failed = True
         self.console.print(Text(message, style=REFUSED))

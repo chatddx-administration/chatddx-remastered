@@ -16,8 +16,8 @@ class Command:
     params: tuple[str, ...]
     text: str
     run: Callable[..., None] | None
-    # The param that takes the words left over, as one name: names may hold spaces.
     rest: int | None = None
+    grouped: Callable[[list[str]], list[str]] | None = None
 
     @property
     def repeats(self) -> bool:
@@ -33,7 +33,11 @@ def help_(repl: Repl) -> None:
 
 COMMANDS: dict[str, Command] = {
     "configurations": Command(
-        (), "list the configurations you can use", listing.configurations
+        ("[NAME]",),
+        "list the configurations you can use, a row per name and language; NAME's "
+        + "per model",
+        listing.configurations,
+        rest=0,
     ),
     "endpoints": Command(
         (), "list the World's endpoints, and the engine each serves", listing.endpoints
@@ -68,8 +72,10 @@ COMMANDS: dict[str, Command] = {
     ),
     "run": Command(
         ("CASE", "[SEED]"),
-        "run a case on the cell, with SEED or the seed the repl holds, and score it",
+        "run a case on the cell, with SEED or the seed the repl holds, and score it; "
+        + "a case that sends appendices is FAMILY with APPENDIX, ...",
         running.run,
+        grouped=running.case_and_seed,
     ),
     "batch": Command(
         ("TAG...",),
@@ -144,16 +150,16 @@ def handle(repl: Repl, line: str) -> bool:
         repl.error(f"no command '{verb}': try help")
         return True
 
-    if command.run is None:
-        return False
-
-    args = _joined(command, args)
+    args = command.grouped(args) if command.grouped else _joined(command, args)
     required = [param for param in command.params if not param.startswith("[")]
     most = len(args) if command.repeats else len(command.params)
 
     if not len(required) <= len(args) <= most:
         repl.error(f"usage: {' '.join((verb, *command.params))}")
         return True
+
+    if command.run is None:
+        return False
 
     try:
         command.run(repl, *args)
@@ -223,8 +229,13 @@ def complete(names: Mapping[str, list[str]], line: str) -> list[str]:
                 if position == 0 and "from".startswith(words[-1])
                 else found
             )
+        case "run":
+            return _next_words(names.get("case", []), words)
+        case "configurations":
+            return _next_words(names.get("configuration", []), words)
         case "set" if position >= 1:
-            return _next_words(names.get(words[0], []), words[1:])
+            held = names.get(f"set:{words[0]}", names.get(words[0], []))
+            return _next_words(held, words[1:])
         case _ if command is not None and command.rest is not None:
             if position < command.rest:
                 return _next_words(names.get(params[position].lower(), []), words[-1:])
@@ -236,6 +247,16 @@ def complete(names: Mapping[str, list[str]], line: str) -> list[str]:
             ):
                 found += _next_words(names.get(params[after].lower(), []), name[-1:])
             return found
+        case _ if (
+            command is not None and command.repeats and position >= len(params) - 1
+        ):
+            given = words[len(params) - 1 : -1]
+            key = command.params[-1].strip("[].").lower()
+            return [
+                name
+                for name in names.get(key, [])
+                if name.startswith(words[-1]) and name not in given
+            ]
         case _ if position < len(params):
             key = params[position].strip("[].").lower()
             held = names.get(f"{verb}:{key}", names.get(key, []))

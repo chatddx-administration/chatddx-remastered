@@ -4,7 +4,6 @@ from rich.table import Table
 from rich.text import Text
 
 from chatddx.bench import Family, Graded
-from chatddx.factors.select import reaches
 from chatddx.ledger import RunStarted
 
 from .render import (
@@ -13,13 +12,15 @@ from .render import (
     REFUSED,
     VALID,
     plural,
+    scored_findings,
+    show_judged,
     show_scores,
     show_summary,
     show_table,
     some,
 )
 from .reviewing import said
-from .running import held
+from .running import SCORING, Held
 from .shell import Repl
 
 
@@ -32,12 +33,15 @@ def score(repl: Repl, prefix: str | None = None) -> None:
             repl.console.print("nothing to score", style=LABEL)
             return
         made: list[Graded] = []
-        for started, unscored in outstanding:
-            said(repl, started)
-            with held():
-                graded = bench.score(started, unscored)
-            _scored(repl, started, graded)
-            made += graded
+        with Held(repl.console, SCORING) as held:
+            for started, unscored in outstanding:
+                said(repl, started)
+                graded = held.scored(bench, started, unscored)
+                _scored(repl, started, graded)
+                made += graded
+                if held.stopped:
+                    break
+        held.said()
         show_summary(repl.console, made)
         return
 
@@ -47,9 +51,10 @@ def score(repl: Repl, prefix: str | None = None) -> None:
     if not bench.store.finished([started.run]):
         repl.console.print("unfinished: nothing to score", style=LABEL)
     elif unscored := bench.unscored(started):
-        with held():
-            graded = bench.score(started, unscored)
+        with Held(repl.console, SCORING) as held:
+            graded = held.scored(bench, started, unscored)
         _scored(repl, started, graded)
+        held.said()
     elif not bench.scorers_for(started):
         repl.console.print("no scorer applies to it", style=LABEL)
     else:
@@ -61,9 +66,11 @@ def _scored(repl: Repl, started: RunStarted, graded: list[Graded]) -> None:
     items = repl.bench.store.run(started.run).items
     if len(items) == 1:
         show_scores(repl.console, graded)
+        show_judged(repl.console, repl.bench, graded)
     else:
         names = {item.key.case: repl.bench.title(item.key.case) for item in items}
         show_table(repl.console, names, list(items), graded)
+    repl.say_findings(scored_findings(graded), tally=True)
 
 
 def scorers(repl: Repl) -> None:
@@ -81,10 +88,12 @@ def scorers(repl: Repl) -> None:
             reads = view.output or "the whole answer"
             if view.split is not None:
                 reads += f", {view.split}"
-            metric = view.metric if view.judge is None else f"{view.metric}, judged"
+            metric = view.metric
+            if view.judge is not None:
+                metric += f", judged by {bench.title(view.judge)}"
             if variation is None:
                 offered = Text("—", style=LABEL)
-            elif reaches(schema, view.output):
+            elif view.offered_by(schema):
                 offered = Text("offers it", style=VALID)
             else:
                 offered = Text("doesn't offer it", style=REFUSED)

@@ -1,8 +1,3 @@
-# The sample's texts in Swedish, in factors.toml's format: the instructions and the example of `free-text-guided`,
-# written in Swedish as cases are, and translations of every text of texts-en.toml's outputs and toolset, which
-# compilation passes through them, the schemas' titles and descriptions and the tool's description included.
-# Translated by an agent from texts-en.toml, and not yet reviewed by a clinician or a translator.
-
 [instructions.clinician]
 text = [
   "Du bistår en läkare på en akutmottagning. Läs fallet och ge din bedömning.",
@@ -26,7 +21,6 @@ description = "The sample's outputs and toolset in Swedish."
 "Give your answer by calling this tool, with the answer as its arguments." = "Ge ditt svar genom att anropa det här verktyget, med svaret som argument."
 "You have access to a web_search tool. Use it whenever you need current facts, documentation, or anything you're not confident about from memory, instead of guessing." = "Du har tillgång till verktyget web_search. Använd det när du behöver aktuella fakta, dokumentation eller något du inte är säker på utifrån minnet, i stället för att gissa."
 "Search the web for up-to-date information" = "Sök på webben efter aktuell information"
-# schemas/management_plan_v1.json
 "management_plan_v1" = "handläggningsplan_v1"
 "IndividualDiagnosis" = "EnskildDiagnos"
 "Diagnosis" = "Diagnos"
@@ -60,6 +54,14 @@ description = "The sample's outputs and toolset in Swedish."
 "Prioritized differential diagnoses ranked by probability. Include critical rules even if low probability." = "Differentialdiagnoser rangordnade efter sannolikhet. Ta med kritiska diagnoser att utesluta även om sannolikheten är låg."
 "Medical Sources" = "Medicinska källor"
 "List of peer-reviewed guidelines or reference tools utilized (e.g. 'UpToDate', 'NICE guidelines')." = "Lista över granskade riktlinjer eller referensverktyg som använts (t.ex. 'UpToDate', 'NICE-riktlinjer')."
-# schemas/diagnoses.json
 "diagnoses" = "diagnoser"
 "The commonly used name of the diagnosis." = "Diagnosens vedertagna namn."
+"Say whether the answer meets the note: whether it reaches the same reading of the case and would lead to the same essential actions. Wording, order and extra detail don't matter; missing what the note calls for, or advice that would harm the patient, does. Give your reason in one or two sentences." = "Säg om svaret motsvarar anteckningen: om det kommer fram till samma bedömning av fallet och skulle leda till samma väsentliga åtgärder. Ordval, ordning och extra detaljer spelar ingen roll; att missa det anteckningen kräver, eller råd som skulle skada patienten, gör det. Motivera med en eller två meningar."
+"Grade how well the answer meets the note, from 0 to 2: 2 when it reaches the same reading of the case and the same essential actions, 1 when it gets part of the way, 0 when it misses it or would mislead. Give your reason in one or two sentences." = "Betygsätt hur väl svaret motsvarar anteckningen, från 0 till 2: 2 när det kommer fram till samma bedömning av fallet och samma väsentliga åtgärder, 1 när det når en del av vägen, 0 när det missar eller skulle vilseleda. Motivera med en eller två meningar."
+"Verdict" = "Utlåtande"
+"Whether an answer meets a clinician's note on the case, and why." = "Om ett svar motsvarar en klinikers anteckning om fallet, och varför."
+"Whether the answer meets the note." = "Om svaret motsvarar anteckningen."
+"Why, in one or two sentences." = "Varför, med en eller två meningar."
+"Grade" = "Betyg"
+"How well an answer meets a clinician's note on the case, and why." = "Hur väl ett svar motsvarar en klinikers anteckning om fallet, och varför."
+"How well the answer meets the note, from 0 (not at all) to 2 (fully)." = "Hur väl svaret motsvarar anteckningen, från 0 (inte alls) till 2 (helt)."

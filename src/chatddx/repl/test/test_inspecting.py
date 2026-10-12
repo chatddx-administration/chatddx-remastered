@@ -17,7 +17,7 @@ from chatddx.test.world import (
     TEST,
 )
 
-pytestmark = pytest.mark.wip
+pytestmark = pytest.mark.solidified
 
 INTENTS = [
     "default",
@@ -202,14 +202,19 @@ def test_show_writes_what_is_json_as_json(say: Say):
     assert '"additionalProperties": false' in written
     assert "chatddx.runner.test.tools:lookup" in line_of(written, "entry_point")
 
+    written = say("show scorer judged")
+
+    assert '"judge": "verdict"' in written and '"judge": "graded"' in written
+    assert "sha256:" not in written
+
 
 def test_show_says_what_it_can_t_show(say: Say):
     assert "no kind 'frobnicate'" in say("show frobnicate")
-    assert "a case isn't in the cell: show case NAME" in say("show case")
+    assert "no case in the cell: show case NAME" in say("show case")
     assert "no case 'nope' for alice" in say("show case nope")
     assert "the cell has no configuration: show output NAME" in say("show output")
     assert "the cell has no endpoint: show engine NAME" in say("show engine")
-    assert "a scorer isn't in the cell: show scorer NAME" in say("show scorer")
+    assert "no scorer in the cell: show scorer NAME" in say("show scorer")
     assert "the cell has no reasoning" in say(f"cell {LINES} {QWEN}", "show reasoning")
 
 
@@ -243,9 +248,26 @@ def test_scorers_say_whether_the_cell_s_output_offers_each_view(say: Say):
 
     assert "reciprocal_rank" in row(written, "answer")
     assert "$.diagnoses[?@.critical == true].diagnosis" in written
+    assert "verdict, judged by verdict" in row(written, "note-comment")
+    assert "points, judged by graded" in row(written, "note-graded")
 
     written = say(f"cell {LINES} {QWEN}", "scorers")
 
     assert "doesn't offer it" in row(written, "answer")
     assert "offers it" in row(written, "lines")
     assert "the whole answer, lines@1" in written
+
+
+def test_show_case_lists_a_family_s_appendices_and_the_cases_that_send_them(say: Say):
+    written = say("show case whitespace")
+
+    assert "labs" in line_of(written, "appendices")
+    assert "whitespace with labs  its own expectation" in line_of(written, "cases")
+
+    written = say("show case whitespace with labs")
+
+    assert written.startswith("case whitespace with labs")
+    assert "CRP 180 mg/L, leukocytes 16." in line_of(written, "appendix labs")
+    assert "appendicitis & perforat*" in written
+    assert "cases" not in written.split("expectation")[0]
+    assert "no runs of yours with this case" in written

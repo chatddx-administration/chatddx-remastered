@@ -111,6 +111,7 @@ class Served:
     system_fingerprint: str | None
     host: str
     port: int
+    api_keys: tuple[str, ...] = ()
 
     @classmethod
     def of(cls, model: str, argv: Sequence[str] = ()) -> "Served":
@@ -120,6 +121,9 @@ class Served:
         if auto_tools and tool_parser is None:
             raise Refused("invalid tool call parser: None")
         context = CONTEXT.get(model, DEFAULT_CONTEXT)
+        keys = options.get("--api-key")
+        if keys == []:
+            raise Refused("--api-key takes a key or more")
         return cls(
             model=model,
             names=tuple(options.get("--served-model-name") or [model]),
@@ -132,6 +136,7 @@ class Served:
             system_fingerprint=_fingerprint(options, model, argv),
             host=_one(options, "--host") or "127.0.0.1",
             port=_int(options, "--port", 12099),
+            api_keys=tuple(keys or ()),
         )
 
     @property

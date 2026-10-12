@@ -8,7 +8,7 @@ from chatddx.catalog import Entry, EntryField, Subject
 from chatddx.cli import main
 from chatddx.conftest import connect
 from chatddx.curation import init
-from chatddx.curation.test.cases import CASES, vignettes
+from chatddx.curation.test.cases import CASES, appended, vignettes
 from chatddx.inventory.test.memory import MemorySource
 from chatddx.store import Catalog, People
 from chatddx.store.store import Connection
@@ -52,10 +52,11 @@ def test_init_data_loads_the_archive(conn: Connection) -> None:
     alice = People(conn).add("alice", "Alice")
     plan = world_plan()
     lines = init(conn, plan, CASES, vignettes(), alice)
-    threads = len(plan.records) + len(CASES)
+    appendices, ordered, expected = appended(CASES)
+    threads = len(plan.records) + len(CASES) + appendices + expected
     assert tally(lines) == Counter(
         {
-            "archive created": threads + len(CASES),
+            "archive created": threads + len(CASES) + ordered,
             "skipped": len(plan.skipped),
             "share": 1,
             "lint": len(LINTS) + 1,
@@ -66,7 +67,9 @@ def test_init_data_loads_the_archive(conn: Connection) -> None:
         lines[-len(LINTS) - 2]
         == f"[share] {shared} of {shared} archive threads and families with alice"
     )
-    components = len({r.digest for r in plan.records}) + 2 * len(CASES)
+    components = (
+        len({r.digest for r in plan.records}) + 2 * len(CASES) + sum(appended(CASES))
+    )
     assert lines[-len(LINTS) - 1 :] == [
         *LINTS,
         f"[lint] {len(LINTS)} findings in {components} components",
@@ -119,7 +122,9 @@ def test_init_data_loads_the_archive(conn: Connection) -> None:
         "archive validated",
         "archive not",
     }
-    assert tally(again)["archive not"] == 2 * (len(CASES) - len(some))
+    left = {id: case for id, case in CASES.items() if id not in some}
+    appendices, _, expected = appended(left)
+    assert tally(again)["archive not"] == 2 * len(left) + appendices + expected
     assert "[archive case] matched: not in the data" in again
     assert again[-len(LINTS) - 2].startswith("[share] 0 of ")
     assert not [line for line in again if line.endswith(LANGUAGES)]
@@ -131,7 +136,9 @@ def test_init_data_lints_what_it_lands(conn: Connection) -> None:
     plan = world_plan()
     unlike = replace(CASES["noted"], targets={"warning": {"pattern": "shock"}})
     lines = init(conn, plan, {**CASES, "noted": unlike}, vignettes(), alice)
-    components = len({r.digest for r in plan.records}) + 2 * len(CASES)
+    components = (
+        len({r.digest for r in plan.records}) + 2 * len(CASES) + sum(appended(CASES))
+    )
     assert [line for line in lines if line.startswith("[lint")] == [
         *FACTOR_LINTS,
         "[lint warning] expectation noted: expectation.invalid: at the root: "

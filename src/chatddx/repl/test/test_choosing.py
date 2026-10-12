@@ -14,13 +14,15 @@ from chatddx.test.world import (
     GPT_OSS,
     GPT_OSS_MODEL,
     LINES,
+    MISTRAL,
     MISTRAL_MODEL,
     NATIVE,
     NATIVE_TOOLS,
     QWEN,
+    QWEN_MODEL,
 )
 
-pytestmark = pytest.mark.wip
+pytestmark = pytest.mark.solidified
 
 
 @pytest.fixture
@@ -58,18 +60,44 @@ def alice_s(conn: Connection) -> int:
 def test_a_per_model_configuration_is_picked_by_the_endpoint(repl: Repl, say: Say):
     written = say("use native")
 
-    assert (
-        f"no configuration 'native' for alice; per model: {NATIVE}, "
-        + f"native (en, {GPT_OSS_MODEL}), native (en, {MISTRAL_MODEL}), "
-        + "picked by the endpoint in the cell"
-    ) in written
-    assert repl.cell.variation is None
+    assert "native is made per model: on ENDPOINT picks its variant" in written
+    assert repl.cell.variation is None and repl.prompt == "alice native #7> "
 
-    _ = say(f"on {QWEN}", "use native")
+    written = say(f"on {QWEN}")
+    assert f"native on {QWEN_MODEL}: {NATIVE}" in written
     assert tried(repl).name == NATIVE
 
     _ = say(f"cell native {GPT_OSS}")
     assert tried(repl).name == f"native (en, {GPT_OSS_MODEL})"
+
+
+def test_on_picks_the_cell_s_configuration_for_its_model_with_what_was_set(
+    repl: Repl, say: Say
+):
+    _ = say(f"cell native {QWEN}", "set reasoning off")
+
+    written = say(f"on {MISTRAL}")
+    assert f"native on {MISTRAL_MODEL}: native (en, {MISTRAL_MODEL})+reasoning=off" in (
+        written
+    )
+    assert tried(repl).held("reasoning") is not None
+
+    written = say(f"on {GPT_OSS}")
+    assert "no reasoning 'off' for alice; per model:" in written
+    assert f"the cell keeps native (en, {MISTRAL_MODEL})+reasoning=off" in written
+    assert repl.prompt.startswith(f"alice native (en, {MISTRAL_MODEL})+reasoning=off×")
+
+    _ = say(f"use {NATIVE}", f"on {GPT_OSS}")
+    assert tried(repl).name == NATIVE
+
+
+def test_a_configuration_made_in_several_languages_is_named_with_its_language(
+    repl: Repl, say: Say
+):
+    written = say("use lines-guided sv", f"on {QWEN}")
+
+    assert "lines-guided sv is made per model" not in written
+    assert tried(repl).name == "lines-guided (sv)"
 
 
 def test_set_puts_another_chunk_in_the_cell(repl: Repl, bench: Bench, say: Say):
@@ -214,7 +242,7 @@ def test_another_s_configuration_isn_t_found_where_it_isn_t_shared(
 
 
 def test_the_cell_warns_when_its_configuration_was_made_for_another_model(say: Say):
-    written = say(f"cell native {QWEN}")
+    written = say(f"cell {NATIVE} {QWEN}")
 
     assert "facts.sampling_unmatched" not in written
 

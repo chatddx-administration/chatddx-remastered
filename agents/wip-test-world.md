@@ -1,6 +1,6 @@
 # The test World: work in progress
 
-The tests run on the sample today: its data set (`src/chatddx/data/sample/`) and its World (`worlds/sample/`). The
+The tests run on the sample today: its data set (`worlds/sample/_data/`) and its World (`worlds/sample/`). The
 sample is live data with work queued on it (`agents/wip-sample-data.md`: the real engines, judges from Olof's notes,
 maybe revised targets, sample runs), and it exercises only part of what a data set and a World can say. This file
 plans a World built for the tests, `worlds/test/`, and moving every test onto it but the sample's own.
@@ -59,6 +59,10 @@ vignettes, and other Worlds may copy that, so the name sets a precedent:
 
 Loading it stays explicit: `chatddx init-data alice --world worlds/test --data worlds/test/_data`. Its one directory
 source is the default `--source`.
+
+Since the sample's data set moved to `worlds/sample/_data/` (`agents/wip-sample-data.md`, "A complete example"), init-data
+takes a World's `_data/` when `--data` names none, a take, so `--data` can be left out here too; the test World still
+loads only under pytest.
 
 ## Principles
 1. **Every record is read by a test.** The table under "What it exercises" names, for each record, the test that
@@ -173,6 +177,9 @@ Other records:
 - **Expectation schema**: `targets`, the sample's kinds (diagnosis, warning or false, disposition, dont_miss,
   notes), requiring `diagnosis`, with no other properties allowed.
 - **Tags** on recipes: `structured`, `text`, `tools`, `reasoning` and `judge`.
+- **A canary set**, `probe`: one seeded probe, read by `curation/test/test_tables.py`.
+- **An appendix and a case that sends it**: `whitespace`'s `labs`, and `whitespace with labs`, held to targets of its
+  own; read by `curation/test/test_tables.py`, and counted by the curation tests that count what a load lands.
 - **Scorers**, one per output shape, as the sample has them:
   - `answer`: differential, warning, disposition, and dont-miss over the diagnoses marked critical;
   - `list`: differential and dont-miss;

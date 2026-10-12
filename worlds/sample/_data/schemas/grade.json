@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Grade",
+  "description": "How well an answer meets a clinician's note on the case, and why.",
+  "type": "object",
+  "required": ["points", "why"],
+  "additionalProperties": false,
+  "properties": {
+    "points": {
+      "description": "How well the answer meets the note, from 0 (not at all) to 2 (fully).",
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 2,
+      "examples": [2, 1, 0]
+    },
+    "why": {
+      "description": "Why, in one or two sentences.",
+      "type": "string",
+      "minLength": 1,
+      "examples": [
+        "It reaches the note's reading of the case and its essential actions.",
+        "It gets the reading right but leaves out an action the note calls for.",
+        "It misses what the note leads with."
+      ]
+    }
+  }
+}

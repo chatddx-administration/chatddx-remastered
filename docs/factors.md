@@ -574,15 +574,17 @@ versioned.
 
 The answer is read from the item's last response by the skeleton's contract: a native answer is the content as JSON, a
 tool answer the answer function's arguments, and a text answer the content, or, when the output has a schema, the JSON
-in it. An answer that can't be read is no answer.
+in it. A native or tool answer cut short is salvaged: read with what it holds up to its last complete value, a string
+it stopped in closed, and its structure closed; JSON that breaks before its end isn't salvaged. An answer that can't
+be read is no answer.
 
 Only shipped code runs.
 
 ### View
 A view scores one part of an output against one part of an expectation. It holds:
-- a selector into the output and one into the expectation (the whole document by default);
-- optionally, how to split what the output selector picks;
-- a metric that only the scorer's code interprets, with optional parameters;
+- a selector into the output and one into the expectation
+- optionally, how to split what the output selector picks
+- a metric that only the scorer's code interprets, with optional parameters
 - optionally, the judge it uses. The view's selections are then what the judge sees (see "Judge").
 
 Selectors are written in standard notations: a JSON Pointer, which picks at most one value, or a JSONPath query from a

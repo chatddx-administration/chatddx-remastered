@@ -25,7 +25,9 @@ def made_for(
             return None
 
 
-def variants_for(name: str, names: Iterable[str], model: str | None) -> list[str]:
+def variants_for(
+    name: str, names: Iterable[str], model: str | None, language: str | None = None
+) -> list[str]:
     models = [] if model is None else [model]
     return sorted(
         n
@@ -33,4 +35,13 @@ def variants_for(name: str, names: Iterable[str], model: str | None) -> list[str
         if (made := made_for(n, models)) is not None
         and made[0] == name
         and made[2] in (None, model)
+        and language in (None, made[1])
     )
+
+
+def language_of(name: str) -> tuple[str, str | None]:
+    made = made_for(name, ())
+    if made is not None and made[1] is not None:
+        return made[0], made[1]
+    base, _, last = name.rpartition(" ")
+    return (base, last) if base and LANGUAGE.match(last) else (name, None)

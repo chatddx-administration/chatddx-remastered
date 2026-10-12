@@ -1,0 +1,25 @@
+[model."mistralai/Mistral-Small-3.2-24B-Instruct-2506"]
+family = "mistral"
+parameters_b = 24
+context_length = 131072
+licence = "apache-2.0"
+
+[model."mistralai/Mistral-Small-3.2-24B-Instruct-2506".reasoning]
+default = "off"
+off = {}
+on = { refused = "Mistral Small 3.2 doesn't reason" }
+minimal = "on"
+low = "on"
+medium = "on"
+high = "on"
+xhigh = "on"
+budget = { refused = "Mistral Small 3.2 doesn't reason" }
+
+[model."mistralai/Mistral-Small-3.2-24B-Instruct-2506".sampling.recommended]
+off = { temperature = 0.15 }
+
+[model."mistralai/Mistral-Small-3.2-24B-Instruct-2506".output]
+default = "native"
+native = {}
+tool = {}
+text = {}

@@ -10,6 +10,7 @@ from chatddx.factors.request import Skeleton
 from chatddx.factors.trial import Trial
 from chatddx.ledger import Run, RunItem, RunStarted
 from chatddx.scorers.aggregate import mean
+from chatddx.scorers.shipped import unit_of
 
 from .render import (
     LABEL,
@@ -19,7 +20,9 @@ from .render import (
     Transcript,
     clipped_line,
     outcome,
+    scored_findings,
     show_answer,
+    show_judged,
     show_scores,
     show_summary,
     show_table,
@@ -84,8 +87,11 @@ def replay(repl: Repl, prefix: str | None = None) -> None:
         )
 
     for key, why in differ.items():
-        repl.error(
-            f"{bench.title(key.case)}: rendered again, the request differs: {why}"
+        repl.console.print(
+            Text(
+                f"{bench.title(key.case)}: rendered again, the request differs: {why}",
+                style=REFUSED,
+            )
         )
 
     skeleton = _skeleton(repl, started)
@@ -96,12 +102,15 @@ def replay(repl: Repl, prefix: str | None = None) -> None:
         Transcript(repl.console).item(item)
         show_answer(repl.console, skeleton, item, graded)
         show_scores(repl.console, graded)
+        show_judged(repl.console, repl.bench, graded)
+        repl.say_findings(scored_findings(graded, read=True))
         return
 
     _lines(repl, skeleton, run.items)
     names = {item.key.case: bench.title(item.key.case) for item in run.items}
     show_table(repl.console, names, list(run.items), graded)
     show_summary(repl.console, graded)
+    repl.say_findings(scored_findings(graded), tally=True)
 
 
 def said(repl: Repl, started: RunStarted) -> None:
@@ -128,7 +137,7 @@ def _lines(repl: Repl, skeleton: Skeleton, items: tuple[RunItem, ...]) -> None:
     header = f"{'case':<{width}}  {'tokens':>{TOKENS}}  outcome"
     repl.console.print(Text(header, style="bold"))
 
-    for item in items:
+    for item in sorted(items, key=lambda i: (names[i.key.case], i.key.replicate)):
         word, style, why = outcome(skeleton, item)
         line = Text(f"{names[item.key.case]:<{width}}  {usage(item)[1]:>{TOKENS}}")
         _ = line.append(f"  {word}", style=style)
@@ -164,5 +173,7 @@ def _means(graded: Graded) -> str:
         values = [
             s.value for s in graded.score.items if s.view == i and s.value is not None
         ]
-        means.append(value_of(mean(values)) if values else "—")
+        means.append(
+            value_of(mean(values), unit_of(graded.scorer, i)) if values else "—"
+        )
     return f"{graded.name} {'/'.join(means)}"

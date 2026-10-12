@@ -5,7 +5,7 @@ from dataclasses import dataclass
 
 from pydantic import JsonValue
 
-from .scorer import Metric, MetricFunction, Scored, Verdicts
+from .scorer import NO_ANSWER, NO_TARGET, Metric, MetricFunction, Scored, Verdicts
 
 _TOKEN = re.compile(r"\(|\)|&|\||[^\s&|()]+")
 _WORD = re.compile(r"\w+")
@@ -123,7 +123,7 @@ def _units(text: str) -> Iterator[tuple[int, str]]:
 
 def reciprocal_rank(items: list[str] | None, target: str) -> Scored:
     if items is None:
-        return Scored(0.0, {"reason": "no answer"})
+        return Scored(None, NO_ANSWER)
     pattern = Pattern(target)
     for rank, item in enumerate(items, 1):
         if pattern.find(item) is not None:
@@ -133,7 +133,7 @@ def reciprocal_rank(items: list[str] | None, target: str) -> Scored:
 
 def first_mention(items: list[str] | None, target: str) -> Scored:
     if items is None:
-        return Scored(None, {"reason": "no answer"})
+        return Scored(None, NO_ANSWER)
     pattern = Pattern(target)
     for item in items:
         for start, unit in _units(item):
@@ -145,7 +145,7 @@ def first_mention(items: list[str] | None, target: str) -> Scored:
 
 def mentions(items: list[str] | None, target: str | None) -> Scored:
     if items is None:
-        return Scored(0.0, {"reason": "no answer"})
+        return Scored(None, NO_ANSWER)
     if target is None:
         if items:
             return Scored(0.0, {"answer": items[0], "reason": "none expected"})
@@ -169,7 +169,7 @@ def _texts(output: list[JsonValue] | None) -> list[str] | None:
 
 def _target(expected: list[JsonValue]) -> str | None | Scored:
     if not expected:
-        return Scored(None, {"reason": "no target"})
+        return Scored(None, NO_TARGET)
     if len(expected) > 1:
         return Scored(None, {"reason": f"{len(expected)} targets, not one"})
     match expected[0]:
@@ -224,17 +224,18 @@ def _mentions(
 METRICS: dict[str, Metric] = {
     "reciprocal_rank": Metric(
         "1 over the rank of the first item that matches the target's pattern; 0 "
-        + "when none does",
+        + "when none does, and none without an answer",
         _by_pattern(reciprocal_rank),
     ),
     "first_mention": Metric(
         "where in the text the target's pattern is first matched, in characters; "
         + "none when it never is",
         _by_pattern(first_mention),
+        unit="@",
     ),
     "mentions": Metric(
         "1 when an item matches the target's pattern, or when nothing is named "
-        + "and nothing is expected; else 0",
+        + "and nothing is expected; else 0, and none without an answer",
         _mentions,
     ),
 }

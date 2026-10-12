@@ -314,7 +314,15 @@ raised once the other calls are halted and written.
 `NO_EXPECTATION` is `{"reason": "no expectation"}`, the detail of every score item of a case the scoring has no
 expectation for.
 
-`type Event = ItemScored | Noted`, `ItemScored(item: ScoreItem)` emitted for each score item written.
+`type Event = ItemScored | JudgeAsked | Streamed | JudgeAnswered | Noted`, frozen dataclasses:
+
+| Event | Fields | When |
+| --- | --- | --- |
+| `ItemScored` | `item: ScoreItem` | Each score item written. |
+| `JudgeAsked` | `key`, `scorer`, `view`, `judge`, `seed_index` | Before a judge call is sent. |
+| `Streamed` | `key`, `delta: Delta` | A piece of the judge call under way, as the runner's. |
+| `JudgeAnswered` | `key`, `view`, `call: JudgeCall`, `verdict` | A judge call ended; `verdict` is its answer as read, or `None`. |
+| `Noted` | `finding` | A finding noted. |
 
 ### `judge_at(inventory, get, ref, cases, named=None) -> tuple[Judge, Skeleton, str]`
 The judge `ref`, its skeleton, and the endpoint its calls go to: `named`, or the one endpoint serving the judge's
@@ -380,6 +388,7 @@ codes".
 | `answer.invalid` | `Grading.send` | item key | how the answer breaks the run skeleton's `output_schema` |
 | `verdict.unread` | `Grading.send` | item key | `view <i>, seed <n>: <problem>`, with `; the call ended with: <error>` when the call has one |
 | `verdict.invalid` | `Grading.send` | item key | `view <i>, seed <n>: <problem>` |
+| `answer.salvaged` | `Grading.send` | item key | `cut short, and read with its structure closed`, with `; the call ended with: <error>` when the call has one; level `info` |
 
 ## Known gaps
 From `docs/runner.md`, "Open design issues", where they concern this API:

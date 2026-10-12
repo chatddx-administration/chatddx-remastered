@@ -35,7 +35,7 @@ from chatddx.store import Catalog, Store
 from chatddx.store.store import Connection
 
 from . import gate, send as sending
-from .run import Noted
+from .run import Noted, Streamed
 
 NO_EXPECTATION: JsonValue = {"reason": "no expectation"}
 
@@ -45,7 +45,24 @@ class ItemScored:
     item: ScoreItem
 
 
-type Event = ItemScored | Noted
+@dataclass(frozen=True)
+class JudgeAsked:
+    key: ItemKey
+    scorer: str
+    view: int
+    judge: str
+    seed_index: int
+
+
+@dataclass(frozen=True)
+class JudgeAnswered:
+    key: ItemKey
+    view: int
+    call: JudgeCall
+    verdict: JsonValue | None
+
+
+type Event = ItemScored | JudgeAsked | Streamed | JudgeAnswered | Noted
 
 
 @dataclass(frozen=True)
@@ -203,6 +220,7 @@ class Grading:
         self._judging: dict[str, _Judging] = judging
         self._trial: Trial = trial
         self._skeleton: Skeleton = resolve(loaded.get, trial.skeleton, Skeleton)
+        self._scorer_ref: str = resolve(loaded.get, started.scoring, Scoring).scorer
         self._items: list[ScoreItem] = []
         self._findings: list[Finding] = []
         self._stopping: bool = False
@@ -259,6 +277,19 @@ class Grading:
     def _grade(self, item: RunItem, emit: Callable[[Event], None]) -> bool:
         last = item.calls[-1]
         answer = read(self._skeleton, last.response)
+        if answer.salvaged:
+            message = "cut short, and read with its structure closed"
+            if last.error is not None:
+                message += f"; the call ended with: {last.error}"
+            self._note(
+                Finding(
+                    level="info",
+                    code="answer.salvaged",
+                    message=message,
+                    subject=str(item.key),
+                ),
+                emit,
+            )
         if answer.problem is not None:
             message = answer.problem
             if answer.value is None and last.error is not None:
@@ -325,6 +356,7 @@ class Grading:
         calls: list[JudgeCall] = []
         for n, seed in enumerate(judging.judge.seeds):
             body = render(judging.skeleton, model=judging.model, seed=seed, fills=fills)
+            emit(JudgeAsked(key, self._scorer_ref, index, view.judge, n))
             stopped = False
             try:
                 call = sending.send(
@@ -332,12 +364,15 @@ class Grading:
                     body,
                     execution=self._started.execution,
                     secret=judging.secret,
+                    on_delta=lambda delta: emit(Streamed(key, delta)),
                     halt=self._halt,
                 )
             except sending.Stopped as e:
                 call, stopped = e.call, True
-            calls.append(JudgeCall(judge=view.judge, seed_index=n, call=call))
+            judged = JudgeCall(judge=view.judge, seed_index=n, call=call)
+            calls.append(judged)
             verdict = read(judging.skeleton, call.response)
+            emit(JudgeAnswered(key, index, judged, verdict.value))
             if verdict.problem is not None:
                 message = f"view {index}, seed {n}: {verdict.problem}"
                 if verdict.value is None and call.error is not None:

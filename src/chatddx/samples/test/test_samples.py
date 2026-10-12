@@ -1,0 +1,98 @@
+from pathlib import Path
+
+import pytest
+
+from chatddx.bench import Bench
+from chatddx.cli import main
+from chatddx.samples import RUNS, load, ran_before, run, samples
+from chatddx.samples.test.helpers import UNFINISHED, went
+from chatddx.test.world import QWEN_MODEL as MODEL, TEST, freed
+
+pytestmark = pytest.mark.wip
+
+HELD = {s.name: s for s in samples(TEST / RUNS)}
+
+
+@pytest.mark.slow
+@pytest.mark.parametrize(
+    ("name", "outcomes"),
+    [
+        ("valid", {"matched": ("valid", None)}),
+        ("stopped", {"crlf": ("stopped", None)}),
+        ("unfinished", {"bom": ("completed", None)}),
+        (
+            "batch",
+            {
+                "crlf": ("errored", "HTTP 503: loading"),
+                "svenska": ("completed", UNFINISHED),
+            },
+        ),
+        ("judged", {"noted": ("completed", None)}),
+        ("appendix", {"whitespace with labs": ("completed", None)}),
+    ],
+)
+def test_each_sample_runs_as_its_script_answers(
+    bench: Bench, name: str, outcomes: dict[str, tuple[str, str | None]]
+) -> None:
+    sample = HELD[name]
+    started = run(bench, sample)
+
+    assert went(bench, started) == outcomes
+    finished = bench.store.run(started.run).finished is not None
+    assert finished == (not sample.unfinished)
+    assert bool(bench.scores_of(started.run)) == (finished and sample.scored)
+    assert ran_before(bench, sample) == started
+
+
+@pytest.mark.slow
+def test_a_sample_s_judges_are_served_as_plain_fakes(bench: Bench) -> None:
+    started = run(bench, HELD["judged"])
+
+    [judged] = [g for g in bench.scores_of(started.run) if g.name == "judged"]
+    assert judged.score is not None
+    called = [c.call for i in judged.score.items for c in i.judge_calls]
+    assert called and all(c.error is None for c in called)
+
+
+def test_a_sample_is_its_file_s_name_and_says_what_it_can_t_read(
+    tmp_path: Path,
+) -> None:
+    assert sorted(HELD) == sorted(p.stem for p in (TEST / RUNS).glob("*.toml"))
+    path = tmp_path / "odd.toml"
+    _ = path.write_text('description = "x"\nconfiguration = "lines"\n')
+    with pytest.raises(ValueError, match="odd.toml"):
+        _ = load(path)
+    _ = path.write_text(
+        'description = "x"\nconfiguration = "lines"\nendpoint = "e"\n'
+        + 'cases = ["c"]\n[[turn]]\nwords = 1\n'
+    )
+    with pytest.raises(ValueError, match=r"turn 1 has no \['words'\]"):
+        _ = load(path)
+
+
+@pytest.mark.slow
+def test_the_samples_command_runs_each_sample_once(
+    db: str,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    monkeypatch.setenv("DB_NAME", db)
+    world = str(freed(tmp_path))
+
+    main(["samples", "alice", "--world", world, "valid", "unfinished"])
+    first = capsys.readouterr().out.splitlines()
+    main(["samples", "alice", "--world", world, "valid"])
+    second = capsys.readouterr().out.splitlines()
+
+    assert [line.split(" × ")[0] for line in first] == [
+        f"[sample unfinished] lines (en, {MODEL})",
+        f"[sample valid] native (en, {MODEL})",
+    ]
+    assert first[0].split(": ", 1)[1].startswith("1 completed, unfinished, scored by 0")
+    assert first[1].split(": ", 1)[1].startswith("1 valid, scored by")
+    assert [line.split(", ran")[0] for line in second] == [first[1].split(", ran")[0]]
+    assert first[1].split(" as run ")[1] == second[0].split(" as run ")[1]
+    assert ", ran before as run " in second[0]
+    with pytest.raises(SystemExit, match="no sample nope"):
+        main(["samples", "alice", "--world", world, "nope"])

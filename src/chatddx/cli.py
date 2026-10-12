@@ -1,22 +1,24 @@
 import argparse
 import getpass
 import sys
+from collections import Counter
 from collections.abc import Sequence
 from pathlib import Path
 
 import psycopg
 import uvicorn
-from rich.console import Console
 
 from chatddx.api.app import app
-from chatddx.bench import Bench
+from chatddx.bench import Bench, outcome
 from chatddx.core import settings
 from chatddx.core.rig import rig
 from chatddx.curation import init, load_cases, plan_factors, repair, wipe
-from chatddx.curation.plan import SAMPLE
 from chatddx.curation.write import ARCHIVE
+from chatddx.factors.base import resolve
+from chatddx.factors.request import Skeleton
+from chatddx.factors.trial import Trial
 from chatddx.facts import BUNDLED, Facts
-from chatddx.fake_vllm.served import CLOSURE, Refused, Served
+from chatddx.fake_vllm.script import Script
 from chatddx.fake_vllm.server import run, run_all
 from chatddx.identity import Role
 from chatddx.importers.o11n import (
@@ -26,9 +28,12 @@ from chatddx.importers.o11n import (
     imported,
     read,
 )
-from chatddx.inventory import World, check, start_up
+from chatddx.inventory import World, check
+from chatddx.ledger import RunStarted
 from chatddx.repl.loop import HISTORY, loop
-from chatddx.repl.shell import Repl
+from chatddx.repl.shell import Repl, console
+from chatddx.runner.gate import Refused
+from chatddx.samples import RUNS, fake_at, ran_before, run as run_sample, samples
 from chatddx.store.migrate import TOP_TIER, migrate, pending
 from chatddx.store.people import People
 from chatddx.store.store import Store
@@ -67,6 +72,10 @@ def _person_password(args: argparse.Namespace) -> None:
     print(f"password set for {args.login}")
 
 
+# A World's data set, which the World itself doesn't read: init-data's by default.
+DATA = "_data"
+
+
 def _world(command: str, path: Path | None) -> World:
     path = path or settings.world()
     if path is None:
@@ -79,7 +88,11 @@ def _world(command: str, path: Path | None) -> World:
 
 def _init_data(args: argparse.Namespace) -> None:
     world = _world("init-data", args.world)
-    data: Path = args.data
+    data: Path = args.data or world.path / DATA
+    if not data.is_dir():
+        raise SystemExit(
+            f"init-data: {world.path} has no {DATA}/: give a data set with --data DIR"
+        )
     more = [*world.factors, *(args.factors or ())]
     try:
         facts = Facts.load(BUNDLED, *world.facts, *(args.facts or ()))
@@ -193,7 +206,58 @@ def _repl(args: argparse.Namespace) -> None:
             raise SystemExit(
                 f"no person {args.login!r}: chatddx init-data {args.login} adds them"
             )
-        loop(Repl(Bench(conn, person, world.inventory, facts), Console()), args.history)
+        bench = Bench(conn, person, world.inventory, facts)
+        if loop(Repl(bench, console()), args.history):
+            raise SystemExit(1)
+
+
+def _samples(args: argparse.Namespace) -> None:
+    world = _world("samples", args.world)
+    try:
+        held = samples(world.path / RUNS)
+        facts = Facts.load(BUNDLED, *world.facts)
+    except ValueError as e:
+        raise SystemExit(f"samples: {e}") from None
+    if unknown := sorted(set(args.sample) - {s.name for s in held}):
+        raise SystemExit(f"samples: no sample {', '.join(unknown)} in {world.path}")
+    chosen = [s for s in held if not args.sample or s.name in args.sample]
+    if not chosen:
+        raise SystemExit(f"samples: {world.path} has no {RUNS}/*.toml")
+    with psycopg.connect(settings.database(), autocommit=True) as conn:
+        person = People(conn).find(args.login)
+        if person is None:
+            raise SystemExit(
+                f"no person {args.login!r}: chatddx init-data {args.login} adds them"
+            )
+        bench = Bench(conn, person, world.inventory, facts)
+        for sample in chosen:
+            try:
+                before = None if args.again else ran_before(bench, sample)
+                started = before or run_sample(bench, sample)
+            except OSError as e:
+                raise SystemExit(
+                    f"samples: {sample.name}: {e}; the samples serve their own fakes, "
+                    + "so chatddx fake-engines must not be running"
+                ) from None
+            except (LookupError, ValueError, Refused) as e:
+                raise SystemExit(f"samples: {sample.name}: {e}") from None
+            said = "ran before as" if before else "ran as"
+            print(
+                f"[sample {sample.name}] {_ran(bench, started)}, {said} run "
+                + str(started.run)[:8]
+            )
+
+
+def _ran(bench: Bench, started: RunStarted) -> str:
+    run = bench.store.run(started.run)
+    trial = resolve(bench.get, started.trial, Trial)
+    skeleton = resolve(bench.get, trial.skeleton, Skeleton)
+    counted = Counter(outcome(skeleton, item)[0] for item in run.items)
+    went = ", ".join(f"{n} {word}" for word, n in counted.items()) or "no items"
+    if run.finished is None:
+        went += ", unfinished"
+    scored = len(bench.scores_of(started.run))
+    return f"{bench.described(started)}: {went}, scored by {scored}"
 
 
 def _api(args: argparse.Namespace) -> None:
@@ -208,27 +272,24 @@ def _api(args: argparse.Namespace) -> None:
 
 
 def _fake_vllm(args: argparse.Namespace) -> None:
-    run(args.model, args.argv, delay=args.delay, runaway=args.runaway)
+    try:
+        script = None if args.script is None else Script.load(args.script)
+    except (OSError, ValueError) as e:
+        raise SystemExit(f"fake-vllm: {e}") from None
+    run(args.model, args.argv, delay=args.delay, runaway=args.runaway, script=script)
 
 
 def _fake_engines(args: argparse.Namespace) -> None:
     world = _world("fake-engines", args.world)
-    served: list[Served] = []
     with psycopg.connect(settings.database()) as conn:
-        for name in args.endpoint or world.inventory.endpoints:
-            try:
-                startup = start_up(world.inventory, Store(conn).get, name)
-            except LookupError as e:
-                raise SystemExit(f"fake-engines: {e}") from None
-            if startup.closure != CLOSURE:
-                raise SystemExit(
-                    f"fake-engines: endpoint {name!r} runs in {startup.closure}, not the "
-                    + "fake vLLM"
-                )
-            try:
-                served.append(Served.of(startup.argv[0], startup.argv[1:]))
-            except Refused as e:
-                raise SystemExit(f"fake-engines: {name} won't start: {e}") from None
+        get = Store(conn).get
+        try:
+            served = [
+                fake_at(world.inventory, get, name)
+                for name in args.endpoint or world.inventory.endpoints
+            ]
+        except LookupError as e:
+            raise SystemExit(f"fake-engines: {e}") from None
     run_all(served, delay=args.delay, runaway=args.runaway)
 
 
@@ -287,9 +348,8 @@ def main(argv: Sequence[str] | None = None) -> None:
     _ = init.add_argument(
         "--data",
         type=Path,
-        default=SAMPLE,
         help="what to load: a directory with factors.toml and cases-<language>.toml "
-        + "(the sample data in the package)",
+        + f"(the World's {DATA}/)",
     )
     _ = init.add_argument(
         "--factors",
@@ -398,6 +458,25 @@ def main(argv: Sequence[str] | None = None) -> None:
     )
     shell.set_defaults(run=_repl)
 
+    sampled = commands.add_parser(
+        "samples",
+        help="run the World's sample runs (_runs/*.toml) for a person, each answered by "
+        + "the fake vLLM from its script, and score them",
+    )
+    _ = sampled.add_argument("login", help="whose runs they are")
+    _ = sampled.add_argument(
+        "--world", type=Path, help="the World whose samples to run (CHATDDX_WORLD)"
+    )
+    _ = sampled.add_argument(
+        "--again",
+        action="store_true",
+        help="run a sample whose trial the person has a run of already",
+    )
+    _ = sampled.add_argument(
+        "sample", nargs="*", help="the samples to run, by name (every one)"
+    )
+    sampled.set_defaults(run=_samples)
+
     api = commands.add_parser(
         "api",
         help="serve the chatddx API over HTTP, with its documentation at /api/docs",
@@ -433,6 +512,11 @@ def main(argv: Sequence[str] | None = None) -> None:
         help="go on with newlines till max_tokens or the context runs out, after a "
         + "text answer or before a document's closing brace, as gpt-oss does at times",
     )
+    _ = fake.add_argument(
+        "--script",
+        type=Path,
+        help="answer each request with the next [[turn]] of this TOML file instead",
+    )
     _ = fake.add_argument("model", help="the model, as vllm serve takes it")
     _ = fake.add_argument(
         "argv",
@@ -445,7 +529,7 @@ def main(argv: Sequence[str] | None = None) -> None:
     fakes = commands.add_parser(
         "fake-engines",
         help="serve the World's fake engines, each where its endpoint's start-up says, "
-        + "till Ctrl-C",
+        + "and stand in for its remote engines on this machine, till Ctrl-C",
     )
     _ = fakes.add_argument(
         "--world",

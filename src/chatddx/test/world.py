@@ -18,6 +18,7 @@ from chatddx.inventory import Inventory, World, start_up
 WORLDS = settings.PROJECT_ROOT / "worlds"
 TEST = WORLDS / "test"
 DATA = TEST / "_data"
+SAMPLE = WORLDS / "sample" / "_data"
 CASES = load_cases(DATA)
 
 QWEN_MODEL = "Qwen/Qwen3-8B-AWQ"

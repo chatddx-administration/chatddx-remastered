@@ -409,6 +409,10 @@ class Metric(_Schema):
     judged: bool = Field(
         description="whether it reads a judge's verdicts, so that its view names a judge"
     )
+    unit: str | None = Field(
+        default=None,
+        description="what marks a value that isn't a score from 0 to 1, as @ an offset",
+    )
 
 
 class ScorerCode(_Schema):

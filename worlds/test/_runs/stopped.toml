@@ -1,0 +1,8 @@
+description = "A run halted after three tokens."
+configuration = "lines"
+endpoint = "qwen3@fake"
+cases = ["crlf"]
+stop_after = 3
+
+[[turn]]
+content = "Subdural haematoma\nStroke\nSyncope\nMigraine"

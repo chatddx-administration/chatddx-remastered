@@ -1,27 +1,23 @@
-# The test World's models and engines. The fake ones are served by chatddx's fake vLLM, which imitates a model by its
-# name and reads no weights: each fake model is its repo with revision "fake" and one empty file, and each fake engine
-# runs `chatddx fake-vllm` on no GPU with an empty chat template.
-#
-# - qwen3@fake and qwen3-bare@fake serve one model: the first with reasoning and tool parsers, the second with
-#   neither, which the vllm.* lints and the fake's refusals are about.
-# - gpt-oss@fake serves harmony.
-# - mistral@fake serves a made-up Mistral-family model, whose facts are the World's (facts.toml), with no tool flags.
-# - unknown@remote is a remote engine, served at an address that resolves nowhere, of a model no facts know.
-
 [model.qwen3-8b-awq]
 repo = "Qwen/Qwen3-8B-AWQ"
 revision = "fake"
-files = [{ path = "none", sha256 = "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855" }]
+files = [
+  { path = "none", sha256 = "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855" }
+]
 
 [model.gpt-oss-20b]
 repo = "openai/gpt-oss-20b"
 revision = "fake"
-files = [{ path = "none", sha256 = "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855" }]
+files = [
+  { path = "none", sha256 = "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855" }
+]
 
 [model.mistral-7b]
 repo = "test/mistral-7b"
 revision = "fake"
-files = [{ path = "none", sha256 = "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855" }]
+files = [
+  { path = "none", sha256 = "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855" }
+]
 
 [local_engine."qwen3@fake"]
 description = "Qwen3 on the fake vLLM, with its reasoning and tool parsers."
@@ -30,7 +26,13 @@ model = "qwen3-8b-awq"
 hardware = { gpu = "none", compute_capability = [0, 0], vram_mib = 0, driver = "none" }
 runtime = { version = "0.24.0+fake", closure = "chatddx fake-vllm" }
 chat_template = "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
-argv = ["--reasoning-parser", "qwen3", "--enable-auto-tool-choice", "--tool-call-parser", "hermes"]
+argv = [
+  "--reasoning-parser",
+  "qwen3",
+  "--enable-auto-tool-choice",
+  "--tool-call-parser",
+  "hermes"
+]
 
 [local_engine."qwen3-bare@fake"]
 description = "Qwen3 on the fake vLLM, with no reasoning parser and no tool flags."
@@ -47,7 +49,13 @@ model = "gpt-oss-20b"
 hardware = { gpu = "none", compute_capability = [0, 0], vram_mib = 0, driver = "none" }
 runtime = { version = "0.24.0+fake", closure = "chatddx fake-vllm" }
 chat_template = "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
-argv = ["--reasoning-parser", "openai_gptoss", "--enable-auto-tool-choice", "--tool-call-parser", "openai"]
+argv = [
+  "--reasoning-parser",
+  "openai_gptoss",
+  "--enable-auto-tool-choice",
+  "--tool-call-parser",
+  "openai"
+]
 
 [local_engine."mistral@fake"]
 description = "A made-up Mistral-family model on the fake vLLM, with no tool flags."

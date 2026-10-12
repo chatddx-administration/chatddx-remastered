@@ -3,18 +3,20 @@ from fastapi.testclient import TestClient
 
 from chatddx.api.test.test_variations import thread
 from chatddx.api.test.test_writes import body
+from chatddx.scorers import metrics
 from chatddx.test.world import LINES
 
 pytestmark = pytest.mark.wip
 
 SHIPPED = "chatddx.scorers.metrics:score"
+SHIPPED_AT = metrics.score.version
 
 
 def test_the_scoring_code_shipped_is_listed_with_what_its_metrics_take(
     signed: TestClient,
 ) -> None:
     [code] = signed.get("/api/scorer-code").json()
-    assert (code["entry_point"], code["version"]) == (SHIPPED, 1)
+    assert (code["entry_point"], code["version"]) == (SHIPPED, SHIPPED_AT)
     assert [(m["name"], m["judged"]) for m in code["metrics"]] == [
         ("first_mention", False),
         ("mentions", False),
@@ -91,8 +93,8 @@ def test_a_scorer_that_could_never_score_is_refused(signed: TestClient) -> None:
         ),
         (
             "/api/threads",
-            {"component": {**held, "version": 2}, "name": "x"},
-            "is at version 1",
+            {"component": {**held, "version": SHIPPED_AT + 1}, "name": "x"},
+            f"is at version {SHIPPED_AT}",
         ),
         (
             "/api/threads",
