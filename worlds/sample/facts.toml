@@ -1,8 +1,3 @@
-# Facts about the models the sample World's engines serve that the bundled facts (src/chatddx/facts/models.toml) don't
-# know: the remote engine's (factors.toml). Its makers' model card (mistralai/Mistral-Small-3.2-24B-Instruct-2506)
-# gives what's here: a 24B model with a 128k context, under Apache 2.0, that doesn't reason, calls tools, and asks for a
-# low temperature.
-
 [model."mistralai/Mistral-Small-3.2-24B-Instruct-2506"]
 family = "mistral"
 parameters_b = 24

@@ -1,7 +1,3 @@
-# The test World's data set: what holds no text, in the format of worlds/sample/_data/factors.toml, whose header
-# describes it. Every record exercises something a test reads (agents/wip-test-world.md, "What it exercises"), and is
-# named for it.
-
 [prompt.case]
 segments = [{ slot = "vignette" }, { slot = "appendices" }]
 
@@ -256,7 +252,9 @@ views = [
 description = "Free text, whole, against the diagnosis."
 entry_point = "chatddx.scorers.metrics:score"
 expectation_schema = "targets"
-views = [{ label = "text", expectation = "/diagnosis", metric = "first_mention" }]
+views = [
+  { label = "text", expectation = "/diagnosis", metric = "first_mention" }
+]
 
 # Pattern and judged views side by side; only `noted` has notes, and carol's are the ones judged.
 [scorer.judged]
@@ -275,9 +273,13 @@ views = [
 description = "Free text: carol's note judged on the remote engine."
 entry_point = "chatddx.scorers.metrics:score"
 expectation_schema = "targets"
-views = [{ label = "note-comment", expectation = "$.notes[?@.author == 'carol'].comment", metric = "verdict", judge = "remote", params = { at = "/meets" } }]
+views = [
+  { label = "note-comment", expectation = "$.notes[?@.author == 'carol'].comment", metric = "verdict", judge = "remote", params = { at = "/meets" } }
+]
 
 # A canary set: fixed probes a run can send before and after its items.
 [canary_set.probe]
 description = "One probe, seeded, that says whether the engine still answers the same."
-canaries = [{ messages = [{ role = "user", content = "Say OK." }], body = { temperature = 0 }, seed = 1 }]
+canaries = [
+  { messages = [{ role = "user", content = "Say OK." }], body = { temperature = 0 }, seed = 1 }
+]

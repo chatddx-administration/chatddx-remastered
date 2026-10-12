@@ -16,7 +16,6 @@ class Command:
     params: tuple[str, ...]
     text: str
     run: Callable[..., None] | None
-    # The param that takes the words left over, as one name: names may hold spaces.
     rest: int | None = None
 
     @property

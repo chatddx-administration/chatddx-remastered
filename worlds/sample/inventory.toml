@@ -1,26 +1,11 @@
-# The sample World: the vignettes of the sample data's cases (_data/cases-*.toml), copied byte for byte from the old
-# chatddx at 7893656 (src/chatddx/data/cases). `chatddx init-data USER --world worlds/sample` loads its data set,
-# _data/, with them and with this World's engines (factors.toml). Kompismoln's World takes its vignettes and its data
-# set from here too.
-#
-# They aren't sensitive, but the source is declared so, as a real one would be, and is kept out of the package.
-#
-# The World's endpoints and host are in endpoints.toml, which a real World's engine import writes and this file
-# includes; its sources and their clearance are written here, by hand.
 include = ["endpoints.toml"]
 
 [source.sample]
 path = "vignettes"
 sensitive = true
 
-# What people type, as swift's cases: kept in the database, sensitive by default.
 [source.typed]
 kind = "database"
-
-# The sensitive sources each endpoint may receive case-derived content from; the runner refuses anything else, and
-# reads this table only from this file. The fake engines run on this machine, so they're cleared for the sample. So is
-# the remote engine's stand-in, which runs here too; a real remote API would be cleared only once it is vetted
-# (agents/wip-clearance.md), and typed cases stay on this machine.
 
 [cleared]
 "qwen3-8b-awq@fake" = ["sample", "typed"]

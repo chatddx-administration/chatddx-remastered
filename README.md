@@ -84,14 +84,6 @@ pytest -m solidified    # what docs/ describes; -m wip for what agents/wip-*.md 
 ```sh
 chatddx init-data alice --giftbag
 ```
-```
-AGENT: amend
-The sample World has a remote endpoint now, whose key fake-engines asks for and the repl sends, both reading it from
-CHATDDX_SAMPLE_KEY, which `.env-devshell` and `.env-container` set. A `.env` copied before it lacks the line.
----
-In a second shell (`nix develop` there too), serve each endpoint's fake engine as its start-up says, and a stand-in for
-the remote engine, which asks for the key in `CHATDDX_SAMPLE_KEY` (set in `.env-devshell`), till Ctrl-C:
-```
 In a second shell (`nix develop` there too), serve each endpoint's fake engine as its start-up says, till Ctrl-C:
 ```sh
 chatddx fake-engines
@@ -120,15 +112,8 @@ git diff --no-index worlds/kompismoln/endpoints.toml /tmp/endpoints.toml
 ```
 No diff means the hosts still serve the engines `worlds/kompismoln` pins. Both are cleared for the sample's
 vignettes, so a case can run on them:
-```
-AGENT: amend
-The sample data set moved from the package to the sample World's _data/, which init-data reads by default; Kompismoln's
-World has none of its own, so it names the sample's.
----
-chatddx init-data alice --world worlds/kompismoln --data worlds/sample/_data
-```
 ```sh
-chatddx init-data alice --world worlds/kompismoln
+chatddx init-data alice --world worlds/kompismoln --data worlds/sample/_data
 chatddx repl alice --world worlds/kompismoln
 ```
 ```text

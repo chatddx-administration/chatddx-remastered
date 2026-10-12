@@ -1,8 +1,3 @@
-# Where the test World's engines (factors.toml) are served, and where their host keeps what they pin. Each endpoint
-# names its engine by digest, which is also the name it's served under, so changing an engine means changing its
-# endpoint here: src/chatddx/curation/test/test_the_test_world.py says which digest to write. The fakes run on this
-# machine, one per engine, as vLLM serves one model, on ports apart from the sample World's.
-
 [endpoint."qwen3@fake"]
 engine = "sha256:cc0dc8fbbc8dbb3a62d274c6ce62ee4bc9d909b05aef6263015cb46459fdc42f"
 url = "http://127.0.0.1:12201/v1/"
@@ -26,7 +21,6 @@ url = "http://127.0.0.1:12204/v1/"
 host = "fake"
 max_jobs = 2
 
-# A remote engine, at an address that resolves nowhere, with the secret in $CHATDDX_TEST_REMOTE.
 [endpoint."unknown@remote"]
 engine = "sha256:a9cc8614b691bd2c838770bf17ad6fd1c2a87aded80ab0b49d74c7de2def3bdd"
 url = "https://remote.invalid/v1/"

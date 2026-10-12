@@ -1,13 +1,3 @@
-# Where the sample's engines (factors.toml) are served, and where their host keeps what they pin, as `chatddx
-# import-engine` writes a real World's from its hosts' reports (worlds/kompismoln/endpoints.toml). The inventory
-# includes it. An endpoint names the engine it serves by digest, which is also the name a local engine is served under,
-# so changing an engine means changing its endpoint here.
-
-# The fake engines run on this machine, one per engine, as vLLM serves one model a process. The fake host says where
-# it keeps what they pin: the fake vLLM takes a model by its repo name, and the fake engines' empty chat template is
-# /dev/null. `chatddx fake-engines` starts them all, each as `chatddx.inventory.start_up` says, once init-data has
-# stored them.
-
 [endpoint."qwen3-8b-awq@fake"]
 engine = "sha256:cc0dc8fbbc8dbb3a62d274c6ce62ee4bc9d909b05aef6263015cb46459fdc42f"
 url = "http://127.0.0.1:12099/v1/"
@@ -20,9 +10,6 @@ url = "http://127.0.0.1:12100/v1/"
 host = "fake"
 max_jobs = 4
 
-# A remote engine's endpoint has no host: someone else runs it. Its key is read from the environment variable
-# `credential` names and sent as a bearer token; neither the key nor the variable's value is stored. `chatddx
-# fake-engines` stands in for it on this machine, asking for the key the variable holds.
 [endpoint."mistral-small@remote"]
 engine = "sha256:afbf6e1b915fcea003c35b0d073872f98670bdd214cc2110db7e6ebab548b277"
 url = "http://127.0.0.1:12101/v1/"

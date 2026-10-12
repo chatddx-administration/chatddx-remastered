@@ -1,5 +1,3 @@
-# The test World's texts in English, in factors.toml's format.
-
 [instructions.clinician]
 role = "developer"
 text = [
@@ -14,12 +12,21 @@ messages = [
 ]
 
 [prompt.headed]
-segments = ["Case:\n", { slot = "vignette" }, { slot = "appendices" }, { insert = "tool_guidance", before = "\n\n" }]
+segments = [
+  "Case:\n",
+  { slot = "vignette" },
+  { slot = "appendices" },
+  { insert = "tool_guidance", before = "\n\n" }
+]
 
-# A judge reads no vignette (agents/wip-judges.md, J7).
 [prompt.judge]
 purpose = "judge"
-segments = ["Answer:\n", { slot = "completion" }, "\n\nExpected:\n", { slot = "expectation" }]
+segments = [
+  "Answer:\n",
+  { slot = "completion" },
+  "\n\nExpected:\n",
+  { slot = "expectation" }
+]
 
 [output.native]
 contract = { kind = "native" }

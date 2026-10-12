@@ -1,7 +1,3 @@
-# The test World's English cases, keyed by their vignettes' ids in the source `test`. Each vignette carries what its
-# id says, and each case's targets are what the tests score: no pattern matches the fake vLLM's answers but
-# `matched`'s, which name them.
-
 [case.crlf]
 tags = ["bytes", "targets"]
 targets.diagnosis.pattern = "subdural & (hematoma | haematoma)"
@@ -16,7 +12,6 @@ targets.diagnosis.pattern = "pneumonia"
 tags = ["bytes"]
 targets.diagnosis.pattern = "appendicitis"
 
-# An appendix, and a case of the family that sends it after the vignette, held to targets of its own.
 [case.whitespace.appendices]
 labs = "CRP 180 mg/L, leukocytes 16."
 
