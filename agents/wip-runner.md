@@ -86,7 +86,11 @@ Next, in the order the user decided:
 
 ### Phase 1: `wire.py`
 - **`post`** sends to `/v1/chat/completions` and returns a `Stream` of parsed SSE chunks. Closing the stream hangs
-  up.
+  up. `Stream.interrupt` shuts the connection down from another thread, which ends a read waiting on a stalled
+  engine; it works on a duplicate of the response's socket, so it can't race the response's close.
+- **`Unfinished`**: a stream that ends before `[DONE]`, as when the engine goes away. It used to end quietly, and the
+  call looked finished. Tested over HTTP/1.0 until the server closes, as the fake streams, and over HTTP/1.1 chunks,
+  as vLLM does (`runner/test/test_wire.py:going_away`).
 - **`Rejected`** holds an error answer's status and body. An error sent in place of a chunk is one too, with status
   200.
 - **`assemble`** adds the chunks up to the unstreamed completion. On the fake, the result is the same for text, a
@@ -103,7 +107,10 @@ Next, in the order the user decided:
   - after `whitespace_limit` tokens of whitespace in a row;
   - when `timeout_s` has passed since the stream started, with the socket's timeout as a backstop.
 - **A KeyboardInterrupt** hangs up and raises `Stopped`, which carries the call so far, with `error = "stopped"`.
-  So does setting `halt`, for a call on another thread (phase 4).
+  So does setting `halt`, a `Halt`, for a call on another thread (phase 4). A `Halt` interrupts the streams it
+  watches when it is set, so the call stops at once rather than at its next chunk, or in its backoff.
+- **An engine that goes away** leaves `Unfinished: the stream ended before [DONE]` as the call's error, with what
+  came; a halt that ended the stream leaves `stopped`.
 - **`Delta` events** carry reasoning, content or tool-call text and the running token count, from each chunk's
   `token_ids`.
 
@@ -127,10 +134,10 @@ endpoint, execution)`:
 4. Writes the run's owner entry.
 
 **`Running.send(on_event)`** sends the items in `Execution.schedule` order:
-- each item is `fetch`, `prepare_case`, `render` with `engine.served_model_name`, then `send`, then appending a
-  `RunItem`;
-- a case that can't be read is a `case.unreadable` finding, and the run goes on (R8). Its `ItemStarted` gets no
-  `ItemEnded` (see "Left");
+- each item is `fetch`, `prepare_case`, `render` with `engine.served_model_name` (`prepare.py:Items.item`, which
+  the bench's `Seen.rendered_again` uses too), then `send`, then appending a `RunItem`;
+- a case that can't be read is a `case.unreadable` finding, and the run goes on (R8). `ItemStarted` comes once an
+  item is prepared, so an unreadable case has none, and every `ItemStarted` gets its `ItemEnded`;
 - `stop()` ends after the item under way;
 - a KeyboardInterrupt during a call appends that item as stopped and is raised again (R9).
 
@@ -156,8 +163,8 @@ land in the caller's frame while the runner sat suspended at a `yield`. The even
 - **Stopping.** `stop()` lets the calls in flight finish. A KeyboardInterrupt can't reach a worker, so the runner sets
   `send`'s `halt`. Each call then hangs up at its next chunk or in its backoff, and is recorded as stopped before the
   interrupt is raised again. Another KeyboardInterrupt while they hang up leaves them out of the log. A worker's
-  unexpected exception is raised on the caller's thread, from its future, and the other calls in flight are halted
-  and left out of the log (see "Left").
+  unexpected exception is raised on the caller's thread, from its future, once the other calls in flight are halted
+  and recorded as stopped. Unlike an interrupt, it doesn't stop the run, as on the serial path.
 - **Concurrency 1** keeps the serial path: a KeyboardInterrupt there hangs up at once, even mid-read.
 - **Events carry the item's key** (`Streamed`), since deltas of items in flight interleave. That changed the serial
   path's events too, so a caller sees one shape whatever the concurrency.
@@ -263,28 +270,23 @@ In `rounds.py`, which `run.py` calls for every item, with tools or without:
   caller.
 - **A summary of failed calls.** `check_run` says nothing about `Call.error`. A run whose every call was cut short
   checks clean, and only the items show it. A UI can count them, or the runner could note them.
-- **A halted call waits for its next chunk.** An engine that stalls mid-stream, under an execution with no
-  `timeout_s`, keeps its worker waiting after a KeyboardInterrupt, until a second one. Shutting the worker's socket
-  down from the caller's thread would end the wait, but `wire.Stream` doesn't offer that yet. Since
-  `Running.halt()` (below), the same holds for a halt from another thread, on a serial run too. The bench sends no
-  `Execution` (`bench/runs.py:start`), so every run from the repl and the API has no `timeout_s`.
+- **A halted call waits for its response's headers.** A halt now ends a stalled stream at once (see "Phase 2"), but
+  a call still waiting for the engine to answer at all, under an execution with no `timeout_s`, waits on. vLLM sends
+  its headers before it starts generating. The bench sends no `Execution` (`bench/runs.py:start`), so every run from
+  the repl and the API has no `timeout_s`.
 
 ### Found in a check against the code
-- **An unreadable case's `ItemStarted` gets no `ItemEnded`** (`run.py:Running._prepared`). A caller that opens
-  something per item leaves it open: the repl's tally for the case is started and never stopped
-  (`repl/running.py:batch`'s `on_event`), and the API sends an `item.started` with no end
-  (`api/events.py:event_of`).
-- **A worker's unexpected exception drops the calls in flight beside it.** Above concurrency 1 they're halted and
-  not recorded, and `_stopping` isn't set (`run.py:Running._send_concurrently`), so a later `send` would send them
-  again.
+Fixed in the runner pass: an unreadable case's `ItemStarted` without an `ItemEnded`, the calls a worker's exception
+dropped, `rendered_again`'s copy of the prepare and render, and a halt waiting on a stalled stream. Still open:
 - **Rejected engine bodies are stored verbatim** (`send.py`, `call(e.status, str(e), e.body)`), raised by
   `agents/healthcheck.md` ("Before real patient data", 1). Closed, with the user's agreement, as no change: they're
   stored in run items, which are case-derived records like the completions beside them
   (`ledger/record.py:Record.case_derived`).
 - **Fingerprints are unkeyed.** `send` takes a `key`, but neither `rounds.converse` nor `Running._probe` passes one
   (`agents/healthcheck.md`, "Before real patient data", 5; `docs/chatddx.md`).
-- **`bench/seen.py:Seen.rendered_again` repeats `Running._prepared`'s fetch, prepare and render** to tell whether a
-  run's requests render the same now. A change to one must follow in the other, and no comment links them.
+- **The fake streams over HTTP/1.0 until it closes**, where vLLM, on uvicorn, streams over HTTP/1.1 in chunks. The
+  runner reads both the same (`runner/test/test_wire.py:going_away` checks an engine going away in each), but the
+  fake differs from vLLM on the wire, which `docs/vllm.md` doesn't say.
 - **The gate's cases only the test World reaches aren't read by a test**: `qwen3-bare@fake` not cleared for
   `typed`, and `unknown@remote` cleared for nothing, with its secret unset (`agents/wip-test-world.md`, "Not read
   yet"). The gate's tests edit the inventory instead (`runner/test/test_run.py`).
