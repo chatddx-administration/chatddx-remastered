@@ -50,7 +50,7 @@ def test_the_test_world_plans_and_loads_as_designed(conn: Connection) -> None:
         "tool": 2,
         "toolset": 1,
         "expectation_schema": 1,
-        "scorer": 4,
+        "scorer": 5,
         "recipe": 27,
         "judge": 3,
     }

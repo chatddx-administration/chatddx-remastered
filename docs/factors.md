@@ -606,6 +606,13 @@ A judge is an LLM used as a metric: a judge skeleton, an engine, its own seeds, 
 The view decides what the judge sees, and the judge decides how it is written out. The completion slot gets what the
 view's output selector picks from the answer, as the scorer read it, and the expectation slot what its expectation
 selector picks from the expectation. The fill rule, named and versioned like cleanup steps, turns those picks into text.
+AGENT: change
+Vignettes will probably never go to a judge (agents/wip-judges.md, J7, closed): the scoring pass refuses a judge
+whose skeleton reads them, before anything is written.
+---
+A judge reads no vignette and no appendices: the scoring pass refuses a judge whose skeleton has either slot, though
+a judge prompt may still be written with them.
+
 The vignette and the appendices are filled as for the trial (see "Preparing a case").
 
 Judge requests are rendered like generation requests, once per seed, and recorded per score item. Their scores are
@@ -681,8 +688,17 @@ changes the shape of a trial, so it is cheapest decided before trials are stored
   prompts, are possible today. A take: keep hand-written skeletons. Provenance is whether a compilation names the
   skeleton, a question a lint can ask once the catalog or ledger is queried for it.
 - **A scoring doesn't say which cases it lacks.** Only checking a score warns, once a run is scored under it.
+AGENT: change
+The model is checked now (agents/wip-judges.md, J8, decided); the prompt tokens aren't.
+---
+- **Judge calls aren't fully attested.** Their returned model is checked against the judge engine's, but their
+  prompt-token fingerprint isn't, as the request would have to be rebuilt from the answer as the scorer read it.
+
 - **Judge calls aren't attested.** Their returned model and prompt-token fingerprint aren't checked the way run items
   are.
+AGENT: remove
+No judge reads the vignette now (J7, closed), so nothing fetches it again.
+---
 - **Judges that read the vignette must fetch it again.** A judge skeleton with the vignette slot makes the scorer fetch
   the sensitive vignette again and redo the trial's cleanup. Preparing a case covers the cleanup; nothing fetches the
   vignette.

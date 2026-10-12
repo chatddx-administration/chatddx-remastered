@@ -221,7 +221,7 @@ seeds = [1]
 [expectation_schema.targets]
 json_schema_path = "schemas/targets.json"
 
-# One scorer per output shape: `answer` reads answer.json, `list` list.json, `lines` and `whole` free text.
+# One scorer per output shape: `answer` reads answer.json, `list` list.json, `lines`, `whole` and `judged` free text.
 [scorer.answer]
 description = "The answer's differential, warning, disposition and critical diagnoses, against the targets."
 entry_point = "chatddx.scorers.metrics:score"
@@ -257,3 +257,15 @@ description = "Free text, whole, against the diagnosis."
 entry_point = "chatddx.scorers.metrics:score"
 expectation_schema = "targets"
 views = [{ label = "text", expectation = "/diagnosis", metric = "first_mention" }]
+
+# Pattern and judged views side by side; only `noted` has notes, and carol's are the ones judged.
+[scorer.judged]
+description = "Free text: the differential line by line, and carol's note judged as met and graded."
+entry_point = "chatddx.scorers.metrics:score"
+expectation_schema = "targets"
+views = [
+  { label = "differential", split = "lines@1", expectation = "/diagnosis", metric = "reciprocal_rank" },
+  { label = "note-comment", expectation = "$.notes[?@.author == 'carol'].comment", metric = "verdict", judge = "verdict", params = { at = "/meets" } },
+  { label = "note-answer", expectation = "$.notes[?@.author == 'carol'].answer", metric = "verdict", judge = "verdict", params = { at = "/meets" } },
+  { label = "note-graded", expectation = "$.notes[?@.author == 'carol'].comment", metric = "points", judge = "graded", params = { at = "/points", max = 2 } },
+]

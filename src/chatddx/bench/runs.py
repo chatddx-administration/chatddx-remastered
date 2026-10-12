@@ -3,6 +3,7 @@ from collections.abc import Collection
 from chatddx.factors.base import resolve
 from chatddx.factors.scoring import Scorer
 from chatddx.ledger import RunStarted
+from chatddx.runner.gate import Refused
 from chatddx.runner.run import Runner, Running
 from chatddx.runner.score import score_run
 
@@ -39,10 +40,10 @@ def score(
                 raise LookupError("none of the run's cases has an expectation")
             registry = seen.store.load([scoring.scorer, *scoring.expectations])
             score, findings = score_run(
-                seen.conn, run.run, scoring, registry, seen.person
+                seen.conn, run.run, scoring, registry, seen.person, seen.inventory
             )
-        except (LookupError, TypeError, NotImplementedError) as e:
+        except (LookupError, TypeError, ValueError, NotImplementedError, Refused) as e:
             found.append(Graded(name, scorer, labels, refused=str(e)))
             continue
         found.append(Graded(name, scorer, labels, score, findings))
-    return found
+    return sorted(found, key=lambda g: g.name)

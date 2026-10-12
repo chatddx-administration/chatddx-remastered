@@ -158,6 +158,10 @@ Judges (`agents/wip-judges.md`, "The test World's additions"), read by `curation
 - `graded`: `judge-graded`'s variant for Qwen3 on `qwen3@fake`, seeds 1, 2 and 3;
 - `remote`: `judge` on `unknown@remote`, which gives `facts.missing`, and which the gate is to refuse.
 
+The scorer `judged` (`chatddx.scorers.metrics:score`, schema `targets`): a pattern view, the differential line by
+line, beside three judged views over carol's note: `note-comment` and `note-answer` under `verdict`, and
+`note-graded` under `graded`. Read by `runner/test/test_score.py`, and listed wherever a `lines` run's scorers are.
+
 Other records:
 - **Sampling**: `recommended` (`from_facts`), `greedy` and `near-greedy`. The bench's and repl's tests swap in
   `greedy`, as they swap in the sample's now.

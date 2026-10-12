@@ -259,6 +259,10 @@ described below.
    item's last call, before the scorer's entry point is called.
 4. Apply each view. A View points into the parsed output (output, a JSON pointer) and into the expectation (expectation), and names a metric that the scorer's code interprets, with params.
 5. If the view names a Judge:
+AGENT: change
+A judge reads no vignette or appendices (agents/wip-judges.md, J7, closed).
+---
+  - Build the judge request with render() from the judge's Skeleton (purpose "judge"). Its slots are filled with the completion and the expectation, as the view picks them; a judge that reads the case or the appendices is refused.
   - Build the judge request with render() from the judge's Skeleton (purpose "judge"). Its slots can be filled with the completion, the expectation, and optionally the case and appendices.
   - Send it to the judge's engine, once per seed in Judge.seeds.
   - Record each call as a JudgeCall: which judge, which seed index, and the call itself.

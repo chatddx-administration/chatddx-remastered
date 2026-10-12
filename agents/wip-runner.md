@@ -206,12 +206,12 @@ In `rounds.py`, which `run.py` calls for every item, with tools or without:
   arguments, and a text answer the content, or, when the output has a schema, the JSON in it (the whole text, else
   the last fenced block that is JSON, else the last JSON object or array). It returns the value, or none with why,
   and where the value breaks the output schema. No truncated structure is salvaged.
-- **`runner/score.py:score_run(conn, run, scoring, registry, by)`** scores a finished run. It refuses before writing
-  a run that hasn't finished, a view with a judge, and a scorer whose code can't run (`scorers/shipped.py:function`).
-  It stores the scoring, then reads the run's trial and the scoring back from the store. Each item's answer is read
-  from its last call, after any tool rounds, and goes through every view (`scorers/scorer.py:score`). It writes
-  `ScoreStarted` and the score's owner entry, the items of each run item in one transaction, then `ScoreFinished`,
-  and returns the score with `check_score`'s findings.
+- **`runner/score.py`** scores a finished run, in the runner's shape since judges run (`agents/wip-judges.md`,
+  phase 4): `Grader(conn, inventory, by).start(run, scoring, registry, endpoints=, execution=)` refuses before
+  anything is written, stores the scoring, writes `ScoreStarted` and the score's owner entry; `Grading.send` writes
+  each run item's score items in one transaction, in the score's schedule order, reading each item's answer from its
+  last call; `Grading.finish` writes `ScoreFinished` and returns the score with `check_score`'s findings.
+  `score_run(conn, run, scoring, registry, by, inventory)` is the three.
 - **What the pass notes** in `ScoreFinished`: `answer.unread`, for an answer that can't be read, with the call's
   error when it has one; and `answer.invalid`, for an answer that breaks the output schema. An invalid answer is
   still scored.

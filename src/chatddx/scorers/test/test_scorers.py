@@ -320,7 +320,7 @@ def test_a_judged_view_is_scored_from_its_judge_s_verdicts() -> None:
     )
     scorer = plan_scorer(views=(differential, MEETS, POINTS))
     run = function(scorer)
-    with pytest.raises(NotImplementedError, match=r"views \[1, 2\] need a judge"):
+    with pytest.raises(ValueError, match=r"views \[1, 2\] need their judges' verdicts"):
         _ = score(scorer, run, ANSWER, TARGETS)
     verdicts: dict[int, list[JsonValue | None]] = {
         1: [{"meets": True}, {"meets": False}, None, {"meets": "yes"}],

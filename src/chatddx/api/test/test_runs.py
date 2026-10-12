@@ -306,13 +306,11 @@ def test_a_request_its_client_leaves_halts_the_run_too(
 ) -> None:
     body = asked(signed)
     alice = {"Authorization": signed.headers["Authorization"]}
-    with (
-        faked(world, Store(conn).get, delay=0.1),
-        httpx2.Client(headers=alice) as http,
-        pytest.raises(httpx2.ReadTimeout),
-    ):
-        _ = http.post(f"{listening}/api/runs", json=body, timeout=0.5)
-    [run] = signed.get("/api/runs").json()
-    shown = finished(signed, run["id"])
+    # The fake serves until the run is scored, as scoring confirms the judges' endpoint.
+    with faked(world, Store(conn).get, delay=0.1), httpx2.Client(headers=alice) as http:
+        with pytest.raises(httpx2.ReadTimeout):
+            _ = http.post(f"{listening}/api/runs", json=body, timeout=0.5)
+        [run] = signed.get("/api/runs").json()
+        shown = finished(signed, run["id"])
     [item] = shown["items"]
     assert item["outcome"] == "stopped"

@@ -126,7 +126,7 @@ def score(
     if unjudged := [
         i for i, v in enumerate(scorer.views) if v.judge is not None and i not in judged
     ]:
-        raise NotImplementedError(f"views {unjudged} need a judge, which can't run yet")
+        raise ValueError(f"views {unjudged} need their judges' verdicts")
     return [
         score_view(scorer, run, i, answer, data, judged.get(i))
         for i in range(len(scorer.views))

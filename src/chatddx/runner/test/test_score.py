@@ -185,35 +185,8 @@ NOTE = "$.notes[?@.author == 'carol'].comment"
 
 
 def judged(plan: Plan, *views: View) -> Scorer:
-    verdict = plan.named("judge", "verdict").digest
-    graded = plan.named("judge", "graded").digest
-    return Scorer(
-        entry_point="chatddx.scorers.metrics:score",
-        version=1,
-        expectation_schema=plan.named("expectation_schema", "targets").digest,
-        views=views
-        or (
-            View(split="lines@1", expectation="/diagnosis", metric="reciprocal_rank"),
-            View(
-                expectation=NOTE,
-                metric="verdict",
-                judge=verdict,
-                params={"at": "/meets"},
-            ),
-            View(
-                expectation="$.notes[?@.author == 'carol'].answer",
-                metric="verdict",
-                judge=verdict,
-                params={"at": "/meets"},
-            ),
-            View(
-                expectation=NOTE,
-                metric="points",
-                judge=graded,
-                params={"at": "/points", "max": 2},
-            ),
-        ),
-    )
+    found = scorer(plan, "judged")
+    return found.model_copy(update={"views": views}) if views else found
 
 
 def scoring_of(plan: Plan, made: Trial, by: Scorer) -> Scoring:

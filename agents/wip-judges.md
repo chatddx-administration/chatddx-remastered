@@ -15,7 +15,9 @@ Phase 2 is built: judges in a data set, the test World's judges, the refusal of 
 (`curation/plan.py`, `curation/test/test_judges.py`; `docs/curation.md` and `docs/factors-api.md` have AGENT
 suggestions). Phase 3 is built too: the scorer interface's version 2, `verdict` and `points`
 (`scorers/verdicts.py`), the one shipped entry point `chatddx.scorers.metrics:score`, and J4's `verdicts.asked`.
-Next: phase 4, which brings the test World's judged scorers, then the remote engine's `base_url` (see "Decided").
+Phases 4 and 5 are built too: the scoring pass sends judge calls (`runner/score.py:Grader`, `Grading`), and the
+bench, the repl and the API score judged scorers like any other. Next: the remote engine's `base_url` (see
+"Decided"), then "Open".
 
 ## Decided
 - **The pipeline before the prompt.** The judge pipeline is built and tested on the test World (`worlds/test/`,
@@ -205,14 +207,32 @@ The fake changes with it: a non-greedy request whose schema has `examples` is an
    digest moved. `verdicts.asked` gives a judge's fills, or no value with the reason when there's nothing to judge
    (J4). A verdict is read with `answer.read` (J3) in the pass. Tested on synthetic verdicts
    (`scorers/test/test_scorers.py`); the API lists whether a metric is judged.
-4. **The pass.** Start, send, halt and finish, with the gate on judge endpoints, `ScoreStarted.endpoints`, the
-   vignette refetched, and `check_score`'s model check (J1, J6–J8). Tested on the test World's fakes. The test World's
-   scorers `judged` and `judged-remote` come with it: added before the pass, every `lines` run would list `judged`
-   as refused.
-5. **The callers.** The bench scores judged scorers and reports a gate refusal as refused; the repl and the API show
-   judged values where they say "not yet" now.
+4. **The pass** (built). `Grader.start` refuses before anything is written: a run not finished, concurrency above 1
+   (judge calls go one at a time yet), scorer code that can't run, a judge reading the vignette or appendices (J7),
+   no inventory for judged views, and a judge endpoint the gate refuses (`gate.admit`, J1), the one serving the
+   judge's engine unless the caller names one. `ScoreStarted.endpoints` records them, and `check_score` checks judge
+   calls' model (J8). `Grading.send` scores the run's items in the score's schedule order, each judged view sending a
+   call per seed (J5) unless there's nothing to judge (J4), each verdict read as an answer is (J3); `halt()` and an
+   interrupt keep the seeds a view has, and the views after it get no item. Events are `ItemScored` and `Noted`.
+   `score_run` is start, send and finish. Tested in `runner/test/test_score.py` on the test World's fakes.
+5. **The callers** (built). The bench passes its inventory, reports a gate refusal or a judge it can't run as
+   refused, and lists a run's scores by name, as stored scores are listed. The test World's scorer `judged` mixes a
+   pattern view with three judged views over carol's note; its labels start with `note-`, as `answer` is a scorer's
+   name too. `judged-remote` was dropped (see "Open").
 6. **After the pipeline.** The sample's judge, on Olof's prompt; a run on pelle or malborg to see real engines write
    valid verdicts; the judge measured against Olof's own grading.
+
+## Open
+- **A scorer that can't be scored stays left to score.** A judged scorer whose endpoint the gate refuses is
+  outstanding on every run it applies to (`Seen.outstanding`), and each score of the run says why again. That's why
+  the test World holds no `judged-remote`: its every `lines` run would never be done. Take: a refusal that holds for
+  the World as it is (an endpoint not cleared, a judge reading the vignette) leaves the scorer out of what applies
+  to a run; one that may pass later (an endpoint that doesn't answer) keeps it outstanding.
+- **Every judged scoring confirms its judges' endpoints** (`confirm`, 10 s timeout), on every run, even when no item
+  needs a judge. An endpoint that hangs holds the scoring up to 10 s a judge. It made
+  `api/test/test_runs.py:test_a_request_its_client_leaves_halts_the_run_too` fail once in four full runs, while the
+  fake was shutting down; the fake now serves until the run is scored.
+- **Concurrent judge calls**, as the runner's phase 4 did for items.
 
 ## For Olof, later
 What the prompt needs from him:

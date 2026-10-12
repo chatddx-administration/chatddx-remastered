@@ -10,7 +10,7 @@ from chatddx.test.world import QWEN, QWEN_MODEL, REMOTE, copied, edit, world_pla
 pytestmark = pytest.mark.solidified
 
 SCORER = """
-[scorer.judged]
+[scorer.noted]
 entry_point = "chatddx.scorers.metrics:score"
 expectation_schema = "targets"
 views = [{ expectation = "/notes", metric = "verdict", judge = "verdict" }]
@@ -57,7 +57,7 @@ def test_a_judge_on_an_engine_the_world_lacks_is_skipped_and_so_is_its_scorer(
     )
     plan = world_plan(world, world / "_data")
     assert "judge verdict: the World has no engine nowhere@fake" in plan.skipped
-    assert "scorer judged: judge verdict isn't planned" in plan.skipped
+    assert "scorer noted: judge verdict isn't planned" in plan.skipped
     with pytest.raises(LookupError):
         _ = plan.named("judge", "verdict")
 
@@ -69,7 +69,7 @@ def test_a_view_naming_no_judge_is_refused(tmp_path: Path) -> None:
         SCORER.replace('judge = "verdict"', 'judge = "nobody"')
         + "\n[expectation_schema.targets]",
     )
-    with pytest.raises(ValueError, match="scorer.judged: no judge named 'nobody'"):
+    with pytest.raises(ValueError, match="scorer.noted: no judge named 'nobody'"):
         _ = world_plan(world, world / "_data")
 
 
