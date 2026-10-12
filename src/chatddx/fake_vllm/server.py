@@ -65,9 +65,12 @@ class _Handler(BaseHTTPRequestHandler):
     runaway: bool = False
 
     def do_GET(self) -> None:
-        self._json(*got(self.served, self.path))
+        if self._authorized():
+            self._json(*got(self.served, self.path))
 
     def do_POST(self) -> None:
+        if not self._authorized():
+            return
         if self.path.partition("?")[0].rstrip("/") != "/v1/chat/completions":
             self._json(404, {"detail": "Not Found"})
             return
@@ -92,6 +95,18 @@ class _Handler(BaseHTTPRequestHandler):
                 self.log_message("aborted: the client hung up after %d tokens", sent)
                 return
             sent = generated
+
+    # With --api-key, vLLM asks for one of its keys as a bearer on /v1 only, so /health and
+    # /version answer anyone.
+    def _authorized(self) -> bool:
+        keys = {key for s in self.served for key in s.api_keys}
+        if not keys or not self.path.startswith("/v1"):
+            return True
+        scheme, _, key = (self.headers.get("Authorization") or "").partition(" ")
+        if scheme.lower() == "bearer" and key in keys:
+            return True
+        self._json(401, {"error": "Unauthorized"})
+        return False
 
     # Waits for the next token, and hears a hang-up from the socket meanwhile, as vLLM
     # does, rather than at the next write.

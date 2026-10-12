@@ -60,6 +60,10 @@ vignettes, and other Worlds may copy that, so the name sets a precedent:
 Loading it stays explicit: `chatddx init-data alice --world worlds/test --data worlds/test/_data`. Its one directory
 source is the default `--source`.
 
+Since the sample's data set moved to `worlds/sample/_data/` (`agents/wip-repl.md`, "7. Completion", step 2), init-data
+takes a World's `_data/` when `--data` names none, a take, so `--data` can be left out here too; the test World still
+loads only under pytest.
+
 ## Principles
 1. **Every record is read by a test.** The table under "What it exercises" names, for each record, the test that
    reads it. A record no test reads isn't added.
@@ -173,6 +177,9 @@ Other records:
 - **Expectation schema**: `targets`, the sample's kinds (diagnosis, warning or false, disposition, dont_miss,
   notes), requiring `diagnosis`, with no other properties allowed.
 - **Tags** on recipes: `structured`, `text`, `tools`, `reasoning` and `judge`.
+- **A canary set**, `probe`: one seeded probe, read by `curation/test/test_tables.py`.
+- **An appendix and a case that sends it**: `whitespace`'s `labs`, and `whitespace with labs`, held to targets of its
+  own; read by `curation/test/test_tables.py`, and counted by the curation tests that count what a load lands.
 - **Scorers**, one per output shape, as the sample has them:
   - `answer`: differential, warning, disposition, and dont-miss over the diagnoses marked critical;
   - `list`: differential and dont-miss;

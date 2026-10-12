@@ -49,6 +49,16 @@ This repository has three, in `worlds/`:
   endpoints on this machine (one with no reasoning parser and no tool flags, one serving a made-up model whose facts
   are the World's own `facts.toml`), a remote endpoint that is never reached, nine vignettes each carrying a quirk of
   its own, and its data set in `_data/`. Its tools are the runner's test tools, so it loads only under pytest.
+```
+AGENT: amend
+The sample World is laid out as Kompismoln's is now, and uses everything a World can hold: an included endpoints file,
+a remote engine with a credential, and facts of its own.
+---
+- The sample World: the example new Worlds follow, using everything a World can hold. The sample's vignettes and its
+  data set (`_data/`), an endpoint for each fake engine on this machine and the fake host, in an included
+  `endpoints.toml` as an engine import writes it, a remote engine's endpoint with a credential, which `chatddx
+  fake-engines` stands in for, and the facts of the remote engine's model. Every endpoint is cleared for the sample.
+```
 - The sample World: the sample's vignettes, an endpoint for each fake engine on this machine, the fake host, and the
   factors of the fake models and engines. Both endpoints are cleared for the sample.
 - Kompismoln's World: the hosts pelle and malborg. Its inventory is written by hand and takes the sample World's

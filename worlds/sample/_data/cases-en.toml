@@ -32,6 +32,29 @@ answer = '''
 vid tecken på prechock eller chock gå vidare med ultraljud t.ex. RUSH för att utesluta andra orsaker till chock.
 Rundodla, och påbörja empirisk bredspektrumantibiotika.'''
 
+# Appendices, and the cases that send them after the vignette: made up for the sample by an agent, from no patient,
+# and reviewed by no clinician. An ultrasound that finds a normal aorta and a blocked kidney changes the right answer
+# from the targets' aneurysm to an obstructed, infected kidney, so the cases that send it are held to targets of their
+# own. A case's appendices go in the order its `appendices` names them; `targets` is optional.
+[case.Dutchfall11w.appendices]
+labs = """Lab results on arrival: haemoglobin 108 g/L, leukocytes 19.4 x10^9/L (neutrophils 17.1), CRP 286 mg/L, \
+creatinine 162 umol/L, glucose 9.8 mmol/L, lactate 3.1 mmol/L. Two blood cultures and a urine culture taken."""
+ultrasound = """Bedside ultrasound in the emergency department: abdominal aorta 2.1 cm across, normal throughout. Right \
+kidney with moderate hydronephrosis and a dilated ureter; left kidney normal. Bladder holds about 900 mL. No free \
+fluid in the abdomen. Inferior vena cava under 1 cm and collapsing with breathing; heart contracting vigorously."""
+
+[[case.Dutchfall11w.with]]
+appendices = ["ultrasound"]
+targets.diagnosis.pattern = "pyelonephritis | urosepsis | (obstruct* | infected) & (kidney | hydronephrosis) | sepsis | septic*"
+targets.warning.pattern = "shock | sepsis | septic*"
+targets.disposition.pattern = "admit* | urolog* | nephrostom* | drain* | icu | intensive & care"
+
+[[case.Dutchfall11w.with]]
+appendices = ["labs", "ultrasound"]
+targets.diagnosis.pattern = "pyelonephritis | urosepsis | (obstruct* | infected) & (kidney | hydronephrosis) | sepsis | septic*"
+targets.warning.pattern = "shock | sepsis | septic*"
+targets.disposition.pattern = "admit* | urolog* | nephrostom* | drain* | icu | intensive & care"
+
 [case.Dutchfall12w]
 tags = ["dutch-fall"]
 targets.diagnosis.pattern = "pancreatitis"

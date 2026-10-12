@@ -14,6 +14,17 @@ targets.diagnosis.pattern = "copd | (exacerbation | obstructive) & pulmonary"
 targets.warning.pattern = "respiratory & failure | hypercapni* | airway | intubat* | andningssvikt | intuber*"
 targets.disposition.pattern = "icu | intensive & care | iva | intensivvård*"
 
+# An appendix in Swedish, made up for the sample by an agent, from no patient, and reviewed by no clinician: the blood
+# gas after bag-mask ventilation. It confirms the targets rather than changing them.
+[case.casesfromedn1.appendices]
+blood-gas = "Blodgas efter 20 minuters maskventilation: pH 7,18, pCO2 11,2 kPa, pO2 9,8 kPa, BE +6, laktat 1,4 mmol/l."
+
+[[case.casesfromedn1.with]]
+appendices = ["blood-gas"]
+targets.diagnosis.pattern = "copd | (exacerbation | obstructive) & pulmonary"
+targets.warning.pattern = "respiratory & failure | hypercapni* | airway | intubat* | andningssvikt | intuber*"
+targets.disposition.pattern = "icu | intensive & care | iva | intensivvård*"
+
 [[case.casesfromedn1.targets.notes]]
 author = "Olof"
 language = "sv"

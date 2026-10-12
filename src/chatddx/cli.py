@@ -1,5 +1,6 @@
 import argparse
 import getpass
+import os
 import sys
 from collections.abc import Sequence
 from pathlib import Path
@@ -13,6 +14,8 @@ from chatddx.core import settings
 from chatddx.core.rig import rig
 from chatddx.curation import init, load_cases, plan_factors, repair, wipe
 from chatddx.curation.write import ARCHIVE
+from chatddx.factors.base import StructuralError
+from chatddx.factors.engine import RemoteEngine
 from chatddx.facts import BUNDLED, Facts
 from chatddx.fake_vllm.served import CLOSURE, Refused, Served
 from chatddx.fake_vllm.server import run, run_all
@@ -24,7 +27,7 @@ from chatddx.importers.o11n import (
     imported,
     read,
 )
-from chatddx.inventory import World, check, start_up
+from chatddx.inventory import Inventory, World, check, start_up
 from chatddx.repl.loop import HISTORY, loop
 from chatddx.repl.shell import Repl, console
 from chatddx.store.migrate import TOP_TIER, migrate, pending
@@ -219,13 +222,41 @@ def _fake_vllm(args: argparse.Namespace) -> None:
     run(args.model, args.argv, delay=args.delay, runaway=args.runaway)
 
 
+# A remote engine's stand-in: its model at its endpoint's address on this machine, asking
+# for the key the endpoint's credential names. A hosted API parses tool calls, as the
+# fake does under any parser.
+def _stand_in(inventory: Inventory, engine: RemoteEngine, name: str) -> Served:
+    spec = inventory.endpoint(name)
+    if spec.url is None or spec.url.host not in ("127.0.0.1", "localhost"):
+        raise SystemExit(f"fake-engines: endpoint {name!r} isn't on this machine")
+    argv = ["--host", spec.url.host, "--port", str(spec.url.port)]
+    argv += ["--enable-auto-tool-choice", "--tool-call-parser", "openai"]
+    if spec.credential is not None:
+        key = os.environ.get(spec.credential)
+        if not key:
+            raise SystemExit(
+                f"fake-engines: endpoint {name!r} asks for the key in "
+                + f"{spec.credential}, which isn't set"
+            )
+        argv += ["--api-key", key]
+    return Served.of(engine.model, argv)
+
+
 def _fake_engines(args: argparse.Namespace) -> None:
     world = _world("fake-engines", args.world)
     served: list[Served] = []
     with psycopg.connect(settings.database()) as conn:
+        get = Store(conn).get
         for name in args.endpoint or world.inventory.endpoints:
             try:
-                startup = start_up(world.inventory, Store(conn).get, name)
+                engine = get(world.inventory.endpoint(name).engine)
+            except (LookupError, StructuralError) as e:
+                raise SystemExit(f"fake-engines: {e}") from None
+            if isinstance(engine, RemoteEngine):
+                served.append(_stand_in(world.inventory, engine, name))
+                continue
+            try:
+                startup = start_up(world.inventory, get, name)
             except LookupError as e:
                 raise SystemExit(f"fake-engines: {e}") from None
             if startup.closure != CLOSURE:
@@ -452,7 +483,7 @@ def main(argv: Sequence[str] | None = None) -> None:
     fakes = commands.add_parser(
         "fake-engines",
         help="serve the World's fake engines, each where its endpoint's start-up says, "
-        + "till Ctrl-C",
+        + "and stand in for its remote engines on this machine, till Ctrl-C",
     )
     _ = fakes.add_argument(
         "--world",

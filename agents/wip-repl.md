@@ -127,8 +127,8 @@ Takes, still waiting for a word:
 - **What applies**: every view of a scorer reaches the run's output schema, so the whole-answer scorers (`free-text`,
   `raw`) apply to every run and read a structured answer as its JSON text (see "3. Reads for a person").
 - **S6**: judge configurations listed and found apart, by purpose.
-- **Hypothetical notes stay out of the sample** (`agents/wip-judges.md`), which the completion's sample judge meets
-  (see "7. Completion", "Questions for the user").
+- **Hypothetical notes stay out of the sample** (`agents/wip-judges.md`), which the sample's drafted judge keeps: its
+  prompt is drafted, the notes are Olof's.
 
 ## Background
 The old repl is a thin UI (`src/chatddx/repl/`, ~1,600 lines and ~1,500 of tests) on top of four layers that do
@@ -619,28 +619,42 @@ Decided: first, before the sample. Built:
   being an error.
 
 #### 2. The sample as a complete example
-The sample is two parts that a new World follows: the data set (`worlds/sample/_data/`), which init-data loads
-into any World, and the World (`worlds/sample/`), which says where its sources and endpoints are and holds its own
-engines; Kompismoln's World is the first to follow it. Complete means every table either can hold is used at least
-once, each with a comment saying what it is for, and every repl command has something of the sample's to show.
+Decided: complete is every table a data set and a World can hold used at least once; the sample's judge prompt is
+drafted now, and the sample gets made-up appendices and a canary set. Also decided: the data set moves from the
+package into the sample World, `worlds/sample/_data/`, as the test World keeps its own.
 
-What the sample has: both source kinds (a directory and `typed`), endpoints with clearance and a host, local engines,
-every chunk kind, recipes made per model and per language, a tool and a toolset, an expectation schema, expectations
-with Olof's notes, and four pattern scorers.
+Built. The sample is two parts that a new World follows: the data set (`worlds/sample/_data/`) and the World
+(`worlds/sample/`), laid out as Kompismoln's is. `src/chatddx/curation/test/test_sample.py:
+test_the_sample_uses_every_table_a_data_set_and_a_world_hold` holds it to that. What came:
+- **Data sets hold appendices and canary sets** (`curation/plan.py`, `curation/write.py`). A cases file names a case's
+  `appendices`, texts by name, each landed as an archive thread `<name> for <id>`, and `[[case.<id>.with]]`, cases of
+  the family that send them in the order named, each with `targets` of its own when it has them. `canary_set` is a
+  table of `factors.toml`. The test World holds one of each (`whitespace`'s `labs`, `probe`), read by
+  `curation/test/test_tables.py`.
+- **The data set's default**: init-data takes the World's `_data/` unless `--data` names another (`cli.py`, `DATA`),
+  so `init-data alice --giftbag` loads the sample, and Kompismoln names `--data worlds/sample/_data`. A take: it
+  revisits `agents/wip-test-world.md`'s "Loading it stays explicit" (see its "Why `_data`").
+- **A judge**, drafted by an agent until Olof writes his (`agents/wip-judges.md`, "For Olof, later"): instructions
+  and a prompt of purpose `judge` (the answer and the note; no vignette), the outputs `verdict` and `grade` with
+  schemas whose `examples` the fake answers by seed, and their Swedish translations; the recipes `judge` (greedy)
+  and `judge-graded` (recommended sampling, per model); the judges `verdict` on `qwen3-8b-awq@fake` and `graded` on
+  `gpt-oss-20b@fake`; the scorer `notes`, Olof's comment and answer judged as met and his comment graded. The judges
+  name the sample World's engines, so Kompismoln skips them and `notes` until it names judges of its own; its
+  `factors.toml` is the engine import's to write whole, so where those go is open.
+- **Made-up appendices**, labelled so: `labs` and `ultrasound` for `Dutchfall11w`, whose ultrasound changes the right
+  answer from the targets' aneurysm to an infected, blocked kidney, held to targets of their own in two cases; and
+  `blood-gas` for `casesfromedn1`, in Swedish, which confirms its targets.
+- **A canary set**, `basics`: two greedy probes and a seeded one. No run sends it yet: `Bench.start` passes no canary
+  set.
+- **A remote engine with a credential**: `mistral-small@remote`, Mistral Small 3.2 from provider `fake`, whose
+  endpoint reads its key from `CHATDDX_SAMPLE_KEY` (set in `.env-container` and `.env-devshell`), and the facts of its
+  model in the World's `facts.toml`, from its makers' model card. `chatddx fake-engines` stands in for a remote engine
+  on this machine (`cli.py:_stand_in`), and the fake vLLM takes `--api-key` (`fake_vllm/served.py`, `server.py`). The
+  stand-in is cleared for the sample, as it runs here. The model adds a third variant of every per-model recipe.
+- **The World's endpoints and host** moved to an included `endpoints.toml`, as an engine import writes them.
 
-What it lacks:
-- **A judge**: a judge prompt (the completion and the expectation; no vignette, J7), the output `verdict` with
-  `examples` so the fake answers by seed, and a graded one (`points`); judges on the sample World's fakes, and on
-  `qwen3-8b@pelle` in Kompismoln's; a scorer over Olof's notes, with a view for `comment` and one for `answer` beside a
-  pattern view, as the test World's `judged` is. The test World shows the shape (`worlds/test/_data/factors.toml`).
-- **Appendices and canary sets**, which a data set can't hold yet (`docs/curation.md`, "What a data set can't hold
-  yet"): a table each in curation first, then the sample's.
-- **A remote engine with a credential**: `RemoteEngine` and an endpoint whose `credential` names an environment
-  variable. The fake vLLM would take `--api-key`, as vLLM 0.24 does, so the sample World can serve one on this machine.
-- **A World's own facts** (`facts.toml`), shown only if the sample has a model the bundled facts don't know.
-- **Sample runs** (`agents/wip-sample-data.md`, "Sample runs"): what a person does, kept genuine (a run of each kind,
-  a stopped one, a judged score), so `runs`, `replay` and `score` have something to show without an engine. They need
-  the fake's `--script`.
+Still to come for "every repl command has something to show": sample runs (`agents/wip-sample-data.md`, "Sample
+runs"), which need the fake's `--script`.
 
 #### 3. Calibration
 With the user, on the sample, once it has its judge. What waits for it, since it depends on what the sample gives:
@@ -661,13 +675,11 @@ adoption with the solidify pass on the repl's tests, which are `wip`.
 
 #### Questions for the user
 1. **The order of steps 1 and 2.** Decided: step 1 first, and built.
-2. **The sample's judge prompt**: a drafted prompt in the sample now, which Olof's replaces as an edit that reaches
-   giftbag forks as a proposal; or no sample judge until his? The notes stay his either way, so "hypothetical notes
-   stay out of the sample" holds.
-3. **Appendices in the sample**: made up for it, in live data, or none until a clinician writes them, with the table
-   shown on the test World only?
-4. **A canary set in the sample**, and a remote engine with a credential served by the fake: wanted, as parts of a
-   complete example?
+2. **The sample's judge prompt**: decided, drafted now; Olof's replaces it as an edit, which reaches giftbag forks as a
+   proposal.
+3. **Appendices in the sample**: decided, made up for it, and labelled so.
+4. **A canary set in the sample**: decided, yes; and every table, so the remote engine with a credential too.
+5. **init-data's default data set**, the World's `_data/`: a take (see step 2).
 
 ## Left out
 What the port left to others, and where each is planned:

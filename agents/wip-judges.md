@@ -170,7 +170,9 @@ prompt's, for Olof. Judges aren't checked for language (`docs/catalog.md`, "Smal
 
 ### Hypothetical notes stay out of the sample
 Take: the sample's notes carry `author = "Olof"` into every score, and the sample is live data. Made-up notes go in
-the test World, under the placeholder authors it has. The sample gets its judge once Olof's prompt exists.
+the test World, under the placeholder authors it has. The sample got its judge before Olof's prompt exists (decided:
+`agents/wip-repl.md`, "7. Completion", step 2): a prompt drafted by an agent over his real notes, which his own
+replaces as an edit. No note is made up.
 
 ## The test World's additions
 Each read by a test, as `agents/wip-test-world.md` asks ("Principles", 1), and pinned in
@@ -222,7 +224,8 @@ The fake changes with it: a non-greedy request whose schema has `examples` is an
    refused, and lists a run's scores by name, as stored scores are listed. The test World's scorer `judged` mixes a
    pattern view with three judged views over carol's note; its labels start with `note-`, as `answer` is a scorer's
    name too. `judged-remote` applies to no run, as its judge's endpoint isn't cleared (see "Open").
-6. **After the pipeline.** The sample's judge, on Olof's prompt; a run on pelle or malborg to see real engines write
+6. **After the pipeline.** The sample's judge: drafted (the judges `verdict` and `graded` and the scorer `notes`,
+   `worlds/sample/_data/`), until Olof's prompt replaces it; a run on pelle or malborg to see real engines write
    valid verdicts; the judge measured against Olof's own grading.
 
 ## Open

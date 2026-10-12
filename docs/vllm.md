@@ -167,6 +167,18 @@ A request goes `server.py` → `chat.py:accept`, which refuses it or picks the s
 decides a `Reply` → `chat.py:completion` or `chat.py:stream`, which shape it. `served.py:Served` is the server's
 set-up, read once from the command line. Paths are relative to `src/chatddx/fake_vllm/`.
 
+```
+AGENT: amend
+fake-engines stands in for a World's remote engines too (src/chatddx/cli.py, `_stand_in`), so the sample World's
+remote endpoint answers on this machine.
+---
+`chatddx fake-engines [--world DIR] [--delay S] [--runaway] [ENDPOINT …]` serves the endpoints named, or every
+endpoint of the World, each on a server of its own where its start-up says, till Ctrl-C, with `fake-vllm`'s `--delay`
+and `--runaway`. It refuses an endpoint whose engine's runtime closure isn't `chatddx fake-vllm`. A remote engine's
+endpoint on this machine gets a stand-in: the engine's model, served under its own name at the endpoint's address,
+parsing tool calls as a hosted API does, and asking for the key in the variable the endpoint's credential names,
+which must be set. The engines come from the store, where init-data put them.
+```
 `chatddx fake-engines [--world DIR] [--delay S] [--runaway] [ENDPOINT …]` serves the endpoints named, or every
 endpoint of the World, each on a server of its own where its start-up says, till Ctrl-C, with `fake-vllm`'s `--delay`
 and `--runaway`. It refuses an endpoint whose engine's runtime closure isn't `chatddx fake-vllm`. The engines come from
@@ -193,6 +205,17 @@ sample models, served as the old inventory served them, and checks each answer a
 - **Flag values.** A flag read for one value refuses to start with none or several; `--max-model-len` and `--port`
   refuse a non-integer.
   fake · `served.py:_one`, `served.py:_int` · `test_it_won_t_start_where_vllm_won_t_or_where_it_can_t_follow`
+```
+AGENT: add
+The fake's `--api-key` (served.py `Served.api_keys`, server.py `_Handler._authorized`). Taken from vLLM's
+AuthenticationMiddleware as remembered, not yet checked against v0.24.0's source: whether it takes several keys, and
+reads `VLLM_API_KEY`, is open.
+---
+- **API keys.** `--api-key` takes one key or more; then every `/v1` request needs one of them as a bearer token, and
+  is otherwise answered 401 with `{"error": "Unauthorized"}`. `/health` and `/version` answer anyone.
+  vLLM, no item · `served.py:Served.of`, `server.py:_Handler._authorized` ·
+  `test_with_an_api_key_it_asks_for_a_key_as_a_bearer_on_v1_only`, `test_an_api_key_takes_a_key`
+```
 - **Served names.** `--served-model-name` takes one or more names, else the model is its own name. The first name is
   the one responses carry.
   items 13, 14 · `served.py:Served.of`, `Served.name` · `test_it_reads_vllm_serve_s_flags_as_vllm_does`,

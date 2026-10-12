@@ -84,6 +84,14 @@ pytest -m solidified    # what docs/ describes; -m wip for what agents/wip-*.md 
 ```sh
 chatddx init-data alice --giftbag
 ```
+```
+AGENT: amend
+The sample World has a remote endpoint now, whose key fake-engines asks for and the repl sends, both reading it from
+CHATDDX_SAMPLE_KEY, which `.env-devshell` and `.env-container` set. A `.env` copied before it lacks the line.
+---
+In a second shell (`nix develop` there too), serve each endpoint's fake engine as its start-up says, and a stand-in for
+the remote engine, which asks for the key in `CHATDDX_SAMPLE_KEY` (set in `.env-devshell`), till Ctrl-C:
+```
 In a second shell (`nix develop` there too), serve each endpoint's fake engine as its start-up says, till Ctrl-C:
 ```sh
 chatddx fake-engines

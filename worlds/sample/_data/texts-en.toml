@@ -9,6 +9,14 @@ text = [
   { insert = "output_guidance", before = "\n\n" },
 ]
 
+# A judge's instructions. A draft by an agent, until Olof writes the judge's prompt (agents/wip-judges.md, "For Olof,
+# later"): the notes it reads are his, in Swedish, and the answers it judges are mostly English.
+[instructions.judge]
+text = [
+  "You are an emergency physician reviewing an assistant's answer to an emergency case. You are given the answer and a note a colleague wrote on the same case: their reading of it and what they would do. The note may be in Swedish and the answer in English; judge what they say, not the language they say it in.",
+  { insert = "output_guidance", before = "\n\n" },
+]
+
 # A made-up case, answered as the free-text output asks.
 [few_shot.worked-example]
 messages = [
@@ -67,6 +75,23 @@ guidance = "List the plausible diagnoses, most likely first."
 description = "The differential as plain lines."
 contract = { kind = "text" }
 guidance = "List the plausible diagnoses, one per line, most likely first."
+
+# A judge's prompt: the answer and the note, and never the vignette (agents/wip-judges.md, J7).
+[prompt.judge]
+purpose = "judge"
+segments = ["The assistant's answer:\n\n", { slot = "completion" }, "\n\nThe colleague's note:\n\n", { slot = "expectation" }]
+
+[output.verdict]
+description = "A judge's verdict: whether the answer meets the note, and why."
+contract = { kind = "native" }
+json_schema_path = "schemas/verdict.json"
+guidance = "Say whether the answer meets the note: whether it reaches the same reading of the case and would lead to the same essential actions. Wording, order and extra detail don't matter; missing what the note calls for, or advice that would harm the patient, does. Give your reason in one or two sentences."
+
+[output.grade]
+description = "A judge's grade of the answer against the note, from 0 to 2, and why."
+contract = { kind = "native" }
+json_schema_path = "schemas/grade.json"
+guidance = "Grade how well the answer meets the note, from 0 to 2: 2 when it reaches the same reading of the case and the same essential actions, 1 when it gets part of the way, 0 when it misses it or would mislead. Give your reason in one or two sentences."
 
 [toolset.web]
 tools = ["web_search"]

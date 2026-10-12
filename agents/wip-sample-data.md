@@ -14,9 +14,13 @@ all fixed but one. Each is condensed to where its result is described now and wh
 write-ups are in git history: `git show 79ec890:agents/wip-sample-data.md`.
 
 ## Start with this
-The endgame is parity with the old `init-data`. Everything is in but the real engines: the configurations and cases,
-the tool and scorers, and the two fake engines with their endpoints (see "Engines and endpoints"). What's left, in
-order:
+Parity with the old `init-data` is reached, and the real engines are imported (below). Since then the sample is the
+example new Worlds follow, using every table a data set and a World can hold (decided; `agents/wip-repl.md`, "7.
+Completion", step 2, which lists what came): it moved to `worlds/sample/_data/`, and gained a drafted judge over
+Olof's notes, made-up appendices and the cases that send them, a canary set, a remote engine with a credential, its
+model's facts, and an included `endpoints.toml`. Next: "Sample runs".
+
+What follows is the parity work's record. It said, in order:
 
 ### 1. Import the real engines from their hosts' reports (decision 4A)
 The old `qwen3-8b-awq@pelle`, `qwen3-8b-awq@malborg` and `gpt-oss-20b@malborg` get seeded from values read on the

@@ -4,6 +4,10 @@
 # set from here too.
 #
 # They aren't sensitive, but the source is declared so, as a real one would be, and is kept out of the package.
+#
+# The World's endpoints and host are in endpoints.toml, which a real World's engine import writes and this file
+# includes; its sources and their clearance are written here, by hand.
+include = ["endpoints.toml"]
 
 [source.sample]
 path = "vignettes"
@@ -13,37 +17,12 @@ sensitive = true
 [source.typed]
 kind = "database"
 
-# Where the sample's fake engines (factors.toml) run: chatddx's fake vLLM on this machine, one per engine, as vLLM serves one model.
-# An endpoint names the engine it serves by digest, which is also the name it's served under, so changing the engine
-# means changing its endpoint here. The fake host says where it keeps what the engines pin: the fake vLLM takes a model
-# by its repo name, and the fake engines' empty chat template is /dev/null. `chatddx fake-engines` starts them all,
-# each as `chatddx.inventory.start_up` says, once init-data has stored them.
-
-[endpoint."qwen3-8b-awq@fake"]
-engine = "sha256:cc0dc8fbbc8dbb3a62d274c6ce62ee4bc9d909b05aef6263015cb46459fdc42f"
-url = "http://127.0.0.1:12099/v1/"
-host = "fake"
-max_jobs = 4
-
-[endpoint."gpt-oss-20b@fake"]
-engine = "sha256:fc08c407478623b2afdb709752f30ecc3333de3142a0d534bdbbb378a6d8e841"
-url = "http://127.0.0.1:12100/v1/"
-host = "fake"
-max_jobs = 4
-
-[host.fake]
-bind = "127.0.0.1"
-
-[host.fake.models]
-"sha256:7781395e2ff446324a43c9d3dd81da3aa0e57ddc87a0da56e02776d3efac5e0d" = "Qwen/Qwen3-8B-AWQ"
-"sha256:355721fac51cefbde383916197f19628d37ab99694dc58eb8e21888bdafb14b5" = "openai/gpt-oss-20b"
-
-[host.fake.templates]
-"e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855" = "/dev/null"
-
-# The sensitive sources each endpoint may receive case-derived content from; the runner refuses anything else. The
-# fake engines run on this machine, so they're cleared for the sample.
+# The sensitive sources each endpoint may receive case-derived content from; the runner refuses anything else, and
+# reads this table only from this file. The fake engines run on this machine, so they're cleared for the sample. So is
+# the remote engine's stand-in, which runs here too; a real remote API would be cleared only once it is vetted
+# (agents/wip-clearance.md), and typed cases stay on this machine.
 
 [cleared]
 "qwen3-8b-awq@fake" = ["sample", "typed"]
 "gpt-oss-20b@fake" = ["sample", "typed"]
+"mistral-small@remote" = ["sample"]

@@ -33,3 +33,12 @@ hardware = { gpu = "none", compute_capability = [0, 0], vram_mib = 0, driver = "
 runtime = { version = "0.24.0+fake", closure = "chatddx fake-vllm" }
 chat_template = "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
 argv = ["--reasoning-parser", "openai_gptoss", "--enable-auto-tool-choice", "--tool-call-parser", "openai"]
+
+# A remote engine: a model behind an API that someone else runs, named by its provider and the model's name there. Its
+# endpoint (endpoints.toml) gives the address and the environment variable that holds the key. The provider here is
+# the fake vLLM, which `chatddx fake-engines` serves at that address as a stand-in, asking for the key.
+[remote_engine."mistral-small@remote"]
+description = "Mistral Small 3.2 behind an API with a key, stood in for by the fake vLLM."
+tags = ["fake", "remote"]
+provider = "fake"
+model = "mistralai/Mistral-Small-3.2-24B-Instruct-2506"

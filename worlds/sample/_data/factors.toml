@@ -165,6 +165,51 @@ sampling = "recommended"
 passthrough = "min-tokens"
 translations = "sample"
 
+# Judges' requests: an answer against a clinician's note, as the judges below ask them. A judge's recipe is made as
+# any other; its prompt's purpose makes it a judge's, which may read the completion and the expectation.
+[recipe.judge]
+description = "Whether an answer meets a clinician's note, greedy."
+tags = ["judge"]
+purpose = "judge"
+instructions = "judge"
+prompt = "judge"
+output = "verdict"
+sampling = "greedy"
+
+[recipe.judge-graded]
+description = "A grade of an answer against a clinician's note, sampled as the model's makers recommend."
+tags = ["judge"]
+purpose = "judge"
+instructions = "judge"
+prompt = "judge"
+output = "grade"
+sampling = "recommended"
+
+# Judges: a recipe, made for the model the engine serves when it's made per model, an engine of the World, and the
+# seeds it's asked under. The engines are the sample World's, so another World skips them, and the scorers that name
+# them, until it names judges of its own.
+[judge.verdict]
+description = "Whether the answer meets the note, greedy, so one seed."
+recipe = "judge"
+engine = "qwen3-8b-awq@fake"
+seeds = [1]
+
+[judge.graded]
+description = "A grade from 0 to 2, sampled under three seeds and averaged."
+recipe = "judge-graded"
+engine = "gpt-oss-20b@fake"
+seeds = [1, 2, 3]
+
+# A canary set: fixed probes, the same for every engine and holding nothing of a case, that a run can send before and
+# after its items to see whether its engine still answers as it did.
+[canary_set.basics]
+description = "Two greedy probes and a seeded one, the same for every engine."
+canaries = [
+  { messages = [{ role = "user", content = "Reply with the single word: ready." }], body = { temperature = 0, max_tokens = 8 } },
+  { messages = [{ role = "user", content = "What is 17 times 23? Reply with the number only." }], body = { temperature = 0, max_tokens = 8 } },
+  { messages = [{ role = "user", content = "Name one cause of chest pain." }], body = { temperature = 0.7, max_tokens = 16 }, seed = 7 },
+]
+
 # Reference data for scoring.
 [expectation_schema.targets]
 json_schema_path = "schemas/targets.json"
@@ -212,3 +257,15 @@ description = "Unguided free text, whole, against the case's diagnosis."
 entry_point = "chatddx.scorers.metrics:score"
 expectation_schema = "targets"
 views = [{ label = "text", expectation = "/diagnosis", metric = "first_mention" }]
+
+# Olof's notes, judged: his comment and his short answer each against the answer, and his comment graded. A case
+# without his notes gives these views nothing to judge.
+[scorer.notes]
+description = "The answer against Olof's notes on the case: his comment and his short answer judged as met, and his comment graded."
+entry_point = "chatddx.scorers.metrics:score"
+expectation_schema = "targets"
+views = [
+  { label = "comment", expectation = "$.notes[?@.author == 'Olof'].comment", metric = "verdict", judge = "verdict", params = { at = "/meets" } },
+  { label = "answer", expectation = "$.notes[?@.author == 'Olof'].answer", metric = "verdict", judge = "verdict", params = { at = "/meets" } },
+  { label = "graded", expectation = "$.notes[?@.author == 'Olof'].comment", metric = "points", judge = "graded", params = { at = "/points", max = 2 } },
+]

@@ -1,4 +1,5 @@
 import json
+import tomllib
 from typing import cast
 
 import pytest
@@ -7,6 +8,7 @@ from pydantic import JsonValue
 
 from chatddx.core.rig import rig
 from chatddx.curation import Plan, init, load_cases
+from chatddx.curation.plan import PLANNED_TABLES
 from chatddx.factors.base import Fingerprint
 from chatddx.factors.request import Compilation, compiled
 from chatddx.inventory import DirectorySource, Inventory, World
@@ -15,6 +17,8 @@ from chatddx.store.store import Connection
 from chatddx.test.world import SAMPLE, WORLDS, world_plan
 
 pytestmark = pytest.mark.wip
+
+MISTRAL_SMALL = "mistralai/Mistral-Small-3.2-24B-Instruct-2506"
 
 
 def sample_plan() -> Plan:
@@ -32,10 +36,14 @@ def test_the_sample_s_texts_are_english_and_free_text_guided_swedish_too() -> No
             "diagnoses",
             "diagnoses-tool",
             "free-text",
+            "verdict",
+            "grade",
         )
     } | {
         ("toolset", "web (en)"),
         ("instructions", "clinician (en)"),
+        ("instructions", "judge (en)"),
+        ("prompt", "judge (en)"),
         ("few_shot", "worked-example (en)"),
     }
     assert {(r.table, r.name) for r in sample.records if r.language == "sv"} == {
@@ -43,7 +51,7 @@ def test_the_sample_s_texts_are_english_and_free_text_guided_swedish_too() -> No
         ("few_shot", "worked-example (sv)"),
         ("translations", "sample (sv)"),
     }
-    models = ("Qwen/Qwen3-8B-AWQ", "openai/gpt-oss-20b")
+    models = ("Qwen/Qwen3-8B-AWQ", "openai/gpt-oss-20b", MISTRAL_SMALL)
     assert {r.name for r in sample.records if r.table == "recipe"} == {
         f"{name} (en, {model})"
         for name in (
@@ -55,9 +63,10 @@ def test_the_sample_s_texts_are_english_and_free_text_guided_swedish_too() -> No
             "diagnoses-tool",
             "free-text",
             "free-text-guided",
+            "judge-graded",
         )
         for model in models
-    } | {f"free-text-guided (sv, {model})" for model in models}
+    } | {f"free-text-guided (sv, {model})" for model in models} | {"judge (en)"}
 
 
 def test_the_sample_s_translations_carry_every_recipe_into_swedish() -> None:
@@ -176,14 +185,39 @@ def test_the_sample_s_cases_are_79_english_and_20_swedish() -> None:
 def test_the_sample_loads_with_its_world_s_fakes(conn: Connection) -> None:
     alice = People(conn).add("alice", "Alice")
     plan = sample_plan()
+    harmony = {
+        "off": "always reasons: vLLM rejects reasoning_effort = none for harmony",
+        "minimal": "harmony has no minimal effort, only low, medium and high",
+        "xhigh": "harmony has no xhigh effort, only low, medium and high",
+        "on-budget-2048": "no thinking budget is documented for harmony",
+    }
+    efforts = [
+        "off",
+        "on",
+        "minimal",
+        "low",
+        "medium",
+        "high",
+        "xhigh",
+        "on-budget-2048",
+    ]
     assert plan.skipped == [
-        f"reasoning {effort} (openai/gpt-oss-20b): {reason}"
-        for effort, reason in [
-            ("off", "always reasons: vLLM rejects reasoning_effort = none for harmony"),
-            ("minimal", "harmony has no minimal effort, only low, medium and high"),
-            ("xhigh", "harmony has no xhigh effort, only low, medium and high"),
-            ("on-budget-2048", "no thinking budget is documented for harmony"),
-        ]
+        line
+        for effort in efforts
+        for line in (
+            *(
+                [
+                    f"reasoning {effort} ({MISTRAL_SMALL}): Mistral Small 3.2 doesn't reason"
+                ]
+                if effort != "off"
+                else []
+            ),
+            *(
+                [f"reasoning {effort} (openai/gpt-oss-20b): {harmony[effort]}"]
+                if effort in harmony
+                else []
+            ),
+        )
     ]
     world = World.load(WORLDS / "sample")
     lines = init(conn, plan, load_cases(SAMPLE), world.inventory.listing(), alice)
@@ -207,3 +241,25 @@ def test_the_sample_loads_with_its_world_s_fakes(conn: Connection) -> None:
     variation = catalog.variation(shown)
     assert variation is not None and set(variation.varies) == {"/recipe/output"}
     assert variation.base.thread == plan_thread
+
+
+# The sample is the example a new World follows, so it uses everything a data set and a
+# World can hold at least once.
+def test_the_sample_uses_every_table_a_data_set_and_a_world_hold() -> None:
+    plan = sample_plan()
+    assert {r.table for r in plan.records} == set(PLANNED_TABLES)
+    cases = load_cases(SAMPLE).values()
+    assert any(c.appendices for c in cases) and any(c.ordered for c in cases)
+    assert {c.language for c in cases} == {"en", "sv"}
+    assert any(isinstance(c.targets, dict) and "notes" in c.targets for c in cases)
+
+    path = WORLDS / "sample"
+    world = World.load(path)
+    assert world.factors and world.facts
+    with (path / "inventory.toml").open("rb") as f:
+        assert tomllib.load(f)["include"]
+    inventory = world.inventory
+    assert {s.kind for s in inventory.sources.values()} == {"directory", "database"}
+    assert inventory.hosts and inventory.cleared
+    endpoints = inventory.endpoints.values()
+    assert any(e.credential for e in endpoints) and any(e.host for e in endpoints)

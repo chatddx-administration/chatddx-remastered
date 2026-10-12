@@ -63,3 +63,13 @@ description = "The sample's outputs and toolset in Swedish."
 # schemas/diagnoses.json
 "diagnoses" = "diagnoser"
 "The commonly used name of the diagnosis." = "Diagnosens vedertagna namn."
+# schemas/verdict.json and schemas/grade.json, and the judges' guidance
+"Say whether the answer meets the note: whether it reaches the same reading of the case and would lead to the same essential actions. Wording, order and extra detail don't matter; missing what the note calls for, or advice that would harm the patient, does. Give your reason in one or two sentences." = "Säg om svaret motsvarar anteckningen: om det kommer fram till samma bedömning av fallet och skulle leda till samma väsentliga åtgärder. Ordval, ordning och extra detaljer spelar ingen roll; att missa det anteckningen kräver, eller råd som skulle skada patienten, gör det. Motivera med en eller två meningar."
+"Grade how well the answer meets the note, from 0 to 2: 2 when it reaches the same reading of the case and the same essential actions, 1 when it gets part of the way, 0 when it misses it or would mislead. Give your reason in one or two sentences." = "Betygsätt hur väl svaret motsvarar anteckningen, från 0 till 2: 2 när det kommer fram till samma bedömning av fallet och samma väsentliga åtgärder, 1 när det når en del av vägen, 0 när det missar eller skulle vilseleda. Motivera med en eller två meningar."
+"Verdict" = "Utlåtande"
+"Whether an answer meets a clinician's note on the case, and why." = "Om ett svar motsvarar en klinikers anteckning om fallet, och varför."
+"Whether the answer meets the note." = "Om svaret motsvarar anteckningen."
+"Why, in one or two sentences." = "Varför, med en eller två meningar."
+"Grade" = "Betyg"
+"How well an answer meets a clinician's note on the case, and why." = "Hur väl ett svar motsvarar en klinikers anteckning om fallet, och varför."
+"How well the answer meets the note, from 0 (not at all) to 2 (fully)." = "Hur väl svaret motsvarar anteckningen, från 0 (inte alls) till 2 (helt)."
