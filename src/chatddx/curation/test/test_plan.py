@@ -2,12 +2,11 @@ from pathlib import Path
 
 import pytest
 
-from chatddx.conftest import sample_plan
 from chatddx.core.rig import rig
 from chatddx.curation import Plan, load_cases, plan_factors
-from chatddx.curation.plan import SAMPLE
 from chatddx.factors.request import Compilation, Skeleton
 from chatddx.facts import BUNDLED, Facts
+from chatddx.test.world import DATA
 
 pytestmark = pytest.mark.solidified
 
@@ -61,7 +60,6 @@ sampling = "recommended"
         + "by engine.remote gemma@api",
         "from_facts records for openai/gpt-oss-20b: no planned engine serves it",
     ]
-    assert not [s for s in sample_plan().skipped if s.startswith("from_facts records")]
 
 
 ENGINE = """
@@ -299,12 +297,10 @@ def test_texts_are_refused_where_they_say_the_wrong_thing(
 
 
 def test_cases_are_kept_by_language(tmp_path: Path) -> None:
-    cases = load_cases(SAMPLE)
-    assert len(cases) == 99
-    assert sum(c.language == "sv" for c in cases.values()) == 20
+    cases = load_cases(DATA)
     assert {c.language for c in cases.values()} == {"en", "sv"}
-    assert cases["casesfromedn1"].language == "sv"
-    assert cases["Dutchfall11w"].language == "en"
+    assert (cases["crlf"].language, cases["svenska"].language) == ("en", "sv")
+    assert cases["mislabeled"].language == "sv"
 
     case = '[case.alpha]\ntags = ["a"]\ntargets.diagnosis.pattern = "x"\n'
     _ = (tmp_path / "cases-en.toml").write_text(case)

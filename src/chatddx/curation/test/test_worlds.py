@@ -1,9 +1,11 @@
 import json
+import shutil
 from pathlib import Path
 
 import pytest
 from jsonschema.validators import validator_for
 
+from chatddx.cli import main
 from chatddx.curation import Plan, load_cases
 from chatddx.curation.plan import SAMPLE
 from chatddx.factors.base import resolve
@@ -122,3 +124,46 @@ def test_every_target_s_pattern_reads(data: Path) -> None:
         for target in case.targets.values():
             if isinstance(target, dict) and "pattern" in target:
                 _ = Pattern(str(target["pattern"]))
+
+
+def few(data: Path, to: Path) -> Path:
+    copy = shutil.copytree(data, to)
+    for path in copy.glob("cases-*.toml"):
+        first = path.read_text().split("\n[case.")[1]
+        _ = path.write_text(f"[case.{first}\n")
+    return copy
+
+
+@pytest.mark.slow
+def test_init_data_binds_each_world_s_endpoints_and_no_other_world_s_engines(
+    db: str,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    monkeypatch.setenv("DB_NAME", db)
+    held: set[tuple[str, str]] = set()
+    for name in ("test", "sample", "kompismoln"):
+        world = WORLDS / name
+        data = few(DATA_SETS[name], tmp_path / name)
+        main(["init-data", "alice", "--world", str(world), "--data", str(data)])
+        out = capsys.readouterr().out.splitlines()
+        endpoints = World.load(world).inventory.endpoints
+        assert [line for line in out if line.startswith("[world")] == [
+            f"[world] 0 findings in {len(endpoints)} endpoints of {world}"
+        ]
+        engines = {
+            (r.kind, r.name)
+            for r in world_plan(world, data).records
+            if r.kind in ("model", "engine.local", "engine.remote")
+        }
+        assert {n for _, n in engines} >= set(endpoints)
+        assert sorted(
+            line
+            for line in out
+            if line.startswith(("[archive model]", "[archive engine."))
+            and line.endswith("not in the data")
+        ) == sorted(
+            f"[archive {kind}] {n}: not in the data" for kind, n in held - engines
+        )
+        held |= engines

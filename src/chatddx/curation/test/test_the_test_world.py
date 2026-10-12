@@ -8,7 +8,7 @@ from chatddx.curation import init, load_cases
 from chatddx.inventory import World, check
 from chatddx.store import People
 from chatddx.store.store import Connection
-from chatddx.test.world import DATA, TEST, world_plan
+from chatddx.test.world import DATA, FAKE_LINTS, TEST, world_plan
 
 pytestmark = pytest.mark.wip
 
@@ -29,18 +29,6 @@ SKIPPED = [
     "recipe reasoned (en, test/mistral-7b): the facts refuse its reasoning",
     "recipe budgeted (en, openai/gpt-oss-20b): the facts refuse its reasoning",
     "recipe budgeted (en, test/mistral-7b): the facts refuse its reasoning",
-]
-FAKES = [
-    *(
-        f"[lint warning] model {name}: model.revision: revision 'fake' is not a "
-        + "commit and can move"
-        for name in ("qwen3-8b-awq", "gpt-oss-20b", "mistral-7b")
-    ),
-    *(
-        f"[lint warning] engine.local {name}: engine.closure: closure 'chatddx "
-        + "fake-vllm' is not a Nix store path"
-        for name in ("qwen3@fake", "qwen3-bare@fake", "gpt-oss@fake", "mistral@fake")
-    ),
 ]
 
 
@@ -74,8 +62,8 @@ def test_the_test_world_plans_and_loads_as_designed(conn: Connection) -> None:
     lines = init(conn, plan, cases, source, alice, giftbag=True)
     components = len({r.digest for r in plan.records}) + 2 * len(cases)
     assert [line for line in lines if line.startswith("[lint")] == [
-        *FAKES,
-        f"[lint] {len(FAKES)} findings in {components} components",
+        *FAKE_LINTS,
+        f"[lint] {len(FAKE_LINTS)} findings in {components} components",
     ]
     adopted = [line for line in lines if line.startswith("[archive case]")]
     assert [line.split(": ")[0] for line in adopted] == [

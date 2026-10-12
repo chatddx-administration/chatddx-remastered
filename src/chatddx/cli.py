@@ -133,7 +133,7 @@ def _repair_data(args: argparse.Namespace) -> None:
 def _wipe_data(args: argparse.Namespace) -> None:
     if args.user == ARCHIVE:
         raise SystemExit(
-            f"wipe-data: {ARCHIVE!r} holds the sample data; it isn't wiped"
+            f"wipe-data: {ARCHIVE!r} holds what init-data loads; it isn't wiped"
         )
     with psycopg.connect(settings.database()) as conn:
         user = People(conn).find(args.user)

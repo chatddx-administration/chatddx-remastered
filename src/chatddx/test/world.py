@@ -22,6 +22,7 @@ DATA = TEST / "_data"
 QWEN_MODEL = "Qwen/Qwen3-8B-AWQ"
 GPT_OSS_MODEL = "openai/gpt-oss-20b"
 MISTRAL_MODEL = "test/mistral-7b"
+MODELS = (QWEN_MODEL, GPT_OSS_MODEL, MISTRAL_MODEL)
 
 QWEN = "qwen3@fake"
 QWEN_BARE = "qwen3-bare@fake"
@@ -33,6 +34,19 @@ LINES = f"lines (en, {QWEN_MODEL})"
 NATIVE = f"native (en, {QWEN_MODEL})"
 NATIVE_TOOLS = f"native-tools (en, {QWEN_MODEL})"
 TOOL_ANSWER = "tool-answer (en)"
+
+FAKE_LINTS = [
+    *(
+        f"[lint warning] model {name}: model.revision: revision 'fake' is not a "
+        + "commit and can move"
+        for name in ("qwen3-8b-awq", "gpt-oss-20b", "mistral-7b")
+    ),
+    *(
+        f"[lint warning] engine.local {name}: engine.closure: closure 'chatddx "
+        + "fake-vllm' is not a Nix store path"
+        for name in (QWEN, QWEN_BARE, GPT_OSS, MISTRAL)
+    ),
+]
 
 
 def world_plan(world: Path = TEST, data: Path = DATA) -> Plan:
