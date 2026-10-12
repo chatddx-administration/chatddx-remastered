@@ -24,7 +24,8 @@ What's open, in order:
    `docs/repl.md`, is drafted from it once the completion's commands settle, since they will change `help` and most
    sections.
 3. **Takes waiting for the user's word**, listed in "Decisions so far".
-4. **Defects found in the check** (see "Where it stands at 5d4bff1"), fixed in the completion's first phase.
+4. **Defects found in the check** (see "Where it stands at 5d4bff1" and "The old manual, checked"), fixed in the
+   completion's first phase.
 5. **Left from 4b and 4c**, still true: a structured answer cut short is unread, as nothing salvages it; no word on
    reasoning that wasn't heeded; two tool calls in one response run together on one line as they stream (`replay`
    splits them, so the two differ); an unsaved cell's runs are titled by their whole recipe; only an item's first
@@ -694,7 +695,8 @@ and writing tools, expectation schemas, engines, models and canary sets, which a
 sets.
 
 #### Phases
-0. **The defects** of "Where it stands at 5d4bff1", and the stale notes in the other plans.
+0. **The defects** of "Where it stands at 5d4bff1" and "The old manual, checked", and the stale notes in the other
+   plans.
 1. **Judging seen**: the scoring handle with judge events and named endpoints, interrupted scores finished, and
    `show score`, verdicts in `run`, `batch`, `score` and `replay`, and a score's findings.
 2. **Runs whole**: seeds, execution, canaries, cleanup, cases by name and by appendix.
@@ -717,6 +719,8 @@ sets.
 4. **A score that was stopped**: does it count as given, so that only naming its scorer scores the run again, or is
    the run left to score until a score finishes whole?
 5. **Writes that undo something** (`delete`, `take … replace`, `follow`): asked to confirm at the prompt, or not?
+6. **An answer that didn't come**, from a stop, a server's error or a structured runaway: 0, as `reciprocal_rank` and
+   `mentions` give it now, or no value with the reason, as `first_mention` gives it (see "The old manual, checked")?
 
 ## Left out
 What the port left to others, and where each is planned:
@@ -746,13 +750,74 @@ What the port left to others, and where each is planned:
   and vLLM accept it.
 
 ## The old manual, checked
-`agents/wip-repl-manual.md` against the shell at 5d4bff1, section by section. Known from building it, before the
-example-by-example pass that comes next:
-- **Words**: `endpoints` and `on ENDPOINT` for stacks, parts for slices (`instructions`, `few_shot`, `prompt`,
-  `output`, `sampling`, `reasoning`, `passthrough`, `translations`, `toolset`; no `coercion`), and per-model names
-  (`plan (en, Qwen/Qwen3-8B-AWQ)`) found by their plain name through the cell's endpoint (D6, 4a).
-- **`seed none`** is gone, and a greedy cell runs with a notice rather than being refused (D3).
-- **Scores come after a run**, in a table, rather than on each batch line (4b).
-- **`show`** renders the request with placeholders and lists the lints and each view's reach, rather than what each
-  slice becomes on the stack (4a).
-- **New since the old manual**: `take`, and `show KIND` over every kind the bench names.
+`agents/wip-repl-manual.md` against the shell at 5d4bff1, section by section, driven on the sample World with
+`fake-engines` (and `--runaway`), through a pipe and a terminal. Where the shell does as the manual says, nothing is
+listed.
+
+- **Starting**: `fake-engines` serves the sample World's fakes, rather than `fake-vllm` one model; `repl` takes
+  `--world`, `--facts` and `--history`.
+- **A few words first**: stacks are endpoints, the six slices are nine parts (`instructions`, `few_shot`, `prompt`,
+  `output`, `sampling`, `reasoning`, `passthrough`, `translations`, `toolset`; no `coercion`), targets are
+  expectations (D6).
+- **`help`** lists `endpoints` and `take` too. It prints `take [TAG...]`: rich reads `[from OWNER]` as markup and
+  drops it.
+- **`configurations`**: a column per part some configuration sets, and every configuration per model, once as
+  the archive's and once as alice's giftbag fork: 36 rows for 9 recipes.
+- **`endpoints`** (was `stacks`): endpoint, engine, model, URL and what it is cleared for. The engine's title repeats
+  the endpoint's name.
+- **`cases`** adds a count per tag.
+- **Tab** completes word by word, per-model names included. `batch` completes its first tag only.
+- **`use`** without an endpoint refuses a name only per-model configurations have, naming them; the old shell held
+  `plan × ?`. `use archive/plan` runs without `save`; the old shell asked for `save` first.
+- **`on`** to another model's endpoint keeps the variant made for the first model and lints it
+  (`facts.sampling_unmatched`); `use` picks again.
+- **`set`**: `set reasoning off` keeps the sampling written for "on", and no lint says so (`facts/lint.py:_sampled_for`
+  checks the model, not the level). On gpt-oss, `set reasoning off` is refused naming only Qwen's `off`, without why
+  gpt-oss has none. The prompt grows with every part set, past a line.
+- **`show`** gives a table of parts, the request rendered with placeholders, the body, the lints, and per scorer view
+  how many cases it can hold the cell to. It doesn't say what a part becomes on the model (the default reasoning shows
+  `—`), refusals are lints, and a pattern that doesn't parse isn't named. The engine's served name is the whole digest.
+- **`show tag`** holds.
+- **`show KIND NAME`** takes 22 kinds. `show case` shows the source, the vignette, the tags, the language and the
+  expectation's fields that exist; the old `missing` and `none expected` lines are gone. Its runs sum every item of
+  every run that reached the case, the batch's other cases included. `show` of a part, a tool or an expectation schema
+  always says "no runs of yours" (`agents/wip-bench.md`, "Reaching a chunk finds no run"). "a expectation_schema" and
+  "a appendix" in the refusals.
+- **`reasoning`** holds, with the endpoints heading each model and why a level is refused.
+- **`seed`**: no `seed none`, and a greedy cell runs with a notice (D3).
+- **`run`** holds, with `valid`, tool calls as `[name] arguments`, and the gate's refusals before anything is
+  written. A plan run is scored by the plan's scorer and by `diagnoses`, `free-text` and `raw` too, whose views read
+  its JSON text (`free-text`'s `text` gives 19, the characters before the diagnosis in the JSON); "What applies".
+  A score's detail may be the raw JSON of what it read. A runaway's free text is kept and scored; a structured one is
+  unread and every view scores `0 no answer`, and no token line follows, as a cut stream has no usage. A stopped run
+  is scored too, with 0 where the answer didn't come.
+- **`batch`** holds, with the scores in a table after the lines. A case with no target and a scorer that found
+  nothing both show `—`, where the old lines left the first blank. Stopped and runaway lines count 0 tokens; a
+  runaway's structured answer reads `errored`; each failed call's `call.failed` is repeated after the table. Cases go
+  one at a time though the endpoint takes four. An English configuration over Swedish cases says nothing at run
+  time; `show tag` lints it.
+- **`runs`** holds, with means per view; an unsaved variation's run is titled by its recipe ("Left from 4c").
+- **`replay`** holds, with where it ran, the build, and whether the request renders as it was sent; a batch gives its
+  lines and tables, not each case's transcript.
+- **`scorers`** holds; on a plan cell every view "offers it", since a whole-answer view reaches any schema.
+- **`score`** catches up after an expectation changes, every run that reached the case included.
+- **`save`** holds, with "unchanged" and "a new version"; the old "yours now too" line is gone.
+- **Leaving**: `quit`, `exit`, Ctrl-D; `quit now` quits too. A piped session echoes its lines, keeps going after an
+  error and exits 0.
+- **Judges** can't be driven by hand: the sample has none, and the test World loads only under pytest (its tools
+  are the runner's test tools).
+
+New since the old manual: `endpoints` and the clearance gate, `take`, `show KIND` over every kind, `show`'s request
+and lints, `reasoning`'s refusals, multi-view scorers with reasons, `score` catching up, `replay` checking the request
+and naming the build, and run ids in "recorded as".
+
+Phase 0 of "7. Completion" takes the defects: `help`'s markup, `show case`'s sum, the article, `batch`'s completion,
+the repeated warnings, and the token count of a cut stream. The rest are questions or takes for the manual:
+- **An answer that didn't come scores 0** under `reciprocal_rank` and `mentions` (`scorers/patterns.py`), so a
+  stopped run or a server's error pulls a mean down as a wrong answer would; `first_mention` gives none. Take: no
+  value, with the reason, so that only what a model answered is scored, and how often it didn't answer is counted
+  apart, as `without a value` already is.
+- **`use OWNER/NAME` runs another's configuration as it is**; the old shell asked for `save` first. Take: keep it, as
+  a run's trial is stored whoever owns the thread.
+- **`on` keeps the variant**; take: pick the new model's variant of the same plain name when the cell was chosen by one.
+- **The whole-answer scorers on structured runs** ("What applies"): noisy scores like `text 19`.
