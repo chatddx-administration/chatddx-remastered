@@ -1,18 +1,20 @@
 import copy
 import json
 import re
+from dataclasses import replace
 
 from pydantic import JsonValue
 from rich.table import Table
 from rich.text import Text
 
-from chatddx.bench import KINDS, PARTS, Family, TriedVariation
+from chatddx.bench import KINDS, PARTS, Family, Graded, TriedVariation
 from chatddx.catalog import About
 from chatddx.catalog.titles import describe, short
 from chatddx.factors.base import Component, resolve
 from chatddx.factors.cases import Case
 from chatddx.factors.engine import LocalEngine
 from chatddx.factors.request import Reasoning, Skeleton
+from chatddx.factors.scoring import Expectation, Scoring
 from chatddx.facts import INTENTS, Effort, ModelFacts, Refusal, Refused
 from chatddx.inventory import url_of
 from chatddx.store import fetch_vignette
@@ -30,6 +32,8 @@ from .render import (
 from .shell import Repl
 
 _DIGEST = re.compile(r"^sha256:[0-9a-f]{64}$")
+
+SCORED = frozenset({"scorer", "judge", "expectation", "expectation_schema"})
 
 
 def show(repl: Repl, kind: str | None = None, *names: str) -> None:
@@ -220,7 +224,7 @@ def _in_cell(repl: Repl, word: str) -> str | None:
     elif word in ("engine", "model"):
         repl.error(f"the cell has no endpoint: show {word} NAME")
     else:
-        repl.error(f"a {word} isn't in the cell: show {word} NAME")
+        repl.error(f"no {word} in the cell: show {word} NAME")
 
     return digest
 
@@ -288,23 +292,48 @@ def _about(table: Table, about: About) -> None:
 
 def _runs(repl: Repl, word: str, digest: str) -> None:
     bench = repl.bench
-    scorer = word == "scorer"
-    runs = bench.scored_by(digest) if scorer else bench.reaching(digest)
+    scored = word in SCORED
+    runs = bench.scored_by(digest) if scored else bench.reaching(digest)
 
     if not runs:
-        said = "it scored" if scorer else f"with this {word}"
+        said = "it scored" if word == "scorer" else f"with this {word}"
         repl.console.print(f"no runs of yours {said}", style=LABEL)
         return
 
-    said = "it scored" if scorer else "with it"
+    said = "it scored" if word == "scorer" else "with it"
     repl.console.print(f"{plural(len(runs), 'run')} of yours {said}", style=LABEL)
     graded = [
-        g
-        for run in runs
-        for g in bench.scores_of(run.run)
-        if not scorer or g.scorer.digest == digest
+        g for run in runs for g in bench.scores_of(run.run) if g.score is not None
     ]
+
+    if scored:
+        graded = [g for g in graded if _scored_with(repl, g, digest)]
+
+    if word == "expectation":
+        case = resolve(bench.get, digest, Expectation).case
+        graded = [_of_case(g, case) for g in graded]
+    elif word == "case":
+        graded = [_of_case(g, digest) for g in graded]
+
     show_summary(repl.console, graded)
+
+
+def _scored_with(repl: Repl, graded: Graded, digest: str) -> bool:
+    assert graded.score is not None
+    scoring = resolve(repl.bench.get, graded.score.started.scoring, Scoring)
+    scorer = graded.scorer
+    return digest in (
+        scoring.scorer,
+        *scoring.expectations,
+        scorer.expectation_schema,
+        *scorer.judges,
+    )
+
+
+def _of_case(graded: Graded, case: str) -> Graded:
+    assert graded.score is not None
+    items = tuple(i for i in graded.score.items if i.key.case == case)
+    return replace(graded, score=graded.score.model_copy(update={"items": items}))
 
 
 def _add_rows(
@@ -343,7 +372,7 @@ def _show_case(repl: Repl, name: str | None) -> None:
     bench = repl.bench
 
     if name is None:
-        repl.error("a case isn't in the cell: show case NAME")
+        repl.error("no case in the cell: show case NAME")
         return
 
     family = bench.family(name)

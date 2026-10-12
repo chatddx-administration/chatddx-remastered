@@ -9,7 +9,7 @@ from .shell import Repl
 HISTORY = Path.home() / ".chatddx_history"
 
 
-def loop(shell: Repl, history: Path = HISTORY) -> None:
+def loop(shell: Repl, history: Path = HISTORY) -> int:
     matches: list[str] = []
 
     def completer(_word: str, state: int) -> str | None:
@@ -51,8 +51,13 @@ def loop(shell: Repl, history: Path = HISTORY) -> None:
                     break
             except KeyboardInterrupt:
                 shell.console.print("\n(interrupted)", style=LABEL)
+
+            if shell.failed and not interactive:
+                return 1
     finally:
         try:
             readline.write_history_file(history)
         except OSError:
             pass
+
+    return 0

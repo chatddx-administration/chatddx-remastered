@@ -37,6 +37,7 @@ def test_help_lists_every_command_with_the_words_it_takes(say: Say):
     assert "set PART CHUNK" in written
     assert "cell CONFIGURATION ENDPOINT" in written
     assert "show [KIND] [NAME...]" in written
+    assert "take [from OWNER] [TAG...]" in written
 
 
 def test_what_it_doesn_t_know_is_said_and_nothing_changes(repl: Repl, say: Say):
@@ -63,12 +64,18 @@ def test_quit_leaves(repl: Repl):
     assert handle(repl, "exit") is False
 
 
+def test_quit_takes_no_words(repl: Repl, say: Say):
+    assert "usage: quit" in say("quit now")
+    assert repl.failed
+
+
 def test_it_completes_a_command_and_then_its_names_word_by_word():
     names = {
         "configuration": ["lines", NATIVE, "native", f"native (en, {GPT_OSS_MODEL})"],
         "endpoint": [QWEN, GPT_OSS],
         "part": ["prompt", "reasoning", "sampling"],
-        "reasoning": ["off", f"off ({QWEN_MODEL})", "on", "none"],
+        "reasoning": ["off", f"off ({QWEN_MODEL})", "on"],
+        "set:reasoning": ["off", f"off ({QWEN_MODEL})", "on", "none"],
         "case": ["case-1", "case-2"],
         "kind": ["tag", "case", "configuration", "tool", "toolset"],
     }
@@ -90,7 +97,16 @@ def test_it_completes_a_command_and_then_its_names_word_by_word():
     assert complete(names, "set reasoning n") == ["none"]
     assert complete(names, "show c") == ["case", "configuration"]
     assert complete(names, "show case case-") == ["case-1", "case-2"]
+    assert complete(names, "show reasoning n") == []
     assert complete(names, "frobnicate x") == []
+
+
+def test_batch_completes_each_tag_once():
+    names = {"tag": ["bytes", "swedish", "targets"]}
+
+    assert complete(names, "batch ") == ["bytes", "swedish", "targets"]
+    assert complete(names, "batch targets ") == ["bytes", "swedish"]
+    assert complete(names, "batch targets s") == ["swedish"]
 
 
 def test_tags_complete_after_show_tag_each_once():
@@ -116,7 +132,9 @@ def test_the_names_complete_as_the_person_sees_them(repl: Repl):
 
     assert names["tag"] == sorted({tag for case in CASES.values() for tag in case.tags})
     assert {NATIVE, "native"} <= set(names["configuration"])
-    assert {"off", f"off ({QWEN_MODEL})", "none"} <= set(names["reasoning"])
-    assert "none" not in names["sampling"]
+    assert {"off", f"off ({QWEN_MODEL})"} <= set(names["reasoning"])
+    assert "none" not in names["reasoning"]
+    assert "none" in names["set:reasoning"]
+    assert "set:sampling" not in names
     assert names["endpoint"] == [GPT_OSS, MISTRAL, QWEN_BARE, QWEN, REMOTE]
     assert names["case"] == sorted(CASES)

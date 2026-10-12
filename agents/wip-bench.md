@@ -283,8 +283,12 @@ ones, and a scorer pinned again by a deploy reaches the person's fork of it.
 - **Scoring** scores a finished run under each scorer that applies to it, or some of them, through the scoring pass.
   A scorer that can't score the run gives why instead, and the others score it all the same.
 - **What is left to score** of a run is each scorer that applies, under which some of its cases have an expectation,
-  and that has no score of the run under the scoring built now, so a changed expectation leaves the run to score
-  again. What is left of the person's is each finished run with what it is left to be scored by.
+  and that has no whole score of the run under the scoring built now, so a changed expectation leaves the run to
+  score again. A score is whole when it finished, scored every item under every view, and none of its judge calls was
+  stopped, so a scoring that was stopped leaves the run to score too. What is left of the person's is each finished
+  run with what it is left to be scored by.
+- **Stopping a scoring**, as Ctrl-C does, finishes the score under way with what it has, and the scorers after it
+  aren't scored.
 - **A run's scores** are the latest under each scorer that scored it, each named by the thread the person sees holding
   that scorer, their own first.
 - **Rendering again**: only a request's fingerprint is kept, so whether a run's first requests would be sent the same
@@ -397,9 +401,9 @@ Variations, in the API:
   variation nobody saved has a long title").
 
 Runs, in the API:
-- **Reaching a chunk finds no run.** Filtering runs by a chunk's digest lists nothing, since a compiled skeleton
-  holds what the chunk sets rather than a reference to it; the compilation refers to both. The repl's `show reasoning
-  NAME` says "no runs of yours" the same way (`Bench.reaching`). Reaching through compilations would find them.
+- **Reaching a chunk** found no run, since a compiled skeleton holds what the chunk sets rather than a reference to
+  it. `Bench.reaching` reaches through the compilations now, which refer to both, and `Bench.scored_by` finds the runs
+  scored with what a scoring holds: an expectation, the expectation schema, a judge.
 - **A quiet stream sends nothing**, as while it waits for a slow first token, and a proxy's read timeout would cut
   it. A comment line now and then would keep it open.
 - **`Accept` is read by media type alone**, so `text/event-stream;q=0` still asks for a stream.

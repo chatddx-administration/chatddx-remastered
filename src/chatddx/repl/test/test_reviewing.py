@@ -133,3 +133,25 @@ def test_show_sums_up_the_runs_with_what_it_shows(say: Say):
     assert "2 runs of yours it scored" in written
     assert "lines" not in written
     assert "no runs of yours it scored" in say("show scorer answer")
+
+
+@pytest.mark.slow
+@pytest.mark.usefixtures("fake")
+def test_show_case_sums_up_only_its_own_items(say: Say):
+    _ = say(f"cell {LINES} {QWEN}", "run noted", "batch targets")
+
+    written = say("show case noted")
+
+    assert "2 runs of yours with it" in written
+    assert ["differential", "2", "0", "0"] in cells(written)
+
+
+@pytest.mark.slow
+@pytest.mark.usefixtures("fake")
+def test_show_finds_the_runs_through_what_compiled_or_scored_them(say: Say):
+    _ = say(f"cell {LINES} {QWEN}", "run noted")
+
+    assert "1 run of yours with it" in say("show output")
+    assert "1 run of yours with it" in say("show prompt case")
+    assert "1 run of yours with it" in say("show judge verdict")
+    assert "1 run of yours with it" in say("show expectation_schema targets")

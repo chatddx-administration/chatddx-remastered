@@ -19,6 +19,7 @@ from .render import (
     Transcript,
     clipped_line,
     outcome,
+    scored_findings,
     show_answer,
     show_scores,
     show_summary,
@@ -84,8 +85,11 @@ def replay(repl: Repl, prefix: str | None = None) -> None:
         )
 
     for key, why in differ.items():
-        repl.error(
-            f"{bench.title(key.case)}: rendered again, the request differs: {why}"
+        repl.console.print(
+            Text(
+                f"{bench.title(key.case)}: rendered again, the request differs: {why}",
+                style=REFUSED,
+            )
         )
 
     skeleton = _skeleton(repl, started)
@@ -96,12 +100,14 @@ def replay(repl: Repl, prefix: str | None = None) -> None:
         Transcript(repl.console).item(item)
         show_answer(repl.console, skeleton, item, graded)
         show_scores(repl.console, graded)
+        repl.say_findings(scored_findings(graded, read=True))
         return
 
     _lines(repl, skeleton, run.items)
     names = {item.key.case: bench.title(item.key.case) for item in run.items}
     show_table(repl.console, names, list(run.items), graded)
     show_summary(repl.console, graded)
+    repl.say_findings(scored_findings(graded), tally=True)
 
 
 def said(repl: Repl, started: RunStarted) -> None:

@@ -1,30 +1,34 @@
 import signal
-from collections.abc import Generator
-from contextlib import contextmanager
 from types import FrameType
 from typing import Any, Self
 
+from rich.console import Console
 from rich.text import Text
 
-from chatddx.bench import TriedVariation, usage
+from chatddx.bench import Bench, Graded, TriedVariation, usage
 from chatddx.catalog.titles import short
-from chatddx.ledger import RunItem
+from chatddx.ledger import RunItem, RunStarted
 from chatddx.runner.gate import Refused
 from chatddx.runner.run import Event, ItemEnded, ItemStarted, Noted, Running, Streamed
 
 from .render import (
     LABEL,
+    LATER,
     TOKENS,
     Tally,
     Transcript,
     outcome,
     plural,
+    scored_findings,
     show_answer,
     show_scores,
     show_summary,
     show_table,
 )
 from .shell import MAX_SEED, Repl, drawn_seed
+
+WRITING = "the run is written down and scored first; Ctrl-C again stops the scoring"
+SCORING = "Ctrl-C again stops the scoring"
 
 
 def seed(repl: Repl, value: str | None = None) -> None:
@@ -74,15 +78,17 @@ def run(repl: Repl, name: str, seed: str | None = None) -> None:
         transcript.begin(None)
         repl.console.print("(stopped)", style=LABEL)
 
-    with held():
+    with Held(repl.console, WRITING) as held:
         findings = running.finish()
-        graded = bench.score(running.started)
+        graded = held.scored(bench, running.started)
 
     for item in ended:
         show_answer(repl.console, skeleton, item, graded)
 
     show_scores(repl.console, graded)
+    repl.say_findings(scored_findings(graded, read=True))
     repl.say_findings(findings)
+    held.said()
     trial = running.started.trial
     runs = [r for r in bench.runs() if r.trial == trial]
     repl.console.print(
@@ -155,9 +161,9 @@ def batch(repl: Repl, *tags: str) -> None:
             if stopping.tally is not None:
                 stopping.tally.__exit__()
 
-    with held():
+    with Held(repl.console, WRITING) as held:
         findings = running.finish()
-        graded = bench.score(running.started)
+        graded = held.scored(bench, running.started)
 
     if len(ended) < len(families):
         repl.console.print(
@@ -165,10 +171,11 @@ def batch(repl: Repl, *tags: str) -> None:
             style=LABEL,
         )
 
-    repl.say_findings([n.finding for n in noted])
+    repl.say_findings([n.finding for n in noted], tally=True)
     show_table(repl.console, names, ended, graded)
     show_summary(repl.console, graded)
-    repl.say_findings(findings)
+    repl.say_findings([*scored_findings(graded), *findings], tally=True)
+    held.said()
 
 
 def _seed_of(repl: Repl, value: str) -> int | None:
@@ -200,21 +207,51 @@ def _started(
         return None
 
 
-@contextmanager
-def held() -> Generator[None]:
-    pressed = 0
+class Held:
+    def __init__(self, console: Console, said: str) -> None:
+        self.console: Console = console
+        self.message: str = said
+        self.pressed: int = 0
+        self.scoring: bool = False
+        self._held: Any = None
 
-    def hold(_signal: int, _frame: FrameType | None) -> None:
-        nonlocal pressed
-        pressed += 1
-        if pressed > 1:
+    def __enter__(self) -> Self:
+        self._held = signal.signal(signal.SIGINT, self._pressed)
+        return self
+
+    def __exit__(self, *_exc: object) -> None:
+        _ = signal.signal(signal.SIGINT, self._held)
+
+    @property
+    def stopped(self) -> bool:
+        return self.pressed > 1
+
+    def scored(
+        self, bench: Bench, run: RunStarted, scorers: list[str] | None = None
+    ) -> list[Graded]:
+        if self.stopped:
+            return []
+        self.scoring = True
+        try:
+            return bench.score(run, scorers)
+        except KeyboardInterrupt:
+            return []
+        finally:
+            self.scoring = False
+
+    def said(self) -> None:
+        if self.stopped:
+            self.console.print(
+                "scoring stopped: score scores what is left", style=LATER
+            )
+
+    # A press goes through once, while scoring: the bench finishes the score under way.
+    def _pressed(self, _signal: int, _frame: FrameType | None) -> None:
+        self.pressed += 1
+        if self.pressed == 1:
+            self.console.print(self.message, style=LATER)
+        elif self.pressed == 2 and self.scoring:
             raise KeyboardInterrupt
-
-    held = signal.signal(signal.SIGINT, hold)
-    try:
-        yield
-    finally:
-        _ = signal.signal(signal.SIGINT, held)
 
 
 class _Stopping:

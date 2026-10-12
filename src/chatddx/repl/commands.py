@@ -144,9 +144,6 @@ def handle(repl: Repl, line: str) -> bool:
         repl.error(f"no command '{verb}': try help")
         return True
 
-    if command.run is None:
-        return False
-
     args = _joined(command, args)
     required = [param for param in command.params if not param.startswith("[")]
     most = len(args) if command.repeats else len(command.params)
@@ -154,6 +151,9 @@ def handle(repl: Repl, line: str) -> bool:
     if not len(required) <= len(args) <= most:
         repl.error(f"usage: {' '.join((verb, *command.params))}")
         return True
+
+    if command.run is None:
+        return False
 
     try:
         command.run(repl, *args)
@@ -224,7 +224,8 @@ def complete(names: Mapping[str, list[str]], line: str) -> list[str]:
                 else found
             )
         case "set" if position >= 1:
-            return _next_words(names.get(words[0], []), words[1:])
+            held = names.get(f"set:{words[0]}", names.get(words[0], []))
+            return _next_words(held, words[1:])
         case _ if command is not None and command.rest is not None:
             if position < command.rest:
                 return _next_words(names.get(params[position].lower(), []), words[-1:])
@@ -236,6 +237,16 @@ def complete(names: Mapping[str, list[str]], line: str) -> list[str]:
             ):
                 found += _next_words(names.get(params[after].lower(), []), name[-1:])
             return found
+        case _ if (
+            command is not None and command.repeats and position >= len(params) - 1
+        ):
+            given = words[len(params) - 1 : -1]
+            key = command.params[-1].strip("[].").lower()
+            return [
+                name
+                for name in names.get(key, [])
+                if name.startswith(words[-1]) and name not in given
+            ]
         case _ if position < len(params):
             key = params[position].strip("[].").lower()
             held = names.get(f"{verb}:{key}", names.get(key, []))

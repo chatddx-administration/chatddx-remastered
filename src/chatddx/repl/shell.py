@@ -9,7 +9,7 @@ from chatddx.bench import KINDS, OPTIONAL, PARTS, Bench, TriedVariation
 from chatddx.catalog import made_for
 from chatddx.factors.base import Finding
 
-from .render import REFUSED, finding
+from .render import REFUSED, counted, finding
 
 NONE = "none"
 
@@ -19,6 +19,11 @@ MAX_SEED = 2**31 - 1
 
 def drawn_seed() -> int:
     return secrets.randbelow(SEEDS)
+
+
+# Names, vignettes and answers may hold brackets, which rich would read as markup.
+def console(record: bool = False, width: int | None = None) -> Console:
+    return Console(markup=False, record=record, width=width)
 
 
 @dataclass(frozen=True)
@@ -44,6 +49,7 @@ class Repl:
         self.console: Console = console
         self.cell: Cell = Cell()
         self.seed: int = drawn_seed() if seed is None else seed
+        self.failed: bool = False
         self._completions: dict[str, list[str]] | None = None
 
     @property
@@ -66,7 +72,7 @@ class Repl:
         bench = self.bench
         names = {word: self._per_model(bench.names(word)) for word in KINDS}
         for part in OPTIONAL:
-            names[part] = [*names[part], NONE]
+            names[f"set:{part}"] = [*names[part], NONE]
         names |= {
             "endpoint": sorted(bench.inventory.endpoints),
             "case": [f.name for f in bench.families()],
@@ -98,9 +104,10 @@ class Repl:
                 self.bench.findings(cell.variation, cell.engine, self.seed)
             )
 
-    def say_findings(self, findings: Iterable[Finding]) -> None:
-        for f in findings:
-            self.console.print(finding(f))
+    def say_findings(self, findings: Iterable[Finding], tally: bool = False) -> None:
+        for f, times in counted(findings) if tally else ((f, 1) for f in findings):
+            self.console.print(finding(f, times))
 
     def error(self, message: str) -> None:
+        self.failed = True
         self.console.print(Text(message, style=REFUSED))

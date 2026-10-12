@@ -1,5 +1,6 @@
 import re
 import signal
+from collections.abc import Callable
 
 import pytest
 
@@ -11,9 +12,11 @@ from chatddx.fake_vllm.server import serving
 from chatddx.inventory import Inventory, start_up
 from chatddx.ledger import Run
 from chatddx.repl.render import Tally, Transcript
+from chatddx.repl.running import WRITING
 from chatddx.repl.shell import SEEDS, Repl
 from chatddx.repl.test.helpers import Say, cells, tagged
 from chatddx.runner.run import Event, Running, Streamed
+from chatddx.runner.score import Event as ScoreEvent, Grading
 from chatddx.store import Store
 from chatddx.test.world import GPT_OSS, LINES, NATIVE, QWEN, TOOL_ANSWER
 
@@ -170,7 +173,27 @@ def test_a_structured_answer_cut_short_is_unread(
 
     assert "stopped: nothing but whitespace for 100 tokens" in written
     assert "unread: the content isn't JSON" in written
+    assert re.search(r"\(\d+ out\)", written)
     assert "no answer" in written
+    assert "answer.unread" not in written
+
+
+@pytest.mark.slow
+def test_a_batch_says_each_finding_once_with_how_often_it_came(
+    world: Inventory, bench: Bench, say: Say
+):
+    startup = start_up(world, bench.get, QWEN)
+    with serving([Served.of(startup.argv[0], startup.argv[1:])], runaway=True):
+        written = say(f"cell {NATIVE} {QWEN}", "batch targets")
+    targets = tagged("targets")
+
+    stop = "stopped: nothing but whitespace for 100 tokens"
+    assert f"[warning] call.failed: {stop} (×{len(targets)})" in written
+    assert written.count("call.failed") == 1
+    assert "answer.unread" in written
+    errored = [c for c in cells(written) if c[2:3] == ["errored"]]
+    assert sorted(c[0] for c in errored) == targets
+    assert all(int(c[1]) > 0 for c in errored)
 
 
 @pytest.mark.slow
@@ -302,6 +325,39 @@ def test_ctrl_c_again_stops_the_case_under_way_too(
     [_] = [c for c in cells(written) if c[2:] == ["stopped"] and c[0] in targets]
     assert f"stopped after 1 of {len(targets)} cases" in written
     assert "call.failed: stopped" in written
+
+
+@pytest.mark.slow
+@pytest.mark.usefixtures("fake")
+def test_ctrl_c_twice_while_scoring_finishes_the_score_and_leaves_the_rest(
+    bench: Bench, say: Say, monkeypatch: pytest.MonkeyPatch
+):
+    send = Grading.send
+
+    def pressed(self: Grading, on_event: Callable[[ScoreEvent], None] | None = None):
+        signal.raise_signal(signal.SIGINT)
+        signal.raise_signal(signal.SIGINT)
+        send(self, on_event)
+
+    monkeypatch.setattr(Grading, "send", pressed)
+    written = pressing(say, f"cell {LINES} {QWEN}", "run noted")
+
+    assert WRITING in written
+    assert "not scored: stopped" in written
+    assert "score.incomplete" in written
+    assert "scoring stopped: score scores what is left" in written
+    assert "recorded as run 1 of trial" in written
+
+    store = Store(bench.conn)
+    [run] = ran(bench)
+    [given] = store.scores_of(run.started.run)
+    assert store.score(given.score).finished is not None
+    started = bench.run_by_id(run.started.run)
+    assert len(bench.unscored(started)) == len(bench.scorers_for(started))
+
+    monkeypatch.undo()
+    assert "nothing to score" not in say("score")
+    assert bench.unscored(started) == []
 
 
 @pytest.mark.slow

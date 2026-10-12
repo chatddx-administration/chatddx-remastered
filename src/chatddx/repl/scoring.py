@@ -13,13 +13,14 @@ from .render import (
     REFUSED,
     VALID,
     plural,
+    scored_findings,
     show_scores,
     show_summary,
     show_table,
     some,
 )
 from .reviewing import said
-from .running import held
+from .running import SCORING, Held
 from .shell import Repl
 
 
@@ -32,12 +33,15 @@ def score(repl: Repl, prefix: str | None = None) -> None:
             repl.console.print("nothing to score", style=LABEL)
             return
         made: list[Graded] = []
-        for started, unscored in outstanding:
-            said(repl, started)
-            with held():
-                graded = bench.score(started, unscored)
-            _scored(repl, started, graded)
-            made += graded
+        with Held(repl.console, SCORING) as held:
+            for started, unscored in outstanding:
+                said(repl, started)
+                graded = held.scored(bench, started, unscored)
+                _scored(repl, started, graded)
+                made += graded
+                if held.stopped:
+                    break
+        held.said()
         show_summary(repl.console, made)
         return
 
@@ -47,9 +51,10 @@ def score(repl: Repl, prefix: str | None = None) -> None:
     if not bench.store.finished([started.run]):
         repl.console.print("unfinished: nothing to score", style=LABEL)
     elif unscored := bench.unscored(started):
-        with held():
-            graded = bench.score(started, unscored)
+        with Held(repl.console, SCORING) as held:
+            graded = held.scored(bench, started, unscored)
         _scored(repl, started, graded)
+        held.said()
     elif not bench.scorers_for(started):
         repl.console.print("no scorer applies to it", style=LABEL)
     else:
@@ -64,6 +69,7 @@ def _scored(repl: Repl, started: RunStarted, graded: list[Graded]) -> None:
     else:
         names = {item.key.case: repl.bench.title(item.key.case) for item in items}
         show_table(repl.console, names, list(items), graded)
+    repl.say_findings(scored_findings(graded), tally=True)
 
 
 def scorers(repl: Repl) -> None:

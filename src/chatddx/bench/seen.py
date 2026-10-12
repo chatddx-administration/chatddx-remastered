@@ -31,10 +31,17 @@ from chatddx.factors.trial import Trial
 from chatddx.facts import Facts, lints, model_name
 from chatddx.identity import Person, preferred
 from chatddx.inventory import Inventory
-from chatddx.ledger import ItemKey, Run, RunStarted, fingerprint_request
+from chatddx.ledger import (
+    ItemKey,
+    Run,
+    RunStarted,
+    ScoreStarted,
+    fingerprint_request,
+)
 from chatddx.runner.gate import Refused
 from chatddx.runner.prepare import Items
 from chatddx.runner.score import judge_at
+from chatddx.runner.send import STOPPED
 from chatddx.scorers.shipped import problems
 from chatddx.store import Catalog, People, Store
 from chatddx.store.catalog import Rows
@@ -347,10 +354,11 @@ class Seen:
         return lints(registry, self.facts, [trial.digest], languages)
 
     def scorers(self) -> list[tuple[Edit, About, Scorer]]:
-        return [
+        found = [
             (e, a, resolve(self.get, e.digest, Scorer))
             for e, a in self.threads("scorer")
         ]
+        return sorted(found, key=lambda s: s[1].name or self.catalog.title(s[0].thread))
 
     def scorers_for(self, run: RunStarted) -> list[tuple[Edit, About]]:
         return [
@@ -536,6 +544,9 @@ class Seen:
 
     def reaching(self, digest: str) -> list[RunStarted]:
         trials = set(self.store.reaching(digest, "trial"))
+        for made in self.store.reaching(digest, "compilation"):
+            skeleton = resolve(self.get, made, Compilation).skeleton
+            trials.update(self.store.reaching(skeleton, "trial"))
         return [r for r in self.runs() if r.trial in trials]
 
     def described(self, run: RunStarted) -> str:
@@ -565,18 +576,17 @@ class Seen:
             )
         return sorted(found.values(), key=lambda g: g.name)
 
-    def scored_by(self, scorer: str) -> list[RunStarted]:
+    def scored_by(self, digest: str) -> list[RunStarted]:
+        scorings = set(self.store.reaching(digest, "scoring"))
         return [
             run
             for run in self.runs()
-            if any(
-                resolve(self.get, s.scoring, Scoring).scorer == scorer
-                for s in self.store.scores_of(run.run)
-            )
+            if any(s.scoring in scorings for s in self.store.scores_of(run.run))
         ]
 
     def unscored(self, run: RunStarted) -> list[str]:
-        scored = {s.scoring for s in self.store.scores_of(run.run)}
+        given = self.store.scores_of(run.run)
+        keys: set[ItemKey] | None = None
         found: list[str] = []
         for edit, _ in self.scorers_for(run):
             try:
@@ -584,9 +594,25 @@ class Seen:
             except Ambiguous:
                 found.append(edit.digest)
                 continue
-            if scoring is not None and scoring.digest not in scored:
+            if scoring is None:
+                continue
+            under = [s for s in given if s.scoring == scoring.digest]
+            if under and keys is None:
+                keys = {i.key for i in self.store.run(run.run).items}
+            views = len(resolve(self.get, edit.digest, Scorer).views)
+            if not any(self._whole(s, keys or set(), views) for s in under):
                 found.append(edit.digest)
         return found
+
+    def _whole(self, started: ScoreStarted, keys: set[ItemKey], views: int) -> bool:
+        score = self.store.score(started.score)
+        if score.finished is None:
+            return False
+        calls = (c.call for i in score.items for c in i.judge_calls)
+        if any(call.error == STOPPED for call in calls):
+            return False
+        expected = {(k, v) for k in keys for v in range(views)}
+        return expected <= {(i.key, i.view) for i in score.items}
 
     def outstanding(self) -> list[tuple[RunStarted, list[str]]]:
         runs = self.runs()

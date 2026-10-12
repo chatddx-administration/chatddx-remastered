@@ -28,8 +28,8 @@ What's open, in order:
    `docs/repl.md`, is drafted from it once the completion's commands settle, since they will change `help` and most
    sections.
 3. **Takes waiting for the user's word**, listed in "Decisions so far".
-4. **Defects found in the check** (see "Where it stands at 5d4bff1" and "The old manual, checked"), fixed in the
-   completion's first phase.
+4. **Defects found in the check** (see "Where it stands at 5d4bff1" and "The old manual, checked"): step 1 of "7.
+   Completion" fixed those that needed no data and no decision; the rest wait for the calibration.
 5. **Left from 4b and 4c**, still true: a structured answer cut short is unread, as nothing salvages it; no word on
    reasoning that wasn't heeded; two tool calls in one response run together on one line as they stream (`replay`
    splits them, so the two differ); an unsaved cell's runs are titled by their whole recipe; only an item's first
@@ -61,6 +61,9 @@ test run passes (548).
 - **The runner** is solidified (`docs/runner.md`, `docs/runner-api.md`).
 
 ### Defects
+Step 1 of "7. Completion" fixed the interrupted scoring, the findings, `show judge`'s runs and the piped session; the
+judged view's display, `scorers` naming the judge, the barred judge, the silent scoring and the judge configurations
+listed wait for the calibration.
 - **An interrupted scoring counts as scored.** A second Ctrl-C while `run`, `batch` or `score` scores raises out of
   `Bench.score` before `Grading.finish`, so the score has no `ScoreFinished`; `Bench.unscored` counts every
   `ScoreStarted` (`store.scores_of`), so the scorer is never offered again, and `runs`, `replay` and `show` read the
@@ -587,22 +590,33 @@ Decided: the four steps in "Start with this". Below, everything else is a take u
 answered.
 
 #### 1. Quirks and misbehaviour
-What needs no new data and no decision, from "Where it stands at 5d4bff1" and "The old manual, checked":
-- **An interrupted scoring** is finished, so its record says what is missing, and only a finished score counts against
-  what is left to score; the run's answer and scores are printed all the same, and the first Ctrl-C says it is held.
-- **A score's findings** are said, as a run's are.
-- **`help`** escapes its markup, so `[from OWNER]` shows.
-- **`show case`** sums the case's own score items, not every item of the runs that reached it.
-- **"a expectation_schema"**, "a appendix": the article, or the word alone.
-- **`batch`** completes every tag, as `show tag` does.
-- **After a batch**, a finding said once per code with its count, not once per failed call.
-- **A cut stream** counts the tokens it streamed, and `run` says them.
-- **`show reasoning`'s completion** offers no `none`; **`quit now`** is refused as usage.
-- **Scorers** in one order everywhere.
-- **`show PART NAME`, `show tool`, `show expectation_schema`** find runs through the compilations
-  (`agents/wip-bench.md`, "Reaching a chunk finds no run"), a fix in `Bench.reaching` that the API's filter shares.
-- **A piped session** stops at its first error and exits 1, so a routine can be held to. A take: the old shell went
-  on.
+Decided: first, before the sample. Built:
+- **An interrupted scoring is finished.** `Bench.score` runs the scoring pass itself (`Grader.start`, `send`,
+  `finish`) rather than `score_run`: a `KeyboardInterrupt` while a scorer sends finishes its score with what it has,
+  and the scorers after it are refused as `stopped`; an error while it sends finishes it too. In the repl, `Held`
+  (`running.py`) holds the first Ctrl-C while a run is written down and scored, and says so; the second goes through
+  once, while scoring, and the repl says "scoring stopped: score scores what is left". `score` stops at that run.
+- **Only a whole score counts** against what is left to score (`Bench.unscored`): finished, an item for every run item
+  and view, and no judge call stopped. A take, the user's question 4 of the earlier list: a stopped scoring leaves the
+  run to score, since nothing else could score it again.
+- **A score's findings are said**: those the pass noted (`ScoreFinished.findings`) and those `check_score` gives,
+  after `run`, `batch`, `score` and `replay`; after `run` and a one-item `replay` without `answer.*`, which the answer's
+  own line says.
+- **A batch says each finding once with how often** it came, `(×4)`, as `score` and a batch's `replay` do.
+- **Rich markup is off** (`shell.py:console`): the repl never used it, and `help`'s `[from OWNER]`, a vignette's or an
+  answer's brackets were read as markup.
+- **`show case`** sums the case's own items; `show expectation` its case's.
+- **`show` of a part, a tool, a judge, an expectation or an expectation schema** finds its runs: `Bench.reaching`
+  reaches through compilations, and `Bench.scored_by` takes anything a scoring holds. The API's run filters share
+  both.
+- **"no expectation_schema in the cell"**, without the article.
+- **`batch`** completes every tag, once each; `show`'s completion offers no `none`, which only `set` takes.
+- **`quit now`** is refused as usage.
+- **A cut stream's tokens** are counted from the token ids its choice holds (`bench/outcome.py:usage`), so a runaway's
+  line and `run` say them.
+- **Scorers in one order**, by name: `Bench.scorers`, and so `scorers` and `show`, as score tables have it.
+- **A piped session stops at its first error** and exits 1. `replay`'s "the request differs" is said in red without
+  being an error.
 
 #### 2. The sample as a complete example
 The sample is two parts that a new World follows: the data set (`src/chatddx/data/sample/`), which init-data loads
@@ -646,7 +660,7 @@ With the user, on the sample, once it has its judge. What waits for it, since it
 adoption with the solidify pass on the repl's tests, which are `wip`.
 
 #### Questions for the user
-1. **The order of steps 1 and 2.**
+1. **The order of steps 1 and 2.** Decided: step 1 first, and built.
 2. **The sample's judge prompt**: a drafted prompt in the sample now, which Olof's replaces as an edit that reaches
    giftbag forks as a proposal; or no sample judge until his? The notes stay his either way, so "hypothetical notes
    stay out of the sample" holds.

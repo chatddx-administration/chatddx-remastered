@@ -6,7 +6,6 @@ from pathlib import Path
 
 import psycopg
 import uvicorn
-from rich.console import Console
 
 from chatddx.api.app import app
 from chatddx.bench import Bench
@@ -28,7 +27,7 @@ from chatddx.importers.o11n import (
 )
 from chatddx.inventory import World, check, start_up
 from chatddx.repl.loop import HISTORY, loop
-from chatddx.repl.shell import Repl
+from chatddx.repl.shell import Repl, console
 from chatddx.store.migrate import TOP_TIER, migrate, pending
 from chatddx.store.people import People
 from chatddx.store.store import Store
@@ -193,7 +192,9 @@ def _repl(args: argparse.Namespace) -> None:
             raise SystemExit(
                 f"no person {args.login!r}: chatddx init-data {args.login} adds them"
             )
-        loop(Repl(Bench(conn, person, world.inventory, facts), Console()), args.history)
+        bench = Bench(conn, person, world.inventory, facts)
+        if loop(Repl(bench, console()), args.history):
+            raise SystemExit(1)
 
 
 def _api(args: argparse.Namespace) -> None:

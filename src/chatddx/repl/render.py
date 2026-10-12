@@ -1,4 +1,5 @@
 import json
+from collections import Counter
 from collections.abc import Iterable
 from typing import Self
 
@@ -35,14 +36,39 @@ STYLES: dict[Outcome, str] = {
 
 TOKENS = len("tokens")
 
+# What the scoring pass notes of an answer, which show_answer says already.
+ANSWERED = frozenset({"answer.unread", "answer.invalid"})
+
 NAMED = 10
 
 
-def finding(f: Finding) -> Text:
+def finding(f: Finding, times: int = 1) -> Text:
     return Text(
-        f"[{f.level}] {f.code}: {f.message}",
+        f"[{f.level}] {f.code}: {f.message}" + (f" (×{times})" if times > 1 else ""),
         style=LATER if f.level == "warning" else LABEL,
     )
+
+
+def counted(findings: Iterable[Finding]) -> list[tuple[Finding, int]]:
+    first: dict[tuple[str, str, str], Finding] = {}
+    times: Counter[tuple[str, str, str]] = Counter()
+    for f in findings:
+        said = (f.level, f.code, f.message)
+        _ = first.setdefault(said, f)
+        times[said] += 1
+    return [(f, times[said]) for said, f in first.items()]
+
+
+def scored_findings(graded: Iterable[Graded], read: bool = False) -> list[Finding]:
+    found: dict[Finding, None] = {}
+    for g in graded:
+        if g.score is None:
+            continue
+        noted = () if g.score.finished is None else g.score.finished.findings
+        for f in (*noted, *g.findings):
+            if not (read and f.code in ANSWERED):
+                found[f] = None
+    return list(found)
 
 
 def writes(values: dict[str, JsonValue], prefix: str = "") -> str:
@@ -110,9 +136,8 @@ class Transcript:
                 calls = len(item.calls)
                 rounds = f", {calls} requests" if calls > 1 else ""
                 if into or out:
-                    self.console.out(
-                        f"({into} in, {out} out{rounds})", style=LABEL, highlight=False
-                    )
+                    used = f"{into} in, {out} out" if into else f"{out} out"
+                    self.console.out(f"({used}{rounds})", style=LABEL, highlight=False)
             case Noted(finding=noted):
                 self.begin(None)
                 self.console.print(finding(noted))

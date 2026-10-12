@@ -205,11 +205,11 @@ def test_show_writes_what_is_json_as_json(say: Say):
 
 def test_show_says_what_it_can_t_show(say: Say):
     assert "no kind 'frobnicate'" in say("show frobnicate")
-    assert "a case isn't in the cell: show case NAME" in say("show case")
+    assert "no case in the cell: show case NAME" in say("show case")
     assert "no case 'nope' for alice" in say("show case nope")
     assert "the cell has no configuration: show output NAME" in say("show output")
     assert "the cell has no endpoint: show engine NAME" in say("show engine")
-    assert "a scorer isn't in the cell: show scorer NAME" in say("show scorer")
+    assert "no scorer in the cell: show scorer NAME" in say("show scorer")
     assert "the cell has no reasoning" in say(f"cell {LINES} {QWEN}", "show reasoning")
 
 

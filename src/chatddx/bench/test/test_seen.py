@@ -9,7 +9,7 @@ from chatddx.curation import Plan, load_cases
 from chatddx.factors.base import resolve
 from chatddx.factors.scoring import Expectation
 from chatddx.identity import Person
-from chatddx.runner.score import score_run
+from chatddx.runner.score import Grader, score_run
 from chatddx.store import Catalog, People, Store
 from chatddx.store.store import Connection
 from chatddx.test.world import DATA, LINES, MODELS, NATIVE, QWEN, QWEN_MODEL, REMOTE
@@ -127,6 +127,8 @@ def test_a_person_finds_their_runs_and_those_that_reach_a_digest(
         _ = bench.run("zzz")
 
     assert [r.run for r in bench.reaching(lines.skeleton)] == [first]
+    output = plan.named("output", "lines (en)").digest
+    assert [r.run for r in bench.reaching(output)] == [first]
     [shared_case] = set(lines.cases) & set(native.cases)
     assert [r.run for r in bench.reaching(shared_case)] == [second, first]
     store = Store(conn)
@@ -179,6 +181,24 @@ def test_a_run_is_left_to_score_until_scored_under_the_scoring_built_now(
     assert set(bench.unscored(started)) == {scorer, *others}
     rebuilt = bench.scoring(started, scorer)
     assert rebuilt is not None and edited in rebuilt.expectations
+
+
+def test_only_a_finished_score_counts_against_what_is_left_to_score(
+    conn: Connection, alice: Person, bench: Bench, plan: Plan
+) -> None:
+    run = ran(conn, alice, trial(conn, plan, LINES, "crlf"))
+    started = bench.run_by_id(run)
+    scorer = plan.named("scorer", "lines").digest
+    scoring = bench.scoring(started, scorer)
+    assert scoring is not None
+    registry = Store(conn).load([scorer, *scoring.expectations])
+
+    grading = Grader(conn, None, alice).start(run, scoring, registry)
+    assert scorer in bench.unscored(started)
+
+    _ = grading.finish()
+    assert scorer not in bench.unscored(started)
+    assert [r.run for r in bench.scored_by(scorer)] == [run]
 
 
 def test_a_case_is_held_to_the_expectation_scoring_picks(

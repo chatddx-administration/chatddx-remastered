@@ -1,12 +1,11 @@
 from collections import Counter
 
 import pytest
-from rich.console import Console
 
 from chatddx.bench import Bench
 from chatddx.inventory import Inventory
 from chatddx.repl.commands import handle
-from chatddx.repl.shell import Repl
+from chatddx.repl.shell import Repl, console
 from chatddx.repl.test.helpers import Say, line_of
 from chatddx.test.world import (
     CASES,
@@ -41,7 +40,7 @@ def test_endpoints_are_listed_with_their_engines_and_clearance(
 
 def test_configurations_are_listed_with_their_parts_and_whose_they_are(bench: Bench):
     # Wide enough that no configuration's name wraps.
-    repl = Repl(bench, Console(record=True, width=400), seed=7)
+    repl = Repl(bench, console(record=True, width=400), seed=7)
     assert handle(repl, "configurations")
     written = repl.console.export_text()
     header = written.splitlines()[0].split()
