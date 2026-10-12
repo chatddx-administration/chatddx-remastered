@@ -112,7 +112,8 @@ without tools on the fake engines (`agents/wip-runner.md`).
 - Tools and scorers pin chatddx's own code, as compilations record their compiler: `Code` from `rig()` and an
   `entry_point` in chatddx. Packaging entry points can come later, for tools and scorers together.
 - Engine locations live in the World inventory (decision 2A): endpoints and hosts (`docs/inventory.md`). A remote
-  engine keeps `base_url` in its digest.
+  engine kept `base_url` in its digest until the user moved it to its endpoint, with a `provider` on the engine
+  (`agents/wip-judges.md`, "Decided").
 - Engine values come from the hosts (decision 4A), with the fake engines first, whose values are ours (4D). No
   placeholders.
 - The scorer interface, version 1, is the old one fed through remastered's views: the entry point takes a view's
@@ -243,12 +244,14 @@ Where tool and scorer code lives is settled (see "Decided"):
   (`src/chatddx/scorers/shipped.py:problems`). Since the version is part of a tool's and a scorer's digest, only a
   raised version makes new ones, and the toolset and `plan-web` skeletons with them; a new chatddx version or
   `CHATDDX_REVISION` doesn't.
-- **Scorer interface, version 1** (`src/chatddx/scorers/scorer.py`). An entry point is a `ScoreFunction`: it takes a
-  view's `metric`, the items its output selector picks (`None` without an answer), the items its expectation
-  selector picks, and the scorer's params under the view's. It returns `Scored(value, detail)`, what a `ScoreItem`
-  keeps. `score(scorer, run, answer, data)` applies every view; `function(scorer)` finds and checks the entry point.
+- **Scorer interface, version 2** (`src/chatddx/scorers/scorer.py`; `agents/wip-judges.md`, J2). An entry point is a
+  `ScoreFunction`: it takes a view's `metric`, the items its output selector picks (`None` without an answer), the
+  items its expectation selector picks, the scorer's params under the view's, and, for a judged view, the judge's
+  verdicts. It returns `Scored(value, detail)`, what a `ScoreItem` keeps. `score(scorer, run, answer, data,
+  verdicts)` applies every view; `function(scorer)` finds and checks the entry point.
 - **The pattern scorers** (`src/chatddx/scorers/patterns.py`): the old matcher and `reciprocal_rank`,
-  `first_mention` and `mentions`, unchanged in what they find, behind `score`, a `Metrics` of the three. A target is
+  `first_mention` and `mentions`, unchanged in what they find, behind the one shipped entry point,
+  `chatddx.scorers.metrics:score`, beside the judged metrics. A target is
   the expectation selector's one item: a target object with a `pattern`, a pattern, or `false` (nothing expected).
   No target, or one that doesn't read, gives no value, with the reason in the detail. A null output item names
   nothing, so a plan's `acute_warning: null` is no warning. The old aggregates are in `aggregate.py`.

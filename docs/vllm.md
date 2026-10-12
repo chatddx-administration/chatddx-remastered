@@ -273,14 +273,18 @@ sample models, served as the old inventory served them, and checks each answer a
   fake · `chat.py:_shown_schema`, `chat.py:_shown` · `test_held_or_shown_a_schema_it_answers_with_a_document_that_holds`
 - **The document.** An instance of the schema, as JSON indented by 2.
   fake · `chat.py:respond` · `test_held_or_shown_a_schema_it_answers_with_a_document_that_holds`
-- **Schema instances.** Local `$ref`s are followed. Then `const`, the first `enum`, the first of `examples`, the first
+- **Schema instances.** Local `$ref`s are followed. Then `const`, the first `enum`, of `examples` the one the seed
+  picks (`examples[seed % n]`, the first when greedy, one at random without a seed), the first
   non-null branch of `anyOf`/`oneOf`/`allOf` read together with the keywords beside it, as JSON Schema applies them,
   the first non-null of a type list. Objects get every property (a schema with `properties` and no `type` is an
   object), arrays `minItems` items (3 without it, at least 1) capped by `maxItems` (3 without it), strings
   `fake <key>` (`fake <key> <n>` in an array), integers and numbers `minimum` (else their place in an array, else 1),
   booleans `false`. Past 12 levels it gives `null`.
-  item 4 · `chat.py:instance`, `chat.py:_resolve` · `test_what_it_writes_holds_to_the_sample_s_schemas`,
-  `test_what_it_writes_follows_references_unions_and_counts`
+  item 4
+    · `chat.py:instance`, `chat.py:_turn`, `chat.py:_resolve`
+    · `test_what_it_writes_follows_references_unions_and_counts`
+    · `test_what_it_writes_holds_to_the_sample_s_schemas`,
+    · `test_seeded_examples.py:test_a_schema_s_examples_are_picked_by_the_seed_unless_greedy`
 
 ### Tools
 - **Default `tool_choice`.** `auto` with `tools`, `none` without.
@@ -381,7 +385,9 @@ sample models, served as the old inventory served them, and checks each answer a
   1, `stop`, `logprobs`, `echo`, and the sampling settings beyond `temperature` and `seed` are ignored.
 - `required` makes one call per reply, where item 9's grammar allows several.
 - A prompt longer than the context, or a `max_tokens` past it, isn't refused.
-- The document doesn't vary with the seed.
+- The document varies with the seed only where its schema has `examples`.
+- The fake streams over HTTP/1.0 and ends a stream by closing the connection; vLLM, on uvicorn, streams over HTTP/1.1
+  in chunks.
 - A document holds to the sample's schemas, not to every schema, as a grammar would make it: `minItems` above 3 is
   met only with a `maxItems`, and `maximum`, `exclusiveMinimum`, `multipleOf` and the string keywords are ignored
   (`chat.py:instance`).

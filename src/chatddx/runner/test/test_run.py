@@ -1,4 +1,6 @@
+import signal
 import threading
+import time
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from typing import Any, cast
@@ -60,9 +62,11 @@ from chatddx.test.world import (
     QWEN,
     TEST,
     TOOL_ANSWER,
+    faked,
 )
+from chatddx.tools.shipped import TOOLS, ShippedTool
 
-pytestmark = pytest.mark.wip
+pytestmark = pytest.mark.solidified
 
 CASES = ("crlf", "svenska")
 
@@ -236,6 +240,9 @@ def test_a_case_that_can_t_be_read_or_has_changed_is_noted(
     findings = running.finish()
     noted = sorted(n.finding.code for n in heard.of(Noted))
     assert noted == ["case.drift", "case.unreadable"]
+    started = [e.key for e in heard.of(ItemStarted)]
+    assert len(started) == 2
+    assert started == [e.item.key for e in heard.of(ItemEnded)]
     stored = Store(conn).run(running.run)
     assert stored.finished is not None
     assert sorted(f.code for f in stored.finished.findings) == noted
@@ -278,9 +285,12 @@ def test_an_interrupt_mid_call_records_the_call_as_stopped(
     with pytest.raises(KeyboardInterrupt):
         running.send(Heard(then=interrupt))
     running.send()
-    _ = running.finish()
+    findings = running.finish()
     [item] = Store(conn).run(running.run).items
     assert item.call.error == STOPPED and item.call.prompt_tokens is not None
+    assert ("call.failed", STOPPED, str(item.key)) in [
+        (f.code, f.message, f.subject) for f in findings
+    ]
 
 
 def test_nothing_is_sent_or_written_where_the_gate_refuses(
@@ -469,6 +479,25 @@ def test_an_interrupt_hangs_up_every_call_in_flight_and_records_them_as_stopped(
     assert all(i.call.prompt_tokens is not None for i in items)
 
 
+def test_an_interrupt_ends_stalled_calls_at_once(
+    conn: Connection, inventory: Inventory, alice: Person, plan: Plan
+) -> None:
+    with faked(inventory, plan.registry.get, delay=5.0):
+        running = Runner(conn, inventory, alice).start(
+            trial(plan), plan.registry, QWEN, Execution(concurrency=2)
+        )
+        main = threading.main_thread().ident
+        assert main is not None
+        threading.Timer(0.05, signal.pthread_kill, (main, signal.SIGINT)).start()
+        began = time.monotonic()
+        with pytest.raises(KeyboardInterrupt):
+            running.send()
+        assert time.monotonic() - began < 2
+    _ = running.finish()
+    items = Store(conn).run(running.run).items
+    assert [i.call.error for i in items] == [STOPPED, STOPPED]
+
+
 @pytest.mark.usefixtures("delayed")
 def test_another_interrupt_while_calls_hang_up_leaves_them_out(
     conn: Connection, inventory: Inventory, alice: Person, plan: Plan
@@ -524,15 +553,30 @@ def test_a_halt_from_another_thread_hangs_up_the_calls_in_flight_and_returns(
     ]
 
 
-@pytest.mark.usefixtures("fake")
-def test_a_call_that_fails_on_its_thread_fails_the_send(
+@pytest.mark.usefixtures("delayed")
+def test_a_call_that_fails_on_its_thread_fails_the_send_and_keeps_the_calls_beside_it(
     conn: Connection,
     inventory: Inventory,
     alice: Person,
     plan: Plan,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    def broken(*_args: object, **_kwargs: object) -> None:
+    send = sending.send
+    streaming = threading.Event()
+    calls: list[int] = []
+
+    def broken(*args: Any, **kwargs: Any) -> Any:
+        calls.append(len(calls))
+        if len(calls) == 1:
+            on_delta = kwargs["on_delta"]
+
+            def heard(delta: sending.Delta) -> None:
+                streaming.set()
+                on_delta(delta)
+
+            kwargs["on_delta"] = heard
+            return send(*args, **kwargs)
+        assert streaming.wait(5)
         raise RuntimeError("broken")
 
     monkeypatch.setattr(sending, "send", broken)
@@ -542,7 +586,8 @@ def test_a_call_that_fails_on_its_thread_fails_the_send(
     with pytest.raises(RuntimeError, match="broken"):
         running.send()
     _ = running.finish()
-    assert Store(conn).run(running.run).items == ()
+    [item] = Store(conn).run(running.run).items
+    assert item.call.error == STOPPED
 
 
 def insensitive(inventory: Inventory) -> Inventory:
@@ -605,7 +650,7 @@ def test_a_round_runs_the_tools_a_response_calls_and_sends_back_their_results(
             )
         ],
     ]
-    last = item.turns[-1].call
+    last = item.calls[-1]
     assert last.response is not None and tool_calls(last.response) == ()
     assert all(c.status == 200 and c.prompt_tokens is not None for c in item.calls)
     assert [(e.key, e.run.name) for e in heard.of(ToolRan)] == [
@@ -624,7 +669,7 @@ def test_a_round_runs_the_tools_a_response_calls_and_sends_back_their_results(
     assert item.call.response is not None
     results = {r.id: r.result for r in item.turns[0].tools}
     second = next_request(body, item.call.response, results)
-    assert item.turns[0].call.request == fingerprint_request(second)
+    assert item.calls[1].request == fingerprint_request(second)
 
 
 @pytest.mark.usefixtures("fake")
@@ -639,7 +684,7 @@ def test_calling_the_answer_tool_ends_the_item(
     assert running.finish() == []
     [item] = Store(conn).run(running.run).items
     assert [[r.name for r in t.tools] for t in item.turns] == [["lookup"]]
-    last = item.turns[-1].call.response
+    last = item.calls[-1].response
     assert last is not None and [c.name for c in tool_calls(last)] == ["final_result"]
 
 
@@ -672,8 +717,12 @@ def test_a_tool_at_a_version_the_running_code_doesn_t_ship_is_refused(
     assert rows(db, "run_stage") == 0
 
 
+def stopped(message: str) -> tuple[str, str]:
+    return ("tools.stopped", message)
+
+
 @pytest.mark.usefixtures("fake")
-def test_an_interrupt_while_tools_run_keeps_the_rounds_that_have_a_call(
+def test_an_interrupt_after_a_tool_ran_keeps_its_round_without_a_call(
     conn: Connection, inventory: Inventory, alice: Person, plan: Plan
 ) -> None:
     made = tooled(plan, LINES, component("lookup"), component("broken"))
@@ -692,11 +741,67 @@ def test_an_interrupt_while_tools_run_keeps_the_rounds_that_have_a_call(
         running.send(Heard(then=interrupt))
     findings = running.finish()
     [item] = Store(conn).run(running.run).items
+    assert [[r.name for r in t.tools] for t in item.turns] == [["lookup"], ["broken"]]
+    assert item.turns[-1].call is None
+    assert len(item.calls) == 2
+    assert stopped("round 2 stopped after 1 of 1 tool calls, before its call") in [
+        (f.code, f.message) for f in findings
+    ]
+
+
+@pytest.mark.usefixtures("fake")
+def test_an_interrupt_inside_a_tool_records_it_as_stopped(
+    conn: Connection,
+    inventory: Inventory,
+    alice: Person,
+    plan: Plan,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def interrupted(**_: object) -> str:
+        raise KeyboardInterrupt
+
+    monkeypatch.setitem(
+        TOOLS, "chatddx.runner.test.tools:lookup", ShippedTool(1, interrupted)
+    )
+    made = tooled(plan, LINES, component("lookup"), component("broken"))
+    running = Runner(conn, insensitive(inventory), alice).start(
+        made, plan.registry, QWEN
+    )
+    with pytest.raises(KeyboardInterrupt):
+        running.send()
+    findings = running.finish()
+    [item] = Store(conn).run(running.run).items
+    [turn] = item.turns
+    assert [(r.name, r.result, r.error) for r in turn.tools] == [
+        ("lookup", f"error: {STOPPED}", STOPPED)
+    ]
+    assert turn.call is None
+    assert stopped("round 1 stopped after 1 of 1 tool calls, before its call") in [
+        (f.code, f.message) for f in findings
+    ]
+
+
+@pytest.mark.usefixtures("fake")
+def test_a_halt_while_tools_run_keeps_the_round_and_sends_no_call(
+    conn: Connection, inventory: Inventory, alice: Person, plan: Plan
+) -> None:
+    made = tooled(plan, LINES, component("lookup"), component("broken"))
+    running = Runner(conn, insensitive(inventory), alice).start(
+        made, plan.registry, QWEN
+    )
+
+    def halt(event: Event) -> None:
+        if isinstance(event, ToolRan):
+            elsewhere(running.halt)
+
+    running.send(Heard(then=halt))
+    findings = running.finish()
+    [item] = Store(conn).run(running.run).items
     assert [[r.name for r in t.tools] for t in item.turns] == [["lookup"]]
-    assert (
-        "tools.unanswered",
-        "the last response still calls broken after 1 of 5 rounds",
-    ) in [(f.code, f.message) for f in findings]
+    assert item.calls == (item.call,)
+    assert stopped("round 1 stopped after 1 of 1 tool calls, before its call") in [
+        (f.code, f.message) for f in findings
+    ]
 
 
 @pytest.mark.usefixtures("fake")
@@ -831,12 +936,15 @@ def test_an_interrupt_during_a_canary_records_it_as_stopped(
     )
     with pytest.raises(KeyboardInterrupt):
         running.send()
-    _ = running.finish()
+    findings = running.finish()
     stored = Store(conn).run(running.run)
     assert [(c.phase, c.canary, c.call.error) for c in stored.canaries] == [
         ("start", 0, STOPPED)
     ]
     assert stored.items == ()
+    assert [(f.message, f.subject) for f in findings if f.code == "call.failed"] == [
+        (STOPPED, "start/0")
+    ]
 
 
 @pytest.mark.usefixtures("fake")

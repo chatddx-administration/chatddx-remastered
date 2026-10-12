@@ -96,9 +96,15 @@ class RunItem(Record):
     call: Call
     turns: tuple[Turn, ...] = ()
 
+    @model_validator(mode="after")
+    def _unsent(self) -> "RunItem":
+        if any(t.call is None for t in self.turns[:-1]):
+            raise ValueError("only the last round may lack its call")
+        return self
+
     @property
     def calls(self) -> tuple[Call, ...]:
-        return (self.call, *(t.call for t in self.turns))
+        return (self.call, *(t.call for t in self.turns if t.call is not None))
 
 
 class CanaryCall(Record):
@@ -192,6 +198,20 @@ def check_run(run: Run, registry: Registry) -> list[Finding]:
                     subject=str(item.key),
                 )
             )
+    for item in run.items:
+        if (error := item.calls[-1].error) is not None:
+            findings.append(
+                Finding(code="call.failed", message=error, subject=str(item.key))
+            )
+    for canary in run.canaries:
+        if (error := canary.call.error) is not None:
+            findings.append(
+                Finding(
+                    code="call.failed",
+                    message=error,
+                    subject=f"{canary.phase}/{canary.canary}",
+                )
+            )
     skeleton = resolve(registry.get, trial.skeleton, Skeleton)
     for item in run.items:
         findings.extend(_rounds(item, skeleton, registry))
@@ -276,16 +296,29 @@ def _rounds(item: RunItem, skeleton: Skeleton, registry: Registry) -> list[Findi
             (c.id, c.name) for c in tool_calls(call.response or {}) if c.name != answer
         }
 
-    previous = item.call
+    previous: Call | None = item.call
+    asked: set[tuple[str, str]] = set()
     for turn in item.turns:
+        assert previous is not None
         for r in turn.tools:
             if r.name not in names and r.error is None:
                 raise StructuralError(f"{item.key}: no tool named {r.name!r}")
-        if {(r.id, r.name) for r in turn.tools} != pending(previous):
+        ran, asked = {(r.id, r.name) for r in turn.tools}, pending(previous)
+        if ran != asked and not (turn.call is None and ran < asked):
             raise StructuralError(
                 f"{item.key}: a round runs tools for calls the response didn't make"
             )
         previous = turn.call
+    if previous is None:
+        return [
+            Finding(
+                code="tools.stopped",
+                message=f"round {len(item.turns)} stopped after "
+                + f"{len(item.turns[-1].tools)} of {len(asked)} tool calls, before "
+                + "its call",
+                subject=str(item.key),
+            )
+        ]
     if left := sorted({name for _, name in pending(previous)}):
         return [
             Finding(

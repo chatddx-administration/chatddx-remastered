@@ -6,7 +6,7 @@
 #   neither, which the vllm.* lints and the fake's refusals are about.
 # - gpt-oss@fake serves harmony.
 # - mistral@fake serves a made-up Mistral-family model, whose facts are the World's (facts.toml), with no tool flags.
-# - unknown@remote is a remote engine on an address that resolves nowhere, serving a model no facts know.
+# - unknown@remote is a remote engine, served at an address that resolves nowhere, of a model no facts know.
 
 [model.qwen3-8b-awq]
 repo = "Qwen/Qwen3-8B-AWQ"
@@ -60,5 +60,5 @@ chat_template = "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b85
 [remote_engine."unknown@remote"]
 description = "A remote engine that is never reached, serving a model no facts know."
 tags = ["remote"]
-base_url = "https://remote.invalid/v1/"
+provider = "test"
 model = "test/unknown"

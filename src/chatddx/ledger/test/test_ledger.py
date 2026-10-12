@@ -11,15 +11,8 @@ from chatddx.factors.base import Fingerprint, StructuralError, resolve
 from chatddx.factors.bundle import Registry
 from chatddx.factors.cases import Case
 from chatddx.factors.engine import LocalEngine
-from chatddx.factors.request import Output, Tool, ToolOutput, Toolset, compile_request
 from chatddx.factors.scoring import Scorer, Scoring, View
-from chatddx.factors.test.sample import (
-    NOW,
-    RIG,
-    fp,
-    generation_recipe,
-    world,
-)
+from chatddx.factors.test.sample import NOW, RIG, fp, world
 from chatddx.factors.trial import Execution, Trial
 from chatddx.ledger import (
     Call,
@@ -44,6 +37,7 @@ from chatddx.ledger import (
     fingerprint_prompt_tokens,
     fingerprint_request,
 )
+from chatddx.ledger.test.rounds import ran, rounds
 
 pytestmark = pytest.mark.solidified
 
@@ -185,7 +179,11 @@ def test_run_and_score_checks(reg: Registry) -> None:
         key=ItemKey(case=ids["case"], replicate=0),
         view=1,
         value=1.0,
-        judge_calls=(JudgeCall(judge=ids["judge"], seed_index=0, call=call("j")),),
+        judge_calls=(
+            JudgeCall(
+                judge=ids["judge"], seed_index=0, call=call(engine.served_model_name)
+            ),
+        ),
     )
     assert check_score(score(ok), run, reg) == []
     assert [(f.code, f.message) for f in check_score(score(ok), open_run, reg)] == [
@@ -205,7 +203,11 @@ def test_run_and_score_checks(reg: Registry) -> None:
                 ok.model_copy(
                     update={
                         "judge_calls": (
-                            JudgeCall(judge=ids["judge"], seed_index=1, call=call("j")),
+                            JudgeCall(
+                                judge=ids["judge"],
+                                seed_index=1,
+                                call=call(engine.served_model_name),
+                            ),
                         )
                     }
                 )
@@ -530,81 +532,10 @@ def test_request_fingerprint_is_over_canonical_bytes() -> None:
 
 
 def test_tool_rounds_are_checked(reg: Registry) -> None:
-    ids = world(reg)
-    engine = reg.get(ids["engine"])
-    assert isinstance(engine, LocalEngine)
-    web = reg.add(
-        Tool(
-            name="web_search",
-            description="Search the web.",
-            parameters={"type": "object"},
-            entry_point="chatddx_tools.web:search",
-            version=1,
-        )
-    )
-    answer = reg.add(
-        Output(
-            contract=ToolOutput(name="answer", description="Answer."),
-            json_schema={"type": "object"},
-        )
-    )
-    recipe = generation_recipe(reg).model_copy(
-        update={
-            "output": answer,
-            "toolset": reg.add(Toolset(tools=(web,), max_rounds=2)),
-        }
-    )
-    skeleton = reg.add(compile_request(recipe, reg.get))
-    trial = reg.add(
-        Trial(skeleton=skeleton, engine=ids["engine"], cases=(ids["case"],), seeds=(1,))
-    )
-    run_id = uuid4()
-    started = RunStarted(
-        run=run_id,
-        at=NOW,
-        rig=RIG,
-        trial=trial,
-        tool_code=(ToolCode(tool=web, version=1),),
-    )
-    vignette = resolve(reg.get, ids["case"], Case).vignette.fingerprint
-
-    def call(*names: str, model: str = engine.served_model_name) -> Call:
-        calls: list[JsonValue] = [
-            {
-                "id": f"c{i}",
-                "type": "function",
-                "function": {"name": n, "arguments": "{}"},
-            }
-            for i, n in enumerate(names)
-        ]
-        message: dict[str, JsonValue] = {"role": "assistant", "tool_calls": calls}
-        response, prompt_tokens = fingerprint_prompt_tokens(
-            {"model": model, "choices": [{"message": message}], "prompt_token_ids": [1]}
-        )
-        return Call(
-            request=fp("body"),
-            started_at=NOW,
-            finished_at=NOW,
-            status=200,
-            response=response,
-            prompt_tokens=prompt_tokens,
-        )
-
-    def ran(*ids_: str, name: str = "web_search") -> tuple[ToolRun, ...]:
-        return tuple(
-            ToolRun(id=i, name=name, started_at=NOW, finished_at=NOW, result="r")
-            for i in ids_
-        )
-
-    def check(first: Call, *turns: Turn) -> list[str]:
-        item = RunItem(
-            run=run_id,
-            key=ItemKey(case=ids["case"], replicate=0),
-            vignette=vignette,
-            call=first,
-            turns=turns,
-        )
-        return [f.code for f in check_run(Run(stages=(started,), items=(item,)), reg)]
+    made = rounds(reg)
+    ids, web, answer, trial = made.ids, made.web, made.answer, made.trial
+    started, run_id, vignette = made.started, made.started.run, made.vignette
+    call, check = made.call, made.check
 
     assert check(call("answer")) == []
 
@@ -685,6 +616,50 @@ def test_tool_rounds_are_checked(reg: Registry) -> None:
             {**plain.model_dump(), "turns": ()}
         ).canonical_doc()
     )
+
+
+def test_a_round_stopped_before_its_call_is_kept_and_noted(reg: Registry) -> None:
+    made = rounds(reg)
+    two = made.call("web_search", "web_search")
+    for tools, message in (
+        (ran("c0"), "round 1 stopped after 1 of 2 tool calls, before its call"),
+        (ran("c0", "c1"), "round 1 stopped after 2 of 2 tool calls, before its call"),
+    ):
+        unsent = Turn(tools=tools)
+        assert made.item(two, unsent).calls == (two,)
+        assert [(f.code, f.message) for f in made.findings(two, unsent)] == [
+            ("tools.stopped", message)
+        ]
+    later = (
+        Turn(tools=ran("c0", "c1"), call=two),
+        Turn(tools=ran("c0", error="stopped")),
+    )
+    assert [f.message for f in made.findings(two, *later)] == [
+        "round 2 stopped after 1 of 2 tool calls, before its call"
+    ]
+
+
+def test_a_round_without_its_call_leaves_no_call_in_the_record(reg: Registry) -> None:
+    made = rounds(reg)
+    sent = made.item(made.call("web_search"), Turn(tools=ran("c0"), call=made.call()))
+    unsent = made.item(made.call("web_search"), Turn(tools=ran("c0")))
+    assert set(json.loads(sent.canonical)["turns"][0]) == {"tools", "call"}
+    assert set(json.loads(unsent.canonical)["turns"][0]) == {"tools"}
+
+
+def test_only_the_last_round_may_lack_its_call(reg: Registry) -> None:
+    made = rounds(reg)
+    two = made.call("web_search", "web_search")
+    with pytest.raises(ValidationError, match="only the last round may lack its call"):
+        _ = made.item(two, Turn(tools=ran("c0")), Turn(tools=ran("c0"), call=two))
+
+
+def test_a_round_without_its_call_runs_only_tools_the_response_called(
+    reg: Registry,
+) -> None:
+    made = rounds(reg)
+    with pytest.raises(StructuralError, match="didn't make"):
+        _ = made.check(made.call("web_search"), Turn(tools=ran("c0", "c1")))
 
 
 def test_score_views_are_checked_against_the_output_schema(reg: Registry) -> None:

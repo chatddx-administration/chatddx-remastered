@@ -11,7 +11,8 @@ type Outcome = Literal["stopped", "errored", "unread", "completed", "invalid", "
 def outcome(skeleton: Skeleton, item: RunItem) -> tuple[Outcome, str | None]:
     last = item.calls[-1]
     answer = read(skeleton, last.response)
-    if last.error == STOPPED:
+    unsent = bool(item.turns) and item.turns[-1].call is None
+    if last.error == STOPPED or unsent:
         return "stopped", None
     if answer.value is None:
         if last.error is not None:

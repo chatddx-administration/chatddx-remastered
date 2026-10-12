@@ -9,7 +9,7 @@ from typing import override
 from urllib.error import HTTPError
 
 import pytest
-from pydantic import ValidationError
+from pydantic import HttpUrl, ValidationError
 
 from chatddx.factors.bundle import Registry
 from chatddx.factors.engine import (
@@ -205,9 +205,7 @@ def test_a_start_up_is_refused_where_the_inventory_or_the_engine_falls_short() -
     with pytest.raises(LookupError, match="sets --port in its argv"):
         _ = start_up(complete, reg.get, "qwen@pelle")
     remote = reg.add(
-        RemoteEngine.model_validate(
-            {"base_url": "https://api.example.org/v1/", "model": "gemma"}
-        )
+        RemoteEngine.model_validate({"provider": "example", "model": "gemma"})
     )
     with pytest.raises(LookupError, match="engine.remote, not ours to start"):
         _ = start_up(world(remote), reg.get, "qwen@pelle")
@@ -222,9 +220,7 @@ def test_a_check_finds_what_starting_or_reaching_each_endpoint_would_refuse() ->
     model, engine = local(reg)
     _, listening = local(reg, "--port=9000")
     remote = reg.add(
-        RemoteEngine.model_validate(
-            {"base_url": "https://api.example.org/v1/", "model": "gemma"}
-        )
+        RemoteEngine.model_validate({"provider": "example", "model": "gemma"})
     )
     url = "http://pelle.km:12009/v1/"
     pelle = HostSpec(models={model: "/m", "sha256:" + "e" * 64: "/old"})
@@ -240,7 +236,11 @@ def test_a_check_finds_what_starting_or_reaching_each_endpoint_would_refuse() ->
                     "url": "http://pelle.km:12010/v1/",
                     "host": "pelle",
                 },
-                "gemma": {"engine": remote, "host": "pelle"},
+                "gemma": {
+                    "engine": remote,
+                    "url": "https://api.example.org/v1/",
+                    "host": "pelle",
+                },
                 "ghost": {"engine": "sha256:" + "c" * 64},
                 "model": {"engine": model},
             },
@@ -276,19 +276,17 @@ def test_a_check_finds_what_starting_or_reaching_each_endpoint_would_refuse() ->
     )
 
 
-def test_a_remote_engine_is_reached_at_its_base_url() -> None:
+def test_a_remote_engine_is_reached_at_its_endpoint_s_url() -> None:
     reg = Registry()
-    remote = reg.add(
-        RemoteEngine.model_validate(
-            {"base_url": "https://api.example.org/v1/", "model": "gemma"}
-        )
-    )
+    remote = reg.add(RemoteEngine(provider="example", model="gemma"))
+    at = HttpUrl("https://api.example.org/v1/")
     alone = Inventory(
-        endpoints={"gemma": EndpointSpec(engine=remote, credential="GEMMA_KEY")},
+        endpoints={"gemma": EndpointSpec(engine=remote, url=at, credential="KEY")},
     )
     assert url_of(alone, reg.get, "gemma") == "https://api.example.org/v1/"
-    with pytest.raises(LookupError, match="but its remote engine's base_url is"):
-        _ = url_of(world(remote), reg.get, "qwen@pelle")
+    unplaced = Inventory(endpoints={"gemma": EndpointSpec(engine=remote)})
+    with pytest.raises(LookupError, match="serves a remote engine but has no url"):
+        _ = url_of(unplaced, reg.get, "gemma")
 
 
 def test_a_fake_started_from_an_endpoint_serves_its_engine() -> None:
@@ -342,9 +340,11 @@ def test_an_endpoint_s_secret_goes_with_the_request_that_confirms_it() -> None:
     reg = Registry()
     with keyed_models("s3cret", "gemma") as url:
         remote = reg.add(
-            RemoteEngine.model_validate({"base_url": url, "model": "gemma"})
+            RemoteEngine.model_validate({"provider": "example", "model": "gemma"})
         )
-        inventory = Inventory(endpoints={"gemma": EndpointSpec(engine=remote)})
+        inventory = Inventory(
+            endpoints={"gemma": EndpointSpec(engine=remote, url=HttpUrl(url))}
+        )
         assert served(url, secret="s3cret") == ["gemma"]
         confirm(inventory, reg.get, "gemma", secret="s3cret")
         with pytest.raises(HTTPError, match="401"):

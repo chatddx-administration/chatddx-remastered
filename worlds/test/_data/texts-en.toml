@@ -16,16 +16,10 @@ messages = [
 [prompt.headed]
 segments = ["Case:\n", { slot = "vignette" }, { slot = "appendices" }, { insert = "tool_guidance", before = "\n\n" }]
 
+# A judge reads no vignette (agents/wip-judges.md, J7).
 [prompt.judge]
 purpose = "judge"
-segments = [
-  "Case:\n",
-  { slot = "vignette" },
-  "\n\nAnswer:\n",
-  { slot = "completion" },
-  "\n\nExpected:\n",
-  { slot = "expectation" },
-]
+segments = ["Answer:\n", { slot = "completion" }, "\n\nExpected:\n", { slot = "expectation" }]
 
 [output.native]
 contract = { kind = "native" }
@@ -60,6 +54,11 @@ guidance = "List the plausible diagnoses, one per line, most likely first."
 contract = { kind = "native" }
 json_schema_path = "schemas/verdict.json"
 guidance = "Say whether the answer meets what was expected, and why."
+
+[output.grade]
+contract = { kind = "native" }
+json_schema_path = "schemas/grade.json"
+guidance = "Grade how well the answer meets what was expected, from 0 to 2, and say why."
 
 [toolset.lookup]
 tools = ["lookup", "broken"]

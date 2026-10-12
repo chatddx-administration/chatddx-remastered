@@ -2,7 +2,7 @@ import hashlib
 import re
 from typing import Annotated, Literal
 
-from pydantic import AfterValidator, Field, HttpUrl, field_validator
+from pydantic import AfterValidator, Field, field_validator
 
 from .base import (
     Api,
@@ -143,7 +143,7 @@ class LocalEngine(Component):
 class RemoteEngine(Component):
     kind: Literal["engine.remote"] = "engine.remote"
     api: Api = "chat.completions"
-    base_url: HttpUrl
+    provider: str = Field(min_length=1)
     model: str
 
     @property

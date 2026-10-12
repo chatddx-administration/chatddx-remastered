@@ -57,7 +57,7 @@ Only records have `v`, `canonical` and `parse`.
 
 | Exception | When |
 | --- | --- |
-| `pydantic.ValidationError` | A record or log breaks its own rules: a naive time, a call, tool run or log that finishes before it starts, stages out of order, rows of different logs, a duplicate phase or tool, `verify_at` without canaries, a tool run without `result`, a round without tools, an infinite or NaN score value. Rules written as validators raise `ValueError` or `StructuralError`, which pydantic wraps. |
+| `pydantic.ValidationError` | A record or log breaks its own rules: a naive time, a call, tool run or log that finishes before it starts, stages out of order, rows of different logs, a duplicate phase or tool, `verify_at` without canaries, a tool run without `result`, a round without tools, a round without its call before an item's last round, an infinite or NaN score value. Rules written as validators raise `ValueError` or `StructuralError`, which pydantic wraps. |
 | `chatddx.factors.base.StructuralError` (a `ValueError`) | `Record.parse` of another version or of JSON that isn't an object; `check_run`, `check_score` and `compare_prompt_tokens` when the rows don't fit the components, or a component is missing or of the wrong kind (`resolve`, `Registry.get`). |
 | `json.JSONDecodeError` | `Record.parse` of bytes that aren't JSON. |
 | `AssertionError` | `check_run` when the trial's engine isn't `engine.local` or `engine.remote`; a checked registry rules it out. |
@@ -186,7 +186,7 @@ A tool round.
 | Field | Type | Default |
 | --- | --- | --- |
 | `tools` | `tuple[ToolRun, ...]`, at least one | required |
-| `call` | `Call` | required; the request sent with the results |
+| `call` | `Call \| None` | `None`; the request sent with the results, or none when the run stopped before it. Only an item's last turn may lack one (`RunItem`). |
 
 ### `check_execution(execution: Execution, trial: Trial, calls: Sequence[Call], sent: Mapping[ItemKey, datetime]) -> list[Finding]`
 Internal; `check_run` and `check_score` call it. `calls` are the calls to count; `sent` says when each item was sent.
@@ -242,7 +242,8 @@ One request of the trial and what came back. Case-derived.
 | `call` | `Call` | required; the first request |
 | `turns` | `tuple[Turn, ...]` | `()`; the tool rounds |
 
-`calls -> tuple[Call, ...]`: `call`, then each turn's call.
+`calls -> tuple[Call, ...]`: `call`, then each turn's call, when it has one. A turn without a call before the last is
+refused: `only the last round may lack its call`.
 
 ### `class CanaryCall(Record)`
 One canary of the run's set, sent at one phase. Not case-derived.
@@ -301,23 +302,26 @@ Raises `StructuralError`:
 | `<key>: tool rounds, but the skeleton has no tools` | An item with turns on a skeleton without tools. |
 | `<key>: more than <max_rounds> rounds` | More turns than `skeleton.max_rounds`. |
 | `<key>: no tool named '<name>'` | A tool run whose name isn't a tool of the skeleton, and which has no `error`. |
-| `<key>: a round runs tools for calls the response didn't make` | A turn's set of `(id, name)` differs from the previous call's tool calls (`chatddx.factors.request.tool_calls`), leaving out calls to the answer function of a `tool` contract. |
+| `<key>: a round runs tools for calls the response didn't make` | A turn's set of `(id, name)` differs from the previous call's tool calls (`chatddx.factors.request.tool_calls`), leaving out calls to the answer function of a `tool` contract; for a turn without a call, it has one the previous call didn't make. |
 | `tool code recorded for tools the skeleton lacks: […]` | A `tool_code` entry for a tool not in `skeleton.tools`. |
 
 Returns findings, in this order:
 1. `ledger.seal`, subject the run id;
 2. `run.incomplete` when finished: one for missing items, one for missing planned canary calls;
 3. `case.drift` for each item whose `vignette` differs from its case's `vignette.fingerprint`;
-4. `tools.unanswered` for each item whose last call still has tool calls other than the answer function's (skeletons
-   with tools only);
-5. `tools.code` for each tool of the skeleton whose version isn't recorded or isn't the one `Tool.version` pins;
-6. `attestation.model` for each item: one per distinct wrong model name, and one when some call has a response but no
-   model name. The declared name is the engine's `served_model_name`: a local engine's digest, a remote engine's
-   `model`. Calls without a response aren't checked;
-7. `attestation.prompt_tokens` when some items have a call, failed calls included, without `prompt_tokens`;
-8. `execution.*` over every item call and canary call, an item counting as sent when its first call starts;
-9. `canary.phase`: start-phase calls that finish after the first item call starts, and end-phase calls that start
-   before the last item call, tool rounds included, finishes. One finding per phase. Nothing when there are no items.
+4. `call.failed` for each item whose last call has an `error`, subject the item key, then for each canary call with
+   one, subject `<phase>/<position>`; the message is the error. Earlier calls of an item can't have one: a failed call
+   ends its rounds;
+5. `tools.unanswered` for each item whose last call still has tool calls other than the answer function's, or
+   `tools.stopped` when its last turn has no call (skeletons with tools only);
+6.  `tools.code` for each tool of the skeleton whose version isn't recorded or isn't the one `Tool.version` pins;
+7.  `attestation.model` for each item: one per distinct wrong model name, and one when some call has a response but no
+    model name. The declared name is the engine's `served_model_name`: a local engine's digest, a remote engine's
+    `model`. Calls without a response aren't checked;
+8.  `attestation.prompt_tokens` when some items have a call, failed calls included, without `prompt_tokens`;
+9.  `execution.*` over every item call and canary call, an item counting as sent when its first call starts;
+10. `canary.phase`: start-phase calls that finish after the first item call starts, and end-phase calls that start
+    before the last item call, tool rounds included, finishes. One finding per phase. Nothing when there are no items.
 
 Canary calls get neither the model check nor the prompt-token check. Timeouts aren't checked.
 
@@ -352,9 +356,10 @@ scorer's entry point the scoring pass ran.
 | `run` | `UUID` | required; the run it grades |
 | `at` | `UtcDatetime` | required |
 | `rig` | `Code` | required |
-| `scorer_code` | `Code` | required; the scorer code that runs |
 | `scoring` | `ScoringRef` | required |
 | `execution` | `Execution` | `Execution()`; for the judge calls |
+| `scorer_version` | `int`, ≥ 1 | required; the version of the scorer's entry point that ran |
+| `endpoints` | `tuple[JudgeEndpoint, ...]` | `()`; each judge's endpoint, `JudgeEndpoint(judge: JudgeRef, endpoint: Endpoint)` |
 
 ### `class ScoreItem(Record)`
 One run item graded by one view. Case-derived.
@@ -401,8 +406,9 @@ Raises `StructuralError`:
 Returns findings, in this order:
 1. `view.unreachable` for each view whose `output` selector can't reach anything in the run skeleton's
    `output_schema` (`chatddx.factors.select.reaches`), subject the scorer digest;
-2. `judge.incomplete` for each item with a value whose view's judge was called with fewer distinct seeds than it
-   has;
+2. `judge.incomplete` for each item with a value whose view's judge was called with fewer distinct seeds than it has;
+   then `attestation.model` for each item's judge calls, per judge: one per distinct wrong model name, and one when
+   some call has a response but no model name, against the judge engine's `served_model_name`;
 3. `score.scorer_code` when `scorer_version` isn't the version `Scorer.version` pins;
 4. `score.run_unfinished` when the run has no finished row, or finished after the score started;
 5. `ledger.seal`, subject the score id;
@@ -420,9 +426,11 @@ All are warnings. Item-key subjects are `str(ItemKey)`.
 | --- | --- | --- | --- |
 | `run.incomplete` | `check_run` | none | `<n> items missing`, `<n> canary calls missing` |
 | `case.drift` | `check_run` | item key | `the vignette read differs from the case's` |
+| `call.failed` | `check_run` | item key, or `<phase>/<position>` for a canary call | the call's `error` |
 | `tools.unanswered` | `check_run` | item key | `the last response still calls <names> after <k> of <max_rounds> rounds` |
+| `tools.stopped` | `check_run` | item key | `round <r> stopped after <k> of <n> tool calls, before its call` |
 | `tools.code` | `check_run` | tool digest | `the code tool '<name>' ran with isn't recorded`, or `tool '<name>' ran at version <v> of <entry point>, not the version it pins (<v>)` |
-| `attestation.model` | `check_run` | item key | `engine returned model '<got>', declared '<want>'`, or `engine returned no model name, declared '<want>'` |
+| `attestation.model` | `check_run`, `check_score` | item key | `engine returned model '<got>', declared '<want>'`, or `engine returned no model name, declared '<want>'`; for a judge call, `judge engine returned …` |
 | `attestation.prompt_tokens` | `check_run` | none | `<n> items have no prompt token fingerprint` |
 | `canary.phase` | `check_run` | none | `<n> start canary calls hadn't finished when the first item was sent`, `<n> end canary calls started before the last item call finished` |
 | `execution.retries` | `check_run`, `check_score` | none | `<n> calls took more than the <retries + 1> attempts allowed` |
@@ -555,6 +563,5 @@ From `docs/ledger.md`, "Open design issues", where they concern this API:
 - `Call.system_fingerprint` is never compared.
 - The finished row is outside the seal: its `at` and `findings` can change without `ledger.seal`.
 - `Call` accepts a response that still holds `prompt_token_ids`.
-- `ScoreStarted` has no endpoint, so judge calls don't record where they went.
 - Records don't travel in a `Bundle`.
 - Findings have no mechanism of their own beyond the finished rows and the check functions.

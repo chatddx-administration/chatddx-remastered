@@ -30,7 +30,7 @@ from chatddx.factors.request import (
     compiled,
     own_texts,
 )
-from chatddx.factors.scoring import ExpectationSchema, Scorer
+from chatddx.factors.scoring import ExpectationSchema, Judge, Scorer
 from chatddx.facts import INTENTS, Effort, Facts, Refused, model_name
 from chatddx.scorers.shipped import SCORERS, problems
 from chatddx.tools.shipped import TOOLS
@@ -53,6 +53,9 @@ TABLES: dict[str, type[Component]] = {
     "scorer": Scorer,
 }
 ENGINE_TABLES = ("model", "local_engine", "remote_engine")
+# Planned after recipes and judges, as a view may name a judge.
+LATE_TABLES = ("scorer",)
+PLANNED_TABLES = (*TABLES, "recipe", "judge")
 # The tables whose records pin shipped code, with what the running code ships.
 SHIPPED: dict[str, Mapping[str, Versioned]] = {"tool": TOOLS, "scorer": SCORERS}
 # References outside recipes, by table and field: each names records of another table.
@@ -229,11 +232,9 @@ def plan_factors(
     data: Path, facts: Facts, compiler: Code, more: Sequence[Path] = ()
 ) -> Plan:
     factors = data / "factors.toml"
-    found = _records(factors, _read(factors), [*TABLES, "recipe"])
+    found = _records(factors, _read(factors), PLANNED_TABLES)
     for extra in more:
-        for table, records in _records(
-            extra, _read(extra), [*TABLES, "recipe"]
-        ).items():
+        for table, records in _records(extra, _read(extra), PLANNED_TABLES).items():
             known = found.setdefault(table, {})
             if twice := sorted(set(known) & set(records)):
                 raise ValueError(f"{extra}: {table} {twice} are named before it too")
@@ -320,6 +321,13 @@ def plan_factors(
                     shipped = SHIPPED[table].get(str(body.get("entry_point")))
                     if shipped is not None:
                         body["version"] = shipped.version
+                if table == "scorer" and (
+                    unplanned := _judged(name, body, planned, found.get("judge", {}))
+                ):
+                    plan.skipped.append(
+                        f"scorer {name}: judge {unplanned} isn't planned"
+                    )
+                    continue
                 labels = _labels(table, body)
                 for model in models if "from_facts" in body else [None]:
                     key = (language, model)
@@ -377,7 +385,7 @@ def plan_factors(
             f"from_facts records for {model}: no planned engine serves it"
         )
     for table in TABLES:
-        if table not in ENGINE_TABLES:
+        if table not in (*ENGINE_TABLES, *LATE_TABLES):
             plan_table(table, models)
 
     for name, raw in found.get("recipe", {}).items():
@@ -415,7 +423,80 @@ def plan_factors(
                     compilation=plan.registry.add(compilation),
                 )
         add("recipe", name, variants)
+
+    engines = {
+        r.name: r for r in plan.records if r.table in ("local_engine", "remote_engine")
+    }
+    for name, raw in found.get("judge", {}).items():
+        assert isinstance(raw, dict)
+        body = dict(raw)
+        tags = _tags(body.pop("tags", []))
+        description = body.pop("description", None)
+        recipe, engine = str(body.pop("recipe", "")), str(body.pop("engine", ""))
+        language = body.pop("language", None)
+        if (recipes := planned.get(("recipe", recipe))) is None:
+            raise ValueError(f"judge.{name}: no recipe named {recipe!r}")
+        if (at := engines.get(engine)) is None:
+            plan.skipped.append(f"judge {name}: the World has no engine {engine}")
+            add("judge", name, {})
+            continue
+        written = sorted({k[0] for k in recipes if k[0] is not None})
+        if language is None and len(written) > 1:
+            raise ValueError(
+                f"judge.{name}: recipe.{recipe} is written in {', '.join(written)}, "
+                + "so the judge names its language"
+            )
+        model = model_name(plan.registry.get(at.digest), plan.registry)
+        key = (str(language) if language else (written or [None])[0], model)
+        if (skeleton := _pick(recipes, key)) is None:
+            plan.skipped.append(
+                f"judge {name}: recipe.{recipe} has no variant for {model} on {engine}"
+            )
+            add("judge", name, {})
+            continue
+        try:
+            judge = Judge.model_validate(
+                {**body, "skeleton": skeleton.digest, "engine": at.digest}
+            )
+        except ValidationError as e:
+            raise ValueError(f"judge.{name}: {e}") from None
+        if refused := judge.cross_check(plan.registry.get):
+            raise ValueError(f"judge.{name}: {'; '.join(refused)}")
+        judged = Planned(
+            table="judge",
+            name=name,
+            kind="judge",
+            digest=plan.registry.add(judge),
+            tags=tags,
+            description=None if description is None else str(description),
+        )
+        add("judge", name, {ALL: judged})
+
+    for table in LATE_TABLES:
+        plan_table(table, models)
     return plan
+
+
+def _judged(
+    scorer: str,
+    body: dict[str, JsonValue],
+    planned: Mapping[tuple[str, str], Variants],
+    judges: Collection[str],
+) -> str | None:
+    views = body.get("views")
+    if not isinstance(views, list):
+        return None
+    copied = [dict(v) if isinstance(v, dict) else v for v in views]
+    for view in copied:
+        if not isinstance(view, dict) or (named := view.get("judge")) is None:
+            continue
+        if not isinstance(named, str) or named not in judges:
+            raise ValueError(f"scorer.{scorer}: no judge named {named!r}")
+        if (judge := planned[("judge", named)].get(ALL)) is None:
+            return named
+        view["judge"] = judge.digest
+    body["views"] = cast(list[JsonValue], copied)
+    return None
 
 
 def _recipe(name: str, key: Key, parts: dict[str, Variants]) -> dict[str, str] | str:

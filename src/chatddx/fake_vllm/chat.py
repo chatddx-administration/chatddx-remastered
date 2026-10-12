@@ -257,6 +257,7 @@ def _constrained(served: Served, body: dict[str, Any]) -> bool:
 
 def respond(served: Served, body: dict[str, Any], runaway: bool = False) -> Reply:
     t = temperature(body)
+    turn = _turn(body, t is not None and t < GREEDY_TEMP)
     held = _constrained(served, body) and not served.reasoning_parser
     thought_text = thinking(body) if thinks(served, body) and not held else None
     thought = _words(thought_text or "")
@@ -264,13 +265,13 @@ def respond(served: Served, body: dict[str, Any], runaway: bool = False) -> Repl
     schema = _schema(body)
     calls: tuple[Call, ...] = ()
     if tool is not None:
-        arguments = json.dumps(instance(tool.get("parameters") or {}))
+        arguments = json.dumps(instance(tool.get("parameters") or {}, turn=turn))
         calls = (Call(tool.get("name", ""), arguments, _call_id(body)),)
         answer: list[str] = []
     elif schema is not None or (schema := _shown_schema(body)) is not None:
-        answer = _words(json.dumps(instance(schema), indent=2))
+        answer = _words(json.dumps(instance(schema, turn=turn), indent=2))
     else:
-        answer = _words(_answer(body, t is not None and t < GREEDY_TEMP))
+        answer = _words(_answer(turn))
 
     budget = body.get("thinking_token_budget")
     if isinstance(budget, int):
@@ -319,13 +320,15 @@ def respond(served: Served, body: dict[str, Any], runaway: bool = False) -> Repl
     return Reply(reasoning, content, calls, finish, newlines)
 
 
-def _answer(body: dict[str, Any], greedy: bool) -> str:
+def _turn(body: dict[str, Any], greedy: bool) -> int:
     if greedy:
-        turn = 0
-    elif isinstance(seed := body.get("seed"), int):
-        turn = seed
-    else:
-        turn = random.randrange(len(DIAGNOSES))
+        return 0
+    if isinstance(seed := body.get("seed"), int):
+        return seed
+    return random.randrange(1 << 31)
+
+
+def _answer(turn: int) -> str:
     turn %= len(DIAGNOSES)
     return "\n".join(DIAGNOSES[turn:] + DIAGNOSES[:turn])
 
@@ -461,19 +464,20 @@ def instance(
     key: str = "value",
     n: int | None = None,
     depth: int = 0,
+    turn: int = 0,
 ) -> Any:
     root = schema if root is None else root
     if not isinstance(schema, dict) or depth > 12:
         return None
     schema = cast(dict[str, Any], schema)
     if "$ref" in schema:
-        return instance(_resolve(root, schema["$ref"]), root, key, n, depth + 1)
+        return instance(_resolve(root, schema["$ref"]), root, key, n, depth + 1, turn)
     if "const" in schema:
         return schema["const"]
     if schema.get("enum"):
         return schema["enum"][0]
-    if schema.get("examples"):
-        return schema["examples"][0]
+    if examples := schema.get("examples"):
+        return examples[turn % len(examples)]
     for union in ("anyOf", "oneOf", "allOf"):
         options = [
             o
@@ -484,7 +488,7 @@ def instance(
             # A branch holds together with the keywords beside it, as `required` beside
             # `type` and `properties` does.
             beside = {k: v for k, v in schema.items() if k != union}
-            return instance(beside | options[0], root, key, n, depth + 1)
+            return instance(beside | options[0], root, key, n, depth + 1, turn)
     kind = schema.get("type")
     if isinstance(kind, list):
         kind = next((k for k in cast(list[str], kind) if k != "null"), "null")
@@ -492,13 +496,13 @@ def instance(
         case "object":
             properties: dict[str, Any] = schema.get("properties", {})
             return {
-                name: instance(sub, root, name, n, depth + 1)
+                name: instance(sub, root, name, n, depth + 1, turn)
                 for name, sub in properties.items()
             }
         case "array":
             count = min(max(schema.get("minItems", 3), 1), schema.get("maxItems", 3))
             return [
-                instance(schema.get("items", {}), root, key, i, depth + 1)
+                instance(schema.get("items", {}), root, key, i, depth + 1, turn)
                 for i in range(1, count + 1)
             ]
         case "string":
@@ -511,7 +515,9 @@ def instance(
             return False
         case _:
             if "properties" in schema:
-                return instance(schema | {"type": "object"}, root, key, n, depth + 1)
+                return instance(
+                    schema | {"type": "object"}, root, key, n, depth + 1, turn
+                )
             return None
 
 

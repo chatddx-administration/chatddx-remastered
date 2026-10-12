@@ -53,7 +53,7 @@ def test_endpoints_say_what_they_serve_and_what_they_re_cleared_for(
     engine = signed.get(f"/api/components/{remote['engine']}").json()["body"]
     assert (remote["model"], remote["url"], remote["host"]) == (
         engine["model"],
-        engine["base_url"],
+        str(inventory.endpoint(REMOTE).url),
         None,
     )
     assert remote["credential"] is not None and remote["cleared_for"] == []

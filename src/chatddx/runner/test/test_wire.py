@@ -1,18 +1,29 @@
 import json
 import logging
+import threading
 import time
 import urllib.request
-from collections.abc import Iterator
-from typing import Any
+from collections.abc import Generator, Iterator
+from contextlib import contextmanager
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from typing import Any, override
 
 import pytest
 from pydantic import JsonValue
 
 from chatddx.fake_vllm.served import Served
 from chatddx.fake_vllm.server import serving
-from chatddx.runner.wire import Rejected, assemble, chunks, events, post, request
+from chatddx.runner.wire import (
+    Rejected,
+    Unfinished,
+    assemble,
+    chunks,
+    events,
+    post,
+    request,
+)
 
-pytestmark = pytest.mark.wip
+pytestmark = pytest.mark.solidified
 
 SERVED = Served.of(
     "Qwen/Qwen3-8B-AWQ",
@@ -48,6 +59,43 @@ def function(name: str, parameters: Any = None) -> dict[str, Any]:
 def url() -> Iterator[str]:
     with serving([SERVED], "127.0.0.1", 0) as (host, port):
         yield f"http://{host}:{port}/v1/"
+
+
+# vLLM streams over HTTP/1.1 in chunks, the fake over HTTP/1.0 until it closes. An engine that
+# goes away mid-stream ends the stream either way.
+class _GoingAway(BaseHTTPRequestHandler):
+    protocol_version: str = "HTTP/1.1"
+    chunked: bool = False
+
+    def do_POST(self) -> None:
+        _ = self.rfile.read(int(self.headers["Content-Length"]))
+        self.send_response(200)
+        self.send_header("Content-Type", "text/event-stream")
+        if self.chunked:
+            self.send_header("Transfer-Encoding", "chunked")
+        self.send_header("Connection", "close")
+        self.end_headers()
+        data = b'data: {"choices": [{"index": 0, "delta": {"content": "Fake"}}]}\n\n'
+        if self.chunked:
+            data = b"%x\r\n%s\r\n" % (len(data), data)
+        _ = self.wfile.write(data)
+
+    @override
+    def log_message(self, format: str, *args: Any) -> None:
+        pass
+
+
+@contextmanager
+def going_away(chunked: bool) -> Generator[str]:
+    handler = type("Handler", (_GoingAway,), {"chunked": chunked})
+    with ThreadingHTTPServer(("127.0.0.1", 0), handler) as server:
+        thread = threading.Thread(target=server.serve_forever, args=(0.01,))
+        thread.start()
+        try:
+            yield f"http://127.0.0.1:{server.server_address[1]}/v1/"
+        finally:
+            server.shutdown()
+            thread.join()
 
 
 def whole(url: str, request: dict[str, Any]) -> dict[str, Any]:
@@ -115,6 +163,15 @@ def test_closing_a_stream_hangs_up_and_the_engine_hears_it(
     assert "aborted: the client hung up" in caplog.text
 
 
+@pytest.mark.parametrize("chunked", [False, True], ids=["closed", "chunked"])
+def test_a_stream_the_engine_leaves_before_done_is_unfinished(chunked: bool) -> None:
+    with going_away(chunked) as url, post(url, body() | STREAM) as stream:
+        chunk = next(iter(stream))
+        with pytest.raises(Unfinished, match=r"ended before \[DONE\]"):
+            _ = next(iter(stream))
+    assert chunk["choices"] == [{"index": 0, "delta": {"content": "Fake"}}]
+
+
 def test_server_sent_events_are_read_as_the_standard_has_them() -> None:
     lines = [
         b": a comment\n",
@@ -130,6 +187,8 @@ def test_server_sent_events_are_read_as_the_standard_has_them() -> None:
     ]
     assert list(events(lines))[:2] == ['{"a":\n1}', "{}"]
     assert list(chunks(lines)) == [{"a": 1}, {}]
+    with pytest.raises(Unfinished):
+        _ = list(chunks(lines[:7]))
     with pytest.raises(Rejected, match="HTTP 200: overloaded"):
         _ = list(chunks([b'data: {"error": {"message": "overloaded"}}\n\n']))
     with pytest.raises(ValueError, match="isn't a JSON object"):

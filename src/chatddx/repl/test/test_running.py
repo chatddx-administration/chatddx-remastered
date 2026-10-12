@@ -299,9 +299,9 @@ def test_ctrl_c_again_stops_the_case_under_way_too(
     [item] = run.items
     assert item.call.error == "stopped"
     assert f"stopped after 0 of {len(targets)} cases" not in written
-    [stopped] = [c for c in cells(written) if c[2:] == ["stopped"]]
-    assert stopped[0] in targets
+    [_] = [c for c in cells(written) if c[2:] == ["stopped"] and c[0] in targets]
     assert f"stopped after 1 of {len(targets)} cases" in written
+    assert "call.failed: stopped" in written
 
 
 @pytest.mark.slow

@@ -13,10 +13,10 @@ from chatddx.factors.trial import Execution
 from chatddx.fake_vllm.chat import ANSWER
 from chatddx.fake_vllm.server import serving
 from chatddx.ledger import fingerprint_request
-from chatddx.runner.send import STOPPED, Delta, Stopped, send
-from chatddx.runner.test.test_wire import SERVED, body, whole
+from chatddx.runner.send import STOPPED, Delta, Halt, Stopped, send
+from chatddx.runner.test.test_wire import SERVED, body, going_away, whole
 
-pytestmark = pytest.mark.wip
+pytestmark = pytest.mark.solidified
 
 
 def at(host: str, port: int) -> str:
@@ -99,7 +99,7 @@ def test_an_interrupt_mid_stream_records_what_came_as_stopped(url: str) -> None:
 
 
 def test_a_halt_hangs_up_mid_stream_and_keeps_what_came(url: str) -> None:
-    halt = threading.Event()
+    halt = Halt()
     seen: list[Delta] = []
 
     def halting(delta: Delta) -> None:
@@ -117,11 +117,35 @@ def test_a_halt_hangs_up_mid_stream_and_keeps_what_came(url: str) -> None:
     )
 
 
+def test_a_halt_from_another_thread_ends_a_stalled_stream() -> None:
+    halt = Halt()
+    with serving([SERVED], "127.0.0.1", 0, delay=5.0) as address:
+        threading.Timer(0.1, halt.set).start()
+        began = time.monotonic()
+        with pytest.raises(Stopped) as caught:
+            _ = send(at(*address), body(), halt=halt)
+        assert time.monotonic() - began < 2
+    call = caught.value.call
+    assert (call.error, call.status) == (STOPPED, 200)
+    assert choice(call.response)["message"]["role"] == "assistant"
+
+
+@pytest.mark.parametrize("chunked", [False, True], ids=["closed", "chunked"])
+def test_a_stream_the_engine_leaves_is_an_error_that_keeps_what_came(
+    chunked: bool,
+) -> None:
+    with going_away(chunked) as url:
+        call = send(url, body())
+    assert call.error == "Unfinished: the stream ended before [DONE]"
+    assert content(call.response) == "Fake"
+    assert choice(call.response)["finish_reason"] is None
+
+
 def test_a_halt_ends_the_wait_between_attempts() -> None:
     with socket.socket() as s:
         s.bind(("127.0.0.1", 0))
         closed = at("127.0.0.1", s.getsockname()[1])
-    halt = threading.Event()
+    halt = Halt()
     threading.Timer(0.1, halt.set).start()
     began = time.monotonic()
     with pytest.raises(Stopped) as caught:

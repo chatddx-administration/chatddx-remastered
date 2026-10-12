@@ -210,12 +210,11 @@ Each kind is described by:
 | Expectation | Its case. | `expectation for Dutchfall11w` |
 | Model | Its repository. | `google/gemma-3-12b-it` |
 | Local engine | Its model, server and GPU. | `google/gemma-3-12b-it on vllm 0.24.0 (NVIDIA GeForce RTX 5090)` |
-| Remote engine | Its model and host. | `gpt-4o at api.openai.com` |
+| Remote engine | Its model and provider. | `gpt-4o from openai` |
 | Trial | Its skeleton, its engine, and how many cases and seeds it has. | `plan on qwen3-8b@pelle, 20 cases, 1 seed` |
 | Batch | Variation count, its base, case count, and endpoint. | `4 variations of plan, 20 cases, at qwen3-8b@pelle` |
 | Judge | Its skeleton and engine. | `judge grader on qwen3-8b@pelle` |
-| Scorer | Its entry point and version. | `scorer chatddx.scorers.patterns:score v1` |
-| Scoring | Its scorer and how many expectations it has. | `plan against 20 expectations` |
+| Scorer | Its entry point and version. | `scorer chatddx.scorers.metrics:score v1` |
 | Expectation schema | Its title or its properties. | `Targets` |
 | Canary set | How many canaries it has. | `2 canaries` |
 | Anything with nothing better to go by | Its kind and the start of its digest. | `compilation 1a2b3c` |

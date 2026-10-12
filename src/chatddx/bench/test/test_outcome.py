@@ -41,15 +41,17 @@ def call(
     )
 
 
+RAN = ToolRun(id="t", name="lookup", started_at=NOW, finished_at=NOW, result="")
+
+
 def item(*calls: Call) -> RunItem:
     first, *rest = calls
-    ran = ToolRun(id="t", name="lookup", started_at=NOW, finished_at=NOW, result="")
     return RunItem(
         run=uuid4(),
         key=ItemKey(case="sha256:" + "0" * 64, replicate=0),
         vignette=Fingerprint.of(b"vignette"),
         call=first,
-        turns=tuple(Turn(tools=(ran,), call=c) for c in rest),
+        turns=tuple(Turn(tools=(RAN,), call=c) for c in rest),
     )
 
 
@@ -68,6 +70,8 @@ def test_an_item_ends_by_its_last_call_and_the_skeleton_s_output(plan: Plan) -> 
     assert outcome(lines, item(call(None, "HTTP 500"))) == ("errored", "HTTP 500")
     assert outcome(lines, item(call("  "))) == ("unread", "no content")
     assert outcome(lines, item(call("Sep", STOPPED))) == ("stopped", None)
+    unsent = item(call("Sep")).model_copy(update={"turns": (Turn(tools=(RAN,)),)})
+    assert outcome(lines, unsent) == ("stopped", None)
     assert outcome(lines, item(call(None, "HTTP 500"), call("Sepsis"))) == (
         "completed",
         None,

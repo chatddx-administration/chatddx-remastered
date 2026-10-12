@@ -66,6 +66,8 @@ class Judge(Component):
         assert isinstance(skeleton, Skeleton)
         if skeleton.purpose != "judge":
             return [f"judge uses a {skeleton.purpose} skeleton"]
+        if skeleton.tools:
+            return ["judge uses a skeleton with tools, which a judge can't run"]
         return []
 
     def fills(

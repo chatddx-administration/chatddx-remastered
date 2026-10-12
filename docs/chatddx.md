@@ -115,13 +115,14 @@ layers depending on what resources they require:
 
 - All *rules* that can be expressed as a pure functions (without store access) -> `identity`
 - All *procedures* that can be carried out from the catalog's rows alone -> `catalog`
-- All *operations* that needs to reach across the project -> `bench`
+- All *operations* that need to reach across the project -> `bench`
 
 This is referred to as the "Person-scoped cake". `identity` is currently underused and exploration of its usability is
 encouraged.
 
 ### On the table
-- The result from scorers needs to be aggregated and exported. Since python is well-suited for statistical analysis, processing the data into publishable results may become a requirement.
+- The result from scorers needs to be aggregated and exported. Since python is well-suited for statistical analysis,
+  processing the data into publishable results may become a requirement.
 - Garbage collector for true deletions of non-referenced items.
 
 ### Work in progress
@@ -164,6 +165,7 @@ Canaries, prompt-token fingerprints and comparing completions show which one app
  - `bundle.recanonicalized`;
  - `case.drift`
  - `tools.unanswered`
+ - `tools.stopped`
  - `judge.incomplete`
  - `score.incomplete`
  - `execution.retries`
@@ -233,8 +235,7 @@ described below.
   - adds seed only if the sampling isn't greedy;
   - adds return_token_ids: true.
 9. Send the request to the engine's /v1/chat/completions.
-  - For a remote engine the URL is RemoteEngine.base_url.
-  - For a local engine, the World inventory's endpoint gives the URL (`docs/inventory.md`, "Endpoints").
+  - The World inventory's endpoint gives the URL, for a local engine and a remote one (`docs/inventory.md`, "Endpoints").
   - Canaries are sent the same way, from their literal bodies (`Canary.render`), one at a time before the first
     item and after the last, at the phases `verify_at` names. Nothing compares canary outputs yet (see "Possible
     design issues").
@@ -258,7 +259,9 @@ described below.
    item's last call, before the scorer's entry point is called.
 4. Apply each view. A View points into the parsed output (output, a JSON pointer) and into the expectation (expectation), and names a metric that the scorer's code interprets, with params.
 5. If the view names a Judge:
-  - Build the judge request with render() from the judge's Skeleton (purpose "judge"). Its slots can be filled with the completion, the expectation, and optionally the case and appendices.
+  - Build the judge request with render() from the judge's Skeleton (purpose "judge").
+    Its slots are filled with the completion and the expectation, as the view picks them;
+    a judge that reads the case or the appendices is refused.
   - Send it to the judge's engine, once per seed in Judge.seeds.
   - Record each call as a JudgeCall: which judge, which seed index, and the call itself.
 6. Write one ScoreItem per (run item, view):

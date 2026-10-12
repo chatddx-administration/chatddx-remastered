@@ -8,7 +8,7 @@ from chatddx.curation import init, load_cases
 from chatddx.inventory import World, check
 from chatddx.store import People
 from chatddx.store.store import Connection
-from chatddx.test.world import DATA, FAKE_LINTS, TEST, world_plan
+from chatddx.test.world import DATA, LINTS, TEST, world_plan
 
 pytestmark = pytest.mark.wip
 
@@ -42,7 +42,7 @@ def test_the_test_world_plans_and_loads_as_designed(conn: Connection) -> None:
         "instructions": 2,
         "few_shot": 2,
         "prompt": 3,
-        "output": 7,
+        "output": 8,
         "sampling": 5,
         "reasoning": 7,
         "passthrough": 1,
@@ -50,8 +50,9 @@ def test_the_test_world_plans_and_loads_as_designed(conn: Connection) -> None:
         "tool": 2,
         "toolset": 1,
         "expectation_schema": 1,
-        "scorer": 4,
-        "recipe": 24,
+        "scorer": 6,
+        "recipe": 27,
+        "judge": 3,
     }
     assert plan.skipped == SKIPPED
     world = World.load(TEST)
@@ -62,8 +63,8 @@ def test_the_test_world_plans_and_loads_as_designed(conn: Connection) -> None:
     lines = init(conn, plan, cases, source, alice, giftbag=True)
     components = len({r.digest for r in plan.records}) + 2 * len(cases)
     assert [line for line in lines if line.startswith("[lint")] == [
-        *FAKE_LINTS,
-        f"[lint] {len(FAKE_LINTS)} findings in {components} components",
+        *LINTS,
+        f"[lint] {len(LINTS)} findings in {components} components",
     ]
     adopted = [line for line in lines if line.startswith("[archive case]")]
     assert [line.split(": ")[0] for line in adopted] == [

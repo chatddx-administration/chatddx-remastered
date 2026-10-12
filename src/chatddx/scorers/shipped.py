@@ -1,10 +1,10 @@
 from chatddx.core.rig import entry
 from chatddx.factors.scoring import Scorer
 
-from . import patterns
+from . import metrics
 from .scorer import Metrics
 
-SCORERS: dict[str, Metrics] = {"chatddx.scorers.patterns:score": patterns.score}
+SCORERS: dict[str, Metrics] = {"chatddx.scorers.metrics:score": metrics.score}
 
 
 def problems(scorer: Scorer) -> list[str]:

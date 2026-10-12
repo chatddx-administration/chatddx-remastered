@@ -240,7 +240,7 @@ know, as `start_up`, and:
 
 | Engine | Returns | Raises |
 | --- | --- | --- |
-| remote | `str(base_url)` | `endpoint '<name>' has url <url>, but its remote engine's base_url is <base_url>` when the endpoint gives another URL |
+| remote | `str(url)` | `endpoint '<name>' serves a remote engine but has no url` |
 | local | `str(url)` | `endpoint '<name>' serves a local engine but has no url` |
 | anything else | | `endpoint '<name>' names a <kind>, not an engine` |
 

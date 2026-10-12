@@ -37,7 +37,8 @@ NATIVE_TOOLS = f"native-tools (en, {QWEN_MODEL})"
 TOOL_ANSWER = "tool-answer (en)"
 OFF = f"off ({QWEN_MODEL})"
 
-FAKE_LINTS = [
+# What loading the test World lints: the factors' lints, then the facts'.
+FACTOR_LINTS = [
     *(
         f"[lint warning] model {name}: model.revision: revision 'fake' is not a "
         + "commit and can move"
@@ -49,6 +50,11 @@ FAKE_LINTS = [
         for name in (QWEN, QWEN_BARE, GPT_OSS, MISTRAL)
     ),
 ]
+FACT_LINTS = [
+    "[lint info] judge remote: facts.missing: no facts about 'test/unknown', so "
+    + "model-level checks were skipped",
+]
+LINTS = [*FACTOR_LINTS, *FACT_LINTS]
 
 
 def world_facts(world: Path = TEST) -> Facts:

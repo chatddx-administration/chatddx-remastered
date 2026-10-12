@@ -1,5 +1,4 @@
 import pytest
-from pydantic import HttpUrl
 
 from chatddx.catalog import Entry, EntryField, Subject, titles
 from chatddx.catalog.test.memory import Memory
@@ -73,10 +72,8 @@ def test_unnamed_components_are_described_by_what_they_hold() -> None:
     assert title(reg.add(tool)) == "tool plan output: steps, disposition"
     schema = reg.add(ExpectationSchema(json_schema={"title": "Targets"}))
     assert title(schema) == "Targets"
-    remote = reg.add(
-        RemoteEngine(base_url=HttpUrl("https://example.org/v1"), model="gpt-x")
-    )
-    assert title(remote) == "gpt-x at example.org"
+    remote = reg.add(RemoteEngine(provider="example", model="gpt-x"))
+    assert title(remote) == "gpt-x from example"
 
 
 def test_recipes_are_described_by_every_part() -> None:

@@ -28,12 +28,17 @@ data set beside its vignettes, in `worlds/test/_data/`: the leading `_` says the
 init-data takes it with `--data`.
 
 ### Factors
+
 Both kinds of file hold one table per kind of component, keyed by name, whose keys are the component's fields
 (docs/factors-api.md). The kinds are models, local and remote engines, instructions, few-shot, prompts, outputs,
-sampling, reasoning, passthrough, translations, tools, toolsets, expectation schemas, scorers and recipes. On top of
-the fields:
-- **References by name.** A toolset's tools, a scorer's expectation schema, a local engine's model and a recipe's
-  parts name records, not digests.
+sampling, reasoning, passthrough, translations, tools, toolsets, expectation schemas, scorers, recipes and judges. On
+top of the fields:
+- **References by name.** A toolset's tools, a scorer's expectation schema and a view's judge, a local engine's model
+  and a recipe's parts name records, not digests.
+- **Judges.** A judge names a `recipe` and an `engine` of the World, and takes the recipe's variant for the model the
+  engine serves, in the recipe's language (`language` picks one when it is written in several). A judge whose engine
+  the World doesn't have, or whose recipe has no variant for its model, is skipped and reported, and so is every
+  scorer whose views name it. A judge's skeleton may not have tools.
 - **Files.** `json_schema_path` loads a JSON file, relative to the file that names it, in place of `json_schema`.
 - **Forks.** `fork_of` names a record of the same kind that this one is a variation of. It is loaded as a fork of
   that record's thread, so the catalog knows what it varies (docs/catalog.md, "Forks"). It inherits no fields. Each
@@ -227,8 +232,8 @@ Curation is the place for the rest of the store's authored content to come and g
 - importing a data set as someone other than the archive.
 
 ### What a data set can't hold yet
-Trials, executions, judges, scorings, canary sets, appendices and hand-written skeletons have no tables, and a data
-set has one expectation schema. A canary set is the next asked for (agents/wip-runner.md).
+Trials, executions, scorings, canary sets, appendices and hand-written skeletons have no tables, and a data set has one
+expectation schema. A canary set is the next asked for (agents/wip-runner.md).
 
 ### Picking a variant by the case's language
 The bench picks a configuration's variant by the model the engine it runs on serves, and by language only when there

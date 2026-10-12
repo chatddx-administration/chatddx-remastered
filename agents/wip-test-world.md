@@ -128,7 +128,8 @@ Outputs, each in `texts-en.toml` unless it holds no text:
 | `tool-answer` | tool, `list.json`, with a description | a named `tool_choice`; a second output shape |
 | `lines` | text, guidance | free text; `lines@1` |
 | `raw` | text, no guidance (in `factors.toml`) | `language.unknown`, with the prompt `case` |
-| `verdict` | native, `verdict.json` | a judge's output |
+| `verdict` | native, `verdict.json`, whose `meets` has the examples `true` and `false` | a judge's output; seeds that disagree on the fake |
+| `grade` | native, `grade.json`: `points` 0–2, with three examples, and `why` | a judge's verdict on a scale |
 
 Recipes. A recipe whose sampling is `recommended` is made per model; the others are made once:
 
@@ -150,6 +151,18 @@ Recipes. A recipe whose sampling is `recommended` is made per model; the others 
 | `budgeted` | `greedy`, reasoning `on-budget` | `vllm.thinking_budget_refused` on `qwen3-bare@fake`; `facts.budget_refused`; skipped where the facts refuse a budget |
 | `clamped` | sampling `near-greedy` (temperature 0.005) | `vllm.temperature_clamped` |
 | `judge` | purpose `judge`; the prompt `judge` with the `completion` and `expectation` slots; output `verdict` | a judge skeleton, for the judge tests in `scorers/test/test_scorers.py` |
+| `judge-graded` | purpose `judge`, the prompt `judge`, output `grade`, `recommended` | a sampled judge's skeleton, made per model |
+
+Judges (`agents/wip-judges.md`, "The test World's additions"), read by `curation/test/test_judges.py`:
+- `verdict`: `judge` on `qwen3@fake`, seed 1;
+- `graded`: `judge-graded`'s variant for Qwen3 on `qwen3@fake`, seeds 1, 2 and 3;
+- `remote`: `judge` on `unknown@remote`, which gives `facts.missing`, and which the gate is to refuse.
+
+The scorer `judged` (`chatddx.scorers.metrics:score`, schema `targets`): a pattern view, the differential line by
+line, beside three judged views over carol's note: `note-comment` and `note-answer` under `verdict`, and
+`note-graded` under `graded`. Read by `runner/test/test_score.py`, and listed wherever a `lines` run's scorers are.
+The scorer `judged-remote` judges carol's comment on `remote`, and applies to no run, since `unknown@remote` is cleared
+for nothing (`bench/test/test_seen.py`).
 
 Other records:
 - **Sampling**: `recommended` (`from_facts`), `greedy` and `near-greedy`. The bench's and repl's tests swap in
@@ -291,8 +304,8 @@ Found while surveying, each to be talked through with the user and then fixed an
 - **The plan's size.** Every curation test writes every record, so a bigger plan makes curation slower. Built, it
   plans 68 records to the sample's 60 (24 skeletons to 18), with 9 cases to 99. Take: keep it; its own load is
   quicker than the sample's, and the curation tests drop to it from loading the sample's records.
-- **Making the remote engine reachable.** Take: not in this run. Its base URL is in its digest, so a free port per
-  test would mean a new engine per test.
+- **Making the remote engine reachable.** Its URL is its endpoint's now, not part of its digest, so `free_world`
+  could give it a free port as it does the fakes. Take: not until a test needs a remote engine to answer.
 - **The `slow` markers.** AGENTS.md marks a test whose call takes 0.2 s or more. 40 marked tests are under it now and
   two unmarked ones over it (see "Where it stands"), most within a run's noise. Take: re-mark by a few timed runs
   rather than one, once the new tests are in.

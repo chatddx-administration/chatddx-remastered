@@ -54,8 +54,9 @@ against the inventory's `[cleared]` table until the clearance pipeline replaces 
 - `Vignette.source` (`src/chatddx/factors/cases.py:Vignette`) names a vignette's source, and is part of the case's
   digest.
 - `prepare_case` produces the case-derived fills the hard block guards (`docs/factors.md`, "Preparing a case").
-- `RemoteEngine.base_url` (`src/chatddx/factors/engine.py:RemoteEngine`) is the only endpoint in a factor, and it is
-  part of the engine's digest. A local engine is located by the inventory (`docs/inventory.md`, "Endpoints").
+- No factor holds an endpoint: every engine is located by the inventory (`docs/inventory.md`, "Endpoints"). A remote
+  engine names its provider and model (`src/chatddx/factors/engine.py:RemoteEngine`); its address moved to its
+  endpoint (`agents/wip-judges.md`, "Decided").
 - `RunStarted.endpoint` (`src/chatddx/ledger/run.py:Endpoint`) records where a run's calls went, by the endpoint's
   name and URL. Judge calls record no endpoint (`src/chatddx/ledger/score.py:ScoreStarted`).
 - The old module had `EndpointBinding(engine, base_url, clearances)` and `CaseSourcePolicy(source,
@@ -80,7 +81,7 @@ against the inventory's `[cleared]` table until the clearance pipeline replaces 
    - the engine digest plus URL (what the old `EndpointBinding` did).
 
    Since decision 2A (`agents/wip-sample-data.md`, "Decided"), an endpoint has a name and binds one engine digest to
-   a URL (`src/chatddx/inventory/inventory.py:EndpointSpec`), and `base_url` stays in the remote engine's digest. So
+   a URL (`src/chatddx/inventory/inventory.py:EndpointSpec`), a remote engine's URL too since it left the engine. So
    a grant can key on the endpoint's name with the digest and URL it holds, as the old `EndpointBinding` did. Today
    `[cleared]` keys on the name alone, so renaming an endpoint drops its clearance (`docs/inventory.md`, "Smaller
    issues").

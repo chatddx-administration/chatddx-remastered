@@ -179,7 +179,7 @@ json_schema_path = "schemas/targets.json"
 # pattern unscored.
 [scorer.plan]
 description = "The management plan's differential, warning, disposition and critical diagnoses, against the case's targets."
-entry_point = "chatddx.scorers.patterns:score"
+entry_point = "chatddx.scorers.metrics:score"
 expectation_schema = "targets"
 views = [
   { label = "differential", output = "$.diagnoses[*].diagnosis", expectation = "/diagnosis", metric = "reciprocal_rank" },
@@ -190,7 +190,7 @@ views = [
 
 [scorer.diagnoses]
 description = "The listed differential, against the case's diagnosis and the diagnosis it mustn't miss."
-entry_point = "chatddx.scorers.patterns:score"
+entry_point = "chatddx.scorers.metrics:score"
 expectation_schema = "targets"
 views = [
   { label = "differential", output = "$.diagnoses[*]", expectation = "/diagnosis", metric = "reciprocal_rank" },
@@ -199,7 +199,7 @@ views = [
 
 [scorer.free-text]
 description = "The free text, whole and line by line, against the case's diagnosis and the diagnosis it mustn't miss."
-entry_point = "chatddx.scorers.patterns:score"
+entry_point = "chatddx.scorers.metrics:score"
 expectation_schema = "targets"
 views = [
   { label = "text", expectation = "/diagnosis", metric = "first_mention" },
@@ -209,6 +209,6 @@ views = [
 
 [scorer.raw]
 description = "Unguided free text, whole, against the case's diagnosis."
-entry_point = "chatddx.scorers.patterns:score"
+entry_point = "chatddx.scorers.metrics:score"
 expectation_schema = "targets"
 views = [{ label = "text", expectation = "/diagnosis", metric = "first_mention" }]

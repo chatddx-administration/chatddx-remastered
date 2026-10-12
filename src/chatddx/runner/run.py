@@ -1,20 +1,15 @@
 import queue
-import threading
 from collections.abc import Callable, Iterator
 from concurrent.futures import Future, ThreadPoolExecutor
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from uuid import UUID, uuid4
 
-from pydantic import JsonValue
-
 from chatddx.catalog import Entry, EntryField, Subject
 from chatddx.core.rig import rig
 from chatddx.factors.base import Finding, Fingerprint, StructuralError, resolve
 from chatddx.factors.bundle import Registry
-from chatddx.factors.cases import Case, prepare_case
-from chatddx.factors.engine import LocalEngine, RemoteEngine
-from chatddx.factors.request import Skeleton, render
+from chatddx.factors.request import Skeleton
 from chatddx.factors.trial import CanarySet, Execution, Trial
 from chatddx.identity import Person
 from chatddx.inventory import Inventory, url_of
@@ -30,10 +25,11 @@ from chatddx.ledger import (
     check_run,
 )
 from chatddx.ledger.run import PHASES, Phase
-from chatddx.store import Catalog, Store, fetch_vignette
+from chatddx.store import Catalog, Store
 from chatddx.store.store import Connection
 
 from . import gate, rounds, send as sending
+from .prepare import Items, PreparedItem
 from .rounds import Exchange, Toolbox
 from .send import Delta
 
@@ -72,13 +68,6 @@ class Noted:
 
 
 type Event = ItemStarted | Streamed | ToolRan | ItemEnded | CanaryEnded | Noted
-
-
-@dataclass(frozen=True)
-class _Prepared:
-    key: ItemKey
-    vignette: Fingerprint
-    body: dict[str, JsonValue]
 
 
 def _now() -> datetime:
@@ -174,11 +163,12 @@ class Running:
         self._url: str = url
         self._secret: str | None = secret
         self._toolbox: Toolbox | None = toolbox
+        self._prepare: Items = Items(conn, inventory, registry.get, started.trial)
         self._items: list[RunItem] = []
         self._canaries: list[CanaryCall] = []
         self._findings: list[Finding] = []
         self._stopping: bool = False
-        self._halt: threading.Event = threading.Event()
+        self._halt: sending.Halt = sending.Halt()
         self._finished: bool = False
 
     @property
@@ -198,7 +188,7 @@ class Running:
 
     def send(self, on_event: Callable[[Event], None] | None = None) -> None:
         emit: Callable[[Event], None] = on_event or _ignore
-        self._halt = threading.Event()
+        self._halt = sending.Halt()
         if self._stopping:
             self._halt.set()
         self._probe("start", emit)
@@ -209,18 +199,12 @@ class Running:
             self._send_concurrently(items, emit)
         self._probe("end", emit)
 
-    def _engine(self) -> LocalEngine | RemoteEngine:
-        get = self._registry.get
-        engine = get(resolve(get, self._started.trial, Trial).engine)
-        assert isinstance(engine, LocalEngine | RemoteEngine)
-        return engine
-
     def _probe(self, phase: Phase, emit: Callable[[Event], None]) -> None:
         started = self._started
         if started.canaries is None or phase not in started.verify_at:
             return
         canaries = resolve(self._registry.get, started.canaries, CanarySet).canaries
-        model = self._engine().served_model_name
+        model = self._prepare.engine.served_model_name
         sent = {(c.phase, c.canary) for c in self._canaries}
         for index, canary in enumerate(canaries):
             if self._stopping or self._finished:
@@ -251,45 +235,31 @@ class Running:
         self._canaries.append(record)
         emit(CanaryEnded(record))
 
-    def _prepared(self, emit: Callable[[Event], None]) -> Iterator[_Prepared]:
-        get = self._registry.get
-        trial = resolve(get, self._started.trial, Trial)
-        skeleton = resolve(get, trial.skeleton, Skeleton)
-        engine = self._engine()
-        execution = self._started.execution
+    def _prepared(self, emit: Callable[[Event], None]) -> Iterator[PreparedItem]:
+        trial = self._prepare.trial
         sent = {i.key for i in self._items}
-        for case_ref, replicate in execution.schedule(trial.cases, len(trial.seeds)):
-            key = ItemKey(case=case_ref, replicate=replicate)
+        schedule = self._started.execution.schedule(trial.cases, len(trial.seeds))
+        for case, replicate in schedule:
+            key = ItemKey(case=case, replicate=replicate)
             if self._stopping or self._finished:
                 return
             if key in sent:
                 continue
-            seed = trial.seeds[replicate]
-            emit(ItemStarted(key, seed))
-            case = resolve(get, case_ref, Case)
             try:
-                raw = fetch_vignette(self._conn, self._inventory, case.vignette)
-                prepared = prepare_case(
-                    case, raw, get, skeleton.appendix_layout, trial.cleanup
-                )
+                prepared = self._prepare.item(key)
             except (LookupError, StructuralError) as e:
                 self._note(
                     Finding(code="case.unreadable", message=str(e), subject=str(key)),
                     emit,
                 )
                 continue
+            emit(ItemStarted(key, prepared.seed))
             for finding in prepared.findings:
                 self._note(finding, emit)
-            body = render(
-                skeleton,
-                model=engine.served_model_name,
-                seed=seed,
-                fills=prepared.fills,
-            )
-            yield _Prepared(key, prepared.fingerprint, body)
+            yield prepared
 
     def _send_serially(
-        self, items: Iterator[_Prepared], emit: Callable[[Event], None]
+        self, items: Iterator[PreparedItem], emit: Callable[[Event], None]
     ) -> None:
         for item in items:
             exchange = rounds.converse(
@@ -310,17 +280,17 @@ class Running:
                 raise KeyboardInterrupt
 
     def _send_concurrently(
-        self, items: Iterator[_Prepared], emit: Callable[[Event], None]
+        self, items: Iterator[PreparedItem], emit: Callable[[Event], None]
     ) -> None:
         execution = self._started.execution
         results: queue.SimpleQueue[Streamed | ToolRan | Future[Exchange]] = (
             queue.SimpleQueue()
         )
         halt = self._halt
-        in_flight: dict[Future[Exchange], _Prepared] = {}
+        in_flight: dict[Future[Exchange], PreparedItem] = {}
         pool = ThreadPoolExecutor(execution.concurrency, "chatddx-runner")
 
-        def work(item: _Prepared, started_at: datetime) -> Exchange:
+        def work(item: PreparedItem, started_at: datetime) -> Exchange:
             return rounds.converse(
                 self._url,
                 item.body,
@@ -352,9 +322,10 @@ class Running:
                     continue
                 item = in_flight.pop(done)
                 self._append(item.key, item.vignette, done.result(), emit)
-        except KeyboardInterrupt:
+        except BaseException as e:
             halt.set()
-            self._stopping = True
+            if isinstance(e, KeyboardInterrupt):
+                self._stopping = True
             while in_flight:
                 done = results.get()
                 if isinstance(done, Streamed | ToolRan):

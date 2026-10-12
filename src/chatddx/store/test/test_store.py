@@ -189,7 +189,7 @@ def test_run_and_score_roundtrip(conn: Connection) -> None:
                 view=1,
                 value=1.0,
                 judge_calls=(
-                    JudgeCall(judge=ids["judge"], seed_index=0, call=call("j")),
+                    JudgeCall(judge=ids["judge"], seed_index=0, call=call(served)),
                 ),
             )
             for i in items

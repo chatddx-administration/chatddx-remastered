@@ -219,7 +219,7 @@ A self-contained package that can be verified offline.
 | `canary_set` | `trial.py:CanarySet` | | |
 | `expectation_schema` | `scoring.py:ExpectationSchema` | | |
 | `expectation` | `scoring.py:Expectation` | `/case`: `case`; `/expectation_schema`: `expectation_schema` | |
-| `judge` | `scoring.py:Judge` | `/skeleton`: `skeleton`; `/engine`: `engine.local`, `engine.remote` | the skeleton's purpose is `judge` |
+| `judge` | `scoring.py:Judge` | `/skeleton`: `skeleton`; `/engine`: `engine.local`, `engine.remote` | the skeleton's purpose is `judge`, and it has no tools |
 | `scorer` | `scoring.py:Scorer` | `/expectation_schema`: `expectation_schema`; `/views/<i>/judge`: `judge` | |
 | `scoring` | `scoring.py:Scoring` | `/scorer`: `scorer`; `/expectations/<i>`: `expectation` | every expectation uses the scorer's expectation schema; at most one expectation per case |
 
@@ -594,7 +594,7 @@ tool, or has no whole answer, or after `max_rounds` rounds.
 `served_model_name -> str`: the engine's digest.
 
 ### `class RemoteEngine(Component)`, kind `engine.remote`
-`api: Api = "chat.completions"`, `base_url: HttpUrl` (pydantic normalizes it), `model: str`.
+`api: Api = "chat.completions"`, `provider: str` (not empty), `model: str`.
 `served_model_name -> str`: `model`.
 
 `Engine = LocalEngine | RemoteEngine`. `EngineRef` allows both kinds.
@@ -670,9 +670,10 @@ schema when the expectation is built; lints check it.
   items.
 
 ### `class Judge(Component)`, kind `judge`
+
 | Field | Type | Default |
 | --- | --- | --- |
-| `skeleton` | `SkeletonRef` | required; purpose `judge` (`cross_check`) |
+| `skeleton` | `SkeletonRef` | required; purpose `judge`, and no tools (`cross_check`) |
 | `engine` | `EngineRef` | required |
 | `seeds` | `tuple[int, ...]`, at least one, distinct | required |
 | `fill` | `FillOp` | `"text@1"` |
@@ -712,10 +713,15 @@ and `appendices` slots come from `prepare_case`.
 The entry point's interface belongs to `src/chatddx/scorers/scorer.py:ScoreFunction`, and the answer it reads to
 `src/chatddx/scorers/answer.py:read`.
 
-`src/chatddx/scorers/shipped.py:SCORERS` ships a `Metrics` with version, metrics, what it measures, a JSON Schema for a
-view's params, and optionally a schema for the scorer's own params. `shipped.problems` says why a scorer can't be
-scored by it: an entry point not shipped, another version, a metric it doesn't publish, or params a schema refuses
-(none where no schema is published).
+`src/chatddx/scorers/shipped.py:SCORERS` ships one `Metrics`, `chatddx.scorers.metrics:score`, with version, metrics,
+what each measures, a JSON Schema for a view's params, whether it reads a judge's verdicts, and optionally a schema
+for the scorer's own params. Its metrics are the pattern metrics (`scorers/patterns.py`) and the judged metrics
+(`scorers/verdicts.py`): `verdict`, the share of the judge's seeds whose verdict holds `true` at `at`, a JSON
+Pointer, and `points`, their mean of the number at `at` over `max`. A judged metric is given the verdicts, one per
+seed in seed order, each none where it couldn't be read; seeds with none are left out, and the detail lists each
+seed's value. `shipped.problems` says why a scorer can't be scored by it: an entry point not shipped, another
+version, a metric it doesn't publish, params a schema refuses (none where no schema is published), or a view whose
+judge and metric disagree, one naming a judge whose metric reads no verdicts or the other way round.
 
 ### `class Scoring(Component)`, kind `scoring`
 `scorer: ScorerRef`, `expectations: tuple[ExpectationRef, ...]` (at least one; the order is kept and is part of the
@@ -824,6 +830,11 @@ On any other engine (a remote engine, or another vLLM version):
 | --- | --- | --- |
 | `schema.ref_unverified` | warning | a `native` or `tool` skeleton's output schema holds `$ref`. `inline_refs@1` removes it. |
 
+#### Judges
+| Code | Level | When |
+| --- | --- | --- |
+| `judge.greedy_seeds` | warning | the judge's skeleton is greedy and it has more than one seed, so every seed sends the same request |
+
 #### Languages, for trials, with `languages`
 | Code | Level | When |
 | --- | --- | --- |
@@ -851,6 +862,7 @@ Checks against the model facts (`facts.*`) are in `src/chatddx/facts/lint.py`.
 | `vllm.native_tools_uncallable` | warning | `lint` |
 | `vllm.grammar_before_reasoning` | warning or info | `lint` |
 | `schema.ref_unverified` | warning | `lint` |
+| `judge.greedy_seeds` | warning | `lint` |
 | `language.unknown` | info | `lint` |
 | `language.mixed` | warning | `lint` |
 

@@ -13,6 +13,7 @@ from .run import (
 )
 from .score import (
     JudgeCall,
+    JudgeEndpoint,
     Score,
     ScoreFinished,
     ScoreItem,
@@ -26,6 +27,7 @@ __all__ = [
     "Endpoint",
     "ItemKey",
     "JudgeCall",
+    "JudgeEndpoint",
     "Record",
     "Run",
     "RunFinished",

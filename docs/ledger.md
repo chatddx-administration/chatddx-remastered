@@ -43,6 +43,9 @@ backward-compatible default needs no new version; changing an existing field's m
 under another version are refused rather than guessed at, so after a bump the store can't return the old ones
 (docs/store.md, "Known gaps").
 
+Making a required field optional needs no new version either, when every record written before reads the same: run
+items kept version 1 when a tool round's call became optional (see "Tool rounds").
+
 Every time is kept in UTC, so the same instant is written, and sealed, the same way whatever the writer's time zone.
 Nothing finishes before it starts.
 
@@ -102,15 +105,16 @@ tool rounds that followed.
 ### Tool rounds
 When the skeleton offers tools and a response calls some, the runner runs them and sends another request
 (docs/factors.md, "Tool rounds"). Each round records the tools run for the previous response's calls and the call that
-followed.
+followed, unless the run stopped before it.
 
 A tool run records the call it answers, the tool, when it ran, and the text sent back to the model, as sent, since it
 shaped the next request. When the tool failed, including a call that names no tool the skeleton offers, it also records
 why; the text is then what the model was told in its place. The arguments aren't repeated: they are in the previous
 response.
 
-A round stopped while its tools run has no call, so it isn't recorded, and neither are its tools, even one that
-reached a third party.
+A round stopped while its tools run is recorded without a call: the tools that ran, a tool stopped while running
+recorded as stopped, and nothing for the tools not run. Only an item's last round can lack its call, and checking the
+run notes it.
 
 ### Canary calls
 A canary call records one canary of the run's set, sent at one phase. Canaries measure the engine before and after the
@@ -128,8 +132,8 @@ Checking a run shows whether it is what its trial produces under the conditions 
 Records that can't be an account of the plan at all stop the check: work that the trial, the canary plan or the
 skeleton couldn't have asked for means the records are wrong, not the world. Everything else is a warning, of four
 kinds:
-- **Complete**: the run did all it planned. Every item and canary call is there, and no item was left waiting on its
-  tools.
+- **Complete**: the run did all it planned. Every item and canary call is there and got a whole answer, and no item
+  was left waiting on its tools.
 - **Conducted as declared**: the rig kept to its own plan. It followed the execution settings, kept the canaries clear
   of the items, and ran each tool with the code the tool pins.
 - **As pinned**: the world matched the pinned factors. The engine attests to the declared model and to the prompt it
@@ -245,11 +249,10 @@ Most of the plan is compared with what happened (see "What a record holds"), but
 
 ### Smaller issues
 - **Canary drift isn't checked.** Nothing compares canary outputs between phases or between runs.
-- **Only run items are attested.** Canary calls and judge calls get no model check and no prompt check.
+- **Only run items are fully attested.** Judge calls get the model check but no prompt check, and canary calls get
+  neither.
 - **The system fingerprint is kept but never compared** between calls or runs.
 - **The finish record is outside the seal.** Its time and findings could change without the seal noticing.
-- **Judge calls don't record where they went.** A score's start record has no endpoint, so the ledger can't show which
-  one received the case-derived content a judge reads, as a run's does.
 - **Records aren't in bundles.** A bundle (docs/factors.md, "Registries and bundles") carries components only; how
   records travel with the factors they reference, for example for publication, isn't specified.
 - **Findings have no mechanism of their own.** The runner and the scoring pass keep those they see in the finish record,

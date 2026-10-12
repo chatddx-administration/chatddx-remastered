@@ -190,13 +190,41 @@ prompt = "judge"
 output = "verdict"
 sampling = "greedy"
 
+[recipe.judge-graded]
+description = "A sampled judge's request, made per model: a grade of the answer against an expectation."
+tags = ["judge"]
+purpose = "judge"
+prompt = "judge"
+output = "grade"
+sampling = "recommended"
+
+# Judges: a recipe, the variant made for the engine's model when it's made per model, an engine of the World, seeds.
+[judge.verdict]
+description = "Whether the answer meets the expectation, greedy, so one seed."
+recipe = "judge"
+engine = "qwen3@fake"
+seeds = [1]
+
+[judge.graded]
+description = "A grade from 0 to 2, sampled under three seeds."
+recipe = "judge-graded"
+engine = "qwen3@fake"
+seeds = [1, 2, 3]
+
+# Never reached: the gate refuses it, as unknown@remote is cleared for nothing and its secret is unset.
+[judge.remote]
+description = "A judge on the remote engine."
+recipe = "judge"
+engine = "unknown@remote"
+seeds = [1]
+
 [expectation_schema.targets]
 json_schema_path = "schemas/targets.json"
 
-# One scorer per output shape: `answer` reads answer.json, `list` list.json, `lines` and `whole` free text.
+# One scorer per output shape: `answer` reads answer.json, `list` list.json, `lines`, `whole` and `judged` free text.
 [scorer.answer]
 description = "The answer's differential, warning, disposition and critical diagnoses, against the targets."
-entry_point = "chatddx.scorers.patterns:score"
+entry_point = "chatddx.scorers.metrics:score"
 expectation_schema = "targets"
 views = [
   { label = "differential", output = "$.diagnoses[*].diagnosis", expectation = "/diagnosis", metric = "reciprocal_rank" },
@@ -207,7 +235,7 @@ views = [
 
 [scorer.list]
 description = "The listed differential, against the diagnosis and the one not to miss."
-entry_point = "chatddx.scorers.patterns:score"
+entry_point = "chatddx.scorers.metrics:score"
 expectation_schema = "targets"
 views = [
   { label = "differential", output = "$.diagnoses[*]", expectation = "/diagnosis", metric = "reciprocal_rank" },
@@ -216,7 +244,7 @@ views = [
 
 [scorer.lines]
 description = "Free text, whole and line by line, against the diagnosis and the one not to miss."
-entry_point = "chatddx.scorers.patterns:score"
+entry_point = "chatddx.scorers.metrics:score"
 expectation_schema = "targets"
 views = [
   { label = "text", expectation = "/diagnosis", metric = "first_mention" },
@@ -226,6 +254,25 @@ views = [
 
 [scorer.whole]
 description = "Free text, whole, against the diagnosis."
-entry_point = "chatddx.scorers.patterns:score"
+entry_point = "chatddx.scorers.metrics:score"
 expectation_schema = "targets"
 views = [{ label = "text", expectation = "/diagnosis", metric = "first_mention" }]
+
+# Pattern and judged views side by side; only `noted` has notes, and carol's are the ones judged.
+[scorer.judged]
+description = "Free text: the differential line by line, and carol's note judged as met and graded."
+entry_point = "chatddx.scorers.metrics:score"
+expectation_schema = "targets"
+views = [
+  { label = "differential", split = "lines@1", expectation = "/diagnosis", metric = "reciprocal_rank" },
+  { label = "note-comment", expectation = "$.notes[?@.author == 'carol'].comment", metric = "verdict", judge = "verdict", params = { at = "/meets" } },
+  { label = "note-answer", expectation = "$.notes[?@.author == 'carol'].answer", metric = "verdict", judge = "verdict", params = { at = "/meets" } },
+  { label = "note-graded", expectation = "$.notes[?@.author == 'carol'].comment", metric = "points", judge = "graded", params = { at = "/points", max = 2 } },
+]
+
+# Applies to no run: unknown@remote is cleared for nothing, which bars its judge for as long as the World says so.
+[scorer.judged-remote]
+description = "Free text: carol's note judged on the remote engine."
+entry_point = "chatddx.scorers.metrics:score"
+expectation_schema = "targets"
+views = [{ label = "note-comment", expectation = "$.notes[?@.author == 'carol'].comment", metric = "verdict", judge = "remote", params = { at = "/meets" } }]

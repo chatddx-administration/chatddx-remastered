@@ -85,17 +85,11 @@ def start_up(inventory: Inventory, get: Resolver, name: str) -> StartUp:
 def url_of(inventory: Inventory, get: Resolver, name: str) -> str:
     endpoint = inventory.endpoint(name)
     match _engine(inventory, get, name):
-        case RemoteEngine(base_url=base_url):
-            if endpoint.url is not None and endpoint.url != base_url:
-                raise LookupError(
-                    f"endpoint {name!r} has url {endpoint.url}, but its remote engine's "
-                    + f"base_url is {base_url}"
-                )
-            return str(base_url)
-        case LocalEngine():
+        case LocalEngine() | RemoteEngine() as engine:
             if endpoint.url is None:
+                where = "local" if isinstance(engine, LocalEngine) else "remote"
                 raise LookupError(
-                    f"endpoint {name!r} serves a local engine but has no url"
+                    f"endpoint {name!r} serves a {where} engine but has no url"
                 )
             return str(endpoint.url)
         case other:

@@ -12,7 +12,7 @@ from chatddx.identity import Person
 from chatddx.runner.score import score_run
 from chatddx.store import Catalog, People, Store
 from chatddx.store.store import Connection
-from chatddx.test.world import DATA, LINES, MODELS, NATIVE, QWEN, QWEN_MODEL
+from chatddx.test.world import DATA, LINES, MODELS, NATIVE, QWEN, QWEN_MODEL, REMOTE
 
 pytestmark = pytest.mark.wip
 
@@ -141,19 +141,22 @@ def test_a_run_is_left_to_score_until_scored_under_the_scoring_built_now(
     run = ran(conn, alice, made)
     _ = ran(conn, alice, made, finished=False)
     started = bench.run(str(run))
-    assert {a.name for _, a in bench.scorers_for(started)} == {"lines", "whole"}
+    texts = {"lines", "whole", "judged"}
+    assert {a.name for _, a in bench.scorers_for(started)} == texts
 
     scorer = plan.named("scorer", "lines").digest
-    whole = plan.named("scorer", "whole").digest
-    assert set(bench.unscored(started)) == {scorer, whole}
-    assert [(r.run, set(s)) for r, s in bench.outstanding()] == [(run, {scorer, whole})]
+    others = {plan.named("scorer", name).digest for name in texts - {"lines"}}
+    assert set(bench.unscored(started)) == {scorer, *others}
+    assert [(r.run, set(s)) for r, s in bench.outstanding()] == [
+        (run, {scorer, *others})
+    ]
     scoring = bench.scoring(started, scorer)
     assert scoring is not None and len(scoring.expectations) == 2
     store = Store(conn)
     registry = store.load([scorer, *scoring.expectations])
     _, findings = score_run(conn, run, scoring, registry, alice)
     assert findings == []
-    assert bench.unscored(started) == [whole]
+    assert set(bench.unscored(started)) == others
     assert [s.scoring for s in store.scores_of(run)] == [scoring.digest]
 
     catalog = Catalog(conn)
@@ -173,7 +176,7 @@ def test_a_run_is_left_to_score_until_scored_under_the_scoring_built_now(
     )
     _ = store.add(registry, [edited])
     _ = catalog.edit(thread, edited, alice.id)
-    assert set(bench.unscored(started)) == {scorer, whole}
+    assert set(bench.unscored(started)) == {scorer, *others}
     rebuilt = bench.scoring(started, scorer)
     assert rebuilt is not None and edited in rebuilt.expectations
 
@@ -426,3 +429,28 @@ def test_a_person_replaces_their_own_expectation_only_when_they_say_so(
     assert bench.shared(case, schema)[0][0].thread == origin
     held = bench.expectation(case, schema)
     assert held is not None and held.digest == catalog.head(origin).digest
+
+
+def test_a_judged_scorer_applies_where_the_world_lets_its_judges_run(
+    conn: Connection,
+    alice: Person,
+    bench: Bench,
+    plan: Plan,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.delenv("CHATDDX_TEST_REMOTE", raising=False)
+    run = ran(conn, alice, trial(conn, plan, LINES, "noted"))
+    started = bench.run(str(run))
+    applies = {a.name for _, a in bench.scorers_for(started)}
+    assert "judged" in applies and "judged-remote" not in applies
+    assert plan.named("scorer", "judged-remote").digest not in bench.unscored(started)
+
+    cleared = bench.inventory.model_copy(
+        update={"cleared": bench.inventory.cleared | {REMOTE: ("test",)}}
+    )
+    opened = Bench(conn, alice, cleared, bench.facts)
+    assert "judged-remote" in {a.name for _, a in opened.scorers_for(started)}
+    [refused] = [g for g in opened.score(started) if g.name == "judged-remote"]
+    assert refused.refused == (
+        f"endpoint {REMOTE!r} needs the secret in $CHATDDX_TEST_REMOTE, which isn't set"
+    )

@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Grade",
+  "type": "object",
+  "required": ["points", "why"],
+  "additionalProperties": false,
+  "properties": {
+    "points": {
+      "description": "How well the answer meets the expectation, from 0 (not at all) to 2 (fully).",
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 2,
+      "examples": [2, 0, 1]
+    },
+    "why": { "type": "string" }
+  }
+}

@@ -124,7 +124,8 @@ class Transcript:
         for turn in item.turns:
             for ran in turn.tools:
                 self.event(ToolRan(item.key, ran))
-            self._message(turn.call)
+            if turn.call is not None:
+                self._message(turn.call)
         self.event(ItemEnded(item))
 
     def _message(self, call: Call) -> None:
