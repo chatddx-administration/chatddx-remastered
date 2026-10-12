@@ -1,7 +1,22 @@
-import pytest
+from collections import Counter
 
+import pytest
+from rich.console import Console
+
+from chatddx.bench import Bench
 from chatddx.inventory import Inventory
-from chatddx.repl.test.sample import FREE_TEXT, GPT_OSS, QWEN, Say, line_of
+from chatddx.repl.commands import handle
+from chatddx.repl.shell import Repl
+from chatddx.repl.test.helpers import CASES, Say, line_of
+from chatddx.test.world import (
+    GPT_OSS,
+    GPT_OSS_MODEL,
+    LINES,
+    NATIVE_TOOLS,
+    QWEN,
+    QWEN_BARE,
+    QWEN_MODEL,
+)
 
 pytestmark = pytest.mark.wip
 
@@ -14,21 +29,23 @@ def test_endpoints_are_listed_with_their_engines_and_clearance(
     assert line_of(written, QWEN).split() == [
         QWEN,
         QWEN,
-        "Qwen/Qwen3-8B-AWQ",
+        QWEN_MODEL,
         str(world.endpoints[QWEN].url),
-        "sample",
+        "test",
         "typed",
     ]
-    assert line_of(written, GPT_OSS).split()[2] == "openai/gpt-oss-20b"
+    assert line_of(written, GPT_OSS).split()[2] == GPT_OSS_MODEL
+    assert line_of(written, QWEN_BARE).split()[-1] == "test"
 
 
-def test_configurations_are_listed_with_their_parts_and_whose_they_are(say: Say):
-    written = say("configurations")
+def test_configurations_are_listed_with_their_parts_and_whose_they_are(bench: Bench):
+    # Wide enough that no configuration's name wraps.
+    repl = Repl(bench, Console(record=True, width=400), seed=7)
+    assert handle(repl, "configurations")
+    written = repl.console.export_text()
     header = written.splitlines()[0].split()
     rows = [
-        line.split()
-        for line in written.splitlines()
-        if line.strip().startswith(FREE_TEXT)
+        line.split() for line in written.splitlines() if line.strip().startswith(LINES)
     ]
 
     assert header == [
@@ -38,32 +55,39 @@ def test_configurations_are_listed_with_their_parts_and_whose_they_are(say: Say)
         "prompt",
         "output",
         "sampling",
+        "reasoning",
         "passthrough",
         "translations",
         "toolset",
         "owner",
     ]
     row = [
-        *FREE_TEXT.split(),
+        *LINES.split(),
         "—",
         "—",
         "case",
-        "free-text",
+        "lines",
         "(en)",
         "recommended",
-        "(Qwen/Qwen3-8B-AWQ)",
+        f"({QWEN_MODEL})",
+        "—",
         "—",
         "—",
         "—",
     ]
     assert rows == [row, [*row, "archive"]]
-    assert "web (en)" in line_of(written, "plan-web (en, Qwen")
-    guided = line_of(written, "free-text-guided (sv, Qwen")
-    assert "clinician (sv)" in guided and "sample (sv)" in guided
+    assert "lookup (en)" in line_of(written, NATIVE_TOOLS)
+    assert f"on-budget ({QWEN_MODEL})" in line_of(
+        written, f"budgeted (en, {QWEN_MODEL})"
+    )
+    guided = line_of(written, "lines-guided (sv)")
+    assert "clinician (sv)" in guided and "guided (sv)" in guided
 
 
 def test_cases_are_listed_by_name_with_their_tags(say: Say):
     written = say("cases")
+    tags = Counter(tag for case in CASES.values() for tag in case.tags)
+    counted = ", ".join(f"{tag} {n}" for tag, n in sorted(tags.items()))
 
-    assert "DutchFall10w  Dutchfall11w" in written
-    assert "99 cases; tagged dutch-fall 30, edn 20, openxddx 49" in written
+    assert "  ".join(sorted(CASES)) in written
+    assert f"{len(CASES)} cases; tagged {counted}" in written

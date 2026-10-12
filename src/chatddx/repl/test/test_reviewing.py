@@ -4,9 +4,9 @@ from pathlib import Path
 import pytest
 
 from chatddx.bench import Bench
-from chatddx.conftest import WORLD
 from chatddx.inventory import DirectorySource, Inventory
-from chatddx.repl.test.sample import FREE_TEXT, PLAN, QWEN, Say
+from chatddx.repl.test.helpers import Say, cells, tagged
+from chatddx.test.world import LINES, NATIVE, QWEN, TEST
 
 pytestmark = pytest.mark.wip
 
@@ -25,35 +25,35 @@ def test_runs_says_when_there_are_none(say: Say):
 @pytest.mark.usefixtures("fake")
 def test_runs_lists_the_latest_first_with_how_each_went(say: Say):
     _ = say(
-        f"cell {FREE_TEXT} {QWEN}",
-        "run Dutchfall11w",
-        f"use {PLAN}",
-        "run casesfromedn1",
+        f"cell {LINES} {QWEN}",
+        "run noted",
+        f"use {NATIVE}",
+        "run crlf",
     )
     written = say("runs")
     latest, first = rows(written)
 
-    assert f"{PLAN} × {QWEN} × casesfromedn1 (seed 7)" in latest
+    assert f"{NATIVE} × {QWEN} × crlf (seed 7)" in latest
     assert " valid " in latest
-    assert "plan 0/0/0/—" in written
-    assert f"{FREE_TEXT} × {QWEN} × Dutchfall11w (seed 7)" in first
+    assert "answer 0/0/0/—" in written
+    assert f"{LINES} × {QWEN} × noted (seed 7)" in first
     assert " completed " in first
 
     [only] = rows(say("runs 1"))
-    assert "casesfromedn1" in only
+    assert "crlf" in only
 
 
 @pytest.mark.slow
 @pytest.mark.usefixtures("fake")
 def test_replay_shows_a_run_again_as_it_streamed(say: Say):
-    live = say(f"cell {FREE_TEXT} {QWEN}", "run Dutchfall11w").splitlines()
+    live = say(f"cell {LINES} {QWEN}", "run noted").splitlines()
     replayed = say("replay").splitlines()
 
     start = next(i for i, line in enumerate(live) if line.startswith("trial:"))
     end = next(i for i, line in enumerate(live) if line.startswith("recorded as"))
 
     assert replayed[0].startswith("run ")
-    assert replayed[0].endswith(f": {FREE_TEXT} × {QWEN} × Dutchfall11w (seed 7)")
+    assert replayed[0].endswith(f": {LINES} × {QWEN} × noted (seed 7)")
     assert ", finished, at http://127.0.0.1:" in replayed[1]
     assert "is the one that was sent" in replayed[2]
     assert replayed[3:] == live[start + 1 : end]
@@ -63,22 +63,23 @@ def test_replay_shows_a_run_again_as_it_streamed(say: Say):
 @pytest.mark.slow
 @pytest.mark.usefixtures("fake")
 def test_replay_shows_a_batch_again_by_its_lines(say: Say):
-    _ = say(f"cell {PLAN} {QWEN}", "batch edn")
+    _ = say(f"cell {NATIVE} {QWEN}", "batch targets")
+    targets = tagged("targets")
 
     replayed = say("replay")
 
-    assert f"× {QWEN} × 20 cases (seed 7)" in replayed
-    assert len([line for line in replayed.splitlines() if "  valid" in line]) == 20
-    assert "plan          plan" in replayed
+    assert f"× {QWEN} × {len(targets)} cases (seed 7)" in replayed
+    assert sorted(c[0] for c in cells(replayed) if c[2:] == ["valid"]) == targets
+    assert any(c[:2] == ["answer", "answer"] for c in cells(replayed))
 
 
 @pytest.mark.slow
 @pytest.mark.usefixtures("fake")
 def test_replay_takes_a_run_by_the_start_of_its_id(bench: Bench, say: Say):
-    _ = say(f"cell {FREE_TEXT} {QWEN}", "run Dutchfall11w", "run casesfromedn1")
+    _ = say(f"cell {LINES} {QWEN}", "run noted", "run svenska")
     first = bench.runs()[-1]
 
-    assert "× Dutchfall11w (seed 7)" in say(f"replay {str(first.run)[:8]}")
+    assert "× noted (seed 7)" in say(f"replay {str(first.run)[:8]}")
     assert "no run of yours starts with 'zzzz'" in say("replay zzzz")
 
 
@@ -87,25 +88,26 @@ def test_replay_takes_a_run_by_the_start_of_its_id(bench: Bench, say: Say):
 def test_replay_says_when_the_request_would_render_otherwise_now(
     bench: Bench, world: Inventory, tmp_path: Path, say: Say
 ):
-    _ = say(f"cell {FREE_TEXT} {QWEN}", "run Dutchfall11w")
+    _ = say(f"cell {LINES} {QWEN}", "run noted")
     moved = tmp_path / "vignettes"
-    _ = shutil.copytree(WORLD / "vignettes", moved)
-    _ = (moved / "Dutchfall11w.txt").write_text("another vignette")
-    source = DirectorySource(name="sample", path=moved)
-    bench.inventory = world.model_copy(update={"sources": {"sample": source}})
+    _ = shutil.copytree(TEST / "vignettes", moved)
+    _ = (moved / "noted.txt").write_text("another vignette")
+    source = DirectorySource(name="test", path=moved)
+    sources = {**world.sources, "test": source}
+    bench.inventory = world.model_copy(update={"sources": sources})
 
     written = say("replay")
 
     assert (
-        "Dutchfall11w: rendered again, the request differs: the vignette at the "
+        "noted: rendered again, the request differs: the vignette at the "
         + "source isn't the one sent"
     ) in written
 
 
 @pytest.mark.usefixtures("fake")
 def test_an_unfinished_run_is_listed_so_and_left_unscored(bench: Bench, say: Say):
-    variation = bench.configuration(FREE_TEXT, bench.endpoint(QWEN))
-    running = bench.start(variation, QWEN, [bench.family("Dutchfall11w").case], 7)
+    variation = bench.configuration(LINES, bench.endpoint(QWEN))
+    running = bench.start(variation, QWEN, [bench.family("noted").case], 7)
     running.send()
 
     [row] = rows(say("runs"))
@@ -119,17 +121,15 @@ def test_an_unfinished_run_is_listed_so_and_left_unscored(bench: Bench, say: Say
 @pytest.mark.slow
 @pytest.mark.usefixtures("fake")
 def test_show_sums_up_the_runs_with_what_it_shows(say: Say):
-    _ = say(f"cell {FREE_TEXT} {QWEN}", "run Dutchfall11w", "run Dutchfall11w 8")
+    _ = say(f"cell {LINES} {QWEN}", "run noted", "run noted 8")
 
-    written = say("show case Dutchfall11w")
+    written = say("show case noted")
 
     assert "2 runs of yours with it" in written
-    assert ["differential", "2", "0", "0"] in [
-        line.split() for line in written.splitlines()
-    ]
+    assert ["differential", "2", "0", "0"] in cells(written)
 
-    written = say("show scorer raw")
+    written = say("show scorer whole")
 
     assert "2 runs of yours it scored" in written
-    assert "free-text" not in written
-    assert "no runs of yours it scored" in say("show scorer plan")
+    assert "lines" not in written
+    assert "no runs of yours it scored" in say("show scorer answer")
