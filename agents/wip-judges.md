@@ -8,9 +8,10 @@ into values. The judge prompt, what a judge is asked and how it answers, is Olof
 "Decided" means the user said so. "Take" is the agent's recommendation and still open.
 
 ## Start with this
-The runner pass before it is done (`agents/wip-runner.md`, "Start with this"), and with it half of phase 1: one
-prepare-and-render, `runner/prepare.py:Items`, whose `case` a judge's fills will use. J2, J5 and J9 are decided. Next:
-the rest of phase 1 (the fake's schema answers picked by seed), then phase 2, which needs J10.
+The runner pass before it is done (`agents/wip-runner.md`, "Start with this"), and so is phase 1: one
+prepare-and-render, `runner/prepare.py:Items`, whose `case` a judge's fills will use, and the fake's schema examples
+picked by seed (`fake_vllm/chat.py:instance`; `docs/vllm.md` has AGENT suggestions). J2, J5 and J9 are decided.
+Next: phase 2, which needs J10.
 
 ## Decided
 - **The pipeline before the prompt.** The judge pipeline is built and tested on the test World (`worlds/test/`,
@@ -168,8 +169,9 @@ The fake changes with it: a non-greedy request whose schema has `examples` is an
 (`docs/vllm.md`, "Schema instances", amended). A greedy one keeps the first.
 
 ## Phases
-1. **Groundwork.** One prepare-and-render for the runner, `rendered_again` and judges (J7; built). The fake's schema
-   answers picked by seed.
+1. **Groundwork** (built). One prepare-and-render for the runner, `rendered_again` and judges (J7). The fake's
+   schema examples picked by seed, as its text answer is rotated, the first when greedy
+   (`fake_vllm/test/test_seeded_examples.py`).
 2. **Curation.** The `judge` table, judged views by name, the refusals and the lint (J9, J10). The test World's
    records above, and the test World's own test.
 3. **Judged metrics.** The scorer interface's version 2, `chatddx/scorers/verdicts.py`, verdict reading and

@@ -289,7 +289,7 @@ dropped, `rendered_again`'s copy of the prepare and render, a halt waiting on a 
   (`agents/healthcheck.md`, "Before real patient data", 5; `docs/chatddx.md`).
 - **The fake streams over HTTP/1.0 until it closes**, where vLLM, on uvicorn, streams over HTTP/1.1 in chunks. The
   runner reads both the same (`runner/test/test_wire.py:going_away` checks an engine going away in each), but the
-  fake differs from vLLM on the wire, which `docs/vllm.md` doesn't say.
+  fake differs from vLLM on the wire. `docs/vllm.md`, "Not emulated", has an AGENT suggestion saying so.
 - **The gate's cases only the test World reaches aren't read by a test**: `qwen3-bare@fake` not cleared for
   `typed`, and `unknown@remote` cleared for nothing, with its secret unset (`agents/wip-test-world.md`, "Not read
   yet"). The gate's tests edit the inventory instead (`runner/test/test_run.py`).
