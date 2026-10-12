@@ -15,7 +15,7 @@ from psycopg.conninfo import make_conninfo
 from chatddx.api.app import app
 from chatddx.api.test.test_variations import OFF, PLAN_WEB, digest, thread
 from chatddx.bench.test.sample import FREE_TEXT, QWEN
-from chatddx.conftest import faked
+from chatddx.conftest import SAMPLE_QWEN, faked
 from chatddx.core import settings
 from chatddx.facts import BUNDLED, Facts
 from chatddx.inventory import Inventory
@@ -277,7 +277,7 @@ def test_a_stream_its_client_leaves_halts_the_run_which_is_finished_and_scored(
     body = asked(signed)
     alice = {"Authorization": signed.headers["Authorization"]}
     with (
-        faked(world, Store(conn).get, delay=0.1),
+        faked(world, Store(conn).get, SAMPLE_QWEN, delay=0.1),
         httpx2.Client(headers=alice) as http,
         http.stream(
             "POST", f"{listening}/api/runs", json=body, headers=STREAM, timeout=10
@@ -304,7 +304,7 @@ def test_a_request_its_client_leaves_halts_the_run_too(
     body = asked(signed)
     alice = {"Authorization": signed.headers["Authorization"]}
     with (
-        faked(world, Store(conn).get, delay=0.1),
+        faked(world, Store(conn).get, SAMPLE_QWEN, delay=0.1),
         httpx2.Client(headers=alice) as http,
         pytest.raises(httpx2.ReadTimeout),
     ):

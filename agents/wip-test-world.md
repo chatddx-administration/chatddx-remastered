@@ -183,17 +183,30 @@ Kept out of the World and made by the tests that need them:
   `endpoint.engine_unknown`.
 
 ## The harness
-- **One module for what the tests share** (take: `src/chatddx/test/world.py`): the World's paths, `world_plan(world,
-  data)`, and the names. `world_plan` generalizes `sample_plan`.
-- **`curated` loads the test World** for alice with her giftbag.
-- **`free_world` rewrites the parsed inventory**, giving each local endpoint a free port and each directory source
-  an absolute path. Today it replaces the strings `12099`, `12100` and `path = "vignettes"` in the file.
-- **`edited(world, …)`**: a copy of the World with text edits, for the broken data above.
-- **One `world` fixture.** Today the root one returns an `Inventory` and curation's returns a `Path`.
+Built (`src/chatddx/test/world.py`, `src/chatddx/conftest.py`):
+- **A module for what the tests import, the conftest for fixtures.** pytest loads a conftest itself, to give the
+  tests under it fixtures and hooks; it isn't meant to be imported. The tests import helpers from the root conftest
+  today (`from chatddx.conftest import …`), which works only because it sits inside the package. So what they import
+  goes in a plain module, `src/chatddx/test/world.py`: the Worlds' paths, the names tests share (models, endpoints,
+  the recipes most tests run), `world_plan`, `free_world`, `freed`, `faked`, `copied` and `edit`. The conftest keeps
+  the fixtures built on them, and the move ends the imports from it.
+- **`world_plan(world, data)`** plans a data set with a World's engines and facts, as init-data does; `sample_plan`
+  is `world_plan` of the sample.
+- **`curated` loads the test World** for alice with her giftbag, and `plan`, `world` and `fake` are the test World's.
+- **`free_world` rewrites the parsed inventory**, giving each local endpoint a free port of its own; it used to replace
+  the strings `12099`, `12100` and `path = "vignettes"` in a copy of the file. `freed` writes such a copy, for the
+  commands, which read a World from its directory.
+- **`copied` and `edit`**: a copy of a World, `_data` included, and a text edit of one of its files, for the broken
+  data above.
+- **The root conftest ships the test tools** for the session.
+
+Still to do in the move:
+- **One `world` fixture.** curation's returns a `Path`, the root one an `Inventory`.
 - **The curation tests' `few` and `FEW` go.** The test World is already small enough to load whole.
 
-While the tests move, both templates exist: the sample's, under a new name, for the packages not yet moved, and
-the test World's `curated`. The sample's template goes when the last package has moved.
+While the tests move, the sample's template is `curated_sample`, and each package not yet moved pins its fixtures to
+the sample in its conftest, or in its test module when it has no conftest, marked "Pinned to the sample until this
+package's tests move to the test World". A package's move deletes its pins; the last one deletes `curated_sample`.
 
 ## The move
 In this order, with `pytest` green after each package and one commit per package:

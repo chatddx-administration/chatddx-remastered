@@ -1,10 +1,9 @@
 from collections.abc import Generator, Iterator
 from contextlib import contextmanager
-from pathlib import Path
 
 import pytest
 
-from chatddx.conftest import free_world
+from chatddx.conftest import WORLD, free_world, sample_plan
 from chatddx.curation import Plan
 from chatddx.fake_vllm.served import Served
 from chatddx.fake_vllm.server import serving
@@ -35,9 +34,15 @@ def alice(conn: Connection) -> Person:
     return People(conn).add("alice", "Alice")
 
 
+# Pinned to the sample until this package's tests move to the test World.
 @pytest.fixture
-def inventory(tmp_path: Path) -> Inventory:
-    return free_world(tmp_path)
+def inventory() -> Inventory:
+    return free_world(WORLD)
+
+
+@pytest.fixture(scope="module")
+def plan() -> Plan:
+    return sample_plan()
 
 
 @contextmanager

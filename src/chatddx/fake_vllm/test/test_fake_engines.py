@@ -6,7 +6,7 @@ from pathlib import Path
 import pytest
 
 from chatddx.cli import main
-from chatddx.conftest import WORLDS, free_world
+from chatddx.conftest import WORLD, WORLDS, sample_plan
 from chatddx.core.rig import rig
 from chatddx.curation import Plan, plan_factors
 from chatddx.curation.plan import SAMPLE
@@ -14,8 +14,15 @@ from chatddx.facts import BUNDLED, Facts
 from chatddx.inventory import Inventory, World, served
 from chatddx.store import Store
 from chatddx.store.store import Connection
+from chatddx.test.world import freed
 
 pytestmark = pytest.mark.wip
+
+
+# Pinned to the sample until this package's tests move to the test World.
+@pytest.fixture(scope="module")
+def plan() -> Plan:
+    return sample_plan()
 
 
 def stored(conn: Connection, plan: Plan, inventory: Inventory) -> None:
@@ -50,14 +57,15 @@ def test_each_endpoint_of_the_world_is_served_its_engine_till_ctrl_c(
     monkeypatch: pytest.MonkeyPatch,
     capsys: pytest.CaptureFixture[str],
 ) -> None:
-    inventory = free_world(tmp_path)
+    world = freed(tmp_path, WORLD)
+    inventory = Inventory.load(world / "inventory.toml")
     stored(conn, plan, inventory)
     monkeypatch.setenv("DB_NAME", db)
     heard: dict[str, list[str]] = {}
     asker = asking(inventory, heard)
     asker.start()
 
-    main(["fake-engines", "--world", str(tmp_path)])
+    main(["fake-engines", "--world", str(world)])
 
     asker.join()
     assert heard == {
