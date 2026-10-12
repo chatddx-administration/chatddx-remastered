@@ -235,8 +235,9 @@ Found while surveying, each to be talked through with the user and then fixed an
   made without a model whose origin is made per model. A re-run of init-data reports a held thread whose origin
   differs from the data's (`src/chatddx/curation/write.py:_Init.forked`, `Catalog.origin`), since an origin is set
   only when a thread is created; archives loaded before this keep their Swedish variants unforked, and say so.
-- **`scorer.revision` is documented but never raised**: in `docs/factors-api.md` (lint table) and
-  `docs/curation.md` ("Loading", step 7). Suggest removing it from the docs (AGENT: REMOVE), or implement it.
+- **Done (decided): `scorer.revision` was documented but never raised.** It went with `Scorer` v2, as
+  `agents/wip-authoring.md` ("Lints") decided, and two docs lagged: `docs/factors-api.md` and `docs/curation.md` have
+  AGENT suggestions dropping it. `test_init.py`'s `revision` fixture, which kept the lint quiet, went too.
 
 ## Docs, when it's done
 - `docs/curation.md`, "Tests" and "Data sets": AGENT suggestions for the test World and `_data`.

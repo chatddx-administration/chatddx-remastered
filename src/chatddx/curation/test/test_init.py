@@ -19,7 +19,6 @@ from chatddx.store.store import Connection
 
 pytestmark = pytest.mark.solidified
 
-REVISION = "f" * 40
 FAKES = [
     *(
         f"[lint warning] model {name}: model.revision: revision 'fake' is not a "
@@ -56,11 +55,6 @@ def tally(lines: list[str]) -> Counter[str]:
 
 
 LANGUAGES = (", in en", ", in sv")
-
-
-@pytest.fixture(autouse=True)
-def revision(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setenv("CHATDDX_REVISION", REVISION)
 
 
 @pytest.mark.slow

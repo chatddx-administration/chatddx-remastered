@@ -165,6 +165,14 @@ refused.
    nothing for USER. Expectation schemas, scorers, models and engines stay the archive's. A fork they already have is
    kept, and one they deleted comes back, unless they own an expectation of that case under that schema by then: a
    person owns one at most (docs/catalog.md, "Owners"), so theirs is kept instead.
+```
+AGENT: CHANGE
+Scorers pin an entry point and its version, not code with a revision, so `scorer.revision` is gone
+(agents/wip-authoring.md, "Lints"); which commit ran is in each record's `rig`.
+---
+7. **Lints.** Every component the run came to is linted, with the catalog's languages and the facts' reasons, and
+   the findings are printed, not stored. For the sample the fake models and engines say they are fake.
+```
 7. **Lints.** Every component the run came to is linted, with the catalog's languages and the facts' reasons, and
    the findings are printed, not stored. For the sample the fake models and engines say they are fake, and without
    `CHATDDX_REVISION` the scorers say their code has no revision.
