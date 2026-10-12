@@ -11,7 +11,7 @@ into values. The judge prompt, what a judge is asked and how it answers, is Olof
 The runner pass before it is done (`agents/wip-runner.md`, "Start with this"), and so is phase 1: one
 prepare-and-render, `runner/prepare.py:Items`, whose `case` a judge's fills will use, and the fake's schema examples
 picked by seed (`fake_vllm/chat.py:instance`; `docs/vllm.md` has AGENT suggestions). J2, J5 and J9 are decided.
-Next: phase 2, which needs J10.
+Next: phase 2, then phase 3. Phase 4 needs J1, J6, J7 and J8.
 
 ## Decided
 - **The pipeline before the prompt.** The judge pipeline is built and tested on the test World (`worlds/test/`,
@@ -28,6 +28,14 @@ Next: phase 2, which needs J10.
   not be common. Views that share a judge and pick the same things send the same request, each its own; a lint could
   say so later.
 - **J9: judges in the data set** (see "J9. Judges in a data set").
+- **J3: a verdict is read as an answer is**, by its skeleton's contract (see "J3. Reading a verdict").
+- **J4: a judged view skips what it would read.** A case without notes still has an expectation; what it lacks is
+  the optional part a view reads, as pattern views meet already, giving no value with `"no target"`. A judged view
+  sends nothing, and gets no value with the reason in the detail, when the answer can't be read, its output selector
+  picks nothing, or its expectation selector picks nothing and the judge's prompt has the `expectation` slot. A
+  judge that doesn't read the expectation runs on every case.
+- **J10: a judge skeleton with tools is refused, and a greedy judge with several seeds is linted** (see "J10. What a
+  judge skeleton may be").
 
 ## What exists
 - **Factors** (`src/chatddx/factors/scoring.py`): `Judge` (a skeleton of purpose `judge`, an engine, seeds, a fill
@@ -79,15 +87,14 @@ Decided: interface version 2 for every scorer (see "Decided"). The pattern metri
   No readable verdict gives no value. Majority and agreement are analysis over the detail.
 
 ### J3. Reading a verdict
-Take: a judge's answer is read as an answer is, by its skeleton's contract (`scorers/answer.py:read`). A verdict that
+Decided, as this take has it: a judge's answer is read as an answer is, by its skeleton's contract (`scorers/answer.py:read`). A verdict that
 breaks the judge's output schema is still read, and noted, as an answer is (`answer.invalid`); one that can't be read
 is none for its seed, and noted, with the call's error when it has one. The codes are `verdict.unread` and
 `verdict.invalid`.
 
 ### J4. Nothing to judge
-Take: a judged view sends nothing, and gets no value with the reason in the detail, when the answer can't be read, or
-either selector picks nothing: a case with targets but no notes, or a note without an `answer`. `Judge.fills` today
-fills an empty pick with an empty string. `check_score` already leaves a value-less item out of `judge.incomplete`.
+Decided (see "Decided"). `Judge.fills` today fills an empty pick with an empty string. `check_score` already leaves a
+value-less item out of `judge.incomplete`.
 
 ### J5. One call, several views
 Decided: a call per view (see "Decided"). The options were a call per view, views with the same judge and picks
@@ -132,7 +139,7 @@ Decided: in the data set, as this take has it:
   Worlds that have that engine. That follows from `View.judge` being a reference (`docs/factors.md`, "Scoring").
 
 ### J10. What a judge skeleton may be
-Take: `Judge.cross_check` refuses a skeleton with tools, since a judge has no tool rounds, and a lint warns about a
+Decided, as this take has it: `Judge.cross_check` refuses a skeleton with tools, since a judge has no tool rounds, and a lint warns about a
 greedy judge with more than one seed, whose seeds all send the same request (`docs/factors.md`, "Greedy sampling and
 seeds").
 
