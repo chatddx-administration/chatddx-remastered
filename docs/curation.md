@@ -46,11 +46,6 @@ the fields:
 - **References by name.** A toolset's tools, a scorer's expectation schema, a local engine's model and a recipe's
   parts name records, not digests.
 - **Files.** `json_schema_path` loads a JSON file, relative to the file that names it, in place of `json_schema`.
-```
-AGENT: CHANGE
-Says which variant of the origin a variant forks, and what a re-run says about a held thread's origin
-(src/chatddx/curation/plan.py:plan_factors, `base`; src/chatddx/curation/write.py:_Init.forked).
----
 - **Forks.** `fork_of` names a record of the same kind that this one is a variation of. It is loaded as a fork of
   that record's thread, so the catalog knows what it varies (docs/catalog.md, "Forks"). It inherits no fields. Each
   variant forks the origin's variant in its language and for its model. An origin written in one language only is
@@ -59,9 +54,6 @@ Says which variant of the origin a variant forks, and what a re-run says about a
   whose origin has none for its model, or is made per model where the variant isn't, is loaded as no fork and
   reported. A thread's origin is set when the thread is created, so a re-run only reports a held thread whose origin
   differs from the data's.
-```
-- **Forks.** `fork_of` names a record of the same kind that this one is a variation of. It is loaded as a fork of
-  that record's thread, so the catalog knows what it varies (docs/catalog.md, "Forks"). It inherits no fields.
 - **Code.** A tool or a scorer that names no `version` pins the version of its entry point that the running chatddx
   ships, so loading the data again after a deploy that raises a version moves it on. Its entry point must be shipped,
   at the version pinned, and a scorer's views must name metrics the code publishes, with params its schemas take.
@@ -142,21 +134,11 @@ the sample's first run comes to 258 threads and families.
 2. **Records.** Each planned record becomes a thread named after it. A record the archive already has, by kind and
    name, is validated when its digest is unchanged and gets a new edit when it changed; a compiled skeleton's edit
    records its compilation. Its tags, description, view labels and language are brought in line with the data.
-```
-AGENT: CHANGE
-`--source` defaults to the World's only source that lists its vignettes, not to `sample`, and a database source is
-refused.
----
 3. **Cases.** Each case is read from the World's source, the one `--source` names or the only one that lists its
    vignettes (a database source lists none), and adopted into a family named after its id, with its tags and its
    file's language, and gets an expectation thread. A case the source doesn't have, or one whose family can't adopt
    it, is reported, with what a survey of the source says happened to it: renamed to or from another id, or changed,
    and the family repair-data would move.
-```
-3. **Cases.** Each case is read from the World's source, by `--source` (`sample`), and adopted into a family named
-   after its id, with its tags and its file's language, and gets an expectation thread. A case the source doesn't
-   have, or one whose family can't adopt it, is reported, with what a survey of the source says happened to it:
-   renamed to or from another id, or changed, and the family repair-data would move.
 4. **Leftovers.** The archive's threads and families that the data no longer names are listed, but not deleted.
 5. **Sharing.** USER becomes a collaborator on every thread and family the run came to.
 6. **Giftbag.** With `--giftbag`, USER also gets a fork of every chunk, tool, skeleton and expectation thread, so
@@ -189,18 +171,10 @@ A vignette can be renamed or edited at its source. Its family then needs a repai
 new place (docs/catalog.md, "Repairing"). Loading only reports this, since a repair also moves the threads of everyone
 who used those cases.
 
-```
-AGENT: CHANGE
-Which source is surveyed, as for loading.
----
 `chatddx repair-data [--world DIR] [--source NAME] [--dry-run]` surveys the source, the one `--source` names or the
 World's only source that lists its vignettes, and repairs each of the archive's families it finds renamed or changed
 there, printing what moved. A family that isn't the archive's is named and left to its owner. With `--dry-run`, it
 only lists them.
-```
-`chatddx repair-data [--world DIR] [--source NAME] [--dry-run]` surveys the source and repairs each of the archive's
-families it finds renamed or changed there, printing what moved. A family that isn't the archive's is named and left
-to its owner. With `--dry-run`, it only lists them.
 
 After a rename, the data set should name the new id; after new content, the expectations stay with the old case
 until someone confirms them for the new one (docs/catalog.md, "Repairing"), and the next loading gives the new case an
