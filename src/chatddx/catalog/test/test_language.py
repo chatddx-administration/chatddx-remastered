@@ -91,6 +91,42 @@ def test_judges_follow_their_skeleton_and_cases_their_family() -> None:
     assert language.language_of(rows, expectation) == "sv"
 
 
+def test_many_digests_are_given_the_language_each_has_alone() -> None:
+    reg = Registry()
+    ids = world(reg)
+    rows = Memory(reg)
+    base = generation_recipe(reg)
+    plan = compiled(reg, base)
+    assert base.instructions is not None
+    for part in (base.instructions, base.prompt, base.output):
+        rows.set_language(part, "en")
+    needed = [t for part in texts(base, reg.get).values() for t in part]
+    swedish = reg.add(Translations(entries={t: f"[sv] {t}" for t in needed}))
+    rows.set_language(swedish, "sv")
+    translated = compiled(reg, base.model_copy(update={"translations": swedish}))
+    uncompiled = reg.add(
+        compile_request(base.model_copy(update={"instructions": None}), reg.get)
+    )
+    _ = rows.bind(1, resolve(reg.get, ids["case"], Case).vignette)
+    rows.note(Subject(family=1), Entry(field=EntryField.LANGUAGE, value="sv"))
+    digests = {
+        plan.skeleton,
+        translated.skeleton,
+        uncompiled,
+        base.output,
+        base.sampling,
+        swedish,
+        *ids.values(),
+        "sha256:" + "0" * 64,
+    }
+    found = language.languages_of(rows, digests)
+    assert found == {d: language.language_of(rows, d) for d in digests}
+    assert {found[plan.skeleton], found[translated.skeleton], found[ids["case"]]} == {
+        "en",
+        "sv",
+    }
+
+
 def test_languages_are_refused_where_they_are_not_read() -> None:
     reg = Registry()
     ids = world(reg)

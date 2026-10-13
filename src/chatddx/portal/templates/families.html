@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% from "macros.html" import heading, section, chip %}
+{% block title %}Families · ChatDDX{% endblock %}
+{% block main %}
+<div class="mx-auto max-w-5xl px-4 py-8">
+  {{ heading("Families", "A family follows a case's vignette through its versions.") }}
+  {% if tags %}
+  <nav class="mb-6 flex flex-wrap gap-1 text-sm" aria-label="Tags">
+    <a href="/families" class="rounded-full border px-3 py-1 font-medium {{ 'border-primary/30 bg-primary/10 text-primary' if not picked else 'border-border bg-background/60 text-muted-foreground hover:text-foreground' }}">All</a>
+    {% for t in tags %}
+    <a href="/families?tag={{ t | urlencode }}" class="rounded-full border px-3 py-1 font-medium {{ 'border-primary/30 bg-primary/10 text-primary' if t in picked else 'border-border bg-background/60 text-muted-foreground hover:text-foreground' }}">{{ t }}</a>
+    {% endfor %}
+  </nav>
+  {% endif %}
+  {% call section("Families") %}
+  {% if families %}
+  <div class="overflow-x-auto">
+    <table class="w-full text-sm">
+      <thead class="text-left text-xs uppercase tracking-wide text-muted-foreground">
+        <tr><th class="pb-2 pr-4 font-medium">Name</th><th class="pb-2 pr-4 font-medium">Owner</th><th class="pb-2 pr-4 font-medium">Language</th><th class="pb-2 font-medium">Tags</th></tr>
+      </thead>
+      <tbody>
+        {% for f in families %}
+        <tr class="border-t border-border/60">
+          <td class="py-2 pr-4 align-top"><a class="text-primary hover:underline" href="/families/{{ f.id }}">{{ f.name }}</a></td>
+          <td class="py-2 pr-4 align-top">{{ f.owner or "—" }}</td>
+          <td class="py-2 pr-4 align-top">{{ f.language or "—" }}</td>
+          <td class="py-2 align-top">{% for t in f.tags %}{{ chip(t) }} {% endfor %}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <p class="text-sm text-muted-foreground">None.</p>
+  {% endif %}
+  {% endcall %}
+</div>
+{% endblock %}

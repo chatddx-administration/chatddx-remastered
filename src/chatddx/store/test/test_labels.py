@@ -8,7 +8,7 @@ from chatddx.store import People
 from chatddx.store.store import Connection
 from chatddx.store.test.test_catalog import stored_world
 
-pytestmark = pytest.mark.wip
+pytestmark = pytest.mark.solidified
 
 LABELS: Labels = {
     ("view", 0): "top-1 match",

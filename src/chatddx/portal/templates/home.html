@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% block main %}
+<div id="home">
+  {% if not assets.island(island).scripts %}
+  <p class="mx-auto max-w-xl px-4 py-16 text-center text-muted-foreground">The home page's script isn't built.</p>
+  {% endif %}
+  <noscript><p class="mx-auto max-w-xl px-4 py-16 text-center text-muted-foreground">The home page needs JavaScript.</p></noscript>
+</div>
+{% endblock %}

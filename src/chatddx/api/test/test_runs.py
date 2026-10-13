@@ -12,6 +12,7 @@ from fastapi import FastAPI
 from fastapi.testclient import TestClient
 from psycopg.conninfo import make_conninfo
 
+from chatddx.api import jobs
 from chatddx.api.app import app
 from chatddx.api.test.test_variations import digest, thread
 from chatddx.core import settings
@@ -268,6 +269,30 @@ def test_runs_are_listed_newest_first_and_filtered(signed: TestClient) -> None:
 
 @pytest.mark.slow
 @pytest.mark.usefixtures("fake")
+def test_no_browser_keeps_what_is_case_derived(signed: TestClient) -> None:
+    made, _ = sent(signed, asked(signed))
+    run, [score, *_] = made["id"], made["scores"]
+    kept = {
+        path: signed.get(path).headers.get("cache-control")
+        for path in (
+            f"/api/runs/{run}",
+            f"/api/runs/{run}/items",
+            f"/api/runs/{run}/events",
+            f"/api/runs/{run}/scores/{score['score']}",
+            f"/api/runs/{run}/scores/{score['score']}/items",
+            f"/api/families/{family(signed, 'crlf')['id']}/vignette",
+        )
+    }
+    assert [path for path, said in kept.items() if said == "no-store"] == [
+        f"/api/runs/{run}/items",
+        f"/api/runs/{run}/events",
+        f"/api/runs/{run}/scores/{score['score']}/items",
+        f"/api/families/{family(signed, 'crlf')['id']}/vignette",
+    ]
+
+
+@pytest.mark.slow
+@pytest.mark.usefixtures("fake")
 def test_a_run_s_items_hold_its_calls_and_render_again_as_they_were_sent(
     signed: TestClient,
 ) -> None:
@@ -276,6 +301,8 @@ def test_a_run_s_items_hold_its_calls_and_render_again_as_they_were_sent(
     assert {k: item[k] for k in made["items"][0]} == made["items"][0]
     assert item["why"] is None and item["turns"] == []
     assert item["call"]["response"]["choices"]
+    said = item["call"]["response"]["choices"][0]["message"]["content"]
+    assert item["answer"] == {"value": said, "problem": None, "salvaged": False}
     assert item["vignette"]["hex"]
 
     [again] = signed.get(f"/api/runs/{made['id']}/rendered-again").json()
@@ -295,7 +322,7 @@ def test_another_s_run_isn_t_found(signed: TestClient, bob: dict[str, str]) -> N
         got = signed.get(f"/api/runs/{made['id']}{path}", headers=bob)
         assert (got.status_code, got.json()) == (
             404,
-            {"detail": f"no run {made['id']} of yours"},
+            {"detail": f"no run {made['id']} of yours", "code": "not_found"},
         )
     got = signed.post(f"/api/runs/{made['id']}/halt", headers=bob)
     assert got.status_code == 404
@@ -356,7 +383,7 @@ def test_a_halt_stops_a_run_which_is_finished_and_left_to_score(
     got = signed.post(f"/api/runs/{run}/halt")
     assert (got.status_code, got.json()) == (
         409,
-        {"detail": f"run {run} has nothing under way"},
+        {"detail": f"run {run} has nothing under way", "code": "conflict"},
     )
 
 
@@ -379,3 +406,108 @@ def test_a_run_whose_listener_goes_away_goes_on(
         shown = finished(signed, run)
     [item] = shown["items"]
     assert item["outcome"] == "completed"
+
+
+@pytest.mark.slow
+@pytest.mark.usefixtures("fake")
+def test_a_run_is_named_by_its_variation_and_runs_the_edit_given(
+    signed: TestClient,
+) -> None:
+    off = digest(signed, "reasoning", OFF)
+    varied, _ = sent(signed, asked(signed, parts={"reasoning": off}))
+    assert varied["described"].startswith(f"{LINES}+reasoning={OFF} × {QWEN} × ")
+    plain, _ = sent(signed, asked(signed))
+    assert plain["described"].startswith(f"{LINES} × {QWEN} × ")
+
+    mine = thread(signed, "configuration", LINES)
+    first = mine["head"]
+    edits = f"/api/threads/{mine['id']}/edits"
+    later = signed.post(edits, json={"head": first["id"], "parts": {"reasoning": off}})
+    assert later.status_code == 201
+    earlier, _ = sent(signed, asked(signed, head=first["id"]))
+    assert earlier["skeleton"] == first["digest"] != later.json()["digest"]
+    got = signed.post("/api/runs", json=asked(signed, head=10**9))
+    assert (got.status_code, got.json()) == (
+        422,
+        {
+            "detail": f"no edit {10**9} of configuration {mine['id']}",
+            "code": "refused",
+        },
+    )
+
+
+@pytest.mark.slow
+@pytest.mark.usefixtures("fake")
+def test_runs_are_held_to_a_day_s_quota_and_a_run_to_its_items(
+    signed: TestClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(settings, "ITEMS_PER_RUN", 0)
+    got = signed.post("/api/runs", json=asked(signed))
+    assert (got.status_code, got.json()) == (
+        429,
+        {"detail": "a run holds at most 0 items, not 1", "code": "over_quota"},
+    )
+    monkeypatch.setattr(settings, "ITEMS_PER_RUN", 1)
+    monkeypatch.setattr(settings, "RUNS_PER_DAY", 1)
+    first = signed.post("/api/runs", json=asked(signed))
+    assert first.status_code == 202
+    _ = finished(signed, first.json()["run"])
+    got = signed.post("/api/runs", json=asked(signed))
+    assert (got.status_code, got.json()) == (
+        429,
+        {
+            "detail": "alice has started 1 runs in the last day, as many as a day takes",
+            "code": "over_quota",
+        },
+    )
+    assert len(signed.get("/api/runs").json()) == 1
+
+
+@pytest.mark.slow
+def test_a_quiet_stream_is_kept_alive(
+    signed: TestClient,
+    listening: str,
+    world: Inventory,
+    conn: Connection,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(jobs, "KEEP_ALIVE", 0.02)
+    alice = {"Authorization": signed.headers["Authorization"]}
+    with (
+        faked(world, Store(conn).get, delay=0.2),
+        httpx2.Client(headers=alice) as http,
+    ):
+        run = signed.post("/api/runs", json=asked(signed)).json()["run"]
+        with http.stream(
+            "GET", f"{listening}/api/runs/{run}/events", timeout=10
+        ) as got:
+            for line in got.iter_lines():
+                if line == ": keep-alive":
+                    break
+            assert signed.post(f"/api/runs/{run}/halt").status_code == 204
+
+
+@pytest.mark.slow
+@pytest.mark.usefixtures("fake")
+def test_a_run_runs_again_with_another_seed_under_its_name(
+    signed: TestClient, bob: dict[str, str]
+) -> None:
+    off = digest(signed, "reasoning", OFF)
+    first, _ = sent(signed, asked(signed, parts={"reasoning": off}))
+    got = signed.post(f"/api/runs/{first['id']}/again", json={"seed": 9})
+    assert got.status_code == 202
+    started = got.json()
+    assert got.headers["location"] == f"/api/runs/{started['run']}"
+    assert started["run"] != first["id"]
+    assert (started["skeleton"], started["cases"], started["seed"]) == (
+        first["skeleton"],
+        first["cases"],
+        9,
+    )
+    _ = followed(signed, started["run"])
+    again = signed.get(got.headers["location"]).json()
+    assert (again["endpoint"], again["seeds"]) == (first["endpoint"], [9])
+    assert again["described"] == first["described"].replace("(seed 7)", "(seed 9)")
+
+    got = signed.post(f"/api/runs/{first['id']}/again", json={}, headers=bob)
+    assert (got.status_code, got.json()["code"]) == (404, "not_found")

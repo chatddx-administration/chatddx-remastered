@@ -2,7 +2,7 @@ from collections.abc import Iterator
 from dataclasses import dataclass, field
 
 import psycopg
-from fastapi import Request
+from fastapi import Request, Response
 
 from chatddx.facts import Facts
 from chatddx.inventory import Inventory
@@ -31,3 +31,10 @@ def state(request: Request) -> AppState:
 def connection(request: Request) -> Iterator[Connection]:
     with state(request).connect() as conn:
         yield conn
+
+
+NO_STORE = {"Cache-Control": "no-store"}
+
+
+def no_store(response: Response) -> None:
+    response.headers.update(NO_STORE)

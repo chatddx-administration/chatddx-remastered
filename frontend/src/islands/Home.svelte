@@ -1,0 +1,243 @@
+<script lang="ts">
+  import { onMount } from "svelte";
+  import ActivityIcon from "@lucide/svelte/icons/activity";
+  import LoaderCircleIcon from "@lucide/svelte/icons/loader-circle";
+  import SparklesIcon from "@lucide/svelte/icons/sparkles";
+  import StethoscopeIcon from "@lucide/svelte/icons/stethoscope";
+  import TriangleAlertIcon from "@lucide/svelte/icons/triangle-alert";
+  import * as Alert from "$lib/components/ui/alert";
+  import { Button } from "$lib/components/ui/button";
+  import * as Card from "$lib/components/ui/card";
+  import { Label } from "$lib/components/ui/label";
+  import * as NativeSelect from "$lib/components/ui/native-select";
+  import { Textarea } from "$lib/components/ui/textarea";
+  import { api, type Schemas, why } from "$lib/api/client";
+  import { watch } from "$lib/runs/events";
+  import { begun, fold } from "$lib/runs/progress";
+  import ManagementPlan from "$lib/plan/ManagementPlan.svelte";
+  import { isPlan, PLAN } from "$lib/plan/types";
+
+  type Phase = "idle" | "typing" | "running" | "reading" | "done";
+
+  let login = $state<string>();
+  let text = $state("");
+  let configurations = $state<Schemas["Thread"][]>([]);
+  let endpoints = $state<Schemas["Endpoint"][]>([]);
+  let configuration = $state<number>();
+  let endpoint = $state<string>();
+  let phase = $state<Phase>("idle");
+  let progress = $state(begun());
+  const streamed = $derived(progress.items[0]?.kind ? progress.items[0] : null);
+  let failure = $state<string | null>(null);
+  let item = $state<Schemas["ItemDetail"] | null>(null);
+
+  const busy = $derived(phase === "typing" || phase === "running" || phase === "reading");
+
+  onMount(async () => {
+    const [me, found, served] = await Promise.all([
+      api.GET("/api/me"),
+      api.GET("/api/threads", { params: { query: { kind: "configuration", answers: PLAN } } }),
+      api.GET("/api/endpoints"),
+    ]);
+    if (!me.data || !found.data || !served.data) {
+      failure = why(me.error ?? found.error ?? served.error);
+      return;
+    }
+    login = me.data.login;
+    configurations = preferred(found.data);
+    endpoints = served.data.filter((e) => e.problem === null);
+    endpoint = endpoints[0]?.name;
+    configuration = fitting(endpoint);
+  });
+
+  function named(thread: Schemas["Thread"]): string {
+    const name = thread.name ?? thread.title;
+    return thread.owner === login || thread.owner === null ? name : `${thread.owner}/${name}`;
+  }
+
+  function preferred(threads: Schemas["Thread"][]): Schemas["Thread"][] {
+    const own = new Set(threads.filter((t) => t.owner === login).map((t) => t.name ?? t.title));
+    return threads.filter((t) => t.owner === login || !own.has(t.name ?? t.title));
+  }
+
+  function fitting(name: string | undefined): number | undefined {
+    const model = endpoints.find((e) => e.name === name)?.model;
+    return (configurations.find((t) => model && named(t).includes(model)) ?? configurations[0])?.id;
+  }
+
+  async function analyze(event: SubmitEvent) {
+    event.preventDefault();
+    if (configuration === undefined || endpoint === undefined || !text.trim()) return;
+    failure = null;
+    item = null;
+    progress = begun();
+    try {
+      phase = "typing";
+      const typed = await api.POST("/api/families", { body: { text } });
+      if (!typed.data) throw new Error(why(typed.error));
+      phase = "running";
+      const started = await api.POST("/api/runs", {
+        body: { configuration, endpoint, families: [typed.data.id], score: false },
+      });
+      if (!started.data) throw new Error(why(started.error));
+      const run = started.data.run;
+      await watch(run, (name, data) => fold(progress, name, data));
+      if (progress.errors.length) failure = progress.errors.join("; ");
+      phase = "reading";
+      const items = await api.GET("/api/runs/{run}/items", { params: { path: { run } } });
+      if (!items.data) throw new Error(why(items.error));
+      item = items.data[0] ?? null;
+      phase = "done";
+    } catch (e) {
+      failure = e instanceof Error ? e.message : String(e);
+      phase = "idle";
+    }
+  }
+
+  const SAYING: Record<Phase, string> = {
+    idle: "",
+    typing: "Keeping the case…",
+    running: "Waiting for the model…",
+    reading: "Reading the answer…",
+    done: "",
+  };
+</script>
+
+<div class="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden="true">
+  <div class="absolute top-20 left-10 size-72 animate-floating rounded-full bg-primary/5 blur-3xl"></div>
+  <div
+    class="absolute right-10 bottom-20 size-96 animate-floating rounded-full bg-accent/5 blur-3xl"
+    style:animation-delay="-2s"
+  ></div>
+</div>
+
+<div class="relative z-10 mx-auto max-w-4xl px-4 py-10 sm:py-16">
+  <header class="mb-10 animate-fade-in text-center sm:mb-14">
+    <div
+      class="glow-primary mb-6 inline-flex size-20 items-center justify-center rounded-3xl bg-gradient-to-br from-primary to-accent"
+    >
+      <StethoscopeIcon class="size-10 text-primary-foreground" />
+    </div>
+    <h1 class="mb-4 text-4xl font-bold tracking-tight sm:text-5xl">
+      <span class="gradient-text">Emergency</span>
+      <span class="text-foreground">Differential Diagnostics</span>
+    </h1>
+    <p class="mx-auto max-w-xl text-lg leading-relaxed text-muted-foreground">
+      Describe the patient's symptoms and history for a differential and a management plan.
+    </p>
+  </header>
+
+  <Alert.Root class="glass-card mb-8 animate-slide-up border-warning/20" style="animation-delay: 100ms">
+    <TriangleAlertIcon class="text-warning" />
+    <Alert.Description class="text-muted-foreground">
+      <p>
+        <strong class="font-semibold text-foreground">Important:</strong> for testing only. It does not
+        replace clinical judgment or medical consultation.
+      </p>
+    </Alert.Description>
+  </Alert.Root>
+
+  <Card.Root class="glass-card mb-8 animate-slide-up" style="animation-delay: 200ms">
+    <Card.Header>
+      <div class="flex items-center gap-3">
+        <div class="rounded-xl bg-primary/10 p-2"><ActivityIcon class="size-5 text-primary" /></div>
+        <div>
+          <Card.Title class="font-display text-xl">Symptoms & history</Card.Title>
+          <Card.Description>
+            Current symptoms, duration, severity, and relevant medical history.
+          </Card.Description>
+        </div>
+      </div>
+    </Card.Header>
+    <Card.Content>
+      <form class="space-y-5" onsubmit={analyze}>
+        <Textarea
+          bind:value={text}
+          aria-label="The case"
+          placeholder="65-year-old man with sudden chest pain for 2 hours, radiating to the left arm, nausea, cold sweats. History of hypertension and type 2 diabetes."
+          class="min-h-40 resize-y rounded-xl bg-background/50 text-base leading-relaxed"
+          disabled={busy}
+        />
+        <div class="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+          <div class="flex flex-col gap-4 sm:flex-row">
+            <div class="grid gap-2">
+              <Label for="endpoint">Endpoint</Label>
+              <NativeSelect.Root
+                id="endpoint"
+                class="min-w-52"
+                bind:value={endpoint}
+                onchange={() => (configuration = fitting(endpoint))}
+                disabled={busy}
+              >
+                {#each endpoints as e (e.name)}
+                  <NativeSelect.Option value={e.name}>{e.name}</NativeSelect.Option>
+                {/each}
+              </NativeSelect.Root>
+            </div>
+            <div class="grid gap-2">
+              <Label for="configuration">Configuration</Label>
+              <NativeSelect.Root id="configuration" bind:value={configuration} disabled={busy}>
+                {#each configurations as c (c.id)}
+                  <NativeSelect.Option value={c.id}>{named(c)}</NativeSelect.Option>
+                {/each}
+              </NativeSelect.Root>
+            </div>
+          </div>
+          <Button
+            type="submit"
+            size="lg"
+            class="gap-2 rounded-xl px-6 font-semibold shadow-lg shadow-primary/20"
+            disabled={busy || !text.trim() || configuration === undefined || endpoint === undefined}
+          >
+            {#if busy}
+              <LoaderCircleIcon class="animate-spin" />
+              {SAYING[phase]}
+            {:else}
+              <SparklesIcon />
+              Analyze
+            {/if}
+          </Button>
+        </div>
+        {#if phase === "running" && streamed}
+          <p class="text-sm text-muted-foreground" aria-live="polite">
+            {streamed.kind === "reasoning" ? "Thinking" : "Writing"}: {streamed.tokens} tokens
+          </p>
+        {/if}
+      </form>
+    </Card.Content>
+  </Card.Root>
+
+  {#if failure}
+    <Alert.Root variant="destructive" class="mb-8 rounded-2xl">
+      <TriangleAlertIcon />
+      <Alert.Title>It didn't go through</Alert.Title>
+      <Alert.Description>{failure}</Alert.Description>
+    </Alert.Root>
+  {/if}
+
+  {#if item}
+    {@const answer = item.answer}
+    <div class="animate-scale-in space-y-6">
+      {#if answer.value === null}
+        <Alert.Root variant="destructive" class="rounded-2xl">
+          <TriangleAlertIcon />
+          <Alert.Title>No answer to show</Alert.Title>
+          <Alert.Description>{answer.problem ?? item.why ?? item.outcome}</Alert.Description>
+        </Alert.Root>
+      {:else}
+        {#if answer.problem || answer.salvaged}
+          <Alert.Root class="rounded-2xl border-warning/30">
+            <TriangleAlertIcon class="text-warning" />
+            <Alert.Title>{answer.salvaged ? "The answer was cut short" : "The answer breaks its schema"}</Alert.Title>
+            {#if answer.problem}<Alert.Description>{answer.problem}</Alert.Description>{/if}
+          </Alert.Root>
+        {/if}
+        {#if typeof answer.value === "string"}
+          <div class="glass-card rounded-2xl p-6 whitespace-pre-wrap text-muted-foreground">{answer.value}</div>
+        {:else if isPlan(answer.value)}
+          <ManagementPlan plan={answer.value} />
+        {/if}
+      {/if}
+    </div>
+  {/if}
+</div>

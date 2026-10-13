@@ -1,12 +1,15 @@
 import argparse
 import getpass
+import json
+import subprocess
 import sys
 from collections import Counter
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 from pathlib import Path
 
 import psycopg
 import uvicorn
+from fastapi import FastAPI
 
 from chatddx.api.app import app
 from chatddx.bench import Bench, outcome
@@ -28,8 +31,10 @@ from chatddx.importers.o11n import (
     imported,
     read,
 )
-from chatddx.inventory import World, check
+from chatddx.inventory import Inventory, World, check
 from chatddx.ledger import RunStarted
+from chatddx.portal.app import app as portal
+from chatddx.portal.assets import Assets
 from chatddx.repl.loop import HISTORY, loop
 from chatddx.repl.shell import Repl, console
 from chatddx.runner.gate import Refused
@@ -267,15 +272,59 @@ def _ran(bench: Bench, started: RunStarted) -> str:
     return f"{bench.described(started)}: {went}, scored by {scored}"
 
 
-def _api(args: argparse.Namespace) -> None:
-    world = _world("api", args.world)
+def _serve(
+    command: str,
+    args: argparse.Namespace,
+    made: Callable[[Inventory, Facts, str], FastAPI],
+) -> None:
+    world = _world(command, args.world)
     facts = Facts.load(BUNDLED, *world.facts, *(args.facts or ()))
     bind: str = args.bind or settings.host()
     host, _, port = bind.rpartition(":")
     if not host or not port.isdigit():
-        raise SystemExit(f"api: bind to HOST:PORT, not {bind!r}")
-    served = app(world.inventory, facts, settings.database())
+        raise SystemExit(f"{command}: bind to HOST:PORT, not {bind!r}")
+    served = made(world.inventory, facts, settings.database())
     uvicorn.run(served, host=host.strip("[]"), port=int(port))
+
+
+def _api(args: argparse.Namespace) -> None:
+    _serve("api", args, app)
+
+
+def _portal(args: argparse.Namespace) -> None:
+    built = settings.portal_assets()
+    if not args.watch and not Assets(built).built:
+        print(
+            f"portal: nothing built in {built}: pnpm --dir frontend build, or --watch",
+            file=sys.stderr,
+        )
+    watching = _watching() if args.watch else None
+    try:
+        _serve("portal", args, portal)
+    finally:
+        if watching is not None:
+            watching.terminate()
+            _ = watching.wait()
+
+
+def _watching() -> subprocess.Popen[bytes]:
+    frontend = str(settings.PROJECT_ROOT / "frontend")
+    try:
+        _ = subprocess.run(
+            ["pnpm", "--dir", frontend, "install", "--frozen-lockfile"], check=True
+        )
+        return subprocess.Popen(["pnpm", "--dir", frontend, "run", "watch"])
+    except FileNotFoundError:
+        raise SystemExit(
+            "portal: --watch builds with pnpm, which isn't on PATH"
+        ) from None
+    except subprocess.CalledProcessError as e:
+        raise SystemExit(f"portal: pnpm install ended with {e.returncode}") from None
+
+
+def _openapi(_: argparse.Namespace) -> None:
+    document = app(Inventory(), Facts.load(BUNDLED), "").openapi()
+    print(json.dumps(document, indent=2, ensure_ascii=False))
 
 
 def _fake_vllm(args: argparse.Namespace) -> None:
@@ -298,6 +347,25 @@ def _fake_engines(args: argparse.Namespace) -> None:
         except LookupError as e:
             raise SystemExit(f"fake-engines: {e}") from None
     run_all(served, delay=args.delay, runaway=args.runaway)
+
+
+def _serving(parser: argparse.ArgumentParser, what: str) -> None:
+    _ = parser.add_argument(
+        "--world",
+        type=Path,
+        help=f"the World directory whose endpoints, vignettes and facts {what} uses "
+        + "(CHATDDX_WORLD)",
+    )
+    _ = parser.add_argument(
+        "--facts",
+        type=Path,
+        action="append",
+        help="more model facts, beside the bundled ones and the World's, as init-data "
+        + "was given",
+    )
+    _ = parser.add_argument(
+        "--bind", help=f"where to listen, as HOST:PORT ($HOST, else {settings.host()})"
+    )
 
 
 def main(argv: Sequence[str] | None = None) -> None:
@@ -484,23 +552,25 @@ def main(argv: Sequence[str] | None = None) -> None:
         "api",
         help="serve the chatddx API over HTTP, with its documentation at /api/docs",
     )
-    _ = api.add_argument(
-        "--world",
-        type=Path,
-        help="the World directory whose endpoints, vignettes and facts the API uses "
-        + "(CHATDDX_WORLD)",
-    )
-    _ = api.add_argument(
-        "--facts",
-        type=Path,
-        action="append",
-        help="more model facts, beside the bundled ones and the World's, as init-data "
-        + "was given",
-    )
-    _ = api.add_argument(
-        "--bind", help=f"where to listen, as HOST:PORT ($HOST, else {settings.host()})"
-    )
+    _serving(api, "the API")
     api.set_defaults(run=_api)
+
+    portal_parser = commands.add_parser(
+        "portal", help="serve the portal over HTTP, and the API with it at /api/"
+    )
+    _serving(portal_parser, "the portal")
+    _ = portal_parser.add_argument(
+        "--watch",
+        action="store_true",
+        help="build the frontend in frontend/ as it changes, while the portal is served",
+    )
+    portal_parser.set_defaults(run=_portal)
+
+    openapi = commands.add_parser(
+        "openapi",
+        help="print the API's OpenAPI document, as frontend/openapi.json keeps it",
+    )
+    openapi.set_defaults(run=_openapi)
 
     fake = commands.add_parser(
         "fake-vllm",

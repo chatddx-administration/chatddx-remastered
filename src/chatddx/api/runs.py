@@ -1,10 +1,11 @@
 import logging
 import threading
+from collections.abc import Callable
 from dataclasses import dataclass
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, Header, HTTPException, Query, Request, Response
+from fastapi import APIRouter, Depends, Header, HTTPException, Query, Request, Response
 from fastapi.concurrency import run_in_threadpool
 from fastapi.responses import StreamingResponse
 
@@ -15,12 +16,13 @@ from chatddx.factors.trial import Trial, suggest_seeds
 from chatddx.identity import Person
 from chatddx.ledger import RunStarted, check_run
 from chatddx.runner.run import Running
+from chatddx.scorers.answer import read
 
 from . import schemas
 from .events import Named, canary_of, event_of, graded_of, item_of
 from .jobs import Job, ending, followed, replayed, scored, scoring_of
 from .people import BenchDep
-from .state import AppState, state
+from .state import NO_STORE, AppState, no_store, state
 from .threads import refused
 
 STREAM = "text/event-stream"
@@ -70,21 +72,14 @@ def _cases(bench: Bench, given: schemas.NewRun) -> list[str]:
     return wanted
 
 
-def _start(held: AppState, person: Person, given: schemas.NewRun) -> _Started:
+type _Starting = Callable[[Bench], tuple[Running, Skeleton, str, int]]
+
+
+def _opened(held: AppState, person: Person, starting: _Starting) -> _Started:
     conn = held.connect()
     try:
         bench = Bench(conn, person, held.inventory, held.facts)
-        try:
-            with refused():
-                variation = bench.variation(given.configuration, given.parts.given())
-                skeleton = bench.skeleton(variation)
-            _ = bench.endpoint(given.endpoint)
-        except LookupError as e:
-            raise HTTPException(422, str(e)) from None
-        cases = _cases(bench, given)
-        seed = suggest_seeds(1)[0] if given.seed is None else given.seed
-        with refused():
-            running = bench.start(variation, given.endpoint, cases, seed)
+        running, skeleton, endpoint, seed = starting(bench)
     except BaseException:
         conn.close()
         raise
@@ -93,12 +88,64 @@ def _start(held: AppState, person: Person, given: schemas.NewRun) -> _Started:
         run=running.run,
         trial=trial.digest,
         skeleton=trial.skeleton,
-        endpoint=given.endpoint,
+        endpoint=endpoint,
         cases=list(trial.cases),
         seed=seed,
         greedy=skeleton.greedy,
     )
     return _Started(bench, running, skeleton, said)
+
+
+def _new(given: schemas.NewRun) -> _Starting:
+    def starting(bench: Bench) -> tuple[Running, Skeleton, str, int]:
+        try:
+            with refused():
+                variation = bench.variation(
+                    given.configuration, given.parts.given(), given.head
+                )
+                skeleton = bench.skeleton(variation)
+            _ = bench.endpoint(given.endpoint)
+        except LookupError as e:
+            raise HTTPException(422, str(e)) from None
+        cases = _cases(bench, given)
+        seed = suggest_seeds(1)[0] if given.seed is None else given.seed
+        with refused():
+            running = bench.start(variation, given.endpoint, cases, seed)
+        return running, skeleton, given.endpoint, seed
+
+    return starting
+
+
+def _repeated(run: UUID, given: schemas.NewAgain) -> _Starting:
+    def starting(bench: Bench) -> tuple[Running, Skeleton, str, int]:
+        before = bench.run_by_id(run)
+        seed = suggest_seeds(1)[0] if given.seed is None else given.seed
+        with refused():
+            running = bench.again(before, seed)
+        trial = resolve(bench.get, before.trial, Trial)
+        assert before.endpoint is not None
+        return (
+            running,
+            resolve(bench.get, trial.skeleton, Skeleton),
+            before.endpoint.name,
+            seed,
+        )
+
+    return starting
+
+
+def _launched(
+    request: Request, response: Response, started: _Started, score: bool
+) -> schemas.RunStartedData:
+    made = started.running.run
+    job = state(request).jobs.started(made)
+    job.running = started.running
+    job.put(("run.started", started.said))
+    threading.Thread(
+        target=_sent, args=(started, score, job), name=f"chatddx-run-{made}"
+    ).start()
+    response.headers["Location"] = request.app.url_path_for("run", run=str(made))
+    return started.said
 
 
 def _sent(started: _Started, score: bool, job: Job) -> None:
@@ -129,17 +176,31 @@ def _sent(started: _Started, score: bool, job: Job) -> None:
 def start(
     request: Request, response: Response, bench: BenchDep, given: schemas.NewRun
 ) -> schemas.RunStartedData:
-    held = state(request)
-    started = _start(held, bench.person, given)
-    made = started.running.run
-    job = held.jobs.started(made)
-    job.running = started.running
-    job.put(("run.started", started.said))
-    threading.Thread(
-        target=_sent, args=(started, given.score, job), name=f"chatddx-run-{made}"
-    ).start()
-    response.headers["Location"] = request.app.url_path_for("run", run=str(made))
-    return started.said
+    started = _opened(state(request), bench.person, _new(given))
+    return _launched(request, response, started, given.score)
+
+
+@router.post(
+    "/runs/{run}/again",
+    status_code=202,
+    responses={
+        202: {
+            "description": "The run's trial started again with another seed, as a run "
+            + "of its own, named as the run is: it is sent, finished and scored whoever "
+            + "listens, and its events are at `/api/runs/{run}/events`."
+        }
+    },
+)
+def again(
+    request: Request,
+    response: Response,
+    bench: BenchDep,
+    run: UUID,
+    given: schemas.NewAgain,
+) -> schemas.RunStartedData:
+    _ = bench.run_by_id(run)
+    started = _opened(state(request), bench.person, _repeated(run, given))
+    return _launched(request, response, started, given.score)
 
 
 @router.get(
@@ -175,7 +236,7 @@ async def events(
     return StreamingResponse(
         body,
         media_type=STREAM,
-        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+        headers={**NO_STORE, "X-Accel-Buffering": "no"},
     )
 
 
@@ -341,7 +402,7 @@ def run(bench: BenchDep, run: UUID) -> schemas.RunDetail:
     return detail(bench, run)
 
 
-@router.get("/runs/{run}/items")
+@router.get("/runs/{run}/items", dependencies=[Depends(no_store)])
 def items(bench: BenchDep, run: UUID) -> list[schemas.ItemDetail]:
     started = bench.run_by_id(run)
     trial = resolve(bench.get, started.trial, Trial)
@@ -353,6 +414,7 @@ def items(bench: BenchDep, run: UUID) -> list[schemas.ItemDetail]:
             vignette=item.vignette.model_dump(mode="json"),
             call=item.call.model_dump(mode="json"),
             turns=[t.model_dump(mode="json") for t in item.turns],
+            answer=schemas.Answer(**read(skeleton, item.calls[-1].response)._asdict()),
         )
         for item in bench.store.run(run).items
     ]

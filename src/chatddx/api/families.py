@@ -1,6 +1,6 @@
 from typing import Annotated
 
-from fastapi import APIRouter, HTTPException, Query, Request, Response
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response
 
 from chatddx import bench as benches
 from chatddx.bench import Ambiguous, Bench, NotFound
@@ -10,6 +10,7 @@ from chatddx.store import fetch_vignette
 
 from . import schemas
 from .people import BenchDep
+from .state import no_store
 from .threads import login, made, refused, thread_of
 
 router = APIRouter(tags=["families"])
@@ -138,7 +139,7 @@ def case(bench: BenchDep, family: int, given: schemas.NewCase) -> schemas.Family
     return case_of(bench, made, found.case)
 
 
-@router.get("/families/{family}/vignette")
+@router.get("/families/{family}/vignette", dependencies=[Depends(no_store)])
 def vignette(bench: BenchDep, family: int) -> schemas.Vignette:
     found = bench.family_by_id(family)
     held = resolve(bench.get, found.case, Case).vignette

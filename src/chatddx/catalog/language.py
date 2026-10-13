@@ -1,4 +1,6 @@
-from chatddx.factors.base import resolve
+from collections.abc import Callable, Collection, Iterable
+
+from chatddx.factors.base import Component, Resolver, iter_refs, resolve
 from chatddx.factors.request import Recipe, texts
 from chatddx.factors.scoring import Expectation, Judge
 from chatddx.factors.trial import Trial
@@ -29,14 +31,44 @@ def language_of(rows: Reader, digest: str) -> str | None:
             compilations = rows.compilations(digest)
             if not compilations:
                 return own(rows, digest)
-            known = {
-                language
-                for c in compilations
-                if (language := recipe_language(rows, c.recipe)) is not None
-            }
-            return known.pop() if len(known) == 1 else None
+            return _agreed(recipe_language(rows, c.recipe) for c in compilations)
         case _:
             return own(rows, digest)
+
+
+def languages_of(rows: Reader, digests: Collection[str]) -> dict[str, str | None]:
+    wanted = set(digests)
+    kinds = {d: c.kind_name for d, c in rows.components(wanted)}
+    compiled = {d: rows.compilations(d) for d, k in kinds.items() if k == "skeleton"}
+    refs = {
+        r.digest
+        for found in compiled.values()
+        for c in found
+        for r in iter_refs(c.recipe)
+    }
+    chunks = dict(rows.components(refs))
+
+    def get(digest: str) -> Component:
+        return chunks[digest] if digest in chunks else rows.get(digest)
+
+    voters = {
+        d: [_voters(c.recipe, get) for c in found] for d, found in compiled.items()
+    }
+    written = {
+        v for found in voters.values() for each in found for v in each if v is not None
+    }
+    owned = latest(rows.languages(wanted | written))
+    found: dict[str, str | None] = {}
+    for digest in wanted:
+        match kinds.get(digest):
+            case "case" | "expectation" | "trial" | "judge":
+                found[digest] = language_of(rows, digest)
+            case "skeleton" if voters[digest]:
+                votes = (_vote(each, owned.get) for each in voters[digest])
+                found[digest] = _agreed(votes)
+            case _:
+                found[digest] = owned.get(digest)
+    return found
 
 
 # src/chatddx/store/migrations/0012-t2-catalog.sql repeats these checks.
@@ -64,12 +96,24 @@ def check_entry(subject: Subject, entry: Entry) -> None:
 
 
 def recipe_language(rows: Reader, recipe: Recipe) -> str | None:
+    return _vote(_voters(recipe, rows.get), lambda digest: own(rows, digest))
+
+
+def _voters(recipe: Recipe, get: Resolver) -> list[str | None]:
     if recipe.translations is not None:
-        return own(rows, recipe.translations)
-    parts: list[str | None] = [
+        return [recipe.translations]
+    return [
         getattr(recipe, part)
-        for part in texts(recipe, rows.get)
+        for part in texts(recipe, get)
         if part != "appendix_layout"
     ]
-    languages = {None if p is None else own(rows, p) for p in parts}
+
+
+def _vote(voters: list[str | None], owned: Callable[[str], str | None]) -> str | None:
+    languages = {None if v is None else owned(v) for v in voters}
     return languages.pop() if len(languages) == 1 else None
+
+
+def _agreed(votes: Iterable[str | None]) -> str | None:
+    known = {v for v in votes if v is not None}
+    return known.pop() if len(known) == 1 else None

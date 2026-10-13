@@ -15,6 +15,28 @@ class _Schema(BaseModel):
     model_config: ClassVar[ConfigDict] = ConfigDict(frozen=True, extra="forbid")
 
 
+type Code = Literal[
+    "unauthenticated",
+    "cross_site",
+    "not_found",
+    "not_allowed",
+    "ambiguous",
+    "conflict",
+    "moved_on",
+    "refused",
+    "unprocessable",
+    "over_quota",
+    "error",
+]
+
+
+class Error(_Schema):
+    detail: str | list[JsonValue] = Field(
+        description="why, or where a request doesn't validate"
+    )
+    code: Code
+
+
 class SignIn(_Schema):
     login: str
     password: str
@@ -87,13 +109,13 @@ class Thread(_Schema):
     title: str
     owner: str | None
     tags: list[str]
+    language: str | None = Field(description="its head's")
     head: Edit
 
 
 class ThreadDetail(Thread):
     description: str | None
     collaborators: list[str]
-    language: str | None
     forked_from: int | None
     recipe: JsonValue
     deleted: bool
@@ -135,6 +157,10 @@ class Parts(_Schema):
 
 
 class Varying(Parts):
+    head: int | None = Field(
+        None,
+        description="the edit it varies, by id: the configuration's head unless given",
+    )
     endpoint: str | None = Field(None, description="to render and lint it for")
     tag: list[str] = Field(
         default_factory=list[str],
@@ -176,6 +202,10 @@ class NewThread(_Schema):
 
 class NewFork(_Schema):
     name: str = Field(min_length=1)
+    head: int | None = Field(
+        None,
+        description="a configuration's: the edit it forks from, its head unless given",
+    )
     parts: Parts = Parts()
     component: ComponentBody | None = Field(
         None, description="what the fork starts from in place of the head"
@@ -269,7 +299,11 @@ class Reach(_Schema):
 
 class Variation(_Schema):
     head: Edit
+    label: str = Field(description="its name, and the chunks it replaces")
     skeleton: str
+    held_by: Thread | None = Field(
+        description="the configuration whose head is the skeleton, the person's own first"
+    )
     greedy: bool
     parts: list[Part] | None
     seed: int
@@ -400,6 +434,20 @@ class Component(_Schema):
     body: JsonValue
 
 
+class Kind(_Schema):
+    kind: str
+    word: str = Field(description="the bench's word for it, as GET /api/threads takes")
+    written: bool = Field(description="whether a person writes it")
+    json_schema: dict[str, JsonValue] = Field(
+        description="its JSON Schema; a reference names the kinds it takes in x-kind"
+    )
+
+
+class Checked(_Schema):
+    digest: str
+    findings: list[Finding]
+
+
 class Metric(_Schema):
     name: str
     measures: str
@@ -424,8 +472,19 @@ class ScorerCode(_Schema):
     )
 
 
+class NewAgain(_Schema):
+    seed: int | None = Field(None, description="drawn when not given")
+    score: bool = Field(
+        True, description="under every scorer that applies, once it is finished"
+    )
+
+
 class NewRun(_Schema):
     configuration: int
+    head: int | None = Field(
+        None,
+        description="the edit it varies, by id: the configuration's head unless given",
+    )
     parts: Parts = Parts()
     endpoint: str
     families: list[int] | None = Field(None, description="the cases to run, by family")
@@ -483,11 +542,24 @@ class Item(_Schema):
     completion_tokens: int
 
 
+class Answer(_Schema):
+    value: JsonValue = Field(
+        description="as read from the item's last call: what its schema holds, or text"
+    )
+    problem: str | None = Field(
+        description="why it couldn't be read, or breaks its schema"
+    )
+    salvaged: bool = Field(
+        description="a structured answer cut short, read with its structure closed"
+    )
+
+
 class ItemDetail(Item):
     why: str | None
     vignette: JsonValue
     call: JsonValue
     turns: JsonValue
+    answer: Answer
 
 
 class ScoredItem(_Schema):

@@ -9,14 +9,16 @@ import pytest
 from argon2 import PasswordHasher
 from psycopg import sql
 
+from chatddx.bench import Bench
 from chatddx.core import settings
 from chatddx.curation import Plan, init
 from chatddx.identity import identity
 from chatddx.inventory import Inventory, World
 from chatddx.runner.test import tools as test_tools
+from chatddx.scripted import RUNS, run, scripted_runs
 from chatddx.store import People, Store, migrate
 from chatddx.store.store import Connection
-from chatddx.test.world import CASES, TEST, faked, free_world, world_plan
+from chatddx.test.world import CASES, TEST, faked, free_world, world_facts, world_plan
 
 
 # The markers split the tests in two: what docs/ describes, and what agents/wip-*.md plans.
@@ -170,6 +172,22 @@ def curated(copies: Copies, migrated: str) -> Iterator[str]:
             alice = People(conn).add("alice", "Alice")
             source = World.load(TEST).inventory.listing()
             _ = init(conn, world_plan(), CASES, source, alice, giftbag=True)
+        yield name
+    finally:
+        copies.forget(name)
+        drop_database(copies.admin, name)
+
+
+@pytest.fixture(scope="session")
+def ran(copies: Copies, curated: str) -> Iterator[str]:
+    name = create_database(copies.admin, template=curated)
+    try:
+        with psycopg.connect(settings.database(), dbname=name, autocommit=True) as conn:
+            alice = People(conn).find("alice")
+            assert alice is not None
+            bench = Bench(conn, alice, free_world(), world_facts())
+            for scripted in scripted_runs(TEST / RUNS):
+                _ = run(bench, scripted)
         yield name
     finally:
         copies.forget(name)

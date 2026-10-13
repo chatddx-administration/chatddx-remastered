@@ -2,18 +2,20 @@
 
 LLMs aren't deterministic like traditional programs: the same question can get a different answer, and a model behind
 an API can change overnight. Nor do they have what makes a human's judgement trustworthy: reputation, introspection
-and accountability. A model can't tell why it answered as it did, and can't be held to account when it's wrong. That
-poses a range of challenges for LLM assistance in emergency care, starting with knowing how accurate it is, in a way
-others can reproduce and examine.
+and accountability.
 
-## What ChatDDX is
+A model can't tell why it answered as it did, and can't be held to account when it's wrong. That poses a range of
+challenges for LLM assistance in emergency care, starting with knowing how accurate it is, in a way others can
+reproduce and examine.
+
 ChatDDX is a rig that measures how accurately LLMs produce differential diagnoses and management plans from
 emergency-care case vignettes. Everything that can change an answer or its score (prompts, sampling, engines, model
 weights, cases, seeds, expectations, scorers) is a factor, pinned by its digest. That way the environment of a run,
-"the cage", can be rebuilt and delivered with its results. A ledger records each exchange: what was planned, what was
-sent and what came back. Vignettes are sensitive: they are fingerprinted, never stored, and are sent only to endpoints
-cleared for them. Answers are scored by strict pattern matching, and later by LLM judges. Models run locally on vLLM or
-remotely behind OpenAI-compatible APIs. See [docs/chatddx.md](docs/chatddx.md).
+"the cage", can be rebuilt and delivered with its results.
+
+It records each exchange: what was planned, what was sent and what came back. Handles sensitive vignettes, without
+storing them and sending them only to cleared endpoints. Answers are scored by strict pattern matching, and later by LLM
+judges. Models run locally on vLLM or remotely behind OpenAI-compatible APIs. See [docs/chatddx.md](docs/chatddx.md).
 
 ## Developing
 On a basic Linux machine, such as Ubuntu on WSL, with the development environment from Nix.
@@ -111,6 +113,16 @@ chatddx repl alice
 runs
 replay
 ```
+
+### The portal
+The portal is served with the API, and builds its frontend in `frontend/` with pnpm, which the shell has. With the
+sample loaded and `chatddx fake-engines` running in a second shell, give alice a password and serve it:
+```sh
+chatddx person password alice
+chatddx portal --watch   # builds the frontend as it changes, till Ctrl-C
+```
+Then sign in as alice at http://localhost:8000, type a case and pick an endpoint. `pnpm --dir frontend check` checks
+the frontend's types.
 
 ### Kompismoln's hosts
 On the Kompismoln VPN, ask pelle and malborg what they serve:

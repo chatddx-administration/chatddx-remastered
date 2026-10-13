@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+{% from "macros.html" import heading, section, facts, chip, json %}
+{% block title %}{{ thread.name or thread.title }} · ChatDDX{% endblock %}
+{% block main %}
+<div class="mx-auto max-w-5xl px-4 py-8">
+  <a href="/library?kind={{ word }}" class="text-sm text-primary hover:underline">← {{ word | replace("_", " ") }}</a>
+  {{ heading(thread.name or thread.title, thread.title if thread.name not in (None, thread.title) else None) }}
+
+  {% if thread.deleted %}
+  <div class="-mt-4 mb-6 flex flex-wrap items-center gap-3 rounded-lg bg-warning/10 p-3 text-sm">
+    <span>You deleted it: nobody else sees it, and it isn't offered anywhere.</span>
+    <form method="post" action="/threads/{{ thread.id }}/restore"><button class="rounded-md bg-primary px-3 py-1 font-medium text-primary-foreground hover:bg-primary/90">Restore</button></form>
+  </div>
+  {% endif %}
+
+  {% call section("About it") %}
+  {% set origin_link %}{% if origin %}<a class="text-primary hover:underline" href="/threads/{{ origin }}">a fork</a>{% else %}—{% endif %}{% endset %}
+  {% set tagged %}{% for t in thread.tags %}{{ chip(t) }} {% else %}—{% endfor %}{% endset %}
+  {{ facts([
+    ("Kind", word | replace("_", " ")),
+    ("Owner", thread.owner or "—"),
+    ("Shared with", thread.collaborators | join(", ") or "—"),
+    ("Language", thread.language or "—"),
+    ("Forked from", origin_link),
+    ("Tags", tagged),
+    ("Description", thread.description or "—"),
+  ]) }}
+  {% endcall %}
+
+  {% if proposal %}
+  {% call section("Its origin has moved on") %}
+  <p class="mb-3 text-sm">Following it keeps the origin's latest version with what yours changes of it{% if proposal.digest == thread.head.digest %}, which is what yours holds already{% endif %}.</p>
+  {% if proposal.varies %}
+  <ul class="mb-4 space-y-1 text-sm">
+    {% for v in proposal.varies %}<li><span class="font-mono text-xs">{{ v.path }}</span>: yours keeps <span class="font-mono text-xs">{{ v.fork | tojson }}</span> over <span class="font-mono text-xs">{{ v.base | tojson }}</span></li>{% endfor %}
+  </ul>
+  {% endif %}
+  <form method="post" action="/threads/{{ thread.id }}/follow">
+    <input type="hidden" name="head" value="{{ thread.head.id }}">
+    <button class="inline-flex h-9 items-center rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground hover:bg-primary/90">Follow its origin</button>
+  </form>
+  {% endcall %}
+  {% endif %}
+
+  <div id="thread-view">
+    {% call section("What it holds") %}
+    {{ json(head) }}
+    <h3 class="mb-2 mt-4 text-sm font-medium">Its versions</h3>
+    <ol class="space-y-1 text-sm">
+      {% for v in versions | reverse %}
+      <li class="flex flex-wrap gap-x-3"><span class="font-medium">Version {{ versions | length - loop.index0 }}</span><span class="text-muted-foreground">{{ v.at | when }}, {{ v.by }}</span><span class="font-mono text-xs text-muted-foreground">{{ v.digest | short }}</span></li>
+      {% endfor %}
+    </ol>
+    {% endcall %}
+  </div>
+  <script type="application/json" id="thread-props">{{ held | tojson }}</script>
+
+  {% if mine and not thread.deleted %}
+  {% call section("What is said of it", "said") %}
+  <form method="post" action="/threads/{{ thread.id }}/said" class="grid max-w-xl gap-3 text-sm">
+    <label class="grid gap-1"><span class="font-medium">Name</span>
+      <input name="name" value="{{ thread.name or '' }}" class="h-9 rounded-md border border-input bg-transparent px-2.5" placeholder="{{ thread.title }}">
+      <span class="text-xs text-muted-foreground">Left empty, it goes by its title.</span></label>
+    <label class="grid gap-1"><span class="font-medium">Description</span>
+      <textarea name="description" rows="3" class="rounded-md border border-input bg-transparent px-2.5 py-1.5">{{ thread.description or '' }}</textarea></label>
+    <label class="grid gap-1"><span class="font-medium">Tags</span>
+      <input name="tags" value="{{ thread.tags | join(', ') }}" class="h-9 rounded-md border border-input bg-transparent px-2.5" placeholder="comma separated"></label>
+    <label class="grid gap-1"><span class="font-medium">Shared with</span>
+      <input name="shared" value="{{ thread.collaborators | join(', ') }}" class="h-9 rounded-md border border-input bg-transparent px-2.5" placeholder="logins, comma separated"></label>
+    <div><button class="inline-flex h-9 items-center rounded-md bg-primary px-4 font-medium text-primary-foreground hover:bg-primary/90">Save what is said</button></div>
+  </form>
+  <form method="post" action="/threads/{{ thread.id }}/delete" class="mt-6 border-t border-border/60 pt-4 text-sm">
+    <button class="inline-flex h-9 items-center rounded-md border border-destructive/40 px-4 font-medium text-destructive hover:bg-destructive/10">Delete it</button>
+    <span class="ml-2 text-muted-foreground">It stays in the runs that used it, and you can restore it from the Library.</span>
+  </form>
+  {% endcall %}
+  {% endif %}
+
+  {% if not thread.deleted %}
+  {% call section("Fork it", "fork") %}
+  <form method="post" action="/threads/{{ thread.id }}/fork" class="flex flex-wrap items-end gap-3 text-sm">
+    <label class="grid gap-1"><span class="font-medium">Name</span>
+      <input name="name" required value="{{ thread.name or thread.title }}" class="h-9 w-72 rounded-md border border-input bg-transparent px-2.5"></label>
+    <button class="inline-flex h-9 items-center rounded-md border border-border bg-card px-4 font-medium hover:bg-muted">Fork it as it is</button>
+  </form>
+  <p class="mt-2 text-sm text-muted-foreground">A thread of your own, starting from its latest version, which follows this one's changes when you ask.</p>
+  {% endcall %}
+  {% endif %}
+</div>
+{% endblock %}

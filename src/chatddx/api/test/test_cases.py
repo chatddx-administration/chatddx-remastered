@@ -98,7 +98,7 @@ def test_a_run_names_its_cases_among_the_current_ones(signed: TestClient) -> Non
     got = signed.post("/api/runs", json=asked)
     assert (got.status_code, got.json()) == (
         422,
-        {"detail": f"no case {ZERO} for alice"},
+        {"detail": f"no case {ZERO} for alice", "code": "refused"},
     )
     both = {**asked, "tags": ["swedish"]}
     assert signed.post("/api/runs", json=both).status_code == 422

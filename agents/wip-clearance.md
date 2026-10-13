@@ -97,8 +97,11 @@ against the inventory's `[cleared]` table until the clearance pipeline replaces 
    run yet.
 5. **Sources.** Sources say only whether they are sensitive. Still unspecified: what clearance each requires beyond
    that. A `[cleared]` entry for a source that isn't sensitive is accepted and clears nothing
-   (`docs/inventory.md`, "Open design issues"). Swift's typed cases will be a source in the database, written by the
-   portal, where a clinician may type about a real patient (`agents/wip-portal.md`, "Swift", "Typed cases").
+   (`docs/inventory.md`, "Open design issues"). Typed cases are a database source (`docs/inventory.md`, "Sources";
+   `docs/bench.md`, "Typed cases"), written through the bench for the portal's home page, where a clinician may type
+   about a real patient (`agents/wip-portal.md`, "Swift"). Their fingerprint is plain, as the sample's, since nothing
+   manages keys yet: a short text's hash can be guessed by anyone who reads the factors, the reader included, while
+   the text itself is kept from them. Open: a keyed one.
 6. **Edges as destinations.** The repl shows case-derived content at its terminal: `show case` prints the vignette and
    `run` streams the completion. An API sends the same over the network to whatever signed in (`docs/api.md`,
    "Case-derived content"). The takes count a database and an export target as endpoints to vet, but nothing says

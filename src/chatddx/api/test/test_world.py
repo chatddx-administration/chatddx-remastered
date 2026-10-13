@@ -59,7 +59,10 @@ def test_endpoints_say_what_they_serve_and_what_they_re_cleared_for(
     assert remote["credential"] is not None and remote["cleared_for"] == []
     got = signed.get("/api/endpoints/nowhere@fake")
     assert got.status_code == 404
-    assert got.json() == {"detail": "no endpoint 'nowhere@fake' in the inventory"}
+    assert got.json() == {
+        "detail": "no endpoint 'nowhere@fake' in the inventory",
+        "code": "not_found",
+    }
 
 
 def test_an_endpoint_whose_engine_isn_t_stored_says_so(
@@ -105,7 +108,7 @@ def test_a_component_is_shown_by_its_digest(signed: TestClient) -> None:
     got = signed.get(f"/api/components/{GHOST}")
     assert (got.status_code, got.json()) == (
         404,
-        {"detail": f"no component {GHOST} in the store"},
+        {"detail": f"no component {GHOST} in the store", "code": "not_found"},
     )
 
 

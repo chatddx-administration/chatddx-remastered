@@ -501,6 +501,11 @@ A recipe votes:
 
 A digest that isn't stored gives `None`.
 
+### `languages_of(rows, digests: Collection[str]) -> dict[str, str | None]`
+`language_of` of each digest, with the components, the texts' languages and their recipes' chunks read once for them
+all, and each skeleton's compilations once per skeleton. A case, an expectation, a trial or a judge is looked up
+alone, by `language_of`.
+
 ### `recipe_language(rows, recipe: Recipe) -> str | None`
 The language `recipe` votes for, as `language_of` counts each compilation's recipe; `None` when it casts no vote.
 
@@ -610,12 +615,14 @@ with a psycopg error when the Python lets it through.
 | `repair(family, by, *, id=None, fingerprint=None) -> Repair` | `families.plan_repair` | in one transaction: the binding, `Store.add` of the plan's registry, and an edit per move |
 | `note(subject, entry, by)` | `language.check_entry`; `threads.check_expectation(thread, entry=entry)` for a thread | the entry; a run or score subject also gets its stage column set to `'started'` |
 | `language(digest, value, by)` | `language.check_language` | a `catalog.language` row with the kind it returned |
+| `languages_of(digests)` | `language.languages_of` | |
 | `about(subject)`, `abouts(subjects)` | `read.about`, `read.abouts` | |
 | `involving(person) -> list[Subject]` | the store only | the subjects whose `owner` or `collaborator` entries ever named the person |
 | `label(scorer, part, position, value, by)` | `check_label` of the resolved scorer | the label |
 | `labels(edit) -> dict[tuple[Part, int], str]` | `read.labels` | |
 | `tags_given(subject)` | `read.tags_given` | |
 | `keep(digest, by, thread, *, name=None, compilation=None, forked_from=None, head=None, labels=None) -> tuple[Edit, Kept]` | `create` without a thread; else, in one transaction, the thread's lock, `threads.check_head` when `head` is given, `threads.head`, and `edit` | a new thread, a new edit, or nothing when the head is `digest` already and `labels`, when given, are the head's |
+| `runs_started(person, since: datetime) -> int` | the store only | how many runs' `owner` entries name the person since then |
 
 ## Database: schema `catalog`
 

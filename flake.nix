@@ -69,11 +69,52 @@
           )
       );
 
+      # Tailwind reads the portal's templates beside the frontend (frontend/src/portal.css).
+      frontend =
+        system:
+        let
+          pkgs = nixpkgs.legacyPackages.${system};
+        in
+        pkgs.stdenv.mkDerivation (finalAttrs: {
+          pname = "${name}-frontend";
+          inherit version;
+          src = lib.fileset.toSource {
+            root = ./.;
+            fileset = lib.fileset.unions [
+              ./frontend
+              ./src/chatddx/portal/templates
+            ];
+          };
+          pnpmRoot = "frontend";
+          nativeBuildInputs = [
+            pkgs.nodejs_22
+            pkgs.pnpm
+            pkgs.pnpmConfigHook
+          ];
+          pnpmDeps = pkgs.fetchPnpmDeps {
+            inherit (finalAttrs) pname version;
+            src = ./frontend;
+            fetcherVersion = 4;
+            hash = "sha256-/i0p8mORqPJPC2A9QDfjLP9/p2yLcuKTojfPLcQpUpI=";
+          };
+          buildPhase = ''
+            runHook preBuild
+            pnpm --dir frontend build
+            runHook postBuild
+          '';
+          installPhase = ''
+            runHook preInstall
+            cp -r frontend/dist $out
+            runHook postInstall
+          '';
+        });
+
     in
     {
 
       packages = forAllSystems (system: {
         default = pythonSets.${system}.mkVirtualEnv "chatddx-env" workspace.deps.default;
+        frontend = frontend system;
       });
 
       devShells = forAllSystems (
@@ -102,6 +143,8 @@
               virtualenv
               dev-db
               pkgs.uv
+              pkgs.nodejs_22
+              pkgs.pnpm
             ];
 
             env = {

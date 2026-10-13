@@ -111,6 +111,12 @@ class Written:
     cases: dict[str, str] = field(default_factory=dict)
 
 
+@dataclass(frozen=True)
+class Checked:
+    digest: str
+    findings: list[Finding]
+
+
 SAVED: dict[Kept, Literal["created", "a new version", "unchanged"]] = {
     "created": "created",
     "edited": "a new version",

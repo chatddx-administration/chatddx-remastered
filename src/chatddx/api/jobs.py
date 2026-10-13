@@ -17,6 +17,9 @@ from .events import Named, graded_of, scoring_event_of, sse
 
 log = logging.getLogger(__name__)
 
+# Comment lines, which event readers skip, keep a proxy from cutting a quiet stream.
+KEEP_ALIVE = 15.0
+
 # A delta is kept only until what it streams has ended, so a stream joined late replays
 # every event but the deltas of the items and judge calls that ended before it.
 ENDS = {"item.ended": "item.delta", "judge.answered": "judge.delta"}
@@ -128,7 +131,14 @@ async def followed(job: Job, after: int) -> AsyncIterator[str]:
     try:
         for text in told:
             yield text
-        while live and (text := await queue.get()) is not None:
+        while live:
+            try:
+                text = await asyncio.wait_for(queue.get(), KEEP_ALIVE)
+            except TimeoutError:
+                yield ": keep-alive\n\n"
+                continue
+            if text is None:
+                break
             yield text
     finally:
         job.leave(listener)

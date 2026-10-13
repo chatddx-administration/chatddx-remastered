@@ -20,8 +20,9 @@ https://github.com/chatddx-administration/chatddx/blob/504792cbeb09508f2c52912be
    keeps (202, a `GET` of a run's events, a halt), but it ends with the process and other replicas don't see it.
 3. **Decided: the queue is updated in place** (K2), an exception to "nothing is updated", as identity's people and
    sessions are.
-4. **Open, as takes** (see "Options"): K1, where it runs; K3, how events reach a page; K4, the unit it schedules; K5,
-   which runs go through it.
+4. **Decided** (see "Options"): K1, one worker, also runnable in the app's process; K3, events read from the ledger
+   and woken by `LISTEN`/`NOTIFY` (E2); K4, it schedules runs; K5, every run started over HTTP goes through it. E3,
+   deltas through `NOTIFY`, is still a take.
 5. **What it needs below it first** (see "Below the worker"): resuming a run, and `Bench.start` taking an execution.
 
 ## Why
@@ -96,11 +97,12 @@ Why apart from the planner:
   thread per run, kept in memory. Small, but runs end with the process, and replicas don't see each other's.
 - **W3. A process of its own**, `chatddx worker`, reading what is asked from the store. Survives the app's restarts,
   serves every replica.
-- **W3, also runnable in the app's process**: the same worker, started as a thread by `chatddx api --worker` and by
-  the tests, reading the same store.
+- **W3, also runnable in the app's process**: the same worker, started as a thread by `chatddx portal`, which starts
+  everything the portal needs (`agents/wip-portal.md`, "P3b, concretely"), by `chatddx api --worker` and by the tests,
+  reading the same store.
 
-Take: the last. One implementation; W2 isn't built and thrown away. What is asked is in the store either way, so even
-in-process a closed tab doesn't stop a run.
+Decided: the last. One implementation; W2 isn't built and thrown away. What is asked is in the store either way, so
+even in-process a closed tab doesn't stop a run.
 
 Since: W2 is built in W3's HTTP shape (`docs/api.md`, "Where it runs"), so a closed tab doesn't stop a run already.
 The worker takes the place of `src/chatddx/api/jobs.py`, and the API stays as it is.
@@ -126,8 +128,8 @@ progress"; `docs/store.md`), as identity's people and sessions are. Take, for it
 - **E3. E2, with deltas through `NOTIFY`**: a completion as it is written, batched to keep within `NOTIFY`'s payload
   limit (8,000 bytes). The deltas are case-derived, and pass through the database, which holds the ledger already.
 
-Take: E2, then E3 when the portal's run island wants to show a completion as it is written. Swift waits for one
-answer, which E2 gives (`agents/wip-portal.md`, "Swift").
+Decided: E2. Take: E3 when the portal's run island wants to show a completion as it is written. The portal's home page,
+swift's, waits for one answer, which E2 gives (`agents/wip-portal.md`, "Swift").
 
 ### K4. The unit it schedules
 - **Runs.** A run is sent whole by one worker, up to its own concurrency. A long run holds its endpoint's slots until
@@ -135,15 +137,15 @@ answer, which E2 gives (`agents/wip-portal.md`, "Swift").
 - **Items.** The worker hands out a run's items, so owners take turns item by item, as the old jobs did. It needs
   several processes writing one run's log, which the runner doesn't do: one `Running` sends one run.
 
-Take: runs, with `max_jobs` shared by the runs on one endpoint through their executions (see "Below the worker").
+Decided: runs, with `max_jobs` shared by the runs on one endpoint through their executions (see "Below the worker").
 
 ### K5. Which runs go through it
 - **Every run started over HTTP**, the portal's and the API's: one path. `POST /api/runs` answers 202 and its id,
   and the stream is `GET /api/runs/{id}/events`, as built in the app's process (`docs/api.md`, "Its events").
 - **Batches only**, single runs staying in the request.
 
-Take: every run started over HTTP. The repl keeps running in its own process, where Ctrl-C halts a run as it should.
-`max_jobs` then isn't held between the repl's runs and the worker's (see "Open").
+Decided: every run started over HTTP. The repl keeps running in its own process, where Ctrl-C halts a run as it
+should. `max_jobs` then isn't held between the repl's runs and the worker's (see "Open").
 
 ## Below the worker
 Moved here from `agents/wip-runner.md` ("Afterwards"), since the worker is their first caller:
@@ -160,7 +162,7 @@ Still the runner's, and met here:
   keeps a halted run's worker thread waiting, under an execution with no `timeout_s`.
 
 ## The plan
-Assuming the takes.
+On the decisions above, and the takes left.
 0. **Below the worker**: resuming (`src/chatddx/runner/`), and `Bench.start` taking an execution.
 1. **The queue**: the `worker` schema, its jobs, controls and workers, at every tier; the store's reads and writes
    for them; tests on the store. The exception is proposed in `docs/store.md` and `docs/chatddx.md`; once the

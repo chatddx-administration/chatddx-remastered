@@ -519,6 +519,8 @@ attempts than its retries allow, when items were sent out of order, or when more
 (docs/ledger.md, "Run" and "Score"). Timeouts aren't checked.
 
 ### Batch
+Not built yet: planned in agents/wip-batch.md.
+
 Principal author: researchers.
 
 A batch is trials run together: those crossed from one configuration's variations over the same cases, at one
@@ -741,8 +743,3 @@ A passthrough refuses a fixed list of options and lets everything else through. 
 - lints instead of refusals: risky options would give a finding, in the spirit of "warnings, not crashes". But a
   passthrough already refuses what the rig and the output contract set, and options that put case text in the stored
   response are closer to the clearance block than to a warning.
-
-### Reference kinds in components' JSON Schemas
-The JSON Schema of each component kind could say which kinds each reference may point to. A portal form could then offer
-a picker of the right kind for every reference, straight from the schema. References used to say this, and stopped
-because nothing read it. The JSON Schema plays no part in any digest, so adding it back changes no digest.

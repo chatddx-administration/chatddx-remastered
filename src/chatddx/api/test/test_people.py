@@ -9,7 +9,7 @@ from chatddx import cli
 from chatddx.api.people import COOKIE
 from chatddx.api.schemas import Me
 from chatddx.api.test.conftest import PASSWORD, sign_in
-from chatddx.bench import Ambiguous, NotFound
+from chatddx.bench import Ambiguous, Conflict, MovedOn, NotFound, OverQuota
 from chatddx.identity import Person
 from chatddx.runner.gate import Refused
 from chatddx.test.world import TEST
@@ -31,10 +31,11 @@ def bearer(token: str) -> dict[str, str]:
 def test_nothing_is_answered_without_a_session(client: TestClient) -> None:
     got = client.get("/api/me")
     assert got.status_code == 401
-    assert got.json() == {"detail": "sign in first"}
+    assert got.json() == {"detail": "sign in first", "code": "unauthenticated"}
     assert got.headers["www-authenticate"] == "Bearer"
     assert client.get("/api/me", headers=bearer("made-up")).json() == {
-        "detail": "the session has ended: sign in again"
+        "detail": "the session has ended: sign in again",
+        "code": "unauthenticated",
     }
 
 
@@ -43,7 +44,8 @@ def test_signing_in_gives_a_token_and_a_cookie_that_each_say_who_you_are(
 ) -> None:
     assert sign_in(client, password="wrong").status_code == 401
     assert sign_in(client, login="nobody").json() == {
-        "detail": "wrong login or password"
+        "detail": "wrong login or password",
+        "code": "unauthenticated",
     }
 
     got = sign_in(client)
@@ -78,7 +80,8 @@ def test_a_cookie_s_unsafe_requests_must_come_from_this_site(
         got = client.delete("/api/session", headers=elsewhere)
         assert got.status_code == 403
         assert got.json() == {
-            "detail": "a browser's request must come from this site's pages"
+            "detail": "a browser's request must come from this site's pages",
+            "code": "cross_site",
         }
         assert client.get("/api/me", headers=elsewhere).status_code == 200
 
@@ -102,7 +105,10 @@ def test_signing_out_ends_the_session_and_drops_the_cookie(client: TestClient) -
     assert got.status_code == 204
     cookie = got.headers["set-cookie"].lower()
     assert cookie.startswith(f"{COOKIE.lower()}=") and "max-age=0" in cookie
-    assert client.get("/api/me").json() == {"detail": "sign in first"}
+    assert client.get("/api/me").json() == {
+        "detail": "sign in first",
+        "code": "unauthenticated",
+    }
     assert client.get("/api/me", headers=bearer(token)).status_code == 401
 
 
@@ -112,6 +118,7 @@ def test_a_request_that_doesn_t_validate_is_refused_with_where(
     got = client.post("/api/session", json={"login": "alice"})
     assert got.status_code == 422
     assert [e["loc"] for e in got.json()["detail"]] == [["body", "password"]]
+    assert got.json()["code"] == "unprocessable"
     extra = {"login": "alice", "password": PASSWORD, "remember": True}
     assert client.post("/api/session", json=extra).status_code == 422
 
@@ -123,20 +130,35 @@ def raising(error: Exception) -> Callable[[], None]:
     return raised
 
 
-def test_the_bench_s_errors_and_the_gate_s_refusals_have_their_status(
+def test_the_bench_s_errors_and_the_gate_s_refusals_have_their_status_and_code(
     served: FastAPI, client: TestClient
 ) -> None:
-    for error, status in (
-        (NotFound("no case 'nope' for alice"), 404),
-        (Ambiguous("case 'plan' names 2"), 409),
-        (Refused("endpoint 'x' isn't cleared for source test"), 422),
+    for error, status, code in (
+        (NotFound("no case 'nope' for alice"), 404, "not_found"),
+        (Ambiguous("case 'plan' names 2"), 409, "ambiguous"),
+        (
+            Conflict("expectation 7 is yours: replace it to take this one"),
+            409,
+            "conflict",
+        ),
+        (MovedOn("thread 7 has moved on to edit 9"), 409, "moved_on"),
+        (OverQuota("alice has typed 50 cases in the last day"), 429, "over_quota"),
+        (Refused("endpoint 'x' isn't cleared for source test"), 422, "refused"),
     ):
         path = f"/api/test/{type(error).__name__}"
         served.add_api_route(path, raising(error))
         got = client.get(path)
-        assert (got.status_code, got.json()) == (status, {"detail": str(error)})
+        assert (got.status_code, got.json()) == (
+            status,
+            {"detail": str(error), "code": code},
+        )
+    got = client.get("/api/nowhere")
+    assert (got.status_code, got.json()["code"]) == (404, "not_found")
+    got = client.put("/api/me")
+    assert (got.status_code, got.json()["code"]) == (405, "not_allowed")
 
 
+@pytest.mark.slow
 def test_the_api_describes_itself(client: TestClient) -> None:
     described = client.get("/api/openapi.json").json()
     assert described["info"]["title"] == "chatddx"
@@ -144,6 +166,7 @@ def test_the_api_describes_itself(client: TestClient) -> None:
     schemes = described["components"]["securitySchemes"]
     assert sorted(s["type"] for s in schemes.values()) == ["apiKey", "http"]
     assert client.get("/api/docs").status_code == 200
+    assert described["components"]["schemas"]["Error"]["required"] == ["detail", "code"]
 
 
 @pytest.mark.parametrize(

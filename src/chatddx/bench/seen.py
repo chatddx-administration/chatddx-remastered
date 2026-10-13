@@ -12,7 +12,7 @@ from chatddx.catalog import (
     made_for,
     variants_for,
 )
-from chatddx.catalog.threads import picked
+from chatddx.catalog.threads import picked, recipe as recipe_of
 from chatddx.catalog.titles import short
 from chatddx.core.rig import rig
 from chatddx.factors.base import (
@@ -228,11 +228,18 @@ class Seen:
         return self.thread(part, name, model)[0].digest
 
     def variation(
-        self, configuration: int, parts: Mapping[str, str | None] | None = None
+        self,
+        configuration: int,
+        parts: Mapping[str, str | None] | None = None,
+        head: int | None = None,
     ) -> TriedVariation:
         edit, about = self.thread_by_id(configuration, "configuration")
+        if head is not None and head != edit.id:
+            edit = self.rows.edit(head)
+            if edit is None or edit.thread != configuration:
+                raise NotFound(f"no edit {head} of configuration {configuration}")
         name = about.name or self.catalog.title(configuration)
-        found = TriedVariation(edit, name, self.catalog.recipe(configuration))
+        found = TriedVariation(edit, name, recipe_of(self.rows, edit))
         for part, digest in (parts or {}).items():
             if part not in PARTS:
                 raise ValueError(f"no part {part!r}: the parts are {', '.join(PARTS)}")
@@ -388,6 +395,18 @@ class Seen:
             (e, a)
             for e, a in held
             if resolve(read.__getitem__, e.digest, Skeleton).purpose == purpose
+        ]
+
+    def answering(
+        self, found: Iterable[tuple[Edit, About]], title: str
+    ) -> list[tuple[Edit, About]]:
+        held = list(found)
+        read = dict(self.rows.components([e.digest for e, _ in held]))
+        return [
+            (e, a)
+            for e, a in held
+            if _titled(resolve(read.__getitem__, e.digest, Skeleton).output_schema)
+            == title
         ]
 
     def scorers(self) -> list[tuple[Edit, About, Scorer]]:
@@ -598,7 +617,10 @@ class Seen:
             else f"{len(trial.cases)} cases"
         )
         seeds = ", ".join(str(seed) for seed in trial.seeds)
-        return f"{self.title(trial.skeleton)} × {where} × {cases} (seed {seeds})"
+        name = self.catalog.about(Subject(run=run.run)).name or self.title(
+            trial.skeleton
+        )
+        return f"{name} × {where} × {cases} (seed {seeds})"
 
     def scores_of(self, run: UUID, every: bool = False) -> list[Graded]:
         given = self.store.scores_of(run)
@@ -694,3 +716,11 @@ class Seen:
             else:
                 found[item.key] = None
         return found
+
+
+def _titled(schema: JsonValue) -> str | None:
+    match schema:
+        case {"title": str() as title}:
+            return title
+        case _:
+            return None

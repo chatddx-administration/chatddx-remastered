@@ -97,12 +97,10 @@ still leave a person two to choose from. Then nothing picks one, and each place 
 - the case's expectation under that schema says it has expectations to choose from.
 
 ## The variation being tried
-A variation being tried is a configuration with recipe parts replaced (docs/catalog.md, "Configurations and
-variations"): the configuration's head edit and recipe, the name the person called it by, and the parts replaced over
-it, each by a chunk's digest, or by nothing for an optional part taken out, with the name it was set by. With nothing
-replaced, it is the configuration's head itself. It is a plain value, not a catalog object: variations are "a
-supported portal workflow, not an object in the code" (docs/chatddx.md), and an unsaved one is just a digest. An edge
-holds it beside the endpoint it is to run at.
+Variation is a configuration with recipe parts replaced (docs/catalog.md, "Configurations and variations"):
+a configuration's edit's recipe, the name the person called it by, and the parts replaced over it with the name it was
+set by. With nothing replaced, it is the configuration itself. It is a plain value and an unsaved one is just a digest.
+An edge holds it beside the endpoint it is to run at.
 
 Looking at a variation writes nothing. What an unsaved skeleton was compiled from is stored when it is saved or
 started, by the running code (docs/catalog.md, "Recipes").
@@ -124,6 +122,9 @@ A judge configuration, one whose purpose is `judge`, is looked at as the judge i
 are the judge's, it reads no case, and it has no reach, as no scorer reads what a judge answers. It isn't run on cases:
 starting it is refused. An edge lists configurations by purpose (`Bench.purposed`), since a judge configuration is no
 use where a run's is wanted.
+
+An edge also lists configurations by what they answer (`Bench.answering`): the title of their answer's JSON Schema, as
+a page that shows management plans offers only the configurations that answer one.
 
 ## Writes for the person
 The bench writes, in the person's name: configurations, chunks, appendices, expectations, scorers, judges, typed
@@ -272,13 +273,13 @@ ones, and a scorer pinned again by a deploy reaches the person's fork of it.
 
 ## Runs and scores
 - **Starting** runs a variation at an endpoint, on some cases with one seed, through the runner (docs/runner.md),
-  under the default execution and with no canary set or text cleanup. A judge configuration is refused first. The
-  runner's gate refuses what clearance forbids before anything is sent, and nothing is sent until the edge sends it,
-  so the edge decides how a run is shown as it goes.
+  under the default execution and with no canary set or text cleanup. A judge configuration is refused first, then a
+  run of more items than `settings.ITEMS_PER_RUN`, and a person who has started `settings.RUNS_PER_DAY` runs in the
+  last day. The run is named by the variation's label as it starts.
 - **A person's runs** are their own, newest first, found by the start of their id, or by a component their trial is
   built on.
-- **A run is described** as the repl's `run` and `batch` say it: the configuration, where it ran, its case or how many,
-  and the seed.
+- **A run is described** as the repl's `run` and `batch` say it: the run's name, else the configuration, where it
+  ran, its case or how many, and the seed.
 - **A scorer applies** to a run when the run's output offers what each of its views reads, a view of the whole answer
   only a text answer, and the World lets each of its judges run (docs/runner.md, "What applies to a run").
 - **A run's scoring** under a scorer is built now, from the expectation each of its cases is scored against. Cases

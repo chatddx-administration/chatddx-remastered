@@ -144,7 +144,7 @@ def test_a_run_is_scored_when_asked_and_what_can_t_be_is_refused(
         busy = signed.post(f"/api/runs/{run}/scores", json={})
         assert (busy.status_code, busy.json()) == (
             409,
-            {"detail": f"run {run} has something under way"},
+            {"detail": f"run {run} has something under way", "code": "conflict"},
         )
         assert signed.post(f"/api/runs/{run}/halt").status_code == 204
         said = followed(signed, run)

@@ -7,7 +7,7 @@ from chatddx.factors.bundle import Registry
 from chatddx.factors.cases import Case
 from chatddx.factors.test.sample import fp, world
 
-pytestmark = pytest.mark.wip
+pytestmark = pytest.mark.solidified
 
 
 def test_a_source_whose_texts_never_move_adopts_by_id_alone() -> None:

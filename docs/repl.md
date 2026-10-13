@@ -230,8 +230,6 @@ The rest is read once, and again after a `save`.
   missed (docs/runner.md, "Smaller issues").
 - **Two tool calls in one response run together** on one line as they stream, as a call's first delta is taken as its
   name and the deltas don't say where the next begins; `replay` splits them.
-- **An unsaved variation's runs are titled by their recipe**, as `case · diagnoses-tool · recommended (…) · off (…)`,
-  since the cell's label isn't stored.
 - **Only an item's first request is rendered again**; a later round's could be rebuilt from the stored responses and
   tool runs.
 

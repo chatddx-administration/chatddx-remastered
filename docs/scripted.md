@@ -77,6 +77,8 @@ src/chatddx/scripted/test/, marked `solidified`.
   judge calls of `judged`.
 - The repl's tests of looking back run the test World's scripted runs for runs to look at
   (src/chatddx/repl/test/test_reviewing.py).
+- `ran` (src/chatddx/conftest.py) is `curated` with alice's scripted runs each run once, copied for each test, for
+  tests that read runs they don't make: the portal's (src/chatddx/portal/test/test_reading.py).
 
 ## Terms
 
@@ -97,8 +99,6 @@ with the web patched in the process that runs the tools (`urllib.request.urlopen
 ### Smaller issues
 - **No scripted run sends a canary set.** `Bench.start` passes none (docs/bench.md, "Runs and scores"), though both
   data sets hold one.
-- **No tests start from runs already made.** A take: a database fixture beside `curated`, with the test World's
-  scripted runs run, copied for each test as `curated` is, once a test reads runs it doesn't make.
 - **A scripted run is one run.** `batch` is one run of four cases; a batch of trials, crossing variations, is the batch
   planner's (agents/wip-batch.md), and a scripted batch waits on it.
 - **`set` and `--again` have no test**, and no scripted run sets a part.

@@ -3,7 +3,7 @@
 The writes the bench makes for a person beyond configurations, runs and scores: chunks, recipes, appendices and the
 cases that order them, expectations, and what is said about a thread, from its name to whether it is deleted. They are
 the bench's, since every edge writes for a person through it (docs/bench.md, "Writes for the person"); the
-portal is the first edge to need them (agents/wip-portal.md, "Below the UI", "Phases" 4 and 5).
+portal is the first edge to need them (agents/wip-portal.md, "Below the UI", "Phases" 1 and 5).
 
 "Decided" means the user said so. "Take" is the agent's recommendation and still open.
 
@@ -452,7 +452,7 @@ Each with its tests in `src/chatddx/bench/test/` and the API's.
 6. **Appendices and cases**, built: the builders, a family's cases, replacement cases, and carrying an expectation
    over.
 7. **Typed cases**, built below the page, with the portal's swift (agents/wip-portal.md, "Typed cases", and its
-   phase 4).
+   phase 1).
 8. **Scorers**, built: the published entry points, their versions and their schemas (S1, S2), the code pin moved to
    them, views, parameters (S3), and labels on edits (S4).
 9. **Judges** (S6), built: written as any component, configurations listed by purpose in the API, and a judge

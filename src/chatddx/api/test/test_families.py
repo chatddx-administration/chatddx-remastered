@@ -117,5 +117,8 @@ def test_a_case_the_person_doesn_t_see_isn_t_found(
     ):
         got = signed.get(path, headers=bob)
         assert got.status_code == 404
-        assert got.json() == {"detail": f"no case {found['id']} for bob"}
+        assert got.json() == {
+            "detail": f"no case {found['id']} for bob",
+            "code": "not_found",
+        }
     assert signed.get("/api/families", headers=bob).json() == []

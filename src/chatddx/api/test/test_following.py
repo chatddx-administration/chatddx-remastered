@@ -32,7 +32,10 @@ def test_a_fork_follows_its_origin_once_it_has_moved_on(
     got = signed.post(follows, json={"head": mine["head"]["id"]})
     assert (got.status_code, got.json()) == (
         422,
-        {"detail": f"configuration {mine['id']} has nothing to follow"},
+        {
+            "detail": f"configuration {mine['id']} has nothing to follow",
+            "code": "refused",
+        },
     )
 
     origin = _moved(bench)

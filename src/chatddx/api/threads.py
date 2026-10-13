@@ -1,4 +1,4 @@
-from collections.abc import Generator
+from collections.abc import Generator, Mapping
 from contextlib import contextmanager
 from typing import Annotated
 
@@ -50,8 +50,14 @@ def edit_of(bench: Bench, edit: catalog.Edit, kind: str | None = None) -> schema
 
 
 def thread_of(
-    bench: Bench, kind: str, edit: catalog.Edit, about: catalog.About
+    bench: Bench,
+    kind: str,
+    edit: catalog.Edit,
+    about: catalog.About,
+    languages: Mapping[str, str | None] | None = None,
 ) -> schemas.Thread:
+    if languages is None:
+        languages = bench.catalog.languages_of([edit.digest])
     return schemas.Thread(
         id=edit.thread,
         kind=kind,
@@ -59,6 +65,7 @@ def thread_of(
         title=bench.catalog.title(edit.thread),
         owner=login(bench, about.owner),
         tags=sorted(about.tags),
+        language=languages[edit.digest],
         head=edit_of(bench, edit, kind),
     )
 
@@ -77,11 +84,17 @@ def threads(
         Purpose | None,
         Query(description="a configuration's, generation unless given"),
     ] = None,
+    answers: Annotated[
+        str | None,
+        Query(description="a configuration's: the title of its answer's JSON Schema"),
+    ] = None,
 ) -> list[schemas.Thread]:
     if kind not in KINDS:
         raise HTTPException(422, f"no kind {kind!r}: the kinds are {', '.join(KINDS)}")
     if purpose is not None and kind != "configuration":
         raise HTTPException(422, "only a configuration has a purpose")
+    if answers is not None and kind != "configuration":
+        raise HTTPException(422, "only a configuration answers")
     wanted = set(tag or ())
     found = {
         held: bench.deleted(held) if deleted else bench.visible(held)
@@ -92,14 +105,18 @@ def threads(
             held: bench.purposed(heads, purpose or "generation")
             for held, heads in found.items()
         }
-    return [
-        thread_of(bench, held, edit, about)
+    if answers is not None:
+        found = {held: bench.answering(heads, answers) for held, heads in found.items()}
+    shown = [
+        (held, edit, about)
         for held, heads in found.items()
         for edit, about in heads
         if (name is None or about.name == name)
         and (owner is None or login(bench, about.owner) == owner)
         and (not wanted or wanted & about.tags)
     ]
+    languages = bench.catalog.languages_of({edit.digest for _, edit, _ in shown})
+    return [thread_of(bench, *each, languages) for each in shown]
 
 
 def detail(bench: Bench, thread: int) -> schemas.ThreadDetail:
@@ -110,7 +127,6 @@ def detail(bench: Bench, thread: int) -> schemas.ThreadDetail:
         **thread_of(bench, found.kind, edit, about).model_dump(),
         description=about.description,
         collaborators=sorted(bench.login(c) for c in about.collaborators),
-        language=bench.catalog.language_of(edit.digest),
         forked_from=found.forked_from,
         recipe=None if recipe is None else recipe.model_dump(mode="json"),
         deleted=about.deleted,
@@ -168,7 +184,7 @@ def variation(
     bench: BenchDep, thread: int, query: Annotated[schemas.Varying, Query()]
 ) -> schemas.Variation:
     with refused():
-        varied = bench.variation(thread, query.given())
+        varied = bench.variation(thread, query.given(), query.head)
         skeleton = bench.skeleton(varied)
     seed = suggest_seeds(1)[0] if query.seed is None else query.seed
     families = bench.families(query.tag)
@@ -185,9 +201,12 @@ def variation(
     parts = None
     if varied.recipe is not None:
         parts = [part_of(bench, varied, p) for p in PARTS]
+    held = bench.holder("configuration", skeleton.digest)
     return schemas.Variation(
         head=edit_of(bench, varied.configuration, "skeleton"),
+        label=varied.label,
         skeleton=skeleton.digest,
+        held_by=None if held is None else thread_of(bench, "skeleton", *held),
         greedy=skeleton.greedy,
         parts=parts,
         seed=seed,
@@ -221,6 +240,15 @@ def check_given(configuration: bool, given: schemas.NewFork | schemas.NewEdit) -
         )
     if not configuration and given.parts.given():
         raise HTTPException(422, "only a configuration has parts")
+    if (
+        not configuration
+        and isinstance(given, schemas.NewFork)
+        and given.head is not None
+    ):
+        raise HTTPException(
+            422,
+            "only a configuration is forked from an edit: another kind from a component",
+        )
     if configuration and given.labels is not None:
         raise HTTPException(422, "only a scorer has labels")
 
@@ -252,7 +280,7 @@ def fork(
     check_given(configuration, given)
     with refused():
         if configuration:
-            varied = bench.variation(thread, given.parts.given())
+            varied = bench.variation(thread, given.parts.given(), given.head)
             saved = bench.fork(varied, given.name)
             forked = saved.variation.configuration.thread
             findings = bench.linted(saved.digest)

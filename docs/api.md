@@ -46,11 +46,12 @@ A configuration made per language or model is a thread under its full name, unti
 (agents/wip-variants.md).
 
 ## What a person sees
-- **Threads** of a kind, by the bench's word for it: configuration, each part, tool, scorer, judge, expectation,
-  appendix, expectation_schema, canary_set, model or engine. A thread gives its kind, name, title, owner, tags and
-  head, and on its own also its description, collaborators, language, the edit it was forked from, whether it is
-  deleted, and for a configuration its recipe. Its versions come oldest first. Configurations are listed by purpose,
-  those that give answers unless the judges' are asked for, since a judge configuration is no use at a run.
+- **Threads** gives its kind, name, title, owner, tags and head, and on its own also its description, collaborators,
+  language, the edit it was forked from, whether it is deleted, and for a configuration its recipe.
+  Its versions come oldest first. Configurations are listed by purpose, those that give answers unless the judges'
+  are asked for, since a judge configuration is no use at a run.
+  A configuration can also be asked for by what it answers: the title of its answer's JSON Schema, such as
+  `management_plan_v1`.
 - **Families**, each with the case of its current vignette, filtered by tag or name. A family on its own adds its
   description and collaborators, the case's appendices, and, under each expectation schema the person sees, the
   expectation its case is scored against: their own, so a schema under which they only see shared ones has none
@@ -63,25 +64,29 @@ A configuration made per language or model is a thread under its full name, unti
   it takes at once, its credential's name, and the sources it is cleared for. One whose engine isn't stored, or whose
   URL can't be told, says why rather than failing the listing.
 - **Models**: what the facts know of each, and the endpoints serving it.
-- **Components**: any stored component by its digest, with its kind and title. These are the same for everyone.
+- **Components**: any stored component by its digest, with its kind and title; and the kinds of component, each
+  with the bench's word for it, whether a person writes it, and its JSON Schema, in which a reference names the kinds
+  it takes (`x-kind`). These are the same for everyone.
 
 A thread, family or run the person doesn't see is "not found", the same as one that doesn't exist. Their own deleted
 threads are listed apart, and each can still be read by its id, with its versions, so that it can be restored.
 
 ## Trying a variation
 A configuration's variation is the configuration with some of its parts replaced. A request states it whole each
-time: the configuration's id, and each part to replace with the digest of a chunk of that part, or with nothing, to
-take an optional part out. Nothing is stored by looking. The configuration means its head when the request comes, so
-a variation looked at and one run moments later can differ if the configuration moved in between; each run records
-the skeleton it ran.
+time and nothing is stored by looking.
+
+The latest configuration means its head when the request comes (unless an edit is given) so a variation looked at and
+one run moments later can differ if the configuration moved in between; each run records the skeleton it ran.
 
 A look at a variation gives:
-- the head it was built on, the digest of the skeleton it compiles to, and whether its sampling is greedy;
-- each part's chunk, its title and what it holds, and whether it was replaced;
-- the request it would send, with placeholders for the case and, without an endpoint, for the model;
-- a seed, drawn from the trial's whole range unless one is given, and given back so a run can send the same;
+- the edit it was built on, its label (`NAME+PART=CHUNK`, `docs/bench.md`, "The variation being tried"), the digest
+  of the skeleton it compiles to, the configuration whose head that skeleton is, the person's own first, and whether
+  its sampling is greedy.
+- each part's chunk, its title and what it holds, and whether it was replaced.
+- the request it would send, with placeholders for the case and, without an endpoint, for the model.
+- a seed, drawn from the trial's whole range unless one is given, and given back so a run can send the same.
 - at an endpoint, the lints of it as a trial over the cases with any of the given tags, else over every case the
-  person sees; where no case has the tags, over one case the person sees, without the cases' languages;
+  person sees; where no case has the tags, over one case the person sees, without the cases' languages.
 - for each view of each scorer, whether the variation's output offers what the view reads, which families have no
   expectation it picks something from, and which have several to choose from.
 
@@ -93,11 +98,17 @@ A variation the bench refuses is unprocessable: a digest that isn't a stored chu
 taken out, parts that don't compile together, or a parameter the request doesn't know, so that a misspelt part is
 refused rather than ignored. A look's queries don't grow with the number of cases it is over.
 
+## Checking a component
+A component of a kind a person writes is checked as a write would store it, and nothing is written: its rules, its
+references, which must be stored, the rules that take several components, and a scorer's code and parameters. It
+gives back the digest it would have and what the lints say of it, or is refused as the write would be. An edge checks
+what a person types as they type it.
+
 ## Forking and editing
 Keeping a variation is two requests, rather than one save by name as the repl's `save NAME` is, which makes a new
 version of the person's configuration of that name if there is one, and a new configuration otherwise:
-- **Fork** any configuration the person sees, with parts replaced and a name, into a new configuration of their own.
-  Names needn't be unique, so forking twice under one name makes two configurations.
+- **Fork** any configuration the person sees, with parts replaced and a name, into a new configuration of their own,
+  from its head or from an earlier edit of it given; an edit of another configuration is "not found".
 - **Edit** a configuration of their own, with parts replaced over its head: a new version, or nothing when the
   variation is the head already, which is answered as such. Another's configuration can't be edited, and is "not
   found" as "no configuration N of yours".
@@ -157,10 +168,16 @@ A person is scored against their own expectations only, so they take the shared 
 
 ## Runs
 ### Starting one
-A run is a configuration's variation, at an endpoint, on the cases of some families, picked by id or by tag, or on
-cases named by digest, each one of a family's current cases, with one seed, drawn from the trial's whole range unless
-given. A family stands for its default case, because a family is what the person sees and picks; a case with
-appendices is named. The run gives back the cases' digests.
+A run is a configuration's variation, of its head or of an earlier edit given, at an endpoint, on the cases of some
+families, picked by id or by tag, or on cases named by digest, each one of a family's current cases, with one seed,
+drawn from the trial's whole range unless given.
+
+A family stands for its default case, because a family is what the person sees and picks; a case with
+appendices is named. The run gives back the cases' digests, and is named by the variation's label, `NAME+PART=CHUNK`,
+which titles it from then on.
+
+A person starts at most `settings.RUNS_PER_DAY` runs a day, and a run holds at most `settings.ITEMS_PER_RUN` items;
+past either the run is refused as over quota.
 
 The run is started within the request, so whatever refuses it does so before anything is sent. The gate refuses an
 endpoint that doesn't serve the trial's engine, isn't cleared for a sensitive source among the cases', or lacks its
@@ -179,13 +196,13 @@ until another job of the run takes its place, and ends with the process. The wor
 as it is (agents/wip-worker.md). Its rows land as they are written, so a run can be read back at any point.
 
 ### Its events
-`GET /api/runs/{id}/events` streams what is under way for the run, from its start, and then as it comes, ending with
-`done`; it is sent unbuffered and uncached, so a proxy passes it on as it comes. Each event has an `id`, its place in
-the job, and its data is one line of JSON, whose models are among the OpenAPI document's schemas. A stream asked for
-with `Last-Event-ID`, as `EventSource` asks again, goes on after it. A delta is kept until its item or judge call has
-ended, so a stream joined late has every event but the deltas of what ended before it joined. A run with nothing in
-the app's process, as one started before it or elsewhere, is told from the ledger: its items as they ended, with no
-deltas or judge calls, its finish, its latest scores, and `done`.
+`GET /api/runs/{id}/events` streams what is under way for the run as it comes, ending with `done`.
+Each event has an `id`, its place in the job, and its data is one line of JSON, whose models are among the OpenAPI
+document's schemas. A delta is kept until its item or judge call has ended, so a stream joined late has every event
+but the deltas of what ended before it joined.
+
+A run with nothing in the app's process, as one started before it or elsewhere, is told from the ledger:
+its items as they ended, with no deltas or judge calls, its finish, its latest scores, and `done`.
 
 | Event | When | Holds |
 | --- | --- | --- |
@@ -211,6 +228,11 @@ deltas or judge calls, its finish, its latest scores, and `done`.
 An item's outcome is stopped, errored, unread, salvaged, completed, invalid or valid, by its last call and the answer
 read from it; salvaged is a structured answer cut short, read with its structure closed.
 
+### Running again
+A run of the person's runs again with another seed, given or drawn: its trial's skeleton and cases at its endpoint,
+as a run of its own named as the run is, so that a run of a variation nobody saved can be run again without its
+variation. It is started, refused, limited and followed as any run.
+
 ### Halting
 A person halts what is under way for a run of theirs: the calls under way are hung up and recorded as stopped, the
 run is finished, and it isn't scored, so it is left to score; a scoring under way finishes the score it is on with
@@ -226,8 +248,9 @@ under way is a conflict.
 - **A run's scores**: the latest under each scorer, or every one, newest first, or one by its id. A score says its
   scoring, when it started and whether it finished, each item's value under each view, and each view's mean.
 - **A score's items**: each item's detail and judge calls, and the findings of the score. They are case-derived.
-- **A run's items**: each call as it was recorded, with its response and tool rounds, and why the item ended as it
-  did. They are case-derived.
+- **A run's items**: each call as it was recorded, with its response and tool rounds, why the item ended as it did,
+  and its answer as read from its last call, as the scorers read it, with why it couldn't be read or breaks its schema.
+  They are case-derived.
 - **Whether each item renders again** as it was sent: only a request's fingerprint is kept, so the request is
   rendered again from the trial and the source, and compared.
 
@@ -255,21 +278,31 @@ can gate those few when clearance has one (agents/wip-clearance.md):
 - a run's events: the deltas, the tool runs, why each item ended, and the scoring's items, judge calls and
   findings.
 
+Each is sent with `Cache-Control: no-store`, so that a browser keeps none of it.
+
 Nothing else carries any. Why an item ended can quote the answer, since checking it against a schema names the value
 it refused, so it is in the items and the events only. For the same reason a score gives values, and its detail,
 judge calls and findings are its items'.
 
 ## Errors
-A refusal's body is `{"detail": "…"}`, except where a request doesn't validate: then it lists where.
+A refusal's body is `{"detail": "…", "code": "…"}`. The detail says why, or, where a request doesn't validate, lists
+where. The code says what it is:
 
-| Status | When |
-| --- | --- |
-| 401 | No session, one that has ended, or a wrong login or password. |
-| 403 | A cookie's request that changes something, or a sign-in, from another site's page. |
-| 404 | What the path names isn't there or isn't seen by the person, a thread is of another kind than the route takes, a source doesn't hold a vignette, or a thread to edit, follow, carry or say something of isn't the person's. |
-| 409 | Taking an expectation the person has their own of, without saying to replace it; an edit, a follow or a carry whose head has moved on; scoring a run with something under way, and halting one with nothing under way. |
-| 422 | A request that doesn't validate or names a field it shouldn't; a kind that isn't one, or a purpose for what isn't a configuration; a variation the bench refuses; a query or body naming what the person doesn't see; tags no case has; the gate's refusal of a run; taking an expectation that is the person's already; a component the bench refuses, or parts for what isn't a configuration and a component for what is; what is said of a thread that the bench refuses, or of a deleted one; following with nothing to follow; a case of appendices or a replacement the bench refuses; carrying an expectation outside its family; a run naming a case that isn't a current one of a family the person sees; a run of a judge configuration; scoring a run that hasn't finished, by a scorer that doesn't apply to it, or one nothing applies to. |
-| 429 | A person who has typed as many cases as a day takes. |
+| Code | Status | When |
+| --- | --- | --- |
+| `unauthenticated` | 401 | No session, one that has ended, or a wrong login or password. |
+| `cross_site` | 403 | A cookie's request that changes something, or a sign-in, from another site's page. |
+| `not_found` | 404 | What the path names isn't there, or isn't the person's to see. |
+| `not_allowed` | 405 | A method the path doesn't take. |
+| `ambiguous` | 409 | Several where the bench is asked for one. |
+| `conflict` | 409 | Taking an expectation the person has their own of, without saying to replace it; scoring a run with something under way, and halting one with nothing under way. |
+| `moved_on` | 409 | An edit, a follow or a carry whose head has moved on. |
+| `unprocessable` | 422 | A request that doesn't validate, or names a field it shouldn't; the detail lists where. |
+| `refused` | 422 | What the API, the bench or the gate refuses: the rest of 422. |
+| `over_quota` | 429 | A person who has typed as many cases as a day takes. |
+| `error` | any other | |
+
+The OpenAPI document holds the body as the schema `Error`.
 
 An edit that changes nothing is answered 200 with the head; what is made is answered 201; a deletion and a halt 204;
 a run or a scoring started 202. What fails once it is under way is an `error` event, not a status. A take for
@@ -319,12 +352,6 @@ and of leaving a stream serve the app with uvicorn on a thread, and speak to it 
 Left for later, each with what holds and the take on it, the agent's recommendation, which waits for a word. The
 bench's are in docs/bench.md, "Outstanding".
 
-### A quiet stream
-A run's events send nothing while an engine takes its time with a first token, or a judge with a verdict, and a
-proxy cuts a connection that is quiet too long: nginx's `proxy_read_timeout` is 60 s by default. A stream cut is
-joined again after the last id it had, which `EventSource` does by itself, so nothing is lost, but a reader that isn't
-a browser has to. Take: a comment line, `: keep-alive`, every 15 s, which event readers skip.
-
 ### Takes the API is built on
 Built as the takes of the plan at 100a078 had them, and not confirmed since. Decided there: who it is for, kept open;
 FastAPI and uvicorn; signing in; and case-derived content in places of its own. Decided since: where a run runs and
@@ -334,10 +361,8 @@ its events (see "Where it runs" and "Its events").
   stored by looking. A run may come to name the skeleton its look gave, and be refused when the variation compiles to
   another by then, as an edit names its head.
 - **Scoring**: at once after a run, with an opt-out, and the runs left to score listed.
-- **Errors**: the bench's errors mapped by class, and what else a route means caught where it means it. 409 means
-  three things and 422 many, told apart by their messages. Take: a `code` beside `detail` (`moved_on`, `conflict`,
-  `ambiguous`, `over_quota`, `refused`, `not_found`, `unprocessable`), so that a portal can offer the head an edit
-  moved on to without reading a sentence.
+- **Errors**: the bench's errors mapped by class, and what else a route means caught where it means it, each answered
+  with a code beside its detail (see "Errors").
 - **Keeping a variation**: a fork and an edit, two requests, rather than a save by name.
 - **Paths**: under `/api/`, with no version until there is a second.
 
@@ -371,10 +396,6 @@ its events (see "Where it runs" and "Its events").
 ### Variations
 - **Variants.** A client finds `plan (en, Qwen/Qwen3-8B-AWQ)` by its full name. Take: so until variants are recorded
   (agents/wip-variants.md, option B), then filters by what a thread is a variant of, its model and its language.
-- **An unsaved variation's runs are titled by their whole recipe**, as the repl's are (docs/catalog.md, "A variation
-  nobody saved has a long title"). Take: the variation's label kept as the run's name as it starts, a name entry on
-  the run, which `Bench.described` reads first.
-
 ### Writes
 - **Carrying answers 201 even when nothing changes**: an expectation carried onto the case it is of already is kept
   `unchanged`, which an edit answers 200. Take: 200, as an edit.

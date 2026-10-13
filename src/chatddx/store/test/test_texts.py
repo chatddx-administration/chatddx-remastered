@@ -10,7 +10,7 @@ from chatddx.inventory import DatabaseSource, DirectorySource, Inventory
 from chatddx.store import People, Texts, fetch_vignette
 from chatddx.store.store import Connection
 
-pytestmark = pytest.mark.wip
+pytestmark = pytest.mark.solidified
 
 
 def test_a_database_source_s_texts_are_kept_and_fetched_through_the_store(
