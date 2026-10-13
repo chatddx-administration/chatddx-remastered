@@ -333,15 +333,10 @@ too, after the run has started.
 
 ## components.py
 
-```
-AGENT: add
-A row after `component`, for checking one without writing it.
----
-| `check(component: Component) -> Checked` | `Checked(digest, findings)`: the component as a write would store it, an appendix bound (`bound`), a scorer held to its code (`check_scorer`), its references loaded and `Registry.check`ed with it, and `chatddx.facts.lints` of it. Nothing is written. `ValueError("a person doesn't write <kind> components")`, the check's `StructuralError` and the others' errors. |
-```
 | Write | Returns / raises |
 | --- | --- |
 | `component(doc: Mapping[str, JsonValue]) -> Component` | Takes no `Seen`. The component `doc` holds, as `GET /api/components` gives its body: of the model `BY_KIND[doc["kind"]]`, with `v`, when given, its schema version. `ValueError("<kind!r> isn't a kind a person writes: the kinds are …")` for a kind not in `WRITTEN`, `ValueError("<kind> is at v<n>, not v<v>")`, and the model's `ValidationError`. |
+| `check(component: Component) -> Checked` | `Checked(digest, findings)`: the component as a write would store it, an appendix bound (`bound`), a scorer held to its code (`check_scorer`), its references loaded and `Registry.check`ed with it, and `chatddx.facts.lints` of it. Nothing is written. `ValueError("a person doesn't write <kind> components")`, the check's `StructuralError` and the others' errors. |
 | `new(component: Component \| Recipe, name: str, language: str \| None = None, labels: Labels \| None = None) -> Written` | `component` as a new thread of the person's own named `name`, without an origin, a scorer with `labels`. A `Recipe` is compiled by the running code (`Seen.compiled`) and kept with `Catalog.create(skeleton, compilation=…)` in one transaction, `what` `"created"`: `ValueError(COMPILED_LANGUAGE)` for a language, `ValueError("only a scorer's views and resources have labels")` for labels, `ValueError("<digest> isn't a stored chunk of <part>")` for a part that isn't, and the compiler's errors, such as `StructuralError("generation prompt in a judge recipe")`. |
 | `fork_component(thread: int, name: str, component: Component \| None = None, language: str \| None = None, labels: Labels \| None = None) -> Written` | A new thread of the person's own named `name`, forked from the head of `thread`, a thread they see (`NotFound("no <word> <thread> for <login>")`), holding `component`, else the head. A scorer forked as it is, with no labels given, keeps the head's (`Catalog.labels`). |
 | `edit_component(thread: int, head: int, component: Component, language: str \| None = None, labels: Labels \| None = None) -> Written` | `component` as a new version of `thread`, which the person owns (`NotFound("no <word> <thread> of yours")`) and whose head was `head` (`MovedOn`); `unchanged` when it is the head already, which for a scorer given labels means its labels too. A scorer edited without labels keeps none, unless it is the head's, which is then `unchanged`. |

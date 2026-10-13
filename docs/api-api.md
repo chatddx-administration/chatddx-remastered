@@ -285,19 +285,14 @@ variation's query parameters to them with `endpoint`, `tag` and `seed`.
 | --- | --- |
 | `endpoint_of(bench, name: str, spec: EndpointSpec) -> schemas.Endpoint` | The spec as the inventory declares it, with `Bench.endpoint`, `Bench.title`, `Bench.model` and `url_of`; a `LookupError` from any of them is given as `problem`, its message, with what comes after it `None`: `title`, `model` and `url` for an engine that isn't stored, `url` alone for one `url_of` can't tell. |
 
-```
-AGENT: add
-Rows after `component`, for the kinds and a check.
----
-| `kinds`, `GET /kinds` | A `Kind` for each kind in `chatddx.bench.KINDS`: its word, whether it is in `WRITTEN`, and `BY_KIND[kind].model_json_schema()`. |
-| `check`, `POST /components/check` | Within `refused()`: `Bench.check(Bench.component(body))`, a `LookupError` as `HTTPException(422)`. The digest and its findings. |
-```
 | Route | Does |
 | --- | --- |
 | `endpoints`, `GET /endpoints` | `endpoint_of` each of the inventory's endpoints, by name. |
 | `endpoint`, `GET /endpoints/{name}` | `Inventory.endpoint`, whose `LookupError` is raised as `NotFound`, then `endpoint_of`. |
 | `models`, `GET /models` | Each model the facts know or an endpoint serves, by name, with its facts dumped or `None`, and the endpoints serving it (`Bench.model` of `Bench.endpoint`, skipping an endpoint whose engine isn't stored). |
 | `component`, `GET /components/{digest}` | `Rows.kind`; `NotFound("no component <digest> in the store")` when it is `None`. The kind, `Bench.title` and `Bench.get` dumped. |
+| `kinds`, `GET /kinds` | A `Kind` for each kind in `chatddx.bench.KINDS`: its word, whether it is in `WRITTEN`, and `BY_KIND[kind].model_json_schema()`. |
+| `check`, `POST /components/check` | Within `refused()`: `Bench.check(Bench.component(body))`, a `LookupError` as `HTTPException(422)`. The digest and its findings. |
 | `scorer_code`, `GET /scorer-code` | Each of `chatddx.scorers.shipped.SCORERS` by entry point, its metrics by name; an entry point that publishes no schema for the scorer's own params gives `NO_PARAMS`, which allows none. Signed in, as every route here. |
 
 ## runs.py
