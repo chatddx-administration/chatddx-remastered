@@ -113,10 +113,6 @@ replay
 ```
 
 ### Kompismoln's hosts
-````
-AGENT: replace
-`import-engine` writes `--engines` (was `--factors`), and Kompismoln's file is `engines.toml`.
----
 On the Kompismoln VPN, ask pelle and malborg what they serve:
 ```sh
 curl -s http://pelle.km:12009/v1/models
@@ -124,16 +120,6 @@ curl -s http://malborg.km:12009/v1/models
 chatddx import-engine http://pelle.km:12008/ http://malborg.km:12008/ \
   --engines /tmp/engines.toml --endpoints /tmp/endpoints.toml
 git diff --no-index worlds/kompismoln/engines.toml /tmp/engines.toml
-git diff --no-index worlds/kompismoln/endpoints.toml /tmp/endpoints.toml
-```
-````
-On the Kompismoln VPN, ask pelle and malborg what they serve:
-```sh
-curl -s http://pelle.km:12009/v1/models
-curl -s http://malborg.km:12009/v1/models
-chatddx import-engine http://pelle.km:12008/ http://malborg.km:12008/ \
-  --factors /tmp/factors.toml --endpoints /tmp/endpoints.toml
-git diff --no-index worlds/kompismoln/factors.toml /tmp/factors.toml
 git diff --no-index worlds/kompismoln/endpoints.toml /tmp/endpoints.toml
 ```
 No diff means the hosts still serve the engines `worlds/kompismoln` pins. Both are cleared for the sample's

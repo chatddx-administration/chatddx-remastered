@@ -32,24 +32,12 @@ endpoints and sources that exist, and that each source is named by its table. An
 checked when an entry is used (see "Checks happen when an entry is used").
 
 ### Worlds
-```
-AGENT: replace
-A World's models and engines are in its `engines.toml`, which holds nothing else, and a data set's `factors.toml`
-holds no engines (agents/wip-data.md, D1).
----
 A World is handed over as its directory, `--world DIR`, and read as its `inventory.toml` and, when present,
 `engines.toml`, the models and engines its endpoints serve and nothing else, and `facts.toml`, facts about models the
 bundled ones don't know, loaded beside them by init-data and the repl (src/chatddx/inventory/world.py,
 src/chatddx/cli.py). A World may also hold its source's vignettes, when git may hold them, a data set whose cases
 name them, in `_data/`, and scripted runs, in `_runs/` (agents/wip-scripted.md): the leading `_` marks what the World
 doesn't read and doesn't own. init-data loads `_data/` unless `--data` names another.
-```
-A World is handed over as its directory, `--world DIR`, and read as its `inventory.toml` and, when present,
-`factors.toml` and `facts.toml`, facts about models the bundled ones don't know, loaded beside them by init-data
-and the repl (src/chatddx/inventory/world.py, src/chatddx/cli.py). A World may also hold its source's vignettes,
-when git may hold them, a data set whose cases name them, in `_data/`, and scripted runs, in `_runs/`
-(agents/wip-scripted.md): the leading `_` marks what the World doesn't read and doesn't own. init-data loads `_data/`
-unless `--data` names another.
 
 `CHATDDX_WORLD` names the deployment's World directory and is the default `--world` of `init-data` and the `repl`
 (src/chatddx/core/settings.py:world, `.env`). The runner is handed its inventory by the bench, as before.
@@ -157,18 +145,9 @@ The hosts run vLLM through o11n (Kompismoln/o11n). Each server runs in a contain
 engine's values come from its host, not from people: the engine import reads each host's report and writes the
 factors and the inventory entries together.
 
-```
-AGENT: replace
-The import writes the World's `engines.toml` (`--engines`, was `--factors`).
----
 For each server, the import writes the model artifact, the local engine, the endpoint, and where the host keeps the
 model and the template, all named server@host after the report's host name. The models and engines go to the World's
 `engines.toml`, and the endpoints and hosts to a file an inventory includes. Both files are rewritten whole, so to
-change them, import again rather than edit.
-```
-For each server, the import writes the model artifact, the local engine, the endpoint, and where the host keeps the
-model and the template, all named server@host after the report's host name. The factors go to a file `init-data` takes
-beside the data's, and the endpoints and hosts to a file an inventory includes. Both files are rewritten whole, so to
 change them, import again rather than edit.
 
 The endpoint's address is the report's, or a host name given in its place, with the server's port. The host's

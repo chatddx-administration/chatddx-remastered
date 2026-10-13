@@ -264,15 +264,8 @@ engine's `model` (`served_model_name`). In order:
    name>")`.
 
 ## `world.py`
-```
-AGENT: replace
-The field and the file are the World's engines now.
----
 `World(path, inventory, engines=(), facts=())`, frozen; `World.load(path)` reads `path / "inventory.toml"` and
 takes `engines.toml` and `facts.toml` beside it when they're files;
-```
-`World(path, inventory, factors=(), facts=())`, frozen; `World.load(path)` reads `path / "inventory.toml"` and
-takes `factors.toml` and `facts.toml` beside it when they're files;
 `LookupError("<path> is no World: it holds no inventory.toml")` without one.
 
 ## `check.py`
@@ -291,15 +284,7 @@ shared addresses, hosts, clearance. A finding's subject is the endpoint's or the
 | `cleared.not_sensitive` | info | an endpoint is cleared for a source that isn't sensitive |
 
 ## Worlds
-```
-AGENT: replace
-The models and engines are in `engines.toml`. (This section's table is older than the test World and the sample's
-remote endpoint; that is left to you.)
----
 A World is a directory with `inventory.toml`, the files it includes, and `engines.toml`, the models and engines its
-endpoints serve. `worlds/` holds two:
-```
-A World is a directory with `inventory.toml`, the files it includes, and `factors.toml`, the models and engines its
 endpoints serve. `worlds/` holds two:
 
 | World | Sources | Endpoints | Hosts | `[cleared]` |
@@ -307,14 +292,7 @@ endpoints serve. `worlds/` holds two:
 | `worlds/sample/` | `sample`, `path = "vignettes"`, sensitive | `qwen3-8b-awq@fake` (port 12099), `gpt-oss-20b@fake` (port 12100), `max_jobs = 4` | `fake`: `bind = "127.0.0.1"`, models by repo ID, the empty template at `/dev/null` | both endpoints for `sample` |
 | `worlds/kompismoln/` | `sample`, `path = "../sample/vignettes"`, sensitive | from `endpoints.toml`: `qwen3-8b@pelle` (`max_jobs = 1`), `gpt-oss-20b@malborg` (`max_jobs = 4`) | from `endpoints.toml`: `pelle`, `malborg`, `bind = "::"` | both endpoints for `sample` |
 
-```
-AGENT: replace
-A World's models and engines are in its `engines.toml`, which holds nothing else, and a data set's `factors.toml`
-holds no engines (agents/wip-data.md, D1).
----
 `endpoints.toml` and `engines.toml` in `worlds/kompismoln/` are what `chatddx import-engine` writes.
-```
-`endpoints.toml` and `factors.toml` in `worlds/kompismoln/` are what `chatddx import-engine` writes.
 
 `test/test_serving.py:test_the_sample_world_binds_each_fake_engine_the_sample_loads` asserts the check finds
 nothing in the sample World against the sample's plan.
