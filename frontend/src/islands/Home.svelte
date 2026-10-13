@@ -11,7 +11,9 @@
   import { Label } from "$lib/components/ui/label";
   import * as NativeSelect from "$lib/components/ui/native-select";
   import { Textarea } from "$lib/components/ui/textarea";
-  import { api, follow, type Schemas, why } from "$lib/api/client";
+  import { api, type Schemas, why } from "$lib/api/client";
+  import { watch } from "$lib/runs/events";
+  import { begun, fold } from "$lib/runs/progress";
   import ManagementPlan from "$lib/plan/ManagementPlan.svelte";
   import { isPlan, PLAN } from "$lib/plan/types";
 
@@ -24,7 +26,8 @@
   let configuration = $state<number>();
   let endpoint = $state<string>();
   let phase = $state<Phase>("idle");
-  let streamed = $state<{ kind: string; tokens: number } | null>(null);
+  let progress = $state(begun());
+  const streamed = $derived(progress.items[0]?.kind ? progress.items[0] : null);
   let failure = $state<string | null>(null);
   let item = $state<Schemas["ItemDetail"] | null>(null);
 
@@ -67,7 +70,7 @@
     if (configuration === undefined || endpoint === undefined || !text.trim()) return;
     failure = null;
     item = null;
-    streamed = null;
+    progress = begun();
     try {
       phase = "typing";
       const typed = await api.POST("/api/families", { body: { text } });
@@ -78,15 +81,8 @@
       });
       if (!started.data) throw new Error(why(started.error));
       const run = started.data.run;
-      await follow(run, {
-        "item.delta": (data) => {
-          const delta = data as Schemas["ItemDeltaData"];
-          streamed = { kind: delta.kind, tokens: delta.tokens };
-        },
-        error: (data) => {
-          failure = (data as Schemas["ErrorData"]).detail;
-        },
-      });
+      await watch(run, (name, data) => fold(progress, name, data));
+      if (progress.errors.length) failure = progress.errors.join("; ");
       phase = "reading";
       const items = await api.GET("/api/runs/{run}/items", { params: { path: { run } } });
       if (!items.data) throw new Error(why(items.error));

@@ -160,6 +160,17 @@ A person is scored against their own expectations only, so they take the shared 
 
 ## Runs
 ### Starting one
+```
+AGENT: change
+A run can vary an earlier edit, as a look and a fork can; it is named by its variation's label; and runs are limited.
+---
+A run is a configuration's variation, of its head or of an earlier edit given, at an endpoint, on the cases of some
+families, … The run gives back the cases' digests, and is named by the variation's label, `NAME+PART=CHUNK`, which
+titles it from then on.
+
+A person starts at most `settings.RUNS_PER_DAY` runs a day, and a run holds at most `settings.ITEMS_PER_RUN` items;
+past either the run is refused as over quota.
+```
 A run is a configuration's variation, at an endpoint, on the cases of some families, picked by id or by tag, or on
 cases named by digest, each one of a family's current cases, with one seed, drawn from the trial's whole range unless
 given. A family stands for its default case, because a family is what the person sees and picks; a case with
@@ -182,6 +193,13 @@ until another job of the run takes its place, and ends with the process. The wor
 as it is (agents/wip-worker.md). Its rows land as they are written, so a run can be read back at any point.
 
 ### Its events
+```
+AGENT: change
+The stream is kept alive while nothing comes (see "Outstanding", "A quiet stream", which this replaces).
+---
+… ending with `done`; it is sent unbuffered and uncached, so a proxy passes it on as it comes, and a comment line,
+`: keep-alive`, is sent every 15 s while nothing else is, so that a proxy doesn't cut it. …
+```
 `GET /api/runs/{id}/events` streams what is under way for the run, from its start, and then as it comes, ending with
 `done`; it is sent unbuffered and uncached, so a proxy passes it on as it comes. Each event has an `id`, its place in
 the job, and its data is one line of JSON, whose models are among the OpenAPI document's schemas. A stream asked for
@@ -214,6 +232,15 @@ deltas or judge calls, its finish, its latest scores, and `done`.
 An item's outcome is stopped, errored, unread, salvaged, completed, invalid or valid, by its last call and the answer
 read from it; salvaged is a structured answer cut short, read with its structure closed.
 
+```
+AGENT: add
+A section before "Halting", for running a run again.
+---
+### Running again
+A run of the person's runs again with another seed, given or drawn: its trial's skeleton and cases at its endpoint,
+as a run of its own named as the run is, so that a run of a variation nobody saved can be run again without its
+variation. It is started, refused, limited and followed as any run.
+```
 ### Halting
 A person halts what is under way for a run of theirs: the calls under way are hung up and recorded as stopped, the
 run is finished, and it isn't scored, so it is left to score; a scoring under way finishes the score it is on with
@@ -333,6 +360,10 @@ and of leaving a stream serve the app with uvicorn on a thread, and speak to it 
 Left for later, each with what holds and the take on it, the agent's recommendation, which waits for a word. The
 bench's are in docs/bench.md, "Outstanding".
 
+```
+AGENT: remove
+Built: a run's events are kept alive (see "Its events").
+```
 ### A quiet stream
 A run's events send nothing while an engine takes its time with a first token, or a judge with a verdict, and a
 proxy cuts a connection that is quiet too long: nginx's `proxy_read_timeout` is 60 s by default. A stream cut is
@@ -383,6 +414,10 @@ its events (see "Where it runs" and "Its events").
 ### Variations
 - **Variants.** A client finds `plan (en, Qwen/Qwen3-8B-AWQ)` by its full name. Take: so until variants are recorded
   (agents/wip-variants.md, option B), then filters by what a thread is a variant of, its model and its language.
+```
+AGENT: remove
+Built as the take had it: a run is named by its variation's label as it starts (see "Starting one").
+```
 - **An unsaved variation's runs are titled by their whole recipe**, as the repl's are (docs/catalog.md, "A variation
   nobody saved has a long title"). Take: the variation's label kept as the run's name as it starts, a name entry on
   the run, which `Bench.described` reads first.

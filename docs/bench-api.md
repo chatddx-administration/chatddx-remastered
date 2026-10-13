@@ -106,6 +106,14 @@ from.
 (`chatddx.catalog.threads.check_head`).
 
 ### `class OverQuota(ValueError)`
+```
+AGENT: change
+`OverQuota` also holds runs.
+---
+The person has written or started as much of something as a day takes, typed cases
+(`chatddx.core.settings.TYPED_PER_DAY`) or runs (`RUNS_PER_DAY`), or a run would hold more items than one takes
+(`ITEMS_PER_RUN`).
+```
 The person has written as much of something as a day takes: typed cases (`chatddx.core.settings.TYPED_PER_DAY`).
 
 ### `class Conflict(ValueError)`
@@ -274,6 +282,12 @@ qualified, `<owner's login>/NAME` (`_qualified`, which gives nothing for a threa
 
 #### Runs and scores
 
+```
+AGENT: change
+The row for `described`, which reads the run's name first.
+---
+| `described(run: RunStarted) -> str` | `<the run's name, else the skeleton's title> × <endpoint, or the engine's title> × <the case's title, or "<n> cases"> (seed <seeds>)`. |
+```
 | Method | Returns / raises |
 | --- | --- |
 | `runs() -> list[RunStarted]` | The runs the person owns and that aren't deleted, newest first, from the subjects whose entries ever named them (`Catalog.involving`). A collaborator on a run doesn't see it. |
@@ -410,6 +424,18 @@ added or withdrawn, and deleting.
 
 ## runs.py
 
+```
+AGENT: change
+The row for `start`, which holds the person to the limits and names the run.
+---
+| `start(variation: TriedVariation, endpoint: str, cases: list[str], seed: int) -> Running` | … `ValueError("<label> is a judge configuration: …")` before anything else; then `OverQuota("a run holds at most <ITEMS_PER_RUN> items, not <n>")`, and `OverQuota("<login> has started <n> runs in the last day, as many as a day takes")` once `Catalog.runs_started` a day ago reaches `RUNS_PER_DAY`; `endpoint`'s errors, the runner's and its gate's. Once started, a `name` entry on the run holds `variation.label`. |
+```
+```
+AGENT: add
+A row for `again`, beside `start`.
+---
+| `again(run: RunStarted, seed: int) -> Running` | The run's trial's skeleton and cases at the run's endpoint with `seed`, started as `start` starts a variation, held to the same limits, and named by the run's name, else its skeleton's title. `ValueError("run <id> was sent to no endpoint, so it can't run again")` for a run without one. |
+```
 | Write | Returns / raises |
 | --- | --- |
 | `start(variation: TriedVariation, endpoint: str, cases: list[str], seed: int) -> Running` | The variation's trial on the engine `endpoint(endpoint)` gives, started by a `Runner` for the person at that endpoint, under the default execution. Nothing is sent until `Running.send`. `ValueError("<label> is a judge configuration: a judge is asked as runs are scored, and isn't run on cases")` before anything else; `endpoint`'s errors, the runner's and its gate's. |

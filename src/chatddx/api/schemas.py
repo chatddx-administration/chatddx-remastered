@@ -458,8 +458,19 @@ class ScorerCode(_Schema):
     )
 
 
+class NewAgain(_Schema):
+    seed: int | None = Field(None, description="drawn when not given")
+    score: bool = Field(
+        True, description="under every scorer that applies, once it is finished"
+    )
+
+
 class NewRun(_Schema):
     configuration: int
+    head: int | None = Field(
+        None,
+        description="the edit it varies, by id: the configuration's head unless given",
+    )
     parts: Parts = Parts()
     endpoint: str
     families: list[int] | None = Field(None, description="the cases to run, by family")

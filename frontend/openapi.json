@@ -1935,6 +1935,67 @@
         }
       }
     },
+    "/api/runs/{run}/again": {
+      "post": {
+        "tags": [
+          "runs"
+        ],
+        "summary": "Again",
+        "operationId": "again_api_runs__run__again_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          },
+          {
+            "APIKeyCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "run",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Run"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NewAgain"
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "The run's trial started again with another seed, as a run of its own, named as the run is: it is sent, finished and scored whoever listens, and its events are at `/api/runs/{run}/events`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RunStartedData"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/runs/{run}/events": {
       "get": {
         "tags": [
@@ -3567,6 +3628,31 @@
         ],
         "title": "Model"
       },
+      "NewAgain": {
+        "properties": {
+          "seed": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Seed",
+            "description": "drawn when not given"
+          },
+          "score": {
+            "type": "boolean",
+            "title": "Score",
+            "description": "under every scorer that applies, once it is finished",
+            "default": true
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "NewAgain"
+      },
       "NewAppendix": {
         "properties": {
           "text": {
@@ -3765,6 +3851,18 @@
           "configuration": {
             "type": "integer",
             "title": "Configuration"
+          },
+          "head": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Head",
+            "description": "the edit it varies, by id: the configuration's head unless given"
           },
           "parts": {
             "$ref": "#/components/schemas/Parts",

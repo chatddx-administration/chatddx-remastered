@@ -12,6 +12,7 @@ from chatddx.api import (
 )
 from chatddx.bench import OPTIONAL, PARTS, Bench
 from chatddx.catalog import made_for
+from chatddx.core import settings
 from chatddx.factors.request import Purpose
 
 from .pages import BenchDep, page
@@ -70,7 +71,8 @@ def configuration(
         "endpoints": [e.model_dump(mode="json") for e in endpoints],
         "variants": {e: t.model_dump(mode="json") for e, t in variants.items()},
         "everyTag": api_families.tags(bench),
-        "families": {f.id: f.name for f in api_families.families(bench)},
+        "families": [f.model_dump(mode="json") for f in api_families.families(bench)],
+        "itemsPerRun": settings.ITEMS_PER_RUN,
         "runs": [r.model_dump(mode="json") for r in runs],
     }
     return page(

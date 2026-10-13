@@ -681,6 +681,7 @@ def test_cases_have_a_language(conn: Connection) -> None:
         )
 
 
+@pytest.mark.slow
 def test_languages_are_kept_on_digests(conn: Connection) -> None:
     catalog, store, reg, ids, alice = stored_world(conn)
     base = generation_recipe(reg)

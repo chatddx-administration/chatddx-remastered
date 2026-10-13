@@ -15,6 +15,7 @@ export type Props = {
   endpoints: Schemas["Endpoint"][];
   variants: Record<string, Schemas["Thread"]>;
   everyTag: string[];
-  families: Record<string, string>;
+  families: Schemas["Family"][];
+  itemsPerRun: number;
   runs: Schemas["Run"][];
 };

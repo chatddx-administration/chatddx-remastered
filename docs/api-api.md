@@ -187,6 +187,18 @@ The token set as `COOKIE`: `Max-Age` `settings.SESSION_TTL` in seconds, `Secure`
 ## schemas.py
 The models' fields are in the OpenAPI document. Besides them:
 
+```
+AGENT: change
+The row for `NewRun`, which takes the edit it varies.
+---
+| `NewRun` | A run's body, with `head`, the edit it varies, the configuration's head unless given. Its validator raises … |
+```
+```
+AGENT: add
+A row for `NewAgain`.
+---
+| `NewAgain` | Running again's body: `seed`, drawn when not given, and `score`. |
+```
 | Name | Is |
 | --- | --- |
 | `_Schema` | The base of every model: frozen, `extra="forbid"`. |
@@ -330,6 +342,13 @@ the trial's first seed), the canary calls of phase `start`, each item's `item.st
 of its turns, and `item.ended`, the canary calls of phase `end`, and, once it finished, `run.finished` with
 `check_run`'s findings and `run.scored` with `Bench.scores_of` when there are any; last, `done` with `halted` `None`.
 
+```
+AGENT: change
+The rows for `start`, and a new one for `again`, which share `_opened` and `_launched`.
+---
+| `start`, `POST /runs` | `_opened` with `_new(given)`, and `_launched`: a `Job` of the run from `AppState.jobs`, holding its `Running`, with `run.started` put; and `_sent` on a thread of its own. 202, with `Location` the run's path (`url_path_for("run")`) and `run.started`'s data. |
+| `again`, `POST /runs/{run}/again` | `Bench.run_by_id` (`NotFound`), then `_opened` with `_repeated(run, given)`, `Bench.again` of the run with the seed given or drawn, and `_launched`, as `start`. |
+```
 | Route | Does |
 | --- | --- |
 | `start`, `POST /runs` | `_start` for the request's person; a `Job` of the run from `AppState.jobs`, holding its `Running`, with `run.started` put; and `_sent` on a thread of its own. 202, with `Location` the run's path (`url_path_for("run")`) and `run.started`'s data. |
@@ -388,6 +407,14 @@ The jobs by run, under a lock. `get(run) -> Job | None`; `started(run) -> Job`, 
 done, and `HTTPException(409, "run <run> has something under way")` in place of one that isn't.
 
 ### Streams
+```
+AGENT: change
+A followed stream is kept alive.
+---
+- `followed(job, after) -> AsyncIterator[str]`: what `Job.listen` gives, then each event as it comes until `None`,
+  with `: keep-alive` whenever `KEEP_ALIVE` seconds (15) pass without one, letting go of the listener when the stream
+  ends or is left.
+```
 - `followed(job, after) -> AsyncIterator[str]`: what `Job.listen` gives, then each event as it comes until `None`,
   letting go of the listener when the stream ends or is left.
 - `replayed(told, after) -> AsyncIterator[str]`: each event of `told` after id `after`, its id its place from 1.

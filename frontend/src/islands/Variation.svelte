@@ -19,6 +19,7 @@
     type Picked,
     queryOf,
     replaced,
+    tagged,
     whereSaveGoes,
   } from "$lib/variation/logic";
   import { untrack } from "svelte";
@@ -27,6 +28,7 @@
   let { held }: { held: Props } = $props();
   const given = untrack(() => held);
   const { configuration, me, versions, base, optional, endpoints, variants, families } = given;
+  const familyNames: Record<string, string> = Object.fromEntries(families.map((f) => [f.id, f.name]));
   const head = given.look.head.id;
   const latest = versions.at(-1)?.id ?? head;
   const version = versions.findIndex((v) => v.id === head) + 1;
@@ -41,6 +43,13 @@
   let name = $state(configuration.name ?? configuration.title);
   let saving = $state(false);
   let unsaved = $state<string | null>(null);
+  let picking = $state(false);
+  let chosen = $state<number[]>([]);
+  let narrowed = $state("");
+  let seed = $state(given.look.seed);
+  let scored = $state(true);
+  let starting = $state(false);
+  let unstarted = $state<string | null>(null);
 
   const groups = Object.fromEntries(
     PARTS.map((p) => [
@@ -68,6 +77,10 @@
   );
   const shown = $derived(Object.fromEntries((look.parts ?? []).map((p) => [p.part, p])));
   const fitting = $derived(endpoint === null ? undefined : variants[endpoint]);
+  const sent = $derived(picking ? families.filter((f) => chosen.includes(f.id)) : tagged(families, tags));
+  const listed = $derived(
+    families.filter((f) => f.name.toLowerCase().includes(narrowed.trim().toLowerCase())).slice(0, 200),
+  );
   const scorers = $derived(
     look.reach.reduce((found, r) => found.set(r.name, [...(found.get(r.name) ?? []), r]), new Map<string, Schemas["Reach"][]>()),
   );
@@ -126,9 +139,37 @@
     void refresh();
   }
 
-  function tagged(tag: string): void {
+  function retagged(tag: string): void {
     tags = tags.includes(tag) ? tags.filter((t) => t !== tag) : [...tags, tag];
     void refresh();
+  }
+
+  function toggled(family: number): void {
+    chosen = chosen.includes(family) ? chosen.filter((f) => f !== family) : [...chosen, family];
+  }
+
+  async function run(event: SubmitEvent): Promise<void> {
+    event.preventDefault();
+    if (endpoint === null || sent.length === 0) return;
+    starting = true;
+    unstarted = null;
+    const got = await api.POST("/api/runs", {
+      body: {
+        configuration: configuration.id,
+        head,
+        parts: replaced(picked, base),
+        endpoint,
+        families: sent.map((f) => f.id),
+        seed,
+        score: scored,
+      },
+    });
+    if (!got.data) {
+      unstarted = why(got.error);
+      starting = false;
+      return;
+    }
+    location.assign(`/runs/${got.data.run}`);
   }
 
   async function save(event: SubmitEvent): Promise<void> {
@@ -267,7 +308,7 @@
             type="button"
             class="rounded-full border px-2.5 py-0.5 text-xs {tags.includes(tag) ? 'border-primary bg-primary/10 text-primary' : 'border-border text-muted-foreground hover:bg-muted'}"
             aria-pressed={tags.includes(tag)}
-            onclick={() => tagged(tag)}>{tag}</button
+            onclick={() => retagged(tag)}>{tag}</button
           >
         {/each}
       </div>
@@ -335,14 +376,14 @@
                     <details class="mt-1">
                       <summary class="cursor-pointer text-xs">{view.missing.length} without one</summary>
                       <p class="mt-1 text-xs">
-                        {#each view.missing as family, j (family)}<a class="text-primary hover:underline" href="/families/{family}">{families[family] ?? family}</a>{j < view.missing.length - 1 ? ", " : ""}{/each}
+                        {#each view.missing as family, j (family)}<a class="text-primary hover:underline" href="/families/{family}">{familyNames[family] ?? family}</a>{j < view.missing.length - 1 ? ", " : ""}{/each}
                       </p>
                     </details>
                   {/if}
                   {#if view.choosing.length}
                     <p class="mt-1 text-xs text-warning">
                       Several to choose from:
-                      {#each view.choosing as family, j (family)}<a class="hover:underline" href="/families/{family}">{families[family] ?? family}</a>{j < view.choosing.length - 1 ? ", " : ""}{/each}
+                      {#each view.choosing as family, j (family)}<a class="hover:underline" href="/families/{family}">{familyNames[family] ?? family}</a>{j < view.choosing.length - 1 ? ", " : ""}{/each}
                     </p>
                   {/if}
                 </td>
@@ -358,6 +399,87 @@
     <summary class="cursor-pointer text-sm font-medium">The request it would send</summary>
     <pre class="mt-2 overflow-x-auto font-mono text-xs leading-relaxed">{JSON.stringify(look.request, null, 2)}</pre>
   </details>
+</section>
+
+<section class="glass-card mb-6 rounded-2xl p-5 sm:p-6">
+  <h2 class="mb-4 text-lg font-semibold">Running it</h2>
+  <form class="space-y-4" onsubmit={run}>
+    <fieldset class="space-y-2">
+      <legend class="mb-1.5 text-sm font-medium">On the cases</legend>
+      <label class="flex items-center gap-2 text-sm">
+        <input type="radio" name="cases" checked={!picking} onchange={() => (picking = false)} />
+        {tags.length ? `tagged ${tags.join(" or ")}` : "every one you see"} ({tagged(families, tags).length})
+      </label>
+      <label class="flex items-center gap-2 text-sm">
+        <input type="radio" name="cases" checked={picking} onchange={() => (picking = true)} />
+        of the families picked ({chosen.length})
+      </label>
+      {#if picking}
+        <div class="ml-6 space-y-2">
+          {#if chosen.length}
+            <div class="flex flex-wrap gap-1.5">
+              {#each families.filter((f) => chosen.includes(f.id)) as f (f.id)}
+                <button
+                  type="button"
+                  class="rounded-full border border-primary bg-primary/10 px-2.5 py-0.5 text-xs text-primary hover:bg-primary/20"
+                  aria-label="Leave out {f.name}"
+                  onclick={() => toggled(f.id)}>{f.name} ×</button
+                >
+              {/each}
+            </div>
+          {/if}
+          <Input bind:value={narrowed} placeholder="Find a family by name" class="max-w-sm" aria-label="Find a family" />
+          <div class="max-h-48 max-w-sm overflow-y-auto rounded-md border border-border p-2 text-sm">
+            {#each listed as f (f.id)}
+              <label class="flex items-center gap-2 py-0.5">
+                <input type="checkbox" checked={chosen.includes(f.id)} onchange={() => toggled(f.id)} />
+                {f.name}
+              </label>
+            {:else}
+              <p class="text-muted-foreground">No family by that name.</p>
+            {/each}
+          </div>
+        </div>
+      {/if}
+    </fieldset>
+    <div class="flex flex-wrap items-end gap-4">
+      <div class="space-y-1.5">
+        <Label for="run-seed">Seed</Label>
+        <Input id="run-seed" type="number" min="0" bind:value={seed} class="w-36" />
+      </div>
+      <label class="flex items-center gap-2 pb-2 text-sm">
+        <input type="checkbox" bind:checked={scored} />
+        Score it when it's done
+      </label>
+    </div>
+    <p class="text-sm" aria-live="polite">
+      {#if endpoint === null}
+        Pick an endpoint to run it at.
+      {:else if sent.length === 0}
+        Pick a case to run it on.
+      {:else}
+        Sends {sent.length} {sent.length === 1 ? "item" : "items"} to {endpoint}, one at a time{look.greedy
+          ? "; its sampling is greedy, so the seed isn't sent"
+          : ""}.
+        {#if sent.length > given.itemsPerRun}
+          <span class="text-warning">A run holds at most {given.itemsPerRun}.</span>
+        {/if}
+      {/if}
+    </p>
+    {#if unstarted}
+      <Alert.Root variant="destructive">
+        <TriangleAlertIcon />
+        <Alert.Description>{unstarted}</Alert.Description>
+      </Alert.Root>
+    {/if}
+    <Button
+      type="submit"
+      disabled={endpoint === null || sent.length === 0 || sent.length > given.itemsPerRun || starting || failure !== null}
+    >
+      {#if starting}<LoaderCircleIcon class="animate-spin" />{/if}
+      Run it
+    </Button>
+  </form>
 </section>
 
 <section class="glass-card mb-6 rounded-2xl p-5 sm:p-6">

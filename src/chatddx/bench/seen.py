@@ -617,7 +617,10 @@ class Seen:
             else f"{len(trial.cases)} cases"
         )
         seeds = ", ".join(str(seed) for seed in trial.seeds)
-        return f"{self.title(trial.skeleton)} × {where} × {cases} (seed {seeds})"
+        name = self.catalog.about(Subject(run=run.run)).name or self.title(
+            trial.skeleton
+        )
+        return f"{name} × {where} × {cases} (seed {seeds})"
 
     def scores_of(self, run: UUID, every: bool = False) -> list[Graded]:
         given = self.store.scores_of(run)

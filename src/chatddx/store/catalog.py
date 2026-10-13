@@ -1,4 +1,5 @@
 from collections.abc import Collection, Mapping, Sequence
+from datetime import datetime
 from typing import Any
 
 from chatddx.catalog import (
@@ -576,6 +577,17 @@ class Catalog:
 
     def tags_given(self, subject: Subject) -> dict[str, int]:
         return read.tags_given(self._rows, subject)
+
+    def runs_started(self, person: int, since: datetime) -> int:
+        row = self._conn.execute(
+            """
+            SELECT count(*) FROM catalog.entry
+            WHERE run IS NOT NULL AND field = 'owner' AND person = %s AND at >= %s
+            """,
+            (person, since),
+        ).fetchone()
+        assert row is not None
+        return int(row[0])
 
     def involving(self, person: int) -> list[Subject]:
         return self._rows.subjects_naming(

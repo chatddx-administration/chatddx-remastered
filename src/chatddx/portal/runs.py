@@ -2,9 +2,11 @@ from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, Query, Request, Response
+from fastapi.responses import RedirectResponse
 from pydantic import JsonValue
 
-from chatddx.api import runs as api, schemas
+from chatddx.api import runs as api, schemas, scores as api_scores
+from chatddx.api.state import state
 from chatddx.bench import Bench
 from chatddx.factors.base import resolve
 from chatddx.factors.request import Skeleton
@@ -41,20 +43,53 @@ def run(request: Request, bench: BenchDep, run: UUID) -> Response:
     shown = api.detail(bench, run)
     skeleton = resolve(bench.get, shown.skeleton, Skeleton)
     schema = skeleton.output_schema
+    job = state(request).jobs.get(run)
+    under_way = job is not None and not job.done
+    left = (
+        []
+        if under_way or shown.finished_at is None
+        else bench.unscored(bench.run_by_id(run))
+    )
+    titles = {case: bench.title(case) for case in shown.cases}
     return page(
         request,
         "run.html",
         person=bench.person,
         run=shown,
         items=api.items(bench, run),
-        titles={case: bench.title(case) for case in shown.cases},
+        titles=titles,
         engine=bench.title(shown.engine),
         configuration=_version(bench, shown.skeleton),
         plan=isinstance(schema, dict) and schema.get("title") == PLAN,
         scores=[(graded, _rows(graded)) for graded in shown.scores],
         said=_said,
-        island="answers",
+        under_way=under_way,
+        left=[bench.scorer_name(s) for s in left],
+        live={"run": str(run), "titles": titles},
+        island="run",
     )
+
+
+@router.post("/runs/{run}/halt")
+def halting(request: Request, bench: BenchDep, run: UUID) -> Response:
+    _ = api.halt(request, bench, run)
+    return RedirectResponse(f"/runs/{run}", 303)
+
+
+@router.post("/runs/{run}/scores")
+def scoring(request: Request, bench: BenchDep, run: UUID) -> Response:
+    left = bench.unscored(bench.run_by_id(run))
+    asked = schemas.NewScoring(scorers=left or None)
+    _ = api_scores.score_now(request, Response(), bench, run, asked)
+    return RedirectResponse(f"/runs/{run}", 303)
+
+
+@router.post("/runs/{run}/again")
+def running_again(request: Request, bench: BenchDep, run: UUID) -> Response:
+    said = api.again(
+        request, Response(), bench, run, schemas.NewAgain(seed=None, score=True)
+    )
+    return RedirectResponse(f"/runs/{said.run}", 303)
 
 
 def _version(bench: Bench, skeleton: str) -> tuple[str, str] | None:

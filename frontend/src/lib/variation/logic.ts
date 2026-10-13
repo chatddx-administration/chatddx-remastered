@@ -83,6 +83,10 @@ export function choicesOf(
     }));
 }
 
+export function tagged(families: Schemas["Family"][], tags: string[]): Schemas["Family"][] {
+  return tags.length ? families.filter((f) => f.tags.some((t) => tags.includes(t))) : families;
+}
+
 export type Saving =
   | { to: "nothing"; because: "nameless" | "unchanged" }
   | { to: "version"; version: number }

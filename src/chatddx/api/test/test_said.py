@@ -7,6 +7,7 @@ from chatddx.test.world import LINES
 pytestmark = pytest.mark.solidified
 
 
+@pytest.mark.slow
 def test_an_owner_says_what_a_thread_is_called_and_who_it_is_shared_with(
     signed: TestClient, bob: dict[str, str]
 ) -> None:
@@ -37,6 +38,7 @@ def test_an_owner_says_what_a_thread_is_called_and_who_it_is_shared_with(
     assert signed.get(path, headers=bob).status_code == 404
 
 
+@pytest.mark.slow
 def test_what_isn_t_the_owner_s_to_say_is_refused(signed: TestClient) -> None:
     mine = thread(signed, "configuration", LINES)
     archives = thread(signed, "configuration", LINES, "archive")

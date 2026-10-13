@@ -8,6 +8,7 @@ import {
   type Picked,
   queryOf,
   replaced,
+  tagged,
   whereSaveGoes,
 } from "./logic";
 
@@ -97,6 +98,24 @@ describe("a part's choices", () => {
     expect(madeFor("plan (en, Qwen/Qwen3-8B-AWQ)")).toBe("en, Qwen/Qwen3-8B-AWQ");
     expect(madeFor("clinician (sv)")).toBe("sv");
     expect(madeFor("greedy")).toBe("");
+  });
+});
+
+describe("the cases a run is sent", () => {
+  const family = (id: number, tags: string[]): Schemas["Family"] => ({
+    id,
+    name: `f${id}`,
+    owner: "archive",
+    tags,
+    language: "en",
+    case: DIGEST(id),
+  });
+  const families = [family(1, ["a"]), family(2, ["b"]), family(3, ["a", "b"]), family(4, [])];
+
+  it("are those with any of the tags, or every one without a tag", () => {
+    expect(tagged(families, ["a"]).map((f) => f.id)).toEqual([1, 3]);
+    expect(tagged(families, ["a", "b"]).map((f) => f.id)).toEqual([1, 2, 3]);
+    expect(tagged(families, []).map((f) => f.id)).toEqual([1, 2, 3, 4]);
   });
 });
 

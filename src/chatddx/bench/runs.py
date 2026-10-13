@@ -2,10 +2,15 @@ import threading
 from collections.abc import Callable, Collection, Generator
 from contextlib import contextmanager, nullcontext
 from dataclasses import dataclass
+from datetime import UTC, datetime, timedelta
 from uuid import UUID
 
+from chatddx.catalog import Entry, EntryField, Subject
+from chatddx.core import settings
 from chatddx.factors.base import resolve
+from chatddx.factors.request import Skeleton
 from chatddx.factors.scoring import Scorer
+from chatddx.factors.trial import Trial
 from chatddx.ledger import RunStarted
 from chatddx.runner.gate import Refused
 from chatddx.runner.run import Runner, Running
@@ -13,6 +18,7 @@ from chatddx.runner.score import Event, Grader, Grading
 from chatddx.runner.send import STOPPED
 
 from .configurations import keep_compilation
+from .errors import OverQuota
 from .model import Graded
 from .seen import Seen
 from .variation import TriedVariation
@@ -29,10 +35,49 @@ def start(
             f"{variation.label} is a judge configuration: a judge is asked as runs are "
             + "scored, and isn't run on cases"
         )
+    running = _begun(seen, skeleton, endpoint, cases, seed, variation.label)
+    _ = keep_compilation(seen, variation)
+    return running
+
+
+def again(seen: Seen, run: RunStarted, seed: int) -> Running:
+    if run.endpoint is None:
+        raise ValueError(
+            f"run {run.run} was sent to no endpoint, so it can't run again"
+        )
+    trial = resolve(seen.get, run.trial, Trial)
+    skeleton = resolve(seen.get, trial.skeleton, Skeleton)
+    name = seen.catalog.about(Subject(run=run.run)).name or seen.title(trial.skeleton)
+    return _begun(seen, skeleton, run.endpoint.name, list(trial.cases), seed, name)
+
+
+def _begun(
+    seen: Seen,
+    skeleton: Skeleton,
+    endpoint: str,
+    cases: list[str],
+    seed: int,
+    name: str,
+) -> Running:
+    if len(cases) > settings.ITEMS_PER_RUN:
+        raise OverQuota(
+            f"a run holds at most {settings.ITEMS_PER_RUN} items, not {len(cases)}"
+        )
+    since = datetime.now(UTC) - timedelta(days=1)
+    started = seen.catalog.runs_started(seen.person.id, since)
+    if started >= settings.RUNS_PER_DAY:
+        raise OverQuota(
+            f"{seen.person.login} has started {started} runs in the last day, as many "
+            + "as a day takes"
+        )
     registry, trial = seen.trial(skeleton, seen.endpoint(endpoint), cases, seed)
     runner = Runner(seen.conn, seen.inventory, seen.person)
     running = runner.start(trial, registry, endpoint)
-    _ = keep_compilation(seen, variation)
+    seen.catalog.note(
+        Subject(run=running.run),
+        Entry(field=EntryField.NAME, value=name),
+        seen.person.id,
+    )
     return running
 
 

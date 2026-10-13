@@ -599,6 +599,12 @@ the first of `Reader.compilations` (by digest). Anything else is `describe`d, wi
 the ones that write insert the rows the package decided on. A rule the database also checks is refused by Postgres
 with a psycopg error when the Python lets it through.
 
+```
+AGENT: add
+A row for the runs a person started lately, which the bench's quota counts.
+---
+| `runs_started(person, since: datetime) -> int` | the store only | how many runs' `owner` entries name the person since then |
+```
 | Method | Calls | Writes |
 | --- | --- | --- |
 | `create(digest, by, *, compilation=None, forked_from=None, name=None, owner=None, labels=None) -> Edit` | `Reader.kind` (`LookupError("<digest> is not in the store")`), `threads.check_threadable`; `threads.check_expectation` and `threads.check_labels` through `edit`, and `note` | in one transaction: the thread, its first edit with its labels (`edit`), an `owner` entry for `owner` or else `by`, and a `name` entry when given |

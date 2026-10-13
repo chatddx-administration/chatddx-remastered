@@ -14,15 +14,16 @@ it.
    that work sets the structure of the portal's frontend, and shows what Lovable has to teach (see "Swift").
 3. **Decided: `chatddx portal`** serves the portal, and starts everything the portal needs with it: the API now, the
    worker once there is one (see "P3b, concretely").
-4. **Phases 0 to 3 are built** (see "Built"): `chatddx.portal`, signing in and out, `Cache-Control: no-store`, a
+4. **Phases 0 to 4 are built** (see "Built"): `chatddx.portal`, signing in and out, `Cache-Control: no-store`, a
    code beside each error's detail in the API (decided); then the frontend in `frontend/`, swift's theme and
-   components, and the home page, the first island; then the pages to read; then the variation being tried (decided,
-   see "The variation being tried"). The choices of phases 1 and 2 are takes (see "Built").
+   components, and the home page, the first island; then the pages to read; then the variation being tried, and
+   starting and watching a run (decided, see "The variation being tried" and "Starting and watching a run"). The
+   choices of phases 1 and 2 are takes (see "Built").
 5. **What it stands on is built**: the bench and the API (`docs/bench.md`, `docs/api.md`), the writes for authoring
    (`agents/wip-authoring.md`) and typed cases (`docs/bench.md`, "Typed cases"). What isn't is under "Below the UI":
    the worker, the batch planner, Z1, and a few things the API doesn't give yet.
-6. **Next**: phase 4, starting and watching a run (see "Phases"), whose island mounts on the variation's page; and
-   what phases 2 and 3 left (see "Open").
+6. **Next**: phase 5, authoring (see "Phases"), or the worker under the runs (`agents/wip-worker.md`); and what
+   phases 2 to 4 left (see "Open").
 
 ## What the portal shows
 The old portal's manual reads as a functional spec for its pages: `docs/portal.md` in chatddx-administration/chatddx
@@ -119,8 +120,8 @@ Decided:
 - **Pages**: `TestClient` on the HTML, in `src/chatddx/portal/test/`, on the test World as `curated` lands it, as the
   API's are; marked `wip` until `docs/portal.md`.
 - **Islands**: through the API's tests for what they call; an island's pure logic by vitest
-  (`pnpm --dir frontend test`, built in phase 3); and a browser test (Playwright, with the container's Chromium) with
-  phase 4's run island (V9).
+  (`pnpm --dir frontend test`, built in phase 3); and a browser test under pytest (Playwright, with the container's
+  Chromium), built in phase 4 (R12).
 - **Runs to show**: the test World's six scripted runs (`docs/scripted.md`, "The runs"), run once into `ran`
   (`src/chatddx/conftest.py`), built in phase 2.
 
@@ -147,6 +148,30 @@ Decided (phase 3), from the options V1 to V9:
   own first), and a thread's `language` in listings.
 - **V9. Tests**: the pages and the API by `TestClient`, the island's pure logic by vitest, and the island by hand in
   Chromium; a browser test in the suite comes with phase 4's run island.
+
+## Starting and watching a run
+Decided (phase 4), from the options R1 to R12:
+- **R1. A run is started** from the variation's page, a panel beside what the variation makes, and again from a run's
+  page (**Run again**: its variation, cases and endpoint, a new seed); then the run's page follows it.
+- **R2. A run is watched on its page**: the server draws what the ledger holds, and an island follows the run's events
+  while something is under way for it, then reloads the page into what it finished as.
+- **R3. Watching shows** how far it has come (the items ended of all, by outcome), each item's state (waiting,
+  thinking or writing with its tokens, ended with its outcome), the text of an item unfolded as it streams, and the
+  scoring as each scorer starts and ends, its judges' calls counted.
+- **R4. Halt** while something is under way, and **Score again** on a run's page and in the runs left to score; a
+  scoring is watched as a run is.
+- **R5. A run names the edit it varies** (`head` on `NewRun`), so it runs what was looked at.
+- **R6. The cases** are the variation's tags, or families picked, with the number of items said before it starts;
+  one seed, the look's, which can be changed.
+- **R7. A run is named by its variation's label** as it starts, which `Bench.described` reads first (`docs/api.md`,
+  "Outstanding", "Variations").
+- **R8. Limits in `settings`**: runs a day per person and items per run, kept by the bench for every edge, refused as
+  over quota.
+- **R9. Concurrency** stays 1 until the worker shares an endpoint's `max_jobs` between runs.
+- **R10. On the jobs in the app's process**; the worker takes their place with the API as it is.
+- **R11. A keep-alive** on a run's event stream (`docs/api.md`, "Outstanding", "A quiet stream").
+- **R12. A browser test** under pytest with Playwright (Python), on the test World and its fake vLLM: start, watch,
+  halt and score again; and the island's logic by vitest.
 
 ## Swift
 Decided:
@@ -236,7 +261,7 @@ case, and its completion lands in the ledger; the vignette doesn't.
 The demo is on the public web, but the portal has no guest: every request needs a session (`docs/api.md`, "Signing
 in"), and people are added by command (`chatddx person add`). So:
 - a person's typed texts are held to a quota and a text to a size, with a NUL refused (built);
-- a person's runs are held to a quota, which is the worker's (`agents/wip-worker.md`);
+- a person's runs are held to a quota a day, and a run to its items, by the bench (built in phase 4, R8);
 - signing in is rate limited, which is open (`docs/api.md`, "Outstanding", "Signing in");
 - a flood's real cost is the inference and the ledger rows each run adds, not the text, so the quota is on runs as
   much as on texts.
@@ -364,6 +389,28 @@ Phase 3, `wip` under this file, as decided (see "The variation being tried"):
   the sample World in Chromium: picking, another endpoint, tags, forking, a new version, stepping back, and the page
   without scripts.
 
+Phase 4, `wip` under this file, as decided (see "Starting and watching a run"):
+- **The API**: a run takes `head`, the edit it varies (`NewRun.head`); a run is named by its variation's label as it
+  starts, which `Bench.described` reads first; `POST /api/runs/{id}/again` runs a run's trial again with another seed
+  (`Bench.again`), so a run of a variation nobody saved can run again without it; runs a day and items a run are
+  limited (`settings.RUNS_PER_DAY`, `ITEMS_PER_RUN`; `Catalog.runs_started`), refused as over quota; and a quiet event
+  stream sends `: keep-alive` every 15 s (`src/chatddx/api/jobs.py:KEEP_ALIVE`). `docs/api.md`, `docs/api-api.md`,
+  `docs/bench.md`, `docs/bench-api.md`, `docs/catalog-api.md` and `docs/repl.md` have AGENT suggestions; the tests stay
+  `solidified`.
+- **Following a run** (`frontend/src/lib/runs/`): `watch`, a run's events through `EventSource`, and `fold`, which
+  folds them into a run's progress: its items as they are sent, stream and end, what is noted, and each scorer's
+  scoring with its judges' calls. The home page follows its run with them too.
+- **The variation's page** gets **Running it**: the cases tagged, or families picked by name, the seed and whether to
+  score, the number of items said, and **Run it**, which leads to the run's page.
+- **A run's page**: while something is under way for it in the app's process, the items, scores and answers give way
+  to the live view (`frontend/src/islands/RunLive.svelte`), which reloads the page when the run is done. **Halt**,
+  **Score again** (by the scorers it is left to) and **Run again** are plain forms (`src/chatddx/portal/runs.py`:
+  `halting`, `scoring`, `running_again`), which call the API's handlers and lead back to the run's page; **Score again**
+  is also in the runs left to score. The `run` island also draws the answers as management plans, as `answers` did.
+- **Tests**: `src/chatddx/portal/test/test_running.py`; `test_browser.py`, the variation run from its page, followed,
+  halted, scored again and run again in Chromium (Playwright, a test dependency at 1.56.0, skipped without a build or
+  a browser); `frontend/src/lib/runs/progress.test.ts`; and by hand on the sample World with its fake engines.
+
 ## Below the UI
 What the portal needs below its pages that isn't built:
 1. **The worker** (`agents/wip-worker.md`): runs that outlive the app's process and are seen from every replica, and
@@ -385,8 +432,8 @@ What the portal needs below its pages that isn't built:
 2. **Pages to read**, built (see "Built"): runs and a run's page, configurations with their versions and recipe,
    families with their expectations (the vignette in its own place), endpoints and models.
 3. **The variation being tried**, and its island, built (see "Built").
-4. **Starting and watching a run**: the run's island, on the API's runs and events; the worker under them when it is
-   built (`agents/wip-worker.md`).
+4. **Starting and watching a run**, built (see "Built"): the run's island, on the API's runs and events; the worker
+   under them when it is built (`agents/wip-worker.md`).
 5. **Authoring**: the pages for the bench's writes, which are built; a scorer's pickers read `GET /api/scorer-code`.
 6. **Batches**: the planner's pages (`agents/wip-batch.md`), then a batch's page and the worker's status
    (`agents/wip-worker.md`).
@@ -400,8 +447,12 @@ What the portal needs below its pages that isn't built:
   with `lib.fakeHash`, and take the one Nix reports.
 - **Caching the build**: its files are named by their content, so they could be kept for good (`immutable`);
   Starlette's `StaticFiles` sends an ETag and a date only.
-- **A browser test in the suite**: the home page's flow is checked by hand. Take: Playwright on the test World and its
-  fakes, with the run's island (phase 4), which shares the flow.
+- **The home page's flow in the browser test**: it is checked by hand; the browser test drives the variation and the
+  run's pages (phase 4).
+- **The browser test in the flake's dev shell**: Playwright's Python package brings a driver that a Nix shell may not
+  run as it is, and its browser is the container's Chromium (revision 1194, which `playwright==1.56.0` expects). Take:
+  nixpkgs' `playwright-driver.browsers` of the same version, pointed at by `PLAYWRIGHT_BROWSERS_PATH`, when a Nix
+  shell runs it; until then the test skips where Chromium can't start.
 - **The frontend's checks**: `pnpm check` runs by hand; nothing runs it beside `pytest`.
 - **A page to test an endpoint**: a live check of the server and the model, written down nowhere. Canaries and
   `confirm` cover parts of it.
@@ -433,9 +484,20 @@ From "What the portal shows", not on the pages yet:
 - **The part pickers are native selects**: a long list (26 reasoning chunks in the sample World) wants a searchable
   picker, perhaps bits-ui's combobox.
 - **A seed** is drawn for each look and kept while the page is open; it isn't in the address, so a reload draws
-  another. It matters once the page starts runs (phase 4).
+  another. A run takes the seed shown, which can be changed.
 - **The page's cost**: the server lists every part's chunks, the configurations, the endpoints, the families and the
   look itself, about 0.6 s on the sample World. Listing a configuration's language costs its skeleton's compilations
   (`Catalog.languages_of`), one query per skeleton.
 - **The frontend's tests** (`pnpm --dir frontend test`) run by hand, as `pnpm check` does.
+
+### What starting and watching a run leaves
+- **Concurrency** is 1 (R9): a run of the sample World's 104 cases sends them one at a time.
+- **A run lives in the app's process** (R10): a restart ends it, and another replica tells it from the ledger without
+  its live text and can't halt it. The worker takes its place (`agents/wip-worker.md`).
+- **The live view holds every item's text** as it streams, in the page; a large run with long answers makes a heavy
+  page. Take: drop the text of an item once it has ended, which the run's page shows after it is done.
+- **Replicates**: a run takes one seed; several seeds are the batch planner's (`agents/wip-batch.md`).
+- **The limits** (`settings.RUNS_PER_DAY`, 100, and `ITEMS_PER_RUN`, 200) are takes, as is counting a day back from
+  now. A scoring isn't limited.
+- **Running again** re-sends a run's trial; it doesn't follow the configuration if it has moved on since.
 
