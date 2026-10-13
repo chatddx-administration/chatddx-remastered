@@ -363,7 +363,9 @@ class _Init:
         head = self.store.get(self.catalog.head(thread).digest)
         assert isinstance(head, Expectation)
         case, schema = head.case, head.expectation_schema
-        return bool(self.catalog.expectation_choices([case], user.id, schema)[case])
+        return any(
+            owns(user.id, a) for _, a in self.catalog.expecting([case], schema)[case]
+        )
 
 
 def _what(catalog: Catalog, subject: Subject) -> str:

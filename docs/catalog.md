@@ -53,6 +53,21 @@ saves an edit, and nothing moves along with it. An edit can name the head it was
 the thread has moved on since, so that a change made on an older version doesn't undo what came after it unseen.
 Edits of one thread are written one at a time, so that holds with several writers too.
 
+```
+AGENT: replace
+The catalog no longer takes the person asking. What a person sees and the expectation they score a case against are
+`chatddx.identity`'s rules, applied by the bench to what the catalog gives (docs/bench.md, "What a person sees",
+"What a person is scored against").
+---
+The catalog answers what people need to find:
+- a thread's versions, and its current one;
+- the threads of a kind, with what is said of each, deleted or not;
+- the threads of a kind with a given name, owned by a given person if asked;
+- the forks of a thread;
+- the expectation threads of a case, and of several cases under a given expectation schema, with what is said of each;
+- where a given component appears, in any thread;
+- which of several heads is picked, or that there are several to choose from (see "Concurrent writers").
+```
 The catalog answers what people need to find:
 - a thread's versions, and its current one;
 - the live threads of a kind, or the deleted ones;

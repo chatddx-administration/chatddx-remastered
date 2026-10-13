@@ -105,24 +105,3 @@ def test_repairs_rebind_appendices_cases_and_expectations() -> None:
     assert (stale.binding, stale.replacement) == (current, plan.cases[ids["case"]])
     rows.note(Subject(family=1), Entry(field=EntryField.DELETED))
     assert families.stale_cases(rows, [("/cases/0", ids["case"])]) == []
-
-
-def test_a_person_sees_the_live_families_they_own_or_share() -> None:
-    reg = Registry()
-    vignette = resolve(reg.get, world(reg)["case"], Case).vignette
-    rows = Memory(reg)
-    for family, owner, shared in ((1, 3, 1), (2, 2, None), (3, 1, None), (4, 1, None)):
-        _ = rows.bind(family, vignette.model_copy(update={"id": f"c{family}"}))
-        rows.note(Subject(family=family), Entry(field=EntryField.OWNER, person=owner))
-        if shared is not None:
-            rows.note(
-                Subject(family=family),
-                Entry(field=EntryField.COLLABORATOR, person=shared),
-            )
-    rows.note(Subject(family=1), Entry(field=EntryField.TAG, value="cardiac"))
-    rows.note(Subject(family=4), Entry(field=EntryField.DELETED))
-    seen = families.visible(rows, 1)
-    assert [(f, a.owner, a.tags) for f, a in seen] == [
-        (1, 3, frozenset({"cardiac"})),
-        (3, 1, frozenset()),
-    ]

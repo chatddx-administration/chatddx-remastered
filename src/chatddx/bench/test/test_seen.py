@@ -249,7 +249,8 @@ def test_a_case_is_held_to_the_expectation_scoring_picks(
 
     held = bench.expectation(case, schema)
     assert held is not None
-    assert held.digest == Catalog(conn).expectation_for(case, alice.id, schema)
+    expecting = Catalog(conn).expecting([case], schema)[case]
+    assert [e.digest for e, a in expecting if owns(alice.id, a)] == [held.digest]
 
     theirs = Bench(conn, bob, bench.inventory, bench.facts)
     assert theirs.expectation_schemas(case) == []

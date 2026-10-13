@@ -368,6 +368,10 @@ the person were planned in agents/wip-authoring.md, whose takes marked "Built, a
 - **Taking counts shared threads, not owners**: a case with two threads shared by one owner is to choose from, and
   naming that owner doesn't pick between them. Only two writers at once can leave an owner two (see "One expectation
   per case and schema").
+```
+AGENT: remove
+`Catalog.expectation_for` is gone.
+```
 - **`Catalog.expectation_for`**, for one case, has callers in tests only.
 - **What the old bench had and this one doesn't**: what a run left unheeded (the old `outcome.py:unheeded`;
   docs/runner.md, "Smaller issues"); a batch's plan, crossing variations into one (agents/wip-batch.md); and what holds

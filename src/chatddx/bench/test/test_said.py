@@ -99,10 +99,9 @@ def test_an_owner_deletes_and_restores_a_thread(bench: Bench) -> None:
 def test_a_restore_is_held_to_one_expectation_per_case_and_schema(
     bench: Bench,
 ) -> None:
-    catalog = bench.catalog
     case = bench.family("noted").case
     [schema] = bench.expectation_schemas(case)
-    [mine] = catalog.expectation_choices([case], bench.person.id, schema)[case]
+    [mine] = bench.expectation_choices([case], schema)[case]
     [(archives, _)] = bench.shared(case, schema)
     _ = bench.say(mine, deleted=True)
     taken = bench.take_from(archives.thread)

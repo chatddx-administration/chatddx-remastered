@@ -76,9 +76,10 @@ need no store found these, and moved them:
 since what a person is shown is the rule and it needs no store. `Owned` is a `Protocol` so that identity imports
 nothing of the catalog's: `About`, a run's and a score's included, fits it as it is.
 
-The catalog keeps the procedures that apply them to its rows: `threads.visible`, `threads.find` with an owner,
-`threads.expectation_choices` and `expectations_shared` (and so `expectations_for`, `expectation_for` and
-`check_expectation`), and `families.visible`.
+Moving the one-line rules alone barely changed the catalog's or the bench's surface, and moving the bench's inline
+owner comparisons too made it larger (`owns(p, a) or restores(p, a)` for `a.owner == p`); that step was reverted. The
+surface is in the catalog's procedures that took the person asking, so the next step made the catalog
+person-agnostic (see "A person-agnostic catalog").
 
 Looked at and left where they are:
 - **`threads.py:picked`** is pure, but it decides among a case's expectation threads, not who: nothing in it is about
@@ -100,6 +101,46 @@ the catalog):
   (`src/chatddx/bench/saying.py:say`);
 - an expectation is "yours already" (`src/chatddx/bench/taking.py:take_from`);
 - `Seen.owner`'s "" for the person's own.
+
+### A person-agnostic catalog
+A prototype: the catalog says who owns and shares what, and no longer takes the person asking; the bench applies
+identity's rules to what it gives.
+
+| Was, in the catalog | Is |
+| --- | --- |
+| `threads.heads(kind, deleted=…) -> list[Edit]` | `threads.heads(kind) -> list[tuple[Edit, About]]`, deleted included |
+| `threads.visible(kind, person)` | `Seen.visible`: `heads` kept by `sees` |
+| `families.visible(person)` | `Seen._families`: `Reader.families` and `abouts`, kept by `sees` |
+| `expectation_for`, `expectations_for`, `expectation_choices`, `expectations_shared`, `_expecting` | `threads.expecting(cases, schema)`, whoever owns, deleted included; `Seen.expectation_choices` keeps what the person `owns`, `Seen.shared` and `taking.take` what they `collaborates` on |
+| The store's `Catalog.visible`, `visible_families`, `expectation_for`, `expectations_for`, `expectation_choices`, `expectations_shared` | `Catalog.expecting` |
+
+Measured against the state before it (non-blank lines, test code apart):
+
+| | Before | After |
+| --- | --- | --- |
+| `src/chatddx/catalog/` | 1126 | 1086 |
+| `src/chatddx/store/catalog.py` | 541 | 527 |
+| `src/chatddx/bench/` | 1682 | 1694 |
+| Public functions of `catalog/{threads,families,read}.py` | 41 | 36 |
+| Public methods of the store's `Catalog` | 40 | 35 |
+| Public methods of `Seen` | 57 | 58 (`expectation_choices`) |
+| Tests | 16374 | 16331 |
+
+Left taking a person or an owner, on purpose:
+- `threads.find(kind, name, owner=)` and `Catalog.create`/`adopt(owner=)`: an owner as a key or a value, like a name.
+  `find` keeps the live ones the owner `owns`; curation and many tests look records up by it.
+- `threads.check_expectation` applies `owns` to the owner it records: one live expectation per case and schema is the
+  catalog's rule, whoever asks.
+- The store's `involving(person)`, `runs_started(person, since)` and `Rows.subjects_naming(person, …)`: SQL keyed by a
+  person, which reading every entry instead would make slower.
+
+What it costs:
+- `expecting` reads the head of every thread of an expectation of the cases, others' and deleted ones included, where
+  `_expecting` read only those the person kept: one batched query, more rows.
+- The catalog's in-memory tests of "own only" and "offered" are gone. Identity's tests hold the rules and the bench's
+  (with the database) hold them applied: `test_seen.py`, taking and holding a case to an expectation.
+- Tests outside the bench spell the filter out: `[e.thread for e, a in catalog.expecting([case], schema)[case] if
+  owns(alice.id, a)]`. Tests with a bench use `bench.expectation_choices([case], schema)[case]`.
 
 ## Decisions
 

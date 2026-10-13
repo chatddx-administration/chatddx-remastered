@@ -40,9 +40,7 @@ def test_an_expectation_is_carried_onto_another_case_of_its_family(
     catalog = bench.catalog
     family = bench.family("noted")
     [schema] = bench.expectation_schemas(family.case)
-    [mine] = catalog.expectation_choices([family.case], bench.person.id, schema)[
-        family.case
-    ]
+    [mine] = bench.expectation_choices([family.case], schema)[family.case]
     held = bench.expectation(family.case, schema)
     assert held is not None
     labs = bench.appendix(family.id, "Lab: CRP 120")

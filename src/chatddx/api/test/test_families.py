@@ -21,7 +21,7 @@ def family(signed: TestClient, name: str = "crlf") -> dict[str, Any]:
 def dropped(signed: TestClient, bench: Bench, family: dict[str, Any]) -> dict[str, Any]:
     [held] = signed.get(f"/api/families/{family['id']}").json()["expectations"]
     catalog, person, case = Catalog(bench.conn), bench.person.id, family["case"]
-    choices = catalog.expectation_choices([case], person, held["expectation_schema"])
+    choices = bench.expectation_choices([case], held["expectation_schema"])
     [mine] = choices[case]
     catalog.note(Subject(thread=mine), Entry(field=EntryField.DELETED), person)
     return held

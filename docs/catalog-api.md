@@ -10,6 +10,12 @@ types it uses (`Component`, `Fingerprint`, `Vignette`, `Recipe`, `Compilation`, 
 Paths are relative to `src/chatddx/catalog/` unless they start with `src/` or `docs/`.
 
 ## Contents
+```
+AGENT: replace
+In the `threads.py` line, "visibility" is the bench's now; the package takes no person but an owner.
+---
+- [threads.py](#threadspy): threads, edits, heads, expectations, forks, variations, proposals, `behind`
+```
 - [Package](#package)
 - [Conventions](#conventions)
 - [model.py](#modelpy): kinds, language tags, rows, entries, `About`, `latest`, results
@@ -34,11 +40,10 @@ Functions are called through their module (`threads.behind(rows, thread)`); `mod
 
 ```
 AGENT: replace
-`model.py` no longer imports `chatddx.identity`; `families.py` and `threads.py` do, for `sees`, `owns` and
-`collaborates`.
+`model.py` no longer imports `chatddx.identity`; `threads.py` does, for `owns`, in `find` with an owner and in
+`check_expectation`.
 ---
 | `model.py` | `chatddx.factors.{base,cases,scoring}` |
-| `families.py` | `model.py`, `read.py`, `chatddx.factors.{base,bundle,cases,scoring}`, `chatddx.identity` |
 | `threads.py` | `families.py`, `model.py`, `read.py`, `chatddx.factors.{base,kinds,request,scoring}`, `chatddx.identity` |
 ```
 | Module | Builds on |
@@ -73,6 +78,12 @@ package takes the last row for a key as the one that holds: through `model.py:la
 
 **Errors.**
 
+```
+AGENT: replace
+In the `LookupError` row, `expectations_for` and `expectation_for` are gone; `picked` raises alone.
+---
+… `check_language`); `picked` with several expectations to choose from. |
+```
 | Exception | When |
 | --- | --- |
 | `LookupError` | A thread, edit or family that doesn't exist (`no thread with id <id>`, `no edit with id <id>`, `no family with id <id>`); a digest that isn't stored where one is required (`check_adoptable`, `check_language`); `picked`, and so `expectations_for` and `expectation_for`, with several expectations to choose from. |
@@ -85,12 +96,12 @@ threads and families is said in its entry; in short:
 
 ```
 AGENT: replace
-The rules moved to identity (docs/identity.md, "Authorization"). `check_expectation` skips deleted threads through
-`expectation_choices`, so it stays in that row.
+The package takes no person, only an owner it records or is asked for. Who sees, owns and collaborates on what is
+`chatddx.identity`'s, applied by the bench to what `heads` and `expecting` give (docs/bench-api.md, `Seen`). Replace
+the two "skipped" rows with these.
 ---
-| skipped, through `chatddx.identity.sees` | `threads.visible`, `families.visible` |
-| skipped, through `chatddx.identity.collaborates` | `threads.expectations_shared` |
-| skipped, through `chatddx.identity.owns` | `threads.find` with an owner, `threads.expectation_choices`, `threads.expectations_for`, `threads.expectation_for`, `threads.check_expectation` |
+| skipped, through `chatddx.identity.owns` | `threads.find` with an owner, `threads.check_expectation` |
+| given, with their `About` | `threads.heads`, `threads.expecting` |
 ```
 | Deleted are | Functions |
 | --- | --- |
@@ -308,6 +319,14 @@ picks the latest row. `src/chatddx/store/catalog.py:Rows` implements it over the
 | `head(rows, thread: int) -> Edit` | The last of `history`. |
 | `recipe(rows, edit: Edit) -> Recipe \| None` | The recipe of the edit's compilation, or `None` when it names none. Takes an edit; `Catalog.recipe(thread)` passes the head. |
 
+```
+AGENT: replace
+`heads` gives every head with its `About`, deleted or not, in place of `heads(deleted=…)` and `visible`.
+---
+### `heads(rows, kind: str) -> list[tuple[Edit, About]]`
+The head and `About` of each thread of `kind`, deleted ones included, in thread id order. Threads without edits are
+left out; an unknown kind gives `[]`.
+```
 ### `heads(rows, kind: str, *, deleted: bool = False) -> list[Edit]`
 The heads of the threads of `kind` whose `About.deleted` equals `deleted`, in thread id order. Threads without edits
 are left out; an unknown kind gives `[]`.
@@ -316,17 +335,19 @@ are left out; an unknown kind gives `[]`.
 The ids of the live threads of `kind` whose current name is exactly `name`, and whose owner is `owner` when given, in
 thread id order. Names aren't unique, so it may return several.
 
+```
+AGENT: remove
+The bench keeps the `heads` a person `chatddx.identity.sees` (docs/bench-api.md, `Seen.visible`).
+```
 ### `visible(rows, kind: str, person: int) -> list[tuple[Edit, About]]`
-```
-AGENT: replace
-`About.shows` is now `chatddx.identity.sees`.
----
-The head and `About` of each thread of `kind` that `person` `sees`: live, and owned by `person` or shared with
-them as a collaborator. Thread id order; threads without edits are left out.
-```
 The head and `About` of each thread of `kind` that `About.shows(person)`: live, and owned by `person` or shared with
 them as a collaborator. Thread id order; threads without edits are left out.
 
+```
+AGENT: remove
+`expectations_for` and `expectation_for` are gone. The bench picks among the person's own, `picked` of
+`Seen.expectation_choices` (docs/bench-api.md, `Seen.expectation`, `Seen.scoring`).
+```
 ### `expectations_for(rows, cases: Sequence[str], person: int, schema: str) -> dict[str, str | None]`
 For each case, the digest of the expectation `person` scores it against: `picked` of its `expectation_choices`, the
 head of the person's own live thread, or `None`. Every case given is a key. The first case, in the order given, with
@@ -334,33 +355,38 @@ several distinct head digests raises `picked`'s `LookupError`. Shared threads ar
 
 `expectation_for(rows, case: str, person: int, schema: str) -> str | None` is `expectations_for` of the one case.
 
+```
+AGENT: remove
+It moved to the bench as `Seen.expectation_choices(cases, schema)`: `expecting` kept by `chatddx.identity.owns`.
+```
 ### `expectation_choices(rows, cases: Sequence[str], person: int, schema: str) -> dict[str, dict[int, str]]`
-```
-AGENT: replace
-`About.owned_by` is now `chatddx.identity.owns`.
----
-For each case, the threads `expectations_for` picks from, each with its head digest: the threads whose head is an
-expectation of that case with `expectation_schema == schema` and which `person` `owns`. Every case given is a key,
-with `{}` when there are none. It refuses nothing.
-```
 For each case, the threads `expectations_for` picks from, each with its head digest: the threads whose head is an
 expectation of that case with `expectation_schema == schema` and which `About.owned_by(person)`. Every case given is
 a key, with `{}` when there are none. It refuses nothing.
 
-### `expectations_shared(rows, cases: Sequence[str], person: int, schema: str) -> dict[str, list[tuple[Edit, About]]]`
 ```
 AGENT: replace
-"`About.shows(person)` and whose owner isn't `person`" is now one rule, `chatddx.identity.collaborates`.
+One function, taking no person, in place of `expectations_shared`, `expectation_choices`, `expectations_for` and
+`expectation_for`. The bench keeps what a person `owns` and `collaborates` on (docs/bench-api.md, `Seen`).
 ---
+### `expecting(rows, cases: Sequence[str], schema: str) -> dict[str, list[tuple[Edit, About]]]`
 For each case, the head and `About` of each thread whose head is an expectation of that case with
-`expectation_schema == schema`, which `person` `collaborates` on: live, shared with them, and not their own. What they
-could take. Thread id order. Every case given is a key, with `[]` when there are none.
+`expectation_schema == schema`, whoever owns it, deleted ones included. Thread id order. Every case given is a key,
+with `[]` when there are none.
 ```
+### `expectations_shared(rows, cases: Sequence[str], person: int, schema: str) -> dict[str, list[tuple[Edit, About]]]`
 For each case, the head and `About` of each thread whose head is an expectation of that case with
 `expectation_schema == schema`, which `About.shows(person)` and whose owner isn't `person`: what they could take.
 Thread id order. Every case given is a key, with `[]` when there are none.
 
 ### `picked(case: str, choices: Mapping[int, str]) -> str | None`
+```
+AGENT: replace
+`expectation_choices` is the bench's now.
+---
+The one distinct head among a case's choices, the threads a person may be scored against
+(docs/bench-api.md, `Seen.expectation_choices`), or `None` for none. …
+```
 The one distinct head among a case's `expectation_choices`, or `None` for none. Threads with the same head digest
 count as one choice. Several raise `LookupError("case <case> has expectations to choose from, in threads <t1>, <t2>,
 …")`, naming the threads.
@@ -448,13 +474,12 @@ it ends with none.
 The family's bindings, by id; the last is the current one. `LookupError("no family with id <family>")` when it has
 none, which also covers a family that doesn't exist.
 
+```
+AGENT: remove
+The bench keeps the families a person `chatddx.identity.sees`, of `Reader.families` and `Catalog.abouts`
+(docs/bench-api.md, `Seen.families`).
+```
 ### `visible(rows, person: int) -> list[tuple[int, About]]`
-```
-AGENT: replace
-`About.shows` is now `chatddx.identity.sees`.
----
-Each family, in id order, that `person` `sees`, with its `About`.
-```
 Each family, in id order, whose `About.shows(person)`, with its `About`.
 
 ### `family_of(rows, case: str) -> int | None`
@@ -651,6 +676,11 @@ the first of `Reader.compilations` (by digest). Anything else is `describe`d, wi
 the ones that write insert the rows the package decided on. A rule the database also checks is refused by Postgres
 with a psycopg error when the Python lets it through.
 
+```
+AGENT: replace
+In the row of `threads` functions, drop `visible`, `expectation_for`, `expectations_for`, `expectation_choices` and
+`expectations_shared`, and add `expecting`; drop the `visible_families(person)` row.
+```
 | Method | Calls | Writes |
 | --- | --- | --- |
 | `create(digest, by, *, compilation=None, forked_from=None, name=None, owner=None, labels=None) -> Edit` | `Reader.kind` (`LookupError("<digest> is not in the store")`), `threads.check_threadable`; `threads.check_expectation` and `threads.check_labels` through `edit`, and `note` | in one transaction: the thread, its first edit with its labels (`edit`), an `owner` entry for `owner` or else `by`, and a `name` entry when given |

@@ -2,9 +2,9 @@
 
 ```
 AGENT: replace
-The bench also applies `sees` and `owns` from `chatddx.identity` now.
+The bench also applies `sees`, `owns` and `collaborates` from `chatddx.identity` now.
 ---
-… agents/wip-identity.md (`Person`, `preferred`, `sees`, `owns`) …
+… agents/wip-identity.md (`Person`, `preferred`, `sees`, `owns`, `collaborates`) …
 ```
 Reference for the `chatddx.bench` package. It was written from `src/chatddx/bench/*` and docs/bench.md. What the bench
 is and why it is shaped this way is in docs/bench.md; this file says what each name accepts, returns and raises. The
@@ -39,8 +39,8 @@ never by path; tests import their helpers from `chatddx.bench.test.helpers`.
 
 ```
 AGENT: replace
-`cases.py`, `components.py`, `configurations.py` and `following.py` now import `chatddx.identity`, for `sees` and
-`owns`. Add it to their rows.
+`cases.py`, `components.py`, `configurations.py`, `following.py` and `taking.py` now import `chatddx.identity`, for
+`sees`, `owns` and `collaborates`. Add it to their rows.
 ```
 | Module | Holds | Builds on |
 | --- | --- | --- |
@@ -220,6 +220,13 @@ writes share. It writes nothing.
 
 #### Threads
 
+```
+AGENT: replace
+The catalog takes no person: `Catalog.heads(kind)` gives every head with its `About`, and the bench keeps its own.
+---
+| `visible(kind: str) -> list[tuple[Edit, About]]` | The heads of `Catalog.heads(kind)` the person `chatddx.identity.sees`: live, owned or collaborated on, in thread id order. |
+| `deleted(kind: str) -> list[tuple[Edit, About]]` | The heads of `Catalog.heads(kind)` that are deleted and the person's own, with their `About`s, in thread id order. |
+```
 | Method | Returns / raises |
 | --- | --- |
 | `visible(kind: str) -> list[tuple[Edit, About]]` | `Catalog.visible(kind, person.id)`: the heads of the live threads of `kind` the person owns or collaborates on, in thread id order. |
@@ -261,6 +268,16 @@ qualified, `<owner's login>/NAME` (`_qualified`, which gives nothing for a threa
 
 #### Families and expectations
 
+```
+AGENT: replace
+The catalog takes no person: `Catalog.expecting(cases, schema)` gives every thread of an expectation, and the bench
+keeps the person's own and those shared with them. Replace the `expectation` and `shared` rows, and add
+`expectation_choices` after `shared`.
+---
+| `expectation(case: str, schema: str) -> Expectation \| None` | The expectation `picked` of `expectation_choices([case], schema)`: the head of the person's own live thread, or `None`. `Ambiguous` with the catalog's message, `case <case> has expectations to choose from, in threads <t1>, <t2>, …`, when there are several. |
+| `shared(case: str, schema: str) -> list[tuple[Edit, About]]` | The heads of `Catalog.expecting([case], schema)` the person `chatddx.identity.collaborates` on: live, shared with them and not their own, in thread id order, each with its `About`. What they could take. |
+| `expectation_choices(cases: Sequence[str], schema: str) -> dict[str, dict[int, str]]` | For each case, the threads of `Catalog.expecting(cases, schema)` the person `chatddx.identity.owns`, each with its head digest; `{}` for none. What `expectation` and `scoring` pick from; it refuses nothing. |
+```
 | Method | Returns / raises |
 | --- | --- |
 | `families(tags: Iterable[str] = ()) -> list[Family]` | The families the person sees that have a case, with any of `tags`, or all without; by name. A family's case is the case of its current binding's vignette alone, when it is stored, else the first stored case of that vignette. |
@@ -295,6 +312,11 @@ qualified, `<owner's login>/NAME` (`_qualified`, which gives nothing for a threa
 
 #### Runs and scores
 
+```
+AGENT: replace
+In the `scoring` row, "`Catalog.expectations_for(cases, person.id, …)` picks" becomes "`picked` of
+`expectation_choices(cases, <the scorer's expectation_schema>)` gives".
+```
 | Method | Returns / raises |
 | --- | --- |
 | `runs() -> list[RunStarted]` | The runs the person owns and that aren't deleted, newest first, from the subjects whose entries ever named them (`Catalog.involving`). A collaborator on a run doesn't see it. |

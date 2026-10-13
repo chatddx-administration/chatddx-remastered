@@ -3,6 +3,7 @@ from collections.abc import Iterable
 from chatddx.catalog import About, Edit, Entry, EntryField, Subject
 from chatddx.factors.base import resolve
 from chatddx.factors.scoring import Expectation
+from chatddx.identity import collaborates, owns
 
 from .errors import Conflict, NotFound
 from .model import Taken
@@ -18,15 +19,17 @@ def take(
     if owner is not None and by is None:
         raise NotFound(f"no person {owner!r}")
     wanted = list(dict.fromkeys(cases))
-    own = seen.catalog.expectation_choices(wanted, seen.person.id, schema)
-    shared = seen.catalog.expectations_shared(wanted, seen.person.id, schema)
+    held = seen.catalog.expecting(wanted, schema)
+    person = seen.person.id
     found = Taken({}, {}, {}, [])
     with seen.conn.transaction():
         for case in wanted:
             offered = [
-                (e, a) for e, a in shared[case] if by is None or a.owner == by.id
+                (e, a)
+                for e, a in held[case]
+                if collaborates(person, a) and (by is None or a.owner == by.id)
             ]
-            if mine := sorted(own[case]):
+            if mine := sorted(e.thread for e, a in held[case] if owns(person, a)):
                 found.kept[case] = mine[0]
             elif not offered:
                 found.missing.append(case)
@@ -43,8 +46,7 @@ def take_from(seen: Seen, thread: int, replace: bool = False) -> int:
         raise ValueError(f"expectation {thread} is yours already")
     held = resolve(seen.get, edit.digest, Expectation)
     case, schema = held.case, held.expectation_schema
-    choices = seen.catalog.expectation_choices([case], seen.person.id, schema)
-    mine = sorted(choices[case])
+    mine = sorted(seen.expectation_choices([case], schema)[case])
     if mine and not replace:
         raise Conflict(
             f"{seen.person.login} has their own expectation of {seen.title(case)} "

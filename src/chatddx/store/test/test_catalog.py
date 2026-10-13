@@ -98,7 +98,7 @@ def test_threads_follow_edits(conn: Connection) -> None:
     reverted = catalog.edit(first.thread, v1, alice.id)
     assert catalog.head(first.thread).digest == v1
     assert catalog.containing(v1) == [first, reverted]
-    assert catalog.heads("chunk.instructions") == [reverted]
+    assert [e for e, _ in catalog.heads("chunk.instructions")] == [reverted]
 
     with pytest.raises(LookupError):
         _ = catalog.create("sha256:" + "9" * 64, alice.id)
@@ -140,7 +140,7 @@ def test_forks(conn: Connection) -> None:
     origin = catalog.create(v1, alice.id)
     fork = catalog.create(v2, bob.id, forked_from=origin.id)
     assert catalog.thread(fork.thread).forked_from == origin.id
-    assert catalog.heads("chunk.instructions") == [origin, fork]
+    assert [e for e, _ in catalog.heads("chunk.instructions")] == [origin, fork]
     with pytest.raises(errors.ForeignKeyViolation), conn.transaction():
         _ = catalog.create(ids["trial"], alice.id, forked_from=origin.id)
 
@@ -295,10 +295,9 @@ def test_entries(conn: Connection) -> None:
         collaborators=frozenset({bob.id}),
         deleted=True,
     )
-    assert catalog.heads("trial") == []
-    assert catalog.heads("trial", deleted=True) == [trial]
+    assert [(e, a.deleted) for e, a in catalog.heads("trial")] == [(trial, True)]
     catalog.note(subject, Entry(field=EntryField.DELETED, present=False), bob.id)
-    assert catalog.heads("trial") == [trial]
+    assert [(e, a.deleted) for e, a in catalog.heads("trial")] == [(trial, False)]
 
     run, score = uuid4(), uuid4()
     store.append(RunStarted(run=run, at=NOW, rig=RIG, trial=ids["trial"]))

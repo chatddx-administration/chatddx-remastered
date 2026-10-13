@@ -54,8 +54,10 @@ anything with an owner, collaborators and a deleted flag (`Owned`, which the cat
 It goes by the catalog's owners and collaborators, and only what is live counts (docs/catalog.md, "Owners"): a person
 owns what names them its owner (src/chatddx/identity/identity.py:owns), collaborates on what is shared with them and
 isn't theirs (`collaborates`), and sees both (`sees`). Of what they see, their own comes first (`preferred`), which is
-how a name finds its thread or family. The catalog applies these to its rows, and the bench to what is in the store
-and the World (docs/bench.md, "What a person sees").
+how a name finds its thread or family. The catalog doesn't take the person asking: it says who owns and shares what,
+and applies `owns` only to the owner it records, to hold one live expectation per case and schema. The bench applies
+the rules to what the catalog gives, and to what is in the store and the World (docs/bench.md, "What a person
+sees").
 ```
 It goes by the catalog's owners and collaborators: a person sees what they own or what is shared with them
 (src/chatddx/identity/identity.py:sees), and of what they see, their own comes first (`preferred`), which is how a

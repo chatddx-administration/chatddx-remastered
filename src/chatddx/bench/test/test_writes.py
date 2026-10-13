@@ -106,7 +106,7 @@ def test_a_person_writes_expectations_and_hears_what_the_lints_say(
     catalog = bench.catalog
     case = bench.family("noted").case
     [schema] = bench.expectation_schemas(case)
-    [mine] = catalog.expectation_choices([case], bench.person.id, schema)[case]
+    [mine] = bench.expectation_choices([case], schema)[case]
     head = catalog.head(mine)
     odd = Expectation(
         case=case, expectation_schema=schema, data=["not", "an", "object"]

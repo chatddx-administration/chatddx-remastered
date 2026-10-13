@@ -1,4 +1,4 @@
-from collections.abc import Iterable, Mapping
+from collections.abc import Iterable, Mapping, Sequence
 from uuid import UUID
 
 from pydantic import JsonValue
@@ -37,7 +37,7 @@ from chatddx.factors.request import (
 from chatddx.factors.scoring import Expectation, Judge, Scorer, Scoring
 from chatddx.factors.trial import Trial
 from chatddx.facts import Facts, lints, model_name
-from chatddx.identity import Person, owns, preferred, sees
+from chatddx.identity import Person, collaborates, owns, preferred, sees
 from chatddx.inventory import Inventory
 from chatddx.ledger import (
     ItemKey,
@@ -89,7 +89,7 @@ class Seen:
         return [found for kind in KINDS[word] for found in self.visible(kind)]
 
     def visible(self, kind: str) -> list[tuple[Edit, About]]:
-        return self.catalog.visible(kind, self.person.id)
+        return [(e, a) for e, a in self.catalog.heads(kind) if sees(self.person.id, a)]
 
     def names(self, word: str) -> list[str]:
         return sorted({a.name for _, a in self.threads(word) if a.name is not None})
@@ -181,12 +181,10 @@ class Seen:
         return self.catalog.head(id), about
 
     def deleted(self, kind: str) -> list[tuple[Edit, About]]:
-        heads = self.catalog.heads(kind, deleted=True)
-        known = self.catalog.abouts([Subject(thread=e.thread) for e in heads])
         return [
             (e, a)
-            for e in heads
-            if (a := known[Subject(thread=e.thread)]).owner == self.person.id
+            for e, a in self.catalog.heads(kind)
+            if a.deleted and a.owner == self.person.id
         ]
 
     def about(self, thread: int) -> About:
@@ -281,7 +279,11 @@ class Seen:
         return sorted(found, key=lambda f: f.name)
 
     def _families(self) -> list[tuple[int, About]]:
-        return self.catalog.visible_families(self.person.id)
+        ids = self.rows.families()
+        known = self.catalog.abouts([Subject(family=f) for f in ids])
+        return [
+            (f, a) for f in ids if sees(self.person.id, a := known[Subject(family=f)])
+        ]
 
     def _cases(self, families: list[int]) -> dict[int, str | None]:
         current = latest((b.family, b.vignette) for b in self.rows.bindings(families))
@@ -325,11 +327,21 @@ class Seen:
         return None if digest is None else resolve(self.get, digest, Expectation)
 
     def shared(self, case: str, schema: str) -> list[tuple[Edit, About]]:
-        return self.catalog.expectations_shared([case], self.person.id, schema)[case]
+        held = self.catalog.expecting([case], schema)[case]
+        return [(e, a) for e, a in held if collaborates(self.person.id, a)]
+
+    def expectation_choices(
+        self, cases: Sequence[str], schema: str
+    ) -> dict[str, dict[int, str]]:
+        return {
+            case: {e.thread: e.digest for e, a in held if owns(self.person.id, a)}
+            for case, held in self.catalog.expecting(cases, schema).items()
+        }
 
     def _expectations_for(self, cases: list[str], schema: str) -> dict[str, str | None]:
+        choices = self.expectation_choices(cases, schema)
         try:
-            return self.catalog.expectations_for(cases, self.person.id, schema)
+            return {case: picked(case, held) for case, held in choices.items()}
         except LookupError as e:
             raise Ambiguous(str(e)) from None
 
@@ -446,8 +458,7 @@ class Seen:
     ) -> tuple[dict[str, JsonValue], set[str]]:
         heads: dict[str, str] = {}
         several: set[str] = set()
-        choices = self.catalog.expectation_choices(cases, self.person.id, schema)
-        for case, held in choices.items():
+        for case, held in self.expectation_choices(cases, schema).items():
             try:
                 digest = picked(case, held)
             except LookupError:
@@ -563,7 +574,7 @@ class Seen:
         self, expectation: Expectation, thread: int | None, then: str = "edit that one"
     ) -> None:
         case, schema = expectation.case, expectation.expectation_schema
-        held = self.catalog.expectation_choices([case], self.person.id, schema)[case]
+        held = self.expectation_choices([case], schema)[case]
         if others := sorted(t for t in held if t != thread):
             raise ValueError(
                 f"{self.person.login} has their own expectation of {self.title(case)} "

@@ -5,10 +5,9 @@ from chatddx.factors.base import Fingerprint, Resolver, resolve
 from chatddx.factors.bundle import Registry
 from chatddx.factors.cases import Appendix, Case, Vignette
 from chatddx.factors.scoring import Expectation
-from chatddx.identity import sees
 
-from .model import About, Behind, Binding, Subject, Survey, latest
-from .read import Reader, about, abouts, heads_holding
+from .model import Behind, Binding, Subject, Survey, latest
+from .read import Reader, about, heads_holding
 
 
 @dataclass(frozen=True)
@@ -25,12 +24,6 @@ def bindings(rows: Reader, family: int) -> list[Binding]:
     if not found:
         raise LookupError(f"no family with id {family}")
     return found
-
-
-def visible(rows: Reader, person: int) -> list[tuple[int, About]]:
-    ids = rows.families()
-    known = abouts(rows, [Subject(family=f) for f in ids])
-    return [(f, a) for f in ids if sees(person, a := known[Subject(family=f)])]
 
 
 def family_of(rows: Reader, case: str) -> int | None:
