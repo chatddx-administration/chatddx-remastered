@@ -9,7 +9,7 @@ from chatddx.store import Catalog
 from chatddx.store.store import Connection
 from chatddx.test.world import LINES
 
-pytestmark = pytest.mark.wip
+pytestmark = pytest.mark.solidified
 
 
 def configuration(signed: TestClient, owner: str) -> dict[str, Any]:
@@ -41,6 +41,21 @@ def test_threads_are_listed_by_kind_among_those_the_person_sees(
     assert nope.status_code == 422 and nope.json()["detail"].startswith(
         "no kind 'stack'"
     )
+
+
+@pytest.mark.slow
+def test_configurations_are_listed_by_purpose(signed: TestClient) -> None:
+    def names(**params: str) -> set[str]:
+        query = {"kind": "configuration", **params}
+        return {t["name"] for t in signed.get("/api/threads", params=query).json()}
+
+    generation, judges = names(), names(purpose="judge")
+    assert names(purpose="generation") == generation
+    assert LINES in generation and "judge (en)" in judges
+    assert not generation & judges
+    got = signed.get("/api/threads", params={"kind": "scorer", "purpose": "judge"})
+    assert got.status_code == 422
+    assert got.json()["detail"] == "only a configuration has a purpose"
 
 
 def test_a_thread_is_shown_with_its_recipe_and_its_versions(signed: TestClient) -> None:

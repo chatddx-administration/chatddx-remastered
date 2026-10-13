@@ -4,7 +4,7 @@ from fastapi.testclient import TestClient
 from chatddx.api.test.test_variations import thread
 from chatddx.test.world import LINES
 
-pytestmark = pytest.mark.wip
+pytestmark = pytest.mark.solidified
 
 
 def test_an_owner_says_what_a_thread_is_called_and_who_it_is_shared_with(

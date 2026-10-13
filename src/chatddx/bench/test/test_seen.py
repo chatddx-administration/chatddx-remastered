@@ -1,21 +1,41 @@
 import re
+from uuid import UUID
 
 import pytest
 from pydantic import JsonValue
 
-from chatddx.bench import Ambiguous, Bench, Conflict, MovedOn, NotFound
+from chatddx.bench import (
+    Ambiguous,
+    Bench,
+    Conflict,
+    Graded,
+    MovedOn,
+    NotFound,
+    ScoreHalt,
+    ScorerStarted,
+    ScoringEvent,
+)
 from chatddx.bench.test.helpers import another_expectation, ran, trial
 from chatddx.catalog import Entry, EntryField, Subject
 from chatddx.curation import Plan, load_cases
 from chatddx.factors.base import resolve
-from chatddx.factors.scoring import Expectation, View
+from chatddx.factors.scoring import Expectation, Judge, View
 from chatddx.identity import Person
 from chatddx.runner.score import Grader, score_run
 from chatddx.store import Catalog, People, Store
 from chatddx.store.store import Connection
-from chatddx.test.world import DATA, LINES, MODELS, NATIVE, QWEN, QWEN_MODEL, REMOTE
+from chatddx.test.world import (
+    DATA,
+    GPT_OSS,
+    LINES,
+    MODELS,
+    NATIVE,
+    QWEN,
+    QWEN_MODEL,
+    REMOTE,
+)
 
-pytestmark = pytest.mark.wip
+pytestmark = pytest.mark.solidified
 
 
 def test_a_person_sees_their_own_and_shared_threads_and_families(
@@ -503,3 +523,74 @@ def test_a_judged_scorer_applies_where_the_world_lets_its_judges_run(
     assert refused.refused == (
         f"endpoint {REMOTE!r} needs the secret in $CHATDDX_TEST_REMOTE, which isn't set"
     )
+
+
+def scored(graded: Graded) -> UUID:
+    assert graded.score is not None
+    return graded.score.started.score
+
+
+@pytest.mark.slow
+def test_a_run_s_scores_are_read_the_latest_every_one_or_one_by_id(
+    conn: Connection, alice: Person, bob: Person, bench: Bench, plan: Plan
+) -> None:
+    run = ran(conn, alice, trial(conn, plan, LINES, "crlf"))
+    other = ran(conn, alice, trial(conn, plan, LINES, "svenska"))
+    lines = plan.named("scorer", "lines").digest
+    [first] = bench.score(bench.run_by_id(run), {lines})
+    [second] = bench.score(bench.run_by_id(run), {lines})
+
+    [latest] = bench.scores_of(run)
+    assert (latest.name, scored(latest)) == ("lines", scored(second))
+    every = [scored(g) for g in bench.scores_of(run, every=True)]
+    assert every == [scored(second), scored(first)]
+    assert scored(bench.score_of(run, scored(first))) == scored(first)
+    assert bench.scorer_name(lines) == "lines"
+
+    with pytest.raises(NotFound, match=f"no score {scored(first)} of run {other}"):
+        _ = bench.score_of(other, scored(first))
+    theirs = Bench(conn, bob, bench.inventory, bench.facts)
+    with pytest.raises(NotFound, match=f"no run {run} of yours"):
+        _ = theirs.score_of(run, scored(first))
+
+
+def test_a_judge_configuration_is_looked_at_as_a_judge_and_isn_t_run(
+    bench: Bench,
+) -> None:
+    configurations = bench.threads("configuration")
+    judges = {a.name for _, a in bench.purposed(configurations, "judge")}
+    generation = {a.name for _, a in bench.purposed(configurations, "generation")}
+    assert f"judge-graded (en, {QWEN_MODEL})" in judges and LINES in generation
+    assert not judges & generation
+
+    variation = bench.configuration(f"judge-graded (en, {QWEN_MODEL})")
+    engine = bench.endpoint(GPT_OSS)
+    findings = bench.findings(variation, engine, 7, bench.families())
+    judge = Judge(skeleton=variation.configuration.digest, engine=engine, seeds=(7,))
+    assert {f.code for f in findings} == {
+        "facts.output_note",
+        "facts.sampling_unmatched",
+    }
+    assert {f.subject for f in findings} == {judge.digest}
+    assert bench.reach(variation, bench.families()) == []
+
+    case = bench.family("crlf").case
+    with pytest.raises(ValueError, match="is a judge configuration"):
+        _ = bench.start(variation, QWEN, [case], 7)
+
+
+def test_a_scoring_says_each_score_it_starts_and_a_halt_stops_the_rest(
+    conn: Connection, alice: Person, bench: Bench, plan: Plan
+) -> None:
+    started = bench.run_by_id(ran(conn, alice, trial(conn, plan, LINES, "crlf")))
+    chosen = {plan.named("scorer", name).digest for name in ("lines", "whole")}
+    said: list[ScoringEvent] = []
+    graded = bench.score(started, chosen, said.append)
+    starts = {(e.scorer, e.name, e.score) for e in said if isinstance(e, ScorerStarted)}
+    assert starts == {(g.scorer.digest, g.name, scored(g)) for g in graded}
+
+    halt = ScoreHalt()
+    halt.set()
+    before = len(bench.scores_of(started.run, every=True))
+    assert {g.refused for g in bench.score(started, chosen, halt=halt)} == {"stopped"}
+    assert len(bench.scores_of(started.run, every=True)) == before

@@ -1,11 +1,8 @@
 # Bench
 
-A candidate for `docs/bench.md`. Its reference is `agents/wip-bench-api.md`, a candidate for `docs/bench-api.md`;
-below, those two names mean these two files until they move. "Outstanding", at the end, stays behind when they do.
-
 The bench is what one person sees and does, whatever the edge they reach it through: the threads, families and runs
 they see, the World's endpoints, the variation they are trying, and what is written in their name. Its edges are the
-repl (agents/wip-repl.md), the API (agents/wip-api.md) and the portal to come (agents/wip-portal.md). This document
+repl (docs/repl.md), the API (docs/api.md) and the portal to come (agents/wip-portal.md). This document
 describes what the bench does and why it is shaped like it is. Names, signatures and errors are in docs/bench-api.md.
 
 The bench builds on the store, the catalog, the World, the facts, the runner and the scoring pass, and holds no SQL of
@@ -19,11 +16,6 @@ before adding functionality to the bench.
 - Authorization, what the bench shows is what is relevant to show a person, not who may read what.
 
 ## How the bench works
-
-### A person-scoped view
-Everything that depends on who is asking goes through the bench; what doesn't is read straight from the store,
-the World and the facts. An edge asks the bench which runs are the person's and which thread a name means to them, but reads a component
-by its digest, or an endpoint's limits, from where they are kept.
 
 ### One person, one connection
 A connection lasts as long as its caller, and caches logins and the model each engine serves for that long.
@@ -53,12 +45,13 @@ none raises `NotFound`.
 A thread made per model or per language is found by its plain name too: `NAME (MODEL)`, `NAME (LANGUAGE)` or
 `NAME (LANGUAGE, MODEL)`, the one the model an engine serves may use (src/chatddx/catalog/variants.py). Without an
 engine, a name that only per-model threads have isn't found, and the error names them, so that an edge can say the
-endpoint picks one. A name made in several languages is ambiguous.
+endpoint picks one. A name made in several languages is ambiguous, unless it names one, as `NAME LANGUAGE` or
+`NAME (LANGUAGE)`.
 
 ### Finding things by id
 By id, a thread, a family or a run is found only among what the person sees, and a thread only among the kinds its
 word names. A run is also found by the start of its id, among their own, as a person at a prompt types it; an edge
-that names things by id can take whole ids only, since a start could name another run tomorrow (agents/wip-api.md,
+that names things by id can take whole ids only, since a start could name another run tomorrow (docs/api.md,
 "Ids").
 
 ## What a person is scored against
@@ -77,7 +70,7 @@ what they are scored against is the shared expectation until either thread moves
 origin reaches them as a proposal. A person can take:
 - **for many cases at once**, under one schema and in one transaction, an expectation for each case they have none of
   their own for, from any owner or one named. The cases left are named, each with why: theirs is kept, or several
-  owners share one, or nobody does.
+  are shared with them to choose from, or none is.
 - **one thread**, an expectation shared with them, which, when they have their own of its case under its schema, is a
   conflict unless they say to replace theirs. Replacing deletes theirs and forks the shared one in one transaction.
 
@@ -127,11 +120,16 @@ For a variation, the bench gives:
 - **its reach**: for each view of each scorer the person sees, whether the variation's output offers what the view
   reads, and which of the given families have no expectation it picks something from, or several to choose from.
 
+A judge configuration, one whose purpose is `judge`, is looked at as the judge it would make on the engine: its lints
+are the judge's, it reads no case, and it has no reach, as no scorer reads what a judge answers. It isn't run on cases:
+starting it is refused. An edge lists configurations by purpose (`Bench.purposed`), since a judge configuration is no
+use where a run's is wanted.
+
 ## Writes for the person
-The bench writes, in the person's name: configurations, chunks, appendices, expectations, scorers, typed cases, what
-is said about a thread, runs and scores. Tools, expectation schemas, engines, models and canary sets are developers'
-and ops', written through data sets (docs/chatddx.md, "Requirements"), and a scoring is built when a run is scored
-rather than written by hand.
+The bench writes, in the person's name: configurations, chunks, appendices, expectations, scorers, judges, typed
+cases, what is said about a thread, runs and scores. Tools, expectation schemas, engines, models and canary sets are
+developers' and ops', written through data sets (docs/chatddx.md, "Requirements"), and a scoring is built when a run
+is scored rather than written by hand.
 
 What every write has in common:
 - **One set of writes for every kind.** A thread is made new, forked from one the person sees, or edited when it is
@@ -143,8 +141,10 @@ What every write has in common:
 - **Nothing is written that is there already.** An edit that is its thread's head already writes nothing, and says
   so; saying what holds of a thread writes only what changes.
 - **What was written comes back with its lints**, and no write refuses on one: an expectation whose data its schema
-  refuses is written, and said so (docs/factors.md, "Lints"). Refusals are the components' own rules, the store's and
-  the catalog's, and the few the bench adds, below.
+  refuses is written, and said so (docs/factors.md, "Lints"). A component does, whether new, forked, edited, followed
+  or carried; a configuration comes back as what was saved, and an edge lints its skeleton itself (`Bench.linted`),
+  as the API does. Taking, saying and building cases give back what they made. Refusals are the components' own
+  rules, the store's and the catalog's, and the few the bench adds, below.
 - **Some refusals come before the write**, in the person's words, where the database or the catalog would refuse
   later in theirs: a component of another kind than the thread's, a second expectation of the person's own for a
   case and schema.
@@ -162,13 +162,14 @@ A configuration is kept with the compilation that makes it: for a variation with
 the running code compiles; otherwise the configuration's own.
 
 ### Components
-A person writes the kinds of chunk a recipe's parts take, appendices, expectations and scorers, each from its JSON as
-the store gives it:
+A person writes the kinds of chunk a recipe's parts take, appendices, expectations, scorers and judges, each from its
+JSON as the store gives it:
 - **new**, as a thread of the person's own, with a name;
 - **a fork** of a thread they see, from its head or from a component given in its place;
 - **an edit** of a thread they own.
 
-What a component refers to must be stored already, so a toolset can't bring a tool of its own.
+What a component refers to must be stored already, so a toolset can't bring a tool of its own, and a judge is written
+over a judge configuration already kept, which its own rule holds it to (docs/factors.md, "Judge").
 
 ### Languages
 A text is written with its language when the person gives one, and only a text can have one. A language belongs to
@@ -270,18 +271,23 @@ changes, which are stored already. That is how a correction to the archive's exp
 ones, and a scorer pinned again by a deploy reaches the person's fork of it.
 
 ## Runs and scores
-- **Starting** runs a variation at an endpoint, on some cases with one seed, through the runner
-  (agents/wip-runner.md). The runner's gate refuses what clearance forbids before anything is sent, and nothing is
-  sent until the edge sends it, so the edge decides how a run is shown as it goes.
+- **Starting** runs a variation at an endpoint, on some cases with one seed, through the runner (docs/runner.md),
+  under the default execution and with no canary set or text cleanup. A judge configuration is refused first. The
+  runner's gate refuses what clearance forbids before anything is sent, and nothing is sent until the edge sends it,
+  so the edge decides how a run is shown as it goes.
 - **A person's runs** are their own, newest first, found by the start of their id, or by a component their trial is
   built on.
 - **A run is described** as the repl's `run` and `batch` say it: the configuration, where it ran, its case or how many,
   and the seed.
-- **A scorer applies** to a run when every one of its views reaches the run's output schema.
+- **A scorer applies** to a run when the run's output offers what each of its views reads, a view of the whole answer
+  only a text answer, and the World lets each of its judges run (docs/runner.md, "What applies to a run").
 - **A run's scoring** under a scorer is built now, from the expectation each of its cases is scored against. Cases
   without one are left out, and a run whose cases have none has no scoring under that scorer.
 - **Scoring** scores a finished run under each scorer that applies to it, or some of them, through the scoring pass.
-  A scorer that can't score the run gives why instead, and the others score it all the same.
+  A scorer that can't score the run gives why instead, and the others score it all the same. A judged view's calls go
+  to the one endpoint serving its judge's engine, as the bench names none (docs/runner.md, "Judges"). The scoring
+  pass's events, each item scored and each judge call, go to the edge as they come, when it asks for them, after a
+  word that each scorer's score has started. Another thread can halt it, as a second Ctrl-C does in the repl.
 - **What is left to score** of a run is each scorer that applies, under which some of its cases have an expectation,
   and that has no whole score of the run under the scoring built now, so a changed expectation leaves the run to
   score again. A score is whole when it finished, scored every item under every view, and none of its judge calls was
@@ -290,7 +296,7 @@ ones, and a scorer pinned again by a deploy reaches the person's fork of it.
 - **Stopping a scoring**, as Ctrl-C does, finishes the score under way with what it has, and the scorers after it
   aren't scored.
 - **A run's scores** are the latest under each scorer that scored it, each named by the thread the person sees holding
-  that scorer, their own first.
+  that scorer, their own first; or every score of the run, newest first; or one by its id.
 - **Rendering again**: only a request's fingerprint is kept, so whether a run's first requests would be sent the same
   now is told by rendering them again from the trial and the vignette at its source.
 
@@ -308,12 +314,12 @@ The bench's errors are told apart by their class, so that an edge can answer eac
 
 The messages are worded for a person, without the edge's terms; an edge adds its own hint where it has one, as the
 repl does for a name its endpoint would pick a model for. The API answers `NotFound` with 404, `Ambiguous`, `Conflict`
-and `MovedOn` with 409, `OverQuota` with 429, and the other refusals with 422 (agents/wip-api.md, "Errors").
+and `MovedOn` with 409, `OverQuota` with 429, and the other refusals with 422 (docs/api.md, "Errors").
 
 ## Tests
-The tests start from the sample as `chatddx init-data` lands it from the sample World, with alice and her giftbag; bob
-is added with nothing. The database is made once a session and copied for each test (`src/chatddx/conftest.py`,
-`curated`). The variation and an item's outcome are tested without a database.
+The tests start from the test World (`worlds/test`, agents/wip-test-world.md) as `chatddx init-data` lands it, with
+alice and her giftbag; bob is added with nothing. The database is made once a session and copied for each test
+(`src/chatddx/conftest.py`, `curated`). The variation and an item's outcome are tested without a database.
 
 A person can only come to own two expectations of a case under one schema through two writers at once, so that is how
 the tests make them: one restores the person's thread while the other starts a new one, each passing the catalog's
@@ -341,71 +347,28 @@ check before the other has written.
 | Cell | The repl's word for a variation being tried together with an endpoint. |
 
 ## Outstanding
-What is still open of the bench and of its edges, the API's included (agents/wip-api.md). It doesn't move to `docs/`.
-The plans they were built from, with the options weighed for each decision and the survey of the old project, are
-`agents/wip-bench.md` at d5ebf52 and `agents/wip-api.md` at 100a078.
+Left for later. The API's are in docs/api.md, "Outstanding". The plan the bench was built from, with the options
+weighed for each decision and the survey of the old project, is `agents/wip-bench.md` at d5ebf52; the writes for
+the person were planned in agents/wip-authoring.md, whose takes marked "Built, as takes" still wait for a word.
 
-### Start with this
-0. **Go through open items, reiterate and confirm design decisions.**
-1. **Scoring in the API**, which has no requests of its own yet: a run is scored as it finishes, and its scores come
-   with it (agents/wip-api.md, "Scoring"). Still to do:
-   - a run's latest score under each scorer, on its own (`Bench.scores_of`);
-   - scoring a run now, under all its scorers or some (`Bench.score`), one run at a time;
-   - the person's finished runs, each with the scorers it is left to be scored by (`Bench.outstanding`, as
-     `runs?unscored=true`), a run with a case that has expectations to choose from among them, as
-     `Bench.outstanding` lists it;
-   - where a score's detail and the scoring's findings show, if anywhere: both can quote the answer, so a place for
-     them is case-derived, and the ledger marks the scoring's findings otherwise (see "Surprises").
-2. **Adopting the docs**: this file and `agents/wip-bench-api.md`, as `docs/bench.md` and `docs/bench-api.md`, and
-   `agents/wip-api.md` and `agents/wip-api-api.md`, as `docs/api.md` and `docs/api-api.md`.
-3. **A low-level manual for the bench**, made from `agents/wip-authoring.md`.
-4. **Judges** are the one write for authoring left (agents/wip-authoring.md, S6, phase 9), waiting for the scoring
-   pass to send judge requests. The portal's authoring and swift wait on the rest, which is built.
-5. **Takes** the bench and the API are built on still wait for a word (below).
-
-### Open
-The bench:
+- **A low-level manual for the bench**, made from agents/wip-authoring.md.
 - **Z1**: the map from roles to the kinds each role sees goes in `identity` once the portal's views give it meaning
   (agents/wip-identity.md, "Open"). `sees` then takes the person's roles and the kind.
-- **An execution for `Bench.start`**, which passes none, so a run gets `Execution()`'s; the worker needs it
-  (agents/wip-worker.md, "Below the worker").
-- **A person's runs are all read**, and paged afterwards, in the API too (`Bench.runs`). Page in the store once that
-  is slow.
-- **Two saves of one name at once** can both create a configuration, in the repl's `save` as in the API's forks
-  (`docs/catalog.md`, "Concurrent writers").
+- **An execution for `Bench.start`**, which passes none, so a run gets `Execution()`'s, with no timeout; the worker
+  needs it (agents/wip-worker.md, "Below the worker").
+- **A judge's endpoint can't be named**: `Bench.score` names none, so a judge whose engine two endpoints serve bars its
+  scorer, in the repl and the API alike (docs/repl.md, "What the repl doesn't reach"). Decided: as it is, until a World
+  serves an engine at two endpoints; then the scoring names an endpoint per judge.
+- **The repl lists judge configurations among the rest**, as the API doesn't.
+- **A person's runs are all read**, and paged afterwards, in the API too (`Bench.runs`), and what is left to score is
+  worked out for each of them, about 40 ms a run under five scorers. Page in the store once that is slow.
+- **Two saves of one name at once** can both create a configuration, in the repl's `save` (`docs/catalog.md`,
+  "Concurrent writers").
+- **Taking counts shared threads, not owners**: a case with two threads shared by one owner is to choose from, and
+  naming that owner doesn't pick between them. Only two writers at once can leave an owner two (see "One expectation
+  per case and schema").
 - **`Catalog.expectation_for`**, for one case, has callers in tests only.
-- **What the old bench had and this one doesn't**: what a run left unheeded (`outcome.py:unheeded`;
-  agents/wip-runner.md, "Afterwards"); a batch's plan, crossing variations into one (agents/wip-batch.md); and what holds a configuration, the portal's
-  (agents/wip-portal.md), whose part for the repl `Bench.reaching` and `Bench.scored_by` cover.
-
-Signing in, in the API:
-- **A cookie over plain HTTP** isn't kept: a `Secure`, `__Host-` cookie needs HTTPS, or `localhost`.
-- **`Origin` against `Host`.** A proxy that rewrites `Host` would fail the `Origin` check for a browser that sends no
-  `Sec-Fetch-Site`, though today's browsers all send it. If it bites: the public origin as a setting.
-- **No limit on login attempts**, and **no personal tokens** for scripts that run longer than a session (a table and a
-  migration).
-- **Keycloak.** Once it is in front, a proxy authenticates and hands over the login, which maps to `person.login`,
-  and signing in is skipped (agents/wip-identity.md).
-- **Roles aren't checked**; that waits for the portal.
-
-Serving the API:
-- **A connection per request**, opened and closed each time; a pool (`psycopg_pool`) when that costs. A run answered
-  as JSON holds two for as long as it lasts: the request's and its own.
-
-Variations, in the API:
-- **A part given twice in a query**: the last one counts.
-- **Variants.** A client finds `plan (en, Qwen/Qwen3-8B-AWQ)` by its full name; agents/wip-variants.md's option B
-  would let it filter by model and language instead.
-- **An unsaved variation's runs are titled by their whole recipe**, in the API as in the repl (docs/catalog.md, "A
-  variation nobody saved has a long title").
-
-Runs, in the API:
-- **Reaching a chunk** found no run, since a compiled skeleton holds what the chunk sets rather than a reference to
-  it. `Bench.reaching` reaches through the compilations now, which refer to both, and `Bench.scored_by` finds the runs
-  scored with what a scoring holds: an expectation, the expectation schema, a judge.
-- **A quiet stream sends nothing**, as while it waits for a slow first token, and a proxy's read timeout would cut
-  it. A comment line now and then would keep it open.
-- **`Accept` is read by media type alone**, so `text/event-stream;q=0` still asks for a stream.
-- **A run outlives a server that stops**, which waits for its requests. A killed one leaves the run unfinished, as
-  resuming isn't built; requests that last as long as a run are agents/wip-worker.md's ("Why").
-- **Judges**: judged views show as "not yet", as in the repl.
+- **What the old bench had and this one doesn't**: what a run left unheeded (the old `outcome.py:unheeded`;
+  docs/runner.md, "Smaller issues"); a batch's plan, crossing variations into one (agents/wip-batch.md); and what holds
+  a configuration, the portal's (agents/wip-portal.md), whose part for the repl `Bench.reaching` and `Bench.scored_by`
+  cover.

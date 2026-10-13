@@ -14,7 +14,7 @@ from chatddx.store import Store
 from chatddx.store.store import Connection
 from chatddx.test.world import DATA, LINES, NATIVE, NATIVE_TOOLS, OFF, QWEN
 
-pytestmark = pytest.mark.wip
+pytestmark = pytest.mark.solidified
 
 DIFFERENTIAL = ("answer", "differential")
 
@@ -217,6 +217,14 @@ def test_an_unsaved_variation_is_linted_in_its_recipe_s_language(
 
     assert "language.unknown" not in codes(tag="targets")
     assert "language.mixed" in codes()
+
+
+def test_a_judge_configuration_is_looked_at_as_a_judge(signed: TestClient) -> None:
+    query = {"kind": "configuration", "purpose": "judge", "name": "judge (en)"}
+    [judging] = signed.get("/api/threads", params={**query, "owner": "alice"}).json()
+    shown = variation(signed, judging, endpoint=QWEN)
+    assert shown["reach"] == [] and shown["findings"] == []
+    assert "‹completion›" in str(shown["request"])
 
 
 @pytest.mark.slow

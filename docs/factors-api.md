@@ -24,7 +24,6 @@ Paths are relative to `src/chatddx/factors/` unless they start with `src/` or `d
 - [Finding codes](#finding-codes)
 - [Database: schema `factor`](#database-schema-factor)
 - [Known gaps](#known-gaps)
-- [Beyond docs/factors.md](#beyond-docsfactorsmd)
 
 ## Package
 

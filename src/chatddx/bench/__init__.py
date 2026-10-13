@@ -12,6 +12,7 @@ from .model import (
     Written,
 )
 from .outcome import Outcome, outcome, usage, used
+from .runs import ScoreHalt, ScorerStarted, ScoringEvent
 from .variation import OPTIONAL, PARTS, TriedVariation
 
 __all__ = [
@@ -31,6 +32,9 @@ __all__ = [
     "Proposed",
     "Reach",
     "Saved",
+    "ScoreHalt",
+    "ScorerStarted",
+    "ScoringEvent",
     "Taken",
     "TriedVariation",
     "Written",

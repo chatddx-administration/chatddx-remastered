@@ -57,13 +57,14 @@ finish record itself is outside the seal (see "Open design issues").
 
 ### Case-derived records
 Content produced from a vignette is *case-derived*. Each record type says whether it may hold any, and a new type is
-assumed to unless it says otherwise. Two types do:
+assumed to unless it says otherwise. Three types do:
 - run items: their responses hold the completions and the arguments the model passed to tools, and their tool rounds
   hold what the tools returned;
-- score items: their judge responses grade completions and may quote them, and the scorer's detail may hold anything.
+- score items: their judge responses grade completions and may quote them, and the scorer's detail may hold anything;
+- a score's finish: its findings can quote the answer, as `answer.invalid` names the value the schema refused.
 
-Start and finish records hold references, settings, times, seals and findings written by code. Canary calls answer
-canaries, which are non-sensitive by definition (docs/factors.md, "Canary sets").
+Start records, a run's finish and canary calls hold references, settings, times, seals and findings written by code.
+Canary calls answer canaries, which are non-sensitive by definition (docs/factors.md, "Canary sets").
 
 Request bodies and the prompt's token ids would carry the case's text too, so neither is stored, only their
 fingerprints (see "Call").

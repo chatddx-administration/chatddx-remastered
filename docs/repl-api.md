@@ -1,9 +1,9 @@
 # Repl API
 
 Reference for the `chatddx.repl` package. It was written from `src/chatddx/repl/*` and `docs/repl.md`. What the shell
-does and why is in `docs/repl.md`, and how to use it in the manual (agents/wip-repl-manual.md); this file says what
+does and why is in `docs/repl.md`, and how to use it in the manual (docs/repl-manual.md); this file says what
 the package holds, what each command calls, and how its tests are set up. The bench it calls on is in
-`src/chatddx/bench/` (agents/wip-bench-api.md).
+`src/chatddx/bench/` (docs/bench-api.md).
 
 Paths are relative to `src/chatddx/repl/` unless they start with `src/`, `docs/` or `agents/`.
 

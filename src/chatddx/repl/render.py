@@ -9,7 +9,15 @@ from rich.live import Live
 from rich.table import Table
 from rich.text import Text
 
-from chatddx.bench import Bench, Graded, Outcome, outcome as ended, usage, used
+from chatddx.bench import (
+    Bench,
+    Graded,
+    Outcome,
+    ScoringEvent,
+    outcome as ended,
+    usage,
+    used,
+)
 from chatddx.catalog.titles import short
 from chatddx.factors.base import Finding, resolve
 from chatddx.factors.request import Skeleton, tool_calls
@@ -17,12 +25,7 @@ from chatddx.factors.scoring import Judge, Scorer, View
 from chatddx.factors.select import select
 from chatddx.ledger import Call, ItemKey, RunItem, ScoreItem
 from chatddx.runner.run import Event, ItemEnded, Noted, Streamed, ToolRan
-from chatddx.runner.score import (
-    NO_EXPECTATION,
-    Event as ScoringEvent,
-    JudgeAnswered,
-    JudgeAsked,
-)
+from chatddx.runner.score import NO_EXPECTATION, JudgeAnswered, JudgeAsked
 from chatddx.runner.send import STOPPED, Delta
 from chatddx.scorers.aggregate import mean, stderr
 from chatddx.scorers.answer import Answer, read

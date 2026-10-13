@@ -2,13 +2,13 @@
 
 The repl, `chatddx repl LOGIN`, is a shell for one person over a World: choose a configuration and an endpoint, see
 what a request would be, run cases, and look back at runs and score them. It works through the bench
-(`src/chatddx/bench/`, agents/wip-bench.md), the person-scoped view the API shares, and strings together pieces
+(`src/chatddx/bench/`, docs/bench.md), the person-scoped view the API shares, and strings together pieces
 documented elsewhere: the runner and the scoring pass (docs/runner.md), what a request is made of (docs/factors.md),
 names, owners and titles (docs/catalog.md), endpoints and clearance (docs/inventory.md), and model facts and their
 lints (docs/facts.md).
 
 This document describes what the shell does and why. Its modules, the command table and what each command calls on the
-bench are in docs/repl-api.md; how to use it, command by command, is the manual (agents/wip-repl-manual.md).
+bench are in docs/repl-api.md; how to use it, command by command, is the manual (docs/repl-manual.md).
 
 The repl writes only runs and scores, through the runner and the scoring pass, a person's saved configurations
 (`save`), and the expectations they take (`take`). Authoring, the chunks, cases, appendices and expectations a person

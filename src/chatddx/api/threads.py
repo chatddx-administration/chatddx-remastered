@@ -17,7 +17,7 @@ from chatddx.bench import (
 )
 from chatddx.catalog.titles import describe
 from chatddx.factors.base import Finding
-from chatddx.factors.request import Recipe
+from chatddx.factors.request import Purpose, Recipe
 from chatddx.factors.trial import suggest_seeds
 from chatddx.store import People
 from chatddx.store.catalog import Rows
@@ -73,14 +73,29 @@ def threads(
     deleted: Annotated[
         bool, Query(description="the person's own deleted threads instead")
     ] = False,
+    purpose: Annotated[
+        Purpose | None,
+        Query(description="a configuration's, generation unless given"),
+    ] = None,
 ) -> list[schemas.Thread]:
     if kind not in KINDS:
         raise HTTPException(422, f"no kind {kind!r}: the kinds are {', '.join(KINDS)}")
+    if purpose is not None and kind != "configuration":
+        raise HTTPException(422, "only a configuration has a purpose")
     wanted = set(tag or ())
+    found = {
+        held: bench.deleted(held) if deleted else bench.visible(held)
+        for held in KINDS[kind]
+    }
+    if kind == "configuration":
+        found = {
+            held: bench.purposed(heads, purpose or "generation")
+            for held, heads in found.items()
+        }
     return [
         thread_of(bench, held, edit, about)
-        for held in KINDS[kind]
-        for edit, about in (bench.deleted(held) if deleted else bench.visible(held))
+        for held, heads in found.items()
+        for edit, about in heads
         if (name is None or about.name == name)
         and (owner is None or login(bench, about.owner) == owner)
         and (not wanted or wanted & about.tags)

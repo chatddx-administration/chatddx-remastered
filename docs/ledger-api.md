@@ -17,7 +17,6 @@ Paths are relative to `src/chatddx/ledger/` unless they start with `src/` or `do
 - [Finding codes](#finding-codes)
 - [Database: schema `ledger`](#database-schema-ledger)
 - [Known gaps](#known-gaps)
-- [Beyond docs/ledger.md](#beyond-docsledgermd)
 
 ## Package
 
@@ -51,7 +50,7 @@ Only records have `v`, `canonical` and `parse`.
 | `RunFinished` | `run.py` | `"finished"` | no | `ledger.run_stage` |
 | `ScoreStarted` | `score.py` | `"started"` | no | `ledger.score_stage` |
 | `ScoreItem` | `score.py` | | yes | `ledger.score_item` |
-| `ScoreFinished` | `score.py` | `"finished"` | no | `ledger.score_stage` |
+| `ScoreFinished` | `score.py` | `"finished"` | yes | `ledger.score_stage` |
 
 **Errors.**
 
@@ -374,7 +373,7 @@ One run item graded by one view. Case-derived.
 | `judge_calls` | `tuple[JudgeCall, ...]` | `()` |
 
 ### `class ScoreFinished(Record)`, stage `finished`
-Not case-derived. Fields as `RunFinished`, with `score: UUID` in place of `run`.
+Case-derived: its findings can quote the answer. Fields as `RunFinished`, with `score: UUID` in place of `run`.
 
 ### `class Score(Frozen)`
 A score's log put back together from its rows.

@@ -1,7 +1,7 @@
 # The portal: work in progress
 
 The portal is the web interface "used to configure factors, watch runs and export results" (`docs/chatddx.md`,
-glossary). It is the bench's third edge, after the repl and the API (`agents/wip-bench.md`; `agents/wip-api.md`). This
+glossary). It is the bench's third edge, after the repl and the API (`docs/bench.md`; `docs/api.md`). This
 file plans its port from the old project.
 
 "The old portal" is chatddx-administration/chatddx at 504792c: `src/chatddx/django/portal/`, its manual
@@ -62,7 +62,7 @@ From its manual (`docs/portal.md`), which reads as a functional spec:
 | Old portal (504792c) | Remastered | Notes |
 |---|---|---|
 | a case: a vignette and targets, saved by name, with versions | a family, its case and appendices, and an expectation per schema (`Bench.family_by_id`, `Bench.expectation`); the vignette is a source's, fetched and never stored | the bench writes none of these yet (see "Below the UI") |
-| a configuration with slices set | a configuration thread's head and recipe; a variation being tried (`src/chatddx/bench/variation.py:TriedVariation`); `GET /api/threads/{id}/variation` (API phase 3) | "cell" stays the repl's word (`agents/wip-bench.md`, "Cell") |
+| a configuration with slices set | a configuration thread's head and recipe; a variation being tried (`src/chatddx/bench/variation.py:TriedVariation`); `GET /api/threads/{id}/variation` (API phase 3) | "cell" stays the repl's word (`docs/bench.md`, "Cell") |
 | a variation as a stored object (`variation_admin.py`) | a chunk on a thread of its part's kind; a saved variation is a fork (`Bench.fork`) | variations are "a supported portal workflow, not an object in the code" (`docs/chatddx.md`) |
 | a stack and its parts | an endpoint and the engine it serves (`Inventory`, `Bench.endpoint`), and the facts (`GET /api/models`) | ops-authored files, read only |
 | a stack's **Test** | nothing yet: `confirm` checks an endpoint's binding (`src/chatddx/runner/gate.py:check`), and the `vllm.*` lints check a skeleton | open |
@@ -94,13 +94,13 @@ From its manual (`docs/portal.md`), which reads as a functional spec:
 
 ## How it is built
 Decided: **P3b**, HTML pages rendered on the server, per request, from the bench, with Svelte islands that call the
-API where a page needs feedback without a reload. The portal consumes the bench, as planned (`agents/wip-bench.md`,
-"A person-scoped view"), and is built on the API where it is interactive (`agents/wip-api.md`, "Who it is for").
+API where a page needs feedback without a reload. The portal consumes the bench, as planned (`docs/bench.md`),
+and is built on the API where it is interactive (`agents/wip-api.md` at 100a078, "A1. Who it is for").
 
 Set aside:
 - **Keeping the old portal, Django and all.** Its pages are `ModelAdmin`s over the old models, which remastered doesn't
   have; Django would bring a second user table, session table and migration history; and querying models from the pages
-  is how the old project copied its rules into every edge (`agents/wip-bench.md` at d5ebf52, "The old bench"). What
+  is how the old project copied its rules into every edge (`docs/bench.md` at d5ebf52, "The old bench"). What
   carries over is its manual, as a spec, and its ways of showing things: the version timeline, the line that says where
   a save goes, live checks, the confirmation before a batch, the run's page.
 - **A PWA.** Offline buys nothing, and what is kept offline is a destination for sensitive data
@@ -156,15 +156,14 @@ Take:
 
 ## Below the UI
 What the portal needs below its pages:
-1. **Runs that outlive the request**: the worker (`agents/wip-worker.md`). A run started over HTTP runs in the
-   request and halts when the client goes away (`agents/wip-bench.md`, "Takes the API is built on", A6, W1); for a
-   browser that is a closed tab.
+1. **Runs that outlive the process**: the worker (`agents/wip-worker.md`). A run started over HTTP is under way in
+   the app's process, beside the request, and ends with it (`docs/api.md`, "Where it runs").
 2. **Writes for authoring**: chunks, appendices and expectations, and cases and families for swift, through the bench
    (`agents/wip-authoring.md`). Taking an expectation shared with the person is one of them: a person is scored against
-   their own only (`agents/wip-bench.md`, "What a person is scored against").
+   their own only (`docs/bench.md`, "What a person is scored against").
 3. **The batch planner** (`agents/wip-batch.md`).
 4. **The worker's controls and status** (`agents/wip-worker.md`, "The plan", 4).
-5. **Z1**, the map from roles to kinds, waits for the portal's views (`agents/wip-bench.md`, "Outstanding", "Open";
+5. **Z1**, the map from roles to kinds, waits for the portal's views (`docs/bench.md`, "Outstanding";
    `agents/wip-identity.md`, "Open").
 6. **Case-derived content in the browser's cache.** A page that shows a vignette or a completion is kept in the
    browser's cache unless it says `Cache-Control: no-store`. The API's A9 (S3) keeps such content in its own places;
@@ -190,7 +189,7 @@ Decided:
   `POST /api/diagnose {symptoms, model}`. The old project dropped the first and the last at 110f9a5 (2026-09-26).
 - **Remastered has its answer**: the sample's management plan
   (`worlds/sample/_data/schemas/management_plan_v1.json`, the `plan` recipes), read as the repl and the API read
-  answers (`chatddx.scorers.answer.read`) and served from a run's items (`agents/wip-api.md`, "Case-derived content").
+  answers (`chatddx.scorers.answer.read`) and served from a run's items (`docs/api.md`, "Case-derived content").
 
 ### Typed cases
 Decided: **the texts typed in swift are kept in the database**, as a source of their own. A case is otherwise a
@@ -239,7 +238,7 @@ Take, for its shape:
   (the schema) and `docs/migrations.md`.
 
 **Protection.** The demo is on the public web, but the portal has no guest: every request needs a session
-(`agents/wip-api.md`, "Signing in"), and people are added by an admin (`chatddx person add`). So:
+(`docs/api.md`, "Signing in"), and people are added by an admin (`chatddx person add`). So:
 - a person's typed cases and runs are held to a quota, and a text to a size, with a NUL refused, since the database
   can't keep one (`docs/store.md`, "Known gaps");
 - signing in is rate limited, which is open (`agents/wip-identity.md`, "Open");
@@ -267,7 +266,7 @@ Assuming the takes.
 6. **Batches**: the planner's pages (`agents/wip-batch.md`), then a batch's page and the worker's status
    (`agents/wip-worker.md`).
 7. **Z1**, and what deleting hides.
-8. **Docs**: material for a `docs/portal.md`, kept here as `agents/wip-bench.md` is the bench's.
+8. **Docs**: material for a `docs/portal.md`, kept here as `docs/bench.md` is the bench's.
 
 ## Open
 - **One process or two.** `chatddx api` serving the portal too, or a `chatddx portal` of its own on the same app.

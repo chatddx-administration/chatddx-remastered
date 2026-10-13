@@ -5,7 +5,7 @@ from fastapi.testclient import TestClient
 
 from chatddx.test.world import LINES, QWEN
 
-pytestmark = pytest.mark.wip
+pytestmark = pytest.mark.solidified
 
 ZERO = "sha256:" + "0" * 64
 

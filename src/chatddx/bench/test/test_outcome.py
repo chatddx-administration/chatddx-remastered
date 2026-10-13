@@ -14,7 +14,7 @@ from chatddx.ledger import Call, ItemKey, RunItem, ToolRun, Turn
 from chatddx.runner.send import STOPPED
 from chatddx.test.world import LINES, NATIVE
 
-pytestmark = pytest.mark.wip
+pytestmark = pytest.mark.solidified
 
 NOW = datetime(2026, 1, 1, tzinfo=UTC)
 

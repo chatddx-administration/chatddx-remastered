@@ -16,6 +16,12 @@ This document contains project-wide instructions written by humans for agents.
 ## Testing
 * Baseline is `pytest` which runs every test and takes ~60s; `pytest -m 'not slow'` is the quick run, <30s.
   A test whose call takes 0.2 s or more is marked `@pytest.mark.slow` (pyproject.toml, `[tool.pytest]`).
+* Drafts are targeted with `pytest -m 'wip'` and excluded with `pytest -m 'not wip'`, see Staging.
+
+## Staging
+A module is either wip or solidified and are held apart with a pytest mark.
+* wip (draft) modules are documented in `agents/wip-<module>.md`
+* solidified modules are documented in `docs/<module>*.md`, where the chatddx rule one of documentation applies.
 
 ## Docs
 All docs except `agents/*` are governed by chatddx rule one of documentation: Humans write, agents suggest.
