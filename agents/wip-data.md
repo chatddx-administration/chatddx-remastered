@@ -5,8 +5,8 @@ runs (`_runs/`), as init-data, the engine import, the repl and `chatddx scripted
 grok, and the rules that govern them are partly conventions. This file plans turning the conventions into rules,
 where the structure is accidental, and leaving it alone where it maps the machinery.
 
-"Decided" means the user said so. "Take" is the agent's recommendation and still open. D1, D2, D4, D5 and D6 are
-decided and built, with two takes inside D2; D3 is a take.
+"Decided" means the user said so. "Take" is the agent's recommendation and still open. D1–D6 are decided and built;
+D2 holds two takes settled while building.
 
 ## Start with this
 The take: the data set is a fair picture of machinery that really is complex; the World and the seam between World
@@ -18,7 +18,7 @@ Order, cheapest and least contested first:
 2. D4, content tests out of curation: built.
 3. D6 and D1, the World's `engines.toml` and no init-data `--factors`: built.
 4. D2, judges bound by the World: built.
-5. D3, translations grouped by source.
+5. D3, translations grouped by record: built.
 
 ## The principle
 Each file is written by one kind of author and holds only what that author decides.
@@ -40,11 +40,6 @@ Since D1 and D2 this holds by rule: the engines are the World's, and so is which
   required; `engines.toml` and `facts.toml` are taken by name when present; `include` names the files of endpoints and
   hosts; a source's `path` names its vignettes; `_data/` is init-data's default `--data`, and `_runs/` is `chatddx
   scripted-runs`'. The leading `_` marks what the World doesn't read.
-- **Translations** (`src/chatddx/factors/request.py:Translations`, `compile_request`) are a flat map from a text,
-  exactly as a chunk holds it, to its translation. A recipe's missing texts fail its compile, listed. Nothing notices
-  an entry that no text uses. `worlds/sample/_data/texts-sv.toml` holds 51 entries in one table, far from the
-  outputs, the toolset and the schema files they come from; a TOML key can't span lines, so a paragraph of guidance
-  is one line of `\n\n`, and one changed English word re-keys the whole paragraph.
 
 ## Takes
 ### D1. The World's engines file
@@ -85,31 +80,34 @@ Two takes, settled while building and open to being overturned:
 - **A judge the World doesn't bind is skipped, not refused**, and reported, as a judge on an unknown engine was, so a
   World can load a data set without binding its judges. A binding for a judge the data set doesn't have is reported.
 
-### D3. Translations grouped by source
-Take: keep the mechanism, a flat map from text to translation (structure can't drift, and a missing text fails the
-compile with a list); change how it is written. Entries are pairs, grouped by where the text comes from, and planning
-flattens them into the same `entries`:
-```toml
-[[translations.sample.of."output.management-plan-shown"]]
-text = """Fill in the management plan for the case.
-
-Answer with a JSON object that matches this JSON Schema, and nothing else:
-
-"""
-translation = """Fyll i handläggningsplanen för fallet.
-
-Svara med ett JSON-objekt som följer detta JSON Schema, och inget annat:
-
-"""
-```
-- A group names a record that holds text the translations reach (`output.<name>`, `toolset.<name>`) and holds texts of
-  that record (`src/chatddx/factors/request.py:own_texts`). An entry whose text its group's record doesn't hold is
-  refused when planned, so a stale entry is found.
-- A text held by several records (a schema shared by `plan`, `plan-shown` and `plan-prompted`) is written once, under
-  any one of them; the same text written twice must have the same translation.
-- Missing texts still fail the compile of the recipe that needs them.
-- Later, if translating grows: a command that appends the missing pairs to a texts file, as gettext's msgmerge does.
-- Digests: none move; the component is the same flat map.
+### D3. Translations grouped by record
+Decided, and built with groups per record only. Translations were a flat map from a text, exactly as a chunk holds it,
+to its translation: `worlds/sample/_data/texts-sv.toml` held 51 entries in one table, far from the records they come
+from; a TOML key can't span lines, so a paragraph of guidance was one line of `\n\n`; and nothing noticed an entry no
+text used any more.
+- A translations record may write its entries in `of`, grouped by the record whose texts they translate, an output, a
+  toolset or a recipe (its appendix layout), each entry a `text` and its `translation`, multi-line strings allowed:
+  ```toml
+  [[translations.sample.of."output.management-plan-shown"]]
+  text = """
+  Fill in the management plan for the case.
+  ...
+  """
+  translation = """
+  Fyll i handläggningsplanen för fallet.
+  ...
+  """
+  ```
+- Planning flattens the groups into the same `entries`, and refuses an entry whose record doesn't hold its text (the
+  record's variants in other languages than the translations'), a group naming no output, toolset or recipe, a text
+  translated two ways, and `of` beside `entries` (`src/chatddx/curation/plan.py`, `grouped`, `texts_of`;
+  `curation/test/test_plan.py`). Translations are planned after toolsets for it. A text several records hold, such as
+  a shared schema's, is written once, under the first that holds it.
+- Both data sets' translations are grouped: the sample's 51 entries under eight records, the test World's two under
+  `output.lines` and `recipe.lines-guided`.
+- Digests: none moved; every planned record of the three Worlds has the digest it had (checked before and after).
+- An AGENT suggestion in `docs/curation.md` ("Factors").
+- Not built: a command that appends a recipe's missing pairs, as gettext's msgmerge does, once translating grows.
 
 ### D4. Content out of curation
 Decided, and built as the take had it: curation is code for any data set; the sample is content, and curation knows
@@ -150,7 +148,7 @@ worlds/<name>/
   vignettes/       a directory source's vignettes, when git may hold them
   _data/
     factors.toml       chunks without text, tools, the expectation schema, scorers, judges, recipes, canary sets
-    texts-<lang>.toml  chunks that hold text, in that language; translations grouped by source
+    texts-<lang>.toml  chunks that hold text, in that language; translations grouped by record
     cases-<lang>.toml  cases in that language, with tags, targets, appendices and the cases that send them
     schemas/           the JSON files the factors load
   _runs/           scripted runs
@@ -163,11 +161,7 @@ worlds/<name>/
   schema. These are the rules of the factors, not of the files.
 - **`include`** for what the import rewrites whole, and the leading `_` for what the World doesn't read.
 
-## What each take touches
-| Take | Code | Data | Tests | Docs (AGENT suggestions) |
-| --- | --- | --- | --- | --- |
-| D3 | `curation/plan.py` | both `texts-sv.toml` | `test_sample.py`, curation's | `docs/curation.md` "Texts"; `docs/factors.md` "Translations" |
-
 ## Open
-- **D3, the groups.** Records only, or schema files too (`schemas/management_plan_v1.json`), which would group a shared
-  schema's texts once. And the recipe's appendix layout, which translations reach too (`request.py:TRANSLATED`).
+- **Where this file goes.** Every take is built. What stays true, the principle and the layout it leaves, belongs in
+  `docs/inventory.md` ("Worlds") and `docs/curation.md` ("Data sets") once their suggestions are in; then this file can
+  go, as `agents/wip-sample-data.md` did.

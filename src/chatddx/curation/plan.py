@@ -16,6 +16,7 @@ from chatddx.factors.engine import LocalEngine, ModelArtifact, RemoteEngine
 from chatddx.factors.request import (
     RECIPE_PARTS,
     TRANSLATED,
+    AppendixLayout,
     FewShot,
     Instructions,
     Output,
@@ -48,9 +49,10 @@ TABLES: dict[str, type[Component]] = {
     "sampling": Sampling,
     "reasoning": Reasoning,
     "passthrough": Passthrough,
-    "translations": Translations,
     "tool": Tool,
     "toolset": Toolset,
+    # After the records whose texts its entries are grouped by.
+    "translations": Translations,
     "expectation_schema": ExpectationSchema,
     "scorer": Scorer,
     "canary_set": CanarySet,
@@ -105,6 +107,10 @@ TEXT_TABLES = frozenset(
     {"instructions", "few_shot", "prompt", "output", "toolset", "translations"}
 )
 _TEXTS = re.compile(r"^texts-(.+)\.toml$")
+
+
+def _short(text: str) -> str:
+    return repr(text if len(text) <= 60 else text[:57] + "…")
 
 
 def _named(name: str, key: Key) -> str:
@@ -305,6 +311,62 @@ def plan_factors(
             )
         return None if found is None else found.name
 
+    # The texts a translations record in `language` may translate, of the record named.
+    def texts_of(record: str, language: str | None) -> set[str]:
+        table, _, name = record.partition(".")
+        if table == "recipe" and name in bodies.get("recipe", {}):
+            raw = bodies["recipe"][name][None]
+            assert isinstance(raw, dict)
+            try:
+                layout = AppendixLayout.model_validate(raw.get("appendix_layout", {}))
+            except ValidationError as e:
+                raise ValueError(f"recipe.{name}: {e}") from None
+            return {
+                t for t in (layout.before, layout.between, layout.after) if t.strip()
+            }
+        if table not in ("output", "toolset", "recipe"):
+            raise ValueError(f"{record!r} names no output, toolset or recipe")
+        if (variants := planned.get((table, name))) is None:
+            raise ValueError(f"{record!r}: no {table} named {name!r}")
+        get = plan.registry.get
+        return {
+            text
+            for (written, _), r in variants.items()
+            if written != language
+            for text in own_texts(get(r.digest), get)
+        }
+
+    def grouped(name: str, language: str | None, of: object) -> dict[str, JsonValue]:
+        where = f"translations.{name}"
+        match of:
+            case dict():
+                groups = cast(dict[str, object], of)
+            case _:
+                raise ValueError(f"{where}: `of` is a table of records and their texts")
+        entries: dict[str, JsonValue] = {}
+        for record, pairs in groups.items():
+            try:
+                texts = texts_of(record, language)
+            except ValueError as e:
+                raise ValueError(f"{where}: {e}") from None
+            listed = cast(list[object], pairs) if isinstance(pairs, list) else [pairs]
+            for pair in listed:
+                match pair:
+                    case {
+                        "text": str() as text,
+                        "translation": str() as translation,
+                    } if len(cast(dict[str, object], pair)) == 2:
+                        pass
+                    case _:
+                        raise ValueError(
+                            f"{where}: {record}: each entry is a text and its translation"
+                        )
+                if text not in texts:
+                    raise ValueError(f"{where}: {record} holds no text {_short(text)}")
+                if entries.setdefault(text, translation) != translation:
+                    raise ValueError(f"{where}: {_short(text)} is translated two ways")
+        return entries
+
     def plan_table(table: str, models: list[str]) -> None:
         kind = TABLES[table]
         for name, written in bodies.get(table, {}).items():
@@ -321,6 +383,13 @@ def plan_factors(
                 else:
                     description = body.pop("description", None)
                 fork_of = body.pop("fork_of", None)
+                if table == "translations" and "of" in body:
+                    if "entries" in body:
+                        raise ValueError(
+                            f"{where}: translations.{name}: give its entries or its "
+                            + "`of`, not both"
+                        )
+                    body["entries"] = grouped(name, language, body.pop("of"))
                 for field_name, target in REFERENCES.get(table, {}).items():
                     match body.get(field_name):
                         case str() as one:

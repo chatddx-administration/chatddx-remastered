@@ -13,55 +13,216 @@ messages = [
 [translations.sample]
 description = "The sample's outputs and toolset in Swedish."
 
-[translations.sample.entries]
-"Fill in the management plan for the case." = "Fyll i handläggningsplanen för fallet."
-"Fill in the management plan for the case.\n\nAnswer with a JSON object that matches this JSON Schema, and nothing else:\n\n" = "Fyll i handläggningsplanen för fallet.\n\nSvara med ett JSON-objekt som följer detta JSON Schema, och inget annat:\n\n"
-"List the plausible diagnoses, most likely first." = "Lista de tänkbara diagnoserna, den mest sannolika först."
-"List the plausible diagnoses, one per line, most likely first." = "Lista de tänkbara diagnoserna, en per rad, den mest sannolika först."
-"Give your answer by calling this tool, with the answer as its arguments." = "Ge ditt svar genom att anropa det här verktyget, med svaret som argument."
-"You have access to a web_search tool. Use it whenever you need current facts, documentation, or anything you're not confident about from memory, instead of guessing." = "Du har tillgång till verktyget web_search. Använd det när du behöver aktuella fakta, dokumentation eller något du inte är säker på utifrån minnet, i stället för att gissa."
-"Search the web for up-to-date information" = "Sök på webben efter aktuell information"
-"management_plan_v1" = "handläggningsplan_v1"
-"IndividualDiagnosis" = "EnskildDiagnos"
-"Diagnosis" = "Diagnos"
-"Diagnosis name (ONE word if possible)." = "Diagnosens namn (ETT ord om möjligt)."
-"Probability" = "Sannolikhet"
-"The assessed likelihood of this condition." = "Den bedömda sannolikheten för detta tillstånd."
-"Critical" = "Kritisk"
-"Whether this is a high-stakes, life-threatening emergency condition." = "Om detta är ett allvarligt, livshotande akut tillstånd."
-"Short Rationale" = "Kort motivering"
-"One sentence on why this diagnosis is considered based on history/exam findings, including relevant key negatives." = "En mening om varför diagnosen övervägs utifrån anamnes och status, med relevanta viktiga negativa fynd."
-"WorkupItem" = "Utredningssteg"
-"Type" = "Typ"
-"Investigations" = "Undersökningar"
-"List of specific diagnostic investigations (e.g. ['CBC/CRP', 'Point-of-care Ultrasound'])." = "Lista över specifika diagnostiska undersökningar (t.ex. ['Blodstatus/CRP', 'Patientnära ultraljud'])."
-"Priority" = "Prioritet"
-"EmpiricalTreatmentItem" = "EmpiriskBehandling"
-"Indication" = "Indikation"
-"The specific suspected condition prompting this intervention (e.g., 'If suspecting Sepsis')." = "Det specifika misstänkta tillstånd som föranleder åtgärden (t.ex. 'Vid misstänkt sepsis')."
-"Treatment" = "Behandling"
-"Specific treatment intervention with dosages if relevant (e.g., 'Ceftriaxone 2g IV')." = "Specifik behandlingsåtgärd med dosering där det är relevant (t.ex. 'Ceftriaxon 2 g iv')."
-"Important Warnings" = "Viktiga varningar"
-"Any key contraindications, warning signs, or monitoring parameters." = "Viktiga kontraindikationer, varningstecken eller parametrar att övervaka."
-"ManagementSection" = "Handläggning"
-"Diagnostic Workup Steps" = "Diagnostisk utredning"
-"Empirical Treatments" = "Empiriska behandlingar"
-"Disposition" = "Vårdnivå"
-"Primary destination or clinical disposition (e.g., 'Admission/Observation/Home with follow-up')." = "Primär vårdnivå eller fortsatt handläggning (t.ex. 'Inläggning/Observation/Hemgång med uppföljning')."
-"Acute Warning" = "Akut varning"
-"Red flag signs of an immediate, life-threatening emergency state. Return null if none." = "Varningstecken på ett omedelbart livshotande akut tillstånd. Ange null om inga finns."
-"Differential Diagnoses" = "Differentialdiagnoser"
-"Prioritized differential diagnoses ranked by probability. Include critical rules even if low probability." = "Differentialdiagnoser rangordnade efter sannolikhet. Ta med kritiska diagnoser att utesluta även om sannolikheten är låg."
-"Medical Sources" = "Medicinska källor"
-"List of peer-reviewed guidelines or reference tools utilized (e.g. 'UpToDate', 'NICE guidelines')." = "Lista över granskade riktlinjer eller referensverktyg som använts (t.ex. 'UpToDate', 'NICE-riktlinjer')."
-"diagnoses" = "diagnoser"
-"The commonly used name of the diagnosis." = "Diagnosens vedertagna namn."
-"Say whether the answer meets the note: whether it reaches the same reading of the case and would lead to the same essential actions. Wording, order and extra detail don't matter; missing what the note calls for, or advice that would harm the patient, does. Give your reason in one or two sentences." = "Säg om svaret motsvarar anteckningen: om det kommer fram till samma bedömning av fallet och skulle leda till samma väsentliga åtgärder. Ordval, ordning och extra detaljer spelar ingen roll; att missa det anteckningen kräver, eller råd som skulle skada patienten, gör det. Motivera med en eller två meningar."
-"Grade how well the answer meets the note, from 0 to 2: 2 when it reaches the same reading of the case and the same essential actions, 1 when it gets part of the way, 0 when it misses it or would mislead. Give your reason in one or two sentences." = "Betygsätt hur väl svaret motsvarar anteckningen, från 0 till 2: 2 när det kommer fram till samma bedömning av fallet och samma väsentliga åtgärder, 1 när det når en del av vägen, 0 när det missar eller skulle vilseleda. Motivera med en eller två meningar."
-"Verdict" = "Utlåtande"
-"Whether an answer meets a clinician's note on the case, and why." = "Om ett svar motsvarar en klinikers anteckning om fallet, och varför."
-"Whether the answer meets the note." = "Om svaret motsvarar anteckningen."
-"Why, in one or two sentences." = "Varför, med en eller två meningar."
-"Grade" = "Betyg"
-"How well an answer meets a clinician's note on the case, and why." = "Hur väl ett svar motsvarar en klinikers anteckning om fallet, och varför."
-"How well the answer meets the note, from 0 (not at all) to 2 (fully)." = "Hur väl svaret motsvarar anteckningen, från 0 (inte alls) till 2 (helt)."
+[[translations.sample.of."output.management-plan"]]
+text = "Fill in the management plan for the case."
+translation = "Fyll i handläggningsplanen för fallet."
+
+[[translations.sample.of."output.management-plan"]]
+text = "Diagnosis name (ONE word if possible)."
+translation = "Diagnosens namn (ETT ord om möjligt)."
+
+[[translations.sample.of."output.management-plan"]]
+text = "Diagnosis"
+translation = "Diagnos"
+
+[[translations.sample.of."output.management-plan"]]
+text = "The assessed likelihood of this condition."
+translation = "Den bedömda sannolikheten för detta tillstånd."
+
+[[translations.sample.of."output.management-plan"]]
+text = "Probability"
+translation = "Sannolikhet"
+
+[[translations.sample.of."output.management-plan"]]
+text = "Whether this is a high-stakes, life-threatening emergency condition."
+translation = "Om detta är ett allvarligt, livshotande akut tillstånd."
+
+[[translations.sample.of."output.management-plan"]]
+text = "Critical"
+translation = "Kritisk"
+
+[[translations.sample.of."output.management-plan"]]
+text = "One sentence on why this diagnosis is considered based on history/exam findings, including relevant key negatives."
+translation = "En mening om varför diagnosen övervägs utifrån anamnes och status, med relevanta viktiga negativa fynd."
+
+[[translations.sample.of."output.management-plan"]]
+text = "Short Rationale"
+translation = "Kort motivering"
+
+[[translations.sample.of."output.management-plan"]]
+text = "IndividualDiagnosis"
+translation = "EnskildDiagnos"
+
+[[translations.sample.of."output.management-plan"]]
+text = "Type"
+translation = "Typ"
+
+[[translations.sample.of."output.management-plan"]]
+text = "List of specific diagnostic investigations (e.g. ['CBC/CRP', 'Point-of-care Ultrasound'])."
+translation = "Lista över specifika diagnostiska undersökningar (t.ex. ['Blodstatus/CRP', 'Patientnära ultraljud'])."
+
+[[translations.sample.of."output.management-plan"]]
+text = "Investigations"
+translation = "Undersökningar"
+
+[[translations.sample.of."output.management-plan"]]
+text = "Priority"
+translation = "Prioritet"
+
+[[translations.sample.of."output.management-plan"]]
+text = "WorkupItem"
+translation = "Utredningssteg"
+
+[[translations.sample.of."output.management-plan"]]
+text = "The specific suspected condition prompting this intervention (e.g., 'If suspecting Sepsis')."
+translation = "Det specifika misstänkta tillstånd som föranleder åtgärden (t.ex. 'Vid misstänkt sepsis')."
+
+[[translations.sample.of."output.management-plan"]]
+text = "Indication"
+translation = "Indikation"
+
+[[translations.sample.of."output.management-plan"]]
+text = "Specific treatment intervention with dosages if relevant (e.g., 'Ceftriaxone 2g IV')."
+translation = "Specifik behandlingsåtgärd med dosering där det är relevant (t.ex. 'Ceftriaxon 2 g iv')."
+
+[[translations.sample.of."output.management-plan"]]
+text = "Treatment"
+translation = "Behandling"
+
+[[translations.sample.of."output.management-plan"]]
+text = "Any key contraindications, warning signs, or monitoring parameters."
+translation = "Viktiga kontraindikationer, varningstecken eller parametrar att övervaka."
+
+[[translations.sample.of."output.management-plan"]]
+text = "Important Warnings"
+translation = "Viktiga varningar"
+
+[[translations.sample.of."output.management-plan"]]
+text = "EmpiricalTreatmentItem"
+translation = "EmpiriskBehandling"
+
+[[translations.sample.of."output.management-plan"]]
+text = "Diagnostic Workup Steps"
+translation = "Diagnostisk utredning"
+
+[[translations.sample.of."output.management-plan"]]
+text = "Empirical Treatments"
+translation = "Empiriska behandlingar"
+
+[[translations.sample.of."output.management-plan"]]
+text = "Primary destination or clinical disposition (e.g., 'Admission/Observation/Home with follow-up')."
+translation = "Primär vårdnivå eller fortsatt handläggning (t.ex. 'Inläggning/Observation/Hemgång med uppföljning')."
+
+[[translations.sample.of."output.management-plan"]]
+text = "Disposition"
+translation = "Vårdnivå"
+
+[[translations.sample.of."output.management-plan"]]
+text = "ManagementSection"
+translation = "Handläggning"
+
+[[translations.sample.of."output.management-plan"]]
+text = "Red flag signs of an immediate, life-threatening emergency state. Return null if none."
+translation = "Varningstecken på ett omedelbart livshotande akut tillstånd. Ange null om inga finns."
+
+[[translations.sample.of."output.management-plan"]]
+text = "Acute Warning"
+translation = "Akut varning"
+
+[[translations.sample.of."output.management-plan"]]
+text = "Prioritized differential diagnoses ranked by probability. Include critical rules even if low probability."
+translation = "Differentialdiagnoser rangordnade efter sannolikhet. Ta med kritiska diagnoser att utesluta även om sannolikheten är låg."
+
+[[translations.sample.of."output.management-plan"]]
+text = "Differential Diagnoses"
+translation = "Differentialdiagnoser"
+
+[[translations.sample.of."output.management-plan"]]
+text = "List of peer-reviewed guidelines or reference tools utilized (e.g. 'UpToDate', 'NICE guidelines')."
+translation = "Lista över granskade riktlinjer eller referensverktyg som använts (t.ex. 'UpToDate', 'NICE-riktlinjer')."
+
+[[translations.sample.of."output.management-plan"]]
+text = "Medical Sources"
+translation = "Medicinska källor"
+
+[[translations.sample.of."output.management-plan"]]
+text = "management_plan_v1"
+translation = "handläggningsplan_v1"
+
+[[translations.sample.of."output.management-plan-shown"]]
+text = """
+Fill in the management plan for the case.
+
+Answer with a JSON object that matches this JSON Schema, and nothing else:
+
+"""
+translation = """
+Fyll i handläggningsplanen för fallet.
+
+Svara med ett JSON-objekt som följer detta JSON Schema, och inget annat:
+
+"""
+
+[[translations.sample.of."output.diagnoses"]]
+text = "List the plausible diagnoses, most likely first."
+translation = "Lista de tänkbara diagnoserna, den mest sannolika först."
+
+[[translations.sample.of."output.diagnoses"]]
+text = "diagnoses"
+translation = "diagnoser"
+
+[[translations.sample.of."output.diagnoses"]]
+text = "The commonly used name of the diagnosis."
+translation = "Diagnosens vedertagna namn."
+
+[[translations.sample.of."output.diagnoses-tool"]]
+text = "Give your answer by calling this tool, with the answer as its arguments."
+translation = "Ge ditt svar genom att anropa det här verktyget, med svaret som argument."
+
+[[translations.sample.of."output.free-text"]]
+text = "List the plausible diagnoses, one per line, most likely first."
+translation = "Lista de tänkbara diagnoserna, en per rad, den mest sannolika först."
+
+[[translations.sample.of."output.verdict"]]
+text = "Say whether the answer meets the note: whether it reaches the same reading of the case and would lead to the same essential actions. Wording, order and extra detail don't matter; missing what the note calls for, or advice that would harm the patient, does. Give your reason in one or two sentences."
+translation = "Säg om svaret motsvarar anteckningen: om det kommer fram till samma bedömning av fallet och skulle leda till samma väsentliga åtgärder. Ordval, ordning och extra detaljer spelar ingen roll; att missa det anteckningen kräver, eller råd som skulle skada patienten, gör det. Motivera med en eller två meningar."
+
+[[translations.sample.of."output.verdict"]]
+text = "Verdict"
+translation = "Utlåtande"
+
+[[translations.sample.of."output.verdict"]]
+text = "Whether an answer meets a clinician's note on the case, and why."
+translation = "Om ett svar motsvarar en klinikers anteckning om fallet, och varför."
+
+[[translations.sample.of."output.verdict"]]
+text = "Whether the answer meets the note."
+translation = "Om svaret motsvarar anteckningen."
+
+[[translations.sample.of."output.verdict"]]
+text = "Why, in one or two sentences."
+translation = "Varför, med en eller två meningar."
+
+[[translations.sample.of."output.grade"]]
+text = "Grade how well the answer meets the note, from 0 to 2: 2 when it reaches the same reading of the case and the same essential actions, 1 when it gets part of the way, 0 when it misses it or would mislead. Give your reason in one or two sentences."
+translation = "Betygsätt hur väl svaret motsvarar anteckningen, från 0 till 2: 2 när det kommer fram till samma bedömning av fallet och samma väsentliga åtgärder, 1 när det når en del av vägen, 0 när det missar eller skulle vilseleda. Motivera med en eller två meningar."
+
+[[translations.sample.of."output.grade"]]
+text = "Grade"
+translation = "Betyg"
+
+[[translations.sample.of."output.grade"]]
+text = "How well an answer meets a clinician's note on the case, and why."
+translation = "Hur väl ett svar motsvarar en klinikers anteckning om fallet, och varför."
+
+[[translations.sample.of."output.grade"]]
+text = "How well the answer meets the note, from 0 (not at all) to 2 (fully)."
+translation = "Hur väl svaret motsvarar anteckningen, från 0 (inte alls) till 2 (helt)."
+
+[[translations.sample.of."toolset.web"]]
+text = "You have access to a web_search tool. Use it whenever you need current facts, documentation, or anything you're not confident about from memory, instead of guessing."
+translation = "Du har tillgång till verktyget web_search. Använd det när du behöver aktuella fakta, dokumentation eller något du inte är säker på utifrån minnet, i stället för att gissa."
+
+[[translations.sample.of."toolset.web"]]
+text = "Search the web for up-to-date information"
+translation = "Sök på webben efter aktuell information"

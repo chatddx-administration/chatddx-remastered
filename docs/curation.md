@@ -61,6 +61,16 @@ On top of the fields:
   `description` is also a field, the one the model reads.
 - **From facts.** `from_facts` asks for a sampling or reasoning chunk per model (see "Per model").
 
+```
+AGENT: add
+A bullet at the end of the list above: a translations chunk's entries grouped by record (agents/wip-data.md, D3).
+---
+- **Translations by record.** A translations chunk's entries may be written in `of`, grouped by the record whose texts
+  they translate, an output, a toolset or a recipe's appendix layout, each entry a `text` and its `translation`:
+  `[[translations.sample.of."output.management-plan"]]`. Loading makes them the chunk's `entries`, and refuses a text
+  its record doesn't hold, so an entry no text uses any more is found. A text that several records hold is written
+  once, under any of them. Missing texts still fail the compilation of the recipe that needs them.
+```
 A name is defined once per kind, and a text's name may come back in each texts file, as the same text in another
 language. A data set's `factors.toml` holds no `model`, `local_engine` or `remote_engine` table: engines are the World's
 (see "The World").

@@ -304,6 +304,86 @@ def test_texts_are_refused_where_they_say_the_wrong_thing(
         _ = plan(tmp_path, **files)
 
 
+LAID_OUT = """
+[recipe.plan]
+prompt = "case"
+output = "plan"
+sampling = "greedy"
+translations = "ui"
+appendix_layout = { before = "\\n\\nAppendices:\\n" }
+"""
+GROUPED = """
+[translations.ui.of]
+"output.plan" = [{ text = "Fill in the plan.", translation = "Fyll i planen." }]
+"recipe.plan" = [{ text = "\\n\\nAppendices:\\n", translation = "\\n\\nBilagor:\\n" }]
+"""
+
+
+def test_translations_are_grouped_by_the_record_whose_texts_they_translate(
+    tmp_path: Path,
+) -> None:
+    files = {"engines": ENGINE, "factors": NEUTRAL + LAID_OUT, "texts_en": ENGLISH}
+    planned = plan(tmp_path, **files, texts_sv=GROUPED)
+    skeleton = planned.registry.get(planned.named("recipe", "plan (sv)").digest)
+    assert isinstance(skeleton, Skeleton)
+    assert str(skeleton.messages[0].content[0]) == "Fyll i planen."
+    assert skeleton.appendix_layout.before == "\n\nBilagor:\n"
+
+    flat = tmp_path / "flat"
+    flat.mkdir()
+    entries = """
+[translations.ui.entries]
+"Fill in the plan." = "Fyll i planen."
+"\\n\\nAppendices:\\n" = "\\n\\nBilagor:\\n"
+"""
+    as_entries = plan(flat, **files, texts_sv=entries)
+    assert (
+        as_entries.named("translations", "ui (sv)").digest
+        == planned.named("translations", "ui (sv)").digest
+    )
+
+
+@pytest.mark.parametrize(
+    ("of", "refusal"),
+    [
+        (
+            '"output.plan" = [{ text = "Fill in the old plan.", translation = "x" }]',
+            "translations.ui: output.plan holds no text 'Fill in the old plan.'",
+        ),
+        (
+            '"output.raw" = [{ text = "Fill in the plan.", translation = "x" }]',
+            "translations.ui: output.raw holds no text 'Fill in the plan.'",
+        ),
+        (
+            '"prompt.case" = [{ text = "x", translation = "x" }]',
+            "'prompt.case' names no output, toolset or recipe",
+        ),
+        (
+            '"output.nope" = [{ text = "x", translation = "x" }]',
+            "'output.nope': no output named 'nope'",
+        ),
+        (
+            '"output.plan" = [{ text = "Fill in the plan." }]',
+            "output.plan: each entry is a text and its translation",
+        ),
+        (
+            '"output.plan" = [{ text = "Fill in the plan.", translation = "Fyll i." }, '
+            + '{ text = "Fill in the plan.", translation = "Fyll i planen." }]',
+            "'Fill in the plan.' is translated two ways",
+        ),
+    ],
+)
+def test_grouped_translations_are_refused_where_they_say_the_wrong_thing(
+    tmp_path: Path, of: str, refusal: str
+) -> None:
+    files = {"engines": ENGINE, "factors": NEUTRAL + LAID_OUT, "texts_en": ENGLISH}
+    with pytest.raises(ValueError, match=refusal):
+        _ = plan(tmp_path, **files, texts_sv=f"[translations.ui.of]\n{of}\n")
+    both = '[translations.ui]\nentries = { "Fill in the plan." = "Fyll i planen." }\n'
+    with pytest.raises(ValueError, match="give its entries or its `of`, not both"):
+        _ = plan(tmp_path, **files, texts_sv=both + "[translations.ui.of]\n")
+
+
 def test_engines_are_the_world_s_and_only_engines_are(tmp_path: Path) -> None:
     with pytest.raises(
         ValueError, match="remote_engine tables are the World's, in its"
