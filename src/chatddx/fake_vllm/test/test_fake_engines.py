@@ -25,7 +25,7 @@ from chatddx.test.world import (
     world_plan,
 )
 
-pytestmark = pytest.mark.wip
+pytestmark = pytest.mark.solidified
 
 FAKES = [QWEN, QWEN_BARE, GPT_OSS, MISTRAL]
 NIX = "/nix/store/" + "0" * 32 + "-vllm"

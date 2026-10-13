@@ -82,6 +82,19 @@ written only in another language is taken from there, and the recipe's translati
 a recipe without them there is skipped and reported. In the language its output and toolset are written in, it needs
 no translations and is made without them. A recipe that names no text is made once, as before.
 
+```
+AGENT: replace
+The sample has eight outputs with guidance now, the judge's `verdict` and `grade` among them, and its judge's
+instructions and prompt are in `texts-en.toml` too.
+---
+The sample is written in English, and one recipe in Swedish too. Its eight outputs with guidance, its toolset, its
+judge's instructions and prompt, and `free-text-guided`'s instructions and worked example are in `texts-en.toml`, and
+every recipe is made in English. The instructions and the example are written again in `texts-sv.toml`, with
+translations of every text its outputs and toolset hold, schemas included, so `free-text-guided` is made in Swedish
+too, its output translated. A trial of an English recipe on the Swedish cases is linted as mixing languages, which is
+what a trial of an English request on a Swedish case is; the sample's translations, set in a variation, carry any of
+its recipes into Swedish.
+```
 The sample is written in English, and one recipe in Swedish too. Its six outputs with guidance, its toolset, and
 `free-text-guided`'s instructions and worked example are in `texts-en.toml`, and every recipe is made in English. The
 instructions and the example are written again in `texts-sv.toml`, with translations of every text its outputs and
@@ -244,6 +257,13 @@ Curation is the place for the rest of the store's authored content to come and g
 - importing a data set as someone other than the archive.
 
 ### What a data set can't hold yet
+```
+AGENT: replace
+Canary sets are a table now: the sample has `basics` and the test World `probe`, loaded as records
+(src/chatddx/curation/test/test_tables.py). Judges are too (see "Factors").
+---
+Trials, executions, scorings and hand-written skeletons have no tables, and a data set has one expectation schema.
+```
 Trials, executions, scorings and hand-written skeletons have no tables, and a data set has one expectation schema.
 A canary set is the next asked for (agents/wip-runner.md).
 
@@ -259,3 +279,15 @@ only by its name today; what recording it would take is in agents/wip-variants.m
 - **A rename isn't followed into the data.** After repair-data, loading says the old id is missing until the data set
   names the new one.
 - **The runner and the engine import don't run the inventory check** that loading does.
+
+```
+AGENT: add
+As asked: the ambition to stage data, which the curated sample doesn't.
+---
+## Outstanding
+- **Staging data.** The sample is curated for preliminary calibration, and everything in it can be considered
+  guessed: its targets, the appendices and `dont_miss` targets made up so that every table is used, its judge,
+  drafted before Olof's, and its translations. Data meant to be relied on needs its stage said in code, not in
+  comments: whether it is guessed or vetted, by whom, and where it came from, loaded with the data so that a score can
+  say what it rests on.
+```

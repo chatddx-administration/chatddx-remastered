@@ -1,9 +1,9 @@
 # The test World: work in progress
 
-The tests run on the sample today: its data set (`worlds/sample/_data/`) and its World (`worlds/sample/`). The
-sample is live data with work queued on it (`agents/wip-sample-data.md`: the real engines, judges from Olof's notes,
-maybe revised targets, sample runs), and it exercises only part of what a data set and a World can say. This file
-plans a World built for the tests, `worlds/test/`, and moving every test onto it but the sample's own.
+The tests ran on the sample: its data set (`worlds/sample/_data/`) and its World (`worlds/sample/`). The sample is
+curated for preliminary calibration, with work queued on it (judges from Olof's notes, maybe revised targets:
+`agents/wip-judges.md`), and it exercised only part of what a data set and a World can say. This file plans a World
+built for the tests, `worlds/test/`, and moving every test onto it but the sample's own.
 
 "Decided" means the user said so. "Take" is the agent's recommendation and still open.
 
@@ -60,9 +60,9 @@ vignettes, and other Worlds may copy that, so the name sets a precedent:
 Loading it stays explicit: `chatddx init-data alice --world worlds/test --data worlds/test/_data`. Its one directory
 source is the default `--source`.
 
-Since the sample's data set moved to `worlds/sample/_data/` (`agents/wip-sample-data.md`, "A complete example"), init-data
-takes a World's `_data/` when `--data` names none, a take, so `--data` can be left out here too; the test World still
-loads only under pytest.
+Since the sample's data set moved to `worlds/sample/_data/`, init-data takes a World's `_data/` when `--data` names
+none (`docs/curation.md`, "Data sets"), so `--data` can be left out here too; the test World still loads only under
+pytest.
 
 ## Principles
 1. **Every record is read by a test.** The table under "What it exercises" names, for each record, the test that
@@ -265,12 +265,14 @@ What only the test World reaches, and no test reads yet:
   `blank_lines.collapse@1`).
 
 ## What stays on the sample
-`src/chatddx/curation/test/test_sample.py`, the sample's pins:
+`src/chatddx/curation/test/test_sample.py`, the sample's pins, `solidified` (`docs/curation.md`, "Tests"):
 - **Vignettes**: they are 7893656's (`test_the_sample_world_holds_the_vignettes_at_7893656`).
 - **Cases**: 79 English and 20 Swedish, and the language of `casesfromedn1` and `Dutchfall11w`.
-- **Records**: the English and Swedish sets, the eight recipes per model, and the translations' coverage.
+- **Records**: the English and Swedish sets, the nine recipes per model and `judge (en)`, and the translations'
+  coverage.
 - **Targets**: the targets schema's rules and Olof's notes on three cases, as written.
-- **A load**: with only its four skips and its fakes' lints, `plan-shown` varying `plan`'s output.
+- **A load**: with only its eleven skips (the reasoning Mistral Small and harmony refuse) and its fakes' lints,
+  `plan-shown` varying `plan`'s output.
 - **Kompismoln**: it takes the sample's vignettes.
 
 `src/chatddx/curation/test/test_worlds.py` checks every World in `worlds/` (test, sample, Kompismoln) with its data set,
@@ -302,12 +304,8 @@ Found while surveying, each to be talked through with the user and then fixed an
 ## Docs
 - `docs/curation.md`, "Data sets" and "Tests", and `docs/inventory.md`, "Worlds": AGENT suggestions for the test
   World and `_data`.
-- `agents/wip-sample-data.md`: its test references point where the tests are now.
 
 ## Open
-- **Should `init-data` take `--data` from the World's `_data/` when there is one?** It would make the convention
-  part of `World` and save each caller from spelling it out, `test_worlds.py` included. Take: not now. Revisit
-  if a second World carries a data set.
 - **The plan's size.** Every curation test writes every record, so a bigger plan makes curation slower. Built, it
   plans 68 records to the sample's 60 (24 skeletons to 18), with 9 cases to 99. Take: keep it; its own load is
   quicker than the sample's, and the curation tests drop to it from loading the sample's records.

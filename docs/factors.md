@@ -251,6 +251,13 @@ Chunks affect each other only in a few fixed ways, all decided in code:
 - The toolset's guidance does the same, after the output's.
 - A toolset adds tools to the request, which changes how the output contract is expressed (see "Recipe and
   compilation").
+```
+AGENT: replace
+"Translations" says instructions, examples and prompts pass through untouched, as the code does
+(`request.py:TRANSLATED`).
+---
+- Translations replace the text the output, the toolset and the appendix layout bring (see "Translations").
+```
 - Translations replace every text the other chunks bring (see "Translations").
 - Greedy sampling drops the settings that only matter when sampling, and no seed is sent.
 
@@ -639,8 +646,25 @@ They look at:
 - pins that can move: a model revision that isn't a commit, a runtime that isn't a Nix store path;
 - views whose expectation selector can't pick anything from documents that follow the scorer's expectation schema. The
   check leans towards "reachable", so a finding is certain;
+```
+AGENT: replace
+Outputs' schemas are checked as expectation schemas are (`output.schema_invalid`).
+---
+- expectation schemas and outputs' schemas that can't be checked or break their draft, and expectations whose data
+  fails its schema or can't be checked against it;
+```
 - expectation schemas that can't be checked or break their draft, and expectations whose data fails its schema or can't
   be checked against it;
+```
+AGENT: replace
+On engines other than vLLM 0.24, toolset tools' parameters are checked for `$ref` too.
+---
+- each trial and judge as a pair of skeleton and engine. On a vLLM 0.24 engine, that is what vLLM would change, refuse
+  or quietly defeat: a temperature it raises, a thinking budget or tools without the server options they need, tools
+  that a native contract leaves uncallable, and a constrained answer that the model can't reason before giving. On any
+  other engine, a schema reference the engine isn't known to resolve, in the output's schema or a toolset tool's
+  parameters;
+```
 - each trial and judge as a pair of skeleton and engine. On a vLLM 0.24 engine, that is what vLLM would change, refuse
   or quietly defeat: a temperature it raises, a thinking budget or tools without the server options they need, tools
   that a native contract leaves uncallable, and a constrained answer that the model can't reason before giving. On any
@@ -692,6 +716,15 @@ changes the shape of a trial, so it is cheapest decided before trials are stored
   trial's case order.
 - **Four cleanup steps exist.** Vignettes may also need non-breaking spaces turned into spaces, zero-width characters
   removed, Unicode line breaks turned into newlines, or trailing whitespace stripped.
+```
+AGENT: replace
+The rest of the machine has no home either; the parity work listed it.
+---
+- **Hardware has no GPU count,** so engines that split a model across GPUs can't be told apart by their hardware. Nor
+  does it say the CPU, the RAM, the GPU's uuid, the machine's id or where it is.
+- **Tool parameters whose root isn't an object.** OpenAI's API is reported to refuse function parameters whose root
+  isn't `type: object`. Unverified; a candidate lint for tools on a remote engine.
+```
 - **Hardware has no GPU count,** so engines that split a model across GPUs can't be told apart by their hardware.
 
 ## Potential design improvements

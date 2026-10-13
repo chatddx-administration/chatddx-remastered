@@ -7,7 +7,7 @@ import pytest
 from chatddx.fake_vllm.served import Refused, Served
 from chatddx.fake_vllm.server import serving
 
-pytestmark = pytest.mark.wip
+pytestmark = pytest.mark.solidified
 
 QWEN = "Qwen/Qwen3-8B-AWQ"
 

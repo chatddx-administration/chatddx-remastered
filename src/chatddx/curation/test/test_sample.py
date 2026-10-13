@@ -16,7 +16,7 @@ from chatddx.store import Catalog, People
 from chatddx.store.store import Connection
 from chatddx.test.world import SAMPLE, WORLDS, world_plan
 
-pytestmark = pytest.mark.wip
+pytestmark = pytest.mark.solidified
 
 MISTRAL_SMALL = "mistralai/Mistral-Small-3.2-24B-Instruct-2506"
 

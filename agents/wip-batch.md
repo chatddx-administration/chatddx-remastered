@@ -144,7 +144,8 @@ Assuming the takes.
 - **How many trials a batch may hold** before the form warns, since crossing multiplies.
 - **Seeds**: one drawn per batch, as before, or several for replicates (`src/chatddx/factors/trial.py:suggest_seeds`).
 - **The order of the variations**, the configuration's own first, as the old crossing put it.
-- **A batch sample run** for the portal's pages (`agents/wip-sample-data.md`, "Sample runs").
+- **A batch sample run** for the portal's pages: the sample `batch` is one run of four cases, not a batch of trials
+  (`agents/wip-samples.md`, "Smaller issues").
 
 ## Moved here
 - From `agents/wip-portal.md`: the planner's part of "The batch planner and the worker".

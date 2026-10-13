@@ -1,4 +1,13 @@
 # vLLM
+```
+AGENT: replace
+The command takes `--script PATH` too (see "Scripts").
+---
+vLLM is used for running local models within our control. `chatddx.fake_vllm` is a fake vLLM 0.24, started as
+`chatddx fake-vllm [--delay S] [--runaway] [--script PATH] MODEL [vllm serve's flags]`. It reads `vllm serve`'s own
+flags, so it can stand in for vLLM on the same command line (`src/chatddx/fake_vllm/served.py:Served.of`), and its
+tests pin the items below (`src/chatddx/fake_vllm/test/`).
+```
 vLLM is used for running local models within our control. `chatddx.fake_vllm` is a fake vLLM 0.24, started as
 `chatddx fake-vllm [--delay S] [--runaway] MODEL [vllm serve's flags]`. It reads `vllm serve`'s own flags, so it can
 stand in for vLLM on the same command line (`src/chatddx/fake_vllm/served.py:Served.of`), and its tests pin the
@@ -167,6 +176,12 @@ A request goes `server.py` → `chat.py:accept`, which refuses it or picks the s
 decides a `Reply` → `chat.py:completion` or `chat.py:stream`, which shape it. `served.py:Served` is the server's
 set-up, read once from the command line. Paths are relative to `src/chatddx/fake_vllm/`.
 
+```
+AGENT: add
+Its tests, at the end of this paragraph; nothing here cites them yet.
+---
+Tested in `test/test_fake_engines.py`.
+```
 `chatddx fake-engines [--world DIR] [--delay S] [--runaway] [ENDPOINT …]` serves the endpoints named, or every
 endpoint of the World, each on a server of its own where its start-up says, till Ctrl-C, with `fake-vllm`'s `--delay`
 and `--runaway`. It refuses an endpoint whose engine's runtime closure isn't `chatddx fake-vllm`. A remote engine's
@@ -180,6 +195,17 @@ Each entry is one emulated behaviour, then a line with:
 - where it is coded;
 - the tests that pin it (`src/chatddx/fake_vllm/test/`), or `untested`.
 
+```
+AGENT: replace
+`test_it_answers_every_sample_skeleton_as_its_contract_asks` went when the tests moved to the test World; its
+successor runs on every World and holds the fake to the `vllm.*` lints.
+---
+The sections follow the sections of `test/test_fake_vllm.py`; "HTTP" is `test/test_fake_vllm_server.py`. Two tests
+cut across them: `src/chatddx/curation/test/test_worlds.py:test_each_fake_answers_each_skeleton_or_refuses_it_as_vllm_would`
+renders every skeleton of every World for each of its fake endpoints, and checks each answer against its contract and
+schema, or the fake's refusal against the `vllm.*` lints; `test_a_tool_round_goes_from_the_toolset_to_the_answer_tool`
+runs a tool round through `next_request`.
+```
 The sections follow the sections of `test/test_fake_vllm.py`; "HTTP" is `test/test_fake_vllm_server.py`. Two tests
 cut across them: `test_it_answers_every_sample_skeleton_as_its_contract_asks` renders every sample skeleton for both
 sample models, served as the old inventory served them, and checks each answer against its contract and schema;
@@ -289,6 +315,12 @@ sample models, served as the old inventory served them, and checks each answer a
   item 4
     · `chat.py:instance`, `chat.py:_turn`, `chat.py:_resolve`
     · `test_what_it_writes_follows_references_unions_and_counts`
+```
+AGENT: replace
+The test moved to the Worlds' tests and holds every data set's schemas.
+---
+    · `src/chatddx/curation/test/test_worlds.py:test_what_the_fake_writes_holds_to_each_data_set_s_schemas`,
+```
     · `test_what_it_writes_holds_to_the_sample_s_schemas`,
     · `test_seeded_examples.py:test_a_schema_s_examples_are_picked_by_the_seed_unless_greedy`
 
@@ -380,10 +412,31 @@ sample models, served as the old inventory served them, and checks each answer a
   `test_a_client_that_hangs_up_is_heard_at_once_and_its_request_aborted`
 - **Won't start.** A refused set-up exits with `the fake vLLM won't start: …`.
   item 19 · `server.py:run` · `test_the_command_won_t_start_what_vllm_wouldn_t`
+```
+AGENT: replace
+The cited test is gone. Its successor picks among several `Served` through `accept`, not over HTTP.
+---
+- **Several models.** `server.server` serves several `Served`, picked by name; `chatddx fake-vllm` serves one.
+  fake · `server.py:server`, `chat.py:pick` ·
+  `src/chatddx/curation/test/test_worlds.py:test_each_fake_answers_each_skeleton_or_refuses_it_as_vllm_would` (picked
+  through `accept`; untested over HTTP)
+```
 - **Several models.** `server.server` serves several `Served`, picked by name; `chatddx fake-vllm` serves one.
   fake · `server.py:server`, `chat.py:pick` · `test_it_answers_every_sample_skeleton_as_its_contract_asks`
 
 ### Scripts
+```
+AGENT: replace
+`hang_up` counts the tokens streamed, not events, and a turn with it answers an unstreamed request with nothing
+(`server.py:_Handler.do_POST`).
+---
+`chatddx fake-vllm --script PATH`, or `serving(…, script=…)`, answers each chat request with the next `[[turn]]` of a
+TOML script instead of deciding the reply itself, after the same checks. A turn has `reasoning`, `content`,
+`tool_calls` (each a `name` and `arguments`, a table or a JSON string), `finish`, `runaway` (newlines after the
+content), `hang_up` (tokens streamed before the server goes away; an unstreamed request gets no answer) and `status`
+(an error answered instead, `content` its message); a request past the last turn gets 500. A file may hold other keys;
+the fake reads only `turn`.
+```
 `chatddx fake-vllm --script PATH`, or `serving(…, script=…)`, answers each chat request with the next `[[turn]]` of a
 TOML script instead of deciding the reply itself, after the same checks. A turn has `reasoning`, `content`,
 `tool_calls` (each a `name` and `arguments`, a table or a JSON string), `finish`, `runaway` (newlines after the
@@ -420,6 +473,11 @@ message); a request past the last turn gets 500. A file may hold other keys; the
 - Unchecked against vLLM: gpt-oss without any parser answers `analysis…assistantfinal…`, taking Harmony's channel
   markers to be special tokens skipped in detokenizing; and Harmony with a tool parser but no reasoning parser still
   separates the reasoning.
+```
+AGENT: remove
+`src/chatddx/curation/test/test_worlds.py` runs both on every skeleton and fake endpoint of every World, and fails
+when one refuses what the other doesn't.
+```
 - Nothing yet runs the factors' `vllm.*` lints and the fake on the same cases, which would catch the two drifting
   apart.
 

@@ -1,0 +1,105 @@
+# Samples
+
+A candidate for `docs/samples.md`; below, that name means this file until it moves.
+
+A sample is a run made to be looked at: a genuine record of something a run can go through, answered by the fake vLLM
+from a script instead of by a model. Everything but the model's words is genuine: the variation, the trial, the
+requests, the ledger and the scores. Samples are for every edge that shows runs, the repl's `runs` and `replay`, the
+API's runs and items and the portal's pages to come, and for tests that read runs they don't make.
+
+This document describes what a sample is and how it runs. The code is `chatddx.samples` (src/chatddx/samples/) and its
+command in src/chatddx/cli.py. Samples build on the bench, the fake vLLM and the World.
+
+## A sample
+A sample is a file in a World's `_runs/`, named after the sample: `<world>/_runs/<name>.toml`. The leading `_` says the
+World itself doesn't read it, as with the data set in `_data/` (docs/inventory.md, "Worlds").
+
+| Key | Meaning |
+| --- | --- |
+| `description` | What the sample shows. Required. |
+| `configuration` | The configuration, as the bench finds it on the endpoint's model (`Bench.configuration`): `plan` is `plan (en, Qwen/Qwen3-8B-AWQ)` on a Qwen3 endpoint. One made in several languages is named whole, such as `free-text-guided (sv, Qwen/Qwen3-8B-AWQ)`. Required. |
+| `set` | Parts to set in the variation, each part to a chunk's name, or to `none` for none. |
+| `endpoint` | The World's endpoint the run goes to. Required. |
+| `cases` | The cases, by family id, or `<id> with <appendix>[, <appendix>]` for a case that sends appendices, as init-data titles it. At least one. |
+| `seed` | The run's seed, 7 by default. |
+| `stop_after` | Halt the run once a call has streamed this many tokens. |
+| `unfinished` | Leave the run without its finish, as when the process running it dies. |
+| `scored` | Score the finished run under every scorer that applies. True by default. |
+| `[[turn]]` | The fake's answers, one per call in the order the run sends them (docs/vllm.md, "Scripts"). |
+
+A file with any other key, or a turn the fake can't read, is refused when it is read, naming the file.
+
+## Running a sample
+The variation is the configuration with `set` applied, and the cases are found by their titles (`Bench.case_titled`).
+The fake for the endpoint is served at the endpoint's address with the sample's turns as its script, and the run is
+started, sent and finished through the bench, as the repl runs one (`Bench.start`, `Running.send`, `Running.finish`).
+`stop_after` is the run's own halt. A scored sample is then scored by `Bench.score`, with a fake without a script at
+each judge's endpoint, so a judge answers as the fake does by itself.
+
+The fake for an endpoint is the one `chatddx fake-engines` serves there (`fakes.py:fake_at`, which the command uses
+too): for a local engine, from its start-up, which must run the fake vLLM; for a remote engine, a stand-in on this
+machine that asks for the key in the variable the endpoint's credential names. A sample serves its own fakes on the
+endpoints' ports, so nothing else may listen there.
+
+The fake stays a leaf: it reads a script and knows nothing of the bench. The samples are the edge that joins them.
+
+## The command
+`chatddx samples LOGIN [--world DIR] [--again] [NAME …]` runs the World's samples, or the ones named, as LOGIN, after
+`chatddx init-data LOGIN --giftbag`. A sample whose trial LOGIN has a run of already isn't run again unless `--again`
+is given; it is said as run before, with that run. Each sample gets a line: its configuration and cases, how its items
+ended, its scorers, and the run's id. It serves its own fakes, so `chatddx fake-engines` must not be running.
+
+## The samples
+The sample World's ten:
+
+| Sample | Configuration on endpoint | Cases | Shows |
+| --- | --- | --- | --- |
+| `typical` | `plan` on `qwen3-8b-awq@fake` | `DutchFall10w` | A plan thought through once and answered in one go, held to its schema. |
+| `invalid` | `plan-prompted` on `gpt-oss-20b@fake` | `Dutchfall12w` | A plan shown its schema with nothing enforcing it, which breaks it. |
+| `broken` | `free-text` on `qwen3-8b-awq@fake` | `Dutchfall13w` | A server that goes away halfway through the answer. |
+| `runaway` | `diagnoses` on `gpt-oss-20b@fake` | `Dutchfall14w` | A structured answer that runs away in newlines, cut short by the runner. |
+| `stopped` | `free-text-guided (sv, …)` on `qwen3-8b-awq@fake` | `casesfromedn2` | A Swedish run halted as it streams. |
+| `unfinished` | `diagnoses` on `qwen3-8b-awq@fake` | `Dutchfall15w` | A run never finished, and so never scored. |
+| `judged` | `free-text` on `qwen3-8b-awq@fake` | `Dutchfall11w` | An answer to a case Olof wrote notes on, scored by the judges as well as the patterns. |
+| `appendix` | `diagnoses` on `qwen3-8b-awq@fake` | `Dutchfall11w with ultrasound` | An appendix that changes the right answer. |
+| `batch` | `diagnoses` on `qwen3-8b-awq@fake` | four | Answers well, a 503 while the engine loads, and a server that goes away. |
+| `remote` | `free-text` on `mistral-small@remote` | `Dutchfall14w` | A run on the remote engine, whose endpoint asks for a key. |
+
+The test World's six are the same shapes on its cases: `valid`, `stopped`, `unfinished`, `batch` (not scored),
+`judged` and `appendix`.
+
+## Tests
+src/chatddx/samples/test/, marked `wip` until this document moves.
+
+- `test_samples.py` runs the test World's samples on `curated`, alice's: how each item ended, that a run is finished
+  unless `unfinished` and scored when it is finished and `scored`, that a sample run before is found, that judges
+  answer as plain fakes, what a sample's file can't say, and the command running each sample once.
+- `test_sample_world.py` loads the sample World with alice's giftbag and runs its ten, each to its outcome, with the
+  judge calls of `judged`.
+- The repl's tests of looking back run the test World's samples for runs to look at
+  (src/chatddx/repl/test/test_reviewing.py).
+
+## Terms
+
+| Term | Meaning |
+| --- | --- |
+| Sample | A run made to be looked at, written as a file in a World's `_runs/` and answered by the fake from its script. |
+| Script | The turns the fake answers with, one per call. |
+| Stand-in | The fake vLLM serving a remote engine's model on this machine, at the remote endpoint's address. |
+
+## Open design issues
+
+### Tool rounds aren't sampled
+The gate refuses tools on a sensitive source (docs/runner.md, "The gate"), and both Worlds' sources are sensitive, as
+a real one is, so no sample can send a tool round on their cases. The old samples' `broken` and `rich` searched the
+web. A take: a made-up source that isn't sensitive, once calibration wants a tool round to show, with the web patched
+in the process that runs the tools (`urllib.request.urlopen`, src/chatddx/tools/web_search.py).
+
+### Smaller issues
+- **No sample sends a canary set.** `Bench.start` passes none (docs/bench.md, "Outstanding"), though both data sets
+  hold one.
+- **No tests start from runs already made.** A take: a `sampled` database, `curated` with the test World's samples
+  run, copied for each test as `curated` is, once a test reads runs it doesn't make.
+- **A sample is one run.** `batch` is one run of four cases; a batch of trials, crossing variations, is the batch
+  planner's (agents/wip-batch.md), and a sample of one waits on it.
+- **`set` and `--again` have no test**, and no sample sets a part.

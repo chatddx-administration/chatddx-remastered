@@ -1,9 +1,10 @@
 # Judges: work in progress
 
 A judge is an LLM used as a metric (`docs/factors.md`, "Judge"). Judges are what score free-text expectations, such as
-the clinicians' notes in the targets (`agents/wip-sample-data.md`, "Free-text expectations"). This file plans the
-judge pipeline: judges in a data set, the scoring pass sending judge requests, and the scorer code turning verdicts
-into values. The judge prompt, what a judge is asked and how it answers, is Olof's to shape and comes after.
+the clinicians' notes in the targets (see "Free-text expectations"). This file plans the judge pipeline: judges in a
+data set, the scoring pass sending judge requests, and the scorer code turning verdicts into values. The judge prompt,
+what a judge is asked and how it answers, is Olof's to shape and comes after. It also holds what is open of the
+scorers' code (see "The scorers' code"), whose tests, `src/chatddx/scorers/test/test_scorers.py`, are `wip` under it.
 
 "Decided" means the user said so. "Take" is the agent's recommendation and still open.
 
@@ -25,8 +26,12 @@ and the engine names its `provider` (see "Decided"; the docs have AGENT suggesti
 - **The pipeline before the prompt.** The judge pipeline is built and tested on the test World (`worlds/test/`,
   `agents/wip-test-world.md`) with made-up material, without waiting on real answers or Olof's prompt. Everything a
   judge pipeline needs goes into the test World first.
-- **Free-text expectations** are as `agents/wip-sample-data.md` decided: clinicians' notes are expectation data, kept
-  apart as `comment` and `answer`, in the targets schema, as written, with their author and language.
+- **Free-text expectations** (decided with the sample data): clinicians' notes are expectation data, not vignette
+  text, since a vignette is sent to the model. They are `notes` in the targets schema beside the targets, so a case
+  keeps one expectation that pattern views and judged views read side by side; each note keeps its `comment` (the
+  reading of the case) and optional `answer` (the short answer wanted) apart, as written, with its `author` and its
+  `language`, checked as a family's is. A judged view picks one with
+  `$.notes[?@.author == 'Olof'].comment` (or `.answer`).
 - **J2: the scorer interface's next version, for every scorer.** One shape of metric takes what a view picks and,
   for a judged view, the judge's verdicts, so one scorer can hold pattern views and judged views side by side. There
   is no stored state to keep, so nothing holds the interface back. The pattern metrics compute what they did, and
@@ -69,15 +74,16 @@ and the engine names its `provider` (see "Decided"; the docs have AGENT suggesti
   declared. It checks the judge calls' execution against the run's schedule (`ledger/call.py:check_execution`).
 - **Lints**: a judge is linted as a skeleton with an engine, as a trial is (`factors/lint.py`, `facts/lint.py`), and
   its language is its skeleton's (`catalog/language.py`).
-- **Refused**: `scorers/scorer.py:score` and `runner/score.py:score_run` refuse judged views; the bench reports them
-  as refused (`bench/runs.py:score`), and the repl and the API show "not yet".
-- **The test World**: the recipe `judge` (purpose `judge`, greedy; its prompt holds the vignette, the completion and
-  the expectation), the output `verdict` (`schemas/verdict.json`: `meets`, `why`), and the case `noted`, with carol's
+- **Scored**: the scoring pass sends a judged view's calls and scores its verdicts (`runner/score.py`,
+  `scorers/verdicts.py`; see "Phases", 3 to 5), and the bench, the repl and the API score judged scorers like any
+  other.
+- **The test World**: the recipe `judge` (purpose `judge`, greedy; its prompt holds the completion and the
+  expectation), the output `verdict` (`schemas/verdict.json`: `meets`, `why`), and the case `noted`, with carol's
   note (a comment and an answer) and dave's (a comment), in Swedish on an English case.
   `scorers/test/test_scorers.py:test_a_judge_reads_a_case_s_notes_beside_the_targets_the_patterns_read` fills a judge
   from them.
-- **Not there**: a data set can't hold a judge (`docs/curation.md`, "What a data set can't hold yet"), no shipped code
-  scores a verdict, nothing sends a judge request, and the fake answers a schema the same whatever the seed.
+- **The sample**: Olof's notes on three cases, `Dutchfall11w`, `Dutchfall1w` and `casesfromedn1`, in Swedish, two
+  with an answer (`src/chatddx/curation/test/test_sample.py`), and a judge drafted over them (see "Phases", 6).
 
 ## Takes
 ### J1. Where judge calls go
@@ -169,10 +175,11 @@ A note is in Swedish, an answer may be in English (G18). Take: the pipeline does
 prompt's, for Olof. Judges aren't checked for language (`docs/catalog.md`, "Smaller issues") and stay unchecked.
 
 ### Hypothetical notes stay out of the sample
-Take: the sample's notes carry `author = "Olof"` into every score, and the sample is live data. Made-up notes go in
-the test World, under the placeholder authors it has. The sample got its judge before Olof's prompt exists (decided:
-`agents/wip-sample-data.md`, "A complete example"): a prompt drafted by an agent over his real notes, which his own
-replaces as an edit. No note is made up.
+Take: the sample's notes carry `author = "Olof"` into every score, so they stay his. The sample is curated for
+preliminary calibration and everything else in it can be considered guessed (`docs/curation.md`, "Outstanding"), but
+made-up notes go in the test World, under the placeholder authors it has. The sample got its judge before Olof's
+prompt exists (decided, when the sample was made the example new Worlds follow): a prompt drafted by an agent over
+his real notes, which his own replaces as an edit. No note is made up.
 
 ## The test World's additions
 Each read by a test, as `agents/wip-test-world.md` asks ("Principles", 1), and pinned in
@@ -208,9 +215,9 @@ The fake changes with it: a non-greedy request whose schema has `examples` is an
    factors' lints.
 3. **Judged metrics** (built). The scorer interface's version 2: a metric also takes the verdicts, and `Metric.judged`
    says which do, which `Metrics.problems` holds views to. The pattern and judged metrics ship together as
-   `chatddx.scorers.metrics:score` at version 1, so a scorer can mix them; the data sets name it, and every scorer's
-   digest moved. `verdicts.asked` gives a judge's fills, or no value with the reason when there's nothing to judge
-   (J4). A verdict is read with `answer.read` (J3) in the pass. Tested on synthetic verdicts
+   `chatddx.scorers.metrics:score` at version 1 (2 since), so a scorer can mix them; the data sets name it, and every
+   scorer's digest moved. `verdicts.asked` gives a judge's fills, or no value with the reason when there's nothing to
+   judge (J4). A verdict is read with `answer.read` (J3) in the pass. Tested on synthetic verdicts
    (`scorers/test/test_scorers.py`); the API lists whether a metric is judged.
 4. **The pass** (built). `Grader.start` refuses before anything is written: a run not finished, concurrency above 1
    (judge calls go one at a time yet), scorer code that can't run, a judge reading the vignette or appendices (J7),
@@ -238,11 +245,16 @@ The fake changes with it: a non-greedy request whose schema has `examples` is an
 - **Every judged scoring confirms its judges' endpoints** (decided, 2A: kept). `confirm` runs on every judged
   scoring, even when no item needs a judge, and an endpoint that hangs holds the scoring up to 10 s a judge.
 - **Concurrent judge calls**, as the runner's phase 4 did for items.
+- **Kompismoln's judges.** The sample's judges name the sample World's fake engines, so init-data with Kompismoln's
+  World skips them and the scorer `notes`, and says so. Kompismoln's `factors.toml` is the engine import's to write
+  whole, so its own judges have no place yet, and a judge's name is defined once across the data set and the World's
+  factors, so a file of its own beside the import's can't name them `verdict` and `graded` for `notes` to find. Take:
+  judges belong where the engines are, in the World, a data set's scorers naming them as now; Kompismoln's would go
+  in a hand-written file its World reads beside the import's.
 
 ## For Olof, later
 What the prompt needs from him:
-- his `comment`, his `answer`, or both as two views;
-- whether the vignette goes in the judge prompt;
+- his `comment`, his `answer`, or both as two views (the drafted `notes` scores all three ways);
 - how a Swedish note is read against an English answer: in the prompt, or translated once into an expectation of its
   own;
 - the verdict: pass or fail, a scale, or a verdict per aspect, and how strict about extra or harmful advice;
@@ -250,4 +262,24 @@ What the prompt needs from him:
 
 What would measure the judge: real answers on the three cases with notes (`Dutchfall11w`, `Dutchfall1w`,
 `casesfromedn1`) from pelle and malborg, graded by Olof with a line on why. Open beside it: notes on more cases, and
-whether the targets are revised where his notes disagree with them (`Dutchfall11w`).
+whether the targets are revised where his notes disagree with them. On `Dutchfall11w` he leads with shock, most
+likely sepsis, with ultrasound (RUSH) to rule out other causes, blood cultures and broad empirical antibiotics, where
+the targets have an aortic aneurysm or a dissection; on `Dutchfall1w` and `casesfromedn1` they roughly agree.
+
+## The scorers' code
+`chatddx.scorers` is described by `docs/factors.md` ("Scorer", "View") and `docs/factors-api.md` ("Scorer"), and the
+answer it reads by `docs/factors.md` too, whose tests (`scorers/test/test_answer.py`) are `solidified`. What no doc
+says yet is how the pattern metrics read a target, which `scorers/test/test_scorers.py` pins:
+- **A pattern** (`scorers/patterns.py:Pattern`) is words, matched whole and without case against the words of an
+  item. Words side by side are a phrase, found in that order; a word ending in `*` matches any word it begins. `&`
+  needs every part somewhere, `|` any part, `&` binding before `|`, and parentheses group. It is found where its
+  earliest part is. The old chatddx's matcher found parts of words too; this one doesn't.
+- **A target** is the one item a view's expectation selector picks: a pattern, an object with a `pattern`, or `false`,
+  nothing expected. No item, several, an object with words for a judge (`text`) and no pattern, or a pattern that
+  doesn't read give no value, with the reason in the detail.
+- **What is read**: the items the output selector picks, nulls dropped, and anything but a string as JSON.
+  `first_mention` holds a pattern to one sentence or line at a time, and counts characters to it.
+- **Open**: the old scorers' aggregates (`metrics = ["mean", "stderr"]`) are ported (`scorers/aggregate.py`) and the
+  repl shows them, but no factor says which apply (`docs/factors.md`, "Runs of the same trial aren't
+  interchangeable"); a check that a view's items are of the type its metric reads, beyond reaching the schema
+  (`docs/repl.md`, "Outstanding").

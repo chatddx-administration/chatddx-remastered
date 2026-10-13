@@ -11,7 +11,7 @@ from chatddx.store import Catalog, People, Store
 from chatddx.store.store import Connection
 from chatddx.test.world import world_plan
 
-pytestmark = pytest.mark.wip
+pytestmark = pytest.mark.solidified
 
 SHIPPED = "chatddx.scorers.metrics:score"
 

@@ -49,6 +49,9 @@ against the inventory's `[cleared]` table until the clearance pipeline replaces 
   responses.
 - The runner runs tools since its phase 5 (`src/chatddx/runner/rounds.py`), and the gate keeps refusing them on a
   sensitive source until a tool can be cleared (`src/chatddx/runner/gate.py:check`).
+- The sample's tool is the old chatddx's web search on the standard library, with the old record's name, description
+  and parameters. Its tests (`src/chatddx/tools/test/test_web_search.py`) are `wip` under this file until tools can
+  be cleared; what ships a tool is in `docs/factors-api.md` ("Tool").
 
 ## What the code offers
 - `Vignette.source` (`src/chatddx/factors/cases.py:Vignette`) names a vignette's source, and is part of the case's
@@ -80,11 +83,11 @@ against the inventory's `[cleared]` table until the clearance pipeline replaces 
    - an inventory entry name (stable for humans, but the inventory isn't in the database, so no foreign key);
    - the engine digest plus URL (what the old `EndpointBinding` did).
 
-   Since decision 2A (`agents/wip-sample-data.md`, "Decided"), an endpoint has a name and binds one engine digest to
-   a URL (`src/chatddx/inventory/inventory.py:EndpointSpec`), a remote engine's URL too since it left the engine. So
-   a grant can key on the endpoint's name with the digest and URL it holds, as the old `EndpointBinding` did. Today
-   `[cleared]` keys on the name alone, so renaming an endpoint drops its clearance (`docs/inventory.md`, "Smaller
-   issues").
+   Since engine locations moved to the inventory (`docs/inventory.md`, "Endpoints"), an endpoint has a name and binds
+   one engine digest to a URL (`src/chatddx/inventory/inventory.py:EndpointSpec`), a remote engine's URL too since it
+   left the engine. So a grant can key on the endpoint's name with the digest and URL it holds, as the old
+   `EndpointBinding` did. Today `[cleared]` keys on the name alone, so renaming an endpoint drops its clearance
+   (`docs/inventory.md`, "Smaller issues").
 2. **Where vetting is declared.** Decided for now (`docs/inventory.md`, "Clearance"; `agents/wip-runner.md`, "Decided"): in
    the inventory, as `[cleared]`. For the long term: the inventory keeps all location facts in one place, while a
    database grant (through the portal, logged) gives an audit trail and fits the append-only store.

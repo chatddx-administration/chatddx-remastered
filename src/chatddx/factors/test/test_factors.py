@@ -1317,6 +1317,27 @@ def test_expectations_are_linted_against_their_schema(reg: Registry) -> None:
     assert findings({}, dangling) == []
 
 
+def test_output_schemas_are_checked_against_their_draft(reg: Registry) -> None:
+    def findings(json_schema: dict[str, JsonValue]) -> list[tuple[str, str]]:
+        output = reg.add(Output(contract=NativeOutput(), json_schema=json_schema))
+        return [(f.code, f.message) for f in lint(reg, [output])]
+
+    assert findings({"type": "object"}) == []
+    assert findings({"type": "array", "items": [{"type": "string"}]}) == [
+        (
+            "output.schema_invalid",
+            "at /items: [{'type': 'string'}] is not of type 'object', 'boolean'",
+        )
+    ]
+    assert findings({"$schema": "https://example.org/draft"}) == [
+        (
+            "output.schema_invalid",
+            "$schema 'https://example.org/draft' names no draft that can be checked",
+        )
+    ]
+    assert lint(reg, [reg.add(Output(contract=TextOutput()))]) == []
+
+
 def test_views_are_checked_against_the_expectation_schema(reg: Registry) -> None:
     closed = reg.add(
         ExpectationSchema(
@@ -1451,6 +1472,35 @@ def test_skeleton_and_engine_compatibility(reg: Registry) -> None:
     assert findings(native, remote) == {"schema.ref_unverified": "warning"}
     assert findings(tool, remote) == {"schema.ref_unverified": "warning"}
     assert findings(budget, remote) == {}
+
+    def messages(skeleton: str, engine: str) -> list[str]:
+        trial = reg.add(
+            Trial(skeleton=skeleton, engine=engine, cases=(ids["case"],), seeds=(1,))
+        )
+        return [f.message for f in lint(reg, [trial])]
+
+    ref = "the schema has $ref, which this engine isn't known to resolve; "
+    assert messages(tool, remote) == [ref + "inline_refs@1 removes them"]
+    referring = reg.add(
+        Tool(
+            name="lookup",
+            description="Look a code up.",
+            parameters=schema,
+            entry_point="chatddx_tools.codes:lookup",
+            version=1,
+        )
+    )
+    with_refs = with_tools.model_copy(
+        update={"toolset": reg.add(Toolset(tools=(web_search(reg), referring)))}
+    )
+    text_refs = reg.add(
+        compile_request(with_refs.model_copy(update={"output": text}), reg.get)
+    )
+    assert messages(text_refs, remote) == [
+        "the parameters of tool 'lookup' have $ref, which this engine isn't known "
+        + "to resolve"
+    ]
+    assert messages(text_refs, parsers) == []
 
     judged = reg.add(
         Skeleton(

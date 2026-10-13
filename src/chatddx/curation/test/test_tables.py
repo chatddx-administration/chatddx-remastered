@@ -10,7 +10,7 @@ from chatddx.store import Catalog, People, Store
 from chatddx.store.store import Connection
 from chatddx.test.world import DATA, world_plan
 
-pytestmark = pytest.mark.wip
+pytestmark = pytest.mark.solidified
 
 
 def test_a_case_names_its_appendices_and_the_cases_that_send_them() -> None:
