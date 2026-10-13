@@ -744,6 +744,11 @@ A passthrough refuses a fixed list of options and lets everything else through. 
   passthrough already refuses what the rig and the output contract set, and options that put case text in the stored
   response are closer to the clearance block than to a warning.
 
+```
+AGENT: remove
+Built: a reference's kinds are in its JSON Schema as `x-kind` (`chatddx.factors.base.RefTo`), and the API publishes
+the kinds' JSON Schemas (`GET /api/kinds`, docs/api.md, "What a person sees").
+```
 ### Reference kinds in components' JSON Schemas
 The JSON Schema of each component kind could say which kinds each reference may point to. A portal form could then offer
 a picker of the right kind for every reference, straight from the schema. References used to say this, and stopped

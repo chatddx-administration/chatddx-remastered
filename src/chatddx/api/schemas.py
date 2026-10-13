@@ -434,6 +434,20 @@ class Component(_Schema):
     body: JsonValue
 
 
+class Kind(_Schema):
+    kind: str
+    word: str = Field(description="the bench's word for it, as GET /api/threads takes")
+    written: bool = Field(description="whether a person writes it")
+    json_schema: dict[str, JsonValue] = Field(
+        description="its JSON Schema; a reference names the kinds it takes in x-kind"
+    )
+
+
+class Checked(_Schema):
+    digest: str
+    findings: list[Finding]
+
+
 class Metric(_Schema):
     name: str
     measures: str

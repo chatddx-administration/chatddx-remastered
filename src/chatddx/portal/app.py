@@ -10,7 +10,7 @@ from chatddx.core import settings
 from chatddx.facts import Facts
 from chatddx.inventory import Inventory
 
-from . import configurations, families, pages, runs, world
+from . import configurations, families, pages, runs, threads, world
 from .assets import ROUTE, Assets
 
 
@@ -28,6 +28,12 @@ def app(
     for error in (*api.STATUSES, HTTPException, RequestValidationError):
         made.add_exception_handler(error, pages.paged(made.exception_handlers[error]))
     made.add_exception_handler(pages.SignInFirst, pages.to_sign_in)
-    for router in (runs.router, configurations.router, families.router, world.router):
+    for router in (
+        runs.router,
+        configurations.router,
+        families.router,
+        threads.router,
+        world.router,
+    ):
         made.include_router(router, include_in_schema=False)
     return made

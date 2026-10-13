@@ -333,6 +333,12 @@ too, after the run has started.
 
 ## components.py
 
+```
+AGENT: add
+A row after `component`, for checking one without writing it.
+---
+| `check(component: Component) -> Checked` | `Checked(digest, findings)`: the component as a write would store it, an appendix bound (`bound`), a scorer held to its code (`check_scorer`), its references loaded and `Registry.check`ed with it, and `chatddx.facts.lints` of it. Nothing is written. `ValueError("a person doesn't write <kind> components")`, the check's `StructuralError` and the others' errors. |
+```
 | Write | Returns / raises |
 | --- | --- |
 | `component(doc: Mapping[str, JsonValue]) -> Component` | Takes no `Seen`. The component `doc` holds, as `GET /api/components` gives its body: of the model `BY_KIND[doc["kind"]]`, with `v`, when given, its schema version. `ValueError("<kind!r> isn't a kind a person writes: the kinds are …")` for a kind not in `WRITTEN`, `ValueError("<kind> is at v<n>, not v<v>")`, and the model's `ValidationError`. |

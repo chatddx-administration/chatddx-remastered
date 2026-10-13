@@ -22,8 +22,8 @@ it.
 5. **What it stands on is built**: the bench and the API (`docs/bench.md`, `docs/api.md`), the writes for authoring
    (`agents/wip-authoring.md`) and typed cases (`docs/bench.md`, "Typed cases"). What isn't is under "Below the UI":
    the worker, the batch planner, Z1, and a few things the API doesn't give yet.
-6. **Next**: phase 5, authoring (see "Phases"), or the worker under the runs (`agents/wip-worker.md`); and what
-   phases 2 to 4 left (see "Open").
+6. **Next**: phase 5's second half, 5c and 5d, once its first is looked at (see "Authoring"); and what phases 2 to
+   5 left (see "Open").
 
 ## What the portal shows
 The old portal's manual reads as a functional spec for its pages: `docs/portal.md` in chatddx-administration/chatddx
@@ -172,6 +172,33 @@ Decided (phase 4), from the options R1 to R12:
 - **R11. A keep-alive** on a run's event stream (`docs/api.md`, "Outstanding", "A quiet stream").
 - **R12. A browser test** under pytest with Playwright (Python), on the test World and its fake vLLM: start, watch,
   halt and score again; and the island's logic by vitest.
+
+## Authoring
+Decided (phase 5), from the options W1 to W11:
+- **W1. In two halves**: 5a, a page for every thread, and 5b, the clinicians' appendices, cases and expectations;
+  then, once the first is looked at, 5c, the researchers' chunk editors and a new configuration from a recipe, and 5d,
+  scorers and judges.
+- **W2. A page for every thread**, `/threads/{id}`, whatever its kind (configurations and families keep their own):
+  the component as it is, its versions, what is said of it with forms to change it, fork, and following its origin
+  when there is a proposal. A Library in the nav lists the kinds, and the person's deleted threads apart.
+- **W3. Versions stepped through** (◀ ▶), each with what it changed, field by field and texts word by word, worked
+  out in the browser from the two components' JSON (jsdiff).
+- **W4. A form per kind**, built from shared pieces: a text that knows its inserts, a settings table, a JSON field the
+  server checks, a picker for a reference of a kind, and a form drawn from a JSON Schema for data and parameters.
+- **W5. An expectation's form** is drawn from its expectation schema's JSON Schema (objects, strings, arrays, `oneOf`
+  with `const: false` as none expected, `$ref`), with a JSON field for what it can't draw.
+- **W6. Checked as it is typed**, by `POST /api/components/check`: the component built, its rules, cross-checks and
+  lints, and its digest, with nothing written.
+- **W7. Pickers from the kinds' JSON Schemas**, published with the kinds each reference takes (`x-kind`) by
+  `GET /api/kinds` (`docs/factors.md`, "Reference kinds in components' JSON Schemas").
+- **W8. Saving** says where it goes, as the variation's page does: a new version of the person's own, a new thread, or
+  a fork, with their namesakes; a text's language offered from the previous version; a conflict shown with a reload
+  that keeps what was typed.
+- **W9. The simple writes are plain forms**: what is said, deleting and restoring, following, taking, carrying, and a
+  fork as it is.
+- **W10. Every form for everyone**; what each role is offered first waits for Z1 (phase 7).
+- **W11. Tests**: the pages', vitest for the differences and the schema's form, and a browser test of a clinician's
+  flow: an appendix, its case, the expectation, and the variation's reach counting it.
 
 ## Swift
 Decided:
@@ -411,6 +438,28 @@ Phase 4, `wip` under this file, as decided (see "Starting and watching a run"):
   halted, scored again and run again in Chromium (Playwright, a test dependency at 1.56.0, skipped without a build or
   a browser); `frontend/src/lib/runs/progress.test.ts`; and by hand on the sample World with its fake engines.
 
+Phase 5, first half, `wip` under this file, as decided (see "Authoring"):
+- **The API**: `GET /api/kinds`, each kind with the bench's word for it, whether a person writes it, and its JSON
+  Schema, in which a reference names the kinds it takes (`x-kind`, from `chatddx.factors.base.RefTo`); and
+  `POST /api/components/check`, a component checked as a write would store it, with nothing written
+  (`Bench.check`). `docs/api.md`, `docs/api-api.md`, `docs/bench-api.md` and `docs/factors.md` have AGENT suggestions;
+  the tests stay `solidified` (`src/chatddx/api/test/test_kinds.py`).
+- **5a, a page for every thread** (`src/chatddx/portal/threads.py`): `/library`, every kind the person sees, their own
+  first, and their deleted threads with **Restore**; `/threads/{id}`, any kind but a configuration's, which has its
+  own: what is said of it, its versions stepped through with what each changed (`frontend/src/lib/thread/`, jsdiff),
+  and the forms for what is said, deleting and restoring, forking as it is, and following its origin when there is a
+  proposal.
+- **5b, the clinicians'**: a family's page writes appendices and builds cases of them; each case offers, under each
+  expectation schema the person sees, the expectation they are held to, or **Write yours** (starting from theirs for
+  the family's case), the shared ones to take, and moving theirs from a replaced case. An appendix's and an
+  expectation's page edit or fork it (`frontend/src/lib/editors/`): the expectation's form is drawn from its schema
+  (`frontend/src/lib/schema/`), each is checked as it is typed, and saving says where it goes, keeping what was typed
+  when the thread has moved on since.
+- **Tests**: `src/chatddx/portal/test/test_library.py` and `test_clinicians.py`; a second browser test, a clinician's
+  appendix, case and expectation, and the variation's reach no longer missing the family under the view it holds
+  (`test_browser.py`); vitest for the differences, the schema's form and where a save goes; and by hand on the sample
+  World.
+
 ## Below the UI
 What the portal needs below its pages that isn't built:
 1. **The worker** (`agents/wip-worker.md`): runs that outlive the app's process and are seen from every replica, and
@@ -435,6 +484,8 @@ What the portal needs below its pages that isn't built:
 4. **Starting and watching a run**, built (see "Built"): the run's island, on the API's runs and events; the worker
    under them when it is built (`agents/wip-worker.md`).
 5. **Authoring**: the pages for the bench's writes, which are built; a scorer's pickers read `GET /api/scorer-code`.
+   Its first half is built (see "Built"): a page for every thread, and the clinicians' appendices, cases and
+   expectations.
 6. **Batches**: the planner's pages (`agents/wip-batch.md`), then a batch's page and the worker's status
    (`agents/wip-worker.md`).
 7. **Z1**, and what deleting hides.
@@ -489,6 +540,19 @@ From "What the portal shows", not on the pages yet:
   look itself, about 0.6 s on the sample World. Listing a configuration's language costs its skeleton's compilations
   (`Catalog.languages_of`), one query per skeleton.
 - **The frontend's tests** (`pnpm --dir frontend test`) run by hand, as `pnpm check` does.
+
+### What the first half of authoring leaves
+- **The chunk editors, a configuration from a recipe, scorers and judges**: the second half (5c, 5d). Their threads
+  have pages, with what is said, versions, forks and following, but no editor; `GET /api/kinds` waits for their
+  pickers.
+- **An expectation's form follows its schema's keys alphabetically**: an expectation schema is stored as canonical
+  JSON, which sorts them, so `targets` shows diagnosis, disposition, dont miss, notes, warning.
+- **Building a case** takes the appendices in the order listed; a case's order can't be chosen yet, and a late case
+  (`NewCase.replacing`) isn't offered.
+- **Moving an expectation** onto another case is offered only from cases other than the family's own, since it leaves
+  the case it was on: the flow after an appendix's new version.
+- **Taking many at once** (`POST /api/takes`, by tag) has no page; a case's shared expectations are taken one by one.
+- **An appendix's language**, and a new version offered the previous one's (W8), wait for the text kinds of 5c.
 
 ### What starting and watching a run leaves
 - **Concurrency** is 1 (R9): a run of the sample World's 104 cases sends them one at a time.

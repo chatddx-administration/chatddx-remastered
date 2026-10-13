@@ -19,6 +19,33 @@
   ]) }}
   {% endcall %}
 
+  {% call section("Its appendices", "appendices") %}
+  <p class="mb-3 text-sm text-muted-foreground">What a case adds to the vignette, such as a test's result. Each is bound to the vignette as it is now.</p>
+  {% if written %}
+  <ul class="mb-4 space-y-1 text-sm">
+    {% for t in written %}<li><a class="text-primary hover:underline" href="/threads/{{ t.id }}">{{ t.name or t.title }}</a>{% if t.owner and t.owner != person.login %} <span class="text-muted-foreground">({{ t.owner }})</span>{% endif %}</li>{% endfor %}
+  </ul>
+  <form method="post" action="/families/{{ family.id }}/cases" class="mb-6 rounded-lg border border-border/60 p-3 text-sm">
+    <p class="mb-2 font-medium">Build a case of the vignette and these, in the order listed</p>
+    {% for t in written %}
+    <label class="flex items-center gap-2 py-0.5"><input type="checkbox" name="appendix" value="{{ t.head.digest }}"> {{ t.name or t.title }}</label>
+    {% endfor %}
+    <button class="mt-2 inline-flex h-8 items-center rounded-md border border-border bg-card px-3 font-medium hover:bg-muted">Build the case</button>
+  </form>
+  {% else %}
+  <p class="mb-4 text-sm text-muted-foreground">None yet.</p>
+  {% endif %}
+  <form method="post" action="/families/{{ family.id }}/appendices" class="grid max-w-xl gap-2 text-sm">
+    <p class="font-medium">Write an appendix</p>
+    <label class="grid gap-1"><span class="text-muted-foreground">Name</span>
+      <input name="name" required class="h-9 rounded-md border border-input bg-transparent px-2.5"></label>
+    <label class="grid gap-1"><span class="text-muted-foreground">Text</span>
+      <textarea name="text" required rows="4" class="rounded-md border border-input bg-transparent px-2.5 py-1.5"></textarea></label>
+    <div><button class="inline-flex h-9 items-center rounded-md bg-primary px-4 font-medium text-primary-foreground hover:bg-primary/90">Write it</button></div>
+  </form>
+  {% endcall %}
+
+  <div id="cases"></div>
   {% for c in cases %}
   {% call section(c.title ~ (" (the family's case)" if c.default else "")) %}
   {% if c.appendices %}
@@ -31,11 +58,29 @@
     <p class="text-sm text-warning">{{ e.ambiguous }}</p>
     {% elif e.expectation %}
     {{ json(e.data) }}
+    {% if e.expectation in own %}<p class="mt-2 text-sm"><a class="text-primary hover:underline" href="/threads/{{ own[e.expectation].id }}#edit">Change it</a></p>{% endif %}
     {% else %}
     <p class="text-sm text-muted-foreground">None of your own.</p>
+    {% set editor = editors.get((c.case, e.expectation_schema)) %}
+    {% if editor %}
+    <div data-editor class="mt-2"><script type="application/json">{{ editor | tojson }}</script></div>
     {% endif %}
-    {% if e.shared %}
-    <p class="mt-2 text-sm text-muted-foreground">Shared with you to take: {% for t in e.shared %}{{ chip((t.owner ~ "/" if t.owner else "") ~ (t.name or t.title)) }} {% endfor %}</p>
+    {% for other, t in carried.get(e.expectation_schema, []) if other != c.case %}
+    <form method="post" action="/threads/{{ t.id }}/carry" class="mt-2 text-sm">
+      <input type="hidden" name="head" value="{{ t.head.id }}"><input type="hidden" name="case" value="{{ c.case }}"><input type="hidden" name="next" value="/families/{{ family.id }}">
+      <button class="rounded-md border border-border px-2.5 py-0.5 text-xs font-medium hover:bg-muted">Move yours here</button>
+      <span class="text-muted-foreground">from {{ (cases | selectattr("case", "equalto", other) | first).title }}, which it leaves, as after an appendix's new version: only if it still holds with this case's appendices</span>
+    </form>
+    {% endfor %}
+    {% endif %}
+    {% if e.shared and not e.expectation %}
+    <div class="mt-2 flex flex-wrap items-center gap-2 text-sm"><span class="text-muted-foreground">Shared with you to take:</span>
+      {% for t in e.shared %}
+      <form method="post" action="/threads/{{ t.id }}/take"><input type="hidden" name="next" value="/families/{{ family.id }}"><button class="rounded-full border border-border px-2.5 py-0.5 text-xs hover:bg-muted">Take {{ (t.owner ~ "/" if t.owner else "") ~ (t.name or t.title) }}</button></form>
+      {% endfor %}
+    </div>
+    {% elif e.shared %}
+    <p class="mt-2 text-sm text-muted-foreground">Shared with you: {% for t in e.shared %}{{ chip((t.owner ~ "/" if t.owner else "") ~ (t.name or t.title)) }} {% endfor %}</p>
     {% endif %}
   </div>
   {% else %}

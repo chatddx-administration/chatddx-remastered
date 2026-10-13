@@ -1,6 +1,7 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException
 
-from chatddx.bench import Bench, NotFound
+from chatddx.bench import KINDS, WRITTEN, Bench, NotFound
+from chatddx.factors.kinds import BY_KIND
 from chatddx.inventory import EndpointSpec, url_of
 from chatddx.scorers.scorer import NO_PARAMS
 from chatddx.scorers.shipped import SCORERS
@@ -8,6 +9,7 @@ from chatddx.store.catalog import Rows
 
 from . import schemas
 from .people import BenchDep
+from .threads import refused
 
 router = APIRouter(tags=["world"])
 
@@ -82,6 +84,33 @@ def component(bench: BenchDep, digest: str) -> schemas.Component:
         kind=kind,
         title=bench.title(digest),
         body=bench.get(digest).model_dump(mode="json"),
+    )
+
+
+@router.get("/kinds")
+def kinds(_: BenchDep) -> list[schemas.Kind]:
+    return [
+        schemas.Kind(
+            kind=kind,
+            word=word,
+            written=kind in WRITTEN,
+            json_schema=BY_KIND[kind].model_json_schema(),
+        )
+        for word, held in KINDS.items()
+        for kind in held
+    ]
+
+
+@router.post("/components/check")
+def check(bench: BenchDep, given: schemas.ComponentBody) -> schemas.Checked:
+    with refused():
+        try:
+            checked = bench.check(bench.component(given))
+        except LookupError as e:
+            raise HTTPException(422, str(e)) from None
+    return schemas.Checked(
+        digest=checked.digest,
+        findings=[schemas.Finding.of(f) for f in checked.findings],
     )
 
 

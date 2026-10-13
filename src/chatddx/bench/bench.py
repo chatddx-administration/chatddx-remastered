@@ -10,7 +10,7 @@ from .cases import (
     replacement,
     type_case,
 )
-from .components import component, edit_component, fork_component, new
+from .components import check, component, edit_component, fork_component, new
 from .configurations import edit, fork, save
 from .following import follow, proposal
 from .runs import again, score, start
@@ -27,6 +27,7 @@ class Bench(Seen):
 
     component = staticmethod(component)
     new = new
+    check = check
     fork_component = fork_component
     edit_component = edit_component
 

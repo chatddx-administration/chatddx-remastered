@@ -18,6 +18,7 @@ export default defineConfig({
         portal: "src/portal.css",
         home: "src/islands/home.ts",
         run: "src/islands/run.ts",
+        thread: "src/islands/thread.ts",
         variation: "src/islands/variation.ts",
       },
     },

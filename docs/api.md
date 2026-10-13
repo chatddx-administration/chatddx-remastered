@@ -64,6 +64,14 @@ A configuration made per language or model is a thread under its full name, unti
   it takes at once, its credential's name, and the sources it is cleared for. One whose engine isn't stored, or whose
   URL can't be told, says why rather than failing the listing.
 - **Models**: what the facts know of each, and the endpoints serving it.
+```
+AGENT: change
+The kinds, with their JSON Schemas, beside the components.
+---
+- **Components**: any stored component by its digest, with its kind and title; and the kinds of component, each
+  with the bench's word for it, whether a person writes it, and its JSON Schema, in which a reference names the kinds
+  it takes (`x-kind`). These are the same for everyone.
+```
 - **Components**: any stored component by its digest, with its kind and title. These are the same for everyone.
 
 A thread, family or run the person doesn't see is "not found", the same as one that doesn't exist. Their own deleted
@@ -96,6 +104,16 @@ A variation the bench refuses is unprocessable: a digest that isn't a stored chu
 taken out, parts that don't compile together, or a parameter the request doesn't know, so that a misspelt part is
 refused rather than ignored. A look's queries don't grow with the number of cases it is over.
 
+```
+AGENT: add
+A section before "Forking and editing", for checking a component before it is written.
+---
+## Checking a component
+A component of a kind a person writes is checked as a write would store it, and nothing is written: its rules, its
+references, which must be stored, the rules that take several components, and a scorer's code and parameters. It
+gives back the digest it would have and what the lints say of it, or is refused as the write would be. An edge checks
+what a person types as they type it.
+```
 ## Forking and editing
 Keeping a variation is two requests, rather than one save by name as the repl's `save NAME` is, which makes a new
 version of the person's configuration of that name if there is one, and a new configuration otherwise:

@@ -1721,6 +1721,93 @@
         }
       }
     },
+    "/api/kinds": {
+      "get": {
+        "tags": [
+          "world"
+        ],
+        "summary": "Kinds",
+        "operationId": "kinds_api_kinds_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/Kind"
+                  },
+                  "type": "array",
+                  "title": "Response Kinds Api Kinds Get"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          },
+          {
+            "APIKeyCookie": []
+          }
+        ]
+      }
+    },
+    "/api/components/check": {
+      "post": {
+        "tags": [
+          "world"
+        ],
+        "summary": "Check",
+        "operationId": "check_api_components_check_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": {
+                  "$ref": "#/components/schemas/JsonValue"
+                },
+                "type": "object",
+                "title": "Given",
+                "description": "a component's JSON as GET /api/components/{digest} gives its body, kind included"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Checked"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          },
+          {
+            "APIKeyCookie": []
+          }
+        ]
+      }
+    },
     "/api/scorer-code": {
       "get": {
         "tags": [
@@ -2560,6 +2647,28 @@
         ],
         "title": "Answer"
       },
+      "Checked": {
+        "properties": {
+          "digest": {
+            "type": "string",
+            "title": "Digest"
+          },
+          "findings": {
+            "items": {
+              "$ref": "#/components/schemas/Finding"
+            },
+            "type": "array",
+            "title": "Findings"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "digest",
+          "findings"
+        ],
+        "title": "Checked"
+      },
       "Chunk": {
         "anyOf": [
           {
@@ -3273,6 +3382,41 @@
         "title": "ItemDetail"
       },
       "JsonValue": {},
+      "Kind": {
+        "properties": {
+          "kind": {
+            "type": "string",
+            "title": "Kind"
+          },
+          "word": {
+            "type": "string",
+            "title": "Word",
+            "description": "the bench's word for it, as GET /api/threads takes"
+          },
+          "written": {
+            "type": "boolean",
+            "title": "Written",
+            "description": "whether a person writes it"
+          },
+          "json_schema": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/JsonValue"
+            },
+            "type": "object",
+            "title": "Json Schema",
+            "description": "its JSON Schema; a reference names the kinds it takes in x-kind"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "kind",
+          "word",
+          "written",
+          "json_schema"
+        ],
+        "title": "Kind"
+      },
       "Labels": {
         "properties": {
           "views": {

@@ -123,3 +123,52 @@ def test_a_variation_is_run_watched_halted_scored_again_and_run_again(
         expect(page.get_by_text("completed").first).to_be_visible()
 
     assert errors == []
+
+
+def test_a_clinician_s_appendix_case_and_expectation_are_written_and_counted(
+    page: Page,
+) -> None:
+    errors: list[str] = []
+    page.on("pageerror", lambda e: errors.append(str(e)))
+    crlf = page.request.get("/api/families", params={"name": "crlf"}).json()[0]
+    [expected] = page.request.get(f"/api/families/{crlf['id']}").json()["expectations"]
+    query: dict[str, str | float | bool] = {"kind": "expectation", "owner": "alice"}
+    mine = next(
+        t
+        for t in page.request.get("/api/threads", params=query).json()
+        if t["head"]["digest"] == expected["expectation"]
+    )
+    query = {"kind": "configuration", "name": LINES, "owner": "alice"}
+    lines = page.request.get("/api/threads", params=query).json()[0]
+
+    def missing() -> set[tuple[str, str]]:
+        look = page.request.get(f"/api/threads/{lines['id']}/variation").json()
+        return {
+            (r["name"], r["label"]) for r in look["reach"] if crlf["id"] in r["missing"]
+        }
+
+    held = missing()
+    assert page.request.delete(f"/api/threads/{mine['id']}").status == 204
+    gone = missing()
+    assert held < gone
+    _ = page.goto(f"/families/{crlf['id']}")
+    written = page.locator(f'form[action="/families/{crlf["id"]}/appendices"]')
+    written.locator('input[name="name"]').fill("ultrasound")
+    written.locator("textarea").fill("Gallstones on ultrasound.")
+    written.get_by_role("button", name="Write it").click()
+    page.get_by_label("ultrasound").check()
+    page.get_by_role("button", name="Build the case").click()
+    expect(page.get_by_role("button", name="Write yours")).to_have_count(2)
+
+    page.get_by_role("button", name="Write yours").first.click()
+    page.get_by_role("button", name="+ pattern").first.click()
+    page.get_by_label("pattern").first.fill("biliary & colic")
+    expect(page.get_by_text("Nothing to say of it.")).to_be_visible()
+    expect(page.get_by_text("a new thread of your own")).to_be_visible()
+    page.get_by_role("button", name="Save").click()
+    page.wait_for_url(re.compile(r"/threads/\d+$"))
+    expect(page.get_by_role("heading", name="Change it")).to_be_visible()
+
+    written_now = missing()
+    assert held <= written_now < gone
+    assert errors == []

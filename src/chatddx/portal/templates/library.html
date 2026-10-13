@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% from "macros.html" import heading, section, chip, tabs %}
+{% block title %}Library · ChatDDX{% endblock %}
+{% block main %}
+<div class="mx-auto max-w-5xl px-4 py-8">
+  {{ heading("Library", "Every kind of thread you see, your own first.") }}
+  {{ tabs(listed) }}
+
+  {% call section(word | replace("_", " ")) %}
+  {% if threads %}
+  <div class="overflow-x-auto">
+    <table class="w-full text-sm">
+      <thead class="text-left text-xs uppercase tracking-wide text-muted-foreground">
+        <tr><th class="pb-2 pr-4 font-medium">Name</th><th class="pb-2 pr-4 font-medium">Owner</th><th class="pb-2 pr-4 font-medium">Language</th><th class="pb-2 pr-4 font-medium">Tags</th><th class="pb-2 font-medium">Latest version</th></tr>
+      </thead>
+      <tbody>
+        {% for t in threads %}
+        <tr class="border-t border-border/60">
+          <td class="py-2 pr-4 align-top"><a class="text-primary hover:underline" href="/threads/{{ t.id }}">{{ t.name or t.title }}</a></td>
+          <td class="py-2 pr-4 align-top">{{ t.owner or "—" }}</td>
+          <td class="py-2 pr-4 align-top">{{ t.language or "—" }}</td>
+          <td class="py-2 pr-4 align-top">{% for tag in t.tags %}{{ chip(tag) }} {% endfor %}</td>
+          <td class="whitespace-nowrap py-2 align-top text-muted-foreground">{{ t.head.at | when }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <p class="text-sm text-muted-foreground">None you see.</p>
+  {% endif %}
+  {% if not written %}<p class="mt-4 text-sm text-muted-foreground">These are written through data sets, by developers and ops.</p>{% endif %}
+  {% endcall %}
+
+  {% call section("Your deleted threads", "deleted") %}
+  {% if deleted %}
+  <ul class="space-y-1.5 text-sm">
+    {% for t in deleted %}
+    <li class="flex flex-wrap items-center gap-3">
+      <a class="text-primary hover:underline" href="/threads/{{ t.id }}">{{ t.name or t.title }}</a>
+      {{ chip(word_of(t.kind) | replace("_", " ")) }}
+      <form method="post" action="/threads/{{ t.id }}/restore"><button class="rounded-md border border-border px-2.5 py-0.5 text-xs font-medium hover:bg-muted">Restore</button></form>
+    </li>
+    {% endfor %}
+  </ul>
+  {% else %}
+  <p class="text-sm text-muted-foreground">None.</p>
+  {% endif %}
+  {% endcall %}
+</div>
+{% endblock %}

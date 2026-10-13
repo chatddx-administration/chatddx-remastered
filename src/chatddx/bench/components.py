@@ -8,9 +8,10 @@ from chatddx.factors.cases import Appendix, Case
 from chatddx.factors.kinds import BY_KIND
 from chatddx.factors.request import Recipe
 from chatddx.factors.scoring import Expectation, Scorer
+from chatddx.facts import lints
 
 from .errors import NotFound
-from .model import COMPILED_LANGUAGE, KINDS, SAVED, WRITTEN, Written
+from .model import COMPILED_LANGUAGE, KINDS, SAVED, WRITTEN, Checked, Written
 from .seen import Seen
 from .variation import PARTS
 
@@ -29,6 +30,21 @@ def component(doc: Mapping[str, JsonValue]) -> Component:
     if doc.get("v", cls.schema_version) != cls.schema_version:
         raise ValueError(f"{kind} is at v{cls.schema_version}, not v{doc['v']}")
     return cls.model_validate(given)
+
+
+def check(seen: Seen, component: Component) -> Checked:
+    kind = component.kind_name
+    if kind not in WRITTEN:
+        raise ValueError(f"a person doesn't write {kind} components")
+    if isinstance(component, Scorer):
+        seen.check_scorer(component)
+    if isinstance(component, Appendix):
+        component = bound(seen, component)
+    registry = seen.store.load(s.digest for s in component.refs())
+    _ = registry.add(component)
+    registry.check(registry.closure([component.digest]))
+    findings = lints(registry, seen.facts, [component.digest], seen.catalog.language_of)
+    return Checked(component.digest, findings)
 
 
 def new(
