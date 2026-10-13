@@ -32,10 +32,8 @@ by its table. Anything that needs the engines is checked when an entry is used (
 used").
 
 ### Worlds
-In chatddx, a world is technically only the parameters beyond chatddx's control, but the directories `worlds/*` contain
-all data shipped with the application, not just the world-data (see docs/chatddx.md, "The welcoming world").
-
-The non-world data is in directories prefixed with `_`.
+In chatddx, a world is technically only the parameters beyond chatddx's control, but the directories `worlds/*` also
+contain the data this repository carries for this world. The non-world data is in directories prefixed with `_`.
 
 Command line tools take `--world DIR` or fall back to `CHATDDX_WORLD`.
 

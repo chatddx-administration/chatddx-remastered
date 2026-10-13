@@ -109,16 +109,6 @@ Variations allow controlled experiments without the combinatorial explosion; the
 `src/chatddx/store/catalog.py:Catalog.variation` and `Catalog.proposal` (what a fork varies,
 and re-applying it when its origin moves), and `catalog.edit.based_on`.
 
-### The welcoming world
-A world is, by the glossary, a collection of all parameters outside of chatddx's control, e.g. vignette sources and
-remote engines etc. But the world seems to have taken on a literal sense and not only host the inventory itself (which
-contains actual chatddx world-data), but all shipped data, piggybacking as a `_`-prefixed directories. The world has
-become overloaded. The choices:
-1. Roll with it
-2. At least rename it to inventory
-
-Your call.
-
 ### The person-scoped cake
 Most of the control plane in chatddx is exercised as a person, and the functionality behind this is organized in three
 layers depending on what resources they require:
