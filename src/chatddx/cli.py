@@ -24,7 +24,7 @@ from chatddx.identity import Role
 from chatddx.importers.o11n import (
     Imported,
     endpoints_toml,
-    factors_toml,
+    engines_toml,
     imported,
     read,
 )
@@ -99,10 +99,9 @@ def _init_data(args: argparse.Namespace) -> None:
         raise SystemExit(
             f"init-data: {world.path} has no {DATA}/: give a data set with --data DIR"
         )
-    more = [*world.factors, *(args.factors or ())]
     try:
         facts = Facts.load(BUNDLED, *world.facts, *(args.facts or ()))
-        plan = plan_factors(data, facts, rig(), more=more)
+        plan = plan_factors(data, facts, rig(), engines=world.engines)
         cases = load_cases(data)
     except ValueError as e:
         raise SystemExit(f"init-data: {e}") from None
@@ -177,7 +176,7 @@ def _import_engine(args: argparse.Namespace) -> None:
             ]
         if missing := sorted(set(args.server or ()) - {i.server for i in imports}):
             raise LookupError(f"no report has a server {', '.join(missing)}")
-        factors, endpoints = factors_toml(imports), endpoints_toml(imports)
+        engines, endpoints = engines_toml(imports), endpoints_toml(imports)
     except (OSError, LookupError, ValueError) as e:
         raise SystemExit(f"import-engine: {e}") from None
     for i in imports:
@@ -186,15 +185,15 @@ def _import_engine(args: argparse.Namespace) -> None:
                 f"[import {f.level}] {i.name}: {f.code}: {f.message}", file=sys.stderr
             )
     written = f"# Written by `{' '.join(['chatddx import-engine', *args.reports])}`.\n"
-    _ = args.factors.write_text(
+    _ = args.engines.write_text(
         written
         + "# The models and engines its hosts serve; import again rather than edit.\n"
         + f"# Where they're served: {args.endpoints.name}.\n\n"
-        + factors
+        + engines
     )
     _ = args.endpoints.write_text(
         written
-        + f"# Where the engines in {args.factors.name} are served, and where their hosts\n"
+        + f"# Where the engines in {args.engines.name} are served, and where their hosts\n"
         + "# keep what they pin; import again rather than edit. A World inventory\n"
         + "# includes it.\n\n"
         + endpoints
@@ -342,7 +341,7 @@ def main(argv: Sequence[str] | None = None) -> None:
         "--world",
         type=Path,
         help="the World directory: its inventory.toml locates the vignettes and "
-        + "endpoints, and its factors.toml and facts.toml are loaded with the data's "
+        + "endpoints, and its engines.toml and facts.toml are loaded with the data's "
         + "(CHATDDX_WORLD)",
     )
     _ = init.add_argument(
@@ -358,12 +357,6 @@ def main(argv: Sequence[str] | None = None) -> None:
         type=Path,
         help="what to load: a directory with factors.toml and cases-<language>.toml "
         + f"(the World's {DATA}/)",
-    )
-    _ = init.add_argument(
-        "--factors",
-        type=Path,
-        action="append",
-        help="more factors to load with the data's and the World's",
     )
     _ = init.add_argument(
         "--facts",
@@ -424,11 +417,11 @@ def main(argv: Sequence[str] | None = None) -> None:
         + "URL's, or else the host's name)",
     )
     _ = imp.add_argument(
-        "--factors",
+        "--engines",
         type=Path,
         required=True,
-        help="the factors file to write the models and engines to, such as "
-        + "worlds/kompismoln/factors.toml, which init-data loads with its World",
+        help="the engines file to write the models and engines to, such as "
+        + "worlds/kompismoln/engines.toml, which init-data loads with its World",
     )
     _ = imp.add_argument(
         "--endpoints",

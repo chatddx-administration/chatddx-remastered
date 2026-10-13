@@ -60,6 +60,15 @@ On top of the fields:
   `description` is also a field, the one the model reads.
 - **From facts.** `from_facts` asks for a sampling or reasoning chunk per model (see "Per model").
 
+```
+AGENT: replace
+A World's models and engines are in its `engines.toml`, which holds nothing else, and a data set's `factors.toml`
+holds no engines (agents/wip-data.md, D1).
+---
+A name is defined once per kind, and a text's name may come back in each texts file, as the same text in another
+language. A data set's `factors.toml` holds no `model`, `local_engine` or `remote_engine` table: engines are the World's
+(see "The World").
+```
 A name is defined once per kind across `factors.toml` and the World's, and a text's name may come back in each texts
 file, as the same text in another language.
 
@@ -112,6 +121,17 @@ reported, and so are a served model the facts don't know and a known model no en
 planned first for this reason.
 
 ## The World
+```
+AGENT: replace
+A World's models and engines are in its `engines.toml`, which holds nothing else, and a data set's `factors.toml`
+holds no engines (agents/wip-data.md, D1).
+---
+A World is a directory (docs/inventory.md, "Worlds"). Loading reads its `inventory.toml` for the source of the cases'
+vignettes, and takes its `engines.toml`, the models and engines its endpoints serve and nothing else, with the data
+set's factors, and its `facts.toml`, facts about models the bundled facts don't know, with the bundled ones. So the
+sample World's fake engines are loaded only with the sample World, and a World that serves a model of its own brings
+what is known about it.
+```
 A World is a directory (docs/inventory.md, "Worlds"). Loading reads its `inventory.toml` for the source of the cases'
 vignettes, and takes its `factors.toml`, the engines and models its endpoints serve, with the data set's, and its
 `facts.toml`, facts about models the bundled facts don't know, with the bundled ones. So the sample World's fake
@@ -125,11 +145,26 @@ A loading ends with the inventory checked against the engines just planned, all 
 each endpoint would refuse, and what is likely a slip (docs/inventory.md, "Checks happen when an entry is used").
 
 ## Loading
+```
+AGENT: replace
+init-data takes no `--factors` any more: the World's engines come from the World and everything else from the data
+set (agents/wip-data.md, D6).
+---
+`chatddx init-data USER [--world DIR] [--source NAME] [--giftbag] [--data DIR] [--facts PATH …]`
+```
 `chatddx init-data USER [--world DIR] [--source NAME] [--giftbag] [--data DIR] [--factors FILE …] [--facts PATH …]`
 loads a data set, the World's `_data/` unless `--data` names another, for the archive, and shares it with USER,
 who is added when missing. It connects as the writer and does everything in one transaction. It prints a line for each
 thing it comes to.
 
+```
+AGENT: replace
+With `--factors` gone, the plan is the data set and the World's engines.
+---
+1. **Plan.** The data set and the World's engines are planned into components, without the
+   store: references resolved, per-model records written, recipes made per language and compiled, texts and entry
+   points checked. A data set that can't be planned is refused before anything is written.
+```
 1. **Plan.** The data set, the World's factors and any more `--factors` are planned into components, without the
    store: references resolved, per-model records written, recipes made per language and compiled, texts and entry
    points checked. A data set that can't be planned is refused before anything is written.

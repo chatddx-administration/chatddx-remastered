@@ -246,9 +246,9 @@ The fake changes with it: a non-greedy request whose schema has `examples` is an
   scoring, even when no item needs a judge, and an endpoint that hangs holds the scoring up to 10 s a judge.
 - **Concurrent judge calls**, as the runner's phase 4 did for items.
 - **Kompismoln's judges.** The sample's judges name the sample World's fake engines, so init-data with Kompismoln's
-  World skips them and the scorer `notes`, and says so. Kompismoln's `factors.toml` is the engine import's to write
-  whole, so its own judges have no place yet, and a judge's name is defined once across the data set and the World's
-  factors, so a file of its own beside the import's can't name them `verdict` and `graded` for `notes` to find. Take:
+  World skips them and the scorer `notes`, and says so. Kompismoln's `engines.toml` is the engine import's to write
+  whole and holds only engines, so its own judges have no place yet, and a judge's name is defined once, so a file of
+  its own beside the data set couldn't name them `verdict` and `graded` for `notes` to find. Take:
   judges belong where the engines are, in the World, a data set's scorers naming them as now; Kompismoln's would go
   in a hand-written file its World reads beside the import's.
 

@@ -17,7 +17,7 @@ from chatddx.importers.o11n import (
     REPORT,
     Imported,
     endpoints_toml,
-    factors_toml,
+    engines_toml,
     imported,
     read,
 )
@@ -179,9 +179,10 @@ def test_the_tables_it_prints_plan_the_engine_it_imported_and_start_it_as_served
         imported(report(), "qwen3-8b", "pelle.kompismoln.se"),
         imported(report({"gpt-oss-20b": gpt}, "malborg"), "gpt-oss-20b"),
     ]
-    factors = tmp_path / "factors.toml"
-    _ = factors.write_text(factors_toml(imports))
-    plan = plan_factors(tmp_path, Facts(), rig())
+    engines = tmp_path / "engines.toml"
+    _ = engines.write_text(engines_toml(imports))
+    _ = (tmp_path / "factors.toml").write_text("")
+    plan = plan_factors(tmp_path, Facts(), rig(), engines=[engines])
     for i in imports:
         assert plan.named("model", i.name).digest == i.model.digest
         assert plan.named("local_engine", i.name).digest == i.engine.digest
@@ -212,7 +213,7 @@ def test_the_tables_it_prints_plan_the_engine_it_imported_and_start_it_as_served
     _ = (sample / "factors.toml").write_text(
         '[prompt.case]\nsegments = [{ slot = "vignette" }]\n'
     )
-    both = plan_factors(sample, Facts(), rig(), more=[factors])
+    both = plan_factors(sample, Facts(), rig(), engines=[engines])
     assert (
         both.named("local_engine", "qwen3-8b@pelle").digest == imports[0].engine.digest
     )
@@ -220,7 +221,7 @@ def test_the_tables_it_prints_plan_the_engine_it_imported_and_start_it_as_served
         ValueError,
         match=r"model \['gpt-oss-20b@malborg', 'qwen3-8b@pelle'\] are named before",
     ):
-        _ = plan_factors(tmp_path, Facts(), rig(), more=[factors])
+        _ = plan_factors(sample, Facts(), rig(), engines=[engines, engines])
 
 
 def test_servers_on_one_host_share_its_table_unless_they_bind_apart() -> None:
@@ -344,18 +345,18 @@ def test_it_reads_a_report_from_its_endpoint_or_a_file(tmp_path: Path) -> None:
 
 
 def import_engine(tmp_path: Path, *argv: str) -> tuple[Path, Path]:
-    factors, endpoints = tmp_path / "factors.toml", tmp_path / "endpoints.toml"
+    engines, endpoints = tmp_path / "engines.toml", tmp_path / "endpoints.toml"
     main(
         [
             "import-engine",
             *argv,
-            "--factors",
-            str(factors),
+            "--engines",
+            str(engines),
             "--endpoints",
             str(endpoints),
         ]
     )
-    return factors, endpoints
+    return engines, endpoints
 
 
 def test_the_command_writes_the_engines_and_their_endpoints_apart(
@@ -363,7 +364,7 @@ def test_the_command_writes_the_engines_and_their_endpoints_apart(
 ) -> None:
     path = tmp_path / "report.json"
     _ = path.write_text(json.dumps(report()))
-    factors, endpoints = import_engine(
+    engines, endpoints = import_engine(
         tmp_path, str(path), "--endpoint-host", "pelle.km"
     )
     out, err = capsys.readouterr()
@@ -376,10 +377,10 @@ def test_the_command_writes_the_engines_and_their_endpoints_apart(
         "[import warning] qwen3-8b@pelle: endpoint.served_name: the server answers as "
         + f"Qwen/Qwen3-8B-AWQ; put {digest} first in its servedModelNames\n"
     )
-    assert factors.read_text().startswith(
+    assert engines.read_text().startswith(
         f"# Written by `chatddx import-engine {path}`.\n# The models and engines"
     )
-    assert "[endpoint." not in factors.read_text()
+    assert "[endpoint." not in engines.read_text()
     assert "[model." not in endpoints.read_text()
     world = tmp_path / "inventory.toml"
     _ = world.write_text('include = ["endpoints.toml"]\n')
@@ -388,7 +389,7 @@ def test_the_command_writes_the_engines_and_their_endpoints_apart(
     _ = (sample / "factors.toml").write_text(
         '[prompt.case]\nsegments = [{ slot = "vignette" }]\n'
     )
-    plan = plan_factors(sample, Facts(), rig(), more=[factors])
+    plan = plan_factors(sample, Facts(), rig(), engines=[engines])
     assert check(Inventory.load(world), plan.registry.get) == []
     with pytest.raises(SystemExit, match="import-engine: no report has a server other"):
         _ = import_engine(tmp_path, str(path), "--server", "other")
@@ -403,14 +404,14 @@ def test_the_command_imports_several_hosts_at_once(
     paths = [str(tmp_path / "pelle.json"), str(tmp_path / "malborg.json")]
     _ = Path(paths[0]).write_text(json.dumps(report()))
     _ = Path(paths[1]).write_text(json.dumps(report({"gpt-oss-20b": gpt}, "malborg")))
-    factors, endpoints = import_engine(tmp_path, *paths)
+    engines, endpoints = import_engine(tmp_path, *paths)
     assert [line.split(":")[0] for line in capsys.readouterr().out.splitlines()] == [
         "[import] qwen3-8b@pelle",
         "[import] gpt-oss-20b@malborg",
     ]
     assert set(Inventory.load(endpoints).hosts) == {"pelle", "malborg"}
-    assert '[local_engine."gpt-oss-20b@malborg"]' in factors.read_text()
+    assert '[local_engine."gpt-oss-20b@malborg"]' in engines.read_text()
     _ = import_engine(tmp_path, *paths, "--server", "gpt-oss-20b")
-    assert "qwen3-8b@pelle" not in factors.read_text()
+    assert "qwen3-8b@pelle" not in engines.read_text()
     with pytest.raises(SystemExit, match="--endpoint-host takes one report"):
         _ = import_engine(tmp_path, *paths, "--endpoint-host", "pelle.km")

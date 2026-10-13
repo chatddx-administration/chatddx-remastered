@@ -58,6 +58,7 @@ ENGINE_TABLES = ("model", "local_engine", "remote_engine")
 # Planned after recipes and judges, as a view may name a judge.
 LATE_TABLES = ("scorer",)
 PLANNED_TABLES = (*TABLES, "recipe", "judge")
+DATA_TABLES = tuple(t for t in PLANNED_TABLES if t not in ENGINE_TABLES)
 # The tables whose records pin shipped code, with what the running code ships.
 SHIPPED: dict[str, Mapping[str, Versioned]] = {"tool": TOOLS, "scorer": SCORERS}
 # References outside recipes, by table and field: each names records of another table.
@@ -230,15 +231,26 @@ def _texts(data: Path) -> dict[str, dict[str, dict[str, JsonValue]]]:
 
 
 def plan_factors(
-    data: Path, facts: Facts, compiler: Code, more: Sequence[Path] = ()
+    data: Path, facts: Facts, compiler: Code, engines: Sequence[Path] = ()
 ) -> Plan:
     factors = data / "factors.toml"
-    found = _records(factors, _read(factors), PLANNED_TABLES)
-    for extra in more:
-        for table, records in _records(extra, _read(extra), PLANNED_TABLES).items():
+    written = _read(factors)
+    if held := sorted(set(written) & set(ENGINE_TABLES)):
+        raise ValueError(
+            f"{factors}: {', '.join(held)} tables are the World's, in its engines.toml"
+        )
+    found = _records(factors, written, DATA_TABLES)
+    for path in engines:
+        written = _read(path)
+        if stray := sorted(set(written) - set(ENGINE_TABLES)):
+            raise ValueError(
+                f"{path}: an engines file holds only {', '.join(ENGINE_TABLES)} "
+                + f"tables, not {', '.join(stray)}"
+            )
+        for table, records in _records(path, written, ENGINE_TABLES).items():
             known = found.setdefault(table, {})
             if twice := sorted(set(known) & set(records)):
-                raise ValueError(f"{extra}: {table} {twice} are named before it too")
+                raise ValueError(f"{path}: {table} {twice} are named before it too")
             known.update(records)
     # Each table's records by name, then by language: None for factors.toml's.
     bodies: dict[str, dict[str, dict[str | None, JsonValue]]] = {
@@ -425,7 +437,7 @@ def plan_factors(
                 )
         add("recipe", name, variants)
 
-    engines = {
+    planned_engines = {
         r.name: r for r in plan.records if r.table in ("local_engine", "remote_engine")
     }
     for name, raw in found.get("judge", {}).items():
@@ -437,7 +449,7 @@ def plan_factors(
         language = body.pop("language", None)
         if (recipes := planned.get(("recipe", recipe))) is None:
             raise ValueError(f"judge.{name}: no recipe named {recipe!r}")
-        if (at := engines.get(engine)) is None:
+        if (at := planned_engines.get(engine)) is None:
             plan.skipped.append(f"judge {name}: the World has no engine {engine}")
             add("judge", name, {})
             continue

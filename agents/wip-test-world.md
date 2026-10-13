@@ -87,7 +87,7 @@ pytest.
 worlds/test/
   inventory.toml   sources, clearances, and include = ["endpoints.toml"]
   endpoints.toml   endpoints and the host
-  factors.toml     models, local engines, the remote engine
+  engines.toml     models, local engines, the remote engine
   facts.toml       facts about the made-up Mistral-family model
   vignettes/       nine files, each with a property of its own
   _data/

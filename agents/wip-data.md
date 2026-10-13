@@ -5,8 +5,8 @@ runs (`_runs/`), as init-data, the engine import, the repl and `chatddx scripted
 grok, and the rules that govern them are partly conventions. This file plans turning the conventions into rules,
 where the structure is accidental, and leaving it alone where it maps the machinery.
 
-"Decided" means the user said so. "Take" is the agent's recommendation and still open. D4 and D5 are decided and
-built; the rest are takes.
+"Decided" means the user said so. "Take" is the agent's recommendation and still open. D1, D4, D5 and D6 are decided
+and built; the rest are takes.
 
 ## Start with this
 The take: the data set is a fair picture of machinery that really is complex; the World and the seam between World
@@ -16,9 +16,8 @@ apply it (D1–D6). None of them moves a stored digest.
 Order, cheapest and least contested first:
 1. D5, the names: built.
 2. D4, content tests out of curation: built.
-3. D6, init-data's `--factors`, with D1. Next.
-4. D1 and D2 together: the World's `engines.toml`, and judges bound by the World. They change how planning takes a
-   World, so they go in one pass.
+3. D6 and D1, the World's `engines.toml` and no init-data `--factors`: built.
+4. D2, judges bound by the World. Next: it makes planning read the World's inventory too.
 5. D3, translations grouped by source.
 
 ## The principle
@@ -28,26 +27,19 @@ Each file is written by one kind of author and holds only what that author decid
 | --- | --- | --- |
 | `inventory.toml` | ops, by hand | sources, clearance, and, with D2, which endpoint judges each judge |
 | `endpoints.toml` | the engine import (by hand for fakes), included | endpoints and hosts |
-| `engines.toml` (D1) | the engine import (by hand for fakes) | models, local engines, remote engines |
+| `engines.toml` | the engine import (by hand for fakes) | models, local engines, remote engines |
 | `facts.toml` | whoever adds a model the bundled facts don't know | facts about models |
 | `vignettes/` | the source's owner | a directory source's vignettes, when git may hold them |
 | `_data/` | researchers and clinicians | the data set |
 | `_runs/` | developers | scripted runs |
 
-Today this holds by convention: the World's `factors.toml` may hold any table, and a judge's engine is the data
-set's choice.
+Since D1 the engines are the World's by rule. A judge's engine is still the data set's choice (D2).
 
 ## What holds now
 - **Finding a World's files** (`src/chatddx/inventory/world.py:World.load`, `src/chatddx/cli.py`): `inventory.toml` is
-  required; `factors.toml` and `facts.toml` are taken by name when present; `include` names the files of endpoints and
+  required; `engines.toml` and `facts.toml` are taken by name when present; `include` names the files of endpoints and
   hosts; a source's `path` names its vignettes; `_data/` is init-data's default `--data`, and `_runs/` is `chatddx
   scripted-runs`'. The leading `_` marks what the World doesn't read.
-- **One namespace for two files.** `plan_factors(data, facts, compiler, more)` merges the World's `factors.toml`, and
-  any `--factors`, into the data set's: either may hold any table of `PLANNED_TABLES`, and a name is defined once
-  across them (`src/chatddx/curation/plan.py`).
-- **Every World's `factors.toml` holds exactly the engine tables**: `model`, `local_engine` and `remote_engine`, in the
-  sample, the test World and Kompismoln. Kompismoln's is the engine import's, rewritten whole; the sample's and the
-  test World's are hand-written fakes.
 - **Judges cross the seam.** A data set's `[judge.<name>]` names a World's `engine` by name, its `recipe`, `seeds`,
   `fill`, and optionally `language`. A World without that engine skips the judge and every scorer whose views name it.
   So init-data with Kompismoln skips the sample's `verdict`, `graded` and `notes`, and Kompismoln has nowhere to name
@@ -60,17 +52,21 @@ set's choice.
   an entry that no text uses. `worlds/sample/_data/texts-sv.toml` holds 51 entries in one table, far from the
   outputs, the toolset and the schema files they come from; a TOML key can't span lines, so a paragraph of guidance
   is one line of `\n\n`, and one changed English word re-keys the whole paragraph.
-- **init-data's `--factors FILE …`** is documented (`docs/curation.md`, "Loading") and has no caller or test.
 
 ## Takes
 ### D1. The World's engines file
-Take: the World's `factors.toml` becomes `engines.toml`, which may hold only `model`, `local_engine` and
-`remote_engine`; a data set's `factors.toml` refuses those tables. The convention becomes a rule, and the name says
-what the file holds, as `docs/factors.md`'s "Engines" names the three.
-- `World.load` reads `engines.toml`; planning takes engines from the World and everything else from the data set, each
-  refusing the other's tables.
-- `chatddx import-engine`'s `--factors` becomes `--engines`; its header comment and README's walkthrough follow.
-- Digests: none move. The records are the same; only the file and the rule change.
+Decided, and built as the take had it. The World's `factors.toml` was the data set's namespace by another name:
+`plan_factors` merged it in, either file could hold any table, and every World's held exactly the engine tables.
+- The World's file is `engines.toml` (`World.engines`), and it holds only `model`, `local_engine` and `remote_engine`;
+  a data set's `factors.toml` refuses those tables. `plan_factors(data, facts, compiler, engines=…)` says which file a
+  table belongs in when it's in the other (`src/chatddx/curation/plan.py`, `DATA_TABLES`;
+  `curation/test/test_plan.py:test_engines_are_the_world_s_and_only_engines_are`).
+- `chatddx import-engine` writes `--engines` (was `--factors`), with `importers/o11n.py:engines_toml`.
+- The three Worlds' files were renamed with git, and Kompismoln's `endpoints.toml` header names `engines.toml`, as
+  the import now writes it.
+- AGENT suggestions in `docs/curation.md` ("Factors", "The World", "Loading"), `docs/inventory.md` ("Worlds",
+  "Importing from a host"), `docs/inventory-api.md` and README.
+- Digests: none moved. The records are the same; only the file and the rule changed.
 
 ### D2. Judges bound by the World
 Take: a judge's engine is the World's choice, as a trial's endpoint is. The data set keeps what researchers author,
@@ -81,7 +77,7 @@ Take: a judge's engine is the World's choice, as a trial's endpoint is. The data
 verdict = "qwen3-8b@pelle"
 graded = "gpt-oss-20b@malborg"
 ```
-- Planning takes the World, not paths to more factors: the judge's engine is the bound endpoint's, which must be an
+- Planning takes the World's inventory beside its engines: the judge's engine is the bound endpoint's, which must be an
   engine the World plans. A judge the World binds no endpoint for is skipped and reported, as a judge with no engine
   is now, with the scorers whose views name it.
 - The scoring pass sends a judge's calls to its bound endpoint, which answers "A judge's endpoint can't be named".
@@ -142,9 +138,9 @@ answered by the fake from a script, which any World can hold. Now it names the f
 - Digests: none moved; nothing stored names either.
 
 ### D6. init-data's `--factors`
-Take: drop it. With D1 and D2, the World's engines and judge bindings come from the World and everything else from
-the data set, and a file of more factors would be a way around both rules. Nothing uses it. `--facts` stays: facts
-are about models, not a factor of either side.
+Decided, and built: dropped. With D1, the World's engines come from the World and everything else from the data set,
+and a file of more factors would have been a way around the rule. Nothing used it. `--facts` stays: facts are about
+models, not a factor of either side.
 
 ## The layout it leaves
 ```
@@ -172,10 +168,8 @@ worlds/<name>/
 ## What each take touches
 | Take | Code | Data | Tests | Docs (AGENT suggestions) |
 | --- | --- | --- | --- | --- |
-| D1 | `inventory/world.py`, `curation/plan.py`, `cli.py`, `importers/o11n.py` | three `factors.toml` renamed | `test/world.py`, curation's and the importer's | `docs/inventory.md` "Worlds", "Importing from a host"; `docs/curation.md` "The World", "Loading"; README |
 | D2 | `inventory/inventory.py`, `curation/plan.py`, `runner/score.py`, `bench` | judges lose `engine`; three inventories gain `[judge]` | `curation/test/test_judges.py`, the runner's and the bench's judge tests | `docs/inventory.md`; `docs/curation.md` "Factors"; `docs/runner.md` "Judges"; `docs/bench.md` "Outstanding" |
 | D3 | `curation/plan.py` | both `texts-sv.toml` | `test_sample.py`, curation's | `docs/curation.md` "Texts"; `docs/factors.md` "Translations" |
-| D6 | `cli.py` | none | none | `docs/curation.md` "Loading" |
 
 ## Open
 - **D2, reading the binding when scoring.** The scoring pass holds a judge by digest, and the binding is by name. It

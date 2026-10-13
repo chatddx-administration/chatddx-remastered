@@ -1,5 +1,5 @@
 # Written by `chatddx import-engine http://pelle.km:12008/ http://malborg.km:12008/`.
-# Where the engines in factors.toml are served, and where their hosts
+# Where the engines in engines.toml are served, and where their hosts
 # keep what they pin; import again rather than edit. A World inventory
 # includes it.
 
