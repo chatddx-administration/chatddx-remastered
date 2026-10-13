@@ -21,7 +21,7 @@ from chatddx.importers.o11n import (
     imported,
     read,
 )
-from chatddx.inventory import Inventory, check, start_up
+from chatddx.inventory import Inventory, World, check, start_up
 
 pytestmark = pytest.mark.solidified
 
@@ -182,7 +182,9 @@ def test_the_tables_it_prints_plan_the_engine_it_imported_and_start_it_as_served
     engines = tmp_path / "engines.toml"
     _ = engines.write_text(engines_toml(imports))
     _ = (tmp_path / "factors.toml").write_text("")
-    plan = plan_factors(tmp_path, Facts(), rig(), engines=[engines])
+    plan = plan_factors(
+        tmp_path, Facts(), rig(), World(tmp_path, Inventory(), engines=(engines,))
+    )
     for i in imports:
         assert plan.named("model", i.name).digest == i.model.digest
         assert plan.named("local_engine", i.name).digest == i.engine.digest
@@ -213,7 +215,9 @@ def test_the_tables_it_prints_plan_the_engine_it_imported_and_start_it_as_served
     _ = (sample / "factors.toml").write_text(
         '[prompt.case]\nsegments = [{ slot = "vignette" }]\n'
     )
-    both = plan_factors(sample, Facts(), rig(), engines=[engines])
+    both = plan_factors(
+        sample, Facts(), rig(), World(sample, Inventory(), engines=(engines,))
+    )
     assert (
         both.named("local_engine", "qwen3-8b@pelle").digest == imports[0].engine.digest
     )
@@ -221,7 +225,12 @@ def test_the_tables_it_prints_plan_the_engine_it_imported_and_start_it_as_served
         ValueError,
         match=r"model \['gpt-oss-20b@malborg', 'qwen3-8b@pelle'\] are named before",
     ):
-        _ = plan_factors(sample, Facts(), rig(), engines=[engines, engines])
+        _ = plan_factors(
+            sample,
+            Facts(),
+            rig(),
+            World(sample, Inventory(), engines=(engines, engines)),
+        )
 
 
 def test_servers_on_one_host_share_its_table_unless_they_bind_apart() -> None:
@@ -389,7 +398,9 @@ def test_the_command_writes_the_engines_and_their_endpoints_apart(
     _ = (sample / "factors.toml").write_text(
         '[prompt.case]\nsegments = [{ slot = "vignette" }]\n'
     )
-    plan = plan_factors(sample, Facts(), rig(), engines=[engines])
+    plan = plan_factors(
+        sample, Facts(), rig(), World(sample, Inventory(), engines=(engines,))
+    )
     assert check(Inventory.load(world), plan.registry.get) == []
     with pytest.raises(SystemExit, match="import-engine: no report has a server other"):
         _ = import_engine(tmp_path, str(path), "--server", "other")

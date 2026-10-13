@@ -8,6 +8,8 @@ from chatddx.factors.base import Digest, Frozen, Sha256Hex
 
 from .sources import DatabaseSource, DirectorySource, ListingSource
 
+_TABLES = ("include", "source", "endpoint", "host", "cleared", "judge")
+
 
 class EndpointSpec(Frozen):
     engine: Digest
@@ -42,6 +44,7 @@ class Inventory(Frozen):
     endpoints: dict[str, EndpointSpec] = Field(default_factory=dict)
     hosts: dict[str, HostSpec] = Field(default_factory=dict)
     cleared: dict[str, tuple[str, ...]] = Field(default_factory=dict)
+    judges: dict[str, str] = Field(default_factory=dict)
 
     @model_validator(mode="after")
     def _sources_named(self) -> Self:
@@ -68,14 +71,21 @@ class Inventory(Frozen):
                 )
         return self
 
+    @model_validator(mode="after")
+    def _judges_bound(self) -> Self:
+        for name, endpoint in self.judges.items():
+            if endpoint not in self.endpoints:
+                raise ValueError(f"judge {name!r} is bound to no endpoint {endpoint!r}")
+        return self
+
     @classmethod
     def load(cls, path: Path) -> Self:
         with path.open("rb") as f:
             data = tomllib.load(f)
-        if stray := set(data) - {"include", "source", "endpoint", "host", "cleared"}:
+        if stray := set(data) - set(_TABLES):
             raise ValueError(
                 f"{path}: the inventory has only 'include', 'source', 'endpoint', "
-                + f"'host' and 'cleared', not {sorted(stray)}"
+                + f"'host', 'cleared' and 'judge', not {sorted(stray)}"
             )
         tables = {t: dict(data.get(t, {})) for t in ("source", "endpoint", "host")}
         for name in data.get("include", []):
@@ -102,6 +112,7 @@ class Inventory(Frozen):
                 "endpoints": tables["endpoint"],
                 "hosts": tables["host"],
                 "cleared": data.get("cleared", {}),
+                "judges": data.get("judge", {}),
             }
         )
 

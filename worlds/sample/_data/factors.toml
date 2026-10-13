@@ -149,13 +149,11 @@ sampling = "recommended"
 [judge.verdict]
 description = "Whether the answer meets the note, greedy, so one seed."
 recipe = "judge"
-engine = "qwen3-8b-awq@fake"
 seeds = [1]
 
 [judge.graded]
 description = "A grade from 0 to 2, sampled under three seeds and averaged."
 recipe = "judge-graded"
-engine = "gpt-oss-20b@fake"
 seeds = [1, 2, 3]
 
 [canary_set.basics]

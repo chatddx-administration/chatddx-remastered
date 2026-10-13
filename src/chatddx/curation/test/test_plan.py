@@ -6,6 +6,7 @@ from chatddx.core.rig import rig
 from chatddx.curation import Plan, load_cases, plan_factors
 from chatddx.factors.request import Compilation, Skeleton
 from chatddx.facts import BUNDLED, Facts
+from chatddx.inventory import Inventory, World
 from chatddx.test.world import DATA
 
 pytestmark = pytest.mark.solidified
@@ -14,8 +15,9 @@ pytestmark = pytest.mark.solidified
 def plan(tmp_path: Path, **files: str) -> Plan:
     for name, text in files.items():
         _ = (tmp_path / name.replace("_", "-")).with_suffix(".toml").write_text(text)
-    engines = [tmp_path / "engines.toml"] if "engines" in files else []
-    return plan_factors(tmp_path, Facts.load(BUNDLED), rig(), engines=engines)
+    engines = (tmp_path / "engines.toml",) if "engines" in files else ()
+    world = World(tmp_path, Inventory(), engines=engines)
+    return plan_factors(tmp_path, Facts.load(BUNDLED), rig(), world)
 
 
 def test_from_facts_records_follow_the_models_the_engines_serve(
@@ -51,7 +53,8 @@ output = "raw"
 sampling = "recommended"
 """
     )
-    plan = plan_factors(tmp_path, Facts.load(BUNDLED), rig(), engines=[engines])
+    world = World(tmp_path, Inventory(), engines=(engines,))
+    plan = plan_factors(tmp_path, Facts.load(BUNDLED), rig(), world)
     assert [(r.table, r.name) for r in plan.records] == [
         ("remote_engine", "qwen@api"),
         ("remote_engine", "gemma@api"),

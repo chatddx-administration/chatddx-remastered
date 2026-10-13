@@ -5,8 +5,8 @@ runs (`_runs/`), as init-data, the engine import, the repl and `chatddx scripted
 grok, and the rules that govern them are partly conventions. This file plans turning the conventions into rules,
 where the structure is accidental, and leaving it alone where it maps the machinery.
 
-"Decided" means the user said so. "Take" is the agent's recommendation and still open. D1, D4, D5 and D6 are decided
-and built; the rest are takes.
+"Decided" means the user said so. "Take" is the agent's recommendation and still open. D1, D2, D4, D5 and D6 are
+decided and built, with two takes inside D2; D3 is a take.
 
 ## Start with this
 The take: the data set is a fair picture of machinery that really is complex; the World and the seam between World
@@ -17,7 +17,7 @@ Order, cheapest and least contested first:
 1. D5, the names: built.
 2. D4, content tests out of curation: built.
 3. D6 and D1, the World's `engines.toml` and no init-data `--factors`: built.
-4. D2, judges bound by the World. Next: it makes planning read the World's inventory too.
+4. D2, judges bound by the World: built.
 5. D3, translations grouped by source.
 
 ## The principle
@@ -25,7 +25,7 @@ Each file is written by one kind of author and holds only what that author decid
 
 | File | Author | Holds |
 | --- | --- | --- |
-| `inventory.toml` | ops, by hand | sources, clearance, and, with D2, which endpoint judges each judge |
+| `inventory.toml` | ops, by hand | sources, clearance, and which endpoint judges each judge |
 | `endpoints.toml` | the engine import (by hand for fakes), included | endpoints and hosts |
 | `engines.toml` | the engine import (by hand for fakes) | models, local engines, remote engines |
 | `facts.toml` | whoever adds a model the bundled facts don't know | facts about models |
@@ -33,20 +33,13 @@ Each file is written by one kind of author and holds only what that author decid
 | `_data/` | researchers and clinicians | the data set |
 | `_runs/` | developers | scripted runs |
 
-Since D1 the engines are the World's by rule. A judge's engine is still the data set's choice (D2).
+Since D1 and D2 this holds by rule: the engines are the World's, and so is which engine judges a data set's judge.
 
 ## What holds now
 - **Finding a World's files** (`src/chatddx/inventory/world.py:World.load`, `src/chatddx/cli.py`): `inventory.toml` is
   required; `engines.toml` and `facts.toml` are taken by name when present; `include` names the files of endpoints and
   hosts; a source's `path` names its vignettes; `_data/` is init-data's default `--data`, and `_runs/` is `chatddx
   scripted-runs`'. The leading `_` marks what the World doesn't read.
-- **Judges cross the seam.** A data set's `[judge.<name>]` names a World's `engine` by name, its `recipe`, `seeds`,
-  `fill`, and optionally `language`. A World without that engine skips the judge and every scorer whose views name it.
-  So init-data with Kompismoln skips the sample's `verdict`, `graded` and `notes`, and Kompismoln has nowhere to name
-  judges of its own: its engines file is the import's, and a judge of its own named `verdict` would clash with the
-  data set's. The scoring pass then finds the one endpoint that serves the judge's engine
-  (`src/chatddx/runner/score.py:judge_at`, `_serving`); with two, the judge's scorer is barred (`docs/bench.md`,
-  "Outstanding": "A judge's endpoint can't be named").
 - **Translations** (`src/chatddx/factors/request.py:Translations`, `compile_request`) are a flat map from a text,
   exactly as a chunk holds it, to its translation. A recipe's missing texts fail its compile, listed. Nothing notices
   an entry that no text uses. `worlds/sample/_data/texts-sv.toml` holds 51 entries in one table, far from the
@@ -69,23 +62,28 @@ Decided, and built as the take had it. The World's `factors.toml` was the data s
 - Digests: none moved. The records are the same; only the file and the rule changed.
 
 ### D2. Judges bound by the World
-Take: a judge's engine is the World's choice, as a trial's endpoint is. The data set keeps what researchers author,
-`[judge.<name>]` with `recipe`, `seeds`, `fill` and `language`, and no `engine`. The World's hand-written
-`inventory.toml` binds each judge to an endpoint, as `[cleared]` clears one:
-```toml
-[judge]
-verdict = "qwen3-8b@pelle"
-graded = "gpt-oss-20b@malborg"
-```
-- Planning takes the World's inventory beside its engines: the judge's engine is the bound endpoint's, which must be an
-  engine the World plans. A judge the World binds no endpoint for is skipped and reported, as a judge with no engine
-  is now, with the scorers whose views name it.
-- The scoring pass sends a judge's calls to its bound endpoint, which answers "A judge's endpoint can't be named".
-- Like `[cleared]`, the binding is a person's statement, read only from the inventory's own file, never an include.
-- Digests: a judge's component is unchanged (`skeleton`, `engine`, `seeds`, `fill`), and its engine digest is the
-  same when the bound endpoint serves the engine the data set named before. Judges and judged scorers already differ
-  per World.
-- With it, Kompismoln binds the sample's judges to pelle and malborg, and the sample's `notes` is planned there too.
+Decided, and built as the take had it. A data set's `[judge.<name>]` named a World's engine by name, so Kompismoln
+skipped the sample's `verdict`, `graded` and `notes` and had nowhere to name judges of its own: its engines file is the
+import's, and a judge of its own named `verdict` would have clashed with the data set's.
+- A data set's judge keeps what researchers author, `recipe`, `seeds`, `fill` and `language`, and refuses an `engine`.
+  The World's inventory binds each judge to an endpoint, as `[cleared]` clears one, read only from its own file:
+  `[judge] verdict = "qwen3-8b@pelle"`; a binding to no endpoint is refused when the inventory loads
+  (`src/chatddx/inventory/inventory.py:Inventory.judges`).
+- `plan_factors(data, facts, compiler, world)` takes the World, its engines and its inventory: a judge's engine is the
+  planned engine its bound endpoint serves (`src/chatddx/curation/plan.py`; `curation/test/test_judges.py`).
+- The three Worlds bind their judges: the sample's and the test World's as their data sets named them before, and
+  Kompismoln's `verdict` to `qwen3-8b@pelle` and `graded` to `gpt-oss-20b@malborg`, so `notes` is planned there too.
+- AGENT suggestions in `docs/curation.md` ("Factors", "The World"), `docs/inventory.md` (a "Judges" section, includes,
+  loading's checks, the terms) and `docs/inventory-api.md`.
+- Digests: none moved. A judge's component is unchanged, and its engine is the one its data set named before.
+
+Two takes, settled while building and open to being overturned:
+- **Scoring doesn't read the binding.** The scoring pass still finds the one endpoint that serves the judge's engine
+  (`runner/score.py:_serving`), so "A judge's endpoint can't be named" (`docs/bench.md`, "Outstanding") stays as it
+  is. A binding is by name, and a judge a person writes over the bench names its engine itself and has no binding;
+  reading the binding when scoring would treat the World's judges and people's apart.
+- **A judge the World doesn't bind is skipped, not refused**, and reported, as a judge on an unknown engine was, so a
+  World can load a data set without binding its judges. A binding for a judge the data set doesn't have is reported.
 
 ### D3. Translations grouped by source
 Take: keep the mechanism, a flat map from text to translation (structure can't drift, and a missing text fails the
@@ -168,14 +166,8 @@ worlds/<name>/
 ## What each take touches
 | Take | Code | Data | Tests | Docs (AGENT suggestions) |
 | --- | --- | --- | --- | --- |
-| D2 | `inventory/inventory.py`, `curation/plan.py`, `runner/score.py`, `bench` | judges lose `engine`; three inventories gain `[judge]` | `curation/test/test_judges.py`, the runner's and the bench's judge tests | `docs/inventory.md`; `docs/curation.md` "Factors"; `docs/runner.md` "Judges"; `docs/bench.md` "Outstanding" |
 | D3 | `curation/plan.py` | both `texts-sv.toml` | `test_sample.py`, curation's | `docs/curation.md` "Texts"; `docs/factors.md` "Translations" |
 
 ## Open
-- **D2, reading the binding when scoring.** The scoring pass holds a judge by digest, and the binding is by name. It
-  can read the judge's name from its thread, or keep finding the endpoint that serves the judge's engine and use the
-  binding only to plan. The first names the endpoint; the second leaves two endpoints of one engine ambiguous.
-- **D2, a judge bound in no World.** The test World's `remote` judge, cleared for nothing, would be bound to
-  `unknown@remote` as now; whether an unbound judge is an error or a skip, as an unknown engine is now.
 - **D3, the groups.** Records only, or schema files too (`schemas/management_plan_v1.json`), which would group a shared
   schema's texts once. And the recipe's appendix layout, which translations reach too (`request.py:TRANSLATED`).

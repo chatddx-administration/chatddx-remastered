@@ -101,7 +101,7 @@ def _init_data(args: argparse.Namespace) -> None:
         )
     try:
         facts = Facts.load(BUNDLED, *world.facts, *(args.facts or ()))
-        plan = plan_factors(data, facts, rig(), engines=world.engines)
+        plan = plan_factors(data, facts, rig(), world)
         cases = load_cases(data)
     except ValueError as e:
         raise SystemExit(f"init-data: {e}") from None

@@ -159,11 +159,12 @@ read it; later. Neither changes what is stored.
 ### J9. Judges in a data set
 Decided: in the data set, as this take has it:
 - `[judge.NAME]` in a data set's `factors.toml`: `recipe` (the variant made for the engine's model, when the recipe
-  is made per model), `engine` (an engine's name in the World), `seeds` and `fill`;
+  is made per model), `seeds` and `fill`. Its engine is the World's since `agents/wip-data.md`'s D2: the World's
+  inventory binds the judge to an endpoint (`[judge]`), and the endpoint's engine judges;
 - a scorer's view names a judge by name, as a scorer names its expectation schema;
-- a judge whose engine the World doesn't have is skipped with a line, as a recipe is, and so is every scorer that
-  names it. A judged scorer's digest pins its judge's engine through the judge, so a judged scorer belongs to the
-  Worlds that have that engine. That follows from `View.judge` being a reference (`docs/factors.md`, "Scoring").
+- a judge the World binds to no endpoint is skipped with a line, as a recipe is, and so is every scorer that names it.
+  A judged scorer's digest pins its judge's engine through the judge, so a judged scorer belongs to the Worlds that
+  bind its judges to that engine. That follows from `View.judge` being a reference (`docs/factors.md`, "Scoring").
 
 ### J10. What a judge skeleton may be
 Decided, as this take has it: `Judge.cross_check` refuses a skeleton with tools, since a judge has no tool rounds, and a lint warns about a
@@ -245,12 +246,9 @@ The fake changes with it: a non-greedy request whose schema has `examples` is an
 - **Every judged scoring confirms its judges' endpoints** (decided, 2A: kept). `confirm` runs on every judged
   scoring, even when no item needs a judge, and an endpoint that hangs holds the scoring up to 10 s a judge.
 - **Concurrent judge calls**, as the runner's phase 4 did for items.
-- **Kompismoln's judges.** The sample's judges name the sample World's fake engines, so init-data with Kompismoln's
-  World skips them and the scorer `notes`, and says so. Kompismoln's `engines.toml` is the engine import's to write
-  whole and holds only engines, so its own judges have no place yet, and a judge's name is defined once, so a file of
-  its own beside the data set couldn't name them `verdict` and `graded` for `notes` to find. Take:
-  judges belong where the engines are, in the World, a data set's scorers naming them as now; Kompismoln's would go
-  in a hand-written file its World reads beside the import's.
+- **Kompismoln's judges** (`agents/wip-data.md`, D2; built). Kompismoln's inventory binds the sample's `verdict` to
+  `qwen3-8b@pelle` and `graded` to `gpt-oss-20b@malborg`, so init-data plans them and the scorer `notes` there. Its
+  first real scoring is phase 6's run on pelle or malborg.
 
 ## For Olof, later
 What the prompt needs from him:

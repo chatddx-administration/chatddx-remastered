@@ -1,7 +1,7 @@
 import json
 import re
 import tomllib
-from collections.abc import Collection, Mapping, Sequence
+from collections.abc import Collection, Mapping
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, cast
@@ -33,6 +33,7 @@ from chatddx.factors.request import (
 from chatddx.factors.scoring import ExpectationSchema, Judge, Scorer
 from chatddx.factors.trial import CanarySet
 from chatddx.facts import INTENTS, Effort, Facts, Refused, model_name
+from chatddx.inventory import World
 from chatddx.scorers.shipped import SCORERS, problems
 from chatddx.tools.shipped import TOOLS
 
@@ -231,7 +232,7 @@ def _texts(data: Path) -> dict[str, dict[str, dict[str, JsonValue]]]:
 
 
 def plan_factors(
-    data: Path, facts: Facts, compiler: Code, engines: Sequence[Path] = ()
+    data: Path, facts: Facts, compiler: Code, world: World | None = None
 ) -> Plan:
     factors = data / "factors.toml"
     written = _read(factors)
@@ -240,7 +241,7 @@ def plan_factors(
             f"{factors}: {', '.join(held)} tables are the World's, in its engines.toml"
         )
     found = _records(factors, written, DATA_TABLES)
-    for path in engines:
+    for path in () if world is None else world.engines:
         written = _read(path)
         if stray := sorted(set(written) - set(ENGINE_TABLES)):
             raise ValueError(
@@ -437,20 +438,35 @@ def plan_factors(
                 )
         add("recipe", name, variants)
 
-    planned_engines = {
-        r.name: r for r in plan.records if r.table in ("local_engine", "remote_engine")
+    engines = {
+        r.digest: r
+        for r in plan.records
+        if r.table in ("local_engine", "remote_engine")
     }
-    for name, raw in found.get("judge", {}).items():
+    bound = {} if world is None else world.inventory.judges
+    judges = found.get("judge", {})
+    for name, raw in judges.items():
         assert isinstance(raw, dict)
         body = dict(raw)
+        if "engine" in body:
+            raise ValueError(
+                f"judge.{name}: a judge's engine is the World's, which binds the judge "
+                + "to an endpoint in its inventory's [judge] table"
+            )
         tags = _tags(body.pop("tags", []))
         description = body.pop("description", None)
-        recipe, engine = str(body.pop("recipe", "")), str(body.pop("engine", ""))
+        recipe = str(body.pop("recipe", ""))
         language = body.pop("language", None)
         if (recipes := planned.get(("recipe", recipe))) is None:
             raise ValueError(f"judge.{name}: no recipe named {recipe!r}")
-        if (at := planned_engines.get(engine)) is None:
-            plan.skipped.append(f"judge {name}: the World has no engine {engine}")
+        if world is None or (endpoint := bound.get(name)) is None:
+            plan.skipped.append(f"judge {name}: the World binds it to no endpoint")
+            add("judge", name, {})
+            continue
+        if (at := engines.get(world.inventory.endpoint(endpoint).engine)) is None:
+            plan.skipped.append(
+                f"judge {name}: endpoint {endpoint} serves no engine the World has"
+            )
             add("judge", name, {})
             continue
         written = sorted({k[0] for k in recipes if k[0] is not None})
@@ -463,7 +479,7 @@ def plan_factors(
         key = (str(language) if language else (written or [None])[0], model)
         if (skeleton := _pick(recipes, key)) is None:
             plan.skipped.append(
-                f"judge {name}: recipe.{recipe} has no variant for {model} on {engine}"
+                f"judge {name}: recipe.{recipe} has no variant for {model} at {endpoint}"
             )
             add("judge", name, {})
             continue
@@ -484,6 +500,10 @@ def plan_factors(
             description=None if description is None else str(description),
         )
         add("judge", name, {ALL: judged})
+    for name in sorted(set(bound) - set(judges)):
+        plan.skipped.append(
+            f"judge {name}: the World binds it to {bound[name]}, but the data has none"
+        )
 
     for table in LATE_TABLES:
         plan_table(table, models)

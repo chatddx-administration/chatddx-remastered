@@ -85,7 +85,7 @@ pytest.
 ## Layout
 ```
 worlds/test/
-  inventory.toml   sources, clearances, and include = ["endpoints.toml"]
+  inventory.toml   sources, clearances, judge bindings, and include = ["endpoints.toml"]
   endpoints.toml   endpoints and the host
   engines.toml     models, local engines, the remote engine
   facts.toml       facts about the made-up Mistral-family model

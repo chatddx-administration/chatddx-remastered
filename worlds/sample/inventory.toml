@@ -11,3 +11,7 @@ kind = "database"
 "qwen3-8b-awq@fake" = ["sample", "typed"]
 "gpt-oss-20b@fake" = ["sample", "typed"]
 "mistral-small@remote" = ["sample"]
+
+[judge]
+verdict = "qwen3-8b-awq@fake"
+graded = "gpt-oss-20b@fake"

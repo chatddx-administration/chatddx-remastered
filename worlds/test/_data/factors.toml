@@ -194,24 +194,21 @@ prompt = "judge"
 output = "grade"
 sampling = "recommended"
 
-# Judges: a recipe, the variant made for the engine's model when it's made per model, an engine of the World, seeds.
+# Judges: a recipe, the variant made for the model of the endpoint the World binds it to (inventory.toml), seeds.
 [judge.verdict]
 description = "Whether the answer meets the expectation, greedy, so one seed."
 recipe = "judge"
-engine = "qwen3@fake"
 seeds = [1]
 
 [judge.graded]
 description = "A grade from 0 to 2, sampled under three seeds."
 recipe = "judge-graded"
-engine = "qwen3@fake"
 seeds = [1, 2, 3]
 
 # Never reached: the gate refuses it, as unknown@remote is cleared for nothing and its secret is unset.
 [judge.remote]
 description = "A judge on the remote engine."
 recipe = "judge"
-engine = "unknown@remote"
 seeds = [1]
 
 [expectation_schema.targets]
