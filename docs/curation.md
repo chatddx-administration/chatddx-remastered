@@ -39,20 +39,11 @@ Both kinds of file hold one table per kind of component, keyed by name, whose ke
 On top of the fields:
 - **References by name.** A toolset's tools, a scorer's expectation schema and a view's judge, a local engine's model
   and a recipe's parts name records, not digests.
-```
-AGENT: replace
-A data set's judge names no engine; the World binds it to an endpoint, whose engine judges (agents/wip-data.md, D2).
----
 - **Judges.** A judge names a `recipe`, its `seeds` and its `fill`, and no engine: the World binds it to an endpoint
   (docs/inventory.md, "Judges"), whose engine judges. It takes the recipe's variant for the model that engine serves,
   in the recipe's language (`language` picks one when it is written in several). A judge the World binds to no
   endpoint, or whose recipe has no variant for its model, is skipped and reported, and so is every scorer whose views
   name it; a binding for a judge the data set doesn't have is reported too. A judge's skeleton may not have tools.
-```
-- **Judges.** A judge names a `recipe` and an `engine` of the World, and takes the recipe's variant for the model the
-  engine serves, in the recipe's language (`language` picks one when it is written in several). A judge whose engine
-  the World doesn't have, or whose recipe has no variant for its model, is skipped and reported, and so is every
-  scorer whose views name it. A judge's skeleton may not have tools.
 - **Files.** `json_schema_path` loads a JSON file, relative to the file that names it, in place of `json_schema`.
 - **Forks.** `fork_of` names a record of the same kind that this one is a variation of. It is loaded as a fork of
   that record's thread, so the catalog knows what it varies (docs/catalog.md, "Forks"). It inherits no fields. Each
@@ -123,21 +114,11 @@ reported, and so are a served model the facts don't know and a known model no en
 planned first for this reason.
 
 ## The World
-```
-AGENT: replace
-A data set's judge names no engine; the World binds it to an endpoint, whose engine judges (agents/wip-data.md, D2).
----
 A World is a directory (docs/inventory.md, "Worlds"). Loading reads its `inventory.toml` for the source of the cases'
 vignettes and the endpoints its judges are bound to, and takes its `engines.toml`, the models and engines its endpoints
 serve and nothing else, with the data set's factors, and its `facts.toml`, facts about models the bundled facts don't
 know, with the bundled ones. So the sample World's fake engines are loaded only with the sample World, and a World
 that serves a model of its own brings what is known about it.
-```
-A World is a directory (docs/inventory.md, "Worlds"). Loading reads its `inventory.toml` for the source of the cases'
-vignettes, and takes its `engines.toml`, the models and engines its endpoints serve and nothing else, with the data
-set's factors, and its `facts.toml`, facts about models the bundled facts don't know, with the bundled ones. So the
-sample World's fake engines are loaded only with the sample World, and a World that serves a model of its own brings
-what is known about it.
 
 The World is `--world DIR`, or by default the directory `CHATDDX_WORLD` names. The repl reads the same World, for its
 endpoints, vignettes and facts.

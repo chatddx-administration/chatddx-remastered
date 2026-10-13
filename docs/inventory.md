@@ -3,15 +3,8 @@
 The inventory is a set of files that ops write that say which directory holds a source's vignettes, at which address an
 engine is served, and where a host keeps the model files and chat template an engine pins.
 
-```
-AGENT: replace
-A data set's judge names no engine; the World binds it to an endpoint, whose engine judges (agents/wip-data.md, D2).
----
 Until clearance has a pipeline of its own, the inventory also says which endpoints may receive content from which
 sensitive sources. It also says at which endpoint each of a data set's judges judges.
-```
-Until clearance has a pipeline of its own, the inventory also says which endpoints may receive content from which
-sensitive sources.
 
 One thing that sounds like a location is a factor, though: a source's name, which every case built from it carries.
 
@@ -28,33 +21,16 @@ table's key. Paths in the file are relative to the file, so a World can be moved
 own files are the host's (see "Hosts").
 
 ### Includes
-```
-AGENT: replace
-Judge bindings are read only from the inventory's own file, as clearance is.
----
 An inventory can include other files, whose endpoints and hosts count as its own. Includes keep what the engine
 import writes apart from what people write, so an import can rewrite its file whole. An included file holds only
 endpoints and hosts: it can't include another file, add a source, clear an endpoint or bind a judge, so importing again
 can't either. A name is defined once, across the inventory and everything it includes.
-```
-An inventory can include other files, whose endpoints and hosts count as its own. Includes keep what the engine
-import writes apart from what people write, so an import can rewrite its file whole. An included file holds only
-endpoints and hosts: it can't include another file, add a source or clear an endpoint, so importing again can't either.
-A name is defined once, across the inventory and everything it includes.
 
 ### What loading checks
-```
-AGENT: replace
-Loading checks that each judge is bound to an endpoint that exists.
----
 Loading checks what the files themselves show: that each endpoint's host is defined, that the clearance table names
 endpoints and sources that exist, that each judge is bound to an endpoint that exists, and that each source is named
 by its table. Anything that needs the engines is checked when an entry is used (see "Checks happen when an entry is
 used").
-```
-Loading checks what the files themselves show: that each endpoint's host is defined, that the clearance table names
-endpoints and sources that exist, and that each source is named by its table. Anything that needs the engines is
-checked when an entry is used (see "Checks happen when an entry is used").
 
 ### Worlds
 A World is handed over as its directory, `--world DIR`, and read as its `inventory.toml` and, when present,
@@ -141,11 +117,6 @@ stands in until clearance has a database grant, and what it permits is clearance
 endpoints"). It is read only from the inventory's own file (see "Includes"). Clearing an endpoint is a person's
 statement, so no command writes it.
 
-```
-AGENT: add
-A section for the judge table, after "Clearance". A data set's judge names no engine; the World binds it to an
-endpoint, whose engine judges (agents/wip-data.md, D2).
----
 ## Judges
 The judge table binds each of a data set's judges, by name, to the endpoint whose engine judges it:
 `[judge] verdict = "qwen3-8b@pelle"`. Which engine judges is the World's choice, as the endpoint a run goes to is,
@@ -155,7 +126,7 @@ inventory's own file, and no command writes it.
 
 A judge a person writes names its engine itself (docs/bench.md, "Components"), and the scoring pass finds the endpoint
 that serves a judge's engine either way (docs/runner.md, "Judges").
-```
+
 ## Starting and reaching an engine
 An endpoint is joined with the engine it serves and, for a local engine, with the host that runs it. When the
 inventory or the engine falls short of what that needs, starting or reaching the endpoint is refused with the reason.
@@ -234,12 +205,7 @@ The import's findings have the engine's digest as subject:
 | Location | Where a host keeps a file, written the way the host reads it. |
 | Start-up | What the start-up script runs for one endpoint: vLLM's arguments, the environment and the runtime. |
 | Include | A file whose endpoints and hosts an inventory takes as its own. |
-```
-AGENT: add
-The term, above this row.
----
 | Bound | A data set's judge, given the endpoint whose engine judges it. |
-```
 | Cleared | An endpoint's permission, for now, to receive content from a sensitive source. |
 | Confirm | Asking an endpoint's server whether it serves the endpoint's engine, before content goes out. |
 

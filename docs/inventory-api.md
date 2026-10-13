@@ -58,26 +58,13 @@ them up through a `Resolver` (`get`), such as `Registry.get` or `Store.get`.
 | --- | --- |
 | `LookupError` | A source, endpoint or vignette that isn't there; an id that would reach outside a directory source; an endpoint whose engine `get` doesn't know (the resolver's `StructuralError`, turned into `endpoint '<name>': <its message>`), isn't an engine, or can't be started or reached as the inventory says; a server that doesn't list the engine's served name. |
 | `ValueError` | `Inventory.load`: a top-level key it doesn't know, a table an included file may not hold, a name defined twice. |
-```
-AGENT: replace
-A data set's judge names no engine; the World binds it to an endpoint, whose engine judges (agents/wip-data.md, D2).
----
 | `pydantic.ValidationError` | An inventory that breaks its own rules: an unknown key, a wrong type, a source named other than its table, an endpoint naming no host, `[cleared]` naming no endpoint or source, `[judge]` binding a judge to no endpoint. Rules written as validators raise `ValueError`, which pydantic wraps. |
-```
-| `pydantic.ValidationError` | An inventory that breaks its own rules: an unknown key, a wrong type, a source named other than its table, an endpoint naming no host, `[cleared]` naming no endpoint or source. Rules written as validators raise `ValueError`, which pydantic wraps. |
 | `tomllib.TOMLDecodeError` (a `ValueError`), `OSError` | `Inventory.load` of a file, or an included file, that isn't TOML or can't be read. |
 | `OSError` | `served` and `confirm` when the server can't be reached, times out or answers with an HTTP error (`urllib.error.URLError`, `HTTPError`); `DirectorySource` for a directory it can't list or a file it can't read, other than a missing one. |
 | `chatddx.factors.base.StructuralError` (a `ValueError`) | `start_up` when the engine's model artifact isn't known to `get` or isn't a model. |
 
 ## The file
-```
-AGENT: replace
-The `judge` key, with a line for it at the end of the example below:
-`[judge]  # judge -> the endpoint whose engine judges it` and `verdict = "qwen3-8b-awq@fake"`.
----
 An inventory file is TOML with the top-level keys `include`, `source`, `endpoint`, `host`, `cleared` and `judge`:
-```
-An inventory file is TOML with the top-level keys `include`, `source`, `endpoint`, `host` and `cleared`:
 
 ```toml
 include = ["endpoints.toml"]          # files whose [endpoint] and [host] tables count too
@@ -106,15 +93,8 @@ bind = "127.0.0.1"
 "qwen3-8b-awq@fake" = ["sample"]
 ```
 
-```
-AGENT: replace
-A data set's judge names no engine; the World binds it to an endpoint, whose engine judges (agents/wip-data.md, D2).
----
 An included file holds only `endpoint` and `host` tables. Sources, `[cleared]` and `[judge]` are read only from the
 inventory's own file.
-```
-An included file holds only `endpoint` and `host` tables. Sources and `[cleared]` are read only from the inventory's
-own file.
 
 ## inventory.py
 
@@ -147,26 +127,16 @@ A location is the host's own, a path or a Hugging Face repo ID, and isn't resolv
 | `sources` | `dict[str, DirectorySource \| DatabaseSource]` | `{}`; by `kind`, `directory` when it has none |
 | `endpoints` | `dict[str, EndpointSpec]` | `{}` |
 | `hosts` | `dict[str, HostSpec]` | `{}` |
-```
-AGENT: add
-The new field, below this row.
----
-| `judges` | `dict[str, str]` | `{}`; judge → endpoint, from `[judge]` |
-```
 | `cleared` | `dict[str, tuple[str, ...]]` | `{}`; endpoint → sources |
+| `judges` | `dict[str, str]` | `{}`; judge → endpoint, from `[judge]` |
 
 A `kind` other than `directory` and `database` is a `ValidationError`.
 
 Building one checks, each a `ValueError` wrapped in `ValidationError`:
 - each source's `name` is its key: `source '<key>' is named '<name>'`;
 - each endpoint's `host`, when set, is a key of `hosts`: `endpoint '<name>' names no host '<host>'`;
-```
-AGENT: add
-The new check, after this one.
----
-- each judge's endpoint is an endpoint: `judge '<name>' is bound to no endpoint '<endpoint>'`.
-```
 - each key of `cleared` is an endpoint, `cleared names no endpoint '<name>'`, and each of its sources is a source,
+- each judge's endpoint is an endpoint: `judge '<name>' is bound to no endpoint '<endpoint>'`.
   `endpoint '<name>' is cleared for no source <names, joined by ", ">`.
 
 | Member | Returns / raises |
@@ -178,15 +148,8 @@ The new check, after this one.
 | `cleared_for(endpoint: str) -> frozenset[str]` | The sources `[cleared]` lists for the endpoint; empty when it lists none, also for an endpoint that doesn't exist. |
 
 #### `Inventory.load(path: Path) -> Self`
-```
-AGENT: replace
-A data set's judge names no engine; the World binds it to an endpoint, whose engine judges (agents/wip-data.md, D2).
----
 1. Reads `path`. `ValueError("<path>: the inventory has only 'include', 'source', 'endpoint', 'host', 'cleared' and
    'judge', not [<keys>]")` for any other top-level key.
-```
-1. Reads `path`. `ValueError("<path>: the inventory has only 'include', 'source', 'endpoint', 'host' and 'cleared',
-   not [<keys>]")` for any other top-level key.
 2. For each name in `include`, in order, reads `path.parent / name`. `ValueError("<included>: an included inventory
    has only 'endpoint' and 'host' tables, not [<keys>]")` for any other key, `include` included, so includes don't
    nest. `ValueError("<included>: <table> [<names>] are in <path> too")` for a name already read, from `path` or from
