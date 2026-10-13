@@ -353,7 +353,8 @@ The plans they were built from, with the options weighed for each decision and t
 `agents/wip-bench.md` at d5ebf52 and `agents/wip-api.md` at 100a078.
 
 ### Start with this
-0. **Go through open items, reiterate and confirm design decisions**, "Takes the API is built on" first.
+0. **Go through open items, reiterate and confirm design decisions**, "Takes the API is built on" first. The API's
+   items, each with what holds today, its options and a take, are in `agents/wip-api-open.md`.
 1. **Scoring in the API**, which has no requests of its own yet: a run is scored as it finishes unless its request
    says `"score": false`, and its latest scores come with it, in `run.scored` and in `GET /api/runs/{id}`
    (agents/wip-api.md, "Scoring"). A run left unscored, or whose scoring failed, can't be scored over HTTP. Still to
