@@ -9,7 +9,7 @@ from chatddx.store import Catalog
 from chatddx.store.store import Connection
 from chatddx.test.world import LINES
 
-pytestmark = pytest.mark.wip
+pytestmark = pytest.mark.solidified
 
 
 def configuration(signed: TestClient, owner: str) -> dict[str, Any]:

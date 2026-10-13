@@ -9,7 +9,7 @@ from chatddx.inventory import Inventory
 from chatddx.store import Store, fetch_vignette
 from chatddx.test.world import LINES, QWEN
 
-pytestmark = pytest.mark.wip
+pytestmark = pytest.mark.solidified
 
 TYPED = "A 54-year-old woman with sudden breathlessness after a long flight."
 

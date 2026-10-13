@@ -1,11 +1,8 @@
 # Bench
 
-A candidate for `docs/bench.md`. Its reference is `agents/wip-bench-api.md`, a candidate for `docs/bench-api.md`;
-below, those two names mean these two files until they move. "Outstanding", at the end, stays behind when they do.
-
 The bench is what one person sees and does, whatever the edge they reach it through: the threads, families and runs
 they see, the World's endpoints, the variation they are trying, and what is written in their name. Its edges are the
-repl (docs/repl.md), the API (agents/wip-api.md) and the portal to come (agents/wip-portal.md). This document
+repl (docs/repl.md), the API (docs/api.md) and the portal to come (agents/wip-portal.md). This document
 describes what the bench does and why it is shaped like it is. Names, signatures and errors are in docs/bench-api.md.
 
 The bench builds on the store, the catalog, the World, the facts, the runner and the scoring pass, and holds no SQL of
@@ -54,7 +51,7 @@ endpoint picks one. A name made in several languages is ambiguous, unless it nam
 ### Finding things by id
 By id, a thread, a family or a run is found only among what the person sees, and a thread only among the kinds its
 word names. A run is also found by the start of its id, among their own, as a person at a prompt types it; an edge
-that names things by id can take whole ids only, since a start could name another run tomorrow (agents/wip-api.md,
+that names things by id can take whole ids only, since a start could name another run tomorrow (docs/api.md,
 "Ids").
 
 ## What a person is scored against
@@ -317,7 +314,7 @@ The bench's errors are told apart by their class, so that an edge can answer eac
 
 The messages are worded for a person, without the edge's terms; an edge adds its own hint where it has one, as the
 repl does for a name its endpoint would pick a model for. The API answers `NotFound` with 404, `Ambiguous`, `Conflict`
-and `MovedOn` with 409, `OverQuota` with 429, and the other refusals with 422 (agents/wip-api.md, "Errors").
+and `MovedOn` with 409, `OverQuota` with 429, and the other refusals with 422 (docs/api.md, "Errors").
 
 ## Tests
 The tests start from the test World (`worlds/test`, agents/wip-test-world.md) as `chatddx init-data` lands it, with
@@ -350,55 +347,23 @@ check before the other has written.
 | Cell | The repl's word for a variation being tried together with an endpoint. |
 
 ## Outstanding
-What is still open of the bench and of its edges, the API's included (agents/wip-api.md). It doesn't move to `docs/`.
-The plans they were built from, with the options weighed for each decision and the survey of the old project, are
-`agents/wip-bench.md` at d5ebf52 and `agents/wip-api.md` at 100a078.
+Left for later. The API's are in docs/api.md, "Outstanding". The plan the bench was built from, with the options
+weighed for each decision and the survey of the old project, is `agents/wip-bench.md` at d5ebf52; the writes for
+the person were planned in agents/wip-authoring.md, whose takes marked "Built, as takes" still wait for a word.
 
-### Start with this
-0. **Go through open items, reiterate and confirm design decisions**, "Takes the API is built on" first. The API's
-   items, each with what holds today, its options and a take, are in `agents/wip-api-open.md`.
-1. **The worker** in place of the app's jobs, with the API as it is (decided: agents/wip-api-open.md, O10). Runs and
-   scorings started over HTTP are under way in the app's process for now, and end with it.
-2. **Adopting the docs**: this file and `agents/wip-bench-api.md`, as `docs/bench.md` and `docs/bench-api.md`, and
-   `agents/wip-api.md` and `agents/wip-api-api.md`, as `docs/api.md` and `docs/api-api.md`; the bench's and the API's
-   tests marked `solidified`; and what points at these files moved with them: `docs/repl.md`, `docs/repl-api.md`,
-   `src/chatddx/repl/test/test_vocabulary.py` and the other plans in `agents/`.
-3. **A low-level manual for the bench**, made from `agents/wip-authoring.md`.
-4. **Judges** are written as any component (decided: agents/wip-api-open.md, O7), and configurations are listed by
-   purpose in the API. The repl still lists judge configurations among the rest. The portal's authoring and swift
-   wait on the rest, which is built.
-5. **Takes** the bench and the API are built on still wait for a word: "Takes the API is built on", below, and the
-   authoring takes marked "Built, as takes" in agents/wip-authoring.md.
-
-### Takes the API is built on
-The options of `agents/wip-api.md` at 100a078 ("Options"), built as its takes had them and not confirmed since. Decided
-there: A1, who it is for, kept open; A2, FastAPI and uvicorn (F2); A3, signing in; and A9, case-derived content in
-places of its own (S3).
-- **A4, ids**: a path takes a whole id, and a name is a filter on a list, which gives every match (N1).
-- **A5, the variation**: stated whole in each request, the configuration by id and its parts by digest, with nothing
-  stored by looking (V1).
-- **A6, where a run runs**: decided since: in the app's process, beside the request, in the worker's HTTP shape
-  (agents/wip-api-open.md, O10).
-- **A7, the stream**: decided with A6: a `GET` of the run's events, each with an id (agents/wip-api.md, "Its events").
-- **A8, scoring**: at once after a run, with an opt-out, and a listing of what is left to score (built: O3).
-- **A10, errors**: the bench's errors mapped by class, and what else a route means caught where it means it
-  (agents/wip-api.md, "Errors").
-- **A11, keeping a variation**: a fork and an edit, two requests, rather than a save by name (K2).
-- **A12, paths**: under `/api/`, with the OpenAPI document at `/api/openapi.json`, and no version until there is a
-  second.
-
-### Open
-The bench:
+- **A low-level manual for the bench**, made from agents/wip-authoring.md.
 - **Z1**: the map from roles to the kinds each role sees goes in `identity` once the portal's views give it meaning
   (agents/wip-identity.md, "Open"). `sees` then takes the person's roles and the kind.
 - **An execution for `Bench.start`**, which passes none, so a run gets `Execution()`'s, with no timeout; the worker
   needs it (agents/wip-worker.md, "Below the worker").
 - **A judge's endpoint can't be named**: `Bench.score` names none, so a judge whose engine two endpoints serve bars its
-  scorer, in the repl and the API alike (docs/repl.md, "What the repl doesn't reach").
-- **A person's runs are all read**, and paged afterwards, in the API too (`Bench.runs`). Page in the store once that
-  is slow.
-- **Two saves of one name at once** can both create a configuration, in the repl's `save` as in the API's forks
-  (`docs/catalog.md`, "Concurrent writers").
+  scorer, in the repl and the API alike (docs/repl.md, "What the repl doesn't reach"). Decided: as it is, until a World
+  serves an engine at two endpoints; then the scoring names an endpoint per judge.
+- **The repl lists judge configurations among the rest**, as the API doesn't.
+- **A person's runs are all read**, and paged afterwards, in the API too (`Bench.runs`), and what is left to score is
+  worked out for each of them, about 40 ms a run under five scorers. Page in the store once that is slow.
+- **Two saves of one name at once** can both create a configuration, in the repl's `save` (`docs/catalog.md`,
+  "Concurrent writers").
 - **Taking counts shared threads, not owners**: a case with two threads shared by one owner is to choose from, and
   naming that owner doesn't pick between them. Only two writers at once can leave an owner two (see "One expectation
   per case and schema").
@@ -407,40 +372,3 @@ The bench:
   docs/runner.md, "Smaller issues"); a batch's plan, crossing variations into one (agents/wip-batch.md); and what holds
   a configuration, the portal's (agents/wip-portal.md), whose part for the repl `Bench.reaching` and `Bench.scored_by`
   cover.
-
-Signing in, in the API:
-- **A cookie over plain HTTP** isn't kept: a `Secure`, `__Host-` cookie needs HTTPS, or `localhost`.
-- **`Origin` against `Host`.** A proxy that rewrites `Host` would fail the `Origin` check for a browser that sends no
-  `Sec-Fetch-Site`, though today's browsers all send it. If it bites: the public origin as a setting.
-- **No limit on login attempts**, and **no personal tokens** for scripts that run longer than a session (a table and a
-  migration).
-- **Keycloak.** Once it is in front, a proxy authenticates and hands over the login, which maps to `person.login`,
-  and signing in is skipped (agents/wip-identity.md).
-- **Roles aren't checked**; that waits for the portal.
-
-Serving the API:
-- **A connection per request**, opened and closed each time; a pool (`psycopg_pool`) when that costs. A run or a
-  scoring under way holds one of its own for as long as it lasts.
-- **A query parameter a route doesn't name is ignored**, unless the query is a model (`Varying`), so a misspelt filter
-  on `GET /api/runs` or `GET /api/threads` gives everything rather than a 422.
-
-Variations, in the API:
-- **A part given twice in a query**: the last one counts.
-- **Variants.** A client finds `plan (en, Qwen/Qwen3-8B-AWQ)` by its full name; agents/wip-variants.md's option B
-  would let it filter by model and language instead.
-- **An unsaved variation's runs are titled by their whole recipe**, in the API as in the repl (docs/catalog.md, "A
-  variation nobody saved has a long title").
-
-Runs, in the API:
-- **A quiet stream sends nothing**, as while it waits for a slow first token or a judge's verdict, and a proxy's read
-  timeout would cut it. A comment line now and then would keep it open; a stream cut is joined again after the last
-  id it had (agents/wip-api-open.md, O26).
-- **A run outlives a server that stops**, which waits for its threads. A killed one leaves the run unfinished, as
-  resuming isn't built (agents/wip-worker.md, "Below the worker").
-- **The jobs are the process's.** Another replica of the app doesn't see them, so its streams tell a run under way
-  from the ledger, as far as it has gone, and it can't halt it. A job is kept, with its events, until another job of
-  the run takes its place, so a long-lived process keeps one per run it sent.
-
-Writes, in the API:
-- **Carrying answers 201 even when nothing changes**: an expectation carried onto the case it is of already is kept
-  `unchanged`, which an edit answers 200, but `POST /api/threads/{id}/carries` doesn't tell them apart.

@@ -7,7 +7,7 @@ from chatddx.factors.cases import Appendix, Case, Vignette
 from chatddx.identity import Person
 from chatddx.store import Catalog, People, Store
 
-pytestmark = pytest.mark.wip
+pytestmark = pytest.mark.solidified
 
 ZERO = "sha256:" + "0" * 64
 

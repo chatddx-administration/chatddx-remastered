@@ -14,7 +14,7 @@ from chatddx.store import Store
 from chatddx.store.store import Connection
 from chatddx.test.world import DATA, LINES, NATIVE, NATIVE_TOOLS, OFF, QWEN
 
-pytestmark = pytest.mark.wip
+pytestmark = pytest.mark.solidified
 
 DIFFERENTIAL = ("answer", "differential")
 

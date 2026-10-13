@@ -28,7 +28,7 @@ from chatddx.test.world import (
     world_facts,
 )
 
-pytestmark = pytest.mark.wip
+pytestmark = pytest.mark.solidified
 
 type Told = list[tuple[int, str, dict[str, Any]]]
 

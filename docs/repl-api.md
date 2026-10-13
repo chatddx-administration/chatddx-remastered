@@ -1,5 +1,14 @@
 # Repl API
 
+```
+AGENT: amend
+The manual is docs/repl-manual.md, and the bench's reference is docs/bench-api.md now.
+---
+Reference for the `chatddx.repl` package. It was written from `src/chatddx/repl/*` and `docs/repl.md`. What the shell
+does and why is in `docs/repl.md`, and how to use it in the manual (docs/repl-manual.md); this file says what
+the package holds, what each command calls, and how its tests are set up. The bench it calls on is in
+`src/chatddx/bench/` (docs/bench-api.md).
+```
 Reference for the `chatddx.repl` package. It was written from `src/chatddx/repl/*` and `docs/repl.md`. What the shell
 does and why is in `docs/repl.md`, and how to use it in the manual (agents/wip-repl-manual.md); this file says what
 the package holds, what each command calls, and how its tests are set up. The bench it calls on is in

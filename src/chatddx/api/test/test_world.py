@@ -17,7 +17,7 @@ from chatddx.test.world import (
     TEST,
 )
 
-pytestmark = pytest.mark.wip
+pytestmark = pytest.mark.solidified
 
 GHOST = "sha256:" + "0" * 64
 

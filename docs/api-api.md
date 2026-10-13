@@ -1,13 +1,10 @@
 # API package
 
-A candidate for `docs/api-api.md`, beside `agents/wip-api.md`, the candidate for `docs/api.md`; below, those two
-names mean these two files until they move.
-
 Reference for the `chatddx.api` package. It was written from `src/chatddx/api/*` and docs/api.md. What the API is and
 why it is shaped this way is in docs/api.md. The HTTP interface itself, its paths, parameters, bodies and statuses,
 is the OpenAPI document the app serves at `/api/openapi.json`, with pages at `/api/docs`, and isn't repeated here;
 this file says how the package builds it: what each name does, accepts, returns and raises. The types it passes
-through are the bench's (agents/wip-bench-api.md), the runner's (docs/runner-api.md), and those in
+through are the bench's (docs/bench-api.md), the runner's (docs/runner-api.md), and those in
 docs/catalog-api.md, docs/ledger-api.md, docs/store-api.md, docs/inventory-api.md and docs/facts-api.md.
 
 Paths are relative to `src/chatddx/api/` unless they start with `src/`, `docs/` or `agents/`.
@@ -416,7 +413,7 @@ or `CHATDDX_WORLD`; the bundled facts, the World's and those given; and `--bind`
 settings.database())`.
 
 ## Tests
-`test/`, marked wip.
+`test/`, marked solidified.
 
 | Module | Holds |
 | --- | --- |

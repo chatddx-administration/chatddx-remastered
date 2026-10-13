@@ -8,7 +8,7 @@ from chatddx.identity import Person
 from chatddx.store.catalog import Rows
 from chatddx.test.world import LINES
 
-pytestmark = pytest.mark.wip
+pytestmark = pytest.mark.solidified
 
 
 def _mine(bench: Bench) -> int:

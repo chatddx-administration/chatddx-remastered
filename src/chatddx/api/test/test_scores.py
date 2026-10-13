@@ -17,7 +17,7 @@ from chatddx.store import Store
 from chatddx.store.store import Connection
 from chatddx.test.world import LINES, faked, world_facts
 
-pytestmark = pytest.mark.wip
+pytestmark = pytest.mark.solidified
 
 
 @pytest.fixture

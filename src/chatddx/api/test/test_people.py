@@ -14,7 +14,7 @@ from chatddx.identity import Person
 from chatddx.runner.gate import Refused
 from chatddx.test.world import TEST
 
-pytestmark = pytest.mark.wip
+pytestmark = pytest.mark.solidified
 
 ELSEWHERE = (
     {"Sec-Fetch-Site": "cross-site"},

@@ -8,7 +8,7 @@ from chatddx.factors.scoring import Expectation
 from chatddx.store import People, Store
 from chatddx.test.world import LINES, QWEN
 
-pytestmark = pytest.mark.wip
+pytestmark = pytest.mark.solidified
 
 
 @pytest.fixture

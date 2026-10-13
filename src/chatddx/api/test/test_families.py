@@ -10,7 +10,7 @@ from chatddx.curation import load_cases
 from chatddx.store import Catalog
 from chatddx.test.world import DATA
 
-pytestmark = pytest.mark.wip
+pytestmark = pytest.mark.solidified
 
 
 def family(signed: TestClient, name: str = "crlf") -> dict[str, Any]:

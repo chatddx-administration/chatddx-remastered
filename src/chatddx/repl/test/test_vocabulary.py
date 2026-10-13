@@ -12,8 +12,8 @@ CELL = re.compile(r"(?<!ex)cell", re.IGNORECASE)
 
 
 # "Cell" is the repl's word for what it runs. The bench and everything under it speak
-# of the variation being tried and the endpoint (agents/wip-bench.md, "Cell"). Only code is
-# held to it: the cases' data say "basal cell carcinoma".
+# of the variation being tried and the endpoint. Only code is held to it: the cases' data
+# say "basal cell carcinoma".
 def test_only_the_repl_speaks_of_a_cell() -> None:
     found = [
         f"{path.relative_to(SRC)}:{n}"

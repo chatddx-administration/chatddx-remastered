@@ -3,7 +3,7 @@ from fastapi.testclient import TestClient
 
 from chatddx.core import settings
 
-pytestmark = pytest.mark.wip
+pytestmark = pytest.mark.solidified
 
 TYPED = "A 54-year-old woman with sudden breathlessness after a long flight."
 

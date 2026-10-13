@@ -1,12 +1,10 @@
 # API
 
-A candidate for `docs/api.md`. Its reference is `agents/wip-api-api.md`, a candidate for `docs/api-api.md`; below,
-those two names mean these two files until they move. What is still open is in `agents/wip-bench.md`, "Outstanding",
-with the bench's. The plan this was rewritten from, with the old API's survey and the options weighed, is
-`agents/wip-api.md` at 100a078.
+Its reference is docs/api-api.md. The plan it was first built from, with the old API's survey and the options
+weighed, is `agents/wip-api.md` at 100a078.
 
 The API and its sibling, the repl, are the rig's control plane. The API reaches every write the bench makes; what it
-doesn't do yet is in "Not covered", and in `agents/wip-bench.md`, "Outstanding".
+doesn't do yet is in "Not covered", and under "Outstanding".
 
 The endpoints are in the OpenAPI document the API serves, at `/api/openapi.json`, with pages at `/api/docs`.
 This document describes what the API does and why it is shaped like it is.
@@ -60,7 +58,7 @@ A configuration made per language or model is a thread under its full name, unti
 - **Families**, each with the case of its current vignette, filtered by tag or name. A family on its own adds its
   description and collaborators, the case's appendices, and, under each expectation schema the person sees, the
   expectation its case is scored against: their own, so a schema under which they only see shared ones has none
-  (`agents/wip-bench.md`, "What a person is scored against"). Several to choose from don't fail the request; that
+  (`docs/bench.md`, "What a person is scored against"). Several to choose from don't fail the request; that
   schema says so instead. Each schema also lists the expectation threads shared with the person they could take.
 - **A family's vignette**, fetched from the World's source, and whether it still is the text the case was made from
   (unknown under a keyed fingerprint). It is case-derived (see "Case-derived content").
@@ -92,7 +90,7 @@ A look at a variation gives:
   expectation it picks something from, and which have several to choose from.
 
 A case with expectations to choose from is listed apart, as `choosing`, rather than as one without
-(`agents/wip-bench.md`, "What a person is scored against"). An unsaved variation is linted in its recipe's
+(`docs/bench.md`, "What a person is scored against"). An unsaved variation is linted in its recipe's
 language, since the language of a skeleton otherwise comes from its stored compilations, which it hasn't got yet.
 
 A variation the bench refuses is unprocessable: a digest that isn't a stored chunk of its part, a part that can't be
@@ -110,7 +108,7 @@ version of the person's configuration of that name if there is one, and a new co
 
 Chunks, appendices, expectations and scorers are written the same way, with a component where a configuration takes
 parts, as its JSON as a component's own request gives it, and a scorer with the labels of its views and resources
-(`agents/wip-bench.md`, "Components" and "Scorers"). A judge is written the same way, over a judge configuration,
+(`docs/bench.md`, "Components" and "Scorers"). A judge is written the same way, over a judge configuration,
 an engine and its seeds:
 - **New**: a component, a name, and the language of its text when it has one, as a thread of the person's own; or a
   recipe, by the chunks' digests for its parts, its purpose and its appendix layout, made into a new configuration
@@ -125,20 +123,20 @@ an expectation whose data its schema refuses, which is written all the same.
 ## What is said about a thread
 Its owner says what holds of a thread in one request, giving only what changes: its name, or none so that its title
 shows; its description; its tags and who it is shared with, each as the whole list, people by login; and whether it
-is deleted (`agents/wip-bench.md`, "What is said about a thread"). Deleting is also a request of its own. What holds
+is deleted (`docs/bench.md`, "What is said about a thread"). Deleting is also a request of its own. What holds
 afterwards comes back. A deleted thread is restored before anything else is said of it. Another's thread is "not
 found", as "no expectation N of yours" for an expectation; a login that names nobody, an empty name or tag, and
 taking a description away are unprocessable.
 
 ## Typed cases
 A person types a case: its text, and a name and a language if they like. It is kept as written, in the World's
-database source, with its case and a family of their own, which comes back as a family does (`agents/wip-bench.md`,
+database source, with its case and a family of their own, which comes back as a family does (`docs/bench.md`,
 "Typed cases"); its vignette is then read as any family's. A text is held to a length and a person to a number of texts
 a day: past the day's is 429.
 
 ## Appendices and cases
 A family lists its cases at its current vignette, its default first, each with its appendices and the expectation
-it is scored against under each schema (`agents/wip-bench.md`, "Appendices and cases"). The person writes an
+it is scored against under each schema (`docs/bench.md`, "Appendices and cases"). The person writes an
 appendix for a family from its text, and builds a case from appendices they see, in order, or stores the replacement
 of a case a repair left at an earlier vignette. An appendix's new version, written as any edit, answers with each case
 it replaced. An expectation is carried onto another case of its family by an edit of its own, which names the head
@@ -146,13 +144,13 @@ it was made on.
 
 ## Following an origin
 A fork whose origin has moved on has a proposal: what following would keep, with the base, the origin's head, what
-the fork varies, and for a configuration the recipe it compiles from (`agents/wip-bench.md`, "Following an
+the fork varies, and for a configuration the recipe it compiles from (`docs/bench.md`, "Following an
 origin"). Asking for it gives nothing when there is none. Following is an edit of the person's own fork, which names
 the head it was made on and comes back with what the lints say. Following a fork with nothing to follow, or whose
 changes no longer fit, is unprocessable.
 
 ## Taking expectations
-A person is scored against their own expectations only, so they take the shared ones (`agents/wip-bench.md`,
+A person is scored against their own expectations only, so they take the shared ones (`docs/bench.md`,
 "Taking"):
 - **For many cases**, by family, under one schema, from any owner or one named. The answer says, for each family,
   whether its case was taken, and into which thread, or was kept as theirs, has several shared to choose from, or
@@ -322,5 +320,65 @@ and of leaving a stream serve the app with uvicorn on a thread, and speak to it 
 | Case-derived | Made from a vignette, or quoting what was: the vignette, answers, tool runs. |
 
 ## Outstanding
-What is still open of the API, from the takes it is built on to its smaller issues, is in `agents/wip-bench.md`,
-"Outstanding", with the bench's. It doesn't move to `docs/`.
+Left for later, each with what holds and the take on it, the agent's recommendation, which waits for a word. The
+bench's are in docs/bench.md, "Outstanding".
+
+### A quiet stream
+A run's events send nothing while an engine takes its time with a first token, or a judge with a verdict, and a
+proxy cuts a connection that is quiet too long: nginx's `proxy_read_timeout` is 60 s by default. A stream cut is
+joined again after the last id it had, which `EventSource` does by itself, so nothing is lost, but a reader that isn't
+a browser has to. Take: a comment line, `: keep-alive`, every 15 s, which event readers skip.
+
+### Takes the API is built on
+Built as the takes of the plan at 100a078 had them, and not confirmed since. Decided there: who it is for, kept open;
+FastAPI and uvicorn; signing in; and case-derived content in places of its own. Decided since: where a run runs and
+its events (see "Where it runs" and "Its events").
+- **Ids**: a path takes a whole id, and a name is a filter on a list, which gives every match.
+- **The variation**: stated whole in each request, the configuration by id and its parts by digest, with nothing
+  stored by looking. A run may come to name the skeleton its look gave, and be refused when the variation compiles to
+  another by then, as an edit names its head.
+- **Scoring**: at once after a run, with an opt-out, and the runs left to score listed.
+- **Errors**: the bench's errors mapped by class, and what else a route means caught where it means it. 409 means
+  three things and 422 many, told apart by their messages. Take: a `code` beside `detail` (`moved_on`, `conflict`,
+  `ambiguous`, `over_quota`, `refused`, `not_found`, `unprocessable`), so that a portal can offer the head an edit
+  moved on to without reading a sentence.
+- **Keeping a variation**: a fork and an edit, two requests, rather than a save by name.
+- **Paths**: under `/api/`, with no version until there is a second.
+
+### Serving
+- **The jobs are the process's.** A run or a scoring under way ends with the process: a server that stops waits for
+  them, and a killed one leaves them unfinished, as resuming isn't built. Another replica doesn't see them, so its
+  streams tell a run under way from the ledger, as far as it has gone, and it can't halt it. A job is kept with its
+  events until another job of the run takes its place, so a long-lived process keeps one per run it sent. The worker
+  is to take their place, with the API as it is (agents/wip-worker.md).
+- **A connection per request**, about 2.6 ms each over the Unix socket, opened and closed each time, and one of its
+  own for each run or scoring under way. A pool (`psycopg_pool`) for requests when a measurement says so.
+- **A query parameter a route doesn't name is ignored**, unless the query is a model (`Varying`), so a misspelt filter
+  on `GET /api/runs` or `GET /api/threads` gives everything, and a part given twice in a variation's query counts the
+  last. Take: one check for every route that refuses a parameter the route doesn't declare, and a scalar given twice.
+- **A person's runs are all read**, filtered and then paged, and with `unscored`, what is left of each is worked out
+  first. Take: as is until slow, then paging by a cursor, the last run's start.
+
+### Signing in
+- **A cookie over plain HTTP** isn't kept: a `Secure`, `__Host-` cookie needs HTTPS, or `localhost`, and a bearer works
+  everywhere. Take: as is.
+- **`Origin` against `Host`.** A proxy that rewrites `Host` would fail the `Origin` check for a browser that sends no
+  `Sec-Fetch-Site`, though today's browsers all send it. Take: as is; the public origin as a setting if it bites.
+- **No limit on sign-ins, and no personal tokens.** Each sign-in costs an argon2 verification, a fraction of a second
+  of CPU, and a script running longer than a session signs in again. Personal tokens were decided for when a script
+  needs one. Take: neither, until Keycloak is in front, which limits sign-ins itself, or a script needs a token.
+- **Keycloak.** How it hands the app a login isn't decided. Take: a proxy in front, such as oauth2-proxy, passes the
+  login in a header the app believes from it alone, mapped onto `person.login` (agents/wip-identity.md), and
+  Keycloak's own tokens as bearers for scripts when they come.
+- **Roles aren't checked**; Z1 shapes what each role is shown, with the portal (docs/bench.md, "Outstanding").
+
+### Variations
+- **Variants.** A client finds `plan (en, Qwen/Qwen3-8B-AWQ)` by its full name. Take: so until variants are recorded
+  (agents/wip-variants.md, option B), then filters by what a thread is a variant of, its model and its language.
+- **An unsaved variation's runs are titled by their whole recipe**, as the repl's are (docs/catalog.md, "A variation
+  nobody saved has a long title"). Take: the variation's label kept as the run's name as it starts, a name entry on
+  the run, which `Bench.described` reads first.
+
+### Writes
+- **Carrying answers 201 even when nothing changes**: an expectation carried onto the case it is of already is kept
+  `unchanged`, which an edit answers 200. Take: 200, as an edit.

@@ -35,7 +35,7 @@ from chatddx.test.world import (
     REMOTE,
 )
 
-pytestmark = pytest.mark.wip
+pytestmark = pytest.mark.solidified
 
 
 def test_a_person_sees_their_own_and_shared_threads_and_families(

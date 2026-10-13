@@ -2,7 +2,7 @@
 
 The writes the bench makes for a person beyond configurations, runs and scores: chunks, recipes, appendices and the
 cases that order them, expectations, and what is said about a thread, from its name to whether it is deleted. They are
-the bench's, since every edge writes for a person through it (agents/wip-bench.md, "Writes for the person"); the
+the bench's, since every edge writes for a person through it (docs/bench.md, "Writes for the person"); the
 portal is the first edge to need them (agents/wip-portal.md, "Below the UI", "Phases" 4 and 5).
 
 "Decided" means the user said so. "Take" is the agent's recommendation and still open.
@@ -15,32 +15,32 @@ portal is the first edge to need them (agents/wip-portal.md, "Below the UI", "Ph
    names the head it was made on (A10), and a take keeps a person's own expectation, with replacing one a write of
    its own (A5). The rest are takes.
 2. **Taking expectations is built** (phase 1): `Bench.take` and `Bench.take_from`, the giftbag keeping a person's own,
-   the repl's `take`, and the API's `POST /api/takes` and `POST /api/threads/{thread}/takes` (agents/wip-bench.md,
+   the repl's `take`, and the API's `POST /api/takes` and `POST /api/threads/{thread}/takes` (docs/bench.md,
    "Taking").
 3. **Chunks and expectations are built** (phase 2): `Bench.new`, `fork_component` and `edit_component` with lints
    and languages, every edit naming its head (A10, configurations included), and the API's `POST /api/threads` and
-   component forks and edits (agents/wip-bench.md, "Components"). The sample has a thread of every chunk kind now,
+   component forks and edits (docs/bench.md, "Components"). The sample has a thread of every chunk kind now,
    and Swedish texts (agents/wip-sample-data.md, "Beyond the old inventory"). Two takes came with it: A7's language
    rule and A10's lock.
 4. **What is said about a thread is built** (phase 3): `Bench.say`, the owner's one write of a thread's name,
    description, tags, collaborators and deletion, and the API's `PATCH` and `DELETE /api/threads/{id}`, with the
-   person's own deleted threads listed and read by id (agents/wip-bench.md, "What is said about a thread").
+   person's own deleted threads listed and read by id (docs/bench.md, "What is said about a thread").
 5. **Following an origin is built** (phase 4): `Bench.proposal` and `Bench.follow`, and the API's
-   `GET /api/threads/{id}/proposal` and `POST /api/threads/{id}/follows` (agents/wip-bench.md, "Following an
+   `GET /api/threads/{id}/proposal` and `POST /api/threads/{id}/follows` (docs/bench.md, "Following an
    origin").
 6. **Recipes into configurations are built** (phase 5): `Bench.new` takes a recipe, and the API's `POST
-   /api/threads` takes one in place of a component (agents/wip-bench.md, "Writes for the person").
+   /api/threads` takes one in place of a component (docs/bench.md, "Writes for the person").
 7. **Appendices and cases are built** (phase 6): the appendix and case builders, a family's cases, replacement cases
    on an appendix's edit and for a late case, carrying an expectation over, and runs that name cases
-   (agents/wip-bench.md, "Appendices and cases").
+   (docs/bench.md, "Appendices and cases").
 8. **Typed cases are built** (phase 7), below the portal's swift page: the `source` schema and the `database`
    source kind, `Bench.type_case`, and `POST /api/families` (agents/wip-portal.md, "Typed cases"). The page waits for
    the portal.
 9. **Scorers are built** (phase 8): the scoring and tool code shipped as lists with versions (S1), scorers and tools
    pinned to them (S2), parameters held to the schemas the code publishes (S3), labels on edits (S4), and the bench's
-   and the API's scorer writes, with `GET /api/scorer-code` for the pickers (agents/wip-bench.md, "Scorers"). The takes
+   and the API's scorer writes, with `GET /api/scorer-code` for the pickers (docs/bench.md, "Scorers"). The takes
    it made are under each section, as "Built". Judges (phase 9) are built too: `judge` is written as any component,
-   and the API lists configurations by purpose (agents/wip-api-open.md, O7).
+   and the API lists configurations by purpose (docs/api.md, "What a person sees").
 10. **One set of writes for every kind people author** (A1), with builders only where a kind binds to a family's
    vignette: appendices and cases (A2).
 11. **No write refuses on a lint** (A6): what was written comes back with its lints. Refusals stay the components' and
@@ -52,7 +52,7 @@ portal is the first edge to need them (agents/wip-portal.md, "Below the UI", "Ph
 | Chunks: instructions, few-shot, prompt, output, sampling, reasoning, passthrough, translations, toolset | researchers | `docs/chatddx.md`, "Requirements"; `docs/factors.md`, "Requests" | by curation, as the archive; forks of them by the giftbag |
 | Recipes, made into configurations | researchers | `docs/chatddx.md`, "Requirements" | only a variation of a configuration the person sees, forked or edited (`Bench.fork`, `Bench.edit`) |
 | Appendices, and the cases that order them | clinicians | `docs/factors.md`, "Case" and "Appendix" | nothing: a data set can't hold appendices (`docs/curation.md`, "What a data set can't hold yet") |
-| Expectations, and taking one shared | clinicians | `docs/factors.md`, "Expectation"; `agents/wip-bench.md`, "What a person is scored against" | by curation, as the archive; forks of them by the giftbag; taken, by any person (phase 1) |
+| Expectations, and taking one shared | clinicians | `docs/factors.md`, "Expectation"; `docs/bench.md`, "What a person is scored against" | by curation, as the archive; forks of them by the giftbag; taken, by any person (phase 1) |
 | A text's language, offered the previous version's | — | `docs/catalog.md`, "Languages" | by curation, from a data set's texts |
 | Names, descriptions, tags, collaborators; deleting and restoring | — | `docs/catalog.md`, "Entries" and "Deleting"; `docs/chatddx.md`, "Intended evolution of configurations" | a name, when a configuration is forked (`Bench.fork`); the rest by curation |
 | Accepting a proposal once a fork's origin moved on | — | `docs/catalog.md`, "Forks" | nothing: `Catalog.proposal` has no caller |
@@ -173,7 +173,7 @@ Decided: K, with replacing named. A bulk write that can't destroy anything is sa
 one that can is a choice made case by case.
 
 Beside it, the giftbag keeps a person's own expectation for a case and schema, as it keeps a fork they already have,
-rather than fail `init-data` on the catalog's rule (agents/wip-bench.md, "What a person is scored against").
+rather than fail `init-data` on the catalog's rule (docs/bench.md, "What a person is scored against").
 
 ### A6. What was written comes back with its lints
 Each write returns what it wrote and the lints of it, as findings: an expectation whose data fails its schema or can't

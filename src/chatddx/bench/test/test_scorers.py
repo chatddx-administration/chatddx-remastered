@@ -17,7 +17,7 @@ from chatddx.store import Catalog, People
 from chatddx.store.store import Connection
 from chatddx.test.world import LINES
 
-pytestmark = pytest.mark.wip
+pytestmark = pytest.mark.solidified
 
 SHIPPED = "chatddx.scorers.metrics:score"
 RAISED = metrics.score.version + 1

@@ -1,7 +1,4 @@
-# Bench package
-
-A candidate for `docs/bench-api.md`, beside `agents/wip-bench.md`, the candidate for `docs/bench.md`; below, those two
-names mean these two files until they move.
+# Bench API
 
 Reference for the `chatddx.bench` package. It was written from `src/chatddx/bench/*` and docs/bench.md. What the bench
 is and why it is shaped this way is in docs/bench.md; this file says what each name accepts, returns and raises. The
@@ -423,7 +420,7 @@ added or withdrawn, and deleting.
 | `ScoreHalt` | A halt for `score` that another thread sets: `set()`, `is_set()`, and `watching(grading)`, a context manager under which `set` halts that `Grading`, at once if it was set already. |
 
 ## Tests
-In `src/chatddx/bench/test/`, all marked `wip`.
+In `src/chatddx/bench/test/`, all marked `solidified`.
 
 | Module | Covers |
 | --- | --- |
