@@ -32,22 +32,11 @@ endpoints and sources that exist, and that each source is named by its table. An
 checked when an entry is used (see "Checks happen when an entry is used").
 
 ### Worlds
-```
-AGENT: replace
-The runs in `_runs/` are scripted runs now, planned in agents/wip-scripted.md.
----
 A World is handed over as its directory, `--world DIR`, and read as its `inventory.toml` and, when present,
 `factors.toml` and `facts.toml`, facts about models the bundled ones don't know, loaded beside them by init-data
 and the repl (src/chatddx/inventory/world.py, src/chatddx/cli.py). A World may also hold its source's vignettes,
 when git may hold them, a data set whose cases name them, in `_data/`, and scripted runs, in `_runs/`
 (agents/wip-scripted.md): the leading `_` marks what the World doesn't read and doesn't own. init-data loads `_data/`
-unless `--data` names another.
-```
-A World is handed over as its directory, `--world DIR`, and read as its `inventory.toml` and, when present,
-`factors.toml` and `facts.toml`, facts about models the bundled ones don't know, loaded beside them by init-data
-and the repl (src/chatddx/inventory/world.py, src/chatddx/cli.py). A World may also hold its source's vignettes,
-when git may hold them, a data set whose cases name them, in `_data/`, and sample runs, in `_runs/`
-(agents/wip-samples.md): the leading `_` marks what the World doesn't read and doesn't own. init-data loads `_data/`
 unless `--data` names another.
 
 `CHATDDX_WORLD` names the deployment's World directory and is the default `--world` of `init-data` and the `repl`
@@ -72,13 +61,7 @@ This repository has three, in `worlds/`:
   vignettes; its endpoints, hosts and factors are what the engine import writes from the hosts' reports. Both
   endpoints are cleared for the sample.
 
-```
-AGENT: replace
-The tests of the Worlds' content moved out of curation, beside the names tests share (src/chatddx/test/).
----
 src/chatddx/test/test_worlds.py fails when a World's engines change and its endpoints don't.
-```
-src/chatddx/curation/test/test_worlds.py fails when a World's engines change and its endpoints don't.
 
 ## Sources
 A source is where a set of vignettes is fetched from, by id. A source is a directory with one file per vignette,

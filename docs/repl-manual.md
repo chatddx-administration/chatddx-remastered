@@ -46,24 +46,12 @@ alice #2475>
 `alice` is who you are, and `#2475` is the seed the shell drew for you (see
 `seed` below). As you choose what to run, the prompt grows to show it.
 
-````
-AGENT: replace
-`chatddx samples` is `chatddx scripted-runs` (agents/wip-scripted.md).
----
 For runs to look at before you make any, with what can go wrong among
 them, run the sample World's scripted runs once (with `fake-engines`
 stopped: they serve their own fakes):
 
 ```
 chatddx scripted-runs alice
-```
-````
-For runs to look at before you make any, with what can go wrong among
-them, run the sample World's sample runs once (with `fake-engines`
-stopped: they serve their own fakes):
-
-```
-chatddx samples alice
 ```
 
 ## A few words first

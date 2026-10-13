@@ -182,18 +182,8 @@ Each entry is one emulated behaviour, then a line with:
 - where it is coded;
 - the tests that pin it (`src/chatddx/fake_vllm/test/`), or `untested`.
 
-```
-AGENT: replace
-The tests of the Worlds' content moved out of curation, beside the names tests share (src/chatddx/test/).
----
 The sections follow the sections of `test/test_fake_vllm.py`; "HTTP" is `test/test_fake_vllm_server.py`. Two tests
 cut across them: `src/chatddx/test/test_worlds.py:test_each_fake_answers_each_skeleton_or_refuses_it_as_vllm_would`
-renders every skeleton of every World for each of its fake endpoints, and checks each answer against its contract and
-schema, or the fake's refusal against the `vllm.*` lints; `test_a_tool_round_goes_from_the_toolset_to_the_answer_tool`
-runs a tool round through `next_request`.
-```
-The sections follow the sections of `test/test_fake_vllm.py`; "HTTP" is `test/test_fake_vllm_server.py`. Two tests
-cut across them: `src/chatddx/curation/test/test_worlds.py:test_each_fake_answers_each_skeleton_or_refuses_it_as_vllm_would`
 renders every skeleton of every World for each of its fake endpoints, and checks each answer against its contract and
 schema, or the fake's refusal against the `vllm.*` lints; `test_a_tool_round_goes_from_the_toolset_to_the_answer_tool`
 runs a tool round through `next_request`.
@@ -302,13 +292,7 @@ runs a tool round through `next_request`.
   item 4
     · `chat.py:instance`, `chat.py:_turn`, `chat.py:_resolve`
     · `test_what_it_writes_follows_references_unions_and_counts`
-```
-AGENT: replace
-The tests of the Worlds' content moved out of curation, beside the names tests share (src/chatddx/test/).
----
     · `src/chatddx/test/test_worlds.py:test_what_the_fake_writes_holds_to_each_data_set_s_schemas`,
-```
-    · `src/chatddx/curation/test/test_worlds.py:test_what_the_fake_writes_holds_to_each_data_set_s_schemas`,
     · `test_seeded_examples.py:test_a_schema_s_examples_are_picked_by_the_seed_unless_greedy`
 
 ### Tools
@@ -399,19 +383,10 @@ The tests of the Worlds' content moved out of curation, beside the names tests s
   `test_a_client_that_hangs_up_is_heard_at_once_and_its_request_aborted`
 - **Won't start.** A refused set-up exits with `the fake vLLM won't start: …`.
   item 19 · `server.py:run` · `test_the_command_won_t_start_what_vllm_wouldn_t`
-```
-AGENT: replace
-The tests of the Worlds' content moved out of curation, beside the names tests share (src/chatddx/test/).
----
 - **Several models.** `server.server` serves several `Served`, picked by name; `chatddx fake-vllm` serves one.
   fake · `server.py:server`, `chat.py:pick` ·
   `src/chatddx/test/test_worlds.py:test_each_fake_answers_each_skeleton_or_refuses_it_as_vllm_would` (picked through
   `accept`; untested over HTTP)
-```
-- **Several models.** `server.server` serves several `Served`, picked by name; `chatddx fake-vllm` serves one.
-  fake · `server.py:server`, `chat.py:pick` ·
-  `src/chatddx/curation/test/test_worlds.py:test_each_fake_answers_each_skeleton_or_refuses_it_as_vllm_would` (picked
-  through `accept`; untested over HTTP)
 
 ### Scripts
 `chatddx fake-vllm --script PATH`, or `serving(…, script=…)`, answers each chat request with the next `[[turn]]` of a
