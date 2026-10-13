@@ -95,7 +95,7 @@
             inherit (finalAttrs) pname version;
             src = ./frontend;
             fetcherVersion = 4;
-            hash = "sha256-8Adt12pVt3jYLfNO14t6NfhkOMOqJtURxA3DmHbhsfs=";
+            hash = "sha256-tGoru3mPq8DuBFLUYKSDFu4TdWhufkH/+UNTFpUlp6M=";
           };
           buildPhase = ''
             runHook preBuild

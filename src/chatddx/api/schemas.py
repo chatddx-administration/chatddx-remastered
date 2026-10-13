@@ -109,13 +109,13 @@ class Thread(_Schema):
     title: str
     owner: str | None
     tags: list[str]
+    language: str | None = Field(description="its head's")
     head: Edit
 
 
 class ThreadDetail(Thread):
     description: str | None
     collaborators: list[str]
-    language: str | None
     forked_from: int | None
     recipe: JsonValue
     deleted: bool
@@ -157,6 +157,10 @@ class Parts(_Schema):
 
 
 class Varying(Parts):
+    head: int | None = Field(
+        None,
+        description="the edit it varies, by id: the configuration's head unless given",
+    )
     endpoint: str | None = Field(None, description="to render and lint it for")
     tag: list[str] = Field(
         default_factory=list[str],
@@ -198,6 +202,10 @@ class NewThread(_Schema):
 
 class NewFork(_Schema):
     name: str = Field(min_length=1)
+    head: int | None = Field(
+        None,
+        description="a configuration's: the edit it forks from, its head unless given",
+    )
     parts: Parts = Parts()
     component: ComponentBody | None = Field(
         None, description="what the fork starts from in place of the head"
@@ -291,7 +299,11 @@ class Reach(_Schema):
 
 class Variation(_Schema):
     head: Edit
+    label: str = Field(description="its name, and the chunks it replaces")
     skeleton: str
+    held_by: Thread | None = Field(
+        description="the configuration whose head is the skeleton, the person's own first"
+    )
     greedy: bool
     parts: list[Part] | None
     seed: int

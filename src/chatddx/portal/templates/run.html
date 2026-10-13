@@ -7,7 +7,7 @@
   {{ heading(run.described) }}
 
   {% call section("The run") %}
-  {% set held %}{% if configuration %}<a class="text-primary hover:underline" href="/configurations/{{ configuration[0] }}">{{ configuration[1] }}</a>{% else %}{{ run.skeleton | short }}{% endif %}{% endset %}
+  {% set held %}{% if configuration %}<a class="text-primary hover:underline" href="{{ configuration[0] }}">{{ configuration[1] }}</a>{% else %}{{ run.skeleton | short }}{% endif %}{% endset %}
   {{ facts([
     ("Started", run.at | when),
     ("Finished", run.finished_at | when),

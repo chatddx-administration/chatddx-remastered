@@ -501,6 +501,15 @@ A recipe votes:
 
 A digest that isn't stored gives `None`.
 
+````
+AGENT: add
+A section before this one, for the language of many digests at once, as a listing of threads asks.
+---
+### `languages_of(rows, digests: Collection[str]) -> dict[str, str | None]`
+`language_of` of each digest, with the components, the texts' languages and their recipes' chunks read once for them
+all, and each skeleton's compilations once per skeleton. A case, an expectation, a trial or a judge is looked up
+alone, by `language_of`.
+````
 ### `recipe_language(rows, recipe: Recipe) -> str | None`
 The language `recipe` votes for, as `language_of` counts each compilation's recipe; `None` when it casts no vote.
 
@@ -594,6 +603,12 @@ the first of `Reader.compilations` (by digest). Anything else is `describe`d, wi
 the ones that write insert the rows the package decided on. A rule the database also checks is refused by Postgres
 with a psycopg error when the Python lets it through.
 
+```
+AGENT: add
+A row after this one.
+---
+| `languages_of(digests)` | `language.languages_of` | |
+```
 | Method | Calls | Writes |
 | --- | --- | --- |
 | `create(digest, by, *, compilation=None, forked_from=None, name=None, owner=None, labels=None) -> Edit` | `Reader.kind` (`LookupError("<digest> is not in the store")`), `threads.check_threadable`; `threads.check_expectation` and `threads.check_labels` through `edit`, and `note` | in one transaction: the thread, its first edit with its labels (`edit`), an `owner` entry for `owner` or else `by`, and a `name` entry when given |

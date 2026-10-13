@@ -97,6 +97,14 @@ still leave a person two to choose from. Then nothing picks one, and each place 
 - the case's expectation under that schema says it has expectations to choose from.
 
 ## The variation being tried
+```
+AGENT: change
+A variation can be made on an earlier edit, as a page that steps through a configuration's versions keeps what is
+set; saving one forks it, since an edit is made on the head.
+---
+A variation being tried is a configuration with recipe parts replaced (docs/catalog.md, "Configurations and
+variations"): one of the configuration's edits, its head unless another is asked for, and that edit's recipe, …
+```
 A variation being tried is a configuration with recipe parts replaced (docs/catalog.md, "Configurations and
 variations"): the configuration's head edit and recipe, the name the person called it by, and the parts replaced over
 it, each by a chunk's digest, or by nothing for an optional part taken out, with the name it was set by. With nothing

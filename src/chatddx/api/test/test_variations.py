@@ -43,6 +43,7 @@ def parts(shown: dict[str, Any]) -> dict[str, dict[str, Any]]:
     return {p["part"]: p for p in shown["parts"]}
 
 
+@pytest.mark.slow
 def test_a_request_names_the_recipe_s_parts(client: TestClient) -> None:
     assert tuple(Parts.model_fields) == PARTS
     described = client.get("/api/openapi.json").json()
@@ -50,6 +51,7 @@ def test_a_request_names_the_recipe_s_parts(client: TestClient) -> None:
     assert {p["name"] for p in get["parameters"]} == {
         "thread",
         *PARTS,
+        "head",
         "endpoint",
         "tag",
         "seed",
@@ -114,6 +116,82 @@ def test_a_variation_replaces_parts_by_digest_or_takes_them_out(
     toolset = parts(taken)["toolset"]
     assert (toolset["digest"], toolset["replaced"]) == (None, True)
     assert "tools" not in taken["request"]
+
+
+@pytest.mark.slow
+def test_a_variation_is_labelled_and_says_which_configuration_holds_it(
+    signed: TestClient,
+) -> None:
+    mine = thread(signed, "configuration", LINES)
+    archives = thread(signed, "configuration", LINES, "archive")
+    assert mine["head"]["digest"] == archives["head"]["digest"]
+    for looked in (mine, archives):
+        shown = variation(signed, looked)
+        assert shown["label"] == LINES
+        assert shown["held_by"] == mine
+
+    off = digest(signed, "reasoning", OFF)
+    shown = variation(signed, archives, reasoning=off)
+    assert shown["label"] == f"{LINES}+reasoning={OFF}"
+    assert shown["held_by"] is None
+    forks = f"/api/threads/{archives['id']}/forks"
+    made = signed.post(forks, json={"name": "terse", "parts": {"reasoning": off}})
+    held = variation(signed, archives, reasoning=off)["held_by"]
+    assert held is not None
+    assert (held["id"], held["name"]) == (made.json()["id"], "terse")
+
+
+@pytest.mark.slow
+def test_a_variation_of_an_earlier_edit_is_looked_at_and_forked(
+    signed: TestClient,
+) -> None:
+    mine = thread(signed, "configuration", LINES)
+    first = mine["head"]
+    off = digest(signed, "reasoning", OFF)
+    edits = f"/api/threads/{mine['id']}/edits"
+    now = signed.post(edits, json={"head": first["id"], "parts": {"reasoning": off}})
+    later = now.json()
+
+    shown = variation(signed, mine, head=first["id"])
+    assert (shown["head"], shown["skeleton"]) == (first, first["digest"])
+    assert parts(shown)["reasoning"]["digest"] is None
+    assert variation(signed, mine, head=later["id"])["skeleton"] == later["digest"]
+    assert variation(signed, mine)["head"]["id"] == later["id"]
+    varied = variation(signed, mine, head=first["id"], reasoning=off)
+    assert varied["skeleton"] == later["digest"]
+
+    forks = f"/api/threads/{mine['id']}/forks"
+    got = signed.post(forks, json={"name": "before", "head": first["id"]})
+    assert got.status_code == 201
+    made = got.json()
+    assert (made["forked_from"], made["head"]["digest"]) == (
+        first["id"],
+        first["digest"],
+    )
+
+    archives = thread(signed, "configuration", LINES, "archive")
+    path = f"/api/threads/{mine['id']}/variation"
+    for edit in (archives["head"]["id"], 10**9):
+        got = signed.get(path, params={"head": edit})
+        assert (got.status_code, got.json()) == (
+            404,
+            {
+                "detail": f"no edit {edit} of configuration {mine['id']}",
+                "code": "not_found",
+            },
+        )
+        got = signed.post(forks, json={"name": "nowhere", "head": edit})
+        assert got.status_code == 404
+
+    chunk = thread(signed, "reasoning", OFF)
+    got = signed.post(
+        f"/api/threads/{chunk['id']}/forks",
+        json={"name": "x", "head": chunk["head"]["id"]},
+    )
+    assert (got.status_code, got.json()["detail"]) == (
+        422,
+        "only a configuration is forked from an edit: another kind from a component",
+    )
 
 
 @pytest.mark.slow
@@ -360,6 +438,7 @@ def test_an_edit_is_a_new_version_of_one_s_own_configuration(
     ]
 
 
+@pytest.mark.slow
 def test_only_one_s_own_configuration_is_edited_and_a_seen_one_forked(
     signed: TestClient, bob: dict[str, str]
 ) -> None:

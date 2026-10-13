@@ -19,30 +19,21 @@
   ]) }}
   {% endcall %}
 
-  {% call section("Its recipe") %}
-  <div class="overflow-x-auto">
-    <table class="w-full text-sm">
-      <thead class="text-left text-xs uppercase tracking-wide text-muted-foreground">
-        <tr><th class="pb-2 pr-4 font-medium">Part</th><th class="pb-2 pr-4 font-medium">Chunk</th><th class="pb-2 font-medium">Holds</th></tr>
-      </thead>
-      <tbody>
-        {% for p in parts %}
-        <tr class="border-t border-border/60">
-          <td class="whitespace-nowrap py-2 pr-4 align-top font-medium">{{ p.part | replace("_", " ") }}</td>
-          <td class="py-2 pr-4 align-top">{{ p.title or "—" }}</td>
-          <td class="py-2 align-top text-muted-foreground">{{ p.summary or "" }}</td>
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
-  </div>
-  {% endcall %}
-
   {% call section("Its versions") %}
+  {% set last = versions | length - 1 %}
+  <nav class="mb-4 flex items-center gap-3 text-sm" aria-label="Versions">
+    {% if at > 0 %}<a class="rounded-md border border-border px-2 py-0.5 hover:bg-muted" href="{{ links[at - 1] }}" data-head="{{ versions[at - 1].id }}" aria-label="The version before">◀</a>{% else %}<span class="rounded-md border border-border/50 px-2 py-0.5 text-muted-foreground/50" aria-hidden="true">◀</span>{% endif %}
+    <span class="font-medium">Version {{ at + 1 }} of {{ versions | length }}</span>
+    {% if at < last %}<a class="rounded-md border border-border px-2 py-0.5 hover:bg-muted" href="{{ links[at + 1] }}" data-head="{{ versions[at + 1].id }}" aria-label="The version after">▶</a>{% else %}<span class="rounded-md border border-border/50 px-2 py-0.5 text-muted-foreground/50" aria-hidden="true">▶</span>{% endif %}
+  </nav>
+  {% if at < last %}
+  <p class="mb-4 rounded-lg bg-warning/10 p-3 text-sm">A newer version is saved: version {{ versions | length }}, {{ versions[last].at | when }} by {{ versions[last].by }}. <a class="text-primary hover:underline" href="{{ links[last] }}" data-head="{{ versions[last].id }}">Open the latest</a></p>
+  {% endif %}
   <ol class="space-y-1.5 text-sm">
     {% for v in versions | reverse %}
+    {% set i = last - loop.index0 %}
     <li class="flex flex-wrap gap-x-3">
-      <span class="font-medium">Version {{ versions | length - loop.index0 }}</span>
+      {% if i == at %}<span class="font-medium" aria-current="true">Version {{ i + 1 }}</span>{% else %}<a class="text-primary hover:underline" href="{{ links[i] }}" data-head="{{ v.id }}">Version {{ i + 1 }}</a>{% endif %}
       <span class="text-muted-foreground">{{ v.at | when }}, {{ v.by }}</span>
       <span class="font-mono text-xs text-muted-foreground">{{ v.digest | short }}</span>
     </li>
@@ -50,8 +41,31 @@
   </ol>
   {% endcall %}
 
-  {% call section("Runs of its latest version") %}
-  {{ runs_table(runs) }}
-  {% endcall %}
+  <div id="variation">
+    {% call section("Its recipe") %}
+    {% if look.parts | selectattr("replaced") | list %}<p class="mb-3 text-sm">Tried as <span class="font-medium">{{ look.label }}</span>.</p>{% endif %}
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead class="text-left text-xs uppercase tracking-wide text-muted-foreground">
+          <tr><th class="pb-2 pr-4 font-medium">Part</th><th class="pb-2 pr-4 font-medium">Chunk</th><th class="pb-2 font-medium">Holds</th></tr>
+        </thead>
+        <tbody>
+          {% for p in look.parts or [] %}
+          <tr class="border-t border-border/60">
+            <td class="whitespace-nowrap py-2 pr-4 align-top font-medium">{{ p.part | replace("_", " ") }}</td>
+            <td class="py-2 pr-4 align-top">{{ p.title or "—" }}{% if p.replaced %} {{ chip("replaced") }}{% endif %}</td>
+            <td class="py-2 align-top text-muted-foreground">{{ p.summary or "" }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% endcall %}
+
+    {% call section("Its runs") %}
+    {{ runs_table(runs) }}
+    {% endcall %}
+  </div>
+  <script type="application/json" id="variation-props">{{ props | tojson }}</script>
 </div>
 {% endblock %}

@@ -254,6 +254,12 @@ qualified, `<owner's login>/NAME` (`_qualified`, which gives nothing for a threa
 
 #### The variation being tried
 
+```
+AGENT: change
+`variation` varies an earlier edit when one is given.
+---
+| `variation(configuration: int, parts: Mapping[str, str \| None] \| None = None, head: int \| None = None) -> TriedVariation` | The configuration `thread_by_id(configuration, "configuration")` finds, at its head or at the edit `head` when given, under its name or else its title, with each of `parts` replaced … `NotFound("no edit <head> of configuration <configuration>")` for an edit of another thread or none, … |
+```
 | Method | Returns / raises |
 | --- | --- |
 | `configuration(name: str, engine: str \| None = None) -> TriedVariation` | The configuration `thread("configuration", name, model(engine))` finds, with nothing replaced: its head, the name that found it without the person's own `<login>/`, and `Catalog.recipe` of its thread. |

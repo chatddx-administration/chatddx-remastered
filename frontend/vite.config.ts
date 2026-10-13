@@ -18,6 +18,7 @@ export default defineConfig({
         portal: "src/portal.css",
         home: "src/islands/home.ts",
         answers: "src/islands/answers.ts",
+        variation: "src/islands/variation.ts",
       },
     },
   },

@@ -7,7 +7,8 @@
     "types": "openapi-typescript openapi.json --default-non-nullable false --output src/lib/api/schema.d.ts",
     "build": "pnpm types && vite build",
     "watch": "pnpm types && vite build --watch",
-    "check": "pnpm types && svelte-check --tsconfig ./tsconfig.json --fail-on-warnings"
+    "check": "pnpm types && svelte-check --tsconfig ./tsconfig.json --fail-on-warnings",
+    "test": "vitest run"
   },
   "devDependencies": {
     "@fontsource-variable/outfit": "5.3.0",
@@ -27,6 +28,7 @@
     "tailwind-variants": "3.3.1",
     "tailwindcss": "4.3.3",
     "typescript": "5.9.3",
-    "vite": "8.3.4"
+    "vite": "8.3.4",
+    "vitest": "5.0.3"
   }
 }

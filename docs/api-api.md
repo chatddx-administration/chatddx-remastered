@@ -187,6 +187,18 @@ The token set as `COOKIE`: `Max-Age` `settings.SESSION_TTL` in seconds, `Secure`
 ## schemas.py
 The models' fields are in the OpenAPI document. Besides them:
 
+```
+AGENT: change
+The row for `Varying`, which takes the edit to vary.
+---
+| `Varying(Parts)` | A variation's query: the parts, `head` (an edit id, the configuration's head unless given), `endpoint`, `tag` (a list, empty by default) and `seed`. |
+```
+```
+AGENT: change
+The row for `NewFork`, which takes the edit a configuration is forked from.
+---
+| `NewFork`, `NewEdit` | A fork's body, `name` (not empty), and `head`, the edit it forks from, and `parts` for a configuration or `component`, `language` and `labels` for another kind; and an edit's, `head` (required), with the same. |
+```
 | Name | Is |
 | --- | --- |
 | `_Schema` | The base of every model: frozen, `extra="forbid"`. |
@@ -229,6 +241,13 @@ variation's query parameters to them with `endpoint`, `tag` and `seed`.
 
 ## threads.py
 
+```
+AGENT: change
+The rows for `thread_of` and `detail`, now that a thread is listed with its language, looked up for many at once.
+---
+| `thread_of(bench, kind: str, edit, about, languages=None) -> schemas.Thread` | A thread from its head and `About`, titled by `Catalog.title`, in the language `languages` gives its head's digest, else `Catalog.languages_of` of it. |
+| `detail(bench, thread: int) -> schemas.ThreadDetail` | `Bench.thread_by_id(thread, deleted=True)` (`NotFound`), so the person's own deleted thread too, with `deleted`, `Catalog.thread` for its kind and `forked_from`, and `Catalog.recipe` dumped, or `None` without a compilation. |
+```
 | Name | Does |
 | --- | --- |
 | `login(bench, person: int \| None) -> str \| None` | `None` for no one, else `Bench.login`. |
@@ -242,6 +261,24 @@ variation's query parameters to them with `endpoint`, `tag` and `seed`.
 | `part_of(bench, variation: TriedVariation, part: str) -> schemas.Part` | The part's digest (`TriedVariation.held`), its title (`Bench.title`), what it holds (`catalog.titles.describe`), and whether the variation replaced it. A part not held has `None` for each. |
 | `reach_of(reach: chatddx.bench.Reach) -> schemas.Reach` | The bench's reach, with the scorer's thread as `scorer`, its name as `name`, the missing families by id, and those with expectations to choose from as `choosing`. |
 
+```
+AGENT: change
+The row for `threads`, which looks up the listed threads' languages at once.
+---
+| `threads`, `GET /threads` | … kept by `name` (whole), `owner` (a login) and any of `tag`; `Catalog.languages_of` of the kept heads' digests, given to `thread_of`. |
+```
+```
+AGENT: change
+The look varies the edit given, and says its label and the configuration that holds its skeleton.
+---
+| `variation`, `GET /threads/{thread}/variation` | Within `refused()`: `Bench.variation(thread, query.given(), query.head)` and `Bench.skeleton`. … `label` is `TriedVariation.label`, and `held_by` is `thread_of` of `Bench.holder("configuration", skeleton)`, or `None`. |
+```
+```
+AGENT: change
+A configuration is forked from the edit given; another kind's fork takes none.
+---
+| `fork`, `POST /threads/{thread}/forks` | `check_given`, which also raises `HTTPException(422, "only a configuration is forked from an edit: another kind from a component")` for a `head` given another kind. Within `refused()`, for a configuration: `Bench.fork(Bench.variation(thread, parts, head), name)`, … |
+```
 | Route | Does |
 | --- | --- |
 | `threads`, `GET /threads` | `HTTPException(422, "no kind '<kind>': the kinds are …" \| "only a configuration has a purpose" \| "only a configuration answers")`. `Bench.[visible \| deleted \| purposed \| answering]`, kept by `name` (whole), `owner` (a login) and any of `tag`. |

@@ -480,6 +480,9 @@ class Catalog:
     def language_of(self, digest: str) -> str | None:
         return language.language_of(self._rows, digest)
 
+    def languages_of(self, digests: Collection[str]) -> dict[str, str | None]:
+        return language.languages_of(self._rows, digests)
+
     def recipe_language(self, recipe: Recipe) -> str | None:
         return language.recipe_language(self._rows, recipe)
 

@@ -15,7 +15,14 @@
 {% block main %}
 <div class="mx-auto max-w-xl px-4 py-16 text-center">
   <h1 class="mb-4 text-3xl font-bold">{{ titles.get(error.code, "Something went wrong") }}</h1>
-  <p class="mb-8 text-muted-foreground">{% if error.detail is string %}{{ error.detail }}{% else %}The request didn't hold together.{% endif %}</p>
+  {% if error.detail is string %}
+  <p class="mb-8 text-muted-foreground">{{ error.detail }}</p>
+  {% else %}
+  <p class="mb-2 text-muted-foreground">The request didn't hold together:</p>
+  <ul class="mb-8 text-sm text-muted-foreground">
+    {% for e in error.detail %}<li>{{ e.loc | join(".") }}: {{ e.msg }}</li>{% endfor %}
+  </ul>
+  {% endif %}
   <a href="/" class="text-primary hover:underline">Home</a>
 </div>
 {% endblock %}

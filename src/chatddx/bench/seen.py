@@ -12,7 +12,7 @@ from chatddx.catalog import (
     made_for,
     variants_for,
 )
-from chatddx.catalog.threads import picked
+from chatddx.catalog.threads import picked, recipe as recipe_of
 from chatddx.catalog.titles import short
 from chatddx.core.rig import rig
 from chatddx.factors.base import (
@@ -228,11 +228,18 @@ class Seen:
         return self.thread(part, name, model)[0].digest
 
     def variation(
-        self, configuration: int, parts: Mapping[str, str | None] | None = None
+        self,
+        configuration: int,
+        parts: Mapping[str, str | None] | None = None,
+        head: int | None = None,
     ) -> TriedVariation:
         edit, about = self.thread_by_id(configuration, "configuration")
+        if head is not None and head != edit.id:
+            edit = self.rows.edit(head)
+            if edit is None or edit.thread != configuration:
+                raise NotFound(f"no edit {head} of configuration {configuration}")
         name = about.name or self.catalog.title(configuration)
-        found = TriedVariation(edit, name, self.catalog.recipe(configuration))
+        found = TriedVariation(edit, name, recipe_of(self.rows, edit))
         for part, digest in (parts or {}).items():
             if part not in PARTS:
                 raise ValueError(f"no part {part!r}: the parts are {', '.join(PARTS)}")

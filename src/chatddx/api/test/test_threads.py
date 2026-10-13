@@ -18,6 +18,7 @@ def configuration(signed: TestClient, owner: str) -> dict[str, Any]:
     return found
 
 
+@pytest.mark.slow
 def test_threads_are_listed_by_kind_among_those_the_person_sees(
     signed: TestClient, conn: Connection, alice: Person
 ) -> None:
@@ -25,6 +26,14 @@ def test_threads_are_listed_by_kind_among_those_the_person_sees(
     assert {t["owner"] for t in listed} == {"alice", "archive"}
     assert {t["kind"] for t in listed} == {"skeleton"}
     assert all(t["title"] and t["head"]["digest"].startswith("sha256:") for t in listed)
+    assert configuration(signed, "alice")["language"] == "en"
+    for kind, name, language in (
+        ("output", "lines (en)", "en"),
+        ("sampling", "greedy", None),
+    ):
+        query = {"kind": kind, "name": name, "owner": "alice"}
+        [chunk] = signed.get("/api/threads", params=query).json()
+        assert chunk["language"] == language
     named = signed.get("/api/threads", params={"kind": "configuration", "name": LINES})
     assert sorted(t["owner"] for t in named.json()) == ["alice", "archive"]
 

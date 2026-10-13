@@ -5,6 +5,7 @@ from fastapi import APIRouter, Query, Request, Response
 from pydantic import JsonValue
 
 from chatddx.api import runs as api, schemas
+from chatddx.bench import Bench
 from chatddx.factors.base import resolve
 from chatddx.factors.request import Skeleton
 
@@ -40,7 +41,6 @@ def run(request: Request, bench: BenchDep, run: UUID) -> Response:
     shown = api.detail(bench, run)
     skeleton = resolve(bench.get, shown.skeleton, Skeleton)
     schema = skeleton.output_schema
-    held = bench.holder("configuration", shown.skeleton)
     return page(
         request,
         "run.html",
@@ -49,13 +49,33 @@ def run(request: Request, bench: BenchDep, run: UUID) -> Response:
         items=api.items(bench, run),
         titles={case: bench.title(case) for case in shown.cases},
         engine=bench.title(shown.engine),
-        configuration=None
-        if held is None
-        else (held[0].thread, bench.title(shown.skeleton)),
+        configuration=_version(bench, shown.skeleton),
         plan=isinstance(schema, dict) and schema.get("title") == PLAN,
         scores=[(graded, _rows(graded)) for graded in shown.scores],
         said=_said,
         island="answers",
+    )
+
+
+def _version(bench: Bench, skeleton: str) -> tuple[str, str] | None:
+    heads = {e.thread: (e, a) for e, a in bench.threads("configuration")}
+    held = [e for e in bench.catalog.containing(skeleton) if e.thread in heads]
+    if not held:
+        return None
+    found = min(
+        held,
+        key=lambda e: (
+            heads[e.thread][1].owner != bench.person.id,
+            heads[e.thread][0].id != e.id,
+            -e.id,
+        ),
+    )
+    title = bench.title(skeleton)
+    if heads[found.thread][0].id == found.id:
+        return f"/configurations/{found.thread}", title
+    return (
+        f"/configurations/{found.thread}?head={found.id}",
+        f"{title}, an earlier version",
     )
 
 

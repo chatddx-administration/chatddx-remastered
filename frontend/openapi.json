@@ -670,6 +670,24 @@
             }
           },
           {
+            "name": "head",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "the edit it varies, by id: the configuration's head unless given",
+              "title": "Head"
+            },
+            "description": "the edit it varies, by id: the configuration's head unless given"
+          },
+          {
             "name": "endpoint",
             "in": "query",
             "required": false,
@@ -3366,6 +3384,18 @@
             "type": "array",
             "title": "Tags"
           },
+          "language": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Language",
+            "description": "its head's"
+          },
           "head": {
             "$ref": "#/components/schemas/Edit"
           },
@@ -3386,17 +3416,6 @@
             },
             "type": "array",
             "title": "Collaborators"
-          },
-          "language": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Language"
           },
           "forked_from": {
             "anyOf": [
@@ -3433,10 +3452,10 @@
           "title",
           "owner",
           "tags",
+          "language",
           "head",
           "description",
           "collaborators",
-          "language",
           "forked_from",
           "recipe",
           "deleted",
@@ -3691,6 +3710,18 @@
             "type": "string",
             "minLength": 1,
             "title": "Name"
+          },
+          "head": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Head",
+            "description": "a configuration's: the edit it forks from, its head unless given"
           },
           "parts": {
             "$ref": "#/components/schemas/Parts",
@@ -4916,6 +4947,18 @@
             "type": "array",
             "title": "Tags"
           },
+          "language": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Language",
+            "description": "its head's"
+          },
           "head": {
             "$ref": "#/components/schemas/Edit"
           }
@@ -4929,6 +4972,7 @@
           "title",
           "owner",
           "tags",
+          "language",
           "head"
         ],
         "title": "Thread"
@@ -4976,6 +5020,18 @@
             "type": "array",
             "title": "Tags"
           },
+          "language": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Language",
+            "description": "its head's"
+          },
           "head": {
             "$ref": "#/components/schemas/Edit"
           },
@@ -4996,17 +5052,6 @@
             },
             "type": "array",
             "title": "Collaborators"
-          },
-          "language": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Language"
           },
           "forked_from": {
             "anyOf": [
@@ -5036,10 +5081,10 @@
           "title",
           "owner",
           "tags",
+          "language",
           "head",
           "description",
           "collaborators",
-          "language",
           "forked_from",
           "recipe",
           "deleted"
@@ -5110,9 +5155,25 @@
           "head": {
             "$ref": "#/components/schemas/Edit"
           },
+          "label": {
+            "type": "string",
+            "title": "Label",
+            "description": "its name, and the chunks it replaces"
+          },
           "skeleton": {
             "type": "string",
             "title": "Skeleton"
+          },
+          "held_by": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Thread"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "the configuration whose head is the skeleton, the person's own first"
           },
           "greedy": {
             "type": "boolean",
@@ -5169,7 +5230,9 @@
         "type": "object",
         "required": [
           "head",
+          "label",
           "skeleton",
+          "held_by",
           "greedy",
           "parts",
           "seed",

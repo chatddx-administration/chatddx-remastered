@@ -14,15 +14,15 @@ it.
    that work sets the structure of the portal's frontend, and shows what Lovable has to teach (see "Swift").
 3. **Decided: `chatddx portal`** serves the portal, and starts everything the portal needs with it: the API now, the
    worker once there is one (see "P3b, concretely").
-4. **Phases 0, 1 and 2 are built** (see "Built"): `chatddx.portal`, signing in and out, `Cache-Control: no-store`, a
+4. **Phases 0 to 3 are built** (see "Built"): `chatddx.portal`, signing in and out, `Cache-Control: no-store`, a
    code beside each error's detail in the API (decided); then the frontend in `frontend/`, swift's theme and
-   components, and the home page, the first island; then the pages to read. The choices of phases 1 and 2 are takes
-   (see "Built").
+   components, and the home page, the first island; then the pages to read; then the variation being tried (decided,
+   see "The variation being tried"). The choices of phases 1 and 2 are takes (see "Built").
 5. **What it stands on is built**: the bench and the API (`docs/bench.md`, `docs/api.md`), the writes for authoring
    (`agents/wip-authoring.md`) and typed cases (`docs/bench.md`, "Typed cases"). What isn't is under "Below the UI":
    the worker, the batch planner, Z1, and a few things the API doesn't give yet.
-6. **Next**: phase 3, the variation being tried (see "Phases"), and what phase 2 left (see "Open", "What the pages
-   to read leave").
+6. **Next**: phase 4, starting and watching a run (see "Phases"), whose island mounts on the variation's page; and
+   what phases 2 and 3 left (see "Open").
 
 ## What the portal shows
 The old portal's manual reads as a functional spec for its pages: `docs/portal.md` in chatddx-administration/chatddx
@@ -118,10 +118,35 @@ Decided, for how, and built in phase 1:
 Decided:
 - **Pages**: `TestClient` on the HTML, in `src/chatddx/portal/test/`, on the test World as `curated` lands it, as the
   API's are; marked `wip` until `docs/portal.md`.
-- **Islands**: through the API's tests for what they call, and a browser test (Playwright, with the container's
-  Chromium) once an island holds logic worth testing on its own.
+- **Islands**: through the API's tests for what they call; an island's pure logic by vitest
+  (`pnpm --dir frontend test`, built in phase 3); and a browser test (Playwright, with the container's Chromium) with
+  phase 4's run island (V9).
 - **Runs to show**: the test World's six scripted runs (`docs/scripted.md`, "The runs"), run once into `ran`
   (`src/chatddx/conftest.py`), built in phase 2.
+
+## The variation being tried
+Decided (phase 3), from the options V1 to V9:
+- **V1. Its address is the configuration's page**: `/configurations/{id}?PART=DIGEST…&head=EDIT&endpoint=…&tag=…`,
+  parts by digest, as the API takes them. Phase 2's page is the variation with nothing replaced, as the old portal's
+  configuration page showed a version "with whatever variations were set in place of its own". Runs and, later, a
+  batch's confirmation link to it.
+- **V2. An island draws it from the API**: the pickers and what the variation makes, with the address following each
+  pick. The server draws the rest of the page; without scripts, the recipe as the address gives it shows read only.
+- **V3. A part's picker** offers every chunk of that part the person sees, one entry per digest, their own first and
+  others' as `owner/name`, grouped by what the name says it is made for; the lints flag a mismatch. An optional part
+  offers none.
+- **V4. An endpoint picker**, defaulting to one serving the configuration's model, and the cases by tag; no lints
+  without an endpoint. Where another variant of the configuration is made for the endpoint's model, a link says so.
+- **V5. Saving in phase 3**: a name, a line saying where the save goes (a new version of this configuration, a new
+  configuration, or that it is one already), then a fork or an edit through the API, a conflict shown, and the saved
+  configuration's page.
+- **V6. The runs of the variation**, by its skeleton (`GET /api/runs?reaching=`), on its page.
+- **V7. An edit to vary**: the look takes `head`, and the page steps through the versions with ◀ ▶, keeping what is
+  set. A variation of an earlier version is saved as a fork.
+- **V8. The API gives** a look's `label` and `held_by` (the configuration whose head the skeleton is, the person's
+  own first), and a thread's `language` in listings.
+- **V9. Tests**: the pages and the API by `TestClient`, the island's pure logic by vitest, and the island by hand in
+  Chromium; a browser test in the suite comes with phase 4's run island.
 
 ## Swift
 Decided:
@@ -313,6 +338,32 @@ Phase 2, `wip` under this file, as takes:
   scripted runs each run once; `docs/scripted.md` has AGENT suggestions. By hand on the sample World in Chromium,
   every page, with the plan drawn.
 
+Phase 3, `wip` under this file, as decided (see "The variation being tried"):
+- **The API**: a look takes `head`, the edit to vary, and gives its `label` and `held_by`; a configuration's fork takes
+  `head` too; a listed thread has its `language`, looked up for many at once (`Catalog.languages_of`;
+  `Bench.variation(…, head)`). `docs/api.md`, `docs/api-api.md`, `docs/bench.md`, `docs/bench-api.md` and
+  `docs/catalog-api.md` have AGENT suggestions; the tests stay `solidified`.
+- **`GET /configurations/{id}`** takes the API's `Varying` as its query: the parts by digest, `head`, `endpoint`
+  and `tag`. Without an endpoint it picks one serving the model the configuration's name is made for. The server
+  draws what is said of it and its versions, with ◀ ▶ and every version's link keeping what is set, and a note on an
+  earlier one; the variation's recipe and its runs as the address gives them, for a page without scripts; and the
+  island's props as JSON (`src/chatddx/portal/configurations.py`).
+- **The `variation` island** (`frontend/src/islands/Variation.svelte`): a picker per part (one entry per digest,
+  the person's own first, others' as `owner/name`, the names it also goes by, grouped by what the name says it is made
+  for, the configuration's own marked); the label, the skeleton, greedy, and the configuration that is the variation
+  already; the endpoint, with a link to the configuration made for its model, and the tags; the lints, each scorer
+  view's reach with the families it misses, and the request folded; the name and the line saying where a save goes,
+  saving by a fork or an edit; and the runs of the skeleton. Each pick asks the API again and keeps the address and
+  the versions' links in step (`history.replaceState`). Its pure logic is `frontend/src/lib/variation/logic.ts`.
+- **A run's page** links the version it ran: the person's own configuration first, its head or else an earlier edit
+  (`src/chatddx/portal/runs.py:_version`).
+- **An error page** lists what didn't validate.
+- **The frontend**: vitest (`pnpm --dir frontend test`), and shadcn-svelte's input, as the components before. The
+  flake's pnpm hash follows the lockfile.
+- **Tests**: `src/chatddx/portal/test/test_varying.py`, `frontend/src/lib/variation/logic.test.ts`, and by hand on
+  the sample World in Chromium: picking, another endpoint, tags, forking, a new version, stepping back, and the page
+  without scripts.
+
 ## Below the UI
 What the portal needs below its pages that isn't built:
 1. **The worker** (`agents/wip-worker.md`): runs that outlive the app's process and are seen from every replica, and
@@ -333,7 +384,7 @@ What the portal needs below its pages that isn't built:
    the first island.
 2. **Pages to read**, built (see "Built"): runs and a run's page, configurations with their versions and recipe,
    families with their expectations (the vignette in its own place), endpoints and models.
-3. **The variation being tried**, and its island.
+3. **The variation being tried**, and its island, built (see "Built").
 4. **Starting and watching a run**: the run's island, on the API's runs and events; the worker under them when it is
    built (`agents/wip-worker.md`).
 5. **Authoring**: the pages for the bench's writes, which are built; a scorer's pickers read `GET /api/scorer-code`.
@@ -360,17 +411,31 @@ What the portal needs below its pages that isn't built:
 
 ### What the pages to read leave
 From "What the portal shows", not on the pages yet:
-- **The version timeline**: a configuration's versions are listed, but not stepped through (◀ ▶), nor what each
-  changed, word by word.
+- **What each version changed**, word by word: the versions are stepped through (◀ ▶, phase 3), but not compared.
 - **The requests rendered again** on a run's page (`GET /api/runs/{id}/rendered-again`), which renders every item's
   requests anew.
 - **A score's items**: what a scorer found per item and its judges' calls
   (`GET /api/runs/{id}/scores/{score}/items`), and the runs a scorer scored (`scored_by`). A run's page shows the
   values and their means.
-- **The configuration as it ran**: a run links the configuration whose head is its skeleton, and of an earlier version
-  shows only the skeleton's digest; it doesn't show the skeleton's parts, nor a run's tools.
+- **The configuration as it ran**: a run links the version of a configuration it ran (phase 3), but a run of an
+  unsaved variation links nothing, and its page doesn't show the skeleton's parts, nor a run's tools.
 - **A run's calls loaded when opened**: a run's page holds every item's last call. Take: an island that loads an
   item's call when it is opened, once runs are large enough to need it.
 - **Families by name**, beside by tag.
-- **Runs of a configuration's earlier versions** under its thread.
+- **Runs of a configuration's earlier versions** under its thread: the variation's page lists the runs of the version
+  shown.
+
+### What the variation being tried leaves
+- **A run of an unsaved variation** isn't linked to the variation it ran: its recipe is stored with its compilation,
+  but not what it varied (`docs/api.md`, "Outstanding", "Variations": the label kept as the run's name).
+- **The pickers rest on names** for what a chunk is made for (`agents/wip-variants.md`); a chunk older than its
+  thread's head is offered only when the variation holds it.
+- **The part pickers are native selects**: a long list (26 reasoning chunks in the sample World) wants a searchable
+  picker, perhaps bits-ui's combobox.
+- **A seed** is drawn for each look and kept while the page is open; it isn't in the address, so a reload draws
+  another. It matters once the page starts runs (phase 4).
+- **The page's cost**: the server lists every part's chunks, the configurations, the endpoints, the families and the
+  look itself, about 0.6 s on the sample World. Listing a configuration's language costs its skeleton's compilations
+  (`Catalog.languages_of`), one query per skeleton.
+- **The frontend's tests** (`pnpm --dir frontend test`) run by hand, as `pnpm check` does.
 

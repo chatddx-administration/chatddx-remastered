@@ -158,6 +158,7 @@ def test_the_bench_s_errors_and_the_gate_s_refusals_have_their_status_and_code(
     assert (got.status_code, got.json()["code"]) == (405, "not_allowed")
 
 
+@pytest.mark.slow
 def test_the_api_describes_itself(client: TestClient) -> None:
     described = client.get("/api/openapi.json").json()
     assert described["info"]["title"] == "chatddx"

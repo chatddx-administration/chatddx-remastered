@@ -46,6 +46,15 @@ A configuration made per language or model is a thread under its full name, unti
 (agents/wip-variants.md).
 
 ## What a person sees
+```
+AGENT: change
+A thread's language is listed with it, so that a part's picker can say each chunk's.
+---
+- **Threads** of a kind, by the bench's word for it: configuration, each part, tool, scorer, judge, expectation,
+  appendix, expectation_schema, canary_set, model or engine. A thread gives its kind, name, title, owner, tags,
+  language and head, and on its own also its description, collaborators, the edit it was forked from, whether it is
+  deleted, and for a configuration its recipe. …
+```
 - **Threads** of a kind, by the bench's word for it: configuration, each part, tool, scorer, judge, expectation,
   appendix, expectation_schema, canary_set, model or engine. A thread gives its kind, name, title, owner, tags and
   head, and on its own also its description, collaborators, language, the edit it was forked from, whether it is
@@ -71,6 +80,15 @@ A thread, family or run the person doesn't see is "not found", the same as one t
 threads are listed apart, and each can still be read by its id, with its versions, so that it can be restored.
 
 ## Trying a variation
+```
+AGENT: change
+An earlier version can be varied, so that a link to a variation can pin the version it was made on.
+---
+A configuration's variation is the configuration with some of its parts replaced. A request states it whole each
+time: the configuration's id, and each part to replace with the digest of a chunk of that part, or with nothing, to
+take an optional part out, and the edit to vary, which is its head unless one is given. Nothing is stored by looking.
+The configuration means its head when the request comes, unless an edit is given, so …
+```
 A configuration's variation is the configuration with some of its parts replaced. A request states it whole each
 time: the configuration's id, and each part to replace with the digest of a chunk of that part, or with nothing, to
 take an optional part out. Nothing is stored by looking. The configuration means its head when the request comes, so
@@ -78,6 +96,15 @@ a variation looked at and one run moments later can differ if the configuration 
 the skeleton it ran.
 
 A look at a variation gives:
+```
+AGENT: change
+The look gives the variation's label, and the configuration that already is it, so that a page can say where a save
+would go before anything is saved.
+---
+- the edit it was built on, its label (`NAME+PART=CHUNK`, `docs/bench.md`, "The variation being tried"), the digest
+  of the skeleton it compiles to, the configuration whose head that skeleton is, the person's own first, and whether
+  its sampling is greedy;
+```
 - the head it was built on, the digest of the skeleton it compiles to, and whether its sampling is greedy;
 - each part's chunk, its title and what it holds, and whether it was replaced;
 - the request it would send, with placeholders for the case and, without an endpoint, for the model;
@@ -98,6 +125,13 @@ refused rather than ignored. A look's queries don't grow with the number of case
 ## Forking and editing
 Keeping a variation is two requests, rather than one save by name as the repl's `save NAME` is, which makes a new
 version of the person's configuration of that name if there is one, and a new configuration otherwise:
+```
+AGENT: change
+A fork can start from an earlier version.
+---
+- **Fork** any configuration the person sees, with parts replaced and a name, into a new configuration of their own,
+  from its head or from an earlier edit of it given; an edit of another configuration is "not found".
+```
 - **Fork** any configuration the person sees, with parts replaced and a name, into a new configuration of their own.
   Names needn't be unique, so forking twice under one name makes two configurations.
 - **Edit** a configuration of their own, with parts replaced over its head: a new version, or nothing when the
