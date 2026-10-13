@@ -222,6 +222,7 @@ The models' fields are in the OpenAPI document. Besides them:
 | `ScoreItemDetail`, `ScoreItems` | A score item with its `detail` and `judge_calls` as their JSON; and a score's items with its `findings`. |
 | `EVENTS: dict[str, type[_Schema]]` | Each event of a run's events, by name, and the model of its data, in the order they can come; `run.noted` and `score.noted` have `Finding`, and `done` `DoneData`, whose `halted` is `None` when told from the ledger. |
 | `NewScoring` | A scoring's body: `scorers`, by digest, or none for every scorer that applies. |
+| `Answer` | what was read, why it couldn't be or breaks its schema, and whether it was salvaged. |
 
 `test/test_variations.py:test_a_request_names_the_recipe_s_parts` holds `Parts`' fields to `PARTS`, and a
 variation's query parameters to them with `endpoint`, `tag` and `seed`.
@@ -241,17 +242,9 @@ variation's query parameters to them with `endpoint`, `tag` and `seed`.
 | `part_of(bench, variation: TriedVariation, part: str) -> schemas.Part` | The part's digest (`TriedVariation.held`), its title (`Bench.title`), what it holds (`catalog.titles.describe`), and whether the variation replaced it. A part not held has `None` for each. |
 | `reach_of(reach: chatddx.bench.Reach) -> schemas.Reach` | The bench's reach, with the scorer's thread as `scorer`, its name as `name`, the missing families by id, and those with expectations to choose from as `choosing`. |
 
-```
-AGENT: amend
-The `threads` row gains: "`HTTPException(422, "only a configuration answers")` for an `answers` given another word;
-for a configuration given `answers`, only those `Bench.answering` gives." The `items` row of runs.py gains: "and the
-answer `chatddx.scorers.answer.read` gives of the last call's response, as `schemas.Answer`." schemas.py's table gains
-`Answer`: what was read, why it couldn't be or breaks its schema, and whether it was salvaged.
----
-```
 | Route | Does |
 | --- | --- |
-| `threads`, `GET /threads` | `HTTPException(422, "no kind '<kind>': the kinds are …")` for a word not in `KINDS`. `HTTPException(422, "only a configuration has a purpose")` for a `purpose` given another word. `Bench.visible` of each kind the word names, or with `deleted` `Bench.deleted`, for a configuration only those of `purpose` (`Bench.purposed`, generation unless given), kept by `name` (whole), `owner` (a login) and any of `tag`. |
+| `threads`, `GET /threads` | `HTTPException(422, "no kind '<kind>': the kinds are …" \| "only a configuration has a purpose" \| "only a configuration answers")`. `Bench.[visible \| deleted \| purposed \| answering]`, kept by `name` (whole), `owner` (a login) and any of `tag`. |
 | `thread`, `GET /threads/{thread}` | `detail`. |
 | `edits`, `GET /threads/{thread}/edits` | `Bench.thread_by_id(thread, deleted=True)`, then `Catalog.history`. |
 | `variation`, `GET /threads/{thread}/variation` | Within `refused()`: `Bench.variation(thread, query.given())` and `Bench.skeleton`. The seed is `suggest_seeds(1)[0]` unless given. `Bench.families(query.tag)`. With an endpoint: `Bench.endpoint`, whose `LookupError` is `HTTPException(422)`, and `Bench.findings(variation, engine, seed, families or None)`. `Bench.request(variation, engine, seed)` and `Bench.reach(variation, families)`. `parts` is `None` for a variation without a recipe. |
@@ -354,7 +347,7 @@ findings over the trial and canary set `Store.load` gives; each item's `item_of`
 | --- | --- |
 | `runs`, `GET /runs` | `Bench.runs`, kept by `trial`, then by the runs of `Bench.reaching(reaching)` and `Bench.scored_by(scored_by)`, then with `unscored` by those of `Bench.outstanding`, each with its scorers left; the page `[offset:offset + limit]`, `limit` from 1 to 200 and 20 by default; `Store.finished` for the page. |
 | `run`, `GET /runs/{run}` | `detail`. |
-| `items`, `GET /runs/{run}/items` | `Bench.run_by_id`, then each of `Store.run`'s items: `item_of`, with `no_store`, the outcome's why, the vignette's fingerprint, the call and the turns dumped. |
+| `items`, `GET /runs/{run}/items` | `Bench.run_by_id`, then each of `Store.run`'s items: `item_of`, with `no_store`, the outcome's why, the vignette's fingerprint, the call, the turns dumped and the answer `chatddx.scorers.answer.read`. |
 | `rendered_again`, `GET /runs/{run}/rendered-again` | `Bench.run_by_id`, then `Bench.rendered_again` of `Store.run`: each item's key, and why it renders otherwise, or `None`. |
 
 A run is named by a `UUID`, so anything else in its place is a 422.
@@ -450,14 +443,7 @@ settings.database())`.
 `chatddx portal` takes the same arguments and serves `chatddx.portal.app.app` the same way, its `SystemExit` saying
 `portal:` (`src/chatddx/cli.py:_serve`; agents/wip-portal.md).
 
-```
-AGENT: add
-A paragraph at the end of "The command", for the portal's frontend, which generates its types from the document
-(agents/wip-portal.md).
----
-`chatddx openapi` prints the API's OpenAPI document, of an app made with an empty inventory and the bundled facts,
-since neither changes it (`src/chatddx/cli.py:_openapi`). `frontend/openapi.json` keeps it.
-```
+``
 ## Tests
 `test/`, marked solidified.
 
@@ -480,3 +466,6 @@ since neither changes it (`src/chatddx/cli.py:_openapi`). `frontend/openapi.json
 ports (`chatddx.test.world.free_world`), and `fake`, `faked` on the test's store. `chatddx.test.world.faked(world, get,
 endpoint=QWEN, delay=0.0)` is the fake vLLM serving an endpoint's engine as its start-up says, `delay` seconds a
 token.
+
+`chatddx openapi` prints the API's OpenAPI document, of an app made with an empty inventory and the bundled facts,
+since neither changes it (`src/chatddx/cli.py:_openapi`). `frontend/openapi.json` keeps it.

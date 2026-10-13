@@ -254,12 +254,6 @@ qualified, `<owner's login>/NAME` (`_qualified`, which gives nothing for a threa
 
 #### The variation being tried
 
-```
-AGENT: add
-A row after `purposed`'s in the table below.
----
-| `answering(found: Iterable[tuple[Edit, About]], title: str) -> list[tuple[Edit, About]]` | The configurations of `found` whose head's skeleton's answer has a JSON Schema titled `title` (`Skeleton.output_schema`), read from their heads alone (`Rows.components`). |
-```
 | Method | Returns / raises |
 | --- | --- |
 | `configuration(name: str, engine: str \| None = None) -> TriedVariation` | The configuration `thread("configuration", name, model(engine))` finds, with nothing replaced: its head, the name that found it without the person's own `<login>/`, and `Catalog.recipe` of its thread. |
@@ -271,6 +265,7 @@ A row after `purposed`'s in the table below.
 | `findings(variation: TriedVariation, engine: str, seed: int, families: list[Family] \| None = None) -> list[Finding]` | For a judge configuration, `lints` of a `Judge` of its skeleton on `engine` with `seed`, built for the look and stored nowhere, whatever `families`. Otherwise `lints` of the variation's trial on `engine`. Without `families`, over the first case of the families the person sees, and `[]` when there is none. With them, over their cases, with each case's language its family's, the skeleton's its recipe's (`Catalog.recipe_language`), and any other's `Catalog.language_of`; `[]` for no families. |
 | `scorers() -> list[tuple[Edit, About, Scorer]]` | `threads("scorer")`, each with its head resolved, by the thread's name, or else its title, as `score` and `scores_of` order theirs. |
 | `purposed(found: Iterable[tuple[Edit, About]], purpose: Purpose) -> list[tuple[Edit, About]]` | The configurations of `found` whose head's skeleton has `purpose`, `generation` or `judge`, read from their heads alone (`Rows.components`). |
+| `answering(found: Iterable[tuple[Edit, About]], title: str) -> list[tuple[Edit, About]]` | The configurations of `found` whose head's skeleton's answer has a JSON Schema titled `title` (`Skeleton.output_schema`), read from their heads alone (`Rows.components`). |
 | `labels(scorer: str) -> dict[int, str]` | What a scorer digest's views are called for the person: `labels_of` the head `holder("scorer", scorer)` gives, else of the latest edit that held it in a scorer thread they see (`Rows.edits_holding`), their own threads first; `{}` when none did. |
 | `labels_of(edit: Edit) -> dict[int, str]` | The view labels the edit of a scorer thread was written with (`Catalog.labels`), by the view's position. |
 | `reach(variation: TriedVariation, families: list[Family]) -> list[Reach]` | `[]` for a judge configuration. Otherwise a `Reach` for each view of each of `scorers()`, named by the thread's name or else its title, and labelled by `labels_of` its head. `offered` as `View.offered_by` the skeleton's `output_schema` has it: a view with an `output` selector when it reaches the schema (`chatddx.factors.select.reaches`), and a view of the whole answer when there is no schema. For an offered view, `choosing` holds the families whose case has several expectations of the person's own under the scorer's schema, and `missing` the others whose case has none or whose expectation gives the view no items (`chatddx.factors.scoring.View.expectation_items`); both are empty for a view not offered. |
