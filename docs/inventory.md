@@ -1,19 +1,18 @@
 # Inventory
 
-The inventory is a set of files that ops write that say which directory holds a source's vignettes, at which address an
-engine is served, and where a host keeps the model files and chat template an engine pins.
+The inventory says which directory holds a source's vignettes, at which address an engine is served, where a host keeps
+the model files and chat template an engine pins.
 
 Until clearance has a pipeline of its own, the inventory also says which endpoints may receive content from which
 sensitive sources. It also says at which endpoint each of a data set's judges judges.
 
-One thing that sounds like a location is a factor, though: a source's name, which every case built from it carries.
+Heads-up: The location the vignette sources is a factor! Everything else is not.
 
 The inventory isn't stored in the database, and its history is git's. A run records the endpoint it used, by name and
 address (docs/ledger.md, "Run start").
 
 This document describes what the inventory says and why. Classes, fields, rules and errors are in the API,
-docs/inventory-api.md. The inventory builds on the factors and nothing else. init-data, the engine import and the
-runner read it.
+docs/inventory-api.md. The `inventory` builds on the `factors` and nothing else.
 
 ## The file
 An inventory is a file of named entries: sources, endpoints, hosts, and the clearance table. An entry's name is its
@@ -33,19 +32,14 @@ by its table. Anything that needs the engines is checked when an entry is used (
 used").
 
 ### Worlds
-````
-AGENT: replace
-From agents/wip-data.md, which this replaces: who writes each of a World's files, and the layout they make.
-The scripted runs' doc is docs/scripted.md now.
----
-A World is handed over as its directory, `--world DIR`, and read as its `inventory.toml` and, when present,
-`engines.toml`, the models and engines its endpoints serve and nothing else, and `facts.toml`, facts about models the
-bundled ones don't know, loaded beside them by init-data and the repl (src/chatddx/inventory/world.py,
-src/chatddx/cli.py). A World may also hold its source's vignettes, when git may hold them, a data set whose cases
-name them, in `_data/`, and scripted runs, in `_runs/` (docs/scripted.md): the leading `_` marks what the World
-doesn't read and doesn't own. init-data loads `_data/` unless `--data` names another.
+In chatddx, a world is technically only the parameters beyond chatddx's control, but the directories `worlds/*` contain
+all data shipped with the application, not just the world-data (see docs/chatddx.md, "The welcoming world").
 
-Each file is written by one kind of author and holds only what that author decides:
+The non-world data is in directories prefixed with `_`.
+
+Command line tools take `--world DIR` or fall back to `CHATDDX_WORLD`.
+
+The directory must contain an `inventory.toml` and may contain the others, see table.
 
 | File | Author | Holds |
 | --- | --- | --- |
@@ -71,16 +65,6 @@ worlds/<name>/
     schemas/           the JSON files the factors load
   _runs/           scripted runs
 ```
-````
-A World is handed over as its directory, `--world DIR`, and read as its `inventory.toml` and, when present,
-`engines.toml`, the models and engines its endpoints serve and nothing else, and `facts.toml`, facts about models the
-bundled ones don't know, loaded beside them by init-data and the repl (src/chatddx/inventory/world.py,
-src/chatddx/cli.py). A World may also hold its source's vignettes, when git may hold them, a data set whose cases
-name them, in `_data/`, and scripted runs, in `_runs/` (agents/wip-scripted.md): the leading `_` marks what the World
-doesn't read and doesn't own. init-data loads `_data/` unless `--data` names another.
-
-`CHATDDX_WORLD` names the deployment's World directory and is the default `--world` of `init-data` and the `repl`
-(src/chatddx/core/settings.py:world, `.env`). The runner is handed its inventory by the bench, as before.
 
 A World may point into another. An include or a source's path can reach another World's directory, so one World can
 take another's vignettes or endpoints without copying them.
@@ -97,17 +81,9 @@ This repository has three, in `worlds/`:
   `endpoints.toml` as an engine import writes it, a remote engine's endpoint with a credential, which `chatddx
   fake-engines` stands in for, and the facts of the remote engine's model. Every endpoint is cleared for the sample.
 
-```
-AGENT: replace
-Its import writes engines, not factors, since engines.toml; and it binds the sample's judges (see "Judges").
----
 - Kompismoln's World: the hosts pelle and malborg. Its inventory is written by hand, takes the sample World's
   vignettes, and binds the sample's judges to pelle and malborg; its endpoints, hosts and engines are what the engine
   import writes from the hosts' reports. Both endpoints are cleared for the sample.
-```
-- Kompismoln's World: the hosts pelle and malborg. Its inventory is written by hand and takes the sample World's
-  vignettes; its endpoints, hosts and factors are what the engine import writes from the hosts' reports. Both
-  endpoints are cleared for the sample.
 
 src/chatddx/test/test_worlds.py fails when a World's engines change and its endpoints don't.
 

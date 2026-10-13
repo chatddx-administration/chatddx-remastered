@@ -23,15 +23,13 @@ The archive is never wiped.
 A data set is a directory of authored files: a `factors.toml`, the texts in `texts-<language>.toml` files, the cases
 in `cases-<language>.toml` files, and the files they load, such as JSON schemas.
 
-```
-AGENT: add
-From agents/wip-data.md, which this replaces: why a data set is split as it is, above this paragraph.
----
-The split follows real distinctions: whether a record holds text the model reads, which language it is in, and
-whether it is a record or a case. What a data set can't hold, engines and which engine judges, is its World's
-(docs/inventory.md, "Worlds").
-```
-A World may carry one beside its vignettes, in `_data/`: the leading `_` says the World itself doesn't read it, and
+A record holds text the model reads, which language it is in, and whether it is a record or a case.
+What a data set can't hold, engines and which engine judges, is its World's (docs/inventory.md, "Worlds").
+
+A World may carry one beside its vignettes, in `_data/`: the leading `_` is because in chatddx, a world has belongings.
+a world is everything
+outside of chatddx, but things in `_data` and
+it, and
 init-data loads it unless `--data` names another.
 
 The sample World carries the sample (worlds/sample/_data/), Kompismoln's World loads it with

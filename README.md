@@ -79,7 +79,7 @@ pytest -m "not slow"    # the quick run, under 30 s
 pytest -m solidified    # what docs/ describes; -m wip for what agents/wip-*.md plans
 ```
 
-### The sample World
+### The sample world
 `worlds/sample` serves two fake vLLM engines on this machine, and a stand-in for a remote one. Load the sample data
 and share it with alice:
 ```sh
