@@ -28,3 +28,8 @@ def host() -> str:
 def world() -> Path | None:
     value = os.environ.get("CHATDDX_WORLD")
     return Path(value) if value else None
+
+
+def portal_assets() -> Path:
+    value = os.environ.get("CHATDDX_PORTAL_ASSETS")
+    return Path(value) if value else PROJECT_ROOT / "frontend" / "dist"

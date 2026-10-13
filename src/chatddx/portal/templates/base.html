@@ -4,13 +4,29 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{% block title %}ChatDDX{% endblock %}</title>
+  {% for href in assets.styles() %}
+  <link rel="stylesheet" href="{{ href }}">
+  {% endfor %}
+  {% if island %}
+  {% set built = assets.island(island) %}
+  {% for href in built.styles %}
+  <link rel="stylesheet" href="{{ href }}">
+  {% endfor %}
+  {% for src in built.scripts %}
+  <script type="module" src="{{ src }}"></script>
+  {% endfor %}
+  {% endif %}
 </head>
-<body>
-  <header>
-    <a href="/">ChatDDX</a>
+<body class="gradient-bg relative min-h-screen overflow-x-hidden">
+  <header class="relative z-20 flex items-center justify-between gap-4 px-4 py-4 sm:px-6">
+    <a href="/" class="font-display text-lg font-bold tracking-tight text-foreground">ChatDDX</a>
     {% if person %}
-    <span>{{ person.name }}</span>
-    <form method="post" action="/sign-out"><button>Sign out</button></form>
+    <div class="flex items-center gap-3 text-sm">
+      <span class="text-muted-foreground">{{ person.name }}</span>
+      <form method="post" action="/sign-out">
+        <button class="inline-flex h-8 items-center rounded-md border border-border bg-background/80 px-3 font-medium shadow-xs backdrop-blur-md transition-colors hover:bg-muted">Sign out</button>
+      </form>
+    </div>
     {% endif %}
   </header>
   <main>

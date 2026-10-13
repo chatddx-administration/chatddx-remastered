@@ -46,6 +46,14 @@ A configuration made per language or model is a thread under its full name, unti
 (agents/wip-variants.md).
 
 ## What a person sees
+```
+AGENT: amend
+Built for the portal's home page, which offers the configurations whose answer is a management plan
+(agents/wip-portal.md, "Swift"). A sentence at the end of the bullet:
+---
+  A configuration can also be asked for by what it answers: the title of its answer's JSON Schema, such as
+  `management_plan_v1`.
+```
 - **Threads** of a kind, by the bench's word for it: configuration, each part, tool, scorer, judge, expectation,
   appendix, expectation_schema, canary_set, model or engine. A thread gives its kind, name, title, owner, tags and
   head, and on its own also its description, collaborators, language, the edit it was forked from, whether it is
@@ -226,6 +234,15 @@ under way is a conflict.
 - **A run's scores**: the latest under each scorer, or every one, newest first, or one by its id. A score says its
   scoring, when it started and whether it finished, each item's value under each view, and each view's mean.
 - **A score's items**: each item's detail and judge calls, and the findings of the score. They are case-derived.
+```
+AGENT: amend
+Built for the portal, whose pages show an answer without reading a response the way the scorers do
+(agents/wip-portal.md, "Below the UI").
+---
+- **A run's items**: each call as it was recorded, with its response and tool rounds, why the item ended as it did,
+  and its answer as read from its last call, as the scorers read it, with why it couldn't be read or breaks its schema.
+  They are case-derived.
+```
 - **A run's items**: each call as it was recorded, with its response and tool rounds, and why the item ended as it
   did. They are case-derived.
 - **Whether each item renders again** as it was sent: only a request's fingerprint is kept, so the request is

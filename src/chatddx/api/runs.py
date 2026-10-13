@@ -15,6 +15,7 @@ from chatddx.factors.trial import Trial, suggest_seeds
 from chatddx.identity import Person
 from chatddx.ledger import RunStarted, check_run
 from chatddx.runner.run import Running
+from chatddx.scorers.answer import read
 
 from . import schemas
 from .events import Named, canary_of, event_of, graded_of, item_of
@@ -353,6 +354,7 @@ def items(bench: BenchDep, run: UUID) -> list[schemas.ItemDetail]:
             vignette=item.vignette.model_dump(mode="json"),
             call=item.call.model_dump(mode="json"),
             turns=[t.model_dump(mode="json") for t in item.turns],
+            answer=schemas.Answer(**read(skeleton, item.calls[-1].response)._asdict()),
         )
         for item in bench.store.run(run).items
     ]

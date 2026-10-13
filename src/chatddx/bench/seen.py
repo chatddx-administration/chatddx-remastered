@@ -390,6 +390,18 @@ class Seen:
             if resolve(read.__getitem__, e.digest, Skeleton).purpose == purpose
         ]
 
+    def answering(
+        self, found: Iterable[tuple[Edit, About]], title: str
+    ) -> list[tuple[Edit, About]]:
+        held = list(found)
+        read = dict(self.rows.components([e.digest for e, _ in held]))
+        return [
+            (e, a)
+            for e, a in held
+            if _titled(resolve(read.__getitem__, e.digest, Skeleton).output_schema)
+            == title
+        ]
+
     def scorers(self) -> list[tuple[Edit, About, Scorer]]:
         found = [
             (e, a, resolve(self.get, e.digest, Scorer))
@@ -694,3 +706,11 @@ class Seen:
             else:
                 found[item.key] = None
         return found
+
+
+def _titled(schema: JsonValue) -> str | None:
+    match schema:
+        case {"title": str() as title}:
+            return title
+        case _:
+            return None

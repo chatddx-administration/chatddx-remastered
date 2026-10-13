@@ -33,6 +33,7 @@ from chatddx.test.world import (
     QWEN,
     QWEN_MODEL,
     REMOTE,
+    TOOL_ANSWER,
 )
 
 pytestmark = pytest.mark.solidified
@@ -552,6 +553,19 @@ def test_a_run_s_scores_are_read_the_latest_every_one_or_one_by_id(
     theirs = Bench(conn, bob, bench.inventory, bench.facts)
     with pytest.raises(NotFound, match=f"no run {run} of yours"):
         _ = theirs.score_of(run, scored(first))
+
+
+def test_a_configuration_is_found_by_the_title_of_its_answer_s_schema(
+    bench: Bench,
+) -> None:
+    configurations = bench.threads("configuration")
+    answering = {a.name for _, a in bench.answering(configurations, "Answer")}
+    assert NATIVE in answering
+    assert LINES not in answering and TOOL_ANSWER not in answering
+    verdicts = {a.name for _, a in bench.answering(configurations, "Verdict")}
+    judges = {a.name for _, a in bench.purposed(configurations, "judge")}
+    assert verdicts and verdicts <= judges
+    assert bench.answering(configurations, "nothing") == []
 
 
 def test_a_judge_configuration_is_looked_at_as_a_judge_and_isn_t_run(

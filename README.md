@@ -114,6 +114,20 @@ runs
 replay
 ```
 
+````
+AGENT: add
+The portal, as phase 1 left it (agents/wip-portal.md): a section before "Kompismoln's hosts".
+---
+### The portal
+The portal is served with the API, and builds its frontend in `frontend/` with pnpm, which the shell has. With the
+sample loaded and `chatddx fake-engines` running in a second shell, give alice a password and serve it:
+```sh
+chatddx person password alice
+chatddx portal --watch   # builds the frontend as it changes, till Ctrl-C
+```
+Then sign in as alice at http://localhost:8000, type a case and pick an endpoint. `pnpm --dir frontend check` checks
+the frontend's types.
+````
 ### Kompismoln's hosts
 On the Kompismoln VPN, ask pelle and malborg what they serve:
 ```sh

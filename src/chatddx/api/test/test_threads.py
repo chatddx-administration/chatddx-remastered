@@ -7,7 +7,7 @@ from chatddx.catalog import Entry, EntryField, Subject
 from chatddx.identity import Person
 from chatddx.store import Catalog
 from chatddx.store.store import Connection
-from chatddx.test.world import LINES
+from chatddx.test.world import LINES, NATIVE
 
 pytestmark = pytest.mark.solidified
 
@@ -56,6 +56,16 @@ def test_configurations_are_listed_by_purpose(signed: TestClient) -> None:
     got = signed.get("/api/threads", params={"kind": "scorer", "purpose": "judge"})
     assert got.status_code == 422
     assert got.json()["detail"] == "only a configuration has a purpose"
+
+    answering = names(answers="Answer")
+    assert NATIVE in answering and LINES not in answering
+    assert answering < generation
+    assert names(answers="Verdict", purpose="judge") < judges
+    got = signed.get("/api/threads", params={"kind": "scorer", "answers": "Answer"})
+    assert (got.status_code, got.json()["detail"]) == (
+        422,
+        "only a configuration answers",
+    )
 
 
 def test_a_thread_is_shown_with_its_recipe_and_its_versions(signed: TestClient) -> None:

@@ -505,11 +505,24 @@ class Item(_Schema):
     completion_tokens: int
 
 
+class Answer(_Schema):
+    value: JsonValue = Field(
+        description="as read from the item's last call: what its schema holds, or text"
+    )
+    problem: str | None = Field(
+        description="why it couldn't be read, or breaks its schema"
+    )
+    salvaged: bool = Field(
+        description="a structured answer cut short, read with its structure closed"
+    )
+
+
 class ItemDetail(Item):
     why: str | None
     vignette: JsonValue
     call: JsonValue
     turns: JsonValue
+    answer: Answer
 
 
 class ScoredItem(_Schema):

@@ -300,6 +300,8 @@ def test_a_run_s_items_hold_its_calls_and_render_again_as_they_were_sent(
     assert {k: item[k] for k in made["items"][0]} == made["items"][0]
     assert item["why"] is None and item["turns"] == []
     assert item["call"]["response"]["choices"]
+    said = item["call"]["response"]["choices"][0]["message"]["content"]
+    assert item["answer"] == {"value": said, "problem": None, "salvaged": False}
     assert item["vignette"]["hex"]
 
     [again] = signed.get(f"/api/runs/{made['id']}/rendered-again").json()

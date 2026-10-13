@@ -13,6 +13,13 @@ This document contains project-wide instructions written by humans for agents.
 ## Typechecking
 * Errors and warnings that indicate issues beyond the scope of the current task should remain, never hide them.
 
+```
+AGENT: add
+A line at the end of "Typechecking", for the portal's frontend (agents/wip-portal.md).
+---
+* `pnpm --dir frontend check` typechecks the frontend, and `pnpm --dir frontend build` builds it. After a change to
+  the API, `chatddx openapi > frontend/openapi.json`.
+```
 ## Testing
 * Baseline is `pytest` which runs every test and takes ~60s; `pytest -m 'not slow'` is the quick run, <30s.
   A test whose call takes 0.2s or more is marked `@pytest.mark.slow` (pyproject.toml, `[tool.pytest]`).

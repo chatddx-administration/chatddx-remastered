@@ -54,7 +54,7 @@ def test_signing_in_opens_a_session_the_api_shares(
     }
     home = client.get("/")
     assert home.status_code == 200 and home.headers["cache-control"] == "no-store"
-    assert f"Signed in as {alice.name} ({alice.login})." in home.text
+    assert alice.name in home.text and 'id="home"' in home.text
     assert client.get("/api/me").json()["login"] == "alice"
     assert client.get("/sign-in", params={"next": "/x"}).headers["location"] == "/x"
 
@@ -107,7 +107,8 @@ def test_a_page_escapes_what_it_shows(
 ) -> None:
     _ = People(conn).update(alice.id, name="<b>Alice</b>")
     _ = signing_in(client)
-    assert "Signed in as &lt;b&gt;Alice&lt;/b&gt; (alice)." in client.get("/").text
+    shown = client.get("/").text
+    assert "&lt;b&gt;Alice&lt;/b&gt;" in shown and "<b>Alice</b>" not in shown
 
 
 @pytest.mark.slow

@@ -77,11 +77,17 @@ def threads(
         Purpose | None,
         Query(description="a configuration's, generation unless given"),
     ] = None,
+    answers: Annotated[
+        str | None,
+        Query(description="a configuration's: the title of its answer's JSON Schema"),
+    ] = None,
 ) -> list[schemas.Thread]:
     if kind not in KINDS:
         raise HTTPException(422, f"no kind {kind!r}: the kinds are {', '.join(KINDS)}")
     if purpose is not None and kind != "configuration":
         raise HTTPException(422, "only a configuration has a purpose")
+    if answers is not None and kind != "configuration":
+        raise HTTPException(422, "only a configuration answers")
     wanted = set(tag or ())
     found = {
         held: bench.deleted(held) if deleted else bench.visible(held)
@@ -92,6 +98,8 @@ def threads(
             held: bench.purposed(heads, purpose or "generation")
             for held, heads in found.items()
         }
+    if answers is not None:
+        found = {held: bench.answering(heads, answers) for held, heads in found.items()}
     return [
         thread_of(bench, held, edit, about)
         for held, heads in found.items()

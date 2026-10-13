@@ -1,0 +1,5723 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "chatddx",
+    "version": "0.0.0+dev"
+  },
+  "paths": {
+    "/api/session": {
+      "post": {
+        "tags": [
+          "people"
+        ],
+        "summary": "Sign In",
+        "operationId": "sign_in_api_session_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SignIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SignedIn"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "people"
+        ],
+        "summary": "Sign Out",
+        "operationId": "sign_out_api_session_delete",
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          },
+          {
+            "APIKeyCookie": []
+          }
+        ]
+      }
+    },
+    "/api/me": {
+      "get": {
+        "tags": [
+          "people"
+        ],
+        "summary": "Me",
+        "operationId": "me_api_me_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Me"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          },
+          {
+            "APIKeyCookie": []
+          }
+        ]
+      }
+    },
+    "/api/threads": {
+      "get": {
+        "tags": [
+          "threads"
+        ],
+        "summary": "Threads",
+        "operationId": "threads_api_threads_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          },
+          {
+            "APIKeyCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "kind",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "one of configuration, instructions, few_shot, prompt, output, sampling, reasoning, passthrough, translations, toolset, tool, scorer, judge, expectation_schema, expectation, appendix, canary_set, model, engine",
+              "title": "Kind"
+            },
+            "description": "one of configuration, instructions, few_shot, prompt, output, sampling, reasoning, passthrough, translations, toolset, tool, scorer, judge, expectation_schema, expectation, appendix, canary_set, model, engine"
+          },
+          {
+            "name": "name",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Name"
+            }
+          },
+          {
+            "name": "owner",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "a login",
+              "title": "Owner"
+            },
+            "description": "a login"
+          },
+          {
+            "name": "tag",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "any of these",
+              "title": "Tag"
+            },
+            "description": "any of these"
+          },
+          {
+            "name": "deleted",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "description": "the person's own deleted threads instead",
+              "default": false,
+              "title": "Deleted"
+            },
+            "description": "the person's own deleted threads instead"
+          },
+          {
+            "name": "purpose",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "generation",
+                    "judge"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "a configuration's, generation unless given",
+              "title": "Purpose"
+            },
+            "description": "a configuration's, generation unless given"
+          },
+          {
+            "name": "answers",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "a configuration's: the title of its answer's JSON Schema",
+              "title": "Answers"
+            },
+            "description": "a configuration's: the title of its answer's JSON Schema"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Thread"
+                  },
+                  "title": "Response Threads Api Threads Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "threads"
+        ],
+        "summary": "New",
+        "operationId": "new_api_threads_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          },
+          {
+            "APIKeyCookie": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NewThread"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MadeThread"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/threads/{thread}": {
+      "get": {
+        "tags": [
+          "threads"
+        ],
+        "summary": "Thread",
+        "operationId": "thread_api_threads__thread__get",
+        "security": [
+          {
+            "HTTPBearer": []
+          },
+          {
+            "APIKeyCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "thread",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Thread"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ThreadDetail"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "threads"
+        ],
+        "summary": "Say",
+        "operationId": "say_api_threads__thread__patch",
+        "security": [
+          {
+            "HTTPBearer": []
+          },
+          {
+            "APIKeyCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "thread",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Thread"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Said"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ThreadDetail"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "threads"
+        ],
+        "summary": "Delete",
+        "operationId": "delete_api_threads__thread__delete",
+        "security": [
+          {
+            "HTTPBearer": []
+          },
+          {
+            "APIKeyCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "thread",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Thread"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/threads/{thread}/edits": {
+      "get": {
+        "tags": [
+          "threads"
+        ],
+        "summary": "Edits",
+        "operationId": "edits_api_threads__thread__edits_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          },
+          {
+            "APIKeyCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "thread",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Thread"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Edit"
+                  },
+                  "title": "Response Edits Api Threads  Thread  Edits Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "threads"
+        ],
+        "summary": "Edit",
+        "operationId": "edit_api_threads__thread__edits_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          },
+          {
+            "APIKeyCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "thread",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Thread"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NewEdit"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MadeEdit"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "Unchanged: it is the head already"
+          },
+          "409": {
+            "description": "The thread has moved on since the head the edit names"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/threads/{thread}/variation": {
+      "get": {
+        "tags": [
+          "threads"
+        ],
+        "summary": "Variation",
+        "operationId": "variation_api_threads__thread__variation_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          },
+          {
+            "APIKeyCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "thread",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Thread"
+            }
+          },
+          {
+            "name": "instructions",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/Chunk"
+            }
+          },
+          {
+            "name": "few_shot",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/Chunk"
+            }
+          },
+          {
+            "name": "prompt",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/Chunk"
+            }
+          },
+          {
+            "name": "output",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/Chunk"
+            }
+          },
+          {
+            "name": "sampling",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/Chunk"
+            }
+          },
+          {
+            "name": "reasoning",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/Chunk"
+            }
+          },
+          {
+            "name": "passthrough",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/Chunk"
+            }
+          },
+          {
+            "name": "translations",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/Chunk"
+            }
+          },
+          {
+            "name": "toolset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/Chunk"
+            }
+          },
+          {
+            "name": "endpoint",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "to render and lint it for",
+              "title": "Endpoint"
+            },
+            "description": "to render and lint it for"
+          },
+          {
+            "name": "tag",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "description": "the cases its reach is over: any of these, else every one",
+              "title": "Tag"
+            },
+            "description": "the cases its reach is over: any of these, else every one"
+          },
+          {
+            "name": "seed",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "drawn when not given",
+              "title": "Seed"
+            },
+            "description": "drawn when not given"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Variation"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/threads/{thread}/forks": {
+      "post": {
+        "tags": [
+          "threads"
+        ],
+        "summary": "Fork",
+        "operationId": "fork_api_threads__thread__forks_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          },
+          {
+            "APIKeyCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "thread",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Thread"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NewFork"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MadeThread"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/threads/{thread}/takes": {
+      "post": {
+        "tags": [
+          "threads"
+        ],
+        "summary": "Take",
+        "operationId": "take_api_threads__thread__takes_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          },
+          {
+            "APIKeyCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "thread",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Thread"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NewTake"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ThreadDetail"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The person has their own expectation of the case under that schema: replace it to take this one"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/threads/{thread}/proposal": {
+      "get": {
+        "tags": [
+          "threads"
+        ],
+        "summary": "Proposal",
+        "operationId": "proposal_api_threads__thread__proposal_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          },
+          {
+            "APIKeyCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "thread",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Thread"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/Proposal"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "title": "Response Proposal Api Threads  Thread  Proposal Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/threads/{thread}/follows": {
+      "post": {
+        "tags": [
+          "threads"
+        ],
+        "summary": "Follow",
+        "operationId": "follow_api_threads__thread__follows_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          },
+          {
+            "APIKeyCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "thread",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Thread"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NewFollow"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MadeEdit"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The thread has moved on since the head the edit names"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/threads/{thread}/carries": {
+      "post": {
+        "tags": [
+          "threads"
+        ],
+        "summary": "Carry",
+        "operationId": "carry_api_threads__thread__carries_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          },
+          {
+            "APIKeyCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "thread",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Thread"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NewCarry"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MadeEdit"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The thread has moved on since the head the edit names"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/families": {
+      "get": {
+        "tags": [
+          "families"
+        ],
+        "summary": "Families",
+        "operationId": "families_api_families_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          },
+          {
+            "APIKeyCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "tag",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "any of these",
+              "title": "Tag"
+            },
+            "description": "any of these"
+          },
+          {
+            "name": "name",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Name"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Family"
+                  },
+                  "title": "Response Families Api Families Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "families"
+        ],
+        "summary": "Typed",
+        "operationId": "typed_api_families_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          },
+          {
+            "APIKeyCookie": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NewTyped"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Family"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "The person has typed as many cases as a day takes"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/families/{family}": {
+      "get": {
+        "tags": [
+          "families"
+        ],
+        "summary": "Family",
+        "operationId": "family_api_families__family__get",
+        "security": [
+          {
+            "HTTPBearer": []
+          },
+          {
+            "APIKeyCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "family",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Family"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FamilyDetail"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/families/{family}/appendices": {
+      "post": {
+        "tags": [
+          "families"
+        ],
+        "summary": "Appendix",
+        "operationId": "appendix_api_families__family__appendices_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          },
+          {
+            "APIKeyCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "family",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Family"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NewAppendix"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MadeThread"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/families/{family}/cases": {
+      "get": {
+        "tags": [
+          "families"
+        ],
+        "summary": "Cases",
+        "operationId": "cases_api_families__family__cases_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          },
+          {
+            "APIKeyCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "family",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Family"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/FamilyCase"
+                  },
+                  "title": "Response Cases Api Families  Family  Cases Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "families"
+        ],
+        "summary": "Case",
+        "operationId": "case_api_families__family__cases_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          },
+          {
+            "APIKeyCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "family",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Family"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NewCase"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FamilyCase"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/families/{family}/vignette": {
+      "get": {
+        "tags": [
+          "families"
+        ],
+        "summary": "Vignette",
+        "operationId": "vignette_api_families__family__vignette_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          },
+          {
+            "APIKeyCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "family",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Family"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Vignette"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/takes": {
+      "post": {
+        "tags": [
+          "families"
+        ],
+        "summary": "Takes",
+        "operationId": "takes_api_takes_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NewTakes"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Taken"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          },
+          {
+            "APIKeyCookie": []
+          }
+        ]
+      }
+    },
+    "/api/tags": {
+      "get": {
+        "tags": [
+          "families"
+        ],
+        "summary": "Tags",
+        "operationId": "tags_api_tags_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "type": "string"
+                  },
+                  "type": "array",
+                  "title": "Response Tags Api Tags Get"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          },
+          {
+            "APIKeyCookie": []
+          }
+        ]
+      }
+    },
+    "/api/endpoints": {
+      "get": {
+        "tags": [
+          "world"
+        ],
+        "summary": "Endpoints",
+        "operationId": "endpoints_api_endpoints_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/Endpoint"
+                  },
+                  "type": "array",
+                  "title": "Response Endpoints Api Endpoints Get"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          },
+          {
+            "APIKeyCookie": []
+          }
+        ]
+      }
+    },
+    "/api/endpoints/{name}": {
+      "get": {
+        "tags": [
+          "world"
+        ],
+        "summary": "Endpoint",
+        "operationId": "endpoint_api_endpoints__name__get",
+        "security": [
+          {
+            "HTTPBearer": []
+          },
+          {
+            "APIKeyCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Name"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Endpoint"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/models": {
+      "get": {
+        "tags": [
+          "world"
+        ],
+        "summary": "Models",
+        "operationId": "models_api_models_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/Model"
+                  },
+                  "type": "array",
+                  "title": "Response Models Api Models Get"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          },
+          {
+            "APIKeyCookie": []
+          }
+        ]
+      }
+    },
+    "/api/components/{digest}": {
+      "get": {
+        "tags": [
+          "world"
+        ],
+        "summary": "Component",
+        "operationId": "component_api_components__digest__get",
+        "security": [
+          {
+            "HTTPBearer": []
+          },
+          {
+            "APIKeyCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "digest",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Digest"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Component"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/scorer-code": {
+      "get": {
+        "tags": [
+          "world"
+        ],
+        "summary": "Scorer Code",
+        "operationId": "scorer_code_api_scorer_code_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ScorerCode"
+                  },
+                  "type": "array",
+                  "title": "Response Scorer Code Api Scorer Code Get"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          },
+          {
+            "APIKeyCookie": []
+          }
+        ]
+      }
+    },
+    "/api/runs": {
+      "post": {
+        "tags": [
+          "runs"
+        ],
+        "summary": "Start",
+        "operationId": "start_api_runs_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          },
+          {
+            "APIKeyCookie": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NewRun"
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "The run, started: it is sent, finished and scored whoever listens, and its events are at `/api/runs/{run}/events`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RunStartedData"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "runs"
+        ],
+        "summary": "Runs",
+        "operationId": "runs_api_runs_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          },
+          {
+            "APIKeyCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 200,
+              "minimum": 1,
+              "default": 20,
+              "title": "Limit"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0,
+              "title": "Offset"
+            }
+          },
+          {
+            "name": "trial",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "a trial's digest",
+              "title": "Trial"
+            },
+            "description": "a trial's digest"
+          },
+          {
+            "name": "reaching",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "a digest the run's trial is built on",
+              "title": "Reaching"
+            },
+            "description": "a digest the run's trial is built on"
+          },
+          {
+            "name": "scored_by",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "a scorer's digest",
+              "title": "Scored By"
+            },
+            "description": "a scorer's digest"
+          },
+          {
+            "name": "unscored",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "description": "only the finished runs left to be scored by some scorer",
+              "default": false,
+              "title": "Unscored"
+            },
+            "description": "only the finished runs left to be scored by some scorer"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Run"
+                  },
+                  "title": "Response Runs Api Runs Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/runs/{run}/events": {
+      "get": {
+        "tags": [
+          "runs"
+        ],
+        "summary": "Events",
+        "operationId": "events_api_runs__run__events_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          },
+          {
+            "APIKeyCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "run",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Run"
+            }
+          },
+          {
+            "name": "Last-Event-ID",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "the id of the last event had",
+              "title": "Last-Event-Id"
+            },
+            "description": "the id of the last event had"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "What the run does, as it does it: what is under way for it in this process, from its start, then as it comes; else what the ledger holds of it. The events are `run.started`, `item.started`, `item.delta`, `item.tool`, `item.ended`, `canary.ended`, `run.noted`, `run.finished`, `run.scoring`, `score.started`, `judge.asked`, `judge.delta`, `judge.answered`, `score.item`, `score.noted`, `run.scored`, `error`, `done`, each with an `id` and its data as JSON; `done` is the last.",
+            "content": {
+              "text/event-stream": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/runs/{run}/halt": {
+      "post": {
+        "tags": [
+          "runs"
+        ],
+        "summary": "Halt",
+        "operationId": "halt_api_runs__run__halt_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          },
+          {
+            "APIKeyCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "run",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Run"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "409": {
+            "description": "Nothing is under way for the run"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/runs/{run}": {
+      "get": {
+        "tags": [
+          "runs"
+        ],
+        "summary": "Run",
+        "operationId": "run_api_runs__run__get",
+        "security": [
+          {
+            "HTTPBearer": []
+          },
+          {
+            "APIKeyCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "run",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Run"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RunDetail"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/runs/{run}/items": {
+      "get": {
+        "tags": [
+          "runs"
+        ],
+        "summary": "Items",
+        "operationId": "items_api_runs__run__items_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          },
+          {
+            "APIKeyCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "run",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Run"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ItemDetail"
+                  },
+                  "title": "Response Items Api Runs  Run  Items Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/runs/{run}/rendered-again": {
+      "get": {
+        "tags": [
+          "runs"
+        ],
+        "summary": "Rendered Again",
+        "operationId": "rendered_again_api_runs__run__rendered_again_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          },
+          {
+            "APIKeyCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "run",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Run"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/RenderedAgain"
+                  },
+                  "title": "Response Rendered Again Api Runs  Run  Rendered Again Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/runs/{run}/scores": {
+      "post": {
+        "tags": [
+          "scores"
+        ],
+        "summary": "Score Now",
+        "operationId": "score_now_api_runs__run__scores_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          },
+          {
+            "APIKeyCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "run",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Run"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NewScoring"
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "The scorers the run is to be scored by, started: the scoring goes on whoever listens, and its events are at `/api/runs/{run}/events`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScoringData"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Something is under way for the run already"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "scores"
+        ],
+        "summary": "Scores",
+        "operationId": "scores_api_runs__run__scores_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          },
+          {
+            "APIKeyCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "run",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Run"
+            }
+          },
+          {
+            "name": "all",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "description": "every score of the run, newest first, rather than the latest under each scorer",
+              "default": false,
+              "title": "All"
+            },
+            "description": "every score of the run, newest first, rather than the latest under each scorer"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Graded"
+                  },
+                  "title": "Response Scores Api Runs  Run  Scores Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/runs/{run}/scores/{score}": {
+      "get": {
+        "tags": [
+          "scores"
+        ],
+        "summary": "Score",
+        "operationId": "score_api_runs__run__scores__score__get",
+        "security": [
+          {
+            "HTTPBearer": []
+          },
+          {
+            "APIKeyCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "run",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Run"
+            }
+          },
+          {
+            "name": "score",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Score"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Graded"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/runs/{run}/scores/{score}/items": {
+      "get": {
+        "tags": [
+          "scores"
+        ],
+        "summary": "Items",
+        "operationId": "items_api_runs__run__scores__score__items_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          },
+          {
+            "APIKeyCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "run",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Run"
+            }
+          },
+          {
+            "name": "score",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Score"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScoreItems"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Answer": {
+        "properties": {
+          "value": {
+            "$ref": "#/components/schemas/JsonValue",
+            "description": "as read from the item's last call: what its schema holds, or text"
+          },
+          "problem": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Problem",
+            "description": "why it couldn't be read, or breaks its schema"
+          },
+          "salvaged": {
+            "type": "boolean",
+            "title": "Salvaged",
+            "description": "a structured answer cut short, read with its structure closed"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "value",
+          "problem",
+          "salvaged"
+        ],
+        "title": "Answer"
+      },
+      "Chunk": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "description": "a chunk's digest; empty or null takes an optional part out"
+      },
+      "Component": {
+        "properties": {
+          "digest": {
+            "type": "string",
+            "title": "Digest"
+          },
+          "kind": {
+            "type": "string",
+            "title": "Kind"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "body": {
+            "$ref": "#/components/schemas/JsonValue"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "digest",
+          "kind",
+          "title",
+          "body"
+        ],
+        "title": "Component"
+      },
+      "ComponentBody": {
+        "additionalProperties": {
+          "$ref": "#/components/schemas/JsonValue"
+        },
+        "type": "object",
+        "description": "a component's JSON as GET /api/components/{digest} gives its body, kind included"
+      },
+      "Edit": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "digest": {
+            "type": "string",
+            "title": "Digest"
+          },
+          "compilation": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Compilation"
+          },
+          "based_on": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Based On"
+          },
+          "by": {
+            "type": "string",
+            "title": "By"
+          },
+          "at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "At"
+          },
+          "labels": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Labels"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "a scorer edit's"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "digest",
+          "compilation",
+          "based_on",
+          "by",
+          "at"
+        ],
+        "title": "Edit"
+      },
+      "Endpoint": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "engine": {
+            "type": "string",
+            "title": "Engine"
+          },
+          "title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title"
+          },
+          "model": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model"
+          },
+          "url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Url"
+          },
+          "host": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Host"
+          },
+          "max_jobs": {
+            "type": "integer",
+            "title": "Max Jobs"
+          },
+          "credential": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Credential"
+          },
+          "cleared_for": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Cleared For"
+          },
+          "problem": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Problem"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "name",
+          "engine",
+          "title",
+          "model",
+          "url",
+          "host",
+          "max_jobs",
+          "credential",
+          "cleared_for",
+          "problem"
+        ],
+        "title": "Endpoint"
+      },
+      "Expected": {
+        "properties": {
+          "expectation_schema": {
+            "type": "string",
+            "title": "Expectation Schema"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "expectation": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expectation"
+          },
+          "data": {
+            "$ref": "#/components/schemas/JsonValue"
+          },
+          "ambiguous": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ambiguous"
+          },
+          "shared": {
+            "items": {
+              "$ref": "#/components/schemas/Thread"
+            },
+            "type": "array",
+            "title": "Shared",
+            "description": "the expectation threads of others, shared with the person, they could take"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "expectation_schema",
+          "title",
+          "expectation",
+          "data",
+          "ambiguous",
+          "shared"
+        ],
+        "title": "Expected"
+      },
+      "Family": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "owner": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Owner"
+          },
+          "tags": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Tags"
+          },
+          "language": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Language"
+          },
+          "case": {
+            "type": "string",
+            "title": "Case"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "owner",
+          "tags",
+          "language",
+          "case"
+        ],
+        "title": "Family"
+      },
+      "FamilyCase": {
+        "properties": {
+          "case": {
+            "type": "string",
+            "title": "Case"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "appendices": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Appendices"
+          },
+          "default": {
+            "type": "boolean",
+            "title": "Default",
+            "description": "the case the family stands for"
+          },
+          "expectations": {
+            "items": {
+              "$ref": "#/components/schemas/Expected"
+            },
+            "type": "array",
+            "title": "Expectations"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "case",
+          "title",
+          "appendices",
+          "default",
+          "expectations"
+        ],
+        "title": "FamilyCase"
+      },
+      "FamilyDetail": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "owner": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Owner"
+          },
+          "tags": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Tags"
+          },
+          "language": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Language"
+          },
+          "case": {
+            "type": "string",
+            "title": "Case"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "collaborators": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Collaborators"
+          },
+          "appendices": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Appendices"
+          },
+          "expectations": {
+            "items": {
+              "$ref": "#/components/schemas/Expected"
+            },
+            "type": "array",
+            "title": "Expectations"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "owner",
+          "tags",
+          "language",
+          "case",
+          "description",
+          "collaborators",
+          "appendices",
+          "expectations"
+        ],
+        "title": "FamilyDetail"
+      },
+      "Finding": {
+        "additionalProperties": false,
+        "properties": {
+          "level": {
+            "enum": [
+              "info",
+              "warning"
+            ],
+            "title": "Level",
+            "type": "string"
+          },
+          "code": {
+            "title": "Code",
+            "type": "string"
+          },
+          "message": {
+            "title": "Message",
+            "type": "string"
+          },
+          "subject": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Subject"
+          }
+        },
+        "required": [
+          "level",
+          "code",
+          "message",
+          "subject"
+        ],
+        "title": "Finding",
+        "type": "object"
+      },
+      "Graded": {
+        "additionalProperties": false,
+        "properties": {
+          "scorer": {
+            "title": "Scorer",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "score": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Score"
+          },
+          "scoring": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Scoring"
+          },
+          "at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "At"
+          },
+          "finished": {
+            "title": "Finished",
+            "type": "boolean"
+          },
+          "labels": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Labels",
+            "type": "array"
+          },
+          "means": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "title": "Means",
+            "type": "array"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/ScoredItem"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "refused": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Refused"
+          }
+        },
+        "required": [
+          "scorer",
+          "name",
+          "score",
+          "scoring",
+          "at",
+          "finished",
+          "labels",
+          "means",
+          "items",
+          "refused"
+        ],
+        "title": "Graded",
+        "type": "object"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
+      },
+      "Item": {
+        "properties": {
+          "case": {
+            "type": "string",
+            "title": "Case"
+          },
+          "replicate": {
+            "type": "integer",
+            "title": "Replicate"
+          },
+          "outcome": {
+            "$ref": "#/components/schemas/Outcome"
+          },
+          "prompt_tokens": {
+            "type": "integer",
+            "title": "Prompt Tokens"
+          },
+          "completion_tokens": {
+            "type": "integer",
+            "title": "Completion Tokens"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "case",
+          "replicate",
+          "outcome",
+          "prompt_tokens",
+          "completion_tokens"
+        ],
+        "title": "Item"
+      },
+      "ItemDetail": {
+        "properties": {
+          "case": {
+            "type": "string",
+            "title": "Case"
+          },
+          "replicate": {
+            "type": "integer",
+            "title": "Replicate"
+          },
+          "outcome": {
+            "$ref": "#/components/schemas/Outcome"
+          },
+          "prompt_tokens": {
+            "type": "integer",
+            "title": "Prompt Tokens"
+          },
+          "completion_tokens": {
+            "type": "integer",
+            "title": "Completion Tokens"
+          },
+          "why": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Why"
+          },
+          "vignette": {
+            "$ref": "#/components/schemas/JsonValue"
+          },
+          "call": {
+            "$ref": "#/components/schemas/JsonValue"
+          },
+          "turns": {
+            "$ref": "#/components/schemas/JsonValue"
+          },
+          "answer": {
+            "$ref": "#/components/schemas/Answer"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "case",
+          "replicate",
+          "outcome",
+          "prompt_tokens",
+          "completion_tokens",
+          "why",
+          "vignette",
+          "call",
+          "turns",
+          "answer"
+        ],
+        "title": "ItemDetail"
+      },
+      "JsonValue": {},
+      "Labels": {
+        "properties": {
+          "views": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Views",
+            "description": "by position; null for none"
+          },
+          "resources": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Resources",
+            "description": "by position; null for none"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "Labels"
+      },
+      "Language": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "description": "the language of the text the component holds, such as 'sv'"
+      },
+      "MadeEdit": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "digest": {
+            "type": "string",
+            "title": "Digest"
+          },
+          "compilation": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Compilation"
+          },
+          "based_on": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Based On"
+          },
+          "by": {
+            "type": "string",
+            "title": "By"
+          },
+          "at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "At"
+          },
+          "labels": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Labels"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "a scorer edit's"
+          },
+          "findings": {
+            "items": {
+              "$ref": "#/components/schemas/Finding"
+            },
+            "type": "array",
+            "title": "Findings"
+          },
+          "cases": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object",
+            "title": "Cases",
+            "description": "for an appendix: each case that held the old version, with its replacement"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "digest",
+          "compilation",
+          "based_on",
+          "by",
+          "at",
+          "findings"
+        ],
+        "title": "MadeEdit"
+      },
+      "MadeThread": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "kind": {
+            "type": "string",
+            "title": "Kind"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "owner": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Owner"
+          },
+          "tags": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Tags"
+          },
+          "head": {
+            "$ref": "#/components/schemas/Edit"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "collaborators": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Collaborators"
+          },
+          "language": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Language"
+          },
+          "forked_from": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Forked From"
+          },
+          "recipe": {
+            "$ref": "#/components/schemas/JsonValue"
+          },
+          "deleted": {
+            "type": "boolean",
+            "title": "Deleted"
+          },
+          "findings": {
+            "items": {
+              "$ref": "#/components/schemas/Finding"
+            },
+            "type": "array",
+            "title": "Findings"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "kind",
+          "name",
+          "title",
+          "owner",
+          "tags",
+          "head",
+          "description",
+          "collaborators",
+          "language",
+          "forked_from",
+          "recipe",
+          "deleted",
+          "findings"
+        ],
+        "title": "MadeThread"
+      },
+      "Me": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "login": {
+            "type": "string",
+            "title": "Login"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "roles": {
+            "items": {
+              "$ref": "#/components/schemas/Role"
+            },
+            "type": "array",
+            "title": "Roles"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "login",
+          "name",
+          "roles"
+        ],
+        "title": "Me"
+      },
+      "Metric": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "measures": {
+            "type": "string",
+            "title": "Measures"
+          },
+          "params": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/JsonValue"
+            },
+            "type": "object",
+            "title": "Params",
+            "description": "a JSON Schema for a view's params"
+          },
+          "judged": {
+            "type": "boolean",
+            "title": "Judged",
+            "description": "whether it reads a judge's verdicts, so that its view names a judge"
+          },
+          "unit": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Unit",
+            "description": "what marks a value that isn't a score from 0 to 1, as @ an offset"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "name",
+          "measures",
+          "params",
+          "judged"
+        ],
+        "title": "Metric"
+      },
+      "Model": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "facts": {
+            "$ref": "#/components/schemas/JsonValue"
+          },
+          "endpoints": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Endpoints"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "name",
+          "facts",
+          "endpoints"
+        ],
+        "title": "Model"
+      },
+      "NewAppendix": {
+        "properties": {
+          "text": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Text"
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Name"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "text",
+          "name"
+        ],
+        "title": "NewAppendix"
+      },
+      "NewCarry": {
+        "properties": {
+          "head": {
+            "type": "integer",
+            "title": "Head",
+            "description": "the edit the change was made on: the head seen"
+          },
+          "case": {
+            "type": "string",
+            "title": "Case",
+            "description": "another case of the expectation's family"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "head",
+          "case"
+        ],
+        "title": "NewCarry"
+      },
+      "NewCase": {
+        "properties": {
+          "appendices": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Appendices",
+            "description": "the appendices, in order"
+          },
+          "replacing": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Replacing",
+            "description": "or a case of the family left at an earlier vignette"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "NewCase"
+      },
+      "NewEdit": {
+        "properties": {
+          "head": {
+            "type": "integer",
+            "title": "Head",
+            "description": "the edit the change was made on: the head seen"
+          },
+          "parts": {
+            "$ref": "#/components/schemas/Parts",
+            "default": {}
+          },
+          "component": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ComponentBody"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "language": {
+            "$ref": "#/components/schemas/Language"
+          },
+          "labels": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Labels"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "for a scorer; without them, the head's when the scorer is the head's, else none"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "head"
+        ],
+        "title": "NewEdit"
+      },
+      "NewFollow": {
+        "properties": {
+          "head": {
+            "type": "integer",
+            "title": "Head",
+            "description": "the edit the change was made on: the head seen"
+          },
+          "language": {
+            "$ref": "#/components/schemas/Language"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "head"
+        ],
+        "title": "NewFollow"
+      },
+      "NewFork": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Name"
+          },
+          "parts": {
+            "$ref": "#/components/schemas/Parts",
+            "default": {}
+          },
+          "component": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ComponentBody"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "what the fork starts from in place of the head"
+          },
+          "language": {
+            "$ref": "#/components/schemas/Language"
+          },
+          "labels": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Labels"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "for a scorer; a scorer forked as it is keeps the head's"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "name"
+        ],
+        "title": "NewFork"
+      },
+      "NewRun": {
+        "properties": {
+          "configuration": {
+            "type": "integer",
+            "title": "Configuration"
+          },
+          "parts": {
+            "$ref": "#/components/schemas/Parts",
+            "default": {}
+          },
+          "endpoint": {
+            "type": "string",
+            "title": "Endpoint"
+          },
+          "families": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "integer"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Families",
+            "description": "the cases to run, by family"
+          },
+          "tags": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tags",
+            "description": "or the cases of the families with any of these"
+          },
+          "cases": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cases",
+            "description": "or the cases themselves, each of a family's current ones"
+          },
+          "seed": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Seed",
+            "description": "drawn when not given"
+          },
+          "score": {
+            "type": "boolean",
+            "title": "Score",
+            "description": "under every scorer that applies, once it is finished",
+            "default": true
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "configuration",
+          "endpoint"
+        ],
+        "title": "NewRun"
+      },
+      "NewScoring": {
+        "properties": {
+          "scorers": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Scorers",
+            "description": "by digest; every scorer that applies when not given"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "NewScoring"
+      },
+      "NewTake": {
+        "properties": {
+          "replace": {
+            "type": "boolean",
+            "title": "Replace",
+            "description": "delete the person's own expectation of the case under that schema, in the same write",
+            "default": false
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "NewTake"
+      },
+      "NewTakes": {
+        "properties": {
+          "families": {
+            "items": {
+              "type": "integer"
+            },
+            "type": "array",
+            "minItems": 1,
+            "title": "Families",
+            "description": "the cases, by family"
+          },
+          "expectation_schema": {
+            "type": "string",
+            "title": "Expectation Schema"
+          },
+          "owner": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Owner",
+            "description": "a login: that owner's only"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "families",
+          "expectation_schema"
+        ],
+        "title": "NewTakes"
+      },
+      "NewThread": {
+        "properties": {
+          "component": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ComponentBody"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "recipe": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "$ref": "#/components/schemas/JsonValue"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Recipe",
+            "description": "for a new configuration: the recipe's parts by digest, its purpose and its appendix layout, as a configuration's recipe reads"
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Name"
+          },
+          "language": {
+            "$ref": "#/components/schemas/Language"
+          },
+          "labels": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Labels"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "for a scorer"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "name"
+        ],
+        "title": "NewThread"
+      },
+      "NewTyped": {
+        "properties": {
+          "text": {
+            "type": "string",
+            "title": "Text",
+            "description": "the case as typed, kept as written"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "language": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Language",
+            "description": "the language it is typed in"
+          },
+          "source": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source",
+            "description": "the database source it is kept in, when the World has several"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "text"
+        ],
+        "title": "NewTyped"
+      },
+      "Outcome": {
+        "enum": [
+          "stopped",
+          "errored",
+          "unread",
+          "completed",
+          "invalid",
+          "valid",
+          "salvaged"
+        ],
+        "type": "string"
+      },
+      "Part": {
+        "properties": {
+          "part": {
+            "type": "string",
+            "title": "Part"
+          },
+          "digest": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Digest"
+          },
+          "title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title"
+          },
+          "summary": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Summary"
+          },
+          "replaced": {
+            "type": "boolean",
+            "title": "Replaced"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "part",
+          "digest",
+          "title",
+          "summary",
+          "replaced"
+        ],
+        "title": "Part"
+      },
+      "Parts": {
+        "properties": {
+          "instructions": {
+            "$ref": "#/components/schemas/Chunk"
+          },
+          "few_shot": {
+            "$ref": "#/components/schemas/Chunk"
+          },
+          "prompt": {
+            "$ref": "#/components/schemas/Chunk"
+          },
+          "output": {
+            "$ref": "#/components/schemas/Chunk"
+          },
+          "sampling": {
+            "$ref": "#/components/schemas/Chunk"
+          },
+          "reasoning": {
+            "$ref": "#/components/schemas/Chunk"
+          },
+          "passthrough": {
+            "$ref": "#/components/schemas/Chunk"
+          },
+          "translations": {
+            "$ref": "#/components/schemas/Chunk"
+          },
+          "toolset": {
+            "$ref": "#/components/schemas/Chunk"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "Parts"
+      },
+      "Proposal": {
+        "properties": {
+          "base": {
+            "$ref": "#/components/schemas/Edit"
+          },
+          "origin_head": {
+            "$ref": "#/components/schemas/Edit"
+          },
+          "varies": {
+            "items": {
+              "$ref": "#/components/schemas/Varied"
+            },
+            "type": "array",
+            "title": "Varies"
+          },
+          "recipe": {
+            "$ref": "#/components/schemas/JsonValue",
+            "description": "for a configuration, what it compiles from"
+          },
+          "component": {
+            "$ref": "#/components/schemas/JsonValue",
+            "description": "for another kind, its body"
+          },
+          "digest": {
+            "type": "string",
+            "title": "Digest"
+          },
+          "compilation": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Compilation"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "base",
+          "origin_head",
+          "varies",
+          "recipe",
+          "component",
+          "digest",
+          "compilation"
+        ],
+        "title": "Proposal"
+      },
+      "Reach": {
+        "properties": {
+          "scorer": {
+            "type": "integer",
+            "title": "Scorer"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "view": {
+            "type": "integer",
+            "title": "View"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "offered": {
+            "type": "boolean",
+            "title": "Offered"
+          },
+          "cases": {
+            "type": "integer",
+            "title": "Cases"
+          },
+          "missing": {
+            "items": {
+              "type": "integer"
+            },
+            "type": "array",
+            "title": "Missing"
+          },
+          "choosing": {
+            "items": {
+              "type": "integer"
+            },
+            "type": "array",
+            "title": "Choosing"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "scorer",
+          "name",
+          "view",
+          "label",
+          "offered",
+          "cases",
+          "missing",
+          "choosing"
+        ],
+        "title": "Reach"
+      },
+      "RenderedAgain": {
+        "properties": {
+          "case": {
+            "type": "string",
+            "title": "Case"
+          },
+          "replicate": {
+            "type": "integer",
+            "title": "Replicate"
+          },
+          "same": {
+            "type": "boolean",
+            "title": "Same"
+          },
+          "why": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Why"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "case",
+          "replicate",
+          "same",
+          "why"
+        ],
+        "title": "RenderedAgain"
+      },
+      "Rig": {
+        "properties": {
+          "distribution": {
+            "type": "string",
+            "title": "Distribution"
+          },
+          "version": {
+            "type": "string",
+            "title": "Version"
+          },
+          "revision": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Revision"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "distribution",
+          "version",
+          "revision"
+        ],
+        "title": "Rig"
+      },
+      "Role": {
+        "type": "string",
+        "enum": [
+          "admin",
+          "clinician",
+          "developer",
+          "ops",
+          "researcher"
+        ],
+        "title": "Role"
+      },
+      "Run": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "At"
+          },
+          "trial": {
+            "type": "string",
+            "title": "Trial"
+          },
+          "skeleton": {
+            "type": "string",
+            "title": "Skeleton"
+          },
+          "engine": {
+            "type": "string",
+            "title": "Engine"
+          },
+          "endpoint": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Endpoint"
+          },
+          "cases": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Cases"
+          },
+          "seeds": {
+            "items": {
+              "type": "integer"
+            },
+            "type": "array",
+            "title": "Seeds"
+          },
+          "described": {
+            "type": "string",
+            "title": "Described"
+          },
+          "finished": {
+            "type": "boolean",
+            "title": "Finished"
+          },
+          "unscored": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/Unscored"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Unscored",
+            "description": "with `unscored`: the scorers it is left to be scored by"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "at",
+          "trial",
+          "skeleton",
+          "engine",
+          "endpoint",
+          "cases",
+          "seeds",
+          "described",
+          "finished"
+        ],
+        "title": "Run"
+      },
+      "RunDetail": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "At"
+          },
+          "trial": {
+            "type": "string",
+            "title": "Trial"
+          },
+          "skeleton": {
+            "type": "string",
+            "title": "Skeleton"
+          },
+          "engine": {
+            "type": "string",
+            "title": "Engine"
+          },
+          "endpoint": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Endpoint"
+          },
+          "cases": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Cases"
+          },
+          "seeds": {
+            "items": {
+              "type": "integer"
+            },
+            "type": "array",
+            "title": "Seeds"
+          },
+          "described": {
+            "type": "string",
+            "title": "Described"
+          },
+          "finished": {
+            "type": "boolean",
+            "title": "Finished"
+          },
+          "unscored": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/Unscored"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Unscored",
+            "description": "with `unscored`: the scorers it is left to be scored by"
+          },
+          "rig": {
+            "$ref": "#/components/schemas/Rig"
+          },
+          "finished_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Finished At"
+          },
+          "noted": {
+            "items": {
+              "$ref": "#/components/schemas/Finding"
+            },
+            "type": "array",
+            "title": "Noted"
+          },
+          "findings": {
+            "items": {
+              "$ref": "#/components/schemas/Finding"
+            },
+            "type": "array",
+            "title": "Findings"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/Item"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "scores": {
+            "items": {
+              "$ref": "#/components/schemas/Graded"
+            },
+            "type": "array",
+            "title": "Scores"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "at",
+          "trial",
+          "skeleton",
+          "engine",
+          "endpoint",
+          "cases",
+          "seeds",
+          "described",
+          "finished",
+          "rig",
+          "finished_at",
+          "noted",
+          "findings",
+          "items",
+          "scores"
+        ],
+        "title": "RunDetail"
+      },
+      "RunStartedData": {
+        "additionalProperties": false,
+        "properties": {
+          "run": {
+            "format": "uuid",
+            "title": "Run",
+            "type": "string"
+          },
+          "trial": {
+            "title": "Trial",
+            "type": "string"
+          },
+          "skeleton": {
+            "title": "Skeleton",
+            "type": "string"
+          },
+          "endpoint": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Endpoint"
+          },
+          "cases": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Cases",
+            "type": "array"
+          },
+          "seed": {
+            "title": "Seed",
+            "type": "integer"
+          },
+          "greedy": {
+            "title": "Greedy",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "run",
+          "trial",
+          "skeleton",
+          "endpoint",
+          "cases",
+          "seed",
+          "greedy"
+        ],
+        "title": "RunStartedData",
+        "type": "object"
+      },
+      "Said": {
+        "properties": {
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name",
+            "description": "null takes the name away, and the title takes over"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description",
+            "description": "replaced, never taken away"
+          },
+          "tags": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tags",
+            "description": "its tags"
+          },
+          "collaborators": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Collaborators",
+            "description": "the logins it is shared with"
+          },
+          "deleted": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Deleted"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "Said"
+      },
+      "ScoreItemDetail": {
+        "properties": {
+          "case": {
+            "type": "string",
+            "title": "Case"
+          },
+          "replicate": {
+            "type": "integer",
+            "title": "Replicate"
+          },
+          "view": {
+            "type": "integer",
+            "title": "View"
+          },
+          "value": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Value"
+          },
+          "detail": {
+            "$ref": "#/components/schemas/JsonValue"
+          },
+          "judge_calls": {
+            "$ref": "#/components/schemas/JsonValue"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "case",
+          "replicate",
+          "view",
+          "value",
+          "detail",
+          "judge_calls"
+        ],
+        "title": "ScoreItemDetail"
+      },
+      "ScoreItems": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/ScoreItemDetail"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "findings": {
+            "items": {
+              "$ref": "#/components/schemas/Finding"
+            },
+            "type": "array",
+            "title": "Findings"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "items",
+          "findings"
+        ],
+        "title": "ScoreItems"
+      },
+      "ScoredItem": {
+        "additionalProperties": false,
+        "properties": {
+          "case": {
+            "title": "Case",
+            "type": "string"
+          },
+          "replicate": {
+            "title": "Replicate",
+            "type": "integer"
+          },
+          "view": {
+            "title": "View",
+            "type": "integer"
+          },
+          "value": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Value"
+          }
+        },
+        "required": [
+          "case",
+          "replicate",
+          "view",
+          "value"
+        ],
+        "title": "ScoredItem",
+        "type": "object"
+      },
+      "ScorerCode": {
+        "properties": {
+          "entry_point": {
+            "type": "string",
+            "title": "Entry Point"
+          },
+          "version": {
+            "type": "integer",
+            "title": "Version"
+          },
+          "metrics": {
+            "items": {
+              "$ref": "#/components/schemas/Metric"
+            },
+            "type": "array",
+            "title": "Metrics"
+          },
+          "params": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/JsonValue"
+            },
+            "type": "object",
+            "title": "Params",
+            "description": "a JSON Schema for the scorer's own params, which every view shares"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "entry_point",
+          "version",
+          "metrics",
+          "params"
+        ],
+        "title": "ScorerCode"
+      },
+      "ScoringData": {
+        "additionalProperties": false,
+        "properties": {
+          "scorers": {
+            "items": {
+              "$ref": "#/components/schemas/Unscored"
+            },
+            "title": "Scorers",
+            "type": "array"
+          }
+        },
+        "required": [
+          "scorers"
+        ],
+        "title": "ScoringData",
+        "type": "object"
+      },
+      "SignIn": {
+        "properties": {
+          "login": {
+            "type": "string",
+            "title": "Login"
+          },
+          "password": {
+            "type": "string",
+            "title": "Password"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "login",
+          "password"
+        ],
+        "title": "SignIn"
+      },
+      "SignedIn": {
+        "properties": {
+          "token": {
+            "type": "string",
+            "title": "Token"
+          },
+          "person": {
+            "$ref": "#/components/schemas/Me"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "token",
+          "person"
+        ],
+        "title": "SignedIn"
+      },
+      "Taken": {
+        "properties": {
+          "taken": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "type": "object",
+            "title": "Taken",
+            "description": "the thread each was taken into"
+          },
+          "kept": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "type": "object",
+            "title": "Kept",
+            "description": "the person's own, left as it is"
+          },
+          "choosing": {
+            "additionalProperties": {
+              "items": {
+                "type": "integer"
+              },
+              "type": "array"
+            },
+            "type": "object",
+            "title": "Choosing",
+            "description": "shared by several owners: the threads to choose from"
+          },
+          "missing": {
+            "items": {
+              "type": "integer"
+            },
+            "type": "array",
+            "title": "Missing",
+            "description": "none shared"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "taken",
+          "kept",
+          "choosing",
+          "missing"
+        ],
+        "title": "Taken"
+      },
+      "Thread": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "kind": {
+            "type": "string",
+            "title": "Kind"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "owner": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Owner"
+          },
+          "tags": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Tags"
+          },
+          "head": {
+            "$ref": "#/components/schemas/Edit"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "kind",
+          "name",
+          "title",
+          "owner",
+          "tags",
+          "head"
+        ],
+        "title": "Thread"
+      },
+      "ThreadDetail": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "kind": {
+            "type": "string",
+            "title": "Kind"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "owner": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Owner"
+          },
+          "tags": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Tags"
+          },
+          "head": {
+            "$ref": "#/components/schemas/Edit"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "collaborators": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Collaborators"
+          },
+          "language": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Language"
+          },
+          "forked_from": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Forked From"
+          },
+          "recipe": {
+            "$ref": "#/components/schemas/JsonValue"
+          },
+          "deleted": {
+            "type": "boolean",
+            "title": "Deleted"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "kind",
+          "name",
+          "title",
+          "owner",
+          "tags",
+          "head",
+          "description",
+          "collaborators",
+          "language",
+          "forked_from",
+          "recipe",
+          "deleted"
+        ],
+        "title": "ThreadDetail"
+      },
+      "Unscored": {
+        "additionalProperties": false,
+        "properties": {
+          "scorer": {
+            "title": "Scorer",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "scorer",
+          "name"
+        ],
+        "title": "Unscored",
+        "type": "object"
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "ctx": {
+            "type": "object",
+            "title": "Context"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError"
+      },
+      "Variation": {
+        "properties": {
+          "head": {
+            "$ref": "#/components/schemas/Edit"
+          },
+          "skeleton": {
+            "type": "string",
+            "title": "Skeleton"
+          },
+          "greedy": {
+            "type": "boolean",
+            "title": "Greedy"
+          },
+          "parts": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/Part"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Parts"
+          },
+          "seed": {
+            "type": "integer",
+            "title": "Seed"
+          },
+          "request": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/JsonValue"
+            },
+            "type": "object",
+            "title": "Request"
+          },
+          "findings": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/Finding"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Findings"
+          },
+          "reach": {
+            "items": {
+              "$ref": "#/components/schemas/Reach"
+            },
+            "type": "array",
+            "title": "Reach"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "head",
+          "skeleton",
+          "greedy",
+          "parts",
+          "seed",
+          "request",
+          "findings",
+          "reach"
+        ],
+        "title": "Variation"
+      },
+      "Varied": {
+        "properties": {
+          "path": {
+            "type": "string",
+            "title": "Path"
+          },
+          "base": {
+            "$ref": "#/components/schemas/JsonValue"
+          },
+          "fork": {
+            "$ref": "#/components/schemas/JsonValue"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "path",
+          "base",
+          "fork"
+        ],
+        "title": "Varied"
+      },
+      "Vignette": {
+        "properties": {
+          "source": {
+            "type": "string",
+            "title": "Source"
+          },
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "text": {
+            "type": "string",
+            "title": "Text"
+          },
+          "drifted": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Drifted"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "source",
+          "id",
+          "text",
+          "drifted"
+        ],
+        "title": "Vignette"
+      },
+      "CanaryEndedData": {
+        "additionalProperties": false,
+        "properties": {
+          "phase": {
+            "title": "Phase",
+            "type": "string"
+          },
+          "canary": {
+            "title": "Canary",
+            "type": "integer"
+          },
+          "call": {
+            "$ref": "#/components/schemas/JsonValue"
+          }
+        },
+        "required": [
+          "phase",
+          "canary",
+          "call"
+        ],
+        "title": "CanaryEndedData",
+        "type": "object"
+      },
+      "Code": {
+        "enum": [
+          "unauthenticated",
+          "cross_site",
+          "not_found",
+          "not_allowed",
+          "ambiguous",
+          "conflict",
+          "moved_on",
+          "refused",
+          "unprocessable",
+          "over_quota",
+          "error"
+        ],
+        "type": "string"
+      },
+      "DoneData": {
+        "additionalProperties": false,
+        "properties": {
+          "halted": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "whether it was halted; null when told from the ledger",
+            "title": "Halted"
+          }
+        },
+        "required": [
+          "halted"
+        ],
+        "title": "DoneData",
+        "type": "object"
+      },
+      "Error": {
+        "additionalProperties": false,
+        "properties": {
+          "detail": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "items": {
+                  "$ref": "#/components/schemas/JsonValue"
+                },
+                "type": "array"
+              }
+            ],
+            "description": "why, or where a request doesn't validate",
+            "title": "Detail"
+          },
+          "code": {
+            "$ref": "#/components/schemas/Code"
+          }
+        },
+        "required": [
+          "detail",
+          "code"
+        ],
+        "title": "Error",
+        "type": "object"
+      },
+      "ErrorData": {
+        "additionalProperties": false,
+        "properties": {
+          "detail": {
+            "title": "Detail",
+            "type": "string"
+          }
+        },
+        "required": [
+          "detail"
+        ],
+        "title": "ErrorData",
+        "type": "object"
+      },
+      "ItemDeltaData": {
+        "additionalProperties": false,
+        "properties": {
+          "case": {
+            "title": "Case",
+            "type": "string"
+          },
+          "replicate": {
+            "title": "Replicate",
+            "type": "integer"
+          },
+          "kind": {
+            "enum": [
+              "reasoning",
+              "content",
+              "tool_call"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "text": {
+            "title": "Text",
+            "type": "string"
+          },
+          "tokens": {
+            "title": "Tokens",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "case",
+          "replicate",
+          "kind",
+          "text",
+          "tokens"
+        ],
+        "title": "ItemDeltaData",
+        "type": "object"
+      },
+      "ItemEndedData": {
+        "additionalProperties": false,
+        "properties": {
+          "case": {
+            "title": "Case",
+            "type": "string"
+          },
+          "replicate": {
+            "title": "Replicate",
+            "type": "integer"
+          },
+          "outcome": {
+            "$ref": "#/components/schemas/Outcome"
+          },
+          "prompt_tokens": {
+            "title": "Prompt Tokens",
+            "type": "integer"
+          },
+          "completion_tokens": {
+            "title": "Completion Tokens",
+            "type": "integer"
+          },
+          "why": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Why"
+          }
+        },
+        "required": [
+          "case",
+          "replicate",
+          "outcome",
+          "prompt_tokens",
+          "completion_tokens",
+          "why"
+        ],
+        "title": "ItemEndedData",
+        "type": "object"
+      },
+      "ItemStartedData": {
+        "additionalProperties": false,
+        "properties": {
+          "case": {
+            "title": "Case",
+            "type": "string"
+          },
+          "replicate": {
+            "title": "Replicate",
+            "type": "integer"
+          },
+          "seed": {
+            "title": "Seed",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "case",
+          "replicate",
+          "seed"
+        ],
+        "title": "ItemStartedData",
+        "type": "object"
+      },
+      "ItemToolData": {
+        "additionalProperties": false,
+        "properties": {
+          "case": {
+            "title": "Case",
+            "type": "string"
+          },
+          "replicate": {
+            "title": "Replicate",
+            "type": "integer"
+          },
+          "tool": {
+            "$ref": "#/components/schemas/JsonValue"
+          }
+        },
+        "required": [
+          "case",
+          "replicate",
+          "tool"
+        ],
+        "title": "ItemToolData",
+        "type": "object"
+      },
+      "JudgeAnsweredData": {
+        "additionalProperties": false,
+        "properties": {
+          "case": {
+            "title": "Case",
+            "type": "string"
+          },
+          "replicate": {
+            "title": "Replicate",
+            "type": "integer"
+          },
+          "view": {
+            "title": "View",
+            "type": "integer"
+          },
+          "judge": {
+            "title": "Judge",
+            "type": "string"
+          },
+          "seed_index": {
+            "title": "Seed Index",
+            "type": "integer"
+          },
+          "verdict": {
+            "$ref": "#/components/schemas/JsonValue"
+          },
+          "call": {
+            "$ref": "#/components/schemas/JsonValue"
+          }
+        },
+        "required": [
+          "case",
+          "replicate",
+          "view",
+          "judge",
+          "seed_index",
+          "verdict",
+          "call"
+        ],
+        "title": "JudgeAnsweredData",
+        "type": "object"
+      },
+      "JudgeAskedData": {
+        "additionalProperties": false,
+        "properties": {
+          "case": {
+            "title": "Case",
+            "type": "string"
+          },
+          "replicate": {
+            "title": "Replicate",
+            "type": "integer"
+          },
+          "scorer": {
+            "title": "Scorer",
+            "type": "string"
+          },
+          "view": {
+            "title": "View",
+            "type": "integer"
+          },
+          "judge": {
+            "title": "Judge",
+            "type": "string"
+          },
+          "seed_index": {
+            "title": "Seed Index",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "case",
+          "replicate",
+          "scorer",
+          "view",
+          "judge",
+          "seed_index"
+        ],
+        "title": "JudgeAskedData",
+        "type": "object"
+      },
+      "JudgeDeltaData": {
+        "additionalProperties": false,
+        "properties": {
+          "case": {
+            "title": "Case",
+            "type": "string"
+          },
+          "replicate": {
+            "title": "Replicate",
+            "type": "integer"
+          },
+          "kind": {
+            "enum": [
+              "reasoning",
+              "content",
+              "tool_call"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "text": {
+            "title": "Text",
+            "type": "string"
+          },
+          "tokens": {
+            "title": "Tokens",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "case",
+          "replicate",
+          "kind",
+          "text",
+          "tokens"
+        ],
+        "title": "JudgeDeltaData",
+        "type": "object"
+      },
+      "RunFinishedData": {
+        "additionalProperties": false,
+        "properties": {
+          "findings": {
+            "items": {
+              "$ref": "#/components/schemas/Finding"
+            },
+            "title": "Findings",
+            "type": "array"
+          }
+        },
+        "required": [
+          "findings"
+        ],
+        "title": "RunFinishedData",
+        "type": "object"
+      },
+      "RunScoredData": {
+        "additionalProperties": false,
+        "properties": {
+          "scores": {
+            "items": {
+              "$ref": "#/components/schemas/Graded"
+            },
+            "title": "Scores",
+            "type": "array"
+          }
+        },
+        "required": [
+          "scores"
+        ],
+        "title": "RunScoredData",
+        "type": "object"
+      },
+      "ScoreItemData": {
+        "additionalProperties": false,
+        "properties": {
+          "case": {
+            "title": "Case",
+            "type": "string"
+          },
+          "replicate": {
+            "title": "Replicate",
+            "type": "integer"
+          },
+          "view": {
+            "title": "View",
+            "type": "integer"
+          },
+          "value": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Value"
+          },
+          "score": {
+            "format": "uuid",
+            "title": "Score",
+            "type": "string"
+          },
+          "detail": {
+            "$ref": "#/components/schemas/JsonValue"
+          }
+        },
+        "required": [
+          "case",
+          "replicate",
+          "view",
+          "value",
+          "score",
+          "detail"
+        ],
+        "title": "ScoreItemData",
+        "type": "object"
+      },
+      "ScoreStartedData": {
+        "additionalProperties": false,
+        "properties": {
+          "scorer": {
+            "title": "Scorer",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "score": {
+            "format": "uuid",
+            "title": "Score",
+            "type": "string"
+          },
+          "labels": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Labels",
+            "type": "array"
+          }
+        },
+        "required": [
+          "scorer",
+          "name",
+          "score",
+          "labels"
+        ],
+        "title": "ScoreStartedData",
+        "type": "object"
+      }
+    },
+    "securitySchemes": {
+      "HTTPBearer": {
+        "type": "http",
+        "description": "the token POST /api/session gives",
+        "scheme": "bearer"
+      },
+      "APIKeyCookie": {
+        "type": "apiKey",
+        "description": "the cookie POST /api/session sets",
+        "in": "cookie",
+        "name": "__Host-chatddx-session"
+      }
+    }
+  }
+}

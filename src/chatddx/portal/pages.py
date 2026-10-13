@@ -29,8 +29,13 @@ def to_sign_in(_: Request, e: Exception) -> Response:
 
 
 def page(request: Request, name: str, status: int = 200, **context: Any) -> Response:
+    assets = request.app.state.assets
     return templates.TemplateResponse(
-        request, name, context, status_code=status, headers=NO_STORE
+        request,
+        name,
+        {"assets": assets, **context},
+        status_code=status,
+        headers=NO_STORE,
     )
 
 
@@ -58,7 +63,7 @@ type PersonDep = Annotated[Person, Depends(signed_in)]
 
 @router.get("/")
 def home(request: Request, person: PersonDep) -> Response:
-    return page(request, "home.html", person=person)
+    return page(request, "home.html", person=person, island="home")
 
 
 @router.get("/sign-in")

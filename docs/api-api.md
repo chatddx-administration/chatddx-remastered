@@ -241,6 +241,14 @@ variation's query parameters to them with `endpoint`, `tag` and `seed`.
 | `part_of(bench, variation: TriedVariation, part: str) -> schemas.Part` | The part's digest (`TriedVariation.held`), its title (`Bench.title`), what it holds (`catalog.titles.describe`), and whether the variation replaced it. A part not held has `None` for each. |
 | `reach_of(reach: chatddx.bench.Reach) -> schemas.Reach` | The bench's reach, with the scorer's thread as `scorer`, its name as `name`, the missing families by id, and those with expectations to choose from as `choosing`. |
 
+```
+AGENT: amend
+The `threads` row gains: "`HTTPException(422, "only a configuration answers")` for an `answers` given another word;
+for a configuration given `answers`, only those `Bench.answering` gives." The `items` row of runs.py gains: "and the
+answer `chatddx.scorers.answer.read` gives of the last call's response, as `schemas.Answer`." schemas.py's table gains
+`Answer`: what was read, why it couldn't be or breaks its schema, and whether it was salvaged.
+---
+```
 | Route | Does |
 | --- | --- |
 | `threads`, `GET /threads` | `HTTPException(422, "no kind '<kind>': the kinds are …")` for a word not in `KINDS`. `HTTPException(422, "only a configuration has a purpose")` for a `purpose` given another word. `Bench.visible` of each kind the word names, or with `deleted` `Bench.deleted`, for a configuration only those of `purpose` (`Bench.purposed`, generation unless given), kept by `name` (whole), `owner` (a login) and any of `tag`. |
@@ -442,6 +450,14 @@ settings.database())`.
 `chatddx portal` takes the same arguments and serves `chatddx.portal.app.app` the same way, its `SystemExit` saying
 `portal:` (`src/chatddx/cli.py:_serve`; agents/wip-portal.md).
 
+```
+AGENT: add
+A paragraph at the end of "The command", for the portal's frontend, which generates its types from the document
+(agents/wip-portal.md).
+---
+`chatddx openapi` prints the API's OpenAPI document, of an app made with an empty inventory and the bundled facts,
+since neither changes it (`src/chatddx/cli.py:_openapi`). `frontend/openapi.json` keeps it.
+```
 ## Tests
 `test/`, marked solidified.
 

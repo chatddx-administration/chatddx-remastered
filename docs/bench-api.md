@@ -254,6 +254,12 @@ qualified, `<owner's login>/NAME` (`_qualified`, which gives nothing for a threa
 
 #### The variation being tried
 
+```
+AGENT: add
+A row after `purposed`'s in the table below.
+---
+| `answering(found: Iterable[tuple[Edit, About]], title: str) -> list[tuple[Edit, About]]` | The configurations of `found` whose head's skeleton's answer has a JSON Schema titled `title` (`Skeleton.output_schema`), read from their heads alone (`Rows.components`). |
+```
 | Method | Returns / raises |
 | --- | --- |
 | `configuration(name: str, engine: str \| None = None) -> TriedVariation` | The configuration `thread("configuration", name, model(engine))` finds, with nothing replaced: its head, the name that found it without the person's own `<login>/`, and `Catalog.recipe` of its thread. |

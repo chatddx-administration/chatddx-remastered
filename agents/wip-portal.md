@@ -14,12 +14,13 @@ it.
    that work sets the structure of the portal's frontend, and shows what Lovable has to teach (see "Swift").
 3. **Decided: `chatddx portal`** serves the portal, and starts everything the portal needs with it: the API now, the
    worker once there is one (see "P3b, concretely").
-4. **Phase 0 is built** (see "Built"): `chatddx.portal`, signing in and out, `Cache-Control: no-store`, and a code
-   beside each error's detail in the API (decided).
+4. **Phases 0 and 1 are built** (see "Built"): `chatddx.portal`, signing in and out, `Cache-Control: no-store`, a
+   code beside each error's detail in the API (decided); then the frontend in `frontend/`, swift's theme and
+   components, and the home page, the first island. Phase 1's choices are takes (see "Built", "Phase 1").
 5. **What it stands on is built**: the bench and the API (`docs/bench.md`, `docs/api.md`), the writes for authoring
    (`agents/wip-authoring.md`) and typed cases (`docs/bench.md`, "Typed cases"). What isn't is under "Below the UI":
    the worker, the batch planner, Z1, and a few things the API doesn't give yet.
-6. **Next**: phase 1, swift's theme, structure and components, and the home page (see "Phases").
+6. **Next**: phase 2, the pages to read (see "Phases").
 
 ## What the portal shows
 The old portal's manual reads as a functional spec for its pages: `docs/portal.md` in chatddx-administration/chatddx
@@ -104,13 +105,12 @@ Decided: Svelte with TypeScript, only where a page needs feedback that takes a r
 - **A batch's progress** and the worker's state (`agents/wip-worker.md`).
 - Perhaps editors for structured chunks and expectations, checked against their JSON Schema as you type.
 
-Decided, for how:
+Decided, for how, and built in phase 1:
 - **Built by Vite** into static files the app serves, a bundle per island.
 - **Types from `/api/openapi.json`** (openapi-typescript), so an island's types follow the API's pydantic schemas. A
-  test can check that what is generated is current.
+  test checks that what they're generated from is current.
 - **Tailwind** for the portal's styling, the pages' and the islands' alike.
-- **Node and Vite join the flake's dev shell**, and the build joins the package's, with the first of the frontend
-  (see "Phases", 1).
+- **Node and Vite join the flake's dev shell**, and the build joins the flake's packages.
 
 ### Tests
 Decided:
@@ -155,26 +155,48 @@ with react-query, react-router, lucide icons and sonner toasts; pnpm, and a Nix 
   the old API, which is gone.
 - **Lovable's own**: `lovable-tagger`, which tags components for Lovable's editor in development, and its README.
 
-Take, for the work:
-- **The theme skeleton** is the tokens, both sets, and Tailwind's mapping of them, shared by the pages and the islands.
-  The fonts are served by the app, so that a page showing case-derived content fetches nothing from a third party.
-- **The primitives come from shadcn-svelte**, the Svelte port of shadcn/ui, which takes the same tokens, rather than
-  being ported by hand. Which Tailwind and shadcn-svelte versions, and whether the tokens move from HSL with them, is
-  settled as the toolchain lands.
-- **The three answer components are ported to Svelte** as the renderer of a management plan, typed from its schema,
-  and shown on the home page and as a run's answer where its output is the plan. Copying the answer as text puts
-  case-derived content on the clipboard (`agents/wip-clearance.md`, "Open", 6).
-- **What Lovable teaches** is read off as the work goes: so far, tokens as CSS variables in a light and a dark set,
-  mapped once; primitives kept apart from the app's own components; `cn()` (clsx and tailwind-merge) to merge classes;
-  an `@` alias for the source root; a Nix build of the bundle from pinned dependencies.
+Built, as takes (see "Built", "Phase 1"):
+- **The theme skeleton** is the tokens, both sets, and Tailwind's mapping of them, shared by the pages and the islands,
+  in `frontend/src/portal.css`. The tokens stay swift's HSL, written as whole colors, which Tailwind 4 mixes itself.
+  The dark set follows the system's preference (`prefers-color-scheme`), as swift had no switch. The fonts are served
+  by the app (`@fontsource-variable`), so that a page showing case-derived content fetches nothing from a third party.
+  `glass-card`, `gradient-bg`, `gradient-text`, `glow-primary` and the animations come along.
+- **The primitives come from shadcn-svelte** (v1.7, its "vega" style, the classic shadcn/ui look), and only the ones
+  used: alert, badge, button, card, label, native-select and textarea. A native select stands in for Radix's, which
+  plain forms on the server's pages can use too.
+- **The three answer components are ported to Svelte** as the renderer of a management plan
+  (`frontend/src/lib/plan/`), and show what swift didn't: a critical diagnosis, and a workup's priority. The older
+  answers' fields are gone. Copying the answer as text isn't ported: it puts case-derived content on the clipboard
+  (`agents/wip-clearance.md`, "Open", 6).
+
+### What Lovable teaches
+Taken:
+- **Tokens as CSS variables**, in a light and a dark set, mapped once to Tailwind's colors and radii.
+- **Primitives apart from the app's own components**: `frontend/src/lib/components/ui/` beside `lib/plan/`.
+- **`cn()`**, clsx and tailwind-merge, so that a component's classes and a caller's merge.
+- **An alias for the source root**: `$lib`, as shadcn-svelte names it, where Lovable has `@`.
+- **A Nix build of the bundle** from pinned dependencies (`fetchPnpmDeps`), and pnpm only.
+
+Left:
+- **Every primitive generated up front**: 49, of which the page used 10. The portal copies one when a page wants it.
+- **A client cache and router** (react-query, react-router) for a page that makes five calls: the server routes, and
+  an island fetches what it shows.
+- **Toasts for errors**, which go away: an island says what went wrong where it went wrong.
+- **An `.env` in the repository**, and the editor's tagger (`lovable-tagger`).
 
 ### The home page
 - **One page**: a text about a patient, a configuration and an endpoint picked, and back a differential (each
   diagnosis with its probability, whether it is critical, a short rationale), a management plan (workups by type and
   priority, empirical treatment, the disposition), its sources and a disclaimer.
-- **Typed, run and read**: the text is typed as a case (`POST /api/families`), run with one seed (`POST /api/runs`),
-  followed (`GET /api/runs/{id}/events`), and its answer read as the repl reads one (`chatddx.scorers.answer.read`).
-  The API serves a run's items with each call as recorded, not the answer read from it (see "Below the UI").
+- **Typed, run and read**: the text is typed as a case (`POST /api/families`), run with one seed and not scored
+  (`POST /api/runs`), followed (`GET /api/runs/{id}/events`), and its answer read from its item
+  (`GET /api/runs/{id}/items`, `answer`).
+- **What it offers**: the configurations whose answer's JSON Schema is titled `management_plan_v1`
+  (`GET /api/threads?kind=configuration&answers=…`), the person's own before another's of the same name, others' shown
+  as `owner/name`; and the endpoints whose engine can be told. Picking an endpoint picks the configuration made for its
+  model, when there is one.
+- **While it runs**: whether the model is thinking or writing, and its tokens so far. An answer that breaks its schema,
+  or was cut short, is shown as far as it goes, and said so.
 
 ### Typed cases
 Built below the home page: the `database` source kind and the `source` schema, `Bench.type_case`, `POST /api/families`,
@@ -195,8 +217,8 @@ in"), and people are added by command (`chatddx person add`). So:
 - A family per typed case, as built, or one per person with tags.
 - The text's language, a family's entry.
 - Whether the demo needs anyone to type without an account, which would bring back a guest (the API has none).
-- Which configurations are offered: those whose output is the management plan, which `GET /api/threads` can't filter
-  for yet.
+- The configurations offered by the title of their answer's schema, `management_plan_v1`, which the renderer is written
+  for. A schema's title is a loose handle: another schema could take the same title.
 
 ## Built
 Phase 0, `wip` under this file:
@@ -208,8 +230,7 @@ Phase 0, `wip` under this file:
   `next`, but only within the site: anything not starting with one `/` leads home. A wrong login or password shows the
   form again, with the login kept. Forms pass `same_origin` first. Every page says `Cache-Control: no-store`, since
   pages are per person and most will show case-derived content.
-- **`src/chatddx/portal/templates/`**: `base.html`, `sign-in.html` and `home.html`, autoescaped and unstyled until
-  phase 1.
+- **`src/chatddx/portal/templates/`**: `base.html`, `sign-in.html` and `home.html`, autoescaped.
 - **`chatddx portal`** (`src/chatddx/cli.py:_portal`, sharing `_serve` and `_serving` with `chatddx api`).
 - **The API**: `Cache-Control: no-store` on a family's vignette, a run's items, a score's items and a run's events
   (`src/chatddx/api/state.py:no_store`, `NO_STORE`); every refusal as `{"detail", "code"}`
@@ -224,6 +245,44 @@ Found on the way:
 - **What the portal doesn't route is answered as the API answers**: JSON with a code, as an unknown page's 404 or a
   form from another site's 403. Take: pages of their own for those when the theme lands.
 
+Phase 1, `wip` under this file:
+- **`frontend/`**, beside `src/`: a Vite project, pnpm only (`packageManager`), Svelte 5 with TypeScript 5.9
+  (openapi-typescript and svelte-check don't take 7 yet), Tailwind 4. Its entries are `src/portal.css`, the styles of
+  every page, and an island per `src/islands/<name>.ts`. `pnpm build` writes `frontend/dist/` with Vite's manifest;
+  `pnpm check` runs svelte-check. Neither `node_modules`, the build nor the generated types are committed.
+- **The API's types**: `frontend/openapi.json` is the API's OpenAPI document, written by `chatddx openapi`
+  (`src/chatddx/cli.py:_openapi`) and committed, so that the frontend builds without Python; openapi-typescript
+  generates `src/lib/api/schema.d.ts` from it, with `--default-non-nullable false`, since a request's defaulted field
+  isn't required. `src/lib/api/client.ts`: `api` (openapi-fetch), `why`, the detail of a refusal, and `follow`, a
+  run's events through `EventSource`. A test holds the document to the API's
+  (`src/chatddx/portal/test/test_frontend.py`).
+- **The components**: shadcn-svelte's vega style as its registry holds it (`docs/static/registry/styles/vega/` in
+  huntabyte/shadcn-svelte at 63bfef7), with `$UTILS$` and the icon placeholder filled as the CLI fills them, since the
+  CLI's registry, shadcn-svelte.com, is denied by this environment's network policy. `components.json` is the CLI's,
+  for a later `add`.
+- **The home page** (`frontend/src/islands/Home.svelte`; see "Swift", "The home page").
+- **Serving it**: `src/chatddx/portal/assets.py:Assets` reads the manifest when a page is rendered, so a rebuild shows
+  at once; a page gets the styles, and the home page its island's script and styles. The build is served at `/static/`
+  from `settings.portal_assets()`, `CHATDDX_PORTAL_ASSETS` or else `frontend/dist`
+  (`src/chatddx/portal/app.py:app` takes another for the tests). The templates are themed, and Tailwind reads them
+  (`@source` in `portal.css`, as a glob: the directory alone wasn't read).
+- **`chatddx portal --watch`** runs `pnpm install --frozen-lockfile` and then `pnpm run watch` in `frontend/` for as
+  long as the portal is served. Without it, and nothing built, it says so and serves unstyled pages.
+- **The flake**: Node 22 and pnpm (11) in the dev shell, and `packages.frontend`, the build, from the templates and
+  `frontend/`, its dependencies fetched by `fetchPnpmDeps` (`fetcherVersion = 4`) under a hash that changes with
+  `pnpm-lock.yaml` (see "Open"). pnpm 11 refuses a release younger than a day (`minimumReleaseAge`), which
+  `frontend/pnpm-workspace.yaml` asks of pnpm 10 too; pnpm 10 doesn't hold to it, so two packages it resolved are
+  overridden there, and `@lucide/svelte` is pinned a release back. Built and checked here with nixpkgs and the other
+  inputs fetched over git (`--override-input`), as this environment reaches GitHub's archives for nothing it hasn't
+  attached, and with the dependencies first fetched trusting its proxy's CA (`NODE_EXTRA_CA_CERTS` among the fetch's
+  `impureEnvVars`, which the flake doesn't keep).
+- **The API**: a run's items carry the answer as read (`answer`: its value, why it couldn't be read or breaks its
+  schema, and whether it was salvaged), and configurations are listed by what they answer (`answers`, the title of
+  their answer's JSON Schema; `Bench.answering`). `docs/api.md`, `docs/api-api.md`, `docs/bench.md` and
+  `docs/bench-api.md` have AGENT suggestions; the tests stay `solidified`.
+- **Tests**: `src/chatddx/portal/test/test_frontend.py`, and by hand on the sample World with its fake engines in
+  Chromium (Playwright), signed in as alice, light and dark.
+
 ## Below the UI
 What the portal needs below its pages that isn't built:
 1. **The worker** (`agents/wip-worker.md`): runs that outlive the app's process and are seen from every replica, and
@@ -233,18 +292,17 @@ What the portal needs below its pages that isn't built:
 3. **The batch planner** (`agents/wip-batch.md`).
 4. **Z1**, the map from roles to kinds, which waits for the portal's views (`docs/bench.md`, "Outstanding";
    `agents/wip-identity.md`, "Open").
-5. **The answer read**, beside each call of a run's items, so that an island shows an answer without reading a
-   response the way `chatddx.scorers.answer.read` does. Take: `GET /api/runs/{id}/items` adds it.
-6. **From the API's "Outstanding"** (`docs/api.md`), what the portal meets first: a keep-alive on the event stream,
-   which a proxy cuts when it is quiet; configurations filtered by their output, for the home page.
-7. **Runs already made, for the tests**: a database fixture with the test World's scripted runs run, copied for each
+5. **From the API's "Outstanding"** (`docs/api.md`), what the portal meets first: a keep-alive on the event stream,
+   which a proxy cuts when it is quiet.
+6. **Runs already made, for the tests**: a database fixture with the test World's scripted runs run, copied for each
    test as `curated` is (`docs/scripted.md`, "Smaller issues").
 
 ## Phases
 0. **Before the first page**, built (see "Built"): `chatddx portal`, `chatddx.portal` mounted beside the API, signing
    in and out, `Cache-Control: no-store` where case-derived content is served, and the API's error codes.
-1. **Swift.** The frontend's structure: Node, Vite and the build in the flake; Svelte, TypeScript and Tailwind; types
-   from `/api/openapi.json`. The theme skeleton and the salvaged components, then the home page, the first island.
+1. **Swift**, built (see "Built"): the frontend's structure, Node, Vite and the build in the flake; Svelte, TypeScript
+   and Tailwind; types from `/api/openapi.json`. The theme skeleton and the salvaged components, then the home page,
+   the first island.
 2. **Pages to read**: runs and a run's page, configurations with their versions and recipe, families with their
    expectations (the vignette in its own place), endpoints and models.
 3. **The variation being tried**, and its island.
@@ -257,8 +315,15 @@ What the portal needs below its pages that isn't built:
 8. **Docs**: material for a `docs/portal.md`.
 
 ## Open
-- **Where the frontend's build lives**: built by Nix with the package, as swift-dx-guide's flake builds its bundle,
-  or committed.
+- **Where the frontend's build lives.** Take, built: not committed; built by pnpm in development and by Nix
+  (`packages.frontend`) for a deployment, which points `CHATDDX_PORTAL_ASSETS` at it. The flake's default package, the
+  Python environment, doesn't hold it. A change to `frontend/pnpm-lock.yaml` wants a new hash in `flake.nix`: build
+  with `lib.fakeHash`, and take the one Nix reports.
+- **Caching the build**: its files are named by their content, so they could be kept for good (`immutable`);
+  Starlette's `StaticFiles` sends an ETag and a date only.
+- **A browser test in the suite**: the home page's flow is checked by hand. Take: Playwright on the test World and its
+  fakes, with the run's island (phase 4), which shares the flow.
+- **The frontend's checks**: `pnpm check` runs by hand; nothing runs it beside `pytest`.
 - **A page to test an endpoint**: a live check of the server and the model, written down nowhere. Canaries and
   `confirm` cover parts of it.
 - **Export.** The portal is to export results (`docs/chatddx.md`, glossary), and the export isn't planned

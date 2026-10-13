@@ -120,6 +120,13 @@ For a variation, the bench gives:
 - **its reach**: for each view of each scorer the person sees, whether the variation's output offers what the view
   reads, and which of the given families have no expectation it picks something from, or several to choose from.
 
+```
+AGENT: amend
+A sentence at the end of the paragraph, for the portal's home page (agents/wip-portal.md, "Swift").
+---
+An edge also lists configurations by what they answer (`Bench.answering`): the title of their answer's JSON Schema, as
+a page that shows management plans offers only the configurations that answer one.
+```
 A judge configuration, one whose purpose is `judge`, is looked at as the judge it would make on the engine: its lints
 are the judge's, it reads no case, and it has no reach, as no scorer reads what a judge answers. It isn't run on cases:
 starting it is refused. An edge lists configurations by purpose (`Bench.purposed`), since a judge configuration is no

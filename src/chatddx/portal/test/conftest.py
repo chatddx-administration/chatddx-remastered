@@ -1,4 +1,5 @@
 from collections.abc import Iterator
+from pathlib import Path
 
 import pytest
 from fastapi import FastAPI
@@ -36,11 +37,17 @@ def alice(conn: Connection) -> Person:
 
 
 @pytest.fixture
-def served(db: str) -> FastAPI:
+def built(tmp_path: Path) -> Path:
+    return tmp_path / "dist"
+
+
+@pytest.fixture
+def served(db: str, built: Path) -> FastAPI:
     return app(
         Inventory.load(TEST / "inventory.toml"),
         world_facts(),
         make_conninfo(settings.database(), dbname=db),
+        built,
     )
 
 
