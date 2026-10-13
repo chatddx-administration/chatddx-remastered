@@ -9,6 +9,7 @@ from chatddx.factors.kinds import BY_KIND
 from chatddx.factors.request import Recipe
 from chatddx.factors.scoring import Expectation, Scorer
 from chatddx.facts import lints
+from chatddx.identity import owns, sees
 
 from .errors import NotFound
 from .model import COMPILED_LANGUAGE, KINDS, SAVED, WRITTEN, Checked, Written
@@ -111,7 +112,7 @@ def edit_component(
     labels: Labels | None = None,
 ) -> Written:
     _, about, word = seen.worded(thread)
-    if not about.owned_by(seen.person.id):
+    if not owns(seen.person.id, about):
         raise NotFound(f"no {word} {thread} of yours")
     seen.check_kind(thread, word, component)
     return _written(
@@ -172,7 +173,7 @@ def bound(seen: Seen, appendix: Appendix) -> Appendix:
     families = {b.family for b in seen.rows.bindings_sharing(vignette)}
     if not any(
         seen.current(f) == vignette
-        and seen.catalog.about(Subject(family=f)).shows(seen.person.id)
+        and sees(seen.person.id, seen.catalog.about(Subject(family=f)))
         for f in families
     ):
         raise ValueError(

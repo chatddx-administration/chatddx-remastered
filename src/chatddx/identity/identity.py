@@ -3,7 +3,7 @@ import re
 import secrets
 from collections.abc import Collection, Iterable
 from enum import StrEnum
-from typing import ClassVar
+from typing import ClassVar, Protocol
 
 from argon2 import PasswordHasher
 from argon2.exceptions import InvalidHashError, VerificationError
@@ -39,8 +39,28 @@ class Person(BaseModel):
         return login
 
 
-def sees(person: int, owner: int | None, collaborators: Collection[int]) -> bool:
-    return owner == person or person in collaborators
+# src/chatddx/catalog/model.py:About is one, said of a thread, family, run or score.
+class Owned(Protocol):
+    @property
+    def owner(self) -> int | None: ...
+
+    @property
+    def collaborators(self) -> Collection[int]: ...
+
+    @property
+    def deleted(self) -> bool: ...
+
+
+def owns(person: int, owned: Owned) -> bool:
+    return not owned.deleted and owned.owner == person
+
+
+def collaborates(person: int, owned: Owned) -> bool:
+    return not owned.deleted and owned.owner != person and person in owned.collaborators
+
+
+def sees(person: int, owned: Owned) -> bool:
+    return owns(person, owned) or collaborates(person, owned)
 
 
 def preferred[T](person: int, seen: Iterable[tuple[T, int | None]]) -> list[T]:

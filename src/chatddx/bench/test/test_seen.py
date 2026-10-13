@@ -20,7 +20,7 @@ from chatddx.catalog import Entry, EntryField, Subject
 from chatddx.curation import Plan, load_cases
 from chatddx.factors.base import resolve
 from chatddx.factors.scoring import Expectation, Judge, View
-from chatddx.identity import Person
+from chatddx.identity import Person, owns
 from chatddx.runner.score import Grader, score_run
 from chatddx.store import Catalog, People, Store
 from chatddx.store.store import Connection
@@ -417,7 +417,7 @@ def _expectation_of(catalog: Catalog, case: str, owner: int) -> int:
     [thread] = [
         t
         for t in catalog.expectations_of(case)
-        if catalog.about(Subject(thread=t)).owned_by(owner)
+        if owns(owner, catalog.about(Subject(thread=t)))
     ]
     return thread
 

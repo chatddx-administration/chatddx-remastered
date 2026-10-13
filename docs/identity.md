@@ -46,6 +46,17 @@ repl and the commands act as a person by login, over a database connection of th
 What a person is shown is a convenience, not a protection: it decides what is relevant to show them. Sensitive data is
 protected by clearance and the database's grants (agents/wip-clearance.md), not by what a person is shown.
 
+```
+AGENT: replace
+Liveness moved from the catalog's `About.shows`/`About.owned_by` to identity, which now holds the three rules over
+anything with an owner, collaborators and a deleted flag (`Owned`, which the catalog's `About` is).
+---
+It goes by the catalog's owners and collaborators, and only what is live counts (docs/catalog.md, "Owners"): a person
+owns what names them its owner (src/chatddx/identity/identity.py:owns), collaborates on what is shared with them and
+isn't theirs (`collaborates`), and sees both (`sees`). Of what they see, their own comes first (`preferred`), which is
+how a name finds its thread or family. The catalog applies these to its rows, and the bench to what is in the store
+and the World (docs/bench.md, "What a person sees").
+```
 It goes by the catalog's owners and collaborators: a person sees what they own or what is shared with them
 (src/chatddx/identity/identity.py:sees), and of what they see, their own comes first (`preferred`), which is how a
 name finds its thread or family. The catalog adds that only what is live is shown (docs/catalog.md, "Owners"), and the
@@ -68,6 +79,13 @@ in with a password can stay as the development path. How Keycloak hands the app 
 "Outstanding", "Signing in"), nor whether roles then come from its realm roles instead of the person.
 
 ## Tests
+```
+AGENT: replace
+The tests now cover owning, collaborating and deleted subjects too.
+---
+- src/chatddx/identity/test/test_identity.py: who owns, collaborates on and sees what, nothing deleted, and their own
+  first.
+```
 - src/chatddx/identity/test/test_identity.py: who sees what, and their own first.
 - src/chatddx/store/test/test_identity.py: people, passwords and sessions; that tokens aren't stored; what the
   database guards, and that the reader sees people but no secrets.

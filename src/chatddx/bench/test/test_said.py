@@ -4,7 +4,7 @@ import pytest
 
 from chatddx.bench import Bench, NotFound
 from chatddx.catalog import About, Subject
-from chatddx.identity import Person
+from chatddx.identity import Person, sees
 from chatddx.store.catalog import Rows
 from chatddx.test.world import LINES
 
@@ -33,7 +33,7 @@ def test_an_owner_says_what_a_thread_is_called_and_who_it_is_shared_with(
     )
     assert (said.name, said.description) == ("terse", "Short answers.")
     assert (said.tags, said.collaborators) == ({"ddx", "short"}, {bob.id})
-    assert said.shows(bob.id)
+    assert sees(bob.id, said)
 
     written = _entries(bench, mine)
     again = bench.say(mine, name="terse", tags=["short", "ddx"], collaborators=["bob"])
@@ -42,7 +42,7 @@ def test_an_owner_says_what_a_thread_is_called_and_who_it_is_shared_with(
     cleared = bench.say(mine, name=None, tags=[], collaborators=[])
     assert (cleared.name, cleared.tags, cleared.collaborators) == (None, set(), set())
     assert cleared.description == "Short answers."
-    assert not cleared.shows(bob.id)
+    assert not sees(bob.id, cleared)
     assert _entries(bench, mine) == written + 4
 
 

@@ -32,6 +32,15 @@ the modules `families`, `language`, `read`, `threads`, `titles` and `variants`.
 
 Functions are called through their module (`threads.behind(rows, thread)`); `model.py` is imported by path.
 
+```
+AGENT: replace
+`model.py` no longer imports `chatddx.identity`; `families.py` and `threads.py` do, for `sees`, `owns` and
+`collaborates`.
+---
+| `model.py` | `chatddx.factors.{base,cases,scoring}` |
+| `families.py` | `model.py`, `read.py`, `chatddx.factors.{base,bundle,cases,scoring}`, `chatddx.identity` |
+| `threads.py` | `families.py`, `model.py`, `read.py`, `chatddx.factors.{base,kinds,request,scoring}`, `chatddx.identity` |
+```
 | Module | Builds on |
 | --- | --- |
 | `model.py` | `chatddx.factors.{base,cases,scoring}`, `chatddx.identity` |
@@ -74,6 +83,15 @@ package takes the last row for a key as the one that holds: through `model.py:la
 **Deleted subjects.** A subject is deleted when its `About.deleted` is true. What each function does with deleted
 threads and families is said in its entry; in short:
 
+```
+AGENT: replace
+The rules moved to identity (docs/identity.md, "Authorization"). `check_expectation` skips deleted threads through
+`expectation_choices`, so it stays in that row.
+---
+| skipped, through `chatddx.identity.sees` | `threads.visible`, `families.visible` |
+| skipped, through `chatddx.identity.collaborates` | `threads.expectations_shared` |
+| skipped, through `chatddx.identity.owns` | `threads.find` with an owner, `threads.expectation_choices`, `threads.expectations_for`, `threads.expectation_for`, `threads.check_expectation` |
+```
 | Deleted are | Functions |
 | --- | --- |
 | skipped, through `About.shows` | `threads.visible`, `threads.expectations_shared`, `families.visible` |
@@ -167,6 +185,11 @@ What a subject's entries say now.
 | `deleted` | `bool` | `False` |
 | `language` | `str \| None` | `None` |
 
+```
+AGENT: remove
+`shows` and `owned_by` moved to `chatddx.identity` as `sees(person, about)` and `owns(person, about)`, beside
+`collaborates(person, about)`: `About` is an `Owned` by its `owner`, `collaborators` and `deleted`. Drop their rows.
+```
 | Member | Description |
 | --- | --- |
 | `of(entries: Iterable[Entry]) -> Self` (classmethod) | Folds the entries in the order given. For `name`, `description`, `owner`, `deleted` and `language` the last entry wins; a `name` entry without a value clears the name. For `tag` and `collaborator` the last entry for each member wins: `present` adds it, not `present` removes it. No entries give `About()`. |
@@ -294,6 +317,13 @@ The ids of the live threads of `kind` whose current name is exactly `name`, and 
 thread id order. Names aren't unique, so it may return several.
 
 ### `visible(rows, kind: str, person: int) -> list[tuple[Edit, About]]`
+```
+AGENT: replace
+`About.shows` is now `chatddx.identity.sees`.
+---
+The head and `About` of each thread of `kind` that `person` `sees`: live, and owned by `person` or shared with
+them as a collaborator. Thread id order; threads without edits are left out.
+```
 The head and `About` of each thread of `kind` that `About.shows(person)`: live, and owned by `person` or shared with
 them as a collaborator. Thread id order; threads without edits are left out.
 
@@ -305,11 +335,27 @@ several distinct head digests raises `picked`'s `LookupError`. Shared threads ar
 `expectation_for(rows, case: str, person: int, schema: str) -> str | None` is `expectations_for` of the one case.
 
 ### `expectation_choices(rows, cases: Sequence[str], person: int, schema: str) -> dict[str, dict[int, str]]`
+```
+AGENT: replace
+`About.owned_by` is now `chatddx.identity.owns`.
+---
+For each case, the threads `expectations_for` picks from, each with its head digest: the threads whose head is an
+expectation of that case with `expectation_schema == schema` and which `person` `owns`. Every case given is a key,
+with `{}` when there are none. It refuses nothing.
+```
 For each case, the threads `expectations_for` picks from, each with its head digest: the threads whose head is an
 expectation of that case with `expectation_schema == schema` and which `About.owned_by(person)`. Every case given is
 a key, with `{}` when there are none. It refuses nothing.
 
 ### `expectations_shared(rows, cases: Sequence[str], person: int, schema: str) -> dict[str, list[tuple[Edit, About]]]`
+```
+AGENT: replace
+"`About.shows(person)` and whose owner isn't `person`" is now one rule, `chatddx.identity.collaborates`.
+---
+For each case, the head and `About` of each thread whose head is an expectation of that case with
+`expectation_schema == schema`, which `person` `collaborates` on: live, shared with them, and not their own. What they
+could take. Thread id order. Every case given is a key, with `[]` when there are none.
+```
 For each case, the head and `About` of each thread whose head is an expectation of that case with
 `expectation_schema == schema`, which `About.shows(person)` and whose owner isn't `person`: what they could take.
 Thread id order. Every case given is a key, with `[]` when there are none.
@@ -403,6 +449,12 @@ The family's bindings, by id; the last is the current one. `LookupError("no fami
 none, which also covers a family that doesn't exist.
 
 ### `visible(rows, person: int) -> list[tuple[int, About]]`
+```
+AGENT: replace
+`About.shows` is now `chatddx.identity.sees`.
+---
+Each family, in id order, that `person` `sees`, with its `About`.
+```
 Each family, in id order, whose `About.shows(person)`, with its `About`.
 
 ### `family_of(rows, case: str) -> int | None`

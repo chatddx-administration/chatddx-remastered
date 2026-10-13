@@ -37,7 +37,7 @@ from chatddx.factors.request import (
 from chatddx.factors.scoring import Expectation, Judge, Scorer, Scoring
 from chatddx.factors.trial import Trial
 from chatddx.facts import Facts, lints, model_name
-from chatddx.identity import Person, preferred
+from chatddx.identity import Person, owns, preferred, sees
 from chatddx.inventory import Inventory
 from chatddx.ledger import (
     ItemKey,
@@ -169,7 +169,7 @@ class Seen:
     ) -> tuple[Edit, About]:
         about = self.about(id)
         thread = self.rows.thread(id)
-        seen = about.shows(self.person.id) or (
+        seen = sees(self.person.id, about) or (
             deleted and about.deleted and about.owner == self.person.id
         )
         if (
@@ -303,7 +303,7 @@ class Seen:
 
     def family_by_id(self, id: int) -> Family:
         about = self.catalog.about(Subject(family=id))
-        case = self._cases([id])[id] if about.shows(self.person.id) else None
+        case = self._cases([id])[id] if sees(self.person.id, about) else None
         if case is None:
             raise NotFound(f"no case {id} for {self.person.login}")
         return Family(id, about, case)
@@ -315,7 +315,7 @@ class Seen:
         heads = [
             self.catalog.head(t).digest
             for t in self.catalog.expectations_of(case)
-            if self.about(t).shows(self.person.id)
+            if sees(self.person.id, self.about(t))
         ]
         held = (resolve(self.get, d, Expectation) for d in heads)
         return sorted({e.expectation_schema for e in held})
@@ -576,7 +576,7 @@ class Seen:
         owned = [
             s.run
             for s in involved
-            if s.run is not None and known[s].owned_by(self.person.id)
+            if s.run is not None and owns(self.person.id, known[s])
         ]
         return self.store.started(owned)
 
@@ -597,7 +597,7 @@ class Seen:
     def run_by_id(self, run: UUID) -> RunStarted:
         about = self.catalog.about(Subject(run=run))
         found = self.store.started([run])
-        if not about.owned_by(self.person.id) or not found:
+        if not owns(self.person.id, about) or not found:
             raise NotFound(f"no run {run} of yours")
         return found[0]
 

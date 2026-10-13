@@ -1,5 +1,11 @@
 # Bench API
 
+```
+AGENT: replace
+The bench also applies `sees` and `owns` from `chatddx.identity` now.
+---
+… agents/wip-identity.md (`Person`, `preferred`, `sees`, `owns`) …
+```
 Reference for the `chatddx.bench` package. It was written from `src/chatddx/bench/*` and docs/bench.md. What the bench
 is and why it is shaped this way is in docs/bench.md; this file says what each name accepts, returns and raises. The
 types it passes through are in docs/catalog-api.md (`Edit`, `About`, `Subject`, `Kept`), docs/factors-api.md
@@ -31,6 +37,11 @@ Paths are relative to `src/chatddx/bench/` unless they start with `src/`, `docs/
 `Saved`, `Taken`, `Written`, `ScoreHalt`, `ScorerStarted` and `ScoringEvent`. Edges import from `chatddx.bench`,
 never by path; tests import their helpers from `chatddx.bench.test.helpers`.
 
+```
+AGENT: replace
+`cases.py`, `components.py`, `configurations.py` and `following.py` now import `chatddx.identity`, for `sees` and
+`owns`. Add it to their rows.
+```
 | Module | Holds | Builds on |
 | --- | --- | --- |
 | `errors.py` | `NotFound`, `Ambiguous`, `Conflict`, `OverQuota`; `MovedOn`, the catalog's | `chatddx.catalog` |
@@ -79,6 +90,14 @@ scoring pass's.
 
 **Words.** A method that takes `word` takes a key of `KINDS`; another raises `KeyError`.
 
+```
+AGENT: replace
+`About.shows` and `About.owned_by` moved to `chatddx.identity` as `sees` and `owns`.
+---
+**What the person sees.** A thread or family the person sees is one whose `About` they `chatddx.identity.sees`:
+live, and owned or shared. Their own is one whose `About` they `owns`: live, and owned. Of several the person sees,
+their own are taken when they own any, else all of them (`chatddx.identity.preferred`).
+```
 **What the person sees.** A thread or family the person sees is one whose `About.shows(person.id)`: live, and owned
 or shared. Their own is `About.owned_by(person.id)`: live, and owned. Of several the person sees, their own are
 taken when they own any, else all of them (`chatddx.identity.preferred`).
@@ -406,6 +425,12 @@ added or withdrawn, and deleting.
 
 ## following.py
 
+```
+AGENT: replace
+In `proposal`'s row, "isn't one the person `shows`" names the method that moved to `chatddx.identity.sees`.
+---
+… when the origin's thread isn't one the person `sees`, …
+```
 | Write | Returns / raises |
 | --- | --- |
 | `proposal(thread: int) -> Proposed \| None` | What following the origin of `thread`, a thread the person sees (`NotFound("no <word> <thread> for <login>")`), would keep. `None` when `Catalog.variation` gives none or one that hasn't `moved`, when the origin's thread isn't one the person `shows`, and when `Catalog.proposal` is `None`. A recipe is compiled by the running code (`Seen.compiled`), nothing stored. `ValueError("<word> <thread>'s changes don't fit its origin's head: …")` wraps a `ValueError` of the proposal or its compiling. |

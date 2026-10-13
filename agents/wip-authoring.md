@@ -210,7 +210,7 @@ Takes, built:
 
 ### A9. What is said about a thread
 A thread's name, description, tags and collaborators, and deleting or restoring it, are entries the bench writes on what
-the person owns (`About.owned_by`), as `edit` already requires: a collaborator may fork a thread, but not edit, share or
+the person owns (`chatddx.identity.owns`), as `edit` already requires: a collaborator may fork a thread, but not edit, share or
 delete it. Decided: only the owner shares. Sharing names a person by login. Restoring is held to the catalog's rules, so
 restoring a second expectation of one case and schema is refused. Handing a thread over to another owner isn't offered.
 

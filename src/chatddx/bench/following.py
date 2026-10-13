@@ -2,6 +2,7 @@ from chatddx.catalog import LANGUAGE_KINDS, Labels, Part, Variation
 from chatddx.factors.bundle import Registry
 from chatddx.factors.request import Recipe
 from chatddx.factors.scoring import Expectation, Scorer
+from chatddx.identity import owns, sees
 
 from .components import keep_language
 from .errors import NotFound
@@ -17,7 +18,7 @@ def proposal(seen: Seen, thread: int) -> Proposed | None:
 
 def follow(seen: Seen, thread: int, head: int, language: str | None = None) -> Written:
     _, about, word = seen.worded(thread)
-    if not about.owned_by(seen.person.id):
+    if not owns(seen.person.id, about):
         raise NotFound(f"no {word} {thread} of yours")
     found = _proposed(seen, thread, word)
     if found is None:
@@ -65,7 +66,7 @@ def _proposed(seen: Seen, thread: int, word: str) -> tuple[Proposed, Registry] |
     varied = seen.catalog.variation(thread)
     if varied is None or not varied.moved:
         return None
-    if not seen.about(varied.origin_head.thread).shows(seen.person.id):
+    if not sees(seen.person.id, seen.about(varied.origin_head.thread)):
         return None
     try:
         proposal = seen.catalog.proposal(thread)

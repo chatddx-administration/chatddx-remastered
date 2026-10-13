@@ -10,7 +10,6 @@ from pydantic import BaseModel, ConfigDict, JsonValue, model_validator
 from chatddx.factors.base import Fingerprint
 from chatddx.factors.cases import Vignette
 from chatddx.factors.scoring import Scorer
-from chatddx.identity import sees
 
 # src/chatddx/store/migrations/0012-t2-catalog.sql repeats these kinds.
 THREAD_KINDS = frozenset(
@@ -246,12 +245,6 @@ class About(_Frozen):
             deleted=deleted,
             language=language,
         )
-
-    def shows(self, person: int) -> bool:
-        return not self.deleted and sees(person, self.owner, self.collaborators)
-
-    def owned_by(self, person: int) -> bool:
-        return not self.deleted and self.owner == person
 
 
 def _toggle[T](members: set[T], member: T, present: bool) -> None:

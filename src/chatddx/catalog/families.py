@@ -5,6 +5,7 @@ from chatddx.factors.base import Fingerprint, Resolver, resolve
 from chatddx.factors.bundle import Registry
 from chatddx.factors.cases import Appendix, Case, Vignette
 from chatddx.factors.scoring import Expectation
+from chatddx.identity import sees
 
 from .model import About, Behind, Binding, Subject, Survey, latest
 from .read import Reader, about, abouts, heads_holding
@@ -29,7 +30,7 @@ def bindings(rows: Reader, family: int) -> list[Binding]:
 def visible(rows: Reader, person: int) -> list[tuple[int, About]]:
     ids = rows.families()
     known = abouts(rows, [Subject(family=f) for f in ids])
-    return [(f, a) for f in ids if (a := known[Subject(family=f)]).shows(person)]
+    return [(f, a) for f in ids if sees(person, a := known[Subject(family=f)])]
 
 
 def family_of(rows: Reader, case: str) -> int | None:

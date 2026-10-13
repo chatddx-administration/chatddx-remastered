@@ -6,6 +6,7 @@ from chatddx.factors.base import Component, canonical_bytes, iter_refs, resolve
 from chatddx.factors.kinds import parse_component
 from chatddx.factors.request import Compilation, Recipe
 from chatddx.factors.scoring import Expectation, Scorer
+from chatddx.identity import collaborates, owns, sees
 
 from .families import stale_cases
 from .model import (
@@ -105,7 +106,7 @@ def find(rows: Reader, kind: str, name: str, *, owner: int | None = None) -> lis
         i
         for i in ids
         if (a := known[Subject(thread=i)]).name == name
-        and (not a.deleted if owner is None else a.owned_by(owner))
+        and (not a.deleted if owner is None else owns(owner, a))
     ]
 
 
@@ -116,7 +117,7 @@ def visible(rows: Reader, kind: str, person: int) -> list[tuple[Edit, About]]:
     return [
         (found[i], a)
         for i in ids
-        if i in found and (a := known[Subject(thread=i)]).shows(person)
+        if i in found and sees(person, a := known[Subject(thread=i)])
     ]
 
 
@@ -150,7 +151,7 @@ def expectation_choices(
     rows: Reader, cases: Sequence[str], person: int, schema: str
 ) -> dict[str, dict[int, str]]:
     found: dict[str, dict[int, str]] = {c: {} for c in cases}
-    for case, edit, _ in _expecting(rows, cases, schema, lambda a: a.owned_by(person)):
+    for case, edit, _ in _expecting(rows, cases, schema, lambda a: owns(person, a)):
         found[case][edit.thread] = edit.digest
     return found
 
@@ -159,9 +160,7 @@ def expectations_shared(
     rows: Reader, cases: Sequence[str], person: int, schema: str
 ) -> dict[str, list[tuple[Edit, About]]]:
     found: dict[str, list[tuple[Edit, About]]] = {c: [] for c in cases}
-    shared = _expecting(
-        rows, cases, schema, lambda a: a.shows(person) and a.owner != person
-    )
+    shared = _expecting(rows, cases, schema, lambda a: collaborates(person, a))
     for case, edit, about in shared:
         found[case].append((edit, about))
     return found
