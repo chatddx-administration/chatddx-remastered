@@ -97,8 +97,9 @@ Why apart from the planner:
   thread per run, kept in memory. Small, but runs end with the process, and replicas don't see each other's.
 - **W3. A process of its own**, `chatddx worker`, reading what is asked from the store. Survives the app's restarts,
   serves every replica.
-- **W3, also runnable in the app's process**: the same worker, started as a thread by `chatddx api --worker` and by
-  the tests, reading the same store.
+- **W3, also runnable in the app's process**: the same worker, started as a thread by `chatddx portal`, which starts
+  everything the portal needs (`agents/wip-portal.md`, "P3b, concretely"), by `chatddx api --worker` and by the tests,
+  reading the same store.
 
 Decided: the last. One implementation; W2 isn't built and thrown away. What is asked is in the store either way, so
 even in-process a closed tab doesn't stop a run.
@@ -127,8 +128,8 @@ progress"; `docs/store.md`), as identity's people and sessions are. Take, for it
 - **E3. E2, with deltas through `NOTIFY`**: a completion as it is written, batched to keep within `NOTIFY`'s payload
   limit (8,000 bytes). The deltas are case-derived, and pass through the database, which holds the ledger already.
 
-Decided: E2. Take: E3 when the portal's run island wants to show a completion as it is written. Swift waits for one
-answer, which E2 gives (`agents/wip-portal.md`, "Swift").
+Decided: E2. Take: E3 when the portal's run island wants to show a completion as it is written. The portal's home page,
+swift's, waits for one answer, which E2 gives (`agents/wip-portal.md`, "Swift").
 
 ### K4. The unit it schedules
 - **Runs.** A run is sent whole by one worker, up to its own concurrency. A long run holds its endpoint's slots until

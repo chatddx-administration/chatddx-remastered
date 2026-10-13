@@ -53,7 +53,7 @@ def test_what_isn_t_the_owner_s_to_say_is_refused(signed: TestClient) -> None:
     got = signed.patch(f"/api/threads/{archives['id']}", json={"name": "mine"})
     assert (got.status_code, got.json()) == (
         404,
-        {"detail": f"no configuration {archives['id']} of yours"},
+        {"detail": f"no configuration {archives['id']} of yours", "code": "not_found"},
     )
     assert signed.get(path).json()["name"] == mine["name"]
 

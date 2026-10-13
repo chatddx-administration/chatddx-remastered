@@ -9,13 +9,17 @@ it.
 ## Start with this
 1. **Decided: HTML pages rendered on the server from the bench, with Svelte islands in TypeScript that call the API**
    (see "How it is built").
-2. **Decided: swift is where the frontend starts.** A theme skeleton is extracted from swift-dx-guide and its reusable
-   components are salvaged; that work sets the structure of the portal's frontend, and shows what Lovable has to teach
-   (see "Swift").
-3. **What it stands on is built**: the bench and the API (`docs/bench.md`, `docs/api.md`), the writes for authoring
+2. **Decided: swift is the portal now.** There is no swift page apart from the portal: what swift showed is the
+   portal's home page. A theme skeleton is extracted from swift-dx-guide and its reusable components are salvaged;
+   that work sets the structure of the portal's frontend, and shows what Lovable has to teach (see "Swift").
+3. **Decided: `chatddx portal`** serves the portal, and starts everything the portal needs with it: the API now, the
+   worker once there is one (see "P3b, concretely").
+4. **Phase 0 is built** (see "Built"): `chatddx.portal`, signing in and out, `Cache-Control: no-store`, and a code
+   beside each error's detail in the API (decided).
+5. **What it stands on is built**: the bench and the API (`docs/bench.md`, `docs/api.md`), the writes for authoring
    (`agents/wip-authoring.md`) and typed cases (`docs/bench.md`, "Typed cases"). What isn't is under "Below the UI":
-   the worker, the batch planner, Z1, `no-store`, and a few things the API doesn't give yet.
-4. **Next**: phase 0, then swift (see "Phases").
+   the worker, the batch planner, Z1, and a few things the API doesn't give yet.
+6. **Next**: phase 1, swift's theme, structure and components, and the home page (see "Phases").
 
 ## What the portal shows
 The old portal's manual reads as a functional spec for its pages: `docs/portal.md` in chatddx-administration/chatddx
@@ -25,8 +29,8 @@ In remastered's terms:
 
 | Page | Shows | Reads |
 |---|---|---|
-| Sign in | a form | `People`, as `POST /api/session` |
-| Swift | a case typed, a configuration and an endpoint picked, the answer as a management plan (see "Swift") | `POST /api/families`, `POST /api/runs`, its events and items |
+| Sign in | a form, and signing out | `People`, as `POST /api/session` does |
+| Home | swift's: a case typed, a configuration and an endpoint picked, the answer as a management plan (see "Swift") | `POST /api/families`, `POST /api/runs`, its events and items |
 | Runs | a person's runs, and those left to score with **Score again** | `Bench.runs`, `Bench.outstanding`; `GET /api/runs` |
 | A run | the trial, how it came out and why, the case it ran, the endpoint and engine, tools, tokens, the configuration as it ran, the answer by view, scores, the messages part by part (folded, linkable as `#message-N`, loaded when opened), and the requests rendered again | `Bench.run_by_id`, `Bench.described`, `Bench.scores_of`, `Bench.rendered_again`, `src/chatddx/bench/outcome.py`; `GET /api/runs/{id}` and below it |
 | Configurations | each with its versions, its recipe part by part, and its runs | `Bench.threads`, `Bench.reaching`, `Bench.scored_by`; `GET /api/threads?kind=configuration` |
@@ -73,6 +77,9 @@ where it is interactive. Its look and the structure of its frontend come from sw
 
 ### P3b, concretely
 Decided:
+- **`chatddx portal`** serves the app, the portal at `/` and the API at `/api/`, as `chatddx api` serves the API
+  alone, with the same `--world`, `--facts` and `--bind`. It starts everything the portal needs with it: the worker,
+  once there is one, in the app's process (`agents/wip-worker.md`, K1), and the frontend's build when it has one.
 - **One app.** `src/chatddx/portal/`, a package beside `src/chatddx/api/`, mounted at `/` in the same FastAPI app as
   the API at `/api/` (`src/chatddx/api/app.py:app`). Its routes return HTML rendered with Jinja2 (Starlette's
   `Jinja2Templates`), and build a bench per request, as the API's routes do (`src/chatddx/api/people.py:bench`).
@@ -81,12 +88,14 @@ Decided:
   `POST /api/session` does.
 - **Forms are plain POSTs**, checked by the API's same-origin check (`src/chatddx/api/people.py:same_origin`), so
   there is no CSRF token, as there is none for the API.
+- **Errors carry a code** beside their detail, so that a page or an island tells a refusal apart without reading its
+  sentence (`docs/api.md`, "Errors", which has an AGENT suggestion).
 - **Dependencies**: `jinja2`, and `python-multipart` for FastAPI's form fields, both in `pyproject.toml`, imported
   only under `chatddx.portal` as `rich` is only under `chatddx.repl`.
 
 ### Islands
 Decided: Svelte with TypeScript, only where a page needs feedback that takes a round trip or live state:
-- **Swift**: the text, and the answer as it comes (see "Swift").
+- **The home page**: the text, and the answer as it comes (see "Swift").
 - **The variation being tried**: pick a chunk per part and see what it would make, as you pick.
 - **A run as it runs**: its items as they start and end, and the deltas while you watch (`docs/api.md`, "Its
   events").
@@ -106,18 +115,20 @@ Decided, for how:
 ### Tests
 Decided:
 - **Pages**: `TestClient` on the HTML, in `src/chatddx/portal/test/`, on the test World as `curated` lands it, as the
-  API's are.
+  API's are; marked `wip` until `docs/portal.md`.
 - **Islands**: through the API's tests for what they call, and a browser test (Playwright, with the container's
   Chromium) once an island holds logic worth testing on its own.
 - **Runs to show**: the test World's six scripted runs (`docs/scripted.md`, "The runs").
 
 ## Swift
 Decided:
+- **Swift is the portal now.** What swift showed is the portal's home page, and nothing called swift stands apart
+  from the portal.
 - **swift-dx-guide is mined, not ported**: a theme skeleton is extracted from it, and its reusable components are
   salvaged. That work sets the structure of the portal's frontend, and shows what Lovable has to teach. The repository
   is chatddx-administration/swift-dx-guide, a Lovable project.
-- **The swift page**: a person types a case, picks a configuration and an endpoint, and reads the answer as a
-  management plan. It is mainly for testing.
+- **The home page**: a person types a case, picks a configuration and an endpoint, and reads the answer as a
+  management plan.
 - **The texts typed in it are kept in the database**, as a source of their own (see "Typed cases").
 
 ### What swift-dx-guide holds
@@ -151,13 +162,13 @@ Take, for the work:
   being ported by hand. Which Tailwind and shadcn-svelte versions, and whether the tokens move from HSL with them, is
   settled as the toolchain lands.
 - **The three answer components are ported to Svelte** as the renderer of a management plan, typed from its schema,
-  and shown on the swift page and as a run's answer where its output is the plan. Copying the answer as text puts
+  and shown on the home page and as a run's answer where its output is the plan. Copying the answer as text puts
   case-derived content on the clipboard (`agents/wip-clearance.md`, "Open", 6).
 - **What Lovable teaches** is read off as the work goes: so far, tokens as CSS variables in a light and a dark set,
   mapped once; primitives kept apart from the app's own components; `cn()` (clsx and tailwind-merge) to merge classes;
   an `@` alias for the source root; a Nix build of the bundle from pinned dependencies.
 
-### The page
+### The home page
 - **One page**: a text about a patient, a configuration and an endpoint picked, and back a differential (each
   diagnosis with its probability, whether it is critical, a short rationale), a management plan (workups by type and
   priority, empirical treatment, the disposition), its sources and a disclaimer.
@@ -166,7 +177,7 @@ Take, for the work:
   The API serves a run's items with each call as recorded, not the answer read from it (see "Below the UI").
 
 ### Typed cases
-Built below the page: the `database` source kind and the `source` schema, `Bench.type_case`, `POST /api/families`,
+Built below the home page: the `database` source kind and the `source` schema, `Bench.type_case`, `POST /api/families`,
 and the limits on a text's length and on texts a day (`docs/bench.md` and `docs/api.md`, "Typed cases";
 `docs/inventory.md`, "Sources"; `docs/store.md`, "Texts"; `docs/migrations.md`, "source"). A typed case runs as any
 case, and its completion lands in the ledger; the vignette doesn't.
@@ -187,6 +198,32 @@ in"), and people are added by command (`chatddx person add`). So:
 - Which configurations are offered: those whose output is the management plan, which `GET /api/threads` can't filter
   for yet.
 
+## Built
+Phase 0, `wip` under this file:
+- **`src/chatddx/portal/app.py:app`**: the API's app (`src/chatddx/api/app.py:app`), with the portal's pages
+  mounted at `/` and left out of the OpenAPI document, and `SignInFirst` answered by a redirect to signing in.
+- **`src/chatddx/portal/pages.py`**: `GET /` (the home page, for now who is signed in), `GET` and `POST /sign-in`, and
+  `POST /sign-out`. A page wants the session cookie, and without one, or with one that has ended, sends the person to
+  `/sign-in?next=` the page. Signing in sets the API's cookie (`src/chatddx/api/people.py:keep_cookie`) and leads to
+  `next`, but only within the site: anything not starting with one `/` leads home. A wrong login or password shows the
+  form again, with the login kept. Forms pass `same_origin` first. Every page says `Cache-Control: no-store`, since
+  pages are per person and most will show case-derived content.
+- **`src/chatddx/portal/templates/`**: `base.html`, `sign-in.html` and `home.html`, autoescaped and unstyled until
+  phase 1.
+- **`chatddx portal`** (`src/chatddx/cli.py:_portal`, sharing `_serve` and `_serving` with `chatddx api`).
+- **The API**: `Cache-Control: no-store` on a family's vignette, a run's items, a score's items and a run's events
+  (`src/chatddx/api/state.py:no_store`, `NO_STORE`); every refusal as `{"detail", "code"}`
+  (`src/chatddx/api/app.py:STATUSES`, `CODES`; `src/chatddx/api/schemas.py:Error`). `docs/api.md` and
+  `docs/api-api.md` have AGENT suggestions; the API's tests, which pin the codes and the header, stay `solidified`.
+- **Tests**: `src/chatddx/portal/test/test_signing_in.py`.
+
+Found on the way:
+- **A route's name is the handler's**, and FastAPI keeps one table for the app: the portal's handlers are named
+  `signing_in_page`, `signing_in` and `signing_out`, so that `url_path_for` doesn't find the API's `sign_in` and
+  `sign_out` for them.
+- **What the portal doesn't route is answered as the API answers**: JSON with a code, as an unknown page's 404 or a
+  form from another site's 403. Take: pages of their own for those when the theme lands.
+
 ## Below the UI
 What the portal needs below its pages that isn't built:
 1. **The worker** (`agents/wip-worker.md`): runs that outlive the app's process and are seen from every replica, and
@@ -196,23 +233,18 @@ What the portal needs below its pages that isn't built:
 3. **The batch planner** (`agents/wip-batch.md`).
 4. **Z1**, the map from roles to kinds, which waits for the portal's views (`docs/bench.md`, "Outstanding";
    `agents/wip-identity.md`, "Open").
-5. **`Cache-Control: no-store`** wherever case-derived content is shown, since a browser otherwise keeps it in its
-   cache: the portal's pages that show a vignette, an answer or a score's items, and the API's places for it
-   (`docs/api.md`, "Case-derived content"), which the islands fetch in the browser. No route sends it today; the
-   events send `no-cache`. Clearance's open question 6 covers it (`agents/wip-clearance.md`).
-6. **The answer read**, beside each call of a run's items, so that an island shows an answer without reading a
+5. **The answer read**, beside each call of a run's items, so that an island shows an answer without reading a
    response the way `chatddx.scorers.answer.read` does. Take: `GET /api/runs/{id}/items` adds it.
-7. **From the API's "Outstanding"** (`docs/api.md`), what the portal meets first: a `code` beside an error's `detail`,
-   so that a form offers the head an edit moved on to; a keep-alive on the event stream, which a proxy cuts when it is
-   quiet; configurations filtered by their output, for swift.
-8. **Runs already made, for the tests**: a database fixture with the test World's scripted runs run, copied for each
+6. **From the API's "Outstanding"** (`docs/api.md`), what the portal meets first: a keep-alive on the event stream,
+   which a proxy cuts when it is quiet; configurations filtered by their output, for the home page.
+7. **Runs already made, for the tests**: a database fixture with the test World's scripted runs run, copied for each
    test as `curated` is (`docs/scripted.md`, "Smaller issues").
 
 ## Phases
-0. **Before the first page.** `chatddx.portal` mounted beside the API, the sign-in page, and `Cache-Control:
-   no-store` where case-derived content is served.
+0. **Before the first page**, built (see "Built"): `chatddx portal`, `chatddx.portal` mounted beside the API, signing
+   in and out, `Cache-Control: no-store` where case-derived content is served, and the API's error codes.
 1. **Swift.** The frontend's structure: Node, Vite and the build in the flake; Svelte, TypeScript and Tailwind; types
-   from `/api/openapi.json`. The theme skeleton and the salvaged components, then the swift page, the first island.
+   from `/api/openapi.json`. The theme skeleton and the salvaged components, then the home page, the first island.
 2. **Pages to read**: runs and a run's page, configurations with their versions and recipe, families with their
    expectations (the vignette in its own place), endpoints and models.
 3. **The variation being tried**, and its island.
@@ -225,7 +257,6 @@ What the portal needs below its pages that isn't built:
 8. **Docs**: material for a `docs/portal.md`.
 
 ## Open
-- **One process or two.** `chatddx api` serving the portal too, or a `chatddx portal` of its own on the same app.
 - **Where the frontend's build lives**: built by Nix with the package, as swift-dx-guide's flake builds its bundle,
   or committed.
 - **A page to test an endpoint**: a live check of the server and the model, written down nowhere. Canaries and

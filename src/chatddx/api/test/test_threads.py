@@ -79,7 +79,10 @@ def test_a_thread_the_person_doesn_t_see_isn_t_found(
     for path in (f"/api/threads/{mine['id']}", f"/api/threads/{mine['id']}/edits"):
         got = signed.get(path, headers=bob)
         assert got.status_code == 404
-        assert got.json() == {"detail": f"no thread {mine['id']} for bob"}
+        assert got.json() == {
+            "detail": f"no thread {mine['id']} for bob",
+            "code": "not_found",
+        }
     assert (
         signed.get("/api/threads", params={"kind": "configuration"}, headers=bob).json()
         == []
@@ -111,10 +114,10 @@ def test_a_person_takes_one_expectation_replacing_theirs_only_when_they_say_so(
     got = signed.post(f"/api/threads/{made['id']}/takes", json={})
     assert (got.status_code, got.json()) == (
         422,
-        {"detail": f"expectation {made['id']} is yours already"},
+        {"detail": f"expectation {made['id']} is yours already", "code": "refused"},
     )
     got = signed.post(taking, json={}, headers=bob)
     assert (got.status_code, got.json()) == (
         404,
-        {"detail": f"no expectation {archives['id']} for bob"},
+        {"detail": f"no expectation {archives['id']} for bob", "code": "not_found"},
     )

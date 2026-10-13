@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, Header, HTTPException, Query, Request, Response
+from fastapi import APIRouter, Depends, Header, HTTPException, Query, Request, Response
 from fastapi.concurrency import run_in_threadpool
 from fastapi.responses import StreamingResponse
 
@@ -20,7 +20,7 @@ from . import schemas
 from .events import Named, canary_of, event_of, graded_of, item_of
 from .jobs import Job, ending, followed, replayed, scored, scoring_of
 from .people import BenchDep
-from .state import AppState, state
+from .state import NO_STORE, AppState, no_store, state
 from .threads import refused
 
 STREAM = "text/event-stream"
@@ -175,7 +175,7 @@ async def events(
     return StreamingResponse(
         body,
         media_type=STREAM,
-        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+        headers={**NO_STORE, "X-Accel-Buffering": "no"},
     )
 
 
@@ -341,7 +341,7 @@ def run(bench: BenchDep, run: UUID) -> schemas.RunDetail:
     return detail(bench, run)
 
 
-@router.get("/runs/{run}/items")
+@router.get("/runs/{run}/items", dependencies=[Depends(no_store)])
 def items(bench: BenchDep, run: UUID) -> list[schemas.ItemDetail]:
     started = bench.run_by_id(run)
     trial = resolve(bench.get, started.trial, Trial)

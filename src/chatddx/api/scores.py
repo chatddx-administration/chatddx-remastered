@@ -2,7 +2,7 @@ import threading
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, HTTPException, Query, Request, Response
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response
 
 from chatddx.bench import Bench
 from chatddx.ledger import RunStarted
@@ -11,7 +11,7 @@ from . import schemas
 from .events import graded_of
 from .jobs import Job, ending, scored, scoring_of
 from .people import BenchDep
-from .state import state
+from .state import no_store, state
 
 router = APIRouter(tags=["scores"])
 
@@ -89,7 +89,7 @@ def score(bench: BenchDep, run: UUID, score: UUID) -> schemas.Graded:
     return graded_of(bench.score_of(run, score))
 
 
-@router.get("/runs/{run}/scores/{score}/items")
+@router.get("/runs/{run}/scores/{score}/items", dependencies=[Depends(no_store)])
 def items(bench: BenchDep, run: UUID, score: UUID) -> schemas.ScoreItems:
     held = bench.score_of(run, score).score
     finished = None if held is None else held.finished

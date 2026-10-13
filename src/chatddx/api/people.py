@@ -71,6 +71,21 @@ def session(
     return Session(person, token)
 
 
+def keep_cookie(response: Response, token: str) -> None:
+    response.set_cookie(
+        COOKIE,
+        token,
+        max_age=int(settings.SESSION_TTL.total_seconds()),
+        secure=True,
+        httponly=True,
+        samesite="lax",
+    )
+
+
+def drop_cookie(response: Response) -> None:
+    response.delete_cookie(COOKIE, secure=True, httponly=True, samesite="lax")
+
+
 def signed_in(held: Annotated[Session, Depends(session)]) -> Person:
     return held.person
 
@@ -95,14 +110,7 @@ def sign_in(
     if person is None:
         raise _unsigned("wrong login or password")
     token = people.open_session(person.id)
-    response.set_cookie(
-        COOKIE,
-        token,
-        max_age=int(settings.SESSION_TTL.total_seconds()),
-        secure=True,
-        httponly=True,
-        samesite="lax",
-    )
+    keep_cookie(response, token)
     return SignedIn(token=token, person=Me.of(person))
 
 
@@ -111,7 +119,7 @@ def sign_out(
     response: Response, held: Annotated[Session, Depends(session)], conn: ConnDep
 ) -> None:
     People(conn).close_session(held.token)
-    response.delete_cookie(COOKIE, secure=True, httponly=True, samesite="lax")
+    drop_cookie(response)
 
 
 @router.get("/me")

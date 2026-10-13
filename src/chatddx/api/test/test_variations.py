@@ -260,12 +260,12 @@ def test_a_variation_the_bench_refuses_is_unprocessable(
     got = signed.get(f"/api/threads/{chunk}/variation")
     assert (got.status_code, got.json()) == (
         404,
-        {"detail": f"no configuration {chunk} for alice"},
+        {"detail": f"no configuration {chunk} for alice", "code": "not_found"},
     )
     got = signed.get(path, headers=bob)
     assert (got.status_code, got.json()) == (
         404,
-        {"detail": f"no configuration {mine['id']} for bob"},
+        {"detail": f"no configuration {mine['id']} for bob", "code": "not_found"},
     )
 
 
@@ -369,7 +369,7 @@ def test_only_one_s_own_configuration_is_edited_and_a_seen_one_forked(
     )
     assert (got.status_code, got.json()) == (
         404,
-        {"detail": f"no configuration {archives['id']} of yours"},
+        {"detail": f"no configuration {archives['id']} of yours", "code": "not_found"},
     )
 
     mine = thread(signed, "configuration", LINES)
@@ -381,7 +381,7 @@ def test_only_one_s_own_configuration_is_edited_and_a_seen_one_forked(
         got = signed.post(path, json=body, headers=bob)
         assert (got.status_code, got.json()) == (
             404,
-            {"detail": f"no configuration {mine['id']} for bob"},
+            {"detail": f"no configuration {mine['id']} for bob", "code": "not_found"},
         )
 
     off = digest(signed, "reasoning", OFF)
@@ -399,7 +399,7 @@ def test_only_one_s_own_configuration_is_edited_and_a_seen_one_forked(
     got = signed.post(edits, json={"head": head, "parts": {"prompt": off}})
     assert (got.status_code, got.json()) == (
         422,
-        {"detail": f"{off} isn't a stored chunk of prompt"},
+        {"detail": f"{off} isn't a stored chunk of prompt", "code": "refused"},
     )
     assert signed.get(edits).json()[-1] == mine["head"]
 

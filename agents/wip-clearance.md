@@ -98,7 +98,7 @@ against the inventory's `[cleared]` table until the clearance pipeline replaces 
 5. **Sources.** Sources say only whether they are sensitive. Still unspecified: what clearance each requires beyond
    that. A `[cleared]` entry for a source that isn't sensitive is accepted and clears nothing
    (`docs/inventory.md`, "Open design issues"). Typed cases are a database source (`docs/inventory.md`, "Sources";
-   `docs/bench.md`, "Typed cases"), written through the bench for the portal's swift page, where a clinician may type
+   `docs/bench.md`, "Typed cases"), written through the bench for the portal's home page, where a clinician may type
    about a real patient (`agents/wip-portal.md`, "Swift"). Their fingerprint is plain, as the sample's, since nothing
    manages keys yet: a short text's hash can be guessed by anyone who reads the factors, the reader included, while
    the text itself is kept from them. Open: a keyed one.

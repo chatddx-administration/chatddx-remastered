@@ -268,6 +268,30 @@ def test_runs_are_listed_newest_first_and_filtered(signed: TestClient) -> None:
 
 @pytest.mark.slow
 @pytest.mark.usefixtures("fake")
+def test_no_browser_keeps_what_is_case_derived(signed: TestClient) -> None:
+    made, _ = sent(signed, asked(signed))
+    run, [score, *_] = made["id"], made["scores"]
+    kept = {
+        path: signed.get(path).headers.get("cache-control")
+        for path in (
+            f"/api/runs/{run}",
+            f"/api/runs/{run}/items",
+            f"/api/runs/{run}/events",
+            f"/api/runs/{run}/scores/{score['score']}",
+            f"/api/runs/{run}/scores/{score['score']}/items",
+            f"/api/families/{family(signed, 'crlf')['id']}/vignette",
+        )
+    }
+    assert [path for path, said in kept.items() if said == "no-store"] == [
+        f"/api/runs/{run}/items",
+        f"/api/runs/{run}/events",
+        f"/api/runs/{run}/scores/{score['score']}/items",
+        f"/api/families/{family(signed, 'crlf')['id']}/vignette",
+    ]
+
+
+@pytest.mark.slow
+@pytest.mark.usefixtures("fake")
 def test_a_run_s_items_hold_its_calls_and_render_again_as_they_were_sent(
     signed: TestClient,
 ) -> None:
@@ -295,7 +319,7 @@ def test_another_s_run_isn_t_found(signed: TestClient, bob: dict[str, str]) -> N
         got = signed.get(f"/api/runs/{made['id']}{path}", headers=bob)
         assert (got.status_code, got.json()) == (
             404,
-            {"detail": f"no run {made['id']} of yours"},
+            {"detail": f"no run {made['id']} of yours", "code": "not_found"},
         )
     got = signed.post(f"/api/runs/{made['id']}/halt", headers=bob)
     assert got.status_code == 404
@@ -356,7 +380,7 @@ def test_a_halt_stops_a_run_which_is_finished_and_left_to_score(
     got = signed.post(f"/api/runs/{run}/halt")
     assert (got.status_code, got.json()) == (
         409,
-        {"detail": f"run {run} has nothing under way"},
+        {"detail": f"run {run} has nothing under way", "code": "conflict"},
     )
 
 

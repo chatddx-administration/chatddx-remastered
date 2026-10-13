@@ -15,6 +15,28 @@ class _Schema(BaseModel):
     model_config: ClassVar[ConfigDict] = ConfigDict(frozen=True, extra="forbid")
 
 
+type Code = Literal[
+    "unauthenticated",
+    "cross_site",
+    "not_found",
+    "not_allowed",
+    "ambiguous",
+    "conflict",
+    "moved_on",
+    "refused",
+    "unprocessable",
+    "over_quota",
+    "error",
+]
+
+
+class Error(_Schema):
+    detail: str | list[JsonValue] = Field(
+        description="why, or where a request doesn't validate"
+    )
+    code: Code
+
+
 class SignIn(_Schema):
     login: str
     password: str

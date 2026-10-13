@@ -115,7 +115,7 @@ def test_a_write_is_refused_what_isn_t_the_person_s(
     got = signed.post(forks, json={"name": "bob's"}, headers=bob)
     assert (got.status_code, got.json()) == (
         404,
-        {"detail": f"no instructions {archives['id']} for bob"},
+        {"detail": f"no instructions {archives['id']} for bob", "code": "not_found"},
     )
 
 
