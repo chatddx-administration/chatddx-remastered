@@ -106,15 +106,9 @@ from.
 (`chatddx.catalog.threads.check_head`).
 
 ### `class OverQuota(ValueError)`
-```
-AGENT: change
-`OverQuota` also holds runs.
----
 The person has written or started as much of something as a day takes, typed cases
 (`chatddx.core.settings.TYPED_PER_DAY`) or runs (`RUNS_PER_DAY`), or a run would hold more items than one takes
 (`ITEMS_PER_RUN`).
-```
-The person has written as much of something as a day takes: typed cases (`chatddx.core.settings.TYPED_PER_DAY`).
 
 ### `class Conflict(ValueError)`
 The write would undo what the person has unless they say so: taking an expectation when they own one of its case under
@@ -282,19 +276,13 @@ qualified, `<owner's login>/NAME` (`_qualified`, which gives nothing for a threa
 
 #### Runs and scores
 
-```
-AGENT: change
-The row for `described`, which reads the run's name first.
----
-| `described(run: RunStarted) -> str` | `<the run's name, else the skeleton's title> × <endpoint, or the engine's title> × <the case's title, or "<n> cases"> (seed <seeds>)`. |
-```
 | Method | Returns / raises |
 | --- | --- |
 | `runs() -> list[RunStarted]` | The runs the person owns and that aren't deleted, newest first, from the subjects whose entries ever named them (`Catalog.involving`). A collaborator on a run doesn't see it. |
 | `run(prefix: str \| None = None) -> RunStarted` | The latest of `runs()`, or the one whose id, as `str(UUID)`, starts with `prefix`. `NotFound("<login> has no runs")`, `NotFound("no run of yours starts with '<prefix>'")` or `Ambiguous("<n> runs of yours start with '<prefix>'")`. |
 | `run_by_id(run: UUID) -> RunStarted` | The run, when it has started and the person owns it, live. Else `NotFound("no run <id> of yours")`. |
 | `reaching(digest: str) -> list[RunStarted]` | The runs of `runs()` whose trial's closure holds `digest` (`Store.reaching(digest, "trial")`), or the skeleton of a compilation whose closure holds it (`Store.reaching(digest, "compilation")`), newest first: a skeleton holds what a chunk sets rather than the chunk, so a chunk reaches its runs through what compiled them. |
-| `described(run: RunStarted) -> str` | `<skeleton's title> × <endpoint, or the engine's title> × <the case's title, or "<n> cases"> (seed <seeds>)`. |
+| `described(run: RunStarted) -> str` | `<the run's name, else the skeleton's title> × <endpoint, or the engine's title> × <the case's title, or "<n> cases"> (seed <seeds>)`. |
 | `scorers_for(run: RunStarted) -> list[tuple[Edit, About]]` | The threads of `threads("scorer")` whose head applies to the run: each of its views is offered by the run's skeleton's `output_schema`, as `reach` has it, and each of its judges passes `chatddx.runner.score.judge_at` for the trial's cases, which refuses with a `ValueError` or `Refused` a judge the World bars. Stricter than `check_score`'s `view.unreachable`: a view of the whole answer reaches a structured output, but isn't offered by it. |
 | `scoring(run: RunStarted, scorer: str) -> Scoring \| None` | The scoring the run would be scored under now: `Scoring(scorer, expectations)`, with, for each of the trial's cases in order, the expectation `Catalog.expectations_for(cases, person.id, <the scorer's expectation_schema>)` picks for it, cases without one left out. `None` when no case has one. `Ambiguous` when a case has several to choose from. Nothing is stored. |
 | `unscored(run: RunStarted) -> list[str]` | The scorers of `scorers_for(run)` with no whole score of the run under `scoring(run, scorer)`, so a run whose expectations changed since it was scored is due again, and those whose `scoring` raises `Ambiguous`, which `score` refuses. A scorer without a scoring isn't one. A score is whole when it has finished, holds an item for each of the run's items and each of the scorer's views, and no judge call of it was stopped: a score that was stopped or never finished leaves the run to score. |
@@ -424,22 +412,11 @@ added or withdrawn, and deleting.
 
 ## runs.py
 
-```
-AGENT: change
-The row for `start`, which holds the person to the limits and names the run.
----
-| `start(variation: TriedVariation, endpoint: str, cases: list[str], seed: int) -> Running` | … `ValueError("<label> is a judge configuration: …")` before anything else; then `OverQuota("a run holds at most <ITEMS_PER_RUN> items, not <n>")`, and `OverQuota("<login> has started <n> runs in the last day, as many as a day takes")` once `Catalog.runs_started` a day ago reaches `RUNS_PER_DAY`; `endpoint`'s errors, the runner's and its gate's. Once started, a `name` entry on the run holds `variation.label`. |
-```
-```
-AGENT: add
-A row for `again`, beside `start`.
----
-| `again(run: RunStarted, seed: int) -> Running` | The run's trial's skeleton and cases at the run's endpoint with `seed`, started as `start` starts a variation, held to the same limits, and named by the run's name, else its skeleton's title. `ValueError("run <id> was sent to no endpoint, so it can't run again")` for a run without one. |
-```
 | Write | Returns / raises |
 | --- | --- |
-| `start(variation: TriedVariation, endpoint: str, cases: list[str], seed: int) -> Running` | The variation's trial on the engine `endpoint(endpoint)` gives, started by a `Runner` for the person at that endpoint, under the default execution. Nothing is sent until `Running.send`. `ValueError("<label> is a judge configuration: a judge is asked as runs are scored, and isn't run on cases")` before anything else; `endpoint`'s errors, the runner's and its gate's. |
+| `start(variation: TriedVariation, endpoint: str, cases: list[str], seed: int) -> Running` | … `ValueError("<label> is a judge configuration: …")` before anything else; then `OverQuota("a run holds at most <ITEMS_PER_RUN> items, not <n>")`, and `OverQuota("<login> has started <n> runs in the last day, as many as a day takes")` once `Catalog.runs_started` a day ago reaches `RUNS_PER_DAY`; `endpoint`'s errors, the runner's and its gate's. Once started, a `name` entry on the run holds `variation.label`. |
 | `score(run: RunStarted, scorers: Collection[str] \| None = None, on_event: Callable[[ScoringEvent], None] \| None = None, halt: ScoreHalt \| None = None) -> list[Graded]` | The run scored by the scoring pass (`Grader.start`, `Grading.send(on_event)`, `Grading.finish`) under each of `scorers_for(run)`, or those of them whose digest is in `scorers`, as `scoring` builds it now, by name. `on_event` is given a `ScorerStarted` as each scorer's score starts, then the scoring pass's events as they come (docs/runner-api.md, "score.py"). A `halt` set, from any thread, refuses the scorers not started as `stopped`, and halts the one under way (`Grading.halt`), whose score is finished with what it has. A judge's calls go to the endpoint the scoring pass picks, as no endpoint is named. A scorer that can't score it is a `Graded` with `refused`: `none of the run's cases has an expectation`, or the message of one of `REFUSALS`, a `LookupError` (`Ambiguous` among them), `TypeError`, `ValueError` (the scoring pass's for a connection not in autocommit mode among them), `NotImplementedError` or `Refused`, raised on the way; one raised while it sends is refused after its score is finished with what it has. A `KeyboardInterrupt` stops the scoring: the score under way is finished with what it has and given, and each scorer after it is refused as `stopped`; the interrupt isn't raised again. |
+| `again(run: RunStarted, seed: int) -> Running` | The run's trial's skeleton and cases at the run's endpoint with `seed`, started as `start` starts a variation, held to the same limits, and named by the run's name, else its skeleton's title. `ValueError("run <id> was sent to no endpoint, so it can't run again")` for a run without one. |
 
 | Name | Is |
 | --- | --- |

@@ -187,18 +187,6 @@ The token set as `COOKIE`: `Max-Age` `settings.SESSION_TTL` in seconds, `Secure`
 ## schemas.py
 The models' fields are in the OpenAPI document. Besides them:
 
-```
-AGENT: change
-The row for `NewRun`, which takes the edit it varies.
----
-| `NewRun` | A run's body, with `head`, the edit it varies, the configuration's head unless given. Its validator raises … |
-```
-```
-AGENT: add
-A row for `NewAgain`.
----
-| `NewAgain` | Running again's body: `seed`, drawn when not given, and `score`. |
-```
 | Name | Is |
 | --- | --- |
 | `_Schema` | The base of every model: frozen, `extra="forbid"`. |
@@ -228,13 +216,14 @@ A row for `NewAgain`.
 | `NewTakes`, `Taken` | A take's body for many cases, `families` (not empty), `expectation_schema` and `owner`, and its answer, `chatddx.bench.Taken` keyed by family id. |
 | `NewTake` | A take's body for one thread, `replace`. |
 | `Metric`, `ScorerCode` | Scoring code the running chatddx ships: its `entry_point`, `version`, `metrics` (each its `name`, what it `measures`, a JSON Schema for a view's `params`, whether it is `judged`, reading a judge's verdicts, and the `unit` that marks a value that isn't a score from 0 to 1, if any) and a JSON Schema for the scorer's own `params`. |
-| `NewRun` | A run's body. Its validator raises `ValueError("a run takes one of families, tags or cases")` unless exactly one of `families`, `tags` and `cases` is given, which FastAPI answers 422. |
+| `NewRun` | A run's body, with `head`, the edit it varies, the configuration's head unless given. Its validator raises `ValueError("a run takes one of families, tags or cases")` unless exactly one of `families`, `tags` and `cases` is given, which FastAPI answers 422. |
 | `Run` | A run as listed, with `unscored`, its scorers left as `Unscored` (`scorer`, `name`), when the listing asked for them, else `None`. |
 | `Graded` | A score under one scorer: the scorer and its name, the score's id, its `scoring`, when it started (`at`) and whether it `finished`, each view's label and mean, each item's value, or why it was refused. |
 | `ScoreItemDetail`, `ScoreItems` | A score item with its `detail` and `judge_calls` as their JSON; and a score's items with its `findings`. |
 | `EVENTS: dict[str, type[_Schema]]` | Each event of a run's events, by name, and the model of its data, in the order they can come; `run.noted` and `score.noted` have `Finding`, and `done` `DoneData`, whose `halted` is `None` when told from the ledger. |
 | `NewScoring` | A scoring's body: `scorers`, by digest, or none for every scorer that applies. |
 | `Answer` | what was read, why it couldn't be or breaks its schema, and whether it was salvaged. |
+| `NewAgain` | Running again's body: `seed`, drawn when not given, and `score`. |
 
 `test/test_variations.py:test_a_request_names_the_recipe_s_parts` holds `Parts`' fields to `PARTS`, and a
 variation's query parameters to them with `endpoint`, `tag` and `seed`.
@@ -342,16 +331,10 @@ the trial's first seed), the canary calls of phase `start`, each item's `item.st
 of its turns, and `item.ended`, the canary calls of phase `end`, and, once it finished, `run.finished` with
 `check_run`'s findings and `run.scored` with `Bench.scores_of` when there are any; last, `done` with `halted` `None`.
 
-```
-AGENT: change
-The rows for `start`, and a new one for `again`, which share `_opened` and `_launched`.
----
-| `start`, `POST /runs` | `_opened` with `_new(given)`, and `_launched`: a `Job` of the run from `AppState.jobs`, holding its `Running`, with `run.started` put; and `_sent` on a thread of its own. 202, with `Location` the run's path (`url_path_for("run")`) and `run.started`'s data. |
-| `again`, `POST /runs/{run}/again` | `Bench.run_by_id` (`NotFound`), then `_opened` with `_repeated(run, given)`, `Bench.again` of the run with the seed given or drawn, and `_launched`, as `start`. |
-```
 | Route | Does |
 | --- | --- |
-| `start`, `POST /runs` | `_start` for the request's person; a `Job` of the run from `AppState.jobs`, holding its `Running`, with `run.started` put; and `_sent` on a thread of its own. 202, with `Location` the run's path (`url_path_for("run")`) and `run.started`'s data. |
+| `start`, `POST /runs` | `_opened` with `_new(given)`, and `_launched`: a `Job` of the run from `AppState.jobs`, holding its `Running`, with `run.started` put; and `_sent` on a thread of its own. 202, with `Location` the run's path (`url_path_for("run")`) and `run.started`'s data. |
+| `again`, `POST /runs/{run}/again` | `Bench.run_by_id` (`NotFound`), then `_opened` with `_repeated(run, given)`, `Bench.again` of the run with the seed given or drawn, and `_launched`, as `start`. |
 | `events`, `GET /runs/{run}/events` | `async`. `Bench.run_by_id` (`NotFound`). The job `AppState.jobs` holds for the run, followed (`jobs.py:followed`), else `_told`, replayed (`jobs.py:replayed`), each after the `Last-Event-ID` header's id, else from the first. A `StreamingResponse` of `STREAM`, with `NO_STORE` and `X-Accel-Buffering: no`; its description names the events. |
 | `halt`, `POST /runs/{run}/halt` | `Bench.run_by_id` (`NotFound`), then `Job.halt` of the run's job. `HTTPException(409, "run <run> has nothing under way")` without one, or once it is done. 204. |
 
@@ -407,16 +390,9 @@ The jobs by run, under a lock. `get(run) -> Job | None`; `started(run) -> Job`, 
 done, and `HTTPException(409, "run <run> has something under way")` in place of one that isn't.
 
 ### Streams
-```
-AGENT: change
-A followed stream is kept alive.
----
 - `followed(job, after) -> AsyncIterator[str]`: what `Job.listen` gives, then each event as it comes until `None`,
   with `: keep-alive` whenever `KEEP_ALIVE` seconds (15) pass without one, letting go of the listener when the stream
   ends or is left.
-```
-- `followed(job, after) -> AsyncIterator[str]`: what `Job.listen` gives, then each event as it comes until `None`,
-  letting go of the listener when the stream ends or is left.
 - `replayed(told, after) -> AsyncIterator[str]`: each event of `told` after id `after`, its id its place from 1.
 
 ### Scoring
