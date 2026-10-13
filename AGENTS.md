@@ -12,7 +12,6 @@ This document contains project-wide instructions written by humans for agents.
 
 ## Typechecking
 * Errors and warnings that indicate issues beyond the scope of the current task should remain, never hide them.
-
 * `pnpm --dir frontend check` typechecks the frontend, and `pnpm --dir frontend build` builds it. After a change to
   the API, `chatddx openapi > frontend/openapi.json`.
 
@@ -20,13 +19,8 @@ This document contains project-wide instructions written by humans for agents.
 * Baseline is `pytest` which runs every test and takes ~60s; `pytest -m 'not slow'` is the quick run, <30s.
   A test whose call takes 0.2s or more is marked `@pytest.mark.slow` (pyproject.toml, `[tool.pytest]`).
 * Drafts are targeted with `pytest -m 'wip'` and excluded with `pytest -m 'not wip'`, see Staging.
-
-```
-AGENT: add
-A line at the end of "Testing", for the frontend's unit tests (agents/wip-portal.md, phase 3).
----
 * `pnpm --dir frontend test` runs the frontend's unit tests (vitest), each beside the module it tests.
-```
+
 ## Staging
 A module is either wip or solidified and are held apart with a pytest mark.
 * wip (draft) modules are documented in `agents/wip-<module>.md`

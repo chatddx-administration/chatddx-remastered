@@ -254,17 +254,13 @@ qualified, `<owner's login>/NAME` (`_qualified`, which gives nothing for a threa
 
 #### The variation being tried
 
-```
-AGENT: change
-`variation` varies an earlier edit when one is given.
----
-| `variation(configuration: int, parts: Mapping[str, str \| None] \| None = None, head: int \| None = None) -> TriedVariation` | The configuration `thread_by_id(configuration, "configuration")` finds, at its head or at the edit `head` when given, under its name or else its title, with each of `parts` replaced … `NotFound("no edit <head> of configuration <configuration>")` for an edit of another thread or none, … |
-```
 | Method | Returns / raises |
 | --- | --- |
 | `configuration(name: str, engine: str \| None = None) -> TriedVariation` | The configuration `thread("configuration", name, model(engine))` finds, with nothing replaced: its head, the name that found it without the person's own `<login>/`, and `Catalog.recipe` of its thread. |
 | `chunk(part: str, name: str, engine: str \| None = None) -> str` | The digest of the head `thread(part, name, model(engine))` finds. |
-| `variation(configuration: int, parts: Mapping[str, str \| None] \| None = None) -> TriedVariation` | The configuration `thread_by_id(configuration, "configuration")` finds, under its name or else its title, with each of `parts` replaced by the chunk of that digest, or taken out for `None`, labelled by the chunk's title. `ValueError("no part '<part>': the parts are <PARTS>")`, `ValueError("<digest> isn't a stored chunk of <part>")`, and `TriedVariation.set`'s. |
+
+| `variation(configuration: int, parts: Mapping[str, str \| None] \| None = None, head: int \| None = None) -> TriedVariation` | The configuration from `thread_by_id(configuration, "configuration")`'s edit / `ValueError("no part '<part>': the parts are <PARTS>")`, `ValueError("<digest> isn't a stored chunk of <part>")`, and `TriedVariation.set`'s. |
+
 | `skeleton(variation: TriedVariation) -> Skeleton` | The configuration's head when nothing is replaced or it has no recipe; else `compile_request` of the varied recipe, with its errors. |
 | `request(variation: TriedVariation, engine: str \| None, seed: int) -> dict[str, JsonValue]` | The request `render` makes of the skeleton with `PLACEHOLDERS` for its slots, `seed`, and `served(engine)` as the model, or `‹model›` without an engine. |
 | `trial(skeleton: Skeleton, engine: str, cases: list[str], seed: int) -> tuple[Registry, Trial]` | A `Trial` of the skeleton, the engine, the cases and the one seed, and a registry holding it with everything it refers to, loaded from the store. Nothing is stored. |
