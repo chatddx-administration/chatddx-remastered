@@ -8,7 +8,7 @@ from chatddx.scripted import RUNS, load, ran_before, run, scripted_runs
 from chatddx.scripted.test.helpers import UNFINISHED, went
 from chatddx.test.world import QWEN_MODEL as MODEL, TEST, freed
 
-pytestmark = pytest.mark.wip
+pytestmark = pytest.mark.solidified
 
 HELD = {s.name: s for s in scripted_runs(TEST / RUNS)}
 

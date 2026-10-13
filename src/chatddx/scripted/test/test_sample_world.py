@@ -9,7 +9,7 @@ from chatddx.store import People
 from chatddx.store.store import Connection
 from chatddx.test.world import SAMPLE, WORLDS, free_world, world_facts, world_plan
 
-pytestmark = pytest.mark.wip
+pytestmark = pytest.mark.solidified
 
 PATH = WORLDS / "sample"
 VALID = ("valid", None)

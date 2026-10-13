@@ -1,7 +1,5 @@
 # Scripted runs
 
-A candidate for `docs/scripted.md`; below, that name means this file until it moves.
-
 A scripted run is a run made to be looked at: a genuine record of something a run can go through, answered by the fake
 vLLM from a script instead of by a model. Everything but the model's words is genuine: the variation, the trial, the
 requests, the ledger and the scores. Scripted runs are for every edge that shows runs, the repl's `runs` and `replay`,
@@ -70,7 +68,7 @@ The test World's six are the same shapes on its cases: `valid`, `stopped`, `unfi
 `judged` and `appendix`.
 
 ## Tests
-src/chatddx/scripted/test/, marked `wip` until this document moves.
+src/chatddx/scripted/test/, marked `solidified`.
 
 - `test_scripted_runs.py` runs the test World's scripted runs on `curated`, alice's: how each item ended, that a run is
   finished unless `unfinished` and scored when it is finished and `scored`, that a run made before is found, that
@@ -97,8 +95,8 @@ a real one is, so no scripted run can send a tool round on their cases. The old 
 with the web patched in the process that runs the tools (`urllib.request.urlopen`, src/chatddx/tools/web_search.py).
 
 ### Smaller issues
-- **No scripted run sends a canary set.** `Bench.start` passes none (docs/bench.md, "Outstanding"), though both data
-  sets hold one.
+- **No scripted run sends a canary set.** `Bench.start` passes none (docs/bench.md, "Runs and scores"), though both
+  data sets hold one.
 - **No tests start from runs already made.** A take: a database fixture beside `curated`, with the test World's
   scripted runs run, copied for each test as `curated` is, once a test reads runs it doesn't make.
 - **A scripted run is one run.** `batch` is one run of four cases; a batch of trials, crossing variations, is the batch

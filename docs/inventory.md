@@ -33,6 +33,45 @@ by its table. Anything that needs the engines is checked when an entry is used (
 used").
 
 ### Worlds
+````
+AGENT: replace
+From agents/wip-data.md, which this replaces: who writes each of a World's files, and the layout they make.
+The scripted runs' doc is docs/scripted.md now.
+---
+A World is handed over as its directory, `--world DIR`, and read as its `inventory.toml` and, when present,
+`engines.toml`, the models and engines its endpoints serve and nothing else, and `facts.toml`, facts about models the
+bundled ones don't know, loaded beside them by init-data and the repl (src/chatddx/inventory/world.py,
+src/chatddx/cli.py). A World may also hold its source's vignettes, when git may hold them, a data set whose cases
+name them, in `_data/`, and scripted runs, in `_runs/` (docs/scripted.md): the leading `_` marks what the World
+doesn't read and doesn't own. init-data loads `_data/` unless `--data` names another.
+
+Each file is written by one kind of author and holds only what that author decides:
+
+| File | Author | Holds |
+| --- | --- | --- |
+| `inventory.toml` | ops, by hand | sources, clearance, and which endpoint judges each judge |
+| `endpoints.toml` | the engine import (by hand for fakes), included | endpoints and hosts |
+| `engines.toml` | the engine import (by hand for fakes) | models, local engines, remote engines |
+| `facts.toml` | whoever adds a model the bundled facts don't know | facts about models |
+| `vignettes/` | the source's owner | a directory source's vignettes, when git may hold them |
+| `_data/` | researchers and clinicians | the data set (docs/curation.md, "Data sets") |
+| `_runs/` | developers | scripted runs (docs/scripted.md) |
+
+```
+worlds/<name>/
+  inventory.toml   sources, clearance, judges bound to endpoints, include = ["endpoints.toml"]
+  endpoints.toml   endpoints and hosts
+  engines.toml     models, local engines, remote engines
+  facts.toml       facts about models the bundled facts don't know
+  vignettes/       a directory source's vignettes, when git may hold them
+  _data/
+    factors.toml       chunks without text, tools, the expectation schema, scorers, judges, recipes, canary sets
+    texts-<lang>.toml  chunks that hold text, in that language; translations grouped by record
+    cases-<lang>.toml  cases in that language, with tags, targets, appendices and the cases that send them
+    schemas/           the JSON files the factors load
+  _runs/           scripted runs
+```
+````
 A World is handed over as its directory, `--world DIR`, and read as its `inventory.toml` and, when present,
 `engines.toml`, the models and engines its endpoints serve and nothing else, and `facts.toml`, facts about models the
 bundled ones don't know, loaded beside them by init-data and the repl (src/chatddx/inventory/world.py,
@@ -58,6 +97,14 @@ This repository has three, in `worlds/`:
   `endpoints.toml` as an engine import writes it, a remote engine's endpoint with a credential, which `chatddx
   fake-engines` stands in for, and the facts of the remote engine's model. Every endpoint is cleared for the sample.
 
+```
+AGENT: replace
+Its import writes engines, not factors, since engines.toml; and it binds the sample's judges (see "Judges").
+---
+- Kompismoln's World: the hosts pelle and malborg. Its inventory is written by hand, takes the sample World's
+  vignettes, and binds the sample's judges to pelle and malborg; its endpoints, hosts and engines are what the engine
+  import writes from the hosts' reports. Both endpoints are cleared for the sample.
+```
 - Kompismoln's World: the hosts pelle and malborg. Its inventory is written by hand and takes the sample World's
   vignettes; its endpoints, hosts and factors are what the engine import writes from the hosts' reports. Both
   endpoints are cleared for the sample.

@@ -145,7 +145,7 @@ Assuming the takes.
 - **Seeds**: one drawn per batch, as before, or several for replicates (`src/chatddx/factors/trial.py:suggest_seeds`).
 - **The order of the variations**, the configuration's own first, as the old crossing put it.
 - **A scripted batch** for the portal's pages: the scripted run `batch` is one run of four cases, not a batch of
-  trials (`agents/wip-scripted.md`, "Smaller issues").
+  trials (`docs/scripted.md`, "Smaller issues").
 
 ## Moved here
 - From `agents/wip-portal.md`: the planner's part of "The batch planner and the worker".

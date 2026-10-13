@@ -12,7 +12,7 @@ kept version 1 for it (`docs/ledger.md`, "Tool rounds" and "Canonical form and v
 "Decided" means the user said so. "Take" is the agent's recommendation and still open.
 
 ## Elsewhere
-- **Scripted runs**, `chatddx scripted-runs` on the bench: `agents/wip-scripted.md`.
+- **Scripted runs**, `chatddx scripted-runs` on the bench: `docs/scripted.md`.
 - **Resuming** and **`max_jobs` across runs**: `agents/wip-worker.md`, "Below the worker".
 - **No run sends a canary set** (`docs/runner.md`, "Smaller issues"): data sets hold them now, and `Bench.start`
   passes none.

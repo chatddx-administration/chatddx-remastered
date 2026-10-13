@@ -159,8 +159,8 @@ read it; later. Neither changes what is stored.
 ### J9. Judges in a data set
 Decided: in the data set, as this take has it:
 - `[judge.NAME]` in a data set's `factors.toml`: `recipe` (the variant made for the engine's model, when the recipe
-  is made per model), `seeds` and `fill`. Its engine is the World's since `agents/wip-data.md`'s D2: the World's
-  inventory binds the judge to an endpoint (`[judge]`), and the endpoint's engine judges;
+  is made per model), `seeds` and `fill`. Its engine is the World's: the World's inventory binds the judge to an
+  endpoint (`[judge]`; `docs/inventory.md`, "Judges"), and the endpoint's engine judges;
 - a scorer's view names a judge by name, as a scorer names its expectation schema;
 - a judge the World binds to no endpoint is skipped with a line, as a recipe is, and so is every scorer that names it.
   A judged scorer's digest pins its judge's engine through the judge, so a judged scorer belongs to the Worlds that
@@ -246,7 +246,7 @@ The fake changes with it: a non-greedy request whose schema has `examples` is an
 - **Every judged scoring confirms its judges' endpoints** (decided, 2A: kept). `confirm` runs on every judged
   scoring, even when no item needs a judge, and an endpoint that hangs holds the scoring up to 10 s a judge.
 - **Concurrent judge calls**, as the runner's phase 4 did for items.
-- **Kompismoln's judges** (`agents/wip-data.md`, D2; built). Kompismoln's inventory binds the sample's `verdict` to
+- **Kompismoln's judges** (built; `docs/inventory.md`, "Judges"). Kompismoln's inventory binds the sample's `verdict` to
   `qwen3-8b@pelle` and `graded` to `gpt-oss-20b@malborg`, so init-data plans them and the scorer `notes` there. Its
   first real scoring is phase 6's run on pelle or malborg.
 
