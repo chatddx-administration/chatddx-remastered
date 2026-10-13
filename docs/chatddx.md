@@ -110,12 +110,14 @@ Variations allow controlled experiments without the combinatorial explosion; the
 and re-applying it when its origin moves), and `catalog.edit.based_on`.
 
 ### The welcoming world
-A world is a collection of all parameters outside of chatddx's control, e.g. vignette sources and remote engines.
-But some data *within* chatddx's control only make sense in a world, in which case it can piggyback on the world as
-a `_`-prefixed directory. `_data` and `_runs` are doing just this. As a coincidence, the things that ends up
-piggybacking on worlds also make sense to ship with the application. So the pattern can be relied upon, assumed as
-standard and extended as necessary: The directory `worlds/*` is where all data that ships with the application belong,
-which is an accepted deviation of chatddx's definition.
+A world is, by the glossary, a collection of all parameters outside of chatddx's control, e.g. vignette sources and
+remote engines etc. But the world seems to have taken on a literal sense and not only host the inventory itself (which
+contains actual chatddx world-data), but all shipped data, piggybacking as a `_`-prefixed directories. The world has
+become overloaded. The choices:
+1. Roll with it
+2. At least rename it to inventory
+
+Your call.
 
 ### The person-scoped cake
 Most of the control plane in chatddx is exercised as a person, and the functionality behind this is organized in three
