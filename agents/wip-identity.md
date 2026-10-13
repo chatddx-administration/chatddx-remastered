@@ -1,8 +1,7 @@
 # Identity: work in progress
 
-Material for `docs/identity.md`. Split out of the former `agents/wip-bookkeeping.md`.
-`docs/identity.md` was a draft too, and was folded back in here with its proposed amendments applied (see "What holds
-now").
+Material for `docs/identity.md`, which holds "What holds now" as AGENT suggestions, one per section, for the user to
+adopt (see "What `docs/` expects of `docs/identity.md`").
 "Decided" means the user said so; "Take" is the agent's recommendation and still open.
 
 `identity` is the *declarative* layer of the "person-scoped cake". Consult docs/chatddx.md's "The person-scoped cake"
@@ -105,7 +104,8 @@ development path. Roles could then come from Keycloak's realm roles instead of t
 - **Expired sessions** are only removed by `People.purge_sessions()`; nothing calls it on a schedule.
 
 ## What `docs/` expects of `docs/identity.md`
-These docs still link to `docs/identity.md`, which is gone until this draft is adopted:
+These docs link to `docs/identity.md`, and its suggestions cover what each expects. Once they are adopted,
+`src/chatddx/identity/test/test_identity.py` can be marked `solidified`, and this file keeps only what is open:
 - `docs/chatddx.md` (glossary, "Sensitive"): people's names aren't sensitive;
 - `docs/factors.md`: the roles are the principal authors; people, roles, authentication and authorization are
   identity's;

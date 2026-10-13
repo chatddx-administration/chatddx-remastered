@@ -9,7 +9,7 @@ from chatddx.factors.request import Sampling
 from chatddx.store import Catalog, People, Store
 from chatddx.store.store import Connection
 
-pytestmark = pytest.mark.wip
+pytestmark = pytest.mark.solidified
 
 
 def _stored(conn: Connection, *temperatures: float) -> list[str]:

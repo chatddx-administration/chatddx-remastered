@@ -137,7 +137,7 @@ Assuming the takes.
 2. **Planning**: `Bench.plan` and `Batch`, tested on the curated sample (`src/chatddx/conftest.py:curated`).
 3. **The API's read**, beside `variation`.
 4. **Kept batches**: the `batch` kind and its thread kind (see "Kept batches"), as the docs describe them.
-5. **The portal's pages** (`agents/wip-portal.md`, "Phases", 5).
+5. **The portal's pages** (`agents/wip-portal.md`, "Phases", 6).
 6. **Asking the worker**, once it exists (`agents/wip-worker.md`, "The plan", 3).
 
 ## Open

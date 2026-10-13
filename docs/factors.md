@@ -518,6 +518,17 @@ A run's calls, and a score's judge calls, show whether the settings were followe
 attempts than its retries allow, when items were sent out of order, or when more calls were in flight than allowed
 (docs/ledger.md, "Run" and "Score"). Timeouts aren't checked.
 
+```
+AGENT: amend
+No batch kind exists yet: `batch` is in neither `src/chatddx/factors/kinds.py:KINDS` nor
+`src/chatddx/catalog/model.py:THREAD_KINDS`, and nothing crosses variations. The kind, its thread and the planner that
+makes one are planned in agents/wip-batch.md, where "at one endpoint" is still open (P2: several endpoints). The
+section reads as built, as do "Components but not factors" and "Kinds" above, docs/catalog.md ("Configurations and
+variations", "Titles") and docs/chatddx.md (glossary).
+---
+### Batch
+Principal author: researchers. Not built yet: planned in agents/wip-batch.md.
+```
 ### Batch
 Principal author: researchers.
 

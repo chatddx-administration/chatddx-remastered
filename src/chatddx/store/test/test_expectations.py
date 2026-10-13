@@ -8,7 +8,7 @@ from chatddx.factors.test.sample import world
 from chatddx.store import Catalog, People, Store
 from chatddx.store.store import Connection
 
-pytestmark = pytest.mark.wip
+pytestmark = pytest.mark.solidified
 
 
 def test_the_catalog_refuses_a_person_a_second_expectation_of_a_case(

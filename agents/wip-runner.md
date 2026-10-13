@@ -19,7 +19,5 @@ kept version 1 for it (`docs/ledger.md`, "Tool rounds" and "Canonical form and v
 - **The gate's cases only the test World reaches aren't read by a test**: `qwen3-bare@fake` not cleared for `typed`,
   and `unknown@remote` cleared for nothing, with its secret unset (`agents/wip-test-world.md`, "Not read yet"). The
   gate's tests edit the inventory instead (`runner/test/test_run.py`).
-- **R2 and R10** of the runner's plan were decided "as recommended", but aren't written down anywhere, in this file or
-  its history; what they decided needs restating.
 - **The real engines are cleared for the sample** (decided: `agents/wip-clearance.md`, "Vetted endpoints").
   `worlds/kompismoln/inventory.toml` clears `qwen3-8b@pelle` and `gpt-oss-20b@malborg` for `sample`.
