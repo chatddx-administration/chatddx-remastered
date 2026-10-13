@@ -22,7 +22,6 @@ Paths are relative to `src/chatddx/catalog/` unless they start with `src/` or `d
 - [The store's Catalog](#the-stores-catalog)
 - [Database: schema `catalog`](#database-schema-catalog)
 - [Known gaps](#known-gaps)
-- [Beyond docs/catalog.md](#beyond-docscatalogmd)
 
 ## Package
 

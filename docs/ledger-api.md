@@ -17,7 +17,6 @@ Paths are relative to `src/chatddx/ledger/` unless they start with `src/` or `do
 - [Finding codes](#finding-codes)
 - [Database: schema `ledger`](#database-schema-ledger)
 - [Known gaps](#known-gaps)
-- [Beyond docs/ledger.md](#beyond-docsledgermd)
 
 ## Package
 

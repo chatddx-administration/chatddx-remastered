@@ -23,7 +23,6 @@ Paths are relative to `src/chatddx/bench/` unless they start with `src/`, `docs/
 - The writes: [configurations.py](#configurationspy), [components.py](#componentspy), [cases.py](#casespy),
   [taking.py](#takingpy), [saying.py](#sayingpy), [following.py](#followingpy), [runs.py](#runspy)
 - [Tests](#tests)
-- [Beyond docs/bench.md](#beyond-docsbenchmd)
 
 ## Package
 
@@ -437,32 +436,3 @@ In `src/chatddx/bench/test/`, all marked `solidified`.
 | `test_outcome.py` | Each outcome by an item's last call and the skeleton's output, but `salvaged`, which the repl's tests read (`src/chatddx/repl/test/test_running.py`), a turn whose call was never sent among them; usage over every call, and a stream cut short counted by the token ids it streamed. Without a database. |
 
 The repl's and the API's tests reach the bench too, through their own fixtures over the same test World.
-
-## Beyond docs/bench.md
-Behavior described here that `docs/bench.md` doesn't state, or states otherwise:
-- `thread` raises `Ambiguous` for a name that threads of two of a word's kinds hold, and a variant is looked for only
-  when no thread is called the name itself.
-- `configuration` drops the person's own `<login>/` from the name it was found by, and keeps another owner's.
-- `holder` takes the first in thread id order of the kinds' order, among the person's own if any.
-- `tags` counts the families whose current vignette has no stored case, which `families` and `family_by_id` leave
-  out.
-- `expectation_schemas` counts shared expectations, while `expectation` reads only the person's own, so a schema can
-  be listed with no expectation under it.
-- `findings` without families lints over one case only, and nothing at all when the person sees no case.
-- `score` turns the scoring pass's `ValueError` for a connection not in autocommit mode into each scorer's refusal,
-  where `start` raises the runner's.
-- `login` gives `nobody` for a subject without an owner.
-- `keep_language` compares with `Catalog.language_of`, which is a chunk's own language, so the refusal is about the
-  digest's language, not the thread's history.
-- `edit_component` checks the kind after ownership, so another's thread of another kind is `NotFound`, not a
-  `ValueError`. `carry` checks that the thread is an expectation before it checks ownership, so another's thread of
-  another kind is a `ValueError` there.
-- `type_case` checks the text, the name and the source before the day's quota, so a person over it is told first
-  what is wrong with the text; a text of only whitespace is refused as holding none.
-- `follow` drops a fork's renamed view when it keeps the origin's views: labels follow the views, not the variation.
-- `labels` prefers the person's own threads, then the latest edit, when no head holds the digest; `holder`'s order
-  otherwise.
-- `take` keeps the lowest-numbered of a person's own threads when they have several, and `take_from` with `replace`
-  deletes each of them.
-- `take` with an owner leaves a case missing when only others share one, and `NotFound` is for an owner with no login,
-  not one sharing nothing.

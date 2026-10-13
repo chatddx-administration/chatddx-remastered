@@ -25,7 +25,6 @@ Paths are relative to `src/chatddx/api/` unless they start with `src/`, `docs/` 
 - [events.py](#eventspy): the runner's and the scoring pass's events as a run's events
 - [The command](#the-command)
 - [Tests](#tests)
-- [Beyond docs/api.md](#beyond-docsapimd)
 
 ## Package
 
@@ -434,11 +433,3 @@ settings.database())`.
 ports (`chatddx.test.world.free_world`), and `fake`, `faked` on the test's store. `chatddx.test.world.faked(world, get,
 endpoint=QWEN, delay=0.0)` is the fake vLLM serving an endpoint's engine as its start-up says, `delay` seconds a
 token.
-
-## Beyond docs/api.md
-Behavior described here that `docs/api.md` doesn't state, or states otherwise:
-- `endpoint_of` keeps an endpoint's title and model when only its URL can't be told.
-- `check_given` refuses a language given a configuration as it refuses a component.
-- `Ambiguous` maps to 409, though no route lets one through: `expected` gives it as `ambiguous`, and `Bench.score`
-  as a refusal.
-- `GET /api/runs` ignores a parameter it doesn't name, `unscored` among them.

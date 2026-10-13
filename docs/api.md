@@ -1,10 +1,6 @@
 # API
 
-Its reference is docs/api-api.md. The plan it was first built from, with the old API's survey and the options
-weighed, is `agents/wip-api.md` at 100a078.
-
-The API and its sibling, the repl, are the rig's control plane. The API reaches every write the bench makes; what it
-doesn't do yet is in "Not covered", and under "Outstanding".
+The API and its sibling, the repl, are the rig's control plane.
 
 The endpoints are in the OpenAPI document the API serves, at `/api/openapi.json`, with pages at `/api/docs`.
 This document describes what the API does and why it is shaped like it is.

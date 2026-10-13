@@ -26,7 +26,6 @@ Paths are relative to `src/chatddx/store/` unless they start with `src/`, `docs/
 - [Migrations](#migrations)
 - [Tests](#tests)
 - [Known gaps](#known-gaps)
-- [Beyond docs/store.md](#beyond-docsstoremd)
 
 ## Package
 
