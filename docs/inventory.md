@@ -32,23 +32,12 @@ endpoints and sources that exist, and that each source is named by its table. An
 checked when an entry is used (see "Checks happen when an entry is used").
 
 ### Worlds
-```
-AGENT: replace
-init-data loads `_data/` unless `--data` names another (docs/curation.md, "Data sets"), and a World may hold
-sample runs in `_runs/` (agents/wip-samples.md).
----
 A World is handed over as its directory, `--world DIR`, and read as its `inventory.toml` and, when present,
 `factors.toml` and `facts.toml`, facts about models the bundled ones don't know, loaded beside them by init-data
 and the repl (src/chatddx/inventory/world.py, src/chatddx/cli.py). A World may also hold its source's vignettes,
 when git may hold them, a data set whose cases name them, in `_data/`, and sample runs, in `_runs/`
 (agents/wip-samples.md): the leading `_` marks what the World doesn't read and doesn't own. init-data loads `_data/`
 unless `--data` names another.
-```
-A World is handed over as its directory, `--world DIR`, and read as its `inventory.toml` and, when present,
-`factors.toml` and `facts.toml`, facts about models the bundled ones don't know, loaded beside them by init-data
-and the repl (src/chatddx/inventory/world.py, src/chatddx/cli.py). A World may also hold its source's vignettes,
-when git may hold them, and a data set whose cases name them, in `_data/`: the leading `_` marks what the World
-doesn't read and doesn't own, and init-data takes it with `--data`.
 
 `CHATDDX_WORLD` names the deployment's World directory and is the default `--world` of `init-data` and the `repl`
 (src/chatddx/core/settings.py:world, `.env`). The runner is handed its inventory by the bench, as before.
@@ -238,12 +227,6 @@ it, and the import would then confirm what was started rather than describe it.
   names.
 - **The capacity holds per run.** Two runs on one endpoint can send twice as many requests between them. vLLM queues
   what's over its limit, so nothing fails, but the batching differs from what each run's execution says.
-
-```
-AGENT: add
-A check the engine import could make, from the parity work's plan.
----
 - **Model files aren't checked against the hub.** huggingface_hub keeps the commit's file listing from the download
   (`<repo>/trees/<commit>.json`): the hub's SHA-256 of each LFS file and the git blob hash of the rest. The report
   could compare every file it hashes with it, offline. The import takes the host's hashes as they are.
-```

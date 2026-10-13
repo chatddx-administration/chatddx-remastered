@@ -80,15 +80,8 @@ pytest -m solidified    # what docs/ describes; -m wip for what agents/wip-*.md 
 ```
 
 ### The sample World
-```
-AGENT: replace
-The sample World has a third endpoint, a remote engine's, which `fake-engines` stands in for, asking for the key in
-`CHATDDX_SAMPLE_KEY`.
----
 `worlds/sample` serves two fake vLLM engines on this machine, and a stand-in for a remote one. Load the sample data
 and share it with alice:
-```
-`worlds/sample` serves two fake vLLM engines on this machine. Load the sample data and share it with alice:
 ```sh
 chatddx init-data alice --giftbag
 ```

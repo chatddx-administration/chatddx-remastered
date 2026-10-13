@@ -9,15 +9,8 @@ an engine is reached and whether it may receive a case (docs/inventory.md).
 This document describes what a run and a score do and why. Names, signatures, refusals and messages are in the API,
 docs/runner-api.md.
 
-```
-AGENT: replace
-The sample runs exist, and start, send and finish their runs through the bench (agents/wip-samples.md).
----
 The bench calls the runner for the repl and the API: it starts a run of a variation, and scores a finished run under
-every scorer that applies to it. A worker and a portal would call it too; the sample runs do, through the bench.
-```
-The bench calls the runner for the repl and the API: it starts a run of a variation, and scores a finished run under
-every scorer that applies to it. A worker, a portal and the sample runs would call it too.
+every scorer that applies to it.
 
 ## A run
 A run is one execution of a trial at one endpoint (docs/ledger.md, "Runs"). It has three steps, and nothing is
@@ -195,27 +188,11 @@ Drift of a vignette is noted as preparing a case notes it (docs/factors.md, "Pre
 ### Smaller issues
 - **Tools have no time limit of their own**, and a halt waits for a tool that's running.
 - **The tool interface isn't versioned**, unlike the scorer's: keyword arguments in, text out.
-```
-AGENT: replace
-The ledger's side of it: `check_run` leaves only the answer tool's call out of what is pending, so it accepts a turn
-running the toolset tool called beside it (`src/chatddx/ledger/run.py:check_run`).
----
 - **The answer tool called beside a toolset tool** ends the item, and checking the run notes the other call; no engine
   under test does that. Checking the run doesn't refuse a turn that runs the other call, though the runner never
   writes one.
-```
-- **The answer tool called beside a toolset tool** ends the item, and checking the run notes the other call; no engine
-  under test does that.
-```
-AGENT: replace
-Data sets hold canary sets now (the sample's `basics`, the test World's `probe`); what's missing is a run that sends
-one.
----
 - **No run sends a canary set**: `Bench.start` passes none, though data sets hold them; canary outputs aren't
   compared (docs/chatddx.md, "Possible design issues"), and canary calls stream without events.
-```
-- **No canary set is seeded** by a data set, canary outputs aren't compared (docs/chatddx.md, "Possible design
-  issues"), and canary calls stream without events.
 - **Fingerprints are unkeyed.** A call can take a key, but neither the runner nor the scoring pass passes one
   (docs/factors.md, "Fingerprints").
 - **Judge calls go one at a time**, and every judged scoring confirms its judges' endpoints, even when no item needs a

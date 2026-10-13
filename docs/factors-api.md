@@ -791,23 +791,12 @@ without changing any digest.
 | `engine.closure` | warning | local engine | `runtime.closure` isn't `/nix/store/<32 chars>-<name>` |
 | `view.unreachable` | warning | scorer | a view's `expectation` selector can't reach anything in the expectation schema (`reaches`), one finding per view |
 
-```
-AGENT: replace
-Outputs' schemas are checked the same way now (see the row added below).
----
 #### Outputs, expectation schemas and expectations
-```
-#### Expectation schemas and expectations
 Checked with `jsonschema`. The draft comes from `$schema`, 2020-12 when absent.
 
 | Code | Level | Subject | When |
 | --- | --- | --- | --- |
-```
-AGENT: add
-The new code, above this row.
----
 | `output.schema_invalid` | warning | output | the output's `json_schema` has a `$schema` that names no draft the library knows, or breaks its draft's metaschema |
-```
 | `expectation_schema.invalid` | warning | schema | `$schema` names no draft the library knows, or the schema breaks its draft's metaschema |
 | `expectation.invalid` | warning | expectation | the data fails its schema. The message gives the most relevant error's location (`at /…` or `at the root`) and how many more errors there are. |
 | `expectation.unchecked` | warning | expectation | a `$ref` the data reaches can't be resolved. Refs resolve within the schema only, and nothing is fetched. |
@@ -842,13 +831,7 @@ On any other engine (a remote engine, or another vLLM version):
 
 | Code | Level | When |
 | --- | --- | --- |
-```
-AGENT: replace
-A toolset tool's parameters are checked too, a finding per tool.
----
 | `schema.ref_unverified` | warning | a `native` or `tool` skeleton's output schema holds `$ref`. `inline_refs@1` removes it. Also a toolset tool whose parameters hold `$ref`, a finding per tool, which nothing removes. |
-```
-| `schema.ref_unverified` | warning | a `native` or `tool` skeleton's output schema holds `$ref`. `inline_refs@1` removes it. |
 
 #### Judges
 | Code | Level | When |
@@ -873,12 +856,7 @@ Checks against the model facts (`facts.*`) are in `src/chatddx/facts/lint.py`.
 | `engine.chat_template_date` | warning | `check_chat_template` |
 | `engine.closure` | warning | `lint` |
 | `view.unreachable` | warning | `lint` |
-```
-AGENT: add
-The new code, above this row.
----
 | `output.schema_invalid` | warning | `lint` |
-```
 | `expectation_schema.invalid` | warning | `lint` |
 | `expectation.invalid` | warning | `lint` |
 | `expectation.unchecked` | warning | `lint` |
