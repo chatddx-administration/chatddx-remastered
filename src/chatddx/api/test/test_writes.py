@@ -4,7 +4,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from chatddx.api.test.test_variations import thread
-from chatddx.test.world import LINES
+from chatddx.test.world import LINES, QWEN
 
 pytestmark = pytest.mark.wip
 
@@ -179,3 +179,27 @@ def test_a_recipe_of_one_s_making_is_a_new_configuration(signed: TestClient) -> 
         got = signed.post("/api/threads", json={**asked, "name": "x"})
         assert got.status_code == 422, (asked, got.json())
         assert said in str(got.json()["detail"])
+
+
+@pytest.mark.slow
+def test_a_judge_is_written_over_a_judge_configuration(signed: TestClient) -> None:
+    query = {"kind": "configuration", "purpose": "judge", "name": "judge (en)"}
+    [judging] = signed.get("/api/threads", params={**query, "owner": "alice"}).json()
+    engine = signed.get(f"/api/endpoints/{QWEN}").json()["engine"]
+    judge = {
+        "kind": "judge",
+        "skeleton": judging["head"]["digest"],
+        "engine": engine,
+        "seeds": [1, 2],
+    }
+    got = signed.post("/api/threads", json={"component": judge, "name": "twice"})
+    assert got.status_code == 201
+    made = got.json()
+    assert (made["kind"], made["owner"]) == ("judge", "alice")
+    assert [f["code"] for f in made["findings"]] == ["judge.greedy_seeds"]
+
+    generation = thread(signed, "configuration", LINES)["head"]["digest"]
+    wrong = {**judge, "skeleton": generation}
+    got = signed.post("/api/threads", json={"component": wrong, "name": "wrong"})
+    assert got.status_code == 422
+    assert "judge uses a generation skeleton" in got.json()["detail"]

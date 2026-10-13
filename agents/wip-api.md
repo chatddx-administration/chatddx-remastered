@@ -55,7 +55,8 @@ A configuration made per language or model is a thread under its full name, unti
 - **Threads** of a kind, by the bench's word for it: configuration, each part, tool, scorer, judge, expectation,
   appendix, expectation_schema, canary_set, model or engine. A thread gives its kind, name, title, owner, tags and
   head, and on its own also its description, collaborators, language, the edit it was forked from, whether it is
-  deleted, and for a configuration its recipe. Its versions come oldest first.
+  deleted, and for a configuration its recipe. Its versions come oldest first. Configurations are listed by purpose,
+  those that give answers unless the judges' are asked for, since a judge configuration is no use at a run.
 - **Families**, each with the case of its current vignette, filtered by tag or name. A family on its own adds its
   description and collaborators, the case's appendices, and, under each expectation schema the person sees, the
   expectation its case is scored against: their own, so a schema under which they only see shared ones has none
@@ -109,8 +110,8 @@ version of the person's configuration of that name if there is one, and a new co
 
 Chunks, appendices, expectations and scorers are written the same way, with a component where a configuration takes
 parts, as its JSON as a component's own request gives it, and a scorer with the labels of its views and resources
-(`agents/wip-bench.md`, "Components" and "Scorers"). Judges aren't written yet (`agents/wip-bench.md`,
-"Outstanding"):
+(`agents/wip-bench.md`, "Components" and "Scorers"). A judge is written the same way, over a judge configuration,
+an engine and its seeds:
 - **New**: a component, a name, and the language of its text when it has one, as a thread of the person's own; or a
   recipe, by the chunks' digests for its parts, its purpose and its appendix layout, made into a new configuration
   of their own with no origin.
@@ -171,7 +172,7 @@ The run is started within the request, so whatever refuses it does so before any
 endpoint that doesn't serve the trial's engine, isn't cleared for a sensitive source among the cases', or lacks its
 secret; tools that would get a sensitive source's content; and an endpoint that doesn't answer. The request is
 refused too for anything its body names that the person doesn't see (a configuration, an endpoint, a family), and
-for tags no case has. A judge configuration is refused as well, but only as its trial is stored, after the gate.
+for tags no case has, and for a judge configuration, which is asked as runs are scored rather than run on cases.
 
 A run is sent under the default execution, with no timeout, and with no canary set or text cleanup.
 
@@ -208,11 +209,14 @@ second. The calls under way are hung up and recorded as stopped, and the run is 
 scoring isn't halted with it: its judge calls are all sent.
 
 ### Reading runs
-- **A person's runs**, newest first, a page at a time, filtered by trial, by a digest their trial is built on, or by
-  a scorer that scored them. Each says what ran: its trial, skeleton, engine, endpoint, cases, seeds, and a line
-  saying it as people read it.
+- **A person's runs**, newest first, a page at a time, filtered by trial, by a digest their trial is built on, by
+  a scorer that scored them, or to those left to score, each with the scorers it is left to be scored by. Each says
+  what ran: its trial, skeleton, engine, endpoint, cases, seeds, and a line saying it as people read it.
 - **A run** adds when it started and finished, the rig it ran on, what it noted as it went, what checking it finds
   now, each item's outcome and tokens, and its latest score under each scorer.
+- **A run's scores**: the latest under each scorer, or every one, newest first, or one by its id. A score says its
+  scoring, when it started and whether it finished, each item's value under each view, and each view's mean.
+- **A score's items**: each item's detail and judge calls, and the findings of the score. They are case-derived.
 - **A run's items**: each call as it was recorded, with its response and tool rounds, and why the item ended as it
   did. They are case-derived.
 - **Whether each item renders again** as it was sent: only a request's fingerprint is kept, so the request is
@@ -223,24 +227,25 @@ Only the person's own runs are seen; a collaborator on a run doesn't see it.
 ## Scoring
 A run is scored as soon as it is finished, under every scorer that applies, because how it scored is what a client
 most wants after a run; a request can ask for it to be left, with `"score": false`. A judged view is scored as any
-other, its judge's calls sent to the one endpoint that serves the judge's engine. The scores come in `run.scored`, and with
-the run when it is read: each item's value under each view, and each view's mean over the items, or why the scorer
-gave none. A judged view's value is the mean over the seeds whose verdicts were read, and neither each seed's value
-nor what the judge said is given.
+other, its judge's calls sent to the one endpoint that serves the judge's engine. The scores come in `run.scored`, and
+with the run when it is read: each item's value under each view, and each view's mean over the items, or why the
+scorer gave none. A judged view's value is the mean over the seeds whose verdicts were read.
 
-There is no request yet to score a run afterwards, or to list the runs left to score (`agents/wip-bench.md`,
-"Outstanding"), so a run left unscored, or whose scoring failed, stays so over HTTP.
+The runs left to score are listed, each with the scorers it is left to be scored by (see "Reading runs"), and what
+each seed gave and the judge said is in the score's items. There is no request yet to score a run afterwards
+(`agents/wip-bench.md`, "Outstanding"), so a run left unscored, or whose scoring failed, stays so over HTTP.
 
 ## Case-derived content
 What is made from a vignette is shown to whoever signed in, but only in its own places, so that a policy for edges
 can gate those few when clearance has one (agents/wip-clearance.md):
 - a family's vignette;
 - a run's items;
+- a score's items, with their detail and judge calls, and the score's findings;
 - a run's stream: the deltas, the tool runs, and why each item ended.
 
 Nothing else carries any. Why an item ended can quote the answer, since checking it against a schema names the value
-it refused, so it is in the items and the stream only. For the same reason a score gives values, but neither the
-scorer's detail, nor its judge calls, nor the scoring's findings.
+it refused, so it is in the items and the stream only. For the same reason a score gives values, and its detail,
+judge calls and findings are its items'.
 
 ## Errors
 A refusal's body is `{"detail": "…"}`, except where a request doesn't validate: then it lists where.
@@ -251,7 +256,7 @@ A refusal's body is `{"detail": "…"}`, except where a request doesn't validate
 | 403 | A cookie's request that changes something, or a sign-in, from another site's page. |
 | 404 | What the path names isn't there or isn't seen by the person, a thread is of another kind than the route takes, a source doesn't hold a vignette, or a thread to edit, follow, carry or say something of isn't the person's. |
 | 409 | Taking an expectation the person has their own of, without saying to replace it; an edit, a follow or a carry whose head has moved on. |
-| 422 | A request that doesn't validate or names a field it shouldn't; a kind that isn't one; a variation the bench refuses; a query or body naming what the person doesn't see; tags no case has; the gate's refusal of a run; taking an expectation that is the person's already; a component the bench refuses, or parts for what isn't a configuration and a component for what is; what is said of a thread that the bench refuses, or of a deleted one; following with nothing to follow; a case of appendices or a replacement the bench refuses; carrying an expectation outside its family; a run naming a case that isn't a current one of a family the person sees. |
+| 422 | A request that doesn't validate or names a field it shouldn't; a kind that isn't one, or a purpose for what isn't a configuration; a variation the bench refuses; a query or body naming what the person doesn't see; tags no case has; the gate's refusal of a run; taking an expectation that is the person's already; a component the bench refuses, or parts for what isn't a configuration and a component for what is; what is said of a thread that the bench refuses, or of a deleted one; following with nothing to follow; a case of appendices or a replacement the bench refuses; carrying an expectation outside its family; a run naming a case that isn't a current one of a family the person sees; a run of a judge configuration. |
 | 429 | A person who has typed as many cases as a day takes. |
 | 500 | A run that failed on its thread, for a request waiting for its answer. |
 
@@ -261,7 +266,6 @@ many cases is answered 200, whatever it took, and a carry 201, even when the exp
 ## Not covered
 - **A vignette in a run's request.** A run takes cases; a text to run is typed first, and kept in the World's
   database source as a case of its own (see "Typed cases").
-- **Writing judges**, the one kind people author that isn't written yet (`agents/wip-bench.md`, "Outstanding").
 - **A trial beyond one seed**: replicates, an execution's settings, canary sets and text cleanup are the batch
   planner's and the worker's (agents/wip-batch.md, agents/wip-worker.md).
 - **A proxy's forward auth**: once a proxy authenticates, that is its job.

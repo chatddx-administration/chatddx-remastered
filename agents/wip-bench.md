@@ -128,11 +128,16 @@ For a variation, the bench gives:
 - **its reach**: for each view of each scorer the person sees, whether the variation's output offers what the view
   reads, and which of the given families have no expectation it picks something from, or several to choose from.
 
+A judge configuration, one whose purpose is `judge`, is looked at as the judge it would make on the engine: its lints
+are the judge's, it reads no case, and it has no reach, as no scorer reads what a judge answers. It isn't run on cases:
+starting it is refused. An edge lists configurations by purpose (`Bench.purposed`), since a judge configuration is no
+use where a run's is wanted.
+
 ## Writes for the person
-The bench writes, in the person's name: configurations, chunks, appendices, expectations, scorers, typed cases, what
-is said about a thread, runs and scores. Tools, expectation schemas, engines, models and canary sets are developers'
-and ops', written through data sets (docs/chatddx.md, "Requirements"), and a scoring is built when a run is scored
-rather than written by hand.
+The bench writes, in the person's name: configurations, chunks, appendices, expectations, scorers, judges, typed
+cases, what is said about a thread, runs and scores. Tools, expectation schemas, engines, models and canary sets are
+developers' and ops', written through data sets (docs/chatddx.md, "Requirements"), and a scoring is built when a run
+is scored rather than written by hand.
 
 What every write has in common:
 - **One set of writes for every kind.** A thread is made new, forked from one the person sees, or edited when it is
@@ -165,13 +170,14 @@ A configuration is kept with the compilation that makes it: for a variation with
 the running code compiles; otherwise the configuration's own.
 
 ### Components
-A person writes the kinds of chunk a recipe's parts take, appendices, expectations and scorers, each from its JSON as
-the store gives it:
+A person writes the kinds of chunk a recipe's parts take, appendices, expectations, scorers and judges, each from its
+JSON as the store gives it:
 - **new**, as a thread of the person's own, with a name;
 - **a fork** of a thread they see, from its head or from a component given in its place;
 - **an edit** of a thread they own.
 
-What a component refers to must be stored already, so a toolset can't bring a tool of its own.
+What a component refers to must be stored already, so a toolset can't bring a tool of its own, and a judge is written
+over a judge configuration already kept, which its own rule holds it to (docs/factors.md, "Judge").
 
 ### Languages
 A text is written with its language when the person gives one, and only a text can have one. A language belongs to
@@ -274,9 +280,9 @@ ones, and a scorer pinned again by a deploy reaches the person's fork of it.
 
 ## Runs and scores
 - **Starting** runs a variation at an endpoint, on some cases with one seed, through the runner (docs/runner.md),
-  under the default execution and with no canary set or text cleanup. The runner's gate refuses what clearance
-  forbids before anything is sent, and nothing is sent until the edge sends it, so the edge decides how a run is shown
-  as it goes.
+  under the default execution and with no canary set or text cleanup. A judge configuration is refused first. The
+  runner's gate refuses what clearance forbids before anything is sent, and nothing is sent until the edge sends it,
+  so the edge decides how a run is shown as it goes.
 - **A person's runs** are their own, newest first, found by the start of their id, or by a component their trial is
   built on.
 - **A run is described** as the repl's `run` and `batch` say it: the configuration, where it ran, its case or how many,
@@ -297,7 +303,7 @@ ones, and a scorer pinned again by a deploy reaches the person's fork of it.
 - **Stopping a scoring**, as Ctrl-C does, finishes the score under way with what it has, and the scorers after it
   aren't scored.
 - **A run's scores** are the latest under each scorer that scored it, each named by the thread the person sees holding
-  that scorer, their own first.
+  that scorer, their own first; or every score of the run, newest first; or one by its id.
 - **Rendering again**: only a request's fingerprint is kept, so whether a run's first requests would be sent the same
   now is told by rendering them again from the trial and the vignette at its source.
 
@@ -355,35 +361,22 @@ The plans they were built from, with the options weighed for each decision and t
 ### Start with this
 0. **Go through open items, reiterate and confirm design decisions**, "Takes the API is built on" first. The API's
    items, each with what holds today, its options and a take, are in `agents/wip-api-open.md`.
-1. **Scoring in the API**, which has no requests of its own yet: a run is scored as it finishes unless its request
-   says `"score": false`, and its latest scores come with it, in `run.scored` and in `GET /api/runs/{id}`
-   (agents/wip-api.md, "Scoring"). A run left unscored, or whose scoring failed, can't be scored over HTTP. Still to
-   do:
-   - a run's latest score under each scorer, on its own (`Bench.scores_of`);
-   - scoring a run now, under all its scorers or some (`Bench.score`), one run at a time;
-   - the person's finished runs, each with the scorers it is left to be scored by (`Bench.outstanding`, as
-     `runs?unscored=true`), a run with a case that has expectations to choose from among them, as
-     `Bench.outstanding` lists it. Today `GET /api/runs` ignores `unscored`, as it ignores any parameter it doesn't
-     name, and gives every run;
-   - the scoring pass's events in a run's stream (`Bench.score`'s `on_event`): each item scored, and each judge call
-     asked and answered. After `run.finished` the stream says nothing until `run.scored`, however many judge calls
-     are sent in between;
-   - where a score's detail, its judge calls and the scoring's findings show, if anywhere. Each can quote the answer,
-     so a place for them is case-derived, and the ledger marks the scoring's findings otherwise: `ScoreFinished` isn't
-     case-derived (`src/chatddx/ledger/score.py`), though an `answer.invalid` finding can quote the answer's values.
-     Until then a judged view's values come back, but neither each seed's value nor what its judge said, which the
-     repl shows.
+1. **Scoring a run in the API**, under all its scorers or some (`Bench.score`), one run at a time, and the scoring
+   pass's events in a stream (`Bench.score`'s `on_event`): each item scored, and each judge call asked and answered.
+   Decided: as a run is, JSON or a stream, with all the events (agents/wip-api-open.md, O1 and O4). It waits on where
+   a run runs (O10), which the user questioned. Until then a run is scored as it finishes unless its request says
+   `"score": false`, a run left unscored, or whose scoring failed, can't be scored over HTTP, and after `run.finished`
+   the stream says nothing until `run.scored`. Built: a run's scores on their own, the latest, every one or one by id;
+   the runs left to score; and a score's items, with their detail and judge calls, as a case-derived place
+   (agents/wip-api.md, "Scoring").
 2. **Adopting the docs**: this file and `agents/wip-bench-api.md`, as `docs/bench.md` and `docs/bench-api.md`, and
    `agents/wip-api.md` and `agents/wip-api-api.md`, as `docs/api.md` and `docs/api-api.md`; the bench's and the API's
    tests marked `solidified`; and what points at these files moved with them: `docs/repl.md`, `docs/repl-api.md`,
    `src/chatddx/repl/test/test_vocabulary.py` and the other plans in `agents/`.
 3. **A low-level manual for the bench**, made from `agents/wip-authoring.md`.
-4. **Judges** are scored by every edge, and writing them is the one write for authoring left (agents/wip-authoring.md,
-   S6, phase 9), which the scoring pass no longer holds back. With it come configurations listed and found by
-   purpose, and a judge configuration looked at as a judge. Today a judge configuration is listed among the
-   configurations, a look at it lints it as a trial and finds nothing, and starting it is refused only as the trial is
-   stored, after the gate has checked the endpoint, as `<digest>: trial uses a judge skeleton`. The portal's
-   authoring and swift wait on the rest, which is built.
+4. **Judges** are written as any component (decided: agents/wip-api-open.md, O7), and configurations are listed by
+   purpose in the API. The repl still lists judge configurations among the rest. The portal's authoring and swift
+   wait on the rest, which is built.
 5. **Takes** the bench and the API are built on still wait for a word: "Takes the API is built on", below, and the
    authoring takes marked "Built, as takes" in agents/wip-authoring.md.
 
@@ -396,9 +389,9 @@ places of its own (S3).
   stored by looking (V1).
 - **A6, where a run runs**: in its request, sent on a thread of its own and halted when the client goes away (W1),
   shaped so that a run beside the request, followed by a GET, can come later (W2). agents/wip-worker.md builds on it.
+  The user finds running inside the request off (agents/wip-api-open.md, O10).
 - **A7, the stream**: asked for by `Accept`, with the runner's events (agents/wip-api.md, "The stream").
-- **A8, scoring**: at once after a run, with an opt-out, and a listing of what is left to score, which isn't built
-  (see "Start with this", 1).
+- **A8, scoring**: at once after a run, with an opt-out, and a listing of what is left to score (built: O3).
 - **A10, errors**: the bench's errors mapped by class, and what else a route means caught where it means it
   (agents/wip-api.md, "Errors").
 - **A11, keeping a variation**: a fork and an edit, two requests, rather than a save by name (K2).

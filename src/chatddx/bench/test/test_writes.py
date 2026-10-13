@@ -6,10 +6,10 @@ from pydantic import ValidationError
 from chatddx.bench import Bench, MovedOn, NotFound
 from chatddx.catalog import Entry, EntryField, Subject
 from chatddx.factors.request import Recipe
-from chatddx.factors.scoring import Expectation
+from chatddx.factors.scoring import Expectation, Judge
 from chatddx.identity import Person
 from chatddx.store import Catalog
-from chatddx.test.world import QWEN
+from chatddx.test.world import LINES, QWEN
 
 pytestmark = pytest.mark.wip
 
@@ -174,3 +174,25 @@ def test_a_recipe_is_refused_what_doesn_t_compile(bench: Bench) -> None:
         _ = bench.new(recipe, "x", "en")
     with pytest.raises(ValueError, match="generation prompt in a judge recipe"):
         _ = bench.new(recipe.model_copy(update={"purpose": "judge"}), "x")
+
+
+def test_a_person_writes_a_judge_over_a_judge_configuration(bench: Bench) -> None:
+    skeleton = bench.configuration("judge (en)").configuration.digest
+    engine = bench.endpoint(QWEN)
+    written = bench.new(Judge(skeleton=skeleton, engine=engine, seeds=(1, 2)), "twice")
+    assert written.what == "created"
+    assert [f.code for f in written.findings] == ["judge.greedy_seeds"]
+
+    thread, _ = _archive_s(bench, "judge")
+    forked = bench.fork_component(thread, "mine")
+    assert (
+        forked.what == "created"
+        and bench.about(forked.edit.thread).owner == bench.person.id
+    )
+    once = Judge(skeleton=skeleton, engine=engine, seeds=(3,))
+    edited = bench.edit_component(forked.edit.thread, forked.edit.id, once)
+    assert (edited.what, edited.edit.digest) == ("a new version", once.digest)
+
+    generation = bench.configuration(LINES).configuration.digest
+    with pytest.raises(ValueError, match="judge uses a generation skeleton"):
+        _ = bench.new(Judge(skeleton=generation, engine=engine, seeds=(1,)), "wrong")

@@ -42,10 +42,14 @@ def graded_of(graded: benches.Graded) -> schemas.Graded:
         [s.value for s in scored if s.view == view and s.value is not None]
         for view in views
     ]
+    started = None if graded.score is None else graded.score.started
     return schemas.Graded(
         scorer=graded.scorer.digest,
         name=graded.name,
-        score=None if graded.score is None else graded.score.started.score,
+        score=None if started is None else started.score,
+        scoring=None if started is None else started.scoring,
+        at=None if started is None else started.at,
+        finished=graded.score is not None and graded.score.finished is not None,
         labels=[graded.label(view) for view in views],
         means=[mean(v) if v else None for v in values],
         items=[

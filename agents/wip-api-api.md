@@ -23,6 +23,7 @@ Paths are relative to `src/chatddx/api/` unless they start with `src/`, `docs/` 
 - [families.py](#familiespy): families, vignettes and tags
 - [world.py](#worldpy): endpoints, models, components and the scoring code shipped
 - [runs.py](#runspy): starting a run, its thread and its stream; reading runs
+- [scores.py](#scorespy): a run's scores and a score's items
 - [events.py](#eventspy): the runner's events as the stream's
 - [The command](#the-command)
 - [Tests](#tests)
@@ -42,6 +43,7 @@ Paths are relative to `src/chatddx/api/` unless they start with `src/`, `docs/` 
 | `world.py` | `schemas.py`, `people.py`, `chatddx.bench`, `chatddx.inventory`, `chatddx.scorers.{scorer,shipped}`, `chatddx.store.catalog` |
 | `events.py` | `schemas.py`, `chatddx.bench`, `chatddx.factors.request`, `chatddx.ledger`, `chatddx.runner.run`, `chatddx.scorers.aggregate` |
 | `runs.py` | `schemas.py`, `events.py`, `people.py`, `state.py`, `threads.py`, `chatddx.bench`, `chatddx.factors.{base,request,trial}`, `chatddx.identity`, `chatddx.ledger`, `chatddx.runner.run` |
+| `scores.py` | `schemas.py`, `events.py`, `people.py` |
 | `app.py` | every module above but `events.py`, `chatddx.bench`, `chatddx.facts`, `chatddx.inventory`, `chatddx.runner.gate` |
 
 The modules that serve build on FastAPI; `schemas.py` and `events.py` need only pydantic, and `app.py` its JSON
@@ -76,8 +78,8 @@ field a model doesn't name is a 422, and so is a query parameter where the query
 query parameter a route doesn't name is ignored. Components,
 recipes, facts, calls, tool runs and fingerprints are given as the JSON they dump to, not as models of their own.
 
-**Case-derived places.** `families.py:vignette`, `runs.py:items` and a run's stream are the only routes that give
-case-derived content.
+**Case-derived places.** `families.py:vignette`, `runs.py:items`, `scores.py:items` and a run's stream are the only
+routes that give case-derived content.
 
 ## app.py
 
@@ -184,6 +186,9 @@ The models' fields are in the OpenAPI document. Besides them:
 | `NewTake` | A take's body for one thread, `replace`. |
 | `Metric`, `ScorerCode` | Scoring code the running chatddx ships: its `entry_point`, `version`, `metrics` (each its `name`, what it `measures`, a JSON Schema for a view's `params`, whether it is `judged`, reading a judge's verdicts, and the `unit` that marks a value that isn't a score from 0 to 1, if any) and a JSON Schema for the scorer's own `params`. |
 | `NewRun` | A run's body. Its validator raises `ValueError("a run takes one of families, tags or cases")` unless exactly one of `families`, `tags` and `cases` is given, which FastAPI answers 422. |
+| `Run` | A run as listed, with `unscored`, its scorers left as `Unscored` (`scorer`, `name`), when the listing asked for them, else `None`. |
+| `Graded` | A score under one scorer: the scorer and its name, the score's id, its `scoring`, when it started (`at`) and whether it `finished`, each view's label and mean, each item's value, or why it was refused. |
+| `ScoreItemDetail`, `ScoreItems` | A score item with its `detail` and `judge_calls` as their JSON; and a score's items with its `findings`. |
 | `EVENTS: dict[str, type[_Schema]]` | Each event of a run's stream, by name, and the model of its data, in the order a stream can send them; `run.noted`'s is `Finding`. |
 
 `test/test_variations.py:test_a_request_names_the_recipe_s_parts` holds `Parts`' fields to `PARTS`, and a
@@ -206,7 +211,7 @@ variation's query parameters to them with `endpoint`, `tag` and `seed`.
 
 | Route | Does |
 | --- | --- |
-| `threads`, `GET /threads` | `HTTPException(422, "no kind '<kind>': the kinds are …")` for a word not in `KINDS`. `Bench.visible` of each kind the word names, or with `deleted` `Bench.deleted`, kept by `name` (whole), `owner` (a login) and any of `tag`. |
+| `threads`, `GET /threads` | `HTTPException(422, "no kind '<kind>': the kinds are …")` for a word not in `KINDS`. `HTTPException(422, "only a configuration has a purpose")` for a `purpose` given another word. `Bench.visible` of each kind the word names, or with `deleted` `Bench.deleted`, for a configuration only those of `purpose` (`Bench.purposed`, generation unless given), kept by `name` (whole), `owner` (a login) and any of `tag`. |
 | `thread`, `GET /threads/{thread}` | `detail`. |
 | `edits`, `GET /threads/{thread}/edits` | `Bench.thread_by_id(thread, deleted=True)`, then `Catalog.history`. |
 | `variation`, `GET /threads/{thread}/variation` | Within `refused()`: `Bench.variation(thread, query.given())` and `Bench.skeleton`. The seed is `suggest_seeds(1)[0]` unless given. `Bench.families(query.tag)`. With an endpoint: `Bench.endpoint`, whose `LookupError` is `HTTPException(422)`, and `Bench.findings(variation, engine, seed, families or None)`. `Bench.request(variation, engine, seed)` and `Bench.reach(variation, families)`. `parts` is `None` for a variation without a recipe. |
@@ -310,20 +315,29 @@ first; the thread puts them with `call_soon_threadsafe`, and drops them once the
 
 The route's 201 names `STREAM` among its content types, and its description names the events.
 
-### `run_of(bench, started: RunStarted, finished: bool) -> schemas.Run` and `detail(bench, run: UUID) -> schemas.RunDetail`
-`run_of` is the run as listed: its trial's parts, its endpoint's name, and `Bench.described`. `detail` adds, from
+### `run_of(bench, started: RunStarted, finished: bool, unscored: list[str] | None = None) -> schemas.Run` and `detail(bench, run: UUID) -> schemas.RunDetail`
+`run_of` is the run as listed: its trial's parts, its endpoint's name, `Bench.described`, and the scorers of
+`unscored`, each by its digest and `Bench.scorer_name`, or `None`. `detail` adds, from
 `Bench.run_by_id` (`NotFound`) and `Store.run`: the rig; the finish's time and findings as `noted`; `check_run`'s
 findings over the trial and canary set `Store.load` gives; each item's `item_of`; and `graded_of` each of
 `Bench.scores_of`.
 
 | Route | Does |
 | --- | --- |
-| `runs`, `GET /runs` | `Bench.runs`, kept by `trial`, then by the runs of `Bench.reaching(reaching)` and `Bench.scored_by(scored_by)`; the page `[offset:offset + limit]`, `limit` from 1 to 200 and 20 by default; `Store.finished` for the page. |
+| `runs`, `GET /runs` | `Bench.runs`, kept by `trial`, then by the runs of `Bench.reaching(reaching)` and `Bench.scored_by(scored_by)`, then with `unscored` by those of `Bench.outstanding`, each with its scorers left; the page `[offset:offset + limit]`, `limit` from 1 to 200 and 20 by default; `Store.finished` for the page. |
 | `run`, `GET /runs/{run}` | `detail`. |
 | `items`, `GET /runs/{run}/items` | `Bench.run_by_id`, then each of `Store.run`'s items: `item_of`, with the outcome's why, and the vignette's fingerprint, the call and the turns dumped. |
 | `rendered_again`, `GET /runs/{run}/rendered-again` | `Bench.run_by_id`, then `Bench.rendered_again` of `Store.run`: each item's key, and why it renders otherwise, or `None`. |
 
 A run is named by a `UUID`, so anything else in its place is a 422.
+
+## scores.py
+
+| Route | Does |
+| --- | --- |
+| `scores`, `GET /runs/{run}/scores` | `Bench.run_by_id` (`NotFound`), then `graded_of` each of `Bench.scores_of(run, every)`, `every` being the query's `all`: the latest under each scorer by name, or every score, newest first. |
+| `score`, `GET /runs/{run}/scores/{score}` | `graded_of` of `Bench.score_of(run, score)`, whose `NotFound` is for a run that isn't the person's and a score that isn't the run's. |
+| `items`, `GET /runs/{run}/scores/{score}/items` | `Bench.score_of(run, score)`, then each of its score's items with its detail and judge calls dumped, and its finish's findings, none when it hasn't finished. Case-derived. |
 
 ## events.py
 
@@ -360,15 +374,16 @@ settings.database())`.
 | --- | --- |
 | `conftest.py` | `template` is `curated`, the test World as init-data lands it; `autocommit`; `alice`, with `PASSWORD`; `served`, the app on the test World's inventory and facts (`chatddx.test.world.world_facts`); `client`, a `TestClient` over `https://testserver`; `signed`, the client with alice's bearer; `bob`, his bearer's header; `bench`, alice's; and the helpers `sign_in` and `bearer`. |
 | `test_people.py` | Signing in and out by bearer and cookie, the same-origin check, validation, the statuses, the OpenAPI document and the command. |
-| `test_threads.py`, `test_families.py`, `test_world.py` | The reads, taking expectations, and what bob doesn't see of threads and families; that every read needs a session. |
-| `test_writes.py` | A configuration made from a recipe, and what is refused of one; chunks and expectations written new, edited and forked; what is refused, and with which status; an expectation's findings. |
+| `test_threads.py`, `test_families.py`, `test_world.py` | The reads, configurations by purpose, taking expectations, and what bob doesn't see of threads and families; that every read needs a session. |
+| `test_writes.py` | A configuration made from a recipe, and what is refused of one; chunks and expectations written new, edited and forked; a judge written over a judge configuration, and one over a generation configuration refused; what is refused, and with which status; an expectation's findings. |
 | `test_cases.py` | A family's cases, an appendix written for it, a case built of it and replaced by the appendix's edit, and an expectation carried onto the replacement; cases refused; a run naming a case that isn't one. |
 | `test_typed.py` | A typed case answered as a family, its vignette read back, and bob not seeing it; what can't be typed, and 429 past the day's quota. |
 | `test_following.py` | A fork with nothing to follow, then a proposal once the archive's configuration moved on, a stale head, following, and nothing proposed after. |
 | `test_scorers.py` | The scoring code shipped, as pickers read it; a scorer of the archive's forked with its labels, a view renamed by an edit and the history's labels, and one written new; scorers refused, and labels given where nothing has them. |
 | `test_said.py` | Saying what holds of a thread, sharing it with bob and taking it back; refusals; deleting, listing and reading the deleted thread, and restoring it; a session needed. |
-| `test_variations.py` | Looks, forks and edits; that a look's queries don't grow with its cases, counted on the test's database (the fixtures create the next test's meanwhile). |
-| `test_runs.py` | Runs, over its own `served` on `world`, the test World on free ports; `listening`, the app under uvicorn on a thread, for the two tests of a client going away. No test reads a judged view's score through the API; `src/chatddx/runner/test/test_score.py` and the repl's tests do. |
+| `test_variations.py` | Looks, forks and edits; a judge configuration looked at as a judge, with no reach; that a look's queries don't grow with its cases, counted on the test's database (the fixtures create the next test's meanwhile). |
+| `test_runs.py` | Runs, over its own `served` on `world`, the test World on free ports, a judge configuration's refused among them; `listening`, the app under uvicorn on a thread, for the two tests of a client going away. |
+| `test_scores.py` | A judged run's scores, the latest and every one, one by id, and its items with their judge calls; what bob can't read; the runs left to score with their scorers, and one leaving the listing once scored; a session needed. |
 
 `src/chatddx/conftest.py` holds what the repl's tests share with these: `world`, the test World's inventory on free
 ports (`chatddx.test.world.free_world`), and `fake`, `faked` on the test's store. `chatddx.test.world.faked(world, get,

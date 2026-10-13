@@ -453,6 +453,11 @@ class Rig(_Schema):
     revision: str | None
 
 
+class Unscored(_Schema):
+    scorer: str
+    name: str
+
+
 class Run(_Schema):
     id: UUID
     at: datetime
@@ -464,6 +469,10 @@ class Run(_Schema):
     seeds: list[int]
     described: str
     finished: bool
+    unscored: list[Unscored] | None = Field(
+        default=None,
+        description="with `unscored`: the scorers it is left to be scored by",
+    )
 
 
 class Item(_Schema):
@@ -492,10 +501,23 @@ class Graded(_Schema):
     scorer: str
     name: str
     score: UUID | None
+    scoring: str | None
+    at: datetime | None
+    finished: bool
     labels: list[str]
     means: list[float | None]
     items: list[ScoredItem]
     refused: str | None
+
+
+class ScoreItemDetail(ScoredItem):
+    detail: JsonValue
+    judge_calls: JsonValue
+
+
+class ScoreItems(_Schema):
+    items: list[ScoreItemDetail]
+    findings: list[Finding]
 
 
 class RunDetail(Run):

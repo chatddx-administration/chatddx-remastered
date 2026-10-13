@@ -39,8 +39,8 @@ portal is the first edge to need them (agents/wip-portal.md, "Below the UI", "Ph
 9. **Scorers are built** (phase 8): the scoring and tool code shipped as lists with versions (S1), scorers and tools
    pinned to them (S2), parameters held to the schemas the code publishes (S3), labels on edits (S4), and the bench's
    and the API's scorer writes, with `GET /api/scorer-code` for the pickers (agents/wip-bench.md, "Scorers"). The takes
-   it made are under each section, as "Built". Judges (phase 9) are next: the scoring pass sends judge requests now
-   (agents/wip-judges.md).
+   it made are under each section, as "Built". Judges (phase 9) are built too: `judge` is written as any component,
+   and the API lists configurations by purpose (agents/wip-api-open.md, O7).
 10. **One set of writes for every kind people author** (A1), with builders only where a kind binds to a family's
    vignette: appendices and cases (A2).
 11. **No write refuses on a lint** (A6): what was written comes back with its lints. Refusals stay the components' and
@@ -58,7 +58,7 @@ portal is the first edge to need them (agents/wip-portal.md, "Below the UI", "Ph
 | Accepting a proposal once a fork's origin moved on | — | `docs/catalog.md`, "Forks" | nothing: `Catalog.proposal` has no caller |
 | Typed cases and their families, for swift | clinicians | `agents/wip-portal.md`, "Typed cases" | typed, by any person (phase 7) |
 | Scorers: their views, free parameters and labels, over shipped code | researchers (decided) | `docs/catalog.md`, "Scorer labels"; "Scorers and judges" below | by curation, as the archive, with each edit's labels from a data set; by any person (phase 8) |
-| Judges: a judge configuration, an engine, seeds, a fill rule | researchers (decided) | `docs/factors.md`, "Judge" | by curation, as the archive; judged views are scored by every edge (docs/runner.md, "Judges") |
+| Judges: a judge configuration, an engine, seeds, a fill rule | researchers (decided) | `docs/factors.md`, "Judge" | by curation, as the archive; by any person (phase 9); judged views are scored by every edge (docs/runner.md, "Judges") |
 
 Not here:
 - **Trials and batches** are the batch planner's (agents/wip-batch.md).
@@ -420,6 +420,8 @@ yet. Take: none are offered until a kind of resource exists, with its own pins, 
   run, only to be refused when the trial is built. Take: configurations are listed and found by purpose, and the
   variation workflow lints a judge configuration as a judge, a skeleton with an engine (as `chatddx.facts.lints`
   already does for judges), not as a trial.
+  Built, in the API: `GET /api/threads?kind=configuration&purpose=judge`, and a look at one linted as the judge it
+  would make, with no reach. The repl lists them all still.
 - **Its engine** is picked among the engines in the store, as a trial's is; the judge's requests are sent where that
   engine is served, cleared for the cases, since a judge prompt can hold case text (`docs/factors.md`, "Judge").
 - **Its seeds** are written, and **its fill rule** is picked among those the code names (`FillOp`).
@@ -453,7 +455,8 @@ Each with its tests in `src/chatddx/bench/test/` and the API's.
    phase 4).
 8. **Scorers**, built: the published entry points, their versions and their schemas (S1, S2), the code pin moved to
    them, views, parameters (S3), and labels on edits (S4).
-9. **Judges** (S6), which the scoring pass no longer holds back.
+9. **Judges** (S6), built: written as any component, configurations listed by purpose in the API, and a judge
+   configuration looked at as a judge and not run.
 
 ## Questions for the user
 None left open. Handing a thread over to another owner isn't offered (A9), as a take.

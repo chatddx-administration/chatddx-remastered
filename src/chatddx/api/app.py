@@ -11,7 +11,7 @@ from chatddx.facts import Facts
 from chatddx.inventory import Inventory
 from chatddx.runner.gate import Refused
 
-from . import families, people, runs, threads, world
+from . import families, people, runs, scores, threads, world
 from .schemas import EVENTS
 from .state import AppState
 
@@ -56,7 +56,7 @@ def app(inventory: Inventory, facts: Facts, conninfo: str) -> FastAPI:
         redoc_url=None,
     )
     made.state.chatddx = AppState(conninfo, inventory, facts)
-    for module in (people, threads, families, world, runs):
+    for module in (people, threads, families, world, runs, scores):
         made.include_router(module.router, prefix="/api")
     for error, status in STATUSES.items():
         made.add_exception_handler(error, _status(status))

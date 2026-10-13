@@ -219,6 +219,14 @@ def test_an_unsaved_variation_is_linted_in_its_recipe_s_language(
     assert "language.mixed" in codes()
 
 
+def test_a_judge_configuration_is_looked_at_as_a_judge(signed: TestClient) -> None:
+    query = {"kind": "configuration", "purpose": "judge", "name": "judge (en)"}
+    [judging] = signed.get("/api/threads", params={**query, "owner": "alice"}).json()
+    shown = variation(signed, judging, endpoint=QWEN)
+    assert shown["reach"] == [] and shown["findings"] == []
+    assert "‹completion›" in str(shown["request"])
+
+
 @pytest.mark.slow
 def test_a_variation_the_bench_refuses_is_unprocessable(
     signed: TestClient, conn: Connection, bob: dict[str, str]

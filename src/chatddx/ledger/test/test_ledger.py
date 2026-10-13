@@ -507,7 +507,7 @@ def test_records_refuse_what_cannot_have_happened() -> None:
         _ = RunStarted(run=run_id, at=NOW, rig=RIG, trial=trial, verify_at=("end",))
 
 
-def test_only_items_are_case_derived() -> None:
+def test_items_and_a_score_s_finish_are_case_derived() -> None:
     records = (
         RunStarted,
         RunItem,
@@ -517,7 +517,7 @@ def test_only_items_are_case_derived() -> None:
         ScoreItem,
         ScoreFinished,
     )
-    assert [r for r in records if r.case_derived] == [RunItem, ScoreItem]
+    assert [r for r in records if r.case_derived] == [RunItem, ScoreItem, ScoreFinished]
 
 
 def test_request_fingerprint_is_over_canonical_bytes() -> None:

@@ -56,6 +56,22 @@ recomputes the seal and warns when it differs: records were added, removed or ch
 finish record itself is outside the seal (see "Open design issues").
 
 ### Case-derived records
+```
+AGENT: amend
+A score's finish holds the scoring pass's findings, and `answer.invalid` names the value the output schema refused,
+so `ScoreFinished` is marked case-derived in the code now (`src/chatddx/ledger/score.py`). A run's finish isn't: the
+runner notes nothing that quotes an answer.
+---
+Content produced from a vignette is *case-derived*. Each record type says whether it may hold any, and a new type is
+assumed to unless it says otherwise. Three types do:
+- run items: their responses hold the completions and the arguments the model passed to tools, and their tool rounds
+  hold what the tools returned;
+- score items: their judge responses grade completions and may quote them, and the scorer's detail may hold anything;
+- a score's finish: its findings can quote the answer, as `answer.invalid` names the value the schema refused.
+
+Start records, a run's finish and canary calls hold references, settings, times, seals and findings written by code.
+Canary calls answer canaries, which are non-sensitive by definition (docs/factors.md, "Canary sets").
+```
 Content produced from a vignette is *case-derived*. Each record type says whether it may hold any, and a new type is
 assumed to unless it says otherwise. Two types do:
 - run items: their responses hold the completions and the arguments the model passed to tools, and their tool rounds

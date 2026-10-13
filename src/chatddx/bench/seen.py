@@ -27,13 +27,14 @@ from chatddx.factors.cases import Case, Vignette
 from chatddx.factors.engine import LocalEngine, RemoteEngine
 from chatddx.factors.request import (
     Compilation,
+    Purpose,
     Recipe,
     Skeleton,
     compile_request,
     compiled,
     render,
 )
-from chatddx.factors.scoring import Expectation, Scorer, Scoring
+from chatddx.factors.scoring import Expectation, Judge, Scorer, Scoring
 from chatddx.factors.trial import Trial
 from chatddx.facts import Facts, lints, model_name
 from chatddx.identity import Person, preferred
@@ -345,6 +346,9 @@ class Seen:
         seed: int,
         families: list[Family] | None = None,
     ) -> list[Finding]:
+        skeleton = self.skeleton(variation)
+        if skeleton.purpose == "judge":
+            return self._judged(skeleton, engine, seed)
         if families is None:
             held = self._cases([f for f, _ in self._families()]).values()
             first = next((c for c in held if c is not None), None)
@@ -353,7 +357,7 @@ class Seen:
             some = [f.case for f in families]
         if not some:
             return []
-        registry, trial = self.trial(self.skeleton(variation), engine, some, seed)
+        registry, trial = self.trial(skeleton, engine, some, seed)
         if families is None:
             return lints(registry, self.facts, [trial.digest])
         known = {f.case: f.about.language for f in families}
@@ -367,6 +371,24 @@ class Seen:
             return self.catalog.language_of(digest)
 
         return lints(registry, self.facts, [trial.digest], languages)
+
+    def _judged(self, skeleton: Skeleton, engine: str, seed: int) -> list[Finding]:
+        registry = self.store.load([engine, *(s.digest for s in skeleton.refs())])
+        _ = registry.add(skeleton)
+        judge = Judge(skeleton=skeleton.digest, engine=engine, seeds=(seed,))
+        _ = registry.add(judge)
+        return lints(registry, self.facts, [judge.digest])
+
+    def purposed(
+        self, found: Iterable[tuple[Edit, About]], purpose: Purpose
+    ) -> list[tuple[Edit, About]]:
+        held = list(found)
+        read = dict(self.rows.components([e.digest for e, _ in held]))
+        return [
+            (e, a)
+            for e, a in held
+            if resolve(read.__getitem__, e.digest, Skeleton).purpose == purpose
+        ]
 
     def scorers(self) -> list[tuple[Edit, About, Scorer]]:
         found = [
@@ -441,7 +463,10 @@ class Seen:
         }
 
     def reach(self, variation: TriedVariation, families: list[Family]) -> list[Reach]:
-        schema = self.skeleton(variation).output_schema
+        skeleton = self.skeleton(variation)
+        if skeleton.purpose == "judge":
+            return []
+        schema = skeleton.output_schema
         cases = [f.case for f in families]
         data: dict[str, tuple[dict[str, JsonValue], set[str]]] = {}
         found: list[Reach] = []
@@ -575,21 +600,35 @@ class Seen:
         seeds = ", ".join(str(seed) for seed in trial.seeds)
         return f"{self.title(trial.skeleton)} × {where} × {cases} (seed {seeds})"
 
-    def scores_of(self, run: UUID) -> list[Graded]:
-        found: dict[str, Graded] = {}
-        for started in self.store.scores_of(run):
+    def scores_of(self, run: UUID, every: bool = False) -> list[Graded]:
+        given = self.store.scores_of(run)
+        if every:
+            return [self._graded(started) for started in given]
+        found: dict[str, ScoreStarted] = {}
+        for started in given:
             scorer = resolve(self.get, started.scoring, Scoring).scorer
-            if scorer in found:
-                continue
-            held = self.holder("scorer", scorer)
-            name = held[1].name if held and held[1].name else self.title(scorer)
-            found[scorer] = Graded(
-                name,
-                resolve(self.get, scorer, Scorer),
-                self.labels(scorer),
-                self.store.score(started.score),
-            )
-        return sorted(found.values(), key=lambda g: g.name)
+            _ = found.setdefault(scorer, started)
+        return sorted((self._graded(s) for s in found.values()), key=lambda g: g.name)
+
+    def score_of(self, run: UUID, score: UUID) -> Graded:
+        _ = self.run_by_id(run)
+        found = next((s for s in self.store.scores_of(run) if s.score == score), None)
+        if found is None:
+            raise NotFound(f"no score {score} of run {run}")
+        return self._graded(found)
+
+    def _graded(self, started: ScoreStarted) -> Graded:
+        scorer = resolve(self.get, started.scoring, Scoring).scorer
+        return Graded(
+            self.scorer_name(scorer),
+            resolve(self.get, scorer, Scorer),
+            self.labels(scorer),
+            self.store.score(started.score),
+        )
+
+    def scorer_name(self, scorer: str) -> str:
+        held = self.holder("scorer", scorer)
+        return held[1].name if held and held[1].name else self.title(scorer)
 
     def scored_by(self, digest: str) -> list[RunStarted]:
         scorings = set(self.store.reaching(digest, "scoring"))

@@ -20,6 +20,11 @@ def start(
     seen: Seen, variation: TriedVariation, endpoint: str, cases: list[str], seed: int
 ) -> Running:
     skeleton = seen.skeleton(variation)
+    if skeleton.purpose == "judge":
+        raise ValueError(
+            f"{variation.label} is a judge configuration: a judge is asked as runs are "
+            + "scored, and isn't run on cases"
+        )
     registry, trial = seen.trial(skeleton, seen.endpoint(endpoint), cases, seed)
     runner = Runner(seen.conn, seen.inventory, seen.person)
     running = runner.start(trial, registry, endpoint)

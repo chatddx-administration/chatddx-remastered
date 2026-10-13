@@ -43,6 +43,12 @@ Building one validates it. The seven row types derive from `Record`; `ItemKey`, 
 `ToolCode`, `Endpoint`, `JudgeCall` are parts of rows, and `Run` and `Score` are logs put back together from rows.
 Only records have `v`, `canonical` and `parse`.
 
+```
+AGENT: amend
+`ScoreFinished` is case-derived now, as its findings can quote the answer (docs/ledger.md, "Case-derived records").
+---
+| `ScoreFinished` | `score.py` | `"finished"` | yes | `ledger.score_stage` |
+```
 | Record | Module | `stage` | `case_derived` | Table |
 | --- | --- | --- | --- | --- |
 | `RunStarted` | `run.py` | `"started"` | no | `ledger.run_stage` |
@@ -374,6 +380,12 @@ One run item graded by one view. Case-derived.
 | `judge_calls` | `tuple[JudgeCall, ...]` | `()` |
 
 ### `class ScoreFinished(Record)`, stage `finished`
+```
+AGENT: amend
+Case-derived now, as its findings can quote the answer.
+---
+Case-derived: its findings can quote the answer. Fields as `RunFinished`, with `score: UUID` in place of `run`.
+```
 Not case-derived. Fields as `RunFinished`, with `score: UUID` in place of `run`.
 
 ### `class Score(Frozen)`

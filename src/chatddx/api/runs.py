@@ -216,7 +216,12 @@ async def start(
     return await run_in_threadpool(detail, bench, made)
 
 
-def run_of(bench: Bench, started: RunStarted, finished: bool) -> schemas.Run:
+def run_of(
+    bench: Bench,
+    started: RunStarted,
+    finished: bool,
+    unscored: list[str] | None = None,
+) -> schemas.Run:
     trial = resolve(bench.get, started.trial, Trial)
     return schemas.Run(
         id=started.run,
@@ -229,6 +234,9 @@ def run_of(bench: Bench, started: RunStarted, finished: bool) -> schemas.Run:
         seeds=list(trial.seeds),
         described=bench.described(started),
         finished=finished,
+        unscored=None
+        if unscored is None
+        else [schemas.Unscored(scorer=s, name=bench.scorer_name(s)) for s in unscored],
     )
 
 
@@ -262,6 +270,10 @@ def runs(
         str | None, Query(description="a digest the run's trial is built on")
     ] = None,
     scored_by: Annotated[str | None, Query(description="a scorer's digest")] = None,
+    unscored: Annotated[
+        bool,
+        Query(description="only the finished runs left to be scored by some scorer"),
+    ] = False,
 ) -> list[schemas.Run]:
     found = bench.runs()
     if trial is not None:
@@ -273,9 +285,13 @@ def runs(
         if kept is not None:
             ids = {r.run for r in kept}
             found = [r for r in found if r.run in ids]
+    left: dict[UUID, list[str]] = {}
+    if unscored:
+        left = {r.run: scorers for r, scorers in bench.outstanding()}
+        found = [r for r in found if r.run in left]
     page = found[offset : offset + limit]
     finished = bench.store.finished([r.run for r in page])
-    return [run_of(bench, r, r.run in finished) for r in page]
+    return [run_of(bench, r, r.run in finished, left.get(r.run)) for r in page]
 
 
 @router.get("/runs/{run}")

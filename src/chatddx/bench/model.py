@@ -24,7 +24,7 @@ KINDS: dict[str, tuple[str, ...]] = {
 }
 
 WRITTEN: frozenset[str] = frozenset(
-    {*(f"chunk.{part}" for part in PARTS), "expectation", "appendix", "scorer"}
+    {*(f"chunk.{part}" for part in PARTS), "expectation", "appendix", "scorer", "judge"}
 )
 
 LABELLED: tuple[Part, ...] = ("view", "resource")

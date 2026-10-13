@@ -6,20 +6,23 @@ take for each. Written from the code at the correction pass before `docs/api.md`
 
 "Decided" means the user said so. "Take" is the agent's recommendation and still open.
 
+Decided: O1 to O7, as the table says. O2, O3, O5 and O7 are built, and O6 needs nothing. O1 and O4 wait on where a run
+runs (O10): the user finds running inside the request off, and scoring a run afterwards is to take a run's shape.
+
 ## In short
 
 | Item | Today | Take |
 | --- | --- | --- |
-| O1. Scoring a finished run | no route | `POST /api/runs/{id}/scores`, JSON or a stream as a run is |
-| O2. A run's scores on their own | only inside the run | `GET /api/runs/{id}/scores`, the latest per scorer |
-| O3. What is left to score | `unscored` is ignored | `GET /api/runs?unscored=true`, each run with its scorers left |
-| O4. The scoring's events | none; the stream is quiet | all of them, as the repl shows them |
-| O5. Detail, judge calls, score findings | nowhere | a case-derived route of a score's items |
-| O6. Naming a judge's endpoint | one endpoint per judge engine, or none | as is, until a World serves an engine twice |
-| O7. Writing judges | configurations only | `judge` written as any component, configurations by purpose |
+| O1. Scoring a finished run | no route | decided: b, as a run is; waits on O10 |
+| O2. A run's scores on their own | built | decided: b, the latest, every one, and one by id |
+| O3. What is left to score | built | decided: a, `GET /api/runs?unscored=true` |
+| O4. The scoring's events | none; the stream is quiet | decided: a, all of them; waits on O10 |
+| O5. Detail, judge calls, score findings | built | decided: a, a case-derived route of a score's items |
+| O6. Naming a judge's endpoint | one endpoint per judge engine, or none | decided: a, as is |
+| O7. Writing judges | built | decided: b, judges written, configurations by purpose |
 | O8. A4, ids | whole ids | confirm |
 | O9. A5, the variation | stated in each request | confirm |
-| O10. A6, where a run runs | in its request | confirm for now; the worker decides after |
+| O10. A6, where a run runs | in its request | questioned by the user; see O10 |
 | O11. A7, the stream | by `Accept`, on `POST` | keep-alives and event ids now; a `GET` with the worker |
 | O12. A8, scoring at once | at once, with an opt-out | confirm; O1–O3 finish it |
 | O13. A10, errors | `detail` only; 409 means three things | a `code` beside `detail` |
@@ -70,6 +73,8 @@ An unfinished run is refused before anything is sent (422), rather than as a ref
 
 Take: b. c comes with the worker, for runs and scorings alike.
 
+Decided: b. Not built: it takes the shape a run takes, which O10 is to settle.
+
 ### O2. A run's scores on their own
 `Bench.scores_of` gives the latest score under each scorer that scored a run, named as the person's view names the
 scorer. `GET /api/runs/{id}` carries them, with every item and what checking the run finds, which is more than a
@@ -81,6 +86,10 @@ client asking for scores wants. The ledger keeps every score; nothing reads an o
 - **c. Nothing new.** The run's detail is enough.
 
 Take: a; b's route when a client needs the history.
+
+Decided: b. Built: `GET /api/runs/{id}/scores`, the latest under each scorer, or with `all` every score of
+the run, newest first, so that an older one's id can be found; and `GET /api/runs/{id}/scores/{score}`. A score says
+its scoring, when it started and whether it finished (`api/scores.py`; `Bench.scores_of`, `Bench.score_of`).
 
 ### O3. What is left to score
 `Bench.outstanding` gives each finished run of the person's with the scorers it is left to be scored by, a run with a
@@ -96,6 +105,9 @@ is ignored, and gives every run (O22).
   looking for what is left reads every page.
 
 Take: a; its cost goes with O30's.
+
+Decided: a. Built: each run listed with `unscored` holds its scorers left, by digest and name; without it,
+`null` (`api/runs.py:runs`).
 
 ### O4. The scoring's events
 `Grading.send` gives, as it goes: a score item written (`ItemScored`: the item's value and detail), a judge asked
@@ -115,6 +127,8 @@ decided at 100a078 as A9, S3).
 
 Take: a. The stream carries case-derived content already, and one set of events serves O1 too.
 
+Decided: a. Not built: with O1, after O10.
+
 ### O5. Where a score's detail, its judge calls and its findings show
 A score item holds its detail (what was read, `no target`, each seed's value) and its judge calls (each call with its
 response); the score's finish holds the findings, such as `answer.invalid`, which can quote the answer's values. The
@@ -130,6 +144,9 @@ what the judge said. The ledger marks a score's records as not case-derived (`Sc
 
 Take: a, and `ScoreFinished` marked case-derived, as a suggestion to docs/ledger.md, so the ledger and the API agree.
 
+Decided: a. Built: `GET /api/runs/{id}/scores/{score}/items`, each item with its detail and judge calls, and the
+score's findings; `ScoreFinished` is case-derived, with AGENT suggestions in docs/ledger.md and docs/ledger-api.md.
+
 ### O6. Naming a judge's endpoint
 The scoring pass takes an endpoint per judge (`Grader.start(…, endpoints)`), else the one endpoint serving the
 judge's engine, and refuses when there is none or several (`runner/score.py:judge_at`). The bench names none, and
@@ -142,6 +159,8 @@ World serves an engine at two endpoints today.
 - **c. Picked.** The bench picks among several by clearance and `max_jobs`.
 
 Take: a, until a World serves an engine twice; then b.
+
+Decided: a.
 
 ## Judges
 
@@ -166,6 +185,10 @@ one is refused only as its trial is stored, after the gate, as `<digest>: trial 
   would read each head's purpose anyway: b with a different spelling.
 
 Take: b, with purpose as a filter rather than a word.
+
+Decided: b. Built: `judge` is in `WRITTEN`; `GET /api/threads?kind=configuration` takes `purpose`, generation
+by default (`Bench.purposed`); a run of a judge configuration is refused before the gate, as `<name> is a judge
+configuration: …`; and a look at one at an endpoint lints a `Judge` of it on that engine, with no reach.
 
 ## Takes the API is built on
 `agents/wip-bench.md`, "Takes the API is built on", lists them; each is built as its take had it.
@@ -201,6 +224,8 @@ with 202 and stream from a `GET`.
 - **W3. The worker.**
 
 Take: confirm W1 for now. The worker's K5 then decides whether `POST /api/runs` keeps W1 for programs.
+
+The user finds running inside the request off; how it should run instead is open, and O1 and O4 wait on it.
 
 ### O11. A7, the stream
 Asked for by `Accept: text/event-stream` on `POST /api/runs`, with the runner's events, one line of JSON each.

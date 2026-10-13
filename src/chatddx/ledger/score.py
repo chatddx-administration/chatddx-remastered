@@ -58,7 +58,6 @@ class ScoreStarted(Record):
 
 
 class ScoreFinished(Record):
-    case_derived: ClassVar[bool] = False
     stage: Literal["finished"] = "finished"
     score: UUID
     at: UtcDatetime

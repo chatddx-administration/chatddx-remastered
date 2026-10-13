@@ -174,6 +174,8 @@ def test_a_run_the_gate_refuses_is_unprocessable_and_isn_t_recorded(
 def test_a_run_the_request_names_wrong_is_unprocessable(signed: TestClient) -> None:
     good = asked(signed)
     chunk = thread(signed, "reasoning", OFF)
+    query = {"kind": "configuration", "purpose": "judge", "name": "judge (en)"}
+    judge = signed.get("/api/threads", params={**query, "owner": "alice"}).json()[0]
     wrong: list[tuple[dict[str, Any], str]] = [
         ({"tags": ["swedish"]}, "a run takes one of families, tags or cases"),
         ({"families": None}, "a run takes one of families, tags or cases"),
@@ -183,6 +185,7 @@ def test_a_run_the_request_names_wrong_is_unprocessable(signed: TestClient) -> N
         ({"endpoint": "nowhere@fake"}, "no endpoint 'nowhere@fake' in the inventory"),
         ({"configuration": chunk["id"]}, f"no configuration {chunk['id']} for alice"),
         ({"parts": {"prompt": chunk["head"]["digest"]}}, "isn't a stored chunk"),
+        ({"configuration": judge["id"]}, "judge (en) is a judge configuration"),
     ]
     for changed, said in wrong:
         got = signed.post("/api/runs", json={**good, **changed})
