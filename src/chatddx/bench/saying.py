@@ -3,7 +3,6 @@ from types import EllipsisType
 
 from chatddx.catalog import About, Entry, EntryField, Subject
 from chatddx.factors.scoring import Expectation
-from chatddx.identity import owns, restores, shares
 
 from .errors import NotFound
 from .model import KINDS
@@ -24,9 +23,7 @@ def say(
     kind = None if found is None else found.kind
     word = next((w for w, held in KINDS.items() if kind in held), "thread")
     about = seen.about(thread)
-    if found is None or not (
-        owns(seen.person.id, about) or restores(seen.person.id, about)
-    ):
+    if found is None or about.owner != seen.person.id:
         raise NotFound(f"no {word} {thread} of yours")
     changing = (name, description, tags, collaborators) != (..., None, None, None)
     if about.deleted and deleted is not False and changing:
@@ -38,7 +35,7 @@ def say(
     sharing: set[int] = (
         set() if collaborators is None else {_sharing(seen, c) for c in collaborators}
     )
-    if not shares(seen.person.id, sharing):
+    if seen.person.id in sharing:
         raise ValueError(f"{word} {thread} is yours: it is shared with others")
 
     said: list[Entry] = []

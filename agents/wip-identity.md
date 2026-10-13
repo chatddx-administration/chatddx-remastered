@@ -43,8 +43,7 @@ the catalog's owner and collaborators (Z2).
   an `Owned`: anything with an owner, collaborators and a deleted flag, which the catalog's `About` is. Only what is
   live counts. What a person owns is their runs, what they may edit, and the expectations they are scored against
   (`docs/bench.md`, "What a person is scored against"); what they collaborate on, of those, is what they could take;
-  and they see both. What they own and deleted they `restores`: it is listed apart, found by id when asked for, and
-  theirs to say more of by restoring it. A person `shares` only with others.
+  and they see both.
 - Of what a person sees, their own comes first: `src/chatddx/identity/identity.py:preferred`, which the bench uses to
   find a thread or family by name and to name a digest's thread.
 - Z1's map from role to kinds goes beside `sees`. `identity` holds both, as data and functions with no store access.
@@ -55,8 +54,8 @@ the catalog's owner and collaborators (Z2).
   `0008-t1-identity.sql` (grants) and `0009-t2-identity.sql` (login pattern, role names, session expiry), all in
   `src/chatddx/store/migrations/` (`docs/migrations.md`).
 - `src/chatddx/identity/identity.py`: `Role`, `Person`, argon2id hashing (`argon2-cffi`), session tokens, `Owned`,
-  `owns`, `collaborates`, `sees`, `restores`, `shares` and `preferred`, exported by `chatddx.identity`.
-- The person-scoped rules moved down from the catalog and the bench (see "The person-scoped cake").
+  `owns`, `collaborates`, `sees` and `preferred`, exported by `chatddx.identity`.
+- The person-scoped rules moved down from the catalog (see "The person-scoped cake").
 - `src/chatddx/store/people.py`: `People`, the store API for people, passwords and sessions.
 - `chatddx person add` / `chatddx person password` (`src/chatddx/cli.py`).
 - Tests: `src/chatddx/store/test/test_identity.py`, `test_cli.py`, and `src/chatddx/identity/test/test_identity.py`.
@@ -93,26 +92,14 @@ Looked at and left where they are:
   resources.
 - **`threads.py:check_expectation`** (a person owns at most one live expectation per case and schema) reads rows.
 
-The bench, a layer up, held pure person rules inline. They moved too, its messages staying in the bench:
-
-| Was, in the bench | Is, in identity |
-| --- | --- |
-| `seen.py:Seen.thread_by_id`, `Seen.deleted`: `about.deleted and about.owner == person` | `restores(person, about)` |
-| `saying.py:say`: the owner alone says, deleted or not, `about.owner == person` | `owns(person, about) or restores(person, about)` |
-| `saying.py:say`: `person in sharing` refused | `not shares(person, sharing)` |
-| `taking.py:take_from`: "yours already", `about.owner == person` of a thread it sees | `owns(person, about)` |
-| `taking.py:take`: shared by the owner named, `a.owner == by.id` of a live thread | `owns(by.id, a)` |
-| `seen.py:Seen.owner`: `""` for the person's own, deleted or not | `owns(person, about) or restores(person, about)` |
-
-From a person's side, `owns`, `collaborates` and `restores` split what is said of a subject: live and theirs, live
-and shared with them, and deleted and theirs; `sees` is the first two. Deleted and shared with them is nothing of
-theirs.
-
-Still inline, above the bench or beside it, comparing a person with an owner or collaborators:
-`src/chatddx/repl/listing.py`, `src/chatddx/portal/threads.py`, `portal/configurations.py` and `portal/runs.py`,
-which list the person's own first or apart, by login or id; and `src/chatddx/curation/write.py` and
-`curation/repair.py`, for the archive's own, a user's forks, and withdrawing a user from what is shared with them,
-deleted or not.
+Further down the cake, the bench holds pure person rules inline that could follow (not moved, as the survey was of
+the catalog):
+- the person's own deleted threads, `about.deleted and about.owner == person`
+  (`src/chatddx/bench/seen.py:Seen.thread_by_id`, `Seen.deleted`);
+- only the owner says anything of a thread, deleted or not, and nobody shares with themselves
+  (`src/chatddx/bench/saying.py:say`);
+- an expectation is "yours already" (`src/chatddx/bench/taking.py:take_from`);
+- `Seen.owner`'s "" for the person's own.
 
 ## Decisions
 

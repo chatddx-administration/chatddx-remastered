@@ -2,9 +2,9 @@
 
 ```
 AGENT: replace
-The bench also applies `sees`, `owns`, `restores` and `shares` from `chatddx.identity` now.
+The bench also applies `sees` and `owns` from `chatddx.identity` now.
 ---
-… agents/wip-identity.md (`Person`, `preferred`, `sees`, `owns`, `restores`, `shares`) …
+… agents/wip-identity.md (`Person`, `preferred`, `sees`, `owns`) …
 ```
 Reference for the `chatddx.bench` package. It was written from `src/chatddx/bench/*` and docs/bench.md. What the bench
 is and why it is shaped this way is in docs/bench.md; this file says what each name accepts, returns and raises. The
@@ -39,8 +39,8 @@ never by path; tests import their helpers from `chatddx.bench.test.helpers`.
 
 ```
 AGENT: replace
-`cases.py`, `components.py`, `configurations.py`, `following.py`, `saying.py` and `taking.py` now import
-`chatddx.identity`, for `sees`, `owns`, `restores` and `shares`. Add it to their rows.
+`cases.py`, `components.py`, `configurations.py` and `following.py` now import `chatddx.identity`, for `sees` and
+`owns`. Add it to their rows.
 ```
 | Module | Holds | Builds on |
 | --- | --- | --- |
@@ -92,13 +92,11 @@ scoring pass's.
 
 ```
 AGENT: replace
-`About.shows` and `About.owned_by` moved to `chatddx.identity` as `sees` and `owns`, and the bench's own deleted
-threads go by `restores`.
+`About.shows` and `About.owned_by` moved to `chatddx.identity` as `sees` and `owns`.
 ---
 **What the person sees.** A thread or family the person sees is one whose `About` they `chatddx.identity.sees`:
-live, and owned or shared. Their own is one whose `About` they `owns`: live, and owned. Their own deleted, listed
-apart, is one whose `About` they `restores`: deleted, and owned. Of several the person sees, their own are taken when
-they own any, else all of them (`chatddx.identity.preferred`).
+live, and owned or shared. Their own is one whose `About` they `owns`: live, and owned. Of several the person sees,
+their own are taken when they own any, else all of them (`chatddx.identity.preferred`).
 ```
 **What the person sees.** A thread or family the person sees is one whose `About.shows(person.id)`: live, and owned
 or shared. Their own is `About.owned_by(person.id)`: live, and owned. Of several the person sees, their own are

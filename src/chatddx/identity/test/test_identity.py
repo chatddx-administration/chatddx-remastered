@@ -2,7 +2,7 @@ from dataclasses import dataclass
 
 import pytest
 
-from chatddx.identity import collaborates, owns, preferred, restores, sees, shares
+from chatddx.identity import collaborates, owns, preferred, sees
 
 pytestmark = pytest.mark.wip
 
@@ -38,19 +38,6 @@ def test_nobody_sees_owns_or_collaborates_on_what_is_deleted() -> None:
     gone = Said(owner=1, collaborators=frozenset({2}), deleted=True)
     assert not sees(1, gone) and not owns(1, gone)
     assert not sees(2, gone) and not collaborates(2, gone)
-
-
-def test_a_person_restores_only_their_own_deleted() -> None:
-    assert restores(1, Said(owner=1, deleted=True))
-    assert not restores(1, Said(owner=1))
-    assert not restores(2, Said(owner=1, collaborators=frozenset({2}), deleted=True))
-    assert not restores(1, Said(deleted=True))
-
-
-def test_a_person_shares_only_with_others() -> None:
-    assert shares(1, {2, 3})
-    assert shares(1, set())
-    assert not shares(1, {1, 2})
 
 
 def test_a_person_prefers_their_own_to_what_is_shared_with_them() -> None:
