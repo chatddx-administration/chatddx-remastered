@@ -37,7 +37,7 @@ from chatddx.factors.request import (
 from chatddx.factors.scoring import Expectation, Judge, Scorer, Scoring
 from chatddx.factors.trial import Trial
 from chatddx.facts import Facts, lints, model_name
-from chatddx.identity import Person, owns, preferred, sees
+from chatddx.identity import Person, owns, preferred, restores, sees
 from chatddx.inventory import Inventory
 from chatddx.ledger import (
     ItemKey,
@@ -83,7 +83,8 @@ class Seen:
         return self._logins[person]
 
     def owner(self, about: About) -> str:
-        return "" if about.owner == self.person.id else self.login(about.owner)
+        mine = owns(self.person.id, about) or restores(self.person.id, about)
+        return "" if mine else self.login(about.owner)
 
     def threads(self, word: str) -> list[tuple[Edit, About]]:
         return [found for kind in KINDS[word] for found in self.visible(kind)]
@@ -170,7 +171,7 @@ class Seen:
         about = self.about(id)
         thread = self.rows.thread(id)
         seen = sees(self.person.id, about) or (
-            deleted and about.deleted and about.owner == self.person.id
+            deleted and restores(self.person.id, about)
         )
         if (
             thread is None
@@ -186,7 +187,7 @@ class Seen:
         return [
             (e, a)
             for e in heads
-            if (a := known[Subject(thread=e.thread)]).owner == self.person.id
+            if restores(self.person.id, a := known[Subject(thread=e.thread)])
         ]
 
     def about(self, thread: int) -> About:

@@ -9,7 +9,9 @@ from .identity import (
     new_token,
     owns,
     preferred,
+    restores,
     sees,
+    shares,
     token_digest,
     verify_password,
 )
@@ -25,7 +27,9 @@ __all__ = [
     "new_token",
     "owns",
     "preferred",
+    "restores",
     "sees",
+    "shares",
     "token_digest",
     "verify_password",
 ]

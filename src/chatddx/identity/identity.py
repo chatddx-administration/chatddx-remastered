@@ -63,6 +63,14 @@ def sees(person: int, owned: Owned) -> bool:
     return owns(person, owned) or collaborates(person, owned)
 
 
+def restores(person: int, owned: Owned) -> bool:
+    return owned.deleted and owned.owner == person
+
+
+def shares(person: int, collaborators: Collection[int]) -> bool:
+    return person not in collaborators
+
+
 def preferred[T](person: int, seen: Iterable[tuple[T, int | None]]) -> list[T]:
     found = list(seen)
     return [t for t, owner in found if owner == person] or [t for t, _ in found]

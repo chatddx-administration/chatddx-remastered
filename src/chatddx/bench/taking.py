@@ -3,6 +3,7 @@ from collections.abc import Iterable
 from chatddx.catalog import About, Edit, Entry, EntryField, Subject
 from chatddx.factors.base import resolve
 from chatddx.factors.scoring import Expectation
+from chatddx.identity import owns
 
 from .errors import Conflict, NotFound
 from .model import Taken
@@ -23,9 +24,7 @@ def take(
     found = Taken({}, {}, {}, [])
     with seen.conn.transaction():
         for case in wanted:
-            offered = [
-                (e, a) for e, a in shared[case] if by is None or a.owner == by.id
-            ]
+            offered = [(e, a) for e, a in shared[case] if by is None or owns(by.id, a)]
             if mine := sorted(own[case]):
                 found.kept[case] = mine[0]
             elif not offered:
@@ -39,7 +38,7 @@ def take(
 
 def take_from(seen: Seen, thread: int, replace: bool = False) -> int:
     edit, about = seen.thread_by_id(thread, "expectation")
-    if about.owner == seen.person.id:
+    if owns(seen.person.id, about):
         raise ValueError(f"expectation {thread} is yours already")
     held = resolve(seen.get, edit.digest, Expectation)
     case, schema = held.case, held.expectation_schema
