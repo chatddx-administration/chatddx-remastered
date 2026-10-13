@@ -56,9 +56,9 @@ set's choice.
   "Outstanding": "A judge's endpoint can't be named").
 - **Translations** (`src/chatddx/factors/request.py:Translations`, `compile_request`) are a flat map from a text,
   exactly as a chunk holds it, to its translation. A recipe's missing texts fail its compile, listed. Nothing notices
-  an entry that no text uses. `worlds/sample/_data/texts-sv.toml` holds 51 entries in one table, far from the outputs, the
-  toolset and the schema files they come from; a TOML key can't span lines, so a paragraph of guidance is one line of
-  `\n\n`, and one changed English word re-keys the whole paragraph.
+  an entry that no text uses. `worlds/sample/_data/texts-sv.toml` holds 51 entries in one table, far from the
+  outputs, the toolset and the schema files they come from; a TOML key can't span lines, so a paragraph of guidance
+  is one line of `\n\n`, and one changed English word re-keys the whole paragraph.
 - **The sample inside curation.** `SampleCase` is any data set's case, named from when the sample was the only one,
   and `write.py` refuses with "the sample needs exactly one expectation schema". `curation/test/` holds three modules
   that test content, not curation: `test_sample.py`, `test_worlds.py` and `test_the_test_world.py`.
