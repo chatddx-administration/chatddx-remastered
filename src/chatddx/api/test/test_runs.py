@@ -30,7 +30,7 @@ from chatddx.test.world import (
 
 pytestmark = pytest.mark.wip
 
-STREAM = {"Accept": "text/event-stream"}
+type Told = list[tuple[int, str, dict[str, Any]]]
 
 
 @pytest.fixture
@@ -72,12 +72,30 @@ def asked(
     }
 
 
-def events(text: str) -> list[tuple[str, dict[str, Any]]]:
-    said: list[tuple[str, dict[str, Any]]] = []
+def told(text: str) -> Told:
+    said: Told = []
     for block in text.strip().split("\n\n"):
         fields = dict(line.split(": ", 1) for line in block.splitlines())
-        said.append((fields["event"], json.loads(fields["data"])))
+        said.append((int(fields["id"]), fields["event"], json.loads(fields["data"])))
     return said
+
+
+def followed(signed: TestClient, run: str, **headers: str) -> Told:
+    got = signed.get(f"/api/runs/{run}/events", headers=headers)
+    assert got.status_code == 200, got.text
+    assert got.headers["content-type"].startswith("text/event-stream")
+    return told(got.text)
+
+
+def sent(signed: TestClient, body: dict[str, Any]) -> tuple[dict[str, Any], Told]:
+    got = signed.post("/api/runs", json=body)
+    assert got.status_code == 202, got.json()
+    said = followed(signed, got.json()["run"])
+    return signed.get(got.headers["location"]).json(), said
+
+
+def names(said: Told) -> list[str]:
+    return [name for _, name, _ in said]
 
 
 def finished(signed: TestClient, run: str) -> dict[str, Any]:
@@ -91,55 +109,83 @@ def finished(signed: TestClient, run: str) -> dict[str, Any]:
 
 @pytest.mark.slow
 @pytest.mark.usefixtures("fake")
-def test_a_run_is_answered_once_it_is_finished_and_scored(signed: TestClient) -> None:
+def test_a_run_is_accepted_and_told_by_its_events(signed: TestClient) -> None:
     case = family(signed, "crlf")["case"]
     got = signed.post("/api/runs", json=asked(signed))
-    assert got.status_code == 201
-    made = got.json()
-    assert got.headers["location"] == f"/api/runs/{made['id']}"
-    assert signed.get(got.headers["location"]).json() == made
+    assert got.status_code == 202
+    started = got.json()
+    assert got.headers["location"] == f"/api/runs/{started['run']}"
+    assert (started["endpoint"], started["cases"]) == (QWEN, [case])
+    assert (started["seed"], started["greedy"]) == (7, False)
 
+    said = followed(signed, started["run"])
+    ids = [i for i, _, _ in said]
+    assert ids == sorted(set(ids)) and ids[0] == 1
+    assert said[0][1:] == ("run.started", started)
+    assert names(said)[-2:] == ["run.scored", "done"]
+    assert said[-1][2] == {"halted": False}
+    expected = {"item.started", "item.ended", "run.finished", "run.scoring"}
+    assert expected | {"score.started", "score.item"} <= set(names(said))
+    [ended] = [d for _, n, d in said if n == "item.ended"]
+    assert (ended["case"], ended["outcome"], ended["why"]) == (case, "completed", None)
+
+    made = signed.get(got.headers["location"]).json()
     assert (made["endpoint"], made["cases"], made["seeds"]) == (QWEN, [case], [7])
     assert made["finished"] and made["finished_at"] is not None
     assert made["rig"]["distribution"] == "chatddx"
     [item] = made["items"]
     assert (item["case"], item["replicate"], item["outcome"]) == (case, 0, "completed")
     assert item["completion_tokens"] > 0
+    [scored] = [d for _, n, d in said if n == "run.scored"]
+    assert scored["scores"] == made["scores"]
     graded = {g["name"]: g for g in made["scores"]}
     lines = graded["lines"]
     assert lines["score"] is not None and lines["refused"] is None
     assert lines["labels"] == ["text", "differential", "dont-miss"]
-    assert len(lines["means"]) == 3
     assert {(s["case"], s["view"]) for s in lines["items"]} == {
         (case, view) for view in range(3)
     }
+    [scoring] = [d for _, n, d in said if n == "run.scoring"]
+    assert {s["name"] for s in scoring["scorers"]} == set(graded)
+
+
+@pytest.mark.slow
+def test_a_run_s_events_stream_as_they_come_and_resume_after_an_id(
+    signed: TestClient, world: Inventory, conn: Connection
+) -> None:
+    with faked(world, Store(conn).get, delay=0.01):
+        run = signed.post("/api/runs", json=asked(signed, score=False)).json()["run"]
+        said = followed(signed, run)
+    content = [d for _, n, d in said if n == "item.delta" and d["kind"] == "content"]
+    assert "".join(d["text"] for d in content).strip()
+    assert content[-1]["tokens"] > 0
+    assert names(said)[-2:] == ["run.finished", "done"]
+
+    again = followed(signed, run)
+    assert again == [s for s in said if s[1] != "item.delta"]
+    middle = again[len(again) // 2][0]
+    assert followed(signed, run, **{"Last-Event-ID": str(middle)}) == [
+        s for s in again if s[0] > middle
+    ]
 
 
 @pytest.mark.slow
 @pytest.mark.usefixtures("fake")
-def test_a_run_streams_its_events_when_asked(signed: TestClient) -> None:
-    case = family(signed, "crlf")["case"]
-    got = signed.post("/api/runs", json=asked(signed), headers=STREAM)
-    assert got.status_code == 201
-    assert got.headers["content-type"].startswith("text/event-stream")
-    assert got.headers["cache-control"] == "no-cache"
-    said = events(got.text)
-    names = [name for name, _ in said]
-    assert names[0] == "run.started"
-    assert names[-2:] == ["run.finished", "run.scored"]
-    assert {"item.started", "item.delta", "item.ended"} <= set(names)
-
-    started = said[0][1]
-    assert got.headers["location"] == f"/api/runs/{started['run']}"
-    assert (started["cases"], started["seed"], started["greedy"]) == ([case], 7, False)
-    content = [d for n, d in said if n == "item.delta" and d["kind"] == "content"]
-    assert "".join(d["text"] for d in content).strip()
-    assert content[-1]["tokens"] > 0
-    [ended] = [d for n, d in said if n == "item.ended"]
-    assert (ended["case"], ended["outcome"], ended["why"]) == (case, "completed", None)
-    [scored] = [d for n, d in said if n == "run.scored"]
-    shown = signed.get(got.headers["location"]).json()
-    assert scored["scores"] == shown["scores"]
+def test_a_run_with_nothing_under_way_here_is_told_from_the_ledger(
+    signed: TestClient, db: str, world: Inventory
+) -> None:
+    made, said = sent(signed, asked(signed))
+    elsewhere = app(world, world_facts(), make_conninfo(settings.database(), dbname=db))
+    with TestClient(elsewhere, base_url="https://testserver") as other:
+        other.headers.update(signed.headers)
+        recorded = followed(other, made["id"])
+    live = [s for s in said if s[1] in {"item.started", "item.ended", "run.finished"}]
+    assert [s[1:] for s in recorded if s[1] in {n for _, n, _ in live}] == [
+        s[1:] for s in live
+    ]
+    assert recorded[0][1:] == said[0][1:]
+    assert recorded[-2][1:] == ("run.scored", {"scores": made["scores"]})
+    assert recorded[-1][1:] == ("done", {"halted": None})
 
 
 @pytest.mark.slow
@@ -147,9 +193,9 @@ def test_a_run_streams_its_events_when_asked(signed: TestClient) -> None:
 def test_a_run_of_tags_runs_the_case_of_each_family_tagged(signed: TestClient) -> None:
     tagged = signed.get("/api/families", params={"tag": "swedish"}).json()
     body = {**asked(signed), "families": None, "tags": ["swedish"], "score": False}
-    made = signed.post("/api/runs", json=body).json()
+    made, said = sent(signed, body)
     assert sorted(i["case"] for i in made["items"]) == sorted(f["case"] for f in tagged)
-    assert made["scores"] == []
+    assert made["scores"] == [] and "run.scoring" not in names(said)
 
 
 @pytest.mark.slow
@@ -198,11 +244,10 @@ def test_a_run_the_request_names_wrong_is_unprocessable(signed: TestClient) -> N
 @pytest.mark.usefixtures("fake")
 def test_runs_are_listed_newest_first_and_filtered(signed: TestClient) -> None:
     off = digest(signed, "reasoning", OFF)
-    first = signed.post("/api/runs", json=asked(signed)).json()
-    second = signed.post(
-        "/api/runs",
-        json=asked(signed, seed=8, parts={"reasoning": off}, score=False),
-    ).json()
+    first, _ = sent(signed, asked(signed))
+    second, _ = sent(
+        signed, asked(signed, seed=8, parts={"reasoning": off}, score=False)
+    )
     assert second["scores"] == []
     scorer = thread(signed, "scorer", "lines", "archive")["head"]["digest"]
 
@@ -226,7 +271,7 @@ def test_runs_are_listed_newest_first_and_filtered(signed: TestClient) -> None:
 def test_a_run_s_items_hold_its_calls_and_render_again_as_they_were_sent(
     signed: TestClient,
 ) -> None:
-    made = signed.post("/api/runs", json=asked(signed)).json()
+    made, _ = sent(signed, asked(signed))
     [item] = signed.get(f"/api/runs/{made['id']}/items").json()
     assert {k: item[k] for k in made["items"][0]} == made["items"][0]
     assert item["why"] is None and item["turns"] == []
@@ -245,75 +290,92 @@ def test_a_run_s_items_hold_its_calls_and_render_again_as_they_were_sent(
 @pytest.mark.slow
 @pytest.mark.usefixtures("fake")
 def test_another_s_run_isn_t_found(signed: TestClient, bob: dict[str, str]) -> None:
-    made = signed.post("/api/runs", json=asked(signed)).json()
-    for path in ("", "/items", "/rendered-again"):
+    made, _ = sent(signed, asked(signed))
+    for path in ("", "/items", "/rendered-again", "/events"):
         got = signed.get(f"/api/runs/{made['id']}{path}", headers=bob)
         assert (got.status_code, got.json()) == (
             404,
             {"detail": f"no run {made['id']} of yours"},
         )
+    got = signed.post(f"/api/runs/{made['id']}/halt", headers=bob)
+    assert got.status_code == 404
     assert signed.get("/api/runs", headers=bob).json() == []
     assert signed.get("/api/runs/not-a-run").status_code == 422
 
 
 def test_runs_need_a_session(client: TestClient) -> None:
     run = "00000000-0000-0000-0000-000000000000"
-    for path in ("/api/runs", f"/api/runs/{run}", f"/api/runs/{run}/items"):
-        assert client.get(path).status_code == 401, path
+    for path in ("", f"/{run}", f"/{run}/items", f"/{run}/events"):
+        assert client.get(f"/api/runs{path}").status_code == 401, path
     assert client.post("/api/runs", json={}).status_code == 401
+    assert client.post(f"/api/runs/{run}/halt").status_code == 401
 
 
 @pytest.mark.slow
-def test_the_stream_s_events_are_described(client: TestClient) -> None:
+def test_the_events_are_described(client: TestClient) -> None:
     described = client.get("/api/openapi.json").json()
-    created = described["paths"]["/api/runs"]["post"]["responses"]["201"]
-    assert set(created["content"]) == {"application/json", "text/event-stream"}
-    assert "`run.started`" in created["description"]
+    paths = described["paths"]
+    assert "202" in paths["/api/runs"]["post"]["responses"]
+    told = paths["/api/runs/{run}/events"]["get"]["responses"]["200"]
+    assert set(told["content"]) == {"text/event-stream"}
+    assert "`run.started`" in told["description"] and "`done`" in told["description"]
     schemas = described["components"]["schemas"]
-    assert {"RunStartedData", "ItemDeltaData", "RunScoredData"} <= set(schemas)
+    expected = {"RunStartedData", "ItemDeltaData", "RunScoredData", "DoneData"}
+    assert expected | {"ScoreStartedData", "JudgeAnsweredData"} <= set(schemas)
 
 
 @pytest.mark.slow
-def test_a_stream_its_client_leaves_halts_the_run_which_is_finished_and_scored(
-    signed: TestClient,
-    listening: str,
-    world: Inventory,
-    conn: Connection,
+def test_a_halt_stops_a_run_which_is_finished_and_left_to_score(
+    signed: TestClient, listening: str, world: Inventory, conn: Connection
 ) -> None:
-    body = asked(signed)
     alice = {"Authorization": signed.headers["Authorization"]}
     with (
         faked(world, Store(conn).get, delay=0.1),
         httpx2.Client(headers=alice) as http,
-        http.stream(
-            "POST", f"{listening}/api/runs", json=body, headers=STREAM, timeout=10
-        ) as got,
     ):
-        run = got.headers["location"].rsplit("/", 1)[1]
-        for line in got.iter_lines():
-            if line == "event: item.delta":
-                break
-    shown = finished(signed, run)
+        run = signed.post("/api/runs", json=asked(signed)).json()["run"]
+        with http.stream(
+            "GET", f"{listening}/api/runs/{run}/events", timeout=10
+        ) as got:
+            lines = got.iter_lines()
+            for line in lines:
+                if line == "event: item.delta":
+                    break
+            assert signed.post(f"/api/runs/{run}/halt").status_code == 204
+            rest = "\n".join(lines)
+    said = told(rest[rest.index("id: ") :])
+    assert names(said)[-2:] == ["run.finished", "done"]
+    assert said[-1][2] == {"halted": True}
+    shown = signed.get(f"/api/runs/{run}").json()
     [item] = shown["items"]
-    assert item["outcome"] == "stopped"
-    [item] = signed.get(f"/api/runs/{run}/items").json()
-    assert item["call"]["error"] == "stopped"
+    assert (item["outcome"], shown["finished"], shown["scores"]) == (
+        "stopped",
+        True,
+        [],
+    )
+    got = signed.post(f"/api/runs/{run}/halt")
+    assert (got.status_code, got.json()) == (
+        409,
+        {"detail": f"run {run} has nothing under way"},
+    )
 
 
 @pytest.mark.slow
-def test_a_request_its_client_leaves_halts_the_run_too(
-    signed: TestClient,
-    listening: str,
-    world: Inventory,
-    conn: Connection,
+def test_a_run_whose_listener_goes_away_goes_on(
+    signed: TestClient, listening: str, world: Inventory, conn: Connection
 ) -> None:
-    body = asked(signed)
     alice = {"Authorization": signed.headers["Authorization"]}
-    # The fake serves until the run is scored, as scoring confirms the judges' endpoint.
-    with faked(world, Store(conn).get, delay=0.1), httpx2.Client(headers=alice) as http:
-        with pytest.raises(httpx2.ReadTimeout):
-            _ = http.post(f"{listening}/api/runs", json=body, timeout=0.5)
-        [run] = signed.get("/api/runs").json()
-        shown = finished(signed, run["id"])
+    with (
+        faked(world, Store(conn).get, delay=0.02),
+        httpx2.Client(headers=alice) as http,
+    ):
+        run = signed.post("/api/runs", json=asked(signed)).json()["run"]
+        with http.stream(
+            "GET", f"{listening}/api/runs/{run}/events", timeout=10
+        ) as got:
+            for line in got.iter_lines():
+                if line == "event: item.delta":
+                    break
+        shown = finished(signed, run)
     [item] = shown["items"]
-    assert item["outcome"] == "stopped"
+    assert item["outcome"] == "completed"

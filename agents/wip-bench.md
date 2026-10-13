@@ -294,7 +294,8 @@ ones, and a scorer pinned again by a deploy reaches the person's fork of it.
 - **Scoring** scores a finished run under each scorer that applies to it, or some of them, through the scoring pass.
   A scorer that can't score the run gives why instead, and the others score it all the same. A judged view's calls go
   to the one endpoint serving its judge's engine, as the bench names none (docs/runner.md, "Judges"). The scoring
-  pass's events, each item scored and each judge call, go to the edge as they come, when it asks for them.
+  pass's events, each item scored and each judge call, go to the edge as they come, when it asks for them, after a
+  word that each scorer's score has started. Another thread can halt it, as a second Ctrl-C does in the repl.
 - **What is left to score** of a run is each scorer that applies, under which some of its cases have an expectation,
   and that has no whole score of the run under the scoring built now, so a changed expectation leaves the run to
   score again. A score is whole when it finished, scored every item under every view, and none of its judge calls was
@@ -361,14 +362,8 @@ The plans they were built from, with the options weighed for each decision and t
 ### Start with this
 0. **Go through open items, reiterate and confirm design decisions**, "Takes the API is built on" first. The API's
    items, each with what holds today, its options and a take, are in `agents/wip-api-open.md`.
-1. **Scoring a run in the API**, under all its scorers or some (`Bench.score`), one run at a time, and the scoring
-   pass's events in a stream (`Bench.score`'s `on_event`): each item scored, and each judge call asked and answered.
-   Decided: as a run is, JSON or a stream, with all the events (agents/wip-api-open.md, O1 and O4). It waits on where
-   a run runs (O10), which the user questioned. Until then a run is scored as it finishes unless its request says
-   `"score": false`, a run left unscored, or whose scoring failed, can't be scored over HTTP, and after `run.finished`
-   the stream says nothing until `run.scored`. Built: a run's scores on their own, the latest, every one or one by id;
-   the runs left to score; and a score's items, with their detail and judge calls, as a case-derived place
-   (agents/wip-api.md, "Scoring").
+1. **The worker** in place of the app's jobs, with the API as it is (decided: agents/wip-api-open.md, O10). Runs and
+   scorings started over HTTP are under way in the app's process for now, and end with it.
 2. **Adopting the docs**: this file and `agents/wip-bench-api.md`, as `docs/bench.md` and `docs/bench-api.md`, and
    `agents/wip-api.md` and `agents/wip-api-api.md`, as `docs/api.md` and `docs/api-api.md`; the bench's and the API's
    tests marked `solidified`; and what points at these files moved with them: `docs/repl.md`, `docs/repl-api.md`,
@@ -387,10 +382,9 @@ places of its own (S3).
 - **A4, ids**: a path takes a whole id, and a name is a filter on a list, which gives every match (N1).
 - **A5, the variation**: stated whole in each request, the configuration by id and its parts by digest, with nothing
   stored by looking (V1).
-- **A6, where a run runs**: in its request, sent on a thread of its own and halted when the client goes away (W1),
-  shaped so that a run beside the request, followed by a GET, can come later (W2). agents/wip-worker.md builds on it.
-  The user finds running inside the request off (agents/wip-api-open.md, O10).
-- **A7, the stream**: asked for by `Accept`, with the runner's events (agents/wip-api.md, "The stream").
+- **A6, where a run runs**: decided since: in the app's process, beside the request, in the worker's HTTP shape
+  (agents/wip-api-open.md, O10).
+- **A7, the stream**: decided with A6: a `GET` of the run's events, each with an id (agents/wip-api.md, "Its events").
 - **A8, scoring**: at once after a run, with an opt-out, and a listing of what is left to score (built: O3).
 - **A10, errors**: the bench's errors mapped by class, and what else a route means caught where it means it
   (agents/wip-api.md, "Errors").
@@ -430,8 +424,8 @@ Signing in, in the API:
 - **Roles aren't checked**; that waits for the portal.
 
 Serving the API:
-- **A connection per request**, opened and closed each time; a pool (`psycopg_pool`) when that costs. A run answered
-  as JSON holds two for as long as it lasts: the request's and its own.
+- **A connection per request**, opened and closed each time; a pool (`psycopg_pool`) when that costs. A run or a
+  scoring under way holds one of its own for as long as it lasts.
 - **A query parameter a route doesn't name is ignored**, unless the query is a model (`Varying`), so a misspelt filter
   on `GET /api/runs` or `GET /api/threads` gives everything rather than a 422.
 
@@ -443,13 +437,14 @@ Variations, in the API:
   variation nobody saved has a long title").
 
 Runs, in the API:
-- **A quiet stream sends nothing**, as while it waits for a slow first token, or while the run is scored after
-  `run.finished`, and a proxy's read timeout would cut it. A comment line now and then would keep it open.
-- **A client that goes away halts its run, not its scoring**: the scoring after it sends its judge calls all the same
-  (`Grading.halt` has no caller in the API).
-- **`Accept` is read by media type alone**, so `text/event-stream;q=0` still asks for a stream.
-- **A run outlives a server that stops**, which waits for its requests. A killed one leaves the run unfinished, as
-  resuming isn't built; requests that last as long as a run are agents/wip-worker.md's ("Why").
+- **A quiet stream sends nothing**, as while it waits for a slow first token or a judge's verdict, and a proxy's read
+  timeout would cut it. A comment line now and then would keep it open; a stream cut is joined again after the last
+  id it had (agents/wip-api-open.md, O26).
+- **A run outlives a server that stops**, which waits for its threads. A killed one leaves the run unfinished, as
+  resuming isn't built (agents/wip-worker.md, "Below the worker").
+- **The jobs are the process's.** Another replica of the app doesn't see them, so its streams tell a run under way
+  from the ledger, as far as it has gone, and it can't halt it. A job is kept, with its events, until another job of
+  the run takes its place, so a long-lived process keeps one per run it sent.
 
 Writes, in the API:
 - **Carrying answers 201 even when nothing changes**: an expectation carried onto the case it is of already is kept

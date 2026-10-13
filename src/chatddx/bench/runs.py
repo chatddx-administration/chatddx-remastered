@@ -1,4 +1,8 @@
-from collections.abc import Callable, Collection
+import threading
+from collections.abc import Callable, Collection, Generator
+from contextlib import contextmanager, nullcontext
+from dataclasses import dataclass
+from uuid import UUID
 
 from chatddx.factors.base import resolve
 from chatddx.factors.scoring import Scorer
@@ -32,11 +36,52 @@ def start(
     return running
 
 
+@dataclass(frozen=True)
+class ScorerStarted:
+    scorer: str
+    name: str
+    score: UUID
+
+
+type ScoringEvent = Event | ScorerStarted
+
+
+class ScoreHalt:
+    def __init__(self) -> None:
+        self._guard: threading.Lock = threading.Lock()
+        self._set: bool = False
+        self._grading: Grading | None = None
+
+    def set(self) -> None:
+        with self._guard:
+            self._set = True
+            grading = self._grading
+        if grading is not None:
+            grading.halt()
+
+    def is_set(self) -> bool:
+        return self._set
+
+    @contextmanager
+    def watching(self, grading: Grading) -> Generator[None]:
+        with self._guard:
+            self._grading = grading
+            halted = self._set
+        if halted:
+            grading.halt()
+        try:
+            yield
+        finally:
+            with self._guard:
+                self._grading = None
+
+
 def score(
     seen: Seen,
     run: RunStarted,
     scorers: Collection[str] | None = None,
-    on_event: Callable[[Event], None] | None = None,
+    on_event: Callable[[ScoringEvent], None] | None = None,
+    halt: ScoreHalt | None = None,
 ) -> list[Graded]:
     found: list[Graded] = []
     stopped = False
@@ -46,7 +91,8 @@ def score(
         name = about.name or seen.catalog.title(edit.thread)
         scorer = resolve(seen.get, edit.digest, Scorer)
         labels = seen.labels_of(edit)
-        if stopped:
+        if stopped or (halt is not None and halt.is_set()):
+            stopped = True
             found.append(Graded(name, scorer, labels, refused=STOPPED))
             continue
         try:
@@ -58,9 +104,12 @@ def score(
             stopped = True
             found.append(Graded(name, scorer, labels, refused=STOPPED))
             continue
+        if on_event is not None:
+            on_event(ScorerStarted(edit.digest, name, grading.score))
         failed: str | None = None
         try:
-            grading.send(on_event)
+            with nullcontext() if halt is None else halt.watching(grading):
+                grading.send(on_event)
         except KeyboardInterrupt:
             stopped = True
         except REFUSALS as e:

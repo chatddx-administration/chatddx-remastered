@@ -6,24 +6,23 @@ take for each. Written from the code at the correction pass before `docs/api.md`
 
 "Decided" means the user said so. "Take" is the agent's recommendation and still open.
 
-Decided: O1 to O7, as the table says. O2, O3, O5 and O7 are built, and O6 needs nothing. O1 and O4 wait on where a run
-runs (O10): the user finds running inside the request off, and scoring a run afterwards is to take a run's shape.
+Decided: O1 to O7 and O10, as the table says, and built; O6 needs nothing. O10 settled O11, O27 and O28 with it.
 
 ## In short
 
 | Item | Today | Take |
 | --- | --- | --- |
-| O1. Scoring a finished run | no route | decided: b, as a run is; waits on O10 |
+| O1. Scoring a finished run | built | decided: b, as a run is: 202, and its events at the run's |
 | O2. A run's scores on their own | built | decided: b, the latest, every one, and one by id |
 | O3. What is left to score | built | decided: a, `GET /api/runs?unscored=true` |
-| O4. The scoring's events | none; the stream is quiet | decided: a, all of them; waits on O10 |
+| O4. The scoring's events | built | decided: a, all of them |
 | O5. Detail, judge calls, score findings | built | decided: a, a case-derived route of a score's items |
 | O6. Naming a judge's endpoint | one endpoint per judge engine, or none | decided: a, as is |
 | O7. Writing judges | built | decided: b, judges written, configurations by purpose |
 | O8. A4, ids | whole ids | confirm |
 | O9. A5, the variation | stated in each request | confirm |
-| O10. A6, where a run runs | in its request | questioned by the user; see O10 |
-| O11. A7, the stream | by `Accept`, on `POST` | keep-alives and event ids now; a `GET` with the worker |
+| O10. A6, where a run runs | built | decided: in the app's process, in the worker's HTTP shape |
+| O11. A7, the stream | a `GET`, with event ids | settled by O10; keep-alives are O26's |
 | O12. A8, scoring at once | at once, with an opt-out | confirm; O1–O3 finish it |
 | O13. A10, errors | `detail` only; 409 means three things | a `code` beside `detail` |
 | O14. A11, keeping a variation | fork and edit | confirm |
@@ -39,8 +38,8 @@ runs (O10): the user finds running inside the request off, and scoring a run aft
 | O24. Variants | by full name | wait for agents/wip-variants.md's B |
 | O25. An unsaved variation's title | its whole recipe | the label as the run's name |
 | O26. A quiet stream | nothing sent | a comment every 15 s |
-| O27. Going away, and scoring | the scoring goes on | halt it too, once O1 exists |
-| O28. `Accept` | media type only | honour `q=0` |
+| O27. Going away, and scoring | gone with O10 | a halt is asked for, and stops the scoring too |
+| O28. `Accept` | gone with O10 | nothing reads it |
 | O29. A server that stops | the run outlives it, or is left unfinished | the worker's resuming |
 | O30. A person's runs are all read | paged afterwards | as is, until slow |
 | O31. Carrying, unchanged | 201 | 200, as an edit |
@@ -73,7 +72,10 @@ An unfinished run is refused before anything is sent (422), rather than as a ref
 
 Take: b. c comes with the worker, for runs and scorings alike.
 
-Decided: b. Not built: it takes the shape a run takes, which O10 is to settle.
+Decided: b. Built, in the shape O10 settled: `POST /api/runs/{id}/scores`, with the scorers by digest or none,
+answers 202 with the scorers it is to score by, and the scoring's events are at the run's `GET` (O4). An unfinished
+run, a scorer that doesn't apply and a run with no scorer that applies are refused (422), and so is a run with
+something under way (409), a run being sent or scored (`api/scores.py:score_now`).
 
 ### O2. A run's scores on their own
 `Bench.scores_of` gives the latest score under each scorer that scored a run, named as the person's view names the
@@ -127,7 +129,9 @@ decided at 100a078 as A9, S3).
 
 Take: a. The stream carries case-derived content already, and one set of events serves O1 too.
 
-Decided: a. Not built: with O1, after O10.
+Decided: a. Built: after `run.finished`, or alone for O1, `run.scoring` names the scorers, then each scorer's
+`score.started`, `judge.asked`, `judge.delta`, `judge.answered`, `score.item` and `score.noted`, and `run.scored` (the
+bench's `ScorerStarted`, and `ScoreHalt` to halt it; `api/events.py:scoring_event_of`).
 
 ### O5. Where a score's detail, its judge calls and its findings show
 A score item holds its detail (what was read, `no target`, each seed's value) and its judge calls (each call with its
@@ -225,7 +229,21 @@ with 202 and stream from a `GET`.
 
 Take: confirm W1 for now. The worker's K5 then decides whether `POST /api/runs` keeps W1 for programs.
 
-The user finds running inside the request off; how it should run instead is open, and O1 and O4 wait on it.
+The user found running inside the request off. Options then: W2 alone; W3 now; or W2 now in W3's HTTP shape, which
+the worker takes over without changing the API.
+
+Decided: W2 in W3's shape. Built (`api/jobs.py`, `api/runs.py`):
+- `POST /api/runs` answers 202 with what `run.started` holds, and the run is sent, finished and scored on a thread of
+  its own whoever listens. The app keeps what it has under way per run, a job, with its events, until another job of
+  the run takes its place.
+- `GET /api/runs/{id}/events` streams the job's events from its start, each with an `id`, then follows it to `done`;
+  `Last-Event-ID` resumes after one. A delta is kept until its item or judge call ends, so a stream joined late has
+  every event but the deltas of what ended before it. A run with no job in the process, started before it or
+  elsewhere, is told from the ledger: no deltas or judge calls, its latest scores, and `done` with `halted` null.
+- `POST /api/runs/{id}/halt` halts what is under way: the calls under way are hung up, the run is finished, and it
+  isn't scored; a scoring under way finishes the score it is on with what it has, and refuses the scorers after it
+  as stopped. Nothing under way is 409.
+- Leaving a stream halts nothing.
 
 ### O11. A7, the stream
 Asked for by `Accept: text/event-stream` on `POST /api/runs`, with the runner's events, one line of JSON each.
@@ -237,6 +255,8 @@ Asked for by `Accept: text/event-stream` on `POST /api/runs`, with the runner's 
   needing the worker's events through the database (agents/wip-worker.md, K3).
 
 Take: the sturdier stream now, the `GET` with the worker.
+
+Settled by O10: the `GET`, with an `id` per event and `Last-Event-ID`. Keep-alives are O26's.
 
 ### O12. A8, scoring at once
 A run is scored as it finishes, under every scorer that applies, unless asked not to be; the listing of what is left
@@ -329,8 +349,8 @@ Take: Z1, with the portal.
 ## Serving
 
 ### O21. A connection per request
-Each request opens a connection and closes it: about 2.6 ms over the Unix socket here. A run answered as JSON holds
-two while it lasts, the request's and its own; PostgreSQL takes 100 by default.
+Each request opens a connection and closes it: about 2.6 ms over the Unix socket here. A run or a scoring under way
+holds one of its own while it lasts; PostgreSQL takes 100 by default.
 - **As is.**
 - **A pool** (`psycopg_pool`, a new dependency) for requests, runs keeping their own.
 
@@ -379,9 +399,10 @@ Take: the label as the run's name; small, and the repl gains it too.
 ## Runs
 
 ### O26. A quiet stream
-A stream sends nothing while an engine takes its time with the first token, or while the run is scored, and a proxy
-cuts a connection that is quiet too long: nginx's `proxy_read_timeout` is 60 s by default. `X-Accel-Buffering: no`
-is sent already.
+A run's events stream sends nothing while an engine takes its time with the first token, or a judge with a verdict,
+and a proxy cuts a connection that is quiet too long: nginx's `proxy_read_timeout` is 60 s by default.
+`X-Accel-Buffering: no` is sent already. Since O10 a stream cut is joined again with `Last-Event-ID`, which
+`EventSource` sends by itself.
 - **Comment lines**, `: keep-alive`, every 15 s, which event readers skip.
 - **A `heartbeat` event** among the stream's events.
 - **The proxy's configuration**, left to whoever deploys it.
@@ -397,12 +418,16 @@ sent (`Grading.halt` has no caller in the API).
 
 Take: as is until O1, then halted too.
 
+Gone with O10: a client's going away halts nothing, and a halt asked for stops the scoring too.
+
 ### O28. `Accept` is read by media type alone
 `text/event-stream;q=0` still asks for a stream.
 - **As is.**
 - **`q` heard**: a media type at `q=0` isn't asked for.
 
 Take: heard; small.
+
+Gone with O10: `POST /api/runs` answers 202 whatever `Accept` says.
 
 ### O29. A server that stops
 A run outlives a server that stops gracefully, which waits for its threads; a killed one leaves the run unfinished,

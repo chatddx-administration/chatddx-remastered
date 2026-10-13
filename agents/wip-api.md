@@ -5,8 +5,8 @@ those two names mean these two files until they move. What is still open is in `
 with the bench's. The plan this was rewritten from, with the old API's survey and the options weighed, is
 `agents/wip-api.md` at 100a078.
 
-The API and its sibling, the repl, are the rig's control plane. The API reaches every write the bench makes but
-scoring a finished run; what it doesn't do yet is in "Not covered", and in `agents/wip-bench.md`, "Outstanding".
+The API and its sibling, the repl, are the rig's control plane. The API reaches every write the bench makes; what it
+doesn't do yet is in "Not covered", and in `agents/wip-bench.md`, "Outstanding".
 
 The endpoints are in the OpenAPI document the API serves, at `/api/openapi.json`, with pages at `/api/docs`.
 This document describes what the API does and why it is shaped like it is.
@@ -173,19 +173,25 @@ endpoint that doesn't serve the trial's engine, isn't cleared for a sensitive so
 secret; tools that would get a sensitive source's content; and an endpoint that doesn't answer. The request is
 refused too for anything its body names that the person doesn't see (a configuration, an endpoint, a family), and
 for tags no case has, and for a judge configuration, which is asked as runs are scored rather than run on cases.
+Once started, it is answered 202 with what `run.started` holds, and the run's path as `Location`.
 
 A run is sent under the default execution, with no timeout, and with no canary set or text cleanup.
 
 ### Where it runs
 A started run is sent on a thread of its own, with a database connection of its own, and is then finished and scored
-under every scorer that applies to it, unless asked not to be. That happens whether or not anyone is still
-listening. Its rows land as they are written, so it can be read back at any point.
+under every scorer that applies to it, unless asked not to be, whether or not anyone is listening. It is in the app's
+process for now: what the app has under way for a run, the run or a scoring of it, is a job, which keeps its events
+until another job of the run takes its place, and ends with the process. The worker is to take its place with the API
+as it is (agents/wip-worker.md). Its rows land as they are written, so a run can be read back at any point.
 
-### The stream
-A request that asks for `text/event-stream` gets the run's events as they come; otherwise it is answered with the run
-once it is finished and scored. Both are answered 201, with the run's path as `Location`, and a stream is sent
-unbuffered and uncached so a proxy passes it on as it comes. Each event's data is one line of JSON, and their models are
-among the OpenAPI document's schemas.
+### Its events
+`GET /api/runs/{id}/events` streams what is under way for the run, from its start, and then as it comes, ending with
+`done`; it is sent unbuffered and uncached, so a proxy passes it on as it comes. Each event has an `id`, its place in
+the job, and its data is one line of JSON, whose models are among the OpenAPI document's schemas. A stream asked for
+with `Last-Event-ID`, as `EventSource` asks again, goes on after it. A delta is kept until its item or judge call has
+ended, so a stream joined late has every event but the deltas of what ended before it joined. A run with nothing in
+the app's process, as one started before it or elsewhere, is told from the ledger: its items as they ended, with no
+deltas or judge calls, its finish, its latest scores, and `done`.
 
 | Event | When | Holds |
 | --- | --- | --- |
@@ -197,16 +203,25 @@ among the OpenAPI document's schemas.
 | `canary.ended` | a canary call is recorded | the phase, which canary, and the call |
 | `run.noted` | something was noted along the way, such as a case that couldn't be read | a finding |
 | `run.finished` | the run is recorded as finished | what checking it found |
-| `run.scored` | it is scored, after every judge call, with nothing sent meanwhile | each scorer's score, or why it gave none |
-| `error` | the run failed after the stream began | why |
+| `run.scoring` | a scoring starts, after the run or asked for | the scorers it is to score by |
+| `score.started` | a scorer's score starts | the scorer, its name, the score and its views' labels |
+| `judge.asked` | a judge is sent an item's view, for one seed | the case and replicate, the scorer, the view, the judge and the seed's index |
+| `judge.delta` | a chunk of the judge's answer streams in | the case and replicate, and as `item.delta` |
+| `judge.answered` | the judge's call is recorded | the case and replicate, the view, the judge, the seed's index, the verdict read, and the call |
+| `score.item` | a score item is written | the score, the case and replicate, the view, its value and detail |
+| `score.noted` | the scoring pass noted something, such as an answer its schema refuses | a finding |
+| `run.scored` | the scoring is over | each scorer's score, or why it gave none |
+| `error` | what was under way failed | why |
+| `done` | last | whether it was halted, `null` when told from the ledger |
 
 An item's outcome is stopped, errored, unread, salvaged, completed, invalid or valid, by its last call and the answer
 read from it; salvaged is a structured answer cut short, read with its structure closed.
 
-### Going away
-A client that goes away halts its run: a stream's at once, and a request waiting for its answer within half a
-second. The calls under way are hung up and recorded as stopped, and the run is finished and scored as always. The
-scoring isn't halted with it: its judge calls are all sent.
+### Halting
+A person halts what is under way for a run of theirs: the calls under way are hung up and recorded as stopped, the
+run is finished, and it isn't scored, so it is left to score; a scoring under way finishes the score it is on with
+what it has, and the scorers after it are refused as stopped. Leaving a stream halts nothing. A halt with nothing
+under way is a conflict.
 
 ### Reading runs
 - **A person's runs**, newest first, a page at a time, filtered by trial, by a digest their trial is built on, by
@@ -231,9 +246,11 @@ other, its judge's calls sent to the one endpoint that serves the judge's engine
 with the run when it is read: each item's value under each view, and each view's mean over the items, or why the
 scorer gave none. A judged view's value is the mean over the seeds whose verdicts were read.
 
-The runs left to score are listed, each with the scorers it is left to be scored by (see "Reading runs"), and what
-each seed gave and the judge said is in the score's items. There is no request yet to score a run afterwards
-(`agents/wip-bench.md`, "Outstanding"), so a run left unscored, or whose scoring failed, stays so over HTTP.
+A finished run is scored again when asked, under every scorer that applies or some, as a run is sent: answered 202
+with the scorers it is to score by, it goes on whoever listens, and its events are the run's. The runs left to score
+are listed, each with the scorers it is left to be scored by (see "Reading runs"), and what each seed gave and the
+judge said is in the score's items. An unfinished run, a scorer that doesn't apply, and a run nothing applies to are
+refused, and so is a run with something under way.
 
 ## Case-derived content
 What is made from a vignette is shown to whoever signed in, but only in its own places, so that a policy for edges
@@ -241,10 +258,11 @@ can gate those few when clearance has one (agents/wip-clearance.md):
 - a family's vignette;
 - a run's items;
 - a score's items, with their detail and judge calls, and the score's findings;
-- a run's stream: the deltas, the tool runs, and why each item ended.
+- a run's events: the deltas, the tool runs, why each item ended, and the scoring's items, judge calls and
+  findings.
 
 Nothing else carries any. Why an item ended can quote the answer, since checking it against a schema names the value
-it refused, so it is in the items and the stream only. For the same reason a score gives values, and its detail,
+it refused, so it is in the items and the events only. For the same reason a score gives values, and its detail,
 judge calls and findings are its items'.
 
 ## Errors
@@ -255,12 +273,12 @@ A refusal's body is `{"detail": "…"}`, except where a request doesn't validate
 | 401 | No session, one that has ended, or a wrong login or password. |
 | 403 | A cookie's request that changes something, or a sign-in, from another site's page. |
 | 404 | What the path names isn't there or isn't seen by the person, a thread is of another kind than the route takes, a source doesn't hold a vignette, or a thread to edit, follow, carry or say something of isn't the person's. |
-| 409 | Taking an expectation the person has their own of, without saying to replace it; an edit, a follow or a carry whose head has moved on. |
-| 422 | A request that doesn't validate or names a field it shouldn't; a kind that isn't one, or a purpose for what isn't a configuration; a variation the bench refuses; a query or body naming what the person doesn't see; tags no case has; the gate's refusal of a run; taking an expectation that is the person's already; a component the bench refuses, or parts for what isn't a configuration and a component for what is; what is said of a thread that the bench refuses, or of a deleted one; following with nothing to follow; a case of appendices or a replacement the bench refuses; carrying an expectation outside its family; a run naming a case that isn't a current one of a family the person sees; a run of a judge configuration. |
+| 409 | Taking an expectation the person has their own of, without saying to replace it; an edit, a follow or a carry whose head has moved on; scoring a run with something under way, and halting one with nothing under way. |
+| 422 | A request that doesn't validate or names a field it shouldn't; a kind that isn't one, or a purpose for what isn't a configuration; a variation the bench refuses; a query or body naming what the person doesn't see; tags no case has; the gate's refusal of a run; taking an expectation that is the person's already; a component the bench refuses, or parts for what isn't a configuration and a component for what is; what is said of a thread that the bench refuses, or of a deleted one; following with nothing to follow; a case of appendices or a replacement the bench refuses; carrying an expectation outside its family; a run naming a case that isn't a current one of a family the person sees; a run of a judge configuration; scoring a run that hasn't finished, by a scorer that doesn't apply to it, or one nothing applies to. |
 | 429 | A person who has typed as many cases as a day takes. |
-| 500 | A run that failed on its thread, for a request waiting for its answer. |
 
-An edit that changes nothing is answered 200 with the head; what is made is answered 201; a deletion 204. A take for
+An edit that changes nothing is answered 200 with the head; what is made is answered 201; a deletion and a halt 204;
+a run or a scoring started 202. What fails once it is under way is an `error` event, not a status. A take for
 many cases is answered 200, whatever it took, and a carry 201, even when the expectation is on that case already.
 
 ## Not covered
@@ -270,8 +288,7 @@ many cases is answered 200, whatever it took, and a carry 201, even when the exp
   planner's and the worker's (agents/wip-batch.md, agents/wip-worker.md).
 - **A proxy's forward auth**: once a proxy authenticates, that is its job.
 - **A person's secrets.** An endpoint's credential comes from an environment variable, as in the repl.
-- **Scoring every outstanding run in one request.** A client is to score one run at a time, once it can (see
-  "Scoring").
+- **Scoring every outstanding run in one request.** A client scores one run at a time (see "Scoring").
 - **"Run N of trial X"**, which the repl says after a run. A run's trial lists its runs.
 
 ## Tests
@@ -280,8 +297,8 @@ alice signed in by a bearer token and bob for what isn't his to see. They speak 
 client over HTTPS, since the cookie is only sent over it. Runs are sent to the fake vLLM serving the test World's
 endpoints on ports nothing else uses.
 
-The test client runs a streamed response to its end whether or not its reader hangs up, so the tests of going away
-serve the app with uvicorn on a thread, and speak to it over a socket.
+The test client runs a streamed response to its end whether or not its reader hangs up, so the tests of halting
+and of leaving a stream serve the app with uvicorn on a thread, and speak to it over a socket.
 
 ## Terms
 
@@ -299,8 +316,9 @@ serve the app with uvicorn on a thread, and speak to it over a socket.
 | Run | A variation sent at an endpoint on some cases with one seed, recorded as it goes. |
 | Item | One case's request in a run, with its calls. |
 | Outcome | How an item ended: stopped, errored, unread, salvaged, completed, invalid or valid. |
-| Event | One step of a run, as its stream tells it. |
-| Halt | Ending a run's sending early, hanging up the calls under way. |
+| Event | One step of what is under way for a run, as its events tell it. |
+| Job | What the app has under way for a run: the run, or a scoring of it, with its events. |
+| Halt | Ending what is under way for a run early: its sending, hanging up the calls under way, or its scoring. |
 | Case-derived | Made from a vignette, or quoting what was: the vignette, answers, tool runs. |
 
 ## Outstanding

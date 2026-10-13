@@ -15,8 +15,9 @@ https://github.com/chatddx-administration/chatddx/blob/504792cbeb09508f2c52912be
 ## Start with this
 1. **Decided: the worker and the batch planner are planned apart**, as this file and `agents/wip-batch.md`. They meet
    at one contract (see "The contract"), which is a take.
-2. **The problem** (see "Why"): a run started over HTTP runs in the request and halts when the client goes away
-   (`agents/wip-bench.md`, "Takes the API is built on", A6, W1). Right for a program, wrong for a browser tab.
+2. **The problem** (see "Why"): a run started over HTTP is under way in the app's process (decided:
+   `agents/wip-api-open.md`, O10). It no longer halts when its client goes away, and the API has the shape this worker
+   keeps (202, a `GET` of a run's events, a halt), but it ends with the process and other replicas don't see it.
 3. **Decided: the queue is updated in place** (K2), an exception to "nothing is updated", as identity's people and
    sessions are.
 4. **Open, as takes** (see "Options"): K1, where it runs; K3, how events reach a page; K4, the unit it schedules; K5,
@@ -24,13 +25,10 @@ https://github.com/chatddx-administration/chatddx/blob/504792cbeb09508f2c52912be
 5. **What it needs below it first** (see "Below the worker"): resuming a run, and `Bench.start` taking an execution.
 
 ## Why
-- **The API runs a trial in the request** (`agents/wip-bench.md`, "Takes the API is built on", A6, W1):
-  `POST /api/runs` streams, or waits for the record. A client that goes away halts the run
-  (`src/chatddx/runner/run.py:Running.halt`), and it is recorded as stopped.
-- **In a browser that is a closed tab, a reload, or a laptop going to sleep.** For a portal page that starts a batch
-  of a hundred cases, it stops the batch.
-- **A long request holds a thread and a connection** for as long as the run lasts (`agents/wip-api.md`,
-  "Outstanding", "Open").
+- **The API ran a trial in the request** (W1): `POST /api/runs` streamed, or waited for the record, and a client that
+  went away halted the run. In a browser that was a closed tab, a reload, or a laptop going to sleep. Since O10
+  (`agents/wip-api-open.md`) a run is under way in the app's process, beside the request, as a job of
+  `src/chatddx/api/jobs.py`, and is followed by `GET /api/runs/{id}/events` and halted by asking.
 - **The orchestrator runs in Kubernetes** (`docs/chatddx.md`, "Target stack"): an app is restarted at each deploy, and
   may run as several replicas. A run held by one process is lost with it, and unseen from the others.
 
@@ -104,6 +102,9 @@ Why apart from the planner:
 Take: the last. One implementation; W2 isn't built and thrown away. What is asked is in the store either way, so even
 in-process a closed tab doesn't stop a run.
 
+Since: W2 is built in W3's HTTP shape (`agents/wip-api-open.md`, O10), so a closed tab doesn't stop a run already.
+The worker takes the place of `src/chatddx/api/jobs.py`, and the API stays as it is.
+
 ### K2. The queue
 Decided: **a table of jobs updated in place**, an exception to "nothing is updated" (`docs/chatddx.md`, "Work in
 progress"; `docs/store.md`), as identity's people and sessions are. Take, for its shape:
@@ -137,9 +138,8 @@ answer, which E2 gives (`agents/wip-portal.md`, "Swift").
 Take: runs, with `max_jobs` shared by the runs on one endpoint through their executions (see "Below the worker").
 
 ### K5. Which runs go through it
-- **Every run started over HTTP**, the portal's and the API's: one path. `POST /api/runs` answers 202 and its id
-  (W2's shape in `agents/wip-bench.md`, "Takes the API is built on", A6), and the stream is
-  `GET /api/runs/{id}/events`.
+- **Every run started over HTTP**, the portal's and the API's: one path. `POST /api/runs` answers 202 and its id,
+  and the stream is `GET /api/runs/{id}/events`, as built in the app's process (`agents/wip-api-open.md`, O10).
 - **Batches only**, single runs staying in the request.
 
 Take: every run started over HTTP. The repl keeps running in its own process, where Ctrl-C halts a run as it should.

@@ -1,7 +1,5 @@
-import asyncio
 import logging
 import threading
-from collections.abc import AsyncIterator, Callable
 from dataclasses import dataclass
 from typing import Annotated
 from uuid import UUID
@@ -19,19 +17,17 @@ from chatddx.ledger import RunStarted, check_run
 from chatddx.runner.run import Running
 
 from . import schemas
-from .events import Named, event_of, graded_of, item_of, sse
+from .events import Named, canary_of, event_of, graded_of, item_of
+from .jobs import Job, ending, followed, replayed, scored, scoring_of
 from .people import BenchDep
 from .state import AppState, state
 from .threads import refused
 
 STREAM = "text/event-stream"
-# How often a request waiting for its run asks whether the client is still there.
-HEARD = 0.5
+EVENTS = ", ".join(f"`{name}`" for name in schemas.EVENTS)
 
 log = logging.getLogger(__name__)
 router = APIRouter(tags=["runs"])
-
-type Put = Callable[[Named | None], None]
 
 
 @dataclass(frozen=True)
@@ -40,11 +36,6 @@ class _Started:
     running: Running
     skeleton: Skeleton
     said: schemas.RunStartedData
-
-
-def streamed(accept: str | None) -> bool:
-    types = [] if accept is None else accept.split(",")
-    return any(t.split(";")[0].strip() == STREAM for t in types)
 
 
 def _families(bench: Bench, given: schemas.NewRun) -> list[Family]:
@@ -110,110 +101,161 @@ def _start(held: AppState, person: Person, given: schemas.NewRun) -> _Started:
     return _Started(bench, running, skeleton, said)
 
 
-def _send(started: _Started, score: bool, put: Put) -> None:
+def _sent(started: _Started, score: bool, job: Job) -> None:
     bench, running = started.bench, started.running
-    try:
+    with ending(job, bench, f"run {running.run}"):
         try:
-            running.send(lambda event: put(event_of(started.skeleton, event)))
+            running.send(lambda event: job.put(event_of(started.skeleton, event)))
         except KeyboardInterrupt:
             pass
         findings = [schemas.Finding.of(f) for f in running.finish()]
-        put(("run.finished", schemas.RunFinishedData(findings=findings)))
-        if score:
-            graded = [graded_of(g) for g in bench.score(running.started)]
-            put(("run.scored", schemas.RunScoredData(scores=graded)))
-    except Exception as e:
-        log.exception("run %s failed", running.run)
-        put(("error", schemas.ErrorData(detail=f"run {running.run} failed: {e}")))
-    finally:
-        bench.conn.close()
-        put(None)
-
-
-async def _stream(
-    running: Running, events: asyncio.Queue[Named | None]
-) -> AsyncIterator[str]:
-    try:
-        while (named := await events.get()) is not None:
-            yield sse(*named)
-    finally:
-        running.halt()
-
-
-async def _drained(events: asyncio.Queue[Named | None]) -> str | None:
-    failed: str | None = None
-    while (named := await events.get()) is not None:
-        if isinstance(named[1], schemas.ErrorData):
-            failed = named[1].detail
-    return failed
-
-
-async def _ended(
-    request: Request, running: Running, events: asyncio.Queue[Named | None]
-) -> str | None:
-    ending = asyncio.create_task(_drained(events))
-    halted = False
-    while not ending.done():
-        _ = await asyncio.wait([ending], timeout=HEARD)
-        if not (ending.done() or halted) and await request.is_disconnected():
-            running.halt()
-            halted = True
-    return ending.result()
+        job.put(("run.finished", schemas.RunFinishedData(findings=findings)))
+        if score and not job.halted:
+            said = scoring_of(bench, running.started, None)
+            job.put(("run.scoring", said))
+            scored(bench, running.started, said, job)
 
 
 @router.post(
     "/runs",
-    status_code=201,
-    response_model=schemas.RunDetail,
+    status_code=202,
     responses={
-        201: {
-            "description": "The run, once it is finished and scored; or, when "
-            + f"`Accept` asks for `{STREAM}`, its events as they come: "
-            + ", ".join(f"`{name}`" for name in schemas.EVENTS)
-            + ", each with its data as JSON.",
+        202: {
+            "description": "The run, started: it is sent, finished and scored whoever "
+            + "listens, and its events are at `/api/runs/{run}/events`."
+        }
+    },
+)
+def start(
+    request: Request, response: Response, bench: BenchDep, given: schemas.NewRun
+) -> schemas.RunStartedData:
+    held = state(request)
+    started = _start(held, bench.person, given)
+    made = started.running.run
+    job = held.jobs.started(made)
+    job.running = started.running
+    job.put(("run.started", started.said))
+    threading.Thread(
+        target=_sent, args=(started, given.score, job), name=f"chatddx-run-{made}"
+    ).start()
+    response.headers["Location"] = request.app.url_path_for("run", run=str(made))
+    return started.said
+
+
+@router.get(
+    "/runs/{run}/events",
+    response_class=StreamingResponse,
+    responses={
+        200: {
+            "description": "What the run does, as it does it: what is under way for it "
+            + "in this process, from its start, then as it comes; else what the ledger "
+            + f"holds of it. The events are {EVENTS}, each with an `id` and its data "
+            + "as JSON; `done` is the last.",
             "content": {STREAM: {"schema": {"type": "string"}}},
         }
     },
 )
-async def start(
+async def events(
     request: Request,
-    response: Response,
     bench: BenchDep,
-    given: schemas.NewRun,
-    accept: Annotated[str | None, Header()] = None,
-) -> schemas.RunDetail | StreamingResponse:
-    started = await run_in_threadpool(_start, state(request), bench.person, given)
-    loop = asyncio.get_running_loop()
-    events: asyncio.Queue[Named | None] = asyncio.Queue()
-    events.put_nowait(("run.started", started.said))
+    run: UUID,
+    last: Annotated[
+        int | None,
+        Header(alias="Last-Event-ID", description="the id of the last event had"),
+    ] = None,
+) -> StreamingResponse:
+    _ = await run_in_threadpool(bench.run_by_id, run)
+    job = state(request).jobs.get(run)
+    after = last or 0
+    if job is None:
+        told = await run_in_threadpool(_told, bench, run)
+        body = replayed(told, after)
+    else:
+        body = followed(job, after)
+    return StreamingResponse(
+        body,
+        media_type=STREAM,
+        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+    )
 
-    def put(named: Named | None) -> None:
-        try:
-            _ = loop.call_soon_threadsafe(events.put_nowait, named)
-        except RuntimeError:
-            pass
 
-    made = started.running.run
-    threading.Thread(
-        target=_send, args=(started, given.score, put), name=f"chatddx-run-{made}"
-    ).start()
-    location = request.app.url_path_for("run", run=str(made))
-    if streamed(accept):
-        return StreamingResponse(
-            _stream(started.running, events),
-            status_code=201,
-            media_type=STREAM,
-            headers={
-                "Location": location,
-                "Cache-Control": "no-cache",
-                "X-Accel-Buffering": "no",
-            },
+@router.post(
+    "/runs/{run}/halt",
+    status_code=204,
+    responses={409: {"description": "Nothing is under way for the run"}},
+)
+def halt(request: Request, bench: BenchDep, run: UUID) -> Response:
+    _ = bench.run_by_id(run)
+    job = state(request).jobs.get(run)
+    if job is None or job.done:
+        raise HTTPException(409, f"run {run} has nothing under way")
+    job.halt()
+    return Response(status_code=204)
+
+
+def _told(bench: Bench, run: UUID) -> list[Named]:
+    whole = bench.store.run(run)
+    started = whole.started
+    roots = [started.trial, *([] if started.canaries is None else [started.canaries])]
+    registry = bench.store.load(roots)
+    trial = resolve(registry.get, started.trial, Trial)
+    skeleton = resolve(registry.get, trial.skeleton, Skeleton)
+    told: list[Named] = [
+        (
+            "run.started",
+            schemas.RunStartedData(
+                run=run,
+                trial=trial.digest,
+                skeleton=trial.skeleton,
+                endpoint=None if started.endpoint is None else started.endpoint.name,
+                cases=list(trial.cases),
+                seed=trial.seeds[0],
+                greedy=skeleton.greedy,
+            ),
+        ),
+        *(canary_of(c) for c in whole.canaries if c.phase == "start"),
+    ]
+    for item in whole.items:
+        key = item.key
+        seed = trial.seeds[key.replicate]
+        told.append(
+            (
+                "item.started",
+                schemas.ItemStartedData(
+                    case=key.case, replicate=key.replicate, seed=seed
+                ),
+            )
         )
-    failed = await _ended(request, started.running, events)
-    if failed is not None:
-        raise HTTPException(500, failed)
-    response.headers["Location"] = location
-    return await run_in_threadpool(detail, bench, made)
+        told.extend(
+            (
+                "item.tool",
+                schemas.ItemToolData(
+                    case=key.case,
+                    replicate=key.replicate,
+                    tool=tool.model_dump(mode="json"),
+                ),
+            )
+            for turn in item.turns
+            for tool in turn.tools
+        )
+        told.append(
+            (
+                "item.ended",
+                schemas.ItemEndedData(
+                    **item_of(skeleton, item).model_dump(),
+                    why=outcome(skeleton, item)[1],
+                ),
+            )
+        )
+    told.extend(canary_of(c) for c in whole.canaries if c.phase == "end")
+    if whole.finished is not None:
+        findings = [schemas.Finding.of(f) for f in check_run(whole, registry)]
+        told.append(("run.finished", schemas.RunFinishedData(findings=findings)))
+        if graded := bench.scores_of(run):
+            scores = [graded_of(g) for g in graded]
+            told.append(("run.scored", schemas.RunScoredData(scores=scores)))
+    told.append(("done", schemas.DoneData(halted=None)))
+    return told
 
 
 def run_of(

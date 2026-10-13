@@ -4,7 +4,17 @@ from uuid import UUID
 import pytest
 from pydantic import JsonValue
 
-from chatddx.bench import Ambiguous, Bench, Conflict, Graded, MovedOn, NotFound
+from chatddx.bench import (
+    Ambiguous,
+    Bench,
+    Conflict,
+    Graded,
+    MovedOn,
+    NotFound,
+    ScoreHalt,
+    ScorerStarted,
+    ScoringEvent,
+)
 from chatddx.bench.test.helpers import another_expectation, ran, trial
 from chatddx.catalog import Entry, EntryField, Subject
 from chatddx.curation import Plan, load_cases
@@ -520,6 +530,7 @@ def scored(graded: Graded) -> UUID:
     return graded.score.started.score
 
 
+@pytest.mark.slow
 def test_a_run_s_scores_are_read_the_latest_every_one_or_one_by_id(
     conn: Connection, alice: Person, bob: Person, bench: Bench, plan: Plan
 ) -> None:
@@ -566,3 +577,20 @@ def test_a_judge_configuration_is_looked_at_as_a_judge_and_isn_t_run(
     case = bench.family("crlf").case
     with pytest.raises(ValueError, match="is a judge configuration"):
         _ = bench.start(variation, QWEN, [case], 7)
+
+
+def test_a_scoring_says_each_score_it_starts_and_a_halt_stops_the_rest(
+    conn: Connection, alice: Person, bench: Bench, plan: Plan
+) -> None:
+    started = bench.run_by_id(ran(conn, alice, trial(conn, plan, LINES, "crlf")))
+    chosen = {plan.named("scorer", name).digest for name in ("lines", "whole")}
+    said: list[ScoringEvent] = []
+    graded = bench.score(started, chosen, said.append)
+    starts = {(e.scorer, e.name, e.score) for e in said if isinstance(e, ScorerStarted)}
+    assert starts == {(g.scorer.digest, g.name, scored(g)) for g in graded}
+
+    halt = ScoreHalt()
+    halt.set()
+    before = len(bench.scores_of(started.run, every=True))
+    assert {g.refused for g in bench.score(started, chosen, halt=halt)} == {"stopped"}
+    assert len(bench.scores_of(started.run, every=True)) == before

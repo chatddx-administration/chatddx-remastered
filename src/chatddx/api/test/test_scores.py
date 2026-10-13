@@ -1,4 +1,4 @@
-from uuid import UUID, uuid4
+from uuid import uuid4
 
 import pytest
 from fastapi import FastAPI
@@ -6,15 +6,16 @@ from fastapi.testclient import TestClient
 from psycopg.conninfo import make_conninfo
 
 from chatddx.api.app import app
-from chatddx.api.test.test_runs import asked, family
+from chatddx.api.test.test_runs import asked, family, followed, names, sent
 from chatddx.bench import Bench
 from chatddx.bench.test.helpers import ran, trial
 from chatddx.core import settings
 from chatddx.curation import Plan
 from chatddx.identity import Person
 from chatddx.inventory import Inventory
+from chatddx.store import Store
 from chatddx.store.store import Connection
-from chatddx.test.world import LINES, world_facts
+from chatddx.test.world import LINES, faked, world_facts
 
 pytestmark = pytest.mark.wip
 
@@ -27,10 +28,10 @@ def served(db: str, world: Inventory) -> FastAPI:
 @pytest.mark.slow
 @pytest.mark.usefixtures("fake")
 def test_a_run_s_scores_are_read_with_their_items_and_judge_calls(
-    signed: TestClient, bench: Bench, bob: dict[str, str]
+    signed: TestClient, bob: dict[str, str]
 ) -> None:
     noted = family(signed, "noted")["id"]
-    made = signed.post("/api/runs", json=asked(signed, families=[noted])).json()
+    made, _ = sent(signed, asked(signed, families=[noted]))
     run = made["id"]
     latest = signed.get(f"/api/runs/{run}/scores").json()
     assert latest == made["scores"]
@@ -47,7 +48,20 @@ def test_a_run_s_scores_are_read_with_their_items_and_judge_calls(
     assert views[3]["detail"] is not None
     assert shown["findings"] == []
 
-    _ = bench.score(bench.run_by_id(UUID(run)))
+    got = signed.post(f"/api/runs/{run}/scores", json={})
+    assert got.status_code == 202
+    assert got.headers["location"] == f"/api/runs/{run}/scores"
+    assert {s["name"] for s in got.json()["scorers"]} == {g["name"] for g in latest}
+    said = followed(signed, run)
+    assert names(said)[0] == "run.scoring" and names(said)[-2:] == [
+        "run.scored",
+        "done",
+    ]
+    assert {"score.started", "score.item", "judge.asked", "judge.answered"} <= set(
+        names(said)
+    )
+    asked_ = [d for _, n, d in said if n == "judge.asked"]
+    assert len(asked_) == 5 and {d["view"] for d in asked_} == {1, 2, 3}
     every = signed.get(f"/api/runs/{run}/scores", params={"all": "true"}).json()
     again = signed.get(f"/api/runs/{run}/scores").json()
     assert len(every) == 2 * len(latest)
@@ -85,3 +99,55 @@ def test_scores_need_a_session(client: TestClient) -> None:
         f"/api/runs/{run}/scores/{score}/items",
     ):
         assert client.get(path).status_code == 401
+
+
+@pytest.mark.slow
+def test_a_run_is_scored_when_asked_and_what_can_t_be_is_refused(
+    signed: TestClient,
+    conn: Connection,
+    alice: Person,
+    plan: Plan,
+    world: Inventory,
+    bob: dict[str, str],
+) -> None:
+    unfinished = ran(conn, alice, trial(conn, plan, LINES, "crlf"), finished=False)
+    left = ran(conn, alice, trial(conn, plan, LINES, "crlf"))
+    lines = plan.named("scorer", "lines").digest
+    other = plan.named("scorer", "answer").digest
+    for run, body, status, said in (
+        (unfinished, {}, 422, f"run {unfinished} hasn't finished"),
+        (
+            left,
+            {"scorers": [other]},
+            422,
+            f"scorer {other} doesn't apply to run {left}",
+        ),
+        (uuid4(), {}, 404, "of yours"),
+    ):
+        got = signed.post(f"/api/runs/{run}/scores", json=body)
+        assert got.status_code == status and said in got.json()["detail"]
+    assert (
+        signed.post(f"/api/runs/{left}/scores", json={}, headers=bob).status_code == 404
+    )
+
+    got = signed.post(f"/api/runs/{left}/scores", json={"scorers": [lines]})
+    assert [s["name"] for s in got.json()["scorers"]] == ["lines"]
+    said = followed(signed, str(left))
+    [scored] = [d for _, n, d in said if n == "run.scored"]
+    assert [g["name"] for g in scored["scores"]] == ["lines"]
+
+    noted = asked(signed, families=[family(signed, "noted")["id"]], score=False)
+    with faked(world, Store(conn).get):
+        run = sent(signed, noted)[0]["id"]
+    with faked(world, Store(conn).get, delay=0.05):
+        assert signed.post(f"/api/runs/{run}/scores", json={}).status_code == 202
+        busy = signed.post(f"/api/runs/{run}/scores", json={})
+        assert (busy.status_code, busy.json()) == (
+            409,
+            {"detail": f"run {run} has something under way"},
+        )
+        assert signed.post(f"/api/runs/{run}/halt").status_code == 204
+        said = followed(signed, run)
+    assert said[-1][1:] == ("done", {"halted": True})
+    [scored] = [d for _, n, d in said if n == "run.scored"]
+    assert "stopped" in {g["refused"] for g in scored["scores"]}

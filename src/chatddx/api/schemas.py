@@ -536,11 +536,17 @@ class RenderedAgain(_Schema):
     why: str | None
 
 
+class NewScoring(_Schema):
+    scorers: list[str] | None = Field(
+        None, description="by digest; every scorer that applies when not given"
+    )
+
+
 class RunStartedData(_Schema):
     run: UUID
     trial: str
     skeleton: str
-    endpoint: str
+    endpoint: str | None
     cases: list[str]
     seed: int
     greedy: bool
@@ -580,12 +586,61 @@ class RunFinishedData(_Schema):
     findings: list[Finding]
 
 
+class ScoringData(_Schema):
+    scorers: list[Unscored]
+
+
+class ScoreStartedData(_Schema):
+    scorer: str
+    name: str
+    score: UUID
+    labels: list[str]
+
+
+class ScoreItemData(ScoredItem):
+    score: UUID
+    detail: JsonValue
+
+
+class JudgeAskedData(_Schema):
+    case: str
+    replicate: int
+    scorer: str
+    view: int
+    judge: str
+    seed_index: int
+
+
+class JudgeDeltaData(_Schema):
+    case: str
+    replicate: int
+    kind: Literal["reasoning", "content", "tool_call"]
+    text: str
+    tokens: int
+
+
+class JudgeAnsweredData(_Schema):
+    case: str
+    replicate: int
+    view: int
+    judge: str
+    seed_index: int
+    verdict: JsonValue
+    call: JsonValue
+
+
 class RunScoredData(_Schema):
     scores: list[Graded]
 
 
 class ErrorData(_Schema):
     detail: str
+
+
+class DoneData(_Schema):
+    halted: bool | None = Field(
+        description="whether it was halted; null when told from the ledger"
+    )
 
 
 EVENTS: dict[str, type[_Schema]] = {
@@ -597,6 +652,14 @@ EVENTS: dict[str, type[_Schema]] = {
     "canary.ended": CanaryEndedData,
     "run.noted": Finding,
     "run.finished": RunFinishedData,
+    "run.scoring": ScoringData,
+    "score.started": ScoreStartedData,
+    "judge.asked": JudgeAskedData,
+    "judge.delta": JudgeDeltaData,
+    "judge.answered": JudgeAnsweredData,
+    "score.item": ScoreItemData,
+    "score.noted": Finding,
     "run.scored": RunScoredData,
     "error": ErrorData,
+    "done": DoneData,
 }
