@@ -83,7 +83,7 @@ def test_signing_in_leads_only_within_the_site(client: TestClient) -> None:
 def test_a_form_from_another_site_is_refused(client: TestClient) -> None:
     for elsewhere in ELSEWHERE:
         got = signing_in(client, **elsewhere)
-        assert (got.status_code, got.json()["code"]) == (403, "cross_site")
+        assert got.status_code == 403 and "Refused" in got.text
     assert signing_in(client).status_code == 303
     for elsewhere in ELSEWHERE:
         assert client.post("/sign-out", headers=elsewhere).status_code == 403

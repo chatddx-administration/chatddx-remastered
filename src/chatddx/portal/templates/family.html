@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% from "macros.html" import heading, section, facts, chip, json %}
+{% block title %}{{ family.name }} · ChatDDX{% endblock %}
+{% block main %}
+<div class="mx-auto max-w-5xl px-4 py-8">
+  <a href="/families" class="text-sm text-primary hover:underline">← Families</a>
+  {{ heading(family.name) }}
+
+  {% call section("About it") %}
+  {% set tagged %}{% for t in family.tags %}{{ chip(t) }} {% else %}—{% endfor %}{% endset %}
+  {% set read %}<a class="text-primary hover:underline" href="/families/{{ family.id }}/vignette">Read it</a>{% endset %}
+  {{ facts([
+    ("Owner", family.owner or "—"),
+    ("Shared with", family.collaborators | join(", ") or "—"),
+    ("Language", family.language or "—"),
+    ("Tags", tagged),
+    ("Description", family.description or "—"),
+    ("Vignette", read),
+  ]) }}
+  {% endcall %}
+
+  {% for c in cases %}
+  {% call section(c.title ~ (" (the family's case)" if c.default else "")) %}
+  {% if c.appendices %}
+  <p class="mb-4 text-sm"><span class="text-muted-foreground">With</span> {% for a in c.appendices %}{{ chip(titles[a]) }} {% endfor %}</p>
+  {% endif %}
+  {% for e in c.expectations %}
+  <div class="mb-4 last:mb-0">
+    <h3 class="mb-2 text-sm font-medium">Expected under {{ e.title }}</h3>
+    {% if e.ambiguous %}
+    <p class="text-sm text-warning">{{ e.ambiguous }}</p>
+    {% elif e.expectation %}
+    {{ json(e.data) }}
+    {% else %}
+    <p class="text-sm text-muted-foreground">None of your own.</p>
+    {% endif %}
+    {% if e.shared %}
+    <p class="mt-2 text-sm text-muted-foreground">Shared with you to take: {% for t in e.shared %}{{ chip((t.owner ~ "/" if t.owner else "") ~ (t.name or t.title)) }} {% endfor %}</p>
+    {% endif %}
+  </div>
+  {% else %}
+  <p class="text-sm text-muted-foreground">No expectation schema applies.</p>
+  {% endfor %}
+  {% endcall %}
+  {% endfor %}
+</div>
+{% endblock %}

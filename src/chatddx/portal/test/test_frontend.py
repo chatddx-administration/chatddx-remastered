@@ -52,6 +52,7 @@ def test_the_built_frontend_is_found_by_its_manifest(tmp_path: Path) -> None:
     island = assets.island("home")
     assert island.scripts == ["/static/assets/home-2.js"]
     assert island.styles == ["/static/assets/home-3.css", "/static/assets/shared-5.css"]
+    assert island.preloads == ["/static/assets/shared-4.js"]
     assert assets.island("nowhere").scripts == []
 
 
@@ -66,6 +67,7 @@ def test_a_page_takes_the_built_styles_and_its_island(
     home = client.get("/").text
     assert '<link rel="stylesheet" href="/static/assets/portal-1.css">' in home
     assert '<script type="module" src="/static/assets/home-2.js"></script>' in home
+    assert '<link rel="modulepreload" href="/static/assets/shared-4.js">' in home
     assert "isn't built" not in home
     signed_out = client.post("/sign-out")
     assert signed_out.status_code == 303

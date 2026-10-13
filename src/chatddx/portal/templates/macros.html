@@ -1,0 +1,93 @@
+{% macro heading(title, sub=None) %}
+<header class="mb-8 animate-fade-in">
+  <h1 class="text-3xl font-bold tracking-tight">{{ title }}</h1>
+  {% if sub %}<p class="mt-2 text-muted-foreground">{{ sub }}</p>{% endif %}
+</header>
+{% endmacro %}
+
+{% macro section(title, id=None) %}
+<section{% if id %} id="{{ id }}"{% endif %} class="glass-card mb-6 rounded-2xl p-5 sm:p-6">
+  <h2 class="mb-4 text-lg font-semibold">{{ title }}</h2>
+  {{ caller() }}
+</section>
+{% endmacro %}
+
+{% macro facts(rows) %}
+<dl class="grid gap-x-6 gap-y-2 text-sm sm:grid-cols-[max-content_1fr]">
+  {% for label, value in rows %}
+  <dt class="text-muted-foreground">{{ label }}</dt>
+  <dd class="min-w-0 break-words">{{ value }}</dd>
+  {% endfor %}
+</dl>
+{% endmacro %}
+
+{% macro findings(found) %}
+{% if found %}
+<ul class="space-y-1.5 text-sm">
+  {% for f in found %}
+  <li class="flex flex-wrap gap-2">
+    <span class="shrink-0 rounded-md px-1.5 py-0.5 font-mono text-xs {{ 'bg-warning/15 text-warning' if f.level == 'warning' else 'bg-muted text-muted-foreground' }}">{{ f.code }}</span>
+    <span class="text-muted-foreground">{{ f.message }}</span>
+  </li>
+  {% endfor %}
+</ul>
+{% else %}
+<p class="text-sm text-muted-foreground">None.</p>
+{% endif %}
+{% endmacro %}
+
+{% macro outcome(said) %}
+{% set tones = {
+  "valid": "border-success/30 bg-success/10 text-success",
+  "completed": "border-success/30 bg-success/10 text-success",
+  "salvaged": "border-warning/30 bg-warning/10 text-warning",
+  "invalid": "border-warning/30 bg-warning/10 text-warning",
+  "errored": "border-destructive/30 bg-destructive/10 text-destructive",
+  "unread": "border-destructive/30 bg-destructive/10 text-destructive",
+  "stopped": "border-border bg-muted text-muted-foreground",
+} %}
+<span class="inline-flex rounded-full border px-2 py-0.5 text-xs font-medium {{ tones.get(said, tones['stopped']) }}">{{ said }}</span>
+{% endmacro %}
+
+{% macro chip(text) %}<span class="inline-flex rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">{{ text }}</span>{% endmacro %}
+
+{% macro json(value) %}<pre class="overflow-x-auto rounded-lg bg-muted/60 p-3 font-mono text-xs leading-relaxed">{{ value | pretty }}</pre>{% endmacro %}
+
+{% macro tabs(items) %}
+<nav class="mb-6 flex flex-wrap gap-1 text-sm">
+  {% for href, label, here in items %}
+  <a href="{{ href }}"{% if here %} aria-current="page"{% endif %} class="rounded-full border px-3 py-1 font-medium transition-colors {{ 'border-primary/30 bg-primary/10 text-primary' if here else 'border-border bg-background/60 text-muted-foreground hover:text-foreground' }}">{{ label }}</a>
+  {% endfor %}
+</nav>
+{% endmacro %}
+
+{% macro runs_table(runs, left=False) %}
+{% if runs %}
+<div class="overflow-x-auto">
+  <table class="w-full text-sm">
+    <thead class="text-left text-xs uppercase tracking-wide text-muted-foreground">
+      <tr>
+        <th class="pb-2 pr-4 font-medium">Started</th>
+        <th class="pb-2 pr-4 font-medium">Run</th>
+        <th class="pb-2 pr-4 font-medium">Endpoint</th>
+        <th class="pb-2 pr-4 font-medium">Finished</th>
+        {% if left %}<th class="pb-2 font-medium">Left to score by</th>{% endif %}
+      </tr>
+    </thead>
+    <tbody>
+      {% for r in runs %}
+      <tr class="border-t border-border/60">
+        <td class="whitespace-nowrap py-2 pr-4 align-top text-muted-foreground">{{ r.at | when }}</td>
+        <td class="py-2 pr-4 align-top"><a href="/runs/{{ r.id }}" class="text-primary hover:underline">{{ r.described }}</a></td>
+        <td class="whitespace-nowrap py-2 pr-4 align-top">{{ r.endpoint or "—" }}</td>
+        <td class="py-2 pr-4 align-top">{{ "yes" if r.finished else "no" }}</td>
+        {% if left %}<td class="py-2 align-top">{% for u in r.unscored or [] %}{{ chip(u.name) }} {% endfor %}</td>{% endif %}
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+<p class="text-sm text-muted-foreground">No runs.</p>
+{% endif %}
+{% endmacro %}

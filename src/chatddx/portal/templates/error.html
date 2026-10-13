@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% set titles = {
+  "not_found": "Not found",
+  "not_allowed": "Not allowed",
+  "cross_site": "Refused",
+  "unauthenticated": "Sign in",
+  "refused": "That can't be done",
+  "unprocessable": "That can't be done",
+  "conflict": "A conflict",
+  "moved_on": "It has moved on",
+  "ambiguous": "That names several",
+  "over_quota": "Over the day's quota",
+} %}
+{% block title %}{{ titles.get(error.code, "Something went wrong") }} · ChatDDX{% endblock %}
+{% block main %}
+<div class="mx-auto max-w-xl px-4 py-16 text-center">
+  <h1 class="mb-4 text-3xl font-bold">{{ titles.get(error.code, "Something went wrong") }}</h1>
+  <p class="mb-8 text-muted-foreground">{% if error.detail is string %}{{ error.detail }}{% else %}The request didn't hold together.{% endif %}</p>
+  <a href="/" class="text-primary hover:underline">Home</a>
+</div>
+{% endblock %}

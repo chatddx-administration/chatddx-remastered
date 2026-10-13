@@ -14,13 +14,15 @@ it.
    that work sets the structure of the portal's frontend, and shows what Lovable has to teach (see "Swift").
 3. **Decided: `chatddx portal`** serves the portal, and starts everything the portal needs with it: the API now, the
    worker once there is one (see "P3b, concretely").
-4. **Phases 0 and 1 are built** (see "Built"): `chatddx.portal`, signing in and out, `Cache-Control: no-store`, a
+4. **Phases 0, 1 and 2 are built** (see "Built"): `chatddx.portal`, signing in and out, `Cache-Control: no-store`, a
    code beside each error's detail in the API (decided); then the frontend in `frontend/`, swift's theme and
-   components, and the home page, the first island. Phase 1's choices are takes (see "Built", "Phase 1").
+   components, and the home page, the first island; then the pages to read. The choices of phases 1 and 2 are takes
+   (see "Built").
 5. **What it stands on is built**: the bench and the API (`docs/bench.md`, `docs/api.md`), the writes for authoring
    (`agents/wip-authoring.md`) and typed cases (`docs/bench.md`, "Typed cases"). What isn't is under "Below the UI":
    the worker, the batch planner, Z1, and a few things the API doesn't give yet.
-6. **Next**: phase 2, the pages to read (see "Phases").
+6. **Next**: phase 3, the variation being tried (see "Phases"), and what phase 2 left (see "Open", "What the pages
+   to read leave").
 
 ## What the portal shows
 The old portal's manual reads as a functional spec for its pages: `docs/portal.md` in chatddx-administration/chatddx
@@ -118,7 +120,8 @@ Decided:
   API's are; marked `wip` until `docs/portal.md`.
 - **Islands**: through the API's tests for what they call, and a browser test (Playwright, with the container's
   Chromium) once an island holds logic worth testing on its own.
-- **Runs to show**: the test World's six scripted runs (`docs/scripted.md`, "The runs").
+- **Runs to show**: the test World's six scripted runs (`docs/scripted.md`, "The runs"), run once into `ran`
+  (`src/chatddx/conftest.py`), built in phase 2.
 
 ## Swift
 Decided:
@@ -242,8 +245,8 @@ Found on the way:
 - **A route's name is the handler's**, and FastAPI keeps one table for the app: the portal's handlers are named
   `signing_in_page`, `signing_in` and `signing_out`, so that `url_path_for` doesn't find the API's `sign_in` and
   `sign_out` for them.
-- **What the portal doesn't route is answered as the API answers**: JSON with a code, as an unknown page's 404 or a
-  form from another site's 403. Take: pages of their own for those when the theme lands.
+- **What the portal doesn't route was answered as the API answers**: JSON with a code, as an unknown page's 404 or a
+  form from another site's 403. Pages of their own for those are built in phase 2.
 
 Phase 1, `wip` under this file:
 - **`frontend/`**, beside `src/`: a Vite project, pnpm only (`packageManager`), Svelte 5 with TypeScript 5.9
@@ -283,6 +286,33 @@ Phase 1, `wip` under this file:
 - **Tests**: `src/chatddx/portal/test/test_frontend.py`, and by hand on the sample World with its fake engines in
   Chromium (Playwright), signed in as alice, light and dark.
 
+Phase 2, `wip` under this file, as takes:
+- **The pages call the API's handlers** with a bench made per request (`src/chatddx/portal/pages.py:page_bench`), so a
+  page shows what the API answers, and is refused as it is. A module per kind under `src/chatddx/portal/`:
+  - `runs.py`: `GET /runs`, a person's runs fifty to a page, and those left to score (`?left=true`), without
+    **Score again**, which writes. `GET /runs/{id}`: the run (when, its configuration, linked to the thread whose head
+    is its skeleton, the endpoint and engine, the cases, seeds, trial and rig); what was noted as it ran and what is
+    checked now; its items; each scoring as a table of case by view, with the means; and a section per item,
+    linkable as `#item-N`: how it came out and why, the answer as read, and the last call's message part by part
+    (reasoning, content and tool calls, folded but for the content).
+  - `configurations.py`: `GET /configurations`, by purpose (generation or judge); `GET /configurations/{id}`, what is
+    said of it, its recipe part by part (the chunk picked and what it holds), its versions, and the runs of its latest
+    version (`reaching`). A thread of another kind isn't found.
+  - `families.py`: `GET /families`, by tags; `GET /families/{id}`, its cases with their appendices, and under each
+    expectation schema the expectation each is scored against, or why it is ambiguous, with those shared to take;
+    `GET /families/{id}/vignette`, the vignette on a page of its own.
+  - `world.py`: `GET /endpoints`, the endpoints and the models' facts.
+- **An answer as a management plan**: on a run whose skeleton's output schema is titled `management_plan_v1`, an
+  answer is drawn by the home page's renderer, mounted by the `answers` island (`frontend/src/islands/answers.ts`)
+  where the page holds the answer as JSON, which shows without scripts. Other answers show as text or JSON.
+- **Pages for errors**: a refusal on a page, and a page that isn't there, is answered with a page of the same status,
+  titled by its code (`src/chatddx/portal/pages.py:paged`, `templates/error.html`); under `/api/` it is JSON as before.
+- **The pieces the pages share** are macros (`templates/macros.html`), and the nav links Runs, Configurations,
+  Families and Endpoints. An island's imported chunks are preloaded (`src/chatddx/portal/assets.py:Island`).
+- **Tests**: `src/chatddx/portal/test/test_reading.py`, on `ran` (`src/chatddx/conftest.py`), `curated` with alice's
+  scripted runs each run once; `docs/scripted.md` has AGENT suggestions. By hand on the sample World in Chromium,
+  every page, with the plan drawn.
+
 ## Below the UI
 What the portal needs below its pages that isn't built:
 1. **The worker** (`agents/wip-worker.md`): runs that outlive the app's process and are seen from every replica, and
@@ -294,8 +324,6 @@ What the portal needs below its pages that isn't built:
    `agents/wip-identity.md`, "Open").
 5. **From the API's "Outstanding"** (`docs/api.md`), what the portal meets first: a keep-alive on the event stream,
    which a proxy cuts when it is quiet.
-6. **Runs already made, for the tests**: a database fixture with the test World's scripted runs run, copied for each
-   test as `curated` is (`docs/scripted.md`, "Smaller issues").
 
 ## Phases
 0. **Before the first page**, built (see "Built"): `chatddx portal`, `chatddx.portal` mounted beside the API, signing
@@ -303,8 +331,8 @@ What the portal needs below its pages that isn't built:
 1. **Swift**, built (see "Built"): the frontend's structure, Node, Vite and the build in the flake; Svelte, TypeScript
    and Tailwind; types from `/api/openapi.json`. The theme skeleton and the salvaged components, then the home page,
    the first island.
-2. **Pages to read**: runs and a run's page, configurations with their versions and recipe, families with their
-   expectations (the vignette in its own place), endpoints and models.
+2. **Pages to read**, built (see "Built"): runs and a run's page, configurations with their versions and recipe,
+   families with their expectations (the vignette in its own place), endpoints and models.
 3. **The variation being tried**, and its island.
 4. **Starting and watching a run**: the run's island, on the API's runs and events; the worker under them when it is
    built (`agents/wip-worker.md`).
@@ -329,3 +357,20 @@ What the portal needs below its pages that isn't built:
 - **Export.** The portal is to export results (`docs/chatddx.md`, glossary), and the export isn't planned
   (`docs/chatddx.md`, "On the table").
 - **Keycloak in front** skips the sign-in page (`agents/wip-identity.md`, "Take, for when Keycloak arrives").
+
+### What the pages to read leave
+From "What the portal shows", not on the pages yet:
+- **The version timeline**: a configuration's versions are listed, but not stepped through (◀ ▶), nor what each
+  changed, word by word.
+- **The requests rendered again** on a run's page (`GET /api/runs/{id}/rendered-again`), which renders every item's
+  requests anew.
+- **A score's items**: what a scorer found per item and its judges' calls
+  (`GET /api/runs/{id}/scores/{score}/items`), and the runs a scorer scored (`scored_by`). A run's page shows the
+  values and their means.
+- **The configuration as it ran**: a run links the configuration whose head is its skeleton, and of an earlier version
+  shows only the skeleton's digest; it doesn't show the skeleton's parts, nor a run's tools.
+- **A run's calls loaded when opened**: a run's page holds every item's last call. Take: an island that loads an
+  item's call when it is opened, once runs are large enough to need it.
+- **Families by name**, beside by tag.
+- **Runs of a configuration's earlier versions** under its thread.
+

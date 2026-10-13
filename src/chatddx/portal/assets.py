@@ -12,6 +12,7 @@ ROUTE = "/static"
 class Island:
     scripts: list[str]
     styles: list[str]
+    preloads: list[str]
 
 
 @dataclass(frozen=True)
@@ -30,8 +31,15 @@ class Assets:
         manifest = self._manifest()
         entry = manifest.get(f"src/islands/{name}.ts")
         if entry is None:
-            return Island([], [])
-        return Island([f"{ROUTE}/{entry['file']}"], _styles(manifest, entry))
+            return Island([], [], [])
+        return Island(
+            [f"{ROUTE}/{entry['file']}"],
+            _styles(manifest, entry),
+            [
+                f"{ROUTE}/{manifest[chunk]['file']}"
+                for chunk in _imports(manifest, entry)
+            ],
+        )
 
     def _manifest(self) -> dict[str, Any]:
         try:
@@ -44,4 +52,13 @@ def _styles(manifest: dict[str, Any], entry: dict[str, Any]) -> list[str]:
     found = [f"{ROUTE}/{css}" for css in entry.get("css", [])]
     for chunk in entry.get("imports", []):
         found += [s for s in _styles(manifest, manifest[chunk]) if s not in found]
+    return found
+
+
+def _imports(manifest: dict[str, Any], entry: dict[str, Any]) -> list[str]:
+    found: list[str] = []
+    for chunk in entry.get("imports", []):
+        found += [
+            c for c in [chunk, *_imports(manifest, manifest[chunk])] if c not in found
+        ]
     return found

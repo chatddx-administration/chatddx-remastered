@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% from "macros.html" import heading, section, facts, chip, runs_table %}
+{% block title %}{{ configuration.name or configuration.title }} · ChatDDX{% endblock %}
+{% block main %}
+<div class="mx-auto max-w-5xl px-4 py-8">
+  <a href="/configurations" class="text-sm text-primary hover:underline">← Configurations</a>
+  {{ heading(configuration.name or configuration.title, configuration.title if configuration.name not in (None, configuration.title) else None) }}
+
+  {% call section("About it") %}
+  {% set origin %}{% if configuration.forked_from %}<a class="text-primary hover:underline" href="/configurations/{{ configuration.forked_from }}">a fork</a>{% else %}—{% endif %}{% endset %}
+  {% set tagged %}{% for t in configuration.tags %}{{ chip(t) }} {% else %}—{% endfor %}{% endset %}
+  {{ facts([
+    ("Owner", configuration.owner or "—"),
+    ("Shared with", configuration.collaborators | join(", ") or "—"),
+    ("Language", configuration.language or "—"),
+    ("Forked from", origin),
+    ("Tags", tagged),
+    ("Description", configuration.description or "—"),
+  ]) }}
+  {% endcall %}
+
+  {% call section("Its recipe") %}
+  <div class="overflow-x-auto">
+    <table class="w-full text-sm">
+      <thead class="text-left text-xs uppercase tracking-wide text-muted-foreground">
+        <tr><th class="pb-2 pr-4 font-medium">Part</th><th class="pb-2 pr-4 font-medium">Chunk</th><th class="pb-2 font-medium">Holds</th></tr>
+      </thead>
+      <tbody>
+        {% for p in parts %}
+        <tr class="border-t border-border/60">
+          <td class="whitespace-nowrap py-2 pr-4 align-top font-medium">{{ p.part | replace("_", " ") }}</td>
+          <td class="py-2 pr-4 align-top">{{ p.title or "—" }}</td>
+          <td class="py-2 align-top text-muted-foreground">{{ p.summary or "" }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% endcall %}
+
+  {% call section("Its versions") %}
+  <ol class="space-y-1.5 text-sm">
+    {% for v in versions | reverse %}
+    <li class="flex flex-wrap gap-x-3">
+      <span class="font-medium">Version {{ versions | length - loop.index0 }}</span>
+      <span class="text-muted-foreground">{{ v.at | when }}, {{ v.by }}</span>
+      <span class="font-mono text-xs text-muted-foreground">{{ v.digest | short }}</span>
+    </li>
+    {% endfor %}
+  </ol>
+  {% endcall %}
+
+  {% call section("Runs of its latest version") %}
+  {{ runs_table(runs) }}
+  {% endcall %}
+</div>
+{% endblock %}

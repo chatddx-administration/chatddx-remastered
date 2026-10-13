@@ -1,17 +1,37 @@
+import json
+from collections.abc import Awaitable, Callable
+from datetime import datetime
 from pathlib import Path
 from typing import Annotated, Any
 from urllib.parse import urlencode
 
 from fastapi import APIRouter, Depends, Form, Request, Response
-from fastapi.responses import RedirectResponse
+from fastapi.responses import JSONResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
+from pydantic import JsonValue
 
 from chatddx.api.people import COOKIE, ConnDep, drop_cookie, keep_cookie, same_origin
-from chatddx.api.state import NO_STORE
+from chatddx.api.state import NO_STORE, state
+from chatddx.bench import Bench
 from chatddx.identity import Person
 from chatddx.store import People
 
 templates = Jinja2Templates(directory=Path(__file__).parent / "templates")
+
+
+def _when(at: datetime | None) -> str:
+    return "—" if at is None else at.strftime("%Y-%m-%d %H:%M")
+
+
+def _short(digest: str | None) -> str:
+    return "—" if digest is None else digest.removeprefix("sha256:")[:12]
+
+
+def _pretty(value: JsonValue) -> str:
+    return json.dumps(value, indent=2, ensure_ascii=False)
+
+
+templates.env.filters.update(when=_when, short=_short, pretty=_pretty)
 
 router = APIRouter()
 
@@ -59,6 +79,30 @@ def signed_in(request: Request, conn: ConnDep) -> Person:
 
 
 type PersonDep = Annotated[Person, Depends(signed_in)]
+
+
+def page_bench(request: Request, conn: ConnDep, person: PersonDep) -> Bench:
+    held = state(request)
+    return Bench(conn, person, held.inventory, held.facts)
+
+
+type BenchDep = Annotated[Bench, Depends(page_bench)]
+
+
+def paged(
+    answer: Callable[[Request, Any], Response | Awaitable[Response]],
+) -> Callable[[Request, Exception], Response]:
+    def handle(request: Request, e: Exception) -> Response:
+        said = answer(request, e)
+        assert isinstance(said, Response)
+        if request.url.path.startswith("/api/") or not isinstance(said, JSONResponse):
+            return said
+        with state(request).connect() as conn:
+            person = _person(request, conn)
+        error = json.loads(bytes(said.body))
+        return page(request, "error.html", said.status_code, error=error, person=person)
+
+    return handle
 
 
 @router.get("/")

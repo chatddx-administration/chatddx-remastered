@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% from "macros.html" import heading, tabs, runs_table, section %}
+{% block title %}Runs · ChatDDX{% endblock %}
+{% block main %}
+<div class="mx-auto max-w-5xl px-4 py-8">
+  {{ heading("Runs", "Your runs, newest first.") }}
+  {{ tabs([("/runs", "All", not left), ("/runs?left=true", "Left to score", left)]) }}
+  {% call section("Left to score" if left else "All runs") %}
+  {{ runs_table(runs, left) }}
+  {% if number > 1 or more %}
+  <div class="mt-4 flex justify-between text-sm">
+    {% if number > 1 %}<a class="text-primary hover:underline" href="/runs?page={{ number - 1 }}{{ '&left=true' if left else '' }}">Newer</a>{% else %}<span></span>{% endif %}
+    {% if more %}<a class="text-primary hover:underline" href="/runs?page={{ number + 1 }}{{ '&left=true' if left else '' }}">Older</a>{% endif %}
+  </div>
+  {% endif %}
+  {% endcall %}
+</div>
+{% endblock %}
