@@ -20,11 +20,6 @@ before adding functionality to the bench.
 
 ## How the bench works
 
-### A person-scoped view
-Everything that depends on who is asking goes through the bench; what doesn't is read straight from the store,
-the World and the facts. An edge asks the bench which runs are the person's and which thread a name means to them, but reads a component
-by its digest, or an endpoint's limits, from where they are kept.
-
 ### One person, one connection
 A connection lasts as long as its caller, and caches logins and the model each engine serves for that long.
 
