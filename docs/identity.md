@@ -1,11 +1,3 @@
-```
-AGENT: add
-Six docs link to this file, and it doesn't exist: docs/catalog.md, docs/catalog-api.md, docs/chatddx.md,
-docs/factors.md, docs/store.md and docs/store-api.md. Drafted from agents/wip-identity.md ("What holds now") and checked
-against src/chatddx/identity/, src/chatddx/store/people.py, the `person` commands and migrations 0007-0009. One block
-per section, so that each can be taken or left. Once adopted, src/chatddx/identity/test/test_identity.py can be marked
-`solidified`, and agents/wip-identity.md keeps only what is open.
----
 # Identity
 
 Identity is who acts in chatddx: the people, the roles they hold, how they sign in, and what each is shown. Most of
@@ -16,11 +8,7 @@ and the bench apply to what is in the store and the World.
 This document describes what identity holds and why. People, their passwords and their sessions are kept by the store
 (docs/store.md, "People"; `People` and "Database: schema `identity`" in docs/store-api.md), and their migrations are
 in docs/migrations.md.
-```
 
-```
-AGENT: add
----
 ## People
 A person has an id, a login, a name, roles, and whether they are active. The id is what the rest of the store refers
 to: the catalog's owners, collaborators and writers, and who typed a text. The login is what a person signs in with,
@@ -32,11 +20,7 @@ sessions and keeps them from signing in.
 
 Names aren't sensitive (docs/chatddx.md, glossary, "Sensitive"), so the reader may read people. Passwords and sessions
 are secrets rather than sensitive data, and it reads neither.
-```
 
-```
-AGENT: add
----
 ## Roles
 The roles are admin, clinician, developer, ops and researcher (src/chatddx/identity/identity.py:Role). All but admin
 are the principal authors of docs/chatddx.md ("Roles mentioned") and docs/factors.md; admin is identity's own, for
@@ -45,11 +29,7 @@ database holds the names to the code's list.
 
 Nothing checks a role yet: a person writes on what they own, whatever their roles (docs/bench.md, "Writes for the
 person"), and nothing asks for admin (see "Open design issues").
-```
 
-```
-AGENT: add
----
 ## Authentication
 The app signs people in itself, with passwords and sessions in the database; there is no identity provider yet.
 - **Passwords** are kept as argon2id hashes, and hashed again when a sign-in finds one made under older parameters. A
@@ -61,11 +41,7 @@ The app signs people in itself, with passwords and sessions in the database; the
 
 How a token is carried is the edge's: the API takes it as a bearer token or a cookie (docs/api.md, "Signing in"). The
 repl and the commands act as a person by login, over a database connection of their own, without signing in.
-```
 
-```
-AGENT: add
----
 ## Authorization
 What a person is shown is a convenience, not a protection: it decides what is relevant to show them. Sensitive data is
 protected by clearance and the database's grants (agents/wip-clearance.md), not by what a person is shown.
@@ -77,11 +53,7 @@ bench applies both to what is in the store and the World (docs/bench.md, "What a
 
 What each role is shown, a map from roles to the kinds each sees, goes beside `sees` once the portal's views give it
 meaning (agents/wip-identity.md, "Open").
-```
 
-```
-AGENT: add
----
 ## Managing people
 People are managed by command, connecting as `DB_USER`:
 - `chatddx person add LOGIN NAME [--role ROLE …]` adds a person;
@@ -89,31 +61,19 @@ People are managed by command, connecting as `DB_USER`:
 - `chatddx init-data LOGIN` adds a person by that login, named by it, when there is none (docs/curation.md).
 
 A person without a password can't sign in to the API, but can be acted as from the repl.
-```
 
-```
-AGENT: add
----
 ## Keycloak
 The deployment is to sit behind Keycloak. Logins follow its lowercase usernames so that people carry over, and signing
 in with a password can stay as the development path. How Keycloak hands the app a login isn't decided (docs/api.md,
 "Outstanding", "Signing in"), nor whether roles then come from its realm roles instead of the person.
-```
 
-```
-AGENT: add
----
 ## Tests
 - src/chatddx/identity/test/test_identity.py: who sees what, and their own first.
 - src/chatddx/store/test/test_identity.py: people, passwords and sessions; that tokens aren't stored; what the
   database guards, and that the reader sees people but no secrets.
 - src/chatddx/store/test/test_cli.py: the `person` commands.
 - Signing in through the API: src/chatddx/api/test/test_people.py (docs/api.md, "Signing in").
-```
 
-```
-AGENT: add
----
 ## Terms
 
 | Term | Meaning |
@@ -124,11 +84,7 @@ AGENT: add
 | Active | Whether a person may sign in. People are made inactive, never deleted. |
 | Session | A person signed in, by a token of which only a digest is kept. |
 | Sees | Owns, or collaborates on. |
-```
 
-```
-AGENT: add
----
 ## Open design issues
 - **Sign-ins aren't limited.** Each costs an argon2 verification. The API's take is none until Keycloak is in front,
   which limits them itself (docs/api.md, "Outstanding").

@@ -69,44 +69,28 @@ from the World, the facts and the store through the bench's reads that take no p
 **People by login.** Owners, collaborators and an edit's author are given as logins (`Bench.login`); a subject with
 no owner has `None` (`threads.py:login`).
 
-```
-AGENT: amend
-Every refusal has a code beside its detail (docs/api.md, "Errors"). The paragraph's first sentence becomes:
----
 **Errors.** `app.py:STATUSES` maps the bench's `NotFound`, `Ambiguous`, `Conflict`, `MovedOn` and `OverQuota`, and
 the gate's `Refused`, wherever they are raised, with the message as the detail and a code of its own. An
 `HTTPException`, a route's or Starlette's, has the code `app.py:CODES` gives its status, and a request that doesn't
 validate is `unprocessable`.
-```
-**Errors.** `app.py:STATUSES` maps the bench's `NotFound`, `Ambiguous`, `Conflict`, `MovedOn` and `OverQuota`, and
-the gate's `Refused`, wherever they are raised, with the message as the detail. What else a route means it raises as
-an `HTTPException` where it catches it: `threads.py:refused`, around every write, every variation built and a
-proposal, turns a `ValueError` into a 422, letting a `Conflict`, a `MovedOn` and an `OverQuota` through, and a route
-turns a `LookupError` about what its query or body names into a 422. Nothing maps `ValueError` or `LookupError`
-wholesale, so one a route doesn't catch is a 500.
+
+What else a route means it raises as an `HTTPException` where it catches it: `threads.py:refused`, around every write,
+every variation built and a proposal, turns a `ValueError` into a 422, letting a `Conflict`, a `MovedOn` and an
+`OverQuota` through, and a route turns a `LookupError` about what its query or body names into a 422.
+
+Nothing maps `ValueError` or `LookupError` wholesale, so one a route doesn't catch is a 500.
 
 **Models.** Every request and response model derives from `schemas.py:_Schema`: frozen, `extra="forbid"`. A body
 field a model doesn't name is a 422, and so is a query parameter where the query is a model (`Varying`); elsewhere a
 query parameter a route doesn't name is ignored. Components,
 recipes, facts, calls, tool runs and fingerprints are given as the JSON they dump to, not as models of their own.
 
-```
-AGENT: amend
-Built: no browser keeps them (docs/api.md, "Case-derived content").
----
 **Case-derived places.** `families.py:vignette`, `runs.py:items`, `scores.py:items` and a run's stream are the only
 routes that give case-derived content, and each says `Cache-Control: no-store`: the first three through
 `state.py:no_store`, the stream with `state.py:NO_STORE` among its headers.
-```
-**Case-derived places.** `families.py:vignette`, `runs.py:items`, `scores.py:items` and a run's stream are the only
-routes that give case-derived content.
 
 ## app.py
 
-```
-AGENT: replace
-The codes beside the details. "Contents" lists `CODES` beside `STATUSES` then.
----
 ### `STATUSES: dict[type[Exception], tuple[int, Code]]`
 `NotFound` 404 `not_found`, `Ambiguous` 409 `ambiguous`, `Conflict` 409 `conflict`, `MovedOn` 409 `moved_on`,
 `OverQuota` 429 `over_quota`, `Refused` 422 `refused`. Each is answered `Error(detail=str(error), code=code)`.
@@ -115,38 +99,20 @@ The codes beside the details. "Contents" lists `CODES` beside `STATUSES` then.
 The code of an `HTTPException`, a route's or Starlette's own, by its status: 401 `unauthenticated`, 403 `cross_site`,
 404 `not_found`, 405 `not_allowed`, 409 `conflict`, 422 `refused` and 429 `over_quota`; any other is `error`. Its
 headers are kept, as a 401's `WWW-Authenticate`.
-```
-### `STATUSES: dict[type[Exception], int]`
-`NotFound` 404, `Ambiguous` 409, `Conflict` 409, `MovedOn` 409, `OverQuota` 429, `Refused` 422. Each is answered
-`{"detail": str(error)}`.
 
-```
-AGENT: amend
-The last sentence becomes:
----
-The routers of `people.py`, `threads.py`, `families.py`, `world.py` and `runs.py` are mounted under `/api`; the
-handlers of `STATUSES` are added, one of `HTTPException` by `CODES`, and one of `RequestValidationError`, answered 422
-with FastAPI's list of where as the detail and `unprocessable`; and `openapi` is `_with_models`.
-```
 ### `app(inventory: Inventory, facts: Facts, conninfo: str) -> FastAPI`
 A FastAPI app titled `chatddx`, versioned as the installed package is, with its OpenAPI document at
 `/api/openapi.json`, its pages at `/api/docs` and no ReDoc. `state.chatddx` holds an `AppState` of what it was made
-with. The routers of `people.py`, `threads.py`, `families.py`, `world.py` and `runs.py` are mounted under `/api`, the
-handlers of `STATUSES` are added, and `openapi` is `_with_events`.
+with.
 
-```
-AGENT: replace
-Renamed, since it adds the error's model too.
----
+The routers of `people.py`, `threads.py`, `families.py`, `world.py` and `runs.py` are mounted under `/api`; the
+handlers of `STATUSES` are added, one of `HTTPException` by `CODES`, and one of `RequestValidationError`, answered 422
+with FastAPI's list of where as the detail and `unprocessable`; and `openapi` is `_with_models`.
+
 ### `_with_models(made: FastAPI) -> Callable[[], dict[str, Any]]`
 FastAPI's own `openapi`, with the model of each event in `schemas.py:EVENTS`, and `schemas.py:Error`, added to
 `components.schemas`, as pydantic's `models_json_schema` gives them in serialization mode, with references as
 `#/components/schemas/{model}`. They are added on every call, to the document FastAPI keeps.
-```
-### `_with_events(made: FastAPI) -> Callable[[], dict[str, Any]]`
-FastAPI's own `openapi`, with the model of each event in `schemas.py:EVENTS` added to `components.schemas`, as
-pydantic's `models_json_schema` gives them in serialization mode, with references as `#/components/schemas/{model}`.
-They are added on every call, to the document FastAPI keeps.
 
 ## state.py
 
@@ -163,16 +129,12 @@ The app's `AppState`.
 ### `connection(request: Request) -> Iterator[Connection]`
 A dependency: a connection for the request, closed when the request is done with it.
 
-```
-AGENT: add
-At the end of state.py.
----
 ### `NO_STORE`
 `{"Cache-Control": "no-store"}`.
 
 ### `no_store(response: Response) -> None`
 A dependency of the case-derived routes: `NO_STORE` among the response's headers.
-```
+
 ## people.py
 
 | Name | Value |
@@ -207,18 +169,13 @@ A dependency: the session's person.
 ### `bench(request, conn, person) -> Bench`
 A dependency: `Bench(conn, person, inventory, facts)`, with the app's inventory and facts.
 
-```
-AGENT: add
-The cookie set and dropped in one place, for the API's sign-in and sign-out and the portal's
-(agents/wip-portal.md).
----
 ### `keep_cookie(response: Response, token: str) -> None`
 The token set as `COOKIE`: `Max-Age` `settings.SESSION_TTL` in seconds, `Secure`, `HttpOnly`, `SameSite=Lax`,
 `Path=/`.
 
 ### `drop_cookie(response: Response) -> None`
 `COOKIE` deleted with the same attributes.
-```
+
 ### Routes
 
 | Route | Does |
@@ -230,16 +187,11 @@ The token set as `COOKIE`: `Max-Age` `settings.SESSION_TTL` in seconds, `Secure`
 ## schemas.py
 The models' fields are in the OpenAPI document. Besides them:
 
-```
-AGENT: add
-Two rows after `_Schema`'s.
----
-| `Code` | The codes of `app.py:STATUSES` and `app.py:CODES`, `unprocessable` and `error`. |
-| `Error` | A refusal's body: `detail`, a string or a list of where a request doesn't validate, and `code`. |
-```
 | Name | Is |
 | --- | --- |
 | `_Schema` | The base of every model: frozen, `extra="forbid"`. |
+| `Code` | The codes of `app.py:STATUSES` and `app.py:CODES`, `unprocessable` and `error`. |
+| `Error` | A refusal's body: `detail`, a string or a list of where a request doesn't validate, and `code`. |
 | `Me.of(person: Person) -> Me` | The person, with their roles sorted. |
 | `Finding.of(finding: chatddx.factors.base.Finding) -> Finding` | The same finding, field for field. |
 | `Chunk` | `str \| None`, a chunk's digest, described for the OpenAPI document. |
@@ -377,15 +329,10 @@ the trial's first seed), the canary calls of phase `start`, each item's `item.st
 of its turns, and `item.ended`, the canary calls of phase `end`, and, once it finished, `run.finished` with
 `check_run`'s findings and `run.scored` with `Bench.scores_of` when there are any; last, `done` with `halted` `None`.
 
-```
-AGENT: amend
-In the `events` row, `Cache-Control: no-cache` becomes `NO_STORE`; and the `items` row gains: "With `no_store`."
----
-```
 | Route | Does |
 | --- | --- |
 | `start`, `POST /runs` | `_start` for the request's person; a `Job` of the run from `AppState.jobs`, holding its `Running`, with `run.started` put; and `_sent` on a thread of its own. 202, with `Location` the run's path (`url_path_for("run")`) and `run.started`'s data. |
-| `events`, `GET /runs/{run}/events` | `async`. `Bench.run_by_id` (`NotFound`). The job `AppState.jobs` holds for the run, followed (`jobs.py:followed`), else `_told`, replayed (`jobs.py:replayed`), each after the `Last-Event-ID` header's id, else from the first. A `StreamingResponse` of `STREAM`, with `Cache-Control: no-cache` and `X-Accel-Buffering: no`; its description names the events. |
+| `events`, `GET /runs/{run}/events` | `async`. `Bench.run_by_id` (`NotFound`). The job `AppState.jobs` holds for the run, followed (`jobs.py:followed`), else `_told`, replayed (`jobs.py:replayed`), each after the `Last-Event-ID` header's id, else from the first. A `StreamingResponse` of `STREAM`, with `NO_STORE` and `X-Accel-Buffering: no`; its description names the events. |
 | `halt`, `POST /runs/{run}/halt` | `Bench.run_by_id` (`NotFound`), then `Job.halt` of the run's job. `HTTPException(409, "run <run> has nothing under way")` without one, or once it is done. 204. |
 
 ### `run_of(bench, started: RunStarted, finished: bool, unscored: list[str] | None = None) -> schemas.Run` and `detail(bench, run: UUID) -> schemas.RunDetail`
@@ -399,7 +346,7 @@ findings over the trial and canary set `Store.load` gives; each item's `item_of`
 | --- | --- |
 | `runs`, `GET /runs` | `Bench.runs`, kept by `trial`, then by the runs of `Bench.reaching(reaching)` and `Bench.scored_by(scored_by)`, then with `unscored` by those of `Bench.outstanding`, each with its scorers left; the page `[offset:offset + limit]`, `limit` from 1 to 200 and 20 by default; `Store.finished` for the page. |
 | `run`, `GET /runs/{run}` | `detail`. |
-| `items`, `GET /runs/{run}/items` | `Bench.run_by_id`, then each of `Store.run`'s items: `item_of`, with the outcome's why, and the vignette's fingerprint, the call and the turns dumped. |
+| `items`, `GET /runs/{run}/items` | `Bench.run_by_id`, then each of `Store.run`'s items: `item_of`, with `no_store`, the outcome's why, the vignette's fingerprint, the call and the turns dumped. |
 | `rendered_again`, `GET /runs/{run}/rendered-again` | `Bench.run_by_id`, then `Bench.rendered_again` of `Store.run`: each item's key, and why it renders otherwise, or `None`. |
 
 A run is named by a `UUID`, so anything else in its place is a 422.
@@ -485,13 +432,6 @@ done, and `HTTPException(409, "run <run> has something under way")` in place of 
 
 `run.started`, `run.finished`, `run.scoring`, `run.scored`, `error` and `done` are `runs.py`'s and `jobs.py`'s.
 
-```
-AGENT: add
-A sentence at the end of the section.
----
-`chatddx portal` takes the same arguments and serves `chatddx.portal.app.app` the same way, its `SystemExit` saying
-`portal:` (`src/chatddx/cli.py:_serve`; agents/wip-portal.md).
-```
 ## The command
 `chatddx api [--world DIR] [--facts PATH]… [--bind HOST:PORT]` (`src/chatddx/cli.py:_api`): the World, from `--world`
 or `CHATDDX_WORLD`; the bundled facts, the World's and those given; and `--bind`, else `settings.host()` (`HOST`,
@@ -499,19 +439,16 @@ or `CHATDDX_WORLD`; the bundled facts, the World's and those given; and `--bind`
 `HOST:PORT` is `SystemExit("api: bind to HOST:PORT, not '<bind>'")`. `uvicorn.run` serves `app(world.inventory, facts,
 settings.database())`.
 
-```
-AGENT: amend
-`test_people.py`'s row: "the statuses" becomes "the statuses and codes, Starlette's own among them". `test_runs.py`'s
-gains: "the case-derived places, and only they, said not to be stored".
----
-```
+`chatddx portal` takes the same arguments and serves `chatddx.portal.app.app` the same way, its `SystemExit` saying
+`portal:` (`src/chatddx/cli.py:_serve`; agents/wip-portal.md).
+
 ## Tests
 `test/`, marked solidified.
 
 | Module | Holds |
 | --- | --- |
 | `conftest.py` | `template` is `curated`, the test World as init-data lands it; `autocommit`; `alice`, with `PASSWORD`; `served`, the app on the test World's inventory and facts (`chatddx.test.world.world_facts`); `client`, a `TestClient` over `https://testserver`; `signed`, the client with alice's bearer; `bob`, his bearer's header; `bench`, alice's; and the helpers `sign_in` and `bearer`. |
-| `test_people.py` | Signing in and out by bearer and cookie, the same-origin check, validation, the statuses, the OpenAPI document and the command. |
+| `test_people.py` | Signing in and out by bearer and cookie, the same-origin check, validation, the statuses and codes (incl. Starlette's), the OpenAPI document and the command. |
 | `test_threads.py`, `test_families.py`, `test_world.py` | The reads, configurations by purpose, taking expectations, and what bob doesn't see of threads and families; that every read needs a session. |
 | `test_writes.py` | A configuration made from a recipe, and what is refused of one; chunks and expectations written new, edited and forked; a judge written over a judge configuration, and one over a generation configuration refused; what is refused, and with which status; an expectation's findings. |
 | `test_cases.py` | A family's cases, an appendix written for it, a case built of it and replaced by the appendix's edit, and an expectation carried onto the replacement; cases refused; a run naming a case that isn't one. |
@@ -520,7 +457,7 @@ gains: "the case-derived places, and only they, said not to be stored".
 | `test_scorers.py` | The scoring code shipped, as pickers read it; a scorer of the archive's forked with its labels, a view renamed by an edit and the history's labels, and one written new; scorers refused, and labels given where nothing has them. |
 | `test_said.py` | Saying what holds of a thread, sharing it with bob and taking it back; refusals; deleting, listing and reading the deleted thread, and restoring it; a session needed. |
 | `test_variations.py` | Looks, forks and edits; a judge configuration looked at as a judge, with no reach; that a look's queries don't grow with its cases, counted on the test's database (the fixtures create the next test's meanwhile). |
-| `test_runs.py` | Runs, over its own `served` on `world`, the test World on free ports: accepted and told by their events, which stream as they come and go on after an id, and are told from the ledger by an app with nothing of them; refused, a judge configuration's among them; listed, read and not bob's. `listening`, the app under uvicorn on a thread, for a halt as the run streams and for a listener that goes away. |
+| `test_runs.py` | Runs, over its own `served` on `world`, the test World on free ports: accepted and told by their events, which stream as they come and go on after an id, and are told from the ledger by an app with nothing of them; refused... |
 | `test_scores.py` | A judged run's scores, the latest and every one, one by id, and its items with their judge calls; the run scored again when asked, with the scoring's events; what bob can't read; the runs left to score with their scorers, and one leaving the listing once scored; a scoring refused for a run unfinished, a scorer that doesn't apply and a run under way, and halted; a session needed. |
 
 `src/chatddx/conftest.py` holds what the repl's tests share with these: `world`, the test World's inventory on free

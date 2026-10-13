@@ -246,13 +246,6 @@ are listed, each with the scorers it is left to be scored by (see "Reading runs"
 judge said is in the score's items. An unfinished run, a scorer that doesn't apply, and a run nothing applies to are
 refused, and so is a run with something under way.
 
-```
-AGENT: amend
-Built (agents/wip-portal.md, "Below the UI"): a browser keeps what it is sent in its cache unless told not to, and the
-portal's islands read these places in the browser. A sentence after the list.
----
-Each is sent with `Cache-Control: no-store`, so that a browser keeps none of it.
-```
 ## Case-derived content
 What is made from a vignette is shown to whoever signed in, but only in its own places, so that a policy for edges
 can gate those few when clearance has one (agents/wip-clearance.md):
@@ -262,16 +255,13 @@ can gate those few when clearance has one (agents/wip-clearance.md):
 - a run's events: the deltas, the tool runs, why each item ended, and the scoring's items, judge calls and
   findings.
 
+Each is sent with `Cache-Control: no-store`, so that a browser keeps none of it.
+
 Nothing else carries any. Why an item ended can quote the answer, since checking it against a schema names the value
 it refused, so it is in the items and the events only. For the same reason a score gives values, and its detail,
 judge calls and findings are its items'.
 
-```
-AGENT: amend
-Built for the portal (agents/wip-portal.md, decided there): every refusal carries a code beside its detail, so that a
-client tells what happened without reading a sentence, as a form offers the head an edit moved on to. The status
-table stays; the first sentence changes, and a table of the codes follows it.
----
+## Errors
 A refusal's body is `{"detail": "…", "code": "…"}`. The detail says why, or, where a request doesn't validate, lists
 where. The code says what it is:
 
@@ -290,18 +280,6 @@ where. The code says what it is:
 | `error` | any other | |
 
 The OpenAPI document holds the body as the schema `Error`.
-```
-## Errors
-A refusal's body is `{"detail": "…"}`, except where a request doesn't validate: then it lists where.
-
-| Status | When |
-| --- | --- |
-| 401 | No session, one that has ended, or a wrong login or password. |
-| 403 | A cookie's request that changes something, or a sign-in, from another site's page. |
-| 404 | What the path names isn't there or isn't seen by the person, a thread is of another kind than the route takes, a source doesn't hold a vignette, or a thread to edit, follow, carry or say something of isn't the person's. |
-| 409 | Taking an expectation the person has their own of, without saying to replace it; an edit, a follow or a carry whose head has moved on; scoring a run with something under way, and halting one with nothing under way. |
-| 422 | A request that doesn't validate or names a field it shouldn't; a kind that isn't one, or a purpose for what isn't a configuration; a variation the bench refuses; a query or body naming what the person doesn't see; tags no case has; the gate's refusal of a run; taking an expectation that is the person's already; a component the bench refuses, or parts for what isn't a configuration and a component for what is; what is said of a thread that the bench refuses, or of a deleted one; following with nothing to follow; a case of appendices or a replacement the bench refuses; carrying an expectation outside its family; a run naming a case that isn't a current one of a family the person sees; a run of a judge configuration; scoring a run that hasn't finished, by a scorer that doesn't apply to it, or one nothing applies to. |
-| 429 | A person who has typed as many cases as a day takes. |
 
 An edit that changes nothing is answered 200 with the head; what is made is answered 201; a deletion and a halt 204;
 a run or a scoring started 202. What fails once it is under way is an `error` event, not a status. A take for
@@ -366,17 +344,8 @@ its events (see "Where it runs" and "Its events").
   stored by looking. A run may come to name the skeleton its look gave, and be refused when the variation compiles to
   another by then, as an edit names its head.
 - **Scoring**: at once after a run, with an opt-out, and the runs left to score listed.
-```
-AGENT: amend
-Decided and built: the code beside the detail (see "Errors").
----
 - **Errors**: the bench's errors mapped by class, and what else a route means caught where it means it, each answered
   with a code beside its detail (see "Errors").
-```
-- **Errors**: the bench's errors mapped by class, and what else a route means caught where it means it. 409 means
-  three things and 422 many, told apart by their messages. Take: a `code` beside `detail` (`moved_on`, `conflict`,
-  `ambiguous`, `over_quota`, `refused`, `not_found`, `unprocessable`), so that a portal can offer the head an edit
-  moved on to without reading a sentence.
 - **Keeping a variation**: a fork and an edit, two requests, rather than a save by name.
 - **Paths**: under `/api/`, with no version until there is a second.
 
