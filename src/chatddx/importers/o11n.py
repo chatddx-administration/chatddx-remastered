@@ -268,7 +268,7 @@ def _value(value: object) -> str:
             raise TypeError(f"no TOML for {value!r}")
 
 
-def factors_toml(imports: Iterable[Imported]) -> str:
+def engines_toml(imports: Iterable[Imported]) -> str:
     tables: list[str] = []
     for i in imports:
         files = "".join(

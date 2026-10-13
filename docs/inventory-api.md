@@ -58,13 +58,13 @@ them up through a `Resolver` (`get`), such as `Registry.get` or `Store.get`.
 | --- | --- |
 | `LookupError` | A source, endpoint or vignette that isn't there; an id that would reach outside a directory source; an endpoint whose engine `get` doesn't know (the resolver's `StructuralError`, turned into `endpoint '<name>': <its message>`), isn't an engine, or can't be started or reached as the inventory says; a server that doesn't list the engine's served name. |
 | `ValueError` | `Inventory.load`: a top-level key it doesn't know, a table an included file may not hold, a name defined twice. |
-| `pydantic.ValidationError` | An inventory that breaks its own rules: an unknown key, a wrong type, a source named other than its table, an endpoint naming no host, `[cleared]` naming no endpoint or source. Rules written as validators raise `ValueError`, which pydantic wraps. |
+| `pydantic.ValidationError` | An inventory that breaks its own rules: an unknown key, a wrong type, a source named other than its table, an endpoint naming no host, `[cleared]` naming no endpoint or source, `[judge]` binding a judge to no endpoint. Rules written as validators raise `ValueError`, which pydantic wraps. |
 | `tomllib.TOMLDecodeError` (a `ValueError`), `OSError` | `Inventory.load` of a file, or an included file, that isn't TOML or can't be read. |
 | `OSError` | `served` and `confirm` when the server can't be reached, times out or answers with an HTTP error (`urllib.error.URLError`, `HTTPError`); `DirectorySource` for a directory it can't list or a file it can't read, other than a missing one. |
 | `chatddx.factors.base.StructuralError` (a `ValueError`) | `start_up` when the engine's model artifact isn't known to `get` or isn't a model. |
 
 ## The file
-An inventory file is TOML with the top-level keys `include`, `source`, `endpoint`, `host` and `cleared`:
+An inventory file is TOML with the top-level keys `include`, `source`, `endpoint`, `host`, `cleared` and `judge`:
 
 ```toml
 include = ["endpoints.toml"]          # files whose [endpoint] and [host] tables count too
@@ -93,8 +93,8 @@ bind = "127.0.0.1"
 "qwen3-8b-awq@fake" = ["sample"]
 ```
 
-An included file holds only `endpoint` and `host` tables. Sources and `[cleared]` are read only from the inventory's
-own file.
+An included file holds only `endpoint` and `host` tables. Sources, `[cleared]` and `[judge]` are read only from the
+inventory's own file.
 
 ## inventory.py
 
@@ -128,6 +128,7 @@ A location is the host's own, a path or a Hugging Face repo ID, and isn't resolv
 | `endpoints` | `dict[str, EndpointSpec]` | `{}` |
 | `hosts` | `dict[str, HostSpec]` | `{}` |
 | `cleared` | `dict[str, tuple[str, ...]]` | `{}`; endpoint → sources |
+| `judges` | `dict[str, str]` | `{}`; judge → endpoint, from `[judge]` |
 
 A `kind` other than `directory` and `database` is a `ValidationError`.
 
@@ -135,6 +136,7 @@ Building one checks, each a `ValueError` wrapped in `ValidationError`:
 - each source's `name` is its key: `source '<key>' is named '<name>'`;
 - each endpoint's `host`, when set, is a key of `hosts`: `endpoint '<name>' names no host '<host>'`;
 - each key of `cleared` is an endpoint, `cleared names no endpoint '<name>'`, and each of its sources is a source,
+- each judge's endpoint is an endpoint: `judge '<name>' is bound to no endpoint '<endpoint>'`.
   `endpoint '<name>' is cleared for no source <names, joined by ", ">`.
 
 | Member | Returns / raises |
@@ -146,8 +148,8 @@ Building one checks, each a `ValueError` wrapped in `ValidationError`:
 | `cleared_for(endpoint: str) -> frozenset[str]` | The sources `[cleared]` lists for the endpoint; empty when it lists none, also for an endpoint that doesn't exist. |
 
 #### `Inventory.load(path: Path) -> Self`
-1. Reads `path`. `ValueError("<path>: the inventory has only 'include', 'source', 'endpoint', 'host' and 'cleared',
-   not [<keys>]")` for any other top-level key.
+1. Reads `path`. `ValueError("<path>: the inventory has only 'include', 'source', 'endpoint', 'host', 'cleared' and
+   'judge', not [<keys>]")` for any other top-level key.
 2. For each name in `include`, in order, reads `path.parent / name`. `ValueError("<included>: an included inventory
    has only 'endpoint' and 'host' tables, not [<keys>]")` for any other key, `include` included, so includes don't
    nest. `ValueError("<included>: <table> [<names>] are in <path> too")` for a name already read, from `path` or from
@@ -264,8 +266,8 @@ engine's `model` (`served_model_name`). In order:
    name>")`.
 
 ## `world.py`
-`World(path, inventory, factors=(), facts=())`, frozen; `World.load(path)` reads `path / "inventory.toml"` and
-takes `factors.toml` and `facts.toml` beside it when they're files;
+`World(path, inventory, engines=(), facts=())`, frozen; `World.load(path)` reads `path / "inventory.toml"` and
+takes `engines.toml` and `facts.toml` beside it when they're files;
 `LookupError("<path> is no World: it holds no inventory.toml")` without one.
 
 ## `check.py`
@@ -284,7 +286,7 @@ shared addresses, hosts, clearance. A finding's subject is the endpoint's or the
 | `cleared.not_sensitive` | info | an endpoint is cleared for a source that isn't sensitive |
 
 ## Worlds
-A World is a directory with `inventory.toml`, the files it includes, and `factors.toml`, the models and engines its
+A World is a directory with `inventory.toml`, the files it includes, and `engines.toml`, the models and engines its
 endpoints serve. `worlds/` holds two:
 
 | World | Sources | Endpoints | Hosts | `[cleared]` |
@@ -292,7 +294,7 @@ endpoints serve. `worlds/` holds two:
 | `worlds/sample/` | `sample`, `path = "vignettes"`, sensitive | `qwen3-8b-awq@fake` (port 12099), `gpt-oss-20b@fake` (port 12100), `max_jobs = 4` | `fake`: `bind = "127.0.0.1"`, models by repo ID, the empty template at `/dev/null` | both endpoints for `sample` |
 | `worlds/kompismoln/` | `sample`, `path = "../sample/vignettes"`, sensitive | from `endpoints.toml`: `qwen3-8b@pelle` (`max_jobs = 1`), `gpt-oss-20b@malborg` (`max_jobs = 4`) | from `endpoints.toml`: `pelle`, `malborg`, `bind = "::"` | both endpoints for `sample` |
 
-`endpoints.toml` and `factors.toml` in `worlds/kompismoln/` are what `chatddx import-engine` writes.
+`endpoints.toml` and `engines.toml` in `worlds/kompismoln/` are what `chatddx import-engine` writes.
 
 `test/test_serving.py:test_the_sample_world_binds_each_fake_engine_the_sample_loads` asserts the check finds
 nothing in the sample World against the sample's plan.

@@ -6,6 +6,7 @@ from chatddx.core.rig import rig
 from chatddx.curation import Plan, load_cases, plan_factors
 from chatddx.factors.request import Compilation, Skeleton
 from chatddx.facts import BUNDLED, Facts
+from chatddx.inventory import Inventory, World
 from chatddx.test.world import DATA
 
 pytestmark = pytest.mark.solidified
@@ -14,14 +15,16 @@ pytestmark = pytest.mark.solidified
 def plan(tmp_path: Path, **files: str) -> Plan:
     for name, text in files.items():
         _ = (tmp_path / name.replace("_", "-")).with_suffix(".toml").write_text(text)
-    return plan_factors(tmp_path, Facts.load(BUNDLED), rig())
+    engines = (tmp_path / "engines.toml",) if "engines" in files else ()
+    world = World(tmp_path, Inventory(), engines=engines)
+    return plan_factors(tmp_path, Facts.load(BUNDLED), rig(), world)
 
 
 def test_from_facts_records_follow_the_models_the_engines_serve(
     tmp_path: Path,
 ) -> None:
-    factors = tmp_path / "factors.toml"
-    _ = factors.write_text(
+    engines = tmp_path / "engines.toml"
+    _ = engines.write_text(
         """
 [remote_engine."qwen@api"]
 provider = "example"
@@ -30,7 +33,11 @@ model = "Qwen/Qwen3-8B-AWQ"
 [remote_engine."gemma@api"]
 provider = "example"
 model = "google/gemma-3-27b-it"
-
+"""
+    )
+    factors = tmp_path / "factors.toml"
+    _ = factors.write_text(
+        """
 [prompt.case]
 segments = [{ slot = "vignette" }]
 
@@ -46,7 +53,8 @@ output = "raw"
 sampling = "recommended"
 """
     )
-    plan = plan_factors(tmp_path, Facts.load(BUNDLED), rig())
+    world = World(tmp_path, Inventory(), engines=(engines,))
+    plan = plan_factors(tmp_path, Facts.load(BUNDLED), rig(), world)
     assert [(r.table, r.name) for r in plan.records] == [
         ("remote_engine", "qwen@api"),
         ("remote_engine", "gemma@api"),
@@ -95,8 +103,8 @@ def test_texts_are_written_by_language_and_recipes_made_in_each(
 ) -> None:
     planned = plan(
         tmp_path,
-        factors=ENGINE
-        + NEUTRAL
+        engines=ENGINE,
+        factors=NEUTRAL
         + """
 [recipe.plan]
 prompt = "case"
@@ -163,13 +171,13 @@ entries = { "Fill in the plan." = "Fyll i planen." }
 def test_a_fork_forks_its_origin_in_the_one_language_it_has(tmp_path: Path) -> None:
     planned = plan(
         tmp_path,
-        factors=ENGINE
+        engines=ENGINE
         + """
 [remote_engine."gpt-oss@api"]
 provider = "example"
 model = "openai/gpt-oss-20b"
-"""
-        + NEUTRAL
+""",
+        factors=NEUTRAL
         + """
 [reasoning.off]
 from_facts = { effort = "off" }
@@ -230,8 +238,8 @@ def test_a_fork_whose_origin_has_other_languages_is_refused(tmp_path: Path) -> N
     ):
         _ = plan(
             tmp_path,
-            factors=ENGINE
-            + NEUTRAL
+            engines=ENGINE,
+            factors=NEUTRAL
             + """
 [recipe.plan]
 instructions = "intro"
@@ -294,6 +302,98 @@ def test_texts_are_refused_where_they_say_the_wrong_thing(
 ) -> None:
     with pytest.raises(ValueError, match=refusal):
         _ = plan(tmp_path, **files)
+
+
+LAID_OUT = """
+[recipe.plan]
+prompt = "case"
+output = "plan"
+sampling = "greedy"
+translations = "ui"
+appendix_layout = { before = "\\n\\nAppendices:\\n" }
+"""
+GROUPED = """
+[translations.ui.of]
+"output.plan" = [{ text = "Fill in the plan.", translation = "Fyll i planen." }]
+"recipe.plan" = [{ text = "\\n\\nAppendices:\\n", translation = "\\n\\nBilagor:\\n" }]
+"""
+
+
+def test_translations_are_grouped_by_the_record_whose_texts_they_translate(
+    tmp_path: Path,
+) -> None:
+    files = {"engines": ENGINE, "factors": NEUTRAL + LAID_OUT, "texts_en": ENGLISH}
+    planned = plan(tmp_path, **files, texts_sv=GROUPED)
+    skeleton = planned.registry.get(planned.named("recipe", "plan (sv)").digest)
+    assert isinstance(skeleton, Skeleton)
+    assert str(skeleton.messages[0].content[0]) == "Fyll i planen."
+    assert skeleton.appendix_layout.before == "\n\nBilagor:\n"
+
+    flat = tmp_path / "flat"
+    flat.mkdir()
+    entries = """
+[translations.ui.entries]
+"Fill in the plan." = "Fyll i planen."
+"\\n\\nAppendices:\\n" = "\\n\\nBilagor:\\n"
+"""
+    as_entries = plan(flat, **files, texts_sv=entries)
+    assert (
+        as_entries.named("translations", "ui (sv)").digest
+        == planned.named("translations", "ui (sv)").digest
+    )
+
+
+@pytest.mark.parametrize(
+    ("of", "refusal"),
+    [
+        (
+            '"output.plan" = [{ text = "Fill in the old plan.", translation = "x" }]',
+            "translations.ui: output.plan holds no text 'Fill in the old plan.'",
+        ),
+        (
+            '"output.raw" = [{ text = "Fill in the plan.", translation = "x" }]',
+            "translations.ui: output.raw holds no text 'Fill in the plan.'",
+        ),
+        (
+            '"prompt.case" = [{ text = "x", translation = "x" }]',
+            "'prompt.case' names no output, toolset or recipe",
+        ),
+        (
+            '"output.nope" = [{ text = "x", translation = "x" }]',
+            "'output.nope': no output named 'nope'",
+        ),
+        (
+            '"output.plan" = [{ text = "Fill in the plan." }]',
+            "output.plan: each entry is a text and its translation",
+        ),
+        (
+            '"output.plan" = [{ text = "Fill in the plan.", translation = "Fyll i." }, '
+            + '{ text = "Fill in the plan.", translation = "Fyll i planen." }]',
+            "'Fill in the plan.' is translated two ways",
+        ),
+    ],
+)
+def test_grouped_translations_are_refused_where_they_say_the_wrong_thing(
+    tmp_path: Path, of: str, refusal: str
+) -> None:
+    files = {"engines": ENGINE, "factors": NEUTRAL + LAID_OUT, "texts_en": ENGLISH}
+    with pytest.raises(ValueError, match=refusal):
+        _ = plan(tmp_path, **files, texts_sv=f"[translations.ui.of]\n{of}\n")
+    both = '[translations.ui]\nentries = { "Fill in the plan." = "Fyll i planen." }\n'
+    with pytest.raises(ValueError, match="give its entries or its `of`, not both"):
+        _ = plan(tmp_path, **files, texts_sv=both + "[translations.ui.of]\n")
+
+
+def test_engines_are_the_world_s_and_only_engines_are(tmp_path: Path) -> None:
+    with pytest.raises(
+        ValueError, match="remote_engine tables are the World's, in its"
+    ):
+        _ = plan(tmp_path, factors=ENGINE)
+    with pytest.raises(
+        ValueError,
+        match="holds only model, local_engine, remote_engine tables, not sampling",
+    ):
+        _ = plan(tmp_path, factors="", engines=ENGINE + "[sampling.greedy]\n")
 
 
 def test_cases_are_kept_by_language(tmp_path: Path) -> None:

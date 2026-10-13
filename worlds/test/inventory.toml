@@ -12,3 +12,8 @@ kind = "database"
 "gpt-oss@fake" = ["test", "typed"]
 "mistral@fake" = ["test", "typed"]
 "qwen3-bare@fake" = ["test"]
+
+[judge]
+verdict = "qwen3@fake"
+graded = "qwen3@fake"
+remote = "unknown@remote"

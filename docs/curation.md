@@ -23,7 +23,13 @@ The archive is never wiped.
 A data set is a directory of authored files: a `factors.toml`, the texts in `texts-<language>.toml` files, the cases
 in `cases-<language>.toml` files, and the files they load, such as JSON schemas.
 
-A World may carry one beside its vignettes, in `_data/`: the leading `_` says the World itself doesn't read it, and
+A record holds text the model reads, which language it is in, and whether it is a record or a case.
+What a data set can't hold, engines and which engine judges, is its World's (docs/inventory.md, "Worlds").
+
+A World may carry one beside its vignettes, in `_data/`: the leading `_` is because in chatddx, a world has belongings.
+a world is everything
+outside of chatddx, but things in `_data` and
+it, and
 init-data loads it unless `--data` names another.
 
 The sample World carries the sample (worlds/sample/_data/), Kompismoln's World loads it with
@@ -39,10 +45,11 @@ Both kinds of file hold one table per kind of component, keyed by name, whose ke
 On top of the fields:
 - **References by name.** A toolset's tools, a scorer's expectation schema and a view's judge, a local engine's model
   and a recipe's parts name records, not digests.
-- **Judges.** A judge names a `recipe` and an `engine` of the World, and takes the recipe's variant for the model the
-  engine serves, in the recipe's language (`language` picks one when it is written in several). A judge whose engine
-  the World doesn't have, or whose recipe has no variant for its model, is skipped and reported, and so is every
-  scorer whose views name it. A judge's skeleton may not have tools.
+- **Judges.** A judge names a `recipe`, its `seeds` and its `fill`, and no engine: the World binds it to an endpoint
+  (docs/inventory.md, "Judges"), whose engine judges. It takes the recipe's variant for the model that engine serves,
+  in the recipe's language (`language` picks one when it is written in several). A judge the World binds to no
+  endpoint, or whose recipe has no variant for its model, is skipped and reported, and so is every scorer whose views
+  name it; a binding for a judge the data set doesn't have is reported too. A judge's skeleton may not have tools.
 - **Files.** `json_schema_path` loads a JSON file, relative to the file that names it, in place of `json_schema`.
 - **Forks.** `fork_of` names a record of the same kind that this one is a variation of. It is loaded as a fork of
   that record's thread, so the catalog knows what it varies (docs/catalog.md, "Forks"). It inherits no fields. Each
@@ -59,9 +66,15 @@ On top of the fields:
   label of the edit the scorer is kept with, so a renamed view is a new edit of the same scorer. A tool's
   `description` is also a field, the one the model reads.
 - **From facts.** `from_facts` asks for a sampling or reasoning chunk per model (see "Per model").
+- **Translations by record.** A translations chunk's entries may be written in `of`, grouped by the record whose texts
+  they translate, an output, a toolset or a recipe's appendix layout, each entry a `text` and its `translation`:
+  `[[translations.sample.of."output.management-plan"]]`. Loading makes them the chunk's `entries`, and refuses a text
+  its record doesn't hold, so an entry no text uses any more is found. A text that several records hold is written
+  once, under any of them. Missing texts still fail the compilation of the recipe that needs them.
 
-A name is defined once per kind across `factors.toml` and the World's, and a text's name may come back in each texts
-file, as the same text in another language.
+A name is defined once per kind, and a text's name may come back in each texts file, as the same text in another
+language. A data set's `factors.toml` holds no `model`, `local_engine` or `remote_engine` table: engines are the World's
+(see "The World").
 
 ### Texts
 What the model reads is written in a language, and a texts file's name gives it: every text in `texts-sv.toml` is
@@ -82,12 +95,12 @@ written only in another language is taken from there, and the recipe's translati
 a recipe without them there is skipped and reported. In the language its output and toolset are written in, it needs
 no translations and is made without them. A recipe that names no text is made once, as before.
 
-The sample is written in English, and one recipe in Swedish too. Its six outputs with guidance, its toolset, and
-`free-text-guided`'s instructions and worked example are in `texts-en.toml`, and every recipe is made in English. The
-instructions and the example are written again in `texts-sv.toml`, with translations of every text its outputs and
-toolset hold, schemas included, so `free-text-guided` is made in Swedish too, its output translated. A trial of an
-English recipe on the Swedish cases is linted as mixing languages, which is what a trial of an English request on a
-Swedish case is; the sample's translations, set in a variation, carry any of its recipes into Swedish.
+The sample is written in English, and one recipe in Swedish too. Its outputs, toolset and judge are in
+`texts-en.toml`, and every recipe is made in English. `free-text-guided`'s instructions and worked example are written
+again in `texts-sv.toml`, with translations of every text its outputs and toolset hold, schemas included, so
+`free-text-guided` is made in Swedish too, its output translated. A trial of an English recipe on the Swedish cases is
+linted as mixing languages, which is what a trial of an English request on a Swedish case is; the sample's
+translations, set in a variation, carry any of its recipes into Swedish.
 
 ### Cases
 A case may have appendices, `[case.<id>.appendices]`, texts by name, each kept as a thread named by its name and told
@@ -97,8 +110,7 @@ Line endings are made LF before an appendix is digested, as every edge does.
 
 A cases file holds `[case.<id>]` tables, keyed by the vignette's id at the source. A case has `tags`, entries on its
 family, and `targets`, its expectation, which must fit the data set's one expectation schema. A case is in exactly one
-file, and the file's name gives its language: every case in `cases-sv.toml` is in Swedish. The sample has 79 English
-and 20 Swedish cases.
+file, and the file's name gives its language: every case in `cases-sv.toml` is in Swedish.
 
 Splitting by language rather than tagging each case keeps a language's cases together, as they will be translated,
 scored and compared together: a case runs in the language it was written in (docs/catalog.md, "Languages"). Notes in
@@ -114,10 +126,10 @@ planned first for this reason.
 
 ## The World
 A World is a directory (docs/inventory.md, "Worlds"). Loading reads its `inventory.toml` for the source of the cases'
-vignettes, and takes its `factors.toml`, the engines and models its endpoints serve, with the data set's, and its
-`facts.toml`, facts about models the bundled facts don't know, with the bundled ones. So the sample World's fake
-engines are loaded only with the sample World, and a World that serves a model of its own brings what is known
-about it.
+vignettes and the endpoints its judges are bound to, and takes its `engines.toml`, the models and engines its endpoints
+serve and nothing else, with the data set's factors, and its `facts.toml`, facts about models the bundled facts don't
+know, with the bundled ones. So the sample World's fake engines are loaded only with the sample World, and a World
+that serves a model of its own brings what is known about it.
 
 The World is `--world DIR`, or by default the directory `CHATDDX_WORLD` names. The repl reads the same World, for its
 endpoints, vignettes and facts.
@@ -126,12 +138,12 @@ A loading ends with the inventory checked against the engines just planned, all 
 each endpoint would refuse, and what is likely a slip (docs/inventory.md, "Checks happen when an entry is used").
 
 ## Loading
-`chatddx init-data USER [--world DIR] [--source NAME] [--giftbag] [--data DIR] [--factors FILE …] [--facts PATH …]`
+`chatddx init-data USER [--world DIR] [--source NAME] [--giftbag] [--data DIR] [--facts PATH …]`
 loads a data set, the World's `_data/` unless `--data` names another, for the archive, and shares it with USER,
 who is added when missing. It connects as the writer and does everything in one transaction. It prints a line for each
 thing it comes to.
 
-1. **Plan.** The data set, the World's factors and any more `--factors` are planned into components, without the
+1. **Plan.** The data set and the World's engines are planned into components, without the
    store: references resolved, per-model records written, recipes made per language and compiled, texts and entry
    points checked. A data set that can't be planned is refused before anything is written.
 2. **Records.** Each planned record becomes a thread named after it. A record the archive already has, by kind and
@@ -185,8 +197,7 @@ writes an entry per gift and per share and no thread.
 Wiping covers all a person owns, their runs and their own threads included, not only what loading gave them.
 
 ## Tests
-src/chatddx/curation/test/, marked `solidified`, but for the tests of the test World itself and of every World, which
-agents/wip-test-world.md plans and which are marked `wip`.
+src/chatddx/curation/test/, marked `solidified`.
 
 - The tests run on the test World (worlds/test/, its data set in worlds/test/_data/), built so that each of its
   records exercises something a test reads. Its paths, the names tests share and the helpers they import are in
@@ -197,20 +208,19 @@ agents/wip-test-world.md plans and which are marked `wip`.
   `migrated`, `db`), with a stand-in source whose vignettes are a line of text each
   (src/chatddx/curation/test/cases.py). The command tests read the test World itself, or a copy they edit.
 - A load writes every record of the data set, so every test that loads is marked `slow`.
+- `test_tables.py` reads a case's appendices and the cases that send them, refuses what they say wrongly, and lands
+  them and a canary set from the test World.
+
+The Worlds' content is tested beside the names tests share, in src/chatddx/test/:
 - `test_the_test_world.py` pins what the test World plans, skips and lints, and the quirks its vignettes carry.
 - `test_worlds.py` checks every World in `worlds/`: each endpoint serves the engine planned under its name,
   init-data binds each World's endpoints and leaves the others' engines out, every target's pattern reads, the fake
   vLLM answers each skeleton as its contract asks or refuses it exactly when a `vllm.*` lint says vLLM would, and what
   it writes holds to each data set's schemas.
-- `test_tables.py` reads a case's appendices and the cases that send them, refuses what they say wrongly, and lands
-  them and a canary set from the test World.
-- `test_sample.py` holds what is true of the sample alone: and uses every table a data set and a World can hold at least
-  once, as the example new Worlds follow.
+- `test_sample.py` holds what is true of the sample alone, and that it uses every table a data set and a World can
+  hold at least once, as the example new Worlds follow.
 
-`api`, `bench` and `repl` start from the test World as init-data lands it, with alice and her giftbag. It is loaded
-once per session, and only when one of those tests asks for it (src/chatddx/conftest.py, `curated`). Each test of the
-packages whose conftest overrides `template` with `curated` (api, bench, repl) gets a copy of it. The runner's and the
-store's tests start from the migrated store, as curation's do.
+The first two are marked `wip`, as agents/wip-test-world.md plans them; `test_sample.py` is `solidified`.
 
 ## Terms
 
@@ -245,7 +255,6 @@ Curation is the place for the rest of the store's authored content to come and g
 
 ### What a data set can't hold yet
 Trials, executions, scorings and hand-written skeletons have no tables, and a data set has one expectation schema.
-A canary set is the next asked for (agents/wip-runner.md).
 
 ### Picking a variant by the case's language
 The bench picks a configuration's variant by the model the engine it runs on serves, and by language only when there
@@ -259,3 +268,10 @@ only by its name today; what recording it would take is in agents/wip-variants.m
 - **A rename isn't followed into the data.** After repair-data, loading says the old id is missing until the data set
   names the new one.
 - **The runner and the engine import don't run the inventory check** that loading does.
+
+## Outstanding
+- **Staging data.** The sample is curated for preliminary calibration, and everything in it can be considered
+  guessed: its targets, the appendices and `dont_miss` targets made up so that every table is used, its judge,
+  drafted before Olof's, and its translations. Data meant to be relied on needs its stage said in code, not in
+  comments: whether it is guessed or vetted, by whom, and where it came from, loaded with the data so that a score can
+  say what it rests on.

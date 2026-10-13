@@ -169,6 +169,26 @@ def test_an_inventory_says_which_sources_an_endpoint_is_cleared_for(
         _ = Inventory.load(path)
 
 
+def test_an_inventory_binds_each_judge_to_an_endpoint(tmp_path: Path) -> None:
+    engine = "sha256:" + "c" * 64
+    imported = tmp_path / "imported.toml"
+    _ = imported.write_text(
+        f'[endpoint.qwen]\nengine = "{engine}"\nurl = "http://pelle.km:12009/v1/"\n'
+    )
+    path = tmp_path / "inventory.toml"
+    _ = path.write_text('include = ["imported.toml"]\n\n[judge]\nverdict = "qwen"\n')
+    assert Inventory.load(path).judges == {"verdict": "qwen"}
+    _ = path.write_text('include = ["imported.toml"]\n\n[judge]\nverdict = "other"\n')
+    with pytest.raises(
+        ValidationError, match="judge 'verdict' is bound to no endpoint 'other'"
+    ):
+        _ = Inventory.load(path)
+    _ = imported.write_text(imported.read_text() + '\n[judge]\nverdict = "qwen"\n')
+    _ = path.write_text('include = ["imported.toml"]\n')
+    with pytest.raises(ValueError, match="has only 'endpoint' and 'host' tables"):
+        _ = Inventory.load(path)
+
+
 def test_a_start_up_joins_the_engine_with_where_its_host_keeps_things() -> None:
     reg = Registry()
     model, engine = local(reg, "--max-model-len", "8192")

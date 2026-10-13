@@ -23,8 +23,8 @@ https://github.com/chatddx-administration/chatddx/blob/504792cbeb09508f2c52912be
    (`agents/wip-authoring.md`), the worker (`agents/wip-worker.md`), the batch planner (`agents/wip-batch.md`), and Z1.
 5. **Decided: the batch planner and the worker are planned apart**, in `agents/wip-batch.md` and
    `agents/wip-worker.md`, around one contract (`agents/wip-worker.md`, "The contract").
-6. **Sample runs**, genuine runs answered by a script, are test data for every edge, the portal's among them
-   (`agents/wip-sample-data.md`, "Sample runs").
+6. **Scripted runs**, genuine runs answered by a script, are test data for every edge, the portal's among them
+   (`docs/scripted.md`).
 7. **Dependencies**: `jinja2` and `python-multipart` are in `pyproject.toml`.
 
 ## The old portal
@@ -151,8 +151,7 @@ Take:
   old portal's were.
 - Islands: through the API's tests for what they call. A browser test (Playwright, with the container's Chromium)
   once an island holds logic worth testing on its own.
-- Sample runs give the pages genuine runs to show: typical, broken and rich (`agents/wip-sample-data.md`, "Sample
-  runs").
+- Scripted runs give the pages genuine runs to show: the sample World's ten (`docs/scripted.md`, "The runs").
 
 ## Below the UI
 What the portal needs below its pages:

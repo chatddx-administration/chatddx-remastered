@@ -5,7 +5,16 @@ import pytest
 from chatddx.factors.base import resolve
 from chatddx.factors.lint import lint
 from chatddx.factors.scoring import Judge
-from chatddx.test.world import QWEN, QWEN_MODEL, REMOTE, copied, edit, world_plan
+from chatddx.test.world import (
+    GPT_OSS,
+    GPT_OSS_MODEL,
+    QWEN,
+    QWEN_MODEL,
+    REMOTE,
+    copied,
+    edit,
+    world_plan,
+)
 
 pytestmark = pytest.mark.solidified
 
@@ -42,24 +51,49 @@ def test_a_judge_takes_its_recipe_s_variant_for_its_engine_s_model() -> None:
     assert remote.engine == plan.named("remote_engine", REMOTE).digest
 
 
-def test_a_judge_on_an_engine_the_world_lacks_is_skipped_and_so_is_its_scorer(
+def test_a_judge_takes_its_engine_from_the_endpoint_the_world_binds_it_to(
+    tmp_path: Path,
+) -> None:
+    world = copied(tmp_path)
+    edit(world / "inventory.toml", 'graded = "qwen3@fake"', f'graded = "{GPT_OSS}"')
+    plan = world_plan(world, world / "_data")
+    graded = resolve(plan.registry.get, plan.named("judge", "graded").digest, Judge)
+    assert (graded.skeleton, graded.engine) == (
+        plan.named("recipe", f"judge-graded (en, {GPT_OSS_MODEL})").digest,
+        plan.named("local_engine", GPT_OSS).digest,
+    )
+
+
+def test_a_judge_the_world_doesn_t_bind_is_skipped_and_so_is_its_scorer(
     tmp_path: Path,
 ) -> None:
     world = edited(
         tmp_path,
-        'engine = "qwen3@fake"\nseeds = [1]\n',
-        'engine = "nowhere@fake"\nseeds = [1]\n',
-    )
-    edit(
-        world / "_data" / "factors.toml",
         "[expectation_schema.targets]",
         SCORER + "\n[expectation_schema.targets]",
     )
+    edit(
+        world / "inventory.toml", 'verdict = "qwen3@fake"\n', 'nobody = "qwen3@fake"\n'
+    )
     plan = world_plan(world, world / "_data")
-    assert "judge verdict: the World has no engine nowhere@fake" in plan.skipped
+    assert "judge verdict: the World binds it to no endpoint" in plan.skipped
     assert "scorer noted: judge verdict isn't planned" in plan.skipped
+    assert (
+        "judge nobody: the World binds it to qwen3@fake, but the data has none"
+        in plan.skipped
+    )
     with pytest.raises(LookupError):
         _ = plan.named("judge", "verdict")
+
+
+def test_a_judge_names_no_engine_of_its_own(tmp_path: Path) -> None:
+    world = edited(
+        tmp_path, "[judge.verdict]\n", f'[judge.verdict]\nengine = "{QWEN}"\n'
+    )
+    with pytest.raises(
+        ValueError, match="judge.verdict: a judge's engine is the World"
+    ):
+        _ = world_plan(world, world / "_data")
 
 
 def test_a_view_naming_no_judge_is_refused(tmp_path: Path) -> None:

@@ -217,7 +217,7 @@ Each kind is described by:
 | Trial | Its skeleton, its engine, and how many cases and seeds it has. | `plan on qwen3-8b@pelle, 20 cases, 1 seed` |
 | Batch | Variation count, its base, case count, and endpoint. | `4 variations of plan, 20 cases, at qwen3-8b@pelle` |
 | Judge | Its skeleton and engine. | `judge grader on qwen3-8b@pelle` |
-| Scorer | Its entry point and version. | `scorer chatddx.scorers.metrics:score v1` |
+| Scorer | Its entry point and version. | `scorer chatddx.scorers.metrics:score v2` |
 | Expectation schema | Its title or its properties. | `Targets` |
 | Canary set | How many canaries it has. | `2 canaries` |
 | Anything with nothing better to go by | Its kind and the start of its digest. | `compilation 1a2b3c` |
@@ -379,6 +379,16 @@ writes at the same moment can leave a person several expectations to choose from
   the origin's current head, while what the fork varies is measured from the base.
 - **Following can drop a fork's renamed view.** Labels follow the views the proposal keeps, so a fork that only
   renamed a view, and follows an origin whose views it keeps, takes the origin's labels.
+- **A repair moves the current binding only.** Cases and appendices bound to an earlier binding of the family aren't
+  rebuilt at the new place (docs/catalog-api.md, "families.py").
+- **Not all a model reads is in the request's language.** Chat templates add English of their own (default system
+  prompts, harmony's channel instructions, tool-call scaffolding), and reasoning is often English whatever the
+  prompt. The same text also takes another number of tokens in Swedish than in English, so budgets confound a
+  comparison between languages.
+- **Languages are said, not checked.** Nothing compares a language with the text, and one can be replaced, so an
+  analysis split by language should freeze them at export, as titles. A scorer that needs the language, for stemming,
+  synonyms or an ontology, takes it from the expectation data or its resources, which are factors, not from the
+  catalog at scoring time.
 - **Judges aren't checked for language.** A judge's language could be compared with the cases its scoring grades, the
   way lints check a trial's. An English judge grading Swedish answers may be intended, so it would be a notice rather
   than a warning.

@@ -1,13 +1,3 @@
-# The old inventory's English cases (chatddx 7893656, src/chatddx/data/cases.toml), with the `# guessed` markers
-# dropped: the targets are treated as live data. Keys are the vignettes' file names at the source, `targets` is each
-# case's expectation (schemas/targets.json), and `tags` are entries on its family, as is this file's language. The
-# Swedish cases are in cases-sv.toml.
-#
-# `targets.notes` are Olof's comments, added to the ends of vignettes after 7893656 (chatddx 13d317d: Dutchfall11w,
-# and casesfromedn1 in cases-sv.toml; 504792c: Dutchfall1w). They're taken out as written, in Swedish, with the
-# "Chatddx:" block as the note's `answer`; only the headings, line endings and trailing spaces are dropped. The
-# vignettes stay as they were at 7893656.
-
 [case.DutchFall10w]
 tags = ["dutch-fall"]
 targets.diagnosis.pattern = "biliary & (colic | stone*)"

@@ -9,7 +9,7 @@ from .inventory import Inventory
 class World:
     path: Path
     inventory: Inventory
-    factors: tuple[Path, ...] = ()
+    engines: tuple[Path, ...] = ()
     facts: tuple[Path, ...] = ()
 
     @classmethod
@@ -20,6 +20,6 @@ class World:
         return cls(
             path=path,
             inventory=Inventory.load(inventory),
-            factors=tuple(p for p in [path / "factors.toml"] if p.is_file()),
+            engines=tuple(p for p in [path / "engines.toml"] if p.is_file()),
             facts=tuple(p for p in [path / "facts.toml"] if p.is_file()),
         )

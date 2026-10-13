@@ -1,8 +1,8 @@
 # vLLM
 vLLM is used for running local models within our control. `chatddx.fake_vllm` is a fake vLLM 0.24, started as
-`chatddx fake-vllm [--delay S] [--runaway] MODEL [vllm serve's flags]`. It reads `vllm serve`'s own flags, so it can
-stand in for vLLM on the same command line (`src/chatddx/fake_vllm/served.py:Served.of`), and its tests pin the
-items below (`src/chatddx/fake_vllm/test/`).
+`chatddx fake-vllm [--delay S] [--runaway] [--script PATH] MODEL [vllm serve's flags]`. It reads `vllm serve`'s own
+flags, so it can stand in for vLLM on the same command line (`src/chatddx/fake_vllm/served.py:Served.of`), and its
+tests pin the items below (`src/chatddx/fake_vllm/test/`).
 
 ## vLLM 0.24 discoveries
 1. ChatCompletionResponse.prompt_token_ids is a top-level list[int] | None, set only when request.return_token_ids is true:
@@ -167,6 +167,8 @@ A request goes `server.py` → `chat.py:accept`, which refuses it or picks the s
 decides a `Reply` → `chat.py:completion` or `chat.py:stream`, which shape it. `served.py:Served` is the server's
 set-up, read once from the command line. Paths are relative to `src/chatddx/fake_vllm/`.
 
+Tested in `test/test_fake_engines.py`.
+
 `chatddx fake-engines [--world DIR] [--delay S] [--runaway] [ENDPOINT …]` serves the endpoints named, or every
 endpoint of the World, each on a server of its own where its start-up says, till Ctrl-C, with `fake-vllm`'s `--delay`
 and `--runaway`. It refuses an endpoint whose engine's runtime closure isn't `chatddx fake-vllm`. A remote engine's
@@ -181,9 +183,10 @@ Each entry is one emulated behaviour, then a line with:
 - the tests that pin it (`src/chatddx/fake_vllm/test/`), or `untested`.
 
 The sections follow the sections of `test/test_fake_vllm.py`; "HTTP" is `test/test_fake_vllm_server.py`. Two tests
-cut across them: `test_it_answers_every_sample_skeleton_as_its_contract_asks` renders every sample skeleton for both
-sample models, served as the old inventory served them, and checks each answer against its contract and schema;
-`test_a_tool_round_goes_from_the_toolset_to_the_answer_tool` runs a tool round through `next_request`.
+cut across them: `src/chatddx/test/test_worlds.py:test_each_fake_answers_each_skeleton_or_refuses_it_as_vllm_would`
+renders every skeleton of every World for each of its fake endpoints, and checks each answer against its contract and
+schema, or the fake's refusal against the `vllm.*` lints; `test_a_tool_round_goes_from_the_toolset_to_the_answer_tool`
+runs a tool round through `next_request`.
 
 ### Serving
 - **Flag spelling.** `_` reads as `-` up to the first `.`, `--flag=value` works, the last of a repeated flag wins,
@@ -289,7 +292,7 @@ sample models, served as the old inventory served them, and checks each answer a
   item 4
     · `chat.py:instance`, `chat.py:_turn`, `chat.py:_resolve`
     · `test_what_it_writes_follows_references_unions_and_counts`
-    · `test_what_it_writes_holds_to_the_sample_s_schemas`,
+    · `src/chatddx/test/test_worlds.py:test_what_the_fake_writes_holds_to_each_data_set_s_schemas`,
     · `test_seeded_examples.py:test_a_schema_s_examples_are_picked_by_the_seed_unless_greedy`
 
 ### Tools
@@ -381,14 +384,17 @@ sample models, served as the old inventory served them, and checks each answer a
 - **Won't start.** A refused set-up exits with `the fake vLLM won't start: …`.
   item 19 · `server.py:run` · `test_the_command_won_t_start_what_vllm_wouldn_t`
 - **Several models.** `server.server` serves several `Served`, picked by name; `chatddx fake-vllm` serves one.
-  fake · `server.py:server`, `chat.py:pick` · `test_it_answers_every_sample_skeleton_as_its_contract_asks`
+  fake · `server.py:server`, `chat.py:pick` ·
+  `src/chatddx/test/test_worlds.py:test_each_fake_answers_each_skeleton_or_refuses_it_as_vllm_would` (picked through
+  `accept`; untested over HTTP)
 
 ### Scripts
 `chatddx fake-vllm --script PATH`, or `serving(…, script=…)`, answers each chat request with the next `[[turn]]` of a
 TOML script instead of deciding the reply itself, after the same checks. A turn has `reasoning`, `content`,
 `tool_calls` (each a `name` and `arguments`, a table or a JSON string), `finish`, `runaway` (newlines after the
-content), `hang_up` (events sent before the server goes away) and `status` (an error answered instead, `content` its
-message); a request past the last turn gets 500. A file may hold other keys; the fake reads only `turn`.
+content), `hang_up` (tokens streamed before the server goes away; an unstreamed request gets no answer) and `status`
+(an error answered instead, `content` its message); a request past the last turn gets 500. A file may hold other keys;
+the fake reads only `turn`.
 - **Turns in order.** Each request takes the next turn, streamed or not, as `chat.py:stream` and
   `chat.py:completion` shape a reply. Its finish is `finish`, else `length` after a runaway, `tool_calls` with calls,
   `stop` otherwise.
@@ -420,8 +426,6 @@ message); a request past the last turn gets 500. A file may hold other keys; the
 - Unchecked against vLLM: gpt-oss without any parser answers `analysis…assistantfinal…`, taking Harmony's channel
   markers to be special tokens skipped in detokenizing; and Harmony with a tool parser but no reasoning parser still
   separates the reasoning.
-- Nothing yet runs the factors' `vllm.*` lints and the fake on the same cases, which would catch the two drifting
-  apart.
 
 ### Extending
 1. If it's vLLM's behaviour, pin it first: add it as the next item under "vLLM 0.24 discoveries", with permalinks into

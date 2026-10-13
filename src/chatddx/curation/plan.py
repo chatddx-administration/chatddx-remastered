@@ -1,7 +1,7 @@
 import json
 import re
 import tomllib
-from collections.abc import Collection, Mapping, Sequence
+from collections.abc import Collection, Mapping
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, cast
@@ -16,6 +16,7 @@ from chatddx.factors.engine import LocalEngine, ModelArtifact, RemoteEngine
 from chatddx.factors.request import (
     RECIPE_PARTS,
     TRANSLATED,
+    AppendixLayout,
     FewShot,
     Instructions,
     Output,
@@ -33,6 +34,7 @@ from chatddx.factors.request import (
 from chatddx.factors.scoring import ExpectationSchema, Judge, Scorer
 from chatddx.factors.trial import CanarySet
 from chatddx.facts import INTENTS, Effort, Facts, Refused, model_name
+from chatddx.inventory import World
 from chatddx.scorers.shipped import SCORERS, problems
 from chatddx.tools.shipped import TOOLS
 
@@ -47,9 +49,10 @@ TABLES: dict[str, type[Component]] = {
     "sampling": Sampling,
     "reasoning": Reasoning,
     "passthrough": Passthrough,
-    "translations": Translations,
     "tool": Tool,
     "toolset": Toolset,
+    # After the records whose texts its entries are grouped by.
+    "translations": Translations,
     "expectation_schema": ExpectationSchema,
     "scorer": Scorer,
     "canary_set": CanarySet,
@@ -58,6 +61,7 @@ ENGINE_TABLES = ("model", "local_engine", "remote_engine")
 # Planned after recipes and judges, as a view may name a judge.
 LATE_TABLES = ("scorer",)
 PLANNED_TABLES = (*TABLES, "recipe", "judge")
+DATA_TABLES = tuple(t for t in PLANNED_TABLES if t not in ENGINE_TABLES)
 # The tables whose records pin shipped code, with what the running code ships.
 SHIPPED: dict[str, Mapping[str, Versioned]] = {"tool": TOOLS, "scorer": SCORERS}
 # References outside recipes, by table and field: each names records of another table.
@@ -103,6 +107,10 @@ TEXT_TABLES = frozenset(
     {"instructions", "few_shot", "prompt", "output", "toolset", "translations"}
 )
 _TEXTS = re.compile(r"^texts-(.+)\.toml$")
+
+
+def _short(text: str) -> str:
+    return repr(text if len(text) <= 60 else text[:57] + "…")
 
 
 def _named(name: str, key: Key) -> str:
@@ -230,15 +238,26 @@ def _texts(data: Path) -> dict[str, dict[str, dict[str, JsonValue]]]:
 
 
 def plan_factors(
-    data: Path, facts: Facts, compiler: Code, more: Sequence[Path] = ()
+    data: Path, facts: Facts, compiler: Code, world: World | None = None
 ) -> Plan:
     factors = data / "factors.toml"
-    found = _records(factors, _read(factors), PLANNED_TABLES)
-    for extra in more:
-        for table, records in _records(extra, _read(extra), PLANNED_TABLES).items():
+    written = _read(factors)
+    if held := sorted(set(written) & set(ENGINE_TABLES)):
+        raise ValueError(
+            f"{factors}: {', '.join(held)} tables are the World's, in its engines.toml"
+        )
+    found = _records(factors, written, DATA_TABLES)
+    for path in () if world is None else world.engines:
+        written = _read(path)
+        if stray := sorted(set(written) - set(ENGINE_TABLES)):
+            raise ValueError(
+                f"{path}: an engines file holds only {', '.join(ENGINE_TABLES)} "
+                + f"tables, not {', '.join(stray)}"
+            )
+        for table, records in _records(path, written, ENGINE_TABLES).items():
             known = found.setdefault(table, {})
             if twice := sorted(set(known) & set(records)):
-                raise ValueError(f"{extra}: {table} {twice} are named before it too")
+                raise ValueError(f"{path}: {table} {twice} are named before it too")
             known.update(records)
     # Each table's records by name, then by language: None for factors.toml's.
     bodies: dict[str, dict[str, dict[str | None, JsonValue]]] = {
@@ -292,6 +311,62 @@ def plan_factors(
             )
         return None if found is None else found.name
 
+    # The texts a translations record in `language` may translate, of the record named.
+    def texts_of(record: str, language: str | None) -> set[str]:
+        table, _, name = record.partition(".")
+        if table == "recipe" and name in bodies.get("recipe", {}):
+            raw = bodies["recipe"][name][None]
+            assert isinstance(raw, dict)
+            try:
+                layout = AppendixLayout.model_validate(raw.get("appendix_layout", {}))
+            except ValidationError as e:
+                raise ValueError(f"recipe.{name}: {e}") from None
+            return {
+                t for t in (layout.before, layout.between, layout.after) if t.strip()
+            }
+        if table not in ("output", "toolset", "recipe"):
+            raise ValueError(f"{record!r} names no output, toolset or recipe")
+        if (variants := planned.get((table, name))) is None:
+            raise ValueError(f"{record!r}: no {table} named {name!r}")
+        get = plan.registry.get
+        return {
+            text
+            for (written, _), r in variants.items()
+            if written != language
+            for text in own_texts(get(r.digest), get)
+        }
+
+    def grouped(name: str, language: str | None, of: object) -> dict[str, JsonValue]:
+        where = f"translations.{name}"
+        match of:
+            case dict():
+                groups = cast(dict[str, object], of)
+            case _:
+                raise ValueError(f"{where}: `of` is a table of records and their texts")
+        entries: dict[str, JsonValue] = {}
+        for record, pairs in groups.items():
+            try:
+                texts = texts_of(record, language)
+            except ValueError as e:
+                raise ValueError(f"{where}: {e}") from None
+            listed = cast(list[object], pairs) if isinstance(pairs, list) else [pairs]
+            for pair in listed:
+                match pair:
+                    case {
+                        "text": str() as text,
+                        "translation": str() as translation,
+                    } if len(cast(dict[str, object], pair)) == 2:
+                        pass
+                    case _:
+                        raise ValueError(
+                            f"{where}: {record}: each entry is a text and its translation"
+                        )
+                if text not in texts:
+                    raise ValueError(f"{where}: {record} holds no text {_short(text)}")
+                if entries.setdefault(text, translation) != translation:
+                    raise ValueError(f"{where}: {_short(text)} is translated two ways")
+        return entries
+
     def plan_table(table: str, models: list[str]) -> None:
         kind = TABLES[table]
         for name, written in bodies.get(table, {}).items():
@@ -308,6 +383,13 @@ def plan_factors(
                 else:
                     description = body.pop("description", None)
                 fork_of = body.pop("fork_of", None)
+                if table == "translations" and "of" in body:
+                    if "entries" in body:
+                        raise ValueError(
+                            f"{where}: translations.{name}: give its entries or its "
+                            + "`of`, not both"
+                        )
+                    body["entries"] = grouped(name, language, body.pop("of"))
                 for field_name, target in REFERENCES.get(table, {}).items():
                     match body.get(field_name):
                         case str() as one:
@@ -426,19 +508,34 @@ def plan_factors(
         add("recipe", name, variants)
 
     engines = {
-        r.name: r for r in plan.records if r.table in ("local_engine", "remote_engine")
+        r.digest: r
+        for r in plan.records
+        if r.table in ("local_engine", "remote_engine")
     }
-    for name, raw in found.get("judge", {}).items():
+    bound = {} if world is None else world.inventory.judges
+    judges = found.get("judge", {})
+    for name, raw in judges.items():
         assert isinstance(raw, dict)
         body = dict(raw)
+        if "engine" in body:
+            raise ValueError(
+                f"judge.{name}: a judge's engine is the World's, which binds the judge "
+                + "to an endpoint in its inventory's [judge] table"
+            )
         tags = _tags(body.pop("tags", []))
         description = body.pop("description", None)
-        recipe, engine = str(body.pop("recipe", "")), str(body.pop("engine", ""))
+        recipe = str(body.pop("recipe", ""))
         language = body.pop("language", None)
         if (recipes := planned.get(("recipe", recipe))) is None:
             raise ValueError(f"judge.{name}: no recipe named {recipe!r}")
-        if (at := engines.get(engine)) is None:
-            plan.skipped.append(f"judge {name}: the World has no engine {engine}")
+        if world is None or (endpoint := bound.get(name)) is None:
+            plan.skipped.append(f"judge {name}: the World binds it to no endpoint")
+            add("judge", name, {})
+            continue
+        if (at := engines.get(world.inventory.endpoint(endpoint).engine)) is None:
+            plan.skipped.append(
+                f"judge {name}: endpoint {endpoint} serves no engine the World has"
+            )
             add("judge", name, {})
             continue
         written = sorted({k[0] for k in recipes if k[0] is not None})
@@ -451,7 +548,7 @@ def plan_factors(
         key = (str(language) if language else (written or [None])[0], model)
         if (skeleton := _pick(recipes, key)) is None:
             plan.skipped.append(
-                f"judge {name}: recipe.{recipe} has no variant for {model} on {engine}"
+                f"judge {name}: recipe.{recipe} has no variant for {model} at {endpoint}"
             )
             add("judge", name, {})
             continue
@@ -472,6 +569,10 @@ def plan_factors(
             description=None if description is None else str(description),
         )
         add("judge", name, {ALL: judged})
+    for name in sorted(set(bound) - set(judges)):
+        plan.skipped.append(
+            f"judge {name}: the World binds it to {bound[name]}, but the data has none"
+        )
 
     for table in LATE_TABLES:
         plan_table(table, models)
@@ -544,7 +645,7 @@ class Ordered:
 
 
 @dataclass(frozen=True)
-class SampleCase:
+class DataCase:
     tags: tuple[str, ...]
     language: str
     targets: JsonValue
@@ -585,8 +686,8 @@ def _ordered(where: str, value: object, appendices: Mapping[str, str]) -> Ordere
     return Ordered(tuple(listed), cast(JsonValue, held.get("targets")))
 
 
-def load_cases(data: Path) -> dict[str, SampleCase]:
-    cases: dict[str, SampleCase] = {}
+def load_cases(data: Path) -> dict[str, DataCase]:
+    cases: dict[str, DataCase] = {}
     where: dict[str, Path] = {}
     for path in sorted(data.glob("cases*.toml")):
         named = _CASES.match(path.name)
@@ -615,7 +716,7 @@ def load_cases(data: Path) -> dict[str, SampleCase]:
             )
             if len({o.appendices for o in ordered}) != len(ordered):
                 raise ValueError(f"{path}: case.{id}: a case with appendices is twice")
-            cases[id] = SampleCase(
+            cases[id] = DataCase(
                 tags=tuple(case.get("tags", ())),
                 language=language,
                 targets=case.get("targets"),

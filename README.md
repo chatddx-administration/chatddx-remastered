@@ -79,8 +79,9 @@ pytest -m "not slow"    # the quick run, under 30 s
 pytest -m solidified    # what docs/ describes; -m wip for what agents/wip-*.md plans
 ```
 
-### The sample World
-`worlds/sample` serves two fake vLLM engines on this machine. Load the sample data and share it with alice:
+### The sample world
+`worlds/sample` serves two fake vLLM engines on this machine, and a stand-in for a remote one. Load the sample data
+and share it with alice:
 ```sh
 chatddx init-data alice --giftbag
 ```
@@ -100,10 +101,10 @@ quit
 ```
 The run streams the fake's answer, scores it and records it.
 
-For runs to look at, with what can go wrong among them, run the sample World's samples instead, without
+For runs to look at, with what can go wrong among them, run the sample World's scripted runs instead, without
 `fake-engines` running (they serve their own fakes):
 ```sh
-chatddx samples alice     # each once; --again runs them again, and names pick some
+chatddx scripted-runs alice   # each once; --again runs them again, and names pick some
 chatddx repl alice
 ```
 ```text
@@ -117,8 +118,8 @@ On the Kompismoln VPN, ask pelle and malborg what they serve:
 curl -s http://pelle.km:12009/v1/models
 curl -s http://malborg.km:12009/v1/models
 chatddx import-engine http://pelle.km:12008/ http://malborg.km:12008/ \
-  --factors /tmp/factors.toml --endpoints /tmp/endpoints.toml
-git diff --no-index worlds/kompismoln/factors.toml /tmp/factors.toml
+  --engines /tmp/engines.toml --endpoints /tmp/endpoints.toml
+git diff --no-index worlds/kompismoln/engines.toml /tmp/engines.toml
 git diff --no-index worlds/kompismoln/endpoints.toml /tmp/endpoints.toml
 ```
 No diff means the hosts still serve the engines `worlds/kompismoln` pins. Both are cleared for the sample's

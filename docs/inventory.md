@@ -1,19 +1,18 @@
 # Inventory
 
-The inventory is a set of files that ops write that say which directory holds a source's vignettes, at which address an
-engine is served, and where a host keeps the model files and chat template an engine pins.
+The inventory says which directory holds a source's vignettes, at which address an engine is served, where a host keeps
+the model files and chat template an engine pins.
 
 Until clearance has a pipeline of its own, the inventory also says which endpoints may receive content from which
-sensitive sources.
+sensitive sources. It also says at which endpoint each of a data set's judges judges.
 
-One thing that sounds like a location is a factor, though: a source's name, which every case built from it carries.
+Heads-up: The location the vignette sources is a factor! Everything else is not.
 
 The inventory isn't stored in the database, and its history is git's. A run records the endpoint it used, by name and
 address (docs/ledger.md, "Run start").
 
 This document describes what the inventory says and why. Classes, fields, rules and errors are in the API,
-docs/inventory-api.md. The inventory builds on the factors and nothing else. init-data, the engine import and the
-runner read it.
+docs/inventory-api.md. The `inventory` builds on the `factors` and nothing else.
 
 ## The file
 An inventory is a file of named entries: sources, endpoints, hosts, and the clearance table. An entry's name is its
@@ -23,23 +22,47 @@ own files are the host's (see "Hosts").
 ### Includes
 An inventory can include other files, whose endpoints and hosts count as its own. Includes keep what the engine
 import writes apart from what people write, so an import can rewrite its file whole. An included file holds only
-endpoints and hosts: it can't include another file, add a source or clear an endpoint, so importing again can't either.
-A name is defined once, across the inventory and everything it includes.
+endpoints and hosts: it can't include another file, add a source, clear an endpoint or bind a judge, so importing again
+can't either. A name is defined once, across the inventory and everything it includes.
 
 ### What loading checks
 Loading checks what the files themselves show: that each endpoint's host is defined, that the clearance table names
-endpoints and sources that exist, and that each source is named by its table. Anything that needs the engines is
-checked when an entry is used (see "Checks happen when an entry is used").
+endpoints and sources that exist, that each judge is bound to an endpoint that exists, and that each source is named
+by its table. Anything that needs the engines is checked when an entry is used (see "Checks happen when an entry is
+used").
 
 ### Worlds
-A World is handed over as its directory, `--world DIR`, and read as its `inventory.toml` and, when present,
-`factors.toml` and `facts.toml`, facts about models the bundled ones don't know, loaded beside them by init-data
-and the repl (src/chatddx/inventory/world.py, src/chatddx/cli.py). A World may also hold its source's vignettes,
-when git may hold them, and a data set whose cases name them, in `_data/`: the leading `_` marks what the World
-doesn't read and doesn't own, and init-data takes it with `--data`.
+In chatddx, a world is technically only the parameters beyond chatddx's control, but the directories `worlds/*` also
+contain the data this repository carries for this world. The non-world data is in directories prefixed with `_`.
 
-`CHATDDX_WORLD` names the deployment's World directory and is the default `--world` of `init-data` and the `repl`
-(src/chatddx/core/settings.py:world, `.env`). The runner is handed its inventory by the bench, as before.
+Command line tools take `--world DIR` or fall back to `CHATDDX_WORLD`.
+
+The directory must contain an `inventory.toml` and may contain the others, see table.
+
+| File | Author | Holds |
+| --- | --- | --- |
+| `inventory.toml` | ops, by hand | sources, clearance, and which endpoint judges each judge |
+| `endpoints.toml` | the engine import (by hand for fakes), included | endpoints and hosts |
+| `engines.toml` | the engine import (by hand for fakes) | models, local engines, remote engines |
+| `facts.toml` | whoever adds a model the bundled facts don't know | facts about models |
+| `vignettes/` | the source's owner | a directory source's vignettes, when git may hold them |
+| `_data/` | researchers and clinicians | the data set (docs/curation.md, "Data sets") |
+| `_runs/` | developers | scripted runs (docs/scripted.md) |
+
+```
+worlds/<name>/
+  inventory.toml   sources, clearance, judges bound to endpoints, include = ["endpoints.toml"]
+  endpoints.toml   endpoints and hosts
+  engines.toml     models, local engines, remote engines
+  facts.toml       facts about models the bundled facts don't know
+  vignettes/       a directory source's vignettes, when git may hold them
+  _data/
+    factors.toml       chunks without text, tools, the expectation schema, scorers, judges, recipes, canary sets
+    texts-<lang>.toml  chunks that hold text, in that language; translations grouped by record
+    cases-<lang>.toml  cases in that language, with tags, targets, appendices and the cases that send them
+    schemas/           the JSON files the factors load
+  _runs/           scripted runs
+```
 
 A World may point into another. An include or a source's path can reach another World's directory, so one World can
 take another's vignettes or endpoints without copying them.
@@ -56,11 +79,11 @@ This repository has three, in `worlds/`:
   `endpoints.toml` as an engine import writes it, a remote engine's endpoint with a credential, which `chatddx
   fake-engines` stands in for, and the facts of the remote engine's model. Every endpoint is cleared for the sample.
 
-- Kompismoln's World: the hosts pelle and malborg. Its inventory is written by hand and takes the sample World's
-  vignettes; its endpoints, hosts and factors are what the engine import writes from the hosts' reports. Both
-  endpoints are cleared for the sample.
+- Kompismoln's World: the hosts pelle and malborg. Its inventory is written by hand, takes the sample World's
+  vignettes, and binds the sample's judges to pelle and malborg; its endpoints, hosts and engines are what the engine
+  import writes from the hosts' reports. Both endpoints are cleared for the sample.
 
-src/chatddx/curation/test/test_worlds.py fails when a World's engines change and its endpoints don't.
+src/chatddx/test/test_worlds.py fails when a World's engines change and its endpoints don't.
 
 ## Sources
 A source is where a set of vignettes is fetched from, by id. A source is a directory with one file per vignette,
@@ -115,6 +138,16 @@ stands in until clearance has a database grant, and what it permits is clearance
 endpoints"). It is read only from the inventory's own file (see "Includes"). Clearing an endpoint is a person's
 statement, so no command writes it.
 
+## Judges
+The judge table binds each of a data set's judges, by name, to the endpoint whose engine judges it:
+`[judge] verdict = "qwen3-8b@pelle"`. Which engine judges is the World's choice, as the endpoint a run goes to is,
+so a data set's judges are planned with the engines of the World they are loaded into, and a World that binds none of
+them leaves them and their scorers out (docs/curation.md, "Factors"). Like clearance, a binding is read only from the
+inventory's own file, and no command writes it.
+
+A judge a person writes names its engine itself (docs/bench.md, "Components"), and the scoring pass finds the endpoint
+that serves a judge's engine either way (docs/runner.md, "Judges").
+
 ## Starting and reaching an engine
 An endpoint is joined with the engine it serves and, for a local engine, with the host that runs it. When the
 inventory or the engine falls short of what that needs, starting or reaching the endpoint is refused with the reason.
@@ -145,8 +178,8 @@ engine's values come from its host, not from people: the engine import reads eac
 factors and the inventory entries together.
 
 For each server, the import writes the model artifact, the local engine, the endpoint, and where the host keeps the
-model and the template, all named server@host after the report's host name. The factors go to a file `init-data` takes
-beside the data's, and the endpoints and hosts to a file an inventory includes. Both files are rewritten whole, so to
+model and the template, all named server@host after the report's host name. The models and engines go to the World's
+`engines.toml`, and the endpoints and hosts to a file an inventory includes. Both files are rewritten whole, so to
 change them, import again rather than edit.
 
 The endpoint's address is the report's, or a host name given in its place, with the server's port. The host's
@@ -193,6 +226,7 @@ The import's findings have the engine's digest as subject:
 | Location | Where a host keeps a file, written the way the host reads it. |
 | Start-up | What the start-up script runs for one endpoint: vLLM's arguments, the environment and the runtime. |
 | Include | A file whose endpoints and hosts an inventory takes as its own. |
+| Bound | A data set's judge, given the endpoint whose engine judges it. |
 | Cleared | An endpoint's permission, for now, to receive content from a sensitive source. |
 | Confirm | Asking an endpoint's server whether it serves the endpoint's engine, before content goes out. |
 
@@ -226,3 +260,6 @@ it, and the import would then confirm what was started rather than describe it.
   names.
 - **The capacity holds per run.** Two runs on one endpoint can send twice as many requests between them. vLLM queues
   what's over its limit, so nothing fails, but the batching differs from what each run's execution says.
+- **Model files aren't checked against the hub.** huggingface_hub keeps the commit's file listing from the download
+  (`<repo>/trees/<commit>.json`): the hub's SHA-256 of each LFS file and the git blob hash of the rest. The report
+  could compare every file it hashes with it, offline. The import takes the host's hashes as they are.

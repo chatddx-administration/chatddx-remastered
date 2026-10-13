@@ -5,7 +5,7 @@ import pytest
 from chatddx.tools.shipped import TOOLS
 from chatddx.tools.web_search import web_search
 
-pytestmark = pytest.mark.wip
+pytestmark = pytest.mark.solidified
 
 
 def test_each_shipped_entry_point_names_the_function_it_ships() -> None:

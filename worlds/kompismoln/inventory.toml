@@ -7,3 +7,7 @@ sensitive = true
 [cleared]
 "qwen3-8b@pelle" = ["sample"]
 "gpt-oss-20b@malborg" = ["sample"]
+
+[judge]
+verdict = "qwen3-8b@pelle"
+graded = "gpt-oss-20b@malborg"

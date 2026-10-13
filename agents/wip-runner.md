@@ -12,9 +12,10 @@ kept version 1 for it (`docs/ledger.md`, "Tool rounds" and "Canonical form and v
 "Decided" means the user said so. "Take" is the agent's recommendation and still open.
 
 ## Elsewhere
-- **`chatddx samples`** back on the runner: `agents/wip-sample-data.md`, "Sample runs".
+- **Scripted runs**, `chatddx scripted-runs` on the bench: `docs/scripted.md`.
 - **Resuming** and **`max_jobs` across runs**: `agents/wip-worker.md`, "Below the worker".
-- **No canary set is seeded** (`docs/runner.md`, "Smaller issues"); `docs/curation.md` points here for it.
+- **No run sends a canary set** (`docs/runner.md`, "Smaller issues"): data sets hold them now, and `Bench.start`
+  passes none.
 - **The gate's cases only the test World reaches aren't read by a test**: `qwen3-bare@fake` not cleared for `typed`,
   and `unknown@remote` cleared for nothing, with its secret unset (`agents/wip-test-world.md`, "Not read yet"). The
   gate's tests edit the inventory instead (`runner/test/test_run.py`).

@@ -11,7 +11,7 @@ from referencing.jsonschema import UnknownDialect, specification_with
 from .base import Component, Finding, resolve
 from .bundle import Registry
 from .engine import LocalEngine, ModelArtifact, flag_names
-from .request import NativeOutput, Skeleton, ToolOutput
+from .request import NativeOutput, Output, Skeleton, ToolOutput
 from .scoring import Expectation, ExpectationSchema, Judge, Scorer
 from .select import reaches
 from .trial import Trial
@@ -105,6 +105,18 @@ def _expectation_schema(
             pass
 
 
+def _output(c: Output, _: Registry) -> Iterable[Finding]:
+    if c.json_schema is None:
+        return
+    match _validator(c.json_schema):
+        case str() as message:
+            yield Finding(
+                code="output.schema_invalid", message=message, subject=c.digest
+            )
+        case _:
+            pass
+
+
 def _expectation(
     c: Expectation, registry: Registry, known: Validators
 ) -> Iterable[Finding]:
@@ -142,6 +154,23 @@ def _has_ref(node: JsonValue) -> bool:
             return False
 
 
+def _tools_with_refs(skeleton: Skeleton) -> list[str]:
+    answer = (
+        skeleton.contract.name if isinstance(skeleton.contract, ToolOutput) else None
+    )
+    tools = skeleton.body.get("tools")
+    named: list[str] = []
+    for t in tools if isinstance(tools, list) else []:
+        match t:
+            case {"function": {"name": str() as name, "parameters": parameters}} if (
+                name != answer and _has_ref(parameters)
+            ):
+                named.append(name)
+            case _:
+                pass
+    return named
+
+
 def _choice(choice: JsonValue) -> str:
     match choice:
         case {"function": {"name": str() as name}}:
@@ -177,6 +206,13 @@ def _runtime(
                 code="schema.ref_unverified",
                 message="the schema has $ref, which this engine isn't known to "
                 + "resolve; inline_refs@1 removes them",
+                subject=subject,
+            )
+        for name in _tools_with_refs(skeleton):
+            yield Finding(
+                code="schema.ref_unverified",
+                message=f"the parameters of tool {name!r} have $ref, which this "
+                + "engine isn't known to resolve",
                 subject=subject,
             )
         return
@@ -294,6 +330,8 @@ def lint(
                 findings.extend(_engine(c, registry))
             case Scorer() as c:
                 findings.extend(_scorer(c, registry))
+            case Output() as c:
+                findings.extend(_output(c, registry))
             case ExpectationSchema() as c:
                 findings.extend(_expectation_schema(c, registry, known))
             case Expectation() as c:

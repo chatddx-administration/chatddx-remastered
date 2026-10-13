@@ -24,7 +24,7 @@ from chatddx.identity import Role
 from chatddx.importers.o11n import (
     Imported,
     endpoints_toml,
-    factors_toml,
+    engines_toml,
     imported,
     read,
 )
@@ -33,7 +33,13 @@ from chatddx.ledger import RunStarted
 from chatddx.repl.loop import HISTORY, loop
 from chatddx.repl.shell import Repl, console
 from chatddx.runner.gate import Refused
-from chatddx.samples import RUNS, fake_at, ran_before, run as run_sample, samples
+from chatddx.scripted import (
+    RUNS,
+    fake_at,
+    ran_before,
+    run as run_scripted,
+    scripted_runs,
+)
 from chatddx.store.migrate import TOP_TIER, migrate, pending
 from chatddx.store.people import People
 from chatddx.store.store import Store
@@ -93,10 +99,9 @@ def _init_data(args: argparse.Namespace) -> None:
         raise SystemExit(
             f"init-data: {world.path} has no {DATA}/: give a data set with --data DIR"
         )
-    more = [*world.factors, *(args.factors or ())]
     try:
         facts = Facts.load(BUNDLED, *world.facts, *(args.facts or ()))
-        plan = plan_factors(data, facts, rig(), more=more)
+        plan = plan_factors(data, facts, rig(), world)
         cases = load_cases(data)
     except ValueError as e:
         raise SystemExit(f"init-data: {e}") from None
@@ -171,7 +176,7 @@ def _import_engine(args: argparse.Namespace) -> None:
             ]
         if missing := sorted(set(args.server or ()) - {i.server for i in imports}):
             raise LookupError(f"no report has a server {', '.join(missing)}")
-        factors, endpoints = factors_toml(imports), endpoints_toml(imports)
+        engines, endpoints = engines_toml(imports), endpoints_toml(imports)
     except (OSError, LookupError, ValueError) as e:
         raise SystemExit(f"import-engine: {e}") from None
     for i in imports:
@@ -180,15 +185,15 @@ def _import_engine(args: argparse.Namespace) -> None:
                 f"[import {f.level}] {i.name}: {f.code}: {f.message}", file=sys.stderr
             )
     written = f"# Written by `{' '.join(['chatddx import-engine', *args.reports])}`.\n"
-    _ = args.factors.write_text(
+    _ = args.engines.write_text(
         written
         + "# The models and engines its hosts serve; import again rather than edit.\n"
         + f"# Where they're served: {args.endpoints.name}.\n\n"
-        + factors
+        + engines
     )
     _ = args.endpoints.write_text(
         written
-        + f"# Where the engines in {args.factors.name} are served, and where their hosts\n"
+        + f"# Where the engines in {args.engines.name} are served, and where their hosts\n"
         + "# keep what they pin; import again rather than edit. A World inventory\n"
         + "# includes it.\n\n"
         + endpoints
@@ -211,18 +216,20 @@ def _repl(args: argparse.Namespace) -> None:
             raise SystemExit(1)
 
 
-def _samples(args: argparse.Namespace) -> None:
-    world = _world("samples", args.world)
+def _scripted_runs(args: argparse.Namespace) -> None:
+    world = _world("scripted-runs", args.world)
     try:
-        held = samples(world.path / RUNS)
+        held = scripted_runs(world.path / RUNS)
         facts = Facts.load(BUNDLED, *world.facts)
     except ValueError as e:
-        raise SystemExit(f"samples: {e}") from None
-    if unknown := sorted(set(args.sample) - {s.name for s in held}):
-        raise SystemExit(f"samples: no sample {', '.join(unknown)} in {world.path}")
-    chosen = [s for s in held if not args.sample or s.name in args.sample]
+        raise SystemExit(f"scripted-runs: {e}") from None
+    if unknown := sorted(set(args.name) - {s.name for s in held}):
+        raise SystemExit(
+            f"scripted-runs: no scripted run {', '.join(unknown)} in {world.path}"
+        )
+    chosen = [s for s in held if not args.name or s.name in args.name]
     if not chosen:
-        raise SystemExit(f"samples: {world.path} has no {RUNS}/*.toml")
+        raise SystemExit(f"scripted-runs: {world.path} has no {RUNS}/*.toml")
     with psycopg.connect(settings.database(), autocommit=True) as conn:
         person = People(conn).find(args.login)
         if person is None:
@@ -230,20 +237,20 @@ def _samples(args: argparse.Namespace) -> None:
                 f"no person {args.login!r}: chatddx init-data {args.login} adds them"
             )
         bench = Bench(conn, person, world.inventory, facts)
-        for sample in chosen:
+        for scripted in chosen:
             try:
-                before = None if args.again else ran_before(bench, sample)
-                started = before or run_sample(bench, sample)
+                before = None if args.again else ran_before(bench, scripted)
+                started = before or run_scripted(bench, scripted)
             except OSError as e:
                 raise SystemExit(
-                    f"samples: {sample.name}: {e}; the samples serve their own fakes, "
-                    + "so chatddx fake-engines must not be running"
+                    f"scripted-runs: {scripted.name}: {e}; scripted runs serve their "
+                    + "own fakes, so chatddx fake-engines must not be running"
                 ) from None
             except (LookupError, ValueError, Refused) as e:
-                raise SystemExit(f"samples: {sample.name}: {e}") from None
+                raise SystemExit(f"scripted-runs: {scripted.name}: {e}") from None
             said = "ran before as" if before else "ran as"
             print(
-                f"[sample {sample.name}] {_ran(bench, started)}, {said} run "
+                f"[scripted run {scripted.name}] {_ran(bench, started)}, {said} run "
                 + str(started.run)[:8]
             )
 
@@ -325,7 +332,7 @@ def main(argv: Sequence[str] | None = None) -> None:
 
     init = commands.add_parser(
         "init-data",
-        help="load the sample data into the archive and share it with a person",
+        help="load a data set into the archive and share it with a person",
     )
     _ = init.add_argument(
         "user", help="the login to share the archive with, added when missing"
@@ -334,7 +341,7 @@ def main(argv: Sequence[str] | None = None) -> None:
         "--world",
         type=Path,
         help="the World directory: its inventory.toml locates the vignettes and "
-        + "endpoints, and its factors.toml and facts.toml are loaded with the data's "
+        + "endpoints, and its engines.toml and facts.toml are loaded with the data's "
         + "(CHATDDX_WORLD)",
     )
     _ = init.add_argument(
@@ -350,12 +357,6 @@ def main(argv: Sequence[str] | None = None) -> None:
         type=Path,
         help="what to load: a directory with factors.toml and cases-<language>.toml "
         + f"(the World's {DATA}/)",
-    )
-    _ = init.add_argument(
-        "--factors",
-        type=Path,
-        action="append",
-        help="more factors to load with the data's and the World's",
     )
     _ = init.add_argument(
         "--facts",
@@ -416,11 +417,11 @@ def main(argv: Sequence[str] | None = None) -> None:
         + "URL's, or else the host's name)",
     )
     _ = imp.add_argument(
-        "--factors",
+        "--engines",
         type=Path,
         required=True,
-        help="the factors file to write the models and engines to, such as "
-        + "worlds/kompismoln/factors.toml, which init-data loads with its World",
+        help="the engines file to write the models and engines to, such as "
+        + "worlds/kompismoln/engines.toml, which init-data loads with its World",
     )
     _ = imp.add_argument(
         "--endpoints",
@@ -458,24 +459,26 @@ def main(argv: Sequence[str] | None = None) -> None:
     )
     shell.set_defaults(run=_repl)
 
-    sampled = commands.add_parser(
-        "samples",
-        help="run the World's sample runs (_runs/*.toml) for a person, each answered by "
-        + "the fake vLLM from its script, and score them",
+    scripted = commands.add_parser(
+        "scripted-runs",
+        help="run the World's scripted runs (_runs/*.toml) for a person, each answered "
+        + "by the fake vLLM from its script, and score them",
     )
-    _ = sampled.add_argument("login", help="whose runs they are")
-    _ = sampled.add_argument(
-        "--world", type=Path, help="the World whose samples to run (CHATDDX_WORLD)"
+    _ = scripted.add_argument("login", help="whose runs they are")
+    _ = scripted.add_argument(
+        "--world",
+        type=Path,
+        help="the World whose scripted runs to run (CHATDDX_WORLD)",
     )
-    _ = sampled.add_argument(
+    _ = scripted.add_argument(
         "--again",
         action="store_true",
-        help="run a sample whose trial the person has a run of already",
+        help="run a scripted run whose trial the person has a run of already",
     )
-    _ = sampled.add_argument(
-        "sample", nargs="*", help="the samples to run, by name (every one)"
+    _ = scripted.add_argument(
+        "name", nargs="*", help="the scripted runs to run, by name (every one)"
     )
-    sampled.set_defaults(run=_samples)
+    scripted.set_defaults(run=_scripted_runs)
 
     api = commands.add_parser(
         "api",

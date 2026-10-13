@@ -16,7 +16,7 @@ from chatddx.store import Catalog, People
 from chatddx.store.store import Connection
 from chatddx.test.world import SAMPLE, WORLDS, world_plan
 
-pytestmark = pytest.mark.wip
+pytestmark = pytest.mark.solidified
 
 MISTRAL_SMALL = "mistralai/Mistral-Small-3.2-24B-Instruct-2506"
 
@@ -255,7 +255,7 @@ def test_the_sample_uses_every_table_a_data_set_and_a_world_hold() -> None:
 
     path = WORLDS / "sample"
     world = World.load(path)
-    assert world.factors and world.facts
+    assert world.engines and world.facts
     with (path / "inventory.toml").open("rb") as f:
         assert tomllib.load(f)["include"]
     inventory = world.inventory

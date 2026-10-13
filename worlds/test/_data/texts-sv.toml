@@ -14,6 +14,10 @@ messages = [
 [translations.guided]
 description = "lines-guided's output and appendix layout in Swedish."
 
-[translations.guided.entries]
-"List the plausible diagnoses, one per line, most likely first." = "Lista de tänkbara diagnoserna, en per rad, den mest sannolika först."
-"\n\nAppendices:\n" = "\n\nBilagor:\n"
+[[translations.guided.of."output.lines"]]
+text = "List the plausible diagnoses, one per line, most likely first."
+translation = "Lista de tänkbara diagnoserna, en per rad, den mest sannolika först."
+
+[[translations.guided.of."recipe.lines-guided"]]
+text = "\n\nAppendices:\n"
+translation = "\n\nBilagor:\n"

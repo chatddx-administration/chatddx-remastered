@@ -1,16 +1,16 @@
 from .fakes import fake_at
+from .read import ScriptedRun, load, scripted_runs
 from .run import ran_before, run, variation
-from .sample import Sample, load, samples
 
 RUNS = "_runs"
 
 __all__ = [
     "RUNS",
-    "Sample",
+    "ScriptedRun",
     "fake_at",
     "load",
     "ran_before",
     "run",
-    "samples",
+    "scripted_runs",
     "variation",
 ]

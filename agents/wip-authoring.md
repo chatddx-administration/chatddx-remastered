@@ -20,7 +20,7 @@ portal is the first edge to need them (agents/wip-portal.md, "Below the UI", "Ph
 3. **Chunks and expectations are built** (phase 2): `Bench.new`, `fork_component` and `edit_component` with lints
    and languages, every edit naming its head (A10, configurations included), and the API's `POST /api/threads` and
    component forks and edits (docs/bench.md, "Components"). The sample has a thread of every chunk kind now,
-   and Swedish texts (agents/wip-sample-data.md, "Beyond the old inventory"). Two takes came with it: A7's language
+   and Swedish texts (docs/curation.md, "Texts"). Two takes came with it: A7's language
    rule and A10's lock.
 4. **What is said about a thread is built** (phase 3): `Bench.say`, the owner's one write of a thread's name,
    description, tags, collaborators and deletion, and the API's `PATCH` and `DELETE /api/threads/{id}`, with the

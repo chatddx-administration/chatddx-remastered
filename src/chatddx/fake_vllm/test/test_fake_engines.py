@@ -25,7 +25,7 @@ from chatddx.test.world import (
     world_plan,
 )
 
-pytestmark = pytest.mark.wip
+pytestmark = pytest.mark.solidified
 
 FAKES = [QWEN, QWEN_BARE, GPT_OSS, MISTRAL]
 NIX = "/nix/store/" + "0" * 32 + "-vllm"
@@ -139,7 +139,7 @@ def test_only_a_fake_s_endpoint_whose_engine_is_stored_is_served(
         main(["fake-engines", "--world", str(TEST)])
 
     real = copied(tmp_path)
-    edit(real / "factors.toml", MISTRAL_RUNTIME, MISTRAL_RUNTIME.replace(CLOSURE, NIX))
+    edit(real / "engines.toml", MISTRAL_RUNTIME, MISTRAL_RUNTIME.replace(CLOSURE, NIX))
     was = World.load(TEST).inventory.endpoint(MISTRAL).engine
     planned = world_plan(real, real / "_data")
     edit(real / "endpoints.toml", was, planned.named("local_engine", MISTRAL).digest)

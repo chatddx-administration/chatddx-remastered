@@ -63,8 +63,7 @@ def world_facts(world: Path = TEST) -> Facts:
 
 
 def world_plan(world: Path = TEST, data: Path = DATA) -> Plan:
-    more = list(World.load(world).factors)
-    return plan_factors(data, world_facts(world), rig(), more=more)
+    return plan_factors(data, world_facts(world), rig(), World.load(world))
 
 
 def free_ports(n: int) -> list[int]:

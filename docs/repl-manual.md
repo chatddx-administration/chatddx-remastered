@@ -47,11 +47,11 @@ alice #2475>
 `seed` below). As you choose what to run, the prompt grows to show it.
 
 For runs to look at before you make any, with what can go wrong among
-them, run the sample World's sample runs once (with `fake-engines`
+them, run the sample World's scripted runs once (with `fake-engines`
 stopped: they serve their own fakes):
 
 ```
-chatddx samples alice
+chatddx scripted-runs alice
 ```
 
 ## A few words first
