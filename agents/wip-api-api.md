@@ -7,7 +7,7 @@ Reference for the `chatddx.api` package. It was written from `src/chatddx/api/*`
 why it is shaped this way is in docs/api.md. The HTTP interface itself, its paths, parameters, bodies and statuses,
 is the OpenAPI document the app serves at `/api/openapi.json`, with pages at `/api/docs`, and isn't repeated here;
 this file says how the package builds it: what each name does, accepts, returns and raises. The types it passes
-through are the bench's (agents/wip-bench.md), the runner's (agents/wip-runner.md), and those in
+through are the bench's (agents/wip-bench-api.md), the runner's (docs/runner-api.md), and those in
 docs/catalog-api.md, docs/ledger-api.md, docs/store-api.md, docs/inventory-api.md and docs/facts-api.md.
 
 Paths are relative to `src/chatddx/api/` unless they start with `src/`, `docs/` or `agents/`.
@@ -35,14 +35,14 @@ Paths are relative to `src/chatddx/api/` unless they start with `src/`, `docs/` 
 | Module | Builds on |
 | --- | --- |
 | `state.py` | psycopg, `chatddx.{facts,inventory,store}` |
-| `schemas.py` | `chatddx.bench`, `chatddx.factors.base`, `chatddx.identity` |
+| `schemas.py` | `chatddx.bench`, `chatddx.catalog`, `chatddx.factors.base`, `chatddx.identity` |
 | `people.py` | `schemas.py`, `state.py`, `chatddx.bench`, `chatddx.core.settings`, `chatddx.identity`, `chatddx.store` |
-| `threads.py` | `schemas.py`, `people.py`, `chatddx.bench`, `chatddx.catalog`, `chatddx.factors.trial` |
-| `families.py` | `schemas.py`, `people.py`, `threads.py`, `chatddx.bench`, `chatddx.factors.{base,cases}` |
+| `threads.py` | `schemas.py`, `people.py`, `chatddx.bench`, `chatddx.catalog`, `chatddx.factors.{base,request,trial}`, `chatddx.store` |
+| `families.py` | `schemas.py`, `people.py`, `threads.py`, `chatddx.bench`, `chatddx.factors.{base,cases}`, `chatddx.store` |
 | `world.py` | `schemas.py`, `people.py`, `chatddx.bench`, `chatddx.inventory`, `chatddx.scorers.{scorer,shipped}`, `chatddx.store.catalog` |
 | `events.py` | `schemas.py`, `chatddx.bench`, `chatddx.factors.request`, `chatddx.ledger`, `chatddx.runner.run`, `chatddx.scorers.aggregate` |
 | `runs.py` | `schemas.py`, `events.py`, `people.py`, `state.py`, `threads.py`, `chatddx.bench`, `chatddx.factors.{base,request,trial}`, `chatddx.identity`, `chatddx.ledger`, `chatddx.runner.run` |
-| `app.py` | every module above, `chatddx.bench`, `chatddx.facts`, `chatddx.inventory`, `chatddx.runner.gate` |
+| `app.py` | every module above but `events.py`, `chatddx.bench`, `chatddx.facts`, `chatddx.inventory`, `chatddx.runner.gate` |
 
 The modules that serve build on FastAPI; `schemas.py` and `events.py` need only pydantic, and `app.py` its JSON
 schemas too. The package holds no SQL: it reads through the bench, the store's `Store` and `Rows`, and `People`.
@@ -56,26 +56,28 @@ schemas too. The package holds no SQL: it reads through the bench, the store's `
 request's connection (`state.py:connection`), in autocommit mode and closed when the request is done with it. A run gets
 a connection of its own (`runs.py:_start`).
 
-**Who it depends on.** What depends on the person is asked of the bench. What doesn't is read straight from the
-World, the facts and the store: the endpoints and models (`world.py`), a component by its digest, and the scoring code
-the running chatddx ships.
+**Who it depends on.** What depends on the person is asked of the bench. What doesn't is the same for everyone: the
+endpoints and models (`world.py`), a component by its digest, and the scoring code the running chatddx ships, read
+from the World, the facts and the store through the bench's reads that take no person (`Bench.endpoint`, `title`,
+`model`, `get`), or straight (`Rows`, `chatddx.scorers.shipped.SCORERS`).
 
 **People by login.** Owners, collaborators and an edit's author are given as logins (`Bench.login`); a subject with
 no owner has `None` (`threads.py:login`).
 
-**Errors.** `app.py:STATUSES` maps the bench's `NotFound`, `Ambiguous`, `Conflict` and `MovedOn`, and the gate's
-`Refused`, wherever they are raised, with the message as the detail. What else a route means it raises as an
-`HTTPException` where it catches it: `threads.py:refused` turns a `ValueError` from building, compiling or keeping a
-variation, or from taking an expectation, into a 422, letting a `Conflict` and a `MovedOn` through, and a route turns a
-`LookupError` about what its query or body names into a 422. Nothing maps `ValueError` or `LookupError` wholesale, so
-one a route doesn't catch is a 500.
+**Errors.** `app.py:STATUSES` maps the bench's `NotFound`, `Ambiguous`, `Conflict`, `MovedOn` and `OverQuota`, and
+the gate's `Refused`, wherever they are raised, with the message as the detail. What else a route means it raises as
+an `HTTPException` where it catches it: `threads.py:refused`, around every write, every variation built and a
+proposal, turns a `ValueError` into a 422, letting a `Conflict`, a `MovedOn` and an `OverQuota` through, and a route
+turns a `LookupError` about what its query or body names into a 422. Nothing maps `ValueError` or `LookupError`
+wholesale, so one a route doesn't catch is a 500.
 
 **Models.** Every request and response model derives from `schemas.py:_Schema`: frozen, `extra="forbid"`. A body
-field a model doesn't name is a 422, and so is a query parameter where the query is a model (`Varying`). Components,
+field a model doesn't name is a 422, and so is a query parameter where the query is a model (`Varying`); elsewhere a
+query parameter a route doesn't name is ignored. Components,
 recipes, facts, calls, tool runs and fingerprints are given as the JSON they dump to, not as models of their own.
 
 **Case-derived places.** `families.py:vignette`, `runs.py:items` and a run's stream are the only routes that give
-case-derived content, and a comment marks the first two.
+case-derived content.
 
 ## app.py
 
@@ -124,6 +126,9 @@ ways of signing in among the OpenAPI document's security schemes.
 ### `class Session`
 A frozen dataclass: `person: Person`, `token: str`.
 
+### `_unsigned(detail: str = "sign in first") -> HTTPException`
+A 401 with `detail`, and `WWW-Authenticate: Bearer`.
+
 ### `same_origin(request: Request) -> None`
 Lets a method in `SAFE` through. Otherwise, where the request has `Sec-Fetch-Site`, it must be `same-origin` or
 `none`; else, where it has `Origin`, its host and port must be the request's `Host`; with neither, it passes. Raises
@@ -131,8 +136,8 @@ Lets a method in `SAFE` through. Otherwise, where the request has `Sec-Fetch-Sit
 
 ### `session(request, conn, bearer, cookie) -> Session`
 A dependency: the session of the bearer token, else of the cookie, which must pass `same_origin` first.
-`People.session` gives the person. Raises `HTTPException(401)`, with `WWW-Authenticate: Bearer`: `"sign in first"`
-without a token, `"the session has ended: sign in again"` for one `People.session` doesn't know.
+`People.session` gives the person. Raises `_unsigned()` without a token, and `_unsigned("the session has ended: sign
+in again")` for one `People.session` doesn't know.
 
 ### `signed_in(held: Session) -> Person`
 A dependency: the session's person.
@@ -144,7 +149,7 @@ A dependency: `Bench(conn, person, inventory, facts)`, with the app's inventory 
 
 | Route | Does |
 | --- | --- |
-| `sign_in`, `POST /session` | `same_origin`, then `People.authenticate`; `HTTPException(401, "wrong login or password")` when it gives no one. `People.open_session`, and the token set as `COOKIE`: `Max-Age` `settings.SESSION_TTL` in seconds, `Secure`, `HttpOnly`, `SameSite=Lax`, `Path=/`. 201. |
+| `sign_in`, `POST /session` | `same_origin`, then `People.authenticate`; `_unsigned("wrong login or password")` when it gives no one. `People.open_session`, and the token set as `COOKIE`: `Max-Age` `settings.SESSION_TTL` in seconds, `Secure`, `HttpOnly`, `SameSite=Lax`, `Path=/`. 201. |
 | `sign_out`, `DELETE /session` | `People.close_session` of the session's token, and the cookie deleted with the same attributes. 204. |
 | `me`, `GET /me` | `Me.of` the person. |
 
@@ -177,7 +182,7 @@ The models' fields are in the OpenAPI document. Besides them:
 | `Said` | What is said about a thread: `name`, `description`, `tags`, `collaborators` (logins) and `deleted`, each optional; a field not given stays as it is (`model_fields_set`), and a null `name` takes the name away. |
 | `NewTakes`, `Taken` | A take's body for many cases, `families` (not empty), `expectation_schema` and `owner`, and its answer, `chatddx.bench.Taken` keyed by family id. |
 | `NewTake` | A take's body for one thread, `replace`. |
-| `Metric`, `ScorerCode` | Scoring code the running chatddx ships: its `entry_point`, `version`, `metrics` (each its `name`, what it `measures` and a JSON Schema for a view's `params`) and a JSON Schema for the scorer's own `params`. |
+| `Metric`, `ScorerCode` | Scoring code the running chatddx ships: its `entry_point`, `version`, `metrics` (each its `name`, what it `measures`, a JSON Schema for a view's `params`, whether it is `judged`, reading a judge's verdicts, and the `unit` that marks a value that isn't a score from 0 to 1, if any) and a JSON Schema for the scorer's own `params`. |
 | `NewRun` | A run's body. Its validator raises `ValueError("a run takes one of families, tags or cases")` unless exactly one of `families`, `tags` and `cases` is given, which FastAPI answers 422. |
 | `EVENTS: dict[str, type[_Schema]]` | Each event of a run's stream, by name, and the model of its data, in the order a stream can send them; `run.noted`'s is `Finding`. |
 
@@ -192,10 +197,10 @@ variation's query parameters to them with `endpoint`, `tag` and `seed`.
 | `edit_of(bench, edit: catalog.Edit, kind: str \| None = None) -> schemas.Edit` | The edit, with its author's login, and for a scorer thread's its labels (`Catalog.labels`). `kind` is the thread's, looked up with `Catalog.thread` when not given. |
 | `thread_of(bench, kind: str, edit, about) -> schemas.Thread` | A thread from its head and `About`, titled by `Catalog.title`. |
 | `detail(bench, thread: int) -> schemas.ThreadDetail` | `Bench.thread_by_id(thread, deleted=True)` (`NotFound`), so the person's own deleted thread too, with `deleted`, `Catalog.thread` for its kind and `forked_from`, `Catalog.recipe` dumped, or `None` without a compilation, and `Catalog.language_of` of the head's digest. |
-| `refused() -> Generator[None]` | A context manager: a `ValueError` within, other than a `Conflict` or a `MovedOn`, is raised as `HTTPException(422)` with its message. Those two pass to `STATUSES`. |
+| `refused() -> Generator[None]` | A context manager: a `ValueError` within, other than a `Conflict`, a `MovedOn` or an `OverQuota`, is raised as `HTTPException(422)` with its message. Those three pass to `STATUSES`. |
 | `made(request, response, bench, thread: int, findings) -> schemas.MadeThread` | `detail` of the thread with the findings, and `Location` its path. |
 | `configures(bench, thread: int) -> bool` | Whether the thread, read without a person, is a configuration's. |
-| `check_given(configuration: bool, given) -> None` | `HTTPException(422, "a configuration is written with parts, not a component")`, `HTTPException(422, "only a configuration has parts")`, or `HTTPException(422, "only a scorer has labels")` for labels given a configuration. |
+| `check_given(configuration: bool, given) -> None` | `HTTPException(422, "a configuration is written with parts, not a component")` for a component or a language given a configuration, `HTTPException(422, "only a configuration has parts")`, or `HTTPException(422, "only a scorer has labels")` for labels given a configuration. |
 | `part_of(bench, variation: TriedVariation, part: str) -> schemas.Part` | The part's digest (`TriedVariation.held`), its title (`Bench.title`), what it holds (`catalog.titles.describe`), and whether the variation replaced it. A part not held has `None` for each. |
 | `reach_of(reach: chatddx.bench.Reach) -> schemas.Reach` | The bench's reach, with the scorer's thread as `scorer`, its name as `name`, the missing families by id, and those with expectations to choose from as `choosing`. |
 
@@ -221,6 +226,7 @@ variation's query parameters to them with `endpoint`, `tag` and `seed`.
 | --- | --- |
 | `family_of(bench, family: chatddx.bench.Family) -> schemas.Family` | The family, its owner's login and its tags sorted. |
 | `expected(bench, case: str, schema: str) -> schemas.Expected` | `Bench.expectation(case, schema)`, titled by `Bench.title(schema)`. Its `Ambiguous` is given as `ambiguous`, its message, with `expectation` and `data` `None`. `shared` is `Bench.shared(case, schema)`, each by `thread_of`. |
+| `case_of(bench, case: str, default: str) -> schemas.FamilyCase` | The case, its title, its appendices, whether it is `default`, and `expected` under each of `Bench.expectation_schemas(case)`. |
 
 | Route | Does |
 | --- | --- |
@@ -238,7 +244,7 @@ variation's query parameters to them with `endpoint`, `tag` and `seed`.
 
 | Name | Does |
 | --- | --- |
-| `endpoint_of(bench, name: str, spec: EndpointSpec) -> schemas.Endpoint` | The spec as the inventory declares it, with `Bench.endpoint`, `Bench.title`, `Bench.model` and `url_of`; a `LookupError` from any of them is given as `problem`, its message, with `title`, `model` and `url` `None`. |
+| `endpoint_of(bench, name: str, spec: EndpointSpec) -> schemas.Endpoint` | The spec as the inventory declares it, with `Bench.endpoint`, `Bench.title`, `Bench.model` and `url_of`; a `LookupError` from any of them is given as `problem`, its message, with what comes after it `None`: `title`, `model` and `url` for an engine that isn't stored, `url` alone for one `url_of` can't tell. |
 
 | Route | Does |
 | --- | --- |
@@ -281,7 +287,8 @@ raises, and is the run's thread's otherwise.
 ### `_send(started: _Started, score: bool, put: Put) -> None`
 The run's thread. `Running.send`, with each event put as `event_of(skeleton, event)`; a `KeyboardInterrupt` from it,
 for a call stopped other than by a halt, as a runaway answer is, ends the sending. Then `Running.finish`, put as
-`run.finished`, and, unless `score` is false, `Bench.score`, put as `run.scored`. Any `Exception` is logged and put
+`run.finished`, and, unless `score` is false, `Bench.score`, put as `run.scored`; the scoring pass's events aren't
+passed on, and nothing halts it. Any `Exception` is logged and put
 as `error`, `"run <id> failed: <error>"`. Last, whatever happened, the connection is closed and `None` put.
 
 ### `_stream(running: Running, events: asyncio.Queue[Named | None]) -> AsyncIterator[str]`
@@ -340,7 +347,7 @@ A run is named by a `UUID`, so anything else in its place is a 422.
 `run.started`, `run.finished`, `run.scored` and `error` are `runs.py`'s.
 
 ## The command
-`chatddx api [--world DIR] [--facts PATH …] [--bind HOST:PORT]` (`src/chatddx/cli.py:_api`): the World, from `--world`
+`chatddx api [--world DIR] [--facts PATH]… [--bind HOST:PORT]` (`src/chatddx/cli.py:_api`): the World, from `--world`
 or `CHATDDX_WORLD`; the bundled facts, the World's and those given; and `--bind`, else `settings.host()` (`HOST`,
 `localhost:8000` when unset), split at its last colon, with brackets stripped from an IPv6 host. One that isn't
 `HOST:PORT` is `SystemExit("api: bind to HOST:PORT, not '<bind>'")`. `uvicorn.run` serves `app(world.inventory, facts,
@@ -351,9 +358,9 @@ settings.database())`.
 
 | Module | Holds |
 | --- | --- |
-| `conftest.py` | `template` is the curated sample; `autocommit`; `alice`, with `PASSWORD`; `served`, the app on the sample World's inventory; `client`, a `TestClient` over `https://testserver`; `signed`, the client with alice's bearer; `bob`, his bearer's header; `bench`, alice's; and the helpers `sign_in` and `bearer`. |
+| `conftest.py` | `template` is `curated`, the test World as init-data lands it; `autocommit`; `alice`, with `PASSWORD`; `served`, the app on the test World's inventory and facts (`chatddx.test.world.world_facts`); `client`, a `TestClient` over `https://testserver`; `signed`, the client with alice's bearer; `bob`, his bearer's header; `bench`, alice's; and the helpers `sign_in` and `bearer`. |
 | `test_people.py` | Signing in and out by bearer and cookie, the same-origin check, validation, the statuses, the OpenAPI document and the command. |
-| `test_threads.py`, `test_families.py`, `test_world.py` | The reads, taking expectations, and what bob doesn't see. |
+| `test_threads.py`, `test_families.py`, `test_world.py` | The reads, taking expectations, and what bob doesn't see of threads and families; that every read needs a session. |
 | `test_writes.py` | A configuration made from a recipe, and what is refused of one; chunks and expectations written new, edited and forked; what is refused, and with which status; an expectation's findings. |
 | `test_cases.py` | A family's cases, an appendix written for it, a case built of it and replaced by the appendix's edit, and an expectation carried onto the replacement; cases refused; a run naming a case that isn't one. |
 | `test_typed.py` | A typed case answered as a family, its vignette read back, and bob not seeing it; what can't be typed, and 429 past the day's quota. |
@@ -361,8 +368,17 @@ settings.database())`.
 | `test_scorers.py` | The scoring code shipped, as pickers read it; a scorer of the archive's forked with its labels, a view renamed by an edit and the history's labels, and one written new; scorers refused, and labels given where nothing has them. |
 | `test_said.py` | Saying what holds of a thread, sharing it with bob and taking it back; refusals; deleting, listing and reading the deleted thread, and restoring it; a session needed. |
 | `test_variations.py` | Looks, forks and edits; that a look's queries don't grow with its cases, counted on the test's database (the fixtures create the next test's meanwhile). |
-| `test_runs.py` | Runs, over its own `served` on `world`, the sample World on free ports; `listening`, the app under uvicorn on a thread, for the two tests of a client going away. |
+| `test_runs.py` | Runs, over its own `served` on `world`, the test World on free ports; `listening`, the app under uvicorn on a thread, for the two tests of a client going away. No test reads a judged view's score through the API; `src/chatddx/runner/test/test_score.py` and the repl's tests do. |
 
-`src/chatddx/conftest.py` holds what the repl's tests share with these: `world` (`free_world`), `faked(world, get,
-endpoint=QWEN, delay=0.0)`, the fake vLLM serving an endpoint's engine as its start-up says, `delay` seconds a token,
-and `fake`, `faked` on the test's store.
+`src/chatddx/conftest.py` holds what the repl's tests share with these: `world`, the test World's inventory on free
+ports (`chatddx.test.world.free_world`), and `fake`, `faked` on the test's store. `chatddx.test.world.faked(world, get,
+endpoint=QWEN, delay=0.0)` is the fake vLLM serving an endpoint's engine as its start-up says, `delay` seconds a
+token.
+
+## Beyond docs/api.md
+Behavior described here that `docs/api.md` doesn't state, or states otherwise:
+- `endpoint_of` keeps an endpoint's title and model when only its URL can't be told.
+- `check_given` refuses a language given a configuration as it refuses a component.
+- `Ambiguous` maps to 409, though no route lets one through: `expected` gives it as `ambiguous`, and `Bench.score`
+  as a refusal.
+- `GET /api/runs` ignores a parameter it doesn't name, `unscored` among them.

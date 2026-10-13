@@ -5,7 +5,7 @@ below, those two names mean these two files until they move. "Outstanding", at t
 
 The bench is what one person sees and does, whatever the edge they reach it through: the threads, families and runs
 they see, the World's endpoints, the variation they are trying, and what is written in their name. Its edges are the
-repl (agents/wip-repl.md), the API (agents/wip-api.md) and the portal to come (agents/wip-portal.md). This document
+repl (docs/repl.md), the API (agents/wip-api.md) and the portal to come (agents/wip-portal.md). This document
 describes what the bench does and why it is shaped like it is. Names, signatures and errors are in docs/bench-api.md.
 
 The bench builds on the store, the catalog, the World, the facts, the runner and the scoring pass, and holds no SQL of
@@ -53,7 +53,8 @@ none raises `NotFound`.
 A thread made per model or per language is found by its plain name too: `NAME (MODEL)`, `NAME (LANGUAGE)` or
 `NAME (LANGUAGE, MODEL)`, the one the model an engine serves may use (src/chatddx/catalog/variants.py). Without an
 engine, a name that only per-model threads have isn't found, and the error names them, so that an edge can say the
-endpoint picks one. A name made in several languages is ambiguous.
+endpoint picks one. A name made in several languages is ambiguous, unless it names one, as `NAME LANGUAGE` or
+`NAME (LANGUAGE)`.
 
 ### Finding things by id
 By id, a thread, a family or a run is found only among what the person sees, and a thread only among the kinds its
@@ -77,7 +78,7 @@ what they are scored against is the shared expectation until either thread moves
 origin reaches them as a proposal. A person can take:
 - **for many cases at once**, under one schema and in one transaction, an expectation for each case they have none of
   their own for, from any owner or one named. The cases left are named, each with why: theirs is kept, or several
-  owners share one, or nobody does.
+  are shared with them to choose from, or none is.
 - **one thread**, an expectation shared with them, which, when they have their own of its case under its schema, is a
   conflict unless they say to replace theirs. Replacing deletes theirs and forks the shared one in one transaction.
 
@@ -143,8 +144,10 @@ What every write has in common:
 - **Nothing is written that is there already.** An edit that is its thread's head already writes nothing, and says
   so; saying what holds of a thread writes only what changes.
 - **What was written comes back with its lints**, and no write refuses on one: an expectation whose data its schema
-  refuses is written, and said so (docs/factors.md, "Lints"). Refusals are the components' own rules, the store's and
-  the catalog's, and the few the bench adds, below.
+  refuses is written, and said so (docs/factors.md, "Lints"). A component does, whether new, forked, edited, followed
+  or carried; a configuration comes back as what was saved, and an edge lints its skeleton itself (`Bench.linted`),
+  as the API does. Taking, saying and building cases give back what they made. Refusals are the components' own
+  rules, the store's and the catalog's, and the few the bench adds, below.
 - **Some refusals come before the write**, in the person's words, where the database or the catalog would refuse
   later in theirs: a component of another kind than the thread's, a second expectation of the person's own for a
   case and schema.
@@ -270,18 +273,22 @@ changes, which are stored already. That is how a correction to the archive's exp
 ones, and a scorer pinned again by a deploy reaches the person's fork of it.
 
 ## Runs and scores
-- **Starting** runs a variation at an endpoint, on some cases with one seed, through the runner
-  (agents/wip-runner.md). The runner's gate refuses what clearance forbids before anything is sent, and nothing is
-  sent until the edge sends it, so the edge decides how a run is shown as it goes.
+- **Starting** runs a variation at an endpoint, on some cases with one seed, through the runner (docs/runner.md),
+  under the default execution and with no canary set or text cleanup. The runner's gate refuses what clearance
+  forbids before anything is sent, and nothing is sent until the edge sends it, so the edge decides how a run is shown
+  as it goes.
 - **A person's runs** are their own, newest first, found by the start of their id, or by a component their trial is
   built on.
 - **A run is described** as the repl's `run` and `batch` say it: the configuration, where it ran, its case or how many,
   and the seed.
-- **A scorer applies** to a run when every one of its views reaches the run's output schema.
+- **A scorer applies** to a run when the run's output offers what each of its views reads, a view of the whole answer
+  only a text answer, and the World lets each of its judges run (docs/runner.md, "What applies to a run").
 - **A run's scoring** under a scorer is built now, from the expectation each of its cases is scored against. Cases
   without one are left out, and a run whose cases have none has no scoring under that scorer.
 - **Scoring** scores a finished run under each scorer that applies to it, or some of them, through the scoring pass.
-  A scorer that can't score the run gives why instead, and the others score it all the same.
+  A scorer that can't score the run gives why instead, and the others score it all the same. A judged view's calls go
+  to the one endpoint serving its judge's engine, as the bench names none (docs/runner.md, "Judges"). The scoring
+  pass's events, each item scored and each judge call, go to the edge as they come, when it asks for them.
 - **What is left to score** of a run is each scorer that applies, under which some of its cases have an expectation,
   and that has no whole score of the run under the scoring built now, so a changed expectation leaves the run to
   score again. A score is whole when it finished, scored every item under every view, and none of its judge calls was
@@ -311,9 +318,9 @@ repl does for a name its endpoint would pick a model for. The API answers `NotFo
 and `MovedOn` with 409, `OverQuota` with 429, and the other refusals with 422 (agents/wip-api.md, "Errors").
 
 ## Tests
-The tests start from the sample as `chatddx init-data` lands it from the sample World, with alice and her giftbag; bob
-is added with nothing. The database is made once a session and copied for each test (`src/chatddx/conftest.py`,
-`curated`). The variation and an item's outcome are tested without a database.
+The tests start from the test World (`worlds/test`, agents/wip-test-world.md) as `chatddx init-data` lands it, with
+alice and her giftbag; bob is added with nothing. The database is made once a session and copied for each test
+(`src/chatddx/conftest.py`, `curated`). The variation and an item's outcome are tested without a database.
 
 A person can only come to own two expectations of a case under one schema through two writers at once, so that is how
 the tests make them: one restores the person's thread while the other starts a new one, each passing the catalog's
@@ -346,37 +353,77 @@ The plans they were built from, with the options weighed for each decision and t
 `agents/wip-bench.md` at d5ebf52 and `agents/wip-api.md` at 100a078.
 
 ### Start with this
-0. **Go through open items, reiterate and confirm design decisions.**
-1. **Scoring in the API**, which has no requests of its own yet: a run is scored as it finishes, and its scores come
-   with it (agents/wip-api.md, "Scoring"). Still to do:
+0. **Go through open items, reiterate and confirm design decisions**, "Takes the API is built on" first.
+1. **Scoring in the API**, which has no requests of its own yet: a run is scored as it finishes unless its request
+   says `"score": false`, and its latest scores come with it, in `run.scored` and in `GET /api/runs/{id}`
+   (agents/wip-api.md, "Scoring"). A run left unscored, or whose scoring failed, can't be scored over HTTP. Still to
+   do:
    - a run's latest score under each scorer, on its own (`Bench.scores_of`);
    - scoring a run now, under all its scorers or some (`Bench.score`), one run at a time;
    - the person's finished runs, each with the scorers it is left to be scored by (`Bench.outstanding`, as
      `runs?unscored=true`), a run with a case that has expectations to choose from among them, as
-     `Bench.outstanding` lists it;
-   - where a score's detail and the scoring's findings show, if anywhere: both can quote the answer, so a place for
-     them is case-derived, and the ledger marks the scoring's findings otherwise (see "Surprises").
+     `Bench.outstanding` lists it. Today `GET /api/runs` ignores `unscored`, as it ignores any parameter it doesn't
+     name, and gives every run;
+   - the scoring pass's events in a run's stream (`Bench.score`'s `on_event`): each item scored, and each judge call
+     asked and answered. After `run.finished` the stream says nothing until `run.scored`, however many judge calls
+     are sent in between;
+   - where a score's detail, its judge calls and the scoring's findings show, if anywhere. Each can quote the answer,
+     so a place for them is case-derived, and the ledger marks the scoring's findings otherwise: `ScoreFinished` isn't
+     case-derived (`src/chatddx/ledger/score.py`), though an `answer.invalid` finding can quote the answer's values.
+     Until then a judged view's values come back, but neither each seed's value nor what its judge said, which the
+     repl shows.
 2. **Adopting the docs**: this file and `agents/wip-bench-api.md`, as `docs/bench.md` and `docs/bench-api.md`, and
-   `agents/wip-api.md` and `agents/wip-api-api.md`, as `docs/api.md` and `docs/api-api.md`.
+   `agents/wip-api.md` and `agents/wip-api-api.md`, as `docs/api.md` and `docs/api-api.md`; the bench's and the API's
+   tests marked `solidified`; and what points at these files moved with them: `docs/repl.md`, `docs/repl-api.md`,
+   `src/chatddx/repl/test/test_vocabulary.py` and the other plans in `agents/`.
 3. **A low-level manual for the bench**, made from `agents/wip-authoring.md`.
-4. **Judges** are the one write for authoring left (agents/wip-authoring.md, S6, phase 9), waiting for the scoring
-   pass to send judge requests. The portal's authoring and swift wait on the rest, which is built.
-5. **Takes** the bench and the API are built on still wait for a word (below).
+4. **Judges** are scored by every edge, and writing them is the one write for authoring left (agents/wip-authoring.md,
+   S6, phase 9), which the scoring pass no longer holds back. With it come configurations listed and found by
+   purpose, and a judge configuration looked at as a judge. Today a judge configuration is listed among the
+   configurations, a look at it lints it as a trial and finds nothing, and starting it is refused only as the trial is
+   stored, after the gate has checked the endpoint, as `<digest>: trial uses a judge skeleton`. The portal's
+   authoring and swift wait on the rest, which is built.
+5. **Takes** the bench and the API are built on still wait for a word: "Takes the API is built on", below, and the
+   authoring takes marked "Built, as takes" in agents/wip-authoring.md.
+
+### Takes the API is built on
+The options of `agents/wip-api.md` at 100a078 ("Options"), built as its takes had them and not confirmed since. Decided
+there: A1, who it is for, kept open; A2, FastAPI and uvicorn (F2); A3, signing in; and A9, case-derived content in
+places of its own (S3).
+- **A4, ids**: a path takes a whole id, and a name is a filter on a list, which gives every match (N1).
+- **A5, the variation**: stated whole in each request, the configuration by id and its parts by digest, with nothing
+  stored by looking (V1).
+- **A6, where a run runs**: in its request, sent on a thread of its own and halted when the client goes away (W1),
+  shaped so that a run beside the request, followed by a GET, can come later (W2). agents/wip-worker.md builds on it.
+- **A7, the stream**: asked for by `Accept`, with the runner's events (agents/wip-api.md, "The stream").
+- **A8, scoring**: at once after a run, with an opt-out, and a listing of what is left to score, which isn't built
+  (see "Start with this", 1).
+- **A10, errors**: the bench's errors mapped by class, and what else a route means caught where it means it
+  (agents/wip-api.md, "Errors").
+- **A11, keeping a variation**: a fork and an edit, two requests, rather than a save by name (K2).
+- **A12, paths**: under `/api/`, with the OpenAPI document at `/api/openapi.json`, and no version until there is a
+  second.
 
 ### Open
 The bench:
 - **Z1**: the map from roles to the kinds each role sees goes in `identity` once the portal's views give it meaning
   (agents/wip-identity.md, "Open"). `sees` then takes the person's roles and the kind.
-- **An execution for `Bench.start`**, which passes none, so a run gets `Execution()`'s; the worker needs it
-  (agents/wip-worker.md, "Below the worker").
+- **An execution for `Bench.start`**, which passes none, so a run gets `Execution()`'s, with no timeout; the worker
+  needs it (agents/wip-worker.md, "Below the worker").
+- **A judge's endpoint can't be named**: `Bench.score` names none, so a judge whose engine two endpoints serve bars its
+  scorer, in the repl and the API alike (docs/repl.md, "What the repl doesn't reach").
 - **A person's runs are all read**, and paged afterwards, in the API too (`Bench.runs`). Page in the store once that
   is slow.
 - **Two saves of one name at once** can both create a configuration, in the repl's `save` as in the API's forks
   (`docs/catalog.md`, "Concurrent writers").
+- **Taking counts shared threads, not owners**: a case with two threads shared by one owner is to choose from, and
+  naming that owner doesn't pick between them. Only two writers at once can leave an owner two (see "One expectation
+  per case and schema").
 - **`Catalog.expectation_for`**, for one case, has callers in tests only.
-- **What the old bench had and this one doesn't**: what a run left unheeded (`outcome.py:unheeded`;
-  agents/wip-runner.md, "Afterwards"); a batch's plan, crossing variations into one (agents/wip-batch.md); and what holds a configuration, the portal's
-  (agents/wip-portal.md), whose part for the repl `Bench.reaching` and `Bench.scored_by` cover.
+- **What the old bench had and this one doesn't**: what a run left unheeded (the old `outcome.py:unheeded`;
+  docs/runner.md, "Smaller issues"); a batch's plan, crossing variations into one (agents/wip-batch.md); and what holds
+  a configuration, the portal's (agents/wip-portal.md), whose part for the repl `Bench.reaching` and `Bench.scored_by`
+  cover.
 
 Signing in, in the API:
 - **A cookie over plain HTTP** isn't kept: a `Secure`, `__Host-` cookie needs HTTPS, or `localhost`.
@@ -391,6 +438,8 @@ Signing in, in the API:
 Serving the API:
 - **A connection per request**, opened and closed each time; a pool (`psycopg_pool`) when that costs. A run answered
   as JSON holds two for as long as it lasts: the request's and its own.
+- **A query parameter a route doesn't name is ignored**, unless the query is a model (`Varying`), so a misspelt filter
+  on `GET /api/runs` or `GET /api/threads` gives everything rather than a 422.
 
 Variations, in the API:
 - **A part given twice in a query**: the last one counts.
@@ -400,12 +449,14 @@ Variations, in the API:
   variation nobody saved has a long title").
 
 Runs, in the API:
-- **Reaching a chunk** found no run, since a compiled skeleton holds what the chunk sets rather than a reference to
-  it. `Bench.reaching` reaches through the compilations now, which refer to both, and `Bench.scored_by` finds the runs
-  scored with what a scoring holds: an expectation, the expectation schema, a judge.
-- **A quiet stream sends nothing**, as while it waits for a slow first token, and a proxy's read timeout would cut
-  it. A comment line now and then would keep it open.
+- **A quiet stream sends nothing**, as while it waits for a slow first token, or while the run is scored after
+  `run.finished`, and a proxy's read timeout would cut it. A comment line now and then would keep it open.
+- **A client that goes away halts its run, not its scoring**: the scoring after it sends its judge calls all the same
+  (`Grading.halt` has no caller in the API).
 - **`Accept` is read by media type alone**, so `text/event-stream;q=0` still asks for a stream.
 - **A run outlives a server that stops**, which waits for its requests. A killed one leaves the run unfinished, as
   resuming isn't built; requests that last as long as a run are agents/wip-worker.md's ("Why").
-- **Judges**: judged views show as "not yet", as in the repl.
+
+Writes, in the API:
+- **Carrying answers 201 even when nothing changes**: an expectation carried onto the case it is of already is kept
+  `unchanged`, which an edit answers 200, but `POST /api/threads/{id}/carries` doesn't tell them apart.
