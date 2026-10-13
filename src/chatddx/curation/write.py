@@ -14,7 +14,7 @@ from chatddx.store.catalog import Catalog
 from chatddx.store.people import People
 from chatddx.store.store import Connection, Store
 
-from .plan import Plan, Planned, SampleCase
+from .plan import DataCase, Plan, Planned
 
 ARCHIVE = "archive"
 VERBS: dict[Kept, str] = {
@@ -158,9 +158,7 @@ class _Init:
                 return f"changed {at} {family}"
         return None
 
-    def case(
-        self, source: ListingSource, id: str, sample: SampleCase, schema: str
-    ) -> None:
+    def case(self, source: ListingSource, id: str, data: DataCase, schema: str) -> None:
         try:
             raw = source.fetch(id)
         except LookupError:
@@ -190,10 +188,10 @@ class _Init:
                 return
         self.families.append(family)
         self.land(digest, f"case {id}")
-        self.sync(Subject(family=family), sample.tags, None, sample.language, name=id)
+        self.sync(Subject(family=family), data.tags, None, data.language, name=id)
         self.lines.append(f"[archive case] {id}: {verb} {short(digest)}")
-        self.expect(id, digest, sample.targets, schema)
-        self.appended(id, case.vignette, sample, schema)
+        self.expect(id, digest, data.targets, schema)
+        self.appended(id, case.vignette, data, schema)
 
     def expect(self, named: str, case: str, data: JsonValue, schema: str) -> None:
         registry = self.plan.registry
@@ -215,11 +213,11 @@ class _Init:
     # An appendix is bound to the vignette its case was just read at, so it's built here
     # rather than planned.
     def appended(
-        self, id: str, vignette: Vignette, sample: SampleCase, schema: str
+        self, id: str, vignette: Vignette, data: DataCase, schema: str
     ) -> None:
         registry = self.plan.registry
         bound: dict[str, str] = {}
-        for name, text in sample.appendices.items():
+        for name, text in data.appendices.items():
             named = f"{name} for {id}"
             appendix = Appendix(vignette=vignette, text=clean(text, ["newlines.lf@1"]))
             digest = registry.add(appendix)
@@ -235,7 +233,7 @@ class _Init:
             self.sync(Subject(thread=thread))
             self.lines.append(f"[archive appendix] {named}: {verb} {short(digest)}")
             bound[name] = digest
-        for ordered in sample.ordered:
+        for ordered in data.ordered:
             named = f"{id} with {', '.join(ordered.appendices)}"
             case = Case(
                 vignette=vignette,
@@ -400,14 +398,14 @@ def wipe(conn: Connection, user: Person) -> list[str]:
 def init(
     conn: Connection,
     plan: Plan,
-    cases: dict[str, SampleCase],
+    cases: dict[str, DataCase],
     source: ListingSource,
     user: Person,
     giftbag: bool = False,
 ) -> list[str]:
     schemas = [r for r in plan.records if r.kind == "expectation_schema"]
     if len(schemas) != 1:
-        raise ValueError("the sample needs exactly one expectation schema")
+        raise ValueError("a data set needs exactly one expectation schema")
     with conn.transaction():
         people = People(conn)
         archive = people.find(ARCHIVE) or people.add(ARCHIVE, "Archive")
@@ -419,8 +417,8 @@ def init(
         for r in plan.records:
             writer.record(r)
         writer.lines += [f"[skipped] {s}" for s in plan.skipped]
-        for id, sample in cases.items():
-            writer.case(source, id, sample, schemas[0].digest)
+        for id, data in cases.items():
+            writer.case(source, id, data, schemas[0].digest)
         writer.leftovers(cases)
         writer.share(user)
         if giftbag:

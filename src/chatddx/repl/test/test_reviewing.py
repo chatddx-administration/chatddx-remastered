@@ -6,12 +6,12 @@ import pytest
 from chatddx.bench import Bench
 from chatddx.inventory import DirectorySource, Inventory
 from chatddx.repl.test.helpers import Say, cells, tagged
-from chatddx.samples import RUNS, run, samples
+from chatddx.scripted import RUNS, run, scripted_runs
 from chatddx.test.world import LINES, NATIVE, QWEN, TEST
 
 pytestmark = pytest.mark.solidified
 
-SAMPLES = {s.name: s for s in samples(TEST / RUNS)}
+SCRIPTED = {s.name: s for s in scripted_runs(TEST / RUNS)}
 
 
 def rows(written: str) -> list[str]:
@@ -165,7 +165,7 @@ def test_show_finds_the_runs_through_what_compiled_or_scored_them(say: Say):
 
 @pytest.mark.slow
 def test_replay_says_a_run_was_stopped(bench: Bench, say: Say):
-    _ = run(bench, SAMPLES["stopped"])
+    _ = run(bench, SCRIPTED["stopped"])
 
     written = say("replay")
 
@@ -175,8 +175,8 @@ def test_replay_says_a_run_was_stopped(bench: Bench, say: Say):
 
 @pytest.mark.slow
 def test_show_judge_sums_up_only_what_it_judged(bench: Bench, say: Say):
-    _ = run(bench, SAMPLES["judged"])
-    _ = run(bench, SAMPLES["valid"])
+    _ = run(bench, SCRIPTED["judged"])
+    _ = run(bench, SCRIPTED["valid"])
 
     written = say("show judge verdict")
 
@@ -199,7 +199,7 @@ def test_show_judge_sums_up_only_what_it_judged(bench: Bench, say: Say):
 
 @pytest.mark.slow
 def test_score_counts_an_answer_that_never_came_apart(bench: Bench, say: Say):
-    _ = run(bench, SAMPLES["batch"])
+    _ = run(bench, SCRIPTED["batch"])
 
     written = say("score").splitlines()
 

@@ -3,8 +3,8 @@ import pytest
 from chatddx.bench import Bench
 from chatddx.curation import init, load_cases
 from chatddx.inventory import World
-from chatddx.samples import RUNS, run, samples
-from chatddx.samples.test.helpers import UNFINISHED, went
+from chatddx.scripted import RUNS, run, scripted_runs
+from chatddx.scripted.test.helpers import UNFINISHED, went
 from chatddx.store import People
 from chatddx.store.store import Connection
 from chatddx.test.world import SAMPLE, WORLDS, free_world, world_facts, world_plan
@@ -42,7 +42,7 @@ def template(migrated: str) -> str:
 
 
 @pytest.mark.slow
-def test_the_sample_world_s_samples_run_as_they_say(
+def test_the_sample_world_s_scripted_runs_run_as_they_say(
     conn: Connection, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     monkeypatch.setenv("CHATDDX_SAMPLE_KEY", "sample-key")
@@ -52,7 +52,7 @@ def test_the_sample_world_s_samples_run_as_they_say(
     _ = init(conn, plan, load_cases(SAMPLE), source, alice, giftbag=True)
     bench = Bench(conn, alice, free_world(PATH), world_facts(PATH))
 
-    ran = {sample.name: run(bench, sample) for sample in samples(PATH / RUNS)}
+    ran = {s.name: run(bench, s) for s in scripted_runs(PATH / RUNS)}
 
     assert {name: went(bench, started) for name, started in ran.items()} == OUTCOMES
     assert not bench.scores_of(ran["unfinished"].run)

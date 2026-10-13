@@ -83,7 +83,7 @@ and the engine names its `provider` (see "Decided"; the docs have AGENT suggesti
   `scorers/test/test_scorers.py:test_a_judge_reads_a_case_s_notes_beside_the_targets_the_patterns_read` fills a judge
   from them.
 - **The sample**: Olof's notes on three cases, `Dutchfall11w`, `Dutchfall1w` and `casesfromedn1`, in Swedish, two
-  with an answer (`src/chatddx/curation/test/test_sample.py`), and a judge drafted over them (see "Phases", 6).
+  with an answer (`src/chatddx/test/test_sample.py`), and a judge drafted over them (see "Phases", 6).
 
 ## Takes
 ### J1. Where judge calls go
@@ -183,7 +183,7 @@ his real notes, which his own replaces as an edit. No note is made up.
 
 ## The test World's additions
 Each read by a test, as `agents/wip-test-world.md` asks ("Principles", 1), and pinned in
-`src/chatddx/curation/test/test_the_test_world.py`:
+`src/chatddx/test/test_the_test_world.py`:
 
 | Record | Exercises | Read by |
 |---|---|---|

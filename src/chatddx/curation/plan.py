@@ -544,7 +544,7 @@ class Ordered:
 
 
 @dataclass(frozen=True)
-class SampleCase:
+class DataCase:
     tags: tuple[str, ...]
     language: str
     targets: JsonValue
@@ -585,8 +585,8 @@ def _ordered(where: str, value: object, appendices: Mapping[str, str]) -> Ordere
     return Ordered(tuple(listed), cast(JsonValue, held.get("targets")))
 
 
-def load_cases(data: Path) -> dict[str, SampleCase]:
-    cases: dict[str, SampleCase] = {}
+def load_cases(data: Path) -> dict[str, DataCase]:
+    cases: dict[str, DataCase] = {}
     where: dict[str, Path] = {}
     for path in sorted(data.glob("cases*.toml")):
         named = _CASES.match(path.name)
@@ -615,7 +615,7 @@ def load_cases(data: Path) -> dict[str, SampleCase]:
             )
             if len({o.appendices for o in ordered}) != len(ordered):
                 raise ValueError(f"{path}: case.{id}: a case with appendices is twice")
-            cases[id] = SampleCase(
+            cases[id] = DataCase(
                 tags=tuple(case.get("tags", ())),
                 language=language,
                 targets=case.get("targets"),

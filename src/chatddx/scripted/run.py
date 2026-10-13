@@ -12,40 +12,40 @@ from chatddx.runner.run import Event, Running, Streamed
 from chatddx.runner.score import judge_at
 
 from .fakes import fake_at
-from .sample import Sample
+from .read import ScriptedRun
 
 NONE = "none"
 
 
-def variation(bench: Bench, sample: Sample) -> TriedVariation:
-    engine = bench.endpoint(sample.endpoint)
-    tried = bench.configuration(sample.configuration, engine)
-    for part, chunk in sample.set.items():
+def variation(bench: Bench, scripted: ScriptedRun) -> TriedVariation:
+    engine = bench.endpoint(scripted.endpoint)
+    tried = bench.configuration(scripted.configuration, engine)
+    for part, chunk in scripted.set.items():
         digest = None if chunk == NONE else bench.chunk(part, chunk, engine)
         tried = tried.set(part, digest, chunk)
     return tried
 
 
-def ran_before(bench: Bench, sample: Sample) -> RunStarted | None:
-    skeleton = bench.skeleton(variation(bench, sample))
-    engine = bench.endpoint(sample.endpoint)
-    cases = [bench.case_titled(name)[1] for name in sample.cases]
-    _, trial = bench.trial(skeleton, engine, cases, sample.seed)
+def ran_before(bench: Bench, scripted: ScriptedRun) -> RunStarted | None:
+    skeleton = bench.skeleton(variation(bench, scripted))
+    engine = bench.endpoint(scripted.endpoint)
+    cases = [bench.case_titled(name)[1] for name in scripted.cases]
+    _, trial = bench.trial(skeleton, engine, cases, scripted.seed)
     return next((r for r in bench.runs() if r.trial == trial.digest), None)
 
 
-def run(bench: Bench, sample: Sample) -> RunStarted:
-    tried = variation(bench, sample)
-    cases = [bench.case_titled(name)[1] for name in sample.cases]
-    fake = fake_at(bench.inventory, bench.get, sample.endpoint)
-    script = Script(sample.turns) if sample.turns else None
+def run(bench: Bench, scripted: ScriptedRun) -> RunStarted:
+    tried = variation(bench, scripted)
+    cases = [bench.case_titled(name)[1] for name in scripted.cases]
+    fake = fake_at(bench.inventory, bench.get, scripted.endpoint)
+    script = Script(scripted.turns) if scripted.turns else None
     with serving([fake], script=script):
-        running = bench.start(tried, sample.endpoint, cases, sample.seed)
-        running.send(_halting(running, sample.stop_after))
-    if sample.unfinished:
+        running = bench.start(tried, scripted.endpoint, cases, scripted.seed)
+        running.send(_halting(running, scripted.stop_after))
+    if scripted.unfinished:
         return running.started
     _ = running.finish()
-    if sample.scored:
+    if scripted.scored:
         with _judging(bench, running.started):
             _ = bench.score(running.started)
     return running.started

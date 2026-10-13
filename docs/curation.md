@@ -82,6 +82,18 @@ written only in another language is taken from there, and the recipe's translati
 a recipe without them there is skipped and reported. In the language its output and toolset are written in, it needs
 no translations and is made without them. A recipe that names no text is made once, as before.
 
+```
+AGENT: replace
+The sample's counts drift as it grows ("six outputs" was stale); its own tests pin them
+(src/chatddx/test/test_sample.py), so the example goes without them.
+---
+The sample is written in English, and one recipe in Swedish too. Its outputs, toolset and judge are in
+`texts-en.toml`, and every recipe is made in English. `free-text-guided`'s instructions and worked example are written
+again in `texts-sv.toml`, with translations of every text its outputs and toolset hold, schemas included, so
+`free-text-guided` is made in Swedish too, its output translated. A trial of an English recipe on the Swedish cases is
+linted as mixing languages, which is what a trial of an English request on a Swedish case is; the sample's
+translations, set in a variation, carry any of its recipes into Swedish.
+```
 The sample is written in English, and one recipe in Swedish too. Its eight outputs with guidance, its toolset, its
 judge's instructions and prompt, and `free-text-guided`'s instructions and worked example are in `texts-en.toml`, and
 every recipe is made in English. The instructions and the example are written again in `texts-sv.toml`, with
@@ -96,6 +108,14 @@ apart by its vignette, and cases that send them after the vignette, `[[case.<id>
 order and, optionally, `targets` of its own, since an appendix can change the right answer (docs/factors.md, "Case").
 Line endings are made LF before an appendix is digested, as every edge does.
 
+```
+AGENT: replace
+The sample's case counts are its tests' to pin (src/chatddx/test/test_sample.py).
+---
+A cases file holds `[case.<id>]` tables, keyed by the vignette's id at the source. A case has `tags`, entries on its
+family, and `targets`, its expectation, which must fit the data set's one expectation schema. A case is in exactly one
+file, and the file's name gives its language: every case in `cases-sv.toml` is in Swedish.
+```
 A cases file holds `[case.<id>]` tables, keyed by the vignette's id at the source. A case has `tags`, entries on its
 family, and `targets`, its expectation, which must fit the data set's one expectation schema. A case is in exactly one
 file, and the file's name gives its language: every case in `cases-sv.toml` is in Swedish. The sample has 79 English
@@ -186,6 +206,36 @@ writes an entry per gift and per share and no thread.
 Wiping covers all a person owns, their runs and their own threads included, not only what loading gave them.
 
 ## Tests
+```
+AGENT: replace
+The tests of the Worlds' content moved out of curation, beside the names tests share (src/chatddx/test/).
+What stays here is all `solidified`; the three moved tests keep their marks.
+---
+src/chatddx/curation/test/, marked `solidified`.
+
+- The tests run on the test World (worlds/test/, its data set in worlds/test/_data/), built so that each of its
+  records exercises something a test reads. Its paths, the names tests share and the helpers they import are in
+  src/chatddx/test/world.py; the fixtures built on them are in src/chatddx/conftest.py.
+- `test_plan.py` plans data sets and needs no database.
+- `test_init.py`, `test_repair.py`, `test_giftbag.py` and `test_pins.py` load the test World's data set whole into
+  a database of their own: a copy of the migrated, empty store, made for each test (src/chatddx/conftest.py,
+  `migrated`, `db`), with a stand-in source whose vignettes are a line of text each
+  (src/chatddx/curation/test/cases.py). The command tests read the test World itself, or a copy they edit.
+- A load writes every record of the data set, so every test that loads is marked `slow`.
+- `test_tables.py` reads a case's appendices and the cases that send them, refuses what they say wrongly, and lands
+  them and a canary set from the test World.
+
+The Worlds' content is tested beside the names tests share, in src/chatddx/test/:
+- `test_the_test_world.py` pins what the test World plans, skips and lints, and the quirks its vignettes carry.
+- `test_worlds.py` checks every World in `worlds/`: each endpoint serves the engine planned under its name,
+  init-data binds each World's endpoints and leaves the others' engines out, every target's pattern reads, the fake
+  vLLM answers each skeleton as its contract asks or refuses it exactly when a `vllm.*` lint says vLLM would, and what
+  it writes holds to each data set's schemas.
+- `test_sample.py` holds what is true of the sample alone, and that it uses every table a data set and a World can
+  hold at least once, as the example new Worlds follow.
+
+The first two are marked `wip`, as agents/wip-test-world.md plans them; `test_sample.py` is `solidified`.
+```
 src/chatddx/curation/test/, marked `solidified`, but for the tests of the test World itself and of every World, which
 agents/wip-test-world.md plans and which are marked `wip`.
 

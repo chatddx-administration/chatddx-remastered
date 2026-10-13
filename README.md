@@ -101,6 +101,18 @@ quit
 ```
 The run streams the fake's answer, scores it and records it.
 
+````
+AGENT: replace
+The sample runs are scripted runs now: `chatddx samples` is `chatddx scripted-runs`
+(agents/wip-scripted.md).
+---
+For runs to look at, with what can go wrong among them, run the sample World's scripted runs instead, without
+`fake-engines` running (they serve their own fakes):
+```sh
+chatddx scripted-runs alice   # each once; --again runs them again, and names pick some
+chatddx repl alice
+```
+````
 For runs to look at, with what can go wrong among them, run the sample World's samples instead, without
 `fake-engines` running (they serve their own fakes):
 ```sh

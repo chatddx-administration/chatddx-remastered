@@ -203,6 +203,16 @@ scores what is left` when it did. `WRITING` and `SCORING` are its two messages, 
 | `repl` | a `Repl` on that bench, a recorded console 200 wide, seed 7 |
 | `say(*lines) -> str` | each line handled in turn, then all the console recorded |
 
+```
+AGENT: replace
+`chatddx.samples` is `chatddx.scripted`, and its runs are scripted runs (agents/wip-scripted.md).
+---
+`helpers.py` has `tried(repl)` (the cell's variation), `line_of`, `cells` and `row` (lines, words and rows of what was
+said), and `tagged`, `targets_of` and `pattern` (the test World's cases). A test that runs uses the root `fake` fixture,
+or serves its own fake; runs to look back on come from the test World's scripted runs (`chatddx.scripted`,
+`worlds/test/_runs`). Ctrl-C is pressed with `signal.raise_signal` as a call streams (`test_running.py:press_at`).
+`test_vocabulary.py` holds the rest of the code to the bench's words: only the repl speaks of a cell.
+```
 `helpers.py` has `tried(repl)` (the cell's variation), `line_of`, `cells` and `row` (lines, words and rows of what was
 said), and `tagged`, `targets_of` and `pattern` (the test World's cases). A test that runs uses the root `fake` fixture,
 or serves its own fake; runs to look back on come from the test World's samples (`chatddx.samples`, `worlds/test/_runs`).

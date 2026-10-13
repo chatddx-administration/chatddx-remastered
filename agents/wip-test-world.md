@@ -38,7 +38,7 @@ Found on the way:
 
 ## Decided
 - **A test World, `worlds/test/`, with its data set inside it, at `worlds/test/_data/`.**
-- **The sample keeps one test module**, `src/chatddx/curation/test/test_sample.py`, with what is true of the sample
+- **The sample keeps one test module**, `src/chatddx/test/test_sample.py`, with what is true of the sample
   alone. What should hold for every World is checked on all of them (see "What stays on the sample").
 - **Names say what they exercise**, not what the sample called them.
 - **The test World's tools are the test tools** (`src/chatddx/runner/test/tools.py`). The root conftest ships them
@@ -73,7 +73,7 @@ pytest.
    (an invalid expectation, an unreachable view, a misplaced clearance) is an edit a test makes to a copy of the
    World (`copied` and `edit` in `src/chatddx/test/world.py`).
 4. **The test World's own test pins its design**: the records per table, the skip lines, the lint lines and the
-   World's findings (`src/chatddx/curation/test/test_the_test_world.py`), and `test_worlds.py` that each endpoint
+   World's findings (`src/chatddx/test/test_the_test_world.py`), and `test_worlds.py` that each endpoint
    names the digest of the engine planned under its name. A change to the World fails there first, with the new
    values in the message.
 5. **Names are spelled once.** `src/chatddx/test/world.py` holds the names tests share: models, endpoints, the
@@ -265,7 +265,7 @@ What only the test World reaches, and no test reads yet:
   `blank_lines.collapse@1`).
 
 ## What stays on the sample
-`src/chatddx/curation/test/test_sample.py`, the sample's pins, `solidified` (`docs/curation.md`, "Tests"):
+`src/chatddx/test/test_sample.py`, the sample's pins, `solidified` (`docs/curation.md`, "Tests"):
 - **Vignettes**: they are 7893656's (`test_the_sample_world_holds_the_vignettes_at_7893656`).
 - **Cases**: 79 English and 20 Swedish, and the language of `casesfromedn1` and `Dutchfall11w`.
 - **Records**: the English and Swedish sets, the nine recipes per model and `judge (en)`, and the translations'
@@ -275,7 +275,7 @@ What only the test World reaches, and no test reads yet:
   `plan-shown` varying `plan`'s output.
 - **Kompismoln**: it takes the sample's vignettes.
 
-`src/chatddx/curation/test/test_worlds.py` checks every World in `worlds/` (test, sample, Kompismoln) with its data set,
+`src/chatddx/test/test_worlds.py` checks every World in `worlds/` (test, sample, Kompismoln) with its data set,
 and fails when a new World isn't given one:
 - each endpoint names the digest of the engine planned under its name, and the World's check finds nothing;
 - init-data binds each World's endpoints and leaves the others' engines out;

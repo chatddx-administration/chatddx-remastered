@@ -1,6 +1,6 @@
 from collections.abc import Mapping
 
-from chatddx.curation import SampleCase
+from chatddx.curation import DataCase
 from chatddx.inventory.test.memory import MemorySource
 from chatddx.test.world import CASES
 
@@ -14,7 +14,7 @@ def vignettes(**changed: bytes) -> MemorySource:
 
 # What loading the cases lands beside each case and its expectation: the appendices, the
 # cases that send them, and those cases' expectations.
-def appended(cases: Mapping[str, SampleCase]) -> tuple[int, int, int]:
+def appended(cases: Mapping[str, DataCase]) -> tuple[int, int, int]:
     return (
         sum(len(c.appendices) for c in cases.values()),
         sum(len(c.ordered) for c in cases.values()),
