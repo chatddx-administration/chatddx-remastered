@@ -63,6 +63,14 @@ comes and a send that stops keeps what it wrote.
 | `KeyboardInterrupt` | Raised again by `send` once the calls an interrupt stopped are written. |
 | `send.Stopped` | Raised by `send.send` only; `rounds.converse`, `Running` and `Grading` catch it. |
 
+```
+AGENT: replace
+answer.salvaged is noted at level info (src/chatddx/runner/score.py:286; "Finding codes" below says so too).
+---
+**Findings.** All findings the runner notes are warnings but `answer.salvaged`, which is info. They are emitted as
+`Noted` while sending and kept in the finished row (`RunFinished.findings`, `ScoreFinished.findings`). `finish`
+returns the ledger check's findings, not these. Codes are under "Finding codes".
+```
 **Findings.** All findings the runner notes are warnings. They are emitted as `Noted` while sending and kept in the
 finished row (`RunFinished.findings`, `ScoreFinished.findings`). `finish` returns the ledger check's findings, not
 these. Codes are under "Finding codes".
@@ -281,6 +289,15 @@ In order:
 3. `rounds.load`;
 4. refuses an `execution.concurrency` above the endpoint's `max_jobs`: `ValueError` `endpoint '<name>' takes <n>
    requests at once, the execution sends <m>`;
+```
+AGENT: replace
+CHATDDX_REVISION, the rig's revision, is documented nowhere (src/chatddx/settings.py:31-32, src/chatddx/rig.py:9-14).
+The item's first two lines:
+---
+5. `url_of`, and builds `RunStarted` with a new id, `rig()` (chatddx at its installed version, with
+   `CHATDDX_REVISION` as its revision when set), `execution` (default `Execution()`), the canary set, `verify_at`, the
+   toolbox's `code` and `Endpoint(name, url)`; `verify_at` other than `PHASES` without a canary set
+```
 5. `url_of`, and builds `RunStarted` with a new id, `rig()`, `execution` (default `Execution()`), the canary set,
    `verify_at`, the toolbox's `code` and `Endpoint(name, url)`; `verify_at` other than `PHASES` without a canary set
    is a `ValidationError`;

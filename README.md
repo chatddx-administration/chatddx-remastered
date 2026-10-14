@@ -57,6 +57,14 @@ exit                            # or Ctrl-D, back to your own shell
 ```
 With [nix-direnv](https://github.com/nix-community/nix-direnv), `direnv allow` enters it whenever you `cd` in.
 
+```
+AGENT: replace
+.env names the World by a relative path (CHATDDX_WORLD=worlds/sample), so the commands without --world work only
+from the repository's root:
+---
+The commands below run inside the shell, from the repository's root: `.env` names the sample World by a path relative
+to it.
+```
 The commands below run inside the shell.
 
 ### The database
@@ -126,6 +134,21 @@ the frontend's types.
 
 ### Kompismoln's hosts
 On the Kompismoln VPN, ask pelle and malborg what they serve:
+````
+AGENT: replace
+The import writes its command line into each file's first line, URLs as given (src/chatddx/cli.py:192), and the
+files in worlds/kompismoln were written without trailing slashes, so with them the diff always shows line 1. The
+block without them:
+---
+```sh
+curl -s http://pelle.km:12009/v1/models
+curl -s http://malborg.km:12009/v1/models
+chatddx import-engine http://pelle.km:12008 http://malborg.km:12008 \
+  --engines /tmp/engines.toml --endpoints /tmp/endpoints.toml
+git diff --no-index worlds/kompismoln/engines.toml /tmp/engines.toml
+git diff --no-index worlds/kompismoln/endpoints.toml /tmp/endpoints.toml
+```
+````
 ```sh
 curl -s http://pelle.km:12009/v1/models
 curl -s http://malborg.km:12009/v1/models

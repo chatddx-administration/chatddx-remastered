@@ -14,11 +14,12 @@ it.
    that work sets the structure of the portal's frontend, and shows what Lovable has to teach (see "Swift").
 3. **Decided: `chatddx portal`** serves the portal, and starts everything the portal needs with it: the API now, the
    worker once there is one (see "P3b, concretely").
-4. **Phases 0 to 4 are built** (see "Built"): `chatddx.portal`, signing in and out, `Cache-Control: no-store`, a
-   code beside each error's detail in the API (decided); then the frontend in `frontend/`, swift's theme and
-   components, and the home page, the first island; then the pages to read; then the variation being tried, and
-   starting and watching a run (decided, see "The variation being tried" and "Starting and watching a run"). The
-   choices of phases 1 and 2 are takes (see "Built").
+4. **Phases 0 to 4, and the first half of 5, are built** (see "Built"): `chatddx.portal`, signing in and out,
+   `Cache-Control: no-store`, a code beside each error's detail in the API (decided); then the frontend in
+   `frontend/`, swift's theme and components, and the home page, the first island; then the pages to read; then the
+   variation being tried, and starting and watching a run (decided, see "The variation being tried" and "Starting and
+   watching a run"); then 5a, a page for every thread, and 5b, the clinicians' appendices, cases and expectations
+   (decided, see "Authoring"). The choices of phases 1 and 2 are takes (see "Built").
 5. **What it stands on is built**: the bench and the API (`docs/bench.md`, `docs/api.md`), the writes for authoring
    (`docs/bench.md`, "Writes for the person") and typed cases (`docs/bench.md`, "Typed cases"). What isn't is under
    "Below the UI": the worker, the batch planner and Z1.
@@ -64,9 +65,9 @@ Ways of showing things the pages keep:
 - A case left at an earlier vignette by a repair offered its replacement, which the bench stores when asked
   (`docs/catalog.md`, "What has moved on"; `docs/bench.md`, "Appendices and cases").
 - What deleting hides: everywhere, or only in pickers (`docs/catalog.md`, "Deleting" and "Smaller issues").
-- Pickers of the right kind for each reference, if components' JSON Schemas say it (`docs/factors.md`, "Reference
-  kinds in components' JSON Schemas"), and execution settings to pick, if they become a component ("Execution settings
-  as a component").
+- Pickers of the right kind for each reference, from the kinds each reference takes in the components' JSON Schemas
+  (`x-kind`, from `GET /api/kinds`: `docs/api.md`, "What a person sees"; built, see W7), and execution settings to
+  pick, if they become a component (`docs/factors.md`, "Execution settings as a component").
 - A change made in the portal kept in git through an export (`docs/curation.md`, "Import, export and verification").
 - Clearance granted in the database, through the portal and logged, as a long-term option
   (`agents/wip-clearance.md`, "Open", 2).
@@ -247,7 +248,7 @@ Built, as takes (see "Built", "Phase 1"):
 - **The three answer components are ported to Svelte** as the renderer of a management plan
   (`frontend/src/lib/plan/`), and show what swift didn't: a critical diagnosis, and a workup's priority. The older
   answers' fields are gone. Copying the answer as text isn't ported: it puts case-derived content on the clipboard
-  (`agents/wip-clearance.md`, "Open", 6).
+  (`agents/wip-clearance.md`, "Open", 5).
 
 ### What Lovable teaches
 Taken:
@@ -289,7 +290,9 @@ The demo is on the public web, but the portal has no guest: every request needs 
 in"), and people are added by command (`chatddx person add`). So:
 - a person's typed texts are held to a quota and a text to a size, with a NUL refused (built);
 - a person's runs are held to a quota a day, and a run to its items, by the bench (built in phase 4, R8);
-- signing in is rate limited, which is open (`docs/api.md`, "Outstanding", "Signing in");
+- signing in isn't limited: `docs/api.md` ("Outstanding", "Signing in") and `docs/identity.md` ("Open design
+  issues") take none until Keycloak is in front, which limits it itself. The demo on the public web before Keycloak
+  then needs a limit of its own, or a proxy's in front, which is open;
 - a flood's real cost is the inference and the ledger rows each run adds, not the text, so the quota is on runs as
   much as on texts.
 
@@ -508,6 +511,10 @@ What the portal needs below its pages that isn't built:
 - **Export.** The portal is to export results (`docs/chatddx.md`, glossary), and the export isn't planned
   (`docs/chatddx.md`, "On the table").
 - **Keycloak in front** skips the sign-in page (`docs/identity.md`, "Take, for when Keycloak arrives").
+- **What holds a configuration**, and reverse lookups. `docs/bench.md` ("Outstanding") leaves what holds a
+  configuration, which the old bench's `held.py` showed, to the portal; `Bench.reaching` and `Bench.scored_by` cover
+  the repl's part of it. The retired sample-data plan wanted the reverse too: every configuration using a component,
+  such as an output, which needs a query the catalog doesn't have. Both would show on a thread's page.
 
 ### What the pages to read leave
 From "What the portal shows", not on the pages yet:

@@ -296,6 +296,14 @@ endpoints serve. `worlds/` holds two:
 
 `endpoints.toml` and `engines.toml` in `worlds/kompismoln/` are what `chatddx import-engine` writes.
 
+```
+AGENT: replace
+That test went with the dedicated test World (b1056f3). Its successor checks every World in the repository
+(src/chatddx/test/test_worlds.py:40):
+---
+`src/chatddx/test/test_worlds.py:test_each_endpoint_serves_the_engine_planned_under_its_name` asserts the check finds
+nothing in each World in the repository against its plan.
+```
 `test/test_serving.py:test_the_sample_world_binds_each_fake_engine_the_sample_loads` asserts the check finds
 nothing in the sample World against the sample's plan.
 

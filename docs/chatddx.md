@@ -41,6 +41,14 @@ It must be possible to deliver the cage together with the results, for scientifi
 - **Schema op:** a named, versioned rewrite an output chunk applies to its schema at
   compile time, so the skeleton sends and shows the rewritten schema. Today the only one is `inline_refs@1`.
 - **Trial:** The smallest unit of an scientific intent (i.e. Experiment): skeleton + engine + cases + text-cleanup steps + seeds.
+```
+AGENT: replace
+A Batch isn't built (docs/factors.md and docs/catalog.md say so), and the word means one trial elsewhere: the repl's
+batch command (docs/repl.md, "A batch") and the sample's scripted run batch (docs/scripted.md). A glossary note,
+with no renames:
+---
+- **Batch:** trials run together, crossed from one configuration's variations over the same cases, at one endpoint. Kept on a catalog thread. Not built yet (agents/wip-batch.md). The repl's `batch` command and the scripted run named `batch` are one trial over several cases, so one run, not a Batch.
+```
 - **Batch:** trials run together, crossed from one configuration's variations over the same cases, at one endpoint. Kept on a catalog thread.
 - **Replicate:** one seed of a trial, identified by its index.
 - **Item key:** (case, replicate index), which identifies one request of a run.
@@ -49,6 +57,13 @@ It must be possible to deliver the cage together with the results, for scientifi
 - **Compilation:** A provenance (component) that says which recipe and compiler produced a skeleton
 - **Run** and **Score:** a stage log.
 - **Worker:** the process that runs the trials queued for it, outside the request that asked for them.
+```
+AGENT: replace
+Until the worker is built, docs/api.md ("Terms") calls the app's in-process run or scoring of a run a job. A
+glossary note, with no renames:
+---
+- **Job:** a trial queued for the worker, at an endpoint, for an owner, scored afterwards or not. Until there is a worker, the API's job is what the app has under way for a run in its own process: the run, or a scoring of it (docs/api.md, "Terms").
+```
 - **Job:** a trial queued for the worker, at an endpoint, for an owner, scored afterwards or not.
 - **Record** / **ledger:** events logged while running or scoring.
 - **Seal:** the hash over a log's started row and item rows, kept in its finished row.
@@ -160,6 +175,12 @@ Canaries, prompt-token fingerprints and comparing completions show which one app
  - `execution.retries`
  - `execution.order`
  - `execution.concurrency`
+```
+AGENT: replace
+A dot for a slash: the function is in ledger/score.py.
+---
+ - `score.scorer_code` (`ledger/score.py:check_score`)
+```
  - `score.scorer_code` (`ledger.score.py:check_score`)
  - plus the lints in `lint.py`.
 

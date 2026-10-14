@@ -20,6 +20,15 @@ Paths are relative to `src/chatddx/ledger/` unless they start with `src/` or `do
 
 ## Package
 
+```
+AGENT: replace
+The package re-exports JudgeEndpoint too (src/chatddx/ledger/__init__.py:30). The paragraph's first three lines:
+---
+`chatddx.ledger` re-exports `Call`, `CanaryCall`, `Endpoint`, `ItemKey`, `JudgeCall`, `JudgeEndpoint`, `Record`,
+`Run`, `RunFinished`, `RunItem`, `RunStarted`, `Score`, `ScoreFinished`, `ScoreItem`, `ScoreStarted`, `ToolCode`,
+`ToolRun`, `Turn`, `check_run`, `check_score`, `compare_prompt_tokens`, `fingerprint_prompt_tokens` and
+`fingerprint_request`.
+```
 `chatddx.ledger` re-exports `Call`, `CanaryCall`, `Endpoint`, `ItemKey`, `JudgeCall`, `Record`, `Run`,
 `RunFinished`, `RunItem`, `RunStarted`, `Score`, `ScoreFinished`, `ScoreItem`, `ScoreStarted`, `ToolCode`, `ToolRun`,
 `Turn`, `check_run`, `check_score`, `compare_prompt_tokens`, `fingerprint_prompt_tokens` and `fingerprint_request`.
@@ -130,6 +139,11 @@ row isn't part of it.
 
 ### Internal helpers
 
+```
+AGENT: remove
+record.py has no code_name since e0bfabe. Messages now name code through chatddx.rig's private _shown
+(src/chatddx/rig.py:37-39), as "<distribution> <version> at <revision>". The row to remove is the table's last.
+```
 | Function | Returns / raises |
 | --- | --- |
 | `in_order(started, finished) -> None` | `ValueError("finished before it started")` when `finished < started`. Equal times pass. |

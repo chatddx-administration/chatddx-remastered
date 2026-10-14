@@ -104,6 +104,15 @@ admin, for tier-0 writes and tier-2 triggers. They fail, rather than skip, when 
 
 ## Known gaps
 These are known shortcomings of the store's design. Some have more details in docs/store-api.md.
+```
+AGENT: add
+No doc tracks that applied migrations are known by name only (src/chatddx/store/migrate.py:27-32), and the
+history edits applied files in place, 0002-t1-factor.sql most recently. An item for the list:
+---
+- Applied migrations are known by name only, so a migration file edited after a database applied it isn't noticed,
+  and that database silently differs from the files. Before a shared database, applied files are frozen, or their
+  checksums kept with their names.
+```
 - The database doesn't check that a component has all its reference rows, only that the rows it has are right; the
   store writes them together.
 - The database allows a thread without versions; the catalog writes a thread together with its first version.

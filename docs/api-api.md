@@ -30,6 +30,15 @@ Paths are relative to `src/chatddx/api/` unless they start with `src/`, `docs/` 
 
 `chatddx.api` re-exports nothing; its modules are imported by path. `src/chatddx/cli.py` imports `app.py:app`.
 
+```
+AGENT: replace
+Three rows miss imports: families.py imports state.py (no_store); world.py imports threads.py (refused) and
+chatddx.factors.kinds (BY_KIND); runs.py imports chatddx.scorers.answer (read). The three rows as the code has them:
+---
+| `families.py` | `schemas.py`, `people.py`, `state.py`, `threads.py`, `chatddx.bench`, `chatddx.factors.{base,cases}`, `chatddx.store` |
+| `world.py` | `schemas.py`, `people.py`, `threads.py`, `chatddx.bench`, `chatddx.factors.kinds`, `chatddx.inventory`, `chatddx.scorers.{scorer,shipped}` |
+| `runs.py` | `schemas.py`, `events.py`, `jobs.py`, `people.py`, `state.py`, `threads.py`, `chatddx.bench`, `chatddx.factors.{base,request,trial}`, `chatddx.identity`, `chatddx.ledger`, `chatddx.runner.run`, `chatddx.scorers.answer` |
+```
 | Module | Builds on |
 | --- | --- |
 | `state.py` | `jobs.py`, psycopg, `chatddx.{facts,inventory,store}` |
@@ -53,6 +62,14 @@ pydantic, and `app.py` its JSON schemas too. The package holds no SQL: it reads 
 **Handlers.** Every route is a plain `def`, which FastAPI runs on its thread pool, but `runs.py:events`, which is
 `async`, so that it can stream; it does its blocking work through `run_in_threadpool`.
 
+```
+AGENT: replace
+runs.py has no _start: the run's own connection is opened by _opened (src/chatddx/api/runs.py:78). The paragraph's
+last two lines:
+---
+request's connection (`state.py:connection`), in autocommit mode and closed when the request is done with it. A run
+and a scoring get a connection of their own (`runs.py:_opened`, `scores.py:score_now`), closed when they are over.
+```
 **A bench per request.** `people.py:bench`, as `BenchDep`, builds a `Bench` for the person the request acts for, on the
 request's connection (`state.py:connection`), in autocommit mode and closed when the request is done with it. A run
 and a scoring get a connection of their own (`runs.py:_start`, `scores.py:score_now`), closed when they are over.
@@ -105,6 +122,14 @@ A FastAPI app titled `chatddx`, versioned as the installed package is, with its 
 `/api/openapi.json`, its pages at `/api/docs` and no ReDoc. `state.chatddx` holds an `AppState` of what it was made
 with.
 
+```
+AGENT: replace
+scores.py's router is mounted too (src/chatddx/api/app.py:17, :92).
+---
+The routers of `people.py`, `threads.py`, `families.py`, `world.py`, `runs.py` and `scores.py` are mounted under
+`/api`; the handlers of `STATUSES` are added, one of `HTTPException` by `CODES`, and one of `RequestValidationError`,
+answered 422 with FastAPI's list of where as the detail and `unprocessable`; and `openapi` is `_with_models`.
+```
 The routers of `people.py`, `threads.py`, `families.py`, `world.py` and `runs.py` are mounted under `/api`; the
 handlers of `STATUSES` are added, one of `HTTPException` by `CODES`, and one of `RequestValidationError`, answered 422
 with FastAPI's list of where as the detail and `unprocessable`; and `openapi` is `_with_models`.
@@ -314,6 +339,34 @@ Without `cases`, each of `_families`' cases. With them: the cases in the order g
 `HTTPException(422, "a run takes at least one case")` for none, and `HTTPException(422, "no case <case> for <login>")`
 for the first that isn't among `Bench.cases` of a family of `Bench.families()`.
 
+```
+AGENT: replace
+There is no _start: starting a run is split between _opened, which _new (for start) and _repeated (for again) are
+given, and _launched (src/chatddx/api/runs.py:76-148). The route table below names them already. In place of this
+section:
+---
+### `_opened(held: AppState, person: Person, starting: _Starting) -> _Started`
+On a connection of its own (`AppState.connect`), a `Bench` for the person, and `starting(bench)`, which gives the
+`Running`, its skeleton, the endpoint's name and the seed. The connection is closed when any of this raises, and is
+the run's thread's otherwise. The `_Started` holds the bench, the `Running`, the skeleton and `run.started`'s data:
+the run, its trial's digest, skeleton and cases, the endpoint's name, the seed and the skeleton's `greedy`.
+
+`_Starting` is `Callable[[Bench], tuple[Running, Skeleton, str, int]]`.
+
+### `_new(given: schemas.NewRun) -> _Starting`
+Within `refused()`, `Bench.variation` and `Bench.skeleton`; then `Bench.endpoint`. A `LookupError` from those,
+`NotFound` among them, is raised as `HTTPException(422)` with its message. The cases of `_cases`; the seed,
+`suggest_seeds(1)[0]` unless given; and, within `refused()`, `Bench.start`, whose `Refused` passes to `STATUSES`.
+
+### `_repeated(run: UUID, given: schemas.NewAgain) -> _Starting`
+`Bench.run_by_id` (`NotFound`); the seed given, else `suggest_seeds(1)[0]`; and, within `refused()`, `Bench.again`
+of the run, whose `Refused` passes to `STATUSES`. The skeleton is the run's trial's, and the endpoint the run's.
+
+### `_launched(request, response, started: _Started, score: bool) -> schemas.RunStartedData`
+A `Job` of the run from `AppState.jobs` (`HTTPException(409)` while one is under way), holding its `Running`, with
+`run.started` put; `_sent` on a thread of its own, named `chatddx-run-<id>`; and `Location` the run's path
+(`url_path_for("run")`). Returns `run.started`'s data.
+```
 ### `_start(held: AppState, person: Person, given: schemas.NewRun) -> _Started`
 On a connection of its own (`AppState.connect`), a `Bench` for the person; within `refused()`, `Bench.variation` and
 `Bench.skeleton`; then `Bench.endpoint`. A `LookupError` from those, `NotFound` among them, is raised as
@@ -448,9 +501,19 @@ settings.database())`.
 `chatddx portal` takes the same arguments and serves `chatddx.portal.app.app` the same way, its `SystemExit` saying
 `portal:` (`src/chatddx/cli.py:_serve`; agents/wip-portal.md).
 
+```
+AGENT: remove
+A stray line of two backquotes.
+```
 ``
 ## Tests
 
+```
+AGENT: add
+The table leaves out test/test_kinds.py. A row for it, after test_writes.py's:
+---
+| `test_kinds.py` | The kinds with their JSON Schemas and what their references take; a component checked as a write would store it, with nothing written, the lints said, and what a write would refuse refused. |
+```
 | Module | Holds |
 | --- | --- |
 | `conftest.py` | `template` is `curated`, the test World as init-data lands it; `autocommit`; `alice`, with `PASSWORD`; `served`, the app on the test World's inventory and facts (`chatddx.test.world.world_facts`); `client`, a `TestClient` over `https://testserver`; `signed`, the client with alice's bearer; `bob`, his bearer's header; `bench`, alice's; and the helpers `sign_in` and `bearer`. |

@@ -670,4 +670,8 @@ line, and stops at the first that fails, exiting with 1:
 printf 'cell plan qwen3-8b@pelle\nseed\nbatch edn\n' | chatddx repl alice
 ```
 
+```
+AGENT: remove
+An empty heading left from AGENTS.md's old "Proposed amendments" convention, which no doc keeps since.
+```
 ## Proposed amendments
