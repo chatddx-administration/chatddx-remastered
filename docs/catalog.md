@@ -16,6 +16,16 @@ It holds nothing no sensitive or sensitive-derived data, so the reader role may 
 ## How the catalog works
 
 ### Append-only, and the latest wins
+```
+AGENT: replace
+The time a row records isn't only for display: the bench counts a person's runs in the last day by their owner
+entries' times, for its quota (`Catalog.runs_started`).
+---
+Nothing in the catalog is changed or removed. Every change is a new row. For anything that can change (a thread's
+current version, a name, a binding, a language), the latest row is what holds now and the earlier rows are its
+history. "Latest" means written last, in the order the database numbered the rows, not by the time a row records,
+which is shown, and counts the runs a person started in the last day.
+```
 Nothing in the catalog is changed or removed. Every change is a new row. For anything that can change (a thread's
 current version, a name, a binding, a language), the latest row is what holds now and the earlier rows are its
 history. "Latest" means written last, in the order the database numbered the rows; the time a row records is only for
@@ -25,6 +35,13 @@ Deleting is a row too, which a later row can undo (see "Deleting"). True deletio
 (docs/store.md, "Tiers"); a garbage collector for unreferenced items is on the table (docs/chatddx.md, "On the table").
 
 ### Rules
+```
+AGENT: replace
+"Concurrent writers" says the database repeats every such rule but two, as the migrations do.
+---
+all. The rules that two writers at once could break are repeated by the database at tier 2, with two exceptions (see
+"Concurrent writers").
+```
 The catalog checks its rules against what is stored when it writes, and a change that takes several rows, such as a
 thread with its first version and its owner, a family with its binding, or a repair, is written all at once or not at
 all. The rules that two writers at once could break are repeated by the database at tier 2, with one exception (see
@@ -69,6 +86,14 @@ version it came from. Trying a variation costs nothing in the catalog, since any
 A variation worth keeping becomes an edit of its thread, or a fork. Configurations are organised by their lineage, the
 recipe parts they use, what is said about them and their runs, not by their names, which are optional.
 
+```
+AGENT: replace
+Batches aren't built: there is no batch kind of component or of thread (docs/factors.md, "Batch": "Not built yet").
+---
+A *batch* is to be kept on a thread of its own (docs/factors.md, "Batch"; not built yet): the variations of a
+configuration that a person runs together over the same cases, kept to run again or later. Adding cases to a batch
+will be an edit of its thread, since a batch's trials pin their cases.
+```
 A *batch* is kept on a thread of its own (docs/factors.md, "Batch"): the variations of a configuration that a person
 runs together over the same cases, kept to run again or later. Adding cases to a batch is an edit of its thread, since a
 batch's trials pin their cases.
@@ -153,6 +178,16 @@ A run's owner is whoever started it, and a score's whoever scored it: the runner
 owner entry as they start, and a person's runs are the runs they own.
 
 ### Deleting
+```
+AGENT: replace
+The catalog's threads of a kind include deleted ones, marked deleted (see "Threads and edits"); the bench leaves them
+out of what a person sees.
+---
+A deleted thread or family is still there, and so are its components. Deleting takes it out of what people pick from
+and of what is proposed to them: what a person sees, looking up by name, the expectation a person is scored against,
+and what has moved on, which proposes no deleted thread and flags no case of a deleted family. The threads of a kind
+still include it, marked deleted.
+```
 A deleted thread or family is still there, and so are its components. Deleting takes it out of what people pick from
 and of what is proposed to them: the threads of a kind, what a person sees, looking up by name, the expectation a
 person scores against, and what has moved on, which proposes no deleted thread and flags no case of a deleted family.
@@ -194,6 +229,13 @@ compilation, as for a hand-written skeleton, it is shown by its purpose and the 
 
 Each kind is described by:
 
+```
+AGENT: replace
+Batches aren't built, so nothing describes one; a scoring is described, but has no row, and would be read as falling
+under the last row. Replace the Batch row with this one, after the Scorer row.
+---
+| Scoring | Its scorer and how many expectations it has. | `scorer chatddx.scorers.metrics:score v2 against 20 expectations` |
+```
 | Component | Described by | Example |
 | --- | --- | --- |
 | Chunk | Its values or the opening words of its text. | `temperature 1.0, top_p 1.0` or `"{vignette}{appendices}"` |
@@ -352,6 +394,14 @@ and expectation schema. So two people adopting the same vignette at the same mom
 writes at the same moment can leave a person several expectations to choose from, which scoring then refuses.
 
 ### Smaller issues
+```
+AGENT: replace
+A survey lists the second id as new while the adopted one is still listed; both are renames only once it is gone.
+---
+- **Identical vignettes.** Two vignettes with the same content under different ids in one source look like a rename:
+  adopting refuses the second, which a survey lists as new. Once the adopted id is gone, a survey reports both ids as
+  renames of the same family.
+```
 - **Identical vignettes.** Two vignettes with the same content under different ids in one source look like a rename:
   adopting refuses the second, and a survey reports both ids as renames of the same family.
 - **Several matching families.** When bindings of several families match a case, the latest matching binding decides,
