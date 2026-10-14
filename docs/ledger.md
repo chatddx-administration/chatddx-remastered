@@ -248,11 +248,6 @@ Most of the plan is compared with what happened (see "What a record holds"), but
   request, from the scorer's reading of the answer (docs/factors.md, "Judge"), aren't rebuilt, and checking a run
   rebuilds none.
 
-```
-AGENT: add
-A potential improvement that came out of the healthcheck's bugs 2 and 3: a stream's ids are places in a job, which
-the ledger's telling of a run can't continue. A subsection for "Open design issues", before "Smaller issues":
----
 ### Telling a run as it was written
 The API tells a run under way from its job, and a run with nothing under way from the ledger (docs/api.md, "Its
 events"). Each numbers its events its own way: the job counts its deltas, the ledger's telling doesn't, so a stream
@@ -269,7 +264,7 @@ job, in any process, after a restart, and across a scoring again, whose rows fol
 - **Every score, not only the latest.** Each scoring's rows would be told after the run's, in the order written.
 - **The worker** is to read a run's events from the ledger (agents/wip-worker.md, K3, E2 decided), and would number
   them the same way.
-```
+
 ### Smaller issues
 - **Canary drift isn't checked.** Nothing compares canary outputs between phases or between runs.
 - **Only run items are fully attested.** Judge calls get the model check but no prompt check, and canary calls get

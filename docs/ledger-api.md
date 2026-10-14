@@ -23,8 +23,6 @@ Paths are relative to `src/chatddx/ledger/` unless they start with `src/` or `do
 `chatddx.ledger` re-exports `Call`, `CanaryCall`, `Endpoint`, `ItemKey`, `JudgeCall`, `JudgeEndpoint`, `Record`,
 `Run`, `RunFinished`, `RunItem`, `RunStarted`, `Score`, `ScoreFinished`, `ScoreItem`, `ScoreStarted`, `ToolCode`,
 `ToolRun`, `Turn`, `check_run`, `check_score`, `compare_prompt_tokens`, `fingerprint_prompt_tokens` and
-`fingerprint_request`. `RunFinished`, `RunItem`, `RunStarted`, `Score`, `ScoreFinished`, `ScoreItem`, `ScoreStarted`,
-`ToolCode`, `ToolRun`, `Turn`, `check_run`, `check_score`, `compare_prompt_tokens`, `fingerprint_prompt_tokens` and
 `fingerprint_request`.
 
 Everything else (`Phase`, `PHASES`, `UtcDatetime`, the stage unions, the helpers in `record.py`
