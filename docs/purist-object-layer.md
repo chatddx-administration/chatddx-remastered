@@ -1,5 +1,16 @@
 # The object layer: a purist take
 
+```
+AGENT: replace
+There is no batch kind to come (agents/wip-portal.md, "Comparing variations").
+---
+Not a plan, and not on the work queue: a take on how `chatddx.factors` would split if how a thing is stored and what
+it means to the research were kept apart. Execution settings are a factor but not a component, and canary sets and
+compilations are components but not factors. This file follows that split to its end, where how something is stored
+is a layer of its own and "factor" is a label for what something means to the research. It also says why, for now,
+the kinds stay together, and what would make the split worth it. On that day the work goes into a `wip-` plan of its
+own.
+```
 Not a plan, and not on the work queue: a take on how `chatddx.factors` would split if how a thing is stored and what
 it means to the research were kept apart. Execution settings are a factor but not a component, and canary sets,
 compilations and, once they are built (`agents/wip-batch.md`), batches are components but not factors. This file
@@ -15,6 +26,13 @@ worth it. On that day the work goes into a `wip-` plan of its own.
    whether it is a factor.
 3. **Decided, built: the kinds are written down** (see "Kinds written down"): `src/chatddx/factors/kinds.py:KINDS`
    replaces self-registration.
+```
+AGENT: replace
+There is no batch kind to come.
+---
+4. **Keep the kinds together** (see "The pragmatic take"): every kind stays in `chatddx.factors`, and the package
+   reads as "the factors, and the objects built alongside them". Take.
+```
 4. **Keep the kinds together** (see "The pragmatic take"): every kind stays in `chatddx.factors`, the batch kind too
    when it is built, and the package reads as "the factors, and the objects built alongside them". Take.
 5. **The trigger** (see "The split"): the day an object kind has to import something above `factors`. Until then,
@@ -22,6 +40,12 @@ worth it. On that day the work goes into a `wip-` plan of its own.
 6. **Open**: the name (see "Naming"), and declaring `kind` as a class keyword (see "Kinds written down").
 
 ## Two questions
+```
+AGENT: replace
+In the row of text: there is no batch kind, so no work.
+---
+| text: added under an id and never changed, deleted only by the admin (typed vignettes, `docs/store.md`, "Texts") | |
+```
 | How it is stored | What it is to the research |
 | --- | --- |
 | object: immutable, content-addressed, identified by its digest | factor: pinned, recorded or observed (`docs/factors.md`, "What a factor is") |
@@ -32,6 +56,12 @@ worth it. On that day the work goes into a `wip-` plan of its own.
 
 Pinned factors are all objects, which is why the two looked the same. The exceptions run both ways:
 - Execution settings are a recorded factor held in records (`src/chatddx/ledger/run.py:RunStarted.execution`).
+```
+AGENT: replace
+There is no batch kind to come.
+---
+- Canary sets and compilations are objects that aren't factors (`docs/factors.md`, "Components but not factors").
+```
 - Canary sets and compilations are objects that aren't factors, and batches will be (`docs/factors.md`, "Components
   but not factors").
 
@@ -53,10 +83,24 @@ Pinned factors are all objects, which is why the two looked the same. The except
     base: a run start holds a trial, a skeleton's tools and a canary set, a score start a scoring and its judges.
   - The catalog imports no chatddx package but `chatddx.factors` and `chatddx.identity` (`docs/catalog-api.md`).
   - The inventory's check and serving read engines, and its sources build cases (`docs/inventory-api.md`).
+```
+AGENT: replace
+There is no batch kind to come.
+---
+- All 24 kinds are defined in `factors` and listed in `factors/kinds.py:KINDS`, which is all `parse_component`
+  reads. A typed case's text is no component: it is kept in the `source` schema.
+```
 - All 24 kinds are defined in `factors` and listed in `factors/kinds.py:KINDS`, which is all `parse_component`
   reads. There is no batch kind yet, and a typed case's text is no component: it is kept in the `source` schema.
 
 ## The pragmatic take
+```
+AGENT: replace
+In the paragraph's first lines: there is no batch kind to come.
+---
+Take: keep every kind in `factors`. Don't extract the object layer, don't move kinds, and don't rename the schema. The
+reasons:
+```
 Take: keep every kind in `factors`, and put batches there too when they are built (`factors/batch.py`, beside
 `trial.py`; the batch's section in `docs/factors.md` sits under "Trials"). Don't extract the object layer, don't move
 kinds, and don't rename the schema. The reasons:
@@ -67,6 +111,10 @@ kinds, and don't rename the schema. The reasons:
 - **Nothing forces the move.** None of the non-factor kinds needs anything above `factors`:
   - canary sets use `RUNTIME_KEYS` (`factors/trial.py`);
   - compilations use `Recipe` and `Code`;
+```
+AGENT: remove
+There is no batch kind to come.
+```
   - a batch would hold digests and an endpoint's name, which is just a string.
 
   The only cost of keeping them together is vocabulary, and `docs/factors.md` already says "Being a factor and being
@@ -139,6 +187,12 @@ The usual name for an immutable, typed thing referred to by a hash of its conten
   media type, much as a kind does here.
 - Merkle-DAG writing says node or block.
 
+```
+AGENT: replace
+In the paragraph's last line: there is no batch kind.
+---
+also suggests being part of a trial's closure, and compilations are part of no closure. Options:
+```
 In Python, `Object` reads badly beside the built-in `object`, which is probably why "component" was chosen. "Component"
 also suggests being part of a trial's closure, and compilations and batches are part of no closure. Options:
 - **A**: `chatddx.objects`, with `Object` and the `object` schema. Take.
@@ -147,6 +201,10 @@ also suggests being part of a trial's closure, and compilations and batches are 
 Open: a question for the user.
 
 ### Homes
+```
+AGENT: remove
+The row `batch, once built`: there is no batch kind to come (agents/wip-portal.md, "Comparing variations").
+```
 | Kind | Is | Home | What moving it costs |
 | --- | --- | --- | --- |
 | trial, skeleton, chunks, cases, engines, scorings… | pinned factors | `factors`, as now | nothing |
@@ -198,6 +256,13 @@ To suggest when built:
   "Errors and findings", "Registries and bundles", "Fingerprints", "Code", "Storage"), and the part of "Kinds" that
   isn't about what each kind means to the research. They also take the `base.py`, `bundle.py` and `kinds.py` sections
   and "Database: schema `factor`" from `docs/factors-api.md`.
+```
+AGENT: replace
+In the item's last line: there is no "Batch" section to move.
+---
+- **`docs/factors.md`, "What a factor is"**: pinned factors are held as objects (`docs/objects.md`). The paragraphs
+  on canary sets and compilations move to `docs/ledger.md` and `docs/catalog.md` if those kinds move.
+```
 - **`docs/factors.md`, "What a factor is"**: pinned factors are held as objects (`docs/objects.md`). The paragraphs
   on canary sets and compilations move to `docs/ledger.md` and `docs/catalog.md` if those kinds move. The "Batch"
   section moves to the batch package's doc.

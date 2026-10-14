@@ -96,7 +96,7 @@ def run(repl: Repl, name: str, seed: str | None = None) -> None:
     _recorded(repl, running)
 
 
-def batch(repl: Repl, *tags: str) -> None:
+def tagged(repl: Repl, *tags: str) -> None:
     whole = _whole(repl)
 
     if whole is None:
@@ -105,10 +105,10 @@ def batch(repl: Repl, *tags: str) -> None:
     variation, endpoint = whole
     bench = repl.bench
     families = bench.families(tags)
-    tagged = " or ".join(tags)
+    any_of = " or ".join(tags)
 
     if not families:
-        repl.error(f"no case tagged {tagged} for {bench.person.login}")
+        repl.error(f"no case tagged {any_of} for {bench.person.login}")
         return
 
     skeleton = bench.skeleton(variation)
@@ -121,8 +121,8 @@ def batch(repl: Repl, *tags: str) -> None:
     width = max(len("case"), *(len(n) for n in names.values()))
     repl.console.print(
         Text(
-            f"batch: {variation.label} × {endpoint} × "
-            + f"{plural(len(families), 'case')} tagged {tagged}, seed {repl.seed}",
+            f"trial: {variation.label} × {endpoint} × "
+            + f"{plural(len(families), 'case')} tagged {any_of} (seed {repl.seed})",
             style="bold",
         )
     )

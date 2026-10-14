@@ -3,9 +3,8 @@
 The worker runs trials outside the process that asked for them, so that a run outlives a restarted app and is seen,
 followed and halted from every replica. A run started over HTTP already outlives a closed tab and a client that goes
 away: it is a job in the app's process (`docs/api.md`, "Where it runs"), which the portal starts and watches runs on
-(`agents/wip-portal.md`, R10). The worker takes the jobs' place with the API as it is, and runs what the batch
-planner plans (`agents/wip-batch.md`). This file plans it, and the port of what the old worker did. Nothing of it is
-built: no `worker` schema, no `src/chatddx/worker/`, no resuming.
+(`agents/wip-portal.md`, R10). The worker takes the jobs' place with the API as it is. This file plans it, and the
+port of what the old worker did. Nothing of it is built: no `worker` schema, no `src/chatddx/worker/`, no resuming.
 
 "The old worker" is chatddx-administration/chatddx at 504792c: `src/chatddx/worker/` (`models.py`, `queue.py`,
 `worker.py`, `control.py`, `cli.py`, about 950 lines), with the portal's **Status** page
@@ -16,8 +15,8 @@ https://github.com/chatddx-administration/chatddx/blob/504792cbeb09508f2c52912be
 "Decided" means the user said so. "Take" is the agent's recommendation and still open.
 
 ## Start with this
-1. **Decided: the worker and the batch planner are planned apart**, as this file and `agents/wip-batch.md`. They meet
-   at one contract (see "The contract"), which is a take.
+1. **Decided: there is no batch.** An edge asks the worker for runs, one at a time; variations started together are
+   a run each (`agents/wip-portal.md`, "Comparing variations"). What an edge hands it is "The contract", a take.
 2. **The problem** (see "Why"): what the app has under way for a run, the run or a scoring of it, is a job in its
    process (decided: `docs/api.md`, "Where it runs"). It ends with the process, and other replicas don't see it.
 3. **Decided: the queue is updated in place** (K2), an exception to "nothing is updated", as identity's people and
@@ -27,7 +26,7 @@ https://github.com/chatddx-administration/chatddx/blob/504792cbeb09508f2c52912be
    and woken by `LISTEN`/`NOTIFY` (E2); K4, it schedules runs; K5, every run started over HTTP goes through it. E3,
    deltas through `NOTIFY`, is still a take, and the API's events need deltas (see K3).
 5. **What it needs below it first** (see "Below the worker"): resuming a run, and `Bench.start` taking an execution
-   and a canary set.
+   and a canary set, with the seeds and cleanup steps the API and the portal want before it.
 6. **Open: where a run starts** (K6): in the request, as `docs/api.md` has it, or in the worker, as "The contract"
    has it. Take: in the request.
 
@@ -66,9 +65,12 @@ https://github.com/chatddx-administration/chatddx/blob/504792cbeb09508f2c52912be
   the cases running with their time and tokens, what is up next, and the ten taken up last.
 
 ### What changes in remastered
-- **A trial holds every case** (`docs/chatddx.md`, glossary, "Trial"), where the old one held one. A batch is a few
-  long runs, one per variation, rather than many short jobs. Fairness between owners, pausing and stopping act on runs,
-  unless the worker schedules a run's items (K4).
+- **A trial holds every case** (`docs/chatddx.md`, glossary, "Trial"), where the old one held one. Variations
+  started together are a few long runs, one per variation, rather than many short jobs. Fairness between owners,
+  pausing and stopping act on runs, unless the worker schedules a run's items (K4).
+- **No batch.** The old `queue.put(owner, batch, trials)` took a batch's id, each `JobModel` pointed at a
+  `BatchModel`, and a batch's state was its jobs' state. A job here is a run, found by its trial and owner as any run
+  is (`agents/wip-portal.md`, "Comparing variations").
 - **Concurrency is the run's.** The runner sends a run's items up to its execution's concurrency, and refuses an
   execution above its endpoint's `max_jobs` (`src/chatddx/runner/run.py:Runner.start`). The old worker's slots were
   its own. Until the worker shares `max_jobs` between runs, a run's concurrency stays 1 (`agents/wip-portal.md`, R9).
@@ -87,24 +89,14 @@ https://github.com/chatddx-administration/chatddx/blob/504792cbeb09508f2c52912be
   `ITEMS_PER_RUN`; `src/chatddx/bench/runs.py`), counted from the runs started in the catalog.
 
 ## The contract
-What edges and the planner hand the worker, and what they get back. Take:
-1. **The unit asked for**: a trial at an endpoint, for an owner, scored afterwards or not, and the batch it came from
-   if any (`agents/wip-batch.md`). That is `Bench.start` followed by `Bench.score` (`src/chatddx/bench/runs.py`), and
-   what `POST /api/runs` asks today (`docs/api.md`, "Runs"). Whether the worker or the request starts the run is K6.
+What edges hand the worker, and what they get back. Take:
+1. **The unit asked for**: a trial at an endpoint, for an owner, scored afterwards or not. That is `Bench.start`
+   followed by `Bench.score` (`src/chatddx/bench/runs.py`), and what `POST /api/runs` asks today (`docs/api.md`, "Runs"). Whether the worker or the request starts the run is K6.
    Scoring a run again is a unit of its own: a run and the scorers it is left to, as `POST /api/runs/{id}/scores`
    asks.
-2. **How its runs are found**: by trial digest and owner (`Bench.runs`; `GET /api/runs?trial=`), or through a kept
-   batch (`agents/wip-batch.md`, "Kept batches").
+2. **How its runs are found**: by trial digest and owner (`Bench.runs`; `GET /api/runs?trial=`), as any run is.
 3. **The surface an edge calls**: queue, which gives the job's id; halt; and the events, by item from the ledger, with
    deltas (K3). A job's state is the queue's; what its run did is the ledger's, read from there and not copied.
-
-Why apart from the planner:
-- **One narrow seam.** The planner decides which trials; the worker decides when and where they run.
-- **Each is useful without the other.** The planner serves the repl's `batch` and the portal's confirmation page; the
-  worker serves single runs from the API and the portal, and sample runs.
-- **Different kinds of work.** The planner is pure over the bench; the worker is processes, concurrency and failure.
-- **The old project fused them, and it cost**: `queue.put(owner, batch, trials)` took a batch's id, each `JobModel`
-  pointed at a `BatchModel`, and a batch's state was its jobs' state.
 
 ## Options
 ### K1. Where it runs
@@ -129,7 +121,7 @@ progress"; `docs/store.md`, "The queue"), as identity's people and sessions are.
   grants to update it, which `docs/store.md` ("Roles and connections") names already. Tier 2 keeps the factors, the
   ledger and the catalog append-only, and leaves the queue out, as it leaves identity.
 - **A job**: the owner, what it does (a run, scored or not, or a scoring of a run), the trial and endpoint or the run
-  and scorers, the batch it came from if any (`agents/wip-batch.md`), its status (queued, under way, finished,
+  and scorers, its status (queued, under way, finished,
   stopped, failed, lost), why, the run it started, and when it was queued, claimed, last beat and ended.
 - **Claimed** with `SELECT … FOR UPDATE SKIP LOCKED`, as the old worker claimed (`worker.py:_taken`).
 - **Controls per owner** (paused, stopping), and **workers** (id, last seen), updated in place too: a job whose worker
@@ -161,7 +153,7 @@ Decided: runs, with `max_jobs` shared by the runs on one endpoint through their 
 ### K5. Which runs go through it
 - **Every run started over HTTP**, the portal's and the API's: one path. `POST /api/runs` answers 202 and the run's
   path, and the stream is `GET /api/runs/{id}/events`, as built in the app's process (`docs/api.md`, "Its events").
-- **Batches only**, single runs staying in the request.
+- **Runs started together only**, a single run staying in the request.
 
 Decided: every run started over HTTP, and with them what else the app runs as a job: scoring again and running again.
 The repl keeps running in its own process, where Ctrl-C halts a run as it should. `max_jobs` then isn't held between
@@ -196,9 +188,15 @@ Moved here from the runner's plan (`docs/runner.md`, "Elsewhere"), since the wor
   (`docs/bench.md`, "Outstanding").
 - **Canary sets.** `Runner.start(…, canaries)` takes one, and both data sets hold one, but `Bench.start` passes none,
   so no run started over HTTP sends one (`docs/scripted.md`, "Smaller issues"). `docs/api.md` ("Not covered") leaves
-  canary sets, with an execution's settings, to the batch planner and the worker; the run's start is where one is
-  given, so `Bench.start` takes it with the execution. Which set a run gets, the World's or the person's pick, is
-  open.
+  canary sets, with an execution's settings, to the worker; the run's start is where one is given, so `Bench.start`
+  takes it with the execution. Which set a run gets, the World's or the person's pick, is open.
+- **Seeds and cleanup steps.** A trial holds several seeds, its replicates, and the cleanup steps it applies to
+  vignettes, but `Bench.start` makes a trial of one seed and none (`src/chatddx/bench/seen.py:Seen.trial`), so no run
+  started from the bench has replicates or cleans its vignettes; running again keeps a trial's cleanup. `Bench.start`
+  takes them with the execution and the canary set, and `POST /api/runs` with it (`docs/api.md`, "Not covered").
+  `settings.ITEMS_PER_RUN` then counts cases times seeds. The API and the portal want them before the worker
+  (`agents/wip-portal.md`, "Comparing variations", C3). Which cleanup a run applies, picked at its start or carried
+  by the configuration, is open.
 
 Still the runner's, and met here:
 - **A call still waiting for its engine to answer at all** waits on after a halt, under an execution with no timeout;
@@ -207,7 +205,8 @@ Still the runner's, and met here:
 
 ## The plan
 On the decisions above, and the takes left.
-0. **Below the worker**: resuming (`src/chatddx/runner/`), and `Bench.start` taking an execution and a canary set.
+0. **Below the worker**: resuming (`src/chatddx/runner/`), and `Bench.start` taking seeds, cleanup steps, an
+   execution and a canary set.
 1. **The queue**: the `worker` schema, its jobs, controls and workers, at every tier; the store's reads and writes
    for them; tests on the store. `docs/store.md` and `docs/chatddx.md` describe it already; once the migrations land,
    `docs/migrations.md` gets a `worker` section, and its "identity, the one mutable schema" changes.
@@ -235,3 +234,4 @@ On the decisions above, and the takes left.
   planner and the worker".
 - From the runner's plan, since solidified as `docs/runner.md`: "Resuming" and "`max_jobs` across runs".
 - From `agents/wip-api.md` at 100a078, "Open": "Long requests".
+- From `agents/wip-batch.md`, removed when the batch was dropped: seeds and cleanup steps for `Bench.start`.

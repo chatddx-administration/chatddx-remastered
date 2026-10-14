@@ -176,12 +176,12 @@ def test_a_structured_answer_cut_short_is_salvaged(
 
 
 @pytest.mark.slow
-def test_a_batch_says_each_finding_once_with_how_often_it_came(
+def test_run_tag_says_each_finding_once_with_how_often_it_came(
     world: Inventory, bench: Bench, say: Say
 ):
     startup = start_up(world, bench.get, QWEN)
     with serving([Served.of(startup.argv[0], startup.argv[1:])], runaway=True):
-        written = say(f"cell {NATIVE} {QWEN}", "batch targets")
+        written = say(f"cell {NATIVE} {QWEN}", "run tag targets")
     targets = tagged("targets")
 
     stop = "stopped: nothing but whitespace for 100 tokens"
@@ -208,12 +208,14 @@ def test_a_greedy_cell_runs_without_its_seed(say: Say):
 
 @pytest.mark.usefixtures("fake")
 @pytest.mark.slow
-def test_batch_runs_the_cell_on_each_case_tagged_a_line_to_each(bench: Bench, say: Say):
-    written = say(f"cell {LINES} {QWEN}", "batch targets")
+def test_run_tag_runs_the_cell_on_each_case_tagged_a_line_to_each(
+    bench: Bench, say: Say
+):
+    written = say(f"cell {LINES} {QWEN}", "run tag targets")
     targets = tagged("targets")
 
     assert (
-        f"batch: {LINES} × {QWEN} × {len(targets)} cases tagged targets, seed 7"
+        f"trial: {LINES} × {QWEN} × {len(targets)} cases tagged targets (seed 7)"
         in written
     )
     assert ["case", "tokens", "outcome"] in cells(written)
@@ -226,16 +228,16 @@ def test_batch_runs_the_cell_on_each_case_tagged_a_line_to_each(bench: Bench, sa
     assert ["lines", "text", "1", "@0", "0", str(len(targets) - 1)] in cells(written)
 
 
-def test_batch_says_what_it_can_t_run(say: Say):
-    assert "the cell needs a configuration and an endpoint" in say("batch targets")
-    assert "usage: batch TAG..." in say(f"cell {LINES} {QWEN}", "batch")
-    assert "no case tagged nowhere for alice" in say("batch nowhere")
+def test_run_tag_says_what_it_can_t_run(say: Say):
+    assert "the cell needs a configuration and an endpoint" in say("run tag targets")
+    assert "usage: run tag TAG..." in say(f"cell {LINES} {QWEN}", "run tag")
+    assert "no case tagged nowhere for alice" in say("run tag nowhere")
 
 
 @pytest.mark.usefixtures("fake")
 @pytest.mark.slow
-def test_batch_runs_the_cases_with_any_of_its_tags(bench: Bench, say: Say):
-    written = say(f"cell {LINES} {QWEN}", "batch targets nowhere swedish")
+def test_run_tag_runs_the_cases_with_any_of_its_tags(bench: Bench, say: Say):
+    written = say(f"cell {LINES} {QWEN}", "run tag targets nowhere swedish")
     either = tagged("targets", "swedish")
 
     assert f"{len(either)} cases tagged targets or nowhere or swedish" in written
@@ -296,11 +298,11 @@ def test_ctrl_c_stops_a_run_as_it_streams_and_it_is_recorded_as_stopped(
 
 @pytest.mark.usefixtures("fake")
 @pytest.mark.slow
-def test_ctrl_c_lets_the_case_under_way_finish_then_stops_the_batch(
+def test_ctrl_c_lets_the_case_under_way_finish_then_stops_the_run(
     bench: Bench, say: Say, monkeypatch: pytest.MonkeyPatch
 ):
     press_at(monkeypatch, 5)
-    written = pressing(say, f"cell {LINES} {QWEN}", "batch targets")
+    written = pressing(say, f"cell {LINES} {QWEN}", "run tag targets")
 
     [run] = ran(bench)
     [item] = run.items
@@ -316,7 +318,7 @@ def test_ctrl_c_again_stops_the_case_under_way_too(
     bench: Bench, say: Say, monkeypatch: pytest.MonkeyPatch
 ):
     press_at(monkeypatch, 5, presses=2)
-    written = pressing(say, f"cell {LINES} {QWEN}", "batch targets")
+    written = pressing(say, f"cell {LINES} {QWEN}", "run tag targets")
     targets = tagged("targets")
 
     [run] = ran(bench)
@@ -419,9 +421,9 @@ def test_views_without_a_target_are_said_once_rather_than_scored(say: Say):
     assert "note-" not in scores.split("no target")[0]
     assert "no target: judged note-comment, note-answer, note-graded" in scores
 
-    written = say("batch bytes")
+    written = say("run tag bytes")
 
-    assert "note-" not in written.split("no target in any case")[0].split("batch:")[-1]
+    assert "note-" not in written.split("no target in any case")[0].split("trial:")[-1]
     assert "no target in any case: judged note-comment, note-answer, note-graded" in (
         written
     )

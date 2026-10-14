@@ -314,6 +314,14 @@ many cases is answered 200, whatever it took, and a carry 201, even when the exp
 ## Not covered
 - **A vignette in a run's request.** A run takes cases; a text to run is typed first, and kept in the World's
   database source as a case of its own (see "Typed cases").
+```
+AGENT: replace
+There is no batch planner: replicates and text cleanup wait on the run's start taking them, as an execution's
+settings and canary sets do.
+---
+- **A trial beyond one seed**: replicates, text cleanup, an execution's settings and canary sets wait on
+  `Bench.start` taking them (agents/wip-worker.md, "Below the worker").
+```
 - **A trial beyond one seed**: replicates, an execution's settings, canary sets and text cleanup are the batch
   planner's and the worker's (agents/wip-batch.md, agents/wip-worker.md).
 - **A proxy's forward auth**: once a proxy authenticates, that is its job.

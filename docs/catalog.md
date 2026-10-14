@@ -69,6 +69,11 @@ version it came from. Trying a variation costs nothing in the catalog, since any
 A variation worth keeping becomes an edit of its thread, or a fork. Configurations are organised by their lineage, the
 recipe parts they use, what is said about them and their runs, not by their names, which are optional.
 
+```
+AGENT: remove
+There is no batch to keep: variations started together are a run each (agents/wip-portal.md, "Comparing
+variations"). Runs can be grouped by the tags an entry says of them (see "Entries").
+```
 A *batch* is to be kept on a thread of its own (docs/factors.md, "Batch"; not built yet): the variations of a
 configuration that a person runs together over the same cases, kept to run again or later. Adding cases to a batch
 will be an edit of its thread, since a batch's trials pin their cases.

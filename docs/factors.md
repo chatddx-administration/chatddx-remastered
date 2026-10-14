@@ -59,6 +59,10 @@ Most components are factors, these are the exceptions:
 - Compilations are *provenance*: each says how a skeleton was made, and no component refers to one, so they change
   no digest and no output (see "Compilation").
 
+```
+AGENT: remove
+There is no batch kind (agents/wip-portal.md, "Comparing variations").
+```
 - Batches: each says which trials a batch runs, and no component refers to one, so they change no digest and no
   output.
 
@@ -100,6 +104,12 @@ applies, and they fall into a few groups:
 - **Grading**: expectations and the schemas they follow, scorers, and judges: how answers are scored.
 - **Roots**: trials and scorings. A trial ties a request, an engine and cases into one experimental condition; a scoring
   ties a scorer to the expectations it grades against. Pinning a root pins everything it references.
+```
+AGENT: replace
+There is no batch kind.
+---
+- **Instruments and provenance**: canary sets and compilations, components that aren't factors.
+```
 - **Instruments, provenance and batches**: canary sets, compilations and batches, components that aren't factors.
 
 The sections below take each kind in turn.
@@ -523,6 +533,11 @@ A run's calls, and a score's judge calls, show whether the settings were followe
 attempts than its retries allow, when items were sent out of order, or when more calls were in flight than allowed
 (docs/ledger.md, "Run" and "Score"). Timeouts aren't checked.
 
+```
+AGENT: remove
+The section, to "## Scoring": there is no batch kind. Variations started together are a run each, and runs are found
+by their trials (agents/wip-portal.md, "Comparing variations").
+```
 ### Batch
 Not built yet: planned in agents/wip-batch.md.
 

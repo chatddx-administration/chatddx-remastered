@@ -27,7 +27,7 @@ def held(bench: Bench, name: str) -> RunStarted:
         ("stopped", {"crlf": ("stopped", None)}),
         ("unfinished", {"bom": ("completed", None)}),
         (
-            "batch",
+            "several",
             {
                 "crlf": ("errored", "HTTP 503: loading"),
                 "svenska": ("completed", UNFINISHED),

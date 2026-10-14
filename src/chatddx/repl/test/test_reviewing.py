@@ -66,8 +66,8 @@ def test_replay_shows_a_run_again_as_it_streamed(say: Say):
 
 @pytest.mark.usefixtures("fake")
 @pytest.mark.slow
-def test_replay_shows_a_batch_again_by_its_lines(say: Say):
-    _ = say(f"cell {NATIVE} {QWEN}", "batch targets")
+def test_replay_shows_a_run_of_several_cases_again_by_its_lines(say: Say):
+    _ = say(f"cell {NATIVE} {QWEN}", "run tag targets")
     targets = tagged("targets")
 
     replayed = say("replay")
@@ -142,7 +142,7 @@ def test_show_sums_up_the_runs_with_what_it_shows(say: Say):
 @pytest.mark.usefixtures("fake")
 @pytest.mark.slow
 def test_show_case_sums_up_only_its_own_items(say: Say):
-    _ = say(f"cell {LINES} {QWEN}", "run noted", "batch targets")
+    _ = say(f"cell {LINES} {QWEN}", "run noted", "run tag targets")
 
     written = say("show case noted")
 
@@ -197,7 +197,7 @@ def test_show_judge_sums_up_only_what_it_judged(bench: Bench, say: Say):
 
 @pytest.mark.slow
 def test_score_counts_an_answer_that_never_came_apart(bench: Bench, say: Say):
-    _ = run(bench, SCRIPTED["batch"])
+    _ = run(bench, SCRIPTED["several"])
 
     written = say("score").splitlines()
 
@@ -210,8 +210,8 @@ def test_score_counts_an_answer_that_never_came_apart(bench: Bench, say: Say):
 
 @pytest.mark.usefixtures("fake")
 @pytest.mark.slow
-def test_a_batch_is_replayed_and_tabled_by_case(say: Say):
-    _ = say(f"cell {LINES} {QWEN}", "batch targets")
+def test_a_run_of_several_cases_is_replayed_and_tabled_by_case(say: Say):
+    _ = say(f"cell {LINES} {QWEN}", "run tag targets")
 
     written = say("replay").splitlines()
 

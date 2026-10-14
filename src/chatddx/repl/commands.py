@@ -77,10 +77,11 @@ COMMANDS: dict[str, Command] = {
         running.run,
         grouped=running.case_and_seed,
     ),
-    "batch": Command(
+    "run tag": Command(
         ("TAG...",),
-        "run the cell on each case with any TAG, then score them (Ctrl-C stops)",
-        running.batch,
+        "run the cell on each case with any TAG, as one run, then score them "
+        + "(Ctrl-C stops)",
+        running.tagged,
     ),
     "seed": Command(
         ("[SEED]",),
@@ -144,6 +145,10 @@ def handle(repl: Repl, line: str) -> bool:
         return True
 
     verb, *args = words
+
+    if args and f"{verb} {args[0]}" in COMMANDS:
+        verb, args = f"{verb} {args[0]}", args[1:]
+
     command = COMMANDS.get("quit" if verb == "exit" else verb)
 
     if command is None:
@@ -197,7 +202,10 @@ def complete(names: Mapping[str, list[str]], line: str) -> list[str]:
     verb, *words = line.split(" ")
 
     if not words:
-        return [name for name in COMMANDS if name.startswith(verb)]
+        return [name for name in COMMANDS if name.startswith(verb) and " " not in name]
+
+    if len(words) > 1 and f"{verb} {words[0]}" in COMMANDS:
+        verb, words = f"{verb} {words[0]}", words[1:]
 
     command = COMMANDS.get(verb)
     params = command.params if command else ()
@@ -230,7 +238,7 @@ def complete(names: Mapping[str, list[str]], line: str) -> list[str]:
                 else found
             )
         case "run":
-            return _next_words(names.get("case", []), words)
+            return _next_words(["tag", *names.get("case", [])], words)
         case "configurations":
             return _next_words(names.get("configuration", []), words)
         case "set" if position >= 1:

@@ -22,7 +22,7 @@ it.
    (decided, see "Authoring"). The choices of phases 1 and 2 are takes (see "Built").
 5. **What it stands on is built**: the bench and the API (`docs/bench.md`, `docs/api.md`), the writes for authoring
    (`docs/bench.md`, "Writes for the person") and typed cases (`docs/bench.md`, "Typed cases"). What isn't is under
-   "Below the UI": the worker, the batch planner and Z1.
+   "Below the UI": the worker, seeds and cleanup steps at a run's start, and Z1.
 6. **Next**: phase 5's second half, 5c and 5d, once its first is looked at (see "Authoring"); and what phases 2 to
    5 left (see "Open").
 
@@ -43,15 +43,15 @@ In remastered's terms:
 | Families | filtered by tag and name; a family's cases, appendices, and the expectation each is scored against under each schema, with those shared to take; the vignette in a place of its own | `Bench.families`, `Bench.family_by_id`, `Bench.expectation`; `GET /api/families` and below it |
 | Authoring | a form per kind people write: chunks, recipes, appendices, cases, expectations, scorers and judges; what is said of a thread; following an origin; taking expectations | the bench's writes (`docs/bench.md`, "Writes for the person") |
 | Endpoints and models | each endpoint's engine, model, host and clearances; the facts of each model | `GET /api/endpoints`, `GET /api/models` |
-| Batches | the form, the confirmation before anything runs, **Run it now** or **Keep it for later**, and a kept batch's page | the batch planner (`agents/wip-batch.md`) |
+| Comparing runs | runs side by side over the cases they share, a column per run under each view; several variations started together from the variation's page (see "Comparing variations") | `Bench.runs`, `Bench.scores_of`, the look per variation; `GET /api/runs`, `POST /api/runs` |
 | Status | the worker at the person's jobs, with pause, resume, stop and stop now | the worker (`agents/wip-worker.md`) |
 
 Ways of showing things the pages keep:
 - **A version timeline** on every thread: ◀ and ▶, "version i of n", and what each version changed, word by word.
 - **A line that says where a save goes**, as you type: a new version of a thread of yours, a new thread, or a fork.
 - **Live checks** where a page needs feedback before anything is written (see "Islands").
-- **A confirmation** before a batch runs: the trials, what each variation sets, what is held back and why, the cases,
-  and each scorer's reach.
+- **A confirmation** before several variations start together: the runs, what each variation sets, what the gate
+  refuses and why, the cases, and each scorer's reach.
 
 ## What the docs ask of it
 - Interfaces for instructions, few-shots, prompts, output, sampling, reasoning, passthrough, recipes, appendices,
@@ -104,9 +104,9 @@ Decided: Svelte with TypeScript, only where a page needs feedback that takes a r
 - **The variation being tried**: pick a chunk per part and see what it would make, as you pick.
 - **A run as it runs**: its items as they start and end, and the deltas while you watch (`docs/api.md`, "Its
   events").
-- **The batch form**: ticking chunks per part, with the number of trials, what is held back and each scorer's reach as
-  you tick (`agents/wip-batch.md`, "Callers").
-- **A batch's progress** and the worker's state (`agents/wip-worker.md`).
+- **Several started together**: more than one chunk picked per part, with the number of runs, what the gate refuses
+  and each scorer's reach as you pick (see "Comparing variations", C2).
+- **The worker's state** (`agents/wip-worker.md`).
 - Perhaps editors for structured chunks and expectations, checked against their JSON Schema as you type.
 
 Decided, for how, and built in phase 1:
@@ -130,8 +130,8 @@ Decided:
 Decided (phase 3), from the options V1 to V9:
 - **V1. Its address is the configuration's page**: `/configurations/{id}?PART=DIGEST…&head=EDIT&endpoint=…&tag=…`,
   parts by digest, as the API takes them. Phase 2's page is the variation with nothing replaced, as the old portal's
-  configuration page showed a version "with whatever variations were set in place of its own". Runs and, later, a
-  batch's confirmation link to it.
+  configuration page showed a version "with whatever variations were set in place of its own". Runs and, later, the
+  comparison of runs link to it.
 - **V2. An island draws it from the API**: the pickers and what the variation makes, with the address following each
   pick. The server draws the rest of the page; without scripts, the recipe as the address gives it shows read only.
 - **V3. A part's picker** offers every chunk of that part the person sees, one entry per digest, their own first and
@@ -200,6 +200,43 @@ Decided (phase 5), from the options W1 to W11:
 - **W10. Every form for everyone**; what each role is offered first waits for Z1 (phase 7).
 - **W11. Tests**: the pages', vitest for the differences and the schema's form, and a browser test of a clinician's
   flow: an appendix, its case, the expectation, and the variation's reach counting it.
+
+## Comparing variations
+Decided: **there is no batch.** The old portal's Batch crossed a configuration's variations over tagged cases, kept
+the plan, and ran it later (`docs/portal.md` at 504792c, "The Batch"). In remastered a trial holds its cases and
+seeds, a run is found by its trial, the look says what a variation would do before it runs, and the worker runs and
+stops what is asked; a stored batch would add only the crossing and a record of what went together. The old project
+had set the record aside already: runs are grouped by what they are, never by what started them
+(`docs/backlog/post-endgame.md` at 504792c, "The batch as a record"). What researchers want of it is comparing
+variations over the same cases, which runs serve.
+
+Take:
+- **C1. A page to compare runs**, `/runs/compare?run=…`: the runs picked side by side over the cases they share, a
+  row per case and replicate, a column per run under each scorer view, each view's mean over the shared items, and
+  the cases only some of them hold said apart. Each run is headed by its name, the variation's label, and its
+  endpoint. Runs are picked on the runs page, and from a configuration's or a variation's runs (V6).
+- **C2. Several started together**, from the variation's page: more than one chunk picked for a part makes a run per
+  chunk, one part at a time against the configuration rather than every combination (`docs/chatddx.md`, "Intended
+  evolution of configurations": "without the combinatorial explosion"), over the same cases and seed. Before they
+  start, a confirmation from a look per variation (`GET /api/threads/{id}/variation`): the runs, what each sets, what
+  the gate refuses and why, the cases, and each scorer's reach. Each is a `POST /api/runs`; nothing else is stored,
+  and the comparison page follows them.
+- **C3. Replicates and text cleanup** on a run's form, once `Bench.start` takes seeds and cleanup steps
+  (`agents/wip-worker.md`, "Below the worker").
+- **C4. Grouping by hand**: tags on runs, which the catalog takes on any subject (`docs/catalog.md`, "Entries") and
+  nothing writes yet; the runs page filters by them.
+
+Open:
+- **Every combination**, as the old crossing made (`plan.py:crossed`), or endpoints as well as parts: C2 varies one
+  part at a time at one endpoint.
+- **How many runs** a confirmation starts before it warns, with `settings.RUNS_PER_DAY` runs a day.
+- **Several started together before the worker**: each is a job in the app's process (R10), so runs on one endpoint
+  send their items side by side, past its `max_jobs` when there are more runs than it takes (R9;
+  `docs/inventory-api.md`, "Known gaps").
+- **Runs to compare in the tests**: none of the test World's scripted runs sets a part, and no two are over the
+  same cases (`docs/scripted.md`, "The runs").
+- **A study kept for publication**: a selection of runs frozen with the scorings it is scored by, designed with the
+  export (`docs/chatddx.md`, "On the table"). It is what would bring a kept grouping back.
 
 ## Swift
 Decided:
@@ -474,7 +511,8 @@ What the portal needs below its pages that isn't built:
    Until then a run is a job in the app's process (`docs/api.md`, "Where it runs"), which the run's
    pages can be built on, since the API stays as it is when the worker takes its place.
 2. **The worker's controls and status** (`agents/wip-worker.md`, "The plan", 4).
-3. **The batch planner** (`agents/wip-batch.md`).
+3. **Seeds and cleanup steps at a run's start**, for replicates and text cleanup (`agents/wip-worker.md`, "Below the
+   worker").
 4. **Z1**, the map from roles to kinds, which waits for the portal's views (`docs/bench.md`, "Outstanding";
    `docs/identity.md`, "Z1: what each role is shown").
 
@@ -492,8 +530,8 @@ What the portal needs below its pages that isn't built:
 5. **Authoring**: the pages for the bench's writes, which are built; a scorer's pickers read `GET /api/scorer-code`.
    Its first half is built (see "Built"): a page for every thread, and the clinicians' appendices, cases and
    expectations.
-6. **Batches**: the planner's pages (`agents/wip-batch.md`), then a batch's page and the worker's status
-   (`agents/wip-worker.md`).
+6. **Comparing variations**: the page to compare runs, then several started together (see "Comparing variations"),
+   and the worker's status (`agents/wip-worker.md`).
 7. **Z1**, and what deleting hides.
 8. **Docs**: material for a `docs/portal.md`.
 
@@ -570,7 +608,8 @@ From "What the portal shows", not on the pages yet:
   its live text and can't halt it. The worker takes its place (`agents/wip-worker.md`).
 - **The live view holds every item's text** as it streams, in the page; a large run with long answers makes a heavy
   page. Take: drop the text of an item once it has ended, which the run's page shows after it is done.
-- **Replicates**: a run takes one seed; several seeds are the batch planner's (`agents/wip-batch.md`).
+- **Replicates**: a run takes one seed until `Bench.start` takes several (`agents/wip-worker.md`, "Below the
+  worker").
 - **The limits** (`settings.RUNS_PER_DAY`, 100, and `ITEMS_PER_RUN`, 200) are takes, as is counting a day back from
   now. A scoring isn't limited.
 - **Running again** re-sends a run's trial; it doesn't follow the configuration if it has moved on since.

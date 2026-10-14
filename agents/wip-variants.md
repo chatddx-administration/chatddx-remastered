@@ -84,5 +84,7 @@ be derived. A guards nothing that B doesn't, and C and D cost more for less.
   name?
 - **Names for people.** With variants recorded, should init-data still put the language and model in the name, for
   people to read, or drop them and let the portal show them?
-- **Mixed batches**: with picking by the cases' language, does a batch of English and Swedish cases run as one trial
-  per language, each under its variant, or is it refused? (`agents/wip-batch.md`, P3).
+- **Mixed languages**: with picking by the cases' language, do English and Swedish cases asked for together run as
+  one trial per language, each under its variant, or are they refused? The docs lean to the first: the request follows
+  the case (`docs/catalog.md`, "Languages"), and a run over cases in several languages would be a run per language
+  (`docs/repl.md`, "Outstanding"; `docs/curation.md`, "Picking a variant by the case's language").

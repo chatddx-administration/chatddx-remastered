@@ -41,6 +41,12 @@ It must be possible to deliver the cage together with the results, for scientifi
 - **Schema op:** a named, versioned rewrite an output chunk applies to its schema at
   compile time, so the skeleton sends and shows the rewritten schema. Today the only one is `inline_refs@1`.
 - **Trial:** The smallest unit of an scientific intent (i.e. Experiment): skeleton + engine + cases + text-cleanup steps + seeds.
+```
+AGENT: remove
+There is no batch: variations started together are a run each, found by their trials and compared as runs
+(agents/wip-portal.md, "Comparing variations"). The repl's `batch` is now `run tag TAG...`, and the scripted run
+`batch` is `several`.
+```
 - **Batch:** trials run together, crossed from one configuration's variations over the same cases, at one endpoint. Kept on a catalog thread. Not built yet (agents/wip-batch.md). The repl's `batch` command and the scripted run named `batch` are one trial over several cases, so one run, not a Batch.
 - **Replicate:** one seed of a trial, identified by its index.
 - **Item key:** (case, replicate index), which identifies one request of a run.

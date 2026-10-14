@@ -149,6 +149,17 @@ DutchFall10w  Dutchfall11w  ...  casesfromedn1  ...  openxddx-case_9
 99 cases; tagged dutch-fall 30, edn 20, openxddx 49
 ```
 
+```
+AGENT: replace
+`batch` is now `run tag`.
+---
+Press Tab at any point to complete a command, or a name after it, word by
+word: a configuration after `use`, an endpoint after `on`, a case after
+`run` (`Dutchfall11w with ultrasound` included), a tag after `run tag` or
+`show tag`, a run after `replay`. A configuration is offered by its plain
+name, and one made in several languages by its name and language:
+`free-text-guided sv`.
+```
 Press Tab at any point to complete a command, or a name after it, word by
 word: a configuration after `use`, an endpoint after `on`, a case after
 `run` (`Dutchfall11w with ultrasound` included), a tag after `batch` or
@@ -291,6 +302,13 @@ are left to `show output` and `show tool`.
 
 ### `show tag TAG...`
 
+```
+AGENT: replace
+`batch` is now `run tag`.
+---
+The same, with the lints and the scorers' table counting only the cases
+with any of the tags: the cases `run tag` would run.
+```
 The same, with the lints and the scorers' table counting only the cases
 with any of the tags: the cases `batch` would run.
 
@@ -368,6 +386,14 @@ alice free-text (en, Qwen/Qwen3-8B-AWQ)×qwen3-8b-awq@fake #6035> seed 42
 seed: #42
 ```
 
+```
+AGENT: replace
+"a batch" is now `run tag`.
+---
+Draw a new seed whenever you want fresh answers rather than a repeat of
+ones you already have: the same `run tag` twice under the same seed asks
+the same questions the same way twice.
+```
 Draw a new seed whenever you want fresh answers rather than a repeat of
 ones you already have: running a batch twice under the same seed asks the
 same questions the same way twice.
@@ -467,6 +493,63 @@ Press Ctrl-C to stop a run while it streams. What came so far is recorded,
 as stopped. While the run is written down and scored, a first Ctrl-C waits
 for it, and a second stops the scoring; `score` scores what is left.
 
+````
+AGENT: replace
+The section, to "## Looking back": `batch TAG...` is now `run tag TAG...`, whose first line starts `trial:`
+and ends with the seed in brackets, as `run`'s does.
+---
+### `run tag TAG...`
+
+Runs the cell on every case with any of the tags, as one run under the
+shell's seed, a line per case. The token count climbs while the case runs;
+then the line fills in with how it went. The run is then scored, and a
+table gives each case's score per view, by case, and a summary per view.
+
+```
+alice free-text-guided (sv, Qwen/Qwen3-8B-AWQ)×qwen3-8b-awq@fake #42> run tag edn
+trial: free-text-guided (sv, Qwen/Qwen3-8B-AWQ) × qwen3-8b-awq@fake × 20 cases tagged edn (seed 42)
+case            tokens  outcome
+casesfromedn13      50  completed
+casesfromedn9       50  completed
+...
+judging casesfromedn1: comment by verdict, seed 1 of 1      51  meets true
+...
+                 free-text  free-text     free-text  notes    notes   notes   raw
+ case            text       differential  dont-miss  comment  answer  graded  text
+ casesfromedn1   —          0             —          1        1       0.5     —
+ casesfromedn10  —          0             —          —        —       —       —
+ ...
+ scorer     view          scored  mean  stderr  no answer  no target  no value
+ free-text  text          0       —     —                             20
+            differential  20      0     0
+            dont-miss     1       0     0                  19
+ notes      comment       1       1     0                  19
+ ...
+recorded as run 1 of trial 9319f5, run e4a95af3
+```
+
+- **Tags** say which set a case belongs to: `dutch-fall`, `edn` and
+  `openxddx` in the sample. `run tag edn dutch-fall` runs both sets.
+- **The lines** come in the order the cases are sent; the table goes by
+  case.
+- **The outcome** is `completed`, or `valid`, `invalid` or `salvaged` for
+  structured answers; `unread`, `errored` or `stopped` when no answer came,
+  with the error at the end of the line. A case whose model runs away is
+  stopped as `run` stops it, and the run goes on.
+- **In the table**, `—` means no value. **The summary** counts the cases
+  scored, their mean and standard error, and apart those with no value:
+  where no answer came, where the case has no target, and for any other
+  reason. A value such as `@44` is where something was first named, in
+  characters, not a score from 0 to 1.
+- **What the scorers note**, such as a call that failed, is said once
+  after the tables, with how often: `(×4)`.
+- **The seed** is the shell's, the same for every case, and shown in the
+  first line. A single `run CASE` afterwards, under the same seed, repeats
+  what `run tag` did for that case.
+- **Ctrl-C once** lets the case under way finish, and then stops; the line
+  says so. **Ctrl-C again** stops that case too, recorded as stopped.
+- The same vignette is in one case only, so it is never run twice.
+````
 ### `batch TAG...`
 
 Runs the cell on every case with any of the tags, as one run under the
@@ -543,6 +626,12 @@ A run that never finished, as when the shell is killed mid-run, says
 
 ### `replay [RUN]`
 
+```
+AGENT: replace
+In the paragraph's last line: "A batch" is now a run of several cases.
+---
+A run of several cases is shown by its lines and tables.
+```
 Shows a run again as it streamed, with when it ran, where, and on which
 build of chatddx. Without a run, the latest; otherwise the first letters of
 its id from `runs` are enough: `replay 809b`. The request isn't kept, so
@@ -666,6 +755,14 @@ The lines you type are kept in `~/.chatddx_history` (or the file given with
 reads lines from a pipe, which is handy for a fixed routine; it echoes each
 line, and stops at the first that fails, exiting with 1:
 
+````
+AGENT: replace
+`batch` is now `run tag`.
+---
+```
+printf 'cell plan qwen3-8b@pelle\nseed\nrun tag edn\n' | chatddx repl alice
+```
+````
 ```
 printf 'cell plan qwen3-8b@pelle\nseed\nbatch edn\n' | chatddx repl alice
 ```

@@ -264,6 +264,12 @@ Curation is the place for the rest of the store's authored content to come and g
 Trials, executions, scorings and hand-written skeletons have no tables, and a data set has one expectation schema.
 
 ### Picking a variant by the case's language
+```
+AGENT: replace
+In the paragraph's third line: there is no batch; cases run together are a run.
+---
+variant in their own language, so a run over English and Swedish cases runs each under its own. A variant is known
+```
 The bench picks a configuration's variant by the model the engine it runs on serves, and by language only when there
 is one (src/chatddx/catalog/variants.py). With texts in several languages, the cases a variation runs on should run the
 variant in their own language, so a batch of English and Swedish cases runs each under its own. A variant is known
