@@ -25,6 +25,15 @@ Paths are relative to `src/chatddx/runner/` unless they start with `src/` or `do
 ## Package
 `chatddx/runner/__init__.py` is empty: every name is imported by its module's path.
 
+```
+AGENT: change
+`chatddx.core` is gone: `settings.py` and `rig.py` are modules of their own at the package's root,
+`chatddx.settings` and `chatddx.rig`. In the table, the rows:
+---
+| `rounds.py` | `send.py`, `chatddx.factors.{base,request,trial}`, `chatddx.ledger`, `chatddx.rig`, `chatddx.tools.shipped` |
+| `run.py` | `gate.py`, `prepare.py`, `rounds.py`, `send.py`, `chatddx.{catalog,factors,identity,inventory,ledger,rig,store}` |
+| `score.py` | `gate.py`, `send.py`, `run.py` (`Noted`), `chatddx.{catalog,factors,identity,inventory,ledger,rig,scorers,store}` |
+```
 | Module | Builds on |
 | --- | --- |
 | `wire.py` | the standard library's `urllib` |
@@ -54,6 +63,13 @@ comes and a send that stops keeps what it wrote.
 
 **Errors.**
 
+```
+AGENT: change
+`chatddx.core` is gone: `settings.py` and `rig.py` are modules of their own at the package's root,
+`chatddx.settings` and `chatddx.rig`. In the table, the row:
+---
+| `LookupError` | Tool or scorer code that isn't shipped, or not at its pinned version (`chatddx.rig.entry`); a scorer whose views don't fit its code (`chatddx.scorers.shipped.function`); a component, endpoint or source that doesn't exist. |
+```
 | Exception | When |
 | --- | --- |
 | `gate.Refused` | `Runner.start`, `Grader.start` and `judge_at` refuse an endpoint (see "gate.py"). |

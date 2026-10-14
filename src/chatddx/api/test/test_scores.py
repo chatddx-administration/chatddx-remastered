@@ -5,11 +5,11 @@ from fastapi import FastAPI
 from fastapi.testclient import TestClient
 from psycopg.conninfo import make_conninfo
 
+from chatddx import settings
 from chatddx.api.app import app
 from chatddx.api.test.test_runs import asked, family, followed, names, sent
 from chatddx.bench import Bench
 from chatddx.bench.test.helpers import ran, trial
-from chatddx.core import settings
 from chatddx.curation import Plan
 from chatddx.identity import Person
 from chatddx.inventory import Inventory

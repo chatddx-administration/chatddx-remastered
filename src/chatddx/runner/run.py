@@ -6,7 +6,6 @@ from datetime import UTC, datetime
 from uuid import UUID, uuid4
 
 from chatddx.catalog import Entry, EntryField, Subject
-from chatddx.core.rig import rig
 from chatddx.factors.base import Finding, Fingerprint, StructuralError, resolve
 from chatddx.factors.bundle import Registry
 from chatddx.factors.request import Skeleton
@@ -25,6 +24,7 @@ from chatddx.ledger import (
     check_run,
 )
 from chatddx.ledger.run import PHASES, Phase
+from chatddx.rig import rig
 from chatddx.store import Catalog, Store
 from chatddx.store.store import Connection
 

@@ -8,7 +8,6 @@ from jsonschema.exceptions import relevance
 from jsonschema.protocols import Validator
 from pydantic import JsonValue
 
-from chatddx.core.rig import entry
 from chatddx.factors.base import Resolver, resolve
 from chatddx.factors.request import (
     Skeleton,
@@ -20,6 +19,7 @@ from chatddx.factors.request import (
 )
 from chatddx.factors.trial import Execution
 from chatddx.ledger import Call, ToolCode, ToolRun, Turn
+from chatddx.rig import entry
 from chatddx.tools.shipped import TOOLS
 
 from . import send as sending

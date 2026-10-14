@@ -5,8 +5,8 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.staticfiles import StaticFiles
 from starlette.exceptions import HTTPException
 
+from chatddx import settings
 from chatddx.api import app as api
-from chatddx.core import settings
 from chatddx.facts import Facts
 from chatddx.inventory import Inventory
 

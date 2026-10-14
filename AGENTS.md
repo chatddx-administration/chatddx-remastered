@@ -8,6 +8,13 @@ This document contains project-wide instructions written by humans for agents.
   - pg_hba.conf:   local all all peer map=chatddx
   - Setup database and roles with `src/chatddx/store/setup.sql`
 * Base the fake vLLM on 0.24.0, extend/amend continuously as new facts are discovered, questions arise or sample data is needed.
+```
+AGENT: change
+`chatddx.core` is gone: `settings.py` and `rig.py` are modules of their own at the package's root,
+`chatddx.settings` and `chatddx.rig`.
+---
+* `chatddx.settings` is the project-wide source of truth.
+```
 * `chatddx.core.settings` is the project-wide source of truth.
 
 ## Typechecking

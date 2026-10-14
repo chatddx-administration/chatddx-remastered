@@ -106,6 +106,14 @@ from.
 `chatddx.catalog.MovedOn`, re-exported: an edit named a head that isn't the thread's head any more.
 
 ### `class OverQuota(ValueError)`
+```
+AGENT: change
+`chatddx.core` is gone: `settings.py` and `rig.py` are modules of their own at the package's root,
+`chatddx.settings` and `chatddx.rig`.
+---
+The person has written or started as much as a day takes: typed cases (`chatddx.settings.TYPED_PER_DAY`) or runs
+(`RUNS_PER_DAY`); or a run would hold more items than one takes (`ITEMS_PER_RUN`).
+```
 The person has written or started as much as a day takes: typed cases (`chatddx.core.settings.TYPED_PER_DAY`) or runs
 (`RUNS_PER_DAY`); or a run would hold more items than one takes (`ITEMS_PER_RUN`).
 

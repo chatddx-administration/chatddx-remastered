@@ -11,7 +11,6 @@ from pydantic import ValidationError
 
 from chatddx.catalog import Subject
 from chatddx.conftest import connect
-from chatddx.core.rig import rig
 from chatddx.curation import Plan
 from chatddx.factors.base import Fingerprint, resolve
 from chatddx.factors.cases import Case, Vignette, prepare_case
@@ -38,6 +37,7 @@ from chatddx.ledger import (
     fingerprint_request,
 )
 from chatddx.ledger.call import check_execution
+from chatddx.rig import rig
 from chatddx.runner import send as sending
 from chatddx.runner.gate import Refused
 from chatddx.runner.run import (

@@ -30,6 +30,18 @@ Paths are relative to `src/chatddx/api/` unless they start with `src/`, `docs/` 
 
 `chatddx.api` re-exports nothing; its modules are imported by path. `src/chatddx/cli.py` imports `app.py:app`.
 
+```
+AGENT: change
+`chatddx.core` is gone: `settings.py` and `rig.py` are modules of their own at the package's root,
+`chatddx.settings` and `chatddx.rig`.
+`threads.py` and `world.py` read through the bench's `rows` and `people` now (`Bench.rows.thread`, `Bench.rows.kind`,
+`Bench.people.find`), rather than building a `Rows` and a `People` on `bench.conn` of their own, so they no longer
+import `chatddx.store`. In the table, the rows:
+---
+| `people.py` | `schemas.py`, `state.py`, `chatddx.bench`, `chatddx.identity`, `chatddx.settings`, `chatddx.store` |
+| `threads.py` | `schemas.py`, `people.py`, `chatddx.bench`, `chatddx.catalog`, `chatddx.factors.{base,request,trial}` |
+| `world.py` | `schemas.py`, `people.py`, `chatddx.bench`, `chatddx.inventory`, `chatddx.scorers.{scorer,shipped}` |
+```
 | Module | Builds on |
 | --- | --- |
 | `state.py` | `jobs.py`, psycopg, `chatddx.{facts,inventory,store}` |
@@ -61,6 +73,16 @@ and a scoring get a connection of their own (`runs.py:_start`, `scores.py:score_
 `AppState.jobs`, on a thread of its own named `chatddx-run-<id>` or `chatddx-score-<id>`, which isn't a daemon. A
 job's events are put by its thread and read by any stream that follows it (`jobs.py:followed`).
 
+```
+AGENT: change
+`Rows` is read through the bench's `rows` now, as `docs/bench-api.md` ("Conventions") says edges read what doesn't
+depend on the person.
+---
+**Who it depends on.** What depends on the person is asked of the bench. What doesn't is the same for everyone: the
+endpoints and models (`world.py`), a component by its digest, and the scoring code the running chatddx ships, read
+from the World, the facts and the store through the bench's reads that take no person (`Bench.endpoint`, `title`,
+`model`, `get`) and its `rows`, or straight (`chatddx.scorers.shipped.SCORERS`).
+```
 **Who it depends on.** What depends on the person is asked of the bench. What doesn't is the same for everyone: the
 endpoints and models (`world.py`), a component by its digest, and the scoring code the running chatddx ships, read
 from the World, the facts and the store through the bench's reads that take no person (`Bench.endpoint`, `title`,

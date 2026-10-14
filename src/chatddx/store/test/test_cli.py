@@ -1,8 +1,8 @@
 import psycopg
 import pytest
 
+from chatddx import settings
 from chatddx.cli import main
-from chatddx.core import settings
 from chatddx.identity import Role
 from chatddx.store import People
 

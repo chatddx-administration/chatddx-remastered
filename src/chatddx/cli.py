@@ -11,10 +11,9 @@ import psycopg
 import uvicorn
 from fastapi import FastAPI
 
+from chatddx import settings
 from chatddx.api.app import app
 from chatddx.bench import Bench, outcome
-from chatddx.core import settings
-from chatddx.core.rig import rig
 from chatddx.curation import init, load_cases, plan_factors, repair, wipe
 from chatddx.curation.write import ARCHIVE
 from chatddx.factors.base import resolve
@@ -37,6 +36,7 @@ from chatddx.portal.app import app as portal
 from chatddx.portal.assets import Assets
 from chatddx.repl.loop import HISTORY, loop
 from chatddx.repl.shell import Repl, console
+from chatddx.rig import rig
 from chatddx.runner.gate import Refused
 from chatddx.scripted import (
     RUNS,

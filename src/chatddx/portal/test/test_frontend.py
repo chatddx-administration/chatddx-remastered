@@ -7,8 +7,7 @@ import pytest
 import uvicorn
 from fastapi.testclient import TestClient
 
-from chatddx import cli
-from chatddx.core import settings
+from chatddx import cli, settings
 from chatddx.portal.assets import MANIFEST, Assets
 from chatddx.portal.test.test_signing_in import signing_in
 from chatddx.test.world import TEST

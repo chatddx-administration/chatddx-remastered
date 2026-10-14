@@ -2,7 +2,7 @@ from collections.abc import Iterable
 from datetime import timedelta
 from typing import Any
 
-from chatddx.core import settings
+from chatddx import settings
 from chatddx.identity import (
     Person,
     Role,

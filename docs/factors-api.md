@@ -404,6 +404,15 @@ share a digest.
 | `entry_point` | `EntryPoint` | required |
 | `version` | `int`, from 1 | required; the version of the entry point it pins |
 
+```
+AGENT: change
+`chatddx.core` is gone: `settings.py` and `rig.py` are modules of their own at the package's root,
+`chatddx.settings` and `chatddx.rig`.
+---
+The tool is called with a call's arguments as keyword arguments and returns text. The runner does the calling
+(`src/chatddx/rig.py:entry` finds what `src/chatddx/tools/shipped.py:TOOLS` ships under the entry point, and
+refuses one that isn't shipped, or not at the version pinned).
+```
 The tool is called with a call's arguments as keyword arguments and returns text. The runner does the calling
 (`src/chatddx/core/rig.py:entry` finds what `src/chatddx/tools/shipped.py:TOOLS` ships under the entry point, and
 refuses one that isn't shipped, or not at the version pinned).

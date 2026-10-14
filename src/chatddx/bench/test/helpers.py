@@ -4,16 +4,16 @@ from uuid import UUID, uuid4
 import psycopg
 from pydantic import JsonValue
 
+from chatddx import settings
 from chatddx.bench import Bench
 from chatddx.catalog import Entry, EntryField, Subject
-from chatddx.core import settings
-from chatddx.core.rig import rig
 from chatddx.curation import Plan
 from chatddx.factors.scoring import Expectation
 from chatddx.factors.trial import Trial
 from chatddx.identity import Person
 from chatddx.inventory import World
 from chatddx.ledger import Run, RunStarted
+from chatddx.rig import rig
 from chatddx.store import Catalog, Store
 from chatddx.store.store import Connection
 from chatddx.test.world import QWEN, TEST

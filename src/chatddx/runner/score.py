@@ -6,7 +6,6 @@ from uuid import UUID, uuid4
 from pydantic import JsonValue
 
 from chatddx.catalog import Entry, EntryField, Subject
-from chatddx.core.rig import rig
 from chatddx.factors.base import Component, Finding, Resolver, resolve
 from chatddx.factors.bundle import Registry
 from chatddx.factors.engine import LocalEngine, RemoteEngine
@@ -27,6 +26,7 @@ from chatddx.ledger import (
     ScoreStarted,
     check_score,
 )
+from chatddx.rig import rig
 from chatddx.scorers.answer import read
 from chatddx.scorers.scorer import Metrics, Scored, Verdicts, score_view
 from chatddx.scorers.shipped import function

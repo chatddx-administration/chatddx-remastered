@@ -9,7 +9,6 @@ from typing import Any, cast
 from pydantic import JsonValue, ValidationError
 
 from chatddx.catalog import language_tag, variant_name
-from chatddx.core.rig import Versioned, entry
 from chatddx.factors.base import Code, Component
 from chatddx.factors.bundle import Registry
 from chatddx.factors.engine import LocalEngine, ModelArtifact, RemoteEngine
@@ -35,6 +34,7 @@ from chatddx.factors.scoring import ExpectationSchema, Judge, Scorer
 from chatddx.factors.trial import CanarySet
 from chatddx.facts import INTENTS, Effort, Facts, Refused, model_name
 from chatddx.inventory import World
+from chatddx.rig import Versioned, entry
 from chatddx.scorers.shipped import SCORERS, problems
 from chatddx.tools.shipped import TOOLS
 

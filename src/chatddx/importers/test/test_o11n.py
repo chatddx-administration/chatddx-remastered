@@ -10,7 +10,6 @@ from typing import Any
 import pytest
 
 from chatddx.cli import main
-from chatddx.core.rig import rig
 from chatddx.curation import plan_factors
 from chatddx.facts import Facts
 from chatddx.importers.o11n import (
@@ -22,6 +21,7 @@ from chatddx.importers.o11n import (
     read,
 )
 from chatddx.inventory import Inventory, World, check, start_up
+from chatddx.rig import rig
 
 STORE = "/nix/store/" + "s" * 32
 SNAPSHOTS = "/srv/models/huggingface/models--{}/snapshots/{}"

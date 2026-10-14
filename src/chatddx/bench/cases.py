@@ -2,9 +2,9 @@ import re
 from collections.abc import Sequence
 from datetime import UTC, datetime, timedelta
 
+from chatddx import settings
 from chatddx.catalog import Entry, EntryField, Subject
 from chatddx.catalog.families import rebind_case
-from chatddx.core import settings
 from chatddx.factors.base import Fingerprint, resolve
 from chatddx.factors.bundle import Registry
 from chatddx.factors.cases import Appendix, Case, Vignette

@@ -5,8 +5,8 @@ from urllib.parse import urlsplit
 from fastapi import APIRouter, Depends, HTTPException, Request, Response
 from fastapi.security import APIKeyCookie, HTTPAuthorizationCredentials, HTTPBearer
 
+from chatddx import settings
 from chatddx.bench import Bench
-from chatddx.core import settings
 from chatddx.identity import Person
 from chatddx.store import People
 from chatddx.store.store import Connection

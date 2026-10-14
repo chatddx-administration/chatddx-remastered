@@ -5,8 +5,8 @@ from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from uuid import UUID
 
+from chatddx import settings
 from chatddx.catalog import Entry, EntryField, Subject
-from chatddx.core import settings
 from chatddx.factors.base import resolve
 from chatddx.factors.request import Skeleton
 from chatddx.factors.scoring import Scorer

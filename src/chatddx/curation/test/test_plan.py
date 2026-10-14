@@ -2,11 +2,11 @@ from pathlib import Path
 
 import pytest
 
-from chatddx.core.rig import rig
 from chatddx.curation import Plan, load_cases, plan_factors
 from chatddx.factors.request import Compilation, Skeleton
 from chatddx.facts import BUNDLED, Facts
 from chatddx.inventory import Inventory, World
+from chatddx.rig import rig
 from chatddx.test.world import DATA
 
 

@@ -11,9 +11,9 @@ import pytest
 from argon2 import PasswordHasher
 from psycopg import sql
 
+from chatddx import settings
 from chatddx.api.app import app
 from chatddx.bench import Bench
-from chatddx.core import settings
 from chatddx.curation import Plan, init, load_cases
 from chatddx.facts import BUNDLED, Facts
 from chatddx.identity import identity
@@ -49,7 +49,8 @@ def cheap_hashing() -> Iterator[None]:
     hasher = PasswordHasher(time_cost=1, memory_cost=8, parallelism=1)
     with pytest.MonkeyPatch.context() as patch:
         patch.setattr(identity, "_hasher", hasher)
-        patch.setattr(identity, "_DUMMY_HASH", hasher.hash("dummy"))
+        dummy = hasher.hash("dummy")
+        patch.setattr(identity, "_dummy_hash", lambda: dummy)
         yield
 
 

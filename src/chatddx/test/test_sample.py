@@ -7,12 +7,12 @@ from jsonschema import validators
 from pydantic import JsonValue
 
 from chatddx.conftest import Loaded
-from chatddx.core.rig import rig
 from chatddx.curation import Plan, load_cases
 from chatddx.curation.plan import PLANNED_TABLES
 from chatddx.factors.base import Fingerprint
 from chatddx.factors.request import Compilation, compiled
 from chatddx.inventory import DirectorySource, Inventory, World
+from chatddx.rig import rig
 from chatddx.store import Catalog, People
 from chatddx.store.store import Connection
 from chatddx.test.world import SAMPLE, WORLDS, world_plan

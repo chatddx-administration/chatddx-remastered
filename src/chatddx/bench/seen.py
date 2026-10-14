@@ -14,7 +14,6 @@ from chatddx.catalog import (
 )
 from chatddx.catalog.threads import picked, recipe as recipe_of
 from chatddx.catalog.titles import short
-from chatddx.core.rig import rig
 from chatddx.factors.base import (
     Component,
     Finding,
@@ -46,6 +45,7 @@ from chatddx.ledger import (
     ScoreStarted,
     fingerprint_request,
 )
+from chatddx.rig import rig
 from chatddx.runner.gate import Refused
 from chatddx.runner.prepare import Items
 from chatddx.runner.score import judge_at

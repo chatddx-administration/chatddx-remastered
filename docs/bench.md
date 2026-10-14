@@ -189,6 +189,15 @@ refused as it is written: code it doesn't ship, at a version it doesn't ship, a 
 parameters its schemas refuse. The scoring pass refuses it the same way. A view that can't pick anything from the
 scorer's expectation schema is written, and said so.
 
+```
+AGENT: change
+`chatddx.core` is gone: `settings.py` and `rig.py` are modules of their own at the package's root,
+`chatddx.settings` and `chatddx.rig`.
+---
+It is a refusal rather than a lint because what the code ships is also a protection: a scorer names code to run, and
+one written over the API names its own, so only code on the shipped list runs (src/chatddx/scorers/shipped.py,
+src/chatddx/rig.py:entry).
+```
 It is a refusal rather than a lint because what the code ships is also a protection: a scorer names code to run, and
 one written over the API names its own, so only code on the shipped list runs (src/chatddx/scorers/shipped.py,
 src/chatddx/core/rig.py:entry).
@@ -237,6 +246,15 @@ the person's own are written with it, all at once, named and in a language when 
 vignette is fetched from its source, a directory's file or a database source's text, wherever the bench, the runner
 and the edges read one (src/chatddx/store/texts.py:fetch_vignette).
 
+```
+AGENT: change
+`chatddx.core` is gone: `settings.py` and `rig.py` are modules of their own at the package's root,
+`chatddx.settings` and `chatddx.rig`.
+---
+A text is held to a length, may not hold U+0000, which can't be stored, and a person to a number of texts a day, as
+set in `chatddx.settings`; over the quota is `OverQuota`. A typed text never moves, so its family is adopted by
+id alone, and the same text typed twice is two cases and two families (docs/catalog.md, "Families and repairs").
+```
 A text is held to a length, may not hold U+0000, which can't be stored, and a person to a number of texts a day, as
 set in `chatddx.core.settings`; over the quota is `OverQuota`. A typed text never moves, so its family is adopted by
 id alone, and the same text typed twice is two cases and two families (docs/catalog.md, "Families and repairs").
