@@ -11,7 +11,7 @@ from chatddx.factors.test.sample import NOW, RIG, world
 from chatddx.identity import Person
 from chatddx.ledger import RunStarted
 from chatddx.store import People, Queue, Store, UnderWay
-from chatddx.store.queue import STATUSES, Held
+from chatddx.store.queue import STATUSES, TAKEN_OUT, Held, Standing, Stopped
 from chatddx.store.store import Connection
 
 LOST = timedelta(seconds=10)
@@ -199,3 +199,62 @@ def test_statuses_match_the_database_check(admin: Connection) -> None:
     [check] = found
     assert all(f"'{s}'" in check for s in STATUSES)
     assert check.count("'") == 2 * len(STATUSES)
+
+
+def test_a_queued_job_is_placed_behind_what_its_endpoint_takes_first(
+    conn: Connection, alice: Person, runs: Callable[[], UUID]
+) -> None:
+    queue, bob = Queue(conn), People(conn).add("bob", "Bob")
+    worker = enlisted(queue)
+    first, waiting, mine, elsewhere = runs(), runs(), runs(), runs()
+    _ = queue.put(alice.id, first, "e", 1, False)
+    assert queue.claim(worker, {"e": 1, "f": 1}, LOST) is not None
+    _ = queue.put(bob.id, waiting, "e", 1, False)
+    _ = queue.put(alice.id, mine, "e", 1, False)
+    _ = queue.put(alice.id, elsewhere, "f", 1, False)
+
+    placed = queue.placed([first, waiting, mine, elsewhere, uuid4()])
+    assert {run: p.ahead for run, p in placed.items()} == {
+        first: None,
+        waiting: 1,
+        mine: 2,
+        elsewhere: 0,
+    }
+    assert placed[mine].job == queue.open(mine)
+    queue.pause(bob.id)
+    assert queue.placed([mine])[mine].ahead == 1
+    queue.pause(alice.id)
+    assert queue.placed([mine])[mine].ahead is None
+    assert queue.standing(alice.id, LOST) == Standing(
+        paused=True, queued=2, under_way=1, workers=1
+    )
+    assert queue.standing(bob.id, timedelta(0)) == Standing(
+        paused=True, queued=1, under_way=0, workers=0
+    )
+
+
+def test_a_stop_takes_the_owner_s_queue_out_and_stopping_now_halts_the_rest(
+    conn: Connection, alice: Person, runs: Callable[[], UUID]
+) -> None:
+    queue, bob = Queue(conn), People(conn).add("bob", "Bob")
+    worker = enlisted(queue)
+    sending, waiting, others = runs(), runs(), runs()
+    _ = queue.put(alice.id, sending, "e", 1, True)
+    assert queue.claim(worker, {"e": 1}, LOST) is not None
+    held = queue.put(alice.id, waiting, "e", 1, True)
+    _ = queue.put(bob.id, others, "e", 1, True)
+
+    assert queue.stop(alice.id) == Stopped(taken_out=(waiting,), halting=())
+    stopped = queue.job(held.id)
+    assert (stopped.status, stopped.why, stopped.worker) == ("stopped", TAKEN_OUT, None)
+    assert stopped.ended is not None
+    under_way = queue.open(sending)
+    assert under_way is not None and not under_way.halt
+    assert queue.open(others) is not None
+
+    assert queue.stop(alice.id, now=True) == Stopped(taken_out=(), halting=(sending,))
+    assert queue.stop(alice.id, now=True) == Stopped(taken_out=(), halting=())
+    halting = queue.open(sending)
+    assert halting is not None and halting.halt
+    assert [h.halt for h in queue.beat(worker, [halting.id])] == [True]
+    _ = queue.put(alice.id, waiting, "e", 1, False)

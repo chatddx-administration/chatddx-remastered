@@ -13,12 +13,18 @@ Status = Literal["queued", "under way", "finished", "stopped", "failed"]
 ENDED: tuple[Status, ...] = ("finished", "stopped", "failed")
 STATUSES: tuple[Status, ...] = get_args(Status)
 
+TAKEN_OUT = "taken out of the queue"
+
 _COLUMNS = """
     j.id, j.owner, j.run, j.endpoint, j.slots, j.score, j.scorers, j.status, j.why,
     j.halt, j.worker, j.queued, j.claimed, j.beat, j.ended
 """
 
 _OPEN = "j.status IN ('queued', 'under way')"
+
+_PAUSED = """
+    EXISTS (SELECT 1 FROM worker.control c WHERE c.owner = j.owner AND c.paused)
+"""
 
 _LIVE = """
     EXISTS (
@@ -56,6 +62,26 @@ class Held:
     job: int
     halt: bool
     paused: bool
+
+
+@dataclass(frozen=True)
+class Placed:
+    job: Job
+    ahead: int | None
+
+
+@dataclass(frozen=True)
+class Standing:
+    paused: bool
+    queued: int
+    under_way: int
+    workers: int
+
+
+@dataclass(frozen=True)
+class Stopped:
+    taken_out: tuple[UUID, ...]
+    halting: tuple[UUID, ...]
 
 
 def _job(row: tuple[Any, ...]) -> Job:
@@ -152,6 +178,91 @@ class Queue:
             (run,),
         ).fetchone()
         return None if row is None else _job(row)
+
+    # A queued job's place: the jobs at its endpoint under way, or queued before it and
+    # to be claimed; none while its owner has paused.
+    def placed(self, runs: Collection[UUID]) -> dict[UUID, Placed]:
+        rows = self._conn.execute(
+            f"""
+            SELECT {_COLUMNS},
+                CASE WHEN j.status = 'queued' AND (j.halt OR NOT {_PAUSED}) THEN (
+                    SELECT count(*) FROM worker.job a
+                    WHERE a.endpoint = j.endpoint
+                        AND (a.queued, a.id) < (j.queued, j.id)
+                        AND (
+                            a.status = 'under way'
+                            OR (a.status = 'queued' AND NOT EXISTS (
+                                SELECT 1 FROM worker.control c
+                                WHERE c.owner = a.owner AND c.paused AND NOT a.halt
+                            ))
+                        )
+                ) END
+            FROM (
+                SELECT DISTINCT ON (run) * FROM worker.job
+                WHERE run = ANY(%s::uuid[]) ORDER BY run, id DESC
+            ) j
+            """,
+            (list(runs),),
+        ).fetchall()
+        return {
+            UUID(str(row[2])): Placed(
+                _job(row[:-1]), None if row[-1] is None else int(row[-1])
+            )
+            for row in rows
+        }
+
+    def standing(self, owner: int, lost: timedelta) -> Standing:
+        row = self._conn.execute(
+            """
+            SELECT
+                EXISTS (
+                    SELECT 1 FROM worker.control WHERE owner = %(owner)s AND paused
+                ),
+                (
+                    SELECT count(*) FROM worker.job
+                    WHERE owner = %(owner)s AND status = 'queued'
+                ),
+                (
+                    SELECT count(*) FROM worker.job
+                    WHERE owner = %(owner)s AND status = 'under way'
+                ),
+                (SELECT count(*) FROM worker.worker WHERE seen > now() - %(lost)s)
+            """,
+            {"owner": owner, "lost": lost},
+        ).fetchone()
+        assert row is not None
+        paused, queued, under_way, workers = row
+        return Standing(bool(paused), int(queued), int(under_way), int(workers))
+
+    def stop(self, owner: int, now: bool = False) -> Stopped:
+        with self._conn.transaction():
+            taken = self._conn.execute(
+                """
+                UPDATE worker.job SET status = 'stopped', why = %s, ended = now()
+                WHERE owner = %s AND status = 'queued'
+                RETURNING run
+                """,
+                (TAKEN_OUT, owner),
+            ).fetchall()
+            halting = (
+                self._conn.execute(
+                    """
+                    UPDATE worker.job SET halt = true
+                    WHERE owner = %s AND status = 'under way' AND NOT halt
+                    RETURNING run
+                    """,
+                    (owner,),
+                ).fetchall()
+                if now
+                else []
+            )
+            self._tell()
+            for (run,) in taken:
+                self._tell(run, "stopped")
+        return Stopped(
+            tuple(UUID(str(r)) for (r,) in taken),
+            tuple(UUID(str(r)) for (r,) in halting),
+        )
 
     def jobs(self, owner: int, limit: int = 100) -> list[Job]:
         rows = self._conn.execute(

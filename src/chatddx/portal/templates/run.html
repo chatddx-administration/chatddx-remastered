@@ -1,12 +1,12 @@
 {% extends "base.html" %}
-{% from "macros.html" import heading, section, facts, findings, outcome, json %}
+{% from "macros.html" import heading, section, facts, findings, outcome, json, job %}
 {% block title %}Run · ChatDDX{% endblock %}
 {% block main %}
 <div class="mx-auto max-w-5xl px-4 py-8">
   <a href="/runs" class="text-sm text-primary hover:underline">← Runs</a>
   {{ heading(run.described) }}
 
-  {% if under_way or left or run.endpoint %}
+  {% if under_way or left or run.endpoint or resumable %}
   <div class="-mt-4 mb-6 flex flex-wrap items-center gap-3 text-sm">
     {% if under_way %}
     <form method="post" action="/runs/{{ run.id }}/halt"><button class="inline-flex h-9 items-center rounded-md bg-destructive px-4 font-medium text-destructive-foreground hover:bg-destructive/90">Halt</button></form>
@@ -14,6 +14,10 @@
     {% if left %}
     <form method="post" action="/runs/{{ run.id }}/scores"><button class="inline-flex h-9 items-center rounded-md bg-primary px-4 font-medium text-primary-foreground hover:bg-primary/90">Score again</button></form>
     <span class="text-muted-foreground">Left to score by {{ left | join(", ") }}.</span>
+    {% endif %}
+    {% if resumable %}
+    <form method="post" action="/runs/{{ run.id }}/resume"><button class="inline-flex h-9 items-center rounded-md bg-primary px-4 font-medium text-primary-foreground hover:bg-primary/90">Resume</button></form>
+    <span class="text-muted-foreground">Unfinished: resuming sends what it lacks.</span>
     {% endif %}
     {% if run.endpoint and not under_way %}
     <form method="post" action="/runs/{{ run.id }}/again"><button class="inline-flex h-9 items-center rounded-md border border-border bg-card px-4 font-medium hover:bg-muted">Run again</button></form>
@@ -26,6 +30,7 @@
   {{ facts([
     ("Started", run.at | when),
     ("Finished", run.finished_at | when),
+    ("Job", job(run.job)),
     ("Configuration", held),
     ("Endpoint", run.endpoint or "—"),
     ("Engine", engine),

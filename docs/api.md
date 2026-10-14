@@ -237,7 +237,32 @@ A halt goes through the queue, and reaches the job's worker wherever it is.
 When a person send a halt the calls under way are hung up and recorded as stopped: the run is finished unscored.
 Leaving a stream halts nothing. A halt with nothing queued or under way is a conflict.
 
+```
+AGENT: add
+A section above this heading: a person's queue, and resuming a run (agents/wip-worker.md, step 4).
+---
+### A person's queue
+A person sees how their queue stands: whether it is paused, how many of their jobs are queued and under way, and how
+many workers have been seen lately, whoever's jobs they hold. They pause it, and their queued jobs wait, and their runs
+under way stop after the items being sent and are queued again, while a scoring under way goes on; and they resume it.
+They stop it in two presses: the first takes what is queued out, each job ended stopped and its run left unfinished,
+while the runs under way go on; the second, `now`, halts those too, as a halt does.
+
+A run left unfinished with nothing queued or under way for it, as one taken out of the queue or one whose job failed,
+is resumed by its owner: queued again, it sends what it lacks, and is finished and scored, unless asked not to be. It
+is refused as a run is started, and when it has finished.
+```
 ### Reading runs
+```
+AGENT: replace
+The bullet below: each run says its latest job.
+---
+- **A person's runs**, newest first, a page at a time, filtered by trial, by a digest their trial is built on, by
+  a scorer that scored them, or to those left to score, each with the scorers it is left to be scored by. Each says
+  what ran: its trial, skeleton, engine, endpoint, cases, seeds, and a line saying it as people read it; and its
+  latest job: how it stands and why, whether it was asked to halt, and while it is queued, how many jobs at its
+  endpoint are under way or are to be taken before it, none while its owner has paused.
+```
 - **A person's runs**, newest first, a page at a time, filtered by trial, by a digest their trial is built on, by
   a scorer that scored them, or to those left to score, each with the scorers it is left to be scored by. Each says
   what ran: its trial, skeleton, engine, endpoint, cases, seeds, and a line saying it as people read it.

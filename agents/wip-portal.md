@@ -45,7 +45,7 @@ In remastered's terms:
 | Authoring | a form per kind people write: chunks, recipes, appendices, cases, expectations, scorers and judges; what is said of a thread; following an origin; taking expectations | the bench's writes (`docs/bench.md`, "Writes for the person") |
 | Endpoints and models | each endpoint's engine, model, host and clearances; the facts of each model | `GET /api/endpoints`, `GET /api/models` |
 | Comparing runs | runs side by side over the cases they share, a column per run under each view; several variations started together from the variation's page (see "Comparing variations") | `Bench.runs`, `Bench.scores_of`, the look per variation; `GET /api/runs`, `POST /api/runs` |
-| Status | the worker at the person's jobs, with pause, resume, stop and stop now | the worker (`agents/wip-worker.md`) |
+| Status | the worker at the person's jobs, with pause, resume, stop and stop now; built on the runs page (the worker's step 4) | the worker (`agents/wip-worker.md`) |
 
 Ways of showing things the pages keep:
 - **A version timeline** on every thread: ◀ and ▶, "version i of n", and what each version changed, word by word.
@@ -514,7 +514,8 @@ Phase 5, first half, as decided (see "Authoring"):
 What the portal needs below its pages that isn't built:
 1. **The worker** (`agents/wip-worker.md`): runs that outlive the app's process and are seen from every replica.
    Built through its step 3: the API's runs, scorings and halts go through its queue, with the API as it was.
-2. **The worker's controls and status** (`agents/wip-worker.md`, "The plan", 4).
+2. **The worker's controls and status** (`agents/wip-worker.md`, "The plan", 4), built: the runs page's queue, each
+   run's job, and Resume on an unfinished run's page.
 3. **Z1**, the map from roles to kinds, which waits for the portal's views (`docs/bench.md`, "Outstanding";
    `docs/identity.md`, "Z1: what each role is shown").
 

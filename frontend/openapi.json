@@ -2083,6 +2083,70 @@
         }
       }
     },
+    "/api/runs/{run}/resume": {
+      "post": {
+        "tags": [
+          "runs"
+        ],
+        "summary": "Resume",
+        "operationId": "resume_api_runs__run__resume_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          },
+          {
+            "APIKeyCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "run",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Run"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NewResume"
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "The unfinished run, queued again: the worker sends what it lacks, finishes it and scores it whoever listens, and its events are at `/api/runs/{run}/events`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RunStartedData"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Something is queued or under way for the run already"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/runs/{run}/events": {
       "get": {
         "tags": [
@@ -2609,6 +2673,142 @@
             }
           }
         }
+      }
+    },
+    "/api/queue": {
+      "get": {
+        "tags": [
+          "queue"
+        ],
+        "summary": "Queue",
+        "operationId": "queue_api_queue_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Queue"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          },
+          {
+            "APIKeyCookie": []
+          }
+        ]
+      }
+    },
+    "/api/queue/pause": {
+      "post": {
+        "tags": [
+          "queue"
+        ],
+        "summary": "Pause",
+        "operationId": "pause_api_queue_pause_post",
+        "responses": {
+          "200": {
+            "description": "Paused: the person's jobs wait, and their runs under way stop after the items being sent and are queued again; a scoring under way goes on.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Queue"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          },
+          {
+            "APIKeyCookie": []
+          }
+        ]
+      }
+    },
+    "/api/queue/resume": {
+      "post": {
+        "tags": [
+          "queue"
+        ],
+        "summary": "Resume",
+        "operationId": "resume_api_queue_resume_post",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Queue"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          },
+          {
+            "APIKeyCookie": []
+          }
+        ]
+      }
+    },
+    "/api/queue/stop": {
+      "post": {
+        "tags": [
+          "queue"
+        ],
+        "summary": "Stop",
+        "operationId": "stop_api_queue_stop_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NewStop"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "The person's queued jobs ended stopped, their runs left unfinished to be resumed; with `now`, their runs under way halted too.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Stopped"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          },
+          {
+            "APIKeyCookie": []
+          }
+        ]
       }
     }
   },
@@ -4015,6 +4215,19 @@
         ],
         "title": "NewFork"
       },
+      "NewResume": {
+        "properties": {
+          "score": {
+            "type": "boolean",
+            "title": "Score",
+            "description": "under every scorer that applies, once it is finished",
+            "default": true
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "NewResume"
+      },
       "NewRun": {
         "properties": {
           "seeds": {
@@ -4204,6 +4417,19 @@
         "additionalProperties": false,
         "type": "object",
         "title": "NewScoring"
+      },
+      "NewStop": {
+        "properties": {
+          "now": {
+            "type": "boolean",
+            "title": "Now",
+            "description": "halt the runs under way too, as a second press of stop does",
+            "default": false
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "NewStop"
       },
       "NewTake": {
         "properties": {
@@ -4511,6 +4737,38 @@
         ],
         "title": "Proposal"
       },
+      "Queue": {
+        "properties": {
+          "paused": {
+            "type": "boolean",
+            "title": "Paused"
+          },
+          "queued": {
+            "type": "integer",
+            "title": "Queued",
+            "description": "the person's jobs queued"
+          },
+          "under_way": {
+            "type": "integer",
+            "title": "Under Way",
+            "description": "the person's jobs under way"
+          },
+          "workers": {
+            "type": "integer",
+            "title": "Workers",
+            "description": "the workers seen lately, whoever's jobs they hold"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "paused",
+          "queued",
+          "under_way",
+          "workers"
+        ],
+        "title": "Queue"
+      },
       "Reach": {
         "properties": {
           "scorer": {
@@ -4715,6 +4973,17 @@
             ],
             "title": "Unscored",
             "description": "with `unscored`: the scorers it is left to be scored by"
+          },
+          "job": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RunJob"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "its latest job; null for a run no job took"
           }
         },
         "additionalProperties": false,
@@ -4805,6 +5074,17 @@
             "title": "Unscored",
             "description": "with `unscored`: the scorers it is left to be scored by"
           },
+          "job": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RunJob"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "its latest job; null for a run no job took"
+          },
           "rig": {
             "$ref": "#/components/schemas/Rig"
           },
@@ -4870,6 +5150,78 @@
           "scores"
         ],
         "title": "RunDetail"
+      },
+      "RunJob": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "queued",
+              "under way",
+              "finished",
+              "stopped",
+              "failed"
+            ],
+            "title": "Status"
+          },
+          "why": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Why",
+            "description": "why it stands as it does: a failure, or why it was queued again or stopped"
+          },
+          "halt": {
+            "type": "boolean",
+            "title": "Halt",
+            "description": "whether it was asked to halt"
+          },
+          "ahead": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ahead",
+            "description": "while queued, the jobs at its endpoint under way or to be taken before it; null while its owner has paused, and once it is taken"
+          },
+          "queued": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Queued"
+          },
+          "ended": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ended"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "status",
+          "why",
+          "halt",
+          "ahead",
+          "queued",
+          "ended"
+        ],
+        "title": "RunJob"
       },
       "RunStartedData": {
         "additionalProperties": false,
@@ -5195,6 +5547,35 @@
           "person"
         ],
         "title": "SignedIn"
+      },
+      "Stopped": {
+        "properties": {
+          "taken_out": {
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "type": "array",
+            "title": "Taken Out",
+            "description": "the runs whose queued jobs ended stopped, left as they were"
+          },
+          "halting": {
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "type": "array",
+            "title": "Halting",
+            "description": "the runs under way asked to halt"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "taken_out",
+          "halting"
+        ],
+        "title": "Stopped"
       },
       "Taken": {
         "properties": {

@@ -110,11 +110,68 @@ def test_a_run_is_scored_again_and_run_again_from_its_page(signed: TestClient) -
     )
 
 
+@pytest.mark.usefixtures("fake")
+@pytest.mark.slow
+def test_the_runs_page_says_how_the_queue_stands_and_pauses_stops_and_resumes_it(
+    signed: TestClient,
+) -> None:
+    page = shown(signed, "/runs")
+    assert "0 queued, 0 under way." in page and 'action="/queue/pause"' in page
+    assert 'action="/queue/stop"' not in page
+
+    got = signed.post("/queue/pause")
+    assert (got.status_code, got.headers["location"]) == (303, "/runs")
+    run = started(signed)
+    page = shown(signed, "/runs")
+    assert "1 queued, 0 under way; paused." in page
+    assert 'action="/queue/resume"' in page and "queued, paused" in page
+    assert ">Stop</button>" in page and ">Stop now</button>" not in page
+
+    assert signed.post("/queue/stop").status_code == 303
+    page = shown(signed, "/runs")
+    assert "stopped: taken out of the queue" in page
+    assert 'action="/queue/stop"' not in page
+    page = shown(signed, f"/runs/{run}")
+    assert f'action="/runs/{run}/resume"' in page and "Run again" in page
+
+    assert signed.post("/queue/resume").status_code == 303
+    got = signed.post(f"/runs/{run}/resume")
+    assert (got.status_code, got.headers["location"]) == (303, f"/runs/{run}")
+    _ = settled(signed, run)
+    done = signed.get(f"/api/runs/{run}").json()
+    assert done["finished"] and done["job"]["status"] == "finished"
+    page = shown(signed, f"/runs/{run}")
+    assert f'action="/runs/{run}/resume"' not in page
+
+
+@pytest.mark.slow
+def test_stop_now_halts_the_runs_under_way(
+    signed: TestClient, world: Inventory, conn: Connection
+) -> None:
+    with faked(world, Store(conn).get, delay=0.2):
+        run = started(signed)
+        page = shown(signed, "/runs")
+        for _ in range(500):
+            if "1 under way" in page:
+                break
+            time.sleep(0.02)
+            page = shown(signed, "/runs")
+        assert ">Stop now</button>" in page and ">Stop</button>" not in page
+        got = signed.post("/queue/stop", data={"now": "true"})
+        assert got.status_code == 303
+        _ = settled(signed, run)
+    halted = signed.get(f"/api/runs/{run}").json()
+    assert (halted["job"]["status"], halted["job"]["halt"]) == ("stopped", True)
+    assert halted["scores"] == []
+
+
 @pytest.mark.slow
 def test_a_form_from_another_site_starts_nothing(signed: TestClient) -> None:
     elsewhere = {"Sec-Fetch-Site": "cross-site"}
-    for action in ("halt", "scores", "again"):
+    for action in ("halt", "scores", "again", "resume"):
         got = signed.post(
             "/runs/00000000-0000-0000-0000-000000000000/" + action, headers=elsewhere
         )
         assert got.status_code == 403
+    for action in ("pause", "resume", "stop"):
+        assert signed.post(f"/queue/{action}", headers=elsewhere).status_code == 403

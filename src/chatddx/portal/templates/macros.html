@@ -49,6 +49,14 @@
 <span class="inline-flex rounded-full border px-2 py-0.5 text-xs font-medium {{ tones.get(said, tones['stopped']) }}">{{ said }}</span>
 {% endmacro %}
 
+{% macro job(j) -%}
+{%- if j is none -%}—
+{%- elif j.status == "queued" -%}{{ "queued, paused" if j.ahead is none else "queued, " ~ j.ahead ~ " ahead" }}{{ ", halting" if j.halt else "" }}
+{%- elif j.status == "under way" -%}{{ "halting" if j.halt else "under way" }}
+{%- else -%}{{ j.status }}{{ ": " ~ j.why if j.why else "" }}
+{%- endif -%}
+{%- endmacro %}
+
 {% macro chip(text) %}<span class="inline-flex rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">{{ text }}</span>{% endmacro %}
 
 {% macro json(value) %}<pre class="overflow-x-auto rounded-lg bg-muted/60 p-3 font-mono text-xs leading-relaxed">{{ value | pretty }}</pre>{% endmacro %}
@@ -71,6 +79,7 @@
         <th class="pb-2 pr-4 font-medium">Run</th>
         <th class="pb-2 pr-4 font-medium">Endpoint</th>
         <th class="pb-2 pr-4 font-medium">Finished</th>
+        <th class="pb-2 pr-4 font-medium">Job</th>
         {% if left %}<th class="pb-2 font-medium">Left to score by</th>{% endif %}
       </tr>
     </thead>
@@ -81,6 +90,7 @@
         <td class="py-2 pr-4 align-top"><a href="/runs/{{ r.id }}" class="text-primary hover:underline">{{ r.described }}</a></td>
         <td class="whitespace-nowrap py-2 pr-4 align-top">{{ r.endpoint or "—" }}</td>
         <td class="py-2 pr-4 align-top">{{ "yes" if r.finished else "no" }}</td>
+        <td class="py-2 pr-4 align-top text-muted-foreground">{{ job(r.job) }}</td>
         {% if left %}<td class="py-2 align-top"><div class="flex flex-wrap items-center gap-2">{% for u in r.unscored or [] %}{{ chip(u.name) }} {% endfor %}<form method="post" action="/runs/{{ r.id }}/scores"><button class="rounded-md bg-primary px-2.5 py-0.5 text-xs font-medium text-primary-foreground hover:bg-primary/90">Score again</button></form></div></td>{% endif %}
       </tr>
       {% endfor %}

@@ -19,7 +19,7 @@ from chatddx.runner.gate import Refused
 from chatddx.store import UnderWay
 from chatddx.worker import Worker
 
-from . import families, people, runs, scores, threads, world
+from . import families, people, queue, runs, scores, threads, world
 from .listening import Listener
 from .schemas import EVENTS, Code, Error
 from .state import AppState
@@ -125,7 +125,7 @@ def app(
         lifespan=_lifespan(worker),
     )
     made.state.chatddx = AppState(conninfo, inventory, facts, Listener(conninfo))
-    for module in (people, threads, families, world, runs, scores):
+    for module in (people, threads, families, world, runs, scores, queue):
         made.include_router(module.router, prefix="/api")
     for error, (status, code) in STATUSES.items():
         made.add_exception_handler(error, _status(status, code))

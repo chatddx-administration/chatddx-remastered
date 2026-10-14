@@ -4,6 +4,19 @@
 {% block main %}
 <div class="mx-auto max-w-5xl px-4 py-8">
   {{ heading("Runs", "Your runs, newest first.") }}
+  {% call section("Your queue") %}
+  <div class="flex flex-wrap items-center gap-3 text-sm">
+    <span>{{ queue.queued }} queued, {{ queue.under_way }} under way{{ "; paused" if queue.paused else "" }}.</span>
+    <form method="post" action="/queue/{{ 'resume' if queue.paused else 'pause' }}"><button class="inline-flex h-9 items-center rounded-md border border-border bg-card px-4 font-medium hover:bg-muted">{{ "Resume" if queue.paused else "Pause" }}</button></form>
+    {% if queue.queued %}
+    <form method="post" action="/queue/stop"><button class="inline-flex h-9 items-center rounded-md bg-destructive px-4 font-medium text-destructive-foreground hover:bg-destructive/90">Stop</button></form>
+    {% elif queue.under_way %}
+    <form method="post" action="/queue/stop"><input type="hidden" name="now" value="true"><button class="inline-flex h-9 items-center rounded-md bg-destructive px-4 font-medium text-destructive-foreground hover:bg-destructive/90">Stop now</button></form>
+    {% endif %}
+    {% if queue.queued and not queue.workers %}<span class="text-warning">No worker is running, so nothing queued is taken.</span>{% endif %}
+  </div>
+  <p class="mt-3 text-xs text-muted-foreground">Pausing holds what is queued and queues the runs under way again after the items being sent. Stop takes what is queued out, its runs left unfinished to be resumed; once nothing is queued, Stop now halts the runs under way.</p>
+  {% endcall %}
   {{ tabs([("/runs", "All", not left), ("/runs?left=true", "Left to score", left)]) }}
   {% call section("Left to score" if left else "All runs") %}
   {{ runs_table(runs, left) }}

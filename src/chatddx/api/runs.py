@@ -13,6 +13,7 @@ from chatddx.ledger import RunStarted, check_run
 from chatddx.runner.run import Running
 from chatddx.scorers.answer import read
 from chatddx.store import Queue
+from chatddx.store.queue import Placed
 
 from . import schemas
 from .events import graded_of, item_of, started_of
@@ -172,6 +173,30 @@ def again(
     return _queued(request, response, bench, running, given.score)
 
 
+@router.post(
+    "/runs/{run}/resume",
+    status_code=202,
+    responses={
+        202: {
+            "description": "The unfinished run, queued again: the worker sends what it "
+            + "lacks, finishes it and scores it whoever listens, and its events are at "
+            + "`/api/runs/{run}/events`."
+        },
+        409: {"description": "Something is queued or under way for the run already"},
+    },
+)
+def resume(
+    request: Request,
+    response: Response,
+    bench: BenchDep,
+    run: UUID,
+    given: schemas.NewResume,
+) -> schemas.RunStartedData:
+    with refused():
+        running = bench.resume(run)
+    return _queued(request, response, bench, running, given.score)
+
+
 @router.get(
     "/runs/{run}/events",
     response_class=StreamingResponse,
@@ -218,11 +243,26 @@ def halt(bench: BenchDep, run: UUID) -> Response:
     return Response(status_code=204)
 
 
+def job_of(placed: Placed | None) -> schemas.RunJob | None:
+    if placed is None:
+        return None
+    job = placed.job
+    return schemas.RunJob(
+        status=job.status,
+        why=job.why,
+        halt=job.halt,
+        ahead=placed.ahead,
+        queued=job.queued,
+        ended=job.ended,
+    )
+
+
 def run_of(
     bench: Bench,
     started: RunStarted,
     finished: bool,
     unscored: list[str] | None = None,
+    placed: Placed | None = None,
 ) -> schemas.Run:
     trial = resolve(bench.get, started.trial, Trial)
     return schemas.Run(
@@ -239,6 +279,7 @@ def run_of(
         unscored=None
         if unscored is None
         else [schemas.Unscored(scorer=s, name=bench.scorer_name(s)) for s in unscored],
+        job=job_of(placed),
     )
 
 
@@ -251,8 +292,9 @@ def detail(bench: Bench, run: UUID) -> schemas.RunDetail:
     skeleton = resolve(registry.get, trial.skeleton, Skeleton)
     finished = whole.finished
     noted = () if finished is None else finished.findings
+    placed = Queue(bench.conn).placed([run]).get(run)
     return schemas.RunDetail(
-        **run_of(bench, started, finished is not None).model_dump(),
+        **run_of(bench, started, finished is not None, placed=placed).model_dump(),
         rig=schemas.Rig(**started.rig.model_dump()),
         finished_at=None if finished is None else finished.at,
         noted=[schemas.Finding.of(f) for f in noted],
@@ -293,7 +335,11 @@ def runs(
         found = [r for r in found if r.run in left]
     page = found[offset : offset + limit]
     finished = bench.store.finished([r.run for r in page])
-    return [run_of(bench, r, r.run in finished, left.get(r.run)) for r in page]
+    placed = Queue(bench.conn).placed([r.run for r in page])
+    return [
+        run_of(bench, r, r.run in finished, left.get(r.run), placed.get(r.run))
+        for r in page
+    ]
 
 
 @router.get("/runs/{run}")

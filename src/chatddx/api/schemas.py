@@ -558,6 +558,21 @@ class Unscored(_Schema):
     name: str
 
 
+class RunJob(_Schema):
+    status: Literal["queued", "under way", "finished", "stopped", "failed"]
+    why: str | None = Field(
+        description="why it stands as it does: a failure, or why it was queued again "
+        + "or stopped"
+    )
+    halt: bool = Field(description="whether it was asked to halt")
+    ahead: int | None = Field(
+        description="while queued, the jobs at its endpoint under way or to be taken "
+        + "before it; null while its owner has paused, and once it is taken"
+    )
+    queued: datetime
+    ended: datetime | None
+
+
 class Run(_Schema):
     id: UUID
     at: datetime
@@ -572,6 +587,9 @@ class Run(_Schema):
     unscored: list[Unscored] | None = Field(
         default=None,
         description="with `unscored`: the scorers it is left to be scored by",
+    )
+    job: RunJob | None = Field(
+        default=None, description="its latest job; null for a run no job took"
     )
 
 
@@ -647,6 +665,35 @@ class RenderedAgain(_Schema):
     replicate: int
     same: bool
     why: str | None
+
+
+class NewResume(_Schema):
+    score: bool = Field(
+        default=True, description="under every scorer that applies, once it is finished"
+    )
+
+
+class NewStop(_Schema):
+    now: bool = Field(
+        default=False,
+        description="halt the runs under way too, as a second press of stop does",
+    )
+
+
+class Queue(_Schema):
+    paused: bool
+    queued: int = Field(description="the person's jobs queued")
+    under_way: int = Field(description="the person's jobs under way")
+    workers: int = Field(
+        description="the workers seen lately, whoever's jobs they hold"
+    )
+
+
+class Stopped(_Schema):
+    taken_out: list[UUID] = Field(
+        description="the runs whose queued jobs ended stopped, left as they were"
+    )
+    halting: list[UUID] = Field(description="the runs under way asked to halt")
 
 
 class NewScoring(_Schema):

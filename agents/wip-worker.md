@@ -1,9 +1,10 @@
 # The worker: work in progress
 
 The worker runs trials outside the process that asked for them, so that a run outlives a restarted app and is seen,
-followed and halted from every replica. This file plans it, and the port of what the old worker did. Steps 0 to 3 are
-built (see "Built"): what it stands on, the queue, the worker, `chatddx worker`, and the API through it, its runs,
-scorings and halts queued and its events told from the ledger's rows, woken by `NOTIFY`, with the worker's deltas.
+followed and halted from every replica. This file plans it, and the port of what the old worker did. Steps 0 to 4 are
+built (see "Built"): what it stands on, the queue, the worker, `chatddx worker`, the API through it, its runs,
+scorings and halts queued and its events told from the ledger's rows, woken by `NOTIFY`, with the worker's deltas; and
+a person's controls of their queue, with each run's job on the runs page.
 
 "The old worker" is chatddx-administration/chatddx at 504792c: `src/chatddx/worker/` (`models.py`, `queue.py`,
 `worker.py`, `control.py`, `cli.py`, about 950 lines), with the portal's **Status** page
@@ -24,10 +25,10 @@ https://github.com/chatddx-administration/chatddx/blob/504792cbeb09508f2c52912be
    and woken by `LISTEN`/`NOTIFY` (E2), with deltas through `NOTIFY` (E3); K4, it schedules runs; K5, every run
    started over HTTP goes through it; K6, a run starts in the request and the worker sends it (A).
 5. **Decided: a run lost mid-way is resumed** by the next claim.
-6. **Built: steps 0 to 3** (see "Built"): resuming a run and what a run starts with; the queue; the worker; the API
-   through the worker.
-7. **Decided: what's next** (see "What's next, decided"), but T4, the repl beside the worker. R1 to R5, T1 to T3 and
-   W1 are built. Next to build: step 4 and W2, then the NixOS module (see "The plan").
+6. **Built: steps 0 to 4** (see "Built"): resuming a run and what a run starts with; the queue; the worker; the API
+   through the worker; controls and status.
+7. **Decided: what's next** (see "What's next, decided"), but T4, the repl beside the worker. R1 to R5, T1 to T3, C1,
+   C3, W1, and C2 as far as queue order goes, are built. Next to build: W2, then the NixOS module (see "The plan").
 
 ## Why
 Until step 3:
@@ -256,6 +257,23 @@ Still the runner's, and met here:
     queued job under a five-minute beat (`test_worker.py`), `src/chatddx/api/test/test_telling.py`, and the API's runs
     and scores tests rewritten: ids are rows' numbers, another app tells a run's rows alike, and a test that looks for
     what isn't a row pauses the owner's queue until its stream listens (`test_runs.py:joined`).
+- **Step 4, controls and status** (C1, C3; C2 as built):
+  - **The queue.** `Queue.stop(owner, now)`: the first press ends the owner's queued jobs stopped, why `taken out of
+    the queue`, their runs left unfinished, and the runs under way go on; `now` asks their jobs under way to halt too,
+    as a run's halt does (C1's take). `Queue.standing(owner, lost)`: paused, how many queued and under way, and the
+    workers seen within `lost`. `Queue.placed(runs)`: each run's latest job, and while it is queued, how many jobs at
+    its endpoint are under way or are to be taken before it (owners who paused left out); none while its owner has
+    paused (`src/chatddx/store/queue.py`).
+  - **The API.** `GET /api/queue`, `POST /api/queue/pause`, `/resume` and `/stop` (`now`)
+    (`src/chatddx/api/queue.py`); a run, listed or read, says its latest job (`Run.job`); and
+    `POST /api/runs/{id}/resume` queues an unfinished run with nothing open for it again, refused as a run is started,
+    so that a run taken out of the queue, or whose job failed, is sent on.
+  - **The runs page** says how the person's queue stands, warns when nothing queued is taken for want of a worker,
+    and has Pause or Resume, and Stop while something is queued, else Stop now while something is under way: the old
+    two presses, told apart by what is left. Each run's row says its job, and a run's page says it too and offers
+    Resume for an unfinished run with nothing open (`src/chatddx/portal/runs.py`, `templates/runs.html`).
+  - Tests: `src/chatddx/store/test/test_queue.py`, `src/chatddx/api/test/test_queue.py`, and
+    `src/chatddx/portal/test/test_running.py`.
 
 ## The plan
 On the decisions above.
@@ -272,8 +290,8 @@ R. **What a run is started with** (R1 to R4), built: the inventory's cleanup per
    `/scores` queue a job and answer 202 as now, the run started in the request (K6); `GET /api/runs/{id}/events` from
    the ledger, woken by the worker, with its deltas through `NOTIFY`; `POST /api/runs/{id}/halt` through the queue;
    `chatddx portal` running a worker in its process; `src/chatddx/api/jobs.py` gone.
-4. **Controls and status** (C1 to C3): pause, resume and the two presses of stop for an owner, and the runs page's
-   status.
+4. **Controls and status** (C1 to C3), built (see "Built"): pause, resume and the two presses of stop for an owner,
+   and the runs page's status.
 5. **A stopping worker's deadline** (W2), with the scorers a job has finished kept.
 6. **A NixOS module** running the HTTP server, the API and the worker as systemd services (W1).
 
@@ -311,13 +329,13 @@ run is started with over HTTP, which doesn't wait on the worker; C for step 4; W
   longer ties up a request; it counts cases times seeds.
 
 ### Step 4
-- **C1. Stop. Decided: the old two presses.** The first takes the owner's queue out: their queued jobs end stopped,
+- **C1. Stop. Decided, built: the old two presses.** The first takes the owner's queue out: their queued jobs end stopped,
   and the runs under way go on. The second stops those too. Take, for what a stop leaves: a run taken out of the
   queue is left unfinished, so that it can be queued again and resumed; one stopped under way is halted, as a run's
-  halt is.
+  halt is. Built as the take has it, with `POST /api/runs/{id}/resume` to queue such a run again.
 - **C2. Fairness between owners. Decided: queue order, as built, then turns per owner at each endpoint** once people
-  wait on each other.
-- **C3. Where the status shows. Decided: on the runs page**: each run's job and why, how many are ahead at its
+  wait on each other. Turns aren't built.
+- **C3. Where the status shows. Decided, built: on the runs page**: each run's job and why, how many are ahead at its
   endpoint, and pause, resume and stop.
 
 ### Running the worker
@@ -352,8 +370,10 @@ T4 is open (see "What's next, decided"). Beside it:
 - **What W1's HTTP server is**: the portal's pages served apart from the API, or a proxy in front of both. The
   portal is one app with the API today (`agents/wip-portal.md`, "P3b, concretely"), and its `__Host-` cookie wants one
   host for both.
-- **What C1's second press leaves**: a halted run is finished, so it can't be resumed; leaving it unfinished means its
-  calls under way are recorded as stopped and its items aren't sent again.
+- **What C1's second press leaves**: built as the take has it, a halted run, finished, so it can't be resumed; leaving
+  it unfinished instead would mean its calls under way are recorded as stopped and its items aren't sent again.
+- **"Ahead" counts jobs, not items**: a run of 1,000 items ahead counts as one, as a run of one does. The workers
+  seen are counted for anyone's jobs, not the person's endpoints.
 - **A job at an endpoint the inventory lost** is claimed and fails at the gate, rather than waiting.
 
 ## Moved here
