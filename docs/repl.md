@@ -61,17 +61,9 @@ Names hold spaces and need no quotes: a command's last name takes the rest of th
 from the last word. `run` takes a seed only as a whole number after a case's title.
 
 ### Parts
-```
-AGENT: replace
-The section is "Recipe and compilation" (docs/factors.md:368). The paragraph:
----
 `set PART CHUNK` puts another chunk in one of the recipe's nine parts (docs/factors.md, "Recipe and compilation"), a
 chunk made per model named plainly. The variation compiles at once, so a part that doesn't compile is refused and the
 cell stays as it was. Setting the configuration's own chunk unsets the part, and `none` takes an optional part out.
-```
-`set PART CHUNK` puts another chunk in one of the recipe's nine parts (docs/factors.md, "Recipe"), a chunk made per
-model named plainly. The variation compiles at once, so a part that doesn't compile is refused and the cell stays as
-it was. Setting the configuration's own chunk unsets the part, and `none` takes an optional part out.
 
 ### Saving
 `save NAME` makes the cell's configuration the person's own. Their live thread named NAME gets a new edit, or none when

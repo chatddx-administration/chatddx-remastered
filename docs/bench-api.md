@@ -52,13 +52,7 @@ The modules, and the ones each builds on:
 Outside the package, the bench builds on the store, the catalog, `chatddx.identity`, the World, the facts, the runner
 and the scoring pass, and holds no SQL.
 
-```
-AGENT: replace
-A typo.
----
 Organisational principles:
-```
-Organisatinal principles:
 - **Modules are named by what they hold**, as `catalog/threads.py` and `runner/send.py` are: what the person sees in
   `seen.py`, each write in the module named for what it writes, as docs/bench.md gives each a section, and `Bench` in
   `bench.py`.

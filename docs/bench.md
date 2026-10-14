@@ -386,14 +386,9 @@ the person were planned in `agents/wip-authoring.md` at b6f76b8. Its takes were 
 - **The repl lists judge configurations among the rest**, as the API doesn't.
 - **A person's runs are all read**, and paged afterwards, in the API too (`Bench.runs`), and what is left to score is
   worked out for each of them, about 40 ms a run under five scorers. Page in the store once that is slow.
-```
-AGENT: add
-An open item of the retired test-world plan that no doc carries since. An item for the list:
----
 - **The archive's configuration saved under another name** is saved with no finding: a hand-made recipe that compiles
   to a skeleton a shared configuration holds becomes a thread of the person's own, and only a look's `held_by` says so
   (docs/api-api.md, "threads.py"). An expectation the same as one the person holds is refused.
-```
 - **Two saves of one name at once** can both create a configuration, in the repl's `save` (`docs/catalog.md`,
   "Concurrent writers").
 - **Taking counts shared threads, not owners**: a case with two threads shared by one owner is to choose from, and

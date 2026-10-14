@@ -205,15 +205,9 @@ src/chatddx/curation/test/.
   plan, the cases or the inventory. Broken data, such as an invalid expectation, an unreachable view, a misplaced
   clearance or a vignette that isn't UTF-8, is an edit a test makes to a copy of the World (`copied` and `edit` in
   src/chatddx/test/world.py).
-```
-AGENT: add
-CHATDDX_TEST_REMOTE, the credential of the test World's remote endpoint, is documented nowhere
-(worlds/test/endpoints.toml:27). An item for the list:
----
 - The test World's remote endpoint, `unknown@remote`, names `CHATDDX_TEST_REMOTE` as its credential. Tests run with it
   unset to see the gate refuse the endpoint for its secret (src/chatddx/bench/test/test_seen.py,
   src/chatddx/runner/test/test_score.py).
-```
 - `test_plan.py` plans data sets and needs no database.
 - `test_init.py`, `test_repair.py`, `test_giftbag.py` and `test_pins.py` load the test World's data set whole, with a
   stand-in source whose vignettes are a line of text each (src/chatddx/curation/test/cases.py). A test that tells

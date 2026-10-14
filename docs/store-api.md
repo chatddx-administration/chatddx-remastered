@@ -29,18 +29,8 @@ Paths are relative to `src/chatddx/store/` unless they start with `src/`, `docs/
 
 ## Package
 
-```
-AGENT: replace
-The package re-exports Texts and fetch_vignette too (src/chatddx/store/__init__.py:5), and other docs cite
-chatddx.store.fetch_vignette (runner-api.md, api-api.md). The paragraph, and a row for texts.py for the table under it:
----
 `chatddx.store` re-exports `TOP_TIER`, `Catalog`, `People`, `Store`, `Texts`, `fetch_vignette` and `migrate`.
 `Connection` (in `store.py`), `Rows`, `pending`, `migrations`, `Migration` and `MIGRATIONS` are imported by path.
-
-| `texts.py` | `store.py`, `chatddx.factors.cases`, `chatddx.inventory` |
-```
-`chatddx.store` re-exports `TOP_TIER`, `Catalog`, `People`, `Store` and `migrate`. `Connection` (in
-`store.py`), `Rows`, `pending`, `migrations`, `Migration` and `MIGRATIONS` are imported by path.
 
 | Module | Builds on |
 | --- | --- |
@@ -48,6 +38,7 @@ chatddx.store.fetch_vignette (runner-api.md, api-api.md). The paragraph, and a r
 | `migrate.py` | psycopg only |
 | `people.py` | `store.py`, `chatddx.settings`, `chatddx.identity` |
 | `catalog.py` | `store.py`, `chatddx.catalog`, `chatddx.factors.{base,cases,request,scoring}` |
+| `texts.py` | `store.py`, `chatddx.factors.cases`, `chatddx.inventory` |
 
 The package holds chatddx's SQL. It uses psycopg 3, synchronously, and no ORM.
 
@@ -143,10 +134,6 @@ does.
 
 `settings.SESSION_TTL` is 12 hours.
 
-```
-AGENT: add
-texts.py has no section. One, before catalog.py's:
----
 ## texts.py
 
 ### `class Texts`
@@ -161,7 +148,7 @@ texts.py has no section. One, before catalog.py's:
 
 ### `fetch_vignette(conn: Connection, inventory: Inventory, vignette: Vignette) -> bytes`
 The vignette's bytes: from `Texts.get` when its source is a `DatabaseSource`, else from the source's own `fetch`.
-```
+
 ## catalog.py
 
 ### `class Rows`
@@ -285,16 +272,6 @@ them).
 ## Migrations
 `migrations/NNNN-tT-<schema>[-<what>].sql`, applied by `migrate`:
 
-```
-AGENT: add
-The table stops at 0013; 0014 to 0018 are missing. Their rows, after 0013's:
----
-| `0014-t0-source.sql` | 0 | `source`: `text` | `docs/migrations.md`, "source" |
-| `0015-t1-source.sql` | 1 | `source` grants: the writer SELECT, INSERT; the reader nothing | `docs/migrations.md`, "source" |
-| `0016-t2-source.sql` | 2 | `source.text` insert-only triggers | `docs/migrations.md`, "source" |
-| `0017-t0-catalog-label-edit.sql` | 0 | `catalog.label` made again, on edits | `docs/catalog-api.md`, "Database: schema `catalog`" |
-| `0018-t2-catalog-label-edit.sql` | 2 | `catalog.check_label()` for labels on edits | `docs/catalog-api.md` |
-```
 | File | Tier | Schema | Documented in |
 | --- | --- | --- | --- |
 | `0001-t0-factor.sql` | 0 | `factor`: `component`, `component_ref` | `docs/factors-api.md`, "Database: schema `factor`" |
@@ -310,6 +287,11 @@ The table stops at 0013; 0014 to 0018 are missing. Their rows, after 0013's:
 | `0011-t1-catalog.sql` | 1 | `catalog` grants | `docs/catalog-api.md` |
 | `0012-t2-catalog.sql` | 2 | `catalog` CHECKs and triggers, insert-only triggers | `docs/catalog-api.md` |
 | `0013-t0-catalog-binding-content.sql` | 0 | `catalog`: index `binding_content` on `binding` | `docs/catalog-api.md`, "Database: schema `catalog`" |
+| `0014-t0-source.sql` | 0 | `source`: `text` | `docs/migrations.md`, "source" |
+| `0015-t1-source.sql` | 1 | `source` grants: the writer SELECT, INSERT; the reader nothing | `docs/migrations.md`, "source" |
+| `0016-t2-source.sql` | 2 | `source.text` insert-only triggers | `docs/migrations.md`, "source" |
+| `0017-t0-catalog-label-edit.sql` | 0 | `catalog.label` made again, on edits | `docs/catalog-api.md`, "Database: schema `catalog`" |
+| `0018-t2-catalog-label-edit.sql` | 2 | `catalog.check_label()` for labels on edits | `docs/catalog-api.md` |
 
 How to name and list a new migration is in `docs/migrations.md`.
 
