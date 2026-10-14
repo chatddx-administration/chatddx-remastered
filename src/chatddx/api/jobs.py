@@ -1,7 +1,7 @@
 import asyncio
 import logging
 import threading
-from collections.abc import AsyncIterator, Collection, Generator, Iterable
+from collections.abc import AsyncIterator, Callable, Collection, Generator, Iterable
 from contextlib import contextmanager
 from dataclasses import dataclass
 from uuid import UUID
@@ -36,10 +36,11 @@ type _Listener = tuple[asyncio.AbstractEventLoop, asyncio.Queue[str | None]]
 
 
 class Job:
-    def __init__(self, run: UUID) -> None:
+    def __init__(self, run: UUID, ended: Callable[["Job"], None]) -> None:
         self.run: UUID = run
         self.running: Running | None = None
         self.scoring: ScoreHalt = ScoreHalt()
+        self._ended: Callable[[Job], None] = ended
         self._guard: threading.Lock = threading.Lock()
         self._said: list[_Said] = []
         self._last: int = 0
@@ -77,6 +78,7 @@ class Job:
             self._done = True
             listeners, self._listeners = self._listeners, []
         self.running = None
+        self._ended(self)
         _tell(listeners, None)
 
     def halt(self) -> None:
@@ -120,8 +122,13 @@ class Jobs:
             held = self._jobs.get(run)
             if held is not None and not held.done:
                 raise HTTPException(409, f"run {run} has something under way")
-            self._jobs[run] = Job(run)
+            self._jobs[run] = Job(run, self._drop)
             return self._jobs[run]
+
+    def _drop(self, job: Job) -> None:
+        with self._guard:
+            if self._jobs.get(job.run) is job:
+                del self._jobs[job.run]
 
 
 async def followed(job: Job, after: int) -> AsyncIterator[str]:
@@ -144,9 +151,11 @@ async def followed(job: Job, after: int) -> AsyncIterator[str]:
         job.leave(listener)
 
 
+# An id past the ledger's numbers is a live job's, which counted its deltas too; the
+# stream still ends with `done`, so that the client stops asking.
 async def replayed(told: list[Named], after: int) -> AsyncIterator[str]:
     for id, (name, data) in enumerate(told, 1):
-        if id > after:
+        if id > after or name == "done":
             yield sse(name, data, id)
 
 

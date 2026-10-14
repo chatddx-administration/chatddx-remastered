@@ -8,13 +8,8 @@ from jsonschema.exceptions import relevance
 from pydantic import JsonValue
 from referencing.exceptions import Unresolvable
 
-from chatddx.factors.request import (
-    NativeOutput,
-    Skeleton,
-    TextOutput,
-    ToolOutput,
-    tool_calls,
-)
+from chatddx.factors.request import NativeOutput, Skeleton, TextOutput, ToolOutput
+from chatddx.factors.response import message, tool_calls
 
 _FENCED = re.compile(r"```[^\n`]*\n(.*?)```", re.DOTALL)
 _LITERAL = re.compile(r"-?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?|true|false|null")
@@ -34,8 +29,7 @@ class Answer(NamedTuple):
 def read(skeleton: Skeleton, response: Mapping[str, JsonValue] | None) -> Answer:
     if response is None:
         return Answer(None, "no response")
-    message = _message(response)
-    content = message.get("content")
+    content = message(response).get("content")
     match skeleton.contract:
         case ToolOutput(name=name):
             called = [c for c in tool_calls(response) if c.name == name]
@@ -56,14 +50,6 @@ def read(skeleton: Skeleton, response: Mapping[str, JsonValue] | None) -> Answer
     if found.value is None or not isinstance(schema, dict):
         return found
     return Answer(found.value, _breaks(schema, found.value), found.salvaged)
-
-
-def _message(response: Mapping[str, JsonValue]) -> dict[str, JsonValue]:
-    match response.get("choices"):
-        case [{"message": dict() as message}, *_]:
-            return message
-        case _:
-            return {}
 
 
 def _json(text: str, what: str, salvage: bool = False) -> Answer:

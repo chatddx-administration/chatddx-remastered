@@ -1,5 +1,6 @@
 from uuid import uuid4
 
+import httpx2
 import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
@@ -7,7 +8,15 @@ from psycopg.conninfo import make_conninfo
 
 from chatddx import settings
 from chatddx.api.app import app
-from chatddx.api.test.test_runs import asked, family, followed, names, sent
+from chatddx.api.test.test_runs import (
+    UNDER_WAY,
+    asked,
+    family,
+    followed,
+    names,
+    sent,
+    told,
+)
 from chatddx.bench import Bench
 from chatddx.bench.test.helpers import ran, trial
 from chatddx.curation import Plan
@@ -23,13 +32,13 @@ def served(db: str, world: Inventory) -> FastAPI:
     return app(world, world_facts(), make_conninfo(settings.database(), dbname=db))
 
 
-@pytest.mark.usefixtures("fake")
 @pytest.mark.slow
 def test_a_run_s_scores_are_read_with_their_items_and_judge_calls(
-    signed: TestClient, bob: dict[str, str]
+    signed: TestClient, bob: dict[str, str], world: Inventory, conn: Connection
 ) -> None:
     noted = family(signed, "noted")["id"]
-    made, _ = sent(signed, asked(signed, families=[noted]))
+    with faked(world, Store(conn).get):
+        made, _ = sent(signed, asked(signed, families=[noted]))
     run = made["id"]
     latest = signed.get(f"/api/runs/{run}/scores").json()
     assert latest == made["scores"]
@@ -46,11 +55,12 @@ def test_a_run_s_scores_are_read_with_their_items_and_judge_calls(
     assert views[3]["detail"] is not None
     assert shown["findings"] == []
 
-    got = signed.post(f"/api/runs/{run}/scores", json={})
-    assert got.status_code == 202
+    with faked(world, Store(conn).get, delay=UNDER_WAY):
+        got = signed.post(f"/api/runs/{run}/scores", json={})
+        assert got.status_code == 202
+        said = followed(signed, run)
     assert got.headers["location"] == f"/api/runs/{run}/scores"
     assert {s["name"] for s in got.json()["scorers"]} == {g["name"] for g in latest}
-    said = followed(signed, run)
     assert names(said)[0] == "run.scoring" and names(said)[-2:] == [
         "run.scored",
         "done",
@@ -97,6 +107,7 @@ def test_a_run_is_scored_when_asked_and_what_can_t_be_is_refused(
     plan: Plan,
     world: Inventory,
     bob: dict[str, str],
+    listening: str,
 ) -> None:
     unfinished = ran(conn, alice, trial(conn, plan, LINES, "crlf"), finished=False)
     left = ran(conn, alice, trial(conn, plan, LINES, "crlf"))
@@ -127,15 +138,21 @@ def test_a_run_is_scored_when_asked_and_what_can_t_be_is_refused(
     noted = asked(signed, families=[family(signed, "noted")["id"]], score=False)
     with faked(world, Store(conn).get):
         run = sent(signed, noted)[0]["id"]
-    with faked(world, Store(conn).get, delay=0.05):
+    bearer = {"Authorization": signed.headers["Authorization"]}
+    with (
+        faked(world, Store(conn).get, delay=0.05),
+        httpx2.Client(headers=bearer) as http,
+    ):
         assert signed.post(f"/api/runs/{run}/scores", json={}).status_code == 202
         busy = signed.post(f"/api/runs/{run}/scores", json={})
         assert (busy.status_code, busy.json()) == (
             409,
             {"detail": f"run {run} has something under way", "code": "conflict"},
         )
-        assert signed.post(f"/api/runs/{run}/halt").status_code == 204
-        said = followed(signed, run)
+        events = f"{listening}/api/runs/{run}/events"
+        with http.stream("GET", events, timeout=10) as got:
+            assert signed.post(f"/api/runs/{run}/halt").status_code == 204
+            said = told(got.read().decode())
     assert said[-1][1:] == ("done", {"halted": True})
     [scored] = [d for _, n, d in said if n == "run.scored"]
     assert "stopped" in {g["refused"] for g in scored["scores"]}

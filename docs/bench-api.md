@@ -52,7 +52,7 @@ The modules, and the ones each builds on:
 Outside the package, the bench builds on the store, the catalog, `chatddx.identity`, the World, the facts, the runner
 and the scoring pass, and holds no SQL.
 
-Organisatinal principles:
+Organisational principles:
 - **Modules are named by what they hold**, as `catalog/threads.py` and `runner/send.py` are: what the person sees in
   `seen.py`, each write in the module named for what it writes, as docs/bench.md gives each a section, and `Bench` in
   `bench.py`.
@@ -393,9 +393,9 @@ The configuration's head when nothing is replaced or it has no recipe; else the 
 The request rendered from the skeleton with `PLACEHOLDERS` for its slots and `seed`.
 - `engine`: whose `served` model the request carries; `‹model›` without one.
 
-#### `trial(skeleton: Skeleton, engine: str, cases: list[str], seed: int) -> tuple[Registry, Trial]`
-A `Trial` of the skeleton, the engine, the cases and the one seed, and a registry holding it with what it refers to.
-Nothing is stored.
+#### `trial(skeleton: Skeleton, engine: str, cases: list[str], seed: int, cleanup: tuple[CleanupOp, ...] = ()) -> tuple[Registry, Trial]`
+A `Trial` of the skeleton, the engine, the cases, the cleanup steps and the one seed, and a registry holding it with
+what it refers to.
 
 #### `findings(variation: TriedVariation, engine: str, seed: int, families: list[Family] | None = None) -> list[Finding]`
 `lints` of the variation's trial on `engine`; for a judge configuration, of a `Judge` of its skeleton on `engine`,
@@ -639,6 +639,10 @@ Raises, before writing:
 - `ValueError("name the source to type into: …")`
 - `OverQuota("<login> has typed <n> cases in the last day, as many as a day takes")`
 
+### `takes_typed(endpoint: str) -> bool`
+Whether a case typed into the World's database source can run at `endpoint`: the source isn't sensitive, or the
+endpoint is cleared for it. False when the World has no database source, or more than one.
+
 ### `carry(thread: int, head: int, case: str) -> Written`
 `edit_component` of the expectation `thread` onto `case`, with the same schema and data.
 - Raises `ValueError("<word> <thread> isn't an expectation")`.
@@ -743,10 +747,9 @@ Raises:
 - `Seen.endpoint`'s, the runner's and its gate's; the runner's `ValueError` for a connection not in autocommit mode.
 
 ### `again(run: RunStarted, seed: int) -> Running`
-The run's trial run again at its endpoint with `seed`, as `start` runs a variation, and named by the run's name, else
-its skeleton's title.
-- Raises `ValueError("run <id> was sent to no endpoint, so it can't run again")`, and `start`'s but the judge
-  configuration's.
+The run's trial run again at its endpoint with `seed`, its engine and cleanup kept, as `start` runs a variation, and
+named by the run's name, else its skeleton's title. The gate refuses an endpoint that serves another engine now
+(`Refused("endpoint '<name>' serves engine <digest>, the trial's is <digest>")`).
 
 ### `score(run: RunStarted, scorers: Collection[str] | None = None, on_event: Callable[[ScoringEvent], None] | None = None, halt: ScoreHalt | None = None) -> list[Graded]`
 The run scored by the scoring pass under each of `scorers_for(run)`, as `scoring` builds it now, by name.

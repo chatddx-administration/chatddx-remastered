@@ -10,6 +10,7 @@ from chatddx.api.state import state
 from chatddx.bench import Bench
 from chatddx.factors.base import resolve
 from chatddx.factors.request import Skeleton
+from chatddx.factors.response import parts
 
 from .pages import BenchDep, page
 
@@ -126,27 +127,11 @@ def _rows(graded: schemas.Graded) -> list[tuple[str, int, list[float | None]]]:
 
 def _said(call: JsonValue) -> list[tuple[str, str]]:
     match call:
-        case {"response": {"choices": [{"message": dict() as message}, *_]}}:
+        case {"response": dict() as response}:
             pass
         case _:
             return []
-    parts: list[tuple[str, str]] = []
-    for key in ("reasoning_content", "reasoning"):
-        if isinstance(text := message.get(key), str) and text:
-            parts.append(("reasoning", text))
-            break
-    if isinstance(text := message.get("content"), str) and text:
-        parts.append(("content", text))
-    match message.get("tool_calls"):
-        case list() as calls:
-            for called in calls:
-                match called:
-                    case {
-                        "function": {"name": str() as name, "arguments": str() as given}
-                    }:
-                        parts.append((f"tool call: {name}", given))
-                    case _:
-                        pass
-        case _:
-            pass
-    return parts
+    return [
+        (part.kind if part.name is None else f"tool call: {part.name}", part.text)
+        for part in parts(response)
+    ]

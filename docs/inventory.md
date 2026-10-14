@@ -174,6 +174,11 @@ With a World, init-data ends with the inventory check's findings and a count (se
 used"). It finds that out without connecting.
 
 ## Importing from a host
+`chatddx import-engine REPORT… [--server NAME]… [--endpoint-host HOST] --engines PATH --endpoints PATH`. A report is
+a host's URL, a file, or `-` for stdin. `--server` imports only the servers named, and refuses a name no report has;
+`--endpoint-host` puts another host name in the endpoints' URLs, for one report only. `--engines` is the file the
+models and engines are written to, and `--endpoints` the file of endpoints and hosts.
+
 The hosts run vLLM through o11n (Kompismoln/o11n). Each server runs in a container configured outside the rig, so an
 engine's values come from its host, not from people: the engine import reads each host's report and writes the
 factors and the inventory entries together.

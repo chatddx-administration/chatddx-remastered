@@ -52,7 +52,6 @@ from chatddx.factors.request import (
     Slot,
     TextOutput,
     Tool,
-    ToolCall,
     ToolOutput,
     Toolset,
     Translations,
@@ -60,8 +59,8 @@ from chatddx.factors.request import (
     next_request,
     render,
     texts,
-    tool_calls,
 )
+from chatddx.factors.response import ToolCall, tool_calls
 from chatddx.factors.scoring import (
     Expectation,
     ExpectationSchema,

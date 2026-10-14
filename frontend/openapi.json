@@ -2856,6 +2856,11 @@
             "type": "array",
             "title": "Cleared For"
           },
+          "takes_typed": {
+            "type": "boolean",
+            "title": "Takes Typed",
+            "description": "whether a case typed into the World's database source can run here: the source isn't sensitive, or the endpoint is cleared for it"
+          },
           "problem": {
             "anyOf": [
               {
@@ -2880,6 +2885,7 @@
           "max_jobs",
           "credential",
           "cleared_for",
+          "takes_typed",
           "problem"
         ],
         "title": "Endpoint"

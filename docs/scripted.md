@@ -36,8 +36,9 @@ judge's endpoint, so a judge answers as the fake does by itself.
 
 The fake for an endpoint is the one `chatddx fake-engines` serves there (`fakes.py:fake_at`, which the command uses
 too): for a local engine, from its start-up, which must run the fake vLLM; for a remote engine, a stand-in on this
-machine that asks for the key in the variable the endpoint's credential names. A scripted run serves its own fakes on
-the endpoints' ports, so nothing else may listen there.
+machine that asks for the key in the variable the endpoint's credential names: in the sample World,
+`CHATDDX_SAMPLE_KEY`, which `.env-devshell` and `.env-container` set to `sample-key`. A scripted run serves its own
+fakes on the endpoints' ports, so nothing else may listen there.
 
 The fake stays a leaf: it reads a script and knows nothing of the bench. The scripted runs are the edge that joins
 them.

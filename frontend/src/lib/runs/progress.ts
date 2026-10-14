@@ -176,3 +176,8 @@ export function tally(progress: Progress): { ended: number; of: number; outcomes
     outcomes: [...counted],
   };
 }
+
+export function failed(progress: Progress): string | null {
+  if (progress.errors.length) return progress.errors.join("; ");
+  return progress.finished === null ? "the run didn't finish" : null;
+}

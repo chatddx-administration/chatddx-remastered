@@ -61,7 +61,7 @@ meaning (see "Z1: what each role is shown").
 ## Managing people
 People are managed by command, connecting as `DB_USER`:
 - `chatddx person add LOGIN NAME [--role ROLE …]` adds a person;
-- `chatddx person password LOGIN` sets their password, asked for twice;
+- `chatddx person password LOGIN` sets their password, asked for twice, and refuses an empty one;
 - `chatddx init-data LOGIN` adds a person by that login, named by it, when there is none (docs/curation.md).
 
 A person without a password can't sign in to the API, but can be acted as from the repl.
@@ -93,6 +93,8 @@ in with a password can stay as the development path. How Keycloak hands the app 
 | Collaborates on | Has shared with them, while it is live, and isn't the owner of. |
 
 ## Open design issues
+- **A new password doesn't end sessions.** `chatddx person password` replaces the hash, and a session opened with the
+  old password stays until it expires; only making the person inactive ends their sessions.
 - **Sign-ins aren't limited.** Each costs an argon2 verification. The API's take is none until Keycloak is in front,
   which limits them itself (docs/api.md, "Outstanding").
 - **Nobody administers people through chatddx.** The admin role exists, but nothing asks for it, and the commands
@@ -102,9 +104,9 @@ in with a password can stay as the development path. How Keycloak hands the app 
   since a session's expiry is checked when it is.
 - **What each role is shown** isn't written (see "Authorization").
 
-# Identity: what is open
+## Takes on what is open
+"Open design issues" lists these too; here are the takes.
 
-## Open
 `docs/identity.md`, "Open design issues", lists these too; here are the takes.
 
 ### Z1: what each role is shown

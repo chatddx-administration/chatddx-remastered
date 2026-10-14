@@ -26,6 +26,7 @@ from .base import (
     resolve,
     sorted_keys,
 )
+from .response import message, tool_calls
 
 SlotName = Literal["vignette", "appendices", "completion", "expectation"]
 InsertName = Literal["schema", "output_guidance", "tool_guidance"]
@@ -961,41 +962,12 @@ def render(
     return body
 
 
-class ToolCall(Frozen):
-    id: str
-    name: str
-    arguments: str
-
-
-def _message(response: Mapping[str, JsonValue]) -> dict[str, JsonValue]:
-    match response.get("choices"):
-        case [{"message": dict() as message}, *_]:
-            return message
-        case _:
-            return {}
-
-
-def tool_calls(response: Mapping[str, JsonValue]) -> tuple[ToolCall, ...]:
-    calls = _message(response).get("tool_calls")
-    found: list[ToolCall] = []
-    for call in calls if isinstance(calls, list) else []:
-        match call:
-            case {
-                "id": str() as id,
-                "function": {"name": str() as name, "arguments": str() as arguments},
-            }:
-                found.append(ToolCall(id=id, name=name, arguments=arguments))
-            case _:
-                pass
-    return tuple(found)
-
-
 def next_request(
     body: Mapping[str, JsonValue],
     response: Mapping[str, JsonValue],
     results: Mapping[str, str],
 ) -> dict[str, JsonValue]:
-    message, calls = _message(response), tool_calls(response)
+    said, calls = message(response), tool_calls(response)
     if missing := [c.id for c in calls if c.id not in results]:
         raise StructuralError(f"no result for tool calls {missing}")
     previous = body.get("messages")
@@ -1003,8 +975,8 @@ def next_request(
         *(previous if isinstance(previous, list) else []),
         {
             "role": "assistant",
-            "content": message.get("content"),
-            "tool_calls": message.get("tool_calls"),
+            "content": said.get("content"),
+            "tool_calls": said.get("tool_calls"),
         },
         *(
             {"role": "tool", "tool_call_id": c.id, "content": results[c.id]}

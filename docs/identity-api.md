@@ -87,6 +87,7 @@ A session token: 32 random bytes, URL-safe.
 The token's SHA-256, in hex: what the store keeps of a session, in place of the token.
 
 ## Tests
-- `src/chatddx/identity/test/test_identity.py`: who owns, collaborates on and sees what, nothing
+- `src/chatddx/identity/test/test_identity.py`: who owns, collaborates on and sees what, nothing deleted, and their own
+  first.
 - `src/chatddx/store/test/test_identity.py`: people, passwords and sessions as the store keeps them
   (`docs/store-api.md`, "people.py").

@@ -26,7 +26,7 @@ Before a run or a judged scoring writes anything, the gate refuses (`docs/runner
 - a sensitive source of the cases the endpoint isn't cleared for;
 - tools on a sensitive source;
 - an endpoint whose credential names a secret that isn't set;
-- an endpoint the inventory can't confirm serves its engine.
+- an endpoint the inventory can't confirm serves its engine, for runs, canaries and judges alike.
 
 The first three hold for as long as the World is as it is (`gate.bar`); the last two may pass later (`gate.admit`
 adds them). The bench leaves a judged scorer that `bar` refuses out of what applies to a run (`docs/runner.md`, "What
@@ -118,11 +118,9 @@ The gate enforces it against the inventory's `[cleared]` table until the clearan
    `[cleared]`. For the long term: the inventory keeps all location facts in one place, while a database grant
    (through the portal, logged) gives an audit trail and fits the append-only store.
 3. **Who may grant clearance**, and whether that needs its own role.
-4. **Binding check before sending.** Built: the gate refuses an endpoint that `confirm` can't confirm, for runs,
-   canaries and judges alike.
-5. **Sources.** Sources say only whether they are sensitive. Still unspecified: what clearance each requires beyond
+4. **Sources.** Sources say only whether they are sensitive. Still unspecified: what clearance each requires beyond
    that.
-6. **Edges as destinations.** The repl shows case-derived content at its terminal: `show case` prints the vignette and
+5. **Edges as destinations.** The repl shows case-derived content at its terminal: `show case` prints the vignette and
    `run` streams the completion. The API sends it over the network to whoever signed in, but only from its own places,
    each with `Cache-Control: no-store` (`docs/api.md`, "Case-derived content": the vignette, a run's items, a score's
    items and findings, and a run's events). The portal is an edge too: every page is `no-store`, the vignette has a

@@ -115,6 +115,8 @@ def appending(
     name: Annotated[str, Form()],
     text: Annotated[str, Form()],
 ) -> Response:
+    if not name.strip():
+        raise HTTPException(422, "an appendix is named")
     asked = schemas.NewAppendix.model_validate({"name": name.strip(), "text": text})
     _ = api.appendix(request, Response(), bench, family, asked)
     return RedirectResponse(f"/families/{family}#appendices", 303)

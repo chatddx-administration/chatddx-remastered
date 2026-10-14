@@ -61,8 +61,8 @@ A configuration made per language or model is a thread under its full name, unti
   (unknown under a keyed fingerprint). It is case-derived (see "Case-derived content").
 - **Tags** on the families the person sees.
 - **Endpoints**: each one's engine and the engine's title, the model it serves, its URL and host, how many requests
-  it takes at once, its credential's name, and the sources it is cleared for. One whose engine isn't stored, or whose
-  URL can't be told, says why rather than failing the listing.
+  it takes at once, its credential's name, the sources it is cleared for, and whether a typed case can run there. One
+  whose engine isn't stored, or whose URL can't be told, says why rather than failing the listing.
 - **Models**: what the facts know of each, and the endpoints serving it.
 - **Components**: any stored component by its digest, with its kind and title; and the kinds of component, each
   with the bench's word for it, whether a person writes it, and its JSON Schema, in which a reference names the kinds
@@ -192,17 +192,19 @@ A run is sent under the default execution, with no timeout, and with no canary s
 A started run is sent on a thread of its own, with a database connection of its own, and is then finished and scored
 under every scorer that applies to it, unless asked not to be, whether or not anyone is listening. It is in the app's
 process for now: what the app has under way for a run, the run or a scoring of it, is a job, which keeps its events
-until another job of the run takes its place, and ends with the process. The worker is to take its place with the API
-as it is (agents/wip-worker.md). Its rows land as they are written, so a run can be read back at any point.
+while it is under way and is let go when it ends, and ends with the process. The worker is to take its place with
+the API as it is (agents/wip-worker.md). Its rows land as they are written, so a run can be read back at any point.
 
 ### Its events
 `GET /api/runs/{id}/events` streams what is under way for the run as it comes, ending with `done`.
 Each event has an `id`, its place in the job, and its data is one line of JSON, whose models are among the OpenAPI
-document's schemas. A delta is kept until its item or judge call has ended, so a stream joined late has every event
-but the deltas of what ended before it joined.
+document's schemas. A delta is kept until its item or judge call has ended, so a stream joined while the job is under
+way has every event but the deltas of what ended before it joined.
 
-A run with nothing in the app's process, as one started before it or elsewhere, is told from the ledger:
-its items as they ended, with no deltas or judge calls, its finish, its latest scores, and `done`.
+A run with nothing under way in the app's process, as one that has finished, or one started before the process or
+elsewhere, is told from the ledger: its items as they ended, with no deltas or judge calls, what it noted, its finish,
+its latest scores, and `done`. Its ids are places in that telling, not in the job, so a stream asked for after an id
+past them, as a job's that counted its deltas too, is told `done` alone.
 
 | Event | When | Holds |
 | --- | --- | --- |
@@ -229,9 +231,10 @@ An item's outcome is stopped, errored, unread, salvaged, completed, invalid or v
 read from it; salvaged is a structured answer cut short, read with its structure closed.
 
 ### Running again
-A run of the person's runs again with another seed, given or drawn: its trial's skeleton and cases at its endpoint,
-as a run of its own named as the run is, so that a run of a variation nobody saved can be run again without its
-variation. It is started, refused, limited and followed as any run.
+A run of the person's runs again with another seed, given or drawn: its trial's skeleton, engine and cases at its
+endpoint, as a run of its own named as the run is, so that a run of a variation nobody saved can be run again without
+its variation. It is started, refused, limited and followed as any run: refused, too, when the endpoint serves
+another engine now, or a case is of a family the person no longer sees.
 
 ### Halting
 A person halts what is under way for a run of theirs: the calls under way are hung up and recorded as stopped, the
@@ -369,9 +372,9 @@ its events (see "Where it runs" and "Its events").
 ### Serving
 - **The jobs are the process's.** A run or a scoring under way ends with the process: a server that stops waits for
   them, and a killed one leaves them unfinished, as resuming isn't built. Another replica doesn't see them, so its
-  streams tell a run under way from the ledger, as far as it has gone, and it can't halt it. A job is kept with its
-  events until another job of the run takes its place, so a long-lived process keeps one per run it sent. The worker
-  is to take their place, with the API as it is (agents/wip-worker.md).
+  streams tell a run under way from the ledger, as far as it has gone, and it can't halt it. A job is let go when it
+  ends, and the run is told from the ledger from then on. The worker is to take their place, with the API as it is
+  (agents/wip-worker.md).
 - **A connection per request**, about 2.6 ms each over the Unix socket, opened and closed each time, and one of its
   own for each run or scoring under way. A pool (`psycopg_pool`) for requests when a measurement says so.
 - **A query parameter a route doesn't name is ignored**, unless the query is a model (`Varying`), so a misspelt filter

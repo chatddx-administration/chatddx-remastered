@@ -36,11 +36,11 @@ Paths are relative to `src/chatddx/api/` unless they start with `src/`, `docs/` 
 | `schemas.py` | `chatddx.bench`, `chatddx.catalog`, `chatddx.factors.base`, `chatddx.identity` |
 | `people.py` | `schemas.py`, `state.py`, `chatddx.bench`, `chatddx.identity`, `chatddx.settings`, `chatddx.store` |
 | `threads.py` | `schemas.py`, `people.py`, `chatddx.bench`, `chatddx.catalog`, `chatddx.factors.{base,request,trial}` |
-| `families.py` | `schemas.py`, `people.py`, `threads.py`, `chatddx.bench`, `chatddx.factors.{base,cases}`, `chatddx.store` |
-| `world.py` | `schemas.py`, `people.py`, `chatddx.bench`, `chatddx.inventory`, `chatddx.scorers.{scorer,shipped}` |
+| `families.py` | `schemas.py`, `people.py`, `state.py`, `threads.py`, `chatddx.bench`, `chatddx.factors.{base,cases}`, `chatddx.store` |
+| `world.py` | `schemas.py`, `people.py`, `threads.py`, `chatddx.bench`, `chatddx.factors.kinds`, `chatddx.inventory`, `chatddx.scorers.{scorer,shipped}` |
 | `events.py` | `schemas.py`, `chatddx.bench`, `chatddx.factors.{base,request,scoring}`, `chatddx.ledger`, `chatddx.runner.{run,score}`, `chatddx.scorers.aggregate` |
 | `jobs.py` | `schemas.py`, `events.py`, `chatddx.bench`, `chatddx.ledger`, `chatddx.runner.run` |
-| `runs.py` | `schemas.py`, `events.py`, `jobs.py`, `people.py`, `state.py`, `threads.py`, `chatddx.bench`, `chatddx.factors.{base,request,trial}`, `chatddx.identity`, `chatddx.ledger`, `chatddx.runner.run` |
+| `runs.py` | `schemas.py`, `events.py`, `jobs.py`, `people.py`, `state.py`, `threads.py`, `chatddx.bench`, `chatddx.factors.{base,request,trial}`, `chatddx.identity`, `chatddx.ledger`, `chatddx.runner.run`, `chatddx.scorers.answer` |
 | `scores.py` | `schemas.py`, `events.py`, `jobs.py`, `people.py`, `state.py`, `chatddx.bench`, `chatddx.ledger` |
 | `app.py` | every module above but `events.py` and `jobs.py`, `chatddx.bench`, `chatddx.facts`, `chatddx.inventory`, `chatddx.runner.gate` |
 
@@ -55,7 +55,7 @@ pydantic, and `app.py` its JSON schemas too. The package holds no SQL: it reads 
 
 **A bench per request.** `people.py:bench`, as `BenchDep`, builds a `Bench` for the person the request acts for, on the
 request's connection (`state.py:connection`), in autocommit mode and closed when the request is done with it. A run
-and a scoring get a connection of their own (`runs.py:_start`, `scores.py:score_now`), closed when they are over.
+and a scoring get a connection of their own (`runs.py:_opened`, `scores.py:score_now`), closed when they are over.
 
 **Jobs.** What the app has under way for a run, the run or a scoring of it, is a `jobs.py:Job`, kept in
 `AppState.jobs`, on a thread of its own named `chatddx-run-<id>` or `chatddx-score-<id>`, which isn't a daemon. A
@@ -105,9 +105,9 @@ A FastAPI app titled `chatddx`, versioned as the installed package is, with its 
 `/api/openapi.json`, its pages at `/api/docs` and no ReDoc. `state.chatddx` holds an `AppState` of what it was made
 with.
 
-The routers of `people.py`, `threads.py`, `families.py`, `world.py` and `runs.py` are mounted under `/api`; the
-handlers of `STATUSES` are added, one of `HTTPException` by `CODES`, and one of `RequestValidationError`, answered 422
-with FastAPI's list of where as the detail and `unprocessable`; and `openapi` is `_with_models`.
+The routers of `people.py`, `threads.py`, `families.py`, `world.py`, `runs.py` and `scores.py` are mounted under
+`/api`; the handlers of `STATUSES` are added, one of `HTTPException` by `CODES`, and one of `RequestValidationError`,
+answered 422 with FastAPI's list of where as the detail and `unprocessable`; and `openapi` is `_with_models`.
 
 ### `_with_models(made: FastAPI) -> Callable[[], dict[str, Any]]`
 FastAPI's own `openapi`, with the model of each event in `schemas.py:EVENTS`, and `schemas.py:Error`, added to
@@ -283,7 +283,7 @@ variation's query parameters to them with `endpoint`, `tag` and `seed`.
 
 | Name | Does |
 | --- | --- |
-| `endpoint_of(bench, name: str, spec: EndpointSpec) -> schemas.Endpoint` | The spec as the inventory declares it, with `Bench.endpoint`, `Bench.title`, `Bench.model` and `url_of`; a `LookupError` from any of them is given as `problem`, its message, with what comes after it `None`: `title`, `model` and `url` for an engine that isn't stored, `url` alone for one `url_of` can't tell. |
+| `endpoint_of(bench, name: str, spec: EndpointSpec) -> schemas.Endpoint` | The spec as the inventory declares it, with `Bench.endpoint`, `Bench.title`, `Bench.model`, `url_of` and `Bench.takes_typed`; a `LookupError` from any of the first four is given as `problem`, its message, with what comes after it `None`: `title`, `model` and `url` for an engine that isn't stored, `url` alone for one `url_of` can't tell. |
 
 | Route | Does |
 | --- | --- |
@@ -314,30 +314,35 @@ Without `cases`, each of `_families`' cases. With them: the cases in the order g
 `HTTPException(422, "a run takes at least one case")` for none, and `HTTPException(422, "no case <case> for <login>")`
 for the first that isn't among `Bench.cases` of a family of `Bench.families()`.
 
-### `_start(held: AppState, person: Person, given: schemas.NewRun) -> _Started`
-On a connection of its own (`AppState.connect`), a `Bench` for the person; within `refused()`, `Bench.variation` and
-`Bench.skeleton`; then `Bench.endpoint`. A `LookupError` from those, `NotFound` among them, is raised as
-`HTTPException(422)` with its message. The cases of `_cases`; the seed, `suggest_seeds(1)[0]` unless given; and,
-within `refused()`, `Bench.start`, whose `Refused` passes to `STATUSES`. The connection is closed when any of this
-raises, and is the run's thread's otherwise.
+### `_opened(held: AppState, person: Person, starting: _Starting) -> _Started`
+On a connection of its own (`AppState.connect`), a `Bench` for the person, and `starting(bench)`, which gives the
+`Running`, its skeleton, the endpoint's name and the seed. The connection is closed when any of this raises, and is
+the run's thread's otherwise. The `_Started` holds the bench, the `Running`, the skeleton and `run.started`'s data:
+the run, its trial's digest, skeleton and cases, the endpoint's name, the seed and the skeleton's `greedy`.
 
-### `_sent(started: _Started, score: bool, job: Job) -> None`
-The run's thread, within `jobs.py:ending`, as `run <id>`. `Running.send`, with each event put as
-`event_of(skeleton, event)`; a `KeyboardInterrupt` from it, for a call stopped other than by a halt, as a runaway
-answer is, ends the sending. Then `Running.finish`, put as `run.finished`; and, unless `score` is false or the job was
-halted, `scoring_of` every scorer that applies, put as `run.scoring`, and `jobs.py:scored`.
+`_Starting` is `Callable[[Bench], tuple[Running, Skeleton, str, int]]`.
 
-### `_told(bench, run: UUID) -> list[Named]`
-The run as the ledger holds it, as events: `run.started` (the endpoint's name, or `None` for a run that has none, and
-the trial's first seed), the canary calls of phase `start`, each item's `item.started`, `item.tool` for each tool run
-of its turns, and `item.ended`, the canary calls of phase `end`, and, once it finished, `run.finished` with
-`check_run`'s findings and `run.scored` with `Bench.scores_of` when there are any; last, `done` with `halted` `None`.
+### `_new(given: schemas.NewRun) -> _Starting`
+Within `refused()`, `Bench.variation` and `Bench.skeleton`; then `Bench.endpoint`. A `LookupError` from those,
+`NotFound` among them, is raised as `HTTPException(422)` with its message. The cases of `_cases`; the seed,
+`suggest_seeds(1)[0]` unless given; and, within `refused()`, `Bench.start`, whose `Refused` passes to `STATUSES`.
+
+### `_repeated(run: UUID, given: schemas.NewAgain) -> _Starting`
+`Bench.run_by_id` (`NotFound`); each case of the run's trial of a family of `Bench.families()`, else
+`HTTPException(422, "no case <case> for <login>")`; the seed given, else `suggest_seeds(1)[0]`; and, within
+`refused()`, `Bench.again` of the run, whose `Refused` passes to `STATUSES`. The skeleton is the run's trial's, and the
+endpoint the run's.
+
+### `_launched(request, response, started: _Started, score: bool) -> schemas.RunStartedData`
+A `Job` of the run from `AppState.jobs` (`HTTPException(409)` while one is under way), holding its `Running`, with
+`run.started` put; `_sent` on a thread of its own, named `chatddx-run-<id>`; and `Location` the run's path
+(`url_path_for("run")`). Returns `run.started`'s data.
 
 | Route | Does |
 | --- | --- |
 | `start`, `POST /runs` | `_opened` with `_new(given)`, and `_launched`: a `Job` of the run from `AppState.jobs`, holding its `Running`, with `run.started` put; and `_sent` on a thread of its own. 202, with `Location` the run's path (`url_path_for("run")`) and `run.started`'s data. |
 | `again`, `POST /runs/{run}/again` | `Bench.run_by_id` (`NotFound`), then `_opened` with `_repeated(run, given)`, `Bench.again` of the run with the seed given or drawn, and `_launched`, as `start`. |
-| `events`, `GET /runs/{run}/events` | `async`. `Bench.run_by_id` (`NotFound`). The job `AppState.jobs` holds for the run, followed (`jobs.py:followed`), else `_told`, replayed (`jobs.py:replayed`), each after the `Last-Event-ID` header's id, else from the first. A `StreamingResponse` of `STREAM`, with `NO_STORE` and `X-Accel-Buffering: no`; its description names the events. |
+| `events`, `GET /runs/{run}/events` | `async`. `Bench.run_by_id` (`NotFound`). The job `AppState.jobs` holds for the run while it is under way, followed (`jobs.py:followed`), else `_told`, replayed (`jobs.py:replayed`), each after the `Last-Event-ID` header's id, else from the first. A `StreamingResponse` of `STREAM`, with `NO_STORE` and `X-Accel-Buffering: no`; its description names the events. |
 | `halt`, `POST /runs/{run}/halt` | `Bench.run_by_id` (`NotFound`), then `Job.halt` of the run's job. `HTTPException(409, "run <run> has nothing under way")` without one, or once it is done. 204. |
 
 ### `run_of(bench, started: RunStarted, finished: bool, unscored: list[str] | None = None) -> schemas.Run` and `detail(bench, run: UUID) -> schemas.RunDetail`
@@ -375,27 +380,29 @@ A run is named by a `UUID`, so anything else in its place is a 422.
 | `ENDS` | Each event that ends what deltas stream, and those deltas' event: `item.ended` ends `item.delta`, `judge.answered` `judge.delta`, of one case and replicate. |
 | `_Said` | An event as put: its `id`, its text as `sse` gives it, and for a delta its event, case and replicate. |
 
-### `class Job(run: UUID)`
+### `class Job(run: UUID, ended: Callable[[Job], None])`
 What is under way for a run: `running`, its `Running` while it is sent, and `scoring`, a `chatddx.bench.ScoreHalt`.
 
 | Member | Does |
 | --- | --- |
 | `put(named: Named) -> None` | The event with the next id, after dropping, for an event of `ENDS`, the deltas of its case and replicate; then told to each listener, on its loop (`call_soon_threadsafe`), and dropped for a loop that is closed. |
-| `end() -> None` | Done: each listener is told `None`, and let go, and so is `running`. |
+| `end() -> None` | Done: each listener is told `None`, and let go, and so is `running`; then `ended(self)`. |
 | `halt() -> None` | `halted`; `Running.halt` while it is sent, and `ScoreHalt.set`. |
 | `listen(after: int, listener) -> tuple[list[str], bool]` | The events after id `after`, and, unless done, the listener, a loop and an `asyncio.Queue`, added under the same lock, so nothing put falls between; whether it was. |
 | `leave(listener) -> None` | The listener let go. |
 | `halted: bool`, `done: bool` (properties) | |
 
 ### `class Jobs`
-The jobs by run, under a lock. `get(run) -> Job | None`; `started(run) -> Job`, a new job in place of one that is
-done, and `HTTPException(409, "run <run> has something under way")` in place of one that isn't.
+The jobs by run, under a lock. `get(run) -> Job | None`; `started(run) -> Job`, a new job, and
+`HTTPException(409, "run <run> has something under way")` in place of one that isn't done. A job is let go when it
+ends.
 
 ### Streams
 - `followed(job, after) -> AsyncIterator[str]`: what `Job.listen` gives, then each event as it comes until `None`,
   with `: keep-alive` whenever `KEEP_ALIVE` seconds (15) pass without one, letting go of the listener when the stream
   ends or is left.
-- `replayed(told, after) -> AsyncIterator[str]`: each event of `told` after id `after`, its id its place from 1.
+- `replayed(told, after) -> AsyncIterator[str]`: each event of `told` after id `after`, its id its place from 1, and
+  `done` even when `after` is past it, as a job's id that counted its deltas is.
 
 ### Scoring
 - `scoring_of(bench, run, scorers) -> schemas.ScoringData`: the scorers of `Bench.scorers_for(run)`, or those of
@@ -448,7 +455,6 @@ settings.database())`.
 `chatddx portal` takes the same arguments and serves `chatddx.portal.app.app` the same way, its `SystemExit` saying
 `portal:` (`src/chatddx/cli.py:_serve`; agents/wip-portal.md).
 
-``
 ## Tests
 
 | Module | Holds |
@@ -457,6 +463,7 @@ settings.database())`.
 | `test_people.py` | Signing in and out by bearer and cookie, the same-origin check, validation, the statuses and codes (incl. Starlette's), the OpenAPI document and the command. |
 | `test_threads.py`, `test_families.py`, `test_world.py` | The reads, configurations by purpose, taking expectations, and what bob doesn't see of threads and families; that every read needs a session. |
 | `test_writes.py` | A configuration made from a recipe, and what is refused of one; chunks and expectations written new, edited and forked; a judge written over a judge configuration, and one over a generation configuration refused; what is refused, and with which status; an expectation's findings. |
+| `test_kinds.py` | The kinds with their JSON Schemas and what their references take; a component checked as a write would store it, with nothing written, the lints said, and what a write would refuse refused. |
 | `test_cases.py` | A family's cases, an appendix written for it, a case built of it and replaced by the appendix's edit, and an expectation carried onto the replacement; cases refused; a run naming a case that isn't one. |
 | `test_typed.py` | A typed case answered as a family, its vignette read back, and bob not seeing it; what can't be typed, and 429 past the day's quota. |
 | `test_following.py` | A fork with nothing to follow, then a proposal once the archive's configuration moved on, a stale head, following, and nothing proposed after. |

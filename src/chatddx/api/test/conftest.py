@@ -1,6 +1,10 @@
+import socket
+import threading
+import time
 from collections.abc import Iterator
 
 import pytest
+import uvicorn
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 from httpx2 import Response
@@ -45,6 +49,23 @@ def served(db: str) -> FastAPI:
         world_facts(),
         make_conninfo(settings.database(), dbname=db),
     )
+
+
+@pytest.fixture
+def listening(served: FastAPI) -> Iterator[str]:
+    with socket.socket() as s:
+        s.bind(("127.0.0.1", 0))
+        port = int(s.getsockname()[1])
+    server = uvicorn.Server(
+        uvicorn.Config(served, host="127.0.0.1", port=port, log_level="warning")
+    )
+    running = threading.Thread(target=server.run, daemon=True)
+    running.start()
+    while not server.started:
+        time.sleep(0.01)
+    yield f"http://127.0.0.1:{port}"
+    server.should_exit = True
+    running.join(5)
 
 
 @pytest.fixture

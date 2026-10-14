@@ -13,7 +13,7 @@
   import { Textarea } from "$lib/components/ui/textarea";
   import { api, type Schemas, why } from "$lib/api/client";
   import { watch } from "$lib/runs/events";
-  import { begun, fold } from "$lib/runs/progress";
+  import { begun, failed, fold } from "$lib/runs/progress";
   import ManagementPlan from "$lib/plan/ManagementPlan.svelte";
   import { isPlan, PLAN } from "$lib/plan/types";
 
@@ -30,6 +30,7 @@
   const streamed = $derived(progress.items[0]?.kind ? progress.items[0] : null);
   let failure = $state<string | null>(null);
   let item = $state<Schemas["ItemDetail"] | null>(null);
+  let typed: { text: string; family: number } | null = null;
 
   const busy = $derived(phase === "typing" || phase === "running" || phase === "reading");
 
@@ -45,7 +46,7 @@
     }
     login = me.data.login;
     configurations = preferred(found.data);
-    endpoints = served.data.filter((e) => e.problem === null);
+    endpoints = served.data.filter((e) => e.problem === null && e.takes_typed);
     endpoint = endpoints[0]?.name;
     configuration = fitting(endpoint);
   });
@@ -73,16 +74,19 @@
     progress = begun();
     try {
       phase = "typing";
-      const typed = await api.POST("/api/families", { body: { text } });
-      if (!typed.data) throw new Error(why(typed.error));
+      if (typed?.text !== text) {
+        const made = await api.POST("/api/families", { body: { text } });
+        if (!made.data) throw new Error(why(made.error));
+        typed = { text, family: made.data.id };
+      }
       phase = "running";
       const started = await api.POST("/api/runs", {
-        body: { configuration, endpoint, families: [typed.data.id], score: false },
+        body: { configuration, endpoint, families: [typed.family], score: false },
       });
       if (!started.data) throw new Error(why(started.error));
       const run = started.data.run;
       await watch(run, (name, data) => fold(progress, name, data));
-      if (progress.errors.length) failure = progress.errors.join("; ");
+      failure = failed(progress);
       phase = "reading";
       const items = await api.GET("/api/runs/{run}/items", { params: { path: { run } } });
       if (!items.data) throw new Error(why(items.error));

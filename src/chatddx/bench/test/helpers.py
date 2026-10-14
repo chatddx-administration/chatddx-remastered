@@ -1,3 +1,4 @@
+from collections.abc import Sequence
 from datetime import UTC, datetime
 from uuid import UUID, uuid4
 
@@ -8,17 +9,19 @@ from chatddx import settings
 from chatddx.bench import Bench
 from chatddx.catalog import Entry, EntryField, Subject
 from chatddx.curation import Plan
+from chatddx.factors.base import Finding
 from chatddx.factors.scoring import Expectation
 from chatddx.factors.trial import Trial
 from chatddx.identity import Person
 from chatddx.inventory import World
-from chatddx.ledger import Run, RunStarted
+from chatddx.ledger import Endpoint, Run, RunStarted
 from chatddx.rig import rig
 from chatddx.store import Catalog, Store
 from chatddx.store.store import Connection
 from chatddx.test.world import QWEN, TEST
 
 SOURCE = World.load(TEST).inventory.listing()
+UNSERVED = "http://127.0.0.1:9/v1/"
 
 
 def trial(conn: Connection, plan: Plan, recipe: str, *ids: str) -> Trial:
@@ -33,9 +36,20 @@ def trial(conn: Connection, plan: Plan, recipe: str, *ids: str) -> Trial:
     return made
 
 
-def ran(conn: Connection, by: Person, made: Trial, finished: bool = True) -> UUID:
+def ran(
+    conn: Connection,
+    by: Person,
+    made: Trial,
+    finished: bool = True,
+    endpoint: str | None = None,
+    findings: Sequence[Finding] = (),
+) -> UUID:
     started = RunStarted(
-        run=uuid4(), at=datetime.now(UTC), rig=rig(), trial=made.digest
+        run=uuid4(),
+        at=datetime.now(UTC),
+        rig=rig(),
+        trial=made.digest,
+        endpoint=None if endpoint is None else Endpoint(name=endpoint, url=UNSERVED),
     )
     store = Store(conn)
     store.append(started)
@@ -43,7 +57,7 @@ def ran(conn: Connection, by: Person, made: Trial, finished: bool = True) -> UUI
         Subject(run=started.run), Entry(field=EntryField.OWNER, person=by.id), by.id
     )
     if finished:
-        store.append(Run(stages=(started,)).finish(datetime.now(UTC)))
+        store.append(Run(stages=(started,)).finish(datetime.now(UTC), findings))
     return started.run
 
 

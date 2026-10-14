@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { EVENTS, type Event } from "./events";
-import { begun, fold, tally } from "./progress";
+import { begun, failed, fold, tally } from "./progress";
 
 function folded(events: [Event, unknown][]) {
   const progress = begun();
@@ -96,5 +96,20 @@ describe("a run's progress", () => {
 
   it("keeps what went wrong", () => {
     expect(folded([["error", { detail: "the engine went away" }]]).errors).toEqual(["the engine went away"]);
+  });
+});
+
+describe("a run that went wrong", () => {
+  it("says what failed, else that it didn't finish, as a run told from the ledger has no errors", () => {
+    expect(failed(folded([["run.started", STARTED], ["run.finished", { findings: [] }], ["done", { halted: null }]]))).toBe(
+      null,
+    );
+    expect(failed(folded([["run.started", STARTED], ["done", { halted: null }]]))).toBe("the run didn't finish");
+    const errored = folded([
+      ["run.started", STARTED],
+      ["error", { detail: "run r failed: boom" }],
+      ["done", { halted: false }],
+    ]);
+    expect(failed(errored)).toBe("run r failed: boom");
   });
 });

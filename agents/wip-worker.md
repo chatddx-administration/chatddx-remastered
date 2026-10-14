@@ -26,7 +26,10 @@ https://github.com/chatddx-administration/chatddx/blob/504792cbeb09508f2c52912be
 4. **Decided** (see "Options"): K1, one worker, also runnable in the app's process; K3, events read from the ledger
    and woken by `LISTEN`/`NOTIFY` (E2); K4, it schedules runs; K5, every run started over HTTP goes through it. E3,
    deltas through `NOTIFY`, is still a take, and the API's events need deltas (see K3).
-5. **What it needs below it first** (see "Below the worker"): resuming a run, and `Bench.start` taking an execution.
+5. **What it needs below it first** (see "Below the worker"): resuming a run, and `Bench.start` taking an execution
+   and a canary set.
+6. **Open: where a run starts** (K6): in the request, as `docs/api.md` has it, or in the worker, as "The contract"
+   has it. Take: in the request.
 
 ## Why
 - **A run is a job in the app's process**: `POST /api/runs` answers 202 and the run's path, the run is sent on a
@@ -87,8 +90,9 @@ https://github.com/chatddx-administration/chatddx/blob/504792cbeb09508f2c52912be
 What edges and the planner hand the worker, and what they get back. Take:
 1. **The unit asked for**: a trial at an endpoint, for an owner, scored afterwards or not, and the batch it came from
    if any (`agents/wip-batch.md`). That is `Bench.start` followed by `Bench.score` (`src/chatddx/bench/runs.py`), and
-   what `POST /api/runs` asks today (`docs/api.md`, "Runs"). Scoring a run again is a unit of its own: a run and the
-   scorers it is left to, as `POST /api/runs/{id}/scores` asks.
+   what `POST /api/runs` asks today (`docs/api.md`, "Runs"). Whether the worker or the request starts the run is K6.
+   Scoring a run again is a unit of its own: a run and the scorers it is left to, as `POST /api/runs/{id}/scores`
+   asks.
 2. **How its runs are found**: by trial digest and owner (`Bench.runs`; `GET /api/runs?trial=`), or through a kept
    batch (`agents/wip-batch.md`, "Kept batches").
 3. **The surface an edge calls**: queue, which gives the job's id; halt; and the events, by item from the ledger, with
@@ -134,7 +138,8 @@ progress"; `docs/store.md`, "The queue"), as identity's people and sessions are.
 
 ### K3. How events reach a page
 - **E1. Read the ledger**: a page or the API polls the run's rows. Works from any process; item by item; no deltas.
-  Built, as what the API tells a run with nothing in its process (`src/chatddx/api/runs.py:_told`).
+  Built, as what the API tells a run with nothing under way in its process, a finished one included
+  (`src/chatddx/api/runs.py:_told`).
 - **E2. E1, woken by `LISTEN`/`NOTIFY`**: the worker notifies when an item starts or ends, and the API reads the rows
   then. No polling, and still from any process.
 - **E3. E2, with deltas through `NOTIFY`**: a completion as it is written, batched to keep within `NOTIFY`'s payload
@@ -162,6 +167,22 @@ Decided: every run started over HTTP, and with them what else the app runs as a 
 The repl keeps running in its own process, where Ctrl-C halts a run as it should. `max_jobs` then isn't held between
 the repl's runs and the worker's (see "Open").
 
+### K6. Where a run starts
+`docs/api.md` ("Runs", "Starting one") has the run started within the request: whatever refuses it does so before
+anything is sent, and the 202 carries `run.started`'s data and the run's path. "The contract" above has the worker
+start it instead: the unit is `Bench.start` followed by `Bench.score`, the queue gives a job's id, and a job records
+the run it started. Both can't hold.
+- **A. The request starts the run, the worker sends it.** `Bench.start` writes `RunStarted` in the request, and the
+  gate's `bar` and `admit` refuse there; the job queued is the started run, and the worker claims it and sends it,
+  as it resumes what it lost. The API stays as `docs/api.md` has it.
+- **B. The worker starts the run.** The request queues a job and answers with it; a refusal the request can't foresee
+  (an unset secret, an endpoint that doesn't answer) becomes the job's failure (see "Open", "Jobs that can't start"),
+  and `docs/api.md`'s "Starting one" changes.
+
+Take: A. It keeps the API's contract and its refusals up front, the worker sends only what resuming already needs
+it to send, and a started run is in the ledger before anything is queued. The contract's first point then reads "a
+run started at an endpoint, scored afterwards or not".
+
 ## Below the worker
 Moved here from the runner's plan (`docs/runner.md`, "Elsewhere"), since the worker is their first caller:
 - **Resuming.** `resume(run)` would append an unfinished log's missing items. `Running.send` skips the items its own
@@ -173,6 +194,11 @@ Moved here from the runner's plan (`docs/runner.md`, "Elsewhere"), since the wor
   at its start (`Runner.start(…, execution)`), refused above the endpoint's `max_jobs`, and recorded in `RunStarted`,
   so the worker can give each run its share. `Bench.start` passes no execution yet, so a run gets `Execution()`'s
   (`docs/bench.md`, "Outstanding").
+- **Canary sets.** `Runner.start(…, canaries)` takes one, and both data sets hold one, but `Bench.start` passes none,
+  so no run started over HTTP sends one (`docs/scripted.md`, "Smaller issues"). `docs/api.md` ("Not covered") leaves
+  canary sets, with an execution's settings, to the batch planner and the worker; the run's start is where one is
+  given, so `Bench.start` takes it with the execution. Which set a run gets, the World's or the person's pick, is
+  open.
 
 Still the runner's, and met here:
 - **A call still waiting for its engine to answer at all** waits on after a halt, under an execution with no timeout;
@@ -181,14 +207,15 @@ Still the runner's, and met here:
 
 ## The plan
 On the decisions above, and the takes left.
-0. **Below the worker**: resuming (`src/chatddx/runner/`), and `Bench.start` taking an execution.
+0. **Below the worker**: resuming (`src/chatddx/runner/`), and `Bench.start` taking an execution and a canary set.
 1. **The queue**: the `worker` schema, its jobs, controls and workers, at every tier; the store's reads and writes
    for them; tests on the store. `docs/store.md` and `docs/chatddx.md` describe it already; once the migrations land,
    `docs/migrations.md` gets a `worker` section, and its "identity, the one mutable schema" changes.
 2. **The worker**: `src/chatddx/worker/`, a loop that claims jobs, builds a bench per run, starts, sends, finishes and
    scores, beats, and finds what is lost; `chatddx worker`. Tests run it in a thread against the fake vLLM, as the
    API's run tests run their jobs (`src/chatddx/conftest.py:fake`, `src/chatddx/api/test/test_runs.py`).
-3. **The API**: `POST /api/runs`, `/again` and `/scores` queue a job and answer 202 as now;
+3. **The API**: `POST /api/runs`, `/again` and `/scores` queue a job and answer 202 as now, a run started in the
+   request before its job is queued (K6, a take);
    `GET /api/runs/{id}/events` streams from the ledger, woken by the worker, with its deltas (E2, E3);
    `POST /api/runs/{id}/halt`. The person's jobs and their state (`GET /api/jobs`, or under runs).
 4. **Controls**: pause, resume and stop for an owner, and the status a portal page shows.
@@ -197,8 +224,8 @@ On the decisions above, and the takes left.
 - **The repl beside the worker**: the repl's runs don't count against the worker's shares of `max_jobs`. The repl
   could ask the worker too, and follow the events.
 - **Fairness between owners**: queue order, or turns per owner, per endpoint.
-- **Jobs that can't start**: `bar` refuses when a job is queued; an endpoint `admit` refuses when the worker comes to
-  it is failed, with why, as the old "skipped", or waits for the secret or the server.
+- **Jobs that can't start**, under K6's B: `bar` refuses when a job is queued; an endpoint `admit` refuses when the
+  worker comes to it is failed, with why, as the old "skipped", or waits for the secret or the server.
 - **Quotas**: whether a queued job counts against `RUNS_PER_DAY`, or only a run it started, as the bench counts now.
 - **A run lost mid-way**: resumed by the next claim, or left unfinished and shown so.
 - **Deployment**: one worker or several, and whether each is a Kubernetes Deployment of its own.

@@ -22,7 +22,7 @@ from chatddx.factors.base import (
     resolve,
 )
 from chatddx.factors.bundle import Registry
-from chatddx.factors.cases import Case, Vignette
+from chatddx.factors.cases import Case, CleanupOp, Vignette
 from chatddx.factors.engine import LocalEngine, RemoteEngine
 from chatddx.factors.request import (
     Compilation,
@@ -346,14 +346,23 @@ class Seen:
             raise Ambiguous(str(e)) from None
 
     def trial(
-        self, skeleton: Skeleton, engine: str, cases: list[str], seed: int
+        self,
+        skeleton: Skeleton,
+        engine: str,
+        cases: list[str],
+        seed: int,
+        cleanup: tuple[CleanupOp, ...] = (),
     ) -> tuple[Registry, Trial]:
         registry = self.store.load(
             [engine, *cases, *(s.digest for s in skeleton.refs())]
         )
         _ = registry.add(skeleton)
         trial = Trial(
-            skeleton=skeleton.digest, engine=engine, cases=tuple(cases), seeds=(seed,)
+            skeleton=skeleton.digest,
+            engine=engine,
+            cases=tuple(cases),
+            cleanup=cleanup,
+            seeds=(seed,),
         )
         _ = registry.add(trial)
         return registry, trial

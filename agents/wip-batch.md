@@ -98,7 +98,10 @@ makes. The planner crosses those. Take:
 ## Below the planner
 - **Seeds**: a trial holds several, but the bench makes one of a single seed (`Seen.trial`, `Bench.start`), so
   replicates need `Bench.start` to take seeds. `agents/wip-worker.md` ("Below the worker") wants it to take an
-  execution too.
+  execution and a canary set too.
+- **Text cleanup**: a trial holds cleanup steps (`Trial.cleanup`), but `Seen.trial` makes it with none, so no run
+  started from the bench cleans its vignettes. `docs/api.md` ("Not covered") leaves text cleanup, with replicates, to
+  the batch planner, which builds the trials: `Seen.trial` takes cleanup steps as it takes seeds.
 - **Running before the worker**: a run is a job in the app's process (`docs/api.md`, "Where it runs"), and its
   concurrency stays 1 until the worker shares an endpoint's `max_jobs` between runs (`agents/wip-portal.md`, R9). A
   batch's runs sent side by side would send more than the endpoint's `max_jobs`, which holds per run
@@ -114,7 +117,7 @@ Take, for its shape:
 - **Where it lives**: `src/chatddx/factors/batch.py`, listed in `factors/kinds.py:KINDS` and
   `catalog/model.py:THREAD_KINDS`, with the thread kinds the database repeats at tier 2
   (`store/migrations/0012-t2-catalog.sql`; `docs/migrations.md`, catalog) and a title (`catalog/titles.py`), since
-  `docs/catalog.md` ("Titles") gives a batch none yet (`agents/purist-object-layer.md`, "The pragmatic take").
+  `docs/catalog.md` ("Titles") gives a batch none yet (`docs/purist-object-layer.md`, "The pragmatic take").
 - **What it pins**: its trials by digest; the endpoint by its name in the inventory, as a case names its source; and
   what was crossed, the base skeleton and the chunks tried per part, by digest, so its page can say what it varies.
   What was held back, and the reach, are worked out again when it is shown.
@@ -166,7 +169,7 @@ Assuming the takes.
 2. **Planning**: `Bench.plan` and `Batch`, tested on the test World as `src/chatddx/conftest.py:curated` lands it.
 3. **The API's read**, beside `variation`.
 4. **Kept batches**: the `batch` kind, its thread kind and its title (see "Kept batches").
-5. **Seeds for replicates**, and running a batch as one job (see "Below the planner").
+5. **Seeds for replicates and cleanup steps**, and running a batch as one job (see "Below the planner").
 6. **The portal's pages** (`agents/wip-portal.md`, "Phases", 6).
 7. **Asking the worker**, once it exists (`agents/wip-worker.md`, "The plan", 3).
 
@@ -174,6 +177,8 @@ Assuming the takes.
 - **How many trials a batch may hold** before the form warns, since crossing multiplies; a person has
   `settings.RUNS_PER_DAY` runs a day.
 - **Seeds**: one drawn per batch, as before, or several for replicates (`src/chatddx/factors/trial.py:suggest_seeds`).
+- **Which cleanup a batch's trials apply**, and where it is chosen: on the batch's form, or carried by the
+  configuration.
 - **The order of the variations**, the configuration's own first, as the old crossing put it.
 - **A scripted batch** for the portal's pages: the scripted run `batch` is one run of four cases, not a batch of
   trials (`docs/scripted.md`, "Smaller issues").

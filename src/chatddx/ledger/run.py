@@ -17,7 +17,13 @@ from chatddx.factors.base import (
 from chatddx.factors.bundle import Registry
 from chatddx.factors.cases import Case
 from chatddx.factors.engine import LocalEngine, RemoteEngine
-from chatddx.factors.request import Skeleton, Tool, ToolOutput, ToolRef, tool_calls
+from chatddx.factors.request import (
+    Skeleton,
+    Tool,
+    ToolOutput,
+    ToolRef,
+)
+from chatddx.factors.response import tool_calls
 from chatddx.factors.trial import CanarySet, CanarySetRef, Execution, Trial, TrialRef
 
 from .call import Call, Turn, check_execution

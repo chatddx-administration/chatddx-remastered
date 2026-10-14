@@ -8,6 +8,7 @@ from .cases import (
     case_titled,
     case_titles,
     replacement,
+    takes_typed,
     type_case,
 )
 from .components import check, component, edit_component, fork_component, new
@@ -38,6 +39,7 @@ class Bench(Seen):
     appendices_of = appendices_of
     replacement = replacement
     type_case = type_case
+    takes_typed = takes_typed
     carry = carry
 
     take = take

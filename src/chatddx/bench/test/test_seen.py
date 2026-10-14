@@ -21,6 +21,8 @@ from chatddx.curation import Plan, load_cases
 from chatddx.factors.base import resolve
 from chatddx.factors.scoring import Expectation, Judge, View
 from chatddx.identity import Person, owns
+from chatddx.inventory import World
+from chatddx.runner.gate import Refused
 from chatddx.runner.score import Grader, score_run
 from chatddx.store import Catalog, People, Store
 from chatddx.store.store import Connection
@@ -33,7 +35,9 @@ from chatddx.test.world import (
     QWEN,
     QWEN_MODEL,
     REMOTE,
+    TEST,
     TOOL_ANSWER,
+    world_facts,
 )
 
 
@@ -591,6 +595,23 @@ def test_a_judge_configuration_is_looked_at_as_a_judge_and_isn_t_run(
     case = bench.family("crlf").case
     with pytest.raises(ValueError, match="is a judge configuration"):
         _ = bench.start(variation, QWEN, [case], 7)
+
+
+def test_a_run_runs_again_on_its_trial_s_engine_or_not_at_all(
+    conn: Connection, alice: Person, plan: Plan
+) -> None:
+    made = trial(conn, plan, LINES, "crlf")
+    run = ran(conn, alice, made, endpoint=QWEN)
+    inventory = World.load(TEST).inventory
+    other = inventory.endpoint(GPT_OSS).engine
+    endpoints = dict(inventory.endpoints)
+    endpoints[QWEN] = endpoints[QWEN].model_copy(update={"engine": other})
+    moved = inventory.model_copy(update={"endpoints": endpoints})
+    bench = Bench(conn, alice, moved, world_facts())
+    with pytest.raises(
+        Refused, match=f"serves engine {other}, the trial's is {made.engine}"
+    ):
+        _ = bench.again(bench.run_by_id(run), 9)
 
 
 @pytest.mark.slow

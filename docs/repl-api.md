@@ -163,7 +163,7 @@ style. `TOKENS` is the width of a token count.
 | Name | Does |
 | --- | --- |
 | `Transcript(console)` | `event(event)` streams a run's events: thinking, labelled, the answer, `[name] arguments` and `[result]`, and the tokens after; `item(item)` tells a stored item again |
-| `Tally(console, width, label)` | a live line: `count(tokens)` as they stream, `stopping()`, `end(tokens, word, style, said)`; a context manager |
+| `Tally(console, width, case)` | a live line: `count(tokens)` as they stream, `stopping()`, `end(tokens, word, style, said)`; a context manager |
 | `JudgeLines(console, bench)` | `event(event)` turns the scoring pass's events into a `Tally` per judge call, ended with what the judge said; `close()` |
 | `outcome(skeleton, item)` | `(word, style, why)`, from `bench.outcome` |
 | `show_answer(console, skeleton, item, graded)` | the call's error, `stopped`, `unread: …`, `salvaged: …`, `valid` or `invalid: …`, then each selection of the views |
@@ -176,9 +176,10 @@ style. `TOKENS` is the width of a token count.
 
 ### What the rest share
 `finding(f, times=1)`, `counted(findings)`, `scored_findings(graded, read=False)` (with `read`, leaving out the
-`answer.*` codes in `ANSWERED`, which `show_answer` says), `writes(values)`, `some(names)` (the first `NAMED` and `and N
-more`), `clipped(text, lines=30)`, `clipped_line(text, width=60)` and `plural(n, one, many=None)`. `UNTARGETED` holds
-the details of a view with no target (`scorers/scorer.py:NO_TARGET`, `runner/score.py:NO_EXPECTATION`).
+`answer.*` codes in `ANSWERED`, which `show_answer` says), `writes(values, prefix="")`, `some(names)` (the first
+`NAMED` and `and N more`), `clipped(text, lines=30)`, `clipped_line(text, width=60)` and `plural(n, one, many=None)`.
+`UNTARGETED` holds the details of a view with no target (`scorers/scorer.py:NO_TARGET`,
+`runner/score.py:NO_EXPECTATION`).
 
 ## running.py
 ### `case_and_seed(words: list[str]) -> list[str]`

@@ -669,5 +669,3 @@ line, and stops at the first that fails, exiting with 1:
 ```
 printf 'cell plan qwen3-8b@pelle\nseed\nbatch edn\n' | chatddx repl alice
 ```
-
-## Proposed amendments

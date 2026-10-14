@@ -1,14 +1,11 @@
 import json
-import socket
-import threading
 import time
-from collections.abc import Iterator
 from typing import Any
+from uuid import uuid4
 
 import httpx2
 import pytest
-import uvicorn
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.testclient import TestClient
 from psycopg.conninfo import make_conninfo
 
@@ -16,8 +13,13 @@ from chatddx import settings
 from chatddx.api import jobs
 from chatddx.api.app import app
 from chatddx.api.test.test_variations import digest, thread
+from chatddx.bench.test.helpers import ran, trial
+from chatddx.catalog import Entry, EntryField, Subject
+from chatddx.curation import Plan
+from chatddx.factors.base import Finding
+from chatddx.identity import Person
 from chatddx.inventory import Inventory
-from chatddx.store import Store
+from chatddx.store import Catalog, People, Store
 from chatddx.store.store import Connection
 from chatddx.test.world import (
     GPT_OSS,
@@ -31,27 +33,14 @@ from chatddx.test.world import (
 
 type Told = list[tuple[int, str, dict[str, Any]]]
 
+# A fake this slow keeps a run under way while a stream asked for at once joins it: a
+# run that has finished is told from the ledger, which holds no live-only events.
+UNDER_WAY = 0.02
+
 
 @pytest.fixture
 def served(db: str, world: Inventory) -> FastAPI:
     return app(world, world_facts(), make_conninfo(settings.database(), dbname=db))
-
-
-@pytest.fixture
-def listening(served: FastAPI) -> Iterator[str]:
-    with socket.socket() as s:
-        s.bind(("127.0.0.1", 0))
-        port = int(s.getsockname()[1])
-    server = uvicorn.Server(
-        uvicorn.Config(served, host="127.0.0.1", port=port, log_level="warning")
-    )
-    running = threading.Thread(target=server.run, daemon=True)
-    running.start()
-    while not server.started:
-        time.sleep(0.01)
-    yield f"http://127.0.0.1:{port}"
-    server.should_exit = True
-    running.join(5)
 
 
 def family(signed: TestClient, name: str) -> dict[str, Any]:
@@ -106,18 +95,20 @@ def finished(signed: TestClient, run: str) -> dict[str, Any]:
     raise AssertionError(f"run {run} wasn't finished and scored")
 
 
-@pytest.mark.usefixtures("fake")
 @pytest.mark.slow
-def test_a_run_is_accepted_and_told_by_its_events(signed: TestClient) -> None:
+def test_a_run_is_accepted_and_told_by_its_events(
+    signed: TestClient, world: Inventory, conn: Connection
+) -> None:
     case = family(signed, "crlf")["case"]
-    got = signed.post("/api/runs", json=asked(signed))
-    assert got.status_code == 202
-    started = got.json()
+    with faked(world, Store(conn).get, delay=UNDER_WAY):
+        got = signed.post("/api/runs", json=asked(signed))
+        assert got.status_code == 202
+        started = got.json()
+        said = followed(signed, started["run"])
     assert got.headers["location"] == f"/api/runs/{started['run']}"
     assert (started["endpoint"], started["cases"]) == (QWEN, [case])
     assert (started["seed"], started["greedy"]) == (7, False)
 
-    said = followed(signed, started["run"])
     ids = [i for i, _, _ in said]
     assert ids == sorted(set(ids)) and ids[0] == 1
     assert said[0][1:] == ("run.started", started)
@@ -149,10 +140,10 @@ def test_a_run_is_accepted_and_told_by_its_events(signed: TestClient) -> None:
 
 
 @pytest.mark.slow
-def test_a_run_s_events_stream_as_they_come_and_resume_after_an_id(
+def test_a_run_s_events_stream_as_they_come_and_then_the_ledger_tells_them(
     signed: TestClient, world: Inventory, conn: Connection
 ) -> None:
-    with faked(world, Store(conn).get, delay=0.005):
+    with faked(world, Store(conn).get, delay=UNDER_WAY):
         run = signed.post("/api/runs", json=asked(signed, score=False)).json()["run"]
         said = followed(signed, run)
     content = [d for _, n, d in said if n == "item.delta" and d["kind"] == "content"]
@@ -161,11 +152,18 @@ def test_a_run_s_events_stream_as_they_come_and_resume_after_an_id(
     assert names(said)[-2:] == ["run.finished", "done"]
 
     again = followed(signed, run)
-    assert again == [s for s in said if s[1] != "item.delta"]
+    assert [i for i, _, _ in again] == list(range(1, len(again) + 1))
+    assert [s[1:] for s in again[:-1]] == [
+        s[1:] for s in said if s[1] not in {"item.delta", "done"}
+    ]
+    assert again[-1][1:] == ("done", {"halted": None})
     middle = again[len(again) // 2][0]
     assert followed(signed, run, **{"Last-Event-ID": str(middle)}) == [
         s for s in again if s[0] > middle
     ]
+    assert said[-1][0] > again[-1][0]
+    past = followed(signed, run, **{"Last-Event-ID": str(said[-1][0])})
+    assert past == [again[-1]]
 
 
 @pytest.mark.usefixtures("fake")
@@ -185,6 +183,28 @@ def test_a_run_with_nothing_under_way_here_is_told_from_the_ledger(
     assert recorded[0][1:] == said[0][1:]
     assert recorded[-2][1:] == ("run.scored", {"scores": made["scores"]})
     assert recorded[-1][1:] == ("done", {"halted": None})
+
+
+def test_a_run_told_from_the_ledger_tells_what_it_noted(
+    signed: TestClient, conn: Connection, alice: Person, plan: Plan
+) -> None:
+    noted = Finding(code="case.drift", message="the vignette moved", subject="x")
+    run = ran(conn, alice, trial(conn, plan, LINES, "crlf"), findings=[noted])
+    said = followed(signed, str(run))
+    assert names(said)[-3:] == ["run.noted", "run.finished", "done"]
+    assert said[-3][2]["code"] == "case.drift"
+
+
+def test_a_job_is_let_go_when_it_ends() -> None:
+    held = jobs.Jobs()
+    run = uuid4()
+    job = held.started(run)
+    with pytest.raises(HTTPException, match="has something under way"):
+        _ = held.started(run)
+    assert held.get(run) is job
+    job.end()
+    assert held.get(run) is None
+    assert held.started(run) is not job
 
 
 @pytest.mark.usefixtures("fake")
@@ -499,3 +519,19 @@ def test_a_run_runs_again_with_another_seed_under_its_name(
 
     got = signed.post(f"/api/runs/{first['id']}/again", json={}, headers=bob)
     assert (got.status_code, got.json()["code"]) == (404, "not_found")
+
+
+@pytest.mark.usefixtures("fake")
+@pytest.mark.slow
+def test_a_run_doesn_t_run_again_on_a_case_its_owner_no_longer_sees(
+    signed: TestClient, conn: Connection, alice: Person
+) -> None:
+    first, _ = sent(signed, asked(signed, score=False))
+    crlf = family(signed, "crlf")
+    archive = People(conn).find("archive")
+    assert archive is not None
+    unshared = Entry(field=EntryField.COLLABORATOR, person=alice.id, present=False)
+    Catalog(conn).note(Subject(family=crlf["id"]), unshared, archive.id)
+    got = signed.post(f"/api/runs/{first['id']}/again", json={})
+    assert (got.status_code, got.json()["code"]) == (422, "refused")
+    assert got.json()["detail"] == f"no case {crlf['case']} for alice"

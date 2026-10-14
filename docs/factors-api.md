@@ -16,6 +16,7 @@ Paths are relative to `src/chatddx/factors/` unless they start with `src/` or `d
 - [Component kinds](#component-kinds): every kind, its class, references and cross-checks
 - [cases.py](#casespy): vignettes, appendices, cases, text cleanup, `prepare_case`
 - [request.py](#requestpy): chunks, recipes, compilation, skeletons, rendering, tool rounds
+- [response.py](#responsepy): a response's first choice, its message, reasoning, parts and tool calls
 - [engine.py](#enginepy): model artifacts, local and remote engines
 - [trial.py](#trialpy): trials, seeds, canaries, execution
 - [scoring.py](#scoringpy): expectations, judges, views, scorers, scorings
@@ -28,8 +29,8 @@ Paths are relative to `src/chatddx/factors/` unless they start with `src/` or `d
 ## Package
 
 `chatddx.factors` re-exports `Bundle`, `Code`, `Component`, `Finding`, `Fingerprint`, `Registry`, `StructuralError`
-and the modules `cases`, `engine`, `kinds`, `request`, `scoring` and `trial`. Import `chatddx.factors.lint` and
-`chatddx.factors.select` by path.
+and the modules `cases`, `engine`, `kinds`, `request`, `response`, `scoring` and `trial`. Import
+`chatddx.factors.lint` and `chatddx.factors.select` by path.
 
 The package imports no other chatddx package. It depends on pydantic, and `lint.py` also depends on `jsonschema` and
 `referencing`.
@@ -543,6 +544,7 @@ and `return_token_ids: true` unless turned off. A slot without a fill raises `Ke
 `stream` and `n` are never added. The runner streams on the wire and records `render`'s body.
 
 ### Tool rounds
+- `ToolCall` and `tool_calls` are `response.py`'s.
 - `ToolCall(id: str, name: str, arguments: str)`.
 - `tool_calls(response: Mapping[str, JsonValue]) -> tuple[ToolCall, ...]`: the tool calls in
   `choices[0].message.tool_calls`, in order. Calls without a string `id`, `function.name` and `function.arguments`
@@ -554,6 +556,29 @@ and `return_token_ids: true` unless turned off. A slot without a fill raises `Ke
 
 The runner owns the loop (`docs/factors.md`, "Tool rounds"). It ends when a response calls no tool, calls the answer
 tool, or has no whole answer, or after `max_rounds` rounds.
+
+## response.py
+Reads what an OpenAI-compatible engine answered: a response, or a stream's chunk for the reasoning. Of chatddx, it
+imports only `base.py`.
+
+| Name | Value |
+| --- | --- |
+| `REASONING` | `("reasoning", "reasoning_content")`: where a message or a delta holds its reasoning, vLLM's name first. |
+| `ToolCall(id: str, name: str, arguments: str)` | A tool call, as `tool_calls` reads it. |
+| `Part(kind, text, name=None)` | A piece of a message: `kind` `reasoning`, `content` or `tool_call`, its text, and a tool call's name. |
+
+- `choice(response) -> dict[str, JsonValue]`: `choices[0]`, or `{}` when there is none.
+- `message(response) -> dict[str, JsonValue]`: `choices[0].message`, or `{}`.
+- `reasoning(said) -> str | None`: the first of `REASONING` that `said`, a message or a delta, holds as a string that
+  isn't empty.
+- `tool_calls(response) -> tuple[ToolCall, ...]`: the tool calls in `choices[0].message.tool_calls`, in order. Calls
+  without a string `id`, `function.name` and `function.arguments` are skipped.
+- `parts(response) -> list[Part]`: the message's reasoning, its content when it isn't empty, and its tool calls, in
+  that order.
+
+Its readers: `request.py:next_request`, `chatddx.scorers.answer.read`, the runner's tool rounds and the stream's
+reasoning deltas, the ledger's run check, `chatddx.bench.outcome` for the tokens streamed, the repl's transcript and
+the portal's run page.
 
 ## engine.py
 

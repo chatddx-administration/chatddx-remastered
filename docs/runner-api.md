@@ -28,10 +28,10 @@ Paths are relative to `src/chatddx/runner/` unless they start with `src/` or `do
 | Module | Builds on |
 | --- | --- |
 | `wire.py` | the standard library's `urllib` |
-| `send.py` | `wire.py`, `chatddx.factors.{base,trial}`, `chatddx.ledger` |
+| `send.py` | `wire.py`, `chatddx.factors.{base,response,trial}`, `chatddx.ledger` |
 | `gate.py` | `chatddx.factors.{base,cases,request,trial}`, `chatddx.inventory` |
 | `prepare.py` | `chatddx.factors.{base,cases,engine,request,trial}`, `chatddx.inventory`, `chatddx.ledger`, `chatddx.store` |
-| `rounds.py` | `send.py`, `chatddx.factors.{base,request,trial}`, `chatddx.ledger`, `chatddx.rig`, `chatddx.tools.shipped` |
+| `rounds.py` | `send.py`, `chatddx.factors.{base,request,response,trial}`, `chatddx.ledger`, `chatddx.rig`, `chatddx.tools.shipped` |
 | `run.py` | `gate.py`, `prepare.py`, `rounds.py`, `send.py`, `chatddx.{catalog,factors,identity,inventory,ledger,rig,store}` |
 | `score.py` | `gate.py`, `send.py`, `run.py` (`Noted`), `chatddx.{catalog,factors,identity,inventory,ledger,rig,scorers,store}` |
 
@@ -63,9 +63,9 @@ comes and a send that stops keeps what it wrote.
 | `KeyboardInterrupt` | Raised again by `send` once the calls an interrupt stopped are written. |
 | `send.Stopped` | Raised by `send.send` only; `rounds.converse`, `Running` and `Grading` catch it. |
 
-**Findings.** All findings the runner notes are warnings. They are emitted as `Noted` while sending and kept in the
-finished row (`RunFinished.findings`, `ScoreFinished.findings`). `finish` returns the ledger check's findings, not
-these. Codes are under "Finding codes".
+**Findings.** All findings the runner notes are warnings but `answer.salvaged`, which is info. They are emitted as
+`Noted` while sending and kept in the finished row (`RunFinished.findings`, `ScoreFinished.findings`). `finish`
+returns the ledger check's findings, not these. Codes are under "Finding codes".
 
 ## wire.py
 
@@ -121,7 +121,8 @@ by index), `finish_reason`, `stop_reason` when given, and `token_ids` joined. On
 
 ### `class Delta`
 A piece of what a call streams: `kind: Literal["reasoning", "content", "tool_call"]`, `text: str`, `tokens: int`,
-the call's completion tokens so far, counted by a chunk's `token_ids`, or one a delta when it has none.
+the call's completion tokens so far, counted by a chunk's `token_ids`, or one a delta when it has none. A chunk's
+reasoning is read once, under `reasoning`, else `reasoning_content` (`chatddx.factors.response.REASONING`).
 
 ### `class Stopped(Exception)`
 A call stopped by an interrupt or a halt. `call: Call` is the call as it stood, with `error` `"stopped"`.
@@ -281,9 +282,9 @@ In order:
 3. `rounds.load`;
 4. refuses an `execution.concurrency` above the endpoint's `max_jobs`: `ValueError` `endpoint '<name>' takes <n>
    requests at once, the execution sends <m>`;
-5. `url_of`, and builds `RunStarted` with a new id, `rig()`, `execution` (default `Execution()`), the canary set,
-   `verify_at`, the toolbox's `code` and `Endpoint(name, url)`; `verify_at` other than `PHASES` without a canary set
-   is a `ValidationError`;
+5. `url_of`, and builds `RunStarted` with a new id, `rig()` (chatddx at its installed version, with
+   `CHATDDX_REVISION` as its revision when set), `execution` (default `Execution()`), the canary set, `verify_at`, the
+   toolbox's `code` and `Endpoint(name, url)`; `verify_at` other than `PHASES` without a canary set
 6. stores the trial and the canary set with what they refer to (`Store.add`), appends `RunStarted`, and notes `by` as
    the run's owner in the catalog.
 

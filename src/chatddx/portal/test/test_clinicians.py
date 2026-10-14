@@ -68,6 +68,9 @@ def test_an_appendix_is_written_and_a_case_built_of_it(signed: TestClient) -> No
         "Gallstones on ultrasound.\n",
     )
     assert signed.post(f"/families/{crlf['id']}/cases").status_code == 422
+    blank = {"name": "  ", "text": "Gallstones."}
+    got = signed.post(f"/families/{crlf['id']}/appendices", data=blank)
+    assert got.status_code == 422 and "an appendix is named" in got.text
 
 
 @pytest.mark.slow

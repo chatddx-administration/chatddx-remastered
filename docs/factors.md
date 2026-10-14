@@ -690,6 +690,10 @@ nondeterminism, and the seeds are what name the replicates. The alternative, a r
 changes the shape of a trial, so it is cheapest decided before trials are stored for real.
 
 ### Smaller issues
+- **One split.** A free-text answer is broken into items only as the lines of a list (`lines@1`), so a scorer can't
+  read one written otherwise, as prose or with items on one line.
+- **Few-shot answers in JSON are written whole.** A few-shot chunk is written in its language, so an assistant
+  example that is a JSON answer is translated by hand, keeping its property names and allowed values as they are.
 - **Resources can't be picked yet.** A scorer's resources are plain strings, no kind of component holds one, and the
   scoring code isn't given them. None are offered until a kind of resource exists, with its pins and code that reads
   it.

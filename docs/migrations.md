@@ -85,14 +85,14 @@ it, if any. A new schema gets its own section with all three tiers.
   beside `binding_source (source, source_id)`, so that looking a case's family up and finding which family holds
   a vignette's place read only the bindings to its id or content
   (`src/chatddx/store/catalog.py:Rows.bindings_sharing`, `src/chatddx/catalog/families.py:family_of`, `holder`).
-
-### Tier 1
-- `0011-t1-catalog.sql`: PUBLIC loses all access; the writer gets SELECT, INSERT and the reader SELECT, with
-  default privileges.
 - `0017-t0-catalog-label-edit.sql`: `catalog.label` dropped and made again as `label (id, edit, kind, part, position,
   value, by, at)`: `(edit, kind)` is an edit of a `scorer` thread, `UNIQUE (edit, part, position)`, and the value not
   empty. The old rows named a scorer digest; they are dropped, since a store from before holds v1 scorers, which can't
   be read any more, and is rebuilt from its data sets. The writer and the reader get the new table through `0011`'s
+  default privileges.
+
+### Tier 1
+- `0011-t1-catalog.sql`: PUBLIC loses all access; the writer gets SELECT, INSERT and the reader SELECT, with
   default privileges.
 
 ### Tier 2

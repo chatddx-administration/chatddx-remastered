@@ -20,17 +20,19 @@ Paths are relative to `src/chatddx/ledger/` unless they start with `src/` or `do
 
 ## Package
 
-`chatddx.ledger` re-exports `Call`, `CanaryCall`, `Endpoint`, `ItemKey`, `JudgeCall`, `Record`, `Run`,
-`RunFinished`, `RunItem`, `RunStarted`, `Score`, `ScoreFinished`, `ScoreItem`, `ScoreStarted`, `ToolCode`, `ToolRun`,
-`Turn`, `check_run`, `check_score`, `compare_prompt_tokens`, `fingerprint_prompt_tokens` and `fingerprint_request`.
-Everything else (`Phase`, `PHASES`, `UtcDatetime`, the stage unions, the helpers in `record.py` and
-`call.py:check_execution`) is imported by path.
+`chatddx.ledger` re-exports `Call`, `CanaryCall`, `Endpoint`, `ItemKey`, `JudgeCall`, `JudgeEndpoint`, `Record`,
+`Run`, `RunFinished`, `RunItem`, `RunStarted`, `Score`, `ScoreFinished`, `ScoreItem`, `ScoreStarted`, `ToolCode`,
+`ToolRun`, `Turn`, `check_run`, `check_score`, `compare_prompt_tokens`, `fingerprint_prompt_tokens` and
+`fingerprint_request`.
+
+Everything else (`Phase`, `PHASES`, `UtcDatetime`, the stage unions, the helpers in `record.py`
+and `call.py:check_execution`) is imported by path.
 
 | Module | Builds on |
 | --- | --- |
 | `record.py` | `chatddx.factors.base`, `chatddx.factors.cases` |
 | `call.py` | `record.py`, `chatddx.factors.trial` |
-| `run.py` | `call.py`, `record.py`, `chatddx.factors.{bundle,cases,engine,request,trial}` |
+| `run.py` | `call.py`, `record.py`, `chatddx.factors.{bundle,cases,engine,request,response,trial}` |
 | `score.py` | `run.py`, `call.py`, `record.py`, `chatddx.factors.{bundle,request,scoring,select,trial}` |
 
 The package imports no chatddx package but `chatddx.factors`, and no third-party package but pydantic.
@@ -135,7 +137,6 @@ row isn't part of it.
 | `in_order(started, finished) -> None` | `ValueError("finished before it started")` when `finished < started`. Equal times pass. |
 | `check_log(stages, order, ids) -> None` | `StructuralError` when the stage names aren't a prefix of `order` (`"stages [...] do not follow (...)"`) or the ids differ (`"rows belong to different logs"`); `in_order` between the first stage and each later one. |
 | `check_seal(log, subject) -> list[Finding]` | `[ledger.seal]` when the log has a finished row whose seal differs from `log.seal()`, else `[]`. |
-| `code_name(code: Code) -> str` | `"<distribution> <version>[ <revision>]"`, for messages. |
 
 ## call.py
 
@@ -301,7 +302,7 @@ Raises `StructuralError`:
 | `<key>: tool rounds, but the skeleton has no tools` | An item with turns on a skeleton without tools. |
 | `<key>: more than <max_rounds> rounds` | More turns than `skeleton.max_rounds`. |
 | `<key>: no tool named '<name>'` | A tool run whose name isn't a tool of the skeleton, and which has no `error`. |
-| `<key>: a round runs tools for calls the response didn't make` | A turn's set of `(id, name)` differs from the previous call's tool calls (`chatddx.factors.request.tool_calls`), leaving out calls to the answer function of a `tool` contract; for a turn without a call, it has one the previous call didn't make. |
+| `<key>: a round runs tools for calls the response didn't make` | A turn's set of `(id, name)` differs from the previous call's tool calls (`chatddx.factors.response.tool_calls`), leaving out calls to the answer function of a `tool` contract; for a turn without a call, it has one the previous call didn't make. |
 | `tool code recorded for tools the skeleton lacks: […]` | A `tool_code` entry for a tool not in `skeleton.tools`. |
 
 Returns findings, in this order:
