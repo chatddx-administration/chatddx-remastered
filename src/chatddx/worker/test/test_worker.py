@@ -5,7 +5,9 @@ from contextlib import contextmanager
 from datetime import timedelta
 from uuid import UUID
 
+import psycopg
 import pytest
+from psycopg import sql
 from psycopg.conninfo import make_conninfo
 
 from chatddx import settings
@@ -14,6 +16,7 @@ from chatddx.conftest import chosen
 from chatddx.identity import Person
 from chatddx.inventory import Inventory
 from chatddx.store import Job, People, Queue, Store
+from chatddx.store.notify import Assembler, Events, JobChanged, Rows, channel
 from chatddx.store.store import Connection
 from chatddx.test.world import LINES, QWEN, faked, world_facts
 from chatddx.worker import Worker
@@ -57,8 +60,10 @@ def start(bench: Bench) -> UUID:
 
 
 @contextmanager
-def serving(conninfo: str, world: Inventory) -> Generator[Worker]:
-    worker = Worker(conninfo, world, world_facts(), BEAT, LOST)
+def serving(
+    conninfo: str, world: Inventory, beat: timedelta = BEAT
+) -> Generator[Worker]:
+    worker = Worker(conninfo, world, world_facts(), beat, LOST)
     stopping = threading.Event()
     thread = threading.Thread(target=worker.serve, args=(stopping,))
     thread.start()
@@ -66,6 +71,7 @@ def serving(conninfo: str, world: Inventory) -> Generator[Worker]:
         yield worker
     finally:
         stopping.set()
+        worker.wake()
         thread.join(30)
         assert not thread.is_alive()
 
@@ -107,6 +113,45 @@ def test_a_queued_run_is_sent_finished_and_scored_and_scored_again_when_asked(
     every = bench.scores_of(started, every=True)
     assert {g.name for g in bench.scores_of(started)} >= {"lines"}
     assert [g.name for g in every].count("lines") == 2
+
+
+@pytest.mark.slow
+def test_a_worker_wakes_to_a_queued_job_and_says_what_its_rows_don_t(
+    conn: Connection, conninfo: str, world: Inventory, bench: Bench, alice: Person
+) -> None:
+    queue = Queue(conn)
+    with (
+        faked(world, Store(conn).get, delay=0.02),
+        psycopg.connect(conninfo, autocommit=True) as listener,
+    ):
+        started = start(bench)
+        name = channel(started)
+        _ = listener.execute(sql.SQL("LISTEN {}").format(sql.Identifier(name)))
+        with serving(conninfo, world, beat=timedelta(minutes=5)):
+            job = queue.put(alice.id, started, QWEN, 1, True)
+            assert until(queue, job, ended).status == "finished"
+        assembler = Assembler()
+        heard = [
+            m
+            for n in listener.notifies(timeout=0.5)
+            if (m := assembler.message(n.channel, n.pid, n.payload)) is not None
+        ]
+
+    said = [name for m in heard if isinstance(m, Events) for name, _ in m.said]
+    assert said[0] == "item.started"
+    assert {"item.delta", "run.scoring", "run.scored"} <= set(said)
+    assert set(said) <= {
+        "item.started",
+        "item.delta",
+        "item.tool",
+        "run.scoring",
+        "judge.asked",
+        "judge.delta",
+        "judge.answered",
+        "run.scored",
+    }
+    assert heard[0] == JobChanged("queued") and heard[-1] == JobChanged("finished")
+    assert Rows() in heard
 
 
 @pytest.mark.slow

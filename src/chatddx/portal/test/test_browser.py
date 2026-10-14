@@ -35,7 +35,11 @@ def built() -> Path:
 @pytest.fixture
 def served(db: str, built: Path, world: Inventory) -> FastAPI:
     return app(
-        world, world_facts(), make_conninfo(settings.database(), dbname=db), built
+        world,
+        world_facts(),
+        make_conninfo(settings.database(), dbname=db),
+        built,
+        worker=True,
     )
 
 

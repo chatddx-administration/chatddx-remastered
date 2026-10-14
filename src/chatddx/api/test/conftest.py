@@ -48,6 +48,7 @@ def served(db: str) -> FastAPI:
         Inventory.load(TEST / "inventory.toml"),
         world_facts(),
         make_conninfo(settings.database(), dbname=db),
+        worker=True,
     )
 
 

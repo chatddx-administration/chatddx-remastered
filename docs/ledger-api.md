@@ -456,6 +456,14 @@ Created by `0004-t0-ledger.sql`, roles in `0005-t1-ledger.sql`, consistency chec
 `0006-t2-ledger.sql` (`docs/migrations.md`, "ledger"). `src/chatddx/store/store.py:Store.append` writes it, and
 `Store.run` and `Store.score` read it back through `Record.parse`, `Run` and `Score`.
 
+```
+AGENT: add
+After this paragraph: the row's number.
+---
+Every table has `seq bigint NOT NULL`, from one sequence, `ledger.seq`, as its default (`0022-t0-ledger-seq.sql`), so
+that `Store.rows_of` reads a run's rows and its scores' in the order they were written; `score_stage_run` indexes a
+score's run.
+```
 Every table has `payload text NOT NULL`, the record's `canonical` text and the source of truth, and
 `doc jsonb NOT NULL`, its `jsonb` copy for queries. The 0006 CHECK on every table requires `doc = payload::jsonb` and
 every key column to equal its value in `doc`. Item rows and canary calls reference their log's started row through a

@@ -1,21 +1,17 @@
+from collections.abc import Collection
+from uuid import UUID
+
 from pydantic import BaseModel
 
 from chatddx import bench as benches
-from chatddx.bench import Bench, ScorerStarted, ScoringEvent, outcome, usage
+from chatddx.bench import Bench, ScoringEvent, outcome, usage
 from chatddx.factors.base import resolve
 from chatddx.factors.request import Skeleton
 from chatddx.factors.scoring import Scorer
-from chatddx.ledger import CanaryCall, RunItem
-from chatddx.runner.run import (
-    CanaryEnded,
-    Event,
-    ItemEnded,
-    ItemStarted,
-    Noted,
-    Streamed,
-    ToolRan,
-)
-from chatddx.runner.score import ItemScored, JudgeAnswered, JudgeAsked
+from chatddx.factors.trial import Trial
+from chatddx.ledger import CanaryCall, RunItem, RunStarted, ScoreItem, ToolRun
+from chatddx.runner.run import Event, ItemStarted, Streamed, ToolRan
+from chatddx.runner.score import JudgeAnswered, JudgeAsked
 from chatddx.scorers.aggregate import mean
 
 from . import schemas
@@ -66,12 +62,85 @@ def graded_of(graded: benches.Graded) -> schemas.Graded:
     )
 
 
-def event_of(skeleton: Skeleton, event: Event) -> Named:
+def scoring_of(
+    bench: Bench, run: RunStarted, scorers: Collection[str] | None
+) -> schemas.ScoringData:
+    return schemas.ScoringData(
+        scorers=[
+            schemas.Unscored(
+                scorer=e.digest, name=a.name or bench.catalog.title(e.thread)
+            )
+            for e, a in bench.scorers_for(run)
+            if scorers is None or e.digest in scorers
+        ]
+    )
+
+
+def started_of(
+    started: RunStarted, trial: Trial, skeleton: Skeleton
+) -> schemas.RunStartedData:
+    return schemas.RunStartedData(
+        run=started.run,
+        trial=trial.digest,
+        skeleton=trial.skeleton,
+        endpoint=None if started.endpoint is None else started.endpoint.name,
+        cases=list(trial.cases),
+        seeds=list(trial.seeds),
+        greedy=skeleton.greedy,
+    )
+
+
+def item_started_of(case: str, replicate: int, seed: int) -> Named:
+    return "item.started", schemas.ItemStartedData(
+        case=case, replicate=replicate, seed=seed
+    )
+
+
+def tool_of(case: str, replicate: int, tool: ToolRun) -> Named:
+    return "item.tool", schemas.ItemToolData(
+        case=case, replicate=replicate, tool=tool.model_dump(mode="json")
+    )
+
+
+def item_ended_of(skeleton: Skeleton, item: RunItem) -> Named:
+    return "item.ended", schemas.ItemEndedData(
+        **item_of(skeleton, item).model_dump(), why=outcome(skeleton, item)[1]
+    )
+
+
+def canary_of(call: CanaryCall) -> Named:
+    return "canary.ended", schemas.CanaryEndedData(
+        phase=call.phase, canary=call.canary, call=call.call.model_dump(mode="json")
+    )
+
+
+def score_started_of(bench: Bench, scorer: str, score: UUID) -> Named:
+    labels = bench.labels(scorer)
+    views = range(len(resolve(bench.get, scorer, Scorer).views))
+    return "score.started", schemas.ScoreStartedData(
+        scorer=scorer,
+        name=bench.scorer_name(scorer),
+        score=score,
+        labels=[labels.get(view, f"view {view}") for view in views],
+    )
+
+
+def score_item_of(item: ScoreItem) -> Named:
+    return "score.item", schemas.ScoreItemData(
+        score=item.score,
+        case=item.key.case,
+        replicate=item.key.replicate,
+        view=item.view,
+        value=item.value,
+        detail=item.detail,
+    )
+
+
+# What a run's events tell that its rows don't, as they happen.
+def said_of(event: Event) -> Named | None:
     match event:
         case ItemStarted(key=key, seed=seed):
-            return "item.started", schemas.ItemStartedData(
-                case=key.case, replicate=key.replicate, seed=seed
-            )
+            return item_started_of(key.case, key.replicate, seed)
         case Streamed(key=key, delta=delta):
             return "item.delta", schemas.ItemDeltaData(
                 case=key.case,
@@ -81,46 +150,13 @@ def event_of(skeleton: Skeleton, event: Event) -> Named:
                 tokens=delta.tokens,
             )
         case ToolRan(key=key, run=run):
-            return "item.tool", schemas.ItemToolData(
-                case=key.case, replicate=key.replicate, tool=run.model_dump(mode="json")
-            )
-        case ItemEnded(item=item):
-            return "item.ended", schemas.ItemEndedData(
-                **item_of(skeleton, item).model_dump(),
-                why=outcome(skeleton, item)[1],
-            )
-        case CanaryEnded(call=call):
-            return canary_of(call)
-        case Noted(finding=finding):
-            return "run.noted", schemas.Finding.of(finding)
+            return tool_of(key.case, key.replicate, run)
+        case _:
+            return None
 
 
-def canary_of(call: CanaryCall) -> Named:
-    return "canary.ended", schemas.CanaryEndedData(
-        phase=call.phase, canary=call.canary, call=call.call.model_dump(mode="json")
-    )
-
-
-def scoring_event_of(bench: Bench, event: ScoringEvent) -> Named:
+def judged_of(event: ScoringEvent) -> Named | None:
     match event:
-        case ScorerStarted(scorer=scorer, name=name, score=score):
-            labels = bench.labels(scorer)
-            views = range(len(resolve(bench.get, scorer, Scorer).views))
-            return "score.started", schemas.ScoreStartedData(
-                scorer=scorer,
-                name=name,
-                score=score,
-                labels=[labels.get(view, f"view {view}") for view in views],
-            )
-        case ItemScored(item=item):
-            return "score.item", schemas.ScoreItemData(
-                score=item.score,
-                case=item.key.case,
-                replicate=item.key.replicate,
-                view=item.view,
-                value=item.value,
-                detail=item.detail,
-            )
         case JudgeAsked(key=key):
             return "judge.asked", schemas.JudgeAskedData(
                 case=key.case,
@@ -148,5 +184,5 @@ def scoring_event_of(bench: Bench, event: ScoringEvent) -> Named:
                 verdict=event.verdict,
                 call=judged.call.model_dump(mode="json"),
             )
-        case Noted(finding=finding):
-            return "score.noted", schemas.Finding.of(finding)
+        case _:
+            return None

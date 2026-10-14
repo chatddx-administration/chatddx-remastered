@@ -21,7 +21,11 @@ from chatddx.test.world import LINES, QWEN, faked, world_facts
 @pytest.fixture
 def served(db: str, built: Path, world: Inventory) -> FastAPI:
     return app(
-        world, world_facts(), make_conninfo(settings.database(), dbname=db), built
+        world,
+        world_facts(),
+        make_conninfo(settings.database(), dbname=db),
+        built,
+        worker=True,
     )
 
 

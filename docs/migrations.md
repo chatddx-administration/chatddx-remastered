@@ -34,12 +34,26 @@ it, if any. A new schema gets its own section with all three tiers.
   rows and canary calls reference their log's started row through a constant `stage` column, and a score's started
   row references its run's. Trials, scorings and cases reference `factor.component`.
 
+```
+AGENT: add
+A bullet at the end of the ledger's Tier 0, above this heading.
+---
+- `0022-t0-ledger-seq.sql`: `ledger.seq`, and a `seq` column on every table taking it by default, so that a run's rows
+  are read back in the order they were written; rows from before are numbered as the column is added, in no
+  particular order. An index on `score_stage (run)`.
+```
 ### Tier 1
 - `0005-t1-ledger.sql`: PUBLIC loses all access; the writer gets SELECT, INSERT, with default privileges. The reader
   gets nothing: `run_item` and `score_item` hold case-derived records
   (`src/chatddx/ledger/record.py:Record.case_derived`), and the stage rows and canary calls sit beside them so that
   each log stays in one schema.
 
+```
+AGENT: add
+A bullet at the end of the ledger's Tier 1, above this heading.
+---
+- `0023-t1-ledger-seq.sql`: the writer gets USAGE on `ledger.seq`, which its inserts draw from.
+```
 ### Tier 2
 - `0006-t2-ledger.sql`: CHECKs that `doc` matches `payload` and that every key column matches `doc`; insert-only
   triggers on every table.

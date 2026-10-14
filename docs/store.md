@@ -25,6 +25,16 @@ The store also finds the components of a kind that reach a given one, such as th
 compilations of a skeleton.
 
 ### Records
+```
+AGENT: replace
+Records are read back in the order written, and each write wakes those listening for the run.
+---
+Ledger records are written as they happen, those that belong together at once, and never overwritten: a record whose
+place is taken is refused. Each is numbered as it is written, and each write notifies the run's channel, so that a
+run's rows, its scores' included, are read back in that order, from any process, after a number had. A run's or a
+score's log is read back whole, and validated as it is read. Runs and scores are listed newest first: those of a
+trial, those of a run, or those asked for; and the store tells which runs have finished.
+```
 Ledger records are written as they happen, those that belong together at once, and never overwritten: a record whose
 place is taken is refused. A run's or a score's log is read back whole, and validated as it is read. Runs and scores
 are listed newest first: those of a trial, those of a run, or those asked for; and the store tells which runs have
@@ -52,7 +62,8 @@ The worker's queue is state, not factors or records, and is updated in place, as
 the worker claims, runs and ends it, each owner's control (paused), and the workers, with when each was last seen. A
 worker claims the next queued job by locking its row, so two workers never take the same one, and claims take turns,
 so that the runs on an endpoint keep to its `max_jobs` between them. A job points at a run started before it was
-queued; what the run did is the ledger's, read from there and not copied into the job.
+queued; what the run did is the ledger's, read from there and not copied into the job. Queuing, halting, pausing,
+ending and queuing again wake the workers, and tell those following the run how its job stands (`NOTIFY`).
 ```
 The worker's queue is state, not factors or records, and is updated in place, as people are: each job's status as
 the worker claims, runs and ends it, each owner's controls (paused, stopping), and the workers, with when each was

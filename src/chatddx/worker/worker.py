@@ -1,20 +1,27 @@
 import logging
+import select
+import socket
 import threading
-import time
 from dataclasses import dataclass, field
 from datetime import timedelta
 from typing import Literal
 from uuid import UUID, uuid4
 
 import psycopg
+from psycopg import sql
 
 from chatddx import settings
+from chatddx.api import schemas
+from chatddx.api.events import graded_of, scoring_of
 from chatddx.bench import Bench, ScoreHalt
 from chatddx.facts import Facts
 from chatddx.inventory import Inventory
 from chatddx.runner.run import Running
 from chatddx.store import Job, People, Queue
+from chatddx.store.notify import WORKERS
 from chatddx.store.store import Connection
+
+from .publish import Publisher
 
 log = logging.getLogger(__name__)
 
@@ -71,26 +78,56 @@ class Worker:
         self._lost: timedelta = lost
         self._guard: threading.Lock = threading.Lock()
         self._held: dict[int, _Held] = {}
+        self._waking: socket.socket | None = None
 
     def serve(self, stopping: threading.Event) -> None:
         max_jobs = {name: e.max_jobs for name, e in self._inventory.endpoints.items()}
-        with self._connect() as conn:
-            queue = Queue(conn)
-            queue.enlist(self.id)
-            while True:
-                leaving = stopping.is_set()
-                if leaving:
-                    for held in self._holding().values():
-                        held.leave(LEFT)
-                self._beat(queue)
-                if leaving:
-                    if not self._holding():
+        woken, waking = socket.socketpair()
+        waking.setblocking(False)
+        with self._guard:
+            self._waking = waking
+        try:
+            with self._connect() as conn:
+                queue = Queue(conn)
+                queue.enlist(self.id)
+                _ = conn.execute(sql.SQL("LISTEN {}").format(sql.Identifier(WORKERS)))
+                while True:
+                    leaving = stopping.is_set()
+                    if leaving:
+                        for held in self._holding().values():
+                            held.leave(LEFT)
+                    self._beat(queue)
+                    if leaving and not self._holding():
                         return
-                    time.sleep(self._beat_every)
-                    continue
-                while (job := queue.claim(self.id, max_jobs, self._lost)) is not None:
-                    self._take(job)
-                _ = stopping.wait(self._beat_every)
+                    if not leaving:
+                        while (
+                            job := queue.claim(self.id, max_jobs, self._lost)
+                        ) is not None:
+                            self._take(job)
+                    self._wait(conn, woken)
+        finally:
+            with self._guard:
+                self._waking = None
+            woken.close()
+            waking.close()
+
+    def wake(self) -> None:
+        with self._guard:
+            if self._waking is None:
+                return
+            try:
+                _ = self._waking.send(b"\0")
+            except OSError:
+                pass
+
+    def _wait(self, conn: Connection, woken: socket.socket) -> None:
+        if list(conn.notifies(timeout=0)):
+            return
+        ready, _, _ = select.select([conn.fileno(), woken], [], [], self._beat_every)
+        if woken in ready:
+            _ = woken.recv(4096)
+        for _ in conn.notifies(timeout=0):
+            pass
 
     def _connect(self) -> Connection:
         return psycopg.connect(self._conninfo, autocommit=True)
@@ -124,10 +161,10 @@ class Worker:
     def _work(self, held: _Held) -> None:
         job = held.job
         try:
-            with self._connect() as conn:
+            with self._connect() as conn, self._connect() as told:
                 queue = Queue(conn)
                 try:
-                    went = self._done(conn, held)
+                    went = self._done(conn, Publisher(told, job.run), held)
                 except Exception as e:
                     log.exception("job %s, run %s, failed", job.id, job.run)
                     _ = queue.end(job.id, self.id, "failed", str(e) or type(e).__name__)
@@ -141,20 +178,29 @@ class Worker:
         finally:
             with self._guard:
                 del self._held[job.id]
+            self.wake()
 
     def _done(
-        self, conn: Connection, held: _Held
+        self, conn: Connection, publisher: Publisher, held: _Held
     ) -> Literal["finished", "stopped", "queued"]:
         job = held.job
         bench = Bench(conn, People(conn).get(job.owner), self._inventory, self._facts)
         started = bench.run_by_id(job.run)
-        if bench.store.run(job.run).finished is None:
-            running = bench.resume(job.run)
-            held.sending(running)
-            running.send()
-            if held.left is not None and not held.halted:
-                return "queued"
-            _ = running.finish()
-        if job.score and not held.halted:
-            _ = bench.score(started, job.scorers, halt=held.scoring)
+        try:
+            if bench.store.run(job.run).finished is None:
+                running = bench.resume(job.run)
+                held.sending(running)
+                running.send(publisher.run_event)
+                if held.left is not None and not held.halted:
+                    return "queued"
+                _ = running.finish()
+            if job.score and not held.halted:
+                publisher.put(("run.scoring", scoring_of(bench, started, job.scorers)))
+                graded = bench.score(
+                    started, job.scorers, publisher.scoring_event, held.scoring
+                )
+                scores = [graded_of(g) for g in graded]
+                publisher.put(("run.scored", schemas.RunScoredData(scores=scores)))
+        finally:
+            publisher.close()
         return "stopped" if held.halted else "finished"

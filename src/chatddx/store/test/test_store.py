@@ -60,6 +60,7 @@ def test_migrations_apply_up_to_a_tier(empty: Connection) -> None:
         "0014-t0-source",
         "0017-t0-catalog-label-edit",
         "0019-t0-worker",
+        "0022-t0-ledger-seq",
     ]
     assert empty.info.transaction_status == TransactionStatus.IDLE
     assert migrate(empty, tier=0) == []
@@ -83,6 +84,7 @@ def test_migrations_apply_up_to_a_tier(empty: Connection) -> None:
         "0018-t2-catalog-label-edit",
         "0020-t1-worker",
         "0021-t2-worker",
+        "0023-t1-ledger-seq",
     ]
     with pytest.raises(errors.RaiseException, match="insert-only"):
         _ = empty.execute("TRUNCATE factor.component CASCADE")

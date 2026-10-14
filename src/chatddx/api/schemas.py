@@ -752,7 +752,8 @@ class ErrorData(_Schema):
 
 class DoneData(_Schema):
     halted: bool | None = Field(
-        description="whether it was halted; null when told from the ledger"
+        description="whether the run's last job was asked to halt; null when the run "
+        + "had none"
     )
 
 

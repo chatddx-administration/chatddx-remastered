@@ -1868,7 +1868,7 @@
         },
         "responses": {
           "202": {
-            "description": "The run, started: it is sent, finished and scored whoever listens, and its events are at `/api/runs/{run}/events`.",
+            "description": "The run, started and queued: the worker sends it, finishes it and scores it whoever listens, and its events are at `/api/runs/{run}/events`.",
             "content": {
               "application/json": {
                 "schema": {
@@ -2061,7 +2061,7 @@
         },
         "responses": {
           "202": {
-            "description": "The run's trial started again with another seed, as a run of its own, named as the run is: it is sent, finished and scored whoever listens, and its events are at `/api/runs/{run}/events`.",
+            "description": "The run's trial started again with other seeds, as a run of its own, named as the run is, and queued: the worker sends it, finishes it and scores it whoever listens, and its events are at `/api/runs/{run}/events`.",
             "content": {
               "application/json": {
                 "schema": {
@@ -2130,7 +2130,7 @@
         ],
         "responses": {
           "200": {
-            "description": "What the run does, as it does it: what is under way for it in this process, from its start, then as it comes; else what the ledger holds of it. The events are `run.started`, `item.started`, `item.delta`, `item.tool`, `item.ended`, `canary.ended`, `run.noted`, `run.finished`, `run.scoring`, `score.started`, `judge.asked`, `judge.delta`, `judge.answered`, `score.item`, `score.noted`, `run.scored`, `error`, `done`, each with an `id` and its data as JSON; `done` is the last.",
+            "description": "What the run does, as it does it: the run's rows in the ledger in the order they were written, each event of a row with the row's number as its id, the last one a row tells holding it; then, while a job for the run is queued or under way, what the worker says as it happens, without ids, and the rows as they land. The events are `run.started`, `item.started`, `item.delta`, `item.tool`, `item.ended`, `canary.ended`, `run.noted`, `run.finished`, `run.scoring`, `score.started`, `judge.asked`, `judge.delta`, `judge.answered`, `score.item`, `score.noted`, `run.scored`, `error`, `done`, each with its data as JSON; `done` is the last.",
             "content": {
               "text/event-stream": {
                 "schema": {
@@ -2184,7 +2184,7 @@
             "description": "Successful Response"
           },
           "409": {
-            "description": "Nothing is under way for the run"
+            "description": "Nothing is queued or under way for the run"
           },
           "422": {
             "description": "Validation Error",
@@ -2399,7 +2399,7 @@
         },
         "responses": {
           "202": {
-            "description": "The scorers the run is to be scored by, started: the scoring goes on whoever listens, and its events are at `/api/runs/{run}/events`.",
+            "description": "The scorers the run is to be scored by, queued: the worker scores it whoever listens, and its events are at `/api/runs/{run}/events`.",
             "content": {
               "application/json": {
                 "schema": {
@@ -2409,7 +2409,7 @@
             }
           },
           "409": {
-            "description": "Something is under way for the run already"
+            "description": "Something is queued or under way for the run already"
           },
           "422": {
             "description": "Validation Error",
@@ -3787,7 +3787,7 @@
                   "type": "integer"
                 },
                 "type": "array",
-                "maxItems": 200,
+                "maxItems": 1000,
                 "minItems": 1
               },
               {
@@ -3801,7 +3801,7 @@
             "anyOf": [
               {
                 "type": "integer",
-                "maximum": 200.0,
+                "maximum": 1000.0,
                 "minimum": 1.0
               },
               {
@@ -4024,7 +4024,7 @@
                   "type": "integer"
                 },
                 "type": "array",
-                "maxItems": 200,
+                "maxItems": 1000,
                 "minItems": 1
               },
               {
@@ -4038,7 +4038,7 @@
             "anyOf": [
               {
                 "type": "integer",
-                "maximum": 200.0,
+                "maximum": 1000.0,
                 "minimum": 1.0
               },
               {
@@ -5691,7 +5691,7 @@
                 "type": "null"
               }
             ],
-            "description": "whether it was halted; null when told from the ledger",
+            "description": "whether the run's last job was asked to halt; null when the run had none",
             "title": "Halted"
           }
         },

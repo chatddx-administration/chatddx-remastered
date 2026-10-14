@@ -1,11 +1,9 @@
 # The worker: work in progress
 
 The worker runs trials outside the process that asked for them, so that a run outlives a restarted app and is seen,
-followed and halted from every replica. A run started over HTTP already outlives a closed tab and a client that goes
-away: it is a job in the app's process (`docs/api.md`, "Where it runs"), which the portal starts and watches runs on
-(`agents/wip-portal.md`, R10). The worker takes the jobs' place with the API as it is. This file plans it, and the
-port of what the old worker did. Steps 0 to 2 are built (see "Built"): what it stands on, the queue and the worker,
-`chatddx worker`. Nothing queues runs yet: the API's runs stay jobs in the app's process until step 3.
+followed and halted from every replica. This file plans it, and the port of what the old worker did. Steps 0 to 3 are
+built (see "Built"): what it stands on, the queue, the worker, `chatddx worker`, and the API through it, its runs,
+scorings and halts queued and its events told from the ledger's rows, woken by `NOTIFY`, with the worker's deltas.
 
 "The old worker" is chatddx-administration/chatddx at 504792c: `src/chatddx/worker/` (`models.py`, `queue.py`,
 `worker.py`, `control.py`, `cli.py`, about 950 lines), with the portal's **Status** page
@@ -26,13 +24,15 @@ https://github.com/chatddx-administration/chatddx/blob/504792cbeb09508f2c52912be
    and woken by `LISTEN`/`NOTIFY` (E2), with deltas through `NOTIFY` (E3); K4, it schedules runs; K5, every run
    started over HTTP goes through it; K6, a run starts in the request and the worker sends it (A).
 5. **Decided: a run lost mid-way is resumed** by the next claim.
-6. **Built: steps 0 to 2** (see "Built"): resuming a run and what a run starts with; the queue; the worker.
-7. **Decided: what's next** (see "What's next, decided"), but T4, the repl beside the worker. R1 to R4 are built.
-   Next to build: step 3, then step 4 and W2, then the NixOS module (see "The plan").
+6. **Built: steps 0 to 3** (see "Built"): resuming a run and what a run starts with; the queue; the worker; the API
+   through the worker.
+7. **Decided: what's next** (see "What's next, decided"), but T4, the repl beside the worker. R1 to R5, T1 to T3 and
+   W1 are built. Next to build: step 4 and W2, then the NixOS module (see "The plan").
 
 ## Why
-- **A run is a job in the app's process**: `POST /api/runs` answers 202 and the run's path, the run is sent on a
-  thread of its own (`src/chatddx/api/jobs.py`), followed by `GET /api/runs/{id}/events` and halted by
+Until step 3:
+- **A run was a job in the app's process**: `POST /api/runs` answers 202 and the run's path, the run is sent on a
+  thread of its own (`src/chatddx/api/jobs.py`, since gone), followed by `GET /api/runs/{id}/events` and halted by
   `POST /api/runs/{id}/halt`. Scoring again (`POST /api/runs/{id}/scores`) and running again
   (`POST /api/runs/{id}/again`) are jobs too. A server that stops waits for them, and a killed one leaves them
   unfinished (`docs/api.md`, "Outstanding", "Serving").
@@ -136,8 +136,7 @@ which was a take:
 
 ### K3. How events reach a page
 - **E1. Read the ledger**: a page or the API polls the run's rows. Works from any process; item by item; no deltas.
-  Built, as what the API tells a run with nothing under way in its process, a finished one included
-  (`src/chatddx/api/runs.py:_told`).
+  Built before step 3 as what the API told a run with nothing under way in its process.
 - **E2. E1, woken by `LISTEN`/`NOTIFY`**: the worker notifies when an item starts or ends, and the API reads the rows
   then. No polling, and still from any process.
 - **E3. E2, with deltas through `NOTIFY`**: a completion as it is written, batched to keep within `NOTIFY`'s payload
@@ -196,7 +195,7 @@ Built, as step 0:
 
 Not built:
 - **`max_jobs` beside the worker.** The worker keeps the runs it sends within an endpoint's `max_jobs` (see K4), but
-  the repl's runs, the API's jobs in the app's process and judge calls don't count. vLLM queues what's over
+  the repl's runs and judge calls don't count. vLLM queues what's over
   `--max-num-seqs` rather than refusing it, so the cost is batching that the runs' `execution` doesn't show.
 - **The repl and the scripted runs pass one seed**, and take the rest from the inventory (R1 to R4, built). No
   World's endpoint names a canary set yet: a scripted run's turns would have to answer its canaries too.
@@ -227,6 +226,36 @@ Still the runner's, and met here:
   `src/chatddx/worker/test/test_worker.py`, the worker on a thread against the fake vLLM.
 - **Resuming a run with nothing written** by the rig that started it notes nothing, since the worker sends every run
   the request started so (`src/chatddx/runner/run.py:_resumed`).
+- **Step 3, the API through the worker** (T1 to T3, R5, W1):
+  - **The ledger's rows counted.** `ledger.seq`, one sequence, numbers every row of every ledger table as it is
+    written (`src/chatddx/store/migrations/0022-t0-ledger-seq.sql`, `0023`), and `Store.rows_of(run, after)` reads a
+    run's rows and its scores' after a number, in order. `Store.append` notifies the run's channel, `run.<id>`, with
+    `rows` in the transaction that writes them, so any writer wakes those following the run, the repl's included.
+  - **The queue notifies.** `put`, `halt`, `pause`, `end` and `requeue` wake the workers on `worker`, and `put`, `end`
+    and `requeue` tell the run's channel how its job stands (`job <status>`); `Queue.last` is a run's latest job. The
+    worker waits on `worker` between beats, so it claims a job and sees a halt at once, and on a socket pair, which
+    `Worker.wake` writes to, so it stops at once and sees a job thread end.
+  - **The worker publishes** what a run's rows don't say (`src/chatddx/worker/publish.py`), on a connection of its own
+    per job: an item started, its deltas and tool runs, the scoring starting, judges asked, their deltas and answers,
+    and the scoring over. Deltas wait up to `EVERY` (0.1 s) and go out merged by item and kind; an item's deltas still
+    held when its row lands go unsaid. Payloads are packed to stay under `NOTIFY`'s 8,000 bytes, and cut in parts when
+    one event doesn't fit (`src/chatddx/store/notify.py`).
+  - **The API** starts a run in the request and queues it (`POST /api/runs`, `/again`), queues a scoring
+    (`/scores`, 409 while the run has a job open) and halts through the queue (`/halt`). `GET /api/runs/{id}/events`
+    (`src/chatddx/api/telling.py`) listens on the run's channel before it reads, tells the rows after `Last-Event-ID`,
+    each row's last event carrying its number, then, while a job is open, what the worker says and the rows as they
+    land, and ends with the latest scores unless told them, the job's failure, and `done`. A stream joined mid-item is
+    told the item started and each tool run once (T2). One listening connection per app process fans out to its
+    streams (`src/chatddx/api/listening.py`), woken through a socket pair to listen at once; a stream that falls
+    1,000 messages behind drops them and reads the ledger again.
+  - **Where the worker runs.** `app(..., worker=True)` runs one on a thread for the app's lifespan: `chatddx portal`
+    does, and the tests; `chatddx api` doesn't. `src/chatddx/api/jobs.py` is gone, and `settings.ITEMS_PER_RUN` is
+    1,000. The portal's run page asks the queue whether a job is open before it reads the run, since a job ends
+    once its run's rows are written, and the run's island makes an item per case and seed.
+  - Tests: `src/chatddx/store/test/test_notify.py`, `src/chatddx/worker/test/test_publish.py`, a worker woken by a
+    queued job under a five-minute beat (`test_worker.py`), `src/chatddx/api/test/test_telling.py`, and the API's runs
+    and scores tests rewritten: ids are rows' numbers, another app tells a run's rows alike, and a test that looks for
+    what isn't a row pauses the owner's queue until its stream listens (`test_runs.py:joined`).
 
 ## The plan
 On the decisions above.
@@ -239,7 +268,7 @@ R. **What a run is started with** (R1 to R4), built: the inventory's cleanup per
    (`inventory.py:EndpointSpec`), which `Bench.start` takes unless given; `POST /api/runs` taking seeds or replicates,
    cleanup, a concurrency and an order, `/again` seeds or replicates, and `run.started` giving the seeds; the
    variation's island taking a replicates count. The island doesn't offer cleanup, a concurrency or an order yet.
-3. **The API through the worker** (T1 to T3, R5, W1): the ledger's rows counted; `POST /api/runs`, `/again` and
+3. **The API through the worker** (T1 to T3, R5, W1), built (see "Built"): the ledger's rows counted; `POST /api/runs`, `/again` and
    `/scores` queue a job and answer 202 as now, the run started in the request (K6); `GET /api/runs/{id}/events` from
    the ledger, woken by the worker, with its deltas through `NOTIFY`; `POST /api/runs/{id}/halt` through the queue;
    `chatddx portal` running a worker in its process; `src/chatddx/api/jobs.py` gone.
@@ -253,15 +282,15 @@ Decided by the user, item by item; T4 is the one take left. T for step 3, the AP
 run is started with over HTTP, which doesn't wait on the worker; C for step 4; W for running the worker.
 
 ### Step 3
-- **T1. Event ids. Decided: by the ledger's rows.** A run's events are numbered by its rows, in the order they were
+- **T1. Event ids. Decided, built: by the ledger's rows.** A run's events are numbered by its rows, in the order they were
   written, and what isn't a row (deltas, an item started, a judge asked) carries no id, as `docs/ledger.md`
   ("Telling a run as it was written") has it. It needs a column counting the ledger's rows as they land, at tier 0,
   and ends `src/chatddx/api/jobs.py:replayed`'s workaround. The others were a counter the worker keeps per run, lost
   when it restarts, and no ids at all.
-- **T2. A stream joined mid-item. Decided: its text from when it joined**, and the whole once the item ends. The
+- **T2. A stream joined mid-item. Decided, built: its text from when it joined**, and the whole once the item ends. The
   others were the worker answering a join with the text so far, and the worker notifying each item's text now and
   then.
-- **T3. `NOTIFY`. Decided: a channel per run**, deltas batched to stay under 8,000 bytes, and one listening connection
+- **T3. `NOTIFY`. Decided, built: a channel per run**, deltas batched to stay under 8,000 bytes, and one listening connection
   per app process fanning out to its streams, so a stream that stops reading holds up nothing.
 - **T4. The repl beside the worker.** Open. (a) As now: it sends in its own process, where Ctrl-C halts, and its runs
   don't count against `max_jobs`. (b) It queues its runs and follows their events. (c) It sends in its own process but
@@ -278,7 +307,7 @@ run is started with over HTTP, which doesn't wait on the worker; C for step 4; W
   alike and runs can be compared.
 - **R4. Execution. Decided: each endpoint's default in the inventory** (a timeout, retries), the request choosing a
   concurrency up to `max_jobs` and an order. R9 ("Concurrency stays 1", `agents/wip-portal.md`) ends with step 3.
-- **R5. The limits. Decided: `settings.ITEMS_PER_RUN` is raised to 1,000** once runs are queued (step 3), as a run no
+- **R5. The limits. Decided, built: `settings.ITEMS_PER_RUN` is raised to 1,000** once runs are queued (step 3), as a run no
   longer ties up a request; it counts cases times seeds.
 
 ### Step 4
@@ -292,7 +321,7 @@ run is started with over HTTP, which doesn't wait on the worker; C for step 4; W
   endpoint, and pause, resume and stop.
 
 ### Running the worker
-- **W1. Where. Decided:** `chatddx portal`, a convenience for development, runs a basic worker in its own process. A
+- **W1. Where. Decided, built but the NixOS module:** `chatddx portal`, a convenience for development, runs a basic worker in its own process. A
   deployment runs the HTTP server, the API and the worker as separate systemd services on NixOS: `chatddx worker` is
   one of them, and `chatddx api` starts no worker. The flake has no NixOS module yet.
 - **W2. A stopping worker's scorings. Decided: up to a deadline**, within the service's stop timeout, then the
@@ -303,6 +332,19 @@ run is started with over HTTP, which doesn't wait on the worker; C for step 4; W
 
 ## Open
 T4 is open (see "What's next, decided"). Beside it:
+- **The rows' order is their writer's.** `ledger.seq` gives numbers as rows are inserted, and a stream reads the rows
+  after the last it told; a row committed after one with a higher number would be missed until the stream starts
+  again. One writer per run keeps the two orders alike: the queue holds one job open per run, the runner and the
+  scoring pass write a log's rows one transaction after another. A repl scoring a run while the worker writes it
+  doesn't.
+- **What isn't a row is told only to those listening** (T2): `run.scoring` when the scoring starts, a judge asked, an
+  item started, so a stream that joins after them misses them, and a test that looks for them pauses the owner's queue
+  until its stream listens. Notes along the way (`run.noted`, `score.noted`) are told with the finish row that holds
+  them, not as they happen.
+- **A connection per stream**, held while it is open, beside the one listening connection per process, and two per
+  job a worker holds (`docs/api.md`, "Serving", has a suggestion).
+- **A stopping app's worker waits for its scorings** (W2 isn't built), so `chatddx portal` and a test's app stopping
+  mid-scoring wait for it.
 - **`NOTIFY`'s queue** (T3): a payload waits in the database's notification queue, kept on disk (`pg_notify/`), until
   every listener has read it, and a listener that stops reading holds the queue up for all. Deltas are case-derived,
   so they pass through the database that holds the ledger's completions already; nothing new is stored.

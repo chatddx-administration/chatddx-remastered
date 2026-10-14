@@ -1,16 +1,17 @@
 import json
 import time
+from collections.abc import Callable
 from typing import Any
 from uuid import UUID, uuid4
 
 import httpx2
 import pytest
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI
 from fastapi.testclient import TestClient
 from psycopg.conninfo import make_conninfo
 
 from chatddx import settings
-from chatddx.api import jobs
+from chatddx.api import telling
 from chatddx.api.app import app
 from chatddx.api.test.test_variations import digest, thread
 from chatddx.bench.test.helpers import ran, trial
@@ -20,7 +21,7 @@ from chatddx.factors.base import Finding, resolve
 from chatddx.factors.trial import Trial
 from chatddx.identity import Person
 from chatddx.inventory import Inventory
-from chatddx.store import Catalog, People, Store
+from chatddx.store import Catalog, People, Queue, Store
 from chatddx.store.store import Connection
 from chatddx.test.world import (
     GPT_OSS,
@@ -32,16 +33,17 @@ from chatddx.test.world import (
     world_facts,
 )
 
-type Told = list[tuple[int, str, dict[str, Any]]]
+type Told = list[tuple[int | None, str, dict[str, Any]]]
 
-# A fake this slow keeps a run under way while a stream asked for at once joins it: a
-# run that has finished is told from the ledger, which holds no live-only events.
+# A fake this slow keeps a run's job under way while a stream asked for at once joins
+# it: one asked for after it has ended is told the ledger's rows alone.
 UNDER_WAY = 0.02
 
 
 @pytest.fixture
 def served(db: str, world: Inventory) -> FastAPI:
-    return app(world, world_facts(), make_conninfo(settings.database(), dbname=db))
+    conninfo = make_conninfo(settings.database(), dbname=db)
+    return app(world, world_facts(), conninfo, worker=True)
 
 
 def family(signed: TestClient, name: str) -> dict[str, Any]:
@@ -64,9 +66,16 @@ def asked(
 def told(text: str) -> Told:
     said: Told = []
     for block in text.strip().split("\n\n"):
+        if block.startswith(":"):
+            continue
         fields = dict(line.split(": ", 1) for line in block.splitlines())
-        said.append((int(fields["id"]), fields["event"], json.loads(fields["data"])))
+        id = int(fields["id"]) if "id" in fields else None
+        said.append((id, fields["event"], json.loads(fields["data"])))
     return said
+
+
+def rows(said: Told) -> Told:
+    return [s for s in said if s[0] is not None]
 
 
 def followed(signed: TestClient, run: str, **headers: str) -> Told:
@@ -74,6 +83,19 @@ def followed(signed: TestClient, run: str, **headers: str) -> Told:
     assert got.status_code == 200, got.text
     assert got.headers["content-type"].startswith("text/event-stream")
     return told(got.text)
+
+
+# What a stream is told from before its job is claimed, with the owner's queue paused
+# until the stream has said its first row: by then it listens.
+def joined(
+    http: httpx2.Client, listening: str, run: str, unpause: Callable[[], None]
+) -> Told:
+    with http.stream("GET", f"{listening}/api/runs/{run}/events", timeout=30) as got:
+        lines = got.iter_lines()
+        first = next(lines)
+        assert first.startswith("id: ")
+        unpause()
+        return told("\n".join([first, *lines]))
 
 
 def sent(signed: TestClient, body: dict[str, Any]) -> tuple[dict[str, Any], Told]:
@@ -110,9 +132,9 @@ def test_a_run_is_accepted_and_told_by_its_events(
     assert (started["endpoint"], started["cases"]) == (QWEN, [case])
     assert (started["seeds"], started["greedy"]) == ([7], False)
 
-    ids = [i for i, _, _ in said]
-    assert ids == sorted(set(ids)) and ids[0] == 1
-    assert said[0][1:] == ("run.started", started)
+    ids = [i for i, _, _ in rows(said) if i is not None]
+    assert ids == sorted(set(ids))
+    assert said[0][1:] == ("run.started", started) and said[0][0] is not None
     assert names(said)[-2:] == ["run.scored", "done"]
     assert said[-1][2] == {"halted": False}
     expected = {"item.started", "item.ended", "run.finished", "run.scoring"}
@@ -142,34 +164,45 @@ def test_a_run_is_accepted_and_told_by_its_events(
 
 @pytest.mark.slow
 def test_a_run_s_events_stream_as_they_come_and_then_the_ledger_tells_them(
-    signed: TestClient, world: Inventory, conn: Connection
+    signed: TestClient,
+    world: Inventory,
+    conn: Connection,
+    alice: Person,
+    listening: str,
 ) -> None:
-    with faked(world, Store(conn).get, delay=UNDER_WAY):
+    queue = Queue(conn)
+    queue.pause(alice.id)
+    bearer = {"Authorization": signed.headers["Authorization"]}
+    with (
+        faked(world, Store(conn).get, delay=UNDER_WAY),
+        httpx2.Client(headers=bearer) as http,
+    ):
         run = signed.post("/api/runs", json=asked(signed, score=False)).json()["run"]
-        said = followed(signed, run)
+        said = joined(http, listening, run, lambda: queue.pause(alice.id, False))
     content = [d for _, n, d in said if n == "item.delta" and d["kind"] == "content"]
     assert "".join(d["text"] for d in content).strip()
     assert content[-1]["tokens"] > 0
     assert names(said)[-2:] == ["run.finished", "done"]
 
     again = followed(signed, run)
-    assert [i for i, _, _ in again] == list(range(1, len(again) + 1))
+    assert rows(again) == rows(said)
     assert [s[1:] for s in again[:-1]] == [
         s[1:] for s in said if s[1] not in {"item.delta", "done"}
     ]
-    assert again[-1][1:] == ("done", {"halted": None})
-    middle = again[len(again) // 2][0]
-    assert followed(signed, run, **{"Last-Event-ID": str(middle)}) == [
-        s for s in again if s[0] > middle
+    assert again[-1] == (None, "done", {"halted": False})
+    [(ended, _, _)] = [s for s in again if s[1] == "item.ended"]
+    assert ended is not None
+    assert followed(signed, run, **{"Last-Event-ID": str(ended)}) == [
+        s for s in again if s[1] in {"run.finished", "done"}
     ]
-    assert said[-1][0] > again[-1][0]
-    past = followed(signed, run, **{"Last-Event-ID": str(said[-1][0])})
+    last = rows(again)[-1][0]
+    past = followed(signed, run, **{"Last-Event-ID": str(last)})
     assert past == [again[-1]]
 
 
 @pytest.mark.usefixtures("fake")
 @pytest.mark.slow
-def test_a_run_with_nothing_under_way_here_is_told_from_the_ledger(
+def test_a_run_is_told_alike_by_its_rows_in_another_process(
     signed: TestClient, db: str, world: Inventory
 ) -> None:
     made, said = sent(signed, asked(signed))
@@ -177,13 +210,10 @@ def test_a_run_with_nothing_under_way_here_is_told_from_the_ledger(
     with TestClient(elsewhere, base_url="https://testserver") as other:
         other.headers.update(signed.headers)
         recorded = followed(other, made["id"])
-    live = [s for s in said if s[1] in {"item.started", "item.ended", "run.finished"}]
-    assert [s[1:] for s in recorded if s[1] in {n for _, n, _ in live}] == [
-        s[1:] for s in live
-    ]
-    assert recorded[0][1:] == said[0][1:]
+    assert rows(recorded) == rows(said)
+    assert {"score.started", "score.item"} <= {n for _, n, _ in rows(recorded)}
     assert recorded[-2][1:] == ("run.scored", {"scores": made["scores"]})
-    assert recorded[-1][1:] == ("done", {"halted": None})
+    assert recorded[-1][1:] == ("done", {"halted": False})
 
 
 def test_a_run_told_from_the_ledger_tells_what_it_noted(
@@ -196,16 +226,24 @@ def test_a_run_told_from_the_ledger_tells_what_it_noted(
     assert said[-3][2]["code"] == "case.drift"
 
 
-def test_a_job_is_let_go_when_it_ends() -> None:
-    held = jobs.Jobs()
-    run = uuid4()
-    job = held.started(run)
-    with pytest.raises(HTTPException, match="has something under way"):
-        _ = held.started(run)
-    assert held.get(run) is job
-    job.end()
-    assert held.get(run) is None
-    assert held.started(run) is not job
+@pytest.mark.usefixtures("fake")
+@pytest.mark.slow
+def test_a_run_is_a_job_in_the_queue_until_it_is_scored(
+    signed: TestClient, conn: Connection, alice: Person
+) -> None:
+    made, _ = sent(signed, asked(signed, concurrency=2))
+    queue, run = Queue(conn), UUID(made["id"])
+    job = queue.last(run)
+    assert job is not None and queue.open(run) is None
+    assert (job.owner, job.endpoint, job.slots) == (alice.id, QWEN, 2)
+    assert (job.score, job.scorers, job.status, job.halt) == (
+        True,
+        None,
+        "finished",
+        False,
+    )
+    got = signed.post(f"/api/runs/{uuid4()}/halt")
+    assert got.status_code == 404
 
 
 @pytest.mark.usefixtures("fake")
@@ -483,7 +521,7 @@ def test_a_quiet_stream_is_kept_alive(
     conn: Connection,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    monkeypatch.setattr(jobs, "KEEP_ALIVE", 0.02)
+    monkeypatch.setattr(telling, "KEEP_ALIVE", 0.02)
     alice = {"Authorization": signed.headers["Authorization"]}
     with (
         faked(world, Store(conn).get, delay=0.2),

@@ -69,6 +69,16 @@ describe("a run's progress", () => {
     expect(tally(progress)).toEqual({ ended: 2, of: 2, outcomes: [["valid", 1], ["stopped", 1]] });
   });
 
+  it("holds an item per case and seed, each case's together", () => {
+    const progress = folded([["run.started", { ...STARTED, seeds: [7, 9] }]]);
+    expect(progress.items.map((i) => [i.case, i.replicate, i.phase])).toEqual([
+      ["a", 0, "waiting"],
+      ["a", 1, "waiting"],
+      ["b", 0, "waiting"],
+      ["b", 1, "waiting"],
+    ]);
+  });
+
   it("follows the scoring scorer by scorer, with its judges", () => {
     const progress = folded([
       ["run.finished", { findings: [] }],

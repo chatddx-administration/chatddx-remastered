@@ -217,6 +217,14 @@ for queries. Stored records are never changed or deleted.
   item needs its log's start record, and a score needs its run's. A run's canary set isn't tied to the run in the
   database. The runner stores it with the trial; another writer must store it too, or the run can't be checked.
 - Checking a run or a score takes the components it needs from the store.
+```
+AGENT: add
+A bullet after this one: the rows' order.
+---
+- Every row is numbered as it is written, from one counter across the tables, so that a run's rows, its scores'
+  included, are read back in the order they were written; rows from before the counter are numbered in no particular
+  order. Each write tells those listening for the run that rows have landed (docs/store.md, "Records").
+```
 - The reader role can't read the ledger at all, which is the store's answer to "Case-derived records".
 
 ## Terms
@@ -248,6 +256,11 @@ Most of the plan is compared with what happened (see "What a record holds"), but
   request, from the scorer's reading of the answer (docs/factors.md, "Judge"), aren't rebuilt, and checking a run
   rebuilds none.
 
+```
+AGENT: remove
+Built with step 3 of agents/wip-worker.md: the ledger's rows are numbered as they are written, and the API tells a
+run by them (docs/api.md, "Its events"). "Storage" has a suggestion saying how.
+```
 ### Telling a run as it was written
 The API tells a run under way from its job, and a run with nothing under way from the ledger (docs/api.md, "Its
 events"). Each numbers its events its own way: the job counts its deltas, the ledger's telling doesn't, so a stream

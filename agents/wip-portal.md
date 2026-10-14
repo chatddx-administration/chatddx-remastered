@@ -84,8 +84,8 @@ where it is interactive. Its look and the structure of its frontend come from sw
 ### P3b, concretely
 Decided:
 - **`chatddx portal`** serves the app, the portal at `/` and the API at `/api/`, as `chatddx api` serves the API
-  alone, with the same `--world`, `--facts` and `--bind`. It starts everything the portal needs with it: the worker,
-  once there is one, in the app's process (`agents/wip-worker.md`, K1), and the frontend's build when it has one.
+  alone, with the same `--world`, `--facts` and `--bind`. It starts everything the portal needs with it: a basic
+  worker in its process (`agents/wip-worker.md`, W1, built with step 3), and the frontend's build when it has one.
 - **One app.** `src/chatddx/portal/`, a package beside `src/chatddx/api/`, mounted at `/` in the same FastAPI app as
   the API at `/api/` (`src/chatddx/api/app.py:app`). Its routes return HTML rendered with Jinja2 (Starlette's
   `Jinja2Templates`), and build a bench per request, as the API's routes do (`src/chatddx/api/people.py:bench`).
@@ -170,8 +170,10 @@ Decided (phase 4), from the options R1 to R12:
 - **R8. Limits in `settings`**: runs a day per person and items per run, kept by the bench for every edge, refused as
   over quota.
 - **R9. Concurrency** stays 1 until the worker shares an endpoint's `max_jobs` between runs, which ends it with the
-  worker's step 3; a run's request then chooses a concurrency up to `max_jobs` (`agents/wip-worker.md`, R4).
-- **R10. On the jobs in the app's process**; the worker takes their place with the API as it is.
+  worker's step 3; a run's request then chooses a concurrency up to `max_jobs` (`agents/wip-worker.md`, R4). Since
+  step 3 the API's runs take one; the variation's island doesn't offer it yet.
+- **R10. On the jobs in the app's process**; the worker takes their place with the API as it is. Since step 3 they
+  are the worker's queue's.
 - **R11. A keep-alive** on a run's event stream, which a proxy cuts when it is quiet.
 - **R12. A browser test** under pytest with Playwright (Python), on the test World and its fake vLLM: start, watch,
   halt and score again; and the island's logic by vitest.
@@ -233,9 +235,9 @@ Open:
 - **Every combination**, as the old crossing made (`plan.py:crossed`), or endpoints as well as parts: C2 varies one
   part at a time at one endpoint.
 - **How many runs** a confirmation starts before it warns, with `settings.RUNS_PER_DAY` runs a day.
-- **Several started together before the worker**: each is a job in the app's process (R10), so runs on one endpoint
-  send their items side by side, past its `max_jobs` when there are more runs than it takes (R9;
-  `docs/inventory-api.md`, "Known gaps").
+- **Several started together**: each is a job in the worker's queue, holding its run's concurrency in slots at its
+  endpoint, so runs on one endpoint take turns within its `max_jobs`; the repl's runs and judge calls aren't counted
+  (`agents/wip-worker.md`, "Below the worker").
 - **Runs to compare in the tests**: none of the test World's scripted runs sets a part, and no two are over the
   same cases (`docs/scripted.md`, "The runs").
 - **A study kept for publication**: a selection of runs frozen with the scorings it is scored by, designed with the
@@ -470,14 +472,14 @@ Phase 4, as decided (see "Starting and watching a run"):
   starts, which `Bench.described` reads first; `POST /api/runs/{id}/again` runs a run's trial again with another seed
   (`Bench.again`), so a run of a variation nobody saved can run again without it; runs a day and items a run are
   limited (`settings.RUNS_PER_DAY`, `ITEMS_PER_RUN`; `Catalog.runs_started`), refused as over quota; and a quiet event
-  stream sends `: keep-alive` every 15 s (`src/chatddx/api/jobs.py:KEEP_ALIVE`), described in `docs/api.md`,
+  stream sends `: keep-alive` every 15 s (`src/chatddx/api/telling.py:KEEP_ALIVE` since the worker's step 3), described in `docs/api.md`,
   `docs/api-api.md`, `docs/bench.md`, `docs/bench-api.md`, `docs/catalog-api.md` and `docs/repl.md`.
 - **Following a run** (`frontend/src/lib/runs/`): `watch`, a run's events through `EventSource`, and `fold`, which
   folds them into a run's progress: its items as they are sent, stream and end, what is noted, and each scorer's
   scoring with its judges' calls. The home page follows its run with them too.
 - **The variation's page** gets **Running it**: the cases tagged, or families picked by name, the seed and whether to
   score, the number of items said, and **Run it**, which leads to the run's page.
-- **A run's page**: while something is under way for it in the app's process, the items, scores and answers give way
+- **A run's page**: while a job for it is queued or under way (`Queue.open`), the items, scores and answers give way
   to the live view (`frontend/src/islands/RunLive.svelte`), which reloads the page when the run is done. **Halt**,
   **Score again** (by the scorers it is left to) and **Run again** are plain forms (`src/chatddx/portal/runs.py`:
   `halting`, `scoring`, `running_again`), which call the API's handlers and lead back to the run's page; **Score again**
@@ -511,8 +513,7 @@ Phase 5, first half, as decided (see "Authoring"):
 ## Below the UI
 What the portal needs below its pages that isn't built:
 1. **The worker** (`agents/wip-worker.md`): runs that outlive the app's process and are seen from every replica.
-   Until then a run is a job in the app's process (`docs/api.md`, "Where it runs"), which the run's
-   pages can be built on, since the API stays as it is when the worker takes its place.
+   Built through its step 3: the API's runs, scorings and halts go through its queue, with the API as it was.
 2. **The worker's controls and status** (`agents/wip-worker.md`, "The plan", 4).
 3. **Z1**, the map from roles to kinds, which waits for the portal's views (`docs/bench.md`, "Outstanding";
    `docs/identity.md`, "Z1: what each role is shown").
@@ -604,14 +605,15 @@ From "What the portal shows", not on the pages yet:
 - **An appendix's language**, and a new version offered the previous one's (W8), wait for the text kinds of 5c.
 
 ### What starting and watching a run leaves
-- **Concurrency** is 1 (R9): a run of the sample World's 104 cases sends them one at a time.
-- **A run lives in the app's process** (R10): a restart ends it, and another replica tells it from the ledger without
-  its live text and can't halt it. The worker takes its place (`agents/wip-worker.md`).
+- **Concurrency** is 1 from the variation's page (R9): a run of the sample World's 104 cases sends them one at a
+  time. The API's runs take a concurrency up to the endpoint's `max_jobs`.
+- **A page that joins a run late** is told its rows, then what the worker says from then on: an item's text from when
+  it joined, the whole once the run's page reloads (`agents/wip-worker.md`, T2).
 - **The live view holds every item's text** as it streams, in the page; a large run with long answers makes a heavy
   page. Take: drop the text of an item once it has ended, which the run's page shows after it is done.
 - **Replicates**: a run takes several seeds, or a count drawn, and the run's island takes a count; cleanup, a
   concurrency and an order are the API's alone so far (`agents/wip-worker.md`, R1 to R4).
-- **The limits** (`settings.RUNS_PER_DAY`, 100, and `ITEMS_PER_RUN`, 200) are takes, as is counting a day back from
+- **The limits** (`settings.RUNS_PER_DAY`, 100, and `ITEMS_PER_RUN`, 1,000 since the worker's step 3) are takes, as is counting a day back from
   now. A scoring isn't limited.
 - **Running again** re-sends a run's trial; it doesn't follow the configuration if it has moved on since.
 

@@ -187,6 +187,13 @@ which titles it from then on.
 A person starts at most `settings.RUNS_PER_DAY` runs a day, and a run holds at most `settings.ITEMS_PER_RUN` items;
 past either the run is refused as over quota.
 
+```
+AGENT: replace
+The paragraph's last sentence: a started run is queued.
+---
+Once started, it is queued for the worker, and answered 202 with what `run.started` holds, and the run's path as
+`Location`.
+```
 The run is started within the request, so whatever refuses it does so before anything is sent. The gate refuses an
 endpoint that doesn't serve the trial's engine, isn't cleared for a sensitive source among the cases', or lacks its
 secret; tools that would get a sensitive source's content; and an endpoint that doesn't answer. The request is
@@ -205,6 +212,16 @@ and with the cleanup steps the request gives, else those its cases' sources ask 
 A run is sent under the default execution, with no timeout, and with no canary set or text cleanup.
 
 ### Where it runs
+```
+AGENT: replace
+Runs go through the worker (agents/wip-worker.md, step 3).
+---
+A started run is queued as a job in the store, and a worker sends it, finishes it and scores it under every scorer
+that applies to it, unless asked not to be, whether or not anyone is listening; so is a scoring asked for. A job
+outlives the process that queued it, and is followed and halted from any. `chatddx portal`, for development, runs a
+worker in its own process; a deployment runs `chatddx worker` beside `chatddx api`, which runs none
+(agents/wip-worker.md). Its rows land as they are written, so a run can be read back at any point.
+```
 A started run is sent on a thread of its own, with a database connection of its own, and is then finished and scored
 under every scorer that applies to it, unless asked not to be, whether or not anyone is listening. It is in the app's
 process for now: what the app has under way for a run, the run or a scoring of it, is a job, which keeps its events
@@ -212,6 +229,25 @@ while it is under way and is let go when it ends, and ends with the process. The
 the API as it is (agents/wip-worker.md). Its rows land as they are written, so a run can be read back at any point.
 
 ### Its events
+```
+AGENT: replace
+The two paragraphs below: a run's events are told from the ledger's rows, numbered by them, with what the worker says
+in between (agents/wip-worker.md, T1 to T3).
+---
+`GET /api/runs/{id}/events` tells the run's rows, its scores' included, in the order they were written; then, while a
+job for the run is queued or under way, what the worker says as it happens and the rows as they land; and ends with
+`done`. Each event's data is one line of JSON, whose models are among the OpenAPI document's schemas.
+
+The last event a row tells has the row's number as its `id`, so that a stream asked for after an id is told the rows
+after it, in any process, after a restart, and across a scoring again. What isn't a row has no id, and is told only
+to the streams listening as it happens: an item about to be sent, its deltas and tool runs before it is recorded, a
+scoring starting, a judge asked, its deltas and its answer, and the scoring over. A stream that joins mid-item is told
+that the item started, its text from when it joined, and each tool run once; its whole answer is the item's once it is
+recorded. Deltas go out together, a tenth of a second's at a time.
+
+A stream joined after its run's job ended, or for a run no job took, is told the rows, the latest scores as
+`run.scored`, and `done`.
+```
 `GET /api/runs/{id}/events` streams what is under way for the run as it comes, ending with `done`.
 Each event has an `id`, its place in the job, and its data is one line of JSON, whose models are among the OpenAPI
 document's schemas. A delta is kept until its item or judge call has ended, so a stream joined while the job is under
@@ -222,6 +258,18 @@ elsewhere, is told from the ledger: its items as they ended, with no deltas or j
 its latest scores, and `done`. Its ids are places in that telling, not in the job, so a stream asked for after an id
 past them, as a job's that counted its deltas too, is told `done` alone.
 
+```
+AGENT: replace
+In the table: the rows of `run.started`, `item.started`, `run.noted`, `score.noted`, `run.scored`, `error` and `done`.
+---
+| `run.started` | first | the run, its trial and skeleton, the endpoint, the cases, the seeds, and whether sampling is greedy |
+| `item.started` | an item is about to be sent, or a stream first hears of it | its case and replicate, and its seed |
+| `run.noted` | the run is recorded as finished, before `run.finished` | a finding noted along the way, such as a case that couldn't be read |
+| `score.noted` | a scorer's score is recorded as finished | a finding of the scoring pass, such as an answer its schema refuses |
+| `run.scored` | the scoring is over; or before `done`, from the ledger, for a stream that wasn't told it | each scorer's score, or why it gave none; from the ledger, the latest scores |
+| `error` | before `done`, when the run's last job failed | why |
+| `done` | last | whether the run's last job was asked to halt, `null` for a run no job took |
+```
 | Event | When | Holds |
 | --- | --- | --- |
 | `run.started` | first | the run, its trial and skeleton, the endpoint, the cases, the seed, and whether sampling is greedy |
@@ -263,6 +311,15 @@ its variation. It is started, refused, limited and followed as any run: refused,
 another engine now, or a case is of a family the person no longer sees.
 
 ### Halting
+```
+AGENT: replace
+A halt goes through the queue, and reaches the job's worker wherever it is.
+---
+A person halts what is queued or under way for a run of theirs, from any process: the calls under way are hung up and
+recorded as stopped, the run is finished, and it isn't scored, so it is left to score; a run halted while queued is
+finished unsent; a scoring under way finishes the score it is on with what it has, and the scorers after it are
+refused as stopped. Leaving a stream halts nothing. A halt with nothing queued or under way is a conflict.
+```
 A person halts what is under way for a run of theirs: the calls under way are hung up and recorded as stopped, the
 run is finished, and it isn't scored, so it is left to score; a scoring under way finishes the score it is on with
 what it has, and the scorers after it are refused as stopped. Leaving a stream halts nothing. A halt with nothing
@@ -292,6 +349,16 @@ other, its judge's calls sent to the one endpoint that serves the judge's engine
 with the run when it is read: each item's value under each view, and each view's mean over the items, or why the
 scorer gave none. A judged view's value is the mean over the seeds whose verdicts were read.
 
+```
+AGENT: replace
+A scoring asked for is queued as a job, as a run is.
+---
+A finished run is scored again when asked, under every scorer that applies or some, queued as a run is: answered 202
+with the scorers it is to score by, it goes on whoever listens, and its events are the run's, after its rows. The runs
+left to score are listed, each with the scorers it is left to be scored by (see "Reading runs"), and what each seed
+gave and the judge said is in the score's items. An unfinished run, a scorer that doesn't apply, and a run nothing
+applies to are refused, and so is a run with something queued or under way.
+```
 A finished run is scored again when asked, under every scorer that applies or some, as a run is sent: answered 202
 with the scorers it is to score by, it goes on whoever listens, and its events are the run's. The runs left to score
 are listed, each with the scorers it is left to be scored by (see "Reading runs"), and what each seed gave and the
@@ -358,6 +425,14 @@ alice signed in by a bearer token and bob for what isn't his to see. They speak 
 client over HTTPS, since the cookie is only sent over it. Runs are sent to the fake vLLM serving the test World's
 endpoints on ports nothing else uses.
 
+```
+AGENT: add
+After this paragraph: the worker in the tests, and what a test must do to hear what isn't a row.
+---
+The app the tests serve runs a worker in its process, as `chatddx portal` does. What isn't a row is told only to a
+stream listening as it happens, so a test that looks for it pauses alice's queue, starts the run, reads the stream's
+first row, by when it listens, and then lets the worker take the job.
+```
 The test client runs a streamed response to its end whether or not its reader hangs up, so the tests of halting
 and of leaving a stream serve the app with uvicorn on a thread, and speak to it over a socket.
 
@@ -408,20 +483,23 @@ its events (see "Where it runs" and "Its events").
 
 ### Serving
 ```
-AGENT: replace
-The runner resumes a run now, and nothing asks it to until the worker does.
----
-- **The jobs are the process's.** A run or a scoring under way ends with the process: a server that stops waits for
-  them, and a killed one leaves them unfinished, as nothing asks the runner to resume them until the worker does.
-  Another replica doesn't see them, so its streams tell a run under way from the ledger, as far as it has gone, and
-  it can't halt it. A job is let go when it ends, and the run is told from the ledger from then on. The worker is to
-  take their place, with the API as it is (agents/wip-worker.md).
+AGENT: remove
+The jobs are the worker's (agents/wip-worker.md, step 3): a run outlives the process that started it, a worker that
+stops queues its runs again for the next to resume, and any process follows a run and halts it.
 ```
 - **The jobs are the process's.** A run or a scoring under way ends with the process: a server that stops waits for
   them, and a killed one leaves them unfinished, as resuming isn't built. Another replica doesn't see them, so its
   streams tell a run under way from the ledger, as far as it has gone, and it can't halt it. A job is let go when it
   ends, and the run is told from the ledger from then on. The worker is to take their place, with the API as it is
   (agents/wip-worker.md).
+```
+AGENT: replace
+The connections a stream and a job hold.
+---
+- **A connection per request**, about 2.6 ms each over the Unix socket, opened and closed each time; one for each
+  stream while it is open, and one per process listening for them all; and two for each job a worker holds. A pool
+  (`psycopg_pool`) for requests and streams when a measurement says so.
+```
 - **A connection per request**, about 2.6 ms each over the Unix socket, opened and closed each time, and one of its
   own for each run or scoring under way. A pool (`psycopg_pool`) for requests when a measurement says so.
 - **A query parameter a route doesn't name is ignored**, unless the query is a model (`Varying`), so a misspelt filter

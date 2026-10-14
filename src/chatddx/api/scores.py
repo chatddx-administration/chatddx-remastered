@@ -1,17 +1,14 @@
-import threading
 from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response
 
-from chatddx.bench import Bench
-from chatddx.ledger import RunStarted
+from chatddx.store import Queue
 
 from . import schemas
-from .events import graded_of
-from .jobs import Job, ending, scored, scoring_of
+from .events import graded_of, scoring_of
 from .people import BenchDep
-from .state import no_store, state
+from .state import no_store
 
 router = APIRouter(tags=["scores"])
 
@@ -21,11 +18,11 @@ router = APIRouter(tags=["scores"])
     status_code=202,
     responses={
         202: {
-            "description": "The scorers the run is to be scored by, started: the "
-            + "scoring goes on whoever listens, and its events are at "
+            "description": "The scorers the run is to be scored by, queued: the "
+            + "worker scores it whoever listens, and its events are at "
             + "`/api/runs/{run}/events`."
         },
-        409: {"description": "Something is under way for the run already"},
+        409: {"description": "Something is queued or under way for the run already"},
     },
 )
 def score_now(
@@ -44,27 +41,12 @@ def score_now(
         raise HTTPException(422, f"scorer {missing[0]} doesn't apply to run {run}")
     if not said.scorers:
         raise HTTPException(422, f"no scorer applies to run {run}")
-    held = state(request)
-    conn = held.connect()
-    try:
-        job = held.jobs.started(run)
-    except HTTPException:
-        conn.close()
-        raise
-    own = Bench(conn, bench.person, held.inventory, held.facts)
-    job.put(("run.scoring", said))
-    threading.Thread(
-        target=_scoring, args=(own, started, said, job), name=f"chatddx-score-{run}"
-    ).start()
+    endpoint = "" if started.endpoint is None else started.endpoint.name
+    _ = Queue(bench.conn).put(
+        bench.person.id, run, endpoint, 0, True, [s.scorer for s in said.scorers]
+    )
     response.headers["Location"] = request.app.url_path_for("scores", run=str(run))
     return said
-
-
-def _scoring(
-    bench: Bench, run: RunStarted, said: schemas.ScoringData, job: Job
-) -> None:
-    with ending(job, bench, f"scoring run {run.run}"):
-        scored(bench, run, said, job)
 
 
 @router.get("/runs/{run}/scores")

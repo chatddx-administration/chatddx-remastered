@@ -15,9 +15,13 @@ from .assets import ROUTE, Assets
 
 
 def app(
-    inventory: Inventory, facts: Facts, conninfo: str, assets: Path | None = None
+    inventory: Inventory,
+    facts: Facts,
+    conninfo: str,
+    assets: Path | None = None,
+    worker: bool = False,
 ) -> FastAPI:
-    made = api.app(inventory, facts, conninfo)
+    made = api.app(inventory, facts, conninfo, worker)
     made.state.assets = Assets(assets or settings.portal_assets())
     made.include_router(pages.router, include_in_schema=False)
     made.mount(

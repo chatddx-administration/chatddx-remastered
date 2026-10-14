@@ -1,5 +1,5 @@
 from collections.abc import Iterator
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 import psycopg
 from fastapi import Request, Response
@@ -8,7 +8,7 @@ from chatddx.facts import Facts
 from chatddx.inventory import Inventory
 from chatddx.store.store import Connection
 
-from .jobs import Jobs
+from .listening import Listener
 
 
 @dataclass(frozen=True)
@@ -16,7 +16,7 @@ class AppState:
     conninfo: str
     inventory: Inventory
     facts: Facts
-    jobs: Jobs = field(default_factory=Jobs)
+    listener: Listener
 
     def connect(self) -> Connection:
         return psycopg.connect(self.conninfo, autocommit=True)

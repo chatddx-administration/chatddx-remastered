@@ -6,11 +6,11 @@ from fastapi.responses import RedirectResponse
 from pydantic import JsonValue
 
 from chatddx.api import runs as api, schemas, scores as api_scores
-from chatddx.api.state import state
 from chatddx.bench import Bench
 from chatddx.factors.base import resolve
 from chatddx.factors.request import Skeleton
 from chatddx.factors.response import parts
+from chatddx.store import Queue
 
 from .pages import BenchDep, page
 
@@ -41,11 +41,11 @@ def runs(
 
 @router.get("/runs/{run}")
 def run(request: Request, bench: BenchDep, run: UUID) -> Response:
+    # Asked before the run is read: a job ends once its run's rows are written.
+    under_way = Queue(bench.conn).open(run) is not None
     shown = api.detail(bench, run)
     skeleton = resolve(bench.get, shown.skeleton, Skeleton)
     schema = skeleton.output_schema
-    job = state(request).jobs.get(run)
-    under_way = job is not None and not job.done
     left = (
         []
         if under_way or shown.finished_at is None
@@ -72,8 +72,8 @@ def run(request: Request, bench: BenchDep, run: UUID) -> Response:
 
 
 @router.post("/runs/{run}/halt")
-def halting(request: Request, bench: BenchDep, run: UUID) -> Response:
-    _ = api.halt(request, bench, run)
+def halting(bench: BenchDep, run: UUID) -> Response:
+    _ = api.halt(bench, run)
     return RedirectResponse(f"/runs/{run}", 303)
 
 

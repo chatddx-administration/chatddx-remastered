@@ -77,6 +77,7 @@ def test_an_endpoint_whose_engine_isn_t_stored_says_so(
         held.conninfo,
         held.inventory.model_copy(update={"endpoints": endpoints}),
         held.facts,
+        held.listener,
     )
     shown = signed.get("/api/endpoints/ghost@nowhere").json()
     assert (shown["title"], shown["model"], shown["url"]) == (None, None, None)

@@ -307,7 +307,7 @@ def _portal(args: argparse.Namespace) -> None:
         )
     watching = _watching() if args.watch else None
     try:
-        _serve("portal", args, portal)
+        _serve("portal", args, lambda i, f, c: portal(i, f, c, worker=True))
     finally:
         if watching is not None:
             watching.terminate()
@@ -338,6 +338,7 @@ def _worker(args: argparse.Namespace) -> None:
 
     def stop(_signal: int, _frame: FrameType | None) -> None:
         stopping.set()
+        worker.wake()
 
     for asked in (signal.SIGTERM, signal.SIGINT):
         _ = signal.signal(asked, stop)

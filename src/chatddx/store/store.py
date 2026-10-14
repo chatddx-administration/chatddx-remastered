@@ -22,7 +22,21 @@ from chatddx.ledger import (
     ScoreStarted,
 )
 
+from .notify import ROWS, channel
+
 Connection = psycopg.Connection[TupleRow]
+
+type Written = tuple[int, Record]
+
+_TOLD: dict[str, type[Record]] = {
+    "run started": RunStarted,
+    "run finished": RunFinished,
+    "run item": RunItem,
+    "canary call": CanaryCall,
+    "score started": ScoreStarted,
+    "score finished": ScoreFinished,
+    "score item": ScoreItem,
+}
 
 
 class Store:
@@ -163,6 +177,8 @@ class Store:
                         )
                     case _:
                         raise TypeError(f"no table for {type(record).__name__}")
+            for run in _runs_of(cur, records):
+                _ = cur.execute("SELECT pg_notify(%s, %s)", (channel(run), ROWS))
 
     def run(self, run: UUID) -> Run:
         started, finished = self._stages(
@@ -205,6 +221,31 @@ class Store:
                 )
             ),
         )
+
+    def rows_of(self, run: UUID, after: int = 0) -> list[Written]:
+        rows = self._conn.execute(
+            """
+            SELECT seq, 'run ' || stage, payload FROM ledger.run_stage
+            WHERE run = %(run)s AND seq > %(after)s
+            UNION ALL
+            SELECT seq, 'run item', payload FROM ledger.run_item
+            WHERE run = %(run)s AND seq > %(after)s
+            UNION ALL
+            SELECT seq, 'canary call', payload FROM ledger.canary_call
+            WHERE run = %(run)s AND seq > %(after)s
+            UNION ALL
+            SELECT s.seq, 'score ' || s.stage, s.payload FROM ledger.score_stage s
+            JOIN ledger.score_stage o ON o.score = s.score AND o.stage = 'started'
+            WHERE o.run = %(run)s AND s.seq > %(after)s
+            UNION ALL
+            SELECT i.seq, 'score item', i.payload FROM ledger.score_item i
+            JOIN ledger.score_stage o ON o.score = i.score AND o.stage = 'started'
+            WHERE o.run = %(run)s AND i.seq > %(after)s
+            ORDER BY 1
+            """,
+            {"run": run, "after": after},
+        ).fetchall()
+        return [(int(seq), _TOLD[str(kind)].parse(str(p))) for seq, kind, p in rows]
 
     def started(self, runs: Collection[UUID]) -> list[RunStarted]:
         return _newest(
@@ -292,6 +333,31 @@ class Store:
         if "started" not in stages:
             raise StructuralError(f"{log} {key} has no started row")
         return stages["started"], [p for s, p in stages.items() if s == "finished"]
+
+
+def _runs_of(cur: psycopg.Cursor[TupleRow], records: Iterable[Record]) -> set[UUID]:
+    runs: set[UUID] = set()
+    scores: list[UUID] = []
+    for record in records:
+        match record:
+            case (
+                RunStarted() | RunFinished() | RunItem() | CanaryCall() | ScoreStarted()
+            ):
+                runs.add(record.run)
+            case ScoreFinished() | ScoreItem():
+                scores.append(record.score)
+            case _:
+                pass
+    if scores:
+        rows = cur.execute(
+            """
+            SELECT run FROM ledger.score_stage
+            WHERE stage = 'started' AND score = ANY(%s::uuid[])
+            """,
+            (scores,),
+        ).fetchall()
+        runs.update(UUID(str(run)) for (run,) in rows)
+    return runs
 
 
 def _newest[S: RunStarted | ScoreStarted](started: Iterable[S]) -> list[S]:

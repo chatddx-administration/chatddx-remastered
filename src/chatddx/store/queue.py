@@ -6,6 +6,7 @@ from uuid import UUID
 
 from psycopg import errors
 
+from .notify import JOB, WORKERS, channel
 from .store import Connection
 
 Status = Literal["queued", "under way", "finished", "stopped", "failed"]
@@ -125,6 +126,7 @@ class Queue:
                         None if scorers is None else sorted(set(scorers)),
                     ),
                 ).fetchone()
+                self._tell(run, "queued")
         except errors.UniqueViolation:
             raise UnderWay(f"run {run} has something under way") from None
         assert row is not None
@@ -144,6 +146,13 @@ class Queue:
         ).fetchone()
         return None if row is None else _job(row)
 
+    def last(self, run: UUID) -> Job | None:
+        row = self._conn.execute(
+            f"SELECT {_COLUMNS} FROM worker.job j WHERE j.run = %s ORDER BY j.id DESC",
+            (run,),
+        ).fetchone()
+        return None if row is None else _job(row)
+
     def jobs(self, owner: int, limit: int = 100) -> list[Job]:
         rows = self._conn.execute(
             f"""
@@ -155,25 +164,29 @@ class Queue:
         return [_job(r) for r in rows]
 
     def halt(self, run: UUID) -> Job:
-        row = self._conn.execute(
-            f"""
-            UPDATE worker.job AS j SET halt = true WHERE j.run = %s AND {_OPEN}
-            RETURNING {_COLUMNS}
-            """,
-            (run,),
-        ).fetchone()
+        with self._conn.transaction():
+            row = self._conn.execute(
+                f"""
+                UPDATE worker.job AS j SET halt = true WHERE j.run = %s AND {_OPEN}
+                RETURNING {_COLUMNS}
+                """,
+                (run,),
+            ).fetchone()
+            self._tell()
         if row is None:
             raise LookupError(f"run {run} has nothing under way")
         return _job(row)
 
     def pause(self, owner: int, paused: bool = True) -> None:
-        _ = self._conn.execute(
-            """
-            INSERT INTO worker.control (owner, paused) VALUES (%s, %s)
-            ON CONFLICT (owner) DO UPDATE SET paused = excluded.paused
-            """,
-            (owner, paused),
-        )
+        with self._conn.transaction():
+            _ = self._conn.execute(
+                """
+                INSERT INTO worker.control (owner, paused) VALUES (%s, %s)
+                ON CONFLICT (owner) DO UPDATE SET paused = excluded.paused
+                """,
+                (owner, paused),
+            )
+            self._tell()
 
     def paused(self, owner: int) -> bool:
         row = self._conn.execute(
@@ -263,27 +276,40 @@ class Queue:
     ) -> bool:
         if status not in ENDED:
             raise ValueError(f"a job ends {', '.join(ENDED)}, not {status}")
-        row = self._conn.execute(
-            """
-            UPDATE worker.job SET status = %s, why = %s, ended = now()
-            WHERE id = %s AND worker = %s AND status = 'under way'
-            RETURNING id
-            """,
-            (status, why, job, worker),
-        ).fetchone()
+        with self._conn.transaction():
+            row = self._conn.execute(
+                """
+                UPDATE worker.job SET status = %s, why = %s, ended = now()
+                WHERE id = %s AND worker = %s AND status = 'under way'
+                RETURNING run
+                """,
+                (status, why, job, worker),
+            ).fetchone()
+            if row is not None:
+                self._tell(row[0], status)
         return row is not None
 
     def requeue(self, job: int, worker: UUID, why: str | None = None) -> bool:
-        row = self._conn.execute(
-            """
-            UPDATE worker.job
-            SET status = 'queued', why = %s, worker = NULL, claimed = NULL, beat = NULL
-            WHERE id = %s AND worker = %s AND status = 'under way'
-            RETURNING id
-            """,
-            (why, job, worker),
-        ).fetchone()
+        with self._conn.transaction():
+            row = self._conn.execute(
+                """
+                UPDATE worker.job
+                SET status = 'queued', why = %s, worker = NULL, claimed = NULL, beat = NULL
+                WHERE id = %s AND worker = %s AND status = 'under way'
+                RETURNING run
+                """,
+                (why, job, worker),
+            ).fetchone()
+            if row is not None:
+                self._tell(row[0], "queued")
         return row is not None
+
+    def _tell(self, run: UUID | None = None, status: Status | None = None) -> None:
+        _ = self._conn.execute("SELECT pg_notify(%s, '')", (WORKERS,))
+        if run is not None and status is not None:
+            _ = self._conn.execute(
+                "SELECT pg_notify(%s, %s)", (channel(run), JOB + status)
+            )
 
     def waiting(self) -> int:
         row = self._conn.execute(
