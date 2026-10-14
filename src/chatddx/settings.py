@@ -4,7 +4,7 @@ from pathlib import Path
 
 from psycopg.conninfo import make_conninfo
 
-PROJECT_ROOT = Path(__file__).resolve().parents[3]
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
 
 
 def database(admin: bool = False) -> str:
@@ -26,6 +26,10 @@ ITEMS_PER_RUN = 200
 
 def host() -> str:
     return os.environ.get("HOST", "localhost:8000")
+
+
+def revision() -> str | None:
+    return os.environ.get("CHATDDX_REVISION") or None
 
 
 def world() -> Path | None:

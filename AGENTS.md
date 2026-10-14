@@ -8,7 +8,7 @@ This document contains project-wide instructions written by humans for agents.
   - pg_hba.conf:   local all all peer map=chatddx
   - Setup database and roles with `src/chatddx/store/setup.sql`
 * Base the fake vLLM on 0.24.0, extend/amend continuously as new facts are discovered, questions arise or sample data is needed.
-* `chatddx.core.settings` is the project-wide source of truth.
+* `chatddx.settings` is the project-wide source of truth.
 
 ## Typechecking
 * Errors and warnings that indicate issues beyond the scope of the current task should remain, never hide them.
@@ -21,6 +21,9 @@ This document contains project-wide instructions written by humans for agents.
 * `@pytest.mark.slow` marks the slowest tests, together \~7/8 of the full run, and the tests that would have the quick
   run make a template only they use (`loaded`, `ran`, `sampled`). `pytest -p chatddx.test.budget`, run serially,
   says which tests to mark or unmark, and which templates a run made.
+* Names tests share (models, endpoints, the recipes most tests run, the cases) are spelled once, in
+  `src/chatddx/test/world.py`; helpers one package's tests share stay in its `test/helpers.py`.
+* A test matches a table's cells, not its padding, so that a longer name doesn't fail it.
 * `pnpm --dir frontend test` runs the frontend's unit tests (vitest), each beside the module it tests.
 
 ## Staging

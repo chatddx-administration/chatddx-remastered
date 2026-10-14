@@ -3,6 +3,7 @@ from urllib.parse import urlencode
 
 from fastapi import APIRouter, Query, Request, Response
 
+from chatddx import settings
 from chatddx.api import (
     families as api_families,
     runs as api_runs,
@@ -12,7 +13,6 @@ from chatddx.api import (
 )
 from chatddx.bench import OPTIONAL, PARTS, Bench
 from chatddx.catalog import made_for
-from chatddx.core import settings
 from chatddx.factors.request import Purpose
 
 from .pages import BenchDep, page

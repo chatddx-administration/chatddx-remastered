@@ -558,7 +558,7 @@ From `docs/ledger.md`, "Open design issues", where they concern this API:
 - `Execution.timeout_s` isn't checked: a call's times span all its attempts.
 - Nothing rebuilds a request to compare with `Call.request`.
 - Canary outputs aren't compared between phases or runs.
-- Canary calls and judge calls get no model check and no prompt-token check.
+- Canary calls get no model check, and neither canary calls nor judge calls a prompt-token check.
 - `Call.system_fingerprint` is never compared.
 - The finished row is outside the seal: its `at` and `findings` can change without `ledger.seal`.
 - `Call` accepts a response that still holds `prompt_token_ids`.

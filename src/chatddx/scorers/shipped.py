@@ -1,5 +1,5 @@
-from chatddx.core.rig import entry
 from chatddx.factors.scoring import Scorer
+from chatddx.rig import entry
 
 from . import metrics
 from .scorer import Metrics

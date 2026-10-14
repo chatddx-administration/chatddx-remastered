@@ -139,6 +139,10 @@ ships instead: an entry point, and the version of it the code publishes, which i
 changes, as a cleanup step's name is (see "Text cleanup"). Only the code chatddx ships runs, at the version pinned, so
 a deploy changes no scorer or tool unless it raises a version.
 
+Scorers and tools pinned the running chatddx first. Each deploy then stopped every scorer until it was pinned again,
+and a scorer pinned again is a new one, so every finished run was left to score again; every skeleton that offers a
+tool changed too, and every trial over one.
+
 ### Storage
 Components are stored in one table for all kinds, plus one row per reference so that every reference gets a foreign key
 (docs/store.md; tables in docs/migrations.md, "factor"). Stored components are never changed or deleted. Anything a
@@ -189,9 +193,10 @@ A case is a vignette plus the appendices to send with it, in order. The vignette
 its id there, and the fingerprint of its raw bytes as fetched. Sources are declared in the inventory (docs/inventory.md,
 "Sources") and hand over vignettes as UTF-8 text.
 
-The vignette itself is sensitive by default, unstructured, and never edited or stored: only its fingerprint is. A case
-covers the vignette and its appendices, so the same vignette with different appendices is a different case. Expectations
-are keyed by the case, which lets appendices change the correct answer.
+The vignette itself is sensitive by default, unstructured, and never edited. The factors and the ledger never store it,
+only its fingerprint; a typed vignette is kept as its database source's text, apart from them (docs/store.md,
+"Texts"). A case covers the vignette and its appendices, so the same vignette with different appendices is a
+different case. Expectations are keyed by the case, which lets appendices change the correct answer.
 
 When a vignette changes at its source, or is renamed there, it needs a new case, new appendices bound to the new
 vignette, and new expectations; the catalog tells a renamed vignette from a changed one. Whether a person or an
@@ -556,7 +561,6 @@ views, the free parameters where the code publishes a schema for them, and the l
 expectation schema and the resources.
 
 - the entry point of the scoring code chatddx ships, and the version of it it pins;
-- the code, and the function in it that does the scoring;
 - the expectation schema it consumes;
 - an ordered list of views;
 - ordered resources, such as synonym tables or ontology releases, pinned by digest;
@@ -579,6 +583,13 @@ tool answer the answer function's arguments, and a text answer the content, or, 
 in it. A native or tool answer cut short is salvaged: read with what it holds up to its last complete value, a string
 it stopped in closed, and its structure closed; JSON that breaks before its end isn't salvaged. An answer that can't
 be read is no answer.
+
+The shipped pattern metrics hold what a view picks from the answer to one target, what its expectation selector
+picks: a pattern, an object with a `pattern`, or `false`, nothing expected. A pattern is words, matched whole and
+regardless of case: words side by side are a phrase, found in that order, a word ending in `*` matches any word it
+begins, `&` needs every part somewhere and `|` any part, `&` binding first, and parentheses group. Unlike the old
+chatddx's matcher, it never matches part of a word. No target, several, an object without a pattern, such as words
+for a judge, or a pattern that doesn't read, give no value, with the reason in the detail.
 
 Only shipped code runs.
 
@@ -609,7 +620,8 @@ A judge is an LLM used as a metric: a judge skeleton, an engine, its own seeds, 
 Vignettes will probably never go to a judge: the scoring pass refuses a judge whose skeleton reads them, before anything
 is written.
 
-The vignette and the appendices are filled as for the trial (see "Preparing a case").
+A judge is given a view's picks: its fill rule fills the `completion` and `expectation` slots. Purpose `judge` still
+allows the `vignette` and `appendices` slots, but a judge whose skeleton has either is refused.
 
 Judge requests are rendered like generation requests, once per seed, and recorded per score item. Their scores are
 reproducible on a best-effort basis. Given the scorer's reading of an answer, a judge request can be rebuilt from stored
@@ -678,6 +690,9 @@ nondeterminism, and the seeds are what name the replicates. The alternative, a r
 changes the shape of a trial, so it is cheapest decided before trials are stored for real.
 
 ### Smaller issues
+- **Resources can't be picked yet.** A scorer's resources are plain strings, no kind of component holds one, and the
+  scoring code isn't given them. None are offered until a kind of resource exists, with its pins and code that reads
+  it.
 - **Canary drift isn't checked.** Nothing compares canary outputs between phases or between runs yet.
 - **Judge engines are never probed.** Canary probes run on the run's engine only. Probing judge engines would put
   canaries in a score's start record, as in a run's; added with defaults, they keep every stored digest.
@@ -734,7 +749,10 @@ If expectations written as free text turn up, a view could split them too. Two w
 
 ### Finding code through packaging entry points
 Today chatddx keeps the list of the code it ships in its code: `src/chatddx/scorers/shipped.py` and
-`src/chatddx/tools/shipped.py`, by the entry point a component names.
+`src/chatddx/tools/shipped.py`, by the entry point a component names. Packaging metadata changes only when the package
+is installed again, and tests add tools of their own to the list for as long as they run
+(src/chatddx/runner/test/tools.py:shipped). Packaging entry points would fit code from other distributions, which
+nothing runs today.
 
 ### Passthrough: an allow list, or lints
 A passthrough refuses a fixed list of options and lets everything else through. Two other ways:

@@ -34,10 +34,10 @@ Paths are relative to `src/chatddx/api/` unless they start with `src/`, `docs/` 
 | --- | --- |
 | `state.py` | `jobs.py`, psycopg, `chatddx.{facts,inventory,store}` |
 | `schemas.py` | `chatddx.bench`, `chatddx.catalog`, `chatddx.factors.base`, `chatddx.identity` |
-| `people.py` | `schemas.py`, `state.py`, `chatddx.bench`, `chatddx.core.settings`, `chatddx.identity`, `chatddx.store` |
-| `threads.py` | `schemas.py`, `people.py`, `chatddx.bench`, `chatddx.catalog`, `chatddx.factors.{base,request,trial}`, `chatddx.store` |
+| `people.py` | `schemas.py`, `state.py`, `chatddx.bench`, `chatddx.identity`, `chatddx.settings`, `chatddx.store` |
+| `threads.py` | `schemas.py`, `people.py`, `chatddx.bench`, `chatddx.catalog`, `chatddx.factors.{base,request,trial}` |
 | `families.py` | `schemas.py`, `people.py`, `threads.py`, `chatddx.bench`, `chatddx.factors.{base,cases}`, `chatddx.store` |
-| `world.py` | `schemas.py`, `people.py`, `chatddx.bench`, `chatddx.inventory`, `chatddx.scorers.{scorer,shipped}`, `chatddx.store.catalog` |
+| `world.py` | `schemas.py`, `people.py`, `chatddx.bench`, `chatddx.inventory`, `chatddx.scorers.{scorer,shipped}` |
 | `events.py` | `schemas.py`, `chatddx.bench`, `chatddx.factors.{base,request,scoring}`, `chatddx.ledger`, `chatddx.runner.{run,score}`, `chatddx.scorers.aggregate` |
 | `jobs.py` | `schemas.py`, `events.py`, `chatddx.bench`, `chatddx.ledger`, `chatddx.runner.run` |
 | `runs.py` | `schemas.py`, `events.py`, `jobs.py`, `people.py`, `state.py`, `threads.py`, `chatddx.bench`, `chatddx.factors.{base,request,trial}`, `chatddx.identity`, `chatddx.ledger`, `chatddx.runner.run` |
@@ -64,7 +64,7 @@ job's events are put by its thread and read by any stream that follows it (`jobs
 **Who it depends on.** What depends on the person is asked of the bench. What doesn't is the same for everyone: the
 endpoints and models (`world.py`), a component by its digest, and the scoring code the running chatddx ships, read
 from the World, the facts and the store through the bench's reads that take no person (`Bench.endpoint`, `title`,
-`model`, `get`), or straight (`Rows`, `chatddx.scorers.shipped.SCORERS`).
+`model`, `get`) and its `rows`, or straight (`chatddx.scorers.shipped.SCORERS`).
 
 **People by login.** Owners, collaborators and an edit's author are given as logins (`Bench.login`); a subject with
 no owner has `None` (`threads.py:login`).

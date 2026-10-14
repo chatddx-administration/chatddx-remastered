@@ -1,8 +1,8 @@
-import os
 from collections.abc import Mapping
 from importlib import metadata
 from typing import Protocol
 
+from chatddx import settings
 from chatddx.factors.base import Code
 
 
@@ -10,7 +10,7 @@ def rig() -> Code:
     return Code(
         distribution="chatddx",
         version=metadata.version("chatddx"),
-        revision=os.environ.get("CHATDDX_REVISION") or None,
+        revision=settings.revision(),
     )
 
 

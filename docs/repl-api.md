@@ -193,7 +193,7 @@ scores what is left` when it did. `WRITING` and `SCORING` are its two messages, 
 
 ## Tests
 `src/chatddx/repl/test/`, on the test World as `src/chatddx/conftest.py:curated` lands it for alice with her giftbag
-(agents/wip-test-world.md), its endpoints on free ports:
+(docs/inventory.md, "Worlds"), its endpoints on free ports:
 
 | Fixture | Gives |
 | --- | --- |

@@ -319,7 +319,7 @@ many cases is answered 200, whatever it took, and a carry 201, even when the exp
 - **"Run N of trial X"**, which the repl says after a run. A run's trial lists its runs.
 
 ## Tests
-The tests start from the test World (`worlds/test`, agents/wip-test-world.md) as `chatddx init-data` lands it, with
+The tests start from the test World (`worlds/test`; docs/inventory.md, "Worlds") as `chatddx init-data` lands it, with
 alice signed in by a bearer token and bob for what isn't his to see. They speak to the app through Starlette's test
 client over HTTPS, since the cookie is only sent over it. Runs are sent to the fake vLLM serving the test World's
 endpoints on ports nothing else uses.
@@ -389,8 +389,8 @@ its events (see "Where it runs" and "Its events").
   of CPU, and a script running longer than a session signs in again. Personal tokens were decided for when a script
   needs one. Take: neither, until Keycloak is in front, which limits sign-ins itself, or a script needs a token.
 - **Keycloak.** How it hands the app a login isn't decided. Take: a proxy in front, such as oauth2-proxy, passes the
-  login in a header the app believes from it alone, mapped onto `person.login` (agents/wip-identity.md), and
-  Keycloak's own tokens as bearers for scripts when they come.
+  login in a header the app believes from it alone, mapped onto `person.login` (docs/identity.md, "Take, for when
+  Keycloak arrives"), and Keycloak's own tokens as bearers for scripts when they come.
 - **Roles aren't checked**; Z1 shapes what each role is shown, with the portal (docs/bench.md, "Outstanding").
 
 ### Variations

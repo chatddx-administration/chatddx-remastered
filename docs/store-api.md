@@ -36,7 +36,7 @@ Paths are relative to `src/chatddx/store/` unless they start with `src/`, `docs/
 | --- | --- |
 | `store.py` | `chatddx.factors.{base,bundle,request}`, `chatddx.ledger` |
 | `migrate.py` | psycopg only |
-| `people.py` | `store.py`, `chatddx.core.settings`, `chatddx.identity` |
+| `people.py` | `store.py`, `chatddx.settings`, `chatddx.identity` |
 | `catalog.py` | `store.py`, `chatddx.catalog`, `chatddx.factors.{base,cases,request,scoring}` |
 
 The package holds chatddx's SQL. It uses psycopg 3, synchronously, and no ORM.
@@ -179,7 +179,7 @@ applied (default tier `TOP_TIER`), or `would apply <name>` for each one `pending
 
 ## Roles and connections
 
-`src/chatddx/core/settings.py:database(admin: bool = False) -> str` makes a libpq connection string from `DB_HOST`,
+`src/chatddx/settings.py:database(admin: bool = False) -> str` makes a libpq connection string from `DB_HOST`,
 `DB_NAME`, and `DB_ADMIN` or `DB_USER` (`KeyError` when one isn't set; `.env`).
 
 | Role | Created by | Can |
@@ -285,12 +285,16 @@ How to name and list a new migration is in `docs/migrations.md`.
 | `connect(name: str, admin: bool = False) -> Connection` | A connection to that database, as the writer or the admin. |
 | `Copies`, `copies` (session fixture) | Makes copies of a template ahead (`AHEAD = 6`) and drops them behind, on three threads, so that a test waits for its database only when they fall behind. `take(template)` hands one out, `give_back(name)` drops it, `forget(template)` drops a template's unused copies before the template is dropped, and `close` drops the rest at the end of the session. |
 | `migrated` (session fixture) | A database migrated to `TOP_TIER`; dropped at the end. |
-| `curated` (session fixture) | A copy of `migrated` holding the sample as init-data lands it from the sample World, shared with alice, with her giftbag (`docs/curation.md`, "Tests"). Loaded once, and only when a test asks for it. |
-| `template` | What `db` is a copy of: `migrated`. The api, bench and repl tests override it with `curated`. |
+| `curated` (session fixture) | A copy of `migrated` holding the test World as init-data lands it, shared with alice, with her giftbag (`docs/curation.md`, "Tests"). Loaded once, and only when a test asks for it. |
+| `template` | What `db` is a copy of: `migrated`, through `chosen`. The api, bench, portal, repl and scripted runs' tests override it with `curated`. |
 | `db` | A copy of `template` per test, from `copies`, dropped afterwards. |
 | `autocommit` | `False`. The api, bench, repl and runner tests override it with `True`, since their code commits as it writes. |
 | `conn`, `admin` | Connections to `db` as the writer, in autocommit mode when `autocommit` is, and as the admin. |
 | `empty_db`, `empty` | An unmigrated database per test, and an admin connection to it. |
+| `templated(copies, of=None)` | A context manager that makes a template for the session, unused copies and itself are dropped afterwards. |
+| `sampled` (session fixture) | A copy of `migrated` holding the sample as init-data lands it from the sample World, for alice, with her giftbag, and what init-data said. |
+| `ran` (session fixture) | A copy of `curated` with alice's scripted runs each run once (`docs/scripted.md`). |
+| `chosen(request, otherwise: str) -> str` | The template a test parametrized indirectly with a template's name, as `ran`, starts from, else `otherwise`. |
 
 Tests fail, rather than skip, when Postgres can't be reached.
 

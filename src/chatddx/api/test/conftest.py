@@ -6,10 +6,10 @@ from fastapi.testclient import TestClient
 from httpx2 import Response
 from psycopg.conninfo import make_conninfo
 
+from chatddx import settings
 from chatddx.api.app import app
 from chatddx.bench import Bench
 from chatddx.conftest import chosen
-from chatddx.core import settings
 from chatddx.identity import Person
 from chatddx.inventory import Inventory
 from chatddx.store import People

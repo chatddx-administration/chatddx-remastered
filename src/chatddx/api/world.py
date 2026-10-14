@@ -5,7 +5,6 @@ from chatddx.factors.kinds import BY_KIND
 from chatddx.inventory import EndpointSpec, url_of
 from chatddx.scorers.scorer import NO_PARAMS
 from chatddx.scorers.shipped import SCORERS
-from chatddx.store.catalog import Rows
 
 from . import schemas
 from .people import BenchDep
@@ -76,7 +75,7 @@ def models(bench: BenchDep) -> list[schemas.Model]:
 
 @router.get("/components/{digest}")
 def component(bench: BenchDep, digest: str) -> schemas.Component:
-    kind = Rows(bench.conn).kind(digest)
+    kind = bench.rows.kind(digest)
     if kind is None:
         raise NotFound(f"no component {digest} in the store")
     return schemas.Component(

@@ -2,8 +2,8 @@ import psycopg
 import pytest
 from psycopg import errors
 
+from chatddx import settings
 from chatddx.catalog import MovedOn
-from chatddx.core import settings
 from chatddx.factors.bundle import Registry
 from chatddx.factors.request import Sampling
 from chatddx.store import Catalog, People, Store

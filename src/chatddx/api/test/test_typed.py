@@ -1,7 +1,7 @@
 import pytest
 from fastapi.testclient import TestClient
 
-from chatddx.core import settings
+from chatddx import settings
 
 TYPED = "A 54-year-old woman with sudden breathlessness after a long flight."
 

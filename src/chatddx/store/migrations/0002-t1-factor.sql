@@ -1,12 +1,20 @@
 -- The roles every schema's tier 1 grants to. Roles are cluster-wide, so another database may
--- already have created them.
+-- already have created them, or be creating them at this moment, as the tests' workers do.
 DO $$
 BEGIN
     IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'chatddx_writer') THEN
-        CREATE ROLE chatddx_writer NOLOGIN;
+        BEGIN
+            CREATE ROLE chatddx_writer NOLOGIN;
+        EXCEPTION WHEN duplicate_object OR unique_violation THEN
+            NULL;
+        END;
     END IF;
     IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'chatddx_reader') THEN
-        CREATE ROLE chatddx_reader NOLOGIN;
+        BEGIN
+            CREATE ROLE chatddx_reader NOLOGIN;
+        EXCEPTION WHEN duplicate_object OR unique_violation THEN
+            NULL;
+        END;
     END IF;
 END
 $$;

@@ -19,8 +19,6 @@ from chatddx.catalog.titles import describe
 from chatddx.factors.base import Finding
 from chatddx.factors.request import Purpose, Recipe
 from chatddx.factors.trial import suggest_seeds
-from chatddx.store import People
-from chatddx.store.catalog import Rows
 
 from . import schemas
 from .people import BenchDep
@@ -229,7 +227,7 @@ def made(
 
 
 def configures(bench: Bench, thread: int) -> bool:
-    found = Rows(bench.conn).thread(thread)
+    found = bench.rows.thread(thread)
     return found is not None and found.kind in KINDS["configuration"]
 
 
@@ -361,7 +359,7 @@ def take(
 def say(bench: BenchDep, thread: int, given: schemas.Said) -> schemas.ThreadDetail:
     if "description" in given.model_fields_set and given.description is None:
         raise HTTPException(422, "a description is replaced, never taken away")
-    people = People(bench.conn)
+    people = bench.people
     if missing := [c for c in given.collaborators or () if people.find(c) is None]:
         raise HTTPException(422, f"no person {missing[0]!r}")
     with refused():

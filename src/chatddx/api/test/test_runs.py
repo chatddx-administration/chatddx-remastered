@@ -12,10 +12,10 @@ from fastapi import FastAPI
 from fastapi.testclient import TestClient
 from psycopg.conninfo import make_conninfo
 
+from chatddx import settings
 from chatddx.api import jobs
 from chatddx.api.app import app
 from chatddx.api.test.test_variations import digest, thread
-from chatddx.core import settings
 from chatddx.inventory import Inventory
 from chatddx.store import Store
 from chatddx.store.store import Connection

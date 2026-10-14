@@ -6,14 +6,14 @@ from pathlib import Path
 
 from pydantic import HttpUrl
 
-from chatddx.core import settings
-from chatddx.core.rig import rig
+from chatddx import settings
 from chatddx.curation import Plan, load_cases, plan_factors
 from chatddx.factors.base import Resolver
 from chatddx.facts import BUNDLED, Facts
 from chatddx.fake_vllm.served import Served
 from chatddx.fake_vllm.server import serving
 from chatddx.inventory import Inventory, World, start_up
+from chatddx.rig import rig
 
 WORLDS = settings.PROJECT_ROOT / "worlds"
 TEST = WORLDS / "test"

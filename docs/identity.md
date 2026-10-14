@@ -56,7 +56,7 @@ expectation per case and schema, or one it is asked to find threads by. The benc
 gives, and to what is in the store and the World (docs/bench.md, "What a person sees").
 
 What each role is shown, a map from roles to the kinds each sees, goes beside `sees` once the portal's views give it
-meaning (agents/wip-identity.md, "Open").
+meaning (see "Z1: what each role is shown").
 
 ## Managing people
 People are managed by command, connecting as `DB_USER`:
@@ -114,7 +114,7 @@ map from roles to kinds isn't written; it needs the portal's views to mean anyth
 Take: the map goes beside `sees` in `src/chatddx/identity/identity.py`, as data, and `sees` then takes the person's
 roles and the kind as well as the `Owned`. The kinds each role authors can go beside it, clinicians appendices,
 expectations and typed cases, researchers chunks and recipes, as a convenience for the portal's forms rather than a
-refusal (`agents/wip-authoring.md`, "A11. Who may write what").
+refusal.
 
 ### Who may administer people
 `Role.ADMIN` exists, but nothing asks for it, and `chatddx person` connects as `DB_USER`, so anyone with database

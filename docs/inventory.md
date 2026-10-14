@@ -71,8 +71,9 @@ This repository has three, in `worlds/`:
 
 - The test World: what the tests run on, built so that each record exercises something a test reads. Four fake
   endpoints on this machine (one with no reasoning parser and no tool flags, one serving a made-up model whose facts
-  are the World's own `facts.toml`), a remote endpoint that is never reached, nine vignettes each carrying a quirk of
-  its own, and its data set in `_data/`. Its tools are the runner's test tools, so it loads only under pytest.
+  are the World's own `facts.toml`), a remote endpoint that only a fake stands in for, nine vignettes each carrying
+  a quirk of its own, and its data set in `_data/`. Its tools are the runner's test tools, so it loads only under
+  pytest.
 
 - The sample World: the example new Worlds follow, using everything a World can hold. The sample's vignettes and its
   data set (`_data/`), an endpoint for each fake engine on this machine and the fake host, in an included

@@ -3,6 +3,7 @@ import re
 import secrets
 from collections.abc import Collection, Iterable
 from enum import StrEnum
+from functools import cache
 from typing import ClassVar, Protocol
 
 from argon2 import PasswordHasher
@@ -69,7 +70,13 @@ def preferred[T](person: int, seen: Iterable[tuple[T, int | None]]) -> list[T]:
 
 
 _hasher = PasswordHasher()
-_DUMMY_HASH = _hasher.hash(secrets.token_urlsafe())
+
+
+# Hashed when first needed rather than at import, which every process that imports the
+# catalog would pay for.
+@cache
+def _dummy_hash() -> str:
+    return _hasher.hash(secrets.token_urlsafe())
 
 
 def hash_password(password: str) -> str:
@@ -78,7 +85,7 @@ def hash_password(password: str) -> str:
 
 def verify_password(hash: str | None, password: str) -> bool:
     try:
-        return _hasher.verify(hash or _DUMMY_HASH, password) and hash is not None
+        return _hasher.verify(hash or _dummy_hash(), password) and hash is not None
     except (VerificationError, InvalidHashError):
         return False
 

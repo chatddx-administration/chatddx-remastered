@@ -134,8 +134,9 @@ A `path` is a JSON Pointer built from field names and positions, without `~` esc
 with `key = (key_id, secret)`.
 
 ### `class Code(Frozen)`
-Names code by `distribution: str`, `version: str` and `revision: str | None = None`. Used by `Tool.code`,
-`Scorer.code`, `Compilation.compiler` and `Bundle.generator`.
+Names code by `distribution: str`, `version: str` and `revision: str | None = None`. Used by
+`Compilation.compiler` and `Bundle.generator`, and by the ledger for the code that ran a run or a score
+(`RunStarted.rig`, `ScoreStarted.rig`).
 
 ### `class Finding(Frozen)`
 
@@ -405,7 +406,7 @@ share a digest.
 | `version` | `int`, from 1 | required; the version of the entry point it pins |
 
 The tool is called with a call's arguments as keyword arguments and returns text. The runner does the calling
-(`src/chatddx/core/rig.py:entry` finds what `src/chatddx/tools/shipped.py:TOOLS` ships under the entry point, and
+(`src/chatddx/rig.py:entry` finds what `src/chatddx/tools/shipped.py:TOOLS` ships under the entry point, and
 refuses one that isn't shipped, or not at the version pinned).
 
 #### `Toolset`, kind `chunk.toolset`
@@ -679,8 +680,9 @@ schema when the expectation is built; lints check it.
 
 `fills(view: View, answer: JsonValue, expectation: JsonValue) -> dict[SlotName, str]` returns
 `{"completion": fill_text(fill, view.output_items(answer)), "expectation": fill_text(fill,
-view.expectation_items(expectation))}`. `StructuralError` when `view.judge` isn't this judge's digest. The `vignette`
-and `appendices` slots come from `prepare_case`.
+view.expectation_items(expectation))}`. `StructuralError` when `view.judge` isn't this judge's digest. A judge whose
+skeleton has the `vignette` or `appendices` slot is refused by the scoring pass
+(`src/chatddx/runner/score.py:judge_at`).
 
 ### `class View(Frozen)`
 | Field | Type | Default |
@@ -718,6 +720,11 @@ isn't a score from 0 to 1 (`unit`, `@` for `first_mention`'s offset), and option
 params. Its metrics are the pattern metrics (`scorers/patterns.py`) and the judged metrics
 (`scorers/verdicts.py`): `verdict`, the share of the judge's seeds whose verdict holds `true` at `at`, a JSON Pointer,
 and `points`, their mean of the number at `at` over `max`.
+
+`scorers/patterns.py:Pattern(text)` raises `ValueError` for a pattern that doesn't read, and `find(text)` gives the
+offset of its earliest part in the text, or `None`. The pattern metrics read each item a view picks as text, nulls
+dropped and anything but a string as JSON; `first_mention` holds a pattern to one sentence or line at a time, and
+counts the characters to it.
 
 A judged metric is given the verdicts, one per seed in seed order, each none where it couldn't be read; seeds with none
 are left out, and the detail lists each seed's value. `shipped.problems` says why a scorer can't be scored by it:

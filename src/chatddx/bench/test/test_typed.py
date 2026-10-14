@@ -1,7 +1,7 @@
 import pytest
 
+from chatddx import settings
 from chatddx.bench import Bench, OverQuota
-from chatddx.core import settings
 from chatddx.factors.base import Fingerprint, resolve
 from chatddx.factors.cases import Case
 from chatddx.identity import Person

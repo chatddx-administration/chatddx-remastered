@@ -31,9 +31,9 @@ Paths are relative to `src/chatddx/runner/` unless they start with `src/` or `do
 | `send.py` | `wire.py`, `chatddx.factors.{base,trial}`, `chatddx.ledger` |
 | `gate.py` | `chatddx.factors.{base,cases,request,trial}`, `chatddx.inventory` |
 | `prepare.py` | `chatddx.factors.{base,cases,engine,request,trial}`, `chatddx.inventory`, `chatddx.ledger`, `chatddx.store` |
-| `rounds.py` | `send.py`, `chatddx.core.rig`, `chatddx.factors.{base,request,trial}`, `chatddx.ledger`, `chatddx.tools.shipped` |
-| `run.py` | `gate.py`, `prepare.py`, `rounds.py`, `send.py`, `chatddx.{catalog,core.rig,factors,identity,inventory,ledger,store}` |
-| `score.py` | `gate.py`, `send.py`, `run.py` (`Noted`), `chatddx.{catalog,core.rig,factors,identity,inventory,ledger,scorers,store}` |
+| `rounds.py` | `send.py`, `chatddx.factors.{base,request,trial}`, `chatddx.ledger`, `chatddx.rig`, `chatddx.tools.shipped` |
+| `run.py` | `gate.py`, `prepare.py`, `rounds.py`, `send.py`, `chatddx.{catalog,factors,identity,inventory,ledger,rig,store}` |
+| `score.py` | `gate.py`, `send.py`, `run.py` (`Noted`), `chatddx.{catalog,factors,identity,inventory,ledger,rig,scorers,store}` |
 
 Third-party packages: pydantic, and jsonschema in `rounds.py`. No HTTP client: `wire.py` uses `urllib`.
 
@@ -58,7 +58,7 @@ comes and a send that stops keeps what it wrote.
 | --- | --- |
 | `gate.Refused` | `Runner.start`, `Grader.start` and `judge_at` refuse an endpoint (see "gate.py"). |
 | `ValueError` | A connection not in autocommit mode; a concurrency above the endpoint's `max_jobs`; a run that hasn't finished; judge calls above concurrency 1; a judge reading the case; judges without an inventory; `finish` called twice. |
-| `LookupError` | Tool or scorer code that isn't shipped, or not at its pinned version (`chatddx.core.rig.entry`); a scorer whose views don't fit its code (`chatddx.scorers.shipped.function`); a component, endpoint or source that doesn't exist. |
+| `LookupError` | Tool or scorer code that isn't shipped, or not at its pinned version (`chatddx.rig.entry`); a scorer whose views don't fit its code (`chatddx.scorers.shipped.function`); a component, endpoint or source that doesn't exist. |
 | `pydantic.ValidationError` | A record the runner builds breaks its rules, as `verify_at` without a canary set. |
 | `KeyboardInterrupt` | Raised again by `send` once the calls an interrupt stopped are written. |
 | `send.Stopped` | Raised by `send.send` only; `rounds.converse`, `Running` and `Grading` catch it. |
