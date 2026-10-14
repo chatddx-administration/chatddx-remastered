@@ -27,8 +27,8 @@ https://github.com/chatddx-administration/chatddx/blob/504792cbeb09508f2c52912be
    started over HTTP goes through it; K6, a run starts in the request and the worker sends it (A).
 5. **Decided: a run lost mid-way is resumed** by the next claim.
 6. **Built: steps 0 to 2** (see "Built"): resuming a run and what a run starts with; the queue; the worker.
-7. **Next: step 3**, the API through the worker, once E3's details are settled; then step 4, the controls a person
-   and a page use (see "The plan" and "Open").
+7. **Next** (see "Options for what's next"): T1 to T4 settle step 3, the API through the worker; R1 to R5, what a
+   run is started with over HTTP, which doesn't wait on the worker; C1 to C3 settle step 4; W1 to W4, running it.
 
 ## Why
 - **A run is a job in the app's process**: `POST /api/runs` answers 202 and the run's path, the run is sent on a
@@ -239,30 +239,69 @@ On the decisions above, and the takes left.
    `POST /api/runs/{id}/halt`. The person's jobs and their state (`GET /api/jobs`, or under runs).
 4. **Controls**: pause, resume and stop for an owner, and the status a portal page shows.
 
+## Options for what's next
+Each with a take. T for step 3, the API through the worker; R for what a run is started with over HTTP, which
+doesn't wait on the worker; C for step 4; W for running the worker.
+
+### Step 3
+- **T1. Event ids** (E3's numbering). (a) Number a run's events by its rows, in the order they were written, and give
+  what isn't a row (deltas, an item started, a judge asked) no id, as `docs/ledger.md` ("Telling a run as it was
+  written") has it: a column counting the ledger's rows as they land. (b) A counter the worker keeps per run, sent with
+  each event, which a restarted worker loses. (c) No ids: a stream joined again starts from the run's beginning.
+  Take: (a). It also ends `api/jobs.py:replayed`'s workaround.
+- **T2. A stream joined mid-item** (E3). (a) It gets the item's text from when it joined, and the whole once the item
+  ends. (b) The worker answers a join with the item's text so far, listening for joins. (c) The worker notifies each
+  item's text so far now and then. Take: (a); (b) if a reload mid-answer on the home page matters.
+- **T3. `NOTIFY`'s use.** (a) A channel per run, deltas batched to stay under 8,000 bytes, and one listening
+  connection per app process fanning out to its streams, so a stream that stops reading holds up nothing. (b) One
+  channel for every run. (c) A connection per stream. Take: (a).
+- **T4. The repl beside the worker.** (a) As now: it sends in its own process, where Ctrl-C halts, and its runs don't
+  count against `max_jobs`. (b) It queues its runs and follows their events. (c) It sends in its own process but
+  holds slots in the queue, as a worker claiming its own job. Take: (a), and (c) once endpoints are shared and busy.
+
+### What a run is started with
+- **R1. Seeds.** (a) `seeds: [..]` in place of `seed`, a list of one being today's. (b) `replicates: n`, drawn. (c)
+  Both: `seeds`, or `replicates` drawn when none are given. `run.started` gives the seeds; `/again` draws as many as
+  the run had unless given. Take: (c). The variation's island gets a replicates count beside its seed, and says that a
+  greedy skeleton's replicates send the same request, measuring the engine's nondeterminism.
+- **R2. Cleanup.** (a) In the request, none unless given. (b) Each source's in the inventory, written by ops, since
+  CRLF, a BOM or NFC are a source's quirks; a run takes its cases' sources' steps, in `CleanupOp`'s order. (c) Carried
+  by the configuration, which would need a place to keep it, as cleanup is the trial's and not the skeleton's. Take:
+  (b) as the default and (a) to override it, `[]` for none, so runs of one source agree unless a researcher varies it.
+- **R3. Canary set.** (a) Each endpoint's in the inventory, by digest, so every run at an endpoint probes it alike and
+  runs can be compared. (b) In the request. (c) One per World. Take: (a).
+- **R4. Execution.** (a) Each endpoint's default in the inventory (a timeout, retries), the request choosing a
+  concurrency up to `max_jobs` and an order. (b) All of it in the request. (c) `Execution()` as now, with no timeout,
+  so a call waiting for its engine waits forever. Take: (a). R9 ("Concurrency stays 1") ends with step 3.
+- **R5. The limits with replicates.** `settings.ITEMS_PER_RUN`, 200, counts cases times seeds now, so the sample's
+  104 cases take one seed. (a) Raise it once runs are queued, as a run no longer ties up a request. (b) Keep it. Take:
+  (a), with step 3.
+
+### Step 4
+- **C1. Stop.** (a) Halt every open job of the owner: queued ones are finished unsent and end stopped, those under way
+  halt. (b) The old two presses: the queue taken out, then the runs under way. (c) No stop beyond a run's halt and
+  pause. Take: (a).
+- **C2. Fairness between owners.** (a) Queue order, as built. (b) Turns per owner at each endpoint. (c) A cap on an
+  owner's slots. Take: (a) until people wait on each other; then (b).
+- **C3. Where the status shows.** (a) On the runs page: each run's job, why, how many are ahead at its endpoint, and
+  pause, resume and stop. (b) A page of its own, as the old Status. Take: (a).
+
+### Running the worker
+- **W1. Where.** (a) A thread of `chatddx portal`, one replica. (b) A Kubernetes Deployment of its own, `chatddx
+  worker`. (c) Both: the thread by default, `--no-worker` where a Deployment runs it. Take: (c).
+- **W2. A stopping worker's scorings.** (a) It waits for them, as built. (b) It halts them and queues the job again,
+  to score what is left. (c) It waits up to a deadline within the grace period, then does (b). Take: (c).
+- **W3. Slots while scoring.** (a) A job holds its run's slots until it ends, as built. (b) It lets them go once its
+  run is sent. Take: (a) until judges make it matter.
+- **W4. A run the gate refuses as it resumes.** (a) The job fails, with why, as built. (b) It waits in the queue until
+  the gate lets it pass. Take: (a).
+
 ## Open
-- **The repl beside the worker**: the repl's runs don't count against the worker's shares of `max_jobs`. The repl
-  could ask the worker too, and follow the events.
-- **Fairness between owners**: queue order, or turns per owner, per endpoint.
-- **A resumed run the gate refuses**: the World changed while it waited, as a clearance withdrawn or a secret unset.
-  Built: the job fails, with why, and the run is left unfinished. Left queued until it passes is the other way.
-- **E3's details**, for step 3:
-  - **A stream joined mid-item.** The API keeps an item's deltas until it ends, so a stream joined while it streams
-    gets its text so far. Under E3 a replica has only the deltas sent since it listened: the worker could notify an
-    item's text so far now and then, or a stream joined mid-item gets the text once the item ends.
-  - **One numbering of events.** A job in the app's process numbers its deltas with the rest, and the ledger's
-    telling doesn't (`src/chatddx/api/jobs.py:replayed`), so an id from one isn't a place in the other. Under E3
-    every replica tells every run, and an id has to mean the same in each.
-  - **`NOTIFY`'s queue.** A payload waits in the database's notification queue, kept on disk (`pg_notify/`), until
-    every listener has read it, and a listener that stops reading holds the queue up for all. Deltas are
-    case-derived, so they pass through the database that holds the ledger's completions already; nothing new is
-    stored.
-- **Deployment**: one worker or several, and whether each is a Kubernetes Deployment of its own. Several take turns
-  to claim, so either works; `chatddx portal` and `chatddx api --worker` starting one on a thread (K1) come with
-  step 3, when the API queues runs.
-- **A stopping worker waits for its scorings**, which judges can make long, beyond a Kubernetes grace period. A
-  scoring halted instead finishes its score with what it has, and the next claim would score again.
-- **Slots while scoring**: a job holds its run's slots until it ends, its scoring too, while the judges' calls go to
-  their own endpoints.
+What is open is under "Options for what's next". Beside it:
+- **`NOTIFY`'s queue** (T3): a payload waits in the database's notification queue, kept on disk (`pg_notify/`), until
+  every listener has read it, and a listener that stops reading holds the queue up for all. Deltas are case-derived,
+  so they pass through the database that holds the ledger's completions already; nothing new is stored.
+- **Several workers** take turns to claim, so one or several work alike (W1).
 - **A job at an endpoint the inventory lost** is claimed and fails at the gate, rather than waiting.
 
 ## Moved here
