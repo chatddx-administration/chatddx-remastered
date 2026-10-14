@@ -28,6 +28,10 @@ def host() -> str:
     return os.environ.get("HOST", "localhost:8000")
 
 
+def revision() -> str | None:
+    return os.environ.get("CHATDDX_REVISION") or None
+
+
 def world() -> Path | None:
     value = os.environ.get("CHATDDX_WORLD")
     return Path(value) if value else None

@@ -277,6 +277,19 @@ How to name and list a new migration is in `docs/migrations.md`.
 ## Tests
 `src/chatddx/conftest.py`, shared by every package's tests:
 
+```
+AGENT: change
+`curated` holds the test World, not the sample, and the templates `ran` and `sampled`, `templated` that makes them,
+and `chosen` aren't listed; the portal's and the scripted runs' tests take `curated` too. In the table, the rows
+from `curated` to `template`:
+---
+| `templated(copies, of=None)` | A context manager that makes a template for the session, from another or from nothing, filled in the body of the `with`; its unused copies and itself are dropped afterwards. |
+| `curated` (session fixture) | A copy of `migrated` holding the test World as init-data lands it, shared with alice, with her giftbag (`docs/curation.md`, "Tests"). Loaded once, and only when a test asks for it. |
+| `ran` (session fixture) | A copy of `curated` with alice's scripted runs each run once (`docs/scripted.md`). |
+| `sampled` (session fixture) | A copy of `migrated` holding the sample as init-data lands it from the sample World, for alice, with her giftbag, and what init-data said. |
+| `chosen(request, otherwise: str) -> str` | The template a test parametrized indirectly with a template's name, as `ran`, starts from, else `otherwise`. |
+| `template` | What `db` is a copy of: `migrated`, through `chosen`. The api, bench, portal, repl and scripted runs' tests override it with `curated`. |
+```
 | Name | Description |
 | --- | --- |
 | `create_database(admin: str, template: str \| None = None) -> str` | Creates `chatddx_test_<12 hex>` over the admin conninfo `admin`, from `template` when given, and returns its name. With a template, it first waits for the template's sessions to end (`_settled`), since copying a database that has sessions fails. |

@@ -134,6 +134,15 @@ A `path` is a JSON Pointer built from field names and positions, without `~` esc
 with `key = (key_id, secret)`.
 
 ### `class Code(Frozen)`
+```
+AGENT: change
+Since `Tool` and `Scorer` v2 pin an entry point and a version, neither holds a `Code`. The ledger's start records
+hold the code that ran them.
+---
+Names code by `distribution: str`, `version: str` and `revision: str | None = None`. Used by
+`Compilation.compiler` and `Bundle.generator`, and by the ledger for the code that ran a run or a score
+(`RunStarted.rig`, `ScoreStarted.rig`).
+```
 Names code by `distribution: str`, `version: str` and `revision: str | None = None`. Used by `Tool.code`,
 `Scorer.code`, `Compilation.compiler` and `Bundle.generator`.
 
@@ -677,6 +686,17 @@ schema when the expectation is built; lints check it.
 | `seeds` | `tuple[int, ...]`, at least one, distinct | required |
 | `fill` | `FillOp` | `"text@1"` |
 
+```
+AGENT: change
+The scoring pass refuses a judge whose skeleton has the `vignette` or `appendices` slot
+(src/chatddx/runner/score.py:judge_at), so `prepare_case` fills nothing for a judge.
+---
+`fills(view: View, answer: JsonValue, expectation: JsonValue) -> dict[SlotName, str]` returns
+`{"completion": fill_text(fill, view.output_items(answer)), "expectation": fill_text(fill,
+view.expectation_items(expectation))}`. `StructuralError` when `view.judge` isn't this judge's digest. A judge whose
+skeleton has the `vignette` or `appendices` slot is refused by the scoring pass
+(`src/chatddx/runner/score.py:judge_at`).
+```
 `fills(view: View, answer: JsonValue, expectation: JsonValue) -> dict[SlotName, str]` returns
 `{"completion": fill_text(fill, view.output_items(answer)), "expectation": fill_text(fill,
 view.expectation_items(expectation))}`. `StructuralError` when `view.judge` isn't this judge's digest. The `vignette`
@@ -712,6 +732,10 @@ and `appendices` slots come from `prepare_case`.
 The entry point's interface belongs to `src/chatddx/scorers/scorer.py:ScoreFunction`, and the answer it reads to
 `src/chatddx/scorers/answer.py:read`.
 
+```
+AGENT: move
+This paragraph was meant to follow the next one, which introduces the pattern metrics.
+```
 `scorers/patterns.py:Pattern(text)` raises `ValueError` for a pattern that doesn't read, and `find(text)` gives the
 offset of its earliest part in the text, or `None`. The pattern metrics read each item a view picks as text, nulls
 dropped and anything but a string as JSON; `first_mention` holds a pattern to one sentence or line at a time, and
