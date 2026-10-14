@@ -13,7 +13,8 @@ it.
    portal's home page. A theme skeleton is extracted from swift-dx-guide and its reusable components are salvaged;
    that work sets the structure of the portal's frontend, and shows what Lovable has to teach (see "Swift").
 3. **Decided: `chatddx portal`** serves the portal, and starts everything the portal needs with it: the API now, the
-   worker once there is one (see "P3b, concretely").
+   worker once the API queues runs (see "P3b, concretely"). It is a convenience for development: a deployment runs
+   the HTTP server, the API and the worker as separate systemd services on NixOS (`agents/wip-worker.md`, W1).
 4. **Phases 0 to 4, and the first half of 5, are built** (see "Built"): `chatddx.portal`, signing in and out,
    `Cache-Control: no-store`, a code beside each error's detail in the API (decided); then the frontend in
    `frontend/`, swift's theme and components, and the home page, the first island; then the pages to read; then the
@@ -168,7 +169,8 @@ Decided (phase 4), from the options R1 to R12:
   "Starting one").
 - **R8. Limits in `settings`**: runs a day per person and items per run, kept by the bench for every edge, refused as
   over quota.
-- **R9. Concurrency** stays 1 until the worker shares an endpoint's `max_jobs` between runs.
+- **R9. Concurrency** stays 1 until the worker shares an endpoint's `max_jobs` between runs, which ends it with the
+  worker's step 3; a run's request then chooses a concurrency up to `max_jobs` (`agents/wip-worker.md`, R4).
 - **R10. On the jobs in the app's process**; the worker takes their place with the API as it is.
 - **R11. A keep-alive** on a run's event stream, which a proxy cuts when it is quiet.
 - **R12. A browser test** under pytest with Playwright (Python), on the test World and its fake vLLM: start, watch,

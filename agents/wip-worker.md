@@ -27,8 +27,8 @@ https://github.com/chatddx-administration/chatddx/blob/504792cbeb09508f2c52912be
    started over HTTP goes through it; K6, a run starts in the request and the worker sends it (A).
 5. **Decided: a run lost mid-way is resumed** by the next claim.
 6. **Built: steps 0 to 2** (see "Built"): resuming a run and what a run starts with; the queue; the worker.
-7. **Next** (see "Options for what's next"): T1 to T4 settle step 3, the API through the worker; R1 to R5, what a
-   run is started with over HTTP, which doesn't wait on the worker; C1 to C3 settle step 4; W1 to W4, running it.
+7. **Decided: what's next** (see "What's next, decided"), but T4, the repl beside the worker. Next to build: R1 to
+   R4, then step 3, then step 4 and W2, then the NixOS module (see "The plan").
 
 ## Why
 - **A run is a job in the app's process**: `POST /api/runs` answers 202 and the run's path, the run is sent on a
@@ -113,6 +113,10 @@ even in-process a closed tab doesn't stop a run.
 
 Since: W2 is built in W3's HTTP shape (`docs/api.md`, "Where it runs"), so a closed tab doesn't stop a run already.
 The worker takes the place of `src/chatddx/api/jobs.py`, and the API stays as it is.
+
+Since, decided (W1): `chatddx portal`, a convenience for development, runs a basic worker in its process, and
+`chatddx api` runs none: a deployment runs the HTTP server, the API and the worker as separate systemd services on
+NixOS.
 
 ### K2. The queue
 Decided: **a table of jobs updated in place**, an exception to "nothing is updated" (`docs/chatddx.md`, "Work in
@@ -228,80 +232,87 @@ Still the runner's, and met here:
   the request started so (`src/chatddx/runner/run.py:_resumed`).
 
 ## The plan
-On the decisions above, and the takes left.
+On the decisions above.
 0. **Below the worker**, built: resuming (`src/chatddx/runner/`), and `Bench.start` taking seeds, cleanup steps, an
    execution and a canary set.
 1. **The queue**, built (see "Built").
 2. **The worker**, built (see "Built").
-3. **The API**: `POST /api/runs`, `/again` and `/scores` queue a job and answer 202 as now, a run started in the
-   request before its job is queued (K6);
-   `GET /api/runs/{id}/events` streams from the ledger, woken by the worker, with its deltas (E2, E3);
-   `POST /api/runs/{id}/halt`. The person's jobs and their state (`GET /api/jobs`, or under runs).
-4. **Controls**: pause, resume and stop for an owner, and the status a portal page shows.
+R. **What a run is started with** (R1 to R4), before step 3, as it doesn't wait on the worker: the inventory's
+   cleanup per source, canary set per endpoint and default execution per endpoint; `POST /api/runs` and `/again`
+   taking seeds or replicates, cleanup, a concurrency and an order; the variation's island following.
+3. **The API through the worker** (T1 to T3, R5, W1): the ledger's rows counted; `POST /api/runs`, `/again` and
+   `/scores` queue a job and answer 202 as now, the run started in the request (K6); `GET /api/runs/{id}/events` from
+   the ledger, woken by the worker, with its deltas through `NOTIFY`; `POST /api/runs/{id}/halt` through the queue;
+   `chatddx portal` running a worker in its process; `src/chatddx/api/jobs.py` gone.
+4. **Controls and status** (C1 to C3): pause, resume and the two presses of stop for an owner, and the runs page's
+   status.
+5. **A stopping worker's deadline** (W2), with the scorers a job has finished kept.
+6. **A NixOS module** running the HTTP server, the API and the worker as systemd services (W1).
 
-## Options for what's next
-Each with a take. T for step 3, the API through the worker; R for what a run is started with over HTTP, which
-doesn't wait on the worker; C for step 4; W for running the worker.
+## What's next, decided
+Decided by the user, item by item; T4 is the one take left. T for step 3, the API through the worker; R for what a
+run is started with over HTTP, which doesn't wait on the worker; C for step 4; W for running the worker.
 
 ### Step 3
-- **T1. Event ids** (E3's numbering). (a) Number a run's events by its rows, in the order they were written, and give
-  what isn't a row (deltas, an item started, a judge asked) no id, as `docs/ledger.md` ("Telling a run as it was
-  written") has it: a column counting the ledger's rows as they land. (b) A counter the worker keeps per run, sent with
-  each event, which a restarted worker loses. (c) No ids: a stream joined again starts from the run's beginning.
-  Take: (a). It also ends `api/jobs.py:replayed`'s workaround.
-- **T2. A stream joined mid-item** (E3). (a) It gets the item's text from when it joined, and the whole once the item
-  ends. (b) The worker answers a join with the item's text so far, listening for joins. (c) The worker notifies each
-  item's text so far now and then. Take: (a); (b) if a reload mid-answer on the home page matters.
-- **T3. `NOTIFY`'s use.** (a) A channel per run, deltas batched to stay under 8,000 bytes, and one listening
-  connection per app process fanning out to its streams, so a stream that stops reading holds up nothing. (b) One
-  channel for every run. (c) A connection per stream. Take: (a).
-- **T4. The repl beside the worker.** (a) As now: it sends in its own process, where Ctrl-C halts, and its runs don't
-  count against `max_jobs`. (b) It queues its runs and follows their events. (c) It sends in its own process but
+- **T1. Event ids. Decided: by the ledger's rows.** A run's events are numbered by its rows, in the order they were
+  written, and what isn't a row (deltas, an item started, a judge asked) carries no id, as `docs/ledger.md`
+  ("Telling a run as it was written") has it. It needs a column counting the ledger's rows as they land, at tier 0,
+  and ends `src/chatddx/api/jobs.py:replayed`'s workaround. The others were a counter the worker keeps per run, lost
+  when it restarts, and no ids at all.
+- **T2. A stream joined mid-item. Decided: its text from when it joined**, and the whole once the item ends. The
+  others were the worker answering a join with the text so far, and the worker notifying each item's text now and
+  then.
+- **T3. `NOTIFY`. Decided: a channel per run**, deltas batched to stay under 8,000 bytes, and one listening connection
+  per app process fanning out to its streams, so a stream that stops reading holds up nothing.
+- **T4. The repl beside the worker.** Open. (a) As now: it sends in its own process, where Ctrl-C halts, and its runs
+  don't count against `max_jobs`. (b) It queues its runs and follows their events. (c) It sends in its own process but
   holds slots in the queue, as a worker claiming its own job. Take: (a), and (c) once endpoints are shared and busy.
 
 ### What a run is started with
-- **R1. Seeds.** (a) `seeds: [..]` in place of `seed`, a list of one being today's. (b) `replicates: n`, drawn. (c)
-  Both: `seeds`, or `replicates` drawn when none are given. `run.started` gives the seeds; `/again` draws as many as
-  the run had unless given. Take: (c). The variation's island gets a replicates count beside its seed, and says that a
-  greedy skeleton's replicates send the same request, measuring the engine's nondeterminism.
-- **R2. Cleanup.** (a) In the request, none unless given. (b) Each source's in the inventory, written by ops, since
-  CRLF, a BOM or NFC are a source's quirks; a run takes its cases' sources' steps, in `CleanupOp`'s order. (c) Carried
-  by the configuration, which would need a place to keep it, as cleanup is the trial's and not the skeleton's. Take:
-  (b) as the default and (a) to override it, `[]` for none, so runs of one source agree unless a researcher varies it.
-- **R3. Canary set.** (a) Each endpoint's in the inventory, by digest, so every run at an endpoint probes it alike and
-  runs can be compared. (b) In the request. (c) One per World. Take: (a).
-- **R4. Execution.** (a) Each endpoint's default in the inventory (a timeout, retries), the request choosing a
-  concurrency up to `max_jobs` and an order. (b) All of it in the request. (c) `Execution()` as now, with no timeout,
-  so a call waiting for its engine waits forever. Take: (a). R9 ("Concurrency stays 1") ends with step 3.
-- **R5. The limits with replicates.** `settings.ITEMS_PER_RUN`, 200, counts cases times seeds now, so the sample's
-  104 cases take one seed. (a) Raise it once runs are queued, as a run no longer ties up a request. (b) Keep it. Take:
-  (a), with step 3.
+- **R1. Seeds. Decided: `seeds`, or `replicates` drawn** when none are given. `run.started` gives the seeds, and
+  `/again` draws as many as the run had unless given. The variation's island gets a replicates count beside its seed,
+  and says that a greedy skeleton's replicates send the same request, measuring the engine's nondeterminism.
+- **R2. Cleanup. Decided: each source's, in the inventory, and the request may override it.** Ops write a source's
+  steps, since CRLF, a BOM or NFC are a source's quirks; a run takes its cases' sources' steps, in `CleanupOp`'s order,
+  unless its request gives its own, `[]` for none. So runs on one source agree unless a researcher varies it.
+- **R3. Canary set. Decided: each endpoint's, in the inventory**, by digest, so every run at an endpoint probes it
+  alike and runs can be compared.
+- **R4. Execution. Decided: each endpoint's default in the inventory** (a timeout, retries), the request choosing a
+  concurrency up to `max_jobs` and an order. R9 ("Concurrency stays 1", `agents/wip-portal.md`) ends with step 3.
+- **R5. The limits. Decided: `settings.ITEMS_PER_RUN` is raised to 1,000** once runs are queued (step 3), as a run no
+  longer ties up a request; it counts cases times seeds.
 
 ### Step 4
-- **C1. Stop.** (a) Halt every open job of the owner: queued ones are finished unsent and end stopped, those under way
-  halt. (b) The old two presses: the queue taken out, then the runs under way. (c) No stop beyond a run's halt and
-  pause. Take: (a).
-- **C2. Fairness between owners.** (a) Queue order, as built. (b) Turns per owner at each endpoint. (c) A cap on an
-  owner's slots. Take: (a) until people wait on each other; then (b).
-- **C3. Where the status shows.** (a) On the runs page: each run's job, why, how many are ahead at its endpoint, and
-  pause, resume and stop. (b) A page of its own, as the old Status. Take: (a).
+- **C1. Stop. Decided: the old two presses.** The first takes the owner's queue out: their queued jobs end stopped,
+  and the runs under way go on. The second stops those too. Take, for what a stop leaves: a run taken out of the
+  queue is left unfinished, so that it can be queued again and resumed; one stopped under way is halted, as a run's
+  halt is.
+- **C2. Fairness between owners. Decided: queue order, as built, then turns per owner at each endpoint** once people
+  wait on each other.
+- **C3. Where the status shows. Decided: on the runs page**: each run's job and why, how many are ahead at its
+  endpoint, and pause, resume and stop.
 
 ### Running the worker
-- **W1. Where.** (a) A thread of `chatddx portal`, one replica. (b) A Kubernetes Deployment of its own, `chatddx
-  worker`. (c) Both: the thread by default, `--no-worker` where a Deployment runs it. Take: (c).
-- **W2. A stopping worker's scorings.** (a) It waits for them, as built. (b) It halts them and queues the job again,
-  to score what is left. (c) It waits up to a deadline within the grace period, then does (b). Take: (c).
-- **W3. Slots while scoring.** (a) A job holds its run's slots until it ends, as built. (b) It lets them go once its
-  run is sent. Take: (a) until judges make it matter.
-- **W4. A run the gate refuses as it resumes.** (a) The job fails, with why, as built. (b) It waits in the queue until
-  the gate lets it pass. Take: (a).
+- **W1. Where. Decided:** `chatddx portal`, a convenience for development, runs a basic worker in its own process. A
+  deployment runs the HTTP server, the API and the worker as separate systemd services on NixOS: `chatddx worker` is
+  one of them, and `chatddx api` starts no worker. The flake has no NixOS module yet.
+- **W2. A stopping worker's scorings. Decided: up to a deadline**, within the service's stop timeout, then the
+  scorings are halted and the job queued again to score what is left. What is left needs the scorers a job has
+  finished kept with it, since a job's scorers are fixed: a column of its own, updated in place.
+- **W3. Slots while scoring. Decided: as built**, a job holds its run's slots until it ends.
+- **W4. A run the gate refuses as it resumes. Decided: as built**, the job fails, with why.
 
 ## Open
-What is open is under "Options for what's next". Beside it:
+T4 is open (see "What's next, decided"). Beside it:
 - **`NOTIFY`'s queue** (T3): a payload waits in the database's notification queue, kept on disk (`pg_notify/`), until
   every listener has read it, and a listener that stops reading holds the queue up for all. Deltas are case-derived,
   so they pass through the database that holds the ledger's completions already; nothing new is stored.
-- **Several workers** take turns to claim, so one or several work alike (W1).
+- **Several workers** take turns to claim, so one or several work alike.
+- **What W1's HTTP server is**: the portal's pages served apart from the API, or a proxy in front of both. The
+  portal is one app with the API today (`agents/wip-portal.md`, "P3b, concretely"), and its `__Host-` cookie wants one
+  host for both.
+- **What C1's second press leaves**: a halted run is finished, so it can't be resumed; leaving it unfinished means its
+  calls under way are recorded as stopped and its items aren't sent again.
 - **A job at an endpoint the inventory lost** is claimed and fails at the gate, rather than waiting.
 
 ## Moved here
