@@ -20,8 +20,6 @@ from chatddx.runner.rounds import Toolbox, load
 from chatddx.runner.test import tools
 from chatddx.test.world import LINES
 
-pytestmark = pytest.mark.solidified
-
 FUNCTIONS = {"lookup": tools.lookup, "broken": tools.broken, "counted": tools.counted}
 
 

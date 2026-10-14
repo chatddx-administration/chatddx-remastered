@@ -27,8 +27,6 @@ from chatddx.scorers.shipped import SCORERS, function, problems
 from chatddx.scorers.verdicts import asked
 from chatddx.test.world import DATA, world_plan
 
-pytestmark = pytest.mark.wip
-
 
 @cache
 def read_only_plan() -> Plan:
@@ -443,7 +441,6 @@ def test_a_judge_reads_a_case_s_notes_beside_the_targets_the_patterns_read() -> 
     assert fills(f"{carol}.answer")["expectation"] == note["answer"]
 
 
-@pytest.mark.slow
 def test_a_dont_miss_is_held_to_what_each_output_can_say() -> None:
     targets: JsonValue = {
         "diagnosis": {"pattern": "pneumonia"},

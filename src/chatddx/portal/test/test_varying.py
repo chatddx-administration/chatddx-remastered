@@ -12,8 +12,6 @@ from chatddx.portal.test.test_reading import shown
 from chatddx.portal.test.test_signing_in import signing_in
 from chatddx.test.world import LINES, OFF, QWEN_MODEL
 
-pytestmark = pytest.mark.wip
-
 
 @pytest.fixture
 def template(ran: str) -> str:

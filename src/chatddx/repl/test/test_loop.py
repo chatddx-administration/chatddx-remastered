@@ -6,8 +6,6 @@ import pytest
 from chatddx.cli import main
 from chatddx.test.world import LINES, QWEN, TEST
 
-pytestmark = pytest.mark.solidified
-
 
 def test_the_shell_reads_lines_from_a_pipe_and_keeps_them(
     db: str,

@@ -14,8 +14,6 @@ from chatddx.store import Store
 from chatddx.store.store import Connection
 from chatddx.test.world import DATA, LINES, NATIVE, NATIVE_TOOLS, OFF, QWEN
 
-pytestmark = pytest.mark.solidified
-
 DIFFERENTIAL = ("answer", "differential")
 
 
@@ -43,10 +41,8 @@ def parts(shown: dict[str, Any]) -> dict[str, dict[str, Any]]:
     return {p["part"]: p for p in shown["parts"]}
 
 
-@pytest.mark.slow
-def test_a_request_names_the_recipe_s_parts(client: TestClient) -> None:
+def test_a_request_names_the_recipe_s_parts(described: dict[str, Any]) -> None:
     assert tuple(Parts.model_fields) == PARTS
-    described = client.get("/api/openapi.json").json()
     get = described["paths"]["/api/threads/{thread}/variation"]["get"]
     assert {p["name"] for p in get["parameters"]} == {
         "thread",
@@ -264,6 +260,10 @@ def test_each_scorer_view_s_reach_names_the_families_it_misses(
     assert reach["lines", "text"]["missing"] == []
 
 
+@pytest.mark.overlap(
+    "bench/test/test_seen.py::test_several_expectations_to_choose_from_are_ambiguous",
+    "::test_each_scorer_view_s_reach_names_the_families_it_misses",
+)
 @pytest.mark.slow
 def test_a_case_with_expectations_to_choose_from_is_shown_apart_in_the_reach(
     signed: TestClient, bench: Bench
@@ -297,6 +297,7 @@ def test_an_unsaved_variation_is_linted_in_its_recipe_s_language(
     assert "language.mixed" in codes()
 
 
+@pytest.mark.slow
 def test_a_judge_configuration_is_looked_at_as_a_judge(signed: TestClient) -> None:
     query = {"kind": "configuration", "purpose": "judge", "name": "judge (en)"}
     [judging] = signed.get("/api/threads", params={**query, "owner": "alice"}).json()

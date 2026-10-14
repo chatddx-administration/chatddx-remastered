@@ -17,16 +17,14 @@ from chatddx.store import Store
 from chatddx.store.store import Connection
 from chatddx.test.world import LINES, faked, world_facts
 
-pytestmark = pytest.mark.solidified
-
 
 @pytest.fixture
 def served(db: str, world: Inventory) -> FastAPI:
     return app(world, world_facts(), make_conninfo(settings.database(), dbname=db))
 
 
-@pytest.mark.slow
 @pytest.mark.usefixtures("fake")
+@pytest.mark.slow
 def test_a_run_s_scores_are_read_with_their_items_and_judge_calls(
     signed: TestClient, bob: dict[str, str]
 ) -> None:
@@ -91,6 +89,10 @@ def test_the_runs_left_to_score_are_listed_with_their_scorers(
     assert {s["name"] for s in after["unscored"]} == {"whole", "judged"}
 
 
+@pytest.mark.overlap(
+    "api/test/test_people.py::test_every_route_but_signing_in_needs_a_session"
+)
+@pytest.mark.slow
 def test_scores_need_a_session(client: TestClient) -> None:
     run, score = uuid4(), uuid4()
     for path in (

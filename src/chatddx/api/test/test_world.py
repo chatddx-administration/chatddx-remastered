@@ -17,11 +17,10 @@ from chatddx.test.world import (
     TEST,
 )
 
-pytestmark = pytest.mark.solidified
-
 GHOST = "sha256:" + "0" * 64
 
 
+@pytest.mark.slow
 def test_endpoints_say_what_they_serve_and_what_they_re_cleared_for(
     signed: TestClient,
 ) -> None:
@@ -94,6 +93,7 @@ def test_models_are_told_by_their_facts_with_the_endpoints_serving_them(
     assert [m for m, held in models.items() if held["facts"] is None] == [unknown]
 
 
+@pytest.mark.slow
 def test_a_component_is_shown_by_its_digest(signed: TestClient) -> None:
     endpoints = {e["name"]: e for e in signed.get("/api/endpoints").json()}
     for name, kind in ((QWEN, "engine.local"), (REMOTE, "engine.remote")):
@@ -112,6 +112,10 @@ def test_a_component_is_shown_by_its_digest(signed: TestClient) -> None:
     )
 
 
+@pytest.mark.overlap(
+    "api/test/test_people.py::test_every_route_but_signing_in_needs_a_session"
+)
+@pytest.mark.slow
 def test_every_read_needs_a_session(client: TestClient) -> None:
     for path in (
         "/api/threads?kind=configuration",

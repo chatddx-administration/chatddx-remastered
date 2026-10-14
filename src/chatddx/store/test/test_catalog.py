@@ -40,8 +40,6 @@ from chatddx.store import Catalog, People, Store
 from chatddx.store.catalog import Rows
 from chatddx.store.store import Connection
 
-pytestmark = pytest.mark.solidified
-
 
 def stored_world(
     conn: Connection,
@@ -145,6 +143,7 @@ def test_forks(conn: Connection) -> None:
         _ = catalog.create(ids["trial"], alice.id, forked_from=origin.id)
 
 
+@pytest.mark.slow
 def test_variations_are_reapplied_on_request(conn: Connection) -> None:
     catalog, store, reg, _, alice = stored_world(conn)
     base = generation_recipe(reg)
@@ -215,6 +214,10 @@ def test_variations_are_reapplied_on_request(conn: Connection) -> None:
         )
 
 
+@pytest.mark.overlap(
+    "catalog/test/test_threads.py::test_forks_vary_their_base_and_follow_it_on_request",
+    "::test_threads_behind_are_proposed_not_moved",
+)
 def test_chunk_variations(conn: Connection) -> None:
     catalog, store, reg, _, alice = stored_world(conn)
     recommended, longer, cooler = (
@@ -234,6 +237,7 @@ def test_chunk_variations(conn: Connection) -> None:
     )
 
 
+@pytest.mark.slow
 def test_threads_behind_are_proposed_not_moved(conn: Connection) -> None:
     catalog, store, reg, ids, alice = stored_world(conn)
     v1 = compiled(store, reg)
@@ -503,6 +507,7 @@ def test_families(conn: Connection) -> None:
     )
 
 
+@pytest.mark.slow
 def test_behind_looks_through_cases(conn: Connection) -> None:
     catalog, store, reg, ids, alice = stored_world(conn)
     case = resolve(reg.get, ids["case"], Case)

@@ -5,8 +5,6 @@ from fastapi.testclient import TestClient
 
 from chatddx.test.world import LINES, QWEN
 
-pytestmark = pytest.mark.solidified
-
 ZERO = "sha256:" + "0" * 64
 
 
@@ -73,6 +71,7 @@ def test_a_family_s_appendices_make_its_cases_and_carry_its_expectation(
     assert [e["data"] for e in carried["expectations"]] == [expected["data"]]
 
 
+@pytest.mark.slow
 def test_a_case_built_of_what_isn_t_the_family_s_is_refused(signed: TestClient) -> None:
     family = _family(signed, "crlf")
     other = _family(signed, "bom")
@@ -89,6 +88,7 @@ def test_a_case_built_of_what_isn_t_the_family_s_is_refused(signed: TestClient) 
         assert said in str(got.json()["detail"])
 
 
+@pytest.mark.slow
 def test_a_run_names_its_cases_among_the_current_ones(signed: TestClient) -> None:
     [configuration] = signed.get(
         "/api/threads",

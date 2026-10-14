@@ -66,8 +66,6 @@ from chatddx.test.world import (
 )
 from chatddx.tools.shipped import TOOLS, ShippedTool
 
-pytestmark = pytest.mark.solidified
-
 CASES = ("crlf", "svenska")
 
 
@@ -252,6 +250,7 @@ def test_a_case_that_can_t_be_read_or_has_changed_is_noted(
 
 
 @pytest.mark.usefixtures("fake")
+@pytest.mark.overlap("::test_a_stopped_run_sends_no_end_canaries")
 def test_stopping_ends_the_run_after_the_item_under_way(
     conn: Connection, inventory: Inventory, alice: Person, plan: Plan
 ) -> None:
@@ -372,7 +371,20 @@ ORDERS = [
 
 @pytest.mark.usefixtures("fake")
 @pytest.mark.parametrize("concurrency", [1, 3])
-@pytest.mark.parametrize("order", ORDERS, ids=lambda e: e.order)
+@pytest.mark.parametrize(
+    "order",
+    [
+        pytest.param(
+            ORDERS[0],
+            marks=pytest.mark.overlap(
+                "::test_a_run_sends_each_item_and_writes_its_log",
+                "::test_items_are_sent_in_the_execution_s_order[shuffled@1-3]",
+            ),
+        ),
+        *ORDERS[1:],
+    ],
+    ids=lambda e: e.order,
+)
 def test_items_are_sent_in_the_execution_s_order(
     conn: Connection,
     inventory: Inventory,
@@ -395,8 +407,8 @@ def test_items_are_sent_in_the_execution_s_order(
     assert Store(conn).run(running.run).started.execution == execution
 
 
-@pytest.mark.slow
 @pytest.mark.usefixtures("delayed")
+@pytest.mark.slow
 def test_calls_are_in_flight_together_up_to_the_execution_s_concurrency(
     conn: Connection, inventory: Inventory, alice: Person, plan: Plan
 ) -> None:
@@ -433,8 +445,8 @@ def test_a_concurrency_above_the_endpoint_s_max_jobs_is_refused(
     assert rows(db, "run_stage") == 0
 
 
-@pytest.mark.slow
 @pytest.mark.usefixtures("delayed")
+@pytest.mark.slow
 def test_stopping_a_concurrent_run_ends_it_after_the_calls_in_flight(
     conn: Connection, inventory: Inventory, alice: Person, plan: Plan
 ) -> None:
@@ -517,9 +529,9 @@ def test_another_interrupt_while_calls_hang_up_leaves_them_out(
     assert item.call.error == STOPPED
 
 
-@pytest.mark.slow
 @pytest.mark.usefixtures("delayed")
 @pytest.mark.parametrize("concurrency", [1, 2])
+@pytest.mark.slow
 def test_a_halt_from_another_thread_hangs_up_the_calls_in_flight_and_returns(
     conn: Connection,
     inventory: Inventory,
@@ -750,6 +762,7 @@ def test_an_interrupt_after_a_tool_ran_keeps_its_round_without_a_call(
 
 
 @pytest.mark.usefixtures("fake")
+@pytest.mark.slow
 def test_an_interrupt_inside_a_tool_records_it_as_stopped(
     conn: Connection,
     inventory: Inventory,
@@ -782,6 +795,7 @@ def test_an_interrupt_inside_a_tool_records_it_as_stopped(
 
 
 @pytest.mark.usefixtures("fake")
+@pytest.mark.slow
 def test_a_halt_while_tools_run_keeps_the_round_and_sends_no_call(
     conn: Connection, inventory: Inventory, alice: Person, plan: Plan
 ) -> None:
@@ -805,6 +819,7 @@ def test_a_halt_while_tools_run_keeps_the_round_and_sends_no_call(
 
 
 @pytest.mark.usefixtures("fake")
+@pytest.mark.slow
 def test_rounds_run_on_the_workers_above_concurrency_1(
     conn: Connection, inventory: Inventory, alice: Person, plan: Plan
 ) -> None:
@@ -842,6 +857,7 @@ CANARIES = CanarySet(
 
 @pytest.mark.usefixtures("fake")
 @pytest.mark.parametrize("concurrency", [1, 2])
+@pytest.mark.slow
 def test_canaries_bracket_the_items_and_are_stored_with_the_run(
     conn: Connection,
     inventory: Inventory,

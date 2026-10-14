@@ -3,11 +3,10 @@ from fastapi.testclient import TestClient
 
 from chatddx.core import settings
 
-pytestmark = pytest.mark.solidified
-
 TYPED = "A 54-year-old woman with sudden breathlessness after a long flight."
 
 
+@pytest.mark.slow
 def test_a_typed_case_is_a_family_of_one_s_own_with_its_vignette(
     signed: TestClient, bob: dict[str, str]
 ) -> None:
@@ -27,6 +26,7 @@ def test_a_typed_case_is_a_family_of_one_s_own_with_its_vignette(
     assert signed.get(f"/api/families/{made['id']}", headers=bob).status_code == 404
 
 
+@pytest.mark.slow
 def test_what_can_t_be_typed_is_refused_and_a_day_s_quota_held(
     signed: TestClient, monkeypatch: pytest.MonkeyPatch
 ) -> None:

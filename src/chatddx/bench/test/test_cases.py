@@ -7,11 +7,10 @@ from chatddx.factors.cases import Appendix, Case, Vignette
 from chatddx.identity import Person
 from chatddx.store import Catalog, People, Store
 
-pytestmark = pytest.mark.solidified
-
 ZERO = "sha256:" + "0" * 64
 
 
+@pytest.mark.slow
 def test_an_appendix_makes_a_case_and_its_edit_a_replacement(bench: Bench) -> None:
     family = bench.family("noted")
     labs = bench.appendix(family.id, "Lab:\r\nCRP 120\rHb 98")
@@ -34,6 +33,7 @@ def test_an_appendix_makes_a_case_and_its_edit_a_replacement(bench: Bench) -> No
     assert (unchanged.what, unchanged.cases) == ("unchanged", {})
 
 
+@pytest.mark.slow
 def test_an_expectation_is_carried_onto_another_case_of_its_family(
     bench: Bench,
 ) -> None:

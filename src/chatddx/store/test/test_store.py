@@ -29,8 +29,6 @@ from chatddx.ledger import (
 from chatddx.store import Store, migrate
 from chatddx.store.store import Connection
 
-pytestmark = pytest.mark.solidified
-
 
 def call(model: str) -> Call:
     return Call(
@@ -51,6 +49,7 @@ def stored_world(conn: Connection) -> tuple[Store, Registry, dict[str, str]]:
     return store, reg, ids
 
 
+@pytest.mark.slow
 def test_migrations_apply_up_to_a_tier(empty: Connection) -> None:
     assert migrate(empty, tier=0) == [
         "0001-t0-factor",
@@ -213,6 +212,7 @@ def test_run_and_score_roundtrip(conn: Connection) -> None:
         _ = store.score(alone)
 
 
+@pytest.mark.slow
 def test_database_guards_the_ledger(conn: Connection) -> None:
     store, _, ids = stored_world(conn)
     run_id = uuid4()
@@ -243,6 +243,7 @@ def test_database_guards_the_ledger(conn: Connection) -> None:
         store.append(canary.model_copy(update={"call": call("other")}))
 
 
+@pytest.mark.slow
 def test_compilations_are_found_by_their_skeleton(conn: Connection) -> None:
     store, reg, _ = stored_world(conn)
     recipe = generation_recipe(reg)

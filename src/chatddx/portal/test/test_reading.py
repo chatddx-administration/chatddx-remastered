@@ -9,8 +9,6 @@ from chatddx.portal.test.test_signing_in import signing_in
 from chatddx.store import People
 from chatddx.store.store import Connection
 
-pytestmark = pytest.mark.wip
-
 
 @pytest.fixture
 def template(ran: str) -> str:
@@ -72,6 +70,7 @@ def test_a_run_s_page_shows_its_answers_and_what_its_scores_hold(
     assert ">Mean</td>" in page
 
 
+@pytest.mark.slow
 def test_another_s_run_isn_t_found_by_a_page_or_the_api(
     client: TestClient, signed: TestClient, conn: Connection
 ) -> None:
@@ -136,6 +135,7 @@ def test_families_are_listed_by_tag_and_read_with_their_cases_and_vignette(
     assert escape(vignette["text"].strip().splitlines()[0]) in page
 
 
+@pytest.mark.slow
 def test_endpoints_and_models_are_listed(signed: TestClient) -> None:
     page = shown(signed, "/endpoints")
     for e in signed.get("/api/endpoints").json():
@@ -145,6 +145,7 @@ def test_endpoints_and_models_are_listed(signed: TestClient) -> None:
 
 
 @pytest.mark.usefixtures("alice")
+@pytest.mark.slow
 def test_what_a_page_can_t_find_is_a_page_and_the_api_s_stays_json(
     signed: TestClient,
 ) -> None:

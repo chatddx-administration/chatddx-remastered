@@ -16,8 +16,6 @@ from chatddx.ledger import fingerprint_request
 from chatddx.runner.send import STOPPED, Delta, Halt, Stopped, send
 from chatddx.runner.test.test_wire import SERVED, body, going_away, whole
 
-pytestmark = pytest.mark.solidified
-
 
 def at(host: str, port: int) -> str:
     return f"http://{host}:{port}/v1/"
@@ -130,7 +128,20 @@ def test_a_halt_from_another_thread_ends_a_stalled_stream() -> None:
     assert choice(call.response)["message"]["role"] == "assistant"
 
 
-@pytest.mark.parametrize("chunked", [False, True], ids=["closed", "chunked"])
+@pytest.mark.parametrize(
+    "chunked",
+    [
+        pytest.param(False, id="closed"),
+        pytest.param(
+            True,
+            id="chunked",
+            marks=pytest.mark.overlap(
+                "::test_a_stream_the_engine_leaves_is_an_error_that_keeps_what_came[closed]",
+                "runner/test/test_wire.py::test_a_stream_the_engine_leaves_before_done_is_unfinished[chunked]",
+            ),
+        ),
+    ],
+)
 def test_a_stream_the_engine_leaves_is_an_error_that_keeps_what_came(
     chunked: bool,
 ) -> None:

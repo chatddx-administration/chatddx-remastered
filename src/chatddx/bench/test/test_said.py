@@ -8,8 +8,6 @@ from chatddx.identity import Person, sees
 from chatddx.store.catalog import Rows
 from chatddx.test.world import LINES
 
-pytestmark = pytest.mark.solidified
-
 
 def _mine(bench: Bench) -> int:
     edit, _ = bench.thread("configuration", LINES)

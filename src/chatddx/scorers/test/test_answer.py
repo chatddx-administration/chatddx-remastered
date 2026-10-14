@@ -10,8 +10,6 @@ from chatddx.fake_vllm.chat import instance
 from chatddx.scorers.answer import Answer, read
 from chatddx.test.world import LINES, NATIVE, TOOL_ANSWER
 
-pytestmark = pytest.mark.solidified
-
 
 def skeleton(plan: Plan, recipe: str) -> Skeleton:
     return resolve(plan.registry.get, plan.named("recipe", recipe).digest, Skeleton)

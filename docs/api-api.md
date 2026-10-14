@@ -450,6 +450,12 @@ settings.database())`.
 
 ``
 ## Tests
+```
+AGENT: replace
+The wip and solidified marks are gone.
+---
+`test/`.
+```
 `test/`, marked solidified.
 
 | Module | Holds |

@@ -25,8 +25,6 @@ from chatddx.test.world import (
     world_plan,
 )
 
-pytestmark = pytest.mark.solidified
-
 FAKES = [QWEN, QWEN_BARE, GPT_OSS, MISTRAL]
 NIX = "/nix/store/" + "0" * 32 + "-vllm"
 MISTRAL_RUNTIME = """model = "mistral-7b"
@@ -121,6 +119,7 @@ def test_a_remote_engine_on_this_machine_is_stood_in_for_asking_for_its_key(
     assert heard == {REMOTE: [engine.model]}
 
 
+@pytest.mark.slow
 def test_only_a_fake_s_endpoint_whose_engine_is_stored_is_served(
     db: str,
     conn: Connection,

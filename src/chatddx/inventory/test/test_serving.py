@@ -35,8 +35,6 @@ from chatddx.inventory import (
 )
 from chatddx.test.world import GPT_OSS, QWEN, free_world, world_plan
 
-pytestmark = pytest.mark.solidified
-
 TEMPLATE = hashlib.sha256(b"{{ messages }}").hexdigest()
 
 

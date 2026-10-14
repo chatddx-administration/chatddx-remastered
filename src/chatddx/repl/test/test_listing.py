@@ -18,8 +18,6 @@ from chatddx.test.world import (
     QWEN_MODEL,
 )
 
-pytestmark = pytest.mark.solidified
-
 
 def test_endpoints_are_listed_with_their_engines_and_clearance(
     world: Inventory, say: Say
@@ -45,6 +43,7 @@ def listed(bench: Bench, line: str) -> str:
     return repl.console.export_text()
 
 
+@pytest.mark.slow
 def test_configurations_are_listed_a_row_per_name_and_language_with_their_models(
     bench: Bench,
 ):
@@ -82,6 +81,7 @@ def test_configurations_are_listed_a_row_per_name_and_language_with_their_models
     assert "every model" in guided and "guided (sv)" in guided
 
 
+@pytest.mark.slow
 def test_configurations_name_lists_its_variants_per_model(bench: Bench):
     written = listed(bench, "configurations lines")
     rows = [

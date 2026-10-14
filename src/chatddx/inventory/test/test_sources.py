@@ -4,8 +4,6 @@ import pytest
 
 from chatddx.inventory import DatabaseSource, DirectorySource, Inventory
 
-pytestmark = pytest.mark.solidified
-
 
 def test_an_inventory_declares_a_database_source_by_its_kind(tmp_path: Path) -> None:
     path = tmp_path / "inventory.toml"

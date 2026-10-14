@@ -9,8 +9,6 @@ from chatddx.portal.test.test_signing_in import signing_in
 from chatddx.portal.test.test_varying import held, thread
 from chatddx.test.world import LINES, OFF
 
-pytestmark = pytest.mark.wip
-
 
 @pytest.fixture
 def signed(client: TestClient, alice: Person) -> TestClient:
@@ -23,6 +21,7 @@ def thread_props(page: str) -> dict[str, Any]:
     return held(page.replace('id="thread-props"', 'id="variation-props"'))
 
 
+@pytest.mark.slow
 def test_the_library_lists_each_kind_one_s_own_first(signed: TestClient) -> None:
     page = shown(signed, "/library?kind=reasoning")
     listed = signed.get("/api/threads", params={"kind": "reasoning"}).json()
@@ -121,6 +120,7 @@ def test_a_fork_follows_its_origin_once_that_moves_on(signed: TestClient) -> Non
     assert len(thread_props(shown(signed, f"/threads/{fork}"))["versions"]) == 2
 
 
+@pytest.mark.slow
 def test_a_thread_s_forms_from_another_site_write_nothing(signed: TestClient) -> None:
     elsewhere = {"Sec-Fetch-Site": "cross-site"}
     for action in ("said", "delete", "restore", "fork", "follow", "take", "carry"):

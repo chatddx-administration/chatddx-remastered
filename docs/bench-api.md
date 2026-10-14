@@ -777,6 +777,12 @@ A halt for `score` that another thread sets.
   already.
 
 ## Tests
+```
+AGENT: replace
+The wip and solidified marks are gone; a test parametrized indirectly with a template's name starts from that one.
+---
+In `src/chatddx/bench/test/`. The repl's and the API's tests reach the bench too, through
+```
 In `src/chatddx/bench/test/`, all marked `solidified`. The repl's and the API's tests reach the bench too, through
 their own fixtures over the same test World.
 - `conftest.py`: `template` is `curated`, the test World as init-data lands it, with alice's giftbag, copied for each

@@ -17,8 +17,6 @@ from chatddx.store import Store
 from chatddx.store.store import Connection
 from chatddx.test.world import LINES, QWEN, faked, world_facts
 
-pytestmark = pytest.mark.wip
-
 
 @pytest.fixture
 def served(db: str, built: Path, world: Inventory) -> FastAPI:
@@ -81,8 +79,8 @@ def test_a_run_under_way_is_followed_and_halted_on_its_page(
     assert got.status_code == 409 and "A conflict" in got.text
 
 
-@pytest.mark.slow
 @pytest.mark.usefixtures("fake")
+@pytest.mark.slow
 def test_a_run_is_scored_again_and_run_again_from_its_page(signed: TestClient) -> None:
     run = started(signed, score=False)
     _ = settled(signed, run)
@@ -108,6 +106,7 @@ def test_a_run_is_scored_again_and_run_again_from_its_page(signed: TestClient) -
     )
 
 
+@pytest.mark.slow
 def test_a_form_from_another_site_starts_nothing(signed: TestClient) -> None:
     elsewhere = {"Sec-Fetch-Site": "cross-site"}
     for action in ("halt", "scores", "again"):

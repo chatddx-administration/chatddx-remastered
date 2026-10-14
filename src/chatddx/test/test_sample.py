@@ -17,8 +17,6 @@ from chatddx.store import Catalog, People
 from chatddx.store.store import Connection
 from chatddx.test.world import SAMPLE, WORLDS, world_plan
 
-pytestmark = pytest.mark.solidified
-
 MISTRAL_SMALL = "mistralai/Mistral-Small-3.2-24B-Instruct-2506"
 
 
@@ -70,6 +68,7 @@ def test_the_sample_s_texts_are_english_and_free_text_guided_swedish_too() -> No
     } | {f"free-text-guided (sv, {model})" for model in models} | {"judge (en)"}
 
 
+@pytest.mark.slow
 def test_the_sample_s_translations_carry_every_recipe_into_swedish() -> None:
     sample = sample_plan()
     translations = sample.named("translations", "sample (sv)").digest

@@ -23,8 +23,6 @@ from chatddx.importers.o11n import (
 )
 from chatddx.inventory import Inventory, World, check, start_up
 
-pytestmark = pytest.mark.solidified
-
 STORE = "/nix/store/" + "s" * 32
 SNAPSHOTS = "/srv/models/huggingface/models--{}/snapshots/{}"
 COMMIT = "4da05a8edb55c6046cce958586c33b61da07bb79"

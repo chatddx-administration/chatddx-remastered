@@ -12,8 +12,6 @@ from chatddx.store import Catalog, People, Store
 from chatddx.store.store import Connection
 from chatddx.test.world import world_plan
 
-pytestmark = pytest.mark.solidified
-
 SHIPPED = "chatddx.scorers.metrics:score"
 
 
@@ -25,8 +23,8 @@ def _scorers(lines: list[str]) -> set[str]:
     }
 
 
-@pytest.mark.slow
 @pytest.mark.parametrize("template", ["loaded"], indirect=True)
+@pytest.mark.slow
 def test_a_deploy_moves_the_archive_s_scorers_on_when_it_raises_their_version(
     conn: Connection, alice: Person, monkeypatch: pytest.MonkeyPatch
 ) -> None:

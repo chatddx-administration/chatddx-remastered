@@ -13,11 +13,9 @@ from chatddx.store import Catalog, People
 from chatddx.store.store import Connection, Store
 from chatddx.test.world import DATA, copied, world_plan
 
-pytestmark = pytest.mark.solidified
 
-
-@pytest.mark.slow
 @pytest.mark.parametrize("template", ["loaded"], indirect=True)
+@pytest.mark.slow
 def test_repair_moves_the_archive_s_families_to_their_vignettes_new_places(
     conn: Connection, alice: Person
 ) -> None:
@@ -77,8 +75,8 @@ def test_repair_moves_the_archive_s_families_to_their_vignettes_new_places(
     assert catalog.about(Subject(family=families["noted"])).name == "noted2"
 
 
-@pytest.mark.slow
 @pytest.mark.parametrize("template", ["loaded"], indirect=True)
+@pytest.mark.slow
 def test_repair_leaves_other_people_s_families_alone(
     conn: Connection, alice: Person
 ) -> None:

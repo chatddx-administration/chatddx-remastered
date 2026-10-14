@@ -1,10 +1,6 @@
 from dataclasses import dataclass
 
-import pytest
-
 from chatddx.identity import collaborates, owns, preferred, sees
-
-pytestmark = pytest.mark.solidified
 
 
 @dataclass(frozen=True)

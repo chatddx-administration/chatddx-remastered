@@ -23,8 +23,6 @@ from chatddx.runner.wire import (
     request,
 )
 
-pytestmark = pytest.mark.solidified
-
 SERVED = Served.of(
     "Qwen/Qwen3-8B-AWQ",
     [

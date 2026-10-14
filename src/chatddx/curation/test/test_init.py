@@ -27,8 +27,6 @@ from chatddx.test.world import (
     world_plan,
 )
 
-pytestmark = pytest.mark.solidified
-
 LANGUAGES = (", in en", ", in sv")
 
 
@@ -131,8 +129,8 @@ def test_init_data_loads_the_archive(conn: Connection) -> None:
     assert not [line for line in again if line.endswith(LANGUAGES)]
 
 
-@pytest.mark.slow
 @pytest.mark.parametrize("template", ["loaded"], indirect=True)
+@pytest.mark.slow
 def test_init_data_lints_what_it_lands(conn: Connection, alice: Person) -> None:
     plan = world_plan()
     unlike = replace(CASES["noted"], targets={"warning": {"pattern": "shock"}})
@@ -149,8 +147,8 @@ def test_init_data_lints_what_it_lands(conn: Connection, alice: Person) -> None:
     ]
 
 
-@pytest.mark.slow
 @pytest.mark.parametrize("template", ["loaded"], indirect=True)
+@pytest.mark.slow
 def test_init_data_updates_and_gives_forks(
     conn: Connection, alice: Person, tmp_path: Path
 ) -> None:
@@ -240,8 +238,8 @@ def test_init_data_says_when_a_thread_is_held_as_another_fork_than_the_data_s(
     ]
 
 
-@pytest.mark.slow
 @pytest.mark.parametrize("template", ["loaded"], indirect=True)
+@pytest.mark.slow
 def test_init_data_withdraws_only_the_tags_the_archive_gave(
     conn: Connection, alice: Person, tmp_path: Path
 ) -> None:
@@ -266,8 +264,8 @@ def test_init_data_withdraws_only_the_tags_the_archive_gave(
     assert catalog.about(Subject(family=family)).tags == {"alice's", "falls"}
 
 
-@pytest.mark.slow
 @pytest.mark.parametrize("template", ["loaded"], indirect=True)
+@pytest.mark.slow
 def test_init_data_says_how_a_vignette_moved_at_its_source(
     conn: Connection, alice: Person
 ) -> None:
@@ -301,40 +299,14 @@ def test_init_data_says_how_a_vignette_moved_at_its_source(
     assert not [line for line in lines if "not in the data" in line]
 
 
+# What it loads is read in test_wipe_data_deletes_and_unshares_and_init_data_gives_it_back.
 @pytest.mark.slow
 def test_init_data_command(
-    db: str,
-    tmp_path: Path,
-    monkeypatch: pytest.MonkeyPatch,
-    capsys: pytest.CaptureFixture[str],
+    db: str, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     monkeypatch.setenv("DB_NAME", db)
-    data = ["--data", str(DATA)]
-    main(["init-data", "alice", "--world", str(TEST), "--giftbag", *data])
-    out = capsys.readouterr().out.splitlines()
-    assert out[0] == "[person] alice: added"
-    assert out[1].startswith("[archive model] qwen3-8b-awq: created")
-    assert any(line.startswith("[archive chunk.prompt] case: created") for line in out)
-    assert any(line.startswith("[giftbag skeleton] native (") for line in out)
-    assert [line for line in out if line.startswith("[world")] == [
-        f"[world] 0 findings in 5 endpoints of {TEST}"
-    ]
-    with connect(db) as conn:
-        assert conn.execute("SELECT count(*) FROM catalog.family").fetchone() == (
-            len(CASES),
-        )
-
     monkeypatch.setenv("CHATDDX_WORLD", str(TEST))
-    main(["init-data", "alice", *data])
-    out = capsys.readouterr().out.splitlines()
-    assert not [line for line in out if line.startswith("[person]")]
-    with connect(db) as conn:
-        alice = People(conn).find("alice")
-    assert alice is not None and (alice.name, alice.roles) == ("alice", frozenset())
-    assert {
-        line.split(": ")[1].split(" ")[0] for line in out if line.startswith("[archive")
-    } == {"validated"}
-
+    data = ["--data", str(DATA)]
     empty = tmp_path / "empty"
     (empty / "vignettes").mkdir(parents=True)
     _ = (empty / "inventory.toml").write_text('[source.test]\npath = "vignettes"\n')
@@ -418,10 +390,35 @@ def test_wipe_data_deletes_and_unshares_and_init_data_gives_it_back(
     argv = ["init-data", "alice", "--world", str(TEST), "--giftbag"]
     argv += ["--data", str(DATA)]
     loaded = run(*argv)
+    assert loaded[0] == "[person] alice: added"
+    assert loaded[1].startswith("[archive model] qwen3-8b-awq: created")
+    assert any(
+        line.startswith("[archive chunk.prompt] case: created") for line in loaded
+    )
+    assert any(line.startswith("[giftbag skeleton] native (") for line in loaded)
+    assert [line for line in loaded if line.startswith("[world")] == [
+        f"[world] 0 findings in 5 endpoints of {TEST}"
+    ]
+    with connect(db) as conn:
+        assert conn.execute("SELECT count(*) FROM catalog.family").fetchone() == (
+            len(CASES),
+        )
     gifts = sum(line.startswith("[giftbag ") for line in loaded)
     shares = int(next(line for line in loaded if line.startswith("[share]")).split()[1])
     threads, entries = rows()
-    _ = run(*argv)
+
+    with monkeypatch.context() as patch:
+        patch.setenv("CHATDDX_WORLD", str(TEST))
+        again = run("init-data", "alice", "--giftbag", "--data", str(DATA))
+    assert not [line for line in again if line.startswith("[person]")]
+    with connect(db) as conn:
+        alice = People(conn).find("alice")
+    assert alice is not None and (alice.name, alice.roles) == ("alice", frozenset())
+    assert {
+        line.split(": ")[1].split(" ")[0]
+        for line in again
+        if line.startswith("[archive")
+    } == {"validated"}
     assert rows() == (threads, entries)
 
     wiped = run("wipe-data", "alice")

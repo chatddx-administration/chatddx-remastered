@@ -3,7 +3,8 @@ from collections import defaultdict, deque
 from collections.abc import Generator, Iterator
 from concurrent.futures import Future, ThreadPoolExecutor
 from contextlib import contextmanager
-from typing import NamedTuple
+from pathlib import Path
+from typing import Any, NamedTuple
 from uuid import uuid4
 
 import psycopg
@@ -11,9 +12,11 @@ import pytest
 from argon2 import PasswordHasher
 from psycopg import sql
 
+from chatddx.api.app import app
 from chatddx.bench import Bench
 from chatddx.core import settings
 from chatddx.curation import Plan, init, load_cases
+from chatddx.facts import BUNDLED, Facts
 from chatddx.identity import identity
 from chatddx.inventory import Inventory, World
 from chatddx.runner.test import tools as test_tools
@@ -31,17 +34,35 @@ from chatddx.test.world import (
 )
 
 
-# The markers split the tests in two: what docs/ describes, and what agents/wip-*.md plans.
-def pytest_collection_modifyitems(items: list[pytest.Item]) -> None:
-    unsplit = [
-        item.nodeid
-        for item in items
-        if len({"solidified", "wip"} & {m.name for m in item.iter_markers()}) != 1
-    ]
-    if unsplit:
-        raise pytest.UsageError(
-            "each test is either solidified or wip: " + ", ".join(unsplit)
-        )
+# Leaving out the overlaps leaves nothing unverified only if each test an overlap names is
+# collected and isn't an overlap itself. Names are node ids under this directory, or "::"
+# and a name in the same file; a test in a file outside the run can't be checked.
+@pytest.hookimpl(tryfirst=True)
+def pytest_collection_modifyitems(
+    config: pytest.Config, items: list[pytest.Item]
+) -> None:
+    here = Path(__file__).parent.relative_to(config.rootpath).as_posix()
+    ids = {item.nodeid for item in items}
+    files = {nodeid.partition("::")[0] for nodeid in ids}
+    overlaps = {item.nodeid for item in items if item.get_closest_marker("overlap")}
+    wrong: list[str] = []
+    for item in items:
+        for mark in item.iter_markers("overlap"):
+            if not mark.args:
+                wrong.append(f"{item.nodeid} names no test")
+            for name in mark.args:
+                file, _, test = str(name).partition("::")
+                file = f"{here}/{file}" if file else item.nodeid.partition("::")[0]
+                if file not in files:
+                    continue
+                nodeid = f"{file}::{test}"
+                named = {i for i in ids if i == nodeid or i.startswith(f"{nodeid}[")}
+                if not named:
+                    wrong.append(f"{item.nodeid} names no test {name}")
+                elif named & overlaps:
+                    wrong.append(f"{item.nodeid} names {name}, an overlap too")
+    if wrong:
+        raise pytest.UsageError("\n".join(wrong))
 
 
 # The test World's tools are the runner's test tools (worlds/test/_data/factors.toml), shipped
@@ -70,6 +91,12 @@ def unsynced_commits() -> Iterator[None]:
     with pytest.MonkeyPatch.context() as patch:
         patch.setenv("PGOPTIONS", "-c synchronous_commit=off", prepend=" ")
         yield
+
+
+# As src/chatddx/cli.py:_openapi makes it.
+@pytest.fixture(scope="session")
+def described() -> dict[str, Any]:
+    return app(Inventory(), Facts.load(BUNDLED), "").openapi()
 
 
 @pytest.fixture
@@ -116,12 +143,19 @@ def create_database(admin: str, template: str | None = None) -> str:
     return name
 
 
+# A run's or a scoring's job outlives the request that started it, and may connect again
+# between settling and dropping after its test has ended.
 def drop_database(admin: str, name: str) -> None:
+    drop = sql.SQL("DROP DATABASE {} WITH (FORCE)").format(sql.Identifier(name))
     with psycopg.connect(admin, autocommit=True) as conn:
-        _settled(conn, name)
-        _ = conn.execute(
-            sql.SQL("DROP DATABASE {} WITH (FORCE)").format(sql.Identifier(name))
-        )
+        for attempt in range(5):
+            _settled(conn, name)
+            try:
+                _ = conn.execute(drop)
+                return
+            except psycopg.errors.InsufficientPrivilege:
+                if attempt == 4:
+                    raise
 
 
 def connect(name: str, admin: bool = False) -> Connection:
@@ -216,7 +250,6 @@ class Loaded(NamedTuple):
     said: list[str]
 
 
-# The sample as init-data loads it with a giftbag for alice, and what loading it said.
 @pytest.fixture(scope="session")
 def sampled(copies: Copies, migrated: str) -> Iterator[Loaded]:
     world = SAMPLE.parent
@@ -229,9 +262,14 @@ def sampled(copies: Copies, migrated: str) -> Iterator[Loaded]:
         yield Loaded(name, said)
 
 
+# A test parametrized indirectly with a template's name, as "ran", starts from it.
+def chosen(request: pytest.FixtureRequest, otherwise: str) -> str:
+    return request.getfixturevalue(getattr(request, "param", otherwise))
+
+
 @pytest.fixture
-def template(migrated: str) -> str:
-    return migrated
+def template(request: pytest.FixtureRequest) -> str:
+    return chosen(request, "migrated")
 
 
 @pytest.fixture

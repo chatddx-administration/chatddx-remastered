@@ -29,8 +29,6 @@ from chatddx.test.world import (
     world_facts,
 )
 
-pytestmark = pytest.mark.solidified
-
 type Told = list[tuple[int, str, dict[str, Any]]]
 
 
@@ -108,8 +106,8 @@ def finished(signed: TestClient, run: str) -> dict[str, Any]:
     raise AssertionError(f"run {run} wasn't finished and scored")
 
 
-@pytest.mark.slow
 @pytest.mark.usefixtures("fake")
+@pytest.mark.slow
 def test_a_run_is_accepted_and_told_by_its_events(signed: TestClient) -> None:
     case = family(signed, "crlf")["case"]
     got = signed.post("/api/runs", json=asked(signed))
@@ -170,8 +168,8 @@ def test_a_run_s_events_stream_as_they_come_and_resume_after_an_id(
     ]
 
 
-@pytest.mark.slow
 @pytest.mark.usefixtures("fake")
+@pytest.mark.slow
 def test_a_run_with_nothing_under_way_here_is_told_from_the_ledger(
     signed: TestClient, db: str, world: Inventory
 ) -> None:
@@ -189,8 +187,8 @@ def test_a_run_with_nothing_under_way_here_is_told_from_the_ledger(
     assert recorded[-1][1:] == ("done", {"halted": None})
 
 
-@pytest.mark.slow
 @pytest.mark.usefixtures("fake")
+@pytest.mark.slow
 def test_a_run_of_tags_runs_the_case_of_each_family_tagged(signed: TestClient) -> None:
     tagged = signed.get("/api/families", params={"tag": "swedish"}).json()
     body = {**asked(signed), "families": None, "tags": ["swedish"], "score": False}
@@ -199,8 +197,12 @@ def test_a_run_of_tags_runs_the_case_of_each_family_tagged(signed: TestClient) -
     assert made["scores"] == [] and "run.scoring" not in names(said)
 
 
-@pytest.mark.slow
 @pytest.mark.usefixtures("fake")
+@pytest.mark.overlap(
+    "runner/test/test_run.py::test_nothing_is_sent_or_written_where_the_gate_refuses",
+    "api/test/test_people.py::test_the_bench_s_errors_and_the_gate_s_refusals_have_their_status_and_code",
+)
+@pytest.mark.slow
 def test_a_run_the_gate_refuses_is_unprocessable_and_isn_t_recorded(
     signed: TestClient,
 ) -> None:
@@ -241,8 +243,8 @@ def test_a_run_the_request_names_wrong_is_unprocessable(signed: TestClient) -> N
     assert signed.get("/api/runs").json() == []
 
 
-@pytest.mark.slow
 @pytest.mark.usefixtures("fake")
+@pytest.mark.slow
 def test_runs_are_listed_newest_first_and_filtered(signed: TestClient) -> None:
     off = digest(signed, "reasoning", OFF)
     first, _ = sent(signed, asked(signed))
@@ -267,8 +269,8 @@ def test_runs_are_listed_newest_first_and_filtered(signed: TestClient) -> None:
     assert signed.get("/api/runs", params={"limit": 0}).status_code == 422
 
 
-@pytest.mark.slow
 @pytest.mark.usefixtures("fake")
+@pytest.mark.slow
 def test_no_browser_keeps_what_is_case_derived(signed: TestClient) -> None:
     made, _ = sent(signed, asked(signed))
     run, [score, *_] = made["id"], made["scores"]
@@ -291,8 +293,8 @@ def test_no_browser_keeps_what_is_case_derived(signed: TestClient) -> None:
     ]
 
 
-@pytest.mark.slow
 @pytest.mark.usefixtures("fake")
+@pytest.mark.slow
 def test_a_run_s_items_hold_its_calls_and_render_again_as_they_were_sent(
     signed: TestClient,
 ) -> None:
@@ -314,8 +316,8 @@ def test_a_run_s_items_hold_its_calls_and_render_again_as_they_were_sent(
     }
 
 
-@pytest.mark.slow
 @pytest.mark.usefixtures("fake")
+@pytest.mark.slow
 def test_another_s_run_isn_t_found(signed: TestClient, bob: dict[str, str]) -> None:
     made, _ = sent(signed, asked(signed, score=False))
     for path in ("", "/items", "/rendered-again", "/events"):
@@ -330,6 +332,10 @@ def test_another_s_run_isn_t_found(signed: TestClient, bob: dict[str, str]) -> N
     assert signed.get("/api/runs/not-a-run").status_code == 422
 
 
+@pytest.mark.overlap(
+    "api/test/test_people.py::test_every_route_but_signing_in_needs_a_session"
+)
+@pytest.mark.slow
 def test_runs_need_a_session(client: TestClient) -> None:
     run = "00000000-0000-0000-0000-000000000000"
     for path in ("", f"/{run}", f"/{run}/items", f"/{run}/events"):
@@ -338,9 +344,7 @@ def test_runs_need_a_session(client: TestClient) -> None:
     assert client.post(f"/api/runs/{run}/halt").status_code == 401
 
 
-@pytest.mark.slow
-def test_the_events_are_described(client: TestClient) -> None:
-    described = client.get("/api/openapi.json").json()
+def test_the_events_are_described(described: dict[str, Any]) -> None:
     paths = described["paths"]
     assert "202" in paths["/api/runs"]["post"]["responses"]
     told = paths["/api/runs/{run}/events"]["get"]["responses"]["200"]
@@ -408,8 +412,8 @@ def test_a_run_whose_listener_goes_away_goes_on(
     assert item["outcome"] == "completed"
 
 
-@pytest.mark.slow
 @pytest.mark.usefixtures("fake")
+@pytest.mark.slow
 def test_a_run_is_named_by_its_variation_and_runs_the_edit_given(
     signed: TestClient,
 ) -> None:
@@ -436,8 +440,8 @@ def test_a_run_is_named_by_its_variation_and_runs_the_edit_given(
     )
 
 
-@pytest.mark.slow
 @pytest.mark.usefixtures("fake")
+@pytest.mark.slow
 def test_runs_are_held_to_a_day_s_quota_and_a_run_to_its_items(
     signed: TestClient, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -487,8 +491,8 @@ def test_a_quiet_stream_is_kept_alive(
             assert signed.post(f"/api/runs/{run}/halt").status_code == 204
 
 
-@pytest.mark.slow
 @pytest.mark.usefixtures("fake")
+@pytest.mark.slow
 def test_a_run_runs_again_with_another_seed_under_its_name(
     signed: TestClient, bob: dict[str, str]
 ) -> None:

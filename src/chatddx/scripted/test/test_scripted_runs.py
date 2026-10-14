@@ -4,16 +4,22 @@ import pytest
 
 from chatddx.bench import Bench
 from chatddx.cli import main
-from chatddx.scripted import RUNS, load, ran_before, run, scripted_runs
+from chatddx.ledger import RunStarted
+from chatddx.scripted import RUNS, load, ran_before, scripted_runs
 from chatddx.scripted.test.helpers import UNFINISHED, went
 from chatddx.test.world import QWEN_MODEL as MODEL, TEST, freed
-
-pytestmark = pytest.mark.solidified
 
 HELD = {s.name: s for s in scripted_runs(TEST / RUNS)}
 
 
-@pytest.mark.slow
+# The ran template ran each scripted run.
+def held(bench: Bench, name: str) -> RunStarted:
+    started = ran_before(bench, HELD[name])
+    assert started is not None
+    return started
+
+
+@pytest.mark.parametrize("template", ["ran"], indirect=True)
 @pytest.mark.parametrize(
     ("name", "outcomes"),
     [
@@ -31,22 +37,22 @@ HELD = {s.name: s for s in scripted_runs(TEST / RUNS)}
         ("appendix", {"whitespace with labs": ("completed", None)}),
     ],
 )
+@pytest.mark.slow
 def test_each_scripted_run_runs_as_its_script_answers(
     bench: Bench, name: str, outcomes: dict[str, tuple[str, str | None]]
 ) -> None:
-    scripted = HELD[name]
-    started = run(bench, scripted)
+    scripted, started = HELD[name], held(bench, name)
 
     assert went(bench, started) == outcomes
     finished = bench.store.run(started.run).finished is not None
     assert finished == (not scripted.unfinished)
     assert bool(bench.scores_of(started.run)) == (finished and scripted.scored)
-    assert ran_before(bench, scripted) == started
 
 
+@pytest.mark.parametrize("template", ["ran"], indirect=True)
 @pytest.mark.slow
 def test_a_scripted_run_s_judges_are_served_as_plain_fakes(bench: Bench) -> None:
-    started = run(bench, HELD["judged"])
+    started = held(bench, "judged")
 
     [judged] = [g for g in bench.scores_of(started.run) if g.name == "judged"]
     assert judged.score is not None

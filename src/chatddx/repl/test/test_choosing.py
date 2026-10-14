@@ -22,8 +22,6 @@ from chatddx.test.world import (
     QWEN_MODEL,
 )
 
-pytestmark = pytest.mark.solidified
-
 
 @pytest.fixture
 def bob(conn: Connection) -> Person:
@@ -71,6 +69,7 @@ def test_a_per_model_configuration_is_picked_by_the_endpoint(repl: Repl, say: Sa
     assert tried(repl).name == f"native (en, {GPT_OSS_MODEL})"
 
 
+@pytest.mark.slow
 def test_on_picks_the_cell_s_configuration_for_its_model_with_what_was_set(
     repl: Repl, say: Say
 ):
@@ -91,6 +90,7 @@ def test_on_picks_the_cell_s_configuration_for_its_model_with_what_was_set(
     assert tried(repl).name == NATIVE
 
 
+@pytest.mark.slow
 def test_a_configuration_made_in_several_languages_is_named_with_its_language(
     repl: Repl, say: Say
 ):
@@ -109,6 +109,10 @@ def test_set_puts_another_chunk_in_the_cell(repl: Repl, bench: Bench, say: Say):
     assert body["chat_template_kwargs"] == {"enable_thinking": False}
 
 
+@pytest.mark.overlap(
+    "bench/test/test_variation.py::test_setting_the_configuration_s_own_chunk_takes_the_part_back",
+    "::test_set_puts_another_chunk_in_the_cell",
+)
 def test_setting_the_configuration_s_own_chunk_unsets_it(repl: Repl, say: Say):
     _ = say(f"cell {LINES} {QWEN}", "set sampling greedy")
     assert repl.prompt == f"alice {LINES}+sampling=greedy×{QWEN} #7> "
@@ -184,6 +188,7 @@ def test_save_keeps_the_cell_as_a_configuration_of_one_s_own(
     assert f"cell: quiet × {QWEN}" in say("use alice/quiet")
 
 
+@pytest.mark.slow
 def test_saving_again_is_a_new_version_or_nothing(
     bench: Bench, conn: Connection, say: Say
 ):
@@ -218,6 +223,7 @@ def test_one_s_own_configuration_shadows_the_archive_s(
     assert repl.prompt == f"alice archive/{NATIVE} #7> "
 
 
+@pytest.mark.slow
 def test_another_s_configuration_is_found_where_it_is_shared(
     repl: Repl, conn: Connection, bob: Person, bench: Bench, say: Say
 ):

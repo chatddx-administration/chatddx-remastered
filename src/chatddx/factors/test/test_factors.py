@@ -87,8 +87,6 @@ from chatddx.factors.trial import (
     suggest_seeds,
 )
 
-pytestmark = pytest.mark.solidified
-
 
 @pytest.fixture
 def reg() -> Registry:
@@ -1123,6 +1121,7 @@ def test_dangling_and_mistyped_refs(reg: Registry) -> None:
         reg.check([dangling.digest])
 
 
+@pytest.mark.overlap("::test_each_component_is_checked_on_its_own")
 def test_cross_checks(reg: Registry) -> None:
     other = reg.add(
         Appendix(

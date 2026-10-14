@@ -11,8 +11,6 @@ from chatddx.repl.test.helpers import Say, cells, line_of, pattern, tagged
 from chatddx.store import Catalog, People, Store
 from chatddx.test.world import LINES, QWEN
 
-pytestmark = pytest.mark.solidified
-
 
 # A new version of the expectation the person reads for a case, from their own thread.
 def retarget(bench: Bench, case: str, data: JsonValue) -> None:
@@ -34,8 +32,8 @@ def retarget(bench: Bench, case: str, data: JsonValue) -> None:
     _ = catalog.edit(thread, changed, bench.person.id)
 
 
-@pytest.mark.slow
 @pytest.mark.usefixtures("fake")
+@pytest.mark.slow
 def test_score_scores_the_runs_a_changed_expectation_leaves_and_sums_them_up(
     bench: Bench, say: Say
 ):
@@ -52,8 +50,8 @@ def test_score_scores_the_runs_a_changed_expectation_leaves_and_sums_them_up(
     assert "nothing to score" in say("score")
 
 
-@pytest.mark.slow
 @pytest.mark.usefixtures("fake")
+@pytest.mark.slow
 def test_score_run_says_what_came_of_one_run(bench: Bench, say: Say):
     _ = say(f"cell {LINES} {QWEN}", "run noted")
     run = str(bench.runs()[0].run)[:8]
@@ -71,8 +69,8 @@ def test_score_run_says_what_came_of_one_run(bench: Bench, say: Say):
     assert ["differential", "1"] in [row[:2] for row in cells(written)]
 
 
-@pytest.mark.slow
 @pytest.mark.usefixtures("fake")
+@pytest.mark.slow
 def test_the_runs_left_to_score_complete(repl: Repl, bench: Bench, say: Say):
     _ = say(f"cell {LINES} {QWEN}", "run noted")
     run = str(bench.runs()[0].run)[:8]

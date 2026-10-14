@@ -8,8 +8,6 @@ from chatddx.store import People
 from chatddx.store.store import Connection
 from chatddx.test.world import WORLDS, free_world, world_facts
 
-pytestmark = pytest.mark.solidified
-
 PATH = WORLDS / "sample"
 VALID = ("valid", None)
 OUTCOMES = {

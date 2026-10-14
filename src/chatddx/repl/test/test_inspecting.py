@@ -17,8 +17,6 @@ from chatddx.test.world import (
     TEST,
 )
 
-pytestmark = pytest.mark.solidified
-
 INTENTS = [
     "default",
     "off",
@@ -45,6 +43,7 @@ def test_show_needs_something_in_the_cell(say: Say):
     assert "the cell is empty: use CONFIGURATION, on ENDPOINT" in say("show")
 
 
+@pytest.mark.slow
 def test_show_sets_each_part_beside_what_it_is_and_renders_the_request(say: Say):
     written = say(f"cell {LINES} {QWEN}", "show")
     sv = [id for id, case in CASES.items() if case.language == "sv"]
@@ -70,7 +69,6 @@ def test_show_says_what_is_set_and_what_the_configuration_has(say: Say):
     assert '"enable_thinking": false' in written
 
 
-@pytest.mark.slow
 def test_show_says_what_the_lints_say_of_the_pair(say: Say):
     written = say(f"cell native-tools {QWEN}", "show")
 
@@ -164,6 +162,9 @@ def test_show_case_says_when_scoring_has_expectations_to_choose_from(
     assert "to choose from: noted" in row(written, "answer", "differential")
 
 
+@pytest.mark.overlap(
+    "repl/test/test_scoring.py::test_take_takes_the_expectations_shared_for_the_cases_without_one_of_yours"
+)
 def test_show_case_says_when_none_of_the_expectations_is_yours(bench: Bench, say: Say):
     case = bench.family("noted").case
     [schema] = bench.expectation_schemas(case)
@@ -175,6 +176,7 @@ def test_show_case_says_when_none_of_the_expectations_is_yours(bench: Bench, say
     assert "none of yours" in line_of(written, "expectation")
 
 
+@pytest.mark.slow
 def test_show_without_a_name_shows_the_cell_s(say: Say):
     written = say(f"cell {LINES} {QWEN}", "show output")
 
@@ -231,6 +233,7 @@ def test_the_reasoning_table_sets_every_level_on_every_model(say: Say):
     assert "the cell has no configuration on a model the facts know" in written
 
 
+@pytest.mark.slow
 def test_the_reasoning_table_marks_the_cell_s_level(say: Say):
     written = say(f"cell {LINES} {QWEN}", "reasoning")
 
@@ -243,6 +246,7 @@ def test_the_reasoning_table_marks_the_cell_s_level(say: Say):
     assert "│ ▸ default" not in written
 
 
+@pytest.mark.slow
 def test_scorers_say_whether_the_cell_s_output_offers_each_view(say: Say):
     written = say("scorers")
 
@@ -258,6 +262,7 @@ def test_scorers_say_whether_the_cell_s_output_offers_each_view(say: Say):
     assert "the whole answer, lines@1" in written
 
 
+@pytest.mark.slow
 def test_show_case_lists_a_family_s_appendices_and_the_cases_that_send_them(say: Say):
     written = say("show case whitespace")
 

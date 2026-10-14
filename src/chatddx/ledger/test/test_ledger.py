@@ -39,8 +39,6 @@ from chatddx.ledger import (
 )
 from chatddx.ledger.test.rounds import ran, rounds
 
-pytestmark = pytest.mark.solidified
-
 
 @pytest.fixture
 def reg() -> Registry:

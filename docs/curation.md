@@ -197,16 +197,36 @@ writes an entry per gift and per share and no thread.
 Wiping covers all a person owns, their runs and their own threads included, not only what loading gave them.
 
 ## Tests
+```
+AGENT: replace
+The wip and solidified marks are gone.
+---
+src/chatddx/curation/test/.
+```
 src/chatddx/curation/test/, marked `solidified`.
 
 - The tests run on the test World (worlds/test/, its data set in worlds/test/_data/), built so that each of its
   records exercises something a test reads. Its paths, the names tests share and the helpers they import are in
   src/chatddx/test/world.py; the fixtures built on them are in src/chatddx/conftest.py.
 - `test_plan.py` plans data sets and needs no database.
+```
+AGENT: replace
+Most of these tests start from one load now, `loaded`, rather than each loading the data set itself.
+---
+- `test_init.py`, `test_repair.py`, `test_giftbag.py` and `test_pins.py` load the test World's data set whole, with a
+  stand-in source whose vignettes are a line of text each (src/chatddx/curation/test/cases.py). A test that tells
+  what a first load says, or loads data edited first, loads it into a copy of the migrated, empty store; the rest
+  start from a copy of `loaded`, alice and the archive after one such load (src/chatddx/curation/test/conftest.py).
+  The command tests read the test World itself, or a copy they edit.
+```
 - `test_init.py`, `test_repair.py`, `test_giftbag.py` and `test_pins.py` load the test World's data set whole into
   a database of their own: a copy of the migrated, empty store, made for each test (src/chatddx/conftest.py,
   `migrated`, `db`), with a stand-in source whose vignettes are a line of text each
   (src/chatddx/curation/test/cases.py). The command tests read the test World itself, or a copy they edit.
+```
+AGENT: remove
+`slow` follows a budget of the full run now (AGENTS.md, "Testing"), not what a test does.
+```
 - A load writes every record of the data set, so every test that loads is marked `slow`.
 - `test_tables.py` reads a case's appendices and the cases that send them, refuses what they say wrongly, and lands
   them and a canary set from the test World.
@@ -220,6 +240,13 @@ The Worlds' content is tested beside the names tests share, in src/chatddx/test/
 - `test_sample.py` holds what is true of the sample alone, and that it uses every table a data set and a World can
   hold at least once, as the example new Worlds follow.
 
+```
+AGENT: replace
+No mark says so any more.
+---
+The first two are what agents/wip-test-world.md plans; `test_sample.py` reads the sample, loaded once for it and
+test_sample_world.py (src/chatddx/conftest.py, `sampled`).
+```
 The first two are marked `wip`, as agents/wip-test-world.md plans them; `test_sample.py` is `solidified`.
 
 ## Terms

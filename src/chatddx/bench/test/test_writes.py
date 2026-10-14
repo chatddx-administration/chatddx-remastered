@@ -11,8 +11,6 @@ from chatddx.identity import Person
 from chatddx.store import Catalog
 from chatddx.test.world import LINES, QWEN
 
-pytestmark = pytest.mark.solidified
-
 ZERO = "sha256:" + "0" * 64
 
 
@@ -100,6 +98,7 @@ def test_a_write_is_refused_what_isn_t_the_person_s_to_write(
         _ = bench.fork_component(theirs.thread, "taken")
 
 
+@pytest.mark.slow
 def test_a_person_writes_expectations_and_hears_what_the_lints_say(
     bench: Bench,
 ) -> None:
@@ -176,6 +175,7 @@ def test_a_recipe_is_refused_what_doesn_t_compile(bench: Bench) -> None:
         _ = bench.new(recipe.model_copy(update={"purpose": "judge"}), "x")
 
 
+@pytest.mark.slow
 def test_a_person_writes_a_judge_over_a_judge_configuration(bench: Bench) -> None:
     skeleton = bench.configuration("judge (en)").configuration.digest
     engine = bench.endpoint(QWEN)
