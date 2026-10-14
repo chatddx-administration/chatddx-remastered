@@ -132,7 +132,7 @@ def test_an_answer_that_can_t_be_read_is_noted_and_scored_without_one(
 ) -> None:
     made = trial(plan, NATIVE, seeds=(7,))
     with faked(inventory, plan.registry.get, delay=DELAY * 10):
-        run = ran(conn, inventory, alice, made, plan, Execution(timeout_s=0.2))
+        run = ran(conn, inventory, alice, made, plan, Execution(timeout_s=0.1))
     scoring = Scoring(
         scorer=plan.named("scorer", "answer").digest,
         expectations=expectations(plan, made),
@@ -144,7 +144,7 @@ def test_an_answer_that_can_t_be_read_is_noted_and_scored_without_one(
     assert {f.code for f in noted} == {"answer.unread"}
     assert len(noted) == len(made.cases)
     assert all(
-        f.message.endswith("the call ended with: stopped: no end after 0.2 s")
+        f.message.endswith("the call ended with: stopped: no end after 0.1 s")
         for f in noted
     )
     assert all(

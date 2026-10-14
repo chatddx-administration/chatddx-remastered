@@ -1,7 +1,9 @@
 import time
 from collections import defaultdict, deque
-from collections.abc import Iterator
+from collections.abc import Generator, Iterator
 from concurrent.futures import Future, ThreadPoolExecutor
+from contextlib import contextmanager
+from typing import NamedTuple
 from uuid import uuid4
 
 import psycopg
@@ -11,14 +13,22 @@ from psycopg import sql
 
 from chatddx.bench import Bench
 from chatddx.core import settings
-from chatddx.curation import Plan, init
+from chatddx.curation import Plan, init, load_cases
 from chatddx.identity import identity
 from chatddx.inventory import Inventory, World
 from chatddx.runner.test import tools as test_tools
 from chatddx.scripted import RUNS, run, scripted_runs
 from chatddx.store import People, Store, migrate
 from chatddx.store.store import Connection
-from chatddx.test.world import CASES, TEST, faked, free_world, world_facts, world_plan
+from chatddx.test.world import (
+    CASES,
+    SAMPLE,
+    TEST,
+    faked,
+    free_world,
+    world_facts,
+    world_plan,
+)
 
 
 # The markers split the tests in two: what docs/ describes, and what agents/wip-*.md plans.
@@ -51,6 +61,14 @@ def cheap_hashing() -> Iterator[None]:
     with pytest.MonkeyPatch.context() as patch:
         patch.setattr(identity, "_hasher", hasher)
         patch.setattr(identity, "_DUMMY_HASH", hasher.hash("dummy"))
+        yield
+
+
+# What a test writes needn't outlive a crash, so no commit waits for the WAL to reach the disk.
+@pytest.fixture(scope="session", autouse=True)
+def unsynced_commits() -> Iterator[None]:
+    with pytest.MonkeyPatch.context() as patch:
+        patch.setenv("PGOPTIONS", "-c synchronous_commit=off", prepend=" ")
         yield
 
 
@@ -152,12 +170,11 @@ def copies() -> Iterator[Copies]:
         made.close()
 
 
-@pytest.fixture(scope="session")
-def migrated(copies: Copies) -> Iterator[str]:
-    name = create_database(copies.admin)
+# A template for the session, filled in the body of the `with`, from another or from nothing.
+@contextmanager
+def templated(copies: Copies, of: str | None = None) -> Generator[str]:
+    name = create_database(copies.admin, template=of)
     try:
-        with connect(name, admin=True) as conn:
-            _ = migrate(conn)
         yield name
     finally:
         copies.forget(name)
@@ -165,23 +182,26 @@ def migrated(copies: Copies) -> Iterator[str]:
 
 
 @pytest.fixture(scope="session")
+def migrated(copies: Copies) -> Iterator[str]:
+    with templated(copies) as name:
+        with connect(name, admin=True) as conn:
+            _ = migrate(conn)
+        yield name
+
+
+@pytest.fixture(scope="session")
 def curated(copies: Copies, migrated: str) -> Iterator[str]:
-    name = create_database(copies.admin, template=migrated)
-    try:
+    with templated(copies, migrated) as name:
         with connect(name) as conn:
             alice = People(conn).add("alice", "Alice")
             source = World.load(TEST).inventory.listing()
             _ = init(conn, world_plan(), CASES, source, alice, giftbag=True)
         yield name
-    finally:
-        copies.forget(name)
-        drop_database(copies.admin, name)
 
 
 @pytest.fixture(scope="session")
 def ran(copies: Copies, curated: str) -> Iterator[str]:
-    name = create_database(copies.admin, template=curated)
-    try:
+    with templated(copies, curated) as name:
         with psycopg.connect(settings.database(), dbname=name, autocommit=True) as conn:
             alice = People(conn).find("alice")
             assert alice is not None
@@ -189,9 +209,24 @@ def ran(copies: Copies, curated: str) -> Iterator[str]:
             for scripted in scripted_runs(TEST / RUNS):
                 _ = run(bench, scripted)
         yield name
-    finally:
-        copies.forget(name)
-        drop_database(copies.admin, name)
+
+
+class Loaded(NamedTuple):
+    name: str
+    said: list[str]
+
+
+# The sample as init-data loads it with a giftbag for alice, and what loading it said.
+@pytest.fixture(scope="session")
+def sampled(copies: Copies, migrated: str) -> Iterator[Loaded]:
+    world = SAMPLE.parent
+    with templated(copies, migrated) as name:
+        with connect(name) as conn:
+            alice = People(conn).add("alice", "Alice")
+            source = World.load(world).inventory.listing()
+            plan = world_plan(world, SAMPLE)
+            said = init(conn, plan, load_cases(SAMPLE), source, alice, giftbag=True)
+        yield Loaded(name, said)
 
 
 @pytest.fixture

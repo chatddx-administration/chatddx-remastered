@@ -4,6 +4,7 @@ from chatddx.curation import init
 from chatddx.curation.test.cases import CASES, vignettes
 from chatddx.factors.base import resolve
 from chatddx.factors.scoring import Scorer
+from chatddx.identity import Person
 from chatddx.scorers import metrics
 from chatddx.scorers.scorer import Metrics
 from chatddx.scorers.shipped import SCORERS
@@ -25,13 +26,10 @@ def _scorers(lines: list[str]) -> set[str]:
 
 
 @pytest.mark.slow
+@pytest.mark.parametrize("template", ["loaded"], indirect=True)
 def test_a_deploy_moves_the_archive_s_scorers_on_when_it_raises_their_version(
-    conn: Connection, monkeypatch: pytest.MonkeyPatch
+    conn: Connection, alice: Person, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    alice = People(conn).add("alice", "Alice")
-    monkeypatch.setenv("CHATDDX_REVISION", "e" * 40)
-    _ = init(conn, world_plan(), CASES, vignettes(), alice)
-
     monkeypatch.setenv("CHATDDX_REVISION", "f" * 40)
     assert _scorers(init(conn, world_plan(), CASES, vignettes(), alice)) == {
         "validated"

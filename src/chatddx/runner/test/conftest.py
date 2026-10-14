@@ -10,7 +10,7 @@ from chatddx.store.store import Connection
 from chatddx.test.world import faked, free_world
 
 # Slow enough that calls sent together overlap: a fake answer is some 40 tokens.
-DELAY = 0.005
+DELAY = 0.002
 
 
 @pytest.fixture

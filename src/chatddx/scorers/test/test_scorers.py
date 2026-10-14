@@ -1,11 +1,12 @@
 import importlib
 import json
+from functools import cache
 from typing import Any, cast
 
 import pytest
 from pydantic import JsonValue
 
-from chatddx.curation import load_cases
+from chatddx.curation import Plan, load_cases
 from chatddx.factors.base import resolve
 from chatddx.factors.bundle import Registry
 from chatddx.factors.request import Skeleton, SlotName
@@ -27,6 +28,12 @@ from chatddx.scorers.verdicts import asked
 from chatddx.test.world import DATA, world_plan
 
 pytestmark = pytest.mark.wip
+
+
+@cache
+def read_only_plan() -> Plan:
+    return world_plan()
+
 
 SCHEMA = "sha256:" + "0" * 64
 SHIPPED = "chatddx.scorers.metrics:score"
@@ -341,7 +348,7 @@ def test_a_judged_view_is_scored_from_its_judge_s_verdicts() -> None:
 
 
 def test_a_judge_is_asked_only_when_it_has_what_it_reads() -> None:
-    plan = world_plan()
+    plan = read_only_plan()
     judge = resolve(plan.registry.get, plan.named("judge", "verdict").digest, Judge)
     skeleton = resolve(plan.registry.get, judge.skeleton, Skeleton)
     view = View(
@@ -386,7 +393,7 @@ TARGETS_SCHEMA = json.loads((DATA / "schemas" / "targets.json").read_text())
 
 
 def world_scorer(name: str) -> tuple[Scorer, tuple[str | None, ...]]:
-    plan = world_plan()
+    plan = read_only_plan()
     record = plan.named("scorer", name)
     scorer = plan.registry.get(record.digest)
     assert isinstance(scorer, Scorer)
@@ -524,7 +531,7 @@ READS = {
 
 
 def test_each_scorer_s_views_pick_from_the_answers_it_reads() -> None:
-    plan = world_plan()
+    plan = read_only_plan()
     read: set[str] = set()
     for record in plan.records:
         if record.kind != "skeleton":

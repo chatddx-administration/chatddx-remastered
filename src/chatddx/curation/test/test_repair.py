@@ -7,6 +7,7 @@ from chatddx.cli import main
 from chatddx.curation import init, repair
 from chatddx.curation.test.cases import CASES, vignettes
 from chatddx.factors.bundle import Registry
+from chatddx.identity import Person
 from chatddx.inventory.test.memory import MemorySource
 from chatddx.store import Catalog, People
 from chatddx.store.store import Connection, Store
@@ -16,11 +17,10 @@ pytestmark = pytest.mark.solidified
 
 
 @pytest.mark.slow
+@pytest.mark.parametrize("template", ["loaded"], indirect=True)
 def test_repair_moves_the_archive_s_families_to_their_vignettes_new_places(
-    conn: Connection,
+    conn: Connection, alice: Person
 ) -> None:
-    alice = People(conn).add("alice", "Alice")
-    _ = init(conn, world_plan(), CASES, vignettes(), alice)
     archive = People(conn).find("archive")
     assert archive is not None
     catalog = Catalog(conn)
@@ -78,9 +78,10 @@ def test_repair_moves_the_archive_s_families_to_their_vignettes_new_places(
 
 
 @pytest.mark.slow
-def test_repair_leaves_other_people_s_families_alone(conn: Connection) -> None:
-    alice = People(conn).add("alice", "Alice")
-    _ = init(conn, world_plan(), CASES, vignettes(), alice)
+@pytest.mark.parametrize("template", ["loaded"], indirect=True)
+def test_repair_leaves_other_people_s_families_alone(
+    conn: Connection, alice: Person
+) -> None:
     archive = People(conn).find("archive")
     assert archive is not None
     mine = vignettes(Mine=b"Alice's own vignette.")

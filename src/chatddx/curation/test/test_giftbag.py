@@ -41,11 +41,12 @@ def _own(conn: Connection, alice: Person, case: str) -> tuple[str, str]:
 
 
 @pytest.mark.slow
-def test_the_giftbag_keeps_a_person_s_own_expectation(conn: Connection) -> None:
-    alice = People(conn).add("alice", "Alice")
+@pytest.mark.parametrize("template", ["loaded"], indirect=True)
+def test_the_giftbag_keeps_a_person_s_own_expectation(
+    conn: Connection, alice: Person
+) -> None:
     catalog = Catalog(conn)
     plan = world_plan()
-    _ = init(conn, plan, CASES, vignettes(), alice)
     noted, crlf = _case("noted"), _case("crlf")
     written, schema = _own(conn, alice, noted)
 

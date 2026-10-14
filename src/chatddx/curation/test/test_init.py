@@ -9,6 +9,7 @@ from chatddx.cli import main
 from chatddx.conftest import connect
 from chatddx.curation import init
 from chatddx.curation.test.cases import CASES, appended, vignettes
+from chatddx.identity import Person
 from chatddx.inventory.test.memory import MemorySource
 from chatddx.store import Catalog, People
 from chatddx.store.store import Connection
@@ -131,8 +132,8 @@ def test_init_data_loads_the_archive(conn: Connection) -> None:
 
 
 @pytest.mark.slow
-def test_init_data_lints_what_it_lands(conn: Connection) -> None:
-    alice = People(conn).add("alice", "Alice")
+@pytest.mark.parametrize("template", ["loaded"], indirect=True)
+def test_init_data_lints_what_it_lands(conn: Connection, alice: Person) -> None:
     plan = world_plan()
     unlike = replace(CASES["noted"], targets={"warning": {"pattern": "shock"}})
     lines = init(conn, plan, {**CASES, "noted": unlike}, vignettes(), alice)
@@ -149,9 +150,10 @@ def test_init_data_lints_what_it_lands(conn: Connection) -> None:
 
 
 @pytest.mark.slow
-def test_init_data_updates_and_gives_forks(conn: Connection, tmp_path: Path) -> None:
-    alice = People(conn).add("alice", "Alice")
-    _ = init(conn, world_plan(), CASES, vignettes(), alice)
+@pytest.mark.parametrize("template", ["loaded"], indirect=True)
+def test_init_data_updates_and_gives_forks(
+    conn: Connection, alice: Person, tmp_path: Path
+) -> None:
     world = edited(
         tmp_path,
         "_data/texts-en.toml",
@@ -239,11 +241,10 @@ def test_init_data_says_when_a_thread_is_held_as_another_fork_than_the_data_s(
 
 
 @pytest.mark.slow
+@pytest.mark.parametrize("template", ["loaded"], indirect=True)
 def test_init_data_withdraws_only_the_tags_the_archive_gave(
-    conn: Connection, tmp_path: Path
+    conn: Connection, alice: Person, tmp_path: Path
 ) -> None:
-    alice = People(conn).add("alice", "Alice")
-    _ = init(conn, world_plan(), CASES, vignettes(), alice)
     catalog = Catalog(conn)
     [native] = catalog.find("skeleton", NATIVE)
     [case] = [c for c in vignettes().cases() if c.vignette.id == "bom"]
@@ -266,9 +267,10 @@ def test_init_data_withdraws_only_the_tags_the_archive_gave(
 
 
 @pytest.mark.slow
-def test_init_data_says_how_a_vignette_moved_at_its_source(conn: Connection) -> None:
-    alice = People(conn).add("alice", "Alice")
-    _ = init(conn, world_plan(), CASES, vignettes(), alice)
+@pytest.mark.parametrize("template", ["loaded"], indirect=True)
+def test_init_data_says_how_a_vignette_moved_at_its_source(
+    conn: Connection, alice: Person
+) -> None:
     catalog = Catalog(conn)
     families = {c.vignette.id: catalog.family(c.digest) for c in vignettes().cases()}
     texts = vignettes().vignettes

@@ -154,7 +154,7 @@ def test_a_run_is_accepted_and_told_by_its_events(signed: TestClient) -> None:
 def test_a_run_s_events_stream_as_they_come_and_resume_after_an_id(
     signed: TestClient, world: Inventory, conn: Connection
 ) -> None:
-    with faked(world, Store(conn).get, delay=0.01):
+    with faked(world, Store(conn).get, delay=0.005):
         run = signed.post("/api/runs", json=asked(signed, score=False)).json()["run"]
         said = followed(signed, run)
     content = [d for _, n, d in said if n == "item.delta" and d["kind"] == "content"]
@@ -296,7 +296,7 @@ def test_no_browser_keeps_what_is_case_derived(signed: TestClient) -> None:
 def test_a_run_s_items_hold_its_calls_and_render_again_as_they_were_sent(
     signed: TestClient,
 ) -> None:
-    made, _ = sent(signed, asked(signed))
+    made, _ = sent(signed, asked(signed, score=False))
     [item] = signed.get(f"/api/runs/{made['id']}/items").json()
     assert {k: item[k] for k in made["items"][0]} == made["items"][0]
     assert item["why"] is None and item["turns"] == []
@@ -317,7 +317,7 @@ def test_a_run_s_items_hold_its_calls_and_render_again_as_they_were_sent(
 @pytest.mark.slow
 @pytest.mark.usefixtures("fake")
 def test_another_s_run_isn_t_found(signed: TestClient, bob: dict[str, str]) -> None:
-    made, _ = sent(signed, asked(signed))
+    made, _ = sent(signed, asked(signed, score=False))
     for path in ("", "/items", "/rendered-again", "/events"):
         got = signed.get(f"/api/runs/{made['id']}{path}", headers=bob)
         assert (got.status_code, got.json()) == (
@@ -393,7 +393,7 @@ def test_a_run_whose_listener_goes_away_goes_on(
 ) -> None:
     alice = {"Authorization": signed.headers["Authorization"]}
     with (
-        faked(world, Store(conn).get, delay=0.02),
+        faked(world, Store(conn).get, delay=0.005),
         httpx2.Client(headers=alice) as http,
     ):
         run = signed.post("/api/runs", json=asked(signed)).json()["run"]
@@ -414,9 +414,9 @@ def test_a_run_is_named_by_its_variation_and_runs_the_edit_given(
     signed: TestClient,
 ) -> None:
     off = digest(signed, "reasoning", OFF)
-    varied, _ = sent(signed, asked(signed, parts={"reasoning": off}))
+    varied, _ = sent(signed, asked(signed, parts={"reasoning": off}, score=False))
     assert varied["described"].startswith(f"{LINES}+reasoning={OFF} × {QWEN} × ")
-    plain, _ = sent(signed, asked(signed))
+    plain, _ = sent(signed, asked(signed, score=False))
     assert plain["described"].startswith(f"{LINES} × {QWEN} × ")
 
     mine = thread(signed, "configuration", LINES)
@@ -424,7 +424,7 @@ def test_a_run_is_named_by_its_variation_and_runs_the_edit_given(
     edits = f"/api/threads/{mine['id']}/edits"
     later = signed.post(edits, json={"head": first["id"], "parts": {"reasoning": off}})
     assert later.status_code == 201
-    earlier, _ = sent(signed, asked(signed, head=first["id"]))
+    earlier, _ = sent(signed, asked(signed, head=first["id"], score=False))
     assert earlier["skeleton"] == first["digest"] != later.json()["digest"]
     got = signed.post("/api/runs", json=asked(signed, head=10**9))
     assert (got.status_code, got.json()) == (
@@ -493,7 +493,7 @@ def test_a_run_runs_again_with_another_seed_under_its_name(
     signed: TestClient, bob: dict[str, str]
 ) -> None:
     off = digest(signed, "reasoning", OFF)
-    first, _ = sent(signed, asked(signed, parts={"reasoning": off}))
+    first, _ = sent(signed, asked(signed, parts={"reasoning": off}, score=False))
     got = signed.post(f"/api/runs/{first['id']}/again", json={"seed": 9})
     assert got.status_code == 202
     started = got.json()
