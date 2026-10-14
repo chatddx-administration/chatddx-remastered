@@ -168,72 +168,28 @@ A person is scored against their own expectations only, so they take the shared 
 
 ## Runs
 ### Starting one
-```
-AGENT: replace
-A run takes seeds or replicates.
----
-A run is a configuration's variation, of its head or of an earlier edit given, at an endpoint, on the cases of some
-families, picked by id or by tag, or on cases named by digest, each one of a family's current cases, with seeds given,
-or as many replicates as asked under seeds drawn from the trial's whole range: one unless asked.
-```
-A run is a configuration's variation, of its head or of an earlier edit given, at an endpoint, on the cases of some
-families, picked by id or by tag, or on cases named by digest, each one of a family's current cases, with one seed,
-drawn from the trial's whole range unless given.
+Runs are started within their request, so whatever refuses them does so before anything is sent.
 
-A family stands for its default case, because a family is what the person sees and picks; a case with
-appendices is named. The run gives back the cases' digests, and is named by the variation's label, `NAME+PART=CHUNK`,
-which titles it from then on.
+Any person can start at most `settings.RUNS_PER_DAY` runs a day, and a run holds at most `settings.ITEMS_PER_RUN` items.
 
-A person starts at most `settings.RUNS_PER_DAY` runs a day, and a run holds at most `settings.ITEMS_PER_RUN` items;
-past either the run is refused as over quota.
+The run gives back the cases' digests, and is named by the variation's label, `NAME+PART=CHUNK`.
 
-```
-AGENT: replace
-The paragraph's last sentence: a started run is queued.
----
+The gate refuses an endpoint that doesn't serve the trial's engine, isn't cleared for a sensitive source among the
+cases', or lacks its secret; tools that would get a sensitive source's content; and an endpoint that doesn't answer.
+
 Once started, it is queued for the worker, and answered 202 with what `run.started` holds, and the run's path as
 `Location`.
-```
-The run is started within the request, so whatever refuses it does so before anything is sent. The gate refuses an
-endpoint that doesn't serve the trial's engine, isn't cleared for a sensitive source among the cases', or lacks its
-secret; tools that would get a sensitive source's content; and an endpoint that doesn't answer. The request is
-refused too for anything its body names that the person doesn't see (a configuration, an endpoint, a family), and
-for tags no case has, and for a judge configuration, which is asked as runs are scored rather than run on cases.
-Once started, it is answered 202 with what `run.started` holds, and the run's path as `Location`.
 
-```
-AGENT: replace
-What a run is sent with comes from its endpoint and its sources, and the request may choose some of it.
----
 A run is sent under its endpoint's execution (docs/inventory.md, "Endpoints"), with the concurrency, up to the
 endpoint's `max_jobs`, and the order the request gives, a shuffled order's seed drawn; with its endpoint's canary set;
 and with the cleanup steps the request gives, else those its cases' sources ask for (docs/inventory.md, "Sources").
-```
-A run is sent under the default execution, with no timeout, and with no canary set or text cleanup.
 
 ### Where it runs
-```
-AGENT: replace
-Runs go through the worker (agents/wip-worker.md, step 3).
----
 A started run is queued as a job in the store, and a worker sends it, finishes it and scores it under every scorer
-that applies to it, unless asked not to be, whether or not anyone is listening; so is a scoring asked for. A job
-outlives the process that queued it, and is followed and halted from any. `chatddx portal`, for development, runs a
-worker in its own process; a deployment runs `chatddx worker` beside `chatddx api`, which runs none
-(agents/wip-worker.md). Its rows land as they are written, so a run can be read back at any point.
-```
-A started run is sent on a thread of its own, with a database connection of its own, and is then finished and scored
-under every scorer that applies to it, unless asked not to be, whether or not anyone is listening. It is in the app's
-process for now: what the app has under way for a run, the run or a scoring of it, is a job, which keeps its events
-while it is under way and is let go when it ends, and ends with the process. The worker is to take its place with
-the API as it is (agents/wip-worker.md). Its rows land as they are written, so a run can be read back at any point.
+that applies to it, unless asked not to be. A job outlives the process that queued it, and is followed and halted from
+any
 
 ### Its events
-```
-AGENT: replace
-The two paragraphs below: a run's events are told from the ledger's rows, numbered by them, with what the worker says
-in between (agents/wip-worker.md, T1 to T3).
----
 `GET /api/runs/{id}/events` tells the run's rows, its scores' included, in the order they were written; then, while a
 job for the run is queued or under way, what the worker says as it happens and the rows as they land; and ends with
 `done`. Each event's data is one line of JSON, whose models are among the OpenAPI document's schemas.
@@ -241,44 +197,23 @@ job for the run is queued or under way, what the worker says as it happens and t
 The last event a row tells has the row's number as its `id`, so that a stream asked for after an id is told the rows
 after it, in any process, after a restart, and across a scoring again. What isn't a row has no id, and is told only
 to the streams listening as it happens: an item about to be sent, its deltas and tool runs before it is recorded, a
-scoring starting, a judge asked, its deltas and its answer, and the scoring over. A stream that joins mid-item is told
-that the item started, its text from when it joined, and each tool run once; its whole answer is the item's once it is
-recorded. Deltas go out together, a tenth of a second's at a time.
+scoring starting, a judge asked, its deltas and its answer, and the scoring over.
+
+A stream that joins mid-item is told that the item started, its text from when it joined, and each tool run once;
+its whole answer is the item's once it is recorded. Deltas go out together, a tenth of a second's at a time.
 
 A stream joined after its run's job ended, or for a run no job took, is told the rows, the latest scores as
 `run.scored`, and `done`.
-```
-`GET /api/runs/{id}/events` streams what is under way for the run as it comes, ending with `done`.
-Each event has an `id`, its place in the job, and its data is one line of JSON, whose models are among the OpenAPI
-document's schemas. A delta is kept until its item or judge call has ended, so a stream joined while the job is under
-way has every event but the deltas of what ended before it joined.
 
-A run with nothing under way in the app's process, as one that has finished, or one started before the process or
-elsewhere, is told from the ledger: its items as they ended, with no deltas or judge calls, what it noted, its finish,
-its latest scores, and `done`. Its ids are places in that telling, not in the job, so a stream asked for after an id
-past them, as a job's that counted its deltas too, is told `done` alone.
-
-```
-AGENT: replace
-In the table: the rows of `run.started`, `item.started`, `run.noted`, `score.noted`, `run.scored`, `error` and `done`.
----
-| `run.started` | first | the run, its trial and skeleton, the endpoint, the cases, the seeds, and whether sampling is greedy |
-| `item.started` | an item is about to be sent, or a stream first hears of it | its case and replicate, and its seed |
-| `run.noted` | the run is recorded as finished, before `run.finished` | a finding noted along the way, such as a case that couldn't be read |
-| `score.noted` | a scorer's score is recorded as finished | a finding of the scoring pass, such as an answer its schema refuses |
-| `run.scored` | the scoring is over; or before `done`, from the ledger, for a stream that wasn't told it | each scorer's score, or why it gave none; from the ledger, the latest scores |
-| `error` | before `done`, when the run's last job failed | why |
-| `done` | last | whether the run's last job was asked to halt, `null` for a run no job took |
-```
 | Event | When | Holds |
 | --- | --- | --- |
-| `run.started` | first | the run, its trial and skeleton, the endpoint, the cases, the seed, and whether sampling is greedy |
-| `item.started` | an item is about to be sent | its case and replicate, and its seed |
+| `run.started` | first | the run, its trial and skeleton, the endpoint, the cases, the seeds, and whether sampling is greedy |
+| `item.started` | an item is about to be sent, or a stream first hears of it | its case and replicate, and its seed |
 | `item.delta` | a chunk of an answer streams in | its case and replicate, the kind (reasoning, content or a tool call), the text, and the tokens so far |
 | `item.tool` | a tool has run for a call | its case and replicate, and the tool run |
 | `item.ended` | an item is recorded | its case and replicate, its outcome and why, and its tokens |
 | `canary.ended` | a canary call is recorded | the phase, which canary, and the call |
-| `run.noted` | something was noted along the way, such as a case that couldn't be read | a finding |
+| `run.noted` | the run is recorded as finished, before `run.finished` | a finding noted along the way, such as a case that couldn't be read |
 | `run.finished` | the run is recorded as finished | what checking it found |
 | `run.scoring` | a scoring starts, after the run or asked for | the scorers it is to score by |
 | `score.started` | a scorer's score starts | the scorer, its name, the score and its views' labels |
@@ -286,44 +221,21 @@ In the table: the rows of `run.started`, `item.started`, `run.noted`, `score.not
 | `judge.delta` | a chunk of the judge's answer streams in | the case and replicate, and as `item.delta` |
 | `judge.answered` | the judge's call is recorded | the case and replicate, the view, the judge, the seed's index, the verdict read, and the call |
 | `score.item` | a score item is written | the score, the case and replicate, the view, its value and detail |
-| `score.noted` | the scoring pass noted something, such as an answer its schema refuses | a finding |
-| `run.scored` | the scoring is over | each scorer's score, or why it gave none |
-| `error` | what was under way failed | why |
-| `done` | last | whether it was halted, `null` when told from the ledger |
+| `score.noted` | a scorer's score is recorded as finished | a finding of the scoring pass, such as an answer its schema refuses |
+| `run.scored` | the scoring is over; or before `done`, from the ledger, for a stream that wasn't told it | each scorer's score, or why it gave none; from the ledger, the latest scores |
+| `error` | before `done`, when the run's last job failed | why |
+| `done` | last | whether the run's last job was asked to halt, `null` for a run no job took |
 
 An item's outcome is stopped, errored, unread, salvaged, completed, invalid or valid, by its last call and the answer
 read from it; salvaged is a structured answer cut short, read with its structure closed.
 
 ### Running again
-```
-AGENT: replace
-In the paragraph's first line: running again takes seeds, or as many as the run had, drawn.
----
-A run of the person's runs again with other seeds, given, or as many as it had, drawn: its trial's skeleton, engine,
-cases and cleanup, and its execution and canary set, at its endpoint, as a run of its own named as the run is, so that
-a run of a variation nobody saved can be run again without its variation. It is started, refused, limited and
-followed as any run: refused, too, when the endpoint serves another engine now, or a case is of a family the person
-no longer sees.
-```
-A run of the person's runs again with another seed, given or drawn: its trial's skeleton, engine and cases at its
-endpoint, as a run of its own named as the run is, so that a run of a variation nobody saved can be run again without
-its variation. It is started, refused, limited and followed as any run: refused, too, when the endpoint serves
-another engine now, or a case is of a family the person no longer sees.
+Running again draws new seeds.
 
 ### Halting
-```
-AGENT: replace
 A halt goes through the queue, and reaches the job's worker wherever it is.
----
-A person halts what is queued or under way for a run of theirs, from any process: the calls under way are hung up and
-recorded as stopped, the run is finished, and it isn't scored, so it is left to score; a run halted while queued is
-finished unsent; a scoring under way finishes the score it is on with what it has, and the scorers after it are
-refused as stopped. Leaving a stream halts nothing. A halt with nothing queued or under way is a conflict.
-```
-A person halts what is under way for a run of theirs: the calls under way are hung up and recorded as stopped, the
-run is finished, and it isn't scored, so it is left to score; a scoring under way finishes the score it is on with
-what it has, and the scorers after it are refused as stopped. Leaving a stream halts nothing. A halt with nothing
-under way is a conflict.
+When a person send a halt the calls under way are hung up and recorded as stopped: the run is finished unscored.
+Leaving a stream halts nothing. A halt with nothing queued or under way is a conflict.
 
 ### Reading runs
 - **A person's runs**, newest first, a page at a time, filtered by trial, by a digest their trial is built on, by
@@ -343,27 +255,14 @@ under way is a conflict.
 Only the person's own runs are seen; a collaborator on a run doesn't see it.
 
 ## Scoring
-A run is scored as soon as it is finished, under every scorer that applies, because how it scored is what a client
-most wants after a run; a request can ask for it to be left, with `"score": false`. A judged view is scored as any
-other, its judge's calls sent to the one endpoint that serves the judge's engine. The scores come in `run.scored`, and
-with the run when it is read: each item's value under each view, and each view's mean over the items, or why the
-scorer gave none. A judged view's value is the mean over the seeds whose verdicts were read.
+A run is scored as soon as it is finished by default but a request can ask for it to be left with `"score": false`.
+A judged view is scored as any other, its judge's calls sent to the one endpoint that serves the judge's engine.
+The scores come in `run.scored`, and with the run when it is read: each item's value under each view.
+Also each view's mean over the items, or why the scorer gave none.
+A judged view's value is the mean over the seeds whose verdicts were read.
 
-```
-AGENT: replace
-A scoring asked for is queued as a job, as a run is.
----
 A finished run is scored again when asked, under every scorer that applies or some, queued as a run is: answered 202
-with the scorers it is to score by, it goes on whoever listens, and its events are the run's, after its rows. The runs
-left to score are listed, each with the scorers it is left to be scored by (see "Reading runs"), and what each seed
-gave and the judge said is in the score's items. An unfinished run, a scorer that doesn't apply, and a run nothing
-applies to are refused, and so is a run with something queued or under way.
-```
-A finished run is scored again when asked, under every scorer that applies or some, as a run is sent: answered 202
-with the scorers it is to score by, it goes on whoever listens, and its events are the run's. The runs left to score
-are listed, each with the scorers it is left to be scored by (see "Reading runs"), and what each seed gave and the
-judge said is in the score's items. An unfinished run, a scorer that doesn't apply, and a run nothing applies to are
-refused, and so is a run with something under way.
+with the scorers it is to score by, it goes on whoever listens, and its events are the run's, after its rows.
 
 ## Case-derived content
 What is made from a vignette is shown to whoever signed in, but only in its own places, so that a policy for edges
@@ -407,13 +306,6 @@ many cases is answered 200, whatever it took, and a carry 201, even when the exp
 ## Not covered
 - **A vignette in a run's request.** A run takes cases; a text to run is typed first, and kept in the World's
   database source as a case of its own (see "Typed cases").
-```
-AGENT: remove
-A run's request takes seeds or replicates, cleanup steps, a concurrency and an order, and the endpoint gives the
-rest (see "Starting one").
-```
-- **A trial beyond one seed**: replicates, text cleanup, an execution's settings and canary sets wait on
-  `Bench.start` taking them (agents/wip-worker.md, "Below the worker").
 - **A proxy's forward auth**: once a proxy authenticates, that is its job.
 - **A person's secrets.** An endpoint's credential comes from an environment variable, as in the repl.
 - **Scoring every outstanding run in one request.** A client scores one run at a time (see "Scoring").
@@ -425,25 +317,12 @@ alice signed in by a bearer token and bob for what isn't his to see. They speak 
 client over HTTPS, since the cookie is only sent over it. Runs are sent to the fake vLLM serving the test World's
 endpoints on ports nothing else uses.
 
-```
-AGENT: add
-After this paragraph: the worker in the tests, and what a test must do to hear what isn't a row.
----
 The app the tests serve runs a worker in its process, as `chatddx portal` does. What isn't a row is told only to a
 stream listening as it happens, so a test that looks for it pauses alice's queue, starts the run, reads the stream's
 first row, by when it listens, and then lets the worker take the job.
-```
-The test client runs a streamed response to its end whether or not its reader hangs up, so the tests of halting
-and of leaving a stream serve the app with uvicorn on a thread, and speak to it over a socket.
 
 ## Terms
 
-```
-AGENT: replace
-In the row `Run`: some seeds.
----
-| Run | A variation sent at an endpoint on some cases with some seeds, recorded as it goes. |
-```
 | Term | Meaning |
 | --- | --- |
 | Session | A person signed in: a token, carried as a bearer or as a cookie, for 12 hours. |
@@ -455,7 +334,7 @@ In the row `Run`: some seeds.
 | Take | A fork of an expectation shared with the person, so that it counts. |
 | Saying | Writing what holds of a thread: its name, description, tags, collaborators, and whether it is deleted. |
 | Reach | Of a scorer's view: whether a variation's output offers what it reads, and which cases have an expectation it picks from. |
-| Run | A variation sent at an endpoint on some cases with one seed, recorded as it goes. |
+| Run | A variation sent at an endpoint on some cases with some seeds, recorded as it goes. |
 | Item | One case's request in a run, with its calls. |
 | Outcome | How an item ended: stopped, errored, unread, salvaged, completed, invalid or valid. |
 | Event | One step of what is under way for a run, as its events tell it. |
@@ -482,26 +361,9 @@ its events (see "Where it runs" and "Its events").
 - **Paths**: under `/api/`, with no version until there is a second.
 
 ### Serving
-```
-AGENT: remove
-The jobs are the worker's (agents/wip-worker.md, step 3): a run outlives the process that started it, a worker that
-stops queues its runs again for the next to resume, and any process follows a run and halts it.
-```
-- **The jobs are the process's.** A run or a scoring under way ends with the process: a server that stops waits for
-  them, and a killed one leaves them unfinished, as resuming isn't built. Another replica doesn't see them, so its
-  streams tell a run under way from the ledger, as far as it has gone, and it can't halt it. A job is let go when it
-  ends, and the run is told from the ledger from then on. The worker is to take their place, with the API as it is
-  (agents/wip-worker.md).
-```
-AGENT: replace
-The connections a stream and a job hold.
----
 - **A connection per request**, about 2.6 ms each over the Unix socket, opened and closed each time; one for each
   stream while it is open, and one per process listening for them all; and two for each job a worker holds. A pool
   (`psycopg_pool`) for requests and streams when a measurement says so.
-```
-- **A connection per request**, about 2.6 ms each over the Unix socket, opened and closed each time, and one of its
-  own for each run or scoring under way. A pool (`psycopg_pool`) for requests when a measurement says so.
 - **A query parameter a route doesn't name is ignored**, unless the query is a model (`Varying`), so a misspelt filter
   on `GET /api/runs` or `GET /api/threads` gives everything, and a part given twice in a variation's query counts the
   last. Take: one check for every route that refuses a parameter the route doesn't declare, and a scalar given twice.

@@ -393,16 +393,8 @@ The configuration's head when nothing is replaced or it has no recipe; else the 
 The request rendered from the skeleton with `PLACEHOLDERS` for its slots and `seed`.
 - `engine`: whose `served` model the request carries; `‹model›` without one.
 
-```
-AGENT: replace
-`Seen.trial` takes seeds.
----
 #### `trial(skeleton: Skeleton, engine: str, cases: list[str], seeds: Sequence[int], cleanup: tuple[CleanupOp, ...] = ()) -> tuple[Registry, Trial]`
 A `Trial` of the skeleton, the engine, the cases, the cleanup steps and the seeds, and a registry holding it with
-what it refers to.
-```
-#### `trial(skeleton: Skeleton, engine: str, cases: list[str], seed: int, cleanup: tuple[CleanupOp, ...] = ()) -> tuple[Registry, Trial]`
-A `Trial` of the skeleton, the engine, the cases, the cleanup steps and the one seed, and a registry holding it with
 what it refers to.
 
 #### `findings(variation: TriedVariation, engine: str, seed: int, families: list[Family] | None = None) -> list[Finding]`
@@ -744,10 +736,6 @@ Raises:
 ### `REFUSALS`
 `(LookupError, TypeError, ValueError, NotImplementedError, Refused)`: what `score` takes as a scorer refused.
 
-```
-AGENT: replace
-`start` takes seeds, cleanup steps, an execution and a canary set.
----
 ### `start(variation: TriedVariation, endpoint: str, cases: list[str], seeds: Sequence[int], cleanup: Sequence[CleanupOp] | None = None, execution: Execution | None = None, canaries: str | None = None) -> Running`
 The variation run at `endpoint` over `cases` with `seeds`, its replicates, its cleanup steps, its execution and the
 canary set stored under the digest `canaries`, its run named by `variation.label`. Not given: the steps the cases'
@@ -760,21 +748,7 @@ Raises:
 - `OverQuota("<login> has started <n> runs in the last day, as many as a day takes")`
 - `Seen.endpoint`'s, `resolve`'s for `canaries`, the runner's and its gate's; the runner's `ValueError` for a
   connection not in autocommit mode.
-```
-### `start(variation: TriedVariation, endpoint: str, cases: list[str], seed: int) -> Running`
-The variation run at `endpoint` over `cases` with `seed`, its run named by `variation.label`. The compilation of a
-varied skeleton is stored once the run has started.
 
-Raises:
-- `ValueError("<label> is a judge configuration: a judge is asked as runs are scored, and isn't run on cases")`
-- `OverQuota("a run holds at most <ITEMS_PER_RUN> items, not <n>")`
-- `OverQuota("<login> has started <n> runs in the last day, as many as a day takes")`
-- `Seen.endpoint`'s, the runner's and its gate's; the runner's `ValueError` for a connection not in autocommit mode.
-
-```
-AGENT: replace
-`again` takes seeds and keeps the run's execution and canary set; `resume` follows it.
----
 ### `again(run: RunStarted, seeds: Sequence[int]) -> Running`
 The run's trial run again at its endpoint with `seeds`, its engine, cleanup, execution and canary set kept, as `start`
 runs a variation, and named by the run's name, else its skeleton's title. The gate refuses an endpoint that serves
@@ -783,11 +757,6 @@ another engine now (`Refused("endpoint '<name>' serves engine <digest>, the tria
 ### `resume(run: UUID) -> Running`
 A run of the person's own resumed by the runner (docs/runner-api.md, `Runner.resume`); another's is `NotFound`, as
 `run_by_id` has it.
-```
-### `again(run: RunStarted, seed: int) -> Running`
-The run's trial run again at its endpoint with `seed`, its engine and cleanup kept, as `start` runs a variation, and
-named by the run's name, else its skeleton's title. The gate refuses an endpoint that serves another engine now
-(`Refused("endpoint '<name>' serves engine <digest>, the trial's is <digest>")`).
 
 ### `score(run: RunStarted, scorers: Collection[str] | None = None, on_event: Callable[[ScoringEvent], None] | None = None, halt: ScoreHalt | None = None) -> list[Graded]`
 The run scored by the scoring pass under each of `scorers_for(run)`, as `scoring` builds it now, by name.

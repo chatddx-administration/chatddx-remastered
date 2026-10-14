@@ -99,15 +99,8 @@ a real one is, so no scripted run can send a tool round on their cases. The old 
 with the web patched in the process that runs the tools (`urllib.request.urlopen`, src/chatddx/tools/web_search.py).
 
 ### Smaller issues
-```
-AGENT: replace
-A run sends its endpoint's canary set now, and the Worlds' endpoints name none.
----
 - **No scripted run sends a canary set**: the Worlds' endpoints name none (docs/inventory.md, "Endpoints"), and a
   scripted run's turns would have to answer its canaries too.
-```
-- **No scripted run sends a canary set.** `Bench.start` passes none (docs/bench.md, "Runs and scores"), though both
-  data sets hold one.
 - **No two scripted runs vary a part over the same cases**, as the page to compare runs wants
   (agents/wip-portal.md, "Comparing variations").
 - **`set` and `--again` have no test**, and no scripted run sets a part.

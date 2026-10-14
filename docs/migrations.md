@@ -34,49 +34,32 @@ it, if any. A new schema gets its own section with all three tiers.
   rows and canary calls reference their log's started row through a constant `stage` column, and a score's started
   row references its run's. Trials, scorings and cases reference `factor.component`.
 
-```
-AGENT: add
-A bullet at the end of the ledger's Tier 0, above this heading.
----
-- `0022-t0-ledger-seq.sql`: `ledger.seq`, and a `seq` column on every table taking it by default, so that a run's rows
-  are read back in the order they were written; rows from before are numbered as the column is added, in no
-  particular order. An index on `score_stage (run)`.
-```
 ### Tier 1
 - `0005-t1-ledger.sql`: PUBLIC loses all access; the writer gets SELECT, INSERT, with default privileges. The reader
   gets nothing: `run_item` and `score_item` hold case-derived records
   (`src/chatddx/ledger/record.py:Record.case_derived`), and the stage rows and canary calls sit beside them so that
   each log stays in one schema.
+- `0022-t0-ledger-seq.sql`: `ledger.seq`, and a `seq` column on every table taking it by default, so that a run's rows
+  are read back in the order they were written; rows from before are numbered as the column is added, in no
+  particular order. An index on `score_stage (run)`.
 
-```
-AGENT: add
-A bullet at the end of the ledger's Tier 1, above this heading.
----
-- `0023-t1-ledger-seq.sql`: the writer gets USAGE on `ledger.seq`, which its inserts draw from.
-```
 ### Tier 2
 - `0006-t2-ledger.sql`: CHECKs that `doc` matches `payload` and that every key column matches `doc`; insert-only
   triggers on every table.
+- `0023-t1-ledger-seq.sql`: the writer gets USAGE on `ledger.seq`, which its inserts draw from.
 
 ## identity
 
 ### Tier 0
-```
-AGENT: replace
-`worker` is updated in place too.
----
-- `0007-t0-identity.sql`: schema `identity`, updated in place, as `worker` is.
-```
-- `0007-t0-identity.sql`: schema `identity`, the one mutable schema.
-  - `person (id, name, login, roles, active)`: `id` generated as identity, `login` unique.
-  - `credential (person, hash)`.
-  - `session (token_digest, person, created, expires)`: only a digest of the token is stored.
-
 ### Tier 1
 - `0008-t1-identity.sql`: PUBLIC loses all access. Each table is granted explicitly, without default privileges,
   because tables here may be mutable. The writer gets SELECT, INSERT, UPDATE on `person` and `credential`, and no
   DELETE, so people are never removed; and SELECT, INSERT, DELETE on `session` (sessions are deleted on logout,
   expiry and deactivation). The reader gets SELECT on `person` only.
+- `0007-t0-identity.sql`: schema `identity`, the one mutable schema.
+  - `person (id, name, login, roles, active)`: `id` generated as identity, `login` unique.
+  - `credential (person, hash)`.
+  - `session (token_digest, person, created, expires)`: only a digest of the token is stored.
 
 ### Tier 2
 - `0009-t2-identity.sql`: CHECKs on `person.login` (lowercase pattern), `person.roles` (known role names) and
@@ -148,10 +131,6 @@ AGENT: replace
 ### Tier 2
 - `0016-t2-source.sql`: triggers refusing UPDATE and TRUNCATE on `text`; DELETE is held back by the grants alone.
 
-```
-AGENT: add
-A section of its own, last: the `worker` schema, built as the worker's queue (agents/wip-worker.md).
----
 ## worker
 
 ### Tier 0
@@ -173,4 +152,3 @@ A section of its own, last: the `worker` schema, built as the worker's queue (ag
   `test/test_queue.py`), and how each status goes with its worker, its claim, its end and why; scorers only for a job
   that scores. A trigger (`worker.keep_job`) refuses to change what a job is asked to do, and any change to a job that
   has ended.
-```

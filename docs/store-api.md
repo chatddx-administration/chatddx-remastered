@@ -13,13 +13,6 @@ files and in `docs/identity.md`.
 
 Paths are relative to `src/chatddx/store/` unless they start with `src/`, `docs/` or `agents/`.
 
-```
-AGENT: add
-Below this heading's list: `queue.py` and the `worker` schema.
----
-- [queue.py](#queuepy): `Queue`, the worker's queue
-- [Database: schema `worker`](#database-schema-worker)
-```
 ## Contents
 - [Package](#package)
 - [Conventions](#conventions)
@@ -27,6 +20,8 @@ Below this heading's list: `queue.py` and the `worker` schema.
 - [people.py](#peoplepy): `People`, passwords and sessions
 - [catalog.py](#catalogpy): `Rows`
 - [migrate.py](#migratepy): migrations and tiers
+- [queue.py](#queuepy): `Queue`, the worker's queue
+- [Database: schema `worker`](#database-schema-worker)
 - [Roles and connections](#roles-and-connections)
 - [Database: `public.migration`](#database-publicmigration)
 - [Database: schema `identity`](#database-schema-identity)
@@ -36,19 +31,12 @@ Below this heading's list: `queue.py` and the `worker` schema.
 
 ## Package
 
-```
-AGENT: replace
-The package re-exports the queue's names, and `queue.py` builds on `store.py`.
----
 `chatddx.store` re-exports `TOP_TIER`, `Catalog`, `Job`, `People`, `Queue`, `Store`, `Texts`, `UnderWay`,
 `fetch_vignette` and `migrate`. `Connection` (in `store.py`), `Rows`, `Held`, `Status`, `STATUSES`, `ENDED`,
 `pending`, `migrations`, `Migration` and `MIGRATIONS` are imported by path.
 
 Rows for the module table: `| notify.py | pydantic |`, and `| queue.py | notify.py, store.py, psycopg's errors |`;
 `store.py` builds on `notify.py` too.
-```
-`chatddx.store` re-exports `TOP_TIER`, `Catalog`, `People`, `Store`, `Texts`, `fetch_vignette` and `migrate`.
-`Connection` (in `store.py`), `Rows`, `pending`, `migrations`, `Migration` and `MIGRATIONS` are imported by path.
 
 | Module | Builds on |
 | --- | --- |
@@ -116,25 +104,15 @@ in whatever order Postgres returns.
 | `ScoreFinished` | `ledger.score_stage` | `score`, `stage` |
 | `ScoreItem` | `ledger.score_item` | `score`, `"case"`, `replicate`, `view` |
 
-```
-AGENT: add
-After this paragraph: the row's number, and the notification.
----
-Each row gets `seq` from `ledger.seq`, its column's default. In the same transaction, `append` notifies the channel
-of each run whose rows it wrote (`notify.py:channel`) with `ROWS`, a score's run read from its started row.
-```
 Each row also gets `payload`, the record's `canonical` text, and `doc`, its `jsonb` copy. Nothing is overwritten:
 a duplicate key raises `UniqueViolation` and the transaction is rolled back. An item, canary call or score started
 row without its log's or run's started row raises `ForeignKeyViolation`; a finished row without its started row is
 accepted. `TypeError("no table for <Class>")` for any other record type. It doesn't validate the log; reading it back
 does.
 
-```
-AGENT: add
-A row of this table, after `score`.
----
-| `rows_of(run: UUID, after: int = 0) -> list[Written]` | The run's rows and its scores', each `(seq, record)`, the record as its table and stage give it through `Record.parse`, with `seq` past `after`, in `seq`'s order. `[]` for a run that isn't stored. |
-```
+Each row gets `seq` from `ledger.seq`, its column's default. In the same transaction, `append` notifies the channel
+of each run whose rows it wrote (`notify.py:channel`) with `ROWS`, a score's run read from its started row.
+
 | Method | Returns / raises |
 | --- | --- |
 | `run(run: UUID) -> Run` | The started row, the finished row if any, the items and the canary calls, parsed with `Record.parse` and put together as a `Run`. `LookupError("run <id> is not in the store")` without stage rows; `StructuralError("run <id> has no started row")` for a finished row alone; `Record.parse`'s errors; `ValidationError` from `Run`. |
@@ -143,6 +121,7 @@ A row of this table, after `score`.
 | `runs_of(trial: str) -> list[RunStarted]` | The started rows of the runs of a trial, newest first. |
 | `finished(runs: Collection[UUID]) -> set[UUID]` | Those of the runs that have a finished row. |
 | `scores_of(run: UUID) -> list[ScoreStarted]` | The started rows of the scores of a run, newest first. |
+| `rows_of(run: UUID, after: int = 0) -> list[Written]` | The run's rows and its scores', each `(seq, record)`, the record as its table and stage give it through `Record.parse`, with `seq` past `after`, in `seq`'s order. `[]` for a run that isn't stored. |
 
 ## people.py
 
@@ -180,10 +159,6 @@ A row of this table, after `score`.
 ### `fetch_vignette(conn: Connection, inventory: Inventory, vignette: Vignette) -> bytes`
 The vignette's bytes: from `Texts.get` when its source is a `DatabaseSource`, else from the source's own `fetch`.
 
-```
-AGENT: add
-Above this heading: `queue.py`.
----
 ## queue.py
 
 ### `class Queue`
@@ -210,11 +185,7 @@ Above this heading: `queue.py`.
 
 In the transaction of the change, `put`, `halt`, `pause`, `end` and `requeue` notify `WORKERS` (`notify.py`), and
 `put`, `end` and `requeue` the run's channel with `JOB` and the status the job is left in.
-```
-```
-AGENT: add
-Above this heading, after `queue.py`: `notify.py`.
----
+
 ## notify.py
 What the store, the queue and the worker tell through `NOTIFY`, and how a listener reads it back.
 
@@ -226,7 +197,7 @@ What the store, the queue and the worker tell through `NOTIFY`, and how a listen
 | `LIMIT` | 7900, the bytes a payload holds, under `NOTIFY`'s 8000. |
 | `payloads(said, ids: Iterator[int]) -> list[str]` | Events, each `(name, data)`, as JSON arrays of `[name, data]` in ASCII, as few as fit within `LIMIT`; an array that doesn't fit alone is cut in parts, each headed `~<message> <part> <parts>` and a newline, the message's number drawn from `ids`. |
 | `Assembler.message(channel, pid, payload) -> Message \| None` | A payload read back: `Rows()`, `JobChanged(status)`, or `Events(said)` once every part of a message has come from one backend, in order; `None` for a part, and for a part out of order, which drops its message. |
-```
+
 ## catalog.py
 
 ### `class Rows`
@@ -296,15 +267,8 @@ Created by `migrate`, not by a migration file. No grants: only the admin reads i
 | `applied_at` | `timestamptz NOT NULL DEFAULT now()` |
 
 ## Database: schema `identity`
-```
-AGENT: replace
-`worker` is updated in place too.
----
 Created by `0007-t0-identity.sql`, roles in `0008-t1-identity.sql`, CHECKs in `0009-t2-identity.sql`. Updated in
 place, as `worker` is: no insert-only triggers. `People` writes it.
-```
-Created by `0007-t0-identity.sql`, roles in `0008-t1-identity.sql`, CHECKs in `0009-t2-identity.sql`. The one
-mutable schema: no insert-only triggers. `People` writes it.
 
 ### `identity.person`
 
@@ -354,10 +318,6 @@ sessions belong to a person, and that a session expires after it is created. It 
 argon2id, or that an inactive person has no sessions (`People.update` deletes them, and `People.session` ignores
 them).
 
-```
-AGENT: add
-Above this heading: the `worker` schema.
----
 ## Database: schema `worker`
 Created by `0019-t0-worker.sql`, roles in `0020-t1-worker.sql`, CHECKs and a trigger in `0021-t2-worker.sql`. Updated
 in place, as `identity` is. `Queue` writes it.
@@ -372,20 +332,10 @@ The writer gets SELECT, INSERT, UPDATE on each table, and no DELETE; the reader 
 one of `Status`; queued, it has no worker or claim; under way, it has both; it has ended exactly when it is finished,
 stopped or failed; a failed one says why; and only a job that scores names scorers. `worker.keep_job` refuses a
 change to what a job is asked to do, and any change once it has ended.
-```
+
 ## Migrations
 `migrations/NNNN-tT-<schema>[-<what>].sql`, applied by `migrate`:
 
-```
-AGENT: add
-Rows for this table, last.
----
-| `0019-t0-worker.sql` | 0 | `worker`: `worker`, `job`, `control` | here, "Database: schema `worker`" |
-| `0020-t1-worker.sql` | 1 | `worker` grants: the writer SELECT, INSERT, UPDATE; the reader nothing | here |
-| `0021-t2-worker.sql` | 2 | `worker` CHECKs, `worker.keep_job()` | here |
-| `0022-t0-ledger-seq.sql` | 0 | `ledger.seq`, a `seq` column on every `ledger` table, index `score_stage_run` | `docs/ledger-api.md`, "Database: schema `ledger`" |
-| `0023-t1-ledger-seq.sql` | 1 | `ledger.seq` to the writer | `docs/ledger-api.md` |
-```
 | File | Tier | Schema | Documented in |
 | --- | --- | --- | --- |
 | `0001-t0-factor.sql` | 0 | `factor`: `component`, `component_ref` | `docs/factors-api.md`, "Database: schema `factor`" |
@@ -406,6 +356,11 @@ Rows for this table, last.
 | `0016-t2-source.sql` | 2 | `source.text` insert-only triggers | `docs/migrations.md`, "source" |
 | `0017-t0-catalog-label-edit.sql` | 0 | `catalog.label` made again, on edits | `docs/catalog-api.md`, "Database: schema `catalog`" |
 | `0018-t2-catalog-label-edit.sql` | 2 | `catalog.check_label()` for labels on edits | `docs/catalog-api.md` |
+| `0019-t0-worker.sql` | 0 | `worker`: `worker`, `job`, `control` | here, "Database: schema `worker`" |
+| `0020-t1-worker.sql` | 1 | `worker` grants: the writer SELECT, INSERT, UPDATE; the reader nothing | here |
+| `0021-t2-worker.sql` | 2 | `worker` CHECKs, `worker.keep_job()` | here |
+| `0022-t0-ledger-seq.sql` | 0 | `ledger.seq`, a `seq` column on every `ledger` table, index `score_stage_run` | `docs/ledger-api.md`, "Database: schema `ledger`" |
+| `0023-t1-ledger-seq.sql` | 1 | `ledger.seq` to the writer | `docs/ledger-api.md` |
 
 How to name and list a new migration is in `docs/migrations.md`.
 

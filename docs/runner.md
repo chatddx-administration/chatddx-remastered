@@ -41,19 +41,15 @@ Canaries are sent one at a time, the start phase's before the first item and the
 the concurrency, so they bracket the items. They need no clearance, as they aren't case-derived, and they go only where
 the run goes, after the gate.
 
-```
-AGENT: add
-Above this heading: a run resumes now (`Runner.resume`), which the worker is to ask for (agents/wip-worker.md, "Below
-the worker").
----
 ### Resuming
-A run that wasn't finished, as when the process sending it died, can resume: the items and canary calls its log holds
-are kept, and only what it lacks is sent. Resuming refuses what starting refuses, under the run's own execution, and an
-endpoint whose address is another now, since the start record holds the one the run is sent to. A finished run doesn't
-resume. The finish notes that the run resumed and how far it had come, and warns when another rig resumed it than
-started it, since the start record names the rig that started it. A run with nothing written yet that the rig which
-started it resumes, as the worker sends a run the request started, is noted nothing.
-```
+A run that wasn't finished can resume, the items and canary calls its log holds are kept, and only what it lacks is
+sent. Resuming refuses what starting refuses, under the run's own execution, and an endpoint whose address is another
+now, since the start record holds the one the run is sent to.
+
+A finished run doesn't resume. The finish notes that the run resumed and how far it had come, and warns when another rig
+resumed it than started it, since the start record names the rig that started it. A run with nothing written yet that
+the rig which started it resumes, as the worker sends a run the request started, is noted nothing.
+
 ### Finishing
 Finishing writes the finish record, with the findings the runner saw while it ran, and returns what checking the run
 finds (docs/ledger.md, "Run"). A run is finished once.
@@ -173,19 +169,10 @@ left to score for as long as the World is as it is. What may pass later (a secre
 keeps it outstanding, and scoring says why.
 
 ## Findings
-```
-AGENT: replace
-A resumed run is noted too.
----
 The runner and the scoring pass note what they see while they work, in the finish record (docs/ledger.md,
 "Findings"): a case that can't be read, a run that resumed, an answer or a verdict that can't be read, and one that
 breaks its schema. Drift of a vignette is noted as preparing a case notes it (docs/factors.md, "Preparing a case").
 The API lists them (docs/runner-api.md, "Finding codes").
-```
-The runner and the scoring pass note what they see while they work, in the finish record (docs/ledger.md,
-"Findings"): a case that can't be read, an answer or a verdict that can't be read, and one that breaks its schema.
-Drift of a vignette is noted as preparing a case notes it (docs/factors.md, "Preparing a case"). The API lists them
-(docs/runner-api.md, "Finding codes").
 
 ## Terms
 
@@ -202,17 +189,9 @@ Drift of a vignette is noted as preparing a case notes it (docs/factors.md, "Pre
 
 ## Elsewhere
 - **Scripted runs**, `chatddx scripted-runs` on the bench: `docs/scripted.md`.
-```
-AGENT: replace
-Resuming is the runner's now (see "Resuming"), and a run sends its endpoint's canary set.
----
 - **`max_jobs` across runs**, and asking for a lost run to resume: `agents/wip-worker.md`, "Below the worker".
 - **Canary sets are each endpoint's**, in the inventory (docs/inventory.md, "Endpoints"); no World's endpoint names
   one yet, though data sets hold them.
-```
-- **Resuming** and **`max_jobs` across runs**: `agents/wip-worker.md`, "Below the worker".
-- **No run sends a canary set** (`docs/runner.md`, "Smaller issues"): data sets hold them now, and `Bench.start`
-  passes none.
 - **The gate's refusal of `qwen3-bare@fake` for `typed` cases isn't read by a test** (docs/curation.md,
   "Outstanding"); the judge `remote`'s tests read `unknown@remote`'s. The gate's tests edit the inventory instead
   (`runner/test/test_run.py`).
@@ -232,25 +211,12 @@ Resuming is the runner's now (see "Resuming"), and a run sends its endpoint's ca
 - **The answer tool called beside a toolset tool** ends the item, and checking the run notes the other call; no engine
   under test does that. Checking the run doesn't refuse a turn that runs the other call, though the runner never
   writes one.
-```
-AGENT: replace
-A run sends its endpoint's canary set now; no World's endpoint names one.
----
 - **No World's endpoint names a canary set**, though data sets hold them; canary outputs aren't compared
   (docs/chatddx.md, "Possible design issues"), and canary calls stream without events.
-```
-- **No run sends a canary set**: `Bench.start` passes none, though data sets hold them; canary outputs aren't
-  compared (docs/chatddx.md, "Possible design issues"), and canary calls stream without events.
 - **Fingerprints are unkeyed.** A call can take a key, but neither the runner nor the scoring pass passes one
   (docs/factors.md, "Fingerprints").
 - **Judge calls go one at a time**, and every judged scoring confirms its judges' endpoints, even when no item needs a
   judge; an endpoint that hangs holds it up to the confirmation's timeout.
 - **Every engine is asked for the prompt's token ids** (docs/factors.md, "Smaller issues").
 - **No finding for reasoning that wasn't heeded**, as the old chatddx had.
-```
-AGENT: replace
-The runner resumes a run now; the worker is to ask for it.
----
 - **`max_jobs` across runs** belongs to the worker, and so does asking for a lost run to resume.
-```
-- **Resuming a run and `max_jobs` across runs** belong to the worker.

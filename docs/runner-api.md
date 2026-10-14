@@ -288,10 +288,6 @@ In order:
 6. stores the trial and the canary set with what they refer to (`Store.add`), appends `RunStarted`, and notes `by` as
    the run's owner in the catalog.
 
-```
-AGENT: add
-Above this heading: `Runner.resume`, built for the worker (agents/wip-worker.md, "Below the worker").
----
 ### `Runner.resume(run: UUID) -> Running`
 A `Running` for an unfinished run, holding the items and canary calls its log holds, so that `send` sends only what
 it lacks. In order:
@@ -304,7 +300,7 @@ it lacks. In order:
 
 The finish notes `run.resumed` (see "Finding codes"), unless the log holds nothing and `rig()` is the rig that
 started the run. Two `Running`s of one run collide on the ledger's key for an item; whoever resumes keeps it to one.
-```
+
 ### `class Running`
 
 | Member | Description |
@@ -398,12 +394,6 @@ and stops the scoring: `send` returns after a halt, and raises `KeyboardInterrup
 Noted while sending, in the finished row. What `check_run` and `check_score` find is in `docs/ledger-api.md`, "Finding
 codes".
 
-```
-AGENT: add
-A row for the finding `Runner.resume` notes.
----
-| `run.resumed` | `Runner.resume` | none | `resumed after <n> of <m> items`, level `info`, when the log holds something; a warning with ` by <rig>, where <rig> started it` when another rig resumes it than started it |
-```
 | Code | Noted by | Subject | Message |
 | --- | --- | --- | --- |
 | `case.unreadable` | `Running.send` | item key | the `LookupError` or `StructuralError` preparing it |
@@ -413,6 +403,7 @@ A row for the finding `Runner.resume` notes.
 | `verdict.unread` | `Grading.send` | item key | `view <i>, seed <n>: <problem>`, with `; the call ended with: <error>` when the call has one |
 | `verdict.invalid` | `Grading.send` | item key | `view <i>, seed <n>: <problem>` |
 | `answer.salvaged` | `Grading.send` | item key | `cut short, and read with its structure closed`, with `; the call ended with: <error>` when the call has one; level `info` |
+| `run.resumed` | `Runner.resume` | none | `resumed after <n> of <m> items`, level `info`, when the log holds something; a warning with ` by <rig>, where <rig> started it` when another rig resumes it than started it |
 
 ## Known gaps
 From `docs/runner.md`, "Open design issues", where they concern this API:

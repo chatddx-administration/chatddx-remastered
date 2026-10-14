@@ -21,14 +21,8 @@ Paths are relative to `src/chatddx/api/` unless they start with `src/`, `docs/` 
 - [world.py](#worldpy): endpoints, models, components and the scoring code shipped
 - [runs.py](#runspy): starting a run, its events and halting it; reading runs
 - [scores.py](#scorespy): scoring a run, its scores and a score's items
-```
-AGENT: replace
-`jobs.py` is gone; `telling.py` and `listening.py` take its place.
----
 - [telling.py](#tellingpy): a run's events, from the ledger's rows and what the worker says
 - [listening.py](#listeningpy): the app's one listening connection, fanning out to its streams
-```
-- [jobs.py](#jobspy): what the app has under way, and how a stream follows it
 - [events.py](#eventspy): the runner's and the scoring pass's events as a run's events
 - [The command](#the-command)
 - [Tests](#tests)
@@ -37,73 +31,40 @@ AGENT: replace
 
 `chatddx.api` re-exports nothing; its modules are imported by path. `src/chatddx/cli.py` imports `app.py:app`.
 
-```
-AGENT: replace
-In the table: the rows of `state.py`, `events.py`, `runs.py`, `scores.py` and `app.py`; `jobs.py`'s gone, and
-`listening.py`'s and `telling.py`'s new.
----
-| `listening.py` | psycopg, `chatddx.store.notify` |
-| `state.py` | `listening.py`, psycopg, `chatddx.{facts,inventory,store}` |
-| `events.py` | `schemas.py`, `chatddx.bench`, `chatddx.factors.{base,request,scoring,trial}`, `chatddx.ledger`, `chatddx.runner.{run,score}`, `chatddx.scorers.aggregate` |
-| `telling.py` | `schemas.py`, `events.py`, `listening.py`, `state.py`, `chatddx.bench`, `chatddx.factors.{base,bundle,request,scoring,trial}`, `chatddx.identity`, `chatddx.ledger`, `chatddx.store` |
-| `runs.py` | `schemas.py`, `events.py`, `people.py`, `state.py`, `telling.py`, `threads.py`, `chatddx.bench`, `chatddx.factors.{base,request,trial}`, `chatddx.ledger`, `chatddx.runner.run`, `chatddx.scorers.answer`, `chatddx.store` |
-| `scores.py` | `schemas.py`, `events.py`, `people.py`, `state.py`, `chatddx.store` |
-| `app.py` | every module above but `events.py` and `telling.py`, `chatddx.bench`, `chatddx.facts`, `chatddx.inventory`, `chatddx.runner.gate`, `chatddx.store`, `chatddx.worker` |
-```
 | Module | Builds on |
 | --- | --- |
-| `state.py` | `jobs.py`, psycopg, `chatddx.{facts,inventory,store}` |
+| `listening.py` | psycopg, `chatddx.store.notify` |
+| `state.py` | `listening.py`, psycopg, `chatddx.{facts,inventory,store}` |
 | `schemas.py` | `chatddx.bench`, `chatddx.catalog`, `chatddx.factors.base`, `chatddx.identity` |
 | `people.py` | `schemas.py`, `state.py`, `chatddx.bench`, `chatddx.identity`, `chatddx.settings`, `chatddx.store` |
 | `threads.py` | `schemas.py`, `people.py`, `chatddx.bench`, `chatddx.catalog`, `chatddx.factors.{base,request,trial}` |
 | `families.py` | `schemas.py`, `people.py`, `state.py`, `threads.py`, `chatddx.bench`, `chatddx.factors.{base,cases}`, `chatddx.store` |
 | `world.py` | `schemas.py`, `people.py`, `threads.py`, `chatddx.bench`, `chatddx.factors.kinds`, `chatddx.inventory`, `chatddx.scorers.{scorer,shipped}` |
-| `events.py` | `schemas.py`, `chatddx.bench`, `chatddx.factors.{base,request,scoring}`, `chatddx.ledger`, `chatddx.runner.{run,score}`, `chatddx.scorers.aggregate` |
+| `events.py` | `schemas.py`, `chatddx.bench`, `chatddx.factors.{base,request,scoring,trial}`, `chatddx.ledger`, `chatddx.runner.{run,score}`, `chatddx.scorers.aggregate` |
 | `jobs.py` | `schemas.py`, `events.py`, `chatddx.bench`, `chatddx.ledger`, `chatddx.runner.run` |
-| `runs.py` | `schemas.py`, `events.py`, `jobs.py`, `people.py`, `state.py`, `threads.py`, `chatddx.bench`, `chatddx.factors.{base,request,trial}`, `chatddx.identity`, `chatddx.ledger`, `chatddx.runner.run`, `chatddx.scorers.answer` |
-| `scores.py` | `schemas.py`, `events.py`, `jobs.py`, `people.py`, `state.py`, `chatddx.bench`, `chatddx.ledger` |
-| `app.py` | every module above but `events.py` and `jobs.py`, `chatddx.bench`, `chatddx.facts`, `chatddx.inventory`, `chatddx.runner.gate` |
+| `runs.py` | `schemas.py`, `events.py`, `people.py`, `state.py`, `telling.py`, `threads.py`, `chatddx.bench`, `chatddx.factors.{base,request,trial}`, `chatddx.ledger`, `chatddx.runner.run`, `chatddx.scorers.answer`, `chatddx.store` |
+| `scores.py` | `schemas.py`, `events.py`, `people.py`, `state.py`, `chatddx.store` |
+| `app.py` | every module above but `events.py` and `telling.py`, `chatddx.bench`, `chatddx.facts`, `chatddx.inventory`, `chatddx.runner.gate`, `chatddx.store`, `chatddx.worker` |
+| `telling.py` | `schemas.py`, `events.py`, `listening.py`, `state.py`, `chatddx.bench`, `chatddx.factors.{base,bundle,request,scoring,trial}`, `chatddx.identity`, `chatddx.ledger`, `chatddx.store` |
 
-```
-AGENT: replace
-`jobs.py` is gone, the worker publishes with `events.py`, and `listening.py` says `LISTEN`.
----
 The modules that serve build on FastAPI, `telling.py` among them for its thread pool; `schemas.py`, `events.py` and
 `listening.py` don't, and `chatddx.worker` publishes a run's events with `events.py`. The package holds no SQL but
 `listening.py`'s `LISTEN` and `UNLISTEN`: it reads through the bench, the store's `Store`, `Rows` and `Queue`, and
 `People`.
-```
-The modules that serve build on FastAPI, `jobs.py` among them for its 409; `schemas.py` and `events.py` need only
-pydantic, and `app.py` its JSON schemas too. The package holds no SQL: it reads through the bench, the store's
-`Store` and `Rows`, and `People`.
 
 ## Conventions
 
 **Handlers.** Every route is a plain `def`, which FastAPI runs on its thread pool, but `runs.py:events`, which is
 `async`, so that it can stream; it does its blocking work through `run_in_threadpool`.
 
-```
-AGENT: replace
-The paragraph's last sentence: a stream has a connection of its own, and a run and a scoring are the worker's.
----
-A stream gets a connection of its own (`telling.py:told`), closed when it ends.
-```
 **A bench per request.** `people.py:bench`, as `BenchDep`, builds a `Bench` for the person the request acts for, on the
-request's connection (`state.py:connection`), in autocommit mode and closed when the request is done with it. A run
-and a scoring get a connection of their own (`runs.py:_opened`, `scores.py:score_now`), closed when they are over.
+request's connection (`state.py:connection`), in autocommit mode and closed when the request is done with it. A stream
+gets a connection of its own (`telling.py:told`), closed when it ends.
 
-```
-AGENT: replace
-A job is the queue's.
----
 **Jobs.** What a request asks to be run or scored is a job in the store's queue (`chatddx.store.Queue`;
 agents/wip-worker.md), which a worker takes: `chatddx worker`, or the one `app` runs on a thread of its own when made
 with `worker=True`. A stream reads the run's rows, and hears what the worker says and the rows as they land through
 the app's one `listening.py:Listener`.
-```
-**Jobs.** What the app has under way for a run, the run or a scoring of it, is a `jobs.py:Job`, kept in
-`AppState.jobs`, on a thread of its own named `chatddx-run-<id>` or `chatddx-score-<id>`, which isn't a daemon. A
-job's events are put by its thread and read by any stream that follows it (`jobs.py:followed`).
 
 **Who it depends on.** What depends on the person is asked of the bench. What doesn't is the same for everyone: the
 endpoints and models (`world.py`), a component by its digest, and the scoring code the running chatddx ships, read
@@ -136,36 +97,20 @@ routes that give case-derived content, and each says `Cache-Control: no-store`: 
 ## app.py
 
 ### `STATUSES: dict[type[Exception], tuple[int, Code]]`
-```
-AGENT: replace
-The queue's `UnderWay` is a 409 too.
----
 `NotFound` 404 `not_found`, `Ambiguous` 409 `ambiguous`, `Conflict` 409 `conflict`, `MovedOn` 409 `moved_on`,
 `OverQuota` 429 `over_quota`, `Refused` 422 `refused`, and the queue's `UnderWay` 409 `conflict`. Each is answered
 `Error(detail=str(error), code=code)`.
-```
-`NotFound` 404 `not_found`, `Ambiguous` 409 `ambiguous`, `Conflict` 409 `conflict`, `MovedOn` 409 `moved_on`,
-`OverQuota` 429 `over_quota`, `Refused` 422 `refused`. Each is answered `Error(detail=str(error), code=code)`.
 
 ### `CODES: dict[int, Code]`
 The code of an `HTTPException`, a route's or Starlette's own, by its status: 401 `unauthenticated`, 403 `cross_site`,
 404 `not_found`, 405 `not_allowed`, 409 `conflict`, 422 `refused` and 429 `over_quota`; any other is `error`. Its
 headers are kept, as a 401's `WWW-Authenticate`.
 
-```
-AGENT: replace
-`app` takes `worker`, holds a listener, and has a lifespan.
----
 ### `app(inventory: Inventory, facts: Facts, conninfo: str, worker: bool = False) -> FastAPI`
 A FastAPI app titled `chatddx`, versioned as the installed package is, with its OpenAPI document at
 `/api/openapi.json`, its pages at `/api/docs` and no ReDoc. `state.chatddx` holds an `AppState` of what it was made
 with, and a `Listener` of `conninfo`. Its lifespan runs a `chatddx.worker.Worker` on a thread named `chatddx-worker`
 when `worker`, and as it ends stops the worker, waiting for it, then the listener.
-```
-### `app(inventory: Inventory, facts: Facts, conninfo: str) -> FastAPI`
-A FastAPI app titled `chatddx`, versioned as the installed package is, with its OpenAPI document at
-`/api/openapi.json`, its pages at `/api/docs` and no ReDoc. `state.chatddx` holds an `AppState` of what it was made
-with.
 
 The routers of `people.py`, `threads.py`, `families.py`, `world.py`, `runs.py` and `scores.py` are mounted under
 `/api`; the handlers of `STATUSES` are added, one of `HTTPException` by `CODES`, and one of `RequestValidationError`,
@@ -179,15 +124,8 @@ FastAPI's own `openapi`, with the model of each event in `schemas.py:EVENTS`, an
 ## state.py
 
 ### `class AppState`
-```
-AGENT: replace
-`AppState` holds the listener in place of the jobs.
----
 A frozen dataclass of what the app is made with, loaded once: `conninfo: str`, `inventory: Inventory`,
 `facts: Facts`, and `listener: Listener`.
-```
-A frozen dataclass of what the app is made with, loaded once: `conninfo: str`, `inventory: Inventory`,
-`facts: Facts`, and `jobs: Jobs`, empty to begin with.
 
 #### `connect() -> Connection`
 A new connection to `conninfo` in autocommit mode, as the runner needs.
@@ -254,14 +192,6 @@ The token set as `COOKIE`: `Max-Age` `settings.SESSION_TTL` in seconds, `Secure`
 | `me`, `GET /me` | `Me.of` the person. |
 
 ## schemas.py
-```
-AGENT: replace
-In the rows `NewRun` and `NewAgain`, and a row for `Seeds`.
----
-| `Seeds` | `seeds`, at least one, or `replicates`, from 1 to `settings.ITEMS_PER_RUN`. Its validator raises `ValueError("a run takes seeds or replicates, not both")`. |
-| `NewRun(Seeds)` | A run's body, with `head`, the edit it varies, the configuration's head unless given; `cleanup`, the steps, else the sources'; `concurrency` and `order`, else the endpoint's. Its validator raises `ValueError("a run takes one of families, tags or cases")` unless exactly one of `families`, `tags` and `cases` is given, which FastAPI answers 422. |
-| `NewAgain(Seeds)` | Running again's body: the seeds or replicates, as many as the run had, drawn, when neither is given; and `score`. |
-```
 The models' fields are in the OpenAPI document. Besides them:
 
 | Name | Is |
@@ -293,14 +223,15 @@ The models' fields are in the OpenAPI document. Besides them:
 | `NewTakes`, `Taken` | A take's body for many cases, `families` (not empty), `expectation_schema` and `owner`, and its answer, `chatddx.bench.Taken` keyed by family id. |
 | `NewTake` | A take's body for one thread, `replace`. |
 | `Metric`, `ScorerCode` | Scoring code the running chatddx ships: its `entry_point`, `version`, `metrics` (each its `name`, what it `measures`, a JSON Schema for a view's `params`, whether it is `judged`, reading a judge's verdicts, and the `unit` that marks a value that isn't a score from 0 to 1, if any) and a JSON Schema for the scorer's own `params`. |
-| `NewRun` | A run's body, with `head`, the edit it varies, the configuration's head unless given. Its validator raises `ValueError("a run takes one of families, tags or cases")` unless exactly one of `families`, `tags` and `cases` is given, which FastAPI answers 422. |
+| `NewRun(Seeds)` | A run's body, with `head`, the edit it varies, the configuration's head unless given; `cleanup`, the steps, else the sources'; `concurrency` and `order`, else the endpoint's. Its validator raises `ValueError("a run takes one of families, tags or cases")` unless exactly one of `families`, `tags` and `cases` is given, which FastAPI answers 422. |
 | `Run` | A run as listed, with `unscored`, its scorers left as `Unscored` (`scorer`, `name`), when the listing asked for them, else `None`. |
 | `Graded` | A score under one scorer: the scorer and its name, the score's id, its `scoring`, when it started (`at`) and whether it `finished`, each view's label and mean, each item's value, or why it was refused. |
 | `ScoreItemDetail`, `ScoreItems` | A score item with its `detail` and `judge_calls` as their JSON; and a score's items with its `findings`. |
 | `EVENTS: dict[str, type[_Schema]]` | Each event of a run's events, by name, and the model of its data, in the order they can come; `run.noted` and `score.noted` have `Finding`, and `done` `DoneData`, whose `halted` is `None` when told from the ledger. |
 | `NewScoring` | A scoring's body: `scorers`, by digest, or none for every scorer that applies. |
 | `Answer` | what was read, why it couldn't be or breaks its schema, and whether it was salvaged. |
-| `NewAgain` | Running again's body: `seed`, drawn when not given, and `score`. |
+| `NewAgain(Seeds)` | Running again's body: the seeds or replicates, as many as the run had, drawn, when neither is given; and `score`. |
+| `Seeds` | `seeds`, at least one, or `replicates`, from 1 to `settings.ITEMS_PER_RUN`. Its validator raises `ValueError("a run takes seeds or replicates, not both")`. |
 
 `test/test_variations.py:test_a_request_names_the_recipe_s_parts` holds `Parts`' fields to `PARTS`, and a
 variation's query parameters to them with `endpoint`, `tag` and `seed`.
@@ -378,11 +309,6 @@ variation's query parameters to them with `endpoint`, `tag` and `seed`.
 | --- | --- |
 | `STREAM` | `"text/event-stream"`. |
 | `EVENTS` | The events' names, each in backquotes, joined by commas, for the routes' descriptions. |
-```
-AGENT: remove
-The row below: `_Started` is gone.
-```
-| `_Started` | A frozen dataclass of a started run: its `bench`, `running` (`Running`), `skeleton`, and `said`, the `run.started` event's data. |
 
 ### `_families(bench, given: schemas.NewRun) -> list[Family]`
 With `tags`: `Bench.families(tags)`, or `HTTPException(422, "no case tagged <tags joined by ' or '> for <login>")`
@@ -395,11 +321,6 @@ Without `cases`, each of `_families`' cases. With them: the cases in the order g
 `HTTPException(422, "a run takes at least one case")` for none, and `HTTPException(422, "no case <case> for <login>")`
 for the first that isn't among `Bench.cases` of a family of `Bench.families()`.
 
-```
-AGENT: replace
-`_opened`, `_Starting` and `_launched` are gone, `_new` and `_repeated` start a run on the request's bench, `_queued`
-queues it, and `_seeds` and `_execution` are new: everything from `_opened` to the routes' table.
----
 ### `_seeds(given: schemas.Seeds, replicates: int) -> tuple[int, ...]`
 The seeds given, else `suggest_seeds` of the replicates asked, else of `replicates`.
 
@@ -422,46 +343,13 @@ raised as `HTTPException(422)` with its message. The cases of `_cases`; and, wit
 `Queue.put` of the started run for the person, at its endpoint, holding as many slots as its execution's concurrency,
 and scoring it or not; `Location` the run's path (`url_path_for("run")`). Returns `run.started`'s data,
 `events.py:started_of` the run, its trial and skeleton.
-```
-### `_opened(held: AppState, person: Person, starting: _Starting) -> _Started`
-On a connection of its own (`AppState.connect`), a `Bench` for the person, and `starting(bench)`, which gives the
-`Running`, its skeleton, the endpoint's name and the seed. The connection is closed when any of this raises, and is
-the run's thread's otherwise. The `_Started` holds the bench, the `Running`, the skeleton and `run.started`'s data:
-the run, its trial's digest, skeleton and cases, the endpoint's name, the seed and the skeleton's `greedy`.
 
-`_Starting` is `Callable[[Bench], tuple[Running, Skeleton, str, int]]`.
-
-### `_new(given: schemas.NewRun) -> _Starting`
-Within `refused()`, `Bench.variation` and `Bench.skeleton`; then `Bench.endpoint`. A `LookupError` from those,
-`NotFound` among them, is raised as `HTTPException(422)` with its message. The cases of `_cases`; the seed,
-`suggest_seeds(1)[0]` unless given; and, within `refused()`, `Bench.start`, whose `Refused` passes to `STATUSES`.
-
-### `_repeated(run: UUID, given: schemas.NewAgain) -> _Starting`
-`Bench.run_by_id` (`NotFound`); each case of the run's trial of a family of `Bench.families()`, else
-`HTTPException(422, "no case <case> for <login>")`; the seed given, else `suggest_seeds(1)[0]`; and, within
-`refused()`, `Bench.again` of the run, whose `Refused` passes to `STATUSES`. The skeleton is the run's trial's, and the
-endpoint the run's.
-
-### `_launched(request, response, started: _Started, score: bool) -> schemas.RunStartedData`
-A `Job` of the run from `AppState.jobs` (`HTTPException(409)` while one is under way), holding its `Running`, with
-`run.started` put; `_sent` on a thread of its own, named `chatddx-run-<id>`; and `Location` the run's path
-(`url_path_for("run")`). Returns `run.started`'s data.
-
-```
-AGENT: replace
-In the table: the rows of `start`, `again`, `events` and `halt`.
----
+| Route | Does |
+| --- | --- |
 | `start`, `POST /runs` | `_new(bench, given)`, then `_queued`. 202, with `Location` the run's path and `run.started`'s data. |
 | `again`, `POST /runs/{run}/again` | `Bench.run_by_id` (`NotFound`), then `_repeated(bench, run, given)` and `_queued`, as `start`. |
 | `events`, `GET /runs/{run}/events` | `async`. `Bench.run_by_id` (`NotFound`), then `telling.py:told` for the person, after the `Last-Event-ID` header's id, else from the first row. A `StreamingResponse` of `STREAM`, with `NO_STORE` and `X-Accel-Buffering: no`; its description names the events. |
 | `halt`, `POST /runs/{run}/halt` | `Bench.run_by_id` (`NotFound`), then `Queue.halt`, whose `LookupError` is `HTTPException(409, "run <run> has nothing under way")`. 204. |
-```
-| Route | Does |
-| --- | --- |
-| `start`, `POST /runs` | `_opened` with `_new(given)`, and `_launched`: a `Job` of the run from `AppState.jobs`, holding its `Running`, with `run.started` put; and `_sent` on a thread of its own. 202, with `Location` the run's path (`url_path_for("run")`) and `run.started`'s data. |
-| `again`, `POST /runs/{run}/again` | `Bench.run_by_id` (`NotFound`), then `_opened` with `_repeated(run, given)`, `Bench.again` of the run with the seed given or drawn, and `_launched`, as `start`. |
-| `events`, `GET /runs/{run}/events` | `async`. `Bench.run_by_id` (`NotFound`). The job `AppState.jobs` holds for the run while it is under way, followed (`jobs.py:followed`), else `_told`, replayed (`jobs.py:replayed`), each after the `Last-Event-ID` header's id, else from the first. A `StreamingResponse` of `STREAM`, with `NO_STORE` and `X-Accel-Buffering: no`; its description names the events. |
-| `halt`, `POST /runs/{run}/halt` | `Bench.run_by_id` (`NotFound`), then `Job.halt` of the run's job. `HTTPException(409, "run <run> has nothing under way")` without one, or once it is done. 204. |
 
 ### `run_of(bench, started: RunStarted, finished: bool, unscored: list[str] | None = None) -> schemas.Run` and `detail(bench, run: UUID) -> schemas.RunDetail`
 `run_of` is the run as listed: its trial's parts, its endpoint's name, `Bench.described`, and the scorers of
@@ -481,31 +369,13 @@ A run is named by a `UUID`, so anything else in its place is a 422.
 
 ## scores.py
 
-```
-AGENT: replace
-In the table: `score_now`'s row; a scoring is queued.
----
-| `score_now`, `POST /runs/{run}/scores` | `Bench.run_by_id` (`NotFound`); `HTTPException(422)`: `"run <run> hasn't finished"`, `"scorer <digest> doesn't apply to run <run>"` for the first of `scorers` that doesn't, and `"no scorer applies to run <run>"`. `Queue.put` of a job scoring the run by the scorers `events.py:scoring_of` gives, at the run's endpoint, `""` for none, holding no slots; `UnderWay` while the run has one queued or under way (409). 202, with `Location` the run's scores' path and `run.scoring`'s data. |
-```
 | Route | Does |
 | --- | --- |
-| `score_now`, `POST /runs/{run}/scores` | `Bench.run_by_id` (`NotFound`); `HTTPException(422)`: `"run <run> hasn't finished"`, `"scorer <digest> doesn't apply to run <run>"` for the first of `scorers` that doesn't, and `"no scorer applies to run <run>"`. On a connection of its own, a job of the run from `AppState.jobs` (409 when one is under way, the connection then closed), `scoring_of` the scorers put as `run.scoring`, and `_scoring` on a thread of its own. 202, with `Location` the run's scores' path and `run.scoring`'s data. |
+| `score_now`, `POST /runs/{run}/scores` | `Bench.run_by_id` (`NotFound`); `HTTPException(422)`: `"run <run> hasn't finished"`, `"scorer <digest> doesn't apply to run <run>"` for the first of `scorers` that doesn't, and `"no scorer applies to run <run>"`. `Queue.put` of a job scoring the run by the scorers `events.py:scoring_of` gives, at the run's endpoint, `""` for none, holding no slots; `UnderWay` while the run has one queued or under way (409). 202, with `Location` the run's scores' path and `run.scoring`'s data. |
 | `scores`, `GET /runs/{run}/scores` | `Bench.run_by_id` (`NotFound`), then `graded_of` each of `Bench.scores_of(run, every)`, `every` being the query's `all`: the latest under each scorer by name, or every score, newest first. |
 | `score`, `GET /runs/{run}/scores/{score}` | `graded_of` of `Bench.score_of(run, score)`, whose `NotFound` is for a run that isn't the person's and a score that isn't the run's. |
 | `items`, `GET /runs/{run}/scores/{score}/items` | `Bench.score_of(run, score)`, then each of its score's items with its detail and judge calls dumped, and its finish's findings, none when it hasn't finished. Case-derived. |
 
-```
-AGENT: remove
-`_scoring` is gone: the worker scores.
-```
-`_scoring(bench, run, said, job)` is the scoring's thread: `jobs.py:scored`, within `jobs.py:ending`, as
-`scoring run <id>`.
-
-```
-AGENT: replace
-`jobs.py` is gone, everything from this heading to `events.py`: a job is the queue's, and a run's events are its rows
-and what the worker says.
----
 ## telling.py
 
 | Name | Value |
@@ -562,52 +432,9 @@ connection and the socket together (`select`), listens on the channels its strea
 rest, and puts each message `chatddx.store.notify.Assembler` gives back to each `Hearing` of its channel. A lost
 connection is made again after `AGAIN` seconds, and every stream told `Lagged`. `stop()` ends the thread and waits for
 it; a later stream starts it again.
-```
-## jobs.py
 
-| Name | Value |
-| --- | --- |
-| `ENDS` | Each event that ends what deltas stream, and those deltas' event: `item.ended` ends `item.delta`, `judge.answered` `judge.delta`, of one case and replicate. |
-| `_Said` | An event as put: its `id`, its text as `sse` gives it, and for a delta its event, case and replicate. |
+## events.py
 
-### `class Job(run: UUID, ended: Callable[[Job], None])`
-What is under way for a run: `running`, its `Running` while it is sent, and `scoring`, a `chatddx.bench.ScoreHalt`.
-
-| Member | Does |
-| --- | --- |
-| `put(named: Named) -> None` | The event with the next id, after dropping, for an event of `ENDS`, the deltas of its case and replicate; then told to each listener, on its loop (`call_soon_threadsafe`), and dropped for a loop that is closed. |
-| `end() -> None` | Done: each listener is told `None`, and let go, and so is `running`; then `ended(self)`. |
-| `halt() -> None` | `halted`; `Running.halt` while it is sent, and `ScoreHalt.set`. |
-| `listen(after: int, listener) -> tuple[list[str], bool]` | The events after id `after`, and, unless done, the listener, a loop and an `asyncio.Queue`, added under the same lock, so nothing put falls between; whether it was. |
-| `leave(listener) -> None` | The listener let go. |
-| `halted: bool`, `done: bool` (properties) | |
-
-### `class Jobs`
-The jobs by run, under a lock. `get(run) -> Job | None`; `started(run) -> Job`, a new job, and
-`HTTPException(409, "run <run> has something under way")` in place of one that isn't done. A job is let go when it
-ends.
-
-### Streams
-- `followed(job, after) -> AsyncIterator[str]`: what `Job.listen` gives, then each event as it comes until `None`,
-  with `: keep-alive` whenever `KEEP_ALIVE` seconds (15) pass without one, letting go of the listener when the stream
-  ends or is left.
-- `replayed(told, after) -> AsyncIterator[str]`: each event of `told` after id `after`, its id its place from 1, and
-  `done` even when `after` is past it, as a job's id that counted its deltas is.
-
-### Scoring
-- `scoring_of(bench, run, scorers) -> schemas.ScoringData`: the scorers of `Bench.scorers_for(run)`, or those of
-  them in `scorers`, by digest and the thread's name, else its title.
-- `scored(bench, run, said, job) -> None`: `Bench.score` under the scorers `said` names, each event put as
-  `scoring_event_of` gives it, halted by `job.scoring`; then `run.scored`.
-- `ending(job, bench, what)`: a context manager: an `Exception` within is logged and put as `error`,
-  `"<what> failed: <error>"`; then, whatever happened, the bench's connection closed, `done` put with `halted`, and
-  `Job.end`.
-
-```
-AGENT: replace
-The table of `events.py`'s names, and the two tables after it: a row's events are `telling.py`'s, and the rest are
-published by the worker.
----
 | Name | Does |
 | --- | --- |
 | `Named` | `tuple[str, BaseModel]`: an event's name, one of `EVENTS`, and its data. |
@@ -635,38 +462,6 @@ published by the worker.
 
 The worker publishes `run.scoring` and `run.scored` itself (`src/chatddx/worker/worker.py`); `error` and `done` are
 `telling.py`'s.
-```
-## events.py
-
-| Name | Does |
-| --- | --- |
-| `Named` | `tuple[str, BaseModel]`: an event's name, one of `EVENTS`, and its data. |
-| `sse(name: str, data: BaseModel, id: int \| None = None) -> str` | `id: <id>` when given, `event: <name>`, `data: <the data as JSON>` and a blank line. The JSON holds no newline. |
-| `item_of(skeleton, item: RunItem) -> schemas.Item` | The item's key, the word of `chatddx.bench.outcome`, and `chatddx.bench.usage`. |
-| `graded_of(graded: chatddx.bench.Graded) -> schemas.Graded` | The scorer's digest and name, the score's id, scoring, start and whether it finished, each view's label (`Graded.label`) and the `mean` of its values that aren't `None` (else `None`), each score item's value, and why it gave none. Neither the score items' detail nor the scoring's findings. |
-| `canary_of(call: CanaryCall) -> Named` | `canary.ended`: the phase, the canary's index, and the call dumped. |
-| `event_of(skeleton, event: chatddx.runner.run.Event) -> Named` | The runner's event as the run's, below. |
-| `scoring_event_of(bench, event: chatddx.bench.ScoringEvent) -> Named` | The scoring's event as the run's, below. |
-
-| Runner's event | Run's | Data |
-| --- | --- | --- |
-| `ItemStarted` | `item.started` | the key, and the seed |
-| `Streamed` | `item.delta` | the key, and the delta's kind, text and tokens so far |
-| `ToolRan` | `item.tool` | the key, and the tool run dumped |
-| `ItemEnded` | `item.ended` | `item_of`, and the outcome's why |
-| `CanaryEnded` | `canary.ended` | `canary_of` |
-| `Noted` | `run.noted` | `Finding.of` |
-
-| Scoring's event | Run's | Data |
-| --- | --- | --- |
-| `chatddx.bench.ScorerStarted` | `score.started` | the scorer, its name, the score, and its views' labels (`Bench.labels`, else `view <i>`) |
-| `ItemScored` | `score.item` | the score, the key, the view, the value and the detail |
-| `JudgeAsked` | `judge.asked` | the key, the scorer, the view, the judge and the seed's index |
-| `Streamed` | `judge.delta` | the key, and the delta's kind, text and tokens so far |
-| `JudgeAnswered` | `judge.answered` | the key, the view, the call's judge and seed index, the verdict, and the call dumped |
-| `Noted` | `score.noted` | `Finding.of` |
-
-`run.started`, `run.finished`, `run.scoring`, `run.scored`, `error` and `done` are `runs.py`'s and `jobs.py`'s.
 
 ## The command
 `chatddx api [--world DIR] [--facts PATH]… [--bind HOST:PORT]` (`src/chatddx/cli.py:_api`): the World, from `--world`
@@ -675,31 +470,15 @@ or `CHATDDX_WORLD`; the bundled facts, the World's and those given; and `--bind`
 `HOST:PORT` is `SystemExit("api: bind to HOST:PORT, not '<bind>'")`. `uvicorn.run` serves `app(world.inventory, facts,
 settings.database())`.
 
-```
-AGENT: replace
-`chatddx portal` runs a worker in its process; `chatddx api` none.
----
 `chatddx portal` takes the same arguments and serves `chatddx.portal.app.app` the same way, with a worker in its
 process (`worker=True`), its `SystemExit` saying `portal:` (`src/chatddx/cli.py:_serve`; agents/wip-portal.md).
 `chatddx api` runs none: `chatddx worker` runs beside it (agents/wip-worker.md).
-```
-`chatddx portal` takes the same arguments and serves `chatddx.portal.app.app` the same way, its `SystemExit` saying
-`portal:` (`src/chatddx/cli.py:_serve`; agents/wip-portal.md).
 
 ## Tests
 
-```
-AGENT: replace
-In the table: the rows of `conftest.py`, `test_runs.py` and `test_scores.py`, and one for `test_telling.py`.
----
-| `conftest.py` | `template` is `curated`, the test World as init-data lands it; `autocommit`; `alice`, with `PASSWORD`; `served`, the app on the test World's inventory and facts (`chatddx.test.world.world_facts`), with a worker; `listening`, `served` by uvicorn on a thread; `client`, a `TestClient` over `https://testserver`; `signed`, the client with alice's bearer; `bob`, his bearer's header; `bench`, alice's; and the helpers `sign_in` and `bearer`. |
-| `test_runs.py` | Runs, over its own `served` on `world`, the test World on free ports, with a worker: accepted and told by their events, numbered by their rows, which stream as they come, go on after an id, and are told alike by an app with no worker; a job in the queue until scored; refused... `joined` follows a run from before its job is claimed, the owner's queue paused until the stream has told its first row. |
-| `test_scores.py` | A judged run's scores, the latest and every one, one by id, and its items with their judge calls; the run scored again when asked, with the scoring's events after the run's rows; what bob can't read; the runs left to score with their scorers, and one leaving the listing once scored; a scoring refused for a run unfinished, a scorer that doesn't apply and a run with a job open, and halted; a session needed. |
-| `test_telling.py` | A stream joined mid-item told the item started and each tool once, and nothing of it once it ended; the listener fanning a run's messages out to two streams, again on another loop, and a stream that falls behind told `Lagged`. |
-```
 | Module | Holds |
 | --- | --- |
-| `conftest.py` | `template` is `curated`, the test World as init-data lands it; `autocommit`; `alice`, with `PASSWORD`; `served`, the app on the test World's inventory and facts (`chatddx.test.world.world_facts`); `client`, a `TestClient` over `https://testserver`; `signed`, the client with alice's bearer; `bob`, his bearer's header; `bench`, alice's; and the helpers `sign_in` and `bearer`. |
+| `conftest.py` | `template` is `curated`, the test World as init-data lands it; `autocommit`; `alice`, with `PASSWORD`; `served`, the app on the test World's inventory and facts (`chatddx.test.world.world_facts`), with a worker; `listening`, `served` by uvicorn on a thread; `client`, a `TestClient` over `https://testserver`; `signed`, the client with alice's bearer; `bob`, his bearer's header; `bench`, alice's; and the helpers `sign_in` and `bearer`. |
 | `test_people.py` | Signing in and out by bearer and cookie, the same-origin check, validation, the statuses and codes (incl. Starlette's), the OpenAPI document and the command. |
 | `test_threads.py`, `test_families.py`, `test_world.py` | The reads, configurations by purpose, taking expectations, and what bob doesn't see of threads and families; that every read needs a session. |
 | `test_writes.py` | A configuration made from a recipe, and what is refused of one; chunks and expectations written new, edited and forked; a judge written over a judge configuration, and one over a generation configuration refused; what is refused, and with which status; an expectation's findings. |
@@ -710,8 +489,9 @@ In the table: the rows of `conftest.py`, `test_runs.py` and `test_scores.py`, an
 | `test_scorers.py` | The scoring code shipped, as pickers read it; a scorer of the archive's forked with its labels, a view renamed by an edit and the history's labels, and one written new; scorers refused, and labels given where nothing has them. |
 | `test_said.py` | Saying what holds of a thread, sharing it with bob and taking it back; refusals; deleting, listing and reading the deleted thread, and restoring it; a session needed. |
 | `test_variations.py` | Looks, forks and edits; a judge configuration looked at as a judge, with no reach; that a look's queries don't grow with its cases, counted on the test's database (the fixtures create the next test's meanwhile). |
-| `test_runs.py` | Runs, over its own `served` on `world`, the test World on free ports: accepted and told by their events, which stream as they come and go on after an id, and are told from the ledger by an app with nothing of them; refused... |
-| `test_scores.py` | A judged run's scores, the latest and every one, one by id, and its items with their judge calls; the run scored again when asked, with the scoring's events; what bob can't read; the runs left to score with their scorers, and one leaving the listing once scored; a scoring refused for a run unfinished, a scorer that doesn't apply and a run under way, and halted; a session needed. |
+| `test_runs.py` | Runs, over its own `served` on `world`, the test World on free ports, with a worker: accepted and told by their events, numbered by their rows, which stream as they come, go on after an id, and are told alike by an app with no worker; a job in the queue until scored; refused... `joined` follows a run from before its job is claimed, the owner's queue paused until the stream has told its first row. |
+| `test_scores.py` | A judged run's scores, the latest and every one, one by id, and its items with their judge calls; the run scored again when asked, with the scoring's events after the run's rows; what bob can't read; the runs left to score with their scorers, and one leaving the listing once scored; a scoring refused for a run unfinished, a scorer that doesn't apply and a run with a job open, and halted; a session needed. |
+| `test_telling.py` | A stream joined mid-item told the item started and each tool once, and nothing of it once it ended; the listener fanning a run's messages out to two streams, again on another loop, and a stream that falls behind told `Lagged`. |
 
 `src/chatddx/conftest.py` holds what the repl's tests share with these: `world`, the test World's inventory on free
 ports (`chatddx.test.world.free_world`), and `fake`, `faked` on the test's store. `chatddx.test.world.faked(world, get,

@@ -87,18 +87,13 @@ This repository has three, in `worlds/`:
 src/chatddx/test/test_worlds.py fails when a World's engines change and its endpoints don't.
 
 ## Sources
-```
-AGENT: add
-Below this paragraph: a source's cleanup steps.
----
-A source names the cleanup steps its vignettes need, such as `newlines.lf@1` for a source written with CRLF, and a
-run applies those of its cases' sources unless its request gives its own (docs/factors.md, "Preparing a case"). Ops
-write them, since they are the source's quirks, so that runs on one source agree unless a researcher varies them.
-```
 A source is where a set of vignettes is fetched from, by id. A source is a directory with one file per vignette,
 named by its id, or a database source, `kind = "database"`, whose vignettes are texts people typed, kept in the
-database under new ids as written and never changed, and read through the store. A source is a directory unless it
-says otherwise.
+database under new ids as written. A source is a directory unless it says otherwise.
+
+Each source name cleanup steps, such as `newlines.lf@1` for a source written with CRLF, and a run applies those of its
+cases' sources unless its request gives its own (docs/factors.md, "Preparing a case"). Ops write them, since they are
+the source's quirks, so that runs on one source agree unless a researcher varies them.
 
 A directory source lists its vignettes' ids, fetches a vignette's raw bytes, and builds a case for each vignette,
 without appendices, with the fingerprint of the raw bytes (docs/factors.md, "Case"). It refuses an id that would reach
@@ -106,7 +101,7 @@ outside it. What happens to the bytes next is the case's preparation (docs/facto
 database source lists nothing: its texts are read through the store, by id, so init-data and repair-data, which list
 a source, refuse one.
 
-A source's name is part of every case built from it, and so of their digests. Renaming a source makes new cases;
+The source's name is part of every case built from it, including their digests. Renaming a source makes new cases;
 moving its directory changes nothing. init-data loads the cases of a source a World names, or of its only source that
 lists its vignettes.
 
@@ -129,16 +124,12 @@ The runner reads the secret from the variable the endpoint names, and sends it a
 the endpoint, the one that confirms it included. It refuses to run when the variable isn't set. The secret itself
 never appears in the inventory or the ledger.
 
-```
-AGENT: add
-Below this paragraph: an endpoint's canary set and default execution.
----
+The capacity matches the server's own limit on requests at once, which the engine import takes from the server's
+configuration, and the runner refuses an execution that would send more.
+
 An endpoint may name a canary set, by digest, which every run at it sends, so that runs at one endpoint are probed
 alike and can be compared; and a default execution, a timeout and retries among it, which a run's request may change
 the concurrency and order of. Loading refuses a default concurrency above the capacity.
-```
-The capacity matches the server's own limit on requests at once, which the engine import takes from the server's
-configuration, and the runner refuses an execution that would send more.
 
 ## Hosts
 A host says the address its servers listen on, and where it keeps what its engines pin. A local engine pins its model
