@@ -18,15 +18,11 @@ This document contains project-wide instructions written by humans for agents.
 ## Testing
 ```
 AGENT: replace
-The baseline leaves out the tests that others verify, `slow` follows a budget instead of a per-call limit, and
-pytest-xdist runs any of the runs on several workers.
+`slow` follows a budget instead of a per-call limit, and pytest-xdist runs the tests on several workers.
 ---
-* Baseline is `pytest -m 'not overlap'`, the deduplicated baseline (~115 s); `pytest` runs every test (~120 s), and
-  `pytest -m 'not slow'` is the quick run (~22 s). `-n 4` (pytest-xdist) runs the baseline in ~62 s and every test in
-  ~70 s; the quick run gains nothing from it. Time a run serially to compare it with another.
-* `@pytest.mark.overlap(...)` marks a test whose assertions the tests it names make too; it names them by node id
-  under src/chatddx/, or `::name` in its own file. src/chatddx/conftest.py refuses a name that is no test or is an
-  overlap itself.
+* Baseline is `pytest` which runs every test and takes ~110 s; `pytest -m 'not slow'` is the quick run, ~22 s.
+  `-n 4` (pytest-xdist) runs the baseline in ~70 s; the quick run gains nothing from it. Time a run serially to
+  compare it with another.
 * `@pytest.mark.slow` marks the slowest tests, together ~7/8 of the full run, and the tests that would have the quick
   run make a template only they use (`loaded`, `ran`, `sampled`). `pytest -p chatddx.test.budget`, run serially,
   says which tests to mark or unmark, and which templates a run made.

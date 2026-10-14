@@ -3,7 +3,6 @@ from collections import defaultdict, deque
 from collections.abc import Generator, Iterator
 from concurrent.futures import Future, ThreadPoolExecutor
 from contextlib import contextmanager
-from pathlib import Path
 from typing import Any, NamedTuple
 from uuid import uuid4
 
@@ -32,37 +31,6 @@ from chatddx.test.world import (
     world_facts,
     world_plan,
 )
-
-
-# Leaving out the overlaps leaves nothing unverified only if each test an overlap names is
-# collected and isn't an overlap itself. Names are node ids under this directory, or "::"
-# and a name in the same file; a test in a file outside the run can't be checked.
-@pytest.hookimpl(tryfirst=True)
-def pytest_collection_modifyitems(
-    config: pytest.Config, items: list[pytest.Item]
-) -> None:
-    here = Path(__file__).parent.relative_to(config.rootpath).as_posix()
-    ids = {item.nodeid for item in items}
-    files = {nodeid.partition("::")[0] for nodeid in ids}
-    overlaps = {item.nodeid for item in items if item.get_closest_marker("overlap")}
-    wrong: list[str] = []
-    for item in items:
-        for mark in item.iter_markers("overlap"):
-            if not mark.args:
-                wrong.append(f"{item.nodeid} names no test")
-            for name in mark.args:
-                file, _, test = str(name).partition("::")
-                file = f"{here}/{file}" if file else item.nodeid.partition("::")[0]
-                if file not in files:
-                    continue
-                nodeid = f"{file}::{test}"
-                named = {i for i in ids if i == nodeid or i.startswith(f"{nodeid}[")}
-                if not named:
-                    wrong.append(f"{item.nodeid} names no test {name}")
-                elif named & overlaps:
-                    wrong.append(f"{item.nodeid} names {name}, an overlap too")
-    if wrong:
-        raise pytest.UsageError("\n".join(wrong))
 
 
 # The test World's tools are the runner's test tools (worlds/test/_data/factors.toml), shipped

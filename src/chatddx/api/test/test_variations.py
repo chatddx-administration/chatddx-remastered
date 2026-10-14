@@ -260,10 +260,6 @@ def test_each_scorer_view_s_reach_names_the_families_it_misses(
     assert reach["lines", "text"]["missing"] == []
 
 
-@pytest.mark.overlap(
-    "bench/test/test_seen.py::test_several_expectations_to_choose_from_are_ambiguous",
-    "::test_each_scorer_view_s_reach_names_the_families_it_misses",
-)
 @pytest.mark.slow
 def test_a_case_with_expectations_to_choose_from_is_shown_apart_in_the_reach(
     signed: TestClient, bench: Bench

@@ -250,7 +250,6 @@ def test_a_case_that_can_t_be_read_or_has_changed_is_noted(
 
 
 @pytest.mark.usefixtures("fake")
-@pytest.mark.overlap("::test_a_stopped_run_sends_no_end_canaries")
 def test_stopping_ends_the_run_after_the_item_under_way(
     conn: Connection, inventory: Inventory, alice: Person, plan: Plan
 ) -> None:
@@ -371,20 +370,7 @@ ORDERS = [
 
 @pytest.mark.usefixtures("fake")
 @pytest.mark.parametrize("concurrency", [1, 3])
-@pytest.mark.parametrize(
-    "order",
-    [
-        pytest.param(
-            ORDERS[0],
-            marks=pytest.mark.overlap(
-                "::test_a_run_sends_each_item_and_writes_its_log",
-                "::test_items_are_sent_in_the_execution_s_order[shuffled@1-3]",
-            ),
-        ),
-        *ORDERS[1:],
-    ],
-    ids=lambda e: e.order,
-)
+@pytest.mark.parametrize("order", ORDERS, ids=lambda e: e.order)
 def test_items_are_sent_in_the_execution_s_order(
     conn: Connection,
     inventory: Inventory,

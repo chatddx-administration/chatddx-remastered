@@ -162,9 +162,6 @@ def test_show_case_says_when_scoring_has_expectations_to_choose_from(
     assert "to choose from: noted" in row(written, "answer", "differential")
 
 
-@pytest.mark.overlap(
-    "repl/test/test_scoring.py::test_take_takes_the_expectations_shared_for_the_cases_without_one_of_yours"
-)
 def test_show_case_says_when_none_of_the_expectations_is_yours(bench: Bench, say: Say):
     case = bench.family("noted").case
     [schema] = bench.expectation_schemas(case)

@@ -77,13 +77,12 @@ chatddx migrate
 ### Tests
 ````
 AGENT: replace
-The deduplicated baseline is the usual run now, and the wip/solidified marks are gone.
+The wip/solidified marks are gone, and pytest-xdist runs the tests on several workers.
 ---
 ```sh
-pytest -m "not overlap"       # the deduplicated baseline: every test but those others verify
-pytest                        # everything
-pytest -m "not slow"          # the quick run
-pytest -n 4 -m "not overlap"  # the baseline on 4 workers (pytest-xdist)
+pytest                  # everything
+pytest -m "not slow"    # the quick run
+pytest -n 4             # everything on 4 workers (pytest-xdist)
 ```
 ````
 ```sh

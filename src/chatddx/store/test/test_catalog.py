@@ -214,10 +214,6 @@ def test_variations_are_reapplied_on_request(conn: Connection) -> None:
         )
 
 
-@pytest.mark.overlap(
-    "catalog/test/test_threads.py::test_forks_vary_their_base_and_follow_it_on_request",
-    "::test_threads_behind_are_proposed_not_moved",
-)
 def test_chunk_variations(conn: Connection) -> None:
     catalog, store, reg, _, alice = stored_world(conn)
     recommended, longer, cooler = (

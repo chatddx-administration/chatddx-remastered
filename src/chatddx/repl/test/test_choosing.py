@@ -109,10 +109,6 @@ def test_set_puts_another_chunk_in_the_cell(repl: Repl, bench: Bench, say: Say):
     assert body["chat_template_kwargs"] == {"enable_thinking": False}
 
 
-@pytest.mark.overlap(
-    "bench/test/test_variation.py::test_setting_the_configuration_s_own_chunk_takes_the_part_back",
-    "::test_set_puts_another_chunk_in_the_cell",
-)
 def test_setting_the_configuration_s_own_chunk_unsets_it(repl: Repl, say: Say):
     _ = say(f"cell {LINES} {QWEN}", "set sampling greedy")
     assert repl.prompt == f"alice {LINES}+sampling=greedy×{QWEN} #7> "

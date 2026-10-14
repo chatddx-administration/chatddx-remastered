@@ -89,20 +89,6 @@ def test_the_runs_left_to_score_are_listed_with_their_scorers(
     assert {s["name"] for s in after["unscored"]} == {"whole", "judged"}
 
 
-@pytest.mark.overlap(
-    "api/test/test_people.py::test_every_route_but_signing_in_needs_a_session"
-)
-@pytest.mark.slow
-def test_scores_need_a_session(client: TestClient) -> None:
-    run, score = uuid4(), uuid4()
-    for path in (
-        f"/api/runs/{run}/scores",
-        f"/api/runs/{run}/scores/{score}",
-        f"/api/runs/{run}/scores/{score}/items",
-    ):
-        assert client.get(path).status_code == 401
-
-
 @pytest.mark.slow
 def test_a_run_is_scored_when_asked_and_what_can_t_be_is_refused(
     signed: TestClient,

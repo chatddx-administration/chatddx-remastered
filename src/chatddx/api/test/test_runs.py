@@ -198,10 +198,6 @@ def test_a_run_of_tags_runs_the_case_of_each_family_tagged(signed: TestClient) -
 
 
 @pytest.mark.usefixtures("fake")
-@pytest.mark.overlap(
-    "runner/test/test_run.py::test_nothing_is_sent_or_written_where_the_gate_refuses",
-    "api/test/test_people.py::test_the_bench_s_errors_and_the_gate_s_refusals_have_their_status_and_code",
-)
 @pytest.mark.slow
 def test_a_run_the_gate_refuses_is_unprocessable_and_isn_t_recorded(
     signed: TestClient,
@@ -330,18 +326,6 @@ def test_another_s_run_isn_t_found(signed: TestClient, bob: dict[str, str]) -> N
     assert got.status_code == 404
     assert signed.get("/api/runs", headers=bob).json() == []
     assert signed.get("/api/runs/not-a-run").status_code == 422
-
-
-@pytest.mark.overlap(
-    "api/test/test_people.py::test_every_route_but_signing_in_needs_a_session"
-)
-@pytest.mark.slow
-def test_runs_need_a_session(client: TestClient) -> None:
-    run = "00000000-0000-0000-0000-000000000000"
-    for path in ("", f"/{run}", f"/{run}/items", f"/{run}/events"):
-        assert client.get(f"/api/runs{path}").status_code == 401, path
-    assert client.post("/api/runs", json={}).status_code == 401
-    assert client.post(f"/api/runs/{run}/halt").status_code == 401
 
 
 def test_the_events_are_described(described: dict[str, Any]) -> None:

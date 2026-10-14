@@ -136,10 +136,6 @@ def test_run_is_refused_where_the_gate_refuses(bench: Bench, say: Say):
     assert ran(bench) == []
 
 
-@pytest.mark.overlap(
-    "::test_run_is_refused_where_the_gate_refuses",
-    "runner/test/test_run.py::test_nothing_is_sent_or_written_where_the_gate_refuses",
-)
 def test_run_is_refused_an_endpoint_that_doesn_t_answer(bench: Bench, say: Say):
     written = say(f"cell native {GPT_OSS}", "run svenska")
 

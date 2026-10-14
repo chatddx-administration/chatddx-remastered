@@ -179,10 +179,6 @@ def test_a_recipe_of_one_s_making_is_a_new_configuration(signed: TestClient) -> 
         assert said in str(got.json()["detail"])
 
 
-@pytest.mark.overlap(
-    "bench/test/test_writes.py::test_a_person_writes_a_judge_over_a_judge_configuration",
-    "::test_a_component_is_written_as_a_thread_of_one_s_own",
-)
 @pytest.mark.slow
 def test_a_judge_is_written_over_a_judge_configuration(signed: TestClient) -> None:
     query = {"kind": "configuration", "purpose": "judge", "name": "judge (en)"}

@@ -1121,23 +1121,6 @@ def test_dangling_and_mistyped_refs(reg: Registry) -> None:
         reg.check([dangling.digest])
 
 
-@pytest.mark.overlap("::test_each_component_is_checked_on_its_own")
-def test_cross_checks(reg: Registry) -> None:
-    other = reg.add(
-        Appendix(
-            vignette=Vignette(source="registry", id="c2", fingerprint=fp("v")),
-            text="x",
-        )
-    )
-    case = Case(
-        vignette=Vignette(source="registry", id="c1", fingerprint=fp("v")),
-        appendices=(other,),
-    )
-    _ = reg.add(case)
-    with pytest.raises(StructuralError, match="bound to another vignette"):
-        reg.check([case.digest])
-
-
 def test_each_component_is_checked_on_its_own(reg: Registry) -> None:
     dangling = reg.add(
         Judge(skeleton="sha256:" + SHA, engine="sha256:" + SHA, seeds=(1,))

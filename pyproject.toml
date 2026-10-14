@@ -58,5 +58,4 @@ testpaths = ["src"]
 strict_markers = true
 markers = [
   "slow: among the slowest tests, together ~7/8 of the full run, left out of the quick run: pytest -m 'not slow'",
-  "overlap(*tests): verified by the tests named, left out of the deduplicated baseline: pytest -m 'not overlap'",
 ]
