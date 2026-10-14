@@ -23,12 +23,6 @@ Paths are relative to `src/chatddx/repl/` unless they start with `src/`, `docs/`
 `loop.HISTORY`, `shell.Repl` and `shell.console`; nothing else imports from the package. Only `chatddx.repl` imports
 `rich`.
 
-```
-AGENT: replace
-In the row `running.py`: `batch` is `tagged`, which `run tag` calls.
----
-| `running.py` | `seed`, `run`, `tagged`, `Held` |
-```
 | Module | Holds |
 | --- | --- |
 | `loop.py` | readline, history, lines from a pipe |
@@ -37,7 +31,7 @@ In the row `running.py`: `batch` is `tagged`, which `run tag` calls.
 | `choosing.py` | `use`, `on`, `cell`, `set`, `save` |
 | `listing.py` | `configurations`, `endpoints`, `cases` |
 | `inspecting.py` | `show`, `reasoning` |
-| `running.py` | `seed`, `run`, `batch`, `Held` |
+| `running.py` | `seed`, `run`, `tagged`, `Held` |
 | `reviewing.py` | `runs`, `replay` |
 | `scoring.py` | `score`, `scorers`, `take` |
 | `render.py` | styles, the transcript, live lines, answers, scores and findings |
@@ -110,27 +104,13 @@ the position of the param that takes the words beyond the params; `grouped: Call
 a function that groups the words into the params in place of `rest`. `repeats` is whether the last param repeats.
 
 ### `COMMANDS: dict[str, Command]`
-```
-AGENT: replace
-`run tag` is a key of two words.
----
 The command table, in `help`'s order; `exit` is read as `quit`. A key of two words, `run tag`, is a verb and the word
 after it. The rows are under "The commands".
-```
-The command table, in `help`'s order; `exit` is read as `quit`. The rows are under "The commands".
 
 ### `handle(repl: Repl, line: str) -> bool`
-```
-AGENT: replace
-In the paragraph's first lines: a verb and the word after it name `run tag`.
----
 Splits the line as a shell would (`shlex`), takes a verb and the word after it as one command where the table has
 them together (`run tag`), groups its words (`grouped`, else `rest`), checks their count against the params, and
 calls the command. It returns `False` for `quit` and `exit`, else `True`. What it says, through `repl.error`:
-```
-Splits the line as a shell would (`shlex`), groups its words (`grouped`, else `rest`), checks their count against the
-params, and calls the command. It returns `False` for `quit` and `exit`, else `True`. What it says, through
-`repl.error`:
 
 | When | Message |
 | --- | --- |
@@ -141,30 +121,14 @@ params, and calls the command. It returns `False` for `quit` and `exit`, else `T
 | the command raises `psycopg.Error` | `the database failed: FIRST LINE` |
 
 ### `complete(names: Mapping[str, list[str]], line: str) -> list[str]`
-```
-AGENT: replace
-`batch` is now `run tag`, and `run` offers `tag` beside the cases.
----
 The words that may come next on `line`: a verb, then names word by word, so a name with spaces is offered a word at a
 time. A command's names are under `VERB:PARAM`, else under the param's name lowercased (`endpoint`, `case`, `run`, …);
 `show` takes a kind and then that kind's names, `set` a part and then `set:PART`; `run tag`, `show tag` and `take`
 offer each tag once; `run` and `configurations` complete the whole line as a name, `run` offering `tag` too. A name a
 command's `rest` param takes whole is followed by the next param's names once it is complete.
-```
-The words that may come next on `line`: a verb, then names word by word, so a name with spaces is offered a word at a
-time. A command's names are under `VERB:PARAM`, else under the param's name lowercased (`endpoint`, `case`, `run`, …);
-`show` takes a kind and then that kind's names, `set` a part and then `set:PART`; `batch`, `show tag` and `take` offer
-each tag once; `run` and `configurations` complete the whole line as a name. A name a command's `rest` param takes
-whole is followed by the next param's names once it is complete.
 
 ## The commands
 
-```
-AGENT: replace
-In the row `batch TAG...`: it is now `run tag TAG...`, calling `running.tagged`.
----
-| `run tag TAG...` | `running.tagged` | `families`, `skeleton`, `start`, `score` through `Held`, `runs` |
-```
 | Command | Function | On the bench |
 | --- | --- | --- |
 | `configurations [NAME]` | `listing.configurations` | `threads`, `catalog.recipe`, `catalog.origin`, `about`, `title` |
@@ -177,7 +141,7 @@ In the row `batch TAG...`: it is now `run tag TAG...`, calling `running.tagged`.
 | `show [KIND] [NAME...]` | `inspecting.show` | `skeleton`, `findings`, `reach`, `thread`, `get`, `reaching`, `scored_by`, `scores_of`, `runs`, `case_titled`, `appendices_of`, `cases`, `expectation_schemas`, `expectation`, `shared`, `store.scores_of` |
 | `reasoning` | `inspecting.reasoning` | `facts`, `inventory`, `endpoint`, `model` |
 | `run CASE [SEED]` | `running.run` | `case_titled`, `skeleton`, `start`, then `score` through `Held`, `runs` |
-| `batch TAG...` | `running.batch` | `families`, `skeleton`, `start`, `score` through `Held`, `runs` |
+| `run tag TAG...` | `running.tagged` | `families`, `skeleton`, `start`, `score` through `Held`, `runs` |
 | `seed [SEED]` | `running.seed` | `skeleton` |
 | `save NAME` | `choosing.save` | `save` |
 | `runs [COUNT]` | `reviewing.runs` | `runs`, `store.run`, `scores_of`, `described` |
@@ -197,12 +161,6 @@ its words with `running.case_and_seed`.
 style. `TOKENS` is the width of a token count.
 
 ### What a run shows
-```
-AGENT: replace
-In the row `show_table`: "a batch's" is now a run of several cases'.
----
-| `show_table(console, names, items, graded)` | a run of several cases' values, by case title, a column per view with a target in some case |
-```
 | Name | Does |
 | --- | --- |
 | `Transcript(console)` | `event(event)` streams a run's events: thinking, labelled, the answer, `[name] arguments` and `[result]`, and the tokens after; `item(item)` tells a stored item again |
@@ -212,7 +170,7 @@ In the row `show_table`: "a batch's" is now a run of several cases'.
 | `show_answer(console, skeleton, item, graded)` | the call's error, `stopped`, `unread: …`, `salvaged: …`, `valid` or `invalid: …`, then each selection of the views |
 | `show_scores(console, graded)` | one item's scores, a row per view with a target, and `no target: …` once |
 | `show_judged(console, bench, graded)` | each judge call of one item: view, judge and seed, what it said at the view's `at`, and its reason |
-| `show_table(console, names, items, graded)` | a batch's values, by case title, a column per view with a target in some case |
+| `show_table(console, names, items, graded)` | a run of several cases' values, by case title, a column per view with a target in some case |
 | `show_summary(console, graded)` | per view: scored, mean, stderr, and no answer, no target and no value apart |
 | `verdict_of(view, verdict)` | `(what it said at the view's at, the rest of its text)` |
 | `value_of(value, unit="")` | `—` for none, else the value, an integer bare, with its metric's mark |

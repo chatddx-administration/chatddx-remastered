@@ -21,16 +21,10 @@ inventory locates the sources and the endpoints, and the model facts are the bun
 each `--facts`, as for init-data. The shell connects as `DB_USER` in autocommit mode, as the runner needs, and refuses a
 login with no person.
 
-```
-AGENT: replace
-In the paragraph's last line: `batch` is now `run tag`, which `run` covers.
----
-command, but where `run` and `score` hold it (see "Stopping").
-```
 Lines are read with readline, which keeps a history (`~/.chatddx_history`, or `--history`) and completes with Tab (see
 "Completion"). Lines from a pipe are echoed, and the session stops at the first that fails, exiting with 1, so a piped
 routine either holds or says where it broke. Ctrl-C at the prompt clears the line; during a command it ends the
-command, but where `run`, `batch` and `score` hold it (see "Stopping").
+command, but where `run` and `score` hold it (see "Stopping").
 
 ## What a person sees
 The shell acts as one person. It sees the threads they own or collaborate on, live (docs/catalog.md, "Owners"), and
@@ -41,15 +35,9 @@ A person is scored against their own expectations only. One shared with them cou
 what they're scored against never changes under them when someone else edits theirs.
 
 ## The cell
-```
-AGENT: replace
-In the paragraph's last line: `batch` is now `run tag`.
----
-parts set on it (`TriedVariation`). Every `run` and `run tag` runs the cell.
-```
 The cell is what the shell runs: a configuration, an endpoint and the engine it serves, and the name the configuration
 was given. The configuration is a variation of a configuration thread: the edit the cell holds, its recipe, and the
-parts set on it (`TriedVariation`). Every `run` and `batch` runs the cell.
+parts set on it (`TriedVariation`). Every `run` and `run tag` runs the cell.
 
 Whenever the cell changes, the shell says what the lints find in it: `factors.lint` and the facts' checks on the pair,
 run as a trial of the cell and one case. A configuration made for another model than the endpoint's is said as soon as
@@ -91,13 +79,7 @@ Nothing here is sent anywhere.
   shows, and per scorer view how many cases it can hold the cell to: a case has it when the expectation the person is
   scored against gives the view's expectation selector something to pick, and the view is offered by the cell's
   output (see "Scoring").
-```
-AGENT: replace
-`batch` is now `run tag`.
----
 - **`show tag TAG...`** is the same over the cases with any of the tags, those `run tag` would run.
-```
-- **`show tag TAG...`** is the same over the cases with any of the tags, those `batch` would run.
 - **`show KIND [NAME]`** is a component the person sees, by kind and name, or the cell's own: its fields, digests in
   them titled, its catalog entries, and a summary of the person's runs with it. Runs are found through compilations
   for a configuration and its parts (`Bench.reaching`), through scorings for a scorer, an expectation and a schema
@@ -142,23 +124,11 @@ and `recorded as run N of trial X, run ID`, N counting the person's runs of that
 by the first label that makes it, and a label used again gets its scorer's name; a view that reads the answer whole
 isn't listed, as the transcript holds it.
 
-```
-AGENT: replace
-The section: `batch TAG...` is now `run tag TAG...`, whose first line reads as `run`'s does, `trial: … × 20 cases
-tagged edn (seed 42)`. Variations started together are the portal's (agents/wip-portal.md, "Comparing variations").
----
 ### A run of tagged cases
 `run tag TAG...` makes one trial of the cases with any of the tags and the shell's seed, so one run. The cases go in
 the trial's order, by digest (docs/factors.md, "Execution"), a line each, counting its tokens as it streams and then
 saying how it went. The run is then scored, and a table gives each case's value per view, by case title, and a
 summary per view.
-```
-### A batch
-`batch TAG...` makes one trial of the cases with any of the tags and the shell's seed, so one run. The cases go in the
-trial's order, by digest (docs/factors.md, "Execution"), a line each, counting its tokens as it streams and then saying
-how it went. The run is then scored, and a table gives each case's value per view, by case title, and a summary per
-view. Crossing several variations over cases is the batch planner's (agents/wip-batch.md); until it exists, a batch
-is one variation over tagged cases.
 
 ### Outcomes
 An item's outcome comes from its last call and its answer, read by the skeleton's contract (docs/factors.md,
@@ -174,19 +144,10 @@ An item's outcome comes from its last call and its answer, read by the skeleton'
 The call's error goes with the outcome, as `completed: Unfinished: the stream ended before [DONE]`.
 
 ### Stopping
-```
-AGENT: replace
-"In a batch" is now "In `run tag`".
----
 In `run`, Ctrl-C hangs the call up, and the item is recorded as stopped. In `run tag`, a first press lets the case
 under way finish and then stops, and a second hangs that call up too (docs/runner.md, "Stopping"). While a run is
 finished and scored, a first press waits, saying so; a second stops the scoring: the scorer under way finishes its
 score with what it has, those after it are refused as stopped, and the shell says `score` scores what is left.
-```
-In `run`, Ctrl-C hangs the call up, and the item is recorded as stopped. In a batch, a first press lets the case under
-way finish and then stops, and a second hangs that call up too (docs/runner.md, "Stopping"). While a run is finished
-and scored, a first press waits, saying so; a second stops the scoring: the scorer under way finishes its score with
-what it has, those after it are refused as stopped, and the shell says `score` scores what is left.
 
 ## Scoring
 A finished run is scored under every scorer that applies to it (docs/runner.md, "What applies to a run"), each under
@@ -195,15 +156,8 @@ its scoring as it would be built now: the scorer, and the person's own expectati
   as it would be built now, finished, with an item for every run item and view, and no judge call stopped. A changed
   expectation makes a new scoring, so its runs are left to score again, and a stopped scoring leaves its run to score.
 - **The latest score per scorer** is the one `runs`, `replay` and `show` read; older ones stay in the ledger.
-```
-AGENT: replace
-"a batch" is now `run tag`.
----
 - **Judge calls are said as they go**, a line per call as `run tag` has per case, ending with what the judge said at
   the view's `at`, from the scoring pass's events (docs/runner-api.md, "score.py").
-```
-- **Judge calls are said as they go**, a line per call as a batch has per case, ending with what the judge said at the
-  view's `at`, from the scoring pass's events (docs/runner-api.md, "score.py").
 
 ### Scores on the screen
 - **One item's scores** give, per scorer and view, the value and the detail as text: what was read, as `1. Biliary
@@ -212,50 +166,29 @@ AGENT: replace
   answer, graded`.
 - **What the judges said** follows one item's scores: each judge call, by view, judge and seed, with what it said at
   the view's `at` and the rest of its answer's text, its reason, or the call's error.
-```
-AGENT: replace
-"A batch" is now a run of several cases, as `run tag` makes.
----
 - **The table** of a run of several cases has a column per scorer view, but for views with no target in any case,
   which are named once; `—` is no value.
-```
-- **A batch's table** has a column per scorer view, but for views with no target in any case, which are named once;
-  `—` is no value.
 - **The summary** per view counts the values, their mean and standard error (`scorers/aggregate.py`; display only,
   analysis rather than a score), and apart those with no value: where no answer came, where the case has no target,
   and for any other reason.
 - **A value that isn't a score from 0 to 1** is written with what marks it, as its metric publishes
   (`scorers/scorer.py:Metric.unit`): `first_mention`'s offset is `@44`. A standard error is written bare.
 - **Where no answer came**, every view has no value, so a server's error doesn't count as a wrong answer.
-```
-AGENT: replace
-"a batch" is now a run of several cases.
----
 - **Findings** that the run, the scoring pass and the checks note are said after the tables; a run of several cases
   says each once, with how often (`(×4)`). After one item, those about reading its answer aren't said again, as its
   outcome says them.
-```
-- **Findings** that the run, the scoring pass and the checks note are said after the tables; a batch says each once,
-  with how often (`(×4)`). After one item, those about reading its answer aren't said again, as its outcome says them.
 
 ## Looking back
 - **`runs [COUNT]`** lists the person's runs, newest first, the last 20 or COUNT: the run's and the trial's ids,
   when, what ran (configuration, endpoint, the case or how many, the seeds), how it went (the one item's outcome, or a
   count of each; `unfinished` without a finish record), and per scorer the latest score's view means, as
   `plan 1/1/1/—`.
-```
-AGENT: replace
-In the item's last two lines: "a batch" is now a run of several cases.
----
-  as it streamed, from the stored responses and tool runs, then its outcome, scores and judges; a run of several
-  cases gives its lines, by case, the table and the summary.
-```
 - **`replay [RUN]`** shows the latest run, or the one an id prefix names: when, whether it finished, the address it
   ran at, and on which chatddx. The request isn't stored (docs/ledger.md, "Some of what happened isn't checked"), so
   each item's first request is rendered again from the trial and the source and held to its fingerprint, saying when
   the vignette at the source isn't the one sent or the request renders otherwise now. A run of one item is told again
-  as it streamed, from the stored responses and tool runs, then its outcome, scores and judges; a batch gives its
-  lines, by case, the table and the summary.
+  as it streamed, from the stored responses and tool runs, then its outcome, scores and judges; a run of several
+  cases gives its lines, by case, the table and the summary.
 - **`score [RUN]`** scores each finished run under the scorers left (see "Scoring"), then sums up every score given.
   With RUN: that run, or why not: `unfinished`, `no scorer applies to it`, or `scored already, as the scorings are
   now`, with its scores.
@@ -302,21 +235,11 @@ The rest is read once, and again after a `save`.
 
 ## Outstanding
 Suggested, and left for later:
-```
-AGENT: replace
-"a batch" is now a run of several cases, as `run tag` makes.
----
 - **The language of a run.** A run is in its configuration's language, and nothing picks it from the cases: a run
   over Swedish cases under an English configuration runs them in English, and only `language.mixed` warns.
   docs/catalog.md, "Languages", has the request follow the case. The cell could hold a name without a language, as it
   holds one without a model, and run each case under that name's variant in the case's language; `run tag` over cases
   in several languages would then be a run per language.
-```
-- **The language of a run.** A run is in its configuration's language, and nothing picks it from the cases: a batch
-  over Swedish cases under an English configuration runs them in English, and only `language.mixed` warns.
-  docs/catalog.md, "Languages", has the request follow the case. The cell could hold a name without a language, as it
-  holds one without a model, and run each case under that name's variant in the case's language; a batch over cases in
-  several languages would then be a run per language.
 - **`diagnoses` applies to a plan**, since a plan's `$.diagnoses[*]` reaches its schema, but the items are objects, so
   its differential lists them as JSON and scores their text. A reach that knew the type of what a view picks would leave
   it out, as `View.offered_by` leaves whole-answer views out of structured runs.

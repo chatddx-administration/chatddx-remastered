@@ -283,14 +283,7 @@ ones, and a scorer pinned again by a deploy reaches the person's fork of it.
   last day. The run is named by the variation's label as it starts.
 - **A person's runs** are their own, newest first, found by the start of their id, or by a component their trial is
   built on.
-```
-AGENT: replace
-The repl's `batch` is now `run tag TAG...`.
----
 - **A run is described** as the repl's `run` and `run tag` say it: the run's name, else the configuration, where it
-  ran, its case or how many, and the seed.
-```
-- **A run is described** as the repl's `run` and `batch` say it: the run's name, else the configuration, where it
   ran, its case or how many, and the seed.
 - **A scorer applies** to a run when the run's output offers what each of its views reads, a view of the whole answer
   only a text answer, and the World lets each of its judges run (docs/runner.md, "What applies to a run").
@@ -401,16 +394,7 @@ the person were planned in `agents/wip-authoring.md` at b6f76b8. Its takes were 
 - **Taking counts shared threads, not owners**: a case with two threads shared by one owner is to choose from, and
   naming that owner doesn't pick between them. Only two writers at once can leave an owner two (see "One expectation
   per case and schema").
-```
-AGENT: replace
-There is no batch planner: the old crossing of variations is the portal's, as several runs started together.
----
 - **What the old bench had and this one doesn't**: what a run left unheeded (the old `outcome.py:unheeded`;
   docs/runner.md, "Smaller issues"); the old crossing of variations, which the portal is to start as several runs
   (agents/wip-portal.md, "Comparing variations"); and what holds a configuration, the portal's
   (agents/wip-portal.md), whose part for the repl `Bench.reaching` and `Bench.scored_by` cover.
-```
-- **What the old bench had and this one doesn't**: what a run left unheeded (the old `outcome.py:unheeded`;
-  docs/runner.md, "Smaller issues"); a batch's plan, crossing variations into one (agents/wip-batch.md); and what holds
-  a configuration, the portal's (agents/wip-portal.md), whose part for the repl `Bench.reaching` and `Bench.scored_by`
-  cover.

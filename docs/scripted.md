@@ -52,13 +52,6 @@ items ended, its scorers, and the run's id. It serves its own fakes, so `chatddx
 ## The runs
 The sample World's ten:
 
-```
-AGENT: replace
-In the row `batch`, the name: the scripted run `batch` is `several` in both Worlds (`_runs/several.toml`), as there is
-no batch.
----
-| `several` | `diagnoses` on `qwen3-8b-awq@fake` | four | Answers well, a 503 while the engine loads, and a server that goes away. |
-```
 | Run | Configuration on endpoint | Cases | Shows |
 | --- | --- | --- | --- |
 | `typical` | `plan` on `qwen3-8b-awq@fake` | `DutchFall10w` | A plan thought through once and answered in one go, held to its schema. |
@@ -69,17 +62,10 @@ no batch.
 | `unfinished` | `diagnoses` on `qwen3-8b-awq@fake` | `Dutchfall15w` | A run never finished, and so never scored. |
 | `judged` | `free-text` on `qwen3-8b-awq@fake` | `Dutchfall11w` | An answer to a case Olof wrote notes on, scored by the judges as well as the patterns. |
 | `appendix` | `diagnoses` on `qwen3-8b-awq@fake` | `Dutchfall11w with ultrasound` | An appendix that changes the right answer. |
-| `batch` | `diagnoses` on `qwen3-8b-awq@fake` | four | Answers well, a 503 while the engine loads, and a server that goes away. |
+| `several` | `diagnoses` on `qwen3-8b-awq@fake` | four | Answers well, a 503 while the engine loads, and a server that goes away. |
 | `remote` | `free-text` on `mistral-small@remote` | `Dutchfall14w` | A run on the remote engine, whose endpoint asks for a key. |
 
-```
-AGENT: replace
-`batch` is `several`.
----
 The test World's six are the same shapes on its cases: `valid`, `stopped`, `unfinished`, `several` (not scored),
-`judged` and `appendix`.
-```
-The test World's six are the same shapes on its cases: `valid`, `stopped`, `unfinished`, `batch` (not scored),
 `judged` and `appendix`.
 
 ## Tests
@@ -115,14 +101,6 @@ with the web patched in the process that runs the tools (`urllib.request.urlopen
 ### Smaller issues
 - **No scripted run sends a canary set.** `Bench.start` passes none (docs/bench.md, "Runs and scores"), though both
   data sets hold one.
-```
-AGENT: replace
-There is no batch of trials to script; the page to compare runs wants scripted runs of two variations over the same
-cases instead (agents/wip-portal.md, "Comparing variations").
----
 - **No two scripted runs vary a part over the same cases**, as the page to compare runs wants
   (agents/wip-portal.md, "Comparing variations").
-```
-- **A scripted run is one run.** `batch` is one run of four cases; a batch of trials, crossing variations, is the batch
-  planner's (agents/wip-batch.md), and a scripted batch waits on it.
 - **`set` and `--again` have no test**, and no scripted run sets a part.
