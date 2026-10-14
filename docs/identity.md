@@ -1,5 +1,19 @@
 # Identity
 
+```
+AGENT: replace
+"The cake" is gone from docs/chatddx.md, and the catalog applies identity's rules only to owners, not to who asks. The
+package's names, signatures and errors get a doc of their own, drafted as agents/identity-api.md.
+---
+Identity is who acts in chatddx: the people, the roles they hold, how they sign in, and what each is shown. Most of
+what chatddx does is done as a person, and `identity` is its declarative layer: its rules are data and pure functions
+with no store access (src/chatddx/identity/), which the bench, the operational layer, applies to what is in the store
+and the World, and the catalog to the owners it records or is asked about.
+
+This document describes what identity holds and why. Names, signatures and errors are in docs/identity-api.md. People,
+their passwords and their sessions are kept by the store (docs/store.md, "People"; `People` and "Database: schema
+`identity`" in docs/store-api.md), and their migrations are in docs/migrations.md.
+```
 Identity is who acts in chatddx: the people, the roles they hold, how they sign in, and what each is shown. Most of
 what chatddx does is done as a person, and `identity` is the cake's
 declarative layer: its rules are data and functions with no store access (src/chatddx/identity/), which the catalog
@@ -55,9 +69,9 @@ It goes by the catalog's owners and collaborators, and only what is live counts 
 owns what names them its owner (src/chatddx/identity/identity.py:owns), collaborates on what is shared with them and
 isn't theirs (`collaborates`), and sees both (`sees`). Of what they see, their own comes first (`preferred`), which is
 how a name finds its thread or family. The catalog doesn't take the person asking: it says who owns and shares what,
-and applies `owns` only to the owner it records, to hold one live expectation per case and schema. The bench applies
-the rules to what the catalog gives, and to what is in the store and the World (docs/bench.md, "What a person
-sees").
+and applies `owns` only to an owner, the one it records, to hold one live expectation per case and schema, or one it is
+asked to find threads by. The bench applies the rules to what the catalog gives, and to what is in the store and the
+World (docs/bench.md, "What a person sees").
 ```
 It goes by the catalog's owners and collaborators: a person sees what they own or what is shared with them
 (src/chatddx/identity/identity.py:sees), and of what they see, their own comes first (`preferred`), which is how a
@@ -96,6 +110,13 @@ The tests now cover owning, collaborating and deleted subjects too.
 
 ## Terms
 
+```
+AGENT: add
+Rows for the two rules `sees` is made of, after "Session"; all three count only what is live.
+---
+| Owns | Is the owner of, while it is live. |
+| Collaborates on | Has shared with them, while it is live, and isn't the owner of. |
+```
 | Term | Meaning |
 | --- | --- |
 | Person | Someone who acts in chatddx, by an id the rest of the store refers to. |

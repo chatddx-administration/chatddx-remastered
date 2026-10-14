@@ -4,7 +4,7 @@ import pytest
 
 from chatddx.identity import collaborates, owns, preferred, sees
 
-pytestmark = pytest.mark.wip
+pytestmark = pytest.mark.solidified
 
 
 @dataclass(frozen=True)

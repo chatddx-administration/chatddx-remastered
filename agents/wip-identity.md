@@ -1,199 +1,52 @@
-# Identity: work in progress
+# Identity: what is open
 
-Material for `docs/identity.md`, which holds "What holds now" as AGENT suggestions, one per section, for the user to
-adopt (see "What `docs/` expects of `docs/identity.md`").
+Identity is solidified: what holds is in `docs/identity.md` and `docs/identity-api.md` (drafted as
+`agents/identity-api.md`), and its tests are marked `solidified`. This file keeps what is open, with the agent's takes.
 "Decided" means the user said so; "Take" is the agent's recommendation and still open.
 
 `identity` is the *declarative* layer of person-scoped functionality, providing rules as pure functions. The `bench`
 being the *operational* layer.
 
-## Scope
-`docs/factors.md` ("Not factors") assigns people, roles, authentication and authorization to identity. Identity is
-referenced by the catalog (owners, collaborators, who started a run) and possibly by clearance (who granted it).
-
-## What holds now
-### People
-People are `identity.person (id, login, name, roles, active)`. `id` is what other schemas reference, `login` is
-unique and lowercase, and `name` is for display. People are never deleted: `active = false` disables them and ends
-their sessions (`src/chatddx/store/people.py:People.update`).
-
-People are managed with `chatddx person add LOGIN NAME [--role ROLE …]` and `chatddx person password LOGIN`
-(`src/chatddx/cli.py`), connecting as `DB_USER`.
-
-Names are not sensitive, so `chatddx_reader` may read `identity.person`, but not credentials or sessions, which are
-secrets rather than sensitive data.
-
-### Roles
-Roles are defined in code (`src/chatddx/identity/identity.py:Role`: admin, clinician, developer, ops, researcher)
-and stored as strings on the person. Tier 2 restricts the column to those names
-(`src/chatddx/store/migrations/0009-t2-identity.sql`; `0008-t1-identity.sql` is tier 1's grants).
-
-### Authentication
-Authentication is owned by the app: argon2id password hashes in `identity.credential`, and server-side sessions in
-`identity.session` holding only a sha256 of the token, with lifetime `settings.SESSION_TTL`
-(`src/chatddx/identity/identity.py`, `src/chatddx/store/people.py`). Neither table is readable by `chatddx_reader`.
-There is no IdP today. The deployment will eventually sit behind Keycloak, and `login` follows Keycloak's lowercase
-usernames so that people carry over; how Keycloak hands the app a login is not decided.
-
-### Authorization
-Authorization is a convenience, not a protection: it decides what is relevant to show. Sensitive data is protected by
-clearance and database grants, not by authorization. It goes by role first (which kinds a role sees, Z1), then also by
-the catalog's owner and collaborators (Z2).
-- Who owns, collaborates on and sees what is `src/chatddx/identity/identity.py:owns`, `collaborates` and `sees`, over
-  an `Owned`: anything with an owner, collaborators and a deleted flag, which the catalog's `About` is. Only what is
-  live counts. What a person owns is their runs, what they may edit, and the expectations they are scored against
-  (`docs/bench.md`, "What a person is scored against"); what they collaborate on, of those, is what they could take;
-  and they see both.
-- Of what a person sees, their own comes first: `src/chatddx/identity/identity.py:preferred`, which the bench uses to
-  find a thread or family by name and to name a digest's thread.
-- Z1's map from role to kinds goes beside `sees`. `identity` holds both, as data and functions with no store access.
-- The bench applies them to what is in the store and the World (`docs/bench.md`, "What a person sees").
-
-## Done
-- Migrations `0007-t0-identity.sql` (person with login, roles and active; credential; session),
-  `0008-t1-identity.sql` (grants) and `0009-t2-identity.sql` (login pattern, role names, session expiry), all in
-  `src/chatddx/store/migrations/` (`docs/migrations.md`).
-- `src/chatddx/identity/identity.py`: `Role`, `Person`, argon2id hashing (`argon2-cffi`), session tokens, `Owned`,
-  `owns`, `collaborates`, `sees` and `preferred`, exported by `chatddx.identity`.
-- The person-scoped rules moved down from the catalog (see "The person-scoped cake").
-- `src/chatddx/store/people.py`: `People`, the store API for people, passwords and sessions.
-- `chatddx person add` / `chatddx person password` (`src/chatddx/cli.py`).
-- Tests: `src/chatddx/store/test/test_identity.py`, `test_cli.py`, and `src/chatddx/identity/test/test_identity.py`.
-- `DB_OWNER` renamed to `DB_ADMIN`, freeing "owner" for the catalog.
-
-## The person-scoped cake
-`docs/chatddx.md`, "The person-scoped cake": pure rules go to `identity`, procedures over the catalog's rows to
-`catalog`, operations across the project to `bench`. A survey of `src/chatddx/catalog/` for person-scoped rules that
-need no store found these, and moved them:
-
-| Was, in the catalog | Is, in identity |
-| --- | --- |
-| `model.py:About.shows(person)`: live, and owned or shared | `sees(person, about)` |
-| `model.py:About.owned_by(person)`: live, and owned | `owns(person, about)` |
-| `threads.py:expectations_shared`'s `a.shows(person) and a.owner != person` | `collaborates(person, about)` |
-
-`identity.sees(person, owner, collaborators)` ignored deletion; the catalog added it. Now identity's rules include it,
-since what a person is shown is the rule and it needs no store. `Owned` is a `Protocol` so that identity imports
-nothing of the catalog's: `About`, a run's and a score's included, fits it as it is.
-
-Moving the one-line rules alone barely changed the catalog's or the bench's surface, and moving the bench's inline
-owner comparisons too made it larger (`owns(p, a) or restores(p, a)` for `a.owner == p`); that step was reverted. The
-surface is in the catalog's procedures that took the person asking, so the next step made the catalog
-person-agnostic (see "A person-agnostic catalog").
-
-Looked at and left where they are:
-- **`threads.py:picked`** is pure, but it decides among a case's expectation threads, not who: nothing in it is about
-  a person. Moving it would bring cases and threads into identity.
-- **The default owner**, `by if owner is None else owner` in `src/chatddx/store/catalog.py:Catalog.create` and
-  `Catalog.adopt` ("whoever creates it owns it unless they name someone else"), is a pure person rule, but one line in
-  the store's writes; a function for it would be ceremony. Take: move it when a second rule about owning on write
-  (Z1's kinds a role may write, say) gives identity a reason to hold write rules.
-- **Pure but not about people**: `variants.py`, `titles.py:describe*`, `model.py:language_tag`, `check_label`,
-  `latest`, `Entry`'s shape and `About.of`'s folding. They belong to the catalog, by subject rather than by
-  resources.
-- **`threads.py:check_expectation`** (a person owns at most one live expectation per case and schema) reads rows.
-
-Further down the cake, the bench holds pure person rules inline that could follow (not moved, as the survey was of
-the catalog):
-- the person's own deleted threads, `about.deleted and about.owner == person`
-  (`src/chatddx/bench/seen.py:Seen.thread_by_id`, `Seen.deleted`);
-- only the owner says anything of a thread, deleted or not, and nobody shares with themselves
-  (`src/chatddx/bench/saying.py:say`);
-- an expectation is "yours already" (`src/chatddx/bench/taking.py:take_from`);
-- `Seen.owner`'s "" for the person's own.
-
-### A person-agnostic catalog
-A prototype: the catalog says who owns and shares what, and no longer takes the person asking; the bench applies
-identity's rules to what it gives.
-
-| Was, in the catalog | Is |
-| --- | --- |
-| `threads.heads(kind, deleted=…) -> list[Edit]` | `threads.heads(kind) -> list[tuple[Edit, About]]`, deleted included |
-| `threads.visible(kind, person)` | `Seen.visible`: `heads` kept by `sees` |
-| `families.visible(person)` | `Seen._families`: `Reader.families` and `abouts`, kept by `sees` |
-| `expectation_for`, `expectations_for`, `expectation_choices`, `expectations_shared`, `_expecting` | `threads.expecting(cases, schema)`, whoever owns, deleted included; `Seen.expectation_choices` keeps what the person `owns`, `Seen.shared` and `taking.take` what they `collaborates` on |
-| The store's `Catalog.visible`, `visible_families`, `expectation_for`, `expectations_for`, `expectation_choices`, `expectations_shared` | `Catalog.expecting` |
-
-Measured against the state before it (non-blank lines, test code apart):
-
-| | Before | After |
-| --- | --- | --- |
-| `src/chatddx/catalog/` | 1126 | 1086 |
-| `src/chatddx/store/catalog.py` | 541 | 527 |
-| `src/chatddx/bench/` | 1682 | 1694 |
-| Public functions of `catalog/{threads,families,read}.py` | 41 | 36 |
-| Public methods of the store's `Catalog` | 40 | 35 |
-| Public methods of `Seen` | 57 | 58 (`expectation_choices`) |
-| Tests | 16374 | 16331 |
-
-Left taking a person or an owner, on purpose:
-- `threads.find(kind, name, owner=)` and `Catalog.create`/`adopt(owner=)`: an owner as a key or a value, like a name.
-  `find` keeps the live ones the owner `owns`; curation and many tests look records up by it.
-- `threads.check_expectation` applies `owns` to the owner it records: one live expectation per case and schema is the
-  catalog's rule, whoever asks.
-- The store's `involving(person)`, `runs_started(person, since)` and `Rows.subjects_naming(person, …)`: SQL keyed by a
-  person, which reading every entry instead would make slower.
-
-What it costs:
-- `expecting` reads the head of every thread of an expectation of the cases, others' and deleted ones included, where
-  `_expecting` read only those the person kept: one batched query, more rows.
-- The catalog's in-memory tests of "own only" and "offered" are gone. Identity's tests hold the rules and the bench's
-  (with the database) hold them applied: `test_seen.py`, taking and holding a case to an expectation.
-- Tests outside the bench spell the filter out: `[e.thread for e, a in catalog.expecting([case], schema)[case] if
-  owns(alice.id, a)]`. Tests with a bench use `bench.expectation_choices([case], schema)[case]`.
-
-## Decisions
-
-### 1. People are a small mutable table of their own
-Decided: `(id, name)`, mutable, in its own schema, separate from `factor`, `ledger` and the catalog.
-
-Take:
-- schema `identity`, table `identity.person (id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY, name text NOT NULL)`;
-- the catalog references `identity.person(id)`;
-- the writer gets SELECT, INSERT, UPDATE on this table only. It's the one mutable table, so its t2 migration attaches
-  no insert-only triggers to it;
-- a person who leaves can't be deleted while catalog rows reference them (the foreign key restricts it), which keeps
-  the history intact. A later `active` column can hide them in the portal;
-- code goes in `src/chatddx/core/identity.py`, since the user's view was that the identity model is what belongs in
-  `core`. It has since moved to its own package, `src/chatddx/identity/` (a03f8b5).
-
-### 2. Not sensitive
-Decided: only vignettes and data derived from them are sensitive. Names are not, so `chatddx_reader` may read
-`identity.person` (not credentials or sessions, which are secrets rather than sensitive data).
-
-### 3. Authentication, roles and authorization
-Decided:
-- Authentication is owned by the app (option B): passwords and sessions in the database. No IdP today. The deployment
-  will eventually sit behind Keycloak; know it, don't implement it.
-- Roles live in code and are stored as strings on the person (R1).
-- Authorization is a convenience that decides what is relevant to show, not a protection: by role first (Z1), then
-  also by catalog owner and collaborators (Z2).
-- The rules are `identity`'s, as data and functions with no store access, and the bench applies them
-  (`docs/bench.md`, "What a person sees").
-
-Take, for when Keycloak arrives: Keycloak (or a proxy in front, such as oauth2-proxy) authenticates and the app maps
-its username onto `person.login`, which is why logins are lowercase like Keycloak's. Password login can stay as the
-development path. Roles could then come from Keycloak's realm roles instead of the column; not decided.
-
 ## Open
-- **Web framework.** Decided for the API: FastAPI (`agents/wip-api.md` at 100a078, "A2. The framework"). The API
-  signs people in with sessions, by bearer token or by a `__Host-` cookie that is `HttpOnly`, `Secure` and
-  `SameSite=Lax`, and checks that a cookie's unsafe requests come from the site's own pages
-  (`src/chatddx/api/people.py`; `docs/api.md`, "Signing in"). The portal shares that cookie, as one app with the API (`agents/wip-portal.md`, "P3b, concretely"). Open: login
-  rate limiting.
-- **Z1's map from role to kinds** isn't written; it needs the portal's views to mean anything.
-- **Who may administer people.** `Role.ADMIN` exists, but nothing checks it; the CLI connects as `DB_USER`, so anyone
-  with database access can add people.
-- **Expired sessions** are only removed by `People.purge_sessions()`; nothing calls it on a schedule.
+`docs/identity.md`, "Open design issues", lists these too; here are the takes.
 
-## What `docs/` expects of `docs/identity.md`
-These docs link to `docs/identity.md`, and its suggestions cover what each expects. Once they are adopted,
-`src/chatddx/identity/test/test_identity.py` can be marked `solidified`, and this file keeps only what is open:
-- `docs/chatddx.md` (glossary, "Sensitive"): people's names aren't sensitive;
-- `docs/factors.md`: the roles are the principal authors; people, roles, authentication and authorization are
-  identity's;
-- `docs/store.md` (introduction, "People"): identity's schema, and its people, passwords and sessions;
-- `docs/store-api.md` (introduction, `People`): the `identity` schema;
-- `docs/catalog.md` (introduction, "Owners"): people by their identity, and "Authorization": what a person sees is
-  what is relevant to show, not who may read it;
-- `docs/catalog-api.md` ("Conventions"): people are ids of `identity.person`.
+### Z1: what each role is shown
+Decided: authorization goes by role first, which kinds a role sees, then by the catalog's owners and collaborators. The
+map from roles to kinds isn't written; it needs the portal's views to mean anything.
+
+Take: the map goes beside `sees` in `src/chatddx/identity/identity.py`, as data, and `sees` then takes the person's
+roles and the kind as well as the `Owned`. The kinds each role authors can go beside it, clinicians appendices,
+expectations and typed cases, researchers chunks and recipes, as a convenience for the portal's forms rather than a
+refusal (`agents/wip-authoring.md`, "A11. Who may write what").
+
+### Who may administer people
+`Role.ADMIN` exists, but nothing asks for it, and `chatddx person` connects as `DB_USER`, so anyone with database
+access adds people. No command changes a person's name, roles or whether they are active (`People.update`).
+
+### Expired sessions and sign-ins
+Expired sessions are only removed by `People.purge_sessions()`, which nothing calls on a schedule. Sign-ins aren't
+limited; `docs/api.md`, "Outstanding", takes none until Keycloak is in front.
+
+### Take, for when Keycloak arrives
+Keycloak, or a proxy in front such as oauth2-proxy, authenticates, and the app maps its username onto `person.login`,
+which is why logins are lowercase like Keycloak's. Password login can stay as the development path. Roles could then
+come from Keycloak's realm roles instead of the column; not decided.
+
+## What could move to identity
+Rules that are pure functions of a person go to `identity`, and the bench applies them (`docs/bench.md`). Moving the
+catalog's `About.shows` and `About.owned_by` gave `owns`, `collaborates` and `sees`; making the catalog take no person
+moved the filtering of threads, families and expectations to the bench, over those rules.
+
+Moving one-line comparisons one at a time doesn't pay: replacing `about.owner == person` with a call of the same
+length adds a name and an import per site (tried on the bench, and reverted). Take: move a rule when it is shared by
+several places or grows beyond a comparison. Candidates left where they are:
+- **The default owner**, `by if owner is None else owner` in `src/chatddx/store/catalog.py:Catalog.create` and
+  `Catalog.adopt`. Take: move it when a second rule about owning on write, such as Z1's kinds a role authors, gives
+  identity a reason to hold write rules.
+- **The bench's owner comparisons**: a person's own deleted threads (`Seen.thread_by_id`, `Seen.deleted`), only the
+  owner says anything of a thread, and nobody shares with themselves (`saying.py:say`), and an expectation that is
+  "yours already" (`taking.py:take_from`).
+- **The edges' "own first"**: `src/chatddx/repl/listing.py` and `src/chatddx/portal/` list a person's own first, by
+  login or id, much as `preferred` picks.
+- **`src/chatddx/catalog/threads.py:picked`** is pure, but decides among a case's expectation threads, not who: it
+  stays with the catalog.

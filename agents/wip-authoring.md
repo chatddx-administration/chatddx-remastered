@@ -241,7 +241,7 @@ it holds with several writers without a rule in the database. The writer may not
 Ownership only, as now: a person makes new threads and writes on their own. Roles aren't checked. Z1 will map roles
 to the kinds each one sees (agents/wip-identity.md, "Open"); the kinds each one authors can go beside it, clinicians
 appendices, expectations and typed cases, researchers chunks and recipes, as a convenience for the portal's forms, not
-a refusal (agents/wip-identity.md, "Authorization").
+a refusal (agents/wip-identity.md, "Z1: what each role is shown").
 
 ### A12. Recipes into configurations
 A recipe the person makes, by the chunks' digests for each part, its purpose and its appendix layout, is compiled and

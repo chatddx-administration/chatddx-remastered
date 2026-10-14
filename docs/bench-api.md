@@ -1,5 +1,13 @@
 # Bench API
 
+```
+AGENT: replace
+Identity is solidified: `Person`, `preferred`, `sees`, `owns` and `collaborates` are in docs/identity-api.md, drafted as
+agents/identity-api.md.
+---
+(`Inventory`), docs/facts-api.md (`Facts`, `lints`), docs/identity-api.md (`Person`, `preferred`, `sees`, `owns`,
+`collaborates`) and docs/runner-api.md (`Runner`, `Running`, `Grader`, `Grading`, `Event`, `Refused`, `judge_at`,
+```
 Reference for the `chatddx.bench` package: each name's signature, what it returns and what it raises. What the bench
 is and why it is shaped this way is in docs/bench.md. The types it passes through are in docs/catalog-api.md (`Edit`,
 `About`, `Subject`, `Kept`), docs/factors-api.md (`Component`, `Registry`, `Skeleton`, `Recipe`, `Trial`, `Case`,
