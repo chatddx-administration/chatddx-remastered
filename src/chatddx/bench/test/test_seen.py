@@ -20,7 +20,7 @@ from chatddx.catalog import Entry, EntryField, Subject
 from chatddx.curation import Plan, load_cases
 from chatddx.factors.base import resolve
 from chatddx.factors.scoring import Expectation, Judge, View
-from chatddx.identity import Person
+from chatddx.identity import Person, owns
 from chatddx.runner.score import Grader, score_run
 from chatddx.store import Catalog, People, Store
 from chatddx.store.store import Connection
@@ -249,7 +249,8 @@ def test_a_case_is_held_to_the_expectation_scoring_picks(
 
     held = bench.expectation(case, schema)
     assert held is not None
-    assert held.digest == Catalog(conn).expectation_for(case, alice.id, schema)
+    expecting = Catalog(conn).expecting([case], schema)[case]
+    assert [e.digest for e, a in expecting if owns(alice.id, a)] == [held.digest]
 
     theirs = Bench(conn, bob, bench.inventory, bench.facts)
     assert theirs.expectation_schemas(case) == []
@@ -417,7 +418,7 @@ def _expectation_of(catalog: Catalog, case: str, owner: int) -> int:
     [thread] = [
         t
         for t in catalog.expectations_of(case)
-        if catalog.about(Subject(thread=t)).owned_by(owner)
+        if owns(owner, catalog.about(Subject(thread=t)))
     ]
     return thread
 

@@ -1,10 +1,13 @@
 from .identity import (
     LOGIN,
+    Owned,
     Person,
     Role,
+    collaborates,
     hash_password,
     needs_rehash,
     new_token,
+    owns,
     preferred,
     sees,
     token_digest,
@@ -13,11 +16,14 @@ from .identity import (
 
 __all__ = [
     "LOGIN",
+    "Owned",
     "Person",
     "Role",
+    "collaborates",
     "hash_password",
     "needs_rehash",
     "new_token",
+    "owns",
     "preferred",
     "sees",
     "token_digest",

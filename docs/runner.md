@@ -178,6 +178,17 @@ Drift of a vignette is noted as preparing a case notes it (docs/factors.md, "Pre
 | Stop, interrupt, halt | Ending a run after the items under way; at once, raising; at once, from another thread. |
 | Verdict | A judge's answer, as its skeleton's contract reads it. |
 
+## Elsewhere
+- **Scripted runs**, `chatddx scripted-runs` on the bench: `docs/scripted.md`.
+- **Resuming** and **`max_jobs` across runs**: `agents/wip-worker.md`, "Below the worker".
+- **No run sends a canary set** (`docs/runner.md`, "Smaller issues"): data sets hold them now, and `Bench.start`
+  passes none.
+- **The gate's cases only the test World reaches aren't read by a test**: `qwen3-bare@fake` not cleared for `typed`,
+  and `unknown@remote` cleared for nothing, with its secret unset (`agents/wip-test-world.md`, "Not read yet"). The
+  gate's tests edit the inventory instead (`runner/test/test_run.py`).
+- **The real engines are cleared for the sample** (decided: `agents/wip-clearance.md`, "Vetted endpoints").
+  `worlds/kompismoln/inventory.toml` clears `qwen3-8b@pelle` and `gpt-oss-20b@malborg` for `sample`.
+
 ## Open design issues
 
 ### What a stop leaves out

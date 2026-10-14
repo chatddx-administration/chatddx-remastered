@@ -418,35 +418,16 @@ class Catalog:
     def head(self, thread: int) -> Edit:
         return threads.head(self._rows, thread)
 
-    def heads(self, kind: str, *, deleted: bool = False) -> list[Edit]:
-        return threads.heads(self._rows, kind, deleted=deleted)
+    def heads(self, kind: str) -> list[tuple[Edit, About]]:
+        return threads.heads(self._rows, kind)
 
     def find(self, kind: str, name: str, *, owner: int | None = None) -> list[int]:
         return threads.find(self._rows, kind, name, owner=owner)
 
-    def visible(self, kind: str, person: int) -> list[tuple[Edit, About]]:
-        return threads.visible(self._rows, kind, person)
-
-    def visible_families(self, person: int) -> list[tuple[int, About]]:
-        return families.visible(self._rows, person)
-
-    def expectation_for(self, case: str, person: int, schema: str) -> str | None:
-        return threads.expectation_for(self._rows, case, person, schema)
-
-    def expectations_for(
-        self, cases: Sequence[str], person: int, schema: str
-    ) -> dict[str, str | None]:
-        return threads.expectations_for(self._rows, cases, person, schema)
-
-    def expectation_choices(
-        self, cases: Sequence[str], person: int, schema: str
-    ) -> dict[str, dict[int, str]]:
-        return threads.expectation_choices(self._rows, cases, person, schema)
-
-    def expectations_shared(
-        self, cases: Sequence[str], person: int, schema: str
+    def expecting(
+        self, cases: Sequence[str], schema: str
     ) -> dict[str, list[tuple[Edit, About]]]:
-        return threads.expectations_shared(self._rows, cases, person, schema)
+        return threads.expecting(self._rows, cases, schema)
 
     def forks(self, thread: int) -> list[int]:
         return threads.forks(self._rows, thread)

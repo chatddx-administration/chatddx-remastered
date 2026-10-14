@@ -6,7 +6,7 @@ from chatddx.curation.test.cases import CASES, vignettes
 from chatddx.factors.base import Fingerprint
 from chatddx.factors.cases import Case, Vignette
 from chatddx.factors.scoring import Expectation
-from chatddx.identity import Person
+from chatddx.identity import Person, owns
 from chatddx.store import Catalog, People, Store
 from chatddx.store.store import Connection
 from chatddx.test.world import world_plan
@@ -53,13 +53,17 @@ def test_the_giftbag_keeps_a_person_s_own_expectation(conn: Connection) -> None:
     assert "[giftbag expectation] noted: kept their own" in lines
     assert any(l.startswith("[giftbag expectation] crlf: forked") for l in lines)
 
-    [fork] = catalog.expectation_choices([crlf], alice.id, schema)[crlf]
+    [fork] = [
+        e.thread
+        for e, a in catalog.expecting([crlf], schema)[crlf]
+        if owns(alice.id, a)
+    ]
     catalog.note(Subject(thread=fork), Entry(field=EntryField.DELETED), alice.id)
     again, _ = _own(conn, alice, crlf)
     lines = init(conn, plan, CASES, vignettes(), alice, giftbag=True)
     assert "[giftbag expectation] crlf: kept their own" in lines
     assert catalog.about(Subject(thread=fork)).deleted
-    assert catalog.expectations_for([noted, crlf], alice.id, schema) == {
-        noted: written,
-        crlf: again,
-    }
+    assert {
+        case: [e.digest for e, a in held if owns(alice.id, a)]
+        for case, held in catalog.expecting([noted, crlf], schema).items()
+    } == {noted: [written], crlf: [again]}

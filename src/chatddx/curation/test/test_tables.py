@@ -6,6 +6,7 @@ from chatddx.catalog import Subject
 from chatddx.curation import init, load_cases
 from chatddx.curation.test.cases import CASES, vignettes
 from chatddx.factors.cases import Appendix, Case
+from chatddx.identity import owns
 from chatddx.store import Catalog, People, Store
 from chatddx.store.store import Connection
 from chatddx.test.world import DATA, world_plan
@@ -85,7 +86,8 @@ def test_init_data_lands_appendices_the_cases_that_send_them_and_canary_sets(
     assert catalog.title_of(sent.digest) == "whitespace with labs"
 
     [schema] = [r.digest for r in plan.records if r.kind == "expectation_schema"]
-    [mine] = catalog.expectation_choices([sent.digest], alice.id, schema)[sent.digest]
+    expecting = catalog.expecting([sent.digest], schema)[sent.digest]
+    [mine] = [e.thread for e, a in expecting if owns(alice.id, a)]
     assert catalog.about(Subject(thread=mine)).owner == alice.id
 
     [canaries] = catalog.find("canary_set", "probe", owner=archive.id)

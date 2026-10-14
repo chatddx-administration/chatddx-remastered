@@ -9,6 +9,7 @@ from chatddx.factors.base import Fingerprint, resolve
 from chatddx.factors.bundle import Registry
 from chatddx.factors.cases import Appendix, Case, Vignette
 from chatddx.factors.scoring import Expectation
+from chatddx.identity import sees
 from chatddx.inventory import DatabaseSource
 from chatddx.store import Texts
 
@@ -71,7 +72,7 @@ def case(seen: Seen, family: int, appendices: Sequence[str]) -> str:
     found = seen.family_by_id(family)
     for digest in appendices:
         held = seen.catalog.containing(digest)
-        if not any(seen.about(e.thread).shows(seen.person.id) for e in held):
+        if not any(sees(seen.person.id, seen.about(e.thread)) for e in held):
             raise NotFound(f"no appendix {digest} for {seen.person.login}")
     made = Case(vignette=seen.current(found.id), appendices=tuple(appendices))
     registry = seen.store.load(appendices)

@@ -1,7 +1,7 @@
 import pytest
 
 from chatddx.catalog import Entry, EntryField, Subject, threads
-from chatddx.catalog.test.memory import ALICE, ARCHIVE, BOB, Memory, compiled, owned
+from chatddx.catalog.test.memory import Memory, compiled
 from chatddx.factors.bundle import Registry
 from chatddx.factors.request import Instructions, Sampling
 from chatddx.factors.test.sample import generation_recipe, world
@@ -9,7 +9,7 @@ from chatddx.factors.test.sample import generation_recipe, world
 pytestmark = pytest.mark.solidified
 
 
-def test_heads_and_names_skip_deleted_threads() -> None:
+def test_heads_say_what_is_deleted_and_names_skip_it() -> None:
     reg = Registry()
     ids = world(reg)
     rows = Memory(reg)
@@ -19,8 +19,10 @@ def test_heads_and_names_skip_deleted_threads() -> None:
             Subject(thread=edit.thread), Entry(field=EntryField.NAME, value="baseline")
         )
     rows.note(Subject(thread=dropped.thread), Entry(field=EntryField.DELETED))
-    assert threads.heads(rows, "trial") == [kept]
-    assert threads.heads(rows, "trial", deleted=True) == [dropped]
+    assert [(e, a.deleted) for e, a in threads.heads(rows, "trial")] == [
+        (kept, False),
+        (dropped, True),
+    ]
     assert threads.find(rows, "trial", "baseline") == [kept.thread]
     with pytest.raises(LookupError):
         _ = threads.history(rows, 99)
@@ -82,16 +84,3 @@ def test_behind_names_every_thread_that_moved_on() -> None:
     ]
     rows.note(Subject(thread=forked.thread), Entry(field=EntryField.DELETED))
     assert [b.head for b in threads.behind(rows, skeleton.thread)] == [one]
-
-
-def test_a_person_sees_the_live_threads_they_own_or_share() -> None:
-    reg = Registry()
-    trial = world(reg)["trial"]
-    rows = Memory(reg)
-    archive = owned(rows, rows.start(trial), ARCHIVE, ALICE)
-    _ = owned(rows, rows.start(trial), BOB)
-    mine = owned(rows, rows.start(trial), ALICE)
-    gone = owned(rows, rows.start(trial), ALICE)
-    rows.note(Subject(thread=gone.thread), Entry(field=EntryField.DELETED))
-    seen = threads.visible(rows, "trial", ALICE)
-    assert [(e, a.owner) for e, a in seen] == [(archive, ARCHIVE), (mine, ALICE)]

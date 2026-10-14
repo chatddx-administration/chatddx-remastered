@@ -1,4 +1,4 @@
-from collections.abc import Callable, Mapping, Sequence
+from collections.abc import Mapping, Sequence
 
 from pydantic import JsonValue
 
@@ -6,6 +6,7 @@ from chatddx.factors.base import Component, canonical_bytes, iter_refs, resolve
 from chatddx.factors.kinds import parse_component
 from chatddx.factors.request import Compilation, Recipe
 from chatddx.factors.scoring import Expectation, Scorer
+from chatddx.identity import owns
 
 from .families import stale_cases
 from .model import (
@@ -87,15 +88,11 @@ def head(rows: Reader, thread: int) -> Edit:
     return history(rows, thread)[-1]
 
 
-def heads(rows: Reader, kind: str, *, deleted: bool = False) -> list[Edit]:
+def heads(rows: Reader, kind: str) -> list[tuple[Edit, About]]:
     ids = [t.id for t in rows.threads(kind)]
     found = heads_of(rows, ids)
     known = abouts(rows, [Subject(thread=i) for i in ids])
-    return [
-        found[i]
-        for i in ids
-        if i in found and known[Subject(thread=i)].deleted == deleted
-    ]
+    return [(found[i], known[Subject(thread=i)]) for i in ids if i in found]
 
 
 def find(rows: Reader, kind: str, name: str, *, owner: int | None = None) -> list[int]:
@@ -105,32 +102,8 @@ def find(rows: Reader, kind: str, name: str, *, owner: int | None = None) -> lis
         i
         for i in ids
         if (a := known[Subject(thread=i)]).name == name
-        and (not a.deleted if owner is None else a.owned_by(owner))
+        and (not a.deleted if owner is None else owns(owner, a))
     ]
-
-
-def visible(rows: Reader, kind: str, person: int) -> list[tuple[Edit, About]]:
-    ids = [t.id for t in rows.threads(kind)]
-    found = heads_of(rows, ids)
-    known = abouts(rows, [Subject(thread=i) for i in ids])
-    return [
-        (found[i], a)
-        for i in ids
-        if i in found and (a := known[Subject(thread=i)]).shows(person)
-    ]
-
-
-def expectation_for(rows: Reader, case: str, person: int, schema: str) -> str | None:
-    return expectations_for(rows, [case], person, schema)[case]
-
-
-def expectations_for(
-    rows: Reader, cases: Sequence[str], person: int, schema: str
-) -> dict[str, str | None]:
-    return {
-        case: picked(case, choices)
-        for case, choices in expectation_choices(rows, cases, person, schema).items()
-    }
 
 
 def picked(case: str, choices: Mapping[int, str]) -> str | None:
@@ -146,39 +119,17 @@ def picked(case: str, choices: Mapping[int, str]) -> str | None:
             )
 
 
-def expectation_choices(
-    rows: Reader, cases: Sequence[str], person: int, schema: str
-) -> dict[str, dict[int, str]]:
-    found: dict[str, dict[int, str]] = {c: {} for c in cases}
-    for case, edit, _ in _expecting(rows, cases, schema, lambda a: a.owned_by(person)):
-        found[case][edit.thread] = edit.digest
-    return found
-
-
-def expectations_shared(
-    rows: Reader, cases: Sequence[str], person: int, schema: str
+def expecting(
+    rows: Reader, cases: Sequence[str], schema: str
 ) -> dict[str, list[tuple[Edit, About]]]:
-    found: dict[str, list[tuple[Edit, About]]] = {c: [] for c in cases}
-    shared = _expecting(
-        rows, cases, schema, lambda a: a.shows(person) and a.owner != person
-    )
-    for case, edit, about in shared:
-        found[case].append((edit, about))
-    return found
-
-
-def _expecting(
-    rows: Reader, cases: Sequence[str], schema: str, keep: Callable[[About], bool]
-) -> list[tuple[str, Edit, About]]:
     held = heads_holding(rows, rows.expectations(cases))
     known = abouts(rows, [Subject(thread=t) for t in held])
-    kept = {t: e for t, e in held.items() if keep(known[Subject(thread=t)])}
-    read = dict(rows.components([e.digest for e in kept.values()]))
-    found: list[tuple[str, Edit, About]] = []
-    for t in sorted(kept):
-        expectation = resolve(read.__getitem__, kept[t].digest, Expectation)
+    read = dict(rows.components([e.digest for e in held.values()]))
+    found: dict[str, list[tuple[Edit, About]]] = {c: [] for c in cases}
+    for t in sorted(held):
+        expectation = resolve(read.__getitem__, held[t].digest, Expectation)
         if expectation.expectation_schema == schema:
-            found.append((expectation.case, kept[t], known[Subject(thread=t)]))
+            found[expectation.case].append((held[t], known[Subject(thread=t)]))
     return found
 
 
@@ -192,14 +143,17 @@ def check_expectation(
         return
     entries = [e for _, e, _ in rows.entries([Subject(thread=thread)])]
     about = About.of(entries if entry is None else [*entries, entry])
-    if about.owner is None or about.deleted:
+    owner = about.owner
+    if owner is None or about.deleted:
         return
     expectation = resolve(rows.get, digest or head(rows, thread).digest, Expectation)
     case, schema = expectation.case, expectation.expectation_schema
-    held = expectation_choices(rows, [case], about.owner, schema)[case]
+    held = [
+        e.thread for e, a in expecting(rows, [case], schema)[case] if owns(owner, a)
+    ]
     if others := sorted(t for t in held if t != thread):
         raise ValueError(
-            f"person {about.owner} owns an expectation of case {case} under that "
+            f"person {owner} owns an expectation of case {case} under that "
             + f"schema already, in thread {others[0]}"
         )
 

@@ -52,7 +52,7 @@ def another_expectation(bench: Bench, case: str, data: JsonValue) -> str:
     held = bench.expectation(case, schema)
     assert held is not None
     store, catalog, person = Store(bench.conn), Catalog(bench.conn), bench.person.id
-    [mine] = catalog.expectation_choices([case], person, schema)[case]
+    [mine] = bench.expectation_choices([case], schema)[case]
     registry = store.load([held.digest])
     other = registry.add(
         Expectation(case=held.case, expectation_schema=schema, data=data)

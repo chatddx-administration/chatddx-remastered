@@ -8,7 +8,7 @@ from chatddx.factors.base import Fingerprint, StructuralError
 from chatddx.factors.cases import Appendix, Case, Vignette, clean
 from chatddx.factors.scoring import Expectation
 from chatddx.facts import lints
-from chatddx.identity import Person
+from chatddx.identity import Person, owns
 from chatddx.inventory import ListingSource
 from chatddx.store.catalog import Catalog
 from chatddx.store.people import People
@@ -280,7 +280,7 @@ class _Init:
         lines: list[str] = []
         for subject in subjects:
             about = known[subject]
-            if not about.owned_by(self.archive.id):
+            if not owns(self.archive.id, about):
                 continue
             if subject.thread is not None and subject.thread not in threads:
                 kind = self.catalog.thread(subject.thread).kind
@@ -363,7 +363,9 @@ class _Init:
         head = self.store.get(self.catalog.head(thread).digest)
         assert isinstance(head, Expectation)
         case, schema = head.case, head.expectation_schema
-        return bool(self.catalog.expectation_choices([case], user.id, schema)[case])
+        return any(
+            owns(user.id, a) for _, a in self.catalog.expecting([case], schema)[case]
+        )
 
 
 def _what(catalog: Catalog, subject: Subject) -> str:
@@ -379,7 +381,7 @@ def wipe(conn: Connection, user: Person) -> list[str]:
         catalog = Catalog(conn)
         for subject in catalog.involving(user.id):
             about = catalog.about(subject)
-            if about.owned_by(user.id):
+            if owns(user.id, about):
                 catalog.note(subject, Entry(field=EntryField.DELETED), user.id)
                 deleted[_what(catalog, subject)] += 1
             if user.id in about.collaborators:

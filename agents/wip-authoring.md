@@ -210,7 +210,7 @@ Takes, built:
 
 ### A9. What is said about a thread
 A thread's name, description, tags and collaborators, and deleting or restoring it, are entries the bench writes on what
-the person owns (`About.owned_by`), as `edit` already requires: a collaborator may fork a thread, but not edit, share or
+the person owns (`chatddx.identity.owns`), as `edit` already requires: a collaborator may fork a thread, but not edit, share or
 delete it. Decided: only the owner shares. Sharing names a person by login. Restoring is held to the catalog's rules, so
 restoring a second expectation of one case and schema is refused. Handing a thread over to another owner isn't offered.
 
@@ -241,7 +241,7 @@ it holds with several writers without a rule in the database. The writer may not
 Ownership only, as now: a person makes new threads and writes on their own. Roles aren't checked. Z1 will map roles
 to the kinds each one sees (agents/wip-identity.md, "Open"); the kinds each one authors can go beside it, clinicians
 appendices, expectations and typed cases, researchers chunks and recipes, as a convenience for the portal's forms, not
-a refusal (agents/wip-identity.md, "Authorization").
+a refusal (agents/wip-identity.md, "Z1: what each role is shown").
 
 ### A12. Recipes into configurations
 A recipe the person makes, by the chunks' digests for each part, its purpose and its appendix layout, is compiled and

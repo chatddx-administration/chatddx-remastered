@@ -31,6 +31,7 @@ All docs except `agents/*` are governed by chatddx rule one of documentation: Hu
 
 * A suggestion is inserted as a fenced code-block immediately above the subject to change.
   The backticks are part of the template, use 4 backticks as envelope if the suggestion contains a code-block.
+  Prefer whole lines for new content.
 ```
 AGENT: <verb>
 <short explanation>

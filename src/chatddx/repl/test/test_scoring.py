@@ -95,7 +95,7 @@ def _dropped(bench: Bench, name: str) -> tuple[str, str]:
     case = bench.family(name).case
     [schema] = bench.expectation_schemas(case)
     catalog, person = Catalog(bench.conn), bench.person.id
-    [mine] = catalog.expectation_choices([case], person, schema)[case]
+    [mine] = bench.expectation_choices([case], schema)[case]
     catalog.note(Subject(thread=mine), Entry(field=EntryField.DELETED), person)
     return case, schema
 

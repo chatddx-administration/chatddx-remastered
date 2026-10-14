@@ -13,16 +13,13 @@ The catalog refers to
 
 It holds nothing no sensitive or sensitive-derived data, so the reader role may read all of catalog.
 
-`catalog` is the *procedural* layer of "The person-scoped cake". Consult docs/chatddx.md's "The person-scoped cake"
-before adding person-scoped functionality.
-
 ## How the catalog works
 
 ### Append-only, and the latest wins
 Nothing in the catalog is changed or removed. Every change is a new row. For anything that can change (a thread's
 current version, a name, a binding, a language), the latest row is what holds now and the earlier rows are its
-history. "Latest" means written last, in the order the database numbered the rows; the time a row records is only for
-display.
+history. "Latest" means written last, in the order the database numbered the rows, not by the time a row records,
+which is shown, and counts the runs a person started in the last day.
 
 Deleting is a row too, which a later row can undo (see "Deleting"). True deletion is refused by the database
 (docs/store.md, "Tiers"); a garbage collector for unreferenced items is on the table (docs/chatddx.md, "On the table").
@@ -30,7 +27,7 @@ Deleting is a row too, which a later row can undo (see "Deleting"). True deletio
 ### Rules
 The catalog checks its rules against what is stored when it writes, and a change that takes several rows, such as a
 thread with its first version and its owner, a family with its binding, or a repair, is written all at once or not at
-all. The rules that two writers at once could break are repeated by the database at tier 2, with one exception (see
+all. The rules that two writers at once could break are repeated by the database at tier 2, with two exceptions (see
 "Concurrent writers").
 
 ## Threads and edits
@@ -55,15 +52,12 @@ Edits of one thread are written one at a time, so that holds with several writer
 
 The catalog answers what people need to find:
 - a thread's versions, and its current one;
-- the live threads of a kind, or the deleted ones;
+- the threads of a kind, with what is said of each, deleted or not;
 - the threads of a kind with a given name, owned by a given person if asked;
 - the forks of a thread;
-- the expectation threads of a case;
+- the expectation threads of a case, and of several cases under a given expectation schema, with what is said of each;
 - where a given component appears, in any thread;
-- what a person sees (see "Owners");
-- the expectation a person scores a case against, under a given expectation schema: their own. One shared with them
-  counts once they fork it. When two writers at once have left them several to choose from, the catalog says so
-  rather than choose (see "Concurrent writers").
+- which of several heads is picked, or that there are several to choose from (see "Concurrent writers").
 
 ## Configurations and variations
 Researchers refine their configurations by trying variations, keeping what works, and forking new configurations from
@@ -75,9 +69,9 @@ version it came from. Trying a variation costs nothing in the catalog, since any
 A variation worth keeping becomes an edit of its thread, or a fork. Configurations are organised by their lineage, the
 recipe parts they use, what is said about them and their runs, not by their names, which are optional.
 
-A *batch* is kept on a thread of its own (docs/factors.md, "Batch"): the variations of a configuration that a person
-runs together over the same cases, kept to run again or later. Adding cases to a batch is an edit of its thread, since a
-batch's trials pin their cases.
+A *batch* is to be kept on a thread of its own (docs/factors.md, "Batch"; not built yet): the variations of a
+configuration that a person runs together over the same cases, kept to run again or later. Adding cases to a batch
+will be an edit of its thread, since a batch's trials pin their cases.
 
 ### Recipes
 A recipe has no thread of its own; its history is kept on the skeleton thread it compiles to. Each edit of a skeleton
@@ -160,9 +154,9 @@ owner entry as they start, and a person's runs are the runs they own.
 
 ### Deleting
 A deleted thread or family is still there, and so are its components. Deleting takes it out of what people pick from
-and of what is proposed to them: the threads of a kind, what a person sees, looking up by name, the expectation a
-person scores against, and what has moved on, which proposes no deleted thread and flags no case of a deleted family.
-Titles turn to deleted threads only when the live ones give them nothing to show.
+and of what is proposed to them: what a person sees, looking up by name, the expectation a person is scored against,
+and what has moved on, which proposes no deleted thread and flags no case of a deleted family. The threads of a kind
+still include it, marked deleted.
 
 What answers questions about the past still includes them: a thread's history, its forks, a case's expectations, where
 a component appears, surveys of a source, and repairs, which rebind deleted threads too.
@@ -215,7 +209,7 @@ Each kind is described by:
 | Local engine | Its model, server and GPU. | `google/gemma-3-12b-it on vllm 0.24.0 (NVIDIA GeForce RTX 5090)` |
 | Remote engine | Its model and provider. | `gpt-4o from openai` |
 | Trial | Its skeleton, its engine, and how many cases and seeds it has. | `plan on qwen3-8b@pelle, 20 cases, 1 seed` |
-| Batch | Variation count, its base, case count, and endpoint. | `4 variations of plan, 20 cases, at qwen3-8b@pelle` |
+| Scoring | Its scorer and how many expectations it has. | `scorer chatddx.scorers.metrics:score v2 against 20 expectations` |
 | Judge | Its skeleton and engine. | `judge grader on qwen3-8b@pelle` |
 | Scorer | Its entry point and version. | `scorer chatddx.scorers.metrics:score v2` |
 | Expectation schema | Its title or its properties. | `Targets` |
@@ -359,7 +353,8 @@ writes at the same moment can leave a person several expectations to choose from
 
 ### Smaller issues
 - **Identical vignettes.** Two vignettes with the same content under different ids in one source look like a rename:
-  adopting refuses the second, and a survey reports both ids as renames of the same family.
+  adopting refuses the second, which a survey lists as new. Once the adopted id is gone, a survey reports both ids as
+  renames of the same family.
 - **Several matching families.** When bindings of several families match a case, the latest matching binding decides,
   which needn't be the latest family's.
 - **Current bindings are compared within a source.** Surveys, adopting and repairing compare a vignette only with the

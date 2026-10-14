@@ -1,10 +1,8 @@
 # Catalog API
 
-Reference for the `chatddx.catalog` package and the `catalog` database schema. It was written from
-`src/chatddx/catalog/*`, `docs/catalog.md` and `src/chatddx/store/migrations/001{0,1,2}-*-catalog.sql`;
-`src/chatddx/store/catalog.py` was read only to map the store's `Catalog` onto this package. What the catalog is and
-why it is shaped this way is in `docs/catalog.md`; this file says what each name accepts, returns and raises. Factor
-types it uses (`Component`, `Fingerprint`, `Vignette`, `Recipe`, `Compilation`, `Registry`, `resolve`, …) are in
+Reference for the `chatddx.catalog` package and the `catalog` database schema: each name's signature, what it returns
+and what it raises. What the catalog is and why it is shaped this way is in `docs/catalog.md`. Factor types it uses
+(`Component`, `Fingerprint`, `Vignette`, `Recipe`, `Compilation`, `Registry`, `resolve`, …) are in
 `docs/factors-api.md`.
 
 Paths are relative to `src/chatddx/catalog/` unless they start with `src/` or `docs/`.
@@ -14,7 +12,7 @@ Paths are relative to `src/chatddx/catalog/` unless they start with `src/` or `d
 - [Conventions](#conventions)
 - [model.py](#modelpy): kinds, language tags, rows, entries, `About`, `latest`, results
 - [read.py](#readpy): `Reader` and the helpers that pick the latest
-- [threads.py](#threadspy): threads, edits, heads, visibility, forks, variations, proposals, `behind`
+- [threads.py](#threadspy): threads, edits, heads, expectations, forks, variations, proposals, `behind`
 - [families.py](#familiespy): bindings, `family_of`, adopting, surveying, repairing, stale cases
 - [language.py](#languagepy): a component's language, and the checks on writing one
 - [titles.py](#titlespy): descriptions and titles
@@ -24,741 +22,740 @@ Paths are relative to `src/chatddx/catalog/` unless they start with `src/` or `d
 - [Known gaps](#known-gaps)
 
 ## Package
-
 `chatddx.catalog` re-exports `LANGUAGE`, `LANGUAGE_KINDS`, `THREAD_KINDS`, `About`, `Behind`, `Binding`, `Edit`,
-`Entry`, `EntryField`, `Kept`, `Labels`, `Part`, `Reader`, `Repair`, `RepairPlan`, `Subject`, `Survey`, `Thread`,
-`Variation`, `check_label`, `language_of`, `language_tag`, `latest`, `made_for`, `variant_name`, `variants_for`, and
-the modules `families`, `language`, `read`, `threads`, `titles` and `variants`.
+`Entry`, `EntryField`, `Kept`, `Labels`, `MovedOn`, `Part`, `Reader`, `Repair`, `RepairPlan`, `Subject`, `Survey`,
+`Thread`, `Variation`, `check_label`, `language_of`, `language_tag`, `latest`, `made_for`, `variant_name`,
+`variants_for`, and the modules `families`, `language`, `read`, `threads`, `titles` and `variants`. Functions are
+called through their module (`threads.behind(rows, thread)`); `model.py` is imported by path.
 
-Functions are called through their module (`threads.behind(rows, thread)`); `model.py` is imported by path.
+The modules, and the ones each builds on:
+- `model.py`, on none.
+- `read.py`, on `model.py`.
+- `families.py`, on `model.py` and `read.py`.
+- `threads.py`, on `families.py`, `model.py` and `read.py`.
+- `language.py`, on `families.py`, `model.py` and `read.py`.
+- `titles.py`, on `families.py`, `language.py`, `model.py`, `read.py` and `threads.py`.
+- `variants.py`, on `model.py`.
 
-| Module | Builds on |
-| --- | --- |
-| `model.py` | `chatddx.factors.{base,cases,scoring}`, `chatddx.identity` |
-| `read.py` | `model.py`, `chatddx.factors.{base,cases,request}` |
-| `families.py` | `model.py`, `read.py`, `chatddx.factors.{base,bundle,cases,scoring}` |
-| `threads.py` | `families.py`, `model.py`, `read.py`, `chatddx.factors.{base,kinds,request,scoring}` |
-| `language.py` | `families.py`, `model.py`, `read.py`, `chatddx.factors.{base,request,scoring,trial}` |
-| `titles.py` | `families.py`, `language.py`, `model.py`, `read.py`, `threads.py`, `chatddx.factors.{base,cases,engine,request,scoring,trial}` |
-| `variants.py` | `model.py` |
-
-The package imports no chatddx package but `chatddx.factors` and `chatddx.identity`, no third-party package but
-pydantic, and holds no SQL. It reads through a `Reader` and writes nothing; `src/chatddx/store/catalog.py:Catalog`
-writes what it decides (see "The store's Catalog").
+The package imports no chatddx package but `chatddx.factors` and `chatddx.identity` (`threads.py`, for `owns`), and no
+third-party package but pydantic. It holds no SQL: it reads through a `Reader` and writes nothing, and
+`src/chatddx/store/catalog.py:Catalog` writes what it decides (see "The store's Catalog").
 
 ## Conventions
-
-**Models.** Every model derives from `model.py:_Frozen`, a pydantic model with `frozen=True, extra="forbid"` (not
-`chatddx.factors.base.Frozen`). Building one validates it. A model whose fields are all hashable is hashable, so
-`Subject` serves as a dict key. `RepairPlan` is a frozen dataclass whose fields are plain dicts and lists.
-
-**Rows and ids.** Threads, edits, families and bindings have `int` ids that the database assigns in insertion order
-(`GENERATED ALWAYS AS IDENTITY`). People are `int` ids of `identity.person` (`docs/identity.md`). Runs and scores are
-`UUID`s. Components are referred to by digest, typed as plain `str`. `at` is a `datetime` the database sets
-(`DEFAULT now()`); nothing in the package reads it.
-
-**Latest wins.** A `Reader` returns rows in the order they were written; nothing in it picks the latest. The
-package takes the last row for a key as the one that holds: through `model.py:latest` and `About.of`, and by taking
-`[-1]` of a list in `threads.head`, `threads.variation`, `families.family_of`, `families.plan_repair`,
-`families.stale_cases` and `titles._case_title`.
+- **Models** derive from `model.py:_Frozen`, a pydantic model with `frozen=True, extra="forbid"`. Building one
+  validates it. A model whose fields are all hashable is hashable, so `Subject` serves as a dict key. `RepairPlan` is a
+  frozen dataclass of plain dicts and lists.
+- **Ids.** Threads, edits, families and bindings have `int` ids the database assigns in insertion order. People are
+  `int` ids of `identity.person` (`docs/identity.md`). Runs and scores are `UUID`s. Components are digests, typed as
+  `str`. `at` is a `datetime` the database sets; nothing in the package reads it.
+- **Latest wins.** A `Reader` returns rows in the order they were written and never picks the latest. The package
+  takes the last row for a key as the one that holds, through `model.py:latest` and `About.of`, or by taking `[-1]`.
+- **The person asking.** No function takes the person asking. Who sees, owns and collaborates on what are
+  `chatddx.identity`'s rules, which the bench applies to what `threads.heads` and `threads.expecting` give
+  (`docs/bench-api.md`, `Seen`). An owner is taken only as a key, by `threads.find`, and as the subject of the
+  one-expectation rule, in `threads.check_expectation`.
+- **Deleted subjects.** A subject is deleted when its `About.deleted` is true.
+  - Skipped by `threads.find` (through `chatddx.identity.owns` when given an owner), `threads.check_expectation`,
+    `threads.behind` and `families.stale_cases`.
+  - Given with their `About`, for the caller to judge, by `threads.heads` and `threads.expecting`.
+  - Ranked last by `titles.title_of`.
+  - Included by `threads.history`, `threads.forks`, `threads.expectations_of`, `families.family_of`,
+    `families.bindings`, `families.survey`, `families.plan_repair`, `language.language_of`, the titles of cases and
+    `Catalog.containing`.
 
 **Errors.**
-
-| Exception | When |
-| --- | --- |
-| `LookupError` | A thread, edit or family that doesn't exist (`no thread with id <id>`, `no edit with id <id>`, `no family with id <id>`); a digest that isn't stored where one is required (`check_adoptable`, `check_language`); `picked`, and so `expectations_for` and `expectation_for`, with several expectations to choose from. |
-| `ValueError` | A rule refused before writing: `check_threadable`, `check_based_on`, `check_expectation`, `check_adoptable`, `plan_repair`, `check_language`, `check_entry`, `check_label`, `language_tag`; and `MovedOn`, from `check_head`. |
-| `pydantic.ValidationError` | A model breaks its own rules: an `Entry` of the wrong shape, a `Subject` that isn't exactly one thing, a `Behind` with both or neither of `head` and `binding`; `proposal` when the merged recipe isn't a valid `Recipe`. Rules written as validators raise `ValueError`, which pydantic wraps. |
-| `chatddx.factors.base.StructuralError` (a `ValueError`) | `Reader.get` of a digest that isn't stored (both `Rows` and `test/memory.py:Memory`, through `Store.get` and `Registry.get`); `resolve` of a component of the wrong kind; `proposal` when the merged document isn't a readable component. |
-
-**Deleted subjects.** A subject is deleted when its `About.deleted` is true. What each function does with deleted
-threads and families is said in its entry; in short:
-
-| Deleted are | Functions |
-| --- | --- |
-| skipped, through `About.shows` | `threads.visible`, `threads.expectations_shared`, `families.visible` |
-| skipped, through `About.owned_by` | `threads.expectation_choices`, `threads.expectations_for`, `threads.expectation_for`, `threads.check_expectation` |
-| ranked last | `titles.title_of` |
-| included | `threads.history`, `threads.forks`, `threads.expectations_of`, `families.family_of`, `families.bindings`, `families.survey`, `families.plan_repair`, `language.language_of`, the titles of cases, `Catalog.containing` |
+- `LookupError`: a thread, edit or family that doesn't exist (`no thread with id <id>`, `no edit with id <id>`, `no
+  family with id <id>`); a digest that isn't stored where one is required (`check_adoptable`, `check_language`);
+  `picked` with several expectations to choose from.
+- `ValueError`: a rule refused before writing (`check_threadable`, `check_based_on`, `check_expectation`,
+  `check_adoptable`, `plan_repair`, `check_language`, `check_entry`, `check_label`, `language_tag`), and `MovedOn`,
+  from `check_head`.
+- `pydantic.ValidationError`: a model that breaks its own rules (an `Entry` of the wrong shape, a `Subject` that isn't
+  exactly one thing, a `Behind` with both or neither of `head` and `binding`), and `proposal` when the merged recipe
+  isn't a valid `Recipe`. Rules written as validators raise `ValueError`, which pydantic wraps.
+- `chatddx.factors.base.StructuralError`, a `ValueError`: `Reader.get` of a digest that isn't stored, `resolve` of a
+  component of the wrong kind, and `proposal` when the merged document isn't a readable component.
 
 ## model.py
 
-### Names and constants
-
-| Name | Value |
-| --- | --- |
-| `THREAD_KINDS` | `frozenset` of the 22 kinds that have threads: `chunk.instructions`, `chunk.few_shot`, `chunk.prompt`, `chunk.output`, `chunk.sampling`, `chunk.reasoning`, `chunk.passthrough`, `chunk.translations`, `chunk.toolset`, `tool`, `skeleton`, `trial`, `judge`, `scorer`, `scoring`, `appendix`, `expectation`, `model`, `engine.local`, `engine.remote`, `expectation_schema`, `canary_set`. Every component kind but `case` and `compilation`. Repeated in `0012` (`thread_kind_check`). |
-| `LANGUAGE_KINDS` | `frozenset` of the 7 kinds that can have a language of their own: `chunk.instructions`, `chunk.few_shot`, `chunk.prompt`, `chunk.output`, `chunk.toolset`, `chunk.translations`, `skeleton`. Repeated in `0012` (`language_kind_check`). |
-| `LANGUAGE` | `re.compile(r"^[a-z]{2,3}(-[A-Za-z0-9]{1,8})*$")`. Accepts `sv`, `pt-BR`, `zh-Hant-TW`; refuses `SV`, `en_US`. Repeated in `0012`. |
-| `Part` | `Literal["view", "resource"]` |
-| `Labels` | `Mapping[tuple[Part, int], str]`: what a scorer edit calls its views and resources, by part and position |
-| `Kept` | `Literal["created", "edited", "unchanged"]`: what `Catalog.keep` did |
+### Constants
+- `THREAD_KINDS`: the 22 kinds that have threads, every component kind but `case` and `compilation`. `0012` repeats
+  them (`thread_kind_check`).
+- `LANGUAGE_KINDS`: the 7 kinds with a language of their own: `chunk.instructions`, `chunk.few_shot`, `chunk.prompt`,
+  `chunk.output`, `chunk.toolset`, `chunk.translations` and `skeleton`. `0012` repeats them (`language_kind_check`).
+- `LANGUAGE`: `^[a-z]{2,3}(-[A-Za-z0-9]{1,8})*$`, which takes `sv`, `pt-BR` and `zh-Hant-TW` and refuses `SV` and
+  `en_US`. `0012` repeats it.
+- `Part`: `Literal["view", "resource"]`.
+- `Labels`: `Mapping[tuple[Part, int], str]`, what a scorer edit calls its views and resources, by part and position.
+- `Kept`: `Literal["created", "edited", "unchanged"]`, what `Catalog.keep` did.
 
 ### `language_tag(value: str) -> str`
-Returns `value` when `LANGUAGE` matches it, else `ValueError("'<value>' is not a language tag such as 'sv' or
-'pt-BR'")`.
+`value`, when `LANGUAGE` matches it.
+- Raises `ValueError("'<value>' is not a language tag such as 'sv' or 'pt-BR'")`.
+
+### `class MovedOn(ValueError)`
+An edit named a head that isn't the thread's head any more (`threads.check_head`).
 
 ### `class EntryField(StrEnum)`
-`NAME = "name"`, `DESCRIPTION = "description"`, `TAG = "tag"`, `OWNER = "owner"`, `COLLABORATOR = "collaborator"`,
-`DELETED = "deleted"`, `LANGUAGE = "language"`. Repeated in `0012` (`entry_field_check`).
+`NAME`, `DESCRIPTION`, `TAG`, `OWNER`, `COLLABORATOR`, `DELETED` and `LANGUAGE`, valued as their lowercase names. `0012`
+repeats them (`entry_field_check`).
 
-### `class Thread(_Frozen)`
+### `class Thread`
 A row of `catalog.thread`. Every field is required.
+- `id: int`
+- `kind: str`: one of `THREAD_KINDS`, held by `Catalog.create` and `0012`, not by the model.
+- `forked_from: int | None`: the edit of the origin it was forked from.
+- `by: int`: who created it.
+- `at: datetime`
 
-| Field | Type | Description |
-| --- | --- | --- |
-| `id` | `int` | |
-| `kind` | `str` | one of `THREAD_KINDS` (enforced by `Catalog.create` and `0012`, not by the model) |
-| `forked_from` | `int \| None` | the edit of the origin it was forked from |
-| `by` | `int` | who created it |
-| `at` | `datetime` | |
-
-### `class Edit(_Frozen)`
+### `class Edit`
 A row of `catalog.edit`, without its `kind` column. Every field is required.
+- `id: int`
+- `thread: int`
+- `digest: str`: a component of the thread's kind.
+- `compilation: str | None`: for a skeleton edit, the compilation that produced the skeleton.
+- `based_on: int | None`: for an edit of a fork, the origin edit its changes were re-applied onto.
+- `by: int`: who saved it.
+- `at: datetime`
 
-| Field | Type | Description |
-| --- | --- | --- |
-| `id` | `int` | |
-| `thread` | `int` | |
-| `digest` | `str` | a component of the thread's kind |
-| `compilation` | `str \| None` | for a skeleton edit, the compilation that produced the skeleton |
-| `based_on` | `int \| None` | for an edit of a fork, the origin edit it was re-applied onto |
-| `by` | `int` | who saved it |
-| `at` | `datetime` | |
+### `class Binding`
+A row of `catalog.binding`. Every field is required.
+- `id: int`
+- `family: int`
+- `vignette: Vignette`: the table's `source`, `source_id` and `fingerprint`.
+- `by: int`
+- `at: datetime`
 
-### `class Binding(_Frozen)`
-A row of `catalog.binding`: `id: int`, `family: int`, `vignette: Vignette`, `by: int`, `at: datetime`. The table's
-`source`, `source_id` and `fingerprint` columns are `vignette.source`, `vignette.id` and `vignette.fingerprint`.
+### `class Subject`
+What an entry is about. Exactly one field is set.
+- `thread: int | None = None`
+- `family: int | None = None`
+- `run: UUID | None = None`
+- `score: UUID | None = None`
 
-### `class Subject(_Frozen)`
-What an entry is about: `thread: int | None`, `family: int | None`, `run: UUID | None`, `score: UUID | None`, all
-defaulting to `None`. Exactly one must be set (`ValueError("a subject is exactly one of a thread, a family, a run or
-a score")`, wrapped in `ValidationError`).
+Raises `ValueError("a subject is exactly one of a thread, a family, a run or a score")`, wrapped in `ValidationError`.
 
-### `class Entry(_Frozen)`
-One thing said about a subject: `field: EntryField`, `value: str | None = None`, `person: int | None = None`,
-`present: bool = True`.
+### `class Entry`
+One thing said about a subject.
+- `field: EntryField`
+- `value: str | None = None`: the text, for the fields that hold one.
+- `person: int | None = None`: the person, for `owner` and `collaborator`.
+- `present: bool = True`: false to remove what the field holds, for the fields that can be removed.
 
-| `field` | `value` | `person` | `present=False` |
-| --- | --- | --- | --- |
-| `name` | required and not empty when `present`; `None` when not | `None` | removes the name |
-| `description` | required; may be empty | `None` | refused |
-| `tag` | required and not empty, also when not `present` | `None` | removes that tag |
-| `owner` | `None` | required | refused |
-| `collaborator` | `None` | required | removes that collaborator |
-| `deleted` | `None` | `None` | restores the subject |
-| `language` | required; a language tag (`language_tag`) | `None` | refused |
+The shape each field takes:
+- `name`: a `value`, not empty; without `present`, no `value`, and the name is removed.
+- `description`: a `value`, which may be empty; it can't be removed.
+- `tag`: a `value`, not empty, also without `present`, which removes that tag.
+- `owner`: a `person`; it can't be removed.
+- `collaborator`: a `person`; without `present`, that person is removed.
+- `deleted`: neither; without `present`, the subject is restored.
+- `language`: a `value` that is a language tag; it can't be removed.
 
-Building one that breaks the table raises `ValidationError` wrapping `ValueError`: `wrong value or person for
-<field>`, `<field> can't be removed, only replaced`, `<field> can't be empty`, or the `language_tag` message. The model
-doesn't know its subject; `language.py:check_entry` refuses a `language` entry on anything but a family. `0012`
+Raises, wrapped in `ValidationError`:
+- `ValueError("wrong value or person for <field>")`
+- `ValueError("<field> can't be removed, only replaced")`
+- `ValueError("<field> can't be empty")`
+- `language_tag`'s `ValueError`.
+
+The model doesn't know its subject: `language.check_entry` refuses a `language` entry on anything but a family. `0012`
 repeats the shapes (`entry_shape_check`) and the family rule (`entry_language_check`).
 
-### `class About(_Frozen)`
-What a subject's entries say now.
+### `class About`
+What a subject's entries say now. It is a `chatddx.identity.Owned`, by its `owner`, `collaborators` and `deleted`.
+- `name: str | None = None`
+- `description: str | None = None`
+- `tags: frozenset[str] = frozenset()`
+- `owner: int | None = None`
+- `collaborators: frozenset[int] = frozenset()`
+- `deleted: bool = False`
+- `language: str | None = None`
 
-| Field | Type | Default |
-| --- | --- | --- |
-| `name` | `str \| None` | `None` |
-| `description` | `str \| None` | `None` |
-| `tags` | `frozenset[str]` | empty |
-| `owner` | `int \| None` | `None` |
-| `collaborators` | `frozenset[int]` | empty |
-| `deleted` | `bool` | `False` |
-| `language` | `str \| None` | `None` |
-
-| Member | Description |
-| --- | --- |
-| `of(entries: Iterable[Entry]) -> Self` (classmethod) | Folds the entries in the order given. For `name`, `description`, `owner`, `deleted` and `language` the last entry wins; a `name` entry without a value clears the name. For `tag` and `collaborator` the last entry for each member wins: `present` adds it, not `present` removes it. No entries give `About()`. |
-| `shows(person: int) -> bool` | `not deleted and (owner == person or person in collaborators)`. |
-| `owned_by(person: int) -> bool` | `not deleted and owner == person`. |
+#### `About.of(entries: Iterable[Entry]) -> Self`
+The entries folded in the order given. For `name`, `description`, `owner`, `deleted` and `language` the last entry
+wins. For `tag` and `collaborator` the last entry about each member wins. No entries give `About()`.
 
 ### `latest[K, V](rows: Iterable[tuple[K, V]]) -> dict[K, V]`
-`dict(rows)`: for each key, the value of its last row. A key keeps the position of its first row.
+For each key, the value of its last row. A key keeps the position of its first row.
 
 ### `check_label(scorer: Scorer, part: Part, position: int) -> None`
-`ValueError("<scorer digest> has no <part> at position <position>")` unless `0 <= position < len(scorer.views)` (for
-`view`) or `len(scorer.resources)` (for `resource`). `0018` repeats it (`catalog.check_label`), for the scorer of the
-label's edit.
+- Raises `ValueError("<scorer digest> has no <part> at position <position>")` unless the scorer has a view or a
+  resource there. `0018` repeats it for the scorer of the label's edit.
 
-### Results
-
-#### `class Variation(_Frozen)`
+### `class Variation`
 What `threads.variation` returns.
+- `base: Edit`: the origin edit the fork is compared with.
+- `origin_head: Edit`: the origin's head now.
+- `varies: dict[str, tuple[JsonValue, JsonValue]]`: path → (value at the base, value at the fork's head), for the
+  paths that differ, sorted by path. `None` stands for a missing field as well as a null one.
+- `moved: bool` (property): whether the origin's head is past the base.
 
-| Member | Description |
-| --- | --- |
-| `base: Edit` | The origin edit the fork is compared with. |
-| `origin_head: Edit` | The origin's head now. |
-| `varies: dict[str, tuple[JsonValue, JsonValue]]` | Path → (value at the base, value at the fork's head), for the paths that differ, sorted by path. `None` on a side stands for a missing field as well as a null one. |
-| `moved -> bool` (property) | `origin_head.id != base.id`. |
+### `class Behind`
+One reference of a thread's head that could be updated. Exactly one of `head` and `binding` is set.
+- `path: str`: where the reference is, from the head, such as `/skeleton`, `/recipe/output` or
+  `/cases/0/appendices/0`.
+- `digest: str`: what the head references there.
+- `head: Edit | None = None`: the head of a thread that held `digest` and has moved on.
+- `binding: Binding | None = None`: the current binding of the family of a case that is behind it.
+- `replacement: str | None = None`: the case `digest` becomes under `binding`, set exactly when `binding` is.
 
-#### `class Behind(_Frozen)`
-One reference of a thread's head that could be updated.
+Raises, wrapped in `ValidationError`:
+- `ValueError("behind either a newer head or a newer binding")`
+- `ValueError("a replacement case goes with a newer binding, and only with it")`
 
-| Field | Type | Default |
-| --- | --- | --- |
-| `path` | `str` | required; where the reference is, from the head (`/skeleton`, `/recipe/output`, `/cases/0/appendices/0`) |
-| `digest` | `str` | required; what the head references there |
-| `head` | `Edit \| None` | `None`; the head of a thread that held `digest` and has moved on |
-| `binding` | `Binding \| None` | `None`; the current binding of the family of a case that is behind it |
-| `replacement` | `str \| None` | `None`; the case `digest` becomes under `binding` |
-
-Exactly one of `head` and `binding` is set (`ValueError("behind either a newer head or a newer binding")`), and
-`replacement` is set exactly when `binding` is (`ValueError("a replacement case goes with a newer binding, and only
-with it")`), both wrapped in `ValidationError`.
-
-#### `class Survey(_Frozen)`
+### `class Survey`
 What `families.survey` returns. Every field defaults to `()`.
+- `unchanged: tuple[int, ...]`: families whose id and content are listed as bound.
+- `changed: tuple[tuple[int, str, Fingerprint], ...]`: (family, id, new fingerprint), the same id with new content.
+- `renamed: tuple[tuple[int, str, str], ...]`: (family, old id, new id), the same content under a new id.
+- `new: tuple[str, ...]`: listed ids that match no family.
+- `gone: tuple[int, ...]`: families none of whose ids or contents are listed.
 
-| Field | Type | Holds |
-| --- | --- | --- |
-| `unchanged` | `tuple[int, ...]` | families whose id and content are listed as bound |
-| `changed` | `tuple[tuple[int, str, Fingerprint], ...]` | (family, id, new fingerprint): the same id with new content |
-| `renamed` | `tuple[tuple[int, str, str], ...]` | (family, old id, new id): the same content under a new id |
-| `new` | `tuple[str, ...]` | listed ids that match no family |
-| `gone` | `tuple[int, ...]` | families none of whose ids or contents are listed |
-
-#### `class Repair(_Frozen)`
-What `Catalog.repair` wrote: `binding: Binding` (the new one), `cases: dict[str, str]` and `appendices: dict[str,
-str]` (old digest → rebound digest), `edits: tuple[Edit, ...]` (in the order of `RepairPlan.moves`).
+### `class Repair`
+What `Catalog.repair` wrote.
+- `binding: Binding`: the new one.
+- `cases: dict[str, str]`: old case digest → rebound case digest.
+- `appendices: dict[str, str]`: old appendix digest → rebound appendix digest.
+- `edits: tuple[Edit, ...]`: in the order of `RepairPlan.moves`.
 
 ## read.py
 
 ### `class Reader(Protocol)`
-What the rules read. Lists come back in the order the rows were written; for components, by digest. A `Reader` never
-picks the latest row. `src/chatddx/store/catalog.py:Rows` implements it over the tables, and
-`test/memory.py:Memory` over a `Registry` and lists.
+What the rules read. Lists come back in the order the rows were written, components by digest.
+`src/chatddx/store/catalog.py:Rows` implements it over the tables, and `test/memory.py:Memory` over a `Registry` and
+lists.
+- `get(digest: str) -> Component`: the stored component. `StructuralError` when it isn't stored.
+- `components(digests: Collection[str]) -> list[tuple[str, Component]]`: those of the digests that are stored.
+- `kind(digest: str) -> str | None`: its kind, or `None` when it isn't stored.
+- `compilations(skeleton: str) -> list[Compilation]`: the stored compilations of this skeleton.
+- `thread(id: int) -> Thread | None`
+- `threads(kind: str) -> list[Thread]`: the threads of a kind.
+- `threads_forked_from(edits: Collection[int]) -> list[Thread]`: the threads forked from one of the edits.
+- `edit(id: int) -> Edit | None`
+- `edits(threads: Collection[int]) -> list[Edit]`: the edits of these threads.
+- `edits_holding(digests: Collection[str]) -> list[Edit]`: the edits, in any thread, of one of these digests.
+- `entries(subjects: Collection[Subject]) -> list[tuple[Subject, Entry, int]]`: the entries about these subjects,
+  each with the person who wrote it.
+- `bindings(families: Collection[int]) -> list[Binding]`: the families' bindings; none for an unknown family.
+- `families() -> list[int]`: every family's id.
+- `bindings_in(source: str) -> list[Binding]`: every binding in a source.
+- `bindings_sharing(vignette: Vignette) -> list[Binding]`: the bindings in the vignette's source to its id or its
+  fingerprint.
+- `bound_to(vignettes: Collection[Vignette], kind: str) -> list[tuple[str, Vignette]]`: the stored components of
+  `kind`, `case` or `appendix`, bound to one of these vignettes, each with it.
+- `expectations(cases: Collection[str]) -> list[str]`: the stored expectations of these cases.
+- `languages(digests: Collection[str]) -> list[tuple[str, str]]`: (digest, language) rows for these digests.
+- `labels(edits: Collection[int]) -> list[tuple[int, Part, int, str]]`: (edit, part, position, label) rows for these
+  edits.
 
-| Method | Returns |
-| --- | --- |
-| `get(digest: str) -> Component` | The stored component. `StructuralError` when it isn't stored. |
-| `components(digests: Collection[str]) -> list[tuple[str, Component]]` | (digest, component) for those of the digests that are stored, by digest. |
-| `kind(digest: str) -> str \| None` | Its kind, or `None` when it isn't stored. |
-| `compilations(skeleton: str) -> list[Compilation]` | The stored compilations whose `skeleton` is this one, by compilation digest. |
-| `thread(id: int) -> Thread \| None` | |
-| `threads(kind: str) -> list[Thread]` | The threads of a kind, by id. |
-| `threads_forked_from(edits: Collection[int]) -> list[Thread]` | The threads whose `forked_from` is one of the edits. |
-| `edit(id: int) -> Edit \| None` | |
-| `edits(threads: Collection[int]) -> list[Edit]` | The edits of these threads, by id. |
-| `edits_holding(digests: Collection[str]) -> list[Edit]` | The edits, in any thread, whose digest is one of these, by id. |
-| `entries(subjects: Collection[Subject]) -> list[tuple[Subject, Entry, int]]` | The entries about these subjects, by id, each with the person who wrote it. |
-| `bindings(families: Collection[int]) -> list[Binding]` | The families' bindings, by id; none for an unknown family. |
-| `families() -> list[int]` | Every family's id. `Rows` reads `catalog.family`; `Memory` lists the families that have bindings. |
-| `bindings_in(source: str) -> list[Binding]` | Every binding, of any family, in a source, by id. |
-| `bound_to(vignettes: Collection[Vignette], kind: str) -> list[tuple[str, Vignette]]` | The stored components of `kind` (`case` or `appendix`) whose `vignette` equals one of these, each with that vignette, by digest. |
-| `expectations(cases: Collection[str]) -> list[str]` | The stored expectations of these cases, by digest. |
-| `languages(digests: Collection[str]) -> list[tuple[str, str]]` | (digest, language) rows for these digests, by id. |
-| `labels(edits: Collection[int]) -> list[tuple[int, Part, int, str]]` | (edit, part, position, label) rows for these edits, by id. |
-| `bindings_sharing(vignette: Vignette) -> list[Binding]` | The bindings in the vignette's source to its id or to its fingerprint, by id. |
+### `heads_of(rows: Reader, threads: Collection[int]) -> dict[int, Edit]`
+Thread → its latest edit, by thread id. Threads without edits are left out.
 
-### Helpers
+### `holders(rows: Reader, digests: Collection[str]) -> dict[int, Edit]`
+`heads_of` every thread with an edit, current or earlier, of one of the digests.
 
-| Function | Returns |
-| --- | --- |
-| `heads_of(rows, threads: Collection[int]) -> dict[int, Edit]` | Thread → its latest edit, sorted by thread id. Threads without edits are left out. |
-| `holders(rows, digests: Collection[str]) -> dict[int, Edit]` | `heads_of` every thread with an edit, current or earlier, holding one of the digests. |
-| `heads_holding(rows, digests: Collection[str]) -> dict[int, Edit]` | The `holders` whose head is one of the digests. |
-| `abouts(rows, subjects: Collection[Subject]) -> dict[Subject, About]` | `About.of` each subject's entries; every subject given is a key. |
-| `about(rows, subject: Subject) -> About` | `abouts` of one subject. |
-| `labels(rows, edit: int) -> Labels` | The edit's labels, by (part, position). `{}` for an edit without labels, of a scorer or not. |
-| `tags_given(rows, subject: Subject) -> dict[str, int]` | The tags that hold on the subject now, each with the writer of the latest entry about it. |
+### `heads_holding(rows: Reader, digests: Collection[str]) -> dict[int, Edit]`
+The `holders` whose head is one of the digests.
+
+### `abouts(rows: Reader, subjects: Collection[Subject]) -> dict[Subject, About]`
+`About.of` each subject's entries. Every subject given is a key.
+
+### `about(rows: Reader, subject: Subject) -> About`
+`abouts` of one subject.
+
+### `labels(rows: Reader, edit: int) -> Labels`
+The edit's labels, by (part, position); `{}` for an edit without any.
+
+### `tags_given(rows: Reader, subject: Subject) -> dict[str, int]`
+The tags that hold on the subject, each with the writer of the latest entry about it.
 
 ## threads.py
 
-### Checks
+### `check_threadable(kind: str) -> None`
+- Raises `ValueError("<kind> components have no threads")` for a kind not in `THREAD_KINDS`.
 
-| Function | Raises |
-| --- | --- |
-| `check_threadable(kind: str) -> None` | `ValueError("<kind> components have no threads")` when `kind` isn't in `THREAD_KINDS`. |
-| `check_based_on(rows, thread: int, based_on: int) -> None` | `ValueError("edit <based_on> is not in the origin of thread <thread>")` unless the thread exists, is a fork, and `based_on` is an edit of its origin with an id at or after `forked_from`. `0012` repeats it (`catalog.check_based_on`, same message). |
-| `check_head(rows, thread: int, head: int) -> None` | `MovedOn("thread <thread> has moved on since edit <head>: its head is edit <current>")` when `head` isn't the thread's head; `history`'s `LookupError` for no thread. `model.py:MovedOn` is a `ValueError`. The database doesn't repeat it; `Catalog.edit` takes the thread's lock first. |
-| `check_labels(rows, thread_id: int, digest: str, labels: Labels) -> None` | Nothing for no labels. `ValueError("a <kind> has no views or resources to label")` for a thread that isn't a scorer's; `check_label` of `digest`'s scorer for each; `ValueError("the label of <part> <position> is empty")`. `0018` repeats the positions, and holds a label to its edit's transaction and writer. |
+### `check_based_on(rows: Reader, thread: int, based_on: int) -> None`
+- Raises `ValueError("edit <based_on> is not in the origin of thread <thread>")` unless the thread is a fork and
+  `based_on` is an edit of its origin at or after `forked_from`. `0012` repeats it (`catalog.check_based_on`).
 
-### Lookups
+### `check_head(rows: Reader, thread: int, head: int) -> None`
+- Raises `MovedOn("thread <thread> has moved on since edit <head>: its head is edit <current>")` when `head` isn't the
+  thread's head, and `history`'s `LookupError`. The database doesn't repeat it; `Catalog.edit` takes the thread's lock
+  first.
 
-| Function | Returns / raises |
-| --- | --- |
-| `thread(rows, id: int) -> Thread` | `LookupError("no thread with id <id>")` when there is none. |
-| `edit(rows, id: int) -> Edit` | `LookupError("no edit with id <id>")` when there is none. |
-| `history(rows, thread: int) -> list[Edit]` | The thread's edits, by id. `LookupError("no thread with id <thread>")` when it has none, which also covers a thread that doesn't exist. Includes deleted threads. |
-| `head(rows, thread: int) -> Edit` | The last of `history`. |
-| `recipe(rows, edit: Edit) -> Recipe \| None` | The recipe of the edit's compilation, or `None` when it names none. Takes an edit; `Catalog.recipe(thread)` passes the head. |
+### `check_labels(rows: Reader, thread_id: int, digest: str, labels: Labels) -> None`
+Nothing for no labels.
+- Raises `ValueError("a <kind> has no views or resources to label")` for a thread that isn't a scorer's.
+- Raises `check_label`'s `ValueError` for a position the scorer at `digest` hasn't.
+- Raises `ValueError("the label of <part> <position> is empty")`.
 
-### `heads(rows, kind: str, *, deleted: bool = False) -> list[Edit]`
-The heads of the threads of `kind` whose `About.deleted` equals `deleted`, in thread id order. Threads without edits
-are left out; an unknown kind gives `[]`.
+### `thread(rows: Reader, id: int) -> Thread`
+- Raises `LookupError("no thread with id <id>")`.
 
-### `find(rows, kind: str, name: str, *, owner: int | None = None) -> list[int]`
-The ids of the live threads of `kind` whose current name is exactly `name`, and whose owner is `owner` when given, in
-thread id order. Names aren't unique, so it may return several.
+### `edit(rows: Reader, id: int) -> Edit`
+- Raises `LookupError("no edit with id <id>")`.
 
-### `visible(rows, kind: str, person: int) -> list[tuple[Edit, About]]`
-The head and `About` of each thread of `kind` that `About.shows(person)`: live, and owned by `person` or shared with
-them as a collaborator. Thread id order; threads without edits are left out.
+### `history(rows: Reader, thread: int) -> list[Edit]`
+The thread's edits, by id, deleted or not.
+- Raises `LookupError("no thread with id <thread>")` when it has none, which covers a thread that doesn't exist.
 
-### `expectations_for(rows, cases: Sequence[str], person: int, schema: str) -> dict[str, str | None]`
-For each case, the digest of the expectation `person` scores it against: `picked` of its `expectation_choices`, the
-head of the person's own live thread, or `None`. Every case given is a key. The first case, in the order given, with
-several distinct head digests raises `picked`'s `LookupError`. Shared threads are never chosen from.
+### `head(rows: Reader, thread: int) -> Edit`
+The last of `history`.
 
-`expectation_for(rows, case: str, person: int, schema: str) -> str | None` is `expectations_for` of the one case.
+### `heads(rows: Reader, kind: str) -> list[tuple[Edit, About]]`
+The head and `About` of each thread of `kind`, deleted ones included, in thread id order. Threads without edits are
+left out; an unknown kind gives `[]`.
 
-### `expectation_choices(rows, cases: Sequence[str], person: int, schema: str) -> dict[str, dict[int, str]]`
-For each case, the threads `expectations_for` picks from, each with its head digest: the threads whose head is an
-expectation of that case with `expectation_schema == schema` and which `About.owned_by(person)`. Every case given is
-a key, with `{}` when there are none. It refuses nothing.
+### `find(rows: Reader, kind: str, name: str, *, owner: int | None = None) -> list[int]`
+The ids of the live threads of `kind` named exactly `name`, in thread id order. Names aren't unique, so it may give
+several.
+- `owner`: only those this person `chatddx.identity.owns`.
 
-### `expectations_shared(rows, cases: Sequence[str], person: int, schema: str) -> dict[str, list[tuple[Edit, About]]]`
-For each case, the head and `About` of each thread whose head is an expectation of that case with
-`expectation_schema == schema`, which `About.shows(person)` and whose owner isn't `person`: what they could take.
-Thread id order. Every case given is a key, with `[]` when there are none.
+### `recipe(rows: Reader, edit: Edit) -> Recipe | None`
+The recipe of the edit's compilation, or `None` when it names none.
+
+### `expecting(rows: Reader, cases: Sequence[str], schema: str) -> dict[str, list[tuple[Edit, About]]]`
+For each case, the head and `About` of each thread whose head is an expectation of that case under `schema`, whoever
+owns it, deleted ones included, in thread id order. Every case given is a key, with `[]` for none.
 
 ### `picked(case: str, choices: Mapping[int, str]) -> str | None`
-The one distinct head among a case's `expectation_choices`, or `None` for none. Threads with the same head digest
-count as one choice. Several raise `LookupError("case <case> has expectations to choose from, in threads <t1>, <t2>,
-…")`, naming the threads.
+The one head digest among a case's choices, thread → head digest, or `None` for none. Threads with the same head count
+as one choice. The bench gives it the threads a person may be scored against (`docs/bench-api.md`,
+`Seen.expectation_choices`).
+- Raises `LookupError("case <case> has expectations to choose from, in threads <t1>, <t2>, …")`.
 
-### `check_expectation(rows, thread: int, digest: str | None = None, entry: Entry | None = None) -> None`
-Refuses what would leave a person owning two live expectation threads of one case under one expectation schema:
-`thread` with `digest` as its head, or after `entry`. Only threads of kind `expectation` are checked, and only
-`owner` and `deleted` entries; a thread without an owner, or deleted, passes. Otherwise its owner's other live threads
-whose head is an expectation of the same case and schema raise `ValueError("person <owner> owns an expectation of case
-<case> under that schema already, in thread <t>")`, naming the first.
+### `check_expectation(rows: Reader, thread: int, digest: str | None = None, entry: Entry | None = None) -> None`
+Refuses what would leave a person owning two live expectation threads of one case under one expectation schema.
+- `digest`: the head the thread would have; its head now when not given.
+- `entry`: an entry about to be written about the thread; only `owner` and `deleted` entries are checked.
 
-### `forks(rows, thread: int) -> list[int]`
-The ids of the threads whose `forked_from` is any edit of `thread`, in thread id order. Direct forks only; deleted
-forks included. An unknown thread gives `[]`.
+Only expectation threads are checked, and one without an owner, or deleted, passes.
+- Raises `ValueError("person <owner> owns an expectation of case <case> under that schema already, in thread <t>")`,
+  naming the first.
 
-### `origin(rows, id: int) -> int | None`
-The id of the thread that `id` was forked from: the thread of its `forked_from` edit. `None` for a thread that isn't
-a fork. `LookupError` for an unknown thread.
+### `forks(rows: Reader, thread: int) -> list[int]`
+The ids of the threads forked from any edit of `thread`, deleted or not. Direct forks only; an unknown thread gives
+`[]`.
 
-### `expectations_of(rows, case: str) -> list[int]`
-The ids, sorted, of the threads whose head is an expectation of `case`. Deleted threads included.
+### `origin(rows: Reader, id: int) -> int | None`
+The id of the thread `id` was forked from, or `None` for one that isn't a fork.
+- Raises `thread`'s `LookupError`.
 
-### `behind(rows, thread: int) -> list[Behind]`
-The references of the thread's head that could be updated. `LookupError` for a thread without edits.
+### `expectations_of(rows: Reader, case: str) -> list[int]`
+The ids, sorted, of the threads whose head is an expectation of `case`, deleted or not.
+
+### `behind(rows: Reader, thread: int) -> list[Behind]`
+The references of the thread's head that could be updated, by path; within a path, the newer heads in thread id order,
+then a newer binding. One level only: a reference's own references aren't followed, but a case's are.
 
 The references looked at:
-1. the head's own (`Component.refs()`): `/skeleton`, `/engine`, `/cases/0`, …;
-2. when the head names a compilation, its recipe's, under `/recipe` (`/recipe/instructions`, …);
-3. for each reference from 1 and 2 that is a case, the case's own references under its path: `/cases/0/appendices/0`,
-   or `/case/appendices/0` for an expectation.
+- the head's own (`Component.refs()`), such as `/skeleton`, `/engine` and `/cases/0`;
+- the recipe of the compilation the head names, under `/recipe`;
+- each case's appendices, under the case's path, such as `/cases/0/appendices/0`.
 
-For each reference, every thread with an edit, current or earlier, holding its digest is looked at. A live one whose
-head now holds another digest gives `Behind(path, digest, head=<that head>)`. A digest held by several threads gives
-one entry per thread that moved on.
+What is behind:
+- A reference held earlier by a live thread whose head is now another digest: a `Behind` with that `head`, one per
+  thread that moved on.
+- A case of a live family with a newer binding: a `Behind` with that `binding` and the `replacement`
+  (`families.stale_cases`). The replacement may not be stored.
 
-Each case reference whose family is live and has a current binding other than the case's vignette gives
-`Behind(path, digest, binding=<current binding>, replacement=<rebound case>)`, from `families.stale_cases`. The
-replacement has the same appendix texts bound to the current vignette; it is computed, and may not be stored.
+Raises `history`'s `LookupError` for a thread without edits.
 
-The result is sorted by path; within a path, `head` entries come in thread id order, then the `binding` entry.
-`behind` goes one level: it doesn't follow a reference's own references, except a case's.
+### `variation(rows: Reader, id: int) -> Variation | None`
+What a fork varies from its base, or `None` for a thread that isn't a fork. The base is the edit of the fork's latest
+`based_on`, else its `forked_from`.
+- When the base and the fork's head both name a compilation, their recipes are compared field by field, as
+  `/recipe/<field>`.
+- Otherwise their canonical documents are compared field by field, without `kind` and `v`, as `/<field>`.
 
-### `variation(rows, id: int) -> Variation | None`
-`None` when the thread isn't a fork; `LookupError` when it doesn't exist, or is a fork without edits.
+Raises `LookupError` for a thread that doesn't exist, or a fork without edits.
 
-The base is the edit named by the fork's latest `based_on`, or else its `forked_from`. The fork is compared by recipe
-when both the base and the fork's head name a compilation:
-- by recipe: every field of the two recipes (`Recipe.model_dump(mode="json")`), as `/recipe/<field>`; `purpose` and
-  `appendix_layout` included;
-- otherwise: the top-level fields of the two canonical documents, without `kind` and `v`, as `/<field>`.
+### `proposal(rows: Reader, id: int) -> Recipe | Component | None`
+The origin's head with the fork's changes on top, or `None` when `variation` gives none or one that hasn't `moved`.
+Nothing is stored.
+- Compared by recipe: a `Recipe` to compile; `None` when the origin's head names no compilation.
+- Otherwise: the component, its varied fields set to the fork's values and removed where the fork has none.
 
-`varies` holds the paths whose values differ. `origin_head` is the head of the base's thread.
-
-### `proposal(rows, id: int) -> Recipe | Component | None`
-The origin's head with the fork's changes on top, or `None` when `variation` is `None` or hasn't `moved`. Nothing is
-stored.
-- Compared by recipe: the recipe of the origin's head, with each varied field set to the fork's value, as a
-  `Recipe` to compile. `None` when the origin's head names no compilation. `ValidationError` when the result isn't a
-  valid recipe.
-- Otherwise: the canonical document of the origin's head, with each varied top-level field set to the fork's value,
-  or removed where the fork has none, read back with `parse_component`. `StructuralError` or `ValidationError` when
-  the result isn't a valid component.
-
-## `variants.py`
-
-### `variant_name(name, language, model)` -> `str`
-What's made for a language, a model or both is named after them, so that one name finds
-the variant that fits: `NAME (LANGUAGE)`, `NAME (MODEL)` or `NAME (LANGUAGE, MODEL)`.
-
-### `made_for(name, models)` -> `(name, language, model) | None`
-What a variant's name says it was made from and for, or None for a name that isn't a
-variant's; `models` are the models a variant may be made for.
-
-### `variants_for(name, names, model, language=None)`
-The variants of `name` among `names` that `model` may use: those made for it, or for
-every model; with `language`, only those made for it.
-
-### `language_of(name)` -> `(name, language | None)`
-The language a name ends with, as `NAME (LANGUAGE)` or `NAME LANGUAGE`, and the name before it; `(name, None)` when
-it ends with none.
+Raises `ValidationError` for an invalid recipe or component, and `StructuralError` for a document that isn't a
+readable component.
 
 ## families.py
 
-### `bindings(rows, family: int) -> list[Binding]`
-The family's bindings, by id; the last is the current one. `LookupError("no family with id <family>")` when it has
-none, which also covers a family that doesn't exist.
-
-### `visible(rows, person: int) -> list[tuple[int, About]]`
-Each family, in id order, whose `About.shows(person)`, with its `About`.
-
-### `family_of(rows, case: str) -> int | None`
-`None` when `case` isn't a stored case. Otherwise, among the bindings in the case's source equal to its vignette
-(source, id and fingerprint), the family of the one with the highest id; `None` when none matches. Earlier bindings
-count, so a case from before a repair keeps its family. Deleted families included.
-
-### `holder(rows, vignette: Vignette, *, but: int | None = None) -> tuple[int, bool] | None`
-Among the current bindings of the families in `vignette.source`, other than `but`, the lowest family id whose binding
-has the same id or the same fingerprint as `vignette`, with `True` when the id is the same. `None` when there is none.
-
-### `check_adoptable(rows, case: str) -> Vignette`
-Returns the case's vignette. Raises:
-- `LookupError("<case> is not a stored case")`;
-- `ValueError("<case> gives family <n>'s vignette new content; rebind the family")` when `holder` finds the same id,
-  or `… a new name; …` when it finds the same content.
-
-`Catalog.adopt` calls it only after `family_of` found no family, so a case whose vignette is already bound never gets
-here.
-
-### `survey(rows, source: str, listing: Mapping[str, Fingerprint]) -> Survey`
-Compares `listing` (id → fingerprint) with the current bindings of the families in `source`. For each listed id, in
-sorted order:
-- a family currently bound to that id: `unchanged` when the fingerprint is the same, else `changed`;
-- otherwise, exactly one family currently bound to the same fingerprint under an id that isn't listed: `renamed`;
-- otherwise: `new`.
-
-Families none of those took are `gone`, in family id order. A vignette whose id and content both changed is `gone`
-plus `new`. Deleted families included.
-
-### Rebinding
-
-| Function | Returns |
-| --- | --- |
-| `rebind_appendix(appendix: Appendix, vignette: Vignette) -> Appendix` | The same text, bound to `vignette`. |
-| `rebind_case(case: Case, vignette: Vignette, get: Resolver) -> tuple[Case, dict[str, Appendix]]` | The case with `vignette` and each appendix rebound, in the same order, and old appendix digest → rebound appendix. |
-
 ### `class RepairPlan`
 A frozen dataclass: what `plan_repair` decided, for `Catalog.repair` to write.
+- `vignette: Vignette`: the new binding's.
+- `registry: Registry`: every rebuilt case, appendix and expectation, and the expectation schemas those reference.
+- `cases: dict[str, str]`: old case digest → rebound case digest.
+- `appendices: dict[str, str]`: old appendix digest → rebound appendix digest.
+- `moves: list[tuple[int, str]]`: (thread, digest), the edits to write.
 
-| Field | Type | Holds |
-| --- | --- | --- |
-| `vignette` | `Vignette` | the new binding's vignette |
-| `registry` | `Registry` | every rebuilt case, appendix and expectation, and the expectation schemas those reference |
-| `cases` | `dict[str, str]` | old case digest → rebound case digest |
-| `appendices` | `dict[str, str]` | old appendix digest → rebound appendix digest |
-| `moves` | `list[tuple[int, str]]` | (thread, digest) edits to write |
+### `bindings(rows: Reader, family: int) -> list[Binding]`
+The family's bindings, by id; the last is the current one.
+- Raises `LookupError("no family with id <family>")` when it has none, which covers a family that doesn't exist.
 
-### `plan_repair(rows, family: int, *, id: str | None = None, fingerprint: Fingerprint | None = None) -> RepairPlan`
-Moves the family's current vignette to a new id or new content, keeping its source. `id` and `fingerprint` default to
-the current ones.
+### `family_of(rows: Reader, case: str) -> int | None`
+The family of the latest binding equal to the case's vignette, earlier bindings included, so that a case from before a
+repair keeps its family. `None` for a case that isn't stored, or one no binding matches. Deleted families included.
+
+### `holder(rows: Reader, vignette: Vignette, *, but: int | None = None) -> tuple[int, bool] | None`
+The lowest family, other than `but`, whose current binding in the vignette's source has its id or its fingerprint,
+with `True` when it is the id. `None` when there is none.
+
+### `check_adoptable(rows: Reader, case: str, *, by_content: bool = True) -> Vignette`
+The case's vignette, when it can be adopted into a new family. `Catalog.adopt` calls it only after `family_of` found
+none.
+- `by_content`: whether another family's content counts. False for a source whose texts never move, where the same
+  text typed twice is two vignettes.
 
 Raises:
-- `LookupError("no family with id <family>")` when it has no bindings;
-- `ValueError("a repair changes exactly one of the id or the fingerprint")` when the new vignette changes neither or
-  both;
-- `ValueError("family <n> already has the id '<id>'")` or `ValueError("family <n> already has that content")` when
+- `LookupError("<case> is not a stored case")`
+- `ValueError("<case> gives family <n>'s vignette new content; rebind the family")` when `holder` finds its id.
+- `ValueError("<case> gives family <n>'s vignette a new name; rebind the family")` when `holder` finds its content.
+
+### `survey(rows: Reader, source: str, listing: Mapping[str, Fingerprint]) -> Survey`
+`listing`, id → fingerprint, sorted into a `Survey` against the current bindings of the families in `source`, deleted
+or not. Each listed id, in sorted order, is:
+- `unchanged` or `changed`, when a family is bound to that id;
+- else `renamed`, when exactly one family is bound to that fingerprint under an id that isn't listed;
+- else `new`.
+
+The families none of them took are `gone`, by family id. A vignette whose id and content both changed is `gone` plus
+`new`.
+
+### `rebind_appendix(appendix: Appendix, vignette: Vignette) -> Appendix`
+The same text, bound to `vignette`.
+
+### `rebind_case(case: Case, vignette: Vignette, get: Resolver) -> tuple[Case, dict[str, Appendix]]`
+The case with `vignette` and each appendix rebound, in the same order, and old appendix digest → rebound appendix.
+
+### `plan_repair(rows: Reader, family: int, *, id: str | None = None, fingerprint: Fingerprint | None = None) -> RepairPlan`
+The family's current vignette moved to a new id or new content in the same source. Deleted threads are moved too.
+- `id`, `fingerprint`: the new vignette's; the current one's when not given. Exactly one must change.
+
+It plans:
+- every stored case of the current vignette, rebound;
+- a move for each thread whose head is an appendix of the current vignette, to the rebound appendix;
+- when the id changes, a move for each thread whose head is an expectation of one of those cases, to the same
+  expectation of the rebound case.
+
+Cases and appendices of an earlier binding aren't rebuilt. Raises:
+- `LookupError("no family with id <family>")`
+- `ValueError("a repair changes exactly one of the id or the fingerprint")`
+- `ValueError("family <n> already has the id '<id>'")` or `ValueError("family <n> already has that content")`, when
   `holder(…, but=family)` finds another family there.
 
-Plans:
-1. every stored case bound to the current vignette, rebound (`rebind_case`), in `cases` and `appendices`;
-2. for each thread whose head is an appendix bound to the current vignette, a move to the rebound appendix, in
-   thread id order;
-3. when the id changes, for each thread whose head is an expectation of one of the old cases, a move to an expectation
-   of the rebound case with the same schema and data, in thread id order.
+`0012` checks that a new binding keeps the source, and the id or the fingerprint (`catalog.check_binding`).
 
-Deleted threads get moves too. Cases and appendices bound to an earlier binding aren't rebuilt. `0012` checks that a
-new binding keeps the source, and the id or the fingerprint (`catalog.check_binding`).
-
-### `stale_cases(rows, refs: list[tuple[str, str]]) -> list[Behind]`
-For each (path, digest) in `refs` that is a case with a family (`family_of`), live, whose current binding's vignette
-isn't the case's: `Behind(path, digest, binding=<current>, replacement=<rebind_case digest>)`, in `refs` order. Other
-references are skipped. `threads.behind` calls it.
+### `stale_cases(rows: Reader, refs: list[tuple[str, str]]) -> list[Behind]`
+For each (path, digest) in `refs` that is a case of a live family whose current binding isn't the case's vignette, a
+`Behind` with that `binding` and the `replacement`, in `refs` order. `threads.behind` calls it.
 
 ## language.py
 
-### `own(rows, digest: str) -> str | None`
-The latest language recorded for the digest itself (`catalog.language`), or `None`.
+### `own(rows: Reader, digest: str) -> str | None`
+The latest language recorded for the digest itself, or `None`.
 
-### `language_of(rows, digest: str) -> str | None`
-By the digest's kind:
-
-| Kind | Language |
-| --- | --- |
-| `case` | its family's `About.language`; `None` without a family |
-| `expectation` | its case's |
-| `trial`, `judge` | its skeleton's |
-| `skeleton` with compilations | one vote per compilation's recipe; the language when the votes that are cast agree, else `None` |
-| anything else, a skeleton without compilations included | `own` |
+### `language_of(rows: Reader, digest: str) -> str | None`
+The digest's language, by its kind; `None` for a digest that isn't stored.
+- `case`: its family's `About.language`, or `None` without a family.
+- `expectation`: its case's.
+- `trial`, `judge`: its skeleton's.
+- `skeleton` with compilations: the language every recipe that votes agrees on, else `None`.
+- anything else, a skeleton without compilations included: `own`.
 
 A recipe votes:
-- with translations: for `own(translations)`, when it has one;
-- without: for the language that `own` gives every text-bearing part (the keys of
-  `chatddx.factors.request.texts(recipe)`, `toolset` included and `appendix_layout` not), when they all have the same
-  one. A part without a language, or parts that disagree, cast no vote.
+- with translations, for their `own` language;
+- without, for the `own` language every text-bearing part shares (the keys of `chatddx.factors.request.texts`,
+  `toolset` included and `appendix_layout` not). A part without a language, or parts that disagree, cast no vote.
 
-A digest that isn't stored gives `None`.
+### `languages_of(rows: Reader, digests: Collection[str]) -> dict[str, str | None]`
+`language_of` of each digest, reading what they need once for them all.
 
-### `languages_of(rows, digests: Collection[str]) -> dict[str, str | None]`
-`language_of` of each digest, with the components, the texts' languages and their recipes' chunks read once for them
-all, and each skeleton's compilations once per skeleton. A case, an expectation, a trial or a judge is looked up
-alone, by `language_of`.
+### `recipe_language(rows: Reader, recipe: Recipe) -> str | None`
+The language `recipe` votes for, or `None` when it casts no vote.
 
-### `recipe_language(rows, recipe: Recipe) -> str | None`
-The language `recipe` votes for, as `language_of` counts each compilation's recipe; `None` when it casts no vote.
-
-### `check_language(rows, digest: str, value: str) -> str`
-Returns the digest's kind, for the row. Raises, in this order:
-- `LookupError("<digest> is not in the store")`;
-- `ValueError("<kind> components have no language of their own")` when the kind isn't in `LANGUAGE_KINDS`;
-- `ValueError("<digest>: a compiled skeleton's language comes from its recipe")` for a skeleton with a compilation;
-- the `language_tag` `ValueError`.
+### `check_language(rows: Reader, digest: str, value: str) -> str`
+The digest's kind, for the row. Raises, in this order:
+- `LookupError("<digest> is not in the store")`
+- `ValueError("<kind> components have no language of their own")` for a kind not in `LANGUAGE_KINDS`.
+- `ValueError("<digest>: a compiled skeleton's language comes from its recipe")` for a skeleton with a compilation.
+- `language_tag`'s `ValueError`.
 
 `0012` repeats it (`language_value_check`, `language_kind_check`, `catalog.check_language`).
 
 ### `check_entry(subject: Subject, entry: Entry) -> None`
-`ValueError("a language entry is for a family's vignette; a component's language is kept on its digest")` for a
-`language` entry on anything but a family. `0012` repeats it (`entry_language_check`).
+- Raises `ValueError("a language entry is for a family's vignette; a component's language is kept on its digest")`
+  for a `language` entry on anything but a family. `0012` repeats it (`entry_language_check`).
 
 ## titles.py
 
-### Names and helpers
+### `type Title = Callable[[str], str]`
+Digest → title. Descriptions call it for the digests they mention; `title` and `title_of` pass `partial(title_of,
+rows)`.
 
-| Name | Description |
-| --- | --- |
-| `Title` | `Callable[[str], str]`: digest → title. Descriptions call it for the digests they mention; `title`, `title_of` and `_derive` pass `partial(title_of, rows)`. |
-| `short(digest) -> str` | The first 6 hex digits. |
-| `snippet(text, limit=40) -> str` | Whitespace collapsed; when longer than `limit`, cut at the last space within `limit + 1` characters and followed by `…` (a text without a space there keeps `limit + 1` characters); in double quotes. |
-| `describe_case(root, appendices, title) -> str` | `<root> with <title of each appendix, joined by ", ">`, or `root` without appendices. |
-| `describe_recipe(recipe, title) -> str` | The titles of the recipe's parts that are set, in the order `instructions`, `few_shot`, `prompt`, `output`, `sampling`, `reasoning`, `passthrough`, `translations`, `toolset`, joined by ` · `; prefixed with `judge: ` when `purpose` isn't `generation`. `appendix_layout` isn't shown. |
-| `describe_change(path, after, title) -> str` | `path` without `/recipe/` or `/`, then: `no <key>` for `None`; `<key>: <title>` for a digest; `<key>: <snippet>` for other text; `<key>: <JSON>` for anything else. |
+### `short(digest: str) -> str`
+The first 6 hex digits.
+
+### `snippet(text: str, limit: int = 40) -> str`
+The text with its whitespace collapsed, in double quotes, cut at the last space within `limit + 1` characters and
+followed by `…` when it is longer than `limit`.
+
+### `describe_case(root: str, appendices: Iterable[str], title: Title) -> str`
+`<root> with <the appendices' titles, joined by ", ">`, or `root` without appendices.
+
+### `describe_recipe(recipe: Recipe, title: Title) -> str`
+The titles of the recipe's parts that are set, in recipe order, joined by ` · `, after `judge: ` for a judge's.
+`appendix_layout` isn't shown.
+
+### `describe_change(path: str, after: JsonValue, title: Title) -> str`
+The path's key, without `/recipe/` or `/`, then `no <key>` for `None`, `<key>: <title>` for a digest,
+`<key>: <snippet>` for other text, and `<key>: <JSON>` for anything else.
 
 ### `describe(component: Component, title: Title, language: str | None = None) -> str`
-What a component holds. `language` is used only for translations.
+What a component holds, by its kind. `language` is used for translations only.
+- `chunk.instructions`, `chunk.prompt`, `appendix`: a `snippet` of its text, slots and inserts as `{name}`.
+- `chunk.few_shot`: `few-shot, <n> message(s)`.
+- `chunk.output`: `native output`, `text output` or `tool <name> output`, then `: <schema title>` or
+  `: <property names>` when its schema has one.
+- `chunk.sampling`: the values that are set, such as `temperature 0.2, top_p 0.9`, or `default sampling`.
+- `chunk.reasoning`: `effort <e>`, each chat template kwarg as `<key> <JSON>`, and `budget <n>`, joined by `, `; or
+  `default reasoning`.
+- `chunk.passthrough`: `passthrough: <keys>`.
+- `chunk.translations`: `[<language> ]translations, <n> text(s)`.
+- `chunk.toolset`: `with <each tool's title>`.
+- `tool`: its name.
+- `skeleton`: `<purpose> skeleton <short>`.
+- `trial`: `<skeleton's title> on <engine's title>, <n> case(s), <n> seed(s)`.
+- `judge`: `judge <skeleton's title> on <engine's title>`.
+- `scorer`: `scorer <entry point> v<version>`.
+- `scoring`: `<scorer's title> against <n> expectation(s)`.
+- `expectation`: `expectation for <case's title>`.
+- `case`: `describe_case("<source>/<id>", …)`.
+- `model`: its repository.
+- `engine.local`: `<model's title> on <server> <version> (<gpu>)`.
+- `engine.remote`: `<model> from <provider>`.
+- `expectation_schema`: its schema's title or property names, else `expectation schema <short>`.
+- `canary_set`: `<n> canary` or `<n> canaries`.
+- anything else: `<kind> <short>`.
 
-| Kind | Description |
-| --- | --- |
-| `chunk.instructions` | `snippet` of its text; slots and inserts as `{name}` |
-| `chunk.few_shot` | `few-shot, <n> message(s)` |
-| `chunk.prompt` | `snippet` of its segments |
-| `chunk.output` | `native output`, `text output` or `tool <name> output`, followed by `: <schema title>` or `: <property names>` when its schema has one |
-| `chunk.sampling` | the sampling values that are set (`temperature 0.2, top_p 0.9`), or `default sampling` |
-| `chunk.reasoning` | `effort <e>`, each chat template kwarg as `<key> <JSON>`, and `budget <n>`, joined by `, `; or `default reasoning` |
-| `chunk.passthrough` | `passthrough: <keys>` |
-| `chunk.translations` | `[<language> ]translations, <n> text(s)` |
-| `chunk.toolset` | `with <title of each tool>` |
-| `tool` | its name |
-| `skeleton` | `<purpose> skeleton <short>` (a compiled skeleton is described by its recipe instead, see `_derive`) |
-| `trial` | `<skeleton title> on <engine title>, <n> case(s), <n> seed(s)` |
-| `judge` | `judge <skeleton title> on <engine title>` |
-| `scorer` | `scorer <distribution> <version>` |
-| `scoring` | `<scorer title> against <n> expectation(s)` |
-| `appendix` | `snippet` of its text |
-| `expectation` | `expectation for <case title>` |
-| `case` | `describe_case("<source>/<id>", …)` |
-| `model` | its repo |
-| `engine.local` | `<model title> on <server> <version> (<gpu>)` |
-| `engine.remote` | `<model> at <host>` |
-| `expectation_schema` | its schema's title, its property names, or `expectation schema <short>` |
-| `canary_set` | `<n> canary` or `<n> canaries` |
-| `compilation` | `compilation <short>` |
+### `title(rows: Reader, thread: int) -> str`
+The first of:
+1. the thread's name;
+2. for a fork, its origin's `title` and `describe_change` of each path it varies, joined by `, `, such as
+   `plan, output: management-plan-shown`; `a fork of <origin's title>` when it varies nothing;
+3. what its head holds: for a skeleton, `describe_recipe` of the compilation the head names, else of the first stored
+   compilation of it; otherwise, or without one, `describe` in the digest's `own` language.
 
-### `title(rows, thread: int) -> str`
-1. The thread's name, when it has one.
-2. For a fork, the `title` of its base's thread (the origin), then `describe_change` of each path in
-   `variation.varies`, joined by `, `: `plan, output: management-plan-shown`. A fork that varies nothing is
-   `a fork of <origin's title>`.
-3. Otherwise `_derive` of the head, with the compilation it names.
+Raises `LookupError` for an unnamed thread that doesn't exist or has no edits.
 
-`LookupError` for an unnamed thread that doesn't exist or has no edits. The origin's title describes the origin's
-current head, while `varies` is measured from the base (see "Known gaps").
+### `title_of(rows: Reader, digest: str) -> str`
+A case's title is its family's name, else its current binding's `<source>/<id>`, followed by ` (earlier)` when the case
+is of an earlier binding, then its appendices (`describe_case`); a case without a family is `describe`d. For anything
+else, among the threads that held the digest, live ones first, then deleted ones, each by thread id:
+1. the name of a thread whose head it is;
+2. the `title` of a thread whose head it is;
+3. `<name> (earlier)` of a thread with a name.
 
-### `title_of(rows, digest: str) -> str`
-For a case, `_case_title`. For anything else, among the threads with an edit holding the digest, live ones first and
-then deleted ones, each in thread id order:
-1. a thread whose head is the digest and that has a name: the name;
-2. a thread whose head is the digest: its `title`;
-3. a thread with a name: `<name> (earlier)`.
+Without such a thread, what it holds, as `title`'s step 3. Raises `StructuralError` for a digest that isn't stored.
 
-When no thread gives a title, `_derive(digest)`. `StructuralError` for a digest that isn't stored.
+## variants.py
 
-### `_case_title(rows, digest: str) -> str`
-Without a family, `describe` of the case. With one, `describe_case` with the family's name, or else its current
-binding's `<source>/<id>`, followed by ` (earlier)` when the case's vignette isn't the current one:
-`chest pain (earlier) with "Troponin 80 ng/L."`. The family's deletion isn't looked at.
+### `variant_name(name: str, language: str | None, model: str | None) -> str`
+The name of what's made for a language, a model or both: `NAME (LANGUAGE)`, `NAME (MODEL)` or
+`NAME (LANGUAGE, MODEL)`; `name` for neither.
 
-### `_derive(rows, digest: str, compilation: str | None = None) -> str`
-A skeleton with a compilation is described by `describe_recipe` of that compilation's recipe: the one given, or else
-the first of `Reader.compilations` (by digest). Anything else is `describe`d, with `own(digest)` as its language.
+### `made_for(name: str, models: Collection[str]) -> tuple[str, str | None, str | None] | None`
+(name, language, model) that a variant's name says it was made from and for, or `None` for a name that isn't a
+variant's.
+- `models`: the models a variant may be made for.
+
+### `variants_for(name: str, names: Iterable[str], model: str | None, language: str | None = None) -> list[str]`
+The variants of `name` among `names` that `model` may use, sorted: those made for it, or for every model.
+- `language`: only those made for it.
+
+### `language_of(name: str) -> tuple[str, str | None]`
+The language a name ends with, as `NAME (LANGUAGE)` or `NAME LANGUAGE`, and the name before it; `(name, None)` when
+it ends with none.
 
 ## The store's Catalog
-
-`src/chatddx/store/catalog.py:Catalog` is what callers use. Each method reads through `Rows` and calls this package;
-the ones that write insert the rows the package decided on. A rule the database also checks is refused by Postgres
+`src/chatddx/store/catalog.py:Catalog(conn: Connection)` is what callers use. It reads through `Rows` and calls this
+package; its writes insert the rows the package decided on. A rule the database also checks is refused by Postgres
 with a psycopg error when the Python lets it through.
 
-| Method | Calls | Writes |
-| --- | --- | --- |
-| `create(digest, by, *, compilation=None, forked_from=None, name=None, owner=None, labels=None) -> Edit` | `Reader.kind` (`LookupError("<digest> is not in the store")`), `threads.check_threadable`; `threads.check_expectation` and `threads.check_labels` through `edit`, and `note` | in one transaction: the thread, its first edit with its labels (`edit`), an `owner` entry for `owner` or else `by`, and a `name` entry when given |
-| `edit(thread, digest, by, *, compilation=None, based_on=None, head=None, labels=None) -> Edit` | in one transaction: the thread's advisory lock (`pg_advisory_xact_lock(hashtext('catalog.thread'), thread mod 2³¹)`), `threads.check_head` when `head` is given, `threads.check_based_on` when `based_on` is given, `threads.check_expectation(thread, digest)`, `threads.check_labels(thread, digest, labels)` | the edit, with the thread's kind, and a `catalog.label` row for each label, by part and position; `LookupError("no thread with id <thread>")` when there is no thread |
-| `thread`, `history`, `head`, `heads`, `find`, `visible`, `expectation_for`, `expectations_for`, `expectation_choices`, `expectations_shared`, `forks`, `origin`, `expectations_of`, `behind`, `variation`, `proposal` | the `threads` function of that name | |
-| `visible_families(person)` | `families.visible` | |
-| `containing(digest) -> list[Edit]` | `Reader.edits_holding([digest])` | |
-| `recipe(thread)` | `threads.recipe` of `threads.head` | |
-| `title(thread)`, `title_of(digest)` | `titles.title`, `titles.title_of` | |
-| `language_of(digest)` | `language.language_of` | |
-| `recipe_language(recipe)` | `language.recipe_language` | |
-| `adopt(case, by, *, owner=None) -> int` | `families.family_of`, returning its family when there is one; else `families.check_adoptable` | in one transaction: a family, its binding, an `owner` entry for `owner` or else `by` |
-| `family(case)`, `bindings(family)`, `survey(source, listing)` | `families.family_of`, `families.bindings`, `families.survey` | |
-| `repair(family, by, *, id=None, fingerprint=None) -> Repair` | `families.plan_repair` | in one transaction: the binding, `Store.add` of the plan's registry, and an edit per move |
-| `note(subject, entry, by)` | `language.check_entry`; `threads.check_expectation(thread, entry=entry)` for a thread | the entry; a run or score subject also gets its stage column set to `'started'` |
-| `language(digest, value, by)` | `language.check_language` | a `catalog.language` row with the kind it returned |
-| `languages_of(digests)` | `language.languages_of` | |
-| `about(subject)`, `abouts(subjects)` | `read.about`, `read.abouts` | |
-| `involving(person) -> list[Subject]` | the store only | the subjects whose `owner` or `collaborator` entries ever named the person |
-| `label(scorer, part, position, value, by)` | `check_label` of the resolved scorer | the label |
-| `labels(edit) -> dict[tuple[Part, int], str]` | `read.labels` | |
-| `tags_given(subject)` | `read.tags_given` | |
-| `keep(digest, by, thread, *, name=None, compilation=None, forked_from=None, head=None, labels=None) -> tuple[Edit, Kept]` | `create` without a thread; else, in one transaction, the thread's lock, `threads.check_head` when `head` is given, `threads.head`, and `edit` | a new thread, a new edit, or nothing when the head is `digest` already and `labels`, when given, are the head's |
-| `runs_started(person, since: datetime) -> int` | the store only | how many runs' `owner` entries name the person since then |
+Reads, each the package function of that name, or the one given, over `Rows`:
+- `thread`, `history`, `head`, `heads`, `find`, `expecting`, `forks`, `origin`, `expectations_of`, `behind`,
+  `variation`, `proposal`: `threads`.
+- `recipe(thread)`: `threads.recipe` of the thread's head.
+- `containing(digest) -> list[Edit]`: `Reader.edits_holding([digest])`.
+- `title(thread)`, `title_of(digest)`: `titles`.
+- `language_of(digest)`, `languages_of(digests)`, `recipe_language(recipe)`: `language`.
+- `family(case)`: `families.family_of`.
+- `bindings(family)`, `survey(source, listing)`: `families`.
+- `about(subject)`, `abouts(subjects)`, `tags_given(subject)`: `read`.
+- `labels(edit) -> dict[tuple[Part, int], str]`: `read.labels`.
+
+### `create(digest: str, by: int, *, compilation: str | None = None, forked_from: int | None = None, name: str | None = None, owner: int | None = None, labels: Labels | None = None) -> Edit`
+A new thread with its first edit, an `owner` entry, and a `name` entry when `name` is given, in one transaction.
+- `owner`: who owns it; `by` when not given.
+
+Raises:
+- `LookupError("<digest> is not in the store")`
+- `threads.check_threadable`'s, and `edit`'s and `note`'s.
+
+### `edit(thread: int, digest: str, by: int, *, compilation: str | None = None, based_on: int | None = None, head: int | None = None, labels: Labels | None = None) -> Edit`
+A new edit of the thread, with a label row for each label, in one transaction under the thread's lock.
+- `head`: the head the edit was made on, which must still be the thread's.
+- `based_on`: for a fork following its origin, the origin edit its changes were re-applied onto.
+
+Raises:
+- `threads.check_head`'s `MovedOn`, `threads.check_based_on`'s, `threads.check_expectation`'s and
+  `threads.check_labels`'s.
+- `LookupError("no thread with id <thread>")`
+
+### `keep(digest: str, by: int, thread: int | None, *, name: str | None = None, compilation: str | None = None, forked_from: int | None = None, head: int | None = None, labels: Labels | None = None) -> tuple[Edit, Kept]`
+- `thread` `None`: `create`, `created`.
+- Else, under the thread's lock: the head, `unchanged`, when it is `digest` already and `labels`, when given, are the
+  head's; else `edit`, `edited`.
+
+Raises `create`'s or `edit`'s.
+
+### `adopt(case: str, by: int, *, owner: int | None = None, by_content: bool = True) -> int`
+The case's family: the one `families.family_of` finds, else a new one with its binding and an `owner` entry, in one
+transaction.
+- `owner`: who owns a new family; `by` when not given.
+- `by_content`: as `families.check_adoptable` takes it.
+
+Raises `families.check_adoptable`'s.
+
+### `repair(family: int, by: int, *, id: str | None = None, fingerprint: Fingerprint | None = None) -> Repair`
+`families.plan_repair`, written in one transaction: the new binding, the plan's registry, and an edit per move.
+- Raises `families.plan_repair`'s.
+
+### `note(subject: Subject, entry: Entry, by: int) -> None`
+The entry, about the subject. A run's or a score's has to have started.
+- Raises `language.check_entry`'s, and, for a thread, `threads.check_expectation`'s.
+
+### `language(digest: str, value: str, by: int) -> None`
+A `catalog.language` row for the digest.
+- Raises `language.check_language`'s.
+
+### `involving(person: int) -> list[Subject]`
+The subjects whose `owner` or `collaborator` entries ever named the person.
+
+### `runs_started(person: int, since: datetime) -> int`
+How many runs' `owner` entries name the person since `since`.
 
 ## Database: schema `catalog`
-
-Created by `0010-t0-catalog.sql`, roles in `0011-t1-catalog.sql`, rules and insert-only triggers in
-`0012-t2-catalog.sql` (`docs/migrations.md`, "catalog"). Every table has `id bigint GENERATED ALWAYS AS IDENTITY
-PRIMARY KEY`, `by bigint NOT NULL` → `identity.person`, and `at timestamptz NOT NULL DEFAULT now()`; the tables below
-list the other columns. "Latest" is the highest id.
+Created by `0010-t0-catalog.sql`, its roles in `0011-t1-catalog.sql`, and its rules and insert-only triggers in
+`0012-t2-catalog.sql` (`docs/migrations.md`, "catalog"). Every table has:
+- `id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY`; "latest" is the highest id;
+- `by bigint NOT NULL`, a foreign key to `identity.person`;
+- `at timestamptz NOT NULL DEFAULT now()`.
 
 `0010` also adds `UNIQUE (digest, kind)` on `factor.component` and `UNIQUE (src, path, dst)` on
-`factor.component_ref`, as targets for the composite foreign keys.
+`factor.component_ref`, as targets of the composite foreign keys.
 
 ### `catalog.thread`
-`Thread` rows.
-
-| Column | Type | Holds |
-| --- | --- | --- |
-| `kind` | `text NOT NULL`; CHECK `thread_kind_check` (0012): one of `THREAD_KINDS` | `kind` |
-| `forked_from` | `bigint`; FK `(forked_from, kind)` → `edit (id, kind)` | `forked_from` |
-
-`UNIQUE (id, kind)`, as the target of `edit`'s foreign key.
+`Thread` rows. `UNIQUE (id, kind)`, as the target of `edit`'s foreign key.
+- `kind text NOT NULL`: one of `THREAD_KINDS` (`thread_kind_check`, 0012).
+- `forked_from bigint`: `(forked_from, kind)` references `edit (id, kind)`.
 
 ### `catalog.edit`
-`Edit` rows.
+`Edit` rows. `UNIQUE (id, kind)`; indexes `edit_thread (thread, id)` and `edit_digest (digest)`.
+- `thread bigint NOT NULL`: `(thread, kind)` references `thread (id, kind)`.
+- `kind text NOT NULL`: the thread's kind, which `Catalog.edit` copies.
+- `digest text NOT NULL`: `(digest, kind)` references `factor.component (digest, kind)`.
+- `compilation text`: `(compilation, compilation_kind)` references `factor.component (digest, kind)`, and
+  `(compilation, compilation_path, digest)` references `factor.component_ref (src, path, dst)`. Only on a skeleton
+  edit (CHECK `compilation IS NULL OR kind = 'skeleton'`).
+- `compilation_kind text NOT NULL`: always `'compilation'`.
+- `compilation_path text NOT NULL`: always `'/skeleton'`.
+- `based_on bigint`: `(based_on, kind)` references `edit (id, kind)`.
+- Trigger `edit_based_on` (0012): `catalog.check_based_on()` raises `edit <based_on> is not in the origin of thread
+  <thread>`, as `threads.check_based_on` does.
 
-| Column | Type | Holds |
-| --- | --- | --- |
-| `thread` | `bigint NOT NULL`; FK `(thread, kind)` → `thread (id, kind)` | `thread` |
-| `kind` | `text NOT NULL` | the thread's kind; `Catalog.edit` copies it from the thread |
-| `digest` | `text NOT NULL`; FK `(digest, kind)` → `factor.component (digest, kind)` | `digest` |
-| `compilation` | `text`; FK `(compilation, compilation_kind)` → `factor.component (digest, kind)`; FK `(compilation, compilation_path, digest)` → `factor.component_ref (src, path, dst)` | `compilation` |
-| `compilation_kind` | `text NOT NULL DEFAULT 'compilation'`, CHECK `= 'compilation'` | constant |
-| `compilation_path` | `text NOT NULL DEFAULT '/skeleton'`, CHECK `= '/skeleton'` | constant |
-| `based_on` | `bigint`; FK `(based_on, kind)` → `edit (id, kind)` | `based_on` |
-
-`UNIQUE (id, kind)`. CHECK `compilation IS NULL OR kind = 'skeleton'`. Indexes `edit_thread (thread, id)` and
-`edit_digest (digest)`. Trigger `edit_based_on` (0012, BEFORE INSERT): `catalog.check_based_on()` raises `edit
-<based_on> is not in the origin of thread <thread>`, as `threads.check_based_on` does.
-
-So an edit points at a stored component of its thread's kind, a fork at an edit of its own kind, `based_on` at an edit
-of the same kind in the origin at or after the fork, and a compilation only from a skeleton edit, to a compilation
-whose `/skeleton` is the edit's digest.
+So an edit holds a stored component of its thread's kind, a fork starts from an edit of its own kind, `based_on` is an
+edit of the origin at or after the fork, and a compilation is named only by a skeleton edit, and is one whose
+`/skeleton` is the edit's digest.
 
 ### `catalog.family`
 No columns but `id`, `by` and `at`.
 
 ### `catalog.binding`
-`Binding` rows.
-
-| Column | Type | Holds |
-| --- | --- | --- |
-| `family` | `bigint NOT NULL`, FK → `family` | `family` |
-| `source` | `text NOT NULL` | `vignette.source` |
-| `source_id` | `text NOT NULL` | `vignette.id` |
-| `fingerprint` | `jsonb NOT NULL` | `vignette.fingerprint`, as its canonical JSON |
-
-Indexes `binding_family (family, id)`, `binding_source (source, source_id)` and `binding_content (source,
-fingerprint)` (0013). Trigger `binding_anchor` (0012, BEFORE INSERT): `catalog.check_binding()` raises `family <n>: a
-new binding must keep the source, and the id or the fingerprint` unless the new binding has the previous one's source
-and its `source_id` or its `fingerprint`.
+`Binding` rows. Indexes `binding_family (family, id)`, `binding_source (source, source_id)` and `binding_content
+(source, fingerprint)` (0013).
+- `family bigint NOT NULL`: references `family`.
+- `source text NOT NULL`: `vignette.source`.
+- `source_id text NOT NULL`: `vignette.id`.
+- `fingerprint jsonb NOT NULL`: `vignette.fingerprint`, as canonical JSON.
+- Trigger `binding_anchor` (0012): `catalog.check_binding()` raises `family <n>: a new binding must keep the source,
+  and the id or the fingerprint` unless the new binding has the previous one's source, and its `source_id` or its
+  `fingerprint`.
 
 ### `catalog.entry`
-`(Subject, Entry)` rows.
+`(Subject, Entry)` rows. Partial indexes on `thread`, `family`, `run` and `score`.
+- `thread bigint`: references `thread`.
+- `family bigint`: references `family`.
+- `run uuid`, with `run_stage text`, always `'started'` with a run: `(run, run_stage)` references `ledger.run_stage`.
+- `score uuid`, with `score_stage text`, always `'started'` with a score: `(score, score_stage)` references
+  `ledger.score_stage`.
+- `field text NOT NULL`: one of `EntryField` (`entry_field_check`, 0012).
+- `value text`
+- `person bigint`: references `identity.person`.
+- `present boolean NOT NULL DEFAULT true`
 
-| Column | Type | Holds |
-| --- | --- | --- |
-| `thread` | `bigint`, FK → `thread` | `Subject.thread` |
-| `family` | `bigint`, FK → `family` | `Subject.family` |
-| `run` | `uuid` | `Subject.run` |
-| `run_stage` | `text`, CHECK `= 'started'` | `'started'` with a run; FK `(run, run_stage)` → `ledger.run_stage` |
-| `score` | `uuid` | `Subject.score` |
-| `score_stage` | `text`, CHECK `= 'started'` | `'started'` with a score; FK `(score, score_stage)` → `ledger.score_stage` |
-| `field` | `text NOT NULL`; CHECK `entry_field_check` (0012): one of `EntryField` | `field` |
-| `value` | `text` | `value` |
-| `person` | `bigint`, FK → `identity.person` | `person` |
-| `present` | `boolean NOT NULL DEFAULT true` | `present` |
-
-CHECK (0010): `num_nonnulls(thread, family, run, score) = 1`, `(run IS NULL) = (run_stage IS NULL)`, `(score IS NULL)
-= (score_stage IS NULL)`. CHECK (0012): `entry_shape_check`, the table under `Entry`, with NULL values ruled out
-explicitly, and `entry_language_check`, `field <> 'language' OR family IS NOT NULL`. Partial indexes on `thread`,
-`family`, `run` and `score` where not NULL. An entry on a run or a score needs the run's or score's started row.
+Checks:
+- `num_nonnulls(thread, family, run, score) = 1`, and a stage exactly with its run or score (0010).
+- `entry_shape_check` (0012): the shapes under `Entry`.
+- `entry_language_check` (0012): `field <> 'language' OR family IS NOT NULL`.
 
 ### `catalog.label`
-Scorer labels, each written with an edit of a scorer thread (`0017`).
-
-| Column | Type | Holds |
-| --- | --- | --- |
-| `edit` | `bigint NOT NULL`; FK `(edit, kind)` → `catalog.edit (id, kind)` | the edit it was written with |
-| `kind` | `text NOT NULL DEFAULT 'scorer'`, CHECK `= 'scorer'` | constant |
-| `part` | `text NOT NULL`, CHECK `IN ('view', 'resource')` | `Part` |
-| `position` | `integer NOT NULL`, CHECK `>= 0` | the position among the scorer's views or resources |
-| `value` | `text NOT NULL`, CHECK `<> ''` | the label |
-
-`UNIQUE (edit, part, position)`. Trigger `label_position` (`0018`, BEFORE INSERT): `catalog.check_label()` raises
-`edit <edit>: its labels are written with it, by its writer` when `by` or `at` isn't the edit's (`at` defaults to the
-transaction's `now()`, as the edit's does), and `<digest>: no <part> at position <position>` when the position is past
-the end of the edit's scorer document's `views` or `resources` (a missing key counts as empty). `0018` also puts the
-insert-only triggers back on the table.
+Scorer labels, each written with an edit of a scorer thread (0017). `UNIQUE (edit, part, position)`.
+- `edit bigint NOT NULL`: `(edit, kind)` references `catalog.edit (id, kind)`.
+- `kind text NOT NULL`: always `'scorer'`.
+- `part text NOT NULL`: a `Part`.
+- `position integer NOT NULL`: `>= 0`, among the scorer's views or resources.
+- `value text NOT NULL`: the label, not empty.
+- Trigger `label_position` (0018): `catalog.check_label()` raises `edit <edit>: its labels are written with it, by its
+  writer` when `by` or `at` isn't the edit's, and `<digest>: no <part> at position <position>` past the end of the
+  edit's scorer's views or resources. `0018` also puts the insert-only triggers back on the table.
 
 ### `catalog.language`
-Languages kept on a component's digest.
+Languages kept on a component's digest. Index `language_digest (digest, id)`.
+- `digest text NOT NULL`: `(digest, kind)` references `factor.component (digest, kind)`.
+- `kind text NOT NULL`: one of `LANGUAGE_KINDS` (`language_kind_check`, 0012), as `check_language` gives it.
+- `value text NOT NULL`: matches `LANGUAGE` (`language_value_check`, 0012).
+- Trigger `language_compiled` (0012): `catalog.check_language()` raises `<digest>: a compiled skeleton's language
+  comes from its recipe` when a stored compilation's `/skeleton` is the digest.
 
-| Column | Type | Holds |
-| --- | --- | --- |
-| `digest` | `text NOT NULL`; FK `(digest, kind)` → `factor.component (digest, kind)` | the component |
-| `kind` | `text NOT NULL`; CHECK `language_kind_check` (0012): one of `LANGUAGE_KINDS` | its kind, from `check_language` |
-| `value` | `text NOT NULL`; CHECK `language_value_check` (0012): matches `LANGUAGE` | the language |
+### Insert-only (0012)
+On every table, the triggers `insert_only` (BEFORE UPDATE OR DELETE) and `insert_only_truncate` (BEFORE TRUNCATE) call
+`factor.refuse_change()`, which raises `<schema>.<table> is insert-only`.
 
-Index `language_digest (digest, id)`. Trigger `language_compiled` (0012, BEFORE INSERT): `catalog.check_language()`
-raises `<digest>: a compiled skeleton's language comes from its recipe` when a stored compilation's `/skeleton` points
-at the digest.
-
-### Insert-only (`0012`)
-On every table, the triggers `insert_only` (BEFORE UPDATE OR DELETE, per row) and `insert_only_truncate` (BEFORE
-TRUNCATE, per statement) call `factor.refuse_change()`, which raises `<schema>.<table> is insert-only`.
-
-### Roles (`0011`)
-PUBLIC loses all access to the schema and its tables. `chatddx_writer` gets `USAGE` and `SELECT, INSERT`, and
-`chatddx_reader` `USAGE` and `SELECT`, on existing tables and, through default privileges, on tables created later.
-The catalog holds nothing produced from a vignette, so the reader may read all of it.
+### Roles (0011)
+PUBLIC loses all access. `chatddx_writer` gets `USAGE` and `SELECT, INSERT`, and `chatddx_reader` `USAGE` and
+`SELECT`, on the tables there are and, through default privileges, on those made later. The catalog holds nothing made
+from a vignette, so the reader may read all of it.
 
 ### What the database checks, and what it doesn't
-It checks thread kinds; that edits point at stored components of their thread's kind; that forks, `based_on` and
-compilations point where they may (see `catalog.edit`); that an entry has exactly one subject, an existing run or score
-started row, a known field and the right shape, and a language only on a family; that labels name a scorer's
-existing view or resource; that a family's bindings keep their source and either the id or the fingerprint; that
-languages are tags on components of `LANGUAGE_KINDS` and not on a skeleton already known to be compiled; and that
-nothing changes.
+It checks:
+- thread kinds;
+- that an edit holds a stored component of its thread's kind;
+- where forks, `based_on` and compilations point (see `catalog.edit`);
+- that an entry has exactly one subject, a run or score that has started, a known field and the right shape, and a
+  language only on a family;
+- that a label names a view or resource its scorer has;
+- that a family's bindings keep their source, and the id or the fingerprint;
+- that languages are tags on components of `LANGUAGE_KINDS`, and not on a skeleton known to be compiled;
+- that nothing changes.
 
-It doesn't
-- require a thread to have an edit, or a family to have a binding (`Catalog.create` and `Catalog.adopt` write both in
-  one transaction);
-- keep current bindings unique across families, the check `adopt` and `repair` make through `families.holder`;
-- require a new binding to differ from the previous one, which `plan_repair` does;
-- require a skeleton edit to name its compilation when one exists;
-- notice that a skeleton with a language row is compiled later;
-- check names, labels or descriptions beyond what the shapes say, or that a subject has an owner.
+It doesn't check:
+- that a thread has an edit, or a family a binding (`Catalog.create` and `Catalog.adopt` write both in one
+  transaction);
+- that current bindings are unique across families (`adopt` and `repair` check it through `families.holder`);
+- that a new binding differs from the previous one (`plan_repair` checks it);
+- that a skeleton edit names its compilation when one exists;
+- that a skeleton with a language row is compiled later;
+- names, labels or descriptions beyond their shapes, or that a subject has an owner.
 
 ## Known gaps
 From `docs/catalog.md`, "Open design issues", where they concern this API:
@@ -767,15 +764,15 @@ From `docs/catalog.md`, "Open design issues", where they concern this API:
 - Two vignettes with the same content under different ids in one source look like a rename: `adopt` refuses the
   second.
 - When bindings of several families match a case, `family_of` takes the family of the latest matching binding.
-- Current bindings are read per source, which relies on a family never changing source; tier 2 enforces that.
+- Current bindings are read per source, which relies on a family never changing source; tier 2 holds that.
 - A thread without edits is possible in SQL.
 - A skeleton edit may leave out its compilation.
 - A language on a skeleton that is compiled later is ignored from then on.
 - A case stored at a vignette's old place after a repair gets a replacement from `behind` that nothing has stored.
-- Who changed an entry, a label or a language isn't returned: `Reader` reads them without `by` and `at`.
+- When an entry, a label or a language was written isn't given, nor who wrote a label or a language:
+  `Reader.entries` gives an entry's writer only.
 - Why an edit was made isn't stored.
 - Titles take a query for every reference they visit, are rebuilt from names that change, and aren't unique.
-- Scorer labels aren't carried to the next scorer edit.
+- Scorer labels aren't carried to the next edit of a scorer thread.
 - An unnamed fork's title can pair two versions: when its origin has no name and has moved on, `title` describes the
-  origin's current head but lists the changes from the base. A fork of `"alpha first version"` whose origin has moved
-  on to `"beta second version"` is titled `"beta second version", text: "gamma fork text"`.
+  origin's current head but lists the changes from the base.

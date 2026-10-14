@@ -68,7 +68,7 @@ def test_a_taken_expectation_follows_the_archive_s_correction(
     catalog, store = bench.catalog, Store(bench.conn)
     case = bench.family("noted").case
     [schema] = bench.expectation_schemas(case)
-    [mine] = catalog.expectation_choices([case], bench.person.id, schema)[case]
+    [mine] = bench.expectation_choices([case], schema)[case]
     [(theirs, _)] = bench.shared(case, schema)
     held = resolve(store.get, theirs.digest, Expectation)
     corrected = Expectation(case=case, expectation_schema=schema, data={"x": 1})

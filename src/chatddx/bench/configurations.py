@@ -1,3 +1,5 @@
+from chatddx.identity import owns
+
 from .errors import Ambiguous, NotFound
 from .model import SAVED, Saved
 from .seen import Seen
@@ -21,7 +23,7 @@ def fork(seen: Seen, variation: TriedVariation, name: str) -> Saved:
 
 def edit(seen: Seen, thread: int, variation: TriedVariation, head: int) -> Saved:
     _, about = seen.thread_by_id(thread, "configuration")
-    if not about.owned_by(seen.person.id):
+    if not owns(seen.person.id, about):
         raise NotFound(f"no configuration {thread} of yours")
     name = about.name or seen.catalog.title(thread)
     return _kept(seen, variation, thread, name, head)
