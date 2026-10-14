@@ -28,17 +28,10 @@ Paths are relative to `src/chatddx/runner/` unless they start with `src/` or `do
 | Module | Builds on |
 | --- | --- |
 | `wire.py` | the standard library's `urllib` |
-```
-AGENT: replace
-send.py reads a delta's reasoning, and rounds.py its tool calls, through chatddx.factors.response now. The two rows:
----
 | `send.py` | `wire.py`, `chatddx.factors.{base,response,trial}`, `chatddx.ledger` |
-| `rounds.py` | `send.py`, `chatddx.factors.{base,request,response,trial}`, `chatddx.ledger`, `chatddx.rig`, `chatddx.tools.shipped` |
-```
-| `send.py` | `wire.py`, `chatddx.factors.{base,trial}`, `chatddx.ledger` |
 | `gate.py` | `chatddx.factors.{base,cases,request,trial}`, `chatddx.inventory` |
 | `prepare.py` | `chatddx.factors.{base,cases,engine,request,trial}`, `chatddx.inventory`, `chatddx.ledger`, `chatddx.store` |
-| `rounds.py` | `send.py`, `chatddx.factors.{base,request,trial}`, `chatddx.ledger`, `chatddx.rig`, `chatddx.tools.shipped` |
+| `rounds.py` | `send.py`, `chatddx.factors.{base,request,response,trial}`, `chatddx.ledger`, `chatddx.rig`, `chatddx.tools.shipped` |
 | `run.py` | `gate.py`, `prepare.py`, `rounds.py`, `send.py`, `chatddx.{catalog,factors,identity,inventory,ledger,rig,store}` |
 | `score.py` | `gate.py`, `send.py`, `run.py` (`Noted`), `chatddx.{catalog,factors,identity,inventory,ledger,rig,scorers,store}` |
 
@@ -126,18 +119,10 @@ by index), `finish_reason`, `stop_reason` when given, and `token_ids` joined. On
 `STREAM` is what `send` adds to a body: `{"stream": True, "stream_options": {"include_usage": True}}`. `STOPPED` is
 `"stopped"`.
 
-```
-AGENT: replace
-A chunk with its reasoning under both names streamed it twice; it is read once now, reasoning first
-(chatddx.factors.response.reasoning). The section's paragraph:
----
+### `class Delta`
 A piece of what a call streams: `kind: Literal["reasoning", "content", "tool_call"]`, `text: str`, `tokens: int`,
 the call's completion tokens so far, counted by a chunk's `token_ids`, or one a delta when it has none. A chunk's
 reasoning is read once, under `reasoning`, else `reasoning_content` (`chatddx.factors.response.REASONING`).
-```
-### `class Delta`
-A piece of what a call streams: `kind: Literal["reasoning", "content", "tool_call"]`, `text: str`, `tokens: int`,
-the call's completion tokens so far, counted by a chunk's `token_ids`, or one a delta when it has none.
 
 ### `class Stopped(Exception)`
 A call stopped by an interrupt or a halt. `call: Call` is the call as it stood, with `error` `"stopped"`.

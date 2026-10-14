@@ -15,13 +15,8 @@ Paths are relative to `src/chatddx/factors/` unless they start with `src/` or `d
 - [kinds.py](#kindspy): registry of all kinds
 - [Component kinds](#component-kinds): every kind, its class, references and cross-checks
 - [cases.py](#casespy): vignettes, appendices, cases, text cleanup, `prepare_case`
-```
-AGENT: add
-A new module, src/chatddx/factors/response.py. Its line, after request.py's:
----
-- [response.py](#responsepy): a response's first choice, its message, reasoning, parts and tool calls
-```
 - [request.py](#requestpy): chunks, recipes, compilation, skeletons, rendering, tool rounds
+- [response.py](#responsepy): a response's first choice, its message, reasoning, parts and tool calls
 - [engine.py](#enginepy): model artifacts, local and remote engines
 - [trial.py](#trialpy): trials, seeds, canaries, execution
 - [scoring.py](#scoringpy): expectations, judges, views, scorers, scorings
@@ -33,17 +28,9 @@ A new module, src/chatddx/factors/response.py. Its line, after request.py's:
 
 ## Package
 
-```
-AGENT: replace
-The package re-exports the module response too (src/chatddx/factors/__init__.py). The paragraph:
----
 `chatddx.factors` re-exports `Bundle`, `Code`, `Component`, `Finding`, `Fingerprint`, `Registry`, `StructuralError`
 and the modules `cases`, `engine`, `kinds`, `request`, `response`, `scoring` and `trial`. Import
 `chatddx.factors.lint` and `chatddx.factors.select` by path.
-```
-`chatddx.factors` re-exports `Bundle`, `Code`, `Component`, `Finding`, `Fingerprint`, `Registry`, `StructuralError`
-and the modules `cases`, `engine`, `kinds`, `request`, `scoring` and `trial`. Import `chatddx.factors.lint` and
-`chatddx.factors.select` by path.
 
 The package imports no other chatddx package. It depends on pydantic, and `lint.py` also depends on `jsonschema` and
 `referencing`.
@@ -556,15 +543,8 @@ and `return_token_ids: true` unless turned off. A slot without a fill raises `Ke
 
 `stream` and `n` are never added. The runner streams on the wire and records `render`'s body.
 
-```
-AGENT: replace
-ToolCall and tool_calls moved to response.py, where every reader of a response now finds them; next_request stays,
-and reads the message through response.py. The heading and its first four lines, ToolCall's and tool_calls' bullets:
----
 ### Tool rounds
 - `ToolCall` and `tool_calls` are `response.py`'s.
-```
-### Tool rounds
 - `ToolCall(id: str, name: str, arguments: str)`.
 - `tool_calls(response: Mapping[str, JsonValue]) -> tuple[ToolCall, ...]`: the tool calls in
   `choices[0].message.tool_calls`, in order. Calls without a string `id`, `function.name` and `function.arguments`
@@ -577,11 +557,6 @@ and reads the message through response.py. The heading and its first four lines,
 The runner owns the loop (`docs/factors.md`, "Tool rounds"). It ends when a response calls no tool, calls the answer
 tool, or has no whole answer, or after `max_rounds` rounds.
 
-```
-AGENT: add
-A section for the new module, before engine.py's. The healthcheck found an answer's message read in five places, and
-the reasoning read under two names in two orders; this is the one reader:
----
 ## response.py
 Reads what an OpenAI-compatible engine answered: a response, or a stream's chunk for the reasoning. Of chatddx, it
 imports only `base.py`.
@@ -604,7 +579,7 @@ imports only `base.py`.
 Its readers: `request.py:next_request`, `chatddx.scorers.answer.read`, the runner's tool rounds and the stream's
 reasoning deltas, the ledger's run check, `chatddx.bench.outcome` for the tokens streamed, the repl's transcript and
 the portal's run page.
-```
+
 ## engine.py
 
 ### Flags

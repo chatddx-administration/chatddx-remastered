@@ -32,13 +32,7 @@ and `call.py:check_execution`) is imported by path.
 | --- | --- |
 | `record.py` | `chatddx.factors.base`, `chatddx.factors.cases` |
 | `call.py` | `record.py`, `chatddx.factors.trial` |
-```
-AGENT: replace
-run.py reads tool calls through chatddx.factors.response now. The row:
----
 | `run.py` | `call.py`, `record.py`, `chatddx.factors.{bundle,cases,engine,request,response,trial}` |
-```
-| `run.py` | `call.py`, `record.py`, `chatddx.factors.{bundle,cases,engine,request,trial}` |
 | `score.py` | `run.py`, `call.py`, `record.py`, `chatddx.factors.{bundle,request,scoring,select,trial}` |
 
 The package imports no chatddx package but `chatddx.factors`, and no third-party package but pydantic.
@@ -308,13 +302,7 @@ Raises `StructuralError`:
 | `<key>: tool rounds, but the skeleton has no tools` | An item with turns on a skeleton without tools. |
 | `<key>: more than <max_rounds> rounds` | More turns than `skeleton.max_rounds`. |
 | `<key>: no tool named '<name>'` | A tool run whose name isn't a tool of the skeleton, and which has no `error`. |
-```
-AGENT: replace
-tool_calls is chatddx.factors.response's now. The row:
----
 | `<key>: a round runs tools for calls the response didn't make` | A turn's set of `(id, name)` differs from the previous call's tool calls (`chatddx.factors.response.tool_calls`), leaving out calls to the answer function of a `tool` contract; for a turn without a call, it has one the previous call didn't make. |
-```
-| `<key>: a round runs tools for calls the response didn't make` | A turn's set of `(id, name)` differs from the previous call's tool calls (`chatddx.factors.request.tool_calls`), leaving out calls to the answer function of a `tool` contract; for a turn without a call, it has one the previous call didn't make. |
 | `tool code recorded for tools the skeleton lacks: […]` | A `tool_code` entry for a tool not in `skeleton.tools`. |
 
 Returns findings, in this order:
