@@ -74,20 +74,9 @@ origin reaches them as a proposal. A person can take:
 - **one thread**, an expectation shared with them, which, when they have their own of its case under its schema, is a
   conflict unless they say to replace theirs. Replacing deletes theirs and forks the shared one in one transaction.
 
-```
-AGENT: replace
-A run that holds a case taken now gets a scoring with that case's expectation in it, a new scoring, so it is left to
-score again (`Seen.unscored` looks for a whole score under the scoring built now).
----
 Taking for many cases only adds, so it is safe to offer as one button and to repeat: taking again after more cases
 were shared adds the new ones, and nothing a person was scored against changes. A run that holds a newly taken case
 is left to score again, since its scoring now holds that case too.
-```
-Taking for many cases only adds, so it is safe to offer as one button and to repeat: taking again after more cases
-were shared adds the new ones, nothing a person was scored against changes, and no run is left to score again.
-Replacing can undo their own corrections, and leaves every run scored against what it replaced to score again, so it
-is a choice made case by case. It deletes and forks rather than editing theirs onto the shared head, since an edit
-would keep the origin they forked first, and proposals would keep coming from it.
 
 What a person could take for a case are the live expectation threads of it under the schema that are shared with them
 and not their own.
@@ -118,16 +107,8 @@ Its label, `NAME+PART=CHUNK`, is a short title for it, where the catalog would g
 saved (docs/catalog.md, "Titles"). Neither is stored.
 
 For a variation, the bench gives:
-```
-AGENT: replace
-A variation can start from an earlier edit of its configuration (`Bench.variation(…, head=)`), and its skeleton is
-then that edit's.
----
 - **its skeleton**: the stored edit it varies when nothing is replaced, the head unless an earlier edit was named,
   else the varied recipe compiled, a skeleton nobody has saved;
-```
-- **its skeleton**: the stored head when nothing is replaced, else the varied recipe compiled, a skeleton nobody has
-  saved;
 - **the request it would send**, with placeholders for the slots, and for the model without an engine;
 - **its lints**, as a trial on an engine: the pair's checks, over any one case since they read none, and with
   families, the languages of their cases too. An unsaved variation is linted in its recipe's language, since a
@@ -158,20 +139,12 @@ What every write has in common:
   names the head it found. The catalog checks it while it holds the thread, so it holds with several writers too.
 - **Nothing is written that is there already.** An edit that is its thread's head already writes nothing, and says
   so; saying what holds of a thread writes only what changes.
-```
-AGENT: replace
-A configuration made from a recipe, or followed, comes back with its lints too; only a variation saved, forked or
-edited comes back without them.
----
+- **What was written comes back with its lints**, and no write refuses on one: an expectation whose data its schema
   refuses is written, and said so (docs/factors.md, "Lints"). A component does, whether new, forked, edited, followed
   or carried, and so does a configuration made from a recipe or followed. A variation saved, forked or edited comes
   back as what was saved, and an edge lints its skeleton itself (`Bench.linted`), as the API does. Taking, saying and
-```
-- **What was written comes back with its lints**, and no write refuses on one: an expectation whose data its schema
-  refuses is written, and said so (docs/factors.md, "Lints"). A component does, whether new, forked, edited, followed
-  or carried; a configuration comes back as what was saved, and an edge lints its skeleton itself (`Bench.linted`),
-  as the API does. Taking, saying and building cases give back what they made. Refusals are the components' own
-  rules, the store's and the catalog's, and the few the bench adds, below.
+  and building cases give back what they made. Refusals are the components' own rules, the store's and the catalog's,
+  and the few the bench adds, below.
 - **Some refusals come before the write**, in the person's words, where the database or the catalog would refuse
   later in theirs: a component of another kind than the thread's, a second expectation of the person's own for a
   case and schema.
@@ -236,17 +209,9 @@ the proposal keeps.
 
 ### Appendices and cases
 A family stands for one case, the one its current vignette makes alone, else the first that holds it, and lists all
-```
-AGENT: replace
-The bench starts a run on any stored cases; holding them to the current cases of families the person sees is the
-edges' (the API's `_cases`, the repl's `case_titled`).
----
 of its cases at its current vignette, that one first. What is run and scored is a case, so a run names cases rather
 than families. The bench starts a run on any stored cases; the edges offer only the current ones of the families the
 person sees.
-```
-of its cases at its current vignette, that one first. What is run and scored is a case, so a run can name cases, each
-one of a family's current ones.
 
 An appendix is written like any other component, but always bound to the current vignette of a family the person
 sees, and with its line endings made LF before it is digested, since browsers send CRLF: the bench does it for every
@@ -339,19 +304,13 @@ ones, and a scorer pinned again by a deploy reaches the person's fork of it.
 ## Errors
 The bench's errors are told apart by their class, so that an edge can answer each its own way:
 
-```
-AGENT: replace
-`OverQuota` is also a run of more items than one takes (`ITEMS_PER_RUN`), which isn't a day's limit.
----
-| `OverQuota` | `ValueError` | more of something than a day takes, or a run of more items than one takes |
-```
 | Error | Is a | For |
 | --- | --- | --- |
 | `NotFound` | `LookupError` | what the person doesn't see, or the store doesn't hold |
 | `Ambiguous` | `LookupError` | a name, an id's start or a case's expectations that give several |
 | `Conflict` | `ValueError` | a write that would undo what the person has unless they say so: taking one thread when they have their own of its case under its schema |
 | `MovedOn` | `ValueError`, the catalog's | an edit made on a head that isn't the head any more |
-| `OverQuota` | `ValueError` | more of something than a day takes |
+| `OverQuota` | `ValueError` | more of something than a day takes, or a run of more items than one takes |
 | any other `ValueError` | | what the bench refuses: an unknown part, a digest that isn't a stored chunk of its part, or a part that can't be taken out; a component that isn't one, or of a kind the person doesn't write; a scorer the code can't score with; taking an expectation of one's own; and the rest, each worded for what was wrong |
 
 The messages are worded for a person, without the edge's terms; an edge adds its own hint where it has one, as the
@@ -369,14 +328,6 @@ check before the other has written.
 
 ## Terms
 
-```
-AGENT: replace
-"To choose from" has a second sense in taking (`Taken.choosing`: several shared threads), and "Left to score" counts
-only a whole score, and only a scorer some of the run's cases have an expectation under.
----
-| To choose from | A case with several expectations of the person's own under one schema, which nothing picks between; in taking, a case with several shared with them. |
-| Left to score | Of a finished run: a scorer that applies, under which some of its cases have an expectation, and that has no whole score of it under the scoring built now. |
-```
 | Term | Meaning |
 | --- | --- |
 | Bench | What one person sees and does, whatever the edge. |
@@ -388,12 +339,12 @@ only a whole score, and only a scorer some of the run's cases have an expectatio
 | Label | Of a variation: its short title, `NAME+PART=CHUNK`, not stored. Of a scorer: what an edit calls one of its views or resources. |
 | Reach | Of a scorer's view: whether a variation's output offers what it reads, and which cases have an expectation it picks from. |
 | Taking | Forking a thread shared with the person to make it their own, as an expectation must be to count. |
-| To choose from | A case with several expectations of the person's own under one schema, which nothing picks between. |
+| To choose from | A case with several expectations of the person's own under one schema or several shared with them. |
+| Left to score | Scorers that applies in finished run that has no whole score of it under the scoring built now. |
 | Carrying | Editing an expectation onto another case of its family, with the same data. |
 | Saying | Writing what holds of a thread: its name, description, tags, collaborators, and whether it is deleted. |
 | Following | Keeping the catalog's proposal as an edit of the person's fork, based on its origin's head. |
 | Typed case | A case whose vignette is a text the person typed, kept in a database source. |
-| Left to score | Of a finished run: a scorer that applies and has no score of it under the scoring built now. |
 | Cell | The repl's word for a variation being tried together with an endpoint. |
 
 ## Outstanding
