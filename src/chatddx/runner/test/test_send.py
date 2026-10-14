@@ -1,10 +1,12 @@
+import json
 import logging
 import socket
 import threading
 import time
 from collections.abc import Iterator
 from datetime import UTC, datetime, timedelta
-from typing import Any, cast
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from typing import Any, cast, override
 
 import pytest
 
@@ -54,6 +56,46 @@ def test_a_call_records_the_body_s_fingerprint_and_the_answer_without_the_prompt
     assert kinds == sorted(kinds, key=["reasoning", "content"].index)
     assert [d.tokens for d in deltas] == list(range(1, len(deltas) + 1))
     assert deltas[-1].tokens == cast(Any, call.response)["usage"]["completion_tokens"]
+
+
+class _BothReasonings(BaseHTTPRequestHandler):
+    protocol_version: str = "HTTP/1.1"
+
+    def do_POST(self) -> None:
+        _ = self.rfile.read(int(self.headers["Content-Length"]))
+        self.send_response(200)
+        self.send_header("Content-Type", "text/event-stream")
+        self.send_header("Connection", "close")
+        self.end_headers()
+        for delta in (
+            {"reasoning": "Hm.", "reasoning_content": "Hm."},
+            {"content": "ACS"},
+        ):
+            chunk = {"choices": [{"index": 0, "delta": delta}]}
+            _ = self.wfile.write(b"data: %s\n\n" % json.dumps(chunk).encode())
+        _ = self.wfile.write(b"data: [DONE]\n\n")
+
+    @override
+    def log_message(self, format: str, *args: Any) -> None:
+        pass
+
+
+def test_reasoning_under_both_names_streams_once() -> None:
+    deltas: list[Delta] = []
+    with ThreadingHTTPServer(("127.0.0.1", 0), _BothReasonings) as server:
+        thread = threading.Thread(target=server.serve_forever, args=(0.01,))
+        thread.start()
+        try:
+            url = f"http://127.0.0.1:{server.server_address[1]}/v1/"
+            call = send(url, body(), on_delta=deltas.append)
+        finally:
+            server.shutdown()
+            thread.join()
+    assert call.status == 200
+    assert [(d.kind, d.text) for d in deltas] == [
+        ("reasoning", "Hm."),
+        ("content", "ACS"),
+    ]
 
 
 def test_a_runaway_is_cut_short_and_what_came_is_kept(

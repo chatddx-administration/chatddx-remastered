@@ -9,6 +9,7 @@ from typing import Literal
 from pydantic import JsonValue
 
 from chatddx.factors.base import Fingerprint
+from chatddx.factors.response import REASONING, reasoning
 from chatddx.factors.trial import Execution
 from chatddx.ledger import Call, fingerprint_prompt_tokens, fingerprint_request
 
@@ -77,10 +78,14 @@ def _deltas(chunk: wire.Chunk) -> Iterator[tuple[Delta, int]]:
         if not isinstance(choice, dict) or choice.get("index", 0) != 0:
             continue
         delta = choice.get("delta")
+        said = delta if isinstance(delta, dict) else {}
+        thought = reasoning(said)
         found: list[Delta] = []
-        for key, value in (delta if isinstance(delta, dict) else {}).items():
-            if key in ("reasoning", "reasoning_content") and isinstance(value, str):
-                found.append(Delta("reasoning", value, 0))
+        for key, value in said.items():
+            if key in REASONING:
+                if thought is not None:
+                    found.append(Delta("reasoning", thought, 0))
+                    thought = None
             elif key == "content" and isinstance(value, str) and value:
                 found.append(Delta("content", value, 0))
             elif key == "tool_calls" and isinstance(value, list):

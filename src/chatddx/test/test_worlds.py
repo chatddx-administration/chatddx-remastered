@@ -15,8 +15,8 @@ from chatddx.factors.request import (
     Skeleton,
     SlotName,
     render,
-    tool_calls,
 )
+from chatddx.factors.response import tool_calls
 from chatddx.factors.trial import Trial
 from chatddx.fake_vllm.chat import Failure, accept, completion, instance, respond
 from chatddx.fake_vllm.served import CLOSURE, Served

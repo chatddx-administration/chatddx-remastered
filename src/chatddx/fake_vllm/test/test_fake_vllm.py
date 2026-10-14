@@ -6,10 +6,8 @@ from typing import Any
 import pytest
 from jsonschema.validators import validator_for
 
-from chatddx.factors.request import (
-    next_request,
-    tool_calls,
-)
+from chatddx.factors.request import next_request
+from chatddx.factors.response import tool_calls
 from chatddx.fake_vllm.chat import (
     ANSWER,
     Call,

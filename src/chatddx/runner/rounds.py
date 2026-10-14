@@ -12,11 +12,10 @@ from chatddx.factors.base import Resolver, resolve
 from chatddx.factors.request import (
     Skeleton,
     Tool,
-    ToolCall,
     ToolOutput,
     next_request,
-    tool_calls,
 )
+from chatddx.factors.response import ToolCall, tool_calls
 from chatddx.factors.trial import Execution
 from chatddx.ledger import Call, ToolCode, ToolRun, Turn
 from chatddx.rig import entry

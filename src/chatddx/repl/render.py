@@ -20,7 +20,8 @@ from chatddx.bench import (
 )
 from chatddx.catalog.titles import short
 from chatddx.factors.base import Finding, resolve
-from chatddx.factors.request import Skeleton, tool_calls
+from chatddx.factors.request import Skeleton
+from chatddx.factors.response import Part, parts
 from chatddx.factors.scoring import Judge, Scorer, View
 from chatddx.factors.select import select
 from chatddx.ledger import Call, ItemKey, RunItem, ScoreItem
@@ -170,23 +171,16 @@ class Transcript:
         self.event(ItemEnded(item))
 
     def _message(self, call: Call) -> None:
-        response = call.response or {}
-        match response.get("choices"):
-            case [{"message": dict() as message}, *_]:
-                pass
-            case _:
-                message = {}
-        reasoning = message.get("reasoning") or message.get("reasoning_content")
-        if isinstance(reasoning, str) and reasoning.strip():
-            self.begin("thinking")
-            self.write(reasoning.rstrip(), THINKING)
-        content = message.get("content")
-        if isinstance(content, str) and content.strip():
-            self.begin(None)
-            self.write(content.rstrip())
-        for called in tool_calls(response):
-            self.begin(called.name)
-            self.write(called.arguments)
+        for part in parts(call.response or {}):
+            match part:
+                case Part("tool_call", arguments, name):
+                    self.begin(name)
+                    self.write(arguments)
+                case Part(kind, text) if text.strip():
+                    self.begin("thinking" if kind == "reasoning" else None)
+                    self.write(text.rstrip(), THINKING if kind == "reasoning" else "")
+                case _:
+                    pass
 
     def write(self, text: str, style: str = "") -> None:
         if self.labelled:

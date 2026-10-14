@@ -23,8 +23,8 @@ from chatddx.factors.request import (
     compile_request,
     next_request,
     render,
-    tool_calls,
 )
+from chatddx.factors.response import tool_calls
 from chatddx.factors.trial import Canary, CanarySet, Execution, Trial
 from chatddx.identity import Person
 from chatddx.inventory import DirectorySource, Inventory

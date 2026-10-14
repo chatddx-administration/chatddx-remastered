@@ -3,6 +3,7 @@ from typing import Literal
 from pydantic import JsonValue
 
 from chatddx.factors.request import Skeleton
+from chatddx.factors.response import choice
 from chatddx.ledger import Call, RunItem
 from chatddx.runner.send import STOPPED
 from chatddx.scorers.answer import read
@@ -52,8 +53,5 @@ def used(call: Call) -> tuple[int, int]:
 
 # A stream cut short ends before its usage, but its choice holds the token ids it streamed.
 def _streamed(response: dict[str, JsonValue]) -> int:
-    match response.get("choices"):
-        case [{"token_ids": list() as ids}, *_]:
-            return len(ids)
-        case _:
-            return 0
+    ids = choice(response).get("token_ids")
+    return len(ids) if isinstance(ids, list) else 0

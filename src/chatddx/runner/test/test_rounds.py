@@ -11,10 +11,10 @@ from chatddx.factors.request import (
     Compilation,
     Skeleton,
     Tool,
-    ToolCall,
     Toolset,
     compile_request,
 )
+from chatddx.factors.response import ToolCall
 from chatddx.ledger import Call
 from chatddx.runner.rounds import Toolbox, load
 from chatddx.runner.test import tools
