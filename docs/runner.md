@@ -51,7 +51,8 @@ A run that wasn't finished, as when the process sending it died, can resume: the
 are kept, and only what it lacks is sent. Resuming refuses what starting refuses, under the run's own execution, and an
 endpoint whose address is another now, since the start record holds the one the run is sent to. A finished run doesn't
 resume. The finish notes that the run resumed and how far it had come, and warns when another rig resumed it than
-started it, since the start record names the rig that started it.
+started it, since the start record names the rig that started it. A run with nothing written yet that the rig which
+started it resumes, as the worker sends a run the request started, is noted nothing.
 ```
 ### Finishing
 Finishing writes the finish record, with the findings the runner saw while it ran, and returns what checking the run

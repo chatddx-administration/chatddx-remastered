@@ -163,7 +163,7 @@ class Runner:
             toolbox,
             items=log.items,
             canaries=log.canaries,
-            findings=[_resumed(log, trial)],
+            findings=_resumed(log, trial),
         )
 
     def _admitted(
@@ -182,16 +182,22 @@ class Runner:
         return secret, toolbox, url_of(self._inventory, registry.get, endpoint)
 
 
-def _resumed(log: Run, trial: Trial) -> Finding:
+# A run the request started and the worker sends is resumed with nothing written yet.
+def _resumed(log: Run, trial: Trial) -> list[Finding]:
     said = (
         f"resumed after {len(log.items)} of {len(trial.cases) * len(trial.seeds)} items"
     )
-    if (now := rig()) == log.started.rig:
-        return Finding(level="info", code="run.resumed", message=said)
-    return Finding(
-        code="run.resumed",
-        message=f"{said} by {_built(now)}, where {_built(log.started.rig)} started it",
-    )
+    if (now := rig()) != log.started.rig:
+        return [
+            Finding(
+                code="run.resumed",
+                message=f"{said} by {_built(now)}, where {_built(log.started.rig)} "
+                + "started it",
+            )
+        ]
+    if log.items or log.canaries:
+        return [Finding(level="info", code="run.resumed", message=said)]
+    return []
 
 
 def _built(code: Code) -> str:

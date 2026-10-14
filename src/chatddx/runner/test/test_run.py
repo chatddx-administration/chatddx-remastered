@@ -1036,6 +1036,19 @@ def test_resuming_sends_what_an_unfinished_log_lacks_and_finishes_it(
 
 
 @pytest.mark.usefixtures("fake")
+def test_a_run_resumed_with_nothing_written_by_the_rig_that_started_it_notes_nothing(
+    conn: Connection, inventory: Inventory, alice: Person, plan: Plan
+) -> None:
+    runner = Runner(conn, inventory, alice)
+    running = runner.start(trial(plan), plan.registry, QWEN)
+    resumed = runner.resume(running.run)
+    resumed.send()
+    assert resumed.finish() == []
+    finished = Store(conn).run(running.run).finished
+    assert finished is not None and finished.findings == ()
+
+
+@pytest.mark.usefixtures("fake")
 def test_a_run_resumed_by_another_rig_says_which(
     conn: Connection,
     inventory: Inventory,

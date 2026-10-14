@@ -47,6 +47,12 @@ it, if any. A new schema gets its own section with all three tiers.
 ## identity
 
 ### Tier 0
+```
+AGENT: replace
+`worker` is updated in place too.
+---
+- `0007-t0-identity.sql`: schema `identity`, updated in place, as `worker` is.
+```
 - `0007-t0-identity.sql`: schema `identity`, the one mutable schema.
   - `person (id, name, login, roles, active)`: `id` generated as identity, `login` unique.
   - `credential (person, hash)`.
@@ -127,3 +133,30 @@ it, if any. A new schema gets its own section with all three tiers.
 
 ### Tier 2
 - `0016-t2-source.sql`: triggers refusing UPDATE and TRUNCATE on `text`; DELETE is held back by the grants alone.
+
+```
+AGENT: add
+A section of its own, last: the `worker` schema, built as the worker's queue (agents/wip-worker.md).
+---
+## worker
+
+### Tier 0
+- `0019-t0-worker.sql`: schema `worker`, the worker's queue, updated in place.
+  - `worker (id, started, seen)`: each worker, and when it was last seen.
+  - `job (id, owner, run, stage, endpoint, slots, score, scorers, status, why, halt, worker, queued, claimed, beat,
+    ended)`: a started run to send and finish, and score when asked. `(run, stage)` references the run's started row
+    in `ledger.run_stage`, as an item row does; `owner` references `identity.person`. A unique index keeps one job
+    queued or under way per run.
+  - `control (owner, paused)`: an owner's controls.
+
+### Tier 1
+- `0020-t1-worker.sql`: PUBLIC loses all access. Each table is granted explicitly, without default privileges, as the
+  tables are updated in place: the writer gets SELECT, INSERT, UPDATE, and no DELETE. The reader gets nothing, since
+  why a job failed can quote what it was sending.
+
+### Tier 2
+- `0021-t2-worker.sql`: CHECKs on a job's status (`src/chatddx/store/queue.py:Status`, tested against the check in
+  `test/test_queue.py`), and how each status goes with its worker, its claim, its end and why; scorers only for a job
+  that scores. A trigger (`worker.keep_job`) refuses to change what a job is asked to do, and any change to a job that
+  has ended.
+```

@@ -1,0 +1,228 @@
+import threading
+import time
+from collections.abc import Callable, Generator
+from contextlib import contextmanager
+from datetime import timedelta
+from uuid import UUID
+
+import pytest
+from psycopg.conninfo import make_conninfo
+
+from chatddx import settings
+from chatddx.bench import Bench
+from chatddx.conftest import chosen
+from chatddx.identity import Person
+from chatddx.inventory import Inventory
+from chatddx.store import Job, People, Queue, Store
+from chatddx.store.store import Connection
+from chatddx.test.world import LINES, QWEN, faked, world_facts
+from chatddx.worker import Worker
+
+BEAT = timedelta(milliseconds=50)
+LOST = timedelta(seconds=1)
+
+
+@pytest.fixture
+def template(request: pytest.FixtureRequest) -> str:
+    return chosen(request, "curated")
+
+
+@pytest.fixture
+def autocommit() -> bool:
+    return True
+
+
+@pytest.fixture
+def alice(conn: Connection) -> Person:
+    found = People(conn).find("alice")
+    assert found is not None
+    return found
+
+
+@pytest.fixture
+def bench(conn: Connection, alice: Person, world: Inventory) -> Bench:
+    return Bench(conn, alice, world, world_facts())
+
+
+@pytest.fixture
+def conninfo(db: str) -> str:
+    return make_conninfo(settings.database(), dbname=db)
+
+
+# As the request starts a run, at an endpoint that answers, before it is queued.
+def start(bench: Bench) -> UUID:
+    variation = bench.configuration(LINES, bench.endpoint(QWEN))
+    cases = [bench.family(name).case for name in ("crlf", "svenska")]
+    return bench.start(variation, QWEN, cases, (7,)).run
+
+
+@contextmanager
+def serving(conninfo: str, world: Inventory) -> Generator[Worker]:
+    worker = Worker(conninfo, world, world_facts(), BEAT, LOST)
+    stopping = threading.Event()
+    thread = threading.Thread(target=worker.serve, args=(stopping,))
+    thread.start()
+    try:
+        yield worker
+    finally:
+        stopping.set()
+        thread.join(30)
+        assert not thread.is_alive()
+
+
+def until(queue: Queue, job: Job, done: Callable[[Job], bool]) -> Job:
+    deadline = time.monotonic() + 30
+    while not done(found := queue.job(job.id)):
+        assert time.monotonic() < deadline, f"job {job.id} is still {found.status}"
+        time.sleep(0.02)
+    return found
+
+
+def ended(job: Job) -> bool:
+    return job.ended is not None
+
+
+@pytest.mark.usefixtures("fake")
+@pytest.mark.slow
+def test_a_queued_run_is_sent_finished_and_scored_and_scored_again_when_asked(
+    conn: Connection,
+    conninfo: str,
+    world: Inventory,
+    bench: Bench,
+    alice: Person,
+) -> None:
+    queue, started = Queue(conn), start(bench)
+    job = queue.put(alice.id, started, QWEN, 1, True)
+    lines = next(e.digest for e, a in bench.threads("scorer") if a.name == "lines")
+    with serving(conninfo, world) as worker:
+        sent = until(queue, job, ended)
+        again = queue.put(alice.id, started, QWEN, 0, True, [lines])
+        scored = until(queue, again, ended)
+
+    assert (sent.status, sent.why, sent.worker) == ("finished", None, worker.id)
+    assert scored.status == "finished"
+    run = Store(conn).run(started)
+    assert len(run.items) == 2
+    assert run.finished is not None and run.finished.findings == ()
+    every = bench.scores_of(started, every=True)
+    assert {g.name for g in bench.scores_of(started)} >= {"lines"}
+    assert [g.name for g in every].count("lines") == 2
+
+
+@pytest.mark.slow
+def test_a_halt_stops_the_run_and_leaves_it_unscored(
+    conn: Connection, conninfo: str, world: Inventory, bench: Bench, alice: Person
+) -> None:
+    queue = Queue(conn)
+    with faked(world, Store(conn).get, delay=0.05):
+        started = start(bench)
+        job = queue.put(alice.id, started, QWEN, 1, True)
+        with serving(conninfo, world):
+            _ = until(queue, job, lambda j: j.status == "under way")
+            _ = queue.halt(started)
+            halted = until(queue, job, ended)
+
+    assert halted.status == "stopped"
+    run = Store(conn).run(started)
+    assert run.finished is not None and len(run.items) < 2
+    assert bench.scores_of(started) == []
+
+
+@pytest.mark.usefixtures("fake")
+@pytest.mark.slow
+def test_a_run_halted_while_queued_is_finished_unsent_and_unscored(
+    conn: Connection, conninfo: str, world: Inventory, bench: Bench, alice: Person
+) -> None:
+    queue, started = Queue(conn), start(bench)
+    job = queue.put(alice.id, started, QWEN, 1, True)
+    _ = queue.halt(started)
+    with serving(conninfo, world):
+        halted = until(queue, job, ended)
+
+    assert halted.status == "stopped"
+    run = Store(conn).run(started)
+    assert run.finished is not None and run.items == ()
+    assert bench.scores_of(started) == []
+
+
+@pytest.mark.slow
+def test_a_paused_owner_s_run_goes_back_to_the_queue_and_resumes_once_unpaused(
+    conn: Connection, conninfo: str, world: Inventory, bench: Bench, alice: Person
+) -> None:
+    queue = Queue(conn)
+    with faked(world, Store(conn).get, delay=0.02):
+        started = start(bench)
+        job = queue.put(alice.id, started, QWEN, 1, False)
+        with serving(conninfo, world):
+            _ = until(queue, job, lambda j: j.status == "under way")
+            queue.pause(alice.id)
+            held = until(queue, job, lambda j: j.status == "queued")
+            assert held.why == "paused"
+            assert Store(conn).run(started).finished is None
+            queue.pause(alice.id, False)
+            done = until(queue, job, ended)
+
+    assert done.status == "finished"
+    run = Store(conn).run(started)
+    assert len(run.items) == 2 and run.finished is not None
+
+
+@pytest.mark.slow
+def test_a_stopped_worker_queues_its_run_again_for_the_next_to_resume(
+    conn: Connection, conninfo: str, world: Inventory, bench: Bench, alice: Person
+) -> None:
+    queue = Queue(conn)
+    with faked(world, Store(conn).get, delay=0.02):
+        started = start(bench)
+        job = queue.put(alice.id, started, QWEN, 1, False)
+        with serving(conninfo, world):
+            _ = until(queue, job, lambda j: j.status == "under way")
+        left = queue.job(job.id)
+        assert (left.status, left.why) == ("queued", "its worker stopped")
+        with serving(conninfo, world) as second:
+            done = until(queue, job, ended)
+
+    assert (done.status, done.worker) == ("finished", second.id)
+    assert len(Store(conn).run(started).items) == 2
+
+
+@pytest.mark.usefixtures("fake")
+@pytest.mark.slow
+def test_a_job_whose_worker_is_lost_is_claimed_and_its_run_resumed(
+    conn: Connection,
+    admin: Connection,
+    conninfo: str,
+    world: Inventory,
+    bench: Bench,
+    alice: Person,
+) -> None:
+    queue, started = Queue(conn), start(bench)
+    job = queue.put(alice.id, started, QWEN, 1, False)
+    ghost = Worker(conninfo, world, world_facts()).id
+    queue.enlist(ghost)
+    assert queue.claim(ghost, {QWEN: 4}, LOST) is not None
+    with admin.transaction():
+        _ = admin.execute(
+            "UPDATE worker.worker SET seen = now() - interval '1 minute' WHERE id = %s",
+            (ghost,),
+        )
+    with serving(conninfo, world) as worker:
+        done = until(queue, job, ended)
+
+    assert (done.status, done.worker) == ("finished", worker.id)
+    assert len(Store(conn).run(started).items) == 2
+
+
+@pytest.mark.usefixtures("fake")
+@pytest.mark.slow
+def test_a_run_the_gate_now_refuses_fails_with_why(
+    conn: Connection, conninfo: str, world: Inventory, bench: Bench, alice: Person
+) -> None:
+    queue, started = Queue(conn), start(bench)
+    job = queue.put(alice.id, started, QWEN, 1, True)
+    with serving(conninfo, world.model_copy(update={"cleared": {}})):
+        failed = until(queue, job, ended)
+
+    assert failed.status == "failed"
+    assert failed.why is not None and "isn't cleared for source test" in failed.why
+    assert Store(conn).run(started).finished is None

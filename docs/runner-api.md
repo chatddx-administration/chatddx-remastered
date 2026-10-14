@@ -302,8 +302,8 @@ it lacks. In order:
 4. refuses an endpoint whose URL is another now: `ValueError` `endpoint '<name>' is at <url> now, and run <id> was
    sent to <url>`.
 
-The finish notes `run.resumed` (see "Finding codes"). Two `Running`s of one run collide on the ledger's key for an
-item; whoever resumes keeps it to one.
+The finish notes `run.resumed` (see "Finding codes"), unless the log holds nothing and `rig()` is the rig that
+started the run. Two `Running`s of one run collide on the ledger's key for an item; whoever resumes keeps it to one.
 ```
 ### `class Running`
 
@@ -402,7 +402,7 @@ codes".
 AGENT: add
 A row for the finding `Runner.resume` notes.
 ---
-| `run.resumed` | `Runner.resume` | none | `resumed after <n> of <m> items`, level `info`; a warning with ` by <rig>, where <rig> started it` when another rig resumes it than started it |
+| `run.resumed` | `Runner.resume` | none | `resumed after <n> of <m> items`, level `info`, when the log holds something; a warning with ` by <rig>, where <rig> started it` when another rig resumes it than started it |
 ```
 | Code | Noted by | Subject | Message |
 | --- | --- | --- | --- |

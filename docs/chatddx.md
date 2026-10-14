@@ -48,6 +48,14 @@ It must be possible to deliver the cage together with the results, for scientifi
 - **Compilation:** A provenance (component) that says which recipe and compiler produced a skeleton
 - **Run** and **Score:** a stage log.
 - **Worker:** the process that runs the trials queued for it, outside the request that asked for them.
+```
+AGENT: replace
+A job is a started run (agents/wip-worker.md, K6).
+---
+- **Job:** a started run queued for the worker, at its endpoint, for its owner, scored afterwards or not; or a run to
+  score. Until the API queues them, the API's job is what the app has under way for a run in its own process: the
+  run, or a scoring of it (docs/api.md, "Terms").
+```
 - **Job:** a trial queued for the worker, at an endpoint, for an owner, scored afterwards or not. Until there is a worker, the API's job is what the app has under way for a run in its own process: the run, or a scoring of it (docs/api.md, "Terms").
 - **Record** / **ledger:** events logged while running or scoring.
 - **Seal:** the hash over a log's started row and item rows, kept in its finished row.

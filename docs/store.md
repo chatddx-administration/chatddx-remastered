@@ -44,6 +44,16 @@ The catalog decides what its rows mean (docs/catalog.md). The store reads the ro
 decided, all of one change at once.
 
 ### The queue
+```
+AGENT: replace
+A job points at a started run under agents/wip-worker.md's K6, and the only control is pausing.
+---
+The worker's queue is state, not factors or records, and is updated in place, as people are: each job's status as
+the worker claims, runs and ends it, each owner's control (paused), and the workers, with when each was last seen. A
+worker claims the next queued job by locking its row, so two workers never take the same one, and claims take turns,
+so that the runs on an endpoint keep to its `max_jobs` between them. A job points at a run started before it was
+queued; what the run did is the ledger's, read from there and not copied into the job.
+```
 The worker's queue is state, not factors or records, and is updated in place, as people are: each job's status as
 the worker claims, runs and ends it, each owner's controls (paused, stopping), and the workers, with when each was
 last seen. A worker claims the next queued job by locking its row, so two workers never take the same one. A job

@@ -13,6 +13,13 @@ files and in `docs/identity.md`.
 
 Paths are relative to `src/chatddx/store/` unless they start with `src/`, `docs/` or `agents/`.
 
+```
+AGENT: add
+Below this heading's list: `queue.py` and the `worker` schema.
+---
+- [queue.py](#queuepy): `Queue`, the worker's queue
+- [Database: schema `worker`](#database-schema-worker)
+```
 ## Contents
 - [Package](#package)
 - [Conventions](#conventions)
@@ -29,6 +36,16 @@ Paths are relative to `src/chatddx/store/` unless they start with `src/`, `docs/
 
 ## Package
 
+```
+AGENT: replace
+The package re-exports the queue's names, and `queue.py` builds on `store.py`.
+---
+`chatddx.store` re-exports `TOP_TIER`, `Catalog`, `Job`, `People`, `Queue`, `Store`, `Texts`, `UnderWay`,
+`fetch_vignette` and `migrate`. `Connection` (in `store.py`), `Rows`, `Held`, `Status`, `STATUSES`, `ENDED`,
+`pending`, `migrations`, `Migration` and `MIGRATIONS` are imported by path.
+
+A row for the module table: `| queue.py | store.py, psycopg's errors |`.
+```
 `chatddx.store` re-exports `TOP_TIER`, `Catalog`, `People`, `Store`, `Texts`, `fetch_vignette` and `migrate`.
 `Connection` (in `store.py`), `Rows`, `pending`, `migrations`, `Migration` and `MIGRATIONS` are imported by path.
 
@@ -149,6 +166,33 @@ does.
 ### `fetch_vignette(conn: Connection, inventory: Inventory, vignette: Vignette) -> bytes`
 The vignette's bytes: from `Texts.get` when its source is a `DatabaseSource`, else from the source's own `fetch`.
 
+```
+AGENT: add
+Above this heading: `queue.py`.
+---
+## queue.py
+
+### `class Queue`
+`Queue(conn: Connection)`. Writes and reads `worker` (see "Database: schema `worker`"). A `Job` is frozen: `id`,
+`owner`, `run`, `endpoint`, `slots`, `score`, `scorers: tuple[str, ...] | None`, `status: Status`, `why`, `halt`,
+`worker`, `queued`, `claimed`, `beat`, `ended`. `Status` is `queued`, `under way`, `finished`, `stopped` or
+`failed`; `ENDED` the last three.
+
+| Method | Returns / raises |
+| --- | --- |
+| `put(owner, run, endpoint, slots, score, scorers=None) -> Job` | Queues a job for a started run, its scorers deduplicated and sorted. `UnderWay("run <id> has something under way")` when the run has a job queued or under way; `ForeignKeyViolation` for a run that hasn't started; `CheckViolation` at tier 2 for scorers without `score`. |
+| `job(id) -> Job` | `LookupError("no job <id>")`. |
+| `open(run) -> Job \| None` | The run's job queued or under way. |
+| `jobs(owner, limit=100) -> list[Job]` | The owner's, newest first. |
+| `halt(run) -> Job` | Asks the run's open job to halt. `LookupError("run <id> has nothing under way")`. |
+| `pause(owner, paused=True)`, `paused(owner) -> bool` | An owner's control. |
+| `enlist(worker)` | A worker, by its id. |
+| `claim(worker, max_jobs, lost) -> Job \| None` | The first job in queue order that is queued, or under way with a worker not seen for `lost`, and fits: halted, at an endpoint `max_jobs` doesn't name, or within the endpoint's free slots and of an owner who hasn't paused. Claims take turns (`pg_advisory_xact_lock`), and count the slots of the jobs under way with a live worker. |
+| `beat(worker, jobs) -> list[Held]` | Marks the worker and the jobs it still holds as seen; a `Held` is a job's id, whether it is to halt and whether its owner has paused. A job another worker took over is left out. |
+| `end(job, worker, status, why=None) -> bool` | Ends a job the worker holds. `ValueError` for a status not in `ENDED`. |
+| `requeue(job, worker, why=None) -> bool` | Puts a job the worker holds back in the queue. |
+| `waiting() -> int` | How many jobs are queued or under way. |
+```
 ## catalog.py
 
 ### `class Rows`
@@ -218,6 +262,13 @@ Created by `migrate`, not by a migration file. No grants: only the admin reads i
 | `applied_at` | `timestamptz NOT NULL DEFAULT now()` |
 
 ## Database: schema `identity`
+```
+AGENT: replace
+`worker` is updated in place too.
+---
+Created by `0007-t0-identity.sql`, roles in `0008-t1-identity.sql`, CHECKs in `0009-t2-identity.sql`. Updated in
+place, as `worker` is: no insert-only triggers. `People` writes it.
+```
 Created by `0007-t0-identity.sql`, roles in `0008-t1-identity.sql`, CHECKs in `0009-t2-identity.sql`. The one
 mutable schema: no insert-only triggers. `People` writes it.
 
@@ -269,6 +320,25 @@ sessions belong to a person, and that a session expires after it is created. It 
 argon2id, or that an inactive person has no sessions (`People.update` deletes them, and `People.session` ignores
 them).
 
+```
+AGENT: add
+Above this heading: the `worker` schema.
+---
+## Database: schema `worker`
+Created by `0019-t0-worker.sql`, roles in `0020-t1-worker.sql`, CHECKs and a trigger in `0021-t2-worker.sql`. Updated
+in place, as `identity` is. `Queue` writes it.
+
+| Table | Holds |
+| --- | --- |
+| `worker` | `id uuid PRIMARY KEY`, `started`, `seen` |
+| `job` | `id` (identity), `owner` → `identity.person`, `(run, stage)` → `ledger.run_stage`, `endpoint`, `slots >= 0`, `score`, `scorers text[]`, `status`, `why`, `halt`, `worker` → `worker`, `queued`, `claimed`, `beat`, `ended`; `job_open`, unique on `run` while queued or under way |
+| `control` | `owner bigint PRIMARY KEY` → `identity.person`, `paused` |
+
+The writer gets SELECT, INSERT, UPDATE on each table, and no DELETE; the reader nothing. At tier 2: a job's status is
+one of `Status`; queued, it has no worker or claim; under way, it has both; it has ended exactly when it is finished,
+stopped or failed; a failed one says why; and only a job that scores names scorers. `worker.keep_job` refuses a
+change to what a job is asked to do, and any change once it has ended.
+```
 ## Migrations
 `migrations/NNNN-tT-<schema>[-<what>].sql`, applied by `migrate`:
 

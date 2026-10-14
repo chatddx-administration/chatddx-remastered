@@ -4,8 +4,8 @@ The worker runs trials outside the process that asked for them, so that a run ou
 followed and halted from every replica. A run started over HTTP already outlives a closed tab and a client that goes
 away: it is a job in the app's process (`docs/api.md`, "Where it runs"), which the portal starts and watches runs on
 (`agents/wip-portal.md`, R10). The worker takes the jobs' place with the API as it is. This file plans it, and the
-port of what the old worker did. What it stands on is built (step 0, see "Below the worker"); the worker isn't: no
-`worker` schema, no `src/chatddx/worker/`.
+port of what the old worker did. Steps 0 to 2 are built (see "Built"): what it stands on, the queue and the worker,
+`chatddx worker`. Nothing queues runs yet: the API's runs stay jobs in the app's process until step 3.
 
 "The old worker" is chatddx-administration/chatddx at 504792c: `src/chatddx/worker/` (`models.py`, `queue.py`,
 `worker.py`, `control.py`, `cli.py`, about 950 lines), with the portal's **Status** page
@@ -21,16 +21,14 @@ https://github.com/chatddx-administration/chatddx/blob/504792cbeb09508f2c52912be
 2. **The problem** (see "Why"): what the app has under way for a run, the run or a scoring of it, is a job in its
    process (decided: `docs/api.md`, "Where it runs"). It ends with the process, and other replicas don't see it.
 3. **Decided: the queue is updated in place** (K2), an exception to "nothing is updated", as identity's people and
-   sessions are. `docs/store.md` ("The queue") and `docs/chatddx.md` ("Work in progress") describe it already, though
-   no migration makes it yet.
+   sessions are. Built: schema `worker` (`src/chatddx/store/migrations/0019-t0-worker.sql` to `0021`).
 4. **Decided** (see "Options"): K1, one worker, also runnable in the app's process; K3, events read from the ledger
    and woken by `LISTEN`/`NOTIFY` (E2), with deltas through `NOTIFY` (E3); K4, it schedules runs; K5, every run
    started over HTTP goes through it; K6, a run starts in the request and the worker sends it (A).
 5. **Decided: a run lost mid-way is resumed** by the next claim.
-6. **Built: step 0** (see "Below the worker"): resuming a run, and `Bench.start` taking seeds, cleanup steps, an
-   execution and a canary set.
-7. **Next: steps 1 and 2**, the queue and the loop (see "The plan"). Step 3 has E3's details to settle first (see
-   "Open").
+6. **Built: steps 0 to 2** (see "Built"): resuming a run and what a run starts with; the queue; the worker.
+7. **Next: step 3**, the API through the worker, once E3's details are settled; then step 4, the controls a person
+   and a page use (see "The plan" and "Open").
 
 ## Why
 - **A run is a job in the app's process**: `POST /api/runs` answers 202 and the run's path, the run is sent on a
@@ -118,16 +116,18 @@ The worker takes the place of `src/chatddx/api/jobs.py`, and the API stays as it
 
 ### K2. The queue
 Decided: **a table of jobs updated in place**, an exception to "nothing is updated" (`docs/chatddx.md`, "Work in
-progress"; `docs/store.md`, "The queue"), as identity's people and sessions are. Take, for its shape:
+progress"; `docs/store.md`, "The queue"), as identity's people and sessions are. Built in this shape (see "Built"),
+which was a take:
 - **A schema of its own** (`worker`), with migrations at every tier (`docs/store.md`, "Tiers") and the writer's
   grants to update it, which `docs/store.md` ("Roles and connections") names already. Tier 2 keeps the factors, the
   ledger and the catalog append-only, and leaves the queue out, as it leaves identity.
-- **A job**: the owner, what it does (send a started run, scored afterwards or not, or score a run), the run and the
-  scorers, its status (queued, under way, finished, stopped, failed, lost), why, and when it was queued, claimed, last
-  beat and ended.
+- **A job**: the owner, the started run, its endpoint and the slots it holds there, whether to score and by which
+  scorers, its status (queued, under way, finished, stopped, failed), why, whether it is to halt, its worker, and when
+  it was queued, claimed, last beat and ended. One job queued or under way per run. A job takes a run to its finish,
+  and scores it when asked, so scoring a finished run again is a job too.
 - **Claimed** with `SELECT … FOR UPDATE SKIP LOCKED`, as the old worker claimed (`worker.py:_taken`).
-- **Controls per owner** (paused, stopping), and **workers** (id, last seen), updated in place too: a job whose worker
-  is gone is lost.
+- **Controls per owner** (paused), and **workers** (id, last seen), updated in place too. "Lost" isn't a status: a
+  job under way whose worker hasn't been seen for `settings.WORKER_LOST` is claimed again. Stopping is step 4's.
 - **What the ledger holds isn't copied**: tokens, items and the finish are read from the run.
 
 ### K3. How events reach a page
@@ -150,7 +150,9 @@ worker, the API wouldn't stay as it is.
 - **Items.** The worker hands out a run's items, so owners take turns item by item, as the old jobs did. It needs
   several processes writing one run's log, which the runner doesn't do: one `Running` sends one run.
 
-Decided: runs, with `max_jobs` shared by the runs on one endpoint through their executions (see "Below the worker").
+Decided: runs, with `max_jobs` shared by the runs on one endpoint through their executions. Built: a job holds as
+many slots at its endpoint as its run's concurrency, and a claim fits it within the endpoint's `max_jobs`, counting
+the jobs under way there.
 
 ### K5. Which runs go through it
 - **Every run started over HTTP**, the portal's and the API's: one path. `POST /api/runs` answers 202 and the run's
@@ -189,11 +191,9 @@ Built, as step 0:
   canary set under new seeds.
 
 Not built:
-- **`max_jobs` across runs.** Each run is held to its endpoint's `max_jobs`, but two runs on one endpoint can send
-  twice that between them. vLLM queues what's over `--max-num-seqs` rather than refusing it, so the cost is batching
-  that the runs' `execution` doesn't show. The worker can hold them to it between them: a run's execution is given
-  at its start, refused above the endpoint's `max_jobs`, and recorded in `RunStarted`, so the worker can give each run
-  its share.
+- **`max_jobs` beside the worker.** The worker keeps the runs it sends within an endpoint's `max_jobs` (see K4), but
+  the repl's runs, the API's jobs in the app's process and judge calls don't count. vLLM queues what's over
+  `--max-num-seqs` rather than refusing it, so the cost is batching that the runs' `execution` doesn't show.
 - **The edges still pass one seed**, no cleanup, the default execution and no canary set: the repl, the API and the
   scripted runs. `POST /api/runs` taking seeds and cleanup steps is the API's (`docs/api.md`, "Not covered"), and the
   portal's run form follows (`agents/wip-portal.md`, "Comparing variations", C3). Which canary set a run gets, the
@@ -205,16 +205,34 @@ Still the runner's, and met here:
   only a stream can be shut down (`docs/runner.md`, "What a stop leaves out"). A halted run's worker thread waits
   with it.
 
+## Built
+- **Step 0**: see "Below the worker".
+- **Step 1, the queue.** Schema `worker` at every tier: `worker`, `job` and `control`, the writer's SELECT, INSERT and
+  UPDATE without DELETE, the reader's nothing, and at tier 2 checks on how a job stands and a trigger that keeps what
+  it was asked to do (`src/chatddx/store/migrations/0019-t0-worker.sql` to `0021`). `Queue`
+  (`src/chatddx/store/queue.py`): `put`, `job`, `open`, `jobs`, `halt`, `pause`, `paused`, and the worker's `enlist`,
+  `claim`, `beat`, `end`, `requeue` and `waiting`. Claims take turns under an advisory lock, so that slots are counted
+  alike by several workers. Tests: `src/chatddx/store/test/test_queue.py`. `docs/` has suggestions for it.
+- **Step 2, the worker** (`src/chatddx/worker/worker.py`, `chatddx worker`). `Worker.serve(stopping)` enlists, then
+  beats every `settings.WORKER_BEAT` and claims what fits; each job runs on a thread of its own, with a connection and
+  a bench of its own: the run resumed (`Bench.resume`, since the request started it), sent and finished, then scored
+  when asked (`Bench.score`). On a beat:
+  - a halt hangs the run's calls up, finishes it unscored, or stops its scoring; the job ends stopped;
+  - an owner who paused has the run stop after its items under way, left unfinished, and the job queued again, why
+    `paused`; unpausing lets the next claim resume it. A scoring under way goes on;
+  - a job another worker took over is let go, as a run stopped and not ended.
+  A job that raises ends failed, with why: a run the gate refuses now fails so. A stopping worker stops its runs after
+  the items under way and queues them again, why `its worker stopped`, and waits for its scorings. Tests:
+  `src/chatddx/worker/test/test_worker.py`, the worker on a thread against the fake vLLM.
+- **Resuming a run with nothing written** by the rig that started it notes nothing, since the worker sends every run
+  the request started so (`src/chatddx/runner/run.py:_resumed`).
+
 ## The plan
 On the decisions above, and the takes left.
 0. **Below the worker**, built: resuming (`src/chatddx/runner/`), and `Bench.start` taking seeds, cleanup steps, an
    execution and a canary set.
-1. **The queue**: the `worker` schema, its jobs, controls and workers, at every tier; the store's reads and writes
-   for them; tests on the store. `docs/store.md` and `docs/chatddx.md` describe it already; once the migrations land,
-   `docs/migrations.md` gets a `worker` section, and its "identity, the one mutable schema" changes.
-2. **The worker**: `src/chatddx/worker/`, a loop that claims jobs, builds a bench per run, starts, sends, finishes and
-   scores, beats, and finds what is lost; `chatddx worker`. Tests run it in a thread against the fake vLLM, as the
-   API's run tests run their jobs (`src/chatddx/conftest.py:fake`, `src/chatddx/api/test/test_runs.py`).
+1. **The queue**, built (see "Built").
+2. **The worker**, built (see "Built").
 3. **The API**: `POST /api/runs`, `/again` and `/scores` queue a job and answer 202 as now, a run started in the
    request before its job is queued (K6);
    `GET /api/runs/{id}/events` streams from the ledger, woken by the worker, with its deltas (E2, E3);
@@ -226,7 +244,7 @@ On the decisions above, and the takes left.
   could ask the worker too, and follow the events.
 - **Fairness between owners**: queue order, or turns per owner, per endpoint.
 - **A resumed run the gate refuses**: the World changed while it waited, as a clearance withdrawn or a secret unset.
-  Failed, with why, or left queued until it passes.
+  Built: the job fails, with why, and the run is left unfinished. Left queued until it passes is the other way.
 - **E3's details**, for step 3:
   - **A stream joined mid-item.** The API keeps an item's deltas until it ends, so a stream joined while it streams
     gets its text so far. Under E3 a replica has only the deltas sent since it listened: the worker could notify an
@@ -238,7 +256,14 @@ On the decisions above, and the takes left.
     every listener has read it, and a listener that stops reading holds the queue up for all. Deltas are
     case-derived, so they pass through the database that holds the ledger's completions already; nothing new is
     stored.
-- **Deployment**: one worker or several, and whether each is a Kubernetes Deployment of its own.
+- **Deployment**: one worker or several, and whether each is a Kubernetes Deployment of its own. Several take turns
+  to claim, so either works; `chatddx portal` and `chatddx api --worker` starting one on a thread (K1) come with
+  step 3, when the API queues runs.
+- **A stopping worker waits for its scorings**, which judges can make long, beyond a Kubernetes grace period. A
+  scoring halted instead finishes its score with what it has, and the next claim would score again.
+- **Slots while scoring**: a job holds its run's slots until it ends, its scoring too, while the judges' calls go to
+  their own endpoints.
+- **A job at an endpoint the inventory lost** is claimed and fails at the gate, rather than waiting.
 
 ## Moved here
 - From `agents/wip-portal.md`: "Below the UI", 1, runs that outlive the request, and the worker's part of "The batch
