@@ -23,7 +23,7 @@ it.
    (decided, see "Authoring"). The choices of phases 1 and 2 are takes (see "Built").
 5. **What it stands on is built**: the bench and the API (`docs/bench.md`, `docs/api.md`), the writes for authoring
    (`docs/bench.md`, "Writes for the person") and typed cases (`docs/bench.md`, "Typed cases"). What isn't is under
-   "Below the UI": the worker, seeds and cleanup steps in the API's runs, and Z1.
+   "Below the UI": the worker and Z1.
 6. **Next**: phase 5's second half, 5c and 5d, once its first is looked at (see "Authoring"); and what phases 2 to
    5 left (see "Open").
 
@@ -223,8 +223,9 @@ Take:
   start, a confirmation from a look per variation (`GET /api/threads/{id}/variation`): the runs, what each sets, what
   the gate refuses and why, the cases, and each scorer's reach. Each is a `POST /api/runs`; nothing else is stored,
   and the comparison page follows them.
-- **C3. Replicates and text cleanup** on a run's form, once `POST /api/runs` takes the seeds and cleanup steps
-  `Bench.start` takes (`agents/wip-worker.md`, "Below the worker").
+- **C3. Replicates and text cleanup** on a run's form, as `POST /api/runs` takes them (`agents/wip-worker.md`, R1
+  and R2). Built: a replicates count beside the seed. Cleanup, a concurrency and an order aren't offered yet: a run
+  takes its sources' and its endpoint's.
 - **C4. Grouping by hand**: tags on runs, which the catalog takes on any subject (`docs/catalog.md`, "Entries") and
   nothing writes yet; the runs page filters by them.
 
@@ -513,9 +514,7 @@ What the portal needs below its pages that isn't built:
    Until then a run is a job in the app's process (`docs/api.md`, "Where it runs"), which the run's
    pages can be built on, since the API stays as it is when the worker takes its place.
 2. **The worker's controls and status** (`agents/wip-worker.md`, "The plan", 4).
-3. **Seeds and cleanup steps in `POST /api/runs`**, for replicates and text cleanup, as `Bench.start` takes them
-   (`agents/wip-worker.md`, "Below the worker").
-4. **Z1**, the map from roles to kinds, which waits for the portal's views (`docs/bench.md`, "Outstanding";
+3. **Z1**, the map from roles to kinds, which waits for the portal's views (`docs/bench.md`, "Outstanding";
    `docs/identity.md`, "Z1: what each role is shown").
 
 ## Phases
@@ -610,8 +609,8 @@ From "What the portal shows", not on the pages yet:
   its live text and can't halt it. The worker takes its place (`agents/wip-worker.md`).
 - **The live view holds every item's text** as it streams, in the page; a large run with long answers makes a heavy
   page. Take: drop the text of an item once it has ended, which the run's page shows after it is done.
-- **Replicates**: a run takes one seed; `Bench.start` takes several, and the API passes one
-  (`agents/wip-worker.md`, "Below the worker").
+- **Replicates**: a run takes several seeds, or a count drawn, and the run's island takes a count; cleanup, a
+  concurrency and an order are the API's alone so far (`agents/wip-worker.md`, R1 to R4).
 - **The limits** (`settings.RUNS_PER_DAY`, 100, and `ITEMS_PER_RUN`, 200) are takes, as is counting a day back from
   now. A scoring isn't limited.
 - **Running again** re-sends a run's trial; it doesn't follow the configuration if it has moved on since.

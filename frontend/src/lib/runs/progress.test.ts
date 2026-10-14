@@ -15,7 +15,7 @@ const STARTED = {
   skeleton: "s",
   endpoint: "qwen@fake",
   cases: ["a", "b"],
-  seed: 7,
+  seeds: [7],
   greedy: false,
 };
 

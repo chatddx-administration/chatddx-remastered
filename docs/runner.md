@@ -204,11 +204,11 @@ Drift of a vignette is noted as preparing a case notes it (docs/factors.md, "Pre
 - **Scripted runs**, `chatddx scripted-runs` on the bench: `docs/scripted.md`.
 ```
 AGENT: replace
-Resuming is the runner's now (see "Resuming"), and `Bench.start` takes a canary set, though no edge passes one.
+Resuming is the runner's now (see "Resuming"), and a run sends its endpoint's canary set.
 ---
 - **`max_jobs` across runs**, and asking for a lost run to resume: `agents/wip-worker.md`, "Below the worker".
-- **No run sends a canary set** (`docs/runner.md`, "Smaller issues"): data sets hold them now, and `Bench.start` takes
-  one, but no edge passes one.
+- **Canary sets are each endpoint's**, in the inventory (docs/inventory.md, "Endpoints"); no World's endpoint names
+  one yet, though data sets hold them.
 ```
 - **Resuming** and **`max_jobs` across runs**: `agents/wip-worker.md`, "Below the worker".
 - **No run sends a canary set** (`docs/runner.md`, "Smaller issues"): data sets hold them now, and `Bench.start`
@@ -234,10 +234,10 @@ Resuming is the runner's now (see "Resuming"), and `Bench.start` takes a canary 
   writes one.
 ```
 AGENT: replace
-`Bench.start` takes a canary set now; no edge passes one.
+A run sends its endpoint's canary set now; no World's endpoint names one.
 ---
-- **No run sends a canary set**: no edge passes one to `Bench.start`, though data sets hold them; canary outputs
-  aren't compared (docs/chatddx.md, "Possible design issues"), and canary calls stream without events.
+- **No World's endpoint names a canary set**, though data sets hold them; canary outputs aren't compared
+  (docs/chatddx.md, "Possible design issues"), and canary calls stream without events.
 ```
 - **No run sends a canary set**: `Bench.start` passes none, though data sets hold them; canary outputs aren't
   compared (docs/chatddx.md, "Possible design issues"), and canary calls stream without events.

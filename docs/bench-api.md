@@ -748,10 +748,11 @@ Raises:
 AGENT: replace
 `start` takes seeds, cleanup steps, an execution and a canary set.
 ---
-### `start(variation: TriedVariation, endpoint: str, cases: list[str], seeds: Sequence[int], cleanup: Sequence[CleanupOp] = (), execution: Execution | None = None, canaries: str | None = None) -> Running`
-The variation run at `endpoint` over `cases` with `seeds`, its replicates, the cleanup steps, the execution
-(`Execution()` when none) and the canary set stored under the digest `canaries`, its run named by `variation.label`.
-The compilation of a varied skeleton is stored once the run has started.
+### `start(variation: TriedVariation, endpoint: str, cases: list[str], seeds: Sequence[int], cleanup: Sequence[CleanupOp] | None = None, execution: Execution | None = None, canaries: str | None = None) -> Running`
+The variation run at `endpoint` over `cases` with `seeds`, its replicates, its cleanup steps, its execution and the
+canary set stored under the digest `canaries`, its run named by `variation.label`. Not given: the steps the cases'
+sources ask for, in `CleanupOp`'s order (`()` for none); the endpoint's execution and canary set, from the
+inventory. The compilation of a varied skeleton is stored once the run has started.
 
 Raises:
 - `ValueError("<label> is a judge configuration: a judge is asked as runs are scored, and isn't run on cases")`

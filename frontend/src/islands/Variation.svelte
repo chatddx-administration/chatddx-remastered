@@ -47,6 +47,7 @@
   let chosen = $state<number[]>([]);
   let narrowed = $state("");
   let seed = $state(given.look.seed);
+  let replicates = $state(1);
   let scored = $state(true);
   let starting = $state(false);
   let unstarted = $state<string | null>(null);
@@ -78,6 +79,7 @@
   const shown = $derived(Object.fromEntries((look.parts ?? []).map((p) => [p.part, p])));
   const fitting = $derived(endpoint === null ? undefined : variants[endpoint]);
   const sent = $derived(picking ? families.filter((f) => chosen.includes(f.id)) : tagged(families, tags));
+  const items = $derived(sent.length * Math.max(1, replicates));
   const listed = $derived(
     families.filter((f) => f.name.toLowerCase().includes(narrowed.trim().toLowerCase())).slice(0, 200),
   );
@@ -160,7 +162,7 @@
         parts: replaced(picked, base),
         endpoint,
         families: sent.map((f) => f.id),
-        seed,
+        ...(replicates > 1 ? { replicates } : { seeds: [seed] }),
         score: scored,
       },
     });
@@ -445,7 +447,11 @@
     <div class="flex flex-wrap items-end gap-4">
       <div class="space-y-1.5">
         <Label for="run-seed">Seed</Label>
-        <Input id="run-seed" type="number" min="0" bind:value={seed} class="w-36" />
+        <Input id="run-seed" type="number" min="0" bind:value={seed} disabled={replicates > 1} class="w-36" />
+      </div>
+      <div class="space-y-1.5">
+        <Label for="run-replicates">Replicates</Label>
+        <Input id="run-replicates" type="number" min="1" bind:value={replicates} class="w-24" />
       </div>
       <label class="flex items-center gap-2 pb-2 text-sm">
         <input type="checkbox" bind:checked={scored} />
@@ -458,10 +464,14 @@
       {:else if sent.length === 0}
         Pick a case to run it on.
       {:else}
-        Sends {sent.length} {sent.length === 1 ? "item" : "items"} to {endpoint}, one at a time{look.greedy
-          ? "; its sampling is greedy, so the seed isn't sent"
+        Sends {items} {items === 1 ? "item" : "items"} to {endpoint}, one at a time{replicates > 1
+          ? `, a replicate each under ${replicates} seeds drawn`
+          : ""}{look.greedy
+          ? replicates > 1
+            ? "; its sampling is greedy, so no seed is sent and its replicates send the same request, which measures the engine's nondeterminism"
+            : "; its sampling is greedy, so the seed isn't sent"
           : ""}.
-        {#if sent.length > given.itemsPerRun}
+        {#if items > given.itemsPerRun}
           <span class="text-warning">A run holds at most {given.itemsPerRun}.</span>
         {/if}
       {/if}
@@ -474,7 +484,7 @@
     {/if}
     <Button
       type="submit"
-      disabled={endpoint === null || sent.length === 0 || sent.length > given.itemsPerRun || starting || failure !== null}
+      disabled={endpoint === null || sent.length === 0 || items > given.itemsPerRun || starting || failure !== null}
     >
       {#if starting}<LoaderCircleIcon class="animate-spin" />{/if}
       Run it

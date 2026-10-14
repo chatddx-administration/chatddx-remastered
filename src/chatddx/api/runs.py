@@ -12,7 +12,7 @@ from fastapi.responses import StreamingResponse
 from chatddx.bench import Bench, Family, outcome
 from chatddx.factors.base import resolve
 from chatddx.factors.request import Skeleton
-from chatddx.factors.trial import Trial, suggest_seeds
+from chatddx.factors.trial import Execution, Trial, suggest_seeds
 from chatddx.identity import Person
 from chatddx.ledger import RunStarted, check_run
 from chatddx.runner.run import Running
@@ -72,14 +72,14 @@ def _cases(bench: Bench, given: schemas.NewRun) -> list[str]:
     return wanted
 
 
-type _Starting = Callable[[Bench], tuple[Running, Skeleton, str, int]]
+type _Starting = Callable[[Bench], tuple[Running, Skeleton, str]]
 
 
 def _opened(held: AppState, person: Person, starting: _Starting) -> _Started:
     conn = held.connect()
     try:
         bench = Bench(conn, person, held.inventory, held.facts)
-        running, skeleton, endpoint, seed = starting(bench)
+        running, skeleton, endpoint = starting(bench)
     except BaseException:
         conn.close()
         raise
@@ -90,14 +90,36 @@ def _opened(held: AppState, person: Person, starting: _Starting) -> _Started:
         skeleton=trial.skeleton,
         endpoint=endpoint,
         cases=list(trial.cases),
-        seed=seed,
+        seeds=list(trial.seeds),
         greedy=skeleton.greedy,
     )
     return _Started(bench, running, skeleton, said)
 
 
+def _seeds(given: schemas.Seeds, replicates: int) -> tuple[int, ...]:
+    if given.seeds is not None:
+        return tuple(given.seeds)
+    return suggest_seeds(given.replicates or replicates)
+
+
+def _execution(bench: Bench, given: schemas.NewRun) -> Execution | None:
+    if given.concurrency is None and given.order is None:
+        return None
+    held = bench.inventory.endpoint(given.endpoint).execution
+    order = given.order or held.order
+    shuffled = held.shuffle_seed if order == held.order else suggest_seeds(1)[0]
+    return Execution.model_validate(
+        {
+            **held.model_dump(),
+            "concurrency": given.concurrency or held.concurrency,
+            "order": order,
+            "shuffle_seed": shuffled if order == "shuffled@1" else None,
+        }
+    )
+
+
 def _new(given: schemas.NewRun) -> _Starting:
-    def starting(bench: Bench) -> tuple[Running, Skeleton, str, int]:
+    def starting(bench: Bench) -> tuple[Running, Skeleton, str]:
         try:
             with refused():
                 variation = bench.variation(
@@ -108,31 +130,35 @@ def _new(given: schemas.NewRun) -> _Starting:
         except LookupError as e:
             raise HTTPException(422, str(e)) from None
         cases = _cases(bench, given)
-        seed = suggest_seeds(1)[0] if given.seed is None else given.seed
         with refused():
-            running = bench.start(variation, given.endpoint, cases, (seed,))
-        return running, skeleton, given.endpoint, seed
+            running = bench.start(
+                variation,
+                given.endpoint,
+                cases,
+                _seeds(given, 1),
+                given.cleanup,
+                _execution(bench, given),
+            )
+        return running, skeleton, given.endpoint
 
     return starting
 
 
 def _repeated(run: UUID, given: schemas.NewAgain) -> _Starting:
-    def starting(bench: Bench) -> tuple[Running, Skeleton, str, int]:
+    def starting(bench: Bench) -> tuple[Running, Skeleton, str]:
         before = bench.run_by_id(run)
         trial = resolve(bench.get, before.trial, Trial)
         seen = {f.id for f in bench.families()}
         for case in trial.cases:
             if bench.catalog.family(case) not in seen:
                 raise HTTPException(422, f"no case {case} for {bench.person.login}")
-        seed = suggest_seeds(1)[0] if given.seed is None else given.seed
         with refused():
-            running = bench.again(before, (seed,))
+            running = bench.again(before, _seeds(given, len(trial.seeds)))
         assert before.endpoint is not None
         return (
             running,
             resolve(bench.get, trial.skeleton, Skeleton),
             before.endpoint.name,
-            seed,
         )
 
     return starting
@@ -274,7 +300,7 @@ def _told(bench: Bench, run: UUID) -> list[Named]:
                 skeleton=trial.skeleton,
                 endpoint=None if started.endpoint is None else started.endpoint.name,
                 cases=list(trial.cases),
-                seed=trial.seeds[0],
+                seeds=list(trial.seeds),
                 greedy=skeleton.greedy,
             ),
         ),

@@ -101,10 +101,10 @@ with the web patched in the process that runs the tools (`urllib.request.urlopen
 ### Smaller issues
 ```
 AGENT: replace
-`Bench.start` takes a canary set now; the scripted runs pass none.
+A run sends its endpoint's canary set now, and the Worlds' endpoints name none.
 ---
-- **No scripted run sends a canary set**, though both data sets hold one and `Bench.start` takes one (docs/bench.md,
-  "Runs and scores").
+- **No scripted run sends a canary set**: the Worlds' endpoints name none (docs/inventory.md, "Endpoints"), and a
+  scripted run's turns would have to answer its canaries too.
 ```
 - **No scripted run sends a canary set.** `Bench.start` passes none (docs/bench.md, "Runs and scores"), though both
   data sets hold one.

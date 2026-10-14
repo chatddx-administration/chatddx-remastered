@@ -87,9 +87,7 @@ def scoring(request: Request, bench: BenchDep, run: UUID) -> Response:
 
 @router.post("/runs/{run}/again")
 def running_again(request: Request, bench: BenchDep, run: UUID) -> Response:
-    said = api.again(
-        request, Response(), bench, run, schemas.NewAgain(seed=None, score=True)
-    )
+    said = api.again(request, Response(), bench, run, schemas.NewAgain(score=True))
     return RedirectResponse(f"/runs/{said.run}", 303)
 
 

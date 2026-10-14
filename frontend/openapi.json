@@ -3780,17 +3780,36 @@
       },
       "NewAgain": {
         "properties": {
-          "seed": {
+          "seeds": {
             "anyOf": [
               {
-                "type": "integer"
+                "items": {
+                  "type": "integer"
+                },
+                "type": "array",
+                "maxItems": 200,
+                "minItems": 1
               },
               {
                 "type": "null"
               }
             ],
-            "title": "Seed",
-            "description": "drawn when not given"
+            "title": "Seeds",
+            "description": "the replicates' seeds"
+          },
+          "replicates": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 200.0,
+                "minimum": 1.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Replicates",
+            "description": "or how many replicates, their seeds drawn"
           },
           "score": {
             "type": "boolean",
@@ -3998,6 +4017,37 @@
       },
       "NewRun": {
         "properties": {
+          "seeds": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "integer"
+                },
+                "type": "array",
+                "maxItems": 200,
+                "minItems": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Seeds",
+            "description": "the replicates' seeds"
+          },
+          "replicates": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 200.0,
+                "minimum": 1.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Replicates",
+            "description": "or how many replicates, their seeds drawn"
+          },
           "configuration": {
             "type": "integer",
             "title": "Configuration"
@@ -4067,17 +4117,56 @@
             "title": "Cases",
             "description": "or the cases themselves, each of a family's current ones"
           },
-          "seed": {
+          "cleanup": {
             "anyOf": [
               {
-                "type": "integer"
+                "items": {
+                  "type": "string",
+                  "enum": [
+                    "newlines.lf@1",
+                    "unicode.nfc@1",
+                    "strip@1",
+                    "blank_lines.collapse@1"
+                  ]
+                },
+                "type": "array"
               },
               {
                 "type": "null"
               }
             ],
-            "title": "Seed",
-            "description": "drawn when not given"
+            "title": "Cleanup",
+            "description": "the steps applied to each vignette, in order: its source's when not given, and none for []"
+          },
+          "concurrency": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 1.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Concurrency",
+            "description": "how many requests at once, up to the endpoint's max_jobs: the endpoint's when not given"
+          },
+          "order": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "case_major@1",
+                  "replicate_major@1",
+                  "shuffled@1"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Order",
+            "description": "the order the items are sent in, a shuffled one's seed drawn: the endpoint's when not given"
           },
           "score": {
             "type": "boolean",
@@ -4816,9 +4905,12 @@
             "title": "Cases",
             "type": "array"
           },
-          "seed": {
-            "title": "Seed",
-            "type": "integer"
+          "seeds": {
+            "items": {
+              "type": "integer"
+            },
+            "title": "Seeds",
+            "type": "array"
           },
           "greedy": {
             "title": "Greedy",
@@ -4831,7 +4923,7 @@
           "skeleton",
           "endpoint",
           "cases",
-          "seed",
+          "seeds",
           "greedy"
         ],
         "title": "RunStartedData",

@@ -76,3 +76,32 @@ def test_a_person_resumes_their_own_unfinished_run(
     resumed.send()
     _ = resumed.finish()
     assert len(bench.store.run(running.run).items) == 2
+
+
+@pytest.mark.usefixtures("fake")
+def test_a_run_takes_its_sources_cleanup_and_its_endpoint_s_canaries_and_execution(
+    conn: Connection, world: Inventory, alice: Person, plan: Plan
+):
+    probe = plan.named("canary_set", "probe").digest
+    execution = Execution(timeout_s=60, retries=1)
+    sources = dict(world.sources)
+    sources["test"] = sources["test"].model_copy(
+        update={"cleanup": ("strip@1", "newlines.lf@1")}
+    )
+    endpoints = dict(world.endpoints)
+    endpoints[QWEN] = endpoints[QWEN].model_copy(
+        update={"canaries": probe, "execution": execution}
+    )
+    declared = world.model_copy(update={"sources": sources, "endpoints": endpoints})
+    bench = Bench(conn, alice, declared, world_facts())
+    variation = bench.configuration(LINES, bench.endpoint(QWEN))
+    cases = [bench.family("crlf").case]
+
+    started = bench.start(variation, QWEN, cases, (7,)).started
+    trial = resolve(bench.get, started.trial, Trial)
+    assert trial.cleanup == ("newlines.lf@1", "strip@1")
+    assert (started.execution, started.canaries) == (execution, probe)
+
+    given = bench.start(variation, QWEN, cases, (7,), (), Execution(), probe).started
+    assert resolve(bench.get, given.trial, Trial).cleanup == ()
+    assert given.execution == Execution()

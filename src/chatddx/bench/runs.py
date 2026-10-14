@@ -3,12 +3,13 @@ from collections.abc import Callable, Collection, Generator, Sequence
 from contextlib import contextmanager, nullcontext
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
+from typing import get_args
 from uuid import UUID
 
 from chatddx import settings
 from chatddx.catalog import Entry, EntryField, Subject
 from chatddx.factors.base import resolve
-from chatddx.factors.cases import CleanupOp
+from chatddx.factors.cases import Case, CleanupOp
 from chatddx.factors.request import Skeleton
 from chatddx.factors.scoring import Scorer
 from chatddx.factors.trial import CanarySet, Execution, Trial
@@ -34,7 +35,7 @@ def start(
     endpoint: str,
     cases: list[str],
     seeds: Sequence[int],
-    cleanup: Sequence[CleanupOp] = (),
+    cleanup: Sequence[CleanupOp] | None = None,
     execution: Execution | None = None,
     canaries: str | None = None,
 ) -> Running:
@@ -44,20 +45,37 @@ def start(
             f"{variation.label} is a judge configuration: a judge is asked as runs are "
             + "scored, and isn't run on cases"
         )
+    engine = seen.endpoint(endpoint)
+    spec = seen.inventory.endpoint(endpoint)
+    canaries = canaries or spec.canaries
     running = _begun(
         seen,
         skeleton,
         endpoint,
-        seen.endpoint(endpoint),
+        engine,
         cases,
         seeds,
         variation.label,
-        cleanup=tuple(cleanup),
-        execution=execution,
+        cleanup=_cleanup_of(seen, cases) if cleanup is None else tuple(cleanup),
+        execution=execution or spec.execution,
         canaries=None if canaries is None else resolve(seen.get, canaries, CanarySet),
     )
     _ = keep_compilation(seen, variation)
     return running
+
+
+def _cleanup_of(seen: Seen, cases: Sequence[str]) -> tuple[CleanupOp, ...]:
+    if not any(s.cleanup for s in seen.inventory.sources.values()):
+        return ()
+    registry = seen.store.load(cases)
+    asked = {
+        op
+        for case in cases
+        for op in seen.inventory.source(
+            resolve(registry.get, case, Case).vignette.source
+        ).cleanup
+    }
+    return tuple(op for op in get_args(CleanupOp) if op in asked)
 
 
 def again(seen: Seen, run: RunStarted, seeds: Sequence[int]) -> Running:

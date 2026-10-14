@@ -87,6 +87,14 @@ This repository has three, in `worlds/`:
 src/chatddx/test/test_worlds.py fails when a World's engines change and its endpoints don't.
 
 ## Sources
+```
+AGENT: add
+Below this paragraph: a source's cleanup steps.
+---
+A source names the cleanup steps its vignettes need, such as `newlines.lf@1` for a source written with CRLF, and a
+run applies those of its cases' sources unless its request gives its own (docs/factors.md, "Preparing a case"). Ops
+write them, since they are the source's quirks, so that runs on one source agree unless a researcher varies them.
+```
 A source is where a set of vignettes is fetched from, by id. A source is a directory with one file per vignette,
 named by its id, or a database source, `kind = "database"`, whose vignettes are texts people typed, kept in the
 database under new ids as written and never changed, and read through the store. A source is a directory unless it
@@ -121,6 +129,14 @@ The runner reads the secret from the variable the endpoint names, and sends it a
 the endpoint, the one that confirms it included. It refuses to run when the variable isn't set. The secret itself
 never appears in the inventory or the ledger.
 
+```
+AGENT: add
+Below this paragraph: an endpoint's canary set and default execution.
+---
+An endpoint may name a canary set, by digest, which every run at it sends, so that runs at one endpoint are probed
+alike and can be compared; and a default execution, a timeout and retries among it, which a run's request may change
+the concurrency and order of. Loading refuses a default concurrency above the capacity.
+```
 The capacity matches the server's own limit on requests at once, which the engine import takes from the server's
 configuration, and the runner refuses an execution that would send more.
 

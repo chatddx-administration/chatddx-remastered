@@ -279,14 +279,15 @@ ones, and a scorer pinned again by a deploy reaches the person's fork of it.
 ## Runs and scores
 ```
 AGENT: replace
-`Bench.start` takes seeds, cleanup steps, an execution and a canary set; the edges pass one seed and none of the
-rest; and a run resumes.
+`Bench.start` takes seeds, cleanup steps, an execution and a canary set, by default the inventory's; and a run
+resumes.
 ---
 - **Starting** runs a variation at an endpoint, on some cases with some seeds, through the runner (docs/runner.md),
-  under an execution, a canary set and cleanup steps when given; the edges give one seed, and none of the rest. A
-  judge configuration is refused first, then a run of more items than `settings.ITEMS_PER_RUN`, its cases times its
-  seeds, and a person who has started `settings.RUNS_PER_DAY` runs in the last day. The run is named by the
-  variation's label as it starts. Running again keeps a run's cleanup, execution and canary set under new seeds.
+  under an execution, a canary set and cleanup steps: those given, else the endpoint's execution and canary set and
+  the steps the cases' sources ask for, from the inventory (docs/inventory.md, "Sources" and "Endpoints"). A judge
+  configuration is refused first, then a run of more items than `settings.ITEMS_PER_RUN`, its cases times its seeds,
+  and a person who has started `settings.RUNS_PER_DAY` runs in the last day. The run is named by the variation's label
+  as it starts. Running again keeps a run's cleanup, execution and canary set under new seeds.
 - **Resuming** a run of the person's own that isn't finished sends what its log lacks (docs/runner.md, "Resuming").
 ```
 - **Starting** runs a variation at an endpoint, on some cases with one seed, through the runner (docs/runner.md),
@@ -391,11 +392,8 @@ the person were planned in `agents/wip-authoring.md` at b6f76b8. Its takes were 
 - **Z1**: the map from roles to the kinds each role sees goes in `identity` once the portal's views give it meaning
   (docs/identity.md, "Z1: what each role is shown"). `sees` then takes the person's roles and the kind.
 ```
-AGENT: replace
-`Bench.start` takes an execution now; no edge passes one.
----
-- **An execution from the edges**: `Bench.start` takes one, and no edge passes one, so a run gets `Execution()`'s,
-  with no timeout; the worker needs it (agents/wip-worker.md, "Below the worker").
+AGENT: remove
+A run takes its endpoint's execution from the inventory unless given one (docs/inventory.md, "Endpoints").
 ```
 - **An execution for `Bench.start`**, which passes none, so a run gets `Execution()`'s, with no timeout; the worker
   needs it (agents/wip-worker.md, "Below the worker").

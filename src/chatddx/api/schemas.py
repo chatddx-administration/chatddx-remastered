@@ -5,9 +5,11 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field, JsonValue, model_validator
 
-from chatddx import catalog
+from chatddx import catalog, settings
 from chatddx.bench import PARTS, Outcome
 from chatddx.factors import base as factors
+from chatddx.factors.cases import CleanupOp
+from chatddx.factors.trial import Order
 from chatddx.identity import Person, Role
 
 
@@ -476,14 +478,34 @@ class ScorerCode(_Schema):
     )
 
 
-class NewAgain(_Schema):
-    seed: int | None = Field(None, description="drawn when not given")
+class Seeds(_Schema):
+    seeds: list[int] | None = Field(
+        default=None,
+        min_length=1,
+        max_length=settings.ITEMS_PER_RUN,
+        description="the replicates' seeds",
+    )
+    replicates: int | None = Field(
+        default=None,
+        ge=1,
+        le=settings.ITEMS_PER_RUN,
+        description="or how many replicates, their seeds drawn",
+    )
+
+    @model_validator(mode="after")
+    def _seeds_or_replicates(self) -> Self:
+        if self.seeds is not None and self.replicates is not None:
+            raise ValueError("a run takes seeds or replicates, not both")
+        return self
+
+
+class NewAgain(Seeds):
     score: bool = Field(
         True, description="under every scorer that applies, once it is finished"
     )
 
 
-class NewRun(_Schema):
+class NewRun(Seeds):
     configuration: int
     head: int | None = Field(
         None,
@@ -498,7 +520,22 @@ class NewRun(_Schema):
     cases: list[str] | None = Field(
         None, description="or the cases themselves, each of a family's current ones"
     )
-    seed: int | None = Field(None, description="drawn when not given")
+    cleanup: list[CleanupOp] | None = Field(
+        None,
+        description="the steps applied to each vignette, in order: its source's when "
+        + "not given, and none for []",
+    )
+    concurrency: int | None = Field(
+        None,
+        ge=1,
+        description="how many requests at once, up to the endpoint's max_jobs: the "
+        + "endpoint's when not given",
+    )
+    order: Order | None = Field(
+        None,
+        description="the order the items are sent in, a shuffled one's seed drawn: the "
+        + "endpoint's when not given",
+    )
     score: bool = Field(
         True, description="under every scorer that applies, once it is finished"
     )
@@ -624,7 +661,7 @@ class RunStartedData(_Schema):
     skeleton: str
     endpoint: str | None
     cases: list[str]
-    seed: int
+    seeds: list[int]
     greedy: bool
 
 

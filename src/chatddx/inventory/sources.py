@@ -3,12 +3,13 @@ from pathlib import Path
 from typing import Literal, override
 
 from chatddx.factors.base import Fingerprint, Frozen
-from chatddx.factors.cases import Case, Vignette
+from chatddx.factors.cases import Case, CleanupOp, Vignette
 
 
 class Source(Frozen):
     name: str
     sensitive: bool = True
+    cleanup: tuple[CleanupOp, ...] = ()
 
 
 class DatabaseSource(Source):

@@ -27,8 +27,8 @@ https://github.com/chatddx-administration/chatddx/blob/504792cbeb09508f2c52912be
    started over HTTP goes through it; K6, a run starts in the request and the worker sends it (A).
 5. **Decided: a run lost mid-way is resumed** by the next claim.
 6. **Built: steps 0 to 2** (see "Built"): resuming a run and what a run starts with; the queue; the worker.
-7. **Decided: what's next** (see "What's next, decided"), but T4, the repl beside the worker. Next to build: R1 to
-   R4, then step 3, then step 4 and W2, then the NixOS module (see "The plan").
+7. **Decided: what's next** (see "What's next, decided"), but T4, the repl beside the worker. R1 to R4 are built.
+   Next to build: step 3, then step 4 and W2, then the NixOS module (see "The plan").
 
 ## Why
 - **A run is a job in the app's process**: `POST /api/runs` answers 202 and the run's path, the run is sent on a
@@ -198,11 +198,8 @@ Not built:
 - **`max_jobs` beside the worker.** The worker keeps the runs it sends within an endpoint's `max_jobs` (see K4), but
   the repl's runs, the API's jobs in the app's process and judge calls don't count. vLLM queues what's over
   `--max-num-seqs` rather than refusing it, so the cost is batching that the runs' `execution` doesn't show.
-- **The edges still pass one seed**, no cleanup, the default execution and no canary set: the repl, the API and the
-  scripted runs. `POST /api/runs` taking seeds and cleanup steps is the API's (`docs/api.md`, "Not covered"), and the
-  portal's run form follows (`agents/wip-portal.md`, "Comparing variations", C3). Which canary set a run gets, the
-  World's or the person's pick, and whether cleanup is picked at a run's start or carried by the configuration, are
-  open.
+- **The repl and the scripted runs pass one seed**, and take the rest from the inventory (R1 to R4, built). No
+  World's endpoint names a canary set yet: a scripted run's turns would have to answer its canaries too.
 
 Still the runner's, and met here:
 - **A call still waiting for its engine to answer at all** waits on after a halt, under an execution with no timeout;
@@ -237,9 +234,11 @@ On the decisions above.
    execution and a canary set.
 1. **The queue**, built (see "Built").
 2. **The worker**, built (see "Built").
-R. **What a run is started with** (R1 to R4), before step 3, as it doesn't wait on the worker: the inventory's
-   cleanup per source, canary set per endpoint and default execution per endpoint; `POST /api/runs` and `/again`
-   taking seeds or replicates, cleanup, a concurrency and an order; the variation's island following.
+R. **What a run is started with** (R1 to R4), built: the inventory's cleanup per source
+   (`src/chatddx/inventory/sources.py:Source.cleanup`), and canary set and default execution per endpoint
+   (`inventory.py:EndpointSpec`), which `Bench.start` takes unless given; `POST /api/runs` taking seeds or replicates,
+   cleanup, a concurrency and an order, `/again` seeds or replicates, and `run.started` giving the seeds; the
+   variation's island taking a replicates count. The island doesn't offer cleanup, a concurrency or an order yet.
 3. **The API through the worker** (T1 to T3, R5, W1): the ledger's rows counted; `POST /api/runs`, `/again` and
    `/scores` queue a job and answer 202 as now, the run started in the request (K6); `GET /api/runs/{id}/events` from
    the ledger, woken by the worker, with its deltas through `NOTIFY`; `POST /api/runs/{id}/halt` through the queue;

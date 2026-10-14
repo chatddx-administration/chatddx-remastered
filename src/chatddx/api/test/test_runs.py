@@ -1,7 +1,7 @@
 import json
 import time
 from typing import Any
-from uuid import uuid4
+from uuid import UUID, uuid4
 
 import httpx2
 import pytest
@@ -16,7 +16,8 @@ from chatddx.api.test.test_variations import digest, thread
 from chatddx.bench.test.helpers import ran, trial
 from chatddx.catalog import Entry, EntryField, Subject
 from chatddx.curation import Plan
-from chatddx.factors.base import Finding
+from chatddx.factors.base import Finding, resolve
+from chatddx.factors.trial import Trial
 from chatddx.identity import Person
 from chatddx.inventory import Inventory
 from chatddx.store import Catalog, People, Store
@@ -55,7 +56,7 @@ def asked(
         "configuration": thread(signed, "configuration", configuration)["id"],
         "endpoint": QWEN,
         "families": [family(signed, "crlf")["id"]],
-        "seed": 7,
+        "seeds": [7],
         **more,
     }
 
@@ -107,7 +108,7 @@ def test_a_run_is_accepted_and_told_by_its_events(
         said = followed(signed, started["run"])
     assert got.headers["location"] == f"/api/runs/{started['run']}"
     assert (started["endpoint"], started["cases"]) == (QWEN, [case])
-    assert (started["seed"], started["greedy"]) == (7, False)
+    assert (started["seeds"], started["greedy"]) == ([7], False)
 
     ids = [i for i, _, _ in said]
     assert ids == sorted(set(ids)) and ids[0] == 1
@@ -251,6 +252,9 @@ def test_a_run_the_request_names_wrong_is_unprocessable(signed: TestClient) -> N
         ({"configuration": chunk["id"]}, f"no configuration {chunk['id']} for alice"),
         ({"parts": {"prompt": chunk["head"]["digest"]}}, "isn't a stored chunk"),
         ({"configuration": judge["id"]}, "judge (en) is a judge configuration"),
+        ({"replicates": 2}, "a run takes seeds or replicates, not both"),
+        ({"seeds": []}, "at least 1 item"),
+        ({"cleanup": ["tidy@1"]}, "newlines.lf@1"),
     ]
     for changed, said in wrong:
         got = signed.post("/api/runs", json={**good, **changed})
@@ -265,7 +269,7 @@ def test_runs_are_listed_newest_first_and_filtered(signed: TestClient) -> None:
     off = digest(signed, "reasoning", OFF)
     first, _ = sent(signed, asked(signed))
     second, _ = sent(
-        signed, asked(signed, seed=8, parts={"reasoning": off}, score=False)
+        signed, asked(signed, seeds=[8], parts={"reasoning": off}, score=False)
     )
     assert second["scores"] == []
     scorer = thread(signed, "scorer", "lines", "archive")["head"]["digest"]
@@ -497,20 +501,51 @@ def test_a_quiet_stream_is_kept_alive(
 
 @pytest.mark.usefixtures("fake")
 @pytest.mark.slow
+def test_a_run_takes_replicates_cleanup_a_concurrency_and_an_order(
+    signed: TestClient, conn: Connection
+) -> None:
+    body = asked(
+        signed,
+        seeds=None,
+        replicates=2,
+        cleanup=["strip@1"],
+        concurrency=2,
+        order="replicate_major@1",
+        score=False,
+    )
+    shown, said = sent(signed, body)
+    [started] = [data for _, name, data in said if name == "run.started"]
+    assert len(shown["seeds"]) == 2 and started["seeds"] == shown["seeds"]
+    stored = Store(conn).run(UUID(shown["id"])).started
+    assert resolve(Store(conn).get, stored.trial, Trial).cleanup == ("strip@1",)
+    execution = stored.execution
+    assert (execution.concurrency, execution.order) == (2, "replicate_major@1")
+
+    again = signed.post(f"/api/runs/{shown['id']}/again", json={"score": False})
+    assert again.status_code == 202
+    assert len(again.json()["seeds"]) == 2
+    _ = followed(signed, again.json()["run"])
+    got = signed.post("/api/runs", json={**body, "concurrency": 5})
+    assert got.status_code == 422
+    assert "takes 4 requests at once" in got.json()["detail"]
+
+
+@pytest.mark.usefixtures("fake")
+@pytest.mark.slow
 def test_a_run_runs_again_with_another_seed_under_its_name(
     signed: TestClient, bob: dict[str, str]
 ) -> None:
     off = digest(signed, "reasoning", OFF)
     first, _ = sent(signed, asked(signed, parts={"reasoning": off}, score=False))
-    got = signed.post(f"/api/runs/{first['id']}/again", json={"seed": 9})
+    got = signed.post(f"/api/runs/{first['id']}/again", json={"seeds": [9]})
     assert got.status_code == 202
     started = got.json()
     assert got.headers["location"] == f"/api/runs/{started['run']}"
     assert started["run"] != first["id"]
-    assert (started["skeleton"], started["cases"], started["seed"]) == (
+    assert (started["skeleton"], started["cases"], started["seeds"]) == (
         first["skeleton"],
         first["cases"],
-        9,
+        [9],
     )
     _ = followed(signed, started["run"])
     again = signed.get(got.headers["location"]).json()

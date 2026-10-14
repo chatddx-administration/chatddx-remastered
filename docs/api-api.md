@@ -185,6 +185,14 @@ The token set as `COOKIE`: `Max-Age` `settings.SESSION_TTL` in seconds, `Secure`
 | `me`, `GET /me` | `Me.of` the person. |
 
 ## schemas.py
+```
+AGENT: replace
+In the rows `NewRun` and `NewAgain`, and a row for `Seeds`.
+---
+| `Seeds` | `seeds`, at least one, or `replicates`, from 1 to `settings.ITEMS_PER_RUN`. Its validator raises `ValueError("a run takes seeds or replicates, not both")`. |
+| `NewRun(Seeds)` | A run's body, with `head`, the edit it varies, the configuration's head unless given; `cleanup`, the steps, else the sources'; `concurrency` and `order`, else the endpoint's. Its validator raises `ValueError("a run takes one of families, tags or cases")` unless exactly one of `families`, `tags` and `cases` is given, which FastAPI answers 422. |
+| `NewAgain(Seeds)` | Running again's body: the seeds or replicates, as many as the run had, drawn, when neither is given; and `score`. |
+```
 The models' fields are in the OpenAPI document. Besides them:
 
 | Name | Is |
@@ -320,13 +328,45 @@ On a connection of its own (`AppState.connect`), a `Bench` for the person, and `
 the run's thread's otherwise. The `_Started` holds the bench, the `Running`, the skeleton and `run.started`'s data:
 the run, its trial's digest, skeleton and cases, the endpoint's name, the seed and the skeleton's `greedy`.
 
+```
+AGENT: replace
+The seeds are read from the trial; `_seeds` and `_execution` are new.
+---
+`_Starting` is `Callable[[Bench], tuple[Running, Skeleton, str]]`; `run.started`'s seeds are the trial's.
+
+### `_seeds(given: schemas.Seeds, replicates: int) -> tuple[int, ...]`
+The seeds given, else `suggest_seeds` of the replicates asked, else of `replicates`.
+
+### `_execution(bench, given: schemas.NewRun) -> Execution | None`
+`None` when the request gives neither a concurrency nor an order, so that `Bench.start` takes the endpoint's. Else the
+endpoint's execution with them in place, validated: a shuffled order keeps the endpoint's shuffle seed when the
+endpoint shuffles, and draws one otherwise.
+```
 `_Starting` is `Callable[[Bench], tuple[Running, Skeleton, str, int]]`.
 
+```
+AGENT: replace
+The paragraph below: the seeds, cleanup and execution passed to `Bench.start`.
+---
+Within `refused()`, `Bench.variation` and `Bench.skeleton`; then `Bench.endpoint`. A `LookupError` from those,
+`NotFound` among them, is raised as `HTTPException(422)` with its message. The cases of `_cases`; and, within
+`refused()`, `Bench.start` with `_seeds(given, 1)`, the cleanup given and `_execution`, whose `Refused` passes to
+`STATUSES`.
+```
 ### `_new(given: schemas.NewRun) -> _Starting`
 Within `refused()`, `Bench.variation` and `Bench.skeleton`; then `Bench.endpoint`. A `LookupError` from those,
 `NotFound` among them, is raised as `HTTPException(422)` with its message. The cases of `_cases`; the seed,
 `suggest_seeds(1)[0]` unless given; and, within `refused()`, `Bench.start`, whose `Refused` passes to `STATUSES`.
 
+```
+AGENT: replace
+The paragraph below: `_seeds` of as many as the run's trial had.
+---
+`Bench.run_by_id` (`NotFound`); each case of the run's trial of a family of `Bench.families()`, else
+`HTTPException(422, "no case <case> for <login>")`; and, within `refused()`, `Bench.again` of the run with
+`_seeds(given, <the trial's seeds>)`, whose `Refused` passes to `STATUSES`. The skeleton is the run's trial's, and the
+endpoint the run's.
+```
 ### `_repeated(run: UUID, given: schemas.NewAgain) -> _Starting`
 `Bench.run_by_id` (`NotFound`); each case of the run's trial of a family of `Bench.families()`, else
 `HTTPException(422, "no case <case> for <login>")`; the seed given, else `suggest_seeds(1)[0]`; and, within

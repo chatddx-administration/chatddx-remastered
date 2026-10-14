@@ -168,6 +168,14 @@ A person is scored against their own expectations only, so they take the shared 
 
 ## Runs
 ### Starting one
+```
+AGENT: replace
+A run takes seeds or replicates.
+---
+A run is a configuration's variation, of its head or of an earlier edit given, at an endpoint, on the cases of some
+families, picked by id or by tag, or on cases named by digest, each one of a family's current cases, with seeds given,
+or as many replicates as asked under seeds drawn from the trial's whole range: one unless asked.
+```
 A run is a configuration's variation, of its head or of an earlier edit given, at an endpoint, on the cases of some
 families, picked by id or by tag, or on cases named by digest, each one of a family's current cases, with one seed,
 drawn from the trial's whole range unless given.
@@ -186,6 +194,14 @@ refused too for anything its body names that the person doesn't see (a configura
 for tags no case has, and for a judge configuration, which is asked as runs are scored rather than run on cases.
 Once started, it is answered 202 with what `run.started` holds, and the run's path as `Location`.
 
+```
+AGENT: replace
+What a run is sent with comes from its endpoint and its sources, and the request may choose some of it.
+---
+A run is sent under its endpoint's execution (docs/inventory.md, "Endpoints"), with the concurrency, up to the
+endpoint's `max_jobs`, and the order the request gives, a shuffled order's seed drawn; with its endpoint's canary set;
+and with the cleanup steps the request gives, else those its cases' sources ask for (docs/inventory.md, "Sources").
+```
 A run is sent under the default execution, with no timeout, and with no canary set or text cleanup.
 
 ### Where it runs
@@ -231,6 +247,16 @@ An item's outcome is stopped, errored, unread, salvaged, completed, invalid or v
 read from it; salvaged is a structured answer cut short, read with its structure closed.
 
 ### Running again
+```
+AGENT: replace
+In the paragraph's first line: running again takes seeds, or as many as the run had, drawn.
+---
+A run of the person's runs again with other seeds, given, or as many as it had, drawn: its trial's skeleton, engine,
+cases and cleanup, and its execution and canary set, at its endpoint, as a run of its own named as the run is, so that
+a run of a variation nobody saved can be run again without its variation. It is started, refused, limited and
+followed as any run: refused, too, when the endpoint serves another engine now, or a case is of a family the person
+no longer sees.
+```
 A run of the person's runs again with another seed, given or drawn: its trial's skeleton, engine and cases at its
 endpoint, as a run of its own named as the run is, so that a run of a variation nobody saved can be run again without
 its variation. It is started, refused, limited and followed as any run: refused, too, when the endpoint serves
@@ -315,11 +341,9 @@ many cases is answered 200, whatever it took, and a carry 201, even when the exp
 - **A vignette in a run's request.** A run takes cases; a text to run is typed first, and kept in the World's
   database source as a case of its own (see "Typed cases").
 ```
-AGENT: replace
-`Bench.start` takes them now; the API doesn't pass them yet.
----
-- **A trial beyond one seed**: replicates, text cleanup, an execution's settings and canary sets, which `Bench.start`
-  takes and a run's request doesn't yet (agents/wip-worker.md, "Below the worker").
+AGENT: remove
+A run's request takes seeds or replicates, cleanup steps, a concurrency and an order, and the endpoint gives the
+rest (see "Starting one").
 ```
 - **A trial beyond one seed**: replicates, text cleanup, an execution's settings and canary sets wait on
   `Bench.start` taking them (agents/wip-worker.md, "Below the worker").
@@ -339,6 +363,12 @@ and of leaving a stream serve the app with uvicorn on a thread, and speak to it 
 
 ## Terms
 
+```
+AGENT: replace
+In the row `Run`: some seeds.
+---
+| Run | A variation sent at an endpoint on some cases with some seeds, recorded as it goes. |
+```
 | Term | Meaning |
 | --- | --- |
 | Session | A person signed in: a token, carried as a bearer or as a cookie, for 12 hours. |

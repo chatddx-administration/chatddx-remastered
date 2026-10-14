@@ -48,6 +48,34 @@ def test_sources_are_declared_in_the_inventory(tmp_path: Path) -> None:
         _ = Inventory.load(path)
 
 
+def test_a_source_s_cleanup_and_an_endpoint_s_canaries_and_execution_are_declared(
+    tmp_path: Path,
+) -> None:
+    _ = vignettes(tmp_path)
+    path = tmp_path / "inventory.toml"
+    engine, probe = "sha256:" + "c" * 64, "sha256:" + "d" * 64
+    _ = path.write_text(
+        '[source.test]\npath = "vignettes"\ncleanup = ["strip@1", "newlines.lf@1"]\n\n'
+        + f'[endpoint.qwen]\nengine = "{engine}"\nmax_jobs = 2\ncanaries = "{probe}"\n\n'
+        + "[endpoint.qwen.execution]\nconcurrency = 2\ntimeout_s = 60\n"
+    )
+    inventory = Inventory.load(path)
+    assert inventory.source("test").cleanup == ("strip@1", "newlines.lf@1")
+    qwen = inventory.endpoint("qwen")
+    assert qwen.canaries == probe
+    assert (qwen.execution.concurrency, qwen.execution.timeout_s) == (2, 60)
+
+    _ = path.write_text(
+        f'[endpoint.qwen]\nengine = "{engine}"\n\n'
+        + "[endpoint.qwen.execution]\nconcurrency = 2\n"
+    )
+    with pytest.raises(ValidationError, match="sends 2 requests at once"):
+        _ = Inventory.load(path)
+    _ = path.write_text('[source.test]\npath = "vignettes"\ncleanup = ["tidy@1"]\n')
+    with pytest.raises(ValidationError):
+        _ = Inventory.load(path)
+
+
 def test_a_world_takes_sources_and_endpoints_from_another(tmp_path: Path) -> None:
     other = tmp_path / "other"
     other.mkdir()
