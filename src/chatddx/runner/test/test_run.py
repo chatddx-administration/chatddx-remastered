@@ -12,7 +12,7 @@ from pydantic import ValidationError
 from chatddx.catalog import Subject
 from chatddx.conftest import connect
 from chatddx.curation import Plan
-from chatddx.factors.base import Fingerprint, resolve
+from chatddx.factors.base import Code, Finding, Fingerprint, resolve
 from chatddx.factors.cases import Case, Vignette, prepare_case
 from chatddx.factors.engine import LocalEngine
 from chatddx.factors.request import (
@@ -991,3 +991,100 @@ def test_phases_without_a_canary_set_are_refused_before_anything_is_written(
             trial(plan), plan.registry, QWEN, verify_at=("end",)
         )
     assert rows(db, "run_stage") == 0
+
+
+@pytest.mark.usefixtures("fake")
+@pytest.mark.parametrize("concurrency", [1, 2])
+@pytest.mark.slow
+def test_resuming_sends_what_an_unfinished_log_lacks_and_finishes_it(
+    conn: Connection,
+    inventory: Inventory,
+    alice: Person,
+    plan: Plan,
+    concurrency: int,
+) -> None:
+    runner = Runner(conn, inventory, alice)
+    running = runner.start(
+        trial(plan), plan.registry, QWEN, Execution(concurrency=concurrency), CANARIES
+    )
+
+    def stop(event: Event) -> None:
+        if isinstance(event, ItemEnded):
+            running.stop()
+
+    running.send(Heard(then=stop))
+    before = Store(conn).run(running.run)
+    resumed = runner.resume(running.run)
+    heard = Heard()
+    resumed.send(heard)
+    assert resumed.finish() == []
+
+    stored = Store(conn).run(running.run)
+    assert len(stored.items) == 4
+    assert {e.key for e in heard.of(ItemStarted)}.isdisjoint(
+        i.key for i in before.items
+    )
+    assert [e.call.phase for e in heard.of(CanaryEnded)] == ["end", "end"]
+    assert stored.finished is not None
+    assert stored.finished.findings == (
+        Finding(
+            level="info",
+            code="run.resumed",
+            message=f"resumed after {len(before.items)} of 4 items",
+        ),
+    )
+
+
+@pytest.mark.usefixtures("fake")
+def test_a_run_resumed_by_another_rig_says_which(
+    conn: Connection,
+    inventory: Inventory,
+    alice: Person,
+    plan: Plan,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    runner = Runner(conn, inventory, alice)
+    running = runner.start(trial(plan), plan.registry, QWEN)
+    other = Code(distribution="chatddx", version="9.9.9", revision="abc123")
+    monkeypatch.setattr("chatddx.runner.run.rig", lambda: other)
+    resumed = runner.resume(running.run)
+    resumed.send()
+    _ = resumed.finish()
+
+    finished = Store(conn).run(running.run).finished
+    assert finished is not None
+    [finding] = finished.findings
+    assert finding.level == "warning"
+    assert finding.message.startswith(
+        "resumed after 0 of 4 items by chatddx 9.9.9 at abc123, where chatddx "
+    )
+    assert finding.message.endswith(" started it")
+
+
+@pytest.mark.usefixtures("fake")
+def test_a_finished_run_a_moved_endpoint_or_the_gate_keep_a_run_from_resuming(
+    conn: Connection,
+    db: str,
+    inventory: Inventory,
+    alice: Person,
+    plan: Plan,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    runner = Runner(conn, inventory, alice)
+    finished = runner.start(trial(plan), plan.registry, QWEN)
+    _ = finished.finish()
+    with pytest.raises(ValueError, match="is finished"):
+        _ = runner.resume(finished.run)
+
+    left = runner.start(trial(plan), plan.registry, QWEN).run
+    uncleared = inventory.model_copy(update={"cleared": {}})
+    with pytest.raises(Refused, match="isn't cleared for source test"):
+        _ = Runner(conn, uncleared, alice).resume(left)
+
+    def moved(*_: object) -> str:
+        return "http://127.0.0.1:1/v1/"
+
+    monkeypatch.setattr("chatddx.runner.run.url_of", moved)
+    with pytest.raises(ValueError, match="is at http://127.0.0.1:1/v1/ now"):
+        _ = runner.resume(left)
+    assert rows(db, "run_item") == 0

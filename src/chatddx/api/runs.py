@@ -110,7 +110,7 @@ def _new(given: schemas.NewRun) -> _Starting:
         cases = _cases(bench, given)
         seed = suggest_seeds(1)[0] if given.seed is None else given.seed
         with refused():
-            running = bench.start(variation, given.endpoint, cases, seed)
+            running = bench.start(variation, given.endpoint, cases, (seed,))
         return running, skeleton, given.endpoint, seed
 
     return starting
@@ -126,7 +126,7 @@ def _repeated(run: UUID, given: schemas.NewAgain) -> _Starting:
                 raise HTTPException(422, f"no case {case} for {bench.person.login}")
         seed = suggest_seeds(1)[0] if given.seed is None else given.seed
         with refused():
-            running = bench.again(before, seed)
+            running = bench.again(before, (seed,))
         assert before.endpoint is not None
         return (
             running,

@@ -99,6 +99,13 @@ a real one is, so no scripted run can send a tool round on their cases. The old 
 with the web patched in the process that runs the tools (`urllib.request.urlopen`, src/chatddx/tools/web_search.py).
 
 ### Smaller issues
+```
+AGENT: replace
+`Bench.start` takes a canary set now; the scripted runs pass none.
+---
+- **No scripted run sends a canary set**, though both data sets hold one and `Bench.start` takes one (docs/bench.md,
+  "Runs and scores").
+```
 - **No scripted run sends a canary set.** `Bench.start` passes none (docs/bench.md, "Runs and scores"), though both
   data sets hold one.
 - **No two scripted runs vary a part over the same cases**, as the page to compare runs wants

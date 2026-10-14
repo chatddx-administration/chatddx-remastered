@@ -14,7 +14,7 @@ from .cases import (
 from .components import check, component, edit_component, fork_component, new
 from .configurations import edit, fork, save
 from .following import follow, proposal
-from .runs import again, score, start
+from .runs import again, resume, score, start
 from .saying import say
 from .seen import Seen
 from .taking import take, take_from
@@ -52,4 +52,5 @@ class Bench(Seen):
 
     start = start
     again = again
+    resume = resume
     score = score

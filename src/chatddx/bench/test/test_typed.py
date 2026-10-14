@@ -63,7 +63,7 @@ def test_a_typed_case_runs_as_any_case(
     on_world = Bench(bench.conn, alice, world, bench.facts)
     family = on_world.type_case(TYPED)
     variation = on_world.configuration(LINES, on_world.endpoint(QWEN))
-    running = on_world.start(variation, QWEN, [family.case], 7)
+    running = on_world.start(variation, QWEN, [family.case], (7,))
     running.send(lambda _: None)
     assert running.finish() == []
     [item] = Store(bench.conn).run(running.run).items

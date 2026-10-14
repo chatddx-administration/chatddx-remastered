@@ -314,6 +314,13 @@ many cases is answered 200, whatever it took, and a carry 201, even when the exp
 ## Not covered
 - **A vignette in a run's request.** A run takes cases; a text to run is typed first, and kept in the World's
   database source as a case of its own (see "Typed cases").
+```
+AGENT: replace
+`Bench.start` takes them now; the API doesn't pass them yet.
+---
+- **A trial beyond one seed**: replicates, text cleanup, an execution's settings and canary sets, which `Bench.start`
+  takes and a run's request doesn't yet (agents/wip-worker.md, "Below the worker").
+```
 - **A trial beyond one seed**: replicates, text cleanup, an execution's settings and canary sets wait on
   `Bench.start` taking them (agents/wip-worker.md, "Below the worker").
 - **A proxy's forward auth**: once a proxy authenticates, that is its job.
@@ -370,6 +377,16 @@ its events (see "Where it runs" and "Its events").
 - **Paths**: under `/api/`, with no version until there is a second.
 
 ### Serving
+```
+AGENT: replace
+The runner resumes a run now, and nothing asks it to until the worker does.
+---
+- **The jobs are the process's.** A run or a scoring under way ends with the process: a server that stops waits for
+  them, and a killed one leaves them unfinished, as nothing asks the runner to resume them until the worker does.
+  Another replica doesn't see them, so its streams tell a run under way from the ledger, as far as it has gone, and
+  it can't halt it. A job is let go when it ends, and the run is told from the ledger from then on. The worker is to
+  take their place, with the API as it is (agents/wip-worker.md).
+```
 - **The jobs are the process's.** A run or a scoring under way ends with the process: a server that stops waits for
   them, and a killed one leaves them unfinished, as resuming isn't built. Another replica doesn't see them, so its
   streams tell a run under way from the ledger, as far as it has gone, and it can't halt it. A job is let go when it

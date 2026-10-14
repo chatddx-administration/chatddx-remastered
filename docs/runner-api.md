@@ -288,6 +288,23 @@ In order:
 6. stores the trial and the canary set with what they refer to (`Store.add`), appends `RunStarted`, and notes `by` as
    the run's owner in the catalog.
 
+```
+AGENT: add
+Above this heading: `Runner.resume`, built for the worker (agents/wip-worker.md, "Below the worker").
+---
+### `Runner.resume(run: UUID) -> Running`
+A `Running` for an unfinished run, holding the items and canary calls its log holds, so that `send` sends only what
+it lacks. In order:
+1. reads the run's log (`Store.run`, whose `LookupError` it raises), and refuses a finished one, `ValueError` `run
+   <id> is finished`, and one sent to no endpoint, `ValueError` `run <id> was sent to no endpoint, so it can't resume`;
+2. loads the trial and the canary set with what they refer to (`Store.load`);
+3. `gate.check`, `rounds.load` and the endpoint's `max_jobs`, as `start` does, under the run's execution;
+4. refuses an endpoint whose URL is another now: `ValueError` `endpoint '<name>' is at <url> now, and run <id> was
+   sent to <url>`.
+
+The finish notes `run.resumed` (see "Finding codes"). Two `Running`s of one run collide on the ledger's key for an
+item; whoever resumes keeps it to one.
+```
 ### `class Running`
 
 | Member | Description |
@@ -381,6 +398,12 @@ and stops the scoring: `send` returns after a halt, and raises `KeyboardInterrup
 Noted while sending, in the finished row. What `check_run` and `check_score` find is in `docs/ledger-api.md`, "Finding
 codes".
 
+```
+AGENT: add
+A row for the finding `Runner.resume` notes.
+---
+| `run.resumed` | `Runner.resume` | none | `resumed after <n> of <m> items`, level `info`; a warning with ` by <rig>, where <rig> started it` when another rig resumes it than started it |
+```
 | Code | Noted by | Subject | Message |
 | --- | --- | --- | --- |
 | `case.unreadable` | `Running.send` | item key | the `LookupError` or `StructuralError` preparing it |

@@ -1,12 +1,12 @@
 import queue
-from collections.abc import Callable, Iterator
+from collections.abc import Callable, Iterator, Sequence
 from concurrent.futures import Future, ThreadPoolExecutor
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from uuid import UUID, uuid4
 
 from chatddx.catalog import Entry, EntryField, Subject
-from chatddx.factors.base import Finding, Fingerprint, StructuralError, resolve
+from chatddx.factors.base import Code, Finding, Fingerprint, StructuralError, resolve
 from chatddx.factors.bundle import Registry
 from chatddx.factors.request import Skeleton
 from chatddx.factors.trial import CanarySet, Execution, Trial
@@ -108,17 +108,7 @@ class Runner:
         execution = execution or Execution()
         _ = registry.add(trial)
         canary_set = None if canaries is None else registry.add(canaries)
-        secret = gate.check(self._inventory, registry.get, endpoint, trial)
-        toolbox = rounds.load(
-            resolve(registry.get, trial.skeleton, Skeleton), registry.get
-        )
-        jobs = self._inventory.endpoint(endpoint).max_jobs
-        if execution.concurrency > jobs:
-            raise ValueError(
-                f"endpoint {endpoint!r} takes {jobs} requests at once, the execution "
-                + f"sends {execution.concurrency}"
-            )
-        url = url_of(self._inventory, registry.get, endpoint)
+        secret, toolbox, url = self._admitted(trial, registry, endpoint, execution)
         started = RunStarted(
             run=uuid4(),
             at=_now(),
@@ -143,6 +133,72 @@ class Runner:
             self._conn, self._inventory, registry, started, url, secret, toolbox
         )
 
+    def resume(self, run: UUID) -> "Running":
+        store = Store(self._conn)
+        log = store.run(run)
+        started = log.started
+        if log.finished is not None:
+            raise ValueError(f"run {run} is finished")
+        if started.endpoint is None:
+            raise ValueError(f"run {run} was sent to no endpoint, so it can't resume")
+        canaries = [] if started.canaries is None else [started.canaries]
+        registry = store.load([started.trial, *canaries])
+        trial = resolve(registry.get, started.trial, Trial)
+        endpoint = started.endpoint
+        secret, toolbox, url = self._admitted(
+            trial, registry, endpoint.name, started.execution
+        )
+        if url != endpoint.url:
+            raise ValueError(
+                f"endpoint {endpoint.name!r} is at {url} now, and run {run} was sent "
+                + f"to {endpoint.url}"
+            )
+        return Running(
+            self._conn,
+            self._inventory,
+            registry,
+            started,
+            url,
+            secret,
+            toolbox,
+            items=log.items,
+            canaries=log.canaries,
+            findings=[_resumed(log, trial)],
+        )
+
+    def _admitted(
+        self, trial: Trial, registry: Registry, endpoint: str, execution: Execution
+    ) -> tuple[str | None, Toolbox | None, str]:
+        secret = gate.check(self._inventory, registry.get, endpoint, trial)
+        toolbox = rounds.load(
+            resolve(registry.get, trial.skeleton, Skeleton), registry.get
+        )
+        jobs = self._inventory.endpoint(endpoint).max_jobs
+        if execution.concurrency > jobs:
+            raise ValueError(
+                f"endpoint {endpoint!r} takes {jobs} requests at once, the execution "
+                + f"sends {execution.concurrency}"
+            )
+        return secret, toolbox, url_of(self._inventory, registry.get, endpoint)
+
+
+def _resumed(log: Run, trial: Trial) -> Finding:
+    said = (
+        f"resumed after {len(log.items)} of {len(trial.cases) * len(trial.seeds)} items"
+    )
+    if (now := rig()) == log.started.rig:
+        return Finding(level="info", code="run.resumed", message=said)
+    return Finding(
+        code="run.resumed",
+        message=f"{said} by {_built(now)}, where {_built(log.started.rig)} started it",
+    )
+
+
+def _built(code: Code) -> str:
+    return f"{code.distribution} {code.version}" + (
+        f" at {code.revision}" if code.revision else ""
+    )
+
 
 class Running:
     def __init__(
@@ -154,6 +210,9 @@ class Running:
         url: str,
         secret: str | None,
         toolbox: Toolbox | None,
+        items: Sequence[RunItem] = (),
+        canaries: Sequence[CanaryCall] = (),
+        findings: Sequence[Finding] = (),
     ) -> None:
         self._conn: Connection = conn
         self._store: Store = Store(conn)
@@ -164,9 +223,9 @@ class Running:
         self._secret: str | None = secret
         self._toolbox: Toolbox | None = toolbox
         self._prepare: Items = Items(conn, inventory, registry.get, started.trial)
-        self._items: list[RunItem] = []
-        self._canaries: list[CanaryCall] = []
-        self._findings: list[Finding] = []
+        self._items: list[RunItem] = list(items)
+        self._canaries: list[CanaryCall] = list(canaries)
+        self._findings: list[Finding] = list(findings)
         self._stopping: bool = False
         self._halt: sending.Halt = sending.Halt()
         self._finished: bool = False
