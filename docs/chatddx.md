@@ -109,17 +109,6 @@ Variations allow controlled experiments without the combinatorial explosion; the
 `src/chatddx/store/catalog.py:Catalog.variation` and `Catalog.proposal` (what a fork varies,
 and re-applying it when its origin moves), and `catalog.edit.based_on`.
 
-### The person-scoped cake
-Most of the control plane in chatddx is exercised as a person, and the functionality behind this is organized in three
-layers depending on what resources they require:
-
-- All *rules* that can be expressed as pure functions (without store access) -> `identity`
-- All *procedures* that can be carried out from the catalog's rows alone -> `catalog`
-- All *operations* that need to reach across the project -> `bench`
-
-This is referred to as "The person-scoped cake". `identity` is currently underused and exploration of its usability is
-encouraged.
-
 ### On the table
 - The result from scorers needs to be aggregated and exported. Since python is well-suited for statistical analysis,
   processing the data into publishable results may become a requirement.

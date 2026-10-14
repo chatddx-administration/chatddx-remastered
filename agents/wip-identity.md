@@ -4,8 +4,8 @@ Material for `docs/identity.md`, which holds "What holds now" as AGENT suggestio
 adopt (see "What `docs/` expects of `docs/identity.md`").
 "Decided" means the user said so; "Take" is the agent's recommendation and still open.
 
-`identity` is the *declarative* layer of the "person-scoped cake". Consult docs/chatddx.md's "The person-scoped cake"
-before adding functionality.
+`identity` is the *declarative* layer of person-scoped functionality, providing rules as pure functions. The `bench`
+being the *operational* layer.
 
 ## Scope
 `docs/factors.md` ("Not factors") assigns people, roles, authentication and authorization to identity. Identity is

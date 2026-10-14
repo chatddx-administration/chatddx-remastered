@@ -1,7 +1,7 @@
 # Identity
 
 Identity is who acts in chatddx: the people, the roles they hold, how they sign in, and what each is shown. Most of
-what chatddx does is done as a person (docs/chatddx.md, "The person-scoped cake"), and `identity` is the cake's
+what chatddx does is done as a person, and `identity` is the cake's
 declarative layer: its rules are data and functions with no store access (src/chatddx/identity/), which the catalog
 and the bench apply to what is in the store and the World.
 

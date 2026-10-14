@@ -8,10 +8,10 @@ describes what the bench does and why it is shaped like it is. Names, signatures
 The bench builds on the store, the catalog, the World, the facts, the runner and the scoring pass, and holds no SQL of
 its own.
 
-`bench` is the *operational* layer of "The person-scoped cake". Consult docs/chatddx.md's "The person-scoped cake"
-before adding functionality to the bench.
+`bench` is the *operational* layer of person-scoped functionality. When adding functionality, express rules as pure
+functions in `identity` and utilize them here.
 
-## Not bench
+## What a bench is not
 - A facade, and nothing checks that an edge goes through it.
 - Authorization, what the bench shows is what is relevant to show a person, not who may read what.
 
@@ -368,11 +368,6 @@ the person were planned in agents/wip-authoring.md, whose takes marked "Built, a
 - **Taking counts shared threads, not owners**: a case with two threads shared by one owner is to choose from, and
   naming that owner doesn't pick between them. Only two writers at once can leave an owner two (see "One expectation
   per case and schema").
-```
-AGENT: remove
-`Catalog.expectation_for` is gone.
-```
-- **`Catalog.expectation_for`**, for one case, has callers in tests only.
 - **What the old bench had and this one doesn't**: what a run left unheeded (the old `outcome.py:unheeded`;
   docs/runner.md, "Smaller issues"); a batch's plan, crossing variations into one (agents/wip-batch.md); and what holds
   a configuration, the portal's (agents/wip-portal.md), whose part for the repl `Bench.reaching` and `Bench.scored_by`
