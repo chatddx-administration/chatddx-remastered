@@ -75,20 +75,10 @@ chatddx migrate
 ```
 
 ### Tests
-````
-AGENT: replace
-The wip/solidified marks are gone, and pytest-xdist runs the tests on several workers.
----
 ```sh
 pytest                  # everything
 pytest -m "not slow"    # the quick run
 pytest -n 4             # everything on 4 workers (pytest-xdist)
-```
-````
-```sh
-pytest                  # everything, about 50 s
-pytest -m "not slow"    # the quick run, under 30 s
-pytest -m solidified    # what docs/ describes; -m wip for what agents/wip-*.md plans
 ```
 
 ### The sample world

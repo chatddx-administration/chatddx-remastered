@@ -68,35 +68,14 @@ The test World's six are the same shapes on its cases: `valid`, `stopped`, `unfi
 `judged` and `appendix`.
 
 ## Tests
-```
-AGENT: replace
-The wip and solidified marks are gone.
----
 src/chatddx/scripted/test/.
-```
-src/chatddx/scripted/test/, marked `solidified`.
 
-```
-AGENT: replace
-The outcome tests read the runs the `ran` template made rather than running them again.
----
 - `test_scripted_runs.py` reads the test World's scripted runs from `ran`, which ran each on `curated`, alice's: how
   each item ended, that a run is finished unless `unfinished` and scored when it is finished and `scored`, that
   judges answer as plain fakes, what a run's file can't say, and, on `curated`, the command running each once and
   finding a run made before.
-```
-- `test_scripted_runs.py` runs the test World's scripted runs on `curated`, alice's: how each item ended, that a run is
-  finished unless `unfinished` and scored when it is finished and `scored`, that a run made before is found, that
-  judges answer as plain fakes, what a run's file can't say, and the command running each once.
-```
-AGENT: replace
-The sample is loaded once for this test and test_sample.py.
----
 - `test_sample_world.py` starts from `sampled`, the sample World loaded with alice's giftbag
   (src/chatddx/conftest.py), and runs its ten, each to its outcome, with the judge calls of `judged`.
-```
-- `test_sample_world.py` loads the sample World with alice's giftbag and runs its ten, each to its outcome, with the
-  judge calls of `judged`.
 - The repl's tests of looking back run the test World's scripted runs for runs to look at
   (src/chatddx/repl/test/test_reviewing.py).
 - `ran` (src/chatddx/conftest.py) is `curated` with alice's scripted runs each run once, copied for each test, for

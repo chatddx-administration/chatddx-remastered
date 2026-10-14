@@ -16,34 +16,15 @@ This document contains project-wide instructions written by humans for agents.
   the API, `chatddx openapi > frontend/openapi.json`.
 
 ## Testing
-```
-AGENT: replace
-`slow` follows a budget instead of a per-call limit, and pytest-xdist runs the tests on several workers.
----
-* Baseline is `pytest` which runs every test and takes ~110 s; `pytest -m 'not slow'` is the quick run, ~22 s.
-  `-n 4` (pytest-xdist) runs the baseline in ~70 s; the quick run gains nothing from it. Time a run serially to
-  compare it with another.
-* `@pytest.mark.slow` marks the slowest tests, together ~7/8 of the full run, and the tests that would have the quick
+* Baseline is `pytest` which runs every test and takes \~110 s; `pytest -m 'not slow'` is the quick run, \~22s.
+  `-n 4` (pytest-xdist) runs the baseline in \~70s; the quick run gains nothing from it.
+* `@pytest.mark.slow` marks the slowest tests, together \~7/8 of the full run, and the tests that would have the quick
   run make a template only they use (`loaded`, `ran`, `sampled`). `pytest -p chatddx.test.budget`, run serially,
   says which tests to mark or unmark, and which templates a run made.
-```
-* Baseline is `pytest` which runs every test and takes ~60s; `pytest -m 'not slow'` is the quick run, <30s.
-  A test whose call takes 0.2s or more is marked `@pytest.mark.slow` (pyproject.toml, `[tool.pytest]`).
-```
-AGENT: remove
-No mark holds drafts apart any more; a draft's tests are run by their path, e.g. `pytest src/chatddx/portal`.
-```
-* Drafts are targeted with `pytest -m 'wip'` and excluded with `pytest -m 'not wip'`, see Staging.
 * `pnpm --dir frontend test` runs the frontend's unit tests (vitest), each beside the module it tests.
 
 ## Staging
-```
-AGENT: replace
-The wip and solidified marks are gone.
----
 A module is either wip or solidified.
-```
-A module is either wip or solidified and are held apart with a pytest mark.
 * wip (draft) modules are documented in `agents/wip-<module>.md`
 * solidified modules are documented in `docs/<module>*.md`, where the chatddx rule one of documentation applies.
 
