@@ -74,6 +74,15 @@ origin reaches them as a proposal. A person can take:
 - **one thread**, an expectation shared with them, which, when they have their own of its case under its schema, is a
   conflict unless they say to replace theirs. Replacing deletes theirs and forks the shared one in one transaction.
 
+```
+AGENT: replace
+A run that holds a case taken now gets a scoring with that case's expectation in it, a new scoring, so it is left to
+score again (`Seen.unscored` looks for a whole score under the scoring built now).
+---
+Taking for many cases only adds, so it is safe to offer as one button and to repeat: taking again after more cases
+were shared adds the new ones, and nothing a person was scored against changes. A run that holds a newly taken case
+is left to score again, since its scoring now holds that case too.
+```
 Taking for many cases only adds, so it is safe to offer as one button and to repeat: taking again after more cases
 were shared adds the new ones, nothing a person was scored against changes, and no run is left to score again.
 Replacing can undo their own corrections, and leaves every run scored against what it replaced to score again, so it
@@ -109,6 +118,14 @@ Its label, `NAME+PART=CHUNK`, is a short title for it, where the catalog would g
 saved (docs/catalog.md, "Titles"). Neither is stored.
 
 For a variation, the bench gives:
+```
+AGENT: replace
+A variation can start from an earlier edit of its configuration (`Bench.variation(…, head=)`), and its skeleton is
+then that edit's.
+---
+- **its skeleton**: the stored edit it varies when nothing is replaced, the head unless an earlier edit was named,
+  else the varied recipe compiled, a skeleton nobody has saved;
+```
 - **its skeleton**: the stored head when nothing is replaced, else the varied recipe compiled, a skeleton nobody has
   saved;
 - **the request it would send**, with placeholders for the slots, and for the model without an engine;
@@ -141,6 +158,15 @@ What every write has in common:
   names the head it found. The catalog checks it while it holds the thread, so it holds with several writers too.
 - **Nothing is written that is there already.** An edit that is its thread's head already writes nothing, and says
   so; saying what holds of a thread writes only what changes.
+```
+AGENT: replace
+A configuration made from a recipe, or followed, comes back with its lints too; only a variation saved, forked or
+edited comes back without them.
+---
+  refuses is written, and said so (docs/factors.md, "Lints"). A component does, whether new, forked, edited, followed
+  or carried, and so does a configuration made from a recipe or followed. A variation saved, forked or edited comes
+  back as what was saved, and an edge lints its skeleton itself (`Bench.linted`), as the API does. Taking, saying and
+```
 - **What was written comes back with its lints**, and no write refuses on one: an expectation whose data its schema
   refuses is written, and said so (docs/factors.md, "Lints"). A component does, whether new, forked, edited, followed
   or carried; a configuration comes back as what was saved, and an edge lints its skeleton itself (`Bench.linted`),
@@ -210,6 +236,15 @@ the proposal keeps.
 
 ### Appendices and cases
 A family stands for one case, the one its current vignette makes alone, else the first that holds it, and lists all
+```
+AGENT: replace
+The bench starts a run on any stored cases; holding them to the current cases of families the person sees is the
+edges' (the API's `_cases`, the repl's `case_titled`).
+---
+of its cases at its current vignette, that one first. What is run and scored is a case, so a run names cases rather
+than families. The bench starts a run on any stored cases; the edges offer only the current ones of the families the
+person sees.
+```
 of its cases at its current vignette, that one first. What is run and scored is a case, so a run can name cases, each
 one of a family's current ones.
 
@@ -304,6 +339,12 @@ ones, and a scorer pinned again by a deploy reaches the person's fork of it.
 ## Errors
 The bench's errors are told apart by their class, so that an edge can answer each its own way:
 
+```
+AGENT: replace
+`OverQuota` is also a run of more items than one takes (`ITEMS_PER_RUN`), which isn't a day's limit.
+---
+| `OverQuota` | `ValueError` | more of something than a day takes, or a run of more items than one takes |
+```
 | Error | Is a | For |
 | --- | --- | --- |
 | `NotFound` | `LookupError` | what the person doesn't see, or the store doesn't hold |
@@ -328,6 +369,14 @@ check before the other has written.
 
 ## Terms
 
+```
+AGENT: replace
+"To choose from" has a second sense in taking (`Taken.choosing`: several shared threads), and "Left to score" counts
+only a whole score, and only a scorer some of the run's cases have an expectation under.
+---
+| To choose from | A case with several expectations of the person's own under one schema, which nothing picks between; in taking, a case with several shared with them. |
+| Left to score | Of a finished run: a scorer that applies, under which some of its cases have an expectation, and that has no whole score of it under the scoring built now. |
+```
 | Term | Meaning |
 | --- | --- |
 | Bench | What one person sees and does, whatever the edge. |
