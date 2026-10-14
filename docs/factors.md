@@ -133,15 +133,10 @@ A fingerprint is a hash of content that must not be stored, such as a vignette. 
 keyed hash that names its key.
 
 ### Code
-```
-AGENT: add
-Why scorers and tools pin a version rather than the running chatddx, from agents/wip-authoring.md (S2), which is
-removed. As a paragraph after the one below:
----
 Scorers and tools pinned the running chatddx first. Each deploy then stopped every scorer until it was pinned again,
 and a scorer pinned again is a new one, so every finished run was left to score again; every skeleton that offers a
 tool changed too, and every trial over one.
-```
+
 Code is named by its distribution, its version and, optionally, its revision. Compilations name their compiler this
 way, bundles the code that wrote them, and runs and scores the code that ran them. Scorers and tools pin code chatddx
 ships instead: an entry point, and the version of it the code publishes, which its developers raise when what it does
@@ -589,18 +584,13 @@ in it. A native or tool answer cut short is salvaged: read with what it holds up
 it stopped in closed, and its structure closed; JSON that breaks before its end isn't salvaged. An answer that can't
 be read is no answer.
 
-```
-AGENT: add
-How the shipped pattern metrics read a target, which no doc says; it was kept in agents/wip-judges.md ("The scorers'
-code"), which is removed, and src/chatddx/scorers/test/test_scorers.py pins it. As a paragraph before the line below:
----
 The shipped pattern metrics hold what a view picks from the answer to one target, what its expectation selector
 picks: a pattern, an object with a `pattern`, or `false`, nothing expected. A pattern is words, matched whole and
 regardless of case: words side by side are a phrase, found in that order, a word ending in `*` matches any word it
 begins, `&` needs every part somewhere and `|` any part, `&` binding first, and parentheses group. Unlike the old
 chatddx's matcher, it never matches part of a word. No target, several, an object without a pattern, such as words
 for a judge, or a pattern that doesn't read, give no value, with the reason in the detail.
-```
+
 Only shipped code runs.
 
 ### View
@@ -699,15 +689,9 @@ nondeterminism, and the seeds are what name the replicates. The alternative, a r
 changes the shape of a trial, so it is cheapest decided before trials are stored for real.
 
 ### Smaller issues
-```
-AGENT: add
-From agents/wip-authoring.md (S5), which is removed: researchers are said to pick resources ("Scorer"), but
-there is nothing to pick. As a bullet:
----
 - **Resources can't be picked yet.** A scorer's resources are plain strings, no kind of component holds one, and the
   scoring code isn't given them. None are offered until a kind of resource exists, with its pins and code that reads
   it.
-```
 - **Canary drift isn't checked.** Nothing compares canary outputs between phases or between runs yet.
 - **Judge engines are never probed.** Canary probes run on the run's engine only. Probing judge engines would put
   canaries in a score's start record, as in a run's; added with defaults, they keep every stored digest.
@@ -763,18 +747,11 @@ If expectations written as free text turn up, a view could split them too. Two w
   go up, and the two sides rarely need the same split.
 
 ### Finding code through packaging entry points
-```
-AGENT: change
-Why the list is kept in code, from agents/wip-authoring.md (S1), which is removed.
----
 Today chatddx keeps the list of the code it ships in its code: `src/chatddx/scorers/shipped.py` and
 `src/chatddx/tools/shipped.py`, by the entry point a component names. Packaging metadata changes only when the package
 is installed again, and tests add tools of their own to the list for as long as they run
 (src/chatddx/runner/test/tools.py:shipped). Packaging entry points would fit code from other distributions, which
 nothing runs today.
-```
-Today chatddx keeps the list of the code it ships in its code: `src/chatddx/scorers/shipped.py` and
-`src/chatddx/tools/shipped.py`, by the entry point a component names.
 
 ### Passthrough: an allow list, or lints
 A passthrough refuses a fixed list of options and lets everything else through. Two other ways:

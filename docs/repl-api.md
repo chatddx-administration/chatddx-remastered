@@ -192,16 +192,8 @@ the judges' lines, `[]` once stopped; `stopped` is whether a second press came; 
 scores what is left` when it did. `WRITING` and `SCORING` are its two messages, for a run just ended and for `score`.
 
 ## Tests
-```
-AGENT: change
-agents/wip-test-world.md is removed: the test World is built and the tests moved onto it. It is described in
-docs/inventory.md, "Worlds", and its tests here and in docs/curation.md, "Tests".
----
 `src/chatddx/repl/test/`, on the test World as `src/chatddx/conftest.py:curated` lands it for alice with her giftbag
 (docs/inventory.md, "Worlds"), its endpoints on free ports:
-```
-`src/chatddx/repl/test/`, on the test World as `src/chatddx/conftest.py:curated` lands it for alice with her giftbag
-(agents/wip-test-world.md), its endpoints on free ports:
 
 | Fixture | Gives |
 | --- | --- |

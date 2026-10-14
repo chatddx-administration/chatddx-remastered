@@ -74,16 +74,11 @@ origin reaches them as a proposal. A person can take:
 - **one thread**, an expectation shared with them, which, when they have their own of its case under its schema, is a
   conflict unless they say to replace theirs. Replacing deletes theirs and forks the shared one in one transaction.
 
-```
-AGENT: add
-Why replacing is a write of its own, from agents/wip-authoring.md (A5), which is removed. As a paragraph after the
-one below:
----
 Replacing is a delete and a fork rather than an edit of theirs onto the shared head, since their thread would keep the
 origin it was forked from, and keep proposing from it. Taking for many cases never replaces: it would reset every
 case to the shared heads, the person's own corrections included, and leave every run scored against what it replaced
 to score again.
-```
+
 Taking for many cases only adds, so it is safe to offer as one button and to repeat: taking again after more cases
 were shared adds the new ones, and nothing a person was scored against changes. A run that holds a newly taken case
 is left to score again, since its scoring now holds that case too.
@@ -199,18 +194,9 @@ refused as it is written: code it doesn't ship, at a version it doesn't ship, a 
 parameters its schemas refuse. The scoring pass refuses it the same way. A view that can't pick anything from the
 scorer's expectation schema is written, and said so.
 
-```
-AGENT: change
-`chatddx.core` is gone: `settings.py` and `rig.py` are modules of their own at the package's root,
-`chatddx.settings` and `chatddx.rig`.
----
 It is a refusal rather than a lint because what the code ships is also a protection: a scorer names code to run, and
 one written over the API names its own, so only code on the shipped list runs (src/chatddx/scorers/shipped.py,
 src/chatddx/rig.py:entry).
-```
-It is a refusal rather than a lint because what the code ships is also a protection: a scorer names code to run, and
-one written over the API names its own, so only code on the shipped list runs (src/chatddx/scorers/shipped.py,
-src/chatddx/core/rig.py:entry).
 
 A scorer pins a version of its code rather than the running chatddx, so a deploy changes no scorer unless it raises a
 version. One that does leaves the scorers pinned to the earlier version refused until they move on: the archive's when
@@ -256,17 +242,8 @@ the person's own are written with it, all at once, named and in a language when 
 vignette is fetched from its source, a directory's file or a database source's text, wherever the bench, the runner
 and the edges read one (src/chatddx/store/texts.py:fetch_vignette).
 
-```
-AGENT: change
-`chatddx.core` is gone: `settings.py` and `rig.py` are modules of their own at the package's root,
-`chatddx.settings` and `chatddx.rig`.
----
 A text is held to a length, may not hold U+0000, which can't be stored, and a person to a number of texts a day, as
 set in `chatddx.settings`; over the quota is `OverQuota`. A typed text never moves, so its family is adopted by
-id alone, and the same text typed twice is two cases and two families (docs/catalog.md, "Families and repairs").
-```
-A text is held to a length, may not hold U+0000, which can't be stored, and a person to a number of texts a day, as
-set in `chatddx.core.settings`; over the quota is `OverQuota`. A typed text never moves, so its family is adopted by
 id alone, and the same text typed twice is two cases and two families (docs/catalog.md, "Families and repairs").
 
 ### What is said about a thread
@@ -346,16 +323,7 @@ repl does for a name its endpoint would pick a model for. The API answers `NotFo
 and `MovedOn` with 409, `OverQuota` with 429, and the other refusals with 422 (docs/api.md, "Errors").
 
 ## Tests
-```
-AGENT: change
-agents/wip-test-world.md is removed: the test World is built and the tests moved onto it. It is described in
-docs/inventory.md, "Worlds", and its tests here and in docs/curation.md, "Tests".
----
 The tests start from the test World (`worlds/test`; docs/inventory.md, "Worlds") as `chatddx init-data` lands it, with
-alice and her giftbag; bob is added with nothing. The database is made once a session and copied for each test
-(`src/chatddx/conftest.py`, `curated`). The variation and an item's outcome are tested without a database.
-```
-The tests start from the test World (`worlds/test`, agents/wip-test-world.md) as `chatddx init-data` lands it, with
 alice and her giftbag; bob is added with nothing. The database is made once a session and copied for each test
 (`src/chatddx/conftest.py`, `curated`). The variation and an item's outcome are tested without a database.
 
@@ -385,11 +353,6 @@ check before the other has written.
 | Cell | The repl's word for a variation being tried together with an endpoint. |
 
 ## Outstanding
-```
-AGENT: change
-agents/wip-authoring.md is removed: every phase of it is built and documented here. It stays readable at b6f76b8,
-on main. Its takes are listed, so that their status isn't lost with it.
----
 Left for later. The API's are in docs/api.md, "Outstanding". The plan the bench was built from, with the options
 weighed for each decision and the survey of the old project, is `agents/wip-bench.md` at d5ebf52; the writes for
 the person were planned in `agents/wip-authoring.md` at b6f76b8. Its takes were built and still wait for a word:
@@ -407,32 +370,14 @@ the person were planned in `agents/wip-authoring.md` at b6f76b8. Its takes were 
   is the head's, and following taking each part's labels from the side whose part it keeps ("Scorers"); no resources
   offered;
 - configurations listed by purpose, in the API.
-```
-Left for later. The API's are in docs/api.md, "Outstanding". The plan the bench was built from, with the options
-weighed for each decision and the survey of the old project, is `agents/wip-bench.md` at d5ebf52; the writes for
-the person were planned in agents/wip-authoring.md, whose takes marked "Built, as takes" still wait for a word.
 
-```
-AGENT: change
-agents/wip-authoring.md is removed; it stays readable at b6f76b8, on main. Two questions it left open go here too.
----
 - **A low-level manual for the bench**, made from `agents/wip-authoring.md` at b6f76b8.
 - **Correcting a wrong language** stays curation's: the bench refuses a language that differs from the text's own.
   What a person may correct, such as a text only their own threads hold, is open.
 - **Leaving a share**: a collaborator can't take a shared thread out of what they see; only the owner can. Whether
   a collaborator may withdraw themselves, an entry the catalog would hold as any other, is open.
-```
-- **A low-level manual for the bench**, made from agents/wip-authoring.md.
-```
-AGENT: change
-agents/wip-identity.md was removed when identity was solidified; its "Open" is docs/identity.md's "Identity: what
-is open" now.
----
 - **Z1**: the map from roles to the kinds each role sees goes in `identity` once the portal's views give it meaning
   (docs/identity.md, "Z1: what each role is shown"). `sees` then takes the person's roles and the kind.
-```
-- **Z1**: the map from roles to the kinds each role sees goes in `identity` once the portal's views give it meaning
-  (agents/wip-identity.md, "Open"). `sees` then takes the person's roles and the kind.
 - **An execution for `Bench.start`**, which passes none, so a run gets `Execution()`'s, with no timeout; the worker
   needs it (agents/wip-worker.md, "Below the worker").
 - **A judge's endpoint can't be named**: `Bench.score` names none, so a judge whose engine two endpoints serve bars its

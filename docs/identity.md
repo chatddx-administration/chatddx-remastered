@@ -55,16 +55,8 @@ The catalog says who owns and shares what, and applies `owns` only to an owner, 
 expectation per case and schema, or one it is asked to find threads by. The bench applies the rules to what the catalog
 gives, and to what is in the store and the World (docs/bench.md, "What a person sees").
 
-```
-AGENT: change
-agents/wip-identity.md was removed when identity was solidified; its "Open" is docs/identity.md's "Identity: what
-is open" now.
----
 What each role is shown, a map from roles to the kinds each sees, goes beside `sees` once the portal's views give it
 meaning (see "Z1: what each role is shown").
-```
-What each role is shown, a map from roles to the kinds each sees, goes beside `sees` once the portal's views give it
-meaning (agents/wip-identity.md, "Open").
 
 ## Managing people
 People are managed by command, connecting as `DB_USER`:
@@ -119,19 +111,10 @@ in with a password can stay as the development path. How Keycloak hands the app 
 Decided: authorization goes by role first, which kinds a role sees, then by the catalog's owners and collaborators. The
 map from roles to kinds isn't written; it needs the portal's views to mean anything.
 
-```
-AGENT: change
-agents/wip-authoring.md is removed; what its A11 said is this paragraph's last sentence.
----
 Take: the map goes beside `sees` in `src/chatddx/identity/identity.py`, as data, and `sees` then takes the person's
 roles and the kind as well as the `Owned`. The kinds each role authors can go beside it, clinicians appendices,
 expectations and typed cases, researchers chunks and recipes, as a convenience for the portal's forms rather than a
 refusal.
-```
-Take: the map goes beside `sees` in `src/chatddx/identity/identity.py`, as data, and `sees` then takes the person's
-roles and the kind as well as the `Owned`. The kinds each role authors can go beside it, clinicians appendices,
-expectations and typed cases, researchers chunks and recipes, as a convenience for the portal's forms rather than a
-refusal (`agents/wip-authoring.md`, "A11. Who may write what").
 
 ### Who may administer people
 `Role.ADMIN` exists, but nothing asks for it, and `chatddx person` connects as `DB_USER`, so anyone with database

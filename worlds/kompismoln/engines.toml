@@ -1,4 +1,4 @@
-# Written by `chatddx import-engine http://pelle.km:12008/ http://malborg.km:12008/`.
+# Written by `chatddx import-engine http://pelle.km:12008 http://malborg.km:12008`.
 # The models and engines its hosts serve; import again rather than edit.
 # Where they're served: endpoints.toml.
 

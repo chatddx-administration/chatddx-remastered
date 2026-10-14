@@ -183,19 +183,9 @@ Drift of a vignette is noted as preparing a case notes it (docs/factors.md, "Pre
 - **Resuming** and **`max_jobs` across runs**: `agents/wip-worker.md`, "Below the worker".
 - **No run sends a canary set** (`docs/runner.md`, "Smaller issues"): data sets hold them now, and `Bench.start`
   passes none.
-```
-AGENT: change
-agents/wip-test-world.md is removed: the test World is built and the tests moved onto it. It is described in
-docs/inventory.md, "Worlds", and its tests here and in docs/curation.md, "Tests". The judge `remote`'s tests read
-`unknown@remote`'s refusals now (src/chatddx/runner/test/test_score.py, src/chatddx/bench/test/test_seen.py).
----
 - **The gate's refusal of `qwen3-bare@fake` for `typed` cases isn't read by a test** (docs/curation.md,
   "Outstanding"); the judge `remote`'s tests read `unknown@remote`'s. The gate's tests edit the inventory instead
   (`runner/test/test_run.py`).
-```
-- **The gate's cases only the test World reaches aren't read by a test**: `qwen3-bare@fake` not cleared for `typed`,
-  and `unknown@remote` cleared for nothing, with its secret unset (`agents/wip-test-world.md`, "Not read yet"). The
-  gate's tests edit the inventory instead (`runner/test/test_run.py`).
 - **The real engines are cleared for the sample** (decided: `agents/wip-clearance.md`, "Vetted endpoints").
   `worlds/kompismoln/inventory.toml` clears `qwen3-8b@pelle` and `gpt-oss-20b@malborg` for `sample`.
 

@@ -32,18 +32,11 @@ Paths are relative to `src/chatddx/store/` unless they start with `src/`, `docs/
 `chatddx.store` re-exports `TOP_TIER`, `Catalog`, `People`, `Store` and `migrate`. `Connection` (in
 `store.py`), `Rows`, `pending`, `migrations`, `Migration` and `MIGRATIONS` are imported by path.
 
-```
-AGENT: change
-`chatddx.core` is gone: `settings.py` and `rig.py` are modules of their own at the package's root,
-`chatddx.settings` and `chatddx.rig`. In the table, the row:
----
-| `people.py` | `store.py`, `chatddx.settings`, `chatddx.identity` |
-```
 | Module | Builds on |
 | --- | --- |
 | `store.py` | `chatddx.factors.{base,bundle,request}`, `chatddx.ledger` |
 | `migrate.py` | psycopg only |
-| `people.py` | `store.py`, `chatddx.core.settings`, `chatddx.identity` |
+| `people.py` | `store.py`, `chatddx.settings`, `chatddx.identity` |
 | `catalog.py` | `store.py`, `chatddx.catalog`, `chatddx.factors.{base,cases,request,scoring}` |
 
 The package holds chatddx's SQL. It uses psycopg 3, synchronously, and no ORM.
@@ -186,15 +179,7 @@ applied (default tier `TOP_TIER`), or `would apply <name>` for each one `pending
 
 ## Roles and connections
 
-```
-AGENT: change
-`chatddx.core` is gone: `settings.py` and `rig.py` are modules of their own at the package's root,
-`chatddx.settings` and `chatddx.rig`.
----
 `src/chatddx/settings.py:database(admin: bool = False) -> str` makes a libpq connection string from `DB_HOST`,
-`DB_NAME`, and `DB_ADMIN` or `DB_USER` (`KeyError` when one isn't set; `.env`).
-```
-`src/chatddx/core/settings.py:database(admin: bool = False) -> str` makes a libpq connection string from `DB_HOST`,
 `DB_NAME`, and `DB_ADMIN` or `DB_USER` (`KeyError` when one isn't set; `.env`).
 
 | Role | Created by | Can |
