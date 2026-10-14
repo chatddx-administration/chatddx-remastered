@@ -133,19 +133,15 @@ A fingerprint is a hash of content that must not be stored, such as a vignette. 
 keyed hash that names its key.
 
 ### Code
-```
-AGENT: move
-This paragraph was meant to follow the next one: it speaks of a pin the next one introduces.
-```
-Scorers and tools pinned the running chatddx first. Each deploy then stopped every scorer until it was pinned again,
-and a scorer pinned again is a new one, so every finished run was left to score again; every skeleton that offers a
-tool changed too, and every trial over one.
-
 Code is named by its distribution, its version and, optionally, its revision. Compilations name their compiler this
 way, bundles the code that wrote them, and runs and scores the code that ran them. Scorers and tools pin code chatddx
 ships instead: an entry point, and the version of it the code publishes, which its developers raise when what it does
 changes, as a cleanup step's name is (see "Text cleanup"). Only the code chatddx ships runs, at the version pinned, so
 a deploy changes no scorer or tool unless it raises a version.
+
+Scorers and tools pinned the running chatddx first. Each deploy then stopped every scorer until it was pinned again,
+and a scorer pinned again is a new one, so every finished run was left to score again; every skeleton that offers a
+tool changed too, and every trial over one.
 
 ### Storage
 Components are stored in one table for all kinds, plus one row per reference so that every reference gets a foreign key
@@ -197,19 +193,10 @@ A case is a vignette plus the appendices to send with it, in order. The vignette
 its id there, and the fingerprint of its raw bytes as fetched. Sources are declared in the inventory (docs/inventory.md,
 "Sources") and hand over vignettes as UTF-8 text.
 
-```
-AGENT: change
-A typed vignette is stored: as its database source's text, in the store's `source` schema (docs/store.md, "Texts"),
-apart from the factors and the ledger.
----
 The vignette itself is sensitive by default, unstructured, and never edited. The factors and the ledger never store it,
 only its fingerprint; a typed vignette is kept as its database source's text, apart from them (docs/store.md,
 "Texts"). A case covers the vignette and its appendices, so the same vignette with different appendices is a
 different case. Expectations are keyed by the case, which lets appendices change the correct answer.
-```
-The vignette itself is sensitive by default, unstructured, and never edited or stored: only its fingerprint is. A case
-covers the vignette and its appendices, so the same vignette with different appendices is a different case. Expectations
-are keyed by the case, which lets appendices change the correct answer.
 
 When a vignette changes at its source, or is renamed there, it needs a new case, new appendices bound to the new
 vignette, and new expectations; the catalog tells a renamed vignette from a changed one. Whether a person or an
@@ -574,11 +561,6 @@ views, the free parameters where the code publishes a schema for them, and the l
 expectation schema and the resources.
 
 - the entry point of the scoring code chatddx ships, and the version of it it pins;
-```
-AGENT: remove
-Left from `Scorer` v1: a scorer pins an entry point and its version (the bullet above), not code.
-```
-- the code, and the function in it that does the scoring;
 - the expectation schema it consumes;
 - an ordered list of views;
 - ordered resources, such as synonym tables or ontology releases, pinned by digest;
@@ -638,15 +620,8 @@ A judge is an LLM used as a metric: a judge skeleton, an engine, its own seeds, 
 Vignettes will probably never go to a judge: the scoring pass refuses a judge whose skeleton reads them, before anything
 is written.
 
-```
-AGENT: change
-It contradicts the sentence above: the scoring pass refuses a judge whose skeleton has the `vignette` or `appendices`
-slot (src/chatddx/runner/score.py:judge_at), so nothing fills them.
----
 A judge is given a view's picks: its fill rule fills the `completion` and `expectation` slots. Purpose `judge` still
 allows the `vignette` and `appendices` slots, but a judge whose skeleton has either is refused.
-```
-The vignette and the appendices are filled as for the trial (see "Preparing a case").
 
 Judge requests are rendered like generation requests, once per seed, and recorded per score item. Their scores are
 reproducible on a best-effort basis. Given the scorer's reading of an answer, a judge request can be rebuilt from stored

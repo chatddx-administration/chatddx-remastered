@@ -277,19 +277,6 @@ How to name and list a new migration is in `docs/migrations.md`.
 ## Tests
 `src/chatddx/conftest.py`, shared by every package's tests:
 
-```
-AGENT: change
-`curated` holds the test World, not the sample, and the templates `ran` and `sampled`, `templated` that makes them,
-and `chosen` aren't listed; the portal's and the scripted runs' tests take `curated` too. In the table, the rows
-from `curated` to `template`:
----
-| `templated(copies, of=None)` | A context manager that makes a template for the session, from another or from nothing, filled in the body of the `with`; its unused copies and itself are dropped afterwards. |
-| `curated` (session fixture) | A copy of `migrated` holding the test World as init-data lands it, shared with alice, with her giftbag (`docs/curation.md`, "Tests"). Loaded once, and only when a test asks for it. |
-| `ran` (session fixture) | A copy of `curated` with alice's scripted runs each run once (`docs/scripted.md`). |
-| `sampled` (session fixture) | A copy of `migrated` holding the sample as init-data lands it from the sample World, for alice, with her giftbag, and what init-data said. |
-| `chosen(request, otherwise: str) -> str` | The template a test parametrized indirectly with a template's name, as `ran`, starts from, else `otherwise`. |
-| `template` | What `db` is a copy of: `migrated`, through `chosen`. The api, bench, portal, repl and scripted runs' tests override it with `curated`. |
-```
 | Name | Description |
 | --- | --- |
 | `create_database(admin: str, template: str \| None = None) -> str` | Creates `chatddx_test_<12 hex>` over the admin conninfo `admin`, from `template` when given, and returns its name. With a template, it first waits for the template's sessions to end (`_settled`), since copying a database that has sessions fails. |
@@ -298,12 +285,16 @@ from `curated` to `template`:
 | `connect(name: str, admin: bool = False) -> Connection` | A connection to that database, as the writer or the admin. |
 | `Copies`, `copies` (session fixture) | Makes copies of a template ahead (`AHEAD = 6`) and drops them behind, on three threads, so that a test waits for its database only when they fall behind. `take(template)` hands one out, `give_back(name)` drops it, `forget(template)` drops a template's unused copies before the template is dropped, and `close` drops the rest at the end of the session. |
 | `migrated` (session fixture) | A database migrated to `TOP_TIER`; dropped at the end. |
-| `curated` (session fixture) | A copy of `migrated` holding the sample as init-data lands it from the sample World, shared with alice, with her giftbag (`docs/curation.md`, "Tests"). Loaded once, and only when a test asks for it. |
-| `template` | What `db` is a copy of: `migrated`. The api, bench and repl tests override it with `curated`. |
+| `curated` (session fixture) | A copy of `migrated` holding the test World as init-data lands it, shared with alice, with her giftbag (`docs/curation.md`, "Tests"). Loaded once, and only when a test asks for it. |
+| `template` | What `db` is a copy of: `migrated`, through `chosen`. The api, bench, portal, repl and scripted runs' tests override it with `curated`. |
 | `db` | A copy of `template` per test, from `copies`, dropped afterwards. |
 | `autocommit` | `False`. The api, bench, repl and runner tests override it with `True`, since their code commits as it writes. |
 | `conn`, `admin` | Connections to `db` as the writer, in autocommit mode when `autocommit` is, and as the admin. |
 | `empty_db`, `empty` | An unmigrated database per test, and an admin connection to it. |
+| `templated(copies, of=None)` | A context manager that makes a template for the session, unused copies and itself are dropped afterwards. |
+| `sampled` (session fixture) | A copy of `migrated` holding the sample as init-data lands it from the sample World, for alice, with her giftbag, and what init-data said. |
+| `ran` (session fixture) | A copy of `curated` with alice's scripted runs each run once (`docs/scripted.md`). |
+| `chosen(request, otherwise: str) -> str` | The template a test parametrized indirectly with a template's name, as `ran`, starts from, else `otherwise`. |
 
 Tests fail, rather than skip, when Postgres can't be reached.
 
