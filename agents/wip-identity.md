@@ -1,7 +1,7 @@
 # Identity: what is open
 
-Identity is solidified: what holds is in `docs/identity.md` and `docs/identity-api.md` (drafted as
-`agents/identity-api.md`), and its tests are marked `solidified`. This file keeps what is open, with the agent's takes.
+Identity is solidified: `docs/identity.md` says who acts in chatddx and why, `docs/identity-api.md` what each name
+takes, returns and raises, and its tests are marked `solidified`. This file keeps what is open, with the agent's takes.
 "Decided" means the user said so; "Take" is the agent's recommendation and still open.
 
 `identity` is the *declarative* layer of person-scoped functionality, providing rules as pure functions. The `bench`

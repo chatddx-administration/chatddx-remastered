@@ -26,11 +26,12 @@ and the bench applies the rules of what a person is shown (`docs/bench-api.md`, 
 
 ### `LOGIN`
 `^[a-z0-9][a-z0-9._@-]*$`: a login is lowercase, as Keycloak keeps usernames, so that people carry over.
-`0009-t2-identity.sql` repeats it.
+`src/chatddx/store/migrations/0009-t2-identity.sql` repeats it.
 
 ### `class Role(StrEnum)`
-`ADMIN`, `CLINICIAN`, `DEVELOPER`, `OPS` and `RESEARCHER`, valued as their lowercase names. `0009-t2-identity.sql`
-repeats them, and `src/chatddx/store/test/test_identity.py:test_roles_match_the_database_check` keeps the two the same.
+`ADMIN`, `CLINICIAN`, `DEVELOPER`, `OPS` and `RESEARCHER`, valued as their lowercase names.
+`src/chatddx/store/migrations/0009-t2-identity.sql` repeats them, and
+`src/chatddx/store/test/test_identity.py:test_roles_match_the_database_check` keeps the two the same.
 
 ### `class Person`
 A frozen pydantic model of a row of `identity.person`.
@@ -88,5 +89,5 @@ The token's SHA-256, in hex: what the store keeps of a session, in place of the 
 ## Tests
 - `src/chatddx/identity/test/test_identity.py`, marked `solidified`: who owns, collaborates on and sees what, nothing
   deleted, and their own first. Without a database.
-- `src/chatddx/store/test/test_identity.py`: people, passwords and sessions as the store keeps them (`docs/store-api.md`,
-  "people.py").
+- `src/chatddx/store/test/test_identity.py`: people, passwords and sessions as the store keeps them
+  (`docs/store-api.md`, "people.py").
