@@ -16,8 +16,6 @@ from chatddx.ledger import fingerprint_request
 from chatddx.runner.send import STOPPED, Delta, Halt, Stopped, send
 from chatddx.runner.test.test_wire import SERVED, body, going_away, whole
 
-pytestmark = pytest.mark.solidified
-
 
 def at(host: str, port: int) -> str:
     return f"http://{host}:{port}/v1/"
@@ -177,7 +175,7 @@ def test_only_a_call_that_got_no_answer_is_tried_again(url: str) -> None:
 
 @pytest.mark.slow
 def test_a_call_past_its_timeout_is_cut_short() -> None:
-    with serving([SERVED], "127.0.0.1", 0, delay=0.05) as address:
-        call = send(at(*address), body(), execution=Execution(timeout_s=0.3))
-    assert call.error == "stopped: no end after 0.3 s"
+    with serving([SERVED], "127.0.0.1", 0, delay=0.02) as address:
+        call = send(at(*address), body(), execution=Execution(timeout_s=0.1))
+    assert call.error == "stopped: no end after 0.1 s"
     assert choice(call.response)["finish_reason"] is None

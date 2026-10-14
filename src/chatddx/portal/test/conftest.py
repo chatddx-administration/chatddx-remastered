@@ -6,6 +6,7 @@ from fastapi import FastAPI
 from fastapi.testclient import TestClient
 from psycopg.conninfo import make_conninfo
 
+from chatddx.conftest import chosen
 from chatddx.core import settings
 from chatddx.identity import Person
 from chatddx.inventory import Inventory
@@ -18,8 +19,8 @@ PASSWORD = "correct horse battery staple"
 
 
 @pytest.fixture
-def template(curated: str) -> str:
-    return curated
+def template(request: pytest.FixtureRequest) -> str:
+    return chosen(request, "curated")
 
 
 @pytest.fixture

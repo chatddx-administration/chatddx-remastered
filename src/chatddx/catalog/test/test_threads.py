@@ -6,8 +6,6 @@ from chatddx.factors.bundle import Registry
 from chatddx.factors.request import Instructions, Sampling
 from chatddx.factors.test.sample import generation_recipe, world
 
-pytestmark = pytest.mark.solidified
-
 
 def test_heads_say_what_is_deleted_and_names_skip_it() -> None:
     reg = Registry()

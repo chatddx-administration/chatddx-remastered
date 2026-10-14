@@ -450,7 +450,6 @@ settings.database())`.
 
 ``
 ## Tests
-`test/`, marked solidified.
 
 | Module | Holds |
 | --- | --- |

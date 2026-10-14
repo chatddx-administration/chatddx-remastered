@@ -9,8 +9,6 @@ from chatddx.facts import BUNDLED, Facts
 from chatddx.inventory import Inventory, World
 from chatddx.test.world import DATA
 
-pytestmark = pytest.mark.solidified
-
 
 def plan(tmp_path: Path, **files: str) -> Plan:
     for name, text in files.items():

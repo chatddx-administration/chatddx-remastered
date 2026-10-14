@@ -6,8 +6,6 @@ from chatddx.bench import Bench
 from chatddx.store import People
 from chatddx.test.world import LINES, QWEN
 
-pytestmark = pytest.mark.solidified
-
 
 def _moved(bench: Bench) -> int:
     found = People(bench.conn).find("archive")

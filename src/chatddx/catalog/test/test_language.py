@@ -15,8 +15,6 @@ from chatddx.factors.request import (
 from chatddx.factors.scoring import Judge, Scoring
 from chatddx.factors.test.sample import generation_recipe, world
 
-pytestmark = pytest.mark.solidified
-
 
 def test_a_request_is_in_the_language_its_parts_agree_on() -> None:
     reg = Registry()

@@ -12,8 +12,6 @@ from chatddx.store import People
 from chatddx.store.store import Connection
 from chatddx.test.world import TEST
 
-pytestmark = pytest.mark.wip
-
 ELSEWHERE = (
     {"Sec-Fetch-Site": "cross-site"},
     {"Origin": "https://elsewhere.example"},
@@ -42,6 +40,7 @@ def test_a_page_sends_whoever_isn_t_signed_in_to_sign_in_first(
     assert 'name="next" value="/?a=b"' in form.text
 
 
+@pytest.mark.slow
 def test_signing_in_opens_a_session_the_api_shares(
     client: TestClient, alice: Person
 ) -> None:
@@ -69,6 +68,7 @@ def test_a_wrong_password_asks_again(client: TestClient) -> None:
 
 
 @pytest.mark.usefixtures("alice")
+@pytest.mark.slow
 def test_signing_in_leads_only_within_the_site(client: TestClient) -> None:
     for away in (
         "//elsewhere.example/x",
@@ -80,6 +80,7 @@ def test_signing_in_leads_only_within_the_site(client: TestClient) -> None:
 
 
 @pytest.mark.usefixtures("alice")
+@pytest.mark.slow
 def test_a_form_from_another_site_is_refused(client: TestClient) -> None:
     for elsewhere in ELSEWHERE:
         got = signing_in(client, **elsewhere)
@@ -91,6 +92,7 @@ def test_a_form_from_another_site_is_refused(client: TestClient) -> None:
 
 
 @pytest.mark.usefixtures("alice")
+@pytest.mark.slow
 def test_signing_out_ends_the_session(client: TestClient) -> None:
     _ = signing_in(client)
     token = client.cookies[COOKIE]
@@ -102,6 +104,7 @@ def test_signing_out_ends_the_session(client: TestClient) -> None:
     assert gone.status_code == 401
 
 
+@pytest.mark.slow
 def test_a_page_escapes_what_it_shows(
     client: TestClient, conn: Connection, alice: Person
 ) -> None:

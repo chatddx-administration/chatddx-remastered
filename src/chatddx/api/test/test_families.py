@@ -10,8 +10,6 @@ from chatddx.curation import load_cases
 from chatddx.store import Catalog
 from chatddx.test.world import DATA
 
-pytestmark = pytest.mark.solidified
-
 
 def family(signed: TestClient, name: str = "crlf") -> dict[str, Any]:
     [found] = signed.get("/api/families", params={"name": name}).json()
@@ -27,6 +25,7 @@ def dropped(signed: TestClient, bench: Bench, family: dict[str, Any]) -> dict[st
     return held
 
 
+@pytest.mark.slow
 def test_cases_are_listed_with_their_tags_and_language(signed: TestClient) -> None:
     listed = signed.get("/api/families").json()
     cases = load_cases(DATA)
@@ -107,6 +106,7 @@ def test_a_case_s_vignette_is_fetched_from_its_source(signed: TestClient) -> Non
     assert vignette["text"].strip()
 
 
+@pytest.mark.slow
 def test_a_case_the_person_doesn_t_see_isn_t_found(
     signed: TestClient, bob: dict[str, str]
 ) -> None:

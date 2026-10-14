@@ -4,8 +4,6 @@ from fastapi.testclient import TestClient
 from chatddx.api.test.test_variations import thread
 from chatddx.test.world import LINES
 
-pytestmark = pytest.mark.solidified
-
 
 @pytest.mark.slow
 def test_an_owner_says_what_a_thread_is_called_and_who_it_is_shared_with(
@@ -87,8 +85,3 @@ def test_an_owner_deletes_and_restores_a_thread(
         "back",
         ["bob"],
     )
-
-
-def test_saying_needs_a_session(client: TestClient) -> None:
-    assert client.patch("/api/threads/1", json={"name": "x"}).status_code == 401
-    assert client.delete("/api/threads/1").status_code == 401

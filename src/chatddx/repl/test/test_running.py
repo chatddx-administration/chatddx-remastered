@@ -20,8 +20,6 @@ from chatddx.runner.score import Event as ScoreEvent, Grading
 from chatddx.store import Store
 from chatddx.test.world import GPT_OSS, LINES, NATIVE, QWEN, TOOL_ANSWER
 
-pytestmark = pytest.mark.solidified
-
 
 def test_seed_draws_a_short_seed_or_holds_one(repl: Repl, say: Say):
     written = say("seed")
@@ -49,8 +47,8 @@ def ran(bench: Bench) -> list[Run]:
     return [Store(bench.conn).run(r.run) for r in bench.runs()]
 
 
-@pytest.mark.slow
 @pytest.mark.usefixtures("fake")
+@pytest.mark.slow
 def test_run_streams_a_run_of_the_cell_and_scores_it(bench: Bench, say: Say):
     written = say(f"cell {LINES} {QWEN}", "run noted")
 
@@ -72,8 +70,8 @@ def test_run_streams_a_run_of_the_cell_and_scores_it(bench: Bench, say: Say):
     assert [s.score for s in Store(bench.conn).scores_of(run.started.run)]
 
 
-@pytest.mark.slow
 @pytest.mark.usefixtures("fake")
+@pytest.mark.slow
 def test_each_run_is_recorded_as_a_run_of_its_trial(bench: Bench, say: Say):
     written = say(f"cell {LINES} {QWEN}", "run noted", "run noted")
 
@@ -91,8 +89,8 @@ def test_run_needs_a_whole_cell(bench: Bench, say: Say):
     assert ran(bench) == []
 
 
-@pytest.mark.slow
 @pytest.mark.usefixtures("fake")
+@pytest.mark.slow
 def test_run_takes_a_seed_of_its_own(repl: Repl, bench: Bench, say: Say):
     written = say(f"cell {LINES} {QWEN}", "run noted 42", "run noted x")
 
@@ -104,8 +102,8 @@ def test_run_takes_a_seed_of_its_own(repl: Repl, bench: Bench, say: Say):
     assert resolve(bench.get, run.started.trial, Trial).seeds == (42,)
 
 
-@pytest.mark.slow
 @pytest.mark.usefixtures("fake")
+@pytest.mark.slow
 def test_a_structured_answer_is_checked_and_its_views_read(say: Say):
     written = say(f"cell {NATIVE} {QWEN}", "run crlf")
 
@@ -118,8 +116,8 @@ def test_a_structured_answer_is_checked_and_its_views_read(say: Say):
     assert ["warning", "0", "not", "named"] in cells(written)
 
 
-@pytest.mark.slow
 @pytest.mark.usefixtures("fake")
+@pytest.mark.slow
 def test_a_tool_contract_shows_the_call_the_answer_is_given_through(say: Say):
     written = say(f"cell {TOOL_ANSWER} {QWEN}", "run svenska")
 
@@ -198,8 +196,8 @@ def test_a_batch_says_each_finding_once_with_how_often_it_came(
     assert all(int(c[1]) > 0 for c in salvaged)
 
 
-@pytest.mark.slow
 @pytest.mark.usefixtures("fake")
+@pytest.mark.slow
 def test_a_greedy_cell_runs_without_its_seed(say: Say):
     written = say(f"cell {LINES} {QWEN}", "set sampling greedy", "run noted")
 
@@ -208,8 +206,8 @@ def test_a_greedy_cell_runs_without_its_seed(say: Say):
     assert "seed=7" not in written
 
 
-@pytest.mark.slow
 @pytest.mark.usefixtures("fake")
+@pytest.mark.slow
 def test_batch_runs_the_cell_on_each_case_tagged_a_line_to_each(bench: Bench, say: Say):
     written = say(f"cell {LINES} {QWEN}", "batch targets")
     targets = tagged("targets")
@@ -234,8 +232,8 @@ def test_batch_says_what_it_can_t_run(say: Say):
     assert "no case tagged nowhere for alice" in say("batch nowhere")
 
 
-@pytest.mark.slow
 @pytest.mark.usefixtures("fake")
+@pytest.mark.slow
 def test_batch_runs_the_cases_with_any_of_its_tags(bench: Bench, say: Say):
     written = say(f"cell {LINES} {QWEN}", "batch targets nowhere swedish")
     either = tagged("targets", "swedish")
@@ -278,8 +276,8 @@ def press_at(monkeypatch: pytest.MonkeyPatch, at: int, presses: int = 1) -> None
     monkeypatch.setattr(Transcript, "event", evented)
 
 
-@pytest.mark.slow
 @pytest.mark.usefixtures("fake")
+@pytest.mark.slow
 def test_ctrl_c_stops_a_run_as_it_streams_and_it_is_recorded_as_stopped(
     bench: Bench, say: Say, monkeypatch: pytest.MonkeyPatch
 ):
@@ -296,8 +294,8 @@ def test_ctrl_c_stops_a_run_as_it_streams_and_it_is_recorded_as_stopped(
     assert run.finished is not None
 
 
-@pytest.mark.slow
 @pytest.mark.usefixtures("fake")
+@pytest.mark.slow
 def test_ctrl_c_lets_the_case_under_way_finish_then_stops_the_batch(
     bench: Bench, say: Say, monkeypatch: pytest.MonkeyPatch
 ):
@@ -312,8 +310,8 @@ def test_ctrl_c_lets_the_case_under_way_finish_then_stops_the_batch(
     assert run.finished is not None
 
 
-@pytest.mark.slow
 @pytest.mark.usefixtures("fake")
+@pytest.mark.slow
 def test_ctrl_c_again_stops_the_case_under_way_too(
     bench: Bench, say: Say, monkeypatch: pytest.MonkeyPatch
 ):
@@ -330,8 +328,8 @@ def test_ctrl_c_again_stops_the_case_under_way_too(
     assert "call.failed: stopped" in written
 
 
-@pytest.mark.slow
 @pytest.mark.usefixtures("fake")
+@pytest.mark.slow
 def test_ctrl_c_twice_while_scoring_finishes_the_score_and_leaves_the_rest(
     bench: Bench, say: Say, monkeypatch: pytest.MonkeyPatch
 ):
@@ -363,8 +361,8 @@ def test_ctrl_c_twice_while_scoring_finishes_the_score_and_leaves_the_rest(
     assert bench.unscored(started) == []
 
 
-@pytest.mark.slow
 @pytest.mark.usefixtures("fake")
+@pytest.mark.slow
 def test_ctrl_c_waits_for_a_run_to_be_written_down_and_scored(
     bench: Bench, say: Say, monkeypatch: pytest.MonkeyPatch
 ):
@@ -383,8 +381,8 @@ def test_ctrl_c_waits_for_a_run_to_be_written_down_and_scored(
     assert Store(bench.conn).scores_of(run.started.run)
 
 
-@pytest.mark.slow
 @pytest.mark.usefixtures("fake")
+@pytest.mark.slow
 def test_a_run_says_each_judge_call_as_it_goes_then_what_the_judges_said(say: Say):
     written = say(f"cell {LINES} {QWEN}", "run noted")
 
@@ -412,8 +410,8 @@ def test_a_run_says_each_judge_call_as_it_goes_then_what_the_judges_said(say: Sa
     assert ["graded,", "seed", "3", "points", "2", "fake", "why"] in cells(judged)
 
 
-@pytest.mark.slow
 @pytest.mark.usefixtures("fake")
+@pytest.mark.slow
 def test_views_without_a_target_are_said_once_rather_than_scored(say: Say):
     written = say(f"cell {LINES} {QWEN}", "run crlf")
 
@@ -429,8 +427,8 @@ def test_views_without_a_target_are_said_once_rather_than_scored(say: Say):
     )
 
 
-@pytest.mark.slow
 @pytest.mark.usefixtures("fake")
+@pytest.mark.slow
 def test_run_takes_a_case_that_sends_appendices_by_its_title(bench: Bench, say: Say):
     written = say(f"cell {LINES} {QWEN}", "run whitespace with labs 8")
 
@@ -441,8 +439,8 @@ def test_run_takes_a_case_that_sends_appendices_by_its_title(bench: Bench, say: 
     assert "no appendix xray of whitespace" in say("run whitespace with xray")
 
 
-@pytest.mark.slow
 @pytest.mark.usefixtures("fake")
+@pytest.mark.slow
 def test_scores_say_an_offset_with_its_unit_and_their_details_as_text(say: Say):
     written = say(f"cell {LINES} {QWEN}", "run matched")
 

@@ -9,8 +9,6 @@ from chatddx.store import Catalog
 from chatddx.store.store import Connection
 from chatddx.test.world import LINES, NATIVE
 
-pytestmark = pytest.mark.solidified
-
 
 def configuration(signed: TestClient, owner: str) -> dict[str, Any]:
     query = {"kind": "configuration", "name": LINES, "owner": owner}
@@ -77,6 +75,7 @@ def test_configurations_are_listed_by_purpose(signed: TestClient) -> None:
     )
 
 
+@pytest.mark.slow
 def test_a_thread_is_shown_with_its_recipe_and_its_versions(signed: TestClient) -> None:
     mine, archives = configuration(signed, "alice"), configuration(signed, "archive")
 
@@ -91,6 +90,7 @@ def test_a_thread_is_shown_with_its_recipe_and_its_versions(signed: TestClient) 
     assert edits[-1] == mine["head"]
 
 
+@pytest.mark.slow
 def test_a_thread_the_person_doesn_t_see_isn_t_found(
     signed: TestClient, bob: dict[str, str]
 ) -> None:

@@ -25,8 +25,6 @@ from chatddx.scorers.answer import read
 from chatddx.scorers.patterns import Pattern
 from chatddx.test.world import DATA, SAMPLE, WORLDS, world_plan
 
-pytestmark = pytest.mark.wip
-
 DATA_SETS = {"test": DATA, "sample": SAMPLE, "kompismoln": SAMPLE}
 
 

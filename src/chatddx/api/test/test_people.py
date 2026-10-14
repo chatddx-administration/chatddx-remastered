@@ -1,4 +1,5 @@
 from collections.abc import Callable
+from typing import Any
 
 import pytest
 import uvicorn
@@ -13,8 +14,6 @@ from chatddx.bench import Ambiguous, Conflict, MovedOn, NotFound, OverQuota
 from chatddx.identity import Person
 from chatddx.runner.gate import Refused
 from chatddx.test.world import TEST
-
-pytestmark = pytest.mark.solidified
 
 ELSEWHERE = (
     {"Sec-Fetch-Site": "cross-site"},
@@ -37,6 +36,32 @@ def test_nothing_is_answered_without_a_session(client: TestClient) -> None:
         "detail": "the session has ended: sign in again",
         "code": "unauthenticated",
     }
+
+
+SIGNING_IN = ("post", "/api/session")
+FILLED = {"integer": "1", "string": "x", "uuid": "00000000-0000-0000-0000-000000000000"}
+
+
+@pytest.mark.slow
+def test_every_route_but_signing_in_needs_a_session(
+    client: TestClient, described: dict[str, Any]
+) -> None:
+    for path, operations in described["paths"].items():
+        for method, operation in operations.items():
+            if (method, path) == SIGNING_IN:
+                continue
+            filled = path.format(
+                **{
+                    p["name"]: FILLED[p["schema"].get("format", p["schema"]["type"])]
+                    for p in operation.get("parameters", [])
+                    if p["in"] == "path"
+                }
+            )
+            body: dict[str, Any] | None = (
+                {} if method in ("post", "put", "patch") else None
+            )
+            got = client.request(method, filled, json=body)
+            assert got.status_code == 401, (method, path, got.text)
 
 
 def test_signing_in_gives_a_token_and_a_cookie_that_each_say_who_you_are(
@@ -69,6 +94,7 @@ def test_signing_in_gives_a_token_and_a_cookie_that_each_say_who_you_are(
 
 
 @pytest.mark.usefixtures("alice")
+@pytest.mark.slow
 def test_a_cookie_s_unsafe_requests_must_come_from_this_site(
     client: TestClient,
 ) -> None:
@@ -130,6 +156,7 @@ def raising(error: Exception) -> Callable[[], None]:
     return raised
 
 
+@pytest.mark.slow
 def test_the_bench_s_errors_and_the_gate_s_refusals_have_their_status_and_code(
     served: FastAPI, client: TestClient
 ) -> None:

@@ -1,21 +1,17 @@
 import json
 import subprocess
 from pathlib import Path
+from typing import Any
 
 import pytest
 import uvicorn
 from fastapi.testclient import TestClient
 
 from chatddx import cli
-from chatddx.api.app import app
 from chatddx.core import settings
-from chatddx.facts import BUNDLED, Facts
-from chatddx.inventory import Inventory
 from chatddx.portal.assets import MANIFEST, Assets
 from chatddx.portal.test.test_signing_in import signing_in
 from chatddx.test.world import TEST
-
-pytestmark = pytest.mark.wip
 
 FRONTEND = settings.PROJECT_ROOT / "frontend"
 
@@ -57,6 +53,7 @@ def test_the_built_frontend_is_found_by_its_manifest(tmp_path: Path) -> None:
 
 
 @pytest.mark.usefixtures("alice")
+@pytest.mark.slow
 def test_a_page_takes_the_built_styles_and_its_island(
     client: TestClient, built: Path
 ) -> None:
@@ -76,12 +73,11 @@ def test_a_page_takes_the_built_styles_and_its_island(
     assert client.get("/static/assets/portal-1.css").text == "body {}"
 
 
-@pytest.mark.slow
-def test_the_frontend_s_openapi_document_is_the_api_s() -> None:
+def test_the_frontend_s_openapi_document_is_the_api_s(
+    described: dict[str, Any],
+) -> None:
     kept = json.loads((FRONTEND / "openapi.json").read_text())
-    assert kept == app(Inventory(), Facts.load(BUNDLED), "").openapi(), (
-        "chatddx openapi > frontend/openapi.json"
-    )
+    assert kept == described, "chatddx openapi > frontend/openapi.json"
 
 
 def test_chatddx_portal_watch_builds_the_frontend_while_it_serves(

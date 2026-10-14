@@ -10,8 +10,6 @@ from chatddx.store import People
 from chatddx.store.store import Connection
 from chatddx.test.world import DATA, LINTS, TEST, world_plan
 
-pytestmark = pytest.mark.wip
-
 SKIPPED = [
     "from_facts records for test/unknown: the facts don't know it, served by "
     + "engine.remote unknown@remote",

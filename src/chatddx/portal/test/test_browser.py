@@ -21,7 +21,7 @@ from chatddx.store import Store
 from chatddx.store.store import Connection
 from chatddx.test.world import LINES, QWEN, faked, world_facts
 
-pytestmark = [pytest.mark.wip, pytest.mark.slow]
+pytestmark = pytest.mark.slow
 
 
 @pytest.fixture

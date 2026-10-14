@@ -8,8 +8,6 @@ from chatddx.factors.cases import Case, Vignette
 from chatddx.factors.scoring import Expectation, Scoring
 from chatddx.factors.test.sample import fp, world
 
-pytestmark = pytest.mark.solidified
-
 
 def test_cases_find_their_family_through_its_bindings() -> None:
     reg = Registry()

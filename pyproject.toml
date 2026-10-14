@@ -31,6 +31,7 @@ test = [
   "httpx2>=2.13.1",
   "playwright==1.56.0",
   "pytest>=9.1.1",
+  "pytest-xdist>=3.8.0",
 ]
 typing = [
   "basedpyright>=1.40.1",
@@ -56,7 +57,5 @@ combine-as-imports = true
 testpaths = ["src"]
 strict_markers = true
 markers = [
-  "solidified: tests of what docs/ describes",
-  "wip: tests of what agents/wip-*.md plans",
-  "slow: a call of 0.2 s or more, left out of the quick run: pytest -m 'not slow'",
+  "slow: among the slowest tests, together ~7/8 of the full run, left out of the quick run: pytest -m 'not slow'",
 ]

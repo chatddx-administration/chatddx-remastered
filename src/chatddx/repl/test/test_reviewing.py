@@ -9,8 +9,6 @@ from chatddx.repl.test.helpers import Say, cells, tagged
 from chatddx.scripted import RUNS, run, scripted_runs
 from chatddx.test.world import LINES, NATIVE, QWEN, TEST
 
-pytestmark = pytest.mark.solidified
-
 SCRIPTED = {s.name: s for s in scripted_runs(TEST / RUNS)}
 
 
@@ -24,8 +22,8 @@ def test_runs_says_when_there_are_none(say: Say):
     assert "alice has no runs" in say("replay")
 
 
-@pytest.mark.slow
 @pytest.mark.usefixtures("fake")
+@pytest.mark.slow
 def test_runs_lists_the_latest_first_with_how_each_went(say: Say):
     _ = say(
         f"cell {LINES} {QWEN}",
@@ -46,8 +44,8 @@ def test_runs_lists_the_latest_first_with_how_each_went(say: Say):
     assert "crlf" in only
 
 
-@pytest.mark.slow
 @pytest.mark.usefixtures("fake")
+@pytest.mark.slow
 def test_replay_shows_a_run_again_as_it_streamed(say: Say):
     live = say(f"cell {LINES} {QWEN}", "run noted").splitlines()
     replayed = say("replay").splitlines()
@@ -66,8 +64,8 @@ def test_replay_shows_a_run_again_as_it_streamed(say: Say):
     assert "[thinking] I am the fake vLLM" in replayed[3]
 
 
-@pytest.mark.slow
 @pytest.mark.usefixtures("fake")
+@pytest.mark.slow
 def test_replay_shows_a_batch_again_by_its_lines(say: Say):
     _ = say(f"cell {NATIVE} {QWEN}", "batch targets")
     targets = tagged("targets")
@@ -79,8 +77,8 @@ def test_replay_shows_a_batch_again_by_its_lines(say: Say):
     assert any(c[:2] == ["answer", "answer"] for c in cells(replayed))
 
 
-@pytest.mark.slow
 @pytest.mark.usefixtures("fake")
+@pytest.mark.slow
 def test_replay_takes_a_run_by_the_start_of_its_id(bench: Bench, say: Say):
     _ = say(f"cell {LINES} {QWEN}", "run noted", "run svenska")
     first = bench.runs()[-1]
@@ -89,8 +87,8 @@ def test_replay_takes_a_run_by_the_start_of_its_id(bench: Bench, say: Say):
     assert "no run of yours starts with 'zzzz'" in say("replay zzzz")
 
 
-@pytest.mark.slow
 @pytest.mark.usefixtures("fake")
+@pytest.mark.slow
 def test_replay_says_when_the_request_would_render_otherwise_now(
     bench: Bench, world: Inventory, tmp_path: Path, say: Say
 ):
@@ -124,8 +122,8 @@ def test_an_unfinished_run_is_listed_so_and_left_unscored(bench: Bench, say: Say
     assert "nothing to score" in say("score")
 
 
-@pytest.mark.slow
 @pytest.mark.usefixtures("fake")
+@pytest.mark.slow
 def test_show_sums_up_the_runs_with_what_it_shows(say: Say):
     _ = say(f"cell {LINES} {QWEN}", "run noted", "run noted 8")
 
@@ -141,8 +139,8 @@ def test_show_sums_up_the_runs_with_what_it_shows(say: Say):
     assert "no runs of yours it scored" in say("show scorer answer")
 
 
-@pytest.mark.slow
 @pytest.mark.usefixtures("fake")
+@pytest.mark.slow
 def test_show_case_sums_up_only_its_own_items(say: Say):
     _ = say(f"cell {LINES} {QWEN}", "run noted", "batch targets")
 
@@ -152,8 +150,8 @@ def test_show_case_sums_up_only_its_own_items(say: Say):
     assert ["differential", "2", "0", "0"] in cells(written)
 
 
-@pytest.mark.slow
 @pytest.mark.usefixtures("fake")
+@pytest.mark.slow
 def test_show_finds_the_runs_through_what_compiled_or_scored_them(say: Say):
     _ = say(f"cell {LINES} {QWEN}", "run noted")
 
@@ -210,8 +208,8 @@ def test_score_counts_an_answer_that_never_came_apart(bench: Bench, say: Say):
     assert row.split()[2] == "0"
 
 
-@pytest.mark.slow
 @pytest.mark.usefixtures("fake")
+@pytest.mark.slow
 def test_a_batch_is_replayed_and_tabled_by_case(say: Say):
     _ = say(f"cell {LINES} {QWEN}", "batch targets")
 

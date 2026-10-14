@@ -8,8 +8,6 @@ from chatddx.factors.scoring import Expectation
 from chatddx.store import People, Store
 from chatddx.test.world import LINES, QWEN
 
-pytestmark = pytest.mark.solidified
-
 
 @pytest.fixture
 def archive(bench: Bench) -> Bench:
@@ -26,6 +24,7 @@ def _own(bench: Bench) -> int:
     return edit.thread
 
 
+@pytest.mark.slow
 def test_a_configuration_follows_its_origin_with_its_own_change_on_top(
     bench: Bench, archive: Bench
 ) -> None:
@@ -62,6 +61,7 @@ def test_a_configuration_follows_its_origin_with_its_own_change_on_top(
     assert bench.proposal(mine) is None
 
 
+@pytest.mark.slow
 def test_a_taken_expectation_follows_the_archive_s_correction(
     bench: Bench, archive: Bench
 ) -> None:
@@ -84,6 +84,7 @@ def test_a_taken_expectation_follows_the_archive_s_correction(
     assert bench.expectation(case, schema) == corrected
 
 
+@pytest.mark.slow
 def test_only_what_has_something_to_follow_is_followed(
     bench: Bench, archive: Bench
 ) -> None:

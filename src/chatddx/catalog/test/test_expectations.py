@@ -8,8 +8,6 @@ from chatddx.factors.cases import Case, Vignette
 from chatddx.factors.scoring import Expectation, ExpectationSchema
 from chatddx.factors.test.sample import fp, world
 
-pytestmark = pytest.mark.solidified
-
 
 class Sample:
     def __init__(self) -> None:

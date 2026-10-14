@@ -11,8 +11,6 @@ from chatddx.store import Catalog, People, Store
 from chatddx.store.store import Connection
 from chatddx.test.world import world_plan
 
-pytestmark = pytest.mark.solidified
-
 
 def _case(id: str) -> str:
     raw = vignettes().fetch(id)
@@ -40,12 +38,13 @@ def _own(conn: Connection, alice: Person, case: str) -> tuple[str, str]:
     return mine, held.expectation_schema
 
 
+@pytest.mark.parametrize("template", ["loaded"], indirect=True)
 @pytest.mark.slow
-def test_the_giftbag_keeps_a_person_s_own_expectation(conn: Connection) -> None:
-    alice = People(conn).add("alice", "Alice")
+def test_the_giftbag_keeps_a_person_s_own_expectation(
+    conn: Connection, alice: Person
+) -> None:
     catalog = Catalog(conn)
     plan = world_plan()
-    _ = init(conn, plan, CASES, vignettes(), alice)
     noted, crlf = _case("noted"), _case("crlf")
     written, schema = _own(conn, alice, noted)
 

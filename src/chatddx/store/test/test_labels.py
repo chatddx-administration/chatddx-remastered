@@ -8,8 +8,6 @@ from chatddx.store import People
 from chatddx.store.store import Connection
 from chatddx.store.test.test_catalog import stored_world
 
-pytestmark = pytest.mark.solidified
-
 LABELS: Labels = {
     ("view", 0): "top-1 match",
     ("view", 1): "judge",
@@ -17,6 +15,7 @@ LABELS: Labels = {
 }
 
 
+@pytest.mark.slow
 def test_a_scorer_s_labels_are_written_with_its_edit(conn: Connection) -> None:
     catalog, _, reg, ids, alice = stored_world(conn)
     scorer = resolve(reg.get, ids["scoring"], Scoring).scorer

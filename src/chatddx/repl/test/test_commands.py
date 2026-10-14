@@ -16,8 +16,6 @@ from chatddx.test.world import (
     REMOTE,
 )
 
-pytestmark = pytest.mark.solidified
-
 
 def test_the_prompt_shows_the_cell(repl: Repl, say: Say):
     assert repl.prompt == "alice #7> "
@@ -52,6 +50,7 @@ def test_what_it_doesn_t_know_is_said_and_nothing_changes(repl: Repl, say: Say):
     assert repl.cell.variation is None
 
 
+@pytest.mark.slow
 def test_a_name_with_spaces_needs_no_quotes(repl: Repl, say: Say):
     _ = say(f"cell {NATIVE} {QWEN}")
     assert repl.prompt == f"alice {NATIVE}×{QWEN} #7> "
@@ -128,6 +127,7 @@ def test_take_completes_from_and_then_each_tag_once():
     assert complete(names, "take targets ") == ["bytes"]
 
 
+@pytest.mark.slow
 def test_the_names_complete_as_the_person_sees_them(repl: Repl):
     names = repl.completions()
 

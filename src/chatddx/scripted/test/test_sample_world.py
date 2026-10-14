@@ -1,15 +1,12 @@
 import pytest
 
 from chatddx.bench import Bench
-from chatddx.curation import init, load_cases
-from chatddx.inventory import World
+from chatddx.conftest import Loaded
 from chatddx.scripted import RUNS, run, scripted_runs
 from chatddx.scripted.test.helpers import UNFINISHED, went
 from chatddx.store import People
 from chatddx.store.store import Connection
-from chatddx.test.world import SAMPLE, WORLDS, free_world, world_facts, world_plan
-
-pytestmark = pytest.mark.solidified
+from chatddx.test.world import WORLDS, free_world, world_facts
 
 PATH = WORLDS / "sample"
 VALID = ("valid", None)
@@ -37,8 +34,8 @@ OUTCOMES = {
 
 
 @pytest.fixture
-def template(migrated: str) -> str:
-    return migrated
+def template(sampled: Loaded) -> str:
+    return sampled.name
 
 
 @pytest.mark.slow
@@ -46,10 +43,8 @@ def test_the_sample_world_s_scripted_runs_run_as_they_say(
     conn: Connection, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     monkeypatch.setenv("CHATDDX_SAMPLE_KEY", "sample-key")
-    alice = People(conn).add("alice", "Alice")
-    source = World.load(PATH).inventory.listing()
-    plan = world_plan(PATH, SAMPLE)
-    _ = init(conn, plan, load_cases(SAMPLE), source, alice, giftbag=True)
+    alice = People(conn).find("alice")
+    assert alice is not None
     bench = Bench(conn, alice, free_world(PATH), world_facts(PATH))
 
     ran = {s.name: run(bench, s) for s in scripted_runs(PATH / RUNS)}

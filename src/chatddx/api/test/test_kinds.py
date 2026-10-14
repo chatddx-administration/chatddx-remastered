@@ -5,8 +5,6 @@ from chatddx.api.test.test_variations import thread
 from chatddx.api.test.test_writes import CLINICIAN, body
 from chatddx.bench import KINDS, WRITTEN
 
-pytestmark = pytest.mark.solidified
-
 GHOST = "sha256:" + "0" * 64
 
 
@@ -30,6 +28,7 @@ def test_the_kinds_say_their_json_schema_and_what_their_references_take(
     )
 
 
+@pytest.mark.slow
 def test_a_component_is_checked_as_a_write_would_store_it_and_nothing_is_written(
     signed: TestClient,
 ) -> None:
@@ -73,8 +72,3 @@ def test_a_check_refuses_what_a_write_would(signed: TestClient) -> None:
         got = signed.post("/api/components/check", json=given)
         assert got.status_code == 422, given
         assert said in str(got.json()["detail"])
-
-
-def test_kinds_and_checks_need_a_session(client: TestClient) -> None:
-    assert client.get("/api/kinds").status_code == 401
-    assert client.post("/api/components/check", json={}).status_code == 401

@@ -1,11 +1,7 @@
 import re
 from pathlib import Path
 
-import pytest
-
 import chatddx
-
-pytestmark = pytest.mark.solidified
 
 SRC = Path(chatddx.__file__).parent
 CELL = re.compile(r"(?<!ex)cell", re.IGNORECASE)

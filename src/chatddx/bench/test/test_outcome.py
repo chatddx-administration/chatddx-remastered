@@ -2,7 +2,6 @@ import json
 from datetime import UTC, datetime
 from uuid import uuid4
 
-import pytest
 from pydantic import JsonValue
 
 from chatddx.bench import outcome, usage
@@ -13,8 +12,6 @@ from chatddx.fake_vllm.chat import instance
 from chatddx.ledger import Call, ItemKey, RunItem, ToolRun, Turn
 from chatddx.runner.send import STOPPED
 from chatddx.test.world import LINES, NATIVE
-
-pytestmark = pytest.mark.solidified
 
 NOW = datetime(2026, 1, 1, tzinfo=UTC)
 

@@ -6,8 +6,6 @@ from chatddx.api.test.test_writes import body
 from chatddx.scorers import metrics
 from chatddx.test.world import LINES
 
-pytestmark = pytest.mark.solidified
-
 SHIPPED = "chatddx.scorers.metrics:score"
 SHIPPED_AT = metrics.score.version
 

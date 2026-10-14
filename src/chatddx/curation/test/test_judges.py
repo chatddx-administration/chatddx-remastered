@@ -16,8 +16,6 @@ from chatddx.test.world import (
     world_plan,
 )
 
-pytestmark = pytest.mark.solidified
-
 SCORER = """
 [scorer.noted]
 entry_point = "chatddx.scorers.metrics:score"

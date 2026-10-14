@@ -6,8 +6,9 @@ import pytest
 from jsonschema import validators
 from pydantic import JsonValue
 
+from chatddx.conftest import Loaded
 from chatddx.core.rig import rig
-from chatddx.curation import Plan, init, load_cases
+from chatddx.curation import Plan, load_cases
 from chatddx.curation.plan import PLANNED_TABLES
 from chatddx.factors.base import Fingerprint
 from chatddx.factors.request import Compilation, compiled
@@ -15,8 +16,6 @@ from chatddx.inventory import DirectorySource, Inventory, World
 from chatddx.store import Catalog, People
 from chatddx.store.store import Connection
 from chatddx.test.world import SAMPLE, WORLDS, world_plan
-
-pytestmark = pytest.mark.solidified
 
 MISTRAL_SMALL = "mistralai/Mistral-Small-3.2-24B-Instruct-2506"
 
@@ -69,6 +68,7 @@ def test_the_sample_s_texts_are_english_and_free_text_guided_swedish_too() -> No
     } | {f"free-text-guided (sv, {model})" for model in models} | {"judge (en)"}
 
 
+@pytest.mark.slow
 def test_the_sample_s_translations_carry_every_recipe_into_swedish() -> None:
     sample = sample_plan()
     translations = sample.named("translations", "sample (sv)").digest
@@ -181,9 +181,15 @@ def test_the_sample_s_cases_are_79_english_and_20_swedish() -> None:
     assert cases["Dutchfall11w"].language == "en"
 
 
+@pytest.fixture
+def template(sampled: Loaded) -> str:
+    return sampled.name
+
+
 @pytest.mark.slow
-def test_the_sample_loads_with_its_world_s_fakes(conn: Connection) -> None:
-    alice = People(conn).add("alice", "Alice")
+def test_the_sample_loads_with_its_world_s_fakes(
+    conn: Connection, sampled: Loaded
+) -> None:
     plan = sample_plan()
     harmony = {
         "off": "always reasons: vLLM rejects reasoning_effort = none for harmony",
@@ -219,8 +225,7 @@ def test_the_sample_loads_with_its_world_s_fakes(conn: Connection) -> None:
             ),
         )
     ]
-    world = World.load(WORLDS / "sample")
-    lines = init(conn, plan, load_cases(SAMPLE), world.inventory.listing(), alice)
+    lines = sampled.said
     fakes = ("qwen3-8b-awq@fake", "gpt-oss-20b@fake")
     assert [line for line in lines if line.startswith("[lint warning]")] == [
         *(
@@ -236,8 +241,14 @@ def test_the_sample_loads_with_its_world_s_fakes(conn: Connection) -> None:
     ]
     assert not [line for line in lines if "needs repair" in line]
     catalog = Catalog(conn)
-    [plan_thread] = catalog.find("skeleton", "plan (en, Qwen/Qwen3-8B-AWQ)")
-    [shown] = catalog.find("skeleton", "plan-shown (en, Qwen/Qwen3-8B-AWQ)")
+    archive = People(conn).find("archive")
+    assert archive is not None
+    [plan_thread] = catalog.find(
+        "skeleton", "plan (en, Qwen/Qwen3-8B-AWQ)", owner=archive.id
+    )
+    [shown] = catalog.find(
+        "skeleton", "plan-shown (en, Qwen/Qwen3-8B-AWQ)", owner=archive.id
+    )
     variation = catalog.variation(shown)
     assert variation is not None and set(variation.varies) == {"/recipe/output"}
     assert variation.base.thread == plan_thread

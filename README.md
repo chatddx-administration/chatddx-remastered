@@ -76,9 +76,9 @@ chatddx migrate
 
 ### Tests
 ```sh
-pytest                  # everything, about 50 s
-pytest -m "not slow"    # the quick run, under 30 s
-pytest -m solidified    # what docs/ describes; -m wip for what agents/wip-*.md plans
+pytest                  # everything
+pytest -m "not slow"    # the quick run
+pytest -n 4             # everything on 4 workers (pytest-xdist)
 ```
 
 ### The sample world

@@ -777,8 +777,8 @@ A halt for `score` that another thread sets.
   already.
 
 ## Tests
-In `src/chatddx/bench/test/`, all marked `solidified`. The repl's and the API's tests reach the bench too, through
-their own fixtures over the same test World.
+In `src/chatddx/bench/test/`. The repl's and the API's tests reach the bench too, through their own fixtures over the
+same test World.
 - `conftest.py`: `template` is `curated`, the test World as init-data lands it, with alice's giftbag, copied for each
   test; `autocommit` is on; `alice` is the test World's person, `bob` a new one with nothing; `bench` is alice's, on
   the test World's inventory and its facts beside the bundled ones.

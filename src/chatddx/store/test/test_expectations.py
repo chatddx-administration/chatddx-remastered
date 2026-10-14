@@ -9,9 +9,8 @@ from chatddx.identity import owns
 from chatddx.store import Catalog, People, Store
 from chatddx.store.store import Connection
 
-pytestmark = pytest.mark.solidified
 
-
+@pytest.mark.slow
 def test_the_catalog_refuses_a_person_a_second_expectation_of_a_case(
     conn: Connection,
 ) -> None:

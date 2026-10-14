@@ -17,8 +17,6 @@ from chatddx.store import Catalog, People
 from chatddx.store.store import Connection
 from chatddx.test.world import LINES
 
-pytestmark = pytest.mark.solidified
-
 SHIPPED = "chatddx.scorers.metrics:score"
 RAISED = metrics.score.version + 1
 
@@ -36,6 +34,7 @@ def _archive(conn: Connection) -> Person:
     return found
 
 
+@pytest.mark.slow
 def test_a_person_writes_a_scorer_over_shipped_code_with_its_labels(
     conn: Connection, alice: Person, bench: Bench, plan: Plan
 ) -> None:
@@ -162,6 +161,7 @@ def _renamed(conn: Connection, thread: int, labels: Labels) -> None:
     _ = Catalog(conn).keep(head.digest, _archive(conn).id, thread, labels=labels)
 
 
+@pytest.mark.slow
 def test_following_an_origin_keeps_the_labels_of_the_views_it_keeps(
     conn: Connection, bench: Bench
 ) -> None:

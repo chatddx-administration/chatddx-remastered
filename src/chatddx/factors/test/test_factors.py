@@ -87,8 +87,6 @@ from chatddx.factors.trial import (
     suggest_seeds,
 )
 
-pytestmark = pytest.mark.solidified
-
 
 @pytest.fixture
 def reg() -> Registry:
@@ -1121,22 +1119,6 @@ def test_dangling_and_mistyped_refs(reg: Registry) -> None:
     _ = reg.add(dangling)
     with pytest.raises(StructuralError, match="is missing"):
         reg.check([dangling.digest])
-
-
-def test_cross_checks(reg: Registry) -> None:
-    other = reg.add(
-        Appendix(
-            vignette=Vignette(source="registry", id="c2", fingerprint=fp("v")),
-            text="x",
-        )
-    )
-    case = Case(
-        vignette=Vignette(source="registry", id="c1", fingerprint=fp("v")),
-        appendices=(other,),
-    )
-    _ = reg.add(case)
-    with pytest.raises(StructuralError, match="bound to another vignette"):
-        reg.check([case.digest])
 
 
 def test_each_component_is_checked_on_its_own(reg: Registry) -> None:

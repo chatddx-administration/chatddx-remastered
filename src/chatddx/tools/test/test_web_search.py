@@ -8,8 +8,6 @@ import pytest
 from chatddx.tools import web_search as module
 from chatddx.tools.web_search import results, web_search
 
-pytestmark = pytest.mark.wip
-
 PAGE = """
 <div class="result">
   <a class="result__a" href="//duckduckgo.com/l/?uddg=https%3A%2F%2Fexample.org%2Fpe&amp;rut=x">

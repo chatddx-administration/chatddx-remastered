@@ -5,8 +5,6 @@ from chatddx.catalog.test.memory import Memory
 from chatddx.factors.bundle import Registry
 from chatddx.factors.request import Sampling
 
-pytestmark = pytest.mark.solidified
-
 
 def test_an_edit_made_on_a_head_that_moved_on_is_refused() -> None:
     reg = Registry()

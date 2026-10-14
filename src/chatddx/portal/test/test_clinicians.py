@@ -9,8 +9,6 @@ from chatddx.portal.test.test_library import thread_props
 from chatddx.portal.test.test_reading import shown
 from chatddx.portal.test.test_signing_in import signing_in
 
-pytestmark = pytest.mark.wip
-
 
 @pytest.fixture
 def signed(client: TestClient, alice: Person) -> TestClient:

@@ -36,8 +36,6 @@ from chatddx.test.world import (
     TOOL_ANSWER,
 )
 
-pytestmark = pytest.mark.solidified
-
 
 def test_a_person_sees_their_own_and_shared_threads_and_families(
     conn: Connection, alice: Person, bob: Person, bench: Bench
@@ -222,6 +220,7 @@ def test_a_run_is_left_to_score_until_scored_under_the_scoring_built_now(
     assert rebuilt is not None and edited in rebuilt.expectations
 
 
+@pytest.mark.slow
 def test_only_a_finished_score_counts_against_what_is_left_to_score(
     conn: Connection, alice: Person, bench: Bench, plan: Plan
 ) -> None:
@@ -594,6 +593,7 @@ def test_a_judge_configuration_is_looked_at_as_a_judge_and_isn_t_run(
         _ = bench.start(variation, QWEN, [case], 7)
 
 
+@pytest.mark.slow
 def test_a_scoring_says_each_score_it_starts_and_a_halt_stops_the_rest(
     conn: Connection, alice: Person, bench: Bench, plan: Plan
 ) -> None:

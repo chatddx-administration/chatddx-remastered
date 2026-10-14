@@ -33,8 +33,6 @@ from chatddx.store import Catalog, Store
 from chatddx.store.store import Connection
 from chatddx.test.world import DATA, LINES, NATIVE, QWEN, REMOTE, TOOL_ANSWER, faked
 
-pytestmark = pytest.mark.solidified
-
 
 def expectations(plan: Plan, made: Trial) -> tuple[str, ...]:
     schema = plan.named("expectation_schema", "targets").digest
@@ -74,6 +72,7 @@ def scorer(plan: Plan, name: str) -> Scorer:
     ("recipe", "scored_by"),
     [(LINES, "lines"), (NATIVE, "answer"), (TOOL_ANSWER, "list")],
 )
+@pytest.mark.slow
 def test_a_run_is_scored_through_every_view_of_its_scorer(
     conn: Connection,
     inventory: Inventory,
@@ -103,6 +102,7 @@ def test_a_run_is_scored_through_every_view_of_its_scorer(
 
 
 @pytest.mark.usefixtures("fake")
+@pytest.mark.slow
 def test_cases_without_an_expectation_get_no_value_and_are_noted(
     conn: Connection, inventory: Inventory, alice: Person, plan: Plan
 ) -> None:
@@ -132,7 +132,7 @@ def test_an_answer_that_can_t_be_read_is_noted_and_scored_without_one(
 ) -> None:
     made = trial(plan, NATIVE, seeds=(7,))
     with faked(inventory, plan.registry.get, delay=DELAY * 10):
-        run = ran(conn, inventory, alice, made, plan, Execution(timeout_s=0.2))
+        run = ran(conn, inventory, alice, made, plan, Execution(timeout_s=0.1))
     scoring = Scoring(
         scorer=plan.named("scorer", "answer").digest,
         expectations=expectations(plan, made),
@@ -144,7 +144,7 @@ def test_an_answer_that_can_t_be_read_is_noted_and_scored_without_one(
     assert {f.code for f in noted} == {"answer.unread"}
     assert len(noted) == len(made.cases)
     assert all(
-        f.message.endswith("the call ended with: stopped: no end after 0.2 s")
+        f.message.endswith("the call ended with: stopped: no end after 0.1 s")
         for f in noted
     )
     assert all(
@@ -204,6 +204,7 @@ def scoring_of(plan: Plan, made: Trial, by: Scorer) -> Scoring:
 
 
 @pytest.mark.usefixtures("fake")
+@pytest.mark.slow
 def test_a_judged_view_is_scored_from_its_judge_s_calls(
     conn: Connection, inventory: Inventory, alice: Person, plan: Plan
 ) -> None:
@@ -263,6 +264,7 @@ def test_a_judged_view_is_scored_from_its_judge_s_calls(
 
 
 @pytest.mark.usefixtures("fake")
+@pytest.mark.slow
 def test_a_judge_call_that_names_another_model_is_noted(
     conn: Connection, inventory: Inventory, alice: Person, plan: Plan
 ) -> None:
@@ -342,6 +344,7 @@ def test_a_judge_is_refused_before_anything_is_written(
 
 
 @pytest.mark.usefixtures("fake")
+@pytest.mark.slow
 def test_a_halt_during_a_judge_s_calls_keeps_the_seeds_it_has(
     conn: Connection,
     inventory: Inventory,
