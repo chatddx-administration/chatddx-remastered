@@ -74,6 +74,16 @@ origin reaches them as a proposal. A person can take:
 - **one thread**, an expectation shared with them, which, when they have their own of its case under its schema, is a
   conflict unless they say to replace theirs. Replacing deletes theirs and forks the shared one in one transaction.
 
+```
+AGENT: add
+Why replacing is a write of its own, from agents/wip-authoring.md (A5), which is removed. As a paragraph after the
+one below:
+---
+Replacing is a delete and a fork rather than an edit of theirs onto the shared head, since their thread would keep the
+origin it was forked from, and keep proposing from it. Taking for many cases never replaces: it would reset every
+case to the shared heads, the person's own corrections included, and leave every run scored against what it replaced
+to score again.
+```
 Taking for many cases only adds, so it is safe to offer as one button and to repeat: taking again after more cases
 were shared adds the new ones, and nothing a person was scored against changes. A run that holds a newly taken case
 is left to score again, since its scoring now holds that case too.
@@ -336,6 +346,15 @@ repl does for a name its endpoint would pick a model for. The API answers `NotFo
 and `MovedOn` with 409, `OverQuota` with 429, and the other refusals with 422 (docs/api.md, "Errors").
 
 ## Tests
+```
+AGENT: change
+agents/wip-test-world.md is removed: the test World is built and the tests moved onto it. It is described in
+docs/inventory.md, "Worlds", and its tests here and in docs/curation.md, "Tests".
+---
+The tests start from the test World (`worlds/test`; docs/inventory.md, "Worlds") as `chatddx init-data` lands it, with
+alice and her giftbag; bob is added with nothing. The database is made once a session and copied for each test
+(`src/chatddx/conftest.py`, `curated`). The variation and an item's outcome are tested without a database.
+```
 The tests start from the test World (`worlds/test`, agents/wip-test-world.md) as `chatddx init-data` lands it, with
 alice and her giftbag; bob is added with nothing. The database is made once a session and copied for each test
 (`src/chatddx/conftest.py`, `curated`). The variation and an item's outcome are tested without a database.
@@ -366,11 +385,52 @@ check before the other has written.
 | Cell | The repl's word for a variation being tried together with an endpoint. |
 
 ## Outstanding
+```
+AGENT: change
+agents/wip-authoring.md is removed: every phase of it is built and documented here. It stays readable at b6f76b8,
+on main. Its takes are listed, so that their status isn't lost with it.
+---
+Left for later. The API's are in docs/api.md, "Outstanding". The plan the bench was built from, with the options
+weighed for each decision and the survey of the old project, is `agents/wip-bench.md` at d5ebf52; the writes for
+the person were planned in `agents/wip-authoring.md` at b6f76b8. Its takes were built and still wait for a word:
+- one set of writes for every kind people author, with builders only for appendices and cases, a case built only of
+  appendices the person sees, and no write refused on a lint ("Writes for the person", "Appendices and cases");
+- a family's cases are those at its current vignette; an appendix's edit replaces only the cases at its own
+  vignette; carrying keeps to the expectation's family ("Appendices and cases");
+- a language is written only where a text has none ("Languages");
+- one write says what holds of a thread; a collaborator can't leave a share, and a thread isn't handed over ("What
+  is said about a thread");
+- only an origin the person sees is followed, always by an edit, for every kind ("Following an origin");
+- the head an edit names is checked under its thread's advisory lock (docs/catalog.md, "Concurrent writers");
+- ownership only, roles unchecked (docs/identity.md);
+- the shipped lists kept in code, versions as integers from 1, an edit keeping the head's labels only when its scorer
+  is the head's, and following taking each part's labels from the side whose part it keeps ("Scorers"); no resources
+  offered;
+- configurations listed by purpose, in the API.
+```
 Left for later. The API's are in docs/api.md, "Outstanding". The plan the bench was built from, with the options
 weighed for each decision and the survey of the old project, is `agents/wip-bench.md` at d5ebf52; the writes for
 the person were planned in agents/wip-authoring.md, whose takes marked "Built, as takes" still wait for a word.
 
+```
+AGENT: change
+agents/wip-authoring.md is removed; it stays readable at b6f76b8, on main. Two questions it left open go here too.
+---
+- **A low-level manual for the bench**, made from `agents/wip-authoring.md` at b6f76b8.
+- **Correcting a wrong language** stays curation's: the bench refuses a language that differs from the text's own.
+  What a person may correct, such as a text only their own threads hold, is open.
+- **Leaving a share**: a collaborator can't take a shared thread out of what they see; only the owner can. Whether
+  a collaborator may withdraw themselves, an entry the catalog would hold as any other, is open.
+```
 - **A low-level manual for the bench**, made from agents/wip-authoring.md.
+```
+AGENT: change
+agents/wip-identity.md was removed when identity was solidified; its "Open" is docs/identity.md's "Identity: what
+is open" now.
+---
+- **Z1**: the map from roles to the kinds each role sees goes in `identity` once the portal's views give it meaning
+  (docs/identity.md, "Z1: what each role is shown"). `sees` then takes the person's roles and the kind.
+```
 - **Z1**: the map from roles to the kinds each role sees goes in `identity` once the portal's views give it meaning
   (agents/wip-identity.md, "Open"). `sees` then takes the person's roles and the kind.
 - **An execution for `Bench.start`**, which passes none, so a run gets `Execution()`'s, with no timeout; the worker

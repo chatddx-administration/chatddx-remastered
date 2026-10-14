@@ -26,6 +26,15 @@ in `cases-<language>.toml` files, and the files they load, such as JSON schemas.
 A record holds text the model reads, which language it is in, and whether it is a record or a case.
 What a data set can't hold, engines and which engine judges, is its World's (docs/inventory.md, "Worlds").
 
+```
+AGENT: change
+The paragraph breaks off. What agents/wip-test-world.md ("Why `_data`"), which is removed, said of the name, in case
+it helps:
+---
+A World may carry one beside its vignettes, in `_data/`. A World is what lies outside chatddx, and a data set is
+chatddx's own authored content, so the leading `_` marks it as no part of the World: `World.load` doesn't read it.
+`data` is init-data's `--data`, which loads it unless it names another.
+```
 A World may carry one beside its vignettes, in `_data/`: the leading `_` is because in chatddx, a world has belongings.
 a world is everything
 outside of chatddx, but things in `_data` and
@@ -202,6 +211,17 @@ src/chatddx/curation/test/.
 - The tests run on the test World (worlds/test/, its data set in worlds/test/_data/), built so that each of its
   records exercises something a test reads. Its paths, the names tests share and the helpers they import are in
   src/chatddx/test/world.py; the fixtures built on them are in src/chatddx/conftest.py.
+```
+AGENT: add
+How the tests use the test World, from agents/wip-test-world.md ("Principles"), which is removed. As a bullet before
+the one below:
+---
+- What `curated` loads holds no mistakes: its only skips, lints and findings are the ones the World is built to
+  give. Only `test_the_test_world.py` writes counts, skip lines or lint lines out; other tests derive them from the
+  plan, the cases or the inventory. Broken data, such as an invalid expectation, an unreachable view, a misplaced
+  clearance or a vignette that isn't UTF-8, is an edit a test makes to a copy of the World (`copied` and `edit` in
+  src/chatddx/test/world.py).
+```
 - `test_plan.py` plans data sets and needs no database.
 - `test_init.py`, `test_repair.py`, `test_giftbag.py` and `test_pins.py` load the test World's data set whole, with a
   stand-in source whose vignettes are a line of text each (src/chatddx/curation/test/cases.py). A test that tells
@@ -220,6 +240,14 @@ The Worlds' content is tested beside the names tests share, in src/chatddx/test/
 - `test_sample.py` holds what is true of the sample alone, and that it uses every table a data set and a World can
   hold at least once, as the example new Worlds follow.
 
+```
+AGENT: change
+agents/wip-test-world.md is removed: the test World is built and the tests moved onto it. It is described in
+docs/inventory.md, "Worlds", and its tests here and in docs/curation.md, "Tests".
+---
+The first two read the test World and every World; `test_sample.py` reads the sample, loaded once for it and
+test_sample_world.py (src/chatddx/conftest.py, `sampled`).
+```
 The first two are what agents/wip-test-world.md plans; `test_sample.py` reads the sample, loaded once for it and
 test_sample_world.py (src/chatddx/conftest.py, `sampled`).
 
@@ -271,8 +299,39 @@ only by its name today; what recording it would take is in agents/wip-variants.m
 - **The runner and the engine import don't run the inventory check** that loading does.
 
 ## Outstanding
+```
+AGENT: change
+From agents/wip-judges.md ("Hypothetical notes stay out of the sample"), which is removed: the notes are the
+exception.
+---
+- **Staging data.** The sample is curated for preliminary calibration, and everything in it can be considered
+  guessed: its targets, the appendices and `dont_miss` targets made up so that every table is used, its judge,
+  drafted before Olof's, and its translations. Its notes are the exception: they are Olof's as written, and carry
+  his name into every score, so none is made up; made-up notes go in the test World, under its placeholder authors.
+  Data meant to be relied on needs its stage said in code, not in comments: whether it is guessed or vetted, by
+  whom, and where it came from, loaded with the data so that a score can say what it rests on.
+```
 - **Staging data.** The sample is curated for preliminary calibration, and everything in it can be considered
   guessed: its targets, the appendices and `dont_miss` targets made up so that every table is used, its judge,
   drafted before Olof's, and its translations. Data meant to be relied on needs its stage said in code, not in
   comments: whether it is guessed or vetted, by whom, and where it came from, loaded with the data so that a score can
   say what it rests on.
+```
+AGENT: add
+From agents/wip-judges.md ("For Olof, later", phase 6) and agents/wip-test-world.md ("Not read yet"), which are
+removed. As bullets after the one above:
+---
+- **The sample's judge** is a draft over Olof's notes until his prompt replaces it, as an edit. His prompt settles
+  which of his comment and answer it reads, how a Swedish note is read against an English answer, whether a verdict is
+  pass or fail, a scale or one per aspect, how strict it is about extra or harmful advice, and the judge's engine and
+  seeds. It is measured by real answers from pelle and malborg on `Dutchfall11w`, `Dutchfall1w` and `casesfromedn1`,
+  graded by Olof with a line on why. Open beside it: notes on more cases, and revising the targets where his notes
+  disagree, as on `Dutchfall11w` (shock, most likely sepsis, where the targets have an aortic aneurysm or a
+  dissection).
+- **What only the test World reaches isn't all read.** No test reads the gate refusing `qwen3-bare@fake` for `typed`
+  cases, the pair lints its records give (`vllm.*` on `qwen3-bare@fake` and `clamped`, `facts.output_refused`,
+  `facts.reasoning_unmatched`, `facts.budget_refused`, `language.unknown`), `headed`'s tool guidance,
+  `lines-guided (sv)`'s translated output and appendix layout, the passthrough, or the vignettes' quirks under the
+  cleanup steps. The lints are tested on synthetic registries, and two of the judge tests in
+  src/chatddx/scorers/test/test_scorers.py use a synthetic judge.
+```

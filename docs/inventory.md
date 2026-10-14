@@ -69,6 +69,17 @@ take another's vignettes or endpoints without copying them.
 
 This repository has three, in `worlds/`:
 
+```
+AGENT: change
+The remote endpoint is reached now: `free_world` and `freed` give it a free port as they give the fakes, and
+`chatddx fake-engines` stands in for it (src/chatddx/fake_vllm/test/test_fake_engines.py).
+---
+- The test World: what the tests run on, built so that each record exercises something a test reads. Four fake
+  endpoints on this machine (one with no reasoning parser and no tool flags, one serving a made-up model whose facts
+  are the World's own `facts.toml`), a remote endpoint that only a fake stands in for, nine vignettes each carrying
+  a quirk of its own, and its data set in `_data/`. Its tools are the runner's test tools, so it loads only under
+  pytest.
+```
 - The test World: what the tests run on, built so that each record exercises something a test reads. Four fake
   endpoints on this machine (one with no reasoning parser and no tool flags, one serving a made-up model whose facts
   are the World's own `facts.toml`), a remote endpoint that is never reached, nine vignettes each carrying a quirk of

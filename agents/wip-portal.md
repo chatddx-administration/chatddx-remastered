@@ -20,8 +20,8 @@ it.
    starting and watching a run (decided, see "The variation being tried" and "Starting and watching a run"). The
    choices of phases 1 and 2 are takes (see "Built").
 5. **What it stands on is built**: the bench and the API (`docs/bench.md`, `docs/api.md`), the writes for authoring
-   (`agents/wip-authoring.md`) and typed cases (`docs/bench.md`, "Typed cases"). What isn't is under "Below the UI":
-   the worker, the batch planner, Z1, and a few things the API doesn't give yet.
+   (`docs/bench.md`, "Writes for the person") and typed cases (`docs/bench.md`, "Typed cases"). What isn't is under
+   "Below the UI": the worker, the batch planner and Z1.
 6. **Next**: phase 5's second half, 5c and 5d, once its first is looked at (see "Authoring"); and what phases 2 to
    5 left (see "Open").
 
@@ -93,7 +93,7 @@ Decided:
 - **Forms are plain POSTs**, checked by the API's same-origin check (`src/chatddx/api/people.py:same_origin`), so
   there is no CSRF token, as there is none for the API.
 - **Errors carry a code** beside their detail, so that a page or an island tells a refusal apart without reading its
-  sentence (`docs/api.md`, "Errors", which has an AGENT suggestion).
+  sentence (`docs/api.md`, "Errors").
 - **Dependencies**: `jinja2`, and `python-multipart` for FastAPI's form fields, both in `pyproject.toml`, imported
   only under `chatddx.portal` as `rich` is only under `chatddx.repl`.
 
@@ -118,7 +118,7 @@ Decided, for how, and built in phase 1:
 ### Tests
 Decided:
 - **Pages**: `TestClient` on the HTML, in `src/chatddx/portal/test/`, on the test World as `curated` lands it, as the
-  API's are; marked `wip` until `docs/portal.md`.
+  API's are.
 - **Islands**: through the API's tests for what they call; an island's pure logic by vitest
   (`pnpm --dir frontend test`, built in phase 3); and a browser test under pytest (Playwright, with the container's
   Chromium), built in phase 4 (R12).
@@ -164,12 +164,12 @@ Decided (phase 4), from the options R1 to R12:
 - **R6. The cases** are the variation's tags, or families picked, with the number of items said before it starts;
   one seed, the look's, which can be changed.
 - **R7. A run is named by its variation's label** as it starts, which `Bench.described` reads first (`docs/api.md`,
-  "Outstanding", "Variations").
+  "Starting one").
 - **R8. Limits in `settings`**: runs a day per person and items per run, kept by the bench for every edge, refused as
   over quota.
 - **R9. Concurrency** stays 1 until the worker shares an endpoint's `max_jobs` between runs.
 - **R10. On the jobs in the app's process**; the worker takes their place with the API as it is.
-- **R11. A keep-alive** on a run's event stream (`docs/api.md`, "Outstanding", "A quiet stream").
+- **R11. A keep-alive** on a run's event stream, which a proxy cuts when it is quiet.
 - **R12. A browser test** under pytest with Playwright (Python), on the test World and its fake vLLM: start, watch,
   halt and score again; and the island's logic by vitest.
 
@@ -190,7 +190,7 @@ Decided (phase 5), from the options W1 to W11:
 - **W6. Checked as it is typed**, by `POST /api/components/check`: the component built, its rules, cross-checks and
   lints, and its digest, with nothing written.
 - **W7. Pickers from the kinds' JSON Schemas**, published with the kinds each reference takes (`x-kind`) by
-  `GET /api/kinds` (`docs/factors.md`, "Reference kinds in components' JSON Schemas").
+  `GET /api/kinds` (`docs/api.md`, "What a person sees").
 - **W8. Saving** says where it goes, as the variation's page does: a new version of the person's own, a new thread, or
   a fork, with their namesakes; a text's language offered from the previous version; a conflict shown with a reload
   that keeps what was typed.
@@ -301,7 +301,7 @@ in"), and people are added by command (`chatddx person add`). So:
   for. A schema's title is a loose handle: another schema could take the same title.
 
 ## Built
-Phase 0, `wip` under this file:
+Phase 0:
 - **`src/chatddx/portal/app.py:app`**: the API's app (`src/chatddx/api/app.py:app`), with the portal's pages
   mounted at `/` and left out of the OpenAPI document, and `SignInFirst` answered by a redirect to signing in.
 - **`src/chatddx/portal/pages.py`**: `GET /` (the home page, for now who is signed in), `GET` and `POST /sign-in`, and
@@ -314,8 +314,8 @@ Phase 0, `wip` under this file:
 - **`chatddx portal`** (`src/chatddx/cli.py:_portal`, sharing `_serve` and `_serving` with `chatddx api`).
 - **The API**: `Cache-Control: no-store` on a family's vignette, a run's items, a score's items and a run's events
   (`src/chatddx/api/state.py:no_store`, `NO_STORE`); every refusal as `{"detail", "code"}`
-  (`src/chatddx/api/app.py:STATUSES`, `CODES`; `src/chatddx/api/schemas.py:Error`). `docs/api.md` and
-  `docs/api-api.md` have AGENT suggestions; the API's tests, which pin the codes and the header, stay `solidified`.
+  (`src/chatddx/api/app.py:STATUSES`, `CODES`; `src/chatddx/api/schemas.py:Error`), described in `docs/api.md` and
+  `docs/api-api.md`; the API's tests pin the codes and the header.
 - **Tests**: `src/chatddx/portal/test/test_signing_in.py`.
 
 Found on the way:
@@ -325,7 +325,7 @@ Found on the way:
 - **What the portal doesn't route was answered as the API answers**: JSON with a code, as an unknown page's 404 or a
   form from another site's 403. Pages of their own for those are built in phase 2.
 
-Phase 1, `wip` under this file:
+Phase 1:
 - **`frontend/`**, beside `src/`: a Vite project, pnpm only (`packageManager`), Svelte 5 with TypeScript 5.9
   (openapi-typescript and svelte-check don't take 7 yet), Tailwind 4. Its entries are `src/portal.css`, the styles of
   every page, and an island per `src/islands/<name>.ts`. `pnpm build` writes `frontend/dist/` with Vite's manifest;
@@ -333,8 +333,8 @@ Phase 1, `wip` under this file:
 - **The API's types**: `frontend/openapi.json` is the API's OpenAPI document, written by `chatddx openapi`
   (`src/chatddx/cli.py:_openapi`) and committed, so that the frontend builds without Python; openapi-typescript
   generates `src/lib/api/schema.d.ts` from it, with `--default-non-nullable false`, since a request's defaulted field
-  isn't required. `src/lib/api/client.ts`: `api` (openapi-fetch), `why`, the detail of a refusal, and `follow`, a
-  run's events through `EventSource`. A test holds the document to the API's
+  isn't required. `src/lib/api/client.ts`: `api` (openapi-fetch) and `why`, the detail of a refusal; a run's events
+  came to `src/lib/runs/events.ts:watch` in phase 4. A test holds the document to the API's
   (`src/chatddx/portal/test/test_frontend.py`).
 - **The components**: shadcn-svelte's vega style as its registry holds it (`docs/static/registry/styles/vega/` in
   huntabyte/shadcn-svelte at 63bfef7), with `$UTILS$` and the icon placeholder filled as the CLI fills them, since the
@@ -358,12 +358,12 @@ Phase 1, `wip` under this file:
   `impureEnvVars`, which the flake doesn't keep).
 - **The API**: a run's items carry the answer as read (`answer`: its value, why it couldn't be read or breaks its
   schema, and whether it was salvaged), and configurations are listed by what they answer (`answers`, the title of
-  their answer's JSON Schema; `Bench.answering`). `docs/api.md`, `docs/api-api.md`, `docs/bench.md` and
-  `docs/bench-api.md` have AGENT suggestions; the tests stay `solidified`.
+  their answer's JSON Schema; `Bench.answering`), described in `docs/api.md`, `docs/api-api.md`, `docs/bench.md` and
+  `docs/bench-api.md`.
 - **Tests**: `src/chatddx/portal/test/test_frontend.py`, and by hand on the sample World with its fake engines in
   Chromium (Playwright), signed in as alice, light and dark.
 
-Phase 2, `wip` under this file, as takes:
+Phase 2, as takes:
 - **The pages call the API's handlers** with a bench made per request (`src/chatddx/portal/pages.py:page_bench`), so a
   page shows what the API answers, and is refused as it is. A module per kind under `src/chatddx/portal/`:
   - `runs.py`: `GET /runs`, a person's runs fifty to a page, and those left to score (`?left=true`), without
@@ -380,21 +380,22 @@ Phase 2, `wip` under this file, as takes:
     `GET /families/{id}/vignette`, the vignette on a page of its own.
   - `world.py`: `GET /endpoints`, the endpoints and the models' facts.
 - **An answer as a management plan**: on a run whose skeleton's output schema is titled `management_plan_v1`, an
-  answer is drawn by the home page's renderer, mounted by the `answers` island (`frontend/src/islands/answers.ts`)
-  where the page holds the answer as JSON, which shows without scripts. Other answers show as text or JSON.
+  answer is drawn by the home page's renderer, mounted where the page holds the answer as JSON, which shows without
+  scripts; an `answers` island did it then, and the `run` island does it since phase 4 (`frontend/src/islands/run.ts`).
+  Other answers show as text or JSON.
 - **Pages for errors**: a refusal on a page, and a page that isn't there, is answered with a page of the same status,
   titled by its code (`src/chatddx/portal/pages.py:paged`, `templates/error.html`); under `/api/` it is JSON as before.
 - **The pieces the pages share** are macros (`templates/macros.html`), and the nav links Runs, Configurations,
-  Families and Endpoints. An island's imported chunks are preloaded (`src/chatddx/portal/assets.py:Island`).
+  Families and Endpoints, and Library since phase 5. An island's imported chunks are preloaded (`src/chatddx/portal/assets.py:Island`).
 - **Tests**: `src/chatddx/portal/test/test_reading.py`, on `ran` (`src/chatddx/conftest.py`), `curated` with alice's
-  scripted runs each run once; `docs/scripted.md` has AGENT suggestions. By hand on the sample World in Chromium,
+  scripted runs each run once (`docs/scripted.md`). By hand on the sample World in Chromium,
   every page, with the plan drawn.
 
-Phase 3, `wip` under this file, as decided (see "The variation being tried"):
+Phase 3, as decided (see "The variation being tried"):
 - **The API**: a look takes `head`, the edit to vary, and gives its `label` and `held_by`; a configuration's fork takes
   `head` too; a listed thread has its `language`, looked up for many at once (`Catalog.languages_of`;
-  `Bench.variation(…, head)`). `docs/api.md`, `docs/api-api.md`, `docs/bench.md`, `docs/bench-api.md` and
-  `docs/catalog-api.md` have AGENT suggestions; the tests stay `solidified`.
+  `Bench.variation(…, head)`), described in `docs/api.md`, `docs/api-api.md`, `docs/bench.md`, `docs/bench-api.md`
+  and `docs/catalog-api.md`.
 - **`GET /configurations/{id}`** takes the API's `Varying` as its query: the parts by digest, `head`, `endpoint`
   and `tag`. Without an endpoint it picks one serving the model the configuration's name is made for. The server
   draws what is said of it and its versions, with ◀ ▶ and every version's link keeping what is set, and a note on an
@@ -416,14 +417,13 @@ Phase 3, `wip` under this file, as decided (see "The variation being tried"):
   the sample World in Chromium: picking, another endpoint, tags, forking, a new version, stepping back, and the page
   without scripts.
 
-Phase 4, `wip` under this file, as decided (see "Starting and watching a run"):
+Phase 4, as decided (see "Starting and watching a run"):
 - **The API**: a run takes `head`, the edit it varies (`NewRun.head`); a run is named by its variation's label as it
   starts, which `Bench.described` reads first; `POST /api/runs/{id}/again` runs a run's trial again with another seed
   (`Bench.again`), so a run of a variation nobody saved can run again without it; runs a day and items a run are
   limited (`settings.RUNS_PER_DAY`, `ITEMS_PER_RUN`; `Catalog.runs_started`), refused as over quota; and a quiet event
-  stream sends `: keep-alive` every 15 s (`src/chatddx/api/jobs.py:KEEP_ALIVE`). `docs/api.md`, `docs/api-api.md`,
-  `docs/bench.md`, `docs/bench-api.md`, `docs/catalog-api.md` and `docs/repl.md` have AGENT suggestions; the tests stay
-  `solidified`.
+  stream sends `: keep-alive` every 15 s (`src/chatddx/api/jobs.py:KEEP_ALIVE`), described in `docs/api.md`,
+  `docs/api-api.md`, `docs/bench.md`, `docs/bench-api.md`, `docs/catalog-api.md` and `docs/repl.md`.
 - **Following a run** (`frontend/src/lib/runs/`): `watch`, a run's events through `EventSource`, and `fold`, which
   folds them into a run's progress: its items as they are sent, stream and end, what is noted, and each scorer's
   scoring with its judges' calls. The home page follows its run with them too.
@@ -438,17 +438,17 @@ Phase 4, `wip` under this file, as decided (see "Starting and watching a run"):
   halted, scored again and run again in Chromium (Playwright, a test dependency at 1.56.0, skipped without a build or
   a browser); `frontend/src/lib/runs/progress.test.ts`; and by hand on the sample World with its fake engines.
 
-Phase 5, first half, `wip` under this file, as decided (see "Authoring"):
+Phase 5, first half, as decided (see "Authoring"):
 - **The API**: `GET /api/kinds`, each kind with the bench's word for it, whether a person writes it, and its JSON
   Schema, in which a reference names the kinds it takes (`x-kind`, from `chatddx.factors.base.RefTo`); and
   `POST /api/components/check`, a component checked as a write would store it, with nothing written
-  (`Bench.check`). `docs/api.md`, `docs/api-api.md`, `docs/bench-api.md` and `docs/factors.md` have AGENT suggestions;
-  the tests stay `solidified` (`src/chatddx/api/test/test_kinds.py`).
+  (`Bench.check`), described in `docs/api.md`, `docs/api-api.md`, `docs/bench-api.md` and `docs/factors.md`, and
+  tested in `src/chatddx/api/test/test_kinds.py`.
 - **5a, a page for every thread** (`src/chatddx/portal/threads.py`): `/library`, every kind the person sees, their own
   first, and their deleted threads with **Restore**; `/threads/{id}`, any kind but a configuration's, which has its
   own: what is said of it, its versions stepped through with what each changed (`frontend/src/lib/thread/`, jsdiff),
   and the forms for what is said, deleting and restoring, forking as it is, and following its origin when there is a
-  proposal.
+  proposal. The versions and the editors are the `thread` island (`frontend/src/islands/thread.ts`).
 - **5b, the clinicians'**: a family's page writes appendices and builds cases of them; each case offers, under each
   expectation schema the person sees, the expectation they are held to, or **Write yours** (starting from theirs for
   the family's case), the shared ones to take, and moving theirs from a replaced case. An appendix's and an
@@ -462,15 +462,13 @@ Phase 5, first half, `wip` under this file, as decided (see "Authoring"):
 
 ## Below the UI
 What the portal needs below its pages that isn't built:
-1. **The worker** (`agents/wip-worker.md`): runs that outlive the app's process and are seen from every replica, and
-   a quota on runs. Until then a run is a job in the app's process (`docs/api.md`, "Where it runs"), which the run's
+1. **The worker** (`agents/wip-worker.md`): runs that outlive the app's process and are seen from every replica.
+   Until then a run is a job in the app's process (`docs/api.md`, "Where it runs"), which the run's
    pages can be built on, since the API stays as it is when the worker takes its place.
 2. **The worker's controls and status** (`agents/wip-worker.md`, "The plan", 4).
 3. **The batch planner** (`agents/wip-batch.md`).
 4. **Z1**, the map from roles to kinds, which waits for the portal's views (`docs/bench.md`, "Outstanding";
-   `agents/wip-identity.md`, "Open").
-5. **From the API's "Outstanding"** (`docs/api.md`), what the portal meets first: a keep-alive on the event stream,
-   which a proxy cuts when it is quiet.
+   `docs/identity.md`, "Z1: what each role is shown").
 
 ## Phases
 0. **Before the first page**, built (see "Built"): `chatddx portal`, `chatddx.portal` mounted beside the API, signing
@@ -509,7 +507,7 @@ What the portal needs below its pages that isn't built:
   `confirm` cover parts of it.
 - **Export.** The portal is to export results (`docs/chatddx.md`, glossary), and the export isn't planned
   (`docs/chatddx.md`, "On the table").
-- **Keycloak in front** skips the sign-in page (`agents/wip-identity.md`, "Take, for when Keycloak arrives").
+- **Keycloak in front** skips the sign-in page (`docs/identity.md`, "Take, for when Keycloak arrives").
 
 ### What the pages to read leave
 From "What the portal shows", not on the pages yet:
@@ -529,7 +527,7 @@ From "What the portal shows", not on the pages yet:
 
 ### What the variation being tried leaves
 - **A run of an unsaved variation** isn't linked to the variation it ran: its recipe is stored with its compilation,
-  but not what it varied (`docs/api.md`, "Outstanding", "Variations": the label kept as the run's name).
+  but not what it varied, only its label, kept as the run's name (`docs/api.md`, "Starting one").
 - **The pickers rest on names** for what a chunk is made for (`agents/wip-variants.md`); a chunk older than its
   thread's head is offered only when the variation holds it.
 - **The part pickers are native selects**: a long list (26 reasoning chunks in the sample World) wants a searchable

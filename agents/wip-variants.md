@@ -2,7 +2,8 @@
 
 What a variant is in the catalog today, why it rests on names alone, and what recording it would take. Written after
 init-data started making recipes per language (`docs/curation.md`, "Texts") and the naming moved to
-`chatddx.catalog.variants`. "Decided" means the user said so; "Take" is the agent's and still open.
+`chatddx.catalog.variants`. Nothing of the options below is built: a variant is still known by its name only.
+"Decided" means the user said so; "Take" is the agent's and still open.
 
 ## What a variant is today
 A variant is something made for a language, a model or both: a text written in a texts file (`management-plan (en)`),
@@ -11,26 +12,42 @@ a chunk written from a model's facts (`recommended (Qwen/Qwen3-8B-AWQ)`), or a r
 for what:
 - init-data names it `NAME (LANGUAGE)`, `NAME (MODEL)` or `NAME (LANGUAGE, MODEL)`
   (`src/chatddx/catalog/variants.py:variant_name`, `src/chatddx/curation/plan.py:_named`);
-- the bench reads the name back to find the variant a plain name means for the engine's model, and refuses one made
-  in several languages (`variants.py:made_for`, `variants_for`; `src/chatddx/bench/seen.py:Seen.thread`);
-- the repl offers the plain name beside the variants in completion (`src/chatddx/repl/shell.py:_per_model`).
+- the bench reads the name back to find the variant a plain name means for the engine's model, narrowed by a language
+  when the name gives one, `NAME LANGUAGE` or `NAME (LANGUAGE)`, and refuses a name made in several languages that
+  gives none (`variants.py:made_for`, `variants_for`, `language_of`; `src/chatddx/bench/seen.py:Seen.thread`). Without
+  an engine, `NotFound.per_model` names the per-model threads (`docs/bench.md`, "Finding things by name");
+- the repl completes the plain name in place of the per-model names, or `NAME LANGUAGE` for a name made in several
+  languages (`src/chatddx/repl/shell.py:_per_model`), and its configurations table groups by base, language and model
+  (`src/chatddx/repl/listing.py:configurations`);
+- the portal's configuration page picks a default endpoint serving the model its name is made for, and links each
+  endpoint to the sibling made for its model (`src/chatddx/portal/configurations.py:_variants`);
+- the variation island groups a part's chunks by the parenthesis that ends their names
+  (`frontend/src/lib/variation/logic.ts:madeFor`), and the home page picks the configuration whose name holds the
+  endpoint's model (`frontend/src/islands/Home.svelte:fitting`).
+
+The API parses no names: a client finds `plan (en, Qwen/Qwen3-8B-AWQ)` by its whole name (`docs/api.md`, "Ids").
 
 ## Why names alone are fragile
 - **Any name that looks like one is one.** A person who saves a configuration as `draft (sv)` has made, as far as the
   bench is concerned, the Swedish variant of `draft`; `ward round (am)` reads as Amharic. `made_for` can only check
-  that a qualifier looks like a language tag (`catalog/model.py:LANGUAGE`) or is a model the facts know.
+  that a qualifier looks like a language tag (`catalog/model.py:LANGUAGE`) or is a model it is given.
+- **Each reader knows other models.** The bench and the repl take the models the facts know, the portal's page the
+  models its endpoints serve, and the frontend none: any trailing parenthesis is a model to the variation island, and
+  any name holding the model's to the home page. A name can be a variant in one place and not in another.
 - **Nothing checks the name against the thing.** A text's language is also kept on its digest (`catalog.language`),
-  and a configuration's comes from its recipe's chunks (`catalog/language.py:language_of`), but nothing compares
-  them with the language in the name. Nor is the model in the name compared with the one its chunks were written
-  for.
+  and a configuration's comes from its recipe's chunks (`src/chatddx/catalog/language.py:language_of`), but nothing
+  compares them with the language in the name. Nor is the model in the name compared with the one its chunks were
+  written for. Two functions are named `language_of`: the catalog's, of a digest, and `variants.py`'s, of a name,
+  which is the one `chatddx.catalog` exports.
 - **Renaming breaks it.** A name entry is the only record, so renaming `plan (en, Qwen/Qwen3-8B-AWQ)` makes it no
   variant, or the variant of something else, and init-data then makes a new thread under the old name.
 - **What belongs together is a string prefix.** `plan (en, …)` and `plan (sv, …)` are sibling threads with no link
   in the catalog: neither is a fork of the other, and nothing says they are the same configuration in two languages.
 - **Forks follow by accident.** A giftbag fork takes its origin's name (`src/chatddx/curation/write.py:_Init.giftbag`),
   so it is a variant too, which is right; a variation saved under a new name isn't, which may not be.
-- **It blocks picking by language.** The bench picks by the engine's model only. Once the data set has texts in two
-  languages, `cell plan qwen3-8b-awq@fake` is ambiguous, where the cell's cases could say which.
+- **It blocks picking by the cases' language.** The bench picks by the engine's model, and by a language only when
+  the name gives one. With texts in two languages, the cases a variation runs on could say which, so that English and
+  Swedish cases each run under their own (`docs/curation.md`, "Picking a variant by the case's language").
 
 ## What the catalog already knows without names
 - **Language.** Texts carry their language on the digest (init-data writes it from the texts file), a compiled
@@ -48,7 +65,9 @@ for what:
 - **B. Recorded.** An entry on the thread naming what it is a variant of, with the language and the model it was made
   for, written by init-data (and by the bench when a person makes one). Names become people's again, and the bench
   picks by (variant of, model, cases' language) with no parsing. Needs a new entry field or fields: a tier-0 and a
-  tier-2 migration, since entry fields are mirrored in the database (`docs/migrations.md`, catalog, tier 2).
+  tier-2 migration, since entry fields are mirrored in the database (`docs/migrations.md`, catalog, tier 2). The API
+  then gives a thread's variant with it, for the portal's pages and the frontend to read in place of the name
+  (`docs/api.md`, "Outstanding", "Variations").
 - **C. Derived.** Group configurations whose recipes differ only in per-language texts and per-model chunks, from
   their compilations, the catalog's languages and the facts. No new data, but it's a heuristic, costs a walk over
   every configuration, and can't place a greedy configuration by model.
@@ -63,6 +82,7 @@ be derived. A guards nothing that B doesn't, and C and D cost more for less.
   variation of their configuration?
 - **Forks.** Should a person's fork of a variant stay a variant of the same thing, as a giftbag fork is today by its
   name?
-- **Mixed batches**: moved to `agents/wip-batch.md` (P3).
 - **Names for people.** With variants recorded, should init-data still put the language and model in the name, for
   people to read, or drop them and let the portal show them?
+- **Mixed batches**: with picking by the cases' language, does a batch of English and Swedish cases run as one trial
+  per language, each under its variant, or is it refused? (`agents/wip-batch.md`, P3).

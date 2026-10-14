@@ -721,6 +721,15 @@ and `appendices` slots come from `prepare_case`.
 The entry point's interface belongs to `src/chatddx/scorers/scorer.py:ScoreFunction`, and the answer it reads to
 `src/chatddx/scorers/answer.py:read`.
 
+```
+AGENT: add
+From agents/wip-judges.md ("The scorers' code"), which is removed. As a paragraph after the one below:
+---
+`scorers/patterns.py:Pattern(text)` raises `ValueError` for a pattern that doesn't read, and `find(text)` gives the
+offset of its earliest part in the text, or `None`. The pattern metrics read each item a view picks as text, nulls
+dropped and anything but a string as JSON; `first_mention` holds a pattern to one sentence or line at a time, and
+counts the characters to it.
+```
 `src/chatddx/scorers/shipped.py:SCORERS` ships one `Metrics`, `chatddx.scorers.metrics:score`, with version, metrics,
 what each measures, a JSON Schema for a view's params, whether it reads a judge's verdicts, what marks a value that
 isn't a score from 0 to 1 (`unit`, `@` for `first_mention`'s offset), and optionally a schema for the scorer's own
