@@ -61,6 +61,12 @@ meaning (see "Z1: what each role is shown").
 ## Managing people
 People are managed by command, connecting as `DB_USER`:
 - `chatddx person add LOGIN NAME [--role ROLE …]` adds a person;
+```
+AGENT: replace
+An empty password is refused now (src/chatddx/cli.py:_person_password). The item:
+---
+- `chatddx person password LOGIN` sets their password, asked for twice, and refuses an empty one;
+```
 - `chatddx person password LOGIN` sets their password, asked for twice;
 - `chatddx init-data LOGIN` adds a person by that login, named by it, when there is none (docs/curation.md).
 

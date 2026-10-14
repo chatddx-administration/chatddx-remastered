@@ -393,6 +393,15 @@ The configuration's head when nothing is replaced or it has no recipe; else the 
 The request rendered from the skeleton with `PLACEHOLDERS` for its slots and `seed`.
 - `engine`: whose `served` model the request carries; `‹model›` without one.
 
+```
+AGENT: replace
+trial takes cleanup steps now, which again carries over (src/chatddx/bench/seen.py:trial). The section's first two
+lines:
+---
+#### `trial(skeleton: Skeleton, engine: str, cases: list[str], seed: int, cleanup: tuple[CleanupOp, ...] = ()) -> tuple[Registry, Trial]`
+A `Trial` of the skeleton, the engine, the cases, the cleanup steps and the one seed, and a registry holding it with
+what it refers to.
+```
 #### `trial(skeleton: Skeleton, engine: str, cases: list[str], seed: int) -> tuple[Registry, Trial]`
 A `Trial` of the skeleton, the engine, the cases and the one seed, and a registry holding it with what it refers to.
 Nothing is stored.
@@ -639,6 +648,14 @@ Raises, before writing:
 - `ValueError("name the source to type into: …")`
 - `OverQuota("<login> has typed <n> cases in the last day, as many as a day takes")`
 
+```
+AGENT: add
+takes_typed has no section (src/chatddx/bench/cases.py:takes_typed). One, before carry's:
+---
+### `takes_typed(endpoint: str) -> bool`
+Whether a case typed into the World's database source can run at `endpoint`: the source isn't sensitive, or the
+endpoint is cleared for it. False when the World has no database source, or more than one.
+```
 ### `carry(thread: int, head: int, case: str) -> Written`
 `edit_component` of the expectation `thread` onto `case`, with the same schema and data.
 - Raises `ValueError("<word> <thread> isn't an expectation")`.
@@ -742,6 +759,16 @@ Raises:
 - `OverQuota("<login> has started <n> runs in the last day, as many as a day takes")`
 - `Seen.endpoint`'s, the runner's and its gate's; the runner's `ValueError` for a connection not in autocommit mode.
 
+```
+AGENT: replace
+again keeps the trial's engine and cleanup now, so the gate refuses an endpoint that serves another engine
+(src/chatddx/bench/runs.py:again). The section's first two lines:
+---
+### `again(run: RunStarted, seed: int) -> Running`
+The run's trial run again at its endpoint with `seed`, its engine and cleanup kept, as `start` runs a variation, and
+named by the run's name, else its skeleton's title. The gate refuses an endpoint that serves another engine now
+(`Refused("endpoint '<name>' serves engine <digest>, the trial's is <digest>")`).
+```
 ### `again(run: RunStarted, seed: int) -> Running`
 The run's trial run again at its endpoint with `seed`, as `start` runs a variation, and named by the run's name, else
 its skeleton's title.

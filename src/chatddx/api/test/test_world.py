@@ -56,6 +56,9 @@ def test_endpoints_say_what_they_serve_and_what_they_re_cleared_for(
         None,
     )
     assert remote["credential"] is not None and remote["cleared_for"] == []
+    typed = {e["name"] for e in listed if e["takes_typed"]}
+    assert typed == {n for n in endpoints if "typed" in inventory.cleared_for(n)}
+    assert QWEN in typed and REMOTE not in typed
     got = signed.get("/api/endpoints/nowhere@fake")
     assert got.status_code == 404
     assert got.json() == {

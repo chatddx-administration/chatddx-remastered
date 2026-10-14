@@ -274,8 +274,13 @@ Left:
   (`GET /api/runs/{id}/items`, `answer`).
 - **What it offers**: the configurations whose answer's JSON Schema is titled `management_plan_v1`
   (`GET /api/threads?kind=configuration&answers=…`), the person's own before another's of the same name, others' shown
-  as `owner/name`; and the endpoints whose engine can be told. Picking an endpoint picks the configuration made for its
-  model, when there is one.
+  as `owner/name`; and the endpoints whose engine can be told and that take a typed case (`Endpoint.takes_typed`:
+  cleared for the World's database source, or the source isn't sensitive), so that a run isn't refused for its
+  clearance after the text is kept. Picking an endpoint picks the configuration made for its model, when there is one.
+- **A text kept once**: a text can't be deleted, so the island keeps the family it typed and runs it again while the
+  text is unchanged, rather than keeping the text again when a run is refused or tried elsewhere.
+- **A run that didn't finish** is said so, as one told from the ledger has no `error` event: the run had ended before
+  the island followed it (`frontend/src/lib/runs/progress.ts:failed`).
 - **While it runs**: whether the model is thinking or writing, and its tokens so far. An answer that breaks its schema,
   or was cut short, is shown as far as it goes, and said so.
 

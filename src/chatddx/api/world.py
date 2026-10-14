@@ -31,6 +31,7 @@ def endpoint_of(bench: Bench, name: str, spec: EndpointSpec) -> schemas.Endpoint
         max_jobs=spec.max_jobs,
         credential=spec.credential,
         cleared_for=sorted(bench.inventory.cleared_for(name)),
+        takes_typed=bench.takes_typed(name),
         problem=problem,
     )
 

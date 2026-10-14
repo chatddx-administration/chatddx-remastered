@@ -283,6 +283,12 @@ variation's query parameters to them with `endpoint`, `tag` and `seed`.
 
 | Name | Does |
 | --- | --- |
+```
+AGENT: replace
+endpoint_of also says whether a typed case can run at the endpoint (Bench.takes_typed). Its row:
+---
+| `endpoint_of(bench, name: str, spec: EndpointSpec) -> schemas.Endpoint` | The spec as the inventory declares it, with `Bench.endpoint`, `Bench.title`, `Bench.model`, `url_of` and `Bench.takes_typed`; a `LookupError` from any of the first four is given as `problem`, its message, with what comes after it `None`: `title`, `model` and `url` for an engine that isn't stored, `url` alone for one `url_of` can't tell. |
+```
 | `endpoint_of(bench, name: str, spec: EndpointSpec) -> schemas.Endpoint` | The spec as the inventory declares it, with `Bench.endpoint`, `Bench.title`, `Bench.model` and `url_of`; a `LookupError` from any of them is given as `problem`, its message, with what comes after it `None`: `title`, `model` and `url` for an engine that isn't stored, `url` alone for one `url_of` can't tell. |
 
 | Route | Does |
@@ -327,6 +333,17 @@ Within `refused()`, `Bench.variation` and `Bench.skeleton`; then `Bench.endpoint
 `NotFound` among them, is raised as `HTTPException(422)` with its message. The cases of `_cases`; the seed,
 `suggest_seeds(1)[0]` unless given; and, within `refused()`, `Bench.start`, whose `Refused` passes to `STATUSES`.
 
+```
+AGENT: replace
+_repeated now refuses a case the person no longer sees before running again (src/chatddx/api/runs.py:_repeated).
+The section:
+---
+### `_repeated(run: UUID, given: schemas.NewAgain) -> _Starting`
+`Bench.run_by_id` (`NotFound`); each case of the run's trial of a family of `Bench.families()`, else
+`HTTPException(422, "no case <case> for <login>")`; the seed given, else `suggest_seeds(1)[0]`; and, within
+`refused()`, `Bench.again` of the run, whose `Refused` passes to `STATUSES`. The skeleton is the run's trial's, and the
+endpoint the run's.
+```
 ### `_repeated(run: UUID, given: schemas.NewAgain) -> _Starting`
 `Bench.run_by_id` (`NotFound`); the seed given, else `suggest_seeds(1)[0]`; and, within `refused()`, `Bench.again`
 of the run, whose `Refused` passes to `STATUSES`. The skeleton is the run's trial's, and the endpoint the run's.
@@ -336,6 +353,12 @@ A `Job` of the run from `AppState.jobs` (`HTTPException(409)` while one is under
 `run.started` put; `_sent` on a thread of its own, named `chatddx-run-<id>`; and `Location` the run's path
 (`url_path_for("run")`). Returns `run.started`'s data.
 
+```
+AGENT: replace
+The events route follows a job only while it is under way now (src/chatddx/api/runs.py:events). Its row:
+---
+| `events`, `GET /runs/{run}/events` | `async`. `Bench.run_by_id` (`NotFound`). The job `AppState.jobs` holds for the run while it is under way, followed (`jobs.py:followed`), else `_told`, replayed (`jobs.py:replayed`), each after the `Last-Event-ID` header's id, else from the first. A `StreamingResponse` of `STREAM`, with `NO_STORE` and `X-Accel-Buffering: no`; its description names the events. |
+```
 | Route | Does |
 | --- | --- |
 | `start`, `POST /runs` | `_opened` with `_new(given)`, and `_launched`: a `Job` of the run from `AppState.jobs`, holding its `Running`, with `run.started` put; and `_sent` on a thread of its own. 202, with `Location` the run's path (`url_path_for("run")`) and `run.started`'s data. |
@@ -378,6 +401,20 @@ A run is named by a `UUID`, so anything else in its place is a 422.
 | `ENDS` | Each event that ends what deltas stream, and those deltas' event: `item.ended` ends `item.delta`, `judge.answered` `judge.delta`, of one case and replicate. |
 | `_Said` | An event as put: its `id`, its text as `sse` gives it, and for a delta its event, case and replicate. |
 
+```
+AGENT: replace
+A job is made with what to call when it ends, and Jobs lets it go then (src/chatddx/api/jobs.py). The heading, and
+the rows of end and of Jobs:
+---
+### `class Job(run: UUID, ended: Callable[[Job], None])`
+
+| `end() -> None` | Done: each listener is told `None`, and let go, and so is `running`; then `ended(self)`. |
+
+### `class Jobs`
+The jobs by run, under a lock. `get(run) -> Job | None`; `started(run) -> Job`, a new job, and
+`HTTPException(409, "run <run> has something under way")` in place of one that isn't done. A job is let go when it
+ends.
+```
 ### `class Job(run: UUID)`
 What is under way for a run: `running`, its `Running` while it is sent, and `scoring`, a `chatddx.bench.ScoreHalt`.
 
@@ -398,6 +435,13 @@ done, and `HTTPException(409, "run <run> has something under way")` in place of 
 - `followed(job, after) -> AsyncIterator[str]`: what `Job.listen` gives, then each event as it comes until `None`,
   with `: keep-alive` whenever `KEEP_ALIVE` seconds (15) pass without one, letting go of the listener when the stream
   ends or is left.
+```
+AGENT: replace
+replayed now ends with done whatever the id (src/chatddx/api/jobs.py:replayed):
+---
+- `replayed(told, after) -> AsyncIterator[str]`: each event of `told` after id `after`, its id its place from 1, and
+  `done` even when `after` is past it, as a job's id that counted its deltas is.
+```
 - `replayed(told, after) -> AsyncIterator[str]`: each event of `told` after id `after`, its id its place from 1.
 
 ### Scoring

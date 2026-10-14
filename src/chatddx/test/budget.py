@@ -65,6 +65,10 @@ class Budget:
             if nodeid not in self.skipped
         }
         total = sum(took.values())
+        if not total:
+            terminalreporter.section("slow budget")
+            terminalreporter.write_line("no test ran, so there is nothing to weigh")
+            return
         left, cut = total, 0.0
         for t in sorted(took.values(), reverse=True):
             if left <= total * QUICK:

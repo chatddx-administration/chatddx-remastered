@@ -418,6 +418,10 @@ class Endpoint(_Schema):
     max_jobs: int
     credential: str | None
     cleared_for: list[str]
+    takes_typed: bool = Field(
+        description="whether a case typed into the World's database source can run "
+        + "here: the source isn't sensitive, or the endpoint is cleared for it"
+    )
     problem: str | None
 
 

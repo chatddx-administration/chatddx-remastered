@@ -138,7 +138,8 @@ progress"; `docs/store.md`, "The queue"), as identity's people and sessions are.
 
 ### K3. How events reach a page
 - **E1. Read the ledger**: a page or the API polls the run's rows. Works from any process; item by item; no deltas.
-  Built, as what the API tells a run with nothing in its process (`src/chatddx/api/runs.py:_told`).
+  Built, as what the API tells a run with nothing under way in its process, a finished one included
+  (`src/chatddx/api/runs.py:_told`).
 - **E2. E1, woken by `LISTEN`/`NOTIFY`**: the worker notifies when an item starts or ends, and the API reads the rows
   then. No polling, and still from any process.
 - **E3. E2, with deltas through `NOTIFY`**: a completion as it is written, batched to keep within `NOTIFY`'s payload

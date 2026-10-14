@@ -8,6 +8,7 @@ from uuid import UUID
 from chatddx import settings
 from chatddx.catalog import Entry, EntryField, Subject
 from chatddx.factors.base import resolve
+from chatddx.factors.cases import CleanupOp
 from chatddx.factors.request import Skeleton
 from chatddx.factors.scoring import Scorer
 from chatddx.factors.trial import Trial
@@ -35,7 +36,8 @@ def start(
             f"{variation.label} is a judge configuration: a judge is asked as runs are "
             + "scored, and isn't run on cases"
         )
-    running = _begun(seen, skeleton, endpoint, cases, seed, variation.label)
+    engine = seen.endpoint(endpoint)
+    running = _begun(seen, skeleton, endpoint, engine, cases, (), seed, variation.label)
     _ = keep_compilation(seen, variation)
     return running
 
@@ -48,14 +50,25 @@ def again(seen: Seen, run: RunStarted, seed: int) -> Running:
     trial = resolve(seen.get, run.trial, Trial)
     skeleton = resolve(seen.get, trial.skeleton, Skeleton)
     name = seen.catalog.about(Subject(run=run.run)).name or seen.title(trial.skeleton)
-    return _begun(seen, skeleton, run.endpoint.name, list(trial.cases), seed, name)
+    return _begun(
+        seen,
+        skeleton,
+        run.endpoint.name,
+        trial.engine,
+        list(trial.cases),
+        trial.cleanup,
+        seed,
+        name,
+    )
 
 
 def _begun(
     seen: Seen,
     skeleton: Skeleton,
     endpoint: str,
+    engine: str,
     cases: list[str],
+    cleanup: tuple[CleanupOp, ...],
     seed: int,
     name: str,
 ) -> Running:
@@ -70,7 +83,7 @@ def _begun(
             f"{seen.person.login} has started {started} runs in the last day, as many "
             + "as a day takes"
         )
-    registry, trial = seen.trial(skeleton, seen.endpoint(endpoint), cases, seed)
+    registry, trial = seen.trial(skeleton, engine, cases, seed, cleanup)
     runner = Runner(seen.conn, seen.inventory, seen.person)
     running = runner.start(trial, registry, endpoint)
     seen.catalog.note(

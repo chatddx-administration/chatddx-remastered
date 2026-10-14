@@ -141,6 +141,15 @@ def type_case(
     return seen.family_by_id(family)
 
 
+def takes_typed(seen: Seen, endpoint: str) -> bool:
+    try:
+        into = _typed_into(seen, None)
+    except ValueError:
+        return False
+    sensitive = seen.inventory.source(into).sensitive
+    return not sensitive or into in seen.inventory.cleared_for(endpoint)
+
+
 def _typed_into(seen: Seen, source: str | None) -> str:
     held = sorted(
         s.name for s in seen.inventory.sources.values() if isinstance(s, DatabaseSource)

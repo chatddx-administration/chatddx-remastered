@@ -248,6 +248,28 @@ Most of the plan is compared with what happened (see "What a record holds"), but
   request, from the scorer's reading of the answer (docs/factors.md, "Judge"), aren't rebuilt, and checking a run
   rebuilds none.
 
+```
+AGENT: add
+A potential improvement that came out of the healthcheck's bugs 2 and 3: a stream's ids are places in a job, which
+the ledger's telling of a run can't continue. A subsection for "Open design issues", before "Smaller issues":
+---
+### Telling a run as it was written
+The API tells a run under way from its job, and a run with nothing under way from the ledger (docs/api.md, "Its
+events"). Each numbers its events its own way: the job counts its deltas, the ledger's telling doesn't, so a stream
+can't go on from one to the other, and is told `done` alone instead. If a run's events were numbered by its rows, in
+the order they were written, the two would agree: a stream would go on after any id from the ledger, then from the
+job, in any process, after a restart, and across a scoring again, whose rows follow the run's.
+
+- **The rows' order.** A run's items, canary calls and score items have no order of their own: they are read back
+  without one (src/chatddx/store/store.py:Store.run), and the calls' times only approximate it under concurrency. A
+  column counting the rows as they are written would give it.
+- **What isn't a row.** Deltas, an item that has started, a tool run before its item ends, a judge asked, a scoring
+  starting and an error are told as they happen and kept nowhere. They would carry no id, so that a stream resumed
+  after a row is told the rows after it, then what is under way.
+- **Every score, not only the latest.** Each scoring's rows would be told after the run's, in the order written.
+- **The worker** is to read a run's events from the ledger (agents/wip-worker.md, K3, E2 decided), and would number
+  them the same way.
+```
 ### Smaller issues
 - **Canary drift isn't checked.** Nothing compares canary outputs between phases or between runs.
 - **Only run items are fully attested.** Judge calls get the model check but no prompt check, and canary calls get

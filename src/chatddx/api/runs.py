@@ -119,10 +119,14 @@ def _new(given: schemas.NewRun) -> _Starting:
 def _repeated(run: UUID, given: schemas.NewAgain) -> _Starting:
     def starting(bench: Bench) -> tuple[Running, Skeleton, str, int]:
         before = bench.run_by_id(run)
+        trial = resolve(bench.get, before.trial, Trial)
+        seen = {f.id for f in bench.families()}
+        for case in trial.cases:
+            if bench.catalog.family(case) not in seen:
+                raise HTTPException(422, f"no case {case} for {bench.person.login}")
         seed = suggest_seeds(1)[0] if given.seed is None else given.seed
         with refused():
             running = bench.again(before, seed)
-        trial = resolve(bench.get, before.trial, Trial)
         assert before.endpoint is not None
         return (
             running,
@@ -228,7 +232,7 @@ async def events(
     _ = await run_in_threadpool(bench.run_by_id, run)
     job = state(request).jobs.get(run)
     after = last or 0
-    if job is None:
+    if job is None or job.done:
         told = await run_in_threadpool(_told, bench, run)
         body = replayed(told, after)
     else:
@@ -310,6 +314,9 @@ def _told(bench: Bench, run: UUID) -> list[Named]:
         )
     told.extend(canary_of(c) for c in whole.canaries if c.phase == "end")
     if whole.finished is not None:
+        told.extend(
+            ("run.noted", schemas.Finding.of(f)) for f in whole.finished.findings
+        )
         findings = [schemas.Finding.of(f) for f in check_run(whole, registry)]
         told.append(("run.finished", schemas.RunFinishedData(findings=findings)))
         if graded := bench.scores_of(run):

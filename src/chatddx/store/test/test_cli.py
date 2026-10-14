@@ -58,7 +58,7 @@ def test_person_commands(
 ) -> None:
     monkeypatch.setenv("DB_NAME", db)
     main(["person", "add", "alice", "Alice", "--role", "admin", "--role", "ops"])
-    answers = iter(["secret", "secret", "secret", "typo"])
+    answers = iter(["secret", "secret", "secret", "typo", ""])
 
     def getpass(_prompt: str) -> str:
         return next(answers)
@@ -66,6 +66,8 @@ def test_person_commands(
     monkeypatch.setattr("getpass.getpass", getpass)
     main(["person", "password", "alice"])
     with pytest.raises(SystemExit, match="don't match"):
+        main(["person", "password", "alice"])
+    with pytest.raises(SystemExit, match="can't be empty"):
         main(["person", "password", "alice"])
     assert capsys.readouterr().out.splitlines() == [
         "added alice (id 1)",

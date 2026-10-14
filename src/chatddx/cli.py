@@ -72,6 +72,8 @@ def _person_add(args: argparse.Namespace) -> None:
 
 def _person_password(args: argparse.Namespace) -> None:
     password = getpass.getpass(f"new password for {args.login}: ")
+    if not password:
+        raise SystemExit("a password can't be empty")
     if getpass.getpass("again: ") != password:
         raise SystemExit("passwords don't match")
     with psycopg.connect(settings.database()) as conn:

@@ -60,6 +60,15 @@ A configuration made per language or model is a thread under its full name, unti
 - **A family's vignette**, fetched from the World's source, and whether it still is the text the case was made from
   (unknown under a keyed fingerprint). It is case-derived (see "Case-derived content").
 - **Tags** on the families the person sees.
+```
+AGENT: replace
+Each endpoint now says whether a typed case can run there (src/chatddx/api/schemas.py:Endpoint.takes_typed), which
+the home page offers endpoints by. The item:
+---
+- **Endpoints**: each one's engine and the engine's title, the model it serves, its URL and host, how many requests
+  it takes at once, its credential's name, the sources it is cleared for, and whether a typed case can run there. One
+  whose engine isn't stored, or whose URL can't be told, says why rather than failing the listing.
+```
 - **Endpoints**: each one's engine and the engine's title, the model it serves, its URL and host, how many requests
   it takes at once, its credential's name, and the sources it is cleared for. One whose engine isn't stored, or whose
   URL can't be told, says why rather than failing the listing.
@@ -189,6 +198,17 @@ Once started, it is answered 202 with what `run.started` holds, and the run's pa
 A run is sent under the default execution, with no timeout, and with no canary set or text cleanup.
 
 ### Where it runs
+```
+AGENT: replace
+A job is now let go when it ends (src/chatddx/api/jobs.py:Jobs._drop), and a run with nothing under way is told from
+the ledger. The paragraph:
+---
+A started run is sent on a thread of its own, with a database connection of its own, and is then finished and scored
+under every scorer that applies to it, unless asked not to be, whether or not anyone is listening. It is in the app's
+process for now: what the app has under way for a run, the run or a scoring of it, is a job, which keeps its events
+while it is under way and is let go when it ends, and ends with the process. The worker is to take its place with
+the API as it is (agents/wip-worker.md). Its rows land as they are written, so a run can be read back at any point.
+```
 A started run is sent on a thread of its own, with a database connection of its own, and is then finished and scored
 under every scorer that applies to it, unless asked not to be, whether or not anyone is listening. It is in the app's
 process for now: what the app has under way for a run, the run or a scoring of it, is a job, which keeps its events
@@ -196,6 +216,22 @@ until another job of the run takes its place, and ends with the process. The wor
 as it is (agents/wip-worker.md). Its rows land as they are written, so a run can be read back at any point.
 
 ### Its events
+```
+AGENT: replace
+A finished job is told from the ledger now, even in the process that sent it; the ledger's telling holds what the run
+noted; and a stream asked for after an id past the ledger's numbers, as a live job's that counted its deltas, still
+gets `done` (src/chatddx/api/runs.py:events, src/chatddx/api/jobs.py:replayed). The two paragraphs:
+---
+`GET /api/runs/{id}/events` streams what is under way for the run as it comes, ending with `done`.
+Each event has an `id`, its place in the job, and its data is one line of JSON, whose models are among the OpenAPI
+document's schemas. A delta is kept until its item or judge call has ended, so a stream joined while the job is under
+way has every event but the deltas of what ended before it joined.
+
+A run with nothing under way in the app's process, as one that has finished, or one started before the process or
+elsewhere, is told from the ledger: its items as they ended, with no deltas or judge calls, what it noted, its finish,
+its latest scores, and `done`. Its ids are places in that telling, not in the job, so a stream asked for after an id
+past them, as a job's that counted its deltas too, is told `done` alone.
+```
 `GET /api/runs/{id}/events` streams what is under way for the run as it comes, ending with `done`.
 Each event has an `id`, its place in the job, and its data is one line of JSON, whose models are among the OpenAPI
 document's schemas. A delta is kept until its item or judge call has ended, so a stream joined late has every event
@@ -229,6 +265,16 @@ An item's outcome is stopped, errored, unread, salvaged, completed, invalid or v
 read from it; salvaged is a structured answer cut short, read with its structure closed.
 
 ### Running again
+```
+AGENT: replace
+Running again keeps the trial's engine, so an endpoint that serves another one now refuses it, and a case of a family
+the person no longer sees is refused, as starting a run refuses it. The paragraph:
+---
+A run of the person's runs again with another seed, given or drawn: its trial's skeleton, engine and cases at its
+endpoint, as a run of its own named as the run is, so that a run of a variation nobody saved can be run again without
+its variation. It is started, refused, limited and followed as any run: refused, too, when the endpoint serves
+another engine now, or a case is of a family the person no longer sees.
+```
 A run of the person's runs again with another seed, given or drawn: its trial's skeleton and cases at its endpoint,
 as a run of its own named as the run is, so that a run of a variation nobody saved can be run again without its
 variation. It is started, refused, limited and followed as any run.
@@ -367,6 +413,16 @@ its events (see "Where it runs" and "Its events").
 - **Paths**: under `/api/`, with no version until there is a second.
 
 ### Serving
+```
+AGENT: replace
+A job is let go when it ends, so a long-lived process no longer keeps one per run it sent. The item:
+---
+- **The jobs are the process's.** A run or a scoring under way ends with the process: a server that stops waits for
+  them, and a killed one leaves them unfinished, as resuming isn't built. Another replica doesn't see them, so its
+  streams tell a run under way from the ledger, as far as it has gone, and it can't halt it. A job is let go when it
+  ends, and the run is told from the ledger from then on. The worker is to take their place, with the API as it is
+  (agents/wip-worker.md).
+```
 - **The jobs are the process's.** A run or a scoring under way ends with the process: a server that stops waits for
   them, and a killed one leaves them unfinished, as resuming isn't built. Another replica doesn't see them, so its
   streams tell a run under way from the ledger, as far as it has gone, and it can't halt it. A job is kept with its
