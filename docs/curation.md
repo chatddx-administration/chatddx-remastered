@@ -49,13 +49,7 @@ On top of the fields:
   endpoint, or whose recipe has no variant for its model, is skipped and reported, and so is every scorer whose views
   name it; a binding for a judge the data set doesn't have is reported too. A judge's skeleton may not have tools.
 - **Files.** `json_schema_path` loads a JSON file, relative to the file that names it, in place of `json_schema`.
-```
-AGENT: replace
-agents/wip-variations.md, W1: a variation is a configuration's, and a record of any kind is forked. Its first line.
----
 - **Forks.** `fork_of` names a record of the same kind that this one is a fork of. It is loaded as a fork of
-```
-- **Forks.** `fork_of` names a record of the same kind that this one is a variation of. It is loaded as a fork of
   that record's thread, so the catalog knows what it varies (docs/catalog.md, "Forks"). It inherits no fields. Each
   variant forks the origin's variant in its language and for its model. An origin written in one language only is
   forked in that language, as a part is taken from it (see "Texts"), so `free-text-guided (sv, …)` forks

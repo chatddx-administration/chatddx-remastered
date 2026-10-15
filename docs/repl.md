@@ -92,16 +92,8 @@ Nothing here is sent anywhere.
   (`Bench.case_titled`): a family's name for its case, or `FAMILY with APPENDIX, …` as the catalog titles a case that
   sends appendices (docs/catalog.md, "Titles"). Such a case shows its appendices' texts and its own expectation; a
   family's case names the family's appendices and the cases that send them.
-```
-AGENT: replace
-Renamed (agents/wip-variations.md, W1): a part whose chunk differs between a name's variants is no variation. Its
-first two lines.
----
 - **`configurations [NAME]`** lists a row per configuration name and language: its models, each part as its variants
   share it with the model taken off (`recommended`), or `differs`, and its owner; a fork reads `yours, from OWNER`, and
-```
-- **`configurations [NAME]`** lists a row per configuration name and language: its models, each part as its variants
-  share it with the model taken off (`recommended`), or `varies`, and its owner; a fork reads `yours, from OWNER`, and
   the origin it forks is left out. Judge configurations follow, in a table of their own. With NAME, its variants, a
   row per model and owner.
 - **`endpoints`** lists the World's endpoints: engine, model, URL and the sources each is cleared for.

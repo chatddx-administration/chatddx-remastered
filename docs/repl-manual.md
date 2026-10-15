@@ -117,13 +117,7 @@ judge configurations
 
 `yours, from archive` is your copy of a configuration the archive (the
 shared data set) holds; the archive's own row is left out. A part that
-```
-AGENT: replace
-Renamed (agents/wip-variations.md, W1).
----
 differs between models reads `differs`. With a name, it lists that
-```
-differs between models reads `varies`. With a name, it lists that
 configuration's variants, one per model and owner:
 
 ```
@@ -456,18 +450,9 @@ can't be read is said in red, and the run is recorded all the same. A case
 whose source the endpoint isn't cleared for is refused before anything is
 sent, as are tools on a sensitive source:
 
-````
-AGENT: replace
-The gate's refusal says configuration (src/chatddx/runner/gate.py:bar).
----
 ```
 alice plan-web (en, Qwen/Qwen3-8B-AWQ)×qwen3-8b-awq@fake #69535> run DutchFall10w
 refused: the configuration's tools would get content from source sample, which is sensitive, and tools can't be cleared yet
-```
-````
-```
-alice plan-web (en, Qwen/Qwen3-8B-AWQ)×qwen3-8b-awq@fake #69535> run DutchFall10w
-refused: the skeleton's tools would get content from source sample, which is sensitive, and tools can't be cleared yet
 ```
 
 A model that runs away, writing nothing but whitespace token after token

@@ -105,14 +105,10 @@ a configuration's edit's recipe, the name the person called it by, and the parts
 set by. With nothing replaced, it is the configuration itself. It is a plain value and an unsaved one is just a digest.
 An edge holds it beside the endpoint it is to run at.
 
-```
-AGENT: add
-Decided (agents/wip-variations.md, the take on purpose and appendix layout): a paragraph after the first.
----
 A variation replaces the recipe's nine parts and nothing else. A configuration's purpose and appendix layout are set
 when it is made from a recipe (see "Configurations"): the purpose for good, since a judge configuration is no use
 where a run's is wanted, and the appendix layout until someone wants to vary it, when it becomes a part.
-```
+
 Looking at a variation writes nothing. What an unsaved skeleton was compiled from is stored when it is saved or
 started, by the running code (docs/catalog.md, "Recipes").
 
@@ -286,18 +282,10 @@ changes, which are stored already. That is how a correction to the archive's exp
 ones, and a scorer pinned again by a deploy reaches the person's fork of it.
 
 ## Runs and scores
-```
-AGENT: replace
-Built (agents/wip-variations.md, R2).
----
 - **Starting** runs a variation at an endpoint, on some cases with some seeds, through the runner (docs/runner.md),
   under an execution. As it starts, the run is named by the variation's label and says what it varied: the edit it
   was built on and the parts replaced over it (docs/catalog.md, "What a run ran"). Running again keeps a run's
   cleanup, execution, canary set, name and what it varied under new seeds.
-```
-- **Starting** runs a variation at an endpoint, on some cases with some seeds, through the runner (docs/runner.md),
-  under an execution. The run is named by the variation's label as it starts. Running again keeps a run's cleanup,
-  execution and canary set under new seeds.
 - **Resuming** a run of the person's own that isn't finished sends what its log lacks (docs/runner.md, "Resuming").
 - **A person's runs** are their own, newest first, found by the start of their id, or by a component their trial is
   built on.
@@ -409,13 +397,8 @@ the person were planned in `agents/wip-authoring.md` at b6f76b8. Its takes were 
 - **Taking counts shared threads, not owners**: a case with two threads shared by one owner is to choose from, and
   naming that owner doesn't pick between them. Only two writers at once can leave an owner two (see "One expectation
   per case and schema").
-```
-AGENT: add
-Decided (agents/wip-variations.md, the take on purpose and appendix layout): the end of "Outstanding".
----
 - **The appendix layout as a part** a variation replaces, when someone wants to vary it. It is a value rather than a
   chunk, so a part would hold one where the others hold a digest, at every edge.
-```
 - **What the old bench had and this one doesn't**: what a run left unheeded (the old `outcome.py:unheeded`;
   docs/runner.md, "Smaller issues"); the old crossing of variations, which the portal is to start as several runs
   (agents/wip-portal.md, "Comparing variations"); and what holds a configuration, the portal's
