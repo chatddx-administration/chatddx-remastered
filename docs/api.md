@@ -42,6 +42,13 @@ spaces, as `plan (en, Qwen/Qwen3-8B-AWQ)` does, and they change. So a list takes
 every match, and a path takes an id. An id's prefix, handy at a prompt, could name another run tomorrow, so only
 whole ids are taken.
 
+```
+AGENT: replace
+agents/wip-engine-part.md replaces agents/wip-variants.md: the model becomes a part, not a name. The paragraph.
+---
+A configuration made per language or model is a thread under its full name, until the engine is a part of it and the
+model leaves its name (agents/wip-engine-part.md).
+```
 A configuration made per language or model is a thread under its full name, until variants are recorded as such
 (agents/wip-variants.md).
 
@@ -388,6 +395,13 @@ its events (see "Where it runs" and "Its events").
 - **Roles aren't checked**; Z1 shapes what each role is shown, with the portal (docs/bench.md, "Outstanding").
 
 ### Variations
+```
+AGENT: replace
+agents/wip-engine-part.md replaces agents/wip-variants.md: the model becomes a part, not a name. The item.
+---
+- **Variants.** A client finds `plan (en, Qwen/Qwen3-8B-AWQ)` by its full name. Take: so until the engine is a part
+  (agents/wip-engine-part.md), when it finds `plan (en)`, and the engine is one of its parts.
+```
 - **Variants.** A client finds `plan (en, Qwen/Qwen3-8B-AWQ)` by its full name. Take: so until variants are recorded
   (agents/wip-variants.md, option B), then filters by what a thread is a variant of, its model and its language.
 ### Writes
