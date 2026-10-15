@@ -4775,6 +4775,42 @@
         ],
         "title": "Queue"
       },
+      "Ran": {
+        "properties": {
+          "configuration": {
+            "type": "integer",
+            "title": "Configuration"
+          },
+          "head": {
+            "type": "integer",
+            "title": "Head",
+            "description": "the edit it varied"
+          },
+          "parts": {
+            "additionalProperties": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "type": "object",
+            "title": "Parts",
+            "description": "each part replaced over it: a chunk's digest, or null for one taken out"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "configuration",
+          "head",
+          "parts"
+        ],
+        "title": "Ran"
+      },
       "Reach": {
         "properties": {
           "scorer": {
@@ -4961,6 +4997,17 @@
             "type": "string",
             "title": "Described"
           },
+          "ran": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Ran"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "the variation it ran, as it was started; null for a run started from a trial alone"
+          },
           "finished": {
             "type": "boolean",
             "title": "Finished"
@@ -5004,6 +5051,7 @@
           "cases",
           "seeds",
           "described",
+          "ran",
           "finished"
         ],
         "title": "Run"
@@ -5060,6 +5108,17 @@
           "described": {
             "type": "string",
             "title": "Described"
+          },
+          "ran": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Ran"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "the variation it ran, as it was started; null for a run started from a trial alone"
           },
           "finished": {
             "type": "boolean",
@@ -5147,6 +5206,7 @@
           "cases",
           "seeds",
           "described",
+          "ran",
           "finished",
           "rig",
           "finished_at",

@@ -1,15 +1,34 @@
 # Variations: work in progress
 
-What a variation is across the docs and the code, where its meanings part, and what solidifying it takes. Split from
+What a variation is across the docs and the code, where its meanings part, and what solidifying it took. Split from
 `agents/wip-variants.md`, which keeps the variants, the threads made per language and model, and which variant a
 variation belongs to. Checked against the code at fcef71a, and its quotes again at f7fd2b0, once configurations and
-requests were settled. Nothing below is built. "Decided" means the user said so; "Take" is the agent's and still open.
+requests were settled. "Decided" means the user said so; "Take" is the agent's.
 
-## Start here
-Take: this file first, before `agents/wip-variants.md`. It stands alone: its decisions are the words and three small
-items, with no migration and no reader of names to change. The variants' work is the larger one, a recorded model,
-its migration and every reader of names, and it writes of "a variation of a variant" in the words settled here; its
-question of which variant a variation belongs to (`agents/wip-variants.md`, L) rests on what a variation is.
+## Where it stands
+Decided: the takes, W1, R2 and the one on purpose and appendix layout, and this file before `agents/wip-variants.md`.
+They are built, and the docs have them as suggestions (`AGENT:` blocks naming this file), which wait to be written
+in; then this file goes. What was built:
+1. **The words**: `catalog.Variation` is `catalog.Divergence`, `threads.variation` and `Catalog.variation` are
+   `divergence`, and `Proposed.variation` is `Proposed.divergence`. The repl's `configurations` says `differs` for a
+   part whose chunk differs between a name's variants. "Variation" keeps two types, `bench.TriedVariation` and its
+   look, `api.schemas.Variation`, which are one thing.
+2. **What a run records of what it ran**: two entry fields on a run, `varied`, the configuration's edit, and
+   `replaced`, a part and its chunk or none, one per part replaced (`src/chatddx/catalog/model.py`,
+   `catalog/threads.py:check_varied`, `src/chatddx/store/migrations/0026-t2-catalog-run-variation.sql`). The bench
+   writes them with the run's name as it starts (`src/chatddx/bench/runs.py:start`), running again carries them
+   (`again`), `Bench.ran` reads them, the API's `Run.ran` gives them, and a run's page links the variation as it was
+   tried (`src/chatddx/portal/runs.py:_configuration`), else a version holding its skeleton, as before. Runs from
+   before have none, and are linked as before.
+3. **Purpose and appendix layout**: as they are. A variation replaces the nine parts; the docs say why, and that the
+   appendix layout becomes a part when someone wants to vary it (`docs/bench.md`, "Outstanding").
+4. **A configuration's proposal on its page**, to its owner, with what the fork keeps by part, and following, which
+   comes back to the page (`src/chatddx/portal/configurations.py`, `threads.py:following`'s `next`).
+5. **Tests**: `src/chatddx/store/test/test_catalog.py:test_a_run_says_what_it_varied` and the entry shape held to
+   `RECIPE_PARTS`; `bench/test/test_runs.py:test_a_run_says_what_it_varied_and_running_again_too`;
+   `api/test/test_runs.py`'s `ran`; `portal/test/test_running.py:test_a_run_links_the_variation_it_ran`,
+   `test_varying.py:test_a_fork_follows_its_origin_from_its_page` and
+   `test_a_run_links_the_version_it_ran_else_one_holding_its_skeleton`.
 
 ## Where the word comes from
 In the old chatddx a configuration's parts were *slices*: instruction, output, coercion, reasoning, sampling and
@@ -70,10 +89,13 @@ They cross where init-data makes a variation per variant, and where an edge pick
 endpoint's model; both are `agents/wip-variants.md`'s ("They cross"; L).
 
 Other things the check turned up:
-- **A configuration's page never offers its proposal.** The thread page that does redirects a skeleton to
-  `/configurations/{id}` (`src/chatddx/portal/threads.py:thread_page`), which shows the variation being tried only.
+- **A configuration's page never offered its proposal.** The thread page that does redirects a skeleton to
+  `/configurations/{id}` (`src/chatddx/portal/threads.py:thread_page`), which showed the variation being tried only.
+  Built (4 above).
+- **What a fork varies is compared by recipe**, so what the running code compiles differently isn't in it ("Compiled
+  by which code" above). Suggested as an open issue in `docs/catalog.md`, "Smaller issues".
 
-## The work ahead
+## The work, as it was planned
 Solidifying (`AGENTS.md`, "Staging") means built, described in `docs/`, and this file removed. Here that is:
 1. **The words** (see W): one definition of variation in every doc, as suggestions, and the identifiers that follow
    it: the catalog's `Variation` named after what it is, a fork compared with its base, and with it
@@ -113,6 +135,6 @@ solidified docs still read awkwardly.
 Take: R2. What a person called a run belongs to the catalog, as its name does, and the ledger keeps what ran; a run
 of a trial nobody varied has no entries to write.
 
-## Questions for the user
-- **This file first**, as "Start here" takes it?
-- **The takes** W1, R2, and the appendix layout's.
+## Left
+- **The suggestions** in `docs/` written in, or answered; then this file goes.
+- **W2**, if the solidified docs still read awkwardly with both words.

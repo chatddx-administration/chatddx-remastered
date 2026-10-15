@@ -117,6 +117,12 @@ judge configurations
 
 `yours, from archive` is your copy of a configuration the archive (the
 shared data set) holds; the archive's own row is left out. A part that
+```
+AGENT: replace
+Renamed (agents/wip-variations.md, W1).
+---
+differs between models reads `differs`. With a name, it lists that
+```
 differs between models reads `varies`. With a name, it lists that
 configuration's variants, one per model and owner:
 

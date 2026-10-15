@@ -12,6 +12,12 @@ Paths are relative to `src/chatddx/catalog/` unless they start with `src/` or `d
 - [Conventions](#conventions)
 - [model.py](#modelpy): kinds, language tags, rows, entries, `About`, `latest`, results
 - [read.py](#readpy): `Reader` and the helpers that pick the latest
+```
+AGENT: replace
+Renamed (agents/wip-variations.md, W1).
+---
+- [threads.py](#threadspy): threads, edits, heads, expectations, forks, divergences, proposals, `behind`
+```
 - [threads.py](#threadspy): threads, edits, heads, expectations, forks, variations, proposals, `behind`
 - [families.py](#familiespy): bindings, `family_of`, adopting, surveying, repairing, stale cases
 - [language.py](#languagepy): a component's language, and the checks on writing one
@@ -22,6 +28,16 @@ Paths are relative to `src/chatddx/catalog/` unless they start with `src/` or `d
 - [Known gaps](#known-gaps)
 
 ## Package
+```
+AGENT: replace
+Renamed (agents/wip-variations.md, W1): `Variation` is `Divergence`, after what it is, a fork compared with its base.
+---
+`chatddx.catalog` re-exports `LANGUAGE`, `LANGUAGE_KINDS`, `THREAD_KINDS`, `About`, `Behind`, `Binding`, `Divergence`,
+`Edit`, `Entry`, `EntryField`, `Kept`, `Labels`, `MovedOn`, `Part`, `Reader`, `Repair`, `RepairPlan`, `Subject`,
+`Survey`, `Thread`, `check_label`, `language_of`, `language_tag`, `latest`, `made_for`, `variant_name`,
+`variants_for`, and the modules `families`, `language`, `read`, `threads`, `titles` and `variants`. Functions are
+called through their module (`threads.behind(rows, thread)`); `model.py` is imported by path.
+```
 `chatddx.catalog` re-exports `LANGUAGE`, `LANGUAGE_KINDS`, `THREAD_KINDS`, `About`, `Behind`, `Binding`, `Edit`,
 `Entry`, `EntryField`, `Kept`, `Labels`, `MovedOn`, `Part`, `Reader`, `Repair`, `RepairPlan`, `Subject`, `Survey`,
 `Thread`, `Variation`, `check_label`, `language_of`, `language_tag`, `latest`, `made_for`, `variant_name`,
@@ -67,6 +83,14 @@ third-party package but pydantic. It holds no SQL: it reads through a `Reader` a
 - `LookupError`: a thread, edit or family that doesn't exist (`no thread with id <id>`, `no edit with id <id>`, `no
   family with id <id>`); a digest that isn't stored where one is required (`check_adoptable`, `check_language`);
   `picked` with several expectations to choose from.
+```
+AGENT: replace
+Built (agents/wip-variations.md, R2): `check_varied`.
+---
+- `ValueError`: a rule refused before writing (`check_threadable`, `check_based_on`, `check_expectation`,
+  `check_varied`, `check_adoptable`, `plan_repair`, `check_language`, `check_entry`, `check_label`, `language_tag`),
+  and `MovedOn`, from `check_head`.
+```
 - `ValueError`: a rule refused before writing (`check_threadable`, `check_based_on`, `check_expectation`,
   `check_adoptable`, `plan_repair`, `check_language`, `check_entry`, `check_label`, `language_tag`), and `MovedOn`,
   from `check_head`.
@@ -85,6 +109,16 @@ third-party package but pydantic. It holds no SQL: it reads through a `Reader` a
   `chunk.output`, `chunk.toolset`, `chunk.translations` and `skeleton`. `0012` repeats them (`language_kind_check`).
 - `LANGUAGE`: `^[a-z]{2,3}(-[A-Za-z0-9]{1,8})*$`, which takes `sv`, `pt-BR` and `zh-Hant-TW` and refuses `SV` and
   `en_US`. `0012` repeats it.
+```
+AGENT: add
+Built (agents/wip-variations.md, R2): after `LANGUAGE`.
+---
+- `VARIED`: `^[1-9][0-9]{0,17}$`, an edit's id as a `varied` entry holds it. `0026` repeats it.
+- `REPLACED`: `^(<the parts, RECIPE_PARTS, joined by |>)=(sha256:[0-9a-f]{64})?$`, a part and the chunk it was set to,
+  or nothing for a part taken out, as a `replaced` entry holds them. `0026` repeats it, and
+  `src/chatddx/store/test/test_catalog.py` holds the database's to `RECIPE_PARTS`.
+- `RUN_FIELDS`: `VARIED` and `REPLACED`, the fields only a run takes.
+```
 - `Part`: `Literal["view", "resource"]`.
 - `Labels`: `Mapping[tuple[Part, int], str]`, what a scorer edit calls its views and resources, by part and position.
 - `Kept`: `Literal["created", "edited", "unchanged"]`, what `Catalog.keep` did.
@@ -97,6 +131,13 @@ third-party package but pydantic. It holds no SQL: it reads through a `Reader` a
 An edit named a head that isn't the thread's head any more (`threads.check_head`).
 
 ### `class EntryField(StrEnum)`
+```
+AGENT: replace
+Built (agents/wip-variations.md, R2).
+---
+`NAME`, `DESCRIPTION`, `TAG`, `OWNER`, `COLLABORATOR`, `DELETED`, `LANGUAGE`, `VARIED` and `REPLACED`, valued as their
+lowercase names. `0012` repeats the first seven (`entry_field_check`), and `0026` all of them.
+```
 `NAME`, `DESCRIPTION`, `TAG`, `OWNER`, `COLLABORATOR`, `DELETED` and `LANGUAGE`, valued as their lowercase names. `0012`
 repeats them (`entry_field_check`).
 
@@ -149,6 +190,14 @@ The shape each field takes:
 - `owner`: a `person`; it can't be removed.
 - `collaborator`: a `person`; without `present`, that person is removed.
 - `deleted`: neither; without `present`, the subject is restored.
+```
+AGENT: add
+Built (agents/wip-variations.md, R2): after `language`.
+---
+- `varied`: a `value` that `VARIED` matches, an edit's id; it can't be removed.
+- `replaced`: a `value` that `REPLACED` matches, `PART=DIGEST`, or `PART=` for a part taken out; it can't be removed,
+  only replaced by another about the same part.
+```
 - `language`: a `value` that is a language tag; it can't be removed.
 
 Raises, wrapped in `ValidationError`:
@@ -157,6 +206,25 @@ Raises, wrapped in `ValidationError`:
 - `ValueError("<field> can't be empty")`
 - `language_tag`'s `ValueError`.
 
+```
+AGENT: add
+Built (agents/wip-variations.md, R2): the end of the list, and the two constructors after it.
+---
+- `ValueError("'<value>' is not an edit's id")`, for `varied`.
+- `ValueError("'<value>' is not PART=DIGEST, or PART= for a part taken out")`, for `replaced`.
+
+#### `Entry.varied(edit: int) -> Self` and `Entry.replaced(part: str, digest: str | None) -> Self`
+A `varied` entry naming the edit, and a `replaced` entry setting the part to the digest, or taking it out for `None`.
+```
+```
+AGENT: replace
+Built (agents/wip-variations.md, R2).
+---
+The model doesn't know its subject: `language.check_entry` refuses a `language` entry on anything but a family, and
+`threads.check_varied` a `varied` or `replaced` entry on anything but a run. `0012` repeats the shapes
+(`entry_shape_check`) and the family rule (`entry_language_check`); `0026` the shapes again, and the run rule
+(`entry_run_check`).
+```
 The model doesn't know its subject: `language.check_entry` refuses a `language` entry on anything but a family. `0012`
 repeats the shapes (`entry_shape_check`) and the family rule (`entry_language_check`).
 
@@ -170,7 +238,23 @@ What a subject's entries say now. It is a `chatddx.identity.Owned`, by its `owne
 - `deleted: bool = False`
 - `language: str | None = None`
 
+```
+AGENT: add
+Built (agents/wip-variations.md, R2): the end of `About`'s fields.
+---
+- `varied: int | None = None`: for a run, the configuration's edit its variation was built on.
+- `replaced: dict[str, str | None] = {}`: for a run, each part replaced over it, the chunk's digest or `None` for a
+  part taken out, in `RECIPE_PARTS` order.
+```
 #### `About.of(entries: Iterable[Entry]) -> Self`
+```
+AGENT: replace
+Built (agents/wip-variations.md, R2).
+---
+The entries folded in the order given. For `name`, `description`, `owner`, `deleted`, `language` and `varied` the
+last entry wins. For `tag` and `collaborator` the last entry about each member wins, and for `replaced` the last about
+each part. No entries give `About()`.
+```
 The entries folded in the order given. For `name`, `description`, `owner`, `deleted` and `language` the last entry
 wins. For `tag` and `collaborator` the last entry about each member wins. No entries give `About()`.
 
@@ -181,6 +265,13 @@ For each key, the value of its last row. A key keeps the position of its first r
 - Raises `ValueError("<scorer digest> has no <part> at position <position>")` unless the scorer has a view or a
   resource there. `0018` repeats it for the scorer of the label's edit.
 
+```
+AGENT: replace
+Renamed (agents/wip-variations.md, W1): the heading and the line after it.
+---
+### `class Divergence`
+What `threads.divergence` returns: a fork compared with its base.
+```
 ### `class Variation`
 What `threads.variation` returns.
 - `base: Edit`: the origin edit the fork is compared with.
@@ -288,6 +379,19 @@ Nothing for no labels.
 - Raises `check_label`'s `ValueError` for a position the scorer at `digest` hasn't.
 - Raises `ValueError("the label of <part> <position> is empty")`.
 
+```
+AGENT: add
+Built (agents/wip-variations.md, R2): before `thread`.
+---
+### `check_varied(rows: Reader, subject: Subject, entry: Entry) -> None`
+Nothing for an entry of another field than `RUN_FIELDS`. `0026` repeats it (`entry_run_check`,
+`catalog.check_varied`).
+- Raises `ValueError("a <field> entry is about a run, and what it ran")` for a subject that isn't a run.
+- Raises `ValueError("edit <id> is no configuration's")` for a `varied` entry naming an edit that isn't a skeleton
+  thread's, or none.
+- Raises `ValueError("<digest> isn't a stored chunk of <part>")` for a `replaced` entry whose chunk isn't stored as
+  that part's kind.
+```
 ### `thread(rows: Reader, id: int) -> Thread`
 - Raises `LookupError("no thread with id <id>")`.
 
@@ -364,6 +468,12 @@ What is behind:
 
 Raises `history`'s `LookupError` for a thread without edits.
 
+```
+AGENT: replace
+Renamed (agents/wip-variations.md, W1).
+---
+### `divergence(rows: Reader, id: int) -> Divergence | None`
+```
 ### `variation(rows: Reader, id: int) -> Variation | None`
 What a fork varies from its base, or `None` for a thread that isn't a fork. The base is the edit of the fork's latest
 `based_on`, else its `forked_from`.
@@ -374,6 +484,12 @@ What a fork varies from its base, or `None` for a thread that isn't a fork. The 
 Raises `LookupError` for a thread that doesn't exist, or a fork without edits.
 
 ### `proposal(rows: Reader, id: int) -> Recipe | Component | None`
+```
+AGENT: replace
+Renamed (agents/wip-variations.md, W1).
+---
+The origin's head with the fork's changes on top, or `None` when `divergence` gives none or one that hasn't `moved`.
+```
 The origin's head with the fork's changes on top, or `None` when `variation` gives none or one that hasn't `moved`.
 Nothing is stored.
 - Compared by recipe: a `Recipe` to compile; `None` when the origin's head names no compilation.
@@ -591,6 +707,12 @@ with a psycopg error when the Python lets it through.
 
 Reads, each the package function of that name, or the one given, over `Rows`:
 - `thread`, `history`, `head`, `heads`, `find`, `expecting`, `forks`, `origin`, `expectations_of`, `behind`,
+```
+AGENT: replace
+Renamed (agents/wip-variations.md, W1).
+---
+  `divergence`, `proposal`: `threads`.
+```
   `variation`, `proposal`: `threads`.
 - `recipe(thread)`: `threads.recipe` of the thread's head.
 - `containing(digest) -> list[Edit]`: `Reader.edits_holding([digest])`.
@@ -641,6 +763,12 @@ Raises `families.check_adoptable`'s.
 
 ### `note(subject: Subject, entry: Entry, by: int) -> None`
 The entry, about the subject. A run's or a score's has to have started.
+```
+AGENT: replace
+Built (agents/wip-variations.md, R2).
+---
+- Raises `language.check_entry`'s, `threads.check_varied`'s, and, for a thread, `threads.check_expectation`'s.
+```
 - Raises `language.check_entry`'s, and, for a thread, `threads.check_expectation`'s.
 
 ### `language(digest: str, value: str, by: int) -> None`
@@ -707,6 +835,13 @@ No columns but `id`, `by` and `at`.
 - `run uuid`, with `run_stage text`, always `'started'` with a run: `(run, run_stage)` references `ledger.run_stage`.
 - `score uuid`, with `score_stage text`, always `'started'` with a score: `(score, score_stage)` references
   `ledger.score_stage`.
+```
+AGENT: replace
+Built (agents/wip-variations.md, R2).
+---
+- `field text NOT NULL`: one of `EntryField` (`entry_field_check`, 0012, and again with `varied` and `replaced`,
+  0026).
+```
 - `field text NOT NULL`: one of `EntryField` (`entry_field_check`, 0012).
 - `value text`
 - `person bigint`: references `identity.person`.
@@ -715,6 +850,16 @@ No columns but `id`, `by` and `at`.
 Checks:
 - `num_nonnulls(thread, family, run, score) = 1`, and a stage exactly with its run or score (0010).
 - `entry_shape_check` (0012): the shapes under `Entry`.
+```
+AGENT: add
+Built (agents/wip-variations.md, R2): after `entry_language_check`.
+---
+- `entry_shape_check` again (0026), with `varied` and `replaced`.
+- `entry_run_check` (0026): `field NOT IN ('varied', 'replaced') OR run IS NOT NULL`.
+- Constraint trigger `entry_varied` (0026), after the row's checks: `catalog.check_varied()` raises `edit <id> is no
+  configuration's` for a `varied` entry naming no skeleton edit, and `<digest> isn't a stored chunk of <part>` for a
+  `replaced` entry whose chunk isn't stored as that part's kind, as `threads.check_varied` does.
+```
 - `entry_language_check` (0012): `field <> 'language' OR family IS NOT NULL`.
 
 ### `catalog.label`
@@ -750,6 +895,13 @@ It checks:
 - thread kinds;
 - that an edit holds a stored component of its thread's kind;
 - where forks, `based_on` and compilations point (see `catalog.edit`);
+```
+AGENT: replace
+Built (agents/wip-variations.md, R2).
+---
+- that an entry has exactly one subject, a run or score that has started, a known field and the right shape, a
+  language only on a family, and what a run varied only on a run, naming a configuration's edit and stored chunks;
+```
 - that an entry has exactly one subject, a run or score that has started, a known field and the right shape, and a
   language only on a family;
 - that a label names a view or resource its scorer has;

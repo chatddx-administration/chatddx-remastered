@@ -1,5 +1,5 @@
 import threading
-from collections.abc import Callable, Collection, Generator, Sequence
+from collections.abc import Callable, Collection, Generator, Mapping, Sequence
 from contextlib import contextmanager, nullcontext
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
@@ -24,7 +24,7 @@ from .configurations import keep_compilation
 from .errors import OverQuota
 from .model import Graded
 from .seen import Seen
-from .variation import TriedVariation
+from .variation import PARTS, TriedVariation
 
 REFUSALS = (LookupError, TypeError, ValueError, NotImplementedError, Refused)
 
@@ -56,6 +56,10 @@ def start(
         cases,
         seeds,
         variation.label,
+        _varying(
+            variation.configuration.id,
+            {p: variation.parts[p][0] for p in PARTS if p in variation.parts},
+        ),
         cleanup=_cleanup_of(seen, cases) if cleanup is None else tuple(cleanup),
         execution=execution or spec.execution,
         canaries=None if canaries is None else resolve(seen.get, canaries, CanarySet),
@@ -85,7 +89,7 @@ def again(seen: Seen, run: RunStarted, seeds: Sequence[int]) -> Running:
         )
     trial = resolve(seen.get, run.trial, Trial)
     skeleton = resolve(seen.get, trial.skeleton, Skeleton)
-    name = seen.catalog.about(Subject(run=run.run)).name or seen.title(trial.skeleton)
+    about = seen.catalog.about(Subject(run=run.run))
     return _begun(
         seen,
         skeleton,
@@ -93,7 +97,8 @@ def again(seen: Seen, run: RunStarted, seeds: Sequence[int]) -> Running:
         trial.engine,
         list(trial.cases),
         seeds,
-        name,
+        about.name or seen.title(trial.skeleton),
+        _varying(about.varied, about.replaced),
         cleanup=trial.cleanup,
         execution=run.execution,
         canaries=None
@@ -101,6 +106,12 @@ def again(seen: Seen, run: RunStarted, seeds: Sequence[int]) -> Running:
         else resolve(seen.get, run.canaries, CanarySet),
         verify_at=run.verify_at,
     )
+
+
+def _varying(edit: int | None, replaced: Mapping[str, str | None]) -> list[Entry]:
+    if edit is None:
+        return []
+    return [Entry.varied(edit), *(Entry.replaced(p, d) for p, d in replaced.items())]
 
 
 def resume(seen: Seen, run: UUID) -> Running:
@@ -116,6 +127,7 @@ def _begun(
     cases: list[str],
     seeds: Sequence[int],
     name: str,
+    said: Sequence[Entry],
     *,
     cleanup: tuple[CleanupOp, ...],
     execution: Execution | None,
@@ -136,11 +148,9 @@ def _begun(
     registry, trial = seen.trial(skeleton, engine, cases, seeds, cleanup)
     runner = Runner(seen.conn, seen.inventory, seen.person)
     running = runner.start(trial, registry, endpoint, execution, canaries, verify_at)
-    seen.catalog.note(
-        Subject(run=running.run),
-        Entry(field=EntryField.NAME, value=name),
-        seen.person.id,
-    )
+    with seen.conn.transaction():
+        for entry in (Entry(field=EntryField.NAME, value=name), *said):
+            seen.catalog.note(Subject(run=running.run), entry, seen.person.id)
     return running
 
 

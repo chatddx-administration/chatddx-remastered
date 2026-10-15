@@ -1,7 +1,7 @@
 from dataclasses import dataclass, field
 from typing import Literal
 
-from chatddx.catalog import About, Edit, Kept, Part, Variation
+from chatddx.catalog import About, Divergence, Edit, Kept, Part
 from chatddx.factors.base import Component, Finding
 from chatddx.factors.request import Recipe, SlotName
 from chatddx.factors.scoring import Scorer
@@ -94,7 +94,7 @@ class Saved:
 
 @dataclass(frozen=True)
 class Proposed:
-    variation: Variation
+    divergence: Divergence
     proposal: Recipe | Component
     digest: str
     compilation: str | None

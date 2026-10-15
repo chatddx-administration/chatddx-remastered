@@ -118,6 +118,16 @@ it, if any. A new schema gets its own section with all three tiers.
     `src/chatddx/catalog/threads.py:check_labels`). The trigger and the insert-only triggers go back on the new table,
     dropped first where a store migrated to tier 0 has them from `0012`.
 
+```
+AGENT: add
+Built (agents/wip-variations.md, R2): the end of catalog's "Tier 2".
+---
+  - `0026-t2-catalog-run-variation.sql`: the entry fields `varied` and `replaced`, which only a run takes
+    (`entry_run_check`); `entry_field_check` and `entry_shape_check` dropped and made again with them, their values
+    as `src/chatddx/catalog/model.py:VARIED` and `REPLACED` have them; and a constraint trigger, after the row's
+    checks, that a `varied` entry names an edit of a configuration and a `replaced` one a stored chunk of its part
+    (`catalog.check_varied()`, `src/chatddx/catalog/threads.py:check_varied`).
+```
 ## source
 
 ### Tier 0

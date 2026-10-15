@@ -42,9 +42,9 @@ def test_forks_vary_their_base_and_follow_it_on_request() -> None:
         origin.thread,
         None,
     )
-    varied = threads.variation(rows, fork.thread)
-    assert varied is not None
-    assert (varied.varies, varied.moved) == (
+    diverged = threads.divergence(rows, fork.thread)
+    assert diverged is not None
+    assert (diverged.varies, diverged.moved) == (
         {"/max_output_tokens": (None, 4096)},
         False,
     )
@@ -56,9 +56,9 @@ def test_forks_vary_their_base_and_follow_it_on_request() -> None:
     with pytest.raises(ValueError, match="origin"):
         threads.check_based_on(rows, fork.thread, fork.id)
     _ = rows.save(fork.thread, cooler_longer, based_on=moved.id)
-    varied = threads.variation(rows, fork.thread)
-    assert varied is not None
-    assert (varied.base, varied.moved) == (moved, False)
+    diverged = threads.divergence(rows, fork.thread)
+    assert diverged is not None
+    assert (diverged.base, diverged.moved) == (moved, False)
 
 
 def test_behind_names_every_thread_that_moved_on() -> None:

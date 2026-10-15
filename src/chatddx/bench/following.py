@@ -1,4 +1,4 @@
-from chatddx.catalog import LANGUAGE_KINDS, Labels, Part, Variation
+from chatddx.catalog import LANGUAGE_KINDS, Divergence, Labels, Part
 from chatddx.factors.bundle import Registry
 from chatddx.factors.request import Recipe
 from chatddx.factors.scoring import Expectation, Scorer
@@ -34,7 +34,7 @@ def follow(seen: Seen, thread: int, head: int, language: str | None = None) -> W
     labels = None
     if isinstance(proposed.proposal, Scorer):
         seen.check_scorer(proposed.proposal)
-        labels = _followed_labels(seen, thread, proposed.variation)
+        labels = _followed_labels(seen, thread, proposed.divergence)
     kept = [proposed.compilation or proposed.digest]
     with seen.conn.transaction():
         _ = seen.store.add(registry, kept)
@@ -45,28 +45,28 @@ def follow(seen: Seen, thread: int, head: int, language: str | None = None) -> W
             proposed.digest,
             seen.person.id,
             compilation=proposed.compilation,
-            based_on=proposed.variation.origin_head.id,
+            based_on=proposed.divergence.origin_head.id,
             head=head,
             labels=labels,
         )
     return Written(edit, "a new version", seen.linted(proposed.digest))
 
 
-def _followed_labels(seen: Seen, thread: int, varied: Variation) -> Labels:
+def _followed_labels(seen: Seen, thread: int, diverged: Divergence) -> Labels:
     fork = seen.catalog.labels(seen.catalog.head(thread).id)
-    origin = seen.catalog.labels(varied.origin_head.id)
+    origin = seen.catalog.labels(diverged.origin_head.id)
     kept: dict[tuple[Part, int], str] = {}
     for part in LABELLED:
-        side = fork if f"/{part}s" in varied.varies else origin
+        side = fork if f"/{part}s" in diverged.varies else origin
         kept |= {k: v for k, v in side.items() if k[0] == part}
     return kept
 
 
 def _proposed(seen: Seen, thread: int, word: str) -> tuple[Proposed, Registry] | None:
-    varied = seen.catalog.variation(thread)
-    if varied is None or not varied.moved:
+    diverged = seen.catalog.divergence(thread)
+    if diverged is None or not diverged.moved:
         return None
-    if not sees(seen.person.id, seen.about(varied.origin_head.thread)):
+    if not sees(seen.person.id, seen.about(diverged.origin_head.thread)):
         return None
     try:
         proposal = seen.catalog.proposal(thread)
@@ -75,11 +75,11 @@ def _proposed(seen: Seen, thread: int, word: str) -> tuple[Proposed, Registry] |
         if isinstance(proposal, Recipe):
             registry, compilation = seen.compiled(proposal)
             digest = compilation.skeleton
-            proposed = Proposed(varied, proposal, digest, compilation.digest)
+            proposed = Proposed(diverged, proposal, digest, compilation.digest)
         else:
             registry = seen.store.load(s.digest for s in proposal.refs())
             digest = registry.add(proposal)
-            proposed = Proposed(varied, proposal, digest, None)
+            proposed = Proposed(diverged, proposal, digest, None)
     except ValueError as e:
         raise ValueError(
             f"{word} {thread}'s changes don't fit its origin's head: {e}"

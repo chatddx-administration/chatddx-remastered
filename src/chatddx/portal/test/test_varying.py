@@ -93,6 +93,40 @@ def test_a_fork_links_the_configuration_it_was_forked_from(signed: TestClient) -
 
 
 @pytest.mark.slow
+def test_a_fork_follows_its_origin_from_its_page(signed: TestClient) -> None:
+    mine = thread(signed, "configuration", LINES)
+    off = thread(signed, "reasoning", OFF)
+    forks = f"/api/threads/{mine['id']}/forks"
+    fork = signed.post(
+        forks, json={"name": "terse", "parts": {"reasoning": off["head"]["digest"]}}
+    ).json()
+    path = f"/configurations/{fork['id']}"
+    assert "Its origin has moved on" not in shown(signed, path)
+
+    greedy = thread(signed, "sampling", "greedy")["head"]["digest"]
+    edits = f"/api/threads/{mine['id']}/edits"
+    got = signed.post(
+        edits, json={"head": mine["head"]["id"], "parts": {"sampling": greedy}}
+    )
+    assert got.status_code == 201
+    page = shown(signed, path)
+    assert "Its origin has moved on" in page
+    assert f"reasoning</span>: yours keeps {OFF} over —" in page
+    assert "Its origin has moved on" not in shown(
+        signed, f"/configurations/{mine['id']}"
+    )
+
+    head = signed.get(f"/api/threads/{fork['id']}").json()["head"]
+    got = signed.post(
+        f"/threads/{fork['id']}/follow", data={"head": head["id"], "next": path}
+    )
+    assert (got.status_code, got.headers["location"]) == (303, path)
+    assert "Its origin has moved on" not in shown(signed, path)
+    followed = signed.get(f"/api/threads/{fork['id']}/variation").json()
+    assert {p["part"]: p["digest"] for p in followed["parts"]}["sampling"] == greedy
+
+
+@pytest.mark.slow
 def test_its_versions_are_stepped_through_keeping_what_is_set(
     signed: TestClient,
 ) -> None:
@@ -150,7 +184,9 @@ def test_the_runs_of_the_variation_are_on_its_page(signed: TestClient) -> None:
 
 
 @pytest.mark.slow
-def test_a_run_links_the_version_it_ran(signed: TestClient) -> None:
+def test_a_run_links_the_version_it_ran_else_one_holding_its_skeleton(
+    signed: TestClient,
+) -> None:
     runs = signed.get("/api/runs", params={"limit": 200}).json()
     configurations = signed.get(
         "/api/threads", params={"kind": "configuration", "owner": "alice"}
@@ -169,3 +205,8 @@ def test_a_run_links_the_version_it_ran(signed: TestClient) -> None:
     page = shown(signed, f"/runs/{run['id']}")
     assert f'href="/configurations/{ran["id"]}?head={ran["head"]["id"]}"' in page
     assert "an earlier version" in page
+
+    assert signed.delete(f"/api/threads/{ran['id']}").status_code == 204
+    archives = thread(signed, "configuration", ran["name"], "archive")
+    page = shown(signed, f"/runs/{run['id']}")
+    assert f'href="/configurations/{archives["id"]}"' in page

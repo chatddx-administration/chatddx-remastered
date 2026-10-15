@@ -6,6 +6,7 @@ from chatddx.catalog import (
     About,
     Behind,
     Binding,
+    Divergence,
     Edit,
     Entry,
     EntryField,
@@ -16,7 +17,6 @@ from chatddx.catalog import (
     Subject,
     Survey,
     Thread,
-    Variation,
     families,
     language,
     read,
@@ -447,8 +447,8 @@ class Catalog:
     def recipe(self, thread: int) -> Recipe | None:
         return threads.recipe(self._rows, threads.head(self._rows, thread))
 
-    def variation(self, thread: int) -> Variation | None:
-        return threads.variation(self._rows, thread)
+    def divergence(self, thread: int) -> Divergence | None:
+        return threads.divergence(self._rows, thread)
 
     def proposal(self, thread: int) -> Recipe | Component | None:
         return threads.proposal(self._rows, thread)
@@ -518,6 +518,7 @@ class Catalog:
 
     def note(self, subject: Subject, entry: Entry, by: int) -> None:
         language.check_entry(subject, entry)
+        threads.check_varied(self._rows, subject, entry)
         if subject.thread is not None:
             threads.check_expectation(self._rows, subject.thread, entry=entry)
         _ = self._conn.execute(

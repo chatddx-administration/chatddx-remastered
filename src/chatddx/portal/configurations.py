@@ -1,7 +1,9 @@
+import json
 from typing import Annotated, Any
 from urllib.parse import urlencode
 
 from fastapi import APIRouter, Query, Request, Response
+from pydantic import JsonValue
 
 from chatddx import settings
 from chatddx.api import (
@@ -52,6 +54,14 @@ def configuration(
     look = api.variation(bench, thread, query.model_copy(update={"endpoint": endpoint}))
     shown = api.detail(bench, thread)
     forked = None if shown.forked_from is None else bench.rows.edit(shown.forked_from)
+    mine = shown.owner == bench.person.login
+    proposal = None
+    if mine and forked is not None and not shown.deleted:
+        proposal = api.proposal(bench, thread)
+    changes = [
+        (v.path.removeprefix("/recipe/"), _held(bench, v.base), _held(bench, v.fork))
+        for v in ([] if proposal is None else proposal.varies)
+    ]
     versions = api.edits(bench, thread)
     at = next(i for i, v in enumerate(versions) if v.id == look.head.id)
     runs = api_runs.runs(bench, reaching=look.skeleton, limit=20)
@@ -82,17 +92,25 @@ def configuration(
         person=bench.person,
         configuration=shown,
         origin=None if forked is None else forked.thread,
+        proposal=proposal,
+        changes=changes,
         versions=versions,
         at=at,
         look=look,
         runs=runs,
-        links=[_linked(query, v.id, versions[-1].id) for v in versions],
+        links=[linked(query, v.id, versions[-1].id) for v in versions],
         props=props,
         island="variation",
     )
 
 
-def _linked(query: schemas.Varying, head: int, latest: int) -> str:
+def _held(bench: Bench, value: JsonValue) -> str:
+    if isinstance(value, str) and bench.rows.kind(value) is not None:
+        return bench.title(value)
+    return "—" if value is None else json.dumps(value)
+
+
+def linked(query: schemas.Varying, head: int, latest: int) -> str:
     given: list[tuple[str, str | int]] = [
         (part, digest or "") for part, digest in query.given().items()
     ]

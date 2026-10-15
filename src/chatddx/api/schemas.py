@@ -574,6 +574,15 @@ class RunJob(_Schema):
     ended: datetime | None
 
 
+class Ran(_Schema):
+    configuration: int
+    head: int = Field(description="the edit it varied")
+    parts: dict[str, str | None] = Field(
+        description="each part replaced over it: a chunk's digest, or null for one "
+        + "taken out"
+    )
+
+
 class Run(_Schema):
     id: UUID
     at: datetime
@@ -584,6 +593,10 @@ class Run(_Schema):
     cases: list[str]
     seeds: list[int]
     described: str
+    ran: Ran | None = Field(
+        description="the variation it ran, as it was started; null for a run started "
+        + "from a trial alone"
+    )
     finished: bool
     unscored: list[Unscored] | None = Field(
         default=None,
