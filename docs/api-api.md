@@ -198,13 +198,6 @@ The token set as `COOKIE`: `Max-Age` `settings.SESSION_TTL` in seconds, `Secure`
 ## schemas.py
 The models' fields are in the OpenAPI document. Besides them:
 
-```
-AGENT: add
-Two rows after `NewFollow`.
----
-| `CorrectedFacts` | What following a configuration's facts would keep: `facts` (the facts thread's id), `model`, `compiled` (the facts its head was compiled against), `head` (the facts thread's head), `digest` and `compilation`, or `refused`. |
-| `NewFollowFacts` | A follow of the facts' body: `head` (required). |
-```
 | Name | Is |
 | --- | --- |
 | `_Schema` | The base of every model: frozen, `extra="forbid"`. |
@@ -226,6 +219,8 @@ Two rows after `NewFollow`.
 | `MadeThread(ThreadDetail)`, `MadeEdit(Edit)` | What a write answers: the thread or the edit, with `findings`; an edit also with `cases`, each case an appendix's edit replaced and its replacement. |
 | `Varied`, `Proposal` | A path a fork varies, with the base's and the fork's values; and what following would keep: `base` and `origin_head` (edits), `varies`, `recipe` for a configuration or `component` for another kind, `digest` and `compilation`. |
 | `NewFollow` | A follow's body: `head` (required) and `language`. |
+| `CorrectedFacts` | What following a configuration's facts would keep: `facts` (the facts thread's id), `model`, `compiled` (the facts its head was compiled against), `head` (the facts thread's head), `digest` and `compilation`, or `refused`. |
+| `NewFollowFacts` | A follow of the facts' body: `head` (required). |
 | `NewTyped` | A typed case's body: `text`, and `name`, `language` and `source`, each optional. |
 | `NewAppendix` | An appendix's body: `text` and `name`, neither empty. |
 | `FamilyCase` | A case of a family: `case`, `title`, `appendices`, `default` (the case the family stands for) and `expectations`, as `FamilyDetail`'s. |
@@ -269,13 +264,6 @@ variation's query parameters to them with `endpoint`, `tag` and `seed`.
 | `part_of(bench, variation: TriedVariation, part: str, landed: Landing \| None = None) -> schemas.Part` | The part's digest (`TriedVariation.held`), its title (`Bench.title`), what it holds (`catalog.titles.describe`), and whether the variation replaced it; with `landed`, a reasoning level's or a recommended sampling's landing, as `Bench.landed` gives it, its level as `landed` and its reasons as `nearest`. A part not held has `None` for each. |
 | `reach_of(reach: chatddx.bench.Reach) -> schemas.Reach` | The bench's reach, with the scorer's thread as `scorer`, its name as `name`, the missing families by id, and those with expectations to choose from as `choosing`. |
 
-```
-AGENT: add
-Two rows after `follow`.
----
-| `facts`, `GET /threads/{thread}/facts` | Within `refused()`: `Bench.corrected`. `null` when there are none. |
-| `follow_facts`, `POST /threads/{thread}/facts/follows` | Within `refused()`: `Bench.follow_facts(thread, head)`. 201 with the edit's `edit_of` and findings. |
-```
 | Route | Does |
 | --- | --- |
 | `threads`, `GET /threads` | … kept by `name` (whole), `owner` (a login) and any of `tag`; `Catalog.edit_languages` of the kept heads, given to `thread_of`. |
@@ -285,6 +273,8 @@ Two rows after `follow`.
 | `say`, `PATCH /threads/{thread}` | `HTTPException(422, "a description is replaced, never taken away")` for a null `description`, and `HTTPException(422, "no person '<login>'")` for a collaborator nobody is (`People.find`). Within `refused()`: `Bench.say`, with `...` for a `name` not given. 200, `detail`. |
 | `proposal`, `GET /threads/{thread}/proposal` | Within `refused()`: `Bench.proposal`. `null` when there is none. |
 | `follow`, `POST /threads/{thread}/follows` | Within `refused()`: `Bench.follow(thread, head, language)`. 201 with the edit's `edit_of` and findings. |
+| `facts`, `GET /threads/{thread}/facts` | Within `refused()`: `Bench.corrected`. `null` when there are none. |
+| `follow_facts`, `POST /threads/{thread}/facts/follows` | Within `refused()`: `Bench.follow_facts(thread, head)`. 201 with the edit's `edit_of` and findings. |
 | `carry`, `POST /threads/{thread}/carries` | Within `refused()`: `Bench.carry(thread, head, case)`. 201 with the edit's `edit_of` and findings. |
 | `delete`, `DELETE /threads/{thread}` | Within `refused()`: `Bench.say(thread, deleted=True)`. 204, also when it was deleted already. |
 | `new`, `POST /threads` | Within `refused()`: `Bench.new(Bench.component(component), name, language, labels.given())`, or with `Recipe.model_validate(recipe)`. 201, `made`. |
@@ -517,12 +507,6 @@ docs/worker-api.md, "The command").
 
 ## Tests
 
-```
-AGENT: replace
-Following facts. The `test_following.py` row.
----
-| `test_following.py` | A fork with nothing to follow, then a proposal once the archive's configuration moved on, a stale head, following, and nothing proposed after; a configuration's corrected facts, none for bob, a stale head, following them, and none after. |
-```
 | Module | Holds |
 | --- | --- |
 | `conftest.py` | `template` is `curated`, the test World as init-data lands it; `autocommit`; `alice`, with `PASSWORD`; `served`, the app on the test World's inventory, with a worker; `listening`, `served` by uvicorn on a thread; `client`, a `TestClient` over `https://testserver`; `signed`, the client with alice's bearer; `bob`, his bearer's header; `bench`, alice's; and the helpers `sign_in` and `bearer`. |
@@ -532,7 +516,7 @@ Following facts. The `test_following.py` row.
 | `test_kinds.py` | The kinds with their JSON Schemas and what their references take; a component checked as a write would store it, with nothing written, the lints said, and what a write would refuse refused. |
 | `test_cases.py` | A family's cases, an appendix written for it, a case built of it and replaced by the appendix's edit, and an expectation carried onto the replacement; cases refused; a run naming a case that isn't one. |
 | `test_typed.py` | A typed case answered as a family, its vignette read back, and bob not seeing it; what can't be typed, and 429 past the day's quota. |
-| `test_following.py` | A fork with nothing to follow, then a proposal once the archive's configuration moved on, a stale head, following, and nothing proposed after. |
+| `test_following.py` | A fork with nothing to follow, then a proposal once the archive's configuration moved on, a stale head, following, and nothing proposed after; a configuration's corrected facts, none for bob, a stale head, following them, and none after. |
 | `test_scorers.py` | The scoring code shipped, as pickers read it; a scorer of the archive's forked with its labels, a view renamed by an edit and the history's labels, and one written new; scorers refused, and labels given where nothing has them. |
 | `test_said.py` | Saying what holds of a thread, sharing it with bob and taking it back; refusals; deleting, listing and reading the deleted thread, and restoring it; a session needed. |
 | `test_variations.py` | Looks, forks and edits; a look rendered and linted for its engine without an endpoint, and the same with its endpoint named; an engine swapped, a level landing on its nearest and the sampling following it, and an engine taken out or an endpoint serving another refused; a judge configuration looked at as a judge, with no reach; that a look's queries don't grow with its cases, counted on the test's database (the fixtures create the next test's meanwhile). |

@@ -44,14 +44,8 @@ The modules, and the ones each builds on:
   `WITH`; on `components.py`, `errors.py`, `model.py` and `seen.py`.
 - `taking.py`: `take`, `take_from`; on `errors.py`, `model.py` and `seen.py`.
 - `saying.py`: `say`; on `errors.py`, `model.py` and `seen.py`.
-```
-AGENT: replace
-`corrected` and `follow_facts`. The item.
----
 - `following.py`: `proposal`, `follow`, `corrected`, `follow_facts`; on `components.py`, `errors.py`, `model.py` and
   `seen.py`.
-```
-- `following.py`: `proposal`, `follow`; on `components.py`, `errors.py`, `model.py` and `seen.py`.
 - `runs.py`: `start`, `again`, `score`, `REFUSALS`, `ScorerStarted`, `ScoringEvent`, `ScoreHalt`; on
   `configurations.py`, `errors.py`, `model.py`, `seen.py` and `variation.py`.
 - `bench.py`: `Bench`; on `seen.py` and the writes.
@@ -235,10 +229,6 @@ A run's score under one scorer, or why there is none.
 - `digest: str`: the component's, or the compiled skeleton's.
 - `compilation: str | None`: for a recipe.
 
-```
-AGENT: add
-`Corrected`, what following a configuration's facts would keep. A class before `Written`.
----
 #### `class Corrected`
 - `behind: Behind`: the catalog's `/facts` entry, with the facts compiled against and the facts thread's head.
 - `model: str`: the model the facts are about.
@@ -246,7 +236,7 @@ AGENT: add
 - `compilation: str | None`: its compilation.
 - `refused: str | None`: why the corrected facts refuse what the recipe asks; `digest` and `compilation` are then
   `None`.
-```
+
 #### `class Written`
 - `edit: Edit`: what was kept.
 - `what: Literal["created", "a new version", "unchanged"]`
@@ -550,10 +540,6 @@ sent: `None` when it is, else why not:
 The recipe compiled by the running code against `facts_for` its engine, in a registry with what it refers to and
 those facts, which the compilation names. Nothing is stored.
 
-```
-AGENT: replace
-A trial's or judge's skeleton's compilations go beside it, for `trial.engine_unmatched` and `judge.engine_unmatched`. The entry, and `add_compilations` after it.
----
 #### `linted(digest: str) -> list[Finding]`
 `lints` of the stored component, with `Catalog.language_of` for languages; a trial or a judge with its skeleton's
 compilations (`add_compilations`).
@@ -562,9 +548,6 @@ compilations (`add_compilations`).
 Adds each stored compilation of `skeleton`, and the facts it names, to `registry`, where the factors' lint reads them.
 `findings` adds them for a configuration with no recipe; one with a recipe pairs its own engine, so has none to
 check. `components.py:check` adds them for a judge.
-```
-#### `linted(digest: str) -> list[Finding]`
-`lints` of the stored component, with `Catalog.language_of` for languages.
 
 #### `check_kind(thread: int, word: str, component: Component) -> None`
 - Raises `ValueError("<word> <thread> holds <kind> components, not <kind>")`.
@@ -801,10 +784,6 @@ Raises:
 - `Seen.check_expecting`'s and `Seen.check_scorer`'s.
 - `MovedOn`
 
-```
-AGENT: add
-`corrected` and `follow_facts`. Two entries at the end of following.py.
----
 ### `corrected(thread: int) -> Corrected | None`
 What following the facts of `thread`, a configuration the person sees, would keep: its head's recipe compiled by
 `Seen.compiled`, against the facts as they are stored now. `None` when the head has no compilation, or the catalog's
@@ -821,7 +800,7 @@ Raises:
 - `ValueError("configuration <thread> has no corrected facts to follow")`
 - `ValueError("configuration <thread> can't follow the facts about <model>: <why>")`
 - `MovedOn`
-```
+
 ## runs.py
 
 ### `REFUSALS`
@@ -891,48 +870,25 @@ same test World.
   of its recipes on `QWEN`, seed 7, over its cases of those vignette ids; `ran(conn, by, made, finished=True)`, a run
   of it recorded without sending; `another_expectation(bench, case, data)`, a second expectation of the person's own
   for the case, left by two writers at once.
-```
-AGENT: replace
-A hand-written configuration on another model. The item.
----
 - `test_seen.py`: what a person sees, by name, `OWNER/NAME` and id; variations; runs and what reaches a digest; what is
   left to score; the expectation a case is held to, and several to choose from; scorers that apply, judged or not;
   a run's scores; judge configurations; a swapped engine keeping every other pick, where its intents land, on their
   nearest or not, and a level its model refuses; a hand-written configuration on another model than its skeleton is
   worked out for; names per language; saving, forking and editing; taking.
-```
-- `test_seen.py`: what a person sees, by name, `OWNER/NAME` and id; variations; runs and what reaches a digest; what is
-  left to score; the expectation a case is held to, and several to choose from; scorers that apply, judged or not;
-  a run's scores; judge configurations; a swapped engine keeping every other pick, where its intents land, on their
-  nearest or not, and a level its model refuses; names per language; saving, forking and editing; taking.
 - `test_runs.py`: a run's seeds, cleanup, execution and canaries, kept when it runs again; what it varied; a run at
   the endpoint serving its engine, or one named, refused for an endpoint serving another engine and for an engine two
   endpoints serve; its items, cases times seeds; resuming one's own; the sources' cleanup and the endpoint's canaries
   and execution.
-```
-AGENT: replace
-The judge on another model. The item.
----
 - `test_writes.py`: configurations from recipes; chunks and expectations, new, edited and forked, with their
   languages; what is refused; an expectation's lints and the one-expectation rule; judges, and a judge on another model
   than its skeleton is worked out for.
-```
-- `test_writes.py`: configurations from recipes; chunks and expectations, new, edited and forked, with their
-  languages; what is refused; an expectation's lints and the one-expectation rule; judges.
 - `test_cases.py`: appendices, cases of them, and an appendix's edit storing a replacement; carrying an expectation;
   refusals; a late case's replacement after a repair; cases found by title.
 - `test_typed.py`: a typed case with its family, name and language; the same text typed twice; refusals and the day's
   quota; a typed case run on the fake vLLM.
-```
-AGENT: replace
-Following facts. The item.
----
 - `test_following.py`: a configuration and a taken expectation following the archive; nothing to follow, another's
   thread, a head that moved on, a language for a compiled configuration, and an origin no longer shared; a
   configuration following its corrected facts, a correction that doesn't reach it, and one that refuses it.
-```
-- `test_following.py`: a configuration and a taken expectation following the archive; nothing to follow, another's
-  thread, a head that moved on, a language for a compiled configuration, and an origin no longer shared.
 - `test_scorers.py`: a scorer of the person's own, with its labels, the runs it applies to and its lints; refusals;
   forks and their labels; following; a scorer refused once a deploy raises its version.
 - `test_said.py`: names, descriptions, tags and collaborators; refusals; deleting, listing and finding deleted

@@ -304,10 +304,6 @@ Any kind the person owns a fork of is followed, since a proposal holds only the 
 changes, which are stored already. That is how a correction to the archive's expectations reaches the person's taken
 ones, and a scorer pinned again by a deploy reaches the person's fork of it.
 
-```
-AGENT: add
-Following corrected facts (`Bench.corrected`, `Bench.follow_facts`). A section before this heading.
----
 ### Following its facts
 A configuration is behind its facts when the facts about its engine's model were corrected where they change what it
 sends (docs/catalog.md, "What has moved on"). The bench shows what following them would keep, to anyone who sees the
@@ -322,7 +318,7 @@ the corrected facts.
 
 Following an origin compiles against the facts as they are stored then, so a fork following its origin follows its
 facts too.
-```
+
 ## Runs and scores
 - **Starting** runs a variation at the endpoint serving its engine, or the one named (see "The engine"), on some
   cases with some seeds, through the runner (docs/runner.md), under an execution. As it starts, the run is named by
@@ -382,12 +378,6 @@ check before the other has written.
 
 ## Terms
 
-```
-AGENT: add
-A row after `Following`.
----
-| Following its facts | Keeping a configuration's recipe, compiled against the facts corrected since, as an edit of the person's own. |
-```
 | Term | Meaning |
 | --- | --- |
 | Bench | What one person sees and does, whatever the edge. |
@@ -404,6 +394,7 @@ A row after `Following`.
 | Carrying | Editing an expectation onto another case of its family, with the same data. |
 | Saying | Writing what holds of a thread: its name, description, tags, collaborators, and whether it is deleted. |
 | Following | Keeping the catalog's proposal as an edit of the person's fork, based on its origin's head. |
+| Following its facts | Keeping a configuration's recipe, compiled against the facts corrected since, as an edit of the person's own. |
 | Typed case | A case whose vignette is a text the person typed, kept in a database source. |
 | Cell | The repl's word for a variation being tried together with the endpoint it runs at, named or found from its engine. |
 
