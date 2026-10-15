@@ -91,8 +91,8 @@ field a model doesn't name is a 422, and so is a query parameter where the query
 query parameter a route doesn't name is ignored. Components,
 recipes, facts, calls, tool runs and fingerprints are given as the JSON they dump to, not as models of their own.
 
-**Case-derived places.** `families.py:vignette`, `runs.py:items`, `scores.py:items` and a run's stream are the only
-routes that give case-derived content, and each says `Cache-Control: no-store`: the first three through
+**Sensitive places.** `families.py:vignette`, `runs.py:items`, `scores.py:items` and a run's stream are the only
+routes that give sensitive content, and each says `Cache-Control: no-store`: the first three through
 `state.py:no_store`, the stream with `state.py:NO_STORE` among its headers.
 
 ## app.py
@@ -144,7 +144,7 @@ A dependency: a connection for the request, closed when the request is done with
 `{"Cache-Control": "no-store"}`.
 
 ### `no_store(response: Response) -> None`
-A dependency of the case-derived routes: `NO_STORE` among the response's headers.
+A dependency of the sensitive routes: `NO_STORE` among the response's headers.
 
 ## people.py
 
@@ -381,7 +381,7 @@ A run is named by a `UUID`, so anything else in its place is a 422.
 | `score_now`, `POST /runs/{run}/scores` | `Bench.run_by_id` (`NotFound`); `HTTPException(422)`: `"run <run> hasn't finished"`, `"scorer <digest> doesn't apply to run <run>"` for the first of `scorers` that doesn't, and `"no scorer applies to run <run>"`. `Queue.put` of a job scoring the run by the scorers `events.py:scoring_of` gives, at the run's endpoint, `""` for none, holding no slots; `UnderWay` while the run has one queued or under way (409). 202, with `Location` the run's scores' path and `run.scoring`'s data. |
 | `scores`, `GET /runs/{run}/scores` | `Bench.run_by_id` (`NotFound`), then `graded_of` each of `Bench.scores_of(run, every)`, `every` being the query's `all`: the latest under each scorer by name, or every score, newest first. |
 | `score`, `GET /runs/{run}/scores/{score}` | `graded_of` of `Bench.score_of(run, score)`, whose `NotFound` is for a run that isn't the person's and a score that isn't the run's. |
-| `items`, `GET /runs/{run}/scores/{score}/items` | `Bench.score_of(run, score)`, then each of its score's items with its detail and judge calls dumped, and its finish's findings, none when it hasn't finished. Case-derived. |
+| `items`, `GET /runs/{run}/scores/{score}/items` | `Bench.score_of(run, score)`, then each of its score's items with its detail and judge calls dumped, and its finish's findings, none when it hasn't finished. Sensitive. |
 
 ## queue.py
 

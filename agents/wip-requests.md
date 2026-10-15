@@ -10,17 +10,17 @@ Checked against the code at fcef71a: the runner, the ledger, the gate, the facto
 - **R1.** A request is the body one call sends to an engine (see "Options", R, for the definition).
 - **K1.** The item key's wording: an item is a case's replicate in a run, its first request and each tool round's,
   each sent as a call that may take several attempts.
-- **B2.** The clearance boundary is every destination of case-derived content, built where `agents/wip-clearance.md`
+- **B2.** The clearance boundary is every destination of sensitive content, built where `agents/wip-clearance.md`
   builds it, the gate deciding per run.
-- **C1.** The hard block guards case-derived content, the vignette included.
+- **C1.** The hard block guards sensitive content, the vignette included.
 
 ### Done
 - **The definition, as suggestions**: `docs/chatddx.md` (glossary: fingerprint, sensitive, insert, request, call,
-  attempt, tool round, item, item key, execution, case-derived, wire body; the hard block in "Compromises" and
+  attempt, tool round, item, item key, execution, sensitive, wire body; the hard block in "Compromises" and
   "Findings and errors"; the dataflow's slots, its tool rounds and its run item), `docs/factors.md` ("Requests",
-  "Rendering", "Tool rounds", "Execution", "Terms"), `docs/ledger.md` ("Case-derived records", "Run items", "Call",
+  "Rendering", "Tool rounds", "Execution", "Terms"), `docs/ledger.md` ("Sensitive records", "Run items", "Call",
   "Terms"), `docs/ledger-api.md` (`ItemKey`, `RunItem`, "Known gaps"), `docs/runner.md` ("The gate", "Calls"),
-  `docs/api.md` ("Case-derived content", "Terms") and `docs/scripted.md` (a turn per attempt).
+  `docs/api.md` ("Sensitive content", "Terms") and `docs/scripted.md` (a turn per attempt).
 - **`judge.greedy_seeds`** says a greedy judge's seeds send the same request (`src/chatddx/factors/lint.py`), as
   `docs/factors-api.md` has it.
 - **`agents/wip-clearance.md`**: B2 and C1 in its scope, and what item 6 of "Before real patient data" keeps is the
@@ -59,7 +59,7 @@ The code uses the word for one thing: the body that one call sends (`Call.reques
 ### The stages, as built
 A generation item, from what people write to what the ledger keeps:
 
-| Stage | What it holds | Made by | Case-derived | Kept |
+| Stage | What it holds | Made by | Sensitive | Kept |
 | --- | --- | --- | --- | --- |
 | Chunks | each part's text and settings | people, init-data | no | components |
 | Recipe | a chunk per part, a purpose, an appendix layout | people | no | in a compilation |
@@ -78,16 +78,16 @@ Beside a generation item:
   (`src/chatddx/bench/seen.py:Seen.request`).
 - **Rendered again** renders an item's first request with its real fills, in memory, and compares its fingerprint
   with the call's (`Seen.rendered_again`; the repl's `replay`, `GET /api/runs/{id}/rendered-again`).
-- **A canary's** is literal messages and settings, the model and the seed added (`Canary.render`): not case-derived,
+- **A canary's** is literal messages and settings, the model and the seed added (`Canary.render`): not sensitive,
   one call, no rounds.
 - **A judge's** is a skeleton of purpose `judge`, rendered with the view's picks of the answer and of the expectation
-  as `completion` and `expectation`, once per seed, one call each, no rounds. It is case-derived through the
+  as `completion` and `expectation`, once per seed, one call each, no rounds. It is sensitive through the
   completion.
 - **Live deltas and tool runs** pass through the database's notification queue as they come, keyed by case and
   replicate (`src/chatddx/worker/publish.py`).
 
 ### Where clearance falls today
-- **What makes a request case-derived**: the vignette's fill in a generation request, and the completion's in a
+- **What makes a request sensitive**: the vignette's fill in a generation request, and the completion's in a
   judge's. Each later request of an item carries the earlier responses too.
 - **The gate decides per run, from what the run pins**, before anything is prepared or rendered: the endpoint serves
   the trial's engine; every sensitive source of the trial's cases is cleared for it (`[cleared]`); the skeleton has no
@@ -100,15 +100,15 @@ Beside a generation item:
 - **Tools** are refused outright on a sensitive source, by whether the skeleton has any (`bool(skeleton.tools)`),
   since no tool can be cleared yet; on a source that isn't sensitive, a tool sends the model's arguments wherever its
   code does.
-- **Beyond the engine**, case-derived content also reaches the ledger (run items, score items, a score's finish), the
+- **Beyond the engine**, sensitive content also reaches the ledger (run items, score items, a score's finish), the
   notification queue, the edges (the repl's terminal; the API's no-store places; the portal), a job's `why`, which
   isn't no-store, an engine's error body kept verbatim, and any proxy the environment names. Nothing gates these;
   `agents/wip-clearance.md` tracks each ("Takes", Open 5, "Before real patient data" 4, 6, 10 and 12).
-- **The words disagree on what is guarded.** The hard block is worded over case-derived content ("sending
-  case-derived content to an engine without clearance", `docs/chatddx.md`), but case-derived is "content produced from
+- **The words disagree on what is guarded.** The hard block is worded over sensitive content ("sending
+  sensitive content to an engine without clearance", `docs/chatddx.md`), but sensitive is "content produced from
   a vignette" there, so the vignette itself isn't, while `docs/api.md` counts the vignette in. The wire body is
   "sensitive if it contains a vignette", but a judge's holds a completion and no vignette. `prepare_case`'s output is
-  "the case-derived fills" in `agents/wip-clearance.md`, appendices included, which aren't sensitive. "Passed to,
+  "the sensitive fills" in `agents/wip-clearance.md`, appendices included, which aren't sensitive. "Passed to,
   non-approved sources" (`docs/chatddx.md`, "Sensitive") uses "source" for a destination.
 
 ### The item key
@@ -185,7 +185,7 @@ Decided: K1.
 - **B1. At the engine, per run**, as built: a run and a judged scoring are admitted from what they pin, and
   everything they send goes to the admitted endpoint. Complete for engines and judges; silent on every other
   destination.
-- **B2. At every destination of case-derived content**: B1, and the tools' third parties (cleared by entry point,
+- **B2. At every destination of sensitive content**: B1, and the tools' third parties (cleared by entry point,
   version and the hosts they reach, as `agents/wip-clearance.md` plans), the database (records, the notification
   queue, a job's reasons, typed texts), the edges and exports, each cleared and refused when not. A run's start record
   could name where its content may go.
@@ -195,11 +195,11 @@ Decided: K1.
 Decided: B2, with the decision kept per run as in B1.
 
 #### C. What the hard block guards
-- **C1. Case-derived content, the vignette included**: the vignette and all that is made from it (fills, rendered
+- **C1. Sensitive content, the vignette included**: the vignette and all that is made from it (fills, rendered
   requests, completions, tool arguments and results, judge requests and responses, error bodies). The wire body is
   sensitive when it holds any; appendices and expectations stay outside it. One word for the block, as
   `docs/api.md` has it.
-- **C2. As worded now**: the vignette is sensitive, case-derived is what is made from it, and the block names the
+- **C2. As worded now**: the vignette is sensitive, sensitive is what is made from it, and the block names the
   second.
 
 Decided: C1.

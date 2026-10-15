@@ -55,22 +55,11 @@ depend on the order storage returns records in, and adding a field with a defaul
 recomputes the seal and warns when it differs: records were added, removed or changed after the log was finished. The
 finish record itself is outside the seal (see "Open design issues").
 
-### Case-derived records
-```
-AGENT: replace
-Decided (agents/wip-requests.md, C1): the vignette is case-derived too, and an engine's refusal kept as a response may
-echo the request (agents/wip-clearance.md, "Before real patient data" 6). The paragraph's first two lines and its first
-bullet.
----
-The vignette and content produced from it are *case-derived*. Each record type says whether it may hold any, and a
+### Sensitive records
+The vignette and content produced from it are *sensitive*. Each record type says whether it may hold any, and a
 new type is assumed to unless it says otherwise. Three types do:
 - run items: their responses hold the completions, the arguments the model passed to tools, and an engine's refusal,
   which may echo the request; their tool rounds hold what the tools returned;
-```
-Content produced from a vignette is *case-derived*. Each record type says whether it may hold any, and a new type is
-assumed to unless it says otherwise. Three types do:
-- run items: their responses hold the completions and the arguments the model passed to tools, and their tool rounds
-  hold what the tools returned;
 - score items: their judge responses grade completions and may quote them, and the scorer's detail may hold anything;
 - a score's finish: its findings can quote the answer, as `answer.invalid` names the value the schema refused.
 
@@ -110,17 +99,9 @@ trial, execution settings and canaries. On a batch-invariant engine a rerun may 
 reproducing a run is best-effort (docs/factors.md, "Local engine" and "Execution").
 
 ### Run items
-```
-AGENT: replace
-Decided (agents/wip-requests.md, K1): an item is a case's replicate, its first request and each tool round's.
----
 A run item records a case's replicate and what came back: which case and which replicate, the fingerprint of the
 vignette as it was read from its source (to detect drift; docs/factors.md, "Preparing a case"), the first call, and the
 tool rounds that followed, each with its call: one request more than the skeleton's round limit, at most.
-```
-A run item records one request of the trial and what came back: which case and which replicate, the fingerprint of the
-vignette as it was read from its source (to detect drift; docs/factors.md, "Preparing a case"), the first call, and the
-tool rounds that followed.
 
 ### Tool rounds
 When the skeleton offers tools and a response calls some, the runner runs them and sends another request
@@ -166,19 +147,10 @@ Two runs whose trials build their prompts alike can also be compared, to show wh
 for the same item both times.
 
 ## Call
-```
-AGENT: replace
-Decided (agents/wip-requests.md, R1 and K1). The first two sentences.
----
 A call records one exchange with an engine: an item's first request, a tool round's, a canary's or a judge's, sent
 in one or more attempts. It holds a fingerprint of the request, when it started and finished, how many attempts it
 took, the status and the response if one came, the error if it failed, and a fingerprint of the prompt the engine
 read.
-```
-A call records one exchange with an engine: an item's request, a tool round's, a canary's or a judge's. It holds a
-fingerprint of the request, when it started and finished, how many attempts it took, the status and the response if
-one came, the error if it failed, and a fingerprint of the prompt the engine read. With retries, its times span every
-attempt.
 
 The request body isn't stored, since it holds the case's text (docs/factors.md, "Rendering"). Its fingerprint doesn't
 depend on how a client spells the JSON or orders the request's settings, but it does depend on the order of a schema's
@@ -248,18 +220,10 @@ for queries. Stored records are never changed or deleted.
 - Every row is numbered as it is written, from one counter across the tables, so that a run's rows, its scores'
   included, are read back in the order they were written; rows from before the counter are numbered in no particular
   order. Each write tells those listening for the run that rows have landed (docs/store.md, "Records").
-- The reader role can't read the ledger at all, which is the store's answer to "Case-derived records".
+- The reader role can't read the ledger at all, which is the store's answer to "Sensitive records".
 
 ## Terms
 
-```
-AGENT: replace
-Decided (agents/wip-requests.md, R1 and K1): the row Item, and Request and Attempt beside Call.
----
-| Item | One case's replicate in a run: its first request and each tool round's; or how one view graded one run item. |
-| Request | The body one call sends to an engine. |
-| Attempt | One try at sending a call's request. |
-```
 | Term | Meaning |
 | --- | --- |
 | Record | What the rig writes when something happens; never changed. |
@@ -267,11 +231,12 @@ Decided (agents/wip-requests.md, R1 and K1): the row Item, and Request and Attem
 | Ledger | All records: the run and score logs. |
 | Log | A run or a score: a start record, item records and a finish record, only ever added to. |
 | Stage | A log's start or finish record. |
-| Item | One request of a run, by case and replicate; or how one view graded one run item. |
+| Item | One case's replicate in a run: its first request and each tool round's; or how one view graded one run item. |
 | Call | One exchange with an engine. |
+| Request | The body one call sends to an engine. |
+| Attempt | One try at sending a call's request. |
 | Tool round | Running the tools a response called, and sending the next request. |
 | Seal | The hash over a log's records, kept in its finish record. |
-| Case-derived | Produced from a vignette: completions, tool arguments and results, judge responses. |
 | Attestation | What the engine says about itself: the model it answered as and the prompt it read. |
 
 ## Open design issues

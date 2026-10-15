@@ -150,19 +150,14 @@ every digest. A bundle is exported from the store, and imported by loading it an
 
 ## Terms
 
-```
-AGENT: add
-Decided (agents/wip-requests.md, R1): rows after Skeleton.
----
-| Request | The body one call sends to an engine: a skeleton rendered, or a tool round's next request. |
-| Item | One case's replicate in a run: its first request and each tool round's. |
-```
 | Term | Meaning |
 | --- | --- |
 | Factor | Anything that can change an output or its score. |
 | Pinned, recorded, observed | The three ways a factor is held: fixed in advance by digest, written into a run's or a score's start record, or only detected afterwards. |
 | Component | An immutable set of parameters identified by its digest. Pinned factors are held in components. |
 | Digest | The hash of a component's canonical form. Components are told apart and referred to by it. |
+| Request | The body one call sends to an engine: a skeleton rendered, or a tool round's next request. |
+| Item | One case's replicate in a run: its first request and each tool round's. |
 | Instrument | A component that measures without being a factor: canary sets. |
 | Provenance | A component that says how another was made, without being a factor: compilations. |
 | Run | One execution of a trial: its requests, responses and records. |
@@ -240,14 +235,8 @@ longer match the case.
 ## Requests
 
 ### Overview
-```
-AGENT: replace
-Decided (agents/wip-requests.md, R1): what a request is, before the layers it is built in.
----
 A *request* is the body one call sends to an engine: a skeleton rendered with its fills, the served model and the
 seed (see "Rendering"), or a tool round's next request (see "Tool rounds"). It is built in three layers:
-```
-A request is built in three layers:
 1. Chunks are written in the portal, one component per part of the request.
 2. A recipe picks one chunk per part.
 3. The compiler turns the recipe into a skeleton: the frozen request that trials and judges reference.
@@ -430,29 +419,14 @@ Rendering produces the request that is sent:
 3. The seed is added, unless sampling is greedy.
 4. The response is asked to carry the prompt's token ids, so a run can fingerprint what the model was actually given.
 
-```
-AGENT: replace
-Decided (agents/wip-requests.md, R1): the ledger keeps the request's fingerprint, not the request.
----
 What the rig adds at send time can't be set by any chunk, skeleton or canary. The runner streams every request and
 reassembles the completion it records; the request it fingerprints is the request as rendered, without the streaming
 options.
-```
-What the rig adds at send time can't be set by any chunk, skeleton or canary. The runner streams every request and
-reassembles the completion it records; what it records as the request is the request as rendered.
 
 ### Tool rounds
-```
-AGENT: replace
-Decided (agents/wip-requests.md, R1): the next request keeps the settings and the seed, but is another body, with a
-fingerprint of its own.
----
 A response that calls tools gets another request: the last one, plus the assistant's message (its content and tool
 calls, without its reasoning) and one answer per call, in the calls' order. Its settings stay, the seed included; its
 body, and so its fingerprint, is its own.
-```
-A response that calls tools gets another request: the same request, plus the assistant's message (its content and tool
-calls, without its reasoning) and one answer per call, in the calls' order. Everything else stays, the seed included.
 
 The loop belongs to the runner. It ends when a response calls no tool, calls the answer function, or has no whole answer
 (an error or a cutoff), or after the round limit. A tool is called with the call's arguments and returns text. A call
@@ -532,13 +506,7 @@ the seeds still count toward the trial's digest (see "Greedy sampling and seeds"
 When a run issues its requests, or a score its judge requests, its execution settings say:
 - the order in which items are sent: every replicate of a case before the next case (the default), every case once per
   replicate, or shuffled by a declared seed;
-```
-AGENT: replace
-Decided (agents/wip-requests.md, K1): the runner holds items in flight, each sending its requests one after another.
----
 - how many items may be in flight at once, each sending its requests one after another (one by default);
-```
-- how many requests may be in flight at once (one by default);
 - an optional timeout;
 - how many transport retries a call may take (none by default);
 - a runaway cutoff, on by default: a call that answers a long run of nothing but whitespace is cut short and keeps what

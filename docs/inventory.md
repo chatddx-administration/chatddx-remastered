@@ -141,7 +141,7 @@ The sample's fake host keeps its models under their repository names, which the 
 its one chat template, the empty one, is the null device.
 
 ## Clearance
-The clearance table lists, for each endpoint, the sensitive sources it may receive case-derived content from. It
+The clearance table lists, for each endpoint, the sensitive sources it may receive sensitive content from. It
 stands in until clearance has a database grant, and what it permits is clearance's (agents/wip-clearance.md, "Vetted
 endpoints"). It is read only from the inventory's own file (see "Includes"). Clearing an endpoint is a person's
 statement, so no command writes it.
