@@ -20,6 +20,8 @@ Paths are relative to `src/chatddx/store/` unless they start with `src/`, `docs/
 - [people.py](#peoplepy): `People`, passwords and sessions
 - [catalog.py](#catalogpy): `Rows`
 - [migrate.py](#migratepy): migrations and tiers
+- [queue.py](#queuepy): `Queue`, the worker's queue
+- [Database: schema `worker`](#database-schema-worker)
 - [Roles and connections](#roles-and-connections)
 - [Database: `public.migration`](#database-publicmigration)
 - [Database: schema `identity`](#database-schema-identity)
@@ -29,8 +31,12 @@ Paths are relative to `src/chatddx/store/` unless they start with `src/`, `docs/
 
 ## Package
 
-`chatddx.store` re-exports `TOP_TIER`, `Catalog`, `People`, `Store`, `Texts`, `fetch_vignette` and `migrate`.
-`Connection` (in `store.py`), `Rows`, `pending`, `migrations`, `Migration` and `MIGRATIONS` are imported by path.
+`chatddx.store` re-exports `TOP_TIER`, `Catalog`, `Job`, `People`, `Queue`, `Store`, `Texts`, `UnderWay`,
+`fetch_vignette` and `migrate`. `Connection` (in `store.py`), `Rows`, `Held`, `Status`, `STATUSES`, `ENDED`,
+`pending`, `migrations`, `Migration` and `MIGRATIONS` are imported by path.
+
+Rows for the module table: `| notify.py | pydantic |`, and `| queue.py | notify.py, store.py, psycopg's errors |`;
+`store.py` builds on `notify.py` too.
 
 | Module | Builds on |
 | --- | --- |
@@ -104,6 +110,9 @@ row without its log's or run's started row raises `ForeignKeyViolation`; a finis
 accepted. `TypeError("no table for <Class>")` for any other record type. It doesn't validate the log; reading it back
 does.
 
+Each row gets `seq` from `ledger.seq`, its column's default. In the same transaction, `append` notifies the channel
+of each run whose rows it wrote (`notify.py:channel`) with `ROWS`, a score's run read from its started row.
+
 | Method | Returns / raises |
 | --- | --- |
 | `run(run: UUID) -> Run` | The started row, the finished row if any, the items and the canary calls, parsed with `Record.parse` and put together as a `Run`. `LookupError("run <id> is not in the store")` without stage rows; `StructuralError("run <id> has no started row")` for a finished row alone; `Record.parse`'s errors; `ValidationError` from `Run`. |
@@ -112,6 +121,7 @@ does.
 | `runs_of(trial: str) -> list[RunStarted]` | The started rows of the runs of a trial, newest first. |
 | `finished(runs: Collection[UUID]) -> set[UUID]` | Those of the runs that have a finished row. |
 | `scores_of(run: UUID) -> list[ScoreStarted]` | The started rows of the scores of a run, newest first. |
+| `rows_of(run: UUID, after: int = 0) -> list[Written]` | The run's rows and its scores', each `(seq, record)`, the record as its table and stage give it through `Record.parse`, with `seq` past `after`, in `seq`'s order. `[]` for a run that isn't stored. |
 
 ## people.py
 
@@ -148,6 +158,49 @@ does.
 
 ### `fetch_vignette(conn: Connection, inventory: Inventory, vignette: Vignette) -> bytes`
 The vignette's bytes: from `Texts.get` when its source is a `DatabaseSource`, else from the source's own `fetch`.
+
+## queue.py
+
+### `class Queue`
+`Queue(conn: Connection)`. Writes and reads `worker` (see "Database: schema `worker`"). A `Job` is frozen: `id`,
+`owner`, `run`, `endpoint`, `slots`, `score`, `scorers: tuple[str, ...] | None`, `scored: tuple[str, ...]`, the
+scorers it has finished, `status: Status`, `why`, `halt`, `worker`, `queued`, `claimed`, `beat`, `ended`. `Status` is
+`queued`, `under way`, `finished`, `stopped` or `failed`; `ENDED` the last three.
+
+| Method | Returns / raises |
+| --- | --- |
+| `put(owner, run, endpoint, slots, score, scorers=None) -> Job` | Queues a job for a started run, its scorers deduplicated and sorted. `UnderWay("run <id> has something under way")` when the run has a job queued or under way; `ForeignKeyViolation` for a run that hasn't started; `CheckViolation` at tier 2 for scorers without `score`. |
+| `job(id) -> Job` | `LookupError("no job <id>")`. |
+| `open(run) -> Job \| None` | The run's job queued or under way. |
+| `last(run) -> Job \| None` | The run's latest job. |
+| `jobs(owner, limit=100) -> list[Job]` | The owner's, newest first. |
+| `halt(run) -> Job` | Asks the run's open job to halt. `LookupError("run <id> has nothing under way")`. |
+| `pause(owner, paused=True)`, `paused(owner) -> bool` | An owner's control. |
+| `enlist(worker)` | A worker, by its id. |
+| `claim(worker, max_jobs, lost) -> Job \| None` | The first job in queue order that is queued, or under way with a worker not seen for `lost`, and fits: halted, at an endpoint `max_jobs` doesn't name, or within the endpoint's free slots and of an owner who hasn't paused. Claims take turns (`pg_advisory_xact_lock`), and count the slots of the jobs under way with a live worker. |
+| `beat(worker, jobs) -> list[Held]` | Marks the worker and the jobs it still holds as seen; a `Held` is a job's id, whether it is to halt and whether its owner has paused. A job another worker took over is left out. |
+| `end(job, worker, status, why=None) -> bool` | Ends a job the worker holds. `ValueError` for a status not in `ENDED`. |
+| `requeue(job, worker, why=None) -> bool` | Puts a job the worker holds back in the queue. |
+| `waiting() -> int` | How many jobs are queued or under way. |
+| `placed(runs) -> dict[UUID, Placed]` | Each run's latest job, and `ahead`: while it is queued and its owner hasn't paused, or it is to halt, how many jobs at its endpoint are under way, or queued before it in queue order and to be taken (their owner not paused, or to halt); else `None`. Runs without a job are left out. |
+| `standing(owner, lost) -> Standing` | Whether the owner has paused, how many of their jobs are queued and under way, and how many workers were seen within `lost`. |
+| `stop(owner, now=False) -> Stopped` | The owner's queued jobs ended stopped, why `TAKEN_OUT` (`"taken out of the queue"`), their runs left as they are; with `now`, their jobs under way asked to halt. The runs taken out and those halting. It notifies as `end` does. |
+| `scored(job, worker, scorer) -> bool` | Adds a scorer to those the job has finished, while the worker holds it; `False` when it doesn't, or the scorer is among them already. Kept when the job is queued again. |
+
+In the transaction of the change, `put`, `halt`, `pause`, `end` and `requeue` notify `WORKERS` (`notify.py`), and
+`put`, `end` and `requeue` the run's channel with `JOB` and the status the job is left in.
+
+## notify.py
+What the store, the queue and the worker tell through `NOTIFY`, and how a listener reads it back.
+
+| Name | Value |
+| --- | --- |
+| `WORKERS` | `"worker"`, the channel workers are woken on. |
+| `channel(run: UUID) -> str` | `run.<id>`, a run's channel. |
+| `ROWS`, `JOB` | The payloads `rows`, which `Store.append` sends, and `job <status>`, which the queue sends. |
+| `LIMIT` | 7900, the bytes a payload holds, under `NOTIFY`'s 8000. |
+| `payloads(said, ids: Iterator[int]) -> list[str]` | Events, each `(name, data)`, as JSON arrays of `[name, data]` in ASCII, as few as fit within `LIMIT`; an array that doesn't fit alone is cut in parts, each headed `~<message> <part> <parts>` and a newline, the message's number drawn from `ids`. |
+| `Assembler.message(channel, pid, payload) -> Message \| None` | A payload read back: `Rows()`, `JobChanged(status)`, or `Events(said)` once every part of a message has come from one backend, in order; `None` for a part, and for a part out of order, which drops its message. |
 
 ## catalog.py
 
@@ -218,8 +271,8 @@ Created by `migrate`, not by a migration file. No grants: only the admin reads i
 | `applied_at` | `timestamptz NOT NULL DEFAULT now()` |
 
 ## Database: schema `identity`
-Created by `0007-t0-identity.sql`, roles in `0008-t1-identity.sql`, CHECKs in `0009-t2-identity.sql`. The one
-mutable schema: no insert-only triggers. `People` writes it.
+Created by `0007-t0-identity.sql`, roles in `0008-t1-identity.sql`, CHECKs in `0009-t2-identity.sql`. Updated in
+place, as `worker` is: no insert-only triggers. `People` writes it.
 
 ### `identity.person`
 
@@ -269,6 +322,23 @@ sessions belong to a person, and that a session expires after it is created. It 
 argon2id, or that an inactive person has no sessions (`People.update` deletes them, and `People.session` ignores
 them).
 
+## Database: schema `worker`
+Created by `0019-t0-worker.sql`, roles in `0020-t1-worker.sql`, CHECKs and a trigger in `0021-t2-worker.sql`; `scored`
+by `0024-t0-worker-scored.sql`, its CHECKs and the trigger again in `0025-t2-worker-scored.sql`. Updated in place, as
+`identity` is. `Queue` writes it.
+
+| Table | Holds |
+| --- | --- |
+| `worker` | `id uuid PRIMARY KEY`, `started`, `seen` |
+| `job` | `id` (identity), `owner` → `identity.person`, `(run, stage)` → `ledger.run_stage`, `endpoint`, `slots >= 0`, `score`, `scorers text[]`, `scored text[]`, `status`, `why`, `halt`, `worker` → `worker`, `queued`, `claimed`, `beat`, `ended`; `job_open`, unique on `run` while queued or under way |
+| `control` | `owner bigint PRIMARY KEY` → `identity.person`, `paused` |
+
+The writer gets SELECT, INSERT, UPDATE on each table, and no DELETE; the reader nothing. At tier 2: a job's status is
+one of `Status`; queued, it has no worker or claim; under way, it has both; it has ended exactly when it is finished,
+stopped or failed; a failed one says why; only a job that scores names scorers or has scored any, and what it has
+scored is among the scorers it names. `worker.keep_job` refuses a change to what a job is asked to do, taking away
+from what it has scored, and any change once it has ended.
+
 ## Migrations
 `migrations/NNNN-tT-<schema>[-<what>].sql`, applied by `migrate`:
 
@@ -292,6 +362,13 @@ them).
 | `0016-t2-source.sql` | 2 | `source.text` insert-only triggers | `docs/migrations.md`, "source" |
 | `0017-t0-catalog-label-edit.sql` | 0 | `catalog.label` made again, on edits | `docs/catalog-api.md`, "Database: schema `catalog`" |
 | `0018-t2-catalog-label-edit.sql` | 2 | `catalog.check_label()` for labels on edits | `docs/catalog-api.md` |
+| `0019-t0-worker.sql` | 0 | `worker`: `worker`, `job`, `control` | here, "Database: schema `worker`" |
+| `0020-t1-worker.sql` | 1 | `worker` grants: the writer SELECT, INSERT, UPDATE; the reader nothing | here |
+| `0021-t2-worker.sql` | 2 | `worker` CHECKs, `worker.keep_job()` | here |
+| `0022-t0-ledger-seq.sql` | 0 | `ledger.seq`, a `seq` column on every `ledger` table, index `score_stage_run` | `docs/ledger-api.md`, "Database: schema `ledger`" |
+| `0023-t1-ledger-seq.sql` | 1 | `ledger.seq` to the writer | `docs/ledger-api.md` |
+| `0024-t0-worker-scored.sql` | 0 | `worker.job.scored` | here, "Database: schema `worker`" |
+| `0025-t2-worker-scored.sql` | 2 | `scored`'s CHECKs, `worker.keep_job()` again | here |
 
 How to name and list a new migration is in `docs/migrations.md`.
 

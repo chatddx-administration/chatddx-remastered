@@ -5,6 +5,7 @@ from typing import Annotated, Any, Self, cast
 from pydantic import Discriminator, Field, HttpUrl, Tag, model_validator
 
 from chatddx.factors.base import Digest, Frozen, Sha256Hex
+from chatddx.factors.trial import Execution
 
 from .sources import DatabaseSource, DirectorySource, ListingSource
 
@@ -17,6 +18,17 @@ class EndpointSpec(Frozen):
     host: str | None = None
     max_jobs: int = Field(default=1, ge=1)
     credential: str | None = None
+    canaries: Digest | None = None
+    execution: Execution = Field(default_factory=Execution)
+
+    @model_validator(mode="after")
+    def _within_max_jobs(self) -> Self:
+        if self.execution.concurrency > self.max_jobs:
+            raise ValueError(
+                f"the execution sends {self.execution.concurrency} requests at once, "
+                + f"and max_jobs takes {self.max_jobs}"
+            )
+        return self
 
 
 class HostSpec(Frozen):

@@ -594,7 +594,7 @@ def test_a_judge_configuration_is_looked_at_as_a_judge_and_isn_t_run(
 
     case = bench.family("crlf").case
     with pytest.raises(ValueError, match="is a judge configuration"):
-        _ = bench.start(variation, QWEN, [case], 7)
+        _ = bench.start(variation, QWEN, [case], (7,))
 
 
 def test_a_run_runs_again_on_its_trial_s_engine_or_not_at_all(
@@ -611,7 +611,7 @@ def test_a_run_runs_again_on_its_trial_s_engine_or_not_at_all(
     with pytest.raises(
         Refused, match=f"serves engine {other}, the trial's is {made.engine}"
     ):
-        _ = bench.again(bench.run_by_id(run), 9)
+        _ = bench.again(bench.run_by_id(run), (9,))
 
 
 @pytest.mark.slow

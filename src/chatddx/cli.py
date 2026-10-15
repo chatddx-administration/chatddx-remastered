@@ -1,11 +1,15 @@
 import argparse
 import getpass
 import json
+import logging
+import signal
 import subprocess
 import sys
+import threading
 from collections import Counter
 from collections.abc import Callable, Sequence
 from pathlib import Path
+from types import FrameType
 
 import psycopg
 import uvicorn
@@ -48,6 +52,7 @@ from chatddx.scripted import (
 from chatddx.store.migrate import TOP_TIER, migrate, pending
 from chatddx.store.people import People
 from chatddx.store.store import Store
+from chatddx.worker import Worker
 
 
 def _migrate(args: argparse.Namespace) -> None:
@@ -302,7 +307,7 @@ def _portal(args: argparse.Namespace) -> None:
         )
     watching = _watching() if args.watch else None
     try:
-        _serve("portal", args, portal)
+        _serve("portal", args, lambda i, f, c: portal(i, f, c, worker=True))
     finally:
         if watching is not None:
             watching.terminate()
@@ -322,6 +327,24 @@ def _watching() -> subprocess.Popen[bytes]:
         ) from None
     except subprocess.CalledProcessError as e:
         raise SystemExit(f"portal: pnpm install ended with {e.returncode}") from None
+
+
+def _worker(args: argparse.Namespace) -> None:
+    world = _world("worker", args.world)
+    facts = Facts.load(BUNDLED, *world.facts, *(args.facts or ()))
+    logging.basicConfig(level=logging.INFO, format="%(message)s")
+    worker = Worker(settings.database(), world.inventory, facts)
+    stopping = threading.Event()
+
+    def stop(_signal: int, _frame: FrameType | None) -> None:
+        stopping.set()
+        worker.wake()
+
+    for asked in (signal.SIGTERM, signal.SIGINT):
+        _ = signal.signal(asked, stop)
+    print(f"worker {worker.id}: serving the queue for {world.path}")
+    worker.serve(stopping)
+    print(f"worker {worker.id}: stopped, and what it held is queued again")
 
 
 def _openapi(_: argparse.Namespace) -> None:
@@ -567,6 +590,26 @@ def main(argv: Sequence[str] | None = None) -> None:
         help="build the frontend in frontend/ as it changes, while the portal is served",
     )
     portal_parser.set_defaults(run=_portal)
+
+    worker = commands.add_parser(
+        "worker",
+        help="send and score the runs queued for the worker, until stopped; what it "
+        + "holds then is queued again",
+    )
+    _ = worker.add_argument(
+        "--world",
+        type=Path,
+        help="the World directory whose endpoints, vignettes and facts the worker uses "
+        + "(CHATDDX_WORLD)",
+    )
+    _ = worker.add_argument(
+        "--facts",
+        type=Path,
+        action="append",
+        help="more model facts, beside the bundled ones and the World's, as init-data "
+        + "was given",
+    )
+    worker.set_defaults(run=_worker)
 
     openapi = commands.add_parser(
         "openapi",

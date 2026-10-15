@@ -1,16 +1,16 @@
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, Query, Request, Response
+from fastapi import APIRouter, Form, Query, Request, Response
 from fastapi.responses import RedirectResponse
 from pydantic import JsonValue
 
-from chatddx.api import runs as api, schemas, scores as api_scores
-from chatddx.api.state import state
+from chatddx.api import queue as api_queue, runs as api, schemas, scores as api_scores
 from chatddx.bench import Bench
 from chatddx.factors.base import resolve
 from chatddx.factors.request import Skeleton
 from chatddx.factors.response import parts
+from chatddx.store import Queue
 
 from .pages import BenchDep, page
 
@@ -36,22 +36,24 @@ def runs(
         number=number,
         more=len(found) > SHOWN,
         left=left,
+        queue=api_queue.standing(bench),
     )
 
 
 @router.get("/runs/{run}")
 def run(request: Request, bench: BenchDep, run: UUID) -> Response:
+    # Asked before the run is read: a job ends once its run's rows are written.
+    under_way = Queue(bench.conn).open(run) is not None
     shown = api.detail(bench, run)
     skeleton = resolve(bench.get, shown.skeleton, Skeleton)
     schema = skeleton.output_schema
-    job = state(request).jobs.get(run)
-    under_way = job is not None and not job.done
     left = (
         []
         if under_way or shown.finished_at is None
         else bench.unscored(bench.run_by_id(run))
     )
     titles = {case: bench.title(case) for case in shown.cases}
+    resumable = not under_way and shown.finished_at is None and shown.endpoint
     return page(
         request,
         "run.html",
@@ -65,6 +67,7 @@ def run(request: Request, bench: BenchDep, run: UUID) -> Response:
         scores=[(graded, _rows(graded)) for graded in shown.scores],
         said=_said,
         under_way=under_way,
+        resumable=resumable,
         left=[bench.scorer_name(s) for s in left],
         live={"run": str(run), "titles": titles},
         island="run",
@@ -72,9 +75,33 @@ def run(request: Request, bench: BenchDep, run: UUID) -> Response:
 
 
 @router.post("/runs/{run}/halt")
-def halting(request: Request, bench: BenchDep, run: UUID) -> Response:
-    _ = api.halt(request, bench, run)
+def halting(bench: BenchDep, run: UUID) -> Response:
+    _ = api.halt(bench, run)
     return RedirectResponse(f"/runs/{run}", 303)
+
+
+@router.post("/runs/{run}/resume")
+def resuming(request: Request, bench: BenchDep, run: UUID) -> Response:
+    _ = api.resume(request, Response(), bench, run, schemas.NewResume())
+    return RedirectResponse(f"/runs/{run}", 303)
+
+
+@router.post("/queue/pause")
+def pausing(bench: BenchDep) -> Response:
+    _ = api_queue.pause(bench)
+    return RedirectResponse("/runs", 303)
+
+
+@router.post("/queue/resume")
+def unpausing(bench: BenchDep) -> Response:
+    _ = api_queue.resume(bench)
+    return RedirectResponse("/runs", 303)
+
+
+@router.post("/queue/stop")
+def stopping(bench: BenchDep, now: Annotated[bool, Form()] = False) -> Response:
+    _ = api_queue.stop(bench, schemas.NewStop(now=now))
+    return RedirectResponse("/runs", 303)
 
 
 @router.post("/runs/{run}/scores")
@@ -87,9 +114,7 @@ def scoring(request: Request, bench: BenchDep, run: UUID) -> Response:
 
 @router.post("/runs/{run}/again")
 def running_again(request: Request, bench: BenchDep, run: UUID) -> Response:
-    said = api.again(
-        request, Response(), bench, run, schemas.NewAgain(seed=None, score=True)
-    )
+    said = api.again(request, Response(), bench, run, schemas.NewAgain(score=True))
     return RedirectResponse(f"/runs/{said.run}", 303)
 
 

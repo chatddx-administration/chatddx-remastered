@@ -13,6 +13,7 @@ from chatddx.api.test.test_runs import (
     asked,
     family,
     followed,
+    joined,
     names,
     sent,
     told,
@@ -22,19 +23,25 @@ from chatddx.bench.test.helpers import ran, trial
 from chatddx.curation import Plan
 from chatddx.identity import Person
 from chatddx.inventory import Inventory
-from chatddx.store import Store
+from chatddx.store import Queue, Store
 from chatddx.store.store import Connection
 from chatddx.test.world import LINES, faked, world_facts
 
 
 @pytest.fixture
 def served(db: str, world: Inventory) -> FastAPI:
-    return app(world, world_facts(), make_conninfo(settings.database(), dbname=db))
+    conninfo = make_conninfo(settings.database(), dbname=db)
+    return app(world, world_facts(), conninfo, worker=True)
 
 
 @pytest.mark.slow
 def test_a_run_s_scores_are_read_with_their_items_and_judge_calls(
-    signed: TestClient, bob: dict[str, str], world: Inventory, conn: Connection
+    signed: TestClient,
+    bob: dict[str, str],
+    world: Inventory,
+    conn: Connection,
+    alice: Person,
+    listening: str,
 ) -> None:
     noted = family(signed, "noted")["id"]
     with faked(world, Store(conn).get):
@@ -55,18 +62,23 @@ def test_a_run_s_scores_are_read_with_their_items_and_judge_calls(
     assert views[3]["detail"] is not None
     assert shown["findings"] == []
 
-    with faked(world, Store(conn).get, delay=UNDER_WAY):
+    queue = Queue(conn)
+    queue.pause(alice.id)
+    bearer = {"Authorization": signed.headers["Authorization"]}
+    with (
+        faked(world, Store(conn).get, delay=UNDER_WAY),
+        httpx2.Client(headers=bearer) as http,
+    ):
         got = signed.post(f"/api/runs/{run}/scores", json={})
         assert got.status_code == 202
-        said = followed(signed, run)
+        said = joined(http, listening, run, lambda: queue.pause(alice.id, False))
     assert got.headers["location"] == f"/api/runs/{run}/scores"
     assert {s["name"] for s in got.json()["scorers"]} == {g["name"] for g in latest}
-    assert names(said)[0] == "run.scoring" and names(said)[-2:] == [
-        "run.scored",
-        "done",
-    ]
+    after = names(said)[names(said).index("run.scoring") :]
+    assert "run.finished" in names(said)[: -len(after)]
+    assert after[-2:] == ["run.scored", "done"]
     assert {"score.started", "score.item", "judge.asked", "judge.answered"} <= set(
-        names(said)
+        after
     )
     asked_ = [d for _, n, d in said if n == "judge.asked"]
     assert len(asked_) == 5 and {d["view"] for d in asked_} == {1, 2, 3}
@@ -138,6 +150,8 @@ def test_a_run_is_scored_when_asked_and_what_can_t_be_is_refused(
     noted = asked(signed, families=[family(signed, "noted")["id"]], score=False)
     with faked(world, Store(conn).get):
         run = sent(signed, noted)[0]["id"]
+    queue = Queue(conn)
+    queue.pause(alice.id)
     bearer = {"Authorization": signed.headers["Authorization"]}
     with (
         faked(world, Store(conn).get, delay=0.05),
@@ -150,9 +164,17 @@ def test_a_run_is_scored_when_asked_and_what_can_t_be_is_refused(
             {"detail": f"run {run} has something under way", "code": "conflict"},
         )
         events = f"{listening}/api/runs/{run}/events"
-        with http.stream("GET", events, timeout=10) as got:
+        with http.stream("GET", events, timeout=30) as got:
+            lines = got.iter_lines()
+            read = [next(lines)]
+            queue.pause(alice.id, False)
+            for line in lines:
+                read.append(line)
+                if line == "event: judge.asked":
+                    break
             assert signed.post(f"/api/runs/{run}/halt").status_code == 204
-            said = told(got.read().decode())
+            said = told("\n".join([*read, *lines]))
     assert said[-1][1:] == ("done", {"halted": True})
+    assert 1 <= names(said).count("judge.asked") < 5
     [scored] = [d for _, n, d in said if n == "run.scored"]
-    assert "stopped" in {g["refused"] for g in scored["scores"]}
+    assert {g["name"] for g in scored["scores"]} == {"lines", "whole", "judged"}

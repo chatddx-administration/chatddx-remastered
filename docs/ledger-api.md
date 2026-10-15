@@ -461,6 +461,10 @@ Every table has `payload text NOT NULL`, the record's `canonical` text and the s
 every key column to equal its value in `doc`. Item rows and canary calls reference their log's started row through a
 `stage` column that can only be `'started'`, so the foreign key can point at it.
 
+Every table has `seq bigint NOT NULL`, from one sequence, `ledger.seq`, as its default (`0022-t0-ledger-seq.sql`), so
+that `Store.rows_of` reads a run's rows and its scores' in the order they were written; `score_stage_run` indexes a
+score's run.
+
 ### `ledger.run_stage`
 `RunStarted` and `RunFinished` rows.
 

@@ -39,24 +39,27 @@ it, if any. A new schema gets its own section with all three tiers.
   gets nothing: `run_item` and `score_item` hold case-derived records
   (`src/chatddx/ledger/record.py:Record.case_derived`), and the stage rows and canary calls sit beside them so that
   each log stays in one schema.
+- `0022-t0-ledger-seq.sql`: `ledger.seq`, and a `seq` column on every table taking it by default, so that a run's rows
+  are read back in the order they were written; rows from before are numbered as the column is added, in no
+  particular order. An index on `score_stage (run)`.
 
 ### Tier 2
 - `0006-t2-ledger.sql`: CHECKs that `doc` matches `payload` and that every key column matches `doc`; insert-only
   triggers on every table.
+- `0023-t1-ledger-seq.sql`: the writer gets USAGE on `ledger.seq`, which its inserts draw from.
 
 ## identity
 
 ### Tier 0
-- `0007-t0-identity.sql`: schema `identity`, the one mutable schema.
-  - `person (id, name, login, roles, active)`: `id` generated as identity, `login` unique.
-  - `credential (person, hash)`.
-  - `session (token_digest, person, created, expires)`: only a digest of the token is stored.
-
 ### Tier 1
 - `0008-t1-identity.sql`: PUBLIC loses all access. Each table is granted explicitly, without default privileges,
   because tables here may be mutable. The writer gets SELECT, INSERT, UPDATE on `person` and `credential`, and no
   DELETE, so people are never removed; and SELECT, INSERT, DELETE on `session` (sessions are deleted on logout,
   expiry and deactivation). The reader gets SELECT on `person` only.
+- `0007-t0-identity.sql`: schema `identity`, the one mutable schema.
+  - `person (id, name, login, roles, active)`: `id` generated as identity, `login` unique.
+  - `credential (person, hash)`.
+  - `session (token_digest, person, created, expires)`: only a digest of the token is stored.
 
 ### Tier 2
 - `0009-t2-identity.sql`: CHECKs on `person.login` (lowercase pattern), `person.roles` (known role names) and
@@ -127,3 +130,29 @@ it, if any. A new schema gets its own section with all three tiers.
 
 ### Tier 2
 - `0016-t2-source.sql`: triggers refusing UPDATE and TRUNCATE on `text`; DELETE is held back by the grants alone.
+
+## worker
+
+### Tier 0
+- `0019-t0-worker.sql`: schema `worker`, the worker's queue, updated in place.
+  - `worker (id, started, seen)`: each worker, and when it was last seen.
+  - `job (id, owner, run, stage, endpoint, slots, score, scorers, status, why, halt, worker, queued, claimed, beat,
+    ended)`: a started run to send and finish, and score when asked. `(run, stage)` references the run's started row
+    in `ledger.run_stage`, as an item row does; `owner` references `identity.person`. A unique index keeps one job
+    queued or under way per run.
+  - `control (owner, paused)`: an owner's controls.
+
+### Tier 1
+- `0020-t1-worker.sql`: PUBLIC loses all access. Each table is granted explicitly, without default privileges, as the
+  tables are updated in place: the writer gets SELECT, INSERT, UPDATE, and no DELETE. The reader gets nothing, since
+  why a job failed can quote what it was sending.
+- `0024-t0-worker-scored.sql`: `job.scored`, the scorers a job has finished, so that a job queued again mid-scoring
+  scores what is left (docs/worker.md, "Stopping").
+
+### Tier 2
+- `0021-t2-worker.sql`: CHECKs on a job's status (`src/chatddx/store/queue.py:Status`, tested against the check in
+  `test/test_queue.py`), and how each status goes with its worker, its claim, its end and why; scorers only for a job
+  that scores. A trigger (`worker.keep_job`) refuses to change what a job is asked to do, and any change to a job that
+  has ended.
+- `0025-t2-worker-scored.sql`: CHECKs that only a job that scores has scored any, and only scorers it names; the
+  trigger again, also refusing to take away from what a job has scored.

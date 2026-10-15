@@ -5,9 +5,11 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field, JsonValue, model_validator
 
-from chatddx import catalog
+from chatddx import catalog, settings
 from chatddx.bench import PARTS, Outcome
 from chatddx.factors import base as factors
+from chatddx.factors.cases import CleanupOp
+from chatddx.factors.trial import Order
 from chatddx.identity import Person, Role
 
 
@@ -476,14 +478,34 @@ class ScorerCode(_Schema):
     )
 
 
-class NewAgain(_Schema):
-    seed: int | None = Field(None, description="drawn when not given")
+class Seeds(_Schema):
+    seeds: list[int] | None = Field(
+        default=None,
+        min_length=1,
+        max_length=settings.ITEMS_PER_RUN,
+        description="the replicates' seeds",
+    )
+    replicates: int | None = Field(
+        default=None,
+        ge=1,
+        le=settings.ITEMS_PER_RUN,
+        description="or how many replicates, their seeds drawn",
+    )
+
+    @model_validator(mode="after")
+    def _seeds_or_replicates(self) -> Self:
+        if self.seeds is not None and self.replicates is not None:
+            raise ValueError("a run takes seeds or replicates, not both")
+        return self
+
+
+class NewAgain(Seeds):
     score: bool = Field(
         True, description="under every scorer that applies, once it is finished"
     )
 
 
-class NewRun(_Schema):
+class NewRun(Seeds):
     configuration: int
     head: int | None = Field(
         None,
@@ -498,7 +520,22 @@ class NewRun(_Schema):
     cases: list[str] | None = Field(
         None, description="or the cases themselves, each of a family's current ones"
     )
-    seed: int | None = Field(None, description="drawn when not given")
+    cleanup: list[CleanupOp] | None = Field(
+        None,
+        description="the steps applied to each vignette, in order: its source's when "
+        + "not given, and none for []",
+    )
+    concurrency: int | None = Field(
+        None,
+        ge=1,
+        description="how many requests at once, up to the endpoint's max_jobs: the "
+        + "endpoint's when not given",
+    )
+    order: Order | None = Field(
+        None,
+        description="the order the items are sent in, a shuffled one's seed drawn: the "
+        + "endpoint's when not given",
+    )
     score: bool = Field(
         True, description="under every scorer that applies, once it is finished"
     )
@@ -521,6 +558,21 @@ class Unscored(_Schema):
     name: str
 
 
+class RunJob(_Schema):
+    status: Literal["queued", "under way", "finished", "stopped", "failed"]
+    why: str | None = Field(
+        description="why it stands as it does: a failure, or why it was queued again "
+        + "or stopped"
+    )
+    halt: bool = Field(description="whether it was asked to halt")
+    ahead: int | None = Field(
+        description="while queued, the jobs at its endpoint under way or to be taken "
+        + "before it; null while its owner has paused, and once it is taken"
+    )
+    queued: datetime
+    ended: datetime | None
+
+
 class Run(_Schema):
     id: UUID
     at: datetime
@@ -535,6 +587,9 @@ class Run(_Schema):
     unscored: list[Unscored] | None = Field(
         default=None,
         description="with `unscored`: the scorers it is left to be scored by",
+    )
+    job: RunJob | None = Field(
+        default=None, description="its latest job; null for a run no job took"
     )
 
 
@@ -612,6 +667,35 @@ class RenderedAgain(_Schema):
     why: str | None
 
 
+class NewResume(_Schema):
+    score: bool = Field(
+        default=True, description="under every scorer that applies, once it is finished"
+    )
+
+
+class NewStop(_Schema):
+    now: bool = Field(
+        default=False,
+        description="halt the runs under way too, as a second press of stop does",
+    )
+
+
+class Queue(_Schema):
+    paused: bool
+    queued: int = Field(description="the person's jobs queued")
+    under_way: int = Field(description="the person's jobs under way")
+    workers: int = Field(
+        description="the workers seen lately, whoever's jobs they hold"
+    )
+
+
+class Stopped(_Schema):
+    taken_out: list[UUID] = Field(
+        description="the runs whose queued jobs ended stopped, left as they were"
+    )
+    halting: list[UUID] = Field(description="the runs under way asked to halt")
+
+
 class NewScoring(_Schema):
     scorers: list[str] | None = Field(
         None, description="by digest; every scorer that applies when not given"
@@ -624,7 +708,7 @@ class RunStartedData(_Schema):
     skeleton: str
     endpoint: str | None
     cases: list[str]
-    seed: int
+    seeds: list[int]
     greedy: bool
 
 
@@ -715,7 +799,8 @@ class ErrorData(_Schema):
 
 class DoneData(_Schema):
     halted: bool | None = Field(
-        description="whether it was halted; null when told from the ledger"
+        description="whether the run's last job was asked to halt; null when the run "
+        + "had none"
     )
 
 

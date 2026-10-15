@@ -218,7 +218,7 @@ def _started(
     if repl.bench.skeleton(variation).greedy:
         repl.console.print("greedy: the seed isn't sent", style=LABEL)
     try:
-        return repl.bench.start(variation, endpoint, cases, seed)
+        return repl.bench.start(variation, endpoint, cases, (seed,))
     except Refused as e:
         repl.error(f"refused: {e}")
         return None

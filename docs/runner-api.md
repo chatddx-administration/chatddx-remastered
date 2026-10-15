@@ -288,6 +288,19 @@ In order:
 6. stores the trial and the canary set with what they refer to (`Store.add`), appends `RunStarted`, and notes `by` as
    the run's owner in the catalog.
 
+### `Runner.resume(run: UUID) -> Running`
+A `Running` for an unfinished run, holding the items and canary calls its log holds, so that `send` sends only what
+it lacks. In order:
+1. reads the run's log (`Store.run`, whose `LookupError` it raises), and refuses a finished one, `ValueError` `run
+   <id> is finished`, and one sent to no endpoint, `ValueError` `run <id> was sent to no endpoint, so it can't resume`;
+2. loads the trial and the canary set with what they refer to (`Store.load`);
+3. `gate.check`, `rounds.load` and the endpoint's `max_jobs`, as `start` does, under the run's execution;
+4. refuses an endpoint whose URL is another now: `ValueError` `endpoint '<name>' is at <url> now, and run <id> was
+   sent to <url>`.
+
+The finish notes `run.resumed` (see "Finding codes"), unless the log holds nothing and `rig()` is the rig that
+started the run. Two `Running`s of one run collide on the ledger's key for an item; whoever resumes keeps it to one.
+
 ### `class Running`
 
 | Member | Description |
@@ -390,6 +403,7 @@ codes".
 | `verdict.unread` | `Grading.send` | item key | `view <i>, seed <n>: <problem>`, with `; the call ended with: <error>` when the call has one |
 | `verdict.invalid` | `Grading.send` | item key | `view <i>, seed <n>: <problem>` |
 | `answer.salvaged` | `Grading.send` | item key | `cut short, and read with its structure closed`, with `; the call ended with: <error>` when the call has one; level `info` |
+| `run.resumed` | `Runner.resume` | none | `resumed after <n> of <m> items`, level `info`, when the log holds something; a warning with ` by <rig>, where <rig> started it` when another rig resumes it than started it |
 
 ## Known gaps
 From `docs/runner.md`, "Open design issues", where they concern this API:

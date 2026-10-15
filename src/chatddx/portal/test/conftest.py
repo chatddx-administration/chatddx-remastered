@@ -49,6 +49,7 @@ def served(db: str, built: Path) -> FastAPI:
         world_facts(),
         make_conninfo(settings.database(), dbname=db),
         built,
+        worker=True,
     )
 
 

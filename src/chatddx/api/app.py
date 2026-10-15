@@ -1,8 +1,11 @@
-from collections.abc import Callable, Mapping
+import threading
+from collections.abc import AsyncGenerator, Callable, Mapping
+from contextlib import AbstractAsyncContextManager, asynccontextmanager
 from importlib import metadata
 from typing import Any
 
 from fastapi import FastAPI, Request
+from fastapi.concurrency import run_in_threadpool
 from fastapi.encoders import jsonable_encoder
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
@@ -13,8 +16,11 @@ from chatddx.bench import Ambiguous, Conflict, MovedOn, NotFound, OverQuota
 from chatddx.facts import Facts
 from chatddx.inventory import Inventory
 from chatddx.runner.gate import Refused
+from chatddx.store import UnderWay
+from chatddx.worker import Worker
 
-from . import families, people, runs, scores, threads, world
+from . import families, people, queue, runs, scores, threads, world
+from .listening import Listener
 from .schemas import EVENTS, Code, Error
 from .state import AppState
 
@@ -25,6 +31,7 @@ STATUSES: dict[type[Exception], tuple[int, Code]] = {
     MovedOn: (409, "moved_on"),
     OverQuota: (429, "over_quota"),
     Refused: (422, "refused"),
+    UnderWay: (409, "conflict"),
 }
 
 CODES: dict[int, Code] = {
@@ -79,16 +86,46 @@ def _with_models(made: FastAPI) -> Callable[[], dict[str, Any]]:
     return openapi
 
 
-def app(inventory: Inventory, facts: Facts, conninfo: str) -> FastAPI:
+def _lifespan(
+    worker: bool,
+) -> Callable[[FastAPI], AbstractAsyncContextManager[None]]:
+    @asynccontextmanager
+    async def lifespan(made: FastAPI) -> AsyncGenerator[None]:
+        held = made.state.chatddx
+        assert isinstance(held, AppState)
+        stopping = threading.Event()
+        serving: threading.Thread | None = None
+        made_worker = Worker(held.conninfo, held.inventory, held.facts)
+        if worker:
+            serving = threading.Thread(
+                target=made_worker.serve, args=(stopping,), name="chatddx-worker"
+            )
+            serving.start()
+        try:
+            yield
+        finally:
+            stopping.set()
+            made_worker.wake()
+            if serving is not None:
+                await run_in_threadpool(serving.join)
+            held.listener.stop()
+
+    return lifespan
+
+
+def app(
+    inventory: Inventory, facts: Facts, conninfo: str, worker: bool = False
+) -> FastAPI:
     made = FastAPI(
         title="chatddx",
         version=metadata.version("chatddx"),
         openapi_url="/api/openapi.json",
         docs_url="/api/docs",
         redoc_url=None,
+        lifespan=_lifespan(worker),
     )
-    made.state.chatddx = AppState(conninfo, inventory, facts)
-    for module in (people, threads, families, world, runs, scores):
+    made.state.chatddx = AppState(conninfo, inventory, facts, Listener(conninfo))
+    for module in (people, threads, families, world, runs, scores, queue):
         made.include_router(module.router, prefix="/api")
     for error, (status, code) in STATUSES.items():
         made.add_exception_handler(error, _status(status, code))

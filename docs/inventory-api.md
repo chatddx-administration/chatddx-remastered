@@ -108,6 +108,8 @@ Where one engine is served.
 | `host` | `str \| None` | `None`; the `[host]` that runs a local engine |
 | `max_jobs` | `int`, ≥ 1 | `1`; how many requests it takes at once |
 | `credential` | `str \| None` | `None`; the name of the environment variable that holds its secret |
+| `canaries` | `Digest \| None` | `None`; a stored canary set every run at the endpoint sends |
+| `execution` | `Execution` | `Execution()`; a run's execution unless its request changes the concurrency or the order. Refused when its concurrency is above `max_jobs`: `the execution sends <n> requests at once, and max_jobs takes <m>`. |
 
 ### `class HostSpec(Frozen)`
 Where a host keeps what its engines pin.
@@ -169,6 +171,7 @@ Where a set of vignettes comes from.
 | --- | --- |
 | `name: str` | Required. The `source` of every case built from it. |
 | `sensitive: bool = True` | Whether content from it may only go to endpoints cleared for it (`src/chatddx/runner/gate.py:check`). |
+| `cleanup: tuple[CleanupOp, ...] = ()` | The steps its vignettes need, which a run applies unless its request gives its own (`src/chatddx/bench/runs.py:_cleanup_of`). |
 
 ### `class DatabaseSource(Source)`
 Texts people typed, kept in the store and read through it (`src/chatddx/store/texts.py`). `kind:

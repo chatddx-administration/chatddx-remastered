@@ -25,10 +25,14 @@ The store also finds the components of a kind that reach a given one, such as th
 compilations of a skeleton.
 
 ### Records
-Ledger records are written as they happen, those that belong together at once, and never overwritten: a record whose
-place is taken is refused. A run's or a score's log is read back whole, and validated as it is read. Runs and scores
-are listed newest first: those of a trial, those of a run, or those asked for; and the store tells which runs have
-finished.
+Ledger records are written as they happen with those that belong together in a single transaction.
+
+Heads-up: A record whose place is taken is refused.
+
+Each is numbered as it is written, and each write notifies the run's channel,
+so that a run's rows, its scores' included, are read back in that order. A run's or a score's log is read back whole,
+and validated as it is read. Runs and scores are listed newest first: those of a trial, those of a run, or those asked
+for; and the store tells which runs have finished.
 
 ### Texts
 The texts of database sources (docs/inventory.md, "Sources") are kept as people typed them, each under a new id, and
@@ -43,11 +47,17 @@ but never removes them; it checks passwords and keeps sessions, and disabling a 
 The catalog decides what its rows mean (docs/catalog.md). The store reads the rows it asks for and writes what it
 decided, all of one change at once.
 
-### The queue
-The worker's queue is state, not factors or records, and is updated in place, as people are: each job's status as
-the worker claims, runs and ends it, each owner's controls (paused, stopping), and the workers, with when each was
-last seen. A worker claims the next queued job by locking its row, so two workers never take the same one. A job
-points at the run it started; what the run did is the ledger's, read from there and not copied into the job.
+### The Queue
+The Queue is a list of Jobs that points at their started run. Workers claims the next queued job by locking its row, so two
+workers never take the same one, and claims take turns, so that the runs on an endpoint keep to its `max_jobs` between them.
+
+Heads-up: The worker's queue is state, not factors or records, and is updated in place.
+
+Claims take turns, so that the runs on an endpoint keep to its `max_jobs` between them. Queuing, halting, pausing,
+ending and queuing again wake the workers, and tell those following the run how its job stands (`NOTIFY`).
+
+A job keeps the scorers it has finished, so that one queued again mid-scoring, as a stopping worker leaves it, scores
+what is left.
 
 ## Tiers
 Integrity comes in three tiers, and a deployment applies migrations up to a chosen tier. Each schema has migrations

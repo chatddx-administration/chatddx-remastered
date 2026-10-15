@@ -1,18 +1,20 @@
 import threading
-from collections.abc import Callable, Collection, Generator
+from collections.abc import Callable, Collection, Generator, Sequence
 from contextlib import contextmanager, nullcontext
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
+from typing import get_args
 from uuid import UUID
 
 from chatddx import settings
 from chatddx.catalog import Entry, EntryField, Subject
 from chatddx.factors.base import resolve
-from chatddx.factors.cases import CleanupOp
+from chatddx.factors.cases import Case, CleanupOp
 from chatddx.factors.request import Skeleton
 from chatddx.factors.scoring import Scorer
-from chatddx.factors.trial import Trial
+from chatddx.factors.trial import CanarySet, Execution, Trial
 from chatddx.ledger import RunStarted
+from chatddx.ledger.run import PHASES, Phase
 from chatddx.runner.gate import Refused
 from chatddx.runner.run import Runner, Running
 from chatddx.runner.score import Event, Grader, Grading
@@ -28,7 +30,14 @@ REFUSALS = (LookupError, TypeError, ValueError, NotImplementedError, Refused)
 
 
 def start(
-    seen: Seen, variation: TriedVariation, endpoint: str, cases: list[str], seed: int
+    seen: Seen,
+    variation: TriedVariation,
+    endpoint: str,
+    cases: list[str],
+    seeds: Sequence[int],
+    cleanup: Sequence[CleanupOp] | None = None,
+    execution: Execution | None = None,
+    canaries: str | None = None,
 ) -> Running:
     skeleton = seen.skeleton(variation)
     if skeleton.purpose == "judge":
@@ -37,12 +46,39 @@ def start(
             + "scored, and isn't run on cases"
         )
     engine = seen.endpoint(endpoint)
-    running = _begun(seen, skeleton, endpoint, engine, cases, (), seed, variation.label)
+    spec = seen.inventory.endpoint(endpoint)
+    canaries = canaries or spec.canaries
+    running = _begun(
+        seen,
+        skeleton,
+        endpoint,
+        engine,
+        cases,
+        seeds,
+        variation.label,
+        cleanup=_cleanup_of(seen, cases) if cleanup is None else tuple(cleanup),
+        execution=execution or spec.execution,
+        canaries=None if canaries is None else resolve(seen.get, canaries, CanarySet),
+    )
     _ = keep_compilation(seen, variation)
     return running
 
 
-def again(seen: Seen, run: RunStarted, seed: int) -> Running:
+def _cleanup_of(seen: Seen, cases: Sequence[str]) -> tuple[CleanupOp, ...]:
+    if not any(s.cleanup for s in seen.inventory.sources.values()):
+        return ()
+    registry = seen.store.load(cases)
+    asked = {
+        op
+        for case in cases
+        for op in seen.inventory.source(
+            resolve(registry.get, case, Case).vignette.source
+        ).cleanup
+    }
+    return tuple(op for op in get_args(CleanupOp) if op in asked)
+
+
+def again(seen: Seen, run: RunStarted, seeds: Sequence[int]) -> Running:
     if run.endpoint is None:
         raise ValueError(
             f"run {run.run} was sent to no endpoint, so it can't run again"
@@ -56,10 +92,20 @@ def again(seen: Seen, run: RunStarted, seed: int) -> Running:
         run.endpoint.name,
         trial.engine,
         list(trial.cases),
-        trial.cleanup,
-        seed,
+        seeds,
         name,
+        cleanup=trial.cleanup,
+        execution=run.execution,
+        canaries=None
+        if run.canaries is None
+        else resolve(seen.get, run.canaries, CanarySet),
+        verify_at=run.verify_at,
     )
+
+
+def resume(seen: Seen, run: UUID) -> Running:
+    _ = seen.run_by_id(run)
+    return Runner(seen.conn, seen.inventory, seen.person).resume(run)
 
 
 def _begun(
@@ -68,13 +114,17 @@ def _begun(
     endpoint: str,
     engine: str,
     cases: list[str],
-    cleanup: tuple[CleanupOp, ...],
-    seed: int,
+    seeds: Sequence[int],
     name: str,
+    *,
+    cleanup: tuple[CleanupOp, ...],
+    execution: Execution | None,
+    canaries: CanarySet | None,
+    verify_at: tuple[Phase, ...] = PHASES,
 ) -> Running:
-    if len(cases) > settings.ITEMS_PER_RUN:
+    if (items := len(cases) * len(seeds)) > settings.ITEMS_PER_RUN:
         raise OverQuota(
-            f"a run holds at most {settings.ITEMS_PER_RUN} items, not {len(cases)}"
+            f"a run holds at most {settings.ITEMS_PER_RUN} items, not {items}"
         )
     since = datetime.now(UTC) - timedelta(days=1)
     started = seen.catalog.runs_started(seen.person.id, since)
@@ -83,9 +133,9 @@ def _begun(
             f"{seen.person.login} has started {started} runs in the last day, as many "
             + "as a day takes"
         )
-    registry, trial = seen.trial(skeleton, engine, cases, seed, cleanup)
+    registry, trial = seen.trial(skeleton, engine, cases, seeds, cleanup)
     runner = Runner(seen.conn, seen.inventory, seen.person)
-    running = runner.start(trial, registry, endpoint)
+    running = runner.start(trial, registry, endpoint, execution, canaries, verify_at)
     seen.catalog.note(
         Subject(run=running.run),
         Entry(field=EntryField.NAME, value=name),

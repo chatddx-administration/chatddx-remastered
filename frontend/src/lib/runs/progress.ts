@@ -81,7 +81,9 @@ export function fold(progress: Progress, name: Event, data: unknown): void {
     case "run.started": {
       const started = data as Schemas["RunStartedData"];
       progress.started = started;
-      for (const c of started.cases) item(progress, { case: c, replicate: 0 });
+      for (const c of started.cases) {
+        for (const replicate of started.seeds.keys()) item(progress, { case: c, replicate });
+      }
       break;
     }
     case "item.started":

@@ -350,7 +350,7 @@ class Seen:
         skeleton: Skeleton,
         engine: str,
         cases: list[str],
-        seed: int,
+        seeds: Sequence[int],
         cleanup: tuple[CleanupOp, ...] = (),
     ) -> tuple[Registry, Trial]:
         registry = self.store.load(
@@ -362,7 +362,7 @@ class Seen:
             engine=engine,
             cases=tuple(cases),
             cleanup=cleanup,
-            seeds=(seed,),
+            seeds=tuple(seeds),
         )
         _ = registry.add(trial)
         return registry, trial
@@ -385,7 +385,7 @@ class Seen:
             some = [f.case for f in families]
         if not some:
             return []
-        registry, trial = self.trial(skeleton, engine, some, seed)
+        registry, trial = self.trial(skeleton, engine, some, (seed,))
         if families is None:
             return lints(registry, self.facts, [trial.digest])
         known = {f.case: f.about.language for f in families}

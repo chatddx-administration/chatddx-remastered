@@ -30,7 +30,7 @@ def ran_before(bench: Bench, scripted: ScriptedRun) -> RunStarted | None:
     skeleton = bench.skeleton(variation(bench, scripted))
     engine = bench.endpoint(scripted.endpoint)
     cases = [bench.case_titled(name)[1] for name in scripted.cases]
-    _, trial = bench.trial(skeleton, engine, cases, scripted.seed)
+    _, trial = bench.trial(skeleton, engine, cases, (scripted.seed,))
     return next((r for r in bench.runs() if r.trial == trial.digest), None)
 
 
@@ -40,7 +40,7 @@ def run(bench: Bench, scripted: ScriptedRun) -> RunStarted:
     fake = fake_at(bench.inventory, bench.get, scripted.endpoint)
     script = Script(scripted.turns) if scripted.turns else None
     with serving([fake], script=script):
-        running = bench.start(tried, scripted.endpoint, cases, scripted.seed)
+        running = bench.start(tried, scripted.endpoint, cases, (scripted.seed,))
         running.send(_halting(running, scripted.stop_after))
     if scripted.unfinished:
         return running.started
