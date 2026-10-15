@@ -162,6 +162,18 @@ The vignette's bytes: from `Texts.get` when its source is a `DatabaseSource`, el
 ## queue.py
 
 ### `class Queue`
+```
+AGENT: replace
+A `Job` holds `scored`, and `scored` is a method of its own: the paragraph below, and a row for the table after it,
+before `requeue`.
+---
+`Queue(conn: Connection)`. Writes and reads `worker` (see "Database: schema `worker`"). A `Job` is frozen: `id`,
+`owner`, `run`, `endpoint`, `slots`, `score`, `scorers: tuple[str, ...] | None`, `scored: tuple[str, ...]`, the
+scorers it has finished, `status: Status`, `why`, `halt`, `worker`, `queued`, `claimed`, `beat`, `ended`. `Status` is
+`queued`, `under way`, `finished`, `stopped` or `failed`; `ENDED` the last three.
+
+| `scored(job, worker, scorer) -> bool` | Adds a scorer to those the job has finished, while the worker holds it; `False` when it doesn't, or the scorer is among them already. Kept when the job is queued again. |
+```
 `Queue(conn: Connection)`. Writes and reads `worker` (see "Database: schema `worker`"). A `Job` is frozen: `id`,
 `owner`, `run`, `endpoint`, `slots`, `score`, `scorers: tuple[str, ...] | None`, `status: Status`, `why`, `halt`,
 `worker`, `queued`, `claimed`, `beat`, `ended`. `Status` is `queued`, `under way`, `finished`, `stopped` or
@@ -322,6 +334,22 @@ argon2id, or that an inactive person has no sessions (`People.update` deletes th
 them).
 
 ## Database: schema `worker`
+```
+AGENT: replace
+The section's first paragraph, `job`'s row and the paragraph after the table: `scored`, and its checks.
+---
+Created by `0019-t0-worker.sql`, roles in `0020-t1-worker.sql`, CHECKs and a trigger in `0021-t2-worker.sql`; `scored`
+by `0024-t0-worker-scored.sql`, its CHECKs and the trigger again in `0025-t2-worker-scored.sql`. Updated in place, as
+`identity` is. `Queue` writes it.
+
+| `job` | `id` (identity), `owner` → `identity.person`, `(run, stage)` → `ledger.run_stage`, `endpoint`, `slots >= 0`, `score`, `scorers text[]`, `scored text[]`, `status`, `why`, `halt`, `worker` → `worker`, `queued`, `claimed`, `beat`, `ended`; `job_open`, unique on `run` while queued or under way |
+
+The writer gets SELECT, INSERT, UPDATE on each table, and no DELETE; the reader nothing. At tier 2: a job's status is
+one of `Status`; queued, it has no worker or claim; under way, it has both; it has ended exactly when it is finished,
+stopped or failed; a failed one says why; only a job that scores names scorers or has scored any, and what it has
+scored is among the scorers it names. `worker.keep_job` refuses a change to what a job is asked to do, taking away
+from what it has scored, and any change once it has ended.
+```
 Created by `0019-t0-worker.sql`, roles in `0020-t1-worker.sql`, CHECKs and a trigger in `0021-t2-worker.sql`. Updated
 in place, as `identity` is. `Queue` writes it.
 
@@ -339,6 +367,13 @@ change to what a job is asked to do, and any change once it has ended.
 ## Migrations
 `migrations/NNNN-tT-<schema>[-<what>].sql`, applied by `migrate`:
 
+```
+AGENT: add
+Rows for this table, last.
+---
+| `0024-t0-worker-scored.sql` | 0 | `worker.job.scored` | here, "Database: schema `worker`" |
+| `0025-t2-worker-scored.sql` | 2 | `scored`'s CHECKs, `worker.keep_job()` again | here |
+```
 | File | Tier | Schema | Documented in |
 | --- | --- | --- | --- |
 | `0001-t0-factor.sql` | 0 | `factor`: `component`, `component_ref` | `docs/factors-api.md`, "Database: schema `factor`" |

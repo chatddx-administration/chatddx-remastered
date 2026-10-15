@@ -258,3 +258,34 @@ def test_a_stop_takes_the_owner_s_queue_out_and_stopping_now_halts_the_rest(
     assert halting is not None and halting.halt
     assert [h.halt for h in queue.beat(worker, [halting.id])] == [True]
     _ = queue.put(alice.id, waiting, "e", 1, False)
+
+
+def test_a_job_keeps_the_scorers_it_has_finished_when_it_is_queued_again(
+    conn: Connection, admin: Connection, alice: Person, runs: Callable[[], UUID]
+) -> None:
+    queue, run = Queue(conn), runs()
+    job = queue.put(alice.id, run, "e", 0, True, ["a", "b"])
+    worker, other = enlisted(queue), enlisted(queue)
+    assert not queue.scored(job.id, worker, "a")
+    assert queue.claim(worker, {"e": 1}, LOST) is not None
+    assert not queue.scored(job.id, other, "a")
+    assert queue.scored(job.id, worker, "a")
+    assert not queue.scored(job.id, worker, "a")
+    assert queue.requeue(job.id, worker, "its worker stopped")
+    assert queue.job(job.id).scored == ("a",)
+
+    def refused(update: LiteralString, on: int = job.id) -> None:
+        with admin.transaction():
+            _ = admin.execute(f"UPDATE worker.job SET {update} WHERE id = %s", (on,))
+
+    with pytest.raises(errors.RaiseException, match="keeps what it has scored"):
+        refused("scored = '{}'")
+    with pytest.raises(errors.CheckViolation):
+        refused("scored = '{a,c}'")
+    unscored = queue.put(alice.id, runs(), "e", 0, False)
+    with pytest.raises(errors.CheckViolation):
+        refused("scored = '{a}'", unscored.id)
+    assert queue.claim(other, {"e": 1}, LOST) is not None
+    assert queue.scored(job.id, other, "b")
+    assert queue.end(job.id, other, "finished")
+    assert queue.job(job.id).scored == ("a", "b")

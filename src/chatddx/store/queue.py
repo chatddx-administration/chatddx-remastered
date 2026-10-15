@@ -16,8 +16,8 @@ STATUSES: tuple[Status, ...] = get_args(Status)
 TAKEN_OUT = "taken out of the queue"
 
 _COLUMNS = """
-    j.id, j.owner, j.run, j.endpoint, j.slots, j.score, j.scorers, j.status, j.why,
-    j.halt, j.worker, j.queued, j.claimed, j.beat, j.ended
+    j.id, j.owner, j.run, j.endpoint, j.slots, j.score, j.scorers, j.scored, j.status,
+    j.why, j.halt, j.worker, j.queued, j.claimed, j.beat, j.ended
 """
 
 _OPEN = "j.status IN ('queued', 'under way')"
@@ -47,6 +47,7 @@ class Job:
     slots: int
     score: bool
     scorers: tuple[str, ...] | None
+    scored: tuple[str, ...]
     status: Status
     why: str | None
     halt: bool
@@ -93,6 +94,7 @@ def _job(row: tuple[Any, ...]) -> Job:
         slots,
         score,
         scorers,
+        scored,
         status,
         why,
         halt,
@@ -110,6 +112,7 @@ def _job(row: tuple[Any, ...]) -> Job:
         slots=slots,
         score=score,
         scorers=None if scorers is None else tuple(scorers),
+        scored=tuple(scored),
         status=cast(Status, status),
         why=why,
         halt=halt,
@@ -398,6 +401,18 @@ class Queue:
             ).fetchone()
             if row is not None:
                 self._tell(row[0], status)
+        return row is not None
+
+    def scored(self, job: int, worker: UUID, scorer: str) -> bool:
+        row = self._conn.execute(
+            """
+            UPDATE worker.job SET scored = array_append(scored, %(scorer)s)
+            WHERE id = %(job)s AND worker = %(worker)s AND status = 'under way'
+                AND NOT %(scorer)s = ANY(scored)
+            RETURNING id
+            """,
+            {"job": job, "worker": worker, "scorer": scorer},
+        ).fetchone()
         return row is not None
 
     def requeue(self, job: int, worker: UUID, why: str | None = None) -> bool:

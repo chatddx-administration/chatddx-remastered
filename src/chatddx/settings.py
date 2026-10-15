@@ -25,6 +25,8 @@ ITEMS_PER_RUN = 1000
 
 WORKER_BEAT = timedelta(seconds=1)
 WORKER_LOST = timedelta(seconds=10)
+# Within the stop timeout of the service that runs the worker.
+WORKER_DEADLINE = timedelta(seconds=60)
 
 
 def host() -> str:

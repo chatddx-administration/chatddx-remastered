@@ -2,6 +2,7 @@ import logging
 import select
 import socket
 import threading
+import time
 from dataclasses import dataclass, field
 from datetime import timedelta
 from typing import Literal
@@ -13,9 +14,10 @@ from psycopg import sql
 from chatddx import settings
 from chatddx.api import schemas
 from chatddx.api.events import graded_of, scoring_of
-from chatddx.bench import Bench, ScoreHalt
+from chatddx.bench import Bench, Graded, ScoreHalt
 from chatddx.facts import Facts
 from chatddx.inventory import Inventory
+from chatddx.ledger import RunStarted
 from chatddx.runner.run import Running
 from chatddx.store import Job, People, Queue
 from chatddx.store.notify import WORKERS
@@ -36,6 +38,7 @@ class _Held:
     running: Running | None = None
     halted: bool = False
     left: str | None = None
+    cut: bool = False
     guard: threading.Lock = field(default_factory=threading.Lock)
 
     def sending(self, running: Running) -> None:
@@ -51,6 +54,11 @@ class _Held:
             self.halted = True
             if self.running is not None:
                 self.running.halt()
+        self.scoring.set()
+
+    def cut_short(self) -> None:
+        with self.guard:
+            self.cut = True
         self.scoring.set()
 
     def leave(self, why: str) -> None:
@@ -69,6 +77,7 @@ class Worker:
         facts: Facts,
         beat: timedelta = settings.WORKER_BEAT,
         lost: timedelta = settings.WORKER_LOST,
+        deadline: timedelta = settings.WORKER_DEADLINE,
     ) -> None:
         self.id: UUID = uuid4()
         self._conninfo: str = conninfo
@@ -76,6 +85,7 @@ class Worker:
         self._facts: Facts = facts
         self._beat_every: float = beat.total_seconds()
         self._lost: timedelta = lost
+        self._deadline: float = deadline.total_seconds()
         self._guard: threading.Lock = threading.Lock()
         self._held: dict[int, _Held] = {}
         self._waking: socket.socket | None = None
@@ -91,11 +101,17 @@ class Worker:
                 queue = Queue(conn)
                 queue.enlist(self.id)
                 _ = conn.execute(sql.SQL("LISTEN {}").format(sql.Identifier(WORKERS)))
+                deadline: float | None = None
                 while True:
                     leaving = stopping.is_set()
-                    if leaving:
+                    if leaving and deadline is None:
+                        deadline = time.monotonic() + self._deadline
+                    if deadline is not None:
+                        past = time.monotonic() >= deadline
                         for held in self._holding().values():
                             held.leave(LEFT)
+                            if past:
+                                held.cut_short()
                     self._beat(queue)
                     if leaving and not self._holding():
                         return
@@ -104,7 +120,7 @@ class Worker:
                             job := queue.claim(self.id, max_jobs, self._lost)
                         ) is not None:
                             self._take(job)
-                    self._wait(conn, woken)
+                    self._wait(conn, woken, deadline)
         finally:
             with self._guard:
                 self._waking = None
@@ -120,10 +136,15 @@ class Worker:
             except OSError:
                 pass
 
-    def _wait(self, conn: Connection, woken: socket.socket) -> None:
+    def _wait(
+        self, conn: Connection, woken: socket.socket, deadline: float | None
+    ) -> None:
         if list(conn.notifies(timeout=0)):
             return
-        ready, _, _ = select.select([conn.fileno(), woken], [], [], self._beat_every)
+        timeout = self._beat_every
+        if deadline is not None:
+            timeout = max(min(timeout, deadline - time.monotonic()), 0.0)
+        ready, _, _ = select.select([conn.fileno(), woken], [], [], timeout)
         if woken in ready:
             _ = woken.recv(4096)
         for _ in conn.notifies(timeout=0):
@@ -195,12 +216,38 @@ class Worker:
                     return "queued"
                 _ = running.finish()
             if job.score and not held.halted:
-                publisher.put(("run.scoring", scoring_of(bench, started, job.scorers)))
-                graded = bench.score(
-                    started, job.scorers, publisher.scoring_event, held.scoring
-                )
+                graded = self._scored(conn, bench, started, publisher, held)
+                if held.cut and not held.halted:
+                    return "queued"
                 scores = [graded_of(g) for g in graded]
                 publisher.put(("run.scored", schemas.RunScoredData(scores=scores)))
         finally:
             publisher.close()
         return "stopped" if held.halted else "finished"
+
+    # Scorer by scorer, so that the job keeps those it finished: queued again, it scores
+    # what is left.
+    def _scored(
+        self,
+        conn: Connection,
+        bench: Bench,
+        started: RunStarted,
+        publisher: Publisher,
+        held: _Held,
+    ) -> list[Graded]:
+        job, queue = held.job, Queue(conn)
+        left = [
+            e.digest
+            for e, _ in bench.scorers_for(started)
+            if (job.scorers is None or e.digest in job.scorers)
+            and e.digest not in job.scored
+        ]
+        publisher.put(("run.scoring", scoring_of(bench, started, left)))
+        graded: list[Graded] = []
+        for scorer in left:
+            graded.extend(
+                bench.score(started, {scorer}, publisher.scoring_event, held.scoring)
+            )
+            if not held.scoring.is_set():
+                _ = queue.scored(job.id, self.id, scorer)
+        return sorted(graded, key=lambda g: g.name)

@@ -20,6 +20,7 @@ from chatddx.store.notify import Assembler, Events, JobChanged, Rows, channel
 from chatddx.store.store import Connection
 from chatddx.test.world import LINES, QWEN, faked, world_facts
 from chatddx.worker import Worker
+from chatddx.worker.worker import LEFT
 
 BEAT = timedelta(milliseconds=50)
 LOST = timedelta(seconds=1)
@@ -61,9 +62,12 @@ def start(bench: Bench) -> UUID:
 
 @contextmanager
 def serving(
-    conninfo: str, world: Inventory, beat: timedelta = BEAT
+    conninfo: str,
+    world: Inventory,
+    beat: timedelta = BEAT,
+    deadline: timedelta = settings.WORKER_DEADLINE,
 ) -> Generator[Worker]:
-    worker = Worker(conninfo, world, world_facts(), beat, LOST)
+    worker = Worker(conninfo, world, world_facts(), beat, LOST, deadline)
     stopping = threading.Event()
     thread = threading.Thread(target=worker.serve, args=(stopping,))
     thread.start()
@@ -271,3 +275,38 @@ def test_a_run_the_gate_now_refuses_fails_with_why(
     assert failed.status == "failed"
     assert failed.why is not None and "isn't cleared for source test" in failed.why
     assert Store(conn).run(started).finished is None
+
+
+@pytest.mark.slow
+def test_a_stopping_worker_cuts_its_scoring_short_at_its_deadline_and_keeps_what_it_scored(
+    conn: Connection, conninfo: str, world: Inventory, bench: Bench, alice: Person
+) -> None:
+    queue = Queue(conn)
+    variation = bench.configuration(LINES, bench.endpoint(QWEN))
+    with faked(world, Store(conn).get):
+        running = bench.start(variation, QWEN, [bench.family("noted").case], (7,))
+        running.send()
+        _ = running.finish()
+    started = running.run
+    names = {e.digest: a.name or "" for e, a in bench.threads("scorer")}
+
+    with faked(world, Store(conn).get, delay=0.05):
+        job = queue.put(alice.id, started, QWEN, 0, True)
+        with serving(conninfo, world, deadline=timedelta(milliseconds=100)):
+            held = until(queue, job, lambda j: len(j.scored) == 2)
+            deadline = time.monotonic() + 30
+            while len(Store(conn).scores_of(started)) < 3:
+                assert time.monotonic() < deadline, "the judged scorer didn't start"
+                time.sleep(0.02)
+    left = queue.job(job.id)
+    assert (left.status, left.why, left.scored) == ("queued", LEFT, held.scored)
+    assert sorted(names[s] for s in left.scored) == ["lines", "whole"]
+    with faked(world, Store(conn).get), serving(conninfo, world):
+        done = until(queue, job, ended)
+
+    assert done.status == "finished"
+    assert sorted(names[s] for s in done.scored) == ["judged", "lines", "whole"]
+    every = [g.name for g in bench.scores_of(started, every=True)]
+    assert sorted(every) == ["judged", "judged", "lines", "whole"]
+    assert {g.name for g in bench.scores_of(started)} == {"judged", "lines", "whole"}
+    assert bench.unscored(bench.run_by_id(started)) == []

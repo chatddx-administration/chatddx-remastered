@@ -53,6 +53,13 @@ workers never take the same one, and claims take turns, so that the runs on an e
 
 Heads-up: The worker's queue is state, not factors or records, and is updated in place.
 
+```
+AGENT: add
+After this paragraph: what a job keeps of its scoring.
+---
+A job keeps the scorers it has finished, so that one queued again mid-scoring, as a stopping worker leaves it, scores
+what is left.
+```
 Claims take turns, so that the runs on an endpoint keep to its `max_jobs` between them. Queuing, halting, pausing,
 ending and queuing again wake the workers, and tell those following the run how its job stands (`NOTIFY`).
 

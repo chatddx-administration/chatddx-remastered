@@ -4,7 +4,8 @@ The worker runs trials outside the process that asked for them, so that a run ou
 followed and halted from every replica. This file plans it, and the port of what the old worker did. Steps 0 to 4 are
 built (see "Built"): what it stands on, the queue, the worker, `chatddx worker`, the API through it, its runs,
 scorings and halts queued and its events told from the ledger's rows, woken by `NOTIFY`, with the worker's deltas; and
-a person's controls of their queue, with each run's job on the runs page.
+a person's controls of their queue, with each run's job on the runs page; and step 5, a stopping worker's deadline for
+its scorings (W2).
 
 "The old worker" is chatddx-administration/chatddx at 504792c: `src/chatddx/worker/` (`models.py`, `queue.py`,
 `worker.py`, `control.py`, `cli.py`, about 950 lines), with the portal's **Status** page
@@ -28,7 +29,7 @@ https://github.com/chatddx-administration/chatddx/blob/504792cbeb09508f2c52912be
 6. **Built: steps 0 to 4** (see "Built"): resuming a run and what a run starts with; the queue; the worker; the API
    through the worker; controls and status.
 7. **Decided: what's next** (see "What's next, decided"), but T4, the repl beside the worker. R1 to R5, T1 to T3, C1,
-   C3, W1, and C2 as far as queue order goes, are built. Next to build: W2, then the NixOS module (see "The plan").
+   C3, W1, W2, and C2 as far as queue order goes, are built. Next to build: the NixOS module (see "The plan").
 
 ## Why
 Until step 3:
@@ -274,6 +275,15 @@ Still the runner's, and met here:
     Resume for an unfinished run with nothing open (`src/chatddx/portal/runs.py`, `templates/runs.html`).
   - Tests: `src/chatddx/store/test/test_queue.py`, `src/chatddx/api/test/test_queue.py`, and
     `src/chatddx/portal/test/test_running.py`.
+- **W2, a stopping worker's deadline.** `worker.job.scored`, the scorers a job has finished, which only grows and
+  outlives the job being queued again (`src/chatddx/store/migrations/0024-t0-worker-scored.sql`, `0025`;
+  `Queue.scored`). The worker scores a job scorer by scorer, those it hasn't finished, and records each it finishes
+  unhalted. A stopping worker lets its scorings go on until `settings.WORKER_DEADLINE` (60 s) after it was asked to
+  stop, then halts them and queues the job again, why `its worker stopped`, without telling `run.scored`; the next
+  worker scores what is left, and the halted scorer again from its start, so its partial score stays beside the whole
+  one. A job lost with its worker keeps its scored scorers too. The deadline is the worker's own: a service's stop
+  timeout is to exceed it (W1's NixOS module). Tests: `test_queue.py`, and a worker cut short at its deadline and
+  another scoring what was left (`src/chatddx/worker/test/test_worker.py`).
 
 ## The plan
 On the decisions above.
@@ -292,7 +302,7 @@ R. **What a run is started with** (R1 to R4), built: the inventory's cleanup per
    `chatddx portal` running a worker in its process; `src/chatddx/api/jobs.py` gone.
 4. **Controls and status** (C1 to C3), built (see "Built"): pause, resume and the two presses of stop for an owner,
    and the runs page's status.
-5. **A stopping worker's deadline** (W2), with the scorers a job has finished kept.
+5. **A stopping worker's deadline** (W2), with the scorers a job has finished kept, built (see "Built").
 6. **A NixOS module** running the HTTP server, the API and the worker as systemd services (W1).
 
 ## What's next, decided
@@ -342,7 +352,7 @@ run is started with over HTTP, which doesn't wait on the worker; C for step 4; W
 - **W1. Where. Decided, built but the NixOS module:** `chatddx portal`, a convenience for development, runs a basic worker in its own process. A
   deployment runs the HTTP server, the API and the worker as separate systemd services on NixOS: `chatddx worker` is
   one of them, and `chatddx api` starts no worker. The flake has no NixOS module yet.
-- **W2. A stopping worker's scorings. Decided: up to a deadline**, within the service's stop timeout, then the
+- **W2. A stopping worker's scorings. Decided, built: up to a deadline**, within the service's stop timeout, then the
   scorings are halted and the job queued again to score what is left. What is left needs the scorers a job has
   finished kept with it, since a job's scorers are fixed: a column of its own, updated in place.
 - **W3. Slots while scoring. Decided: as built**, a job holds its run's slots until it ends.
@@ -361,8 +371,10 @@ T4 is open (see "What's next, decided"). Beside it:
   them, not as they happen.
 - **A connection per stream**, held while it is open, beside the one listening connection per process, and two per
   job a worker holds (`docs/api.md`, "Serving", has a suggestion).
-- **A stopping app's worker waits for its scorings** (W2 isn't built), so `chatddx portal` and a test's app stopping
-  mid-scoring wait for it.
+- **A stopping worker's sending** has no deadline: its runs stop after the items under way, however long they take,
+  and a service's stop timeout kills it before then, leaving the job to be claimed again once its worker is lost, and
+  the items to be sent again. Halting them at the deadline would record them stopped, and they wouldn't be sent again.
+- **A halted scorer is scored again from its start** on the next claim, its partial score kept beside the whole one.
 - **`NOTIFY`'s queue** (T3): a payload waits in the database's notification queue, kept on disk (`pg_notify/`), until
   every listener has read it, and a listener that stops reading holds the queue up for all. Deltas are case-derived,
   so they pass through the database that holds the ledger's completions already; nothing new is stored.
