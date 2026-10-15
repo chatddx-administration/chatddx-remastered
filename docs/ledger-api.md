@@ -109,6 +109,12 @@ As for components (`docs/factors-api.md`, "Canonical form"):
 ```
 
 ### `class ItemKey(Frozen)`
+```
+AGENT: replace
+Decided (agents/wip-requests.md, K1).
+---
+Which item of a run a record is, by case and replicate; with a view, which item of a score.
+```
 Which request of a run an item is.
 
 | Field | Type | Default |
@@ -232,6 +238,12 @@ Opens a run with its recorded factors. Not case-derived. `schema_version` 2: `to
 | `endpoint` | `Endpoint \| None` | `None` |
 
 ### `class RunItem(Record)`
+```
+AGENT: replace
+Decided (agents/wip-requests.md, K1).
+---
+A case's replicate in a run: its first call and its tool rounds. Case-derived.
+```
 One request of the trial and what came back. Case-derived.
 
 | Field | Type | Default |
@@ -561,6 +573,13 @@ It doesn't
 ## Known gaps
 From `docs/ledger.md`, "Open design issues", where they concern this API:
 - `Execution.timeout_s` isn't checked: a call's times span all its attempts.
+```
+AGENT: replace
+The bench rebuilds an item's first request (`Bench.rendered_again`); found by agents/wip-requests.md.
+---
+- Nothing here rebuilds a request to compare with `Call.request`; the bench rebuilds an item's first
+  (`Bench.rendered_again`), not a later round's or a judge's.
+```
 - Nothing rebuilds a request to compare with `Call.request`.
 - Canary outputs aren't compared between phases or runs.
 - Canary calls get no model check, and neither canary calls nor judge calls a prompt-token check.

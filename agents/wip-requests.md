@@ -6,6 +6,34 @@ section per piece of work. "Decided" means the user said so; "Take" is the agent
 ## What a request is, its stages, and where clearance falls
 Checked against the code at fcef71a: the runner, the ledger, the gate, the factors' rendering and the bench's looks.
 
+### Decided
+- **R1.** A request is the body one call sends to an engine (see "Options", R, for the definition).
+- **K1.** The item key's wording: an item is a case's replicate in a run, its first request and each tool round's,
+  each sent as a call that may take several attempts.
+- **B2.** The clearance boundary is every destination of case-derived content, built where `agents/wip-clearance.md`
+  builds it, the gate deciding per run.
+- **C1.** The hard block guards case-derived content, the vignette included.
+
+### Done
+- **The definition, as suggestions**: `docs/chatddx.md` (glossary: fingerprint, sensitive, insert, request, call,
+  attempt, tool round, item, item key, execution, case-derived, wire body; the hard block in "Compromises" and
+  "Findings and errors"; the dataflow's slots, its tool rounds and its run item), `docs/factors.md` ("Requests",
+  "Rendering", "Tool rounds", "Execution", "Terms"), `docs/ledger.md` ("Case-derived records", "Run items", "Call",
+  "Terms"), `docs/ledger-api.md` (`ItemKey`, `RunItem`, "Known gaps"), `docs/runner.md` ("The gate", "Calls"),
+  `docs/api.md` ("Case-derived content", "Terms") and `docs/scripted.md` (a turn per attempt).
+- **`judge.greedy_seeds`** says a greedy judge's seeds send the same request (`src/chatddx/factors/lint.py`), as
+  `docs/factors-api.md` has it.
+- **`agents/wip-clearance.md`**: B2 and C1 in its scope, and what item 6 of "Before real patient data" keeps is the
+  engine's error response.
+
+### Left
+- **The suggestions** wait for a human to write them in.
+- **B2's other destinations**: the third parties tools send to, the database, the edges and exports, each cleared as
+  `agents/wip-clearance.md` builds it.
+- **"Turn"** still names a model's response in `docs/factors.md` ("every turn calls a tool") and an unsent round in
+  `docs/repl.md`, beside the tool round `Turn` is.
+- **K2 and K3**, if an edge comes to show an item's rounds apart, or timeouts are to be checked per attempt.
+
 ### The word today
 Besides the HTTP requests people send the API and the portal, which are left aside here, "request" names an LLM
 request at every stage of its life, and one thing that is several:
@@ -133,7 +161,7 @@ What says otherwise, or loosely:
 - **R3. Every stage.** "Request" stays the word for the whole life, each stage qualified: the compiled request (the
   skeleton), the rendered request, the wire body, an attempt. Most generous, and the word stays loose.
 
-Take: R1, as the definition:
+Decided: R1, as the definition:
 > A *request* is the body one call sends to an engine: a skeleton rendered with its fills, the served model and the
 > seed, or for a tool round, the last request with the assistant's message and the tools' results. Its stages are
 > the chunks, the recipe and the skeleton it is built from; its fills, from the case's vignette and appendices or
@@ -151,7 +179,7 @@ Take: R1, as the definition:
   attempt (`docs/ledger.md`, "Some of what happened isn't checked"), and whether an earlier attempt's error body is
   kept is decided rather than incidental. Changes `Call`, so its record's version.
 
-Take: K1 now; K2 when an edge shows an item's rounds apart; K3 when timeouts are to be checked.
+Decided: K1.
 
 #### B. Where the clearance boundary falls
 - **B1. At the engine, per run**, as built: a run and a judged scoring are admitted from what they pin, and
@@ -164,9 +192,7 @@ Take: K1 now; K2 when an edge shows an item's rounds apart; K3 when timeouts are
 - **B3. Per request**: the gate asked at every send, a round's, an attempt's, a judge call's, so that a clearance
   withdrawn during a run stops it.
 
-Take: B2, as what the boundary is, built where `agents/wip-clearance.md` builds it, with the decision kept per run as
-in B1: a run's requests go nowhere its pins don't name, and a dated grant can tell whether a run was cleared when it
-started (`agents/wip-clearance.md`, "When to build it"). B3 only if a withdrawn clearance must stop a run under way.
+Decided: B2, with the decision kept per run as in B1.
 
 #### C. What the hard block guards
 - **C1. Case-derived content, the vignette included**: the vignette and all that is made from it (fills, rendered
@@ -176,15 +202,4 @@ started (`agents/wip-clearance.md`, "When to build it"). B3 only if a withdrawn 
 - **C2. As worded now**: the vignette is sensitive, case-derived is what is made from it, and the block names the
   second.
 
-Take: C1.
-
-### The work ahead
-Once R, K, B and C are settled:
-1. **The definition**, as suggestions: `docs/chatddx.md` (glossary: request, call, attempt, round, item, item key,
-   wire body, case-derived; the dataflow's slots and its item of several calls), `docs/factors.md` ("Requests",
-   "Rendering", "Tool rounds", "Execution"), `docs/ledger.md` ("Run items", "Call", "Terms"), `docs/ledger-api.md`,
-   `docs/runner.md` ("Calls", "The gate"), `docs/api.md` ("Terms") and `docs/scripted.md`.
-2. **The smaller things**: `judge.greedy_seeds`'s message; the known gap in `docs/ledger-api.md`, narrowed to later
-   rounds and judges; "a rejected request's body" in `agents/wip-clearance.md`.
-3. **K2 or K3**, if taken.
-4. **B2**, with `agents/wip-clearance.md`.
+Decided: C1.

@@ -56,6 +56,17 @@ recomputes the seal and warns when it differs: records were added, removed or ch
 finish record itself is outside the seal (see "Open design issues").
 
 ### Case-derived records
+```
+AGENT: replace
+Decided (agents/wip-requests.md, C1): the vignette is case-derived too, and an engine's refusal kept as a response may
+echo the request (agents/wip-clearance.md, "Before real patient data" 6). The paragraph's first two lines and its first
+bullet.
+---
+The vignette and content produced from it are *case-derived*. Each record type says whether it may hold any, and a
+new type is assumed to unless it says otherwise. Three types do:
+- run items: their responses hold the completions, the arguments the model passed to tools, and an engine's refusal,
+  which may echo the request; their tool rounds hold what the tools returned;
+```
 Content produced from a vignette is *case-derived*. Each record type says whether it may hold any, and a new type is
 assumed to unless it says otherwise. Three types do:
 - run items: their responses hold the completions and the arguments the model passed to tools, and their tool rounds
@@ -99,6 +110,14 @@ trial, execution settings and canaries. On a batch-invariant engine a rerun may 
 reproducing a run is best-effort (docs/factors.md, "Local engine" and "Execution").
 
 ### Run items
+```
+AGENT: replace
+Decided (agents/wip-requests.md, K1): an item is a case's replicate, its first request and each tool round's.
+---
+A run item records a case's replicate and what came back: which case and which replicate, the fingerprint of the
+vignette as it was read from its source (to detect drift; docs/factors.md, "Preparing a case"), the first call, and the
+tool rounds that followed, each with its call: one request more than the skeleton's round limit, at most.
+```
 A run item records one request of the trial and what came back: which case and which replicate, the fingerprint of the
 vignette as it was read from its source (to detect drift; docs/factors.md, "Preparing a case"), the first call, and the
 tool rounds that followed.
@@ -147,6 +166,15 @@ Two runs whose trials build their prompts alike can also be compared, to show wh
 for the same item both times.
 
 ## Call
+```
+AGENT: replace
+Decided (agents/wip-requests.md, R1 and K1). The first two sentences.
+---
+A call records one exchange with an engine: an item's first request, a tool round's, a canary's or a judge's, sent
+in one or more attempts. It holds a fingerprint of the request, when it started and finished, how many attempts it
+took, the status and the response if one came, the error if it failed, and a fingerprint of the prompt the engine
+read.
+```
 A call records one exchange with an engine: an item's request, a tool round's, a canary's or a judge's. It holds a
 fingerprint of the request, when it started and finished, how many attempts it took, the status and the response if
 one came, the error if it failed, and a fingerprint of the prompt the engine read. With retries, its times span every
@@ -224,6 +252,14 @@ for queries. Stored records are never changed or deleted.
 
 ## Terms
 
+```
+AGENT: replace
+Decided (agents/wip-requests.md, R1 and K1): the row Item, and Request and Attempt beside Call.
+---
+| Item | One case's replicate in a run: its first request and each tool round's; or how one view graded one run item. |
+| Request | The body one call sends to an engine. |
+| Attempt | One try at sending a call's request. |
+```
 | Term | Meaning |
 | --- | --- |
 | Record | What the rig writes when something happens; never changed. |

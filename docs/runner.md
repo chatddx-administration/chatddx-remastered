@@ -55,6 +55,16 @@ Finishing writes the finish record, with the findings the runner saw while it ra
 finds (docs/ledger.md, "Run"). A run is finished once.
 
 ## The gate
+```
+AGENT: replace
+Decided (agents/wip-requests.md, B2 and C1): the boundary, and when the gate decides. The lines before the list.
+---
+Case-derived content, the vignette included, may go only where it is cleared to go: the one hard block
+(docs/chatddx.md, "Findings and errors"). The gate guards the engines. It decides once per run, as it starts and as it
+resumes, and once per judge as a judged scoring starts, from what they pin, before anything is prepared or rendered:
+every request a run sends, each tool round's and attempt's included, goes to the endpoint the gate admitted. The gate
+refuses, in order:
+```
 Sending case-derived content to an engine that isn't cleared for its source is the one hard block (docs/chatddx.md,
 "Findings and errors"). The gate refuses, in order:
 - an endpoint that serves another engine than the one asked for;
@@ -69,6 +79,13 @@ comes up. The bench uses the difference (see "What applies to a run").
 The secret goes only into the request's `Authorization` header. No stored row holds it.
 
 ## Calls
+```
+AGENT: replace
+Decided (agents/wip-requests.md, R1). The first sentence.
+---
+A call is one exchange with an engine: one request, sent in one or more attempts, and what came back
+(docs/ledger.md, "Call"). Every call streams: the request's fingerprint is taken
+```
 A call is one exchange with an engine (docs/ledger.md, "Call"). Every call streams: the request's fingerprint is taken
 before the streaming options are added, and the streamed chunks are added up to the completion an unstreamed request
 would have had. Streaming is only how a call travels; what is stored is the same either way. The prompt's token ids

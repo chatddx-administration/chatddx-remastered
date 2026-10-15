@@ -14,6 +14,11 @@ ledger provide the means; the runner enforces.
 Decided: this plan also holds every concern about running real patient data until it is resolved (see "Before real
 patient data").
 
+Decided (`agents/wip-requests.md`, B2 and C1): the boundary is every destination of case-derived content, the vignette
+included: engines and judge engines, the third parties tools send to, the database (records, the notification queue,
+a job's reasons, typed texts), the edges and exports. The gate keeps deciding per run, from what the run pins, and
+covers every request a run sends; each other destination is cleared as this plan builds it.
+
 ## What holds now
 ### Vetted endpoints
 Until clearance has a database grant, a World inventory's `[cleared]` table (`docs/inventory.md`, "Clearance") says
@@ -194,9 +199,10 @@ runs out of the app, in the healthcheck's order, with where else it is tracked. 
    inline script, `script-src 'self'` fits every portal page. The NixOS module's nginx sends HSTS, `nosniff`,
    `Referrer-Policy` and `frame-ancestors`, but no `script-src`, which would refuse Swagger UI's scripts; the app sends
    none, so the Kubernetes target has none (`agents/wip-deploy.md`, "The NixOS module").
-6. **Engine errors** are stored verbatim: a rejected request's body (`src/chatddx/runner/send.py:158-160`), with only
-   `prompt_token_ids` stripped (`src/chatddx/ledger/call.py:47`), and the engine's message in `Call.error`
-   (`src/chatddx/runner/wire.py:17-35`). An engine that echoes its input in an error puts vignette text in the store.
+6. **Engine errors** are stored verbatim: the engine's error response to a rejected request, as the call's response
+   (`src/chatddx/runner/send.py:158-160`), with only `prompt_token_ids` stripped (`src/chatddx/ledger/call.py:47`),
+   and the engine's message in `Call.error` (`src/chatddx/runner/wire.py:17-35`). An engine that echoes its input in
+   an error puts vignette text in the store.
    They are served with a run's items only, which are no-store. Not checked against real vLLM.
 7. **Digests** work as capabilities.
    - `GET /api/components/{digest}` checks no visibility (`src/chatddx/api/world.py:77-87`), by design: appendices and

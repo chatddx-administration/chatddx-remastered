@@ -23,6 +23,13 @@ the World itself doesn't read it, as with the data set in `_data/` (docs/invento
 | `stop_after` | Halt the run once a call has streamed this many tokens. |
 | `unfinished` | Leave the run without its finish, as when the process running it dies. |
 | `scored` | Score the finished run under every scorer that applies. True by default. |
+```
+AGENT: replace
+Decided (agents/wip-requests.md, R1): the fake takes a turn per HTTP request, so a call retried takes one per attempt
+(docs/vllm.md, "Scripts").
+---
+| `[[turn]]` | The fake's answers, one per attempt in the order the run sends them, so one per call without retries (docs/vllm.md, "Scripts"). |
+```
 | `[[turn]]` | The fake's answers, one per call in the order the run sends them (docs/vllm.md, "Scripts"). |
 
 A file with any other key, or a turn the fake can't read, is refused when it is read, naming the file.
@@ -87,6 +94,12 @@ src/chatddx/scripted/test/.
 | Term | Meaning |
 | --- | --- |
 | Scripted run | A run made to be looked at, written as a file in a World's `_runs/` and answered by the fake from its script. |
+```
+AGENT: replace
+Decided (agents/wip-requests.md, R1).
+---
+| Script | The turns the fake answers with, one per attempt. |
+```
 | Script | The turns the fake answers with, one per call. |
 | Stand-in | The fake vLLM serving a remote engine's model on this machine, at the remote endpoint's address. |
 

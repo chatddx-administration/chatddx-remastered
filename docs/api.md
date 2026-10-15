@@ -277,6 +277,16 @@ can gate those few when clearance has one (agents/wip-clearance.md):
 
 Each is sent with `Cache-Control: no-store`, so that a browser keeps none of it.
 
+```
+AGENT: replace
+Decided (agents/wip-requests.md, B2): a job's reason is one more destination, served by `GET /api/runs` without no-store
+(agents/wip-clearance.md, "Before real patient data" 10).
+---
+Nothing else should carry any, but why a job failed can quote what it was sending, and is served with the runs
+(agents/wip-clearance.md, "Before real patient data" 10). Why an item ended can quote the answer, since checking it
+against a schema names the value it refused, so it is in the items and the events only. For the same reason a score
+gives values, and its detail, judge calls and findings are its items'.
+```
 Nothing else carries any. Why an item ended can quote the answer, since checking it against a schema names the value
 it refused, so it is in the items and the events only. For the same reason a score gives values, and its detail,
 judge calls and findings are its items'.
@@ -325,6 +335,12 @@ first row, by when it listens, and then lets the worker take the job.
 
 ## Terms
 
+```
+AGENT: replace
+Decided (agents/wip-requests.md, K1): the row Item.
+---
+| Item | One case's replicate in a run: its first request and each tool round's, each a call. |
+```
 | Term | Meaning |
 | --- | --- |
 | Session | A person signed in: a token, carried as a bearer or as a cookie, for 12 hours. |
