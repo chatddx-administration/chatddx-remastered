@@ -92,15 +92,8 @@ In `chatddx.settings`:
 prints the worker's id and the World as it starts, and serves `settings.database()` until SIGTERM or SIGINT sets its
 stopping event and wakes it; then it prints that what it held is queued again.
 
-```
-AGENT: replace
-`chatddx portal` is renamed `chatddx run`, and `chatddx portal` now serves the portal and the API with no worker
-(agents/wip-deploy.md).
----
 `chatddx run` runs one in its process (`src/chatddx/api/app.py:app`, `worker=True`); `chatddx api` and
 `chatddx portal` run none.
-```
-`chatddx portal` runs one in its process (`src/chatddx/api/app.py:app`, `worker=True`); `chatddx api` runs none.
 
 ## Tests
 `test/`, against the `curated` template, in autocommit mode:

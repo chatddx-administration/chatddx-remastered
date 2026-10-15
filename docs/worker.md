@@ -72,18 +72,9 @@ Each run says its latest job, and while it is queued, how many jobs at its endpo
 before it. The portal's runs page shows the person's queue with its controls, and each run's job.
 
 ## Where it runs
-```
-AGENT: replace
-`chatddx portal` is renamed `chatddx run`, and `chatddx portal` now serves the portal and the API with no worker
-(agents/wip-deploy.md).
----
 `chatddx worker` serves the queue for a World until it is stopped. `chatddx run`, a convenience for development,
 runs a worker in its own process; `chatddx portal` and `chatddx api` run none. A deployment runs the HTTP server, the
 API and the worker as separate services. Several workers work alike, taking turns to claim.
-```
-`chatddx worker` serves the queue for a World until it is stopped. `chatddx portal`, a convenience for development,
-runs a worker in its own process; `chatddx api` runs none. A deployment runs the HTTP server, the API and the worker
-as separate services. Several workers work alike, taking turns to claim.
 
 The repl sends its runs in its own process, where an interrupt halts a run, and not through the worker.
 
