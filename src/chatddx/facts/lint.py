@@ -4,24 +4,24 @@ from pydantic import JsonValue
 
 from chatddx.factors.base import Finding, resolve
 from chatddx.factors.bundle import Registry
-from chatddx.factors.lint import Languages, Reasons, lint
-from chatddx.factors.request import Sampling, Skeleton
-from chatddx.factors.scoring import Judge
-from chatddx.factors.trial import Trial
-
-from .models import (
+from chatddx.factors.facts import (
     ContractFact,
-    Facts,
     ModelFacts,
     Refusal,
     SamplingValues,
     model_name,
 )
+from chatddx.factors.lint import Languages, Reasons, lint
+from chatddx.factors.request import Sampling, Skeleton
+from chatddx.factors.scoring import Judge
+from chatddx.factors.trial import Trial
+
+from .models import Facts
 
 
 def reasons(facts: Facts, registry: Registry) -> Reasons:
     def by_default(engine: str) -> bool | None:
-        model = facts.about(registry.get(engine), registry)
+        model = facts.about(engine, registry.get)
         return None if model is None else model.reasons_by_default()
 
     return by_default
@@ -89,9 +89,8 @@ def _sampled_for(
 
 
 def _pair(c: Trial | Judge, registry: Registry, facts: Facts) -> Iterable[Finding]:
-    engine = registry.get(c.engine)
-    name = model_name(engine, registry)
-    model = facts.about(engine, registry)
+    name = model_name(c.engine, registry.get)
+    model = facts.about(c.engine, registry.get)
     skeleton = resolve(registry.get, c.skeleton, Skeleton)
     if model is None:
         yield Finding(

@@ -18,6 +18,7 @@ from chatddx.bench import (
 )
 from chatddx.catalog.titles import describe
 from chatddx.factors.base import Finding
+from chatddx.factors.facts import Landing
 from chatddx.factors.request import Purpose, Recipe
 from chatddx.factors.trial import suggest_seeds
 
@@ -155,7 +156,9 @@ def refused() -> Generator[None]:
         raise HTTPException(422, str(e)) from None
 
 
-def part_of(bench: Bench, variation: TriedVariation, part: str) -> schemas.Part:
+def part_of(
+    bench: Bench, variation: TriedVariation, part: str, landed: Landing | None = None
+) -> schemas.Part:
     held = variation.held(part)
     return schemas.Part(
         part=part,
@@ -163,6 +166,8 @@ def part_of(bench: Bench, variation: TriedVariation, part: str) -> schemas.Part:
         title=None if held is None else bench.title(held),
         summary=None if held is None else describe(bench.get(held), bench.title),
         replaced=part in variation.parts,
+        landed=None if landed is None else landed.level,
+        nearest=[] if landed is None else list(landed.nearest),
     )
 
 
@@ -186,21 +191,24 @@ def variation(
     with refused():
         varied = bench.variation(thread, query.given(), query.head)
         skeleton = bench.skeleton(varied)
+        landed = bench.landed(varied)
+        engine = varied.held("engine")
+        if query.endpoint is not None:
+            try:
+                _, engine = bench.at(varied, query.endpoint)
+            except LookupError as e:
+                raise HTTPException(422, str(e)) from None
     seed = suggest_seeds(1)[0] if query.seed is None else query.seed
     families = bench.families(query.tag)
-    engine = findings = None
-    if query.endpoint is not None:
-        try:
-            engine = bench.endpoint(query.endpoint)
-        except LookupError as e:
-            raise HTTPException(422, str(e)) from None
+    findings = None
+    if engine is not None:
         findings = [
             schemas.Finding.of(f)
             for f in bench.findings(varied, engine, seed, families or None)
         ]
     parts = None
     if varied.recipe is not None:
-        parts = [part_of(bench, varied, p) for p in PARTS]
+        parts = [part_of(bench, varied, p, landed.get(p)) for p in PARTS]
     held = bench.holder("configuration", skeleton.digest, varied.varied)
     return schemas.Variation(
         head=edit_of(bench, varied.configuration, "skeleton"),

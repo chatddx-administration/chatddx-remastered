@@ -16,14 +16,13 @@ from chatddx.portal.test.test_reading import shown
 from chatddx.portal.test.test_signing_in import signing_in
 from chatddx.store import Store
 from chatddx.store.store import Connection
-from chatddx.test.world import LINES, OFF, QWEN, faked, world_facts
+from chatddx.test.world import LINES, OFF, QWEN, faked
 
 
 @pytest.fixture
 def served(db: str, built: Path, world: Inventory) -> FastAPI:
     return app(
         world,
-        world_facts(),
         make_conninfo(settings.database(), dbname=db),
         built,
         worker=True,

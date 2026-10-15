@@ -13,13 +13,13 @@ from chatddx.inventory import Inventory
 from chatddx.store import Store
 from chatddx.store.queue import TAKEN_OUT
 from chatddx.store.store import Connection
-from chatddx.test.world import faked, world_facts
+from chatddx.test.world import faked
 
 
 @pytest.fixture
 def served(db: str, world: Inventory) -> FastAPI:
     conninfo = make_conninfo(settings.database(), dbname=db)
-    return app(world, world_facts(), conninfo, worker=True)
+    return app(world, conninfo, worker=True)
 
 
 def job(signed: TestClient, run: str) -> dict[str, Any]:

@@ -3,8 +3,8 @@
 What it takes to make the engine one more part of a configuration, as researchers see it, with what depends on the model
 worked out from the facts when a configuration is compiled. Replaces `agents/wip-variants.md` (at d417267), whose
 question, how to record which model a configuration is made for, this answers by making the model a part rather than a
-name. Checked against the code once variations were built. Nothing below is built. "Decided" means the user said so;
-"Take" is the agent's and still open.
+name. Checked against the code once variations were built. Stage 1 is built (see "Built"), but for the NixOS test;
+stage 2 isn't. "Decided" means the user said so; "Take" is the agent's and still open.
 
 ## Decided
 - **For a researcher the engine is just another part.** They swap it as they swap a sampling chunk and expect the rest
@@ -52,6 +52,34 @@ configuration sends without an edit of it; keeping the facts in the store, as ve
 4. **Variant groups recorded**, the engine swap picking a sibling (`agents/wip-variants.md` at d417267, B2). Only
    what init-data made per model exists.
 5. **Names as they are**, the edges re-resolving by name as the repl's cell does.
+
+## Built
+Stage 1, as designed below, with these details the design left open:
+- **Facts come from the store** wherever the bench reads them (`Seen.facts`, the live heads of the `facts` threads,
+  read when asked); `--facts` stays on init-data alone, and `Bench`, `api.app`, `portal.app` and `Worker` take none.
+- **A look needs no endpoint.** It renders and lints a configuration with a recipe for its engine, so `findings` is
+  always a list then; an endpoint named must serve that engine, and only a hand-written configuration needs one. Its
+  parts say where an intent landed (`Part.landed`, `Part.nearest`; `Seen.landed`).
+- **Where a run goes**: `Seen.at(variation, endpoint)`, the endpoint serving the variation's engine
+  (`Inventory.serving`), refused for none or several unless one is named, and refused for one named that serves another
+  engine. The judges' `runner/score.py:judge_at` uses `Inventory.serving` too.
+- **Judges** compile their recipe with the engine the World binds them to; a compilation that differs from the
+  recipe's own is stored without a thread (`Plan.compilations`).
+- **The repl**: the cell's engine is its configuration's engine part; `on ENDPOINT`, `use` and `cell` put the
+  endpoint's engine in it and keep every pick; `set engine NAME` swaps it and leaves an endpoint that serves another;
+  the prompt and `cell:` show the endpoint named or derived. A level the new engine's model refuses is said as the cell
+  changes (the cell changes anyway, so `set reasoning` can mend it), where `_again` kept the cell as it was.
+- **The portal**: the engine picker lists the engines the World's endpoints serve; the endpoint picker shows only for a
+  hand-written configuration or an engine served at several endpoints. The home page runs the configuration it picks
+  with its engine set to the endpoint's (`parts.engine`).
+- **Scripted runs** set the engine to the scripted endpoint's.
+- **Docs**: suggestions in the docs this touches (item 13).
+
+Outstanding:
+- **The NixOS test** (`nix/test.nix`) still finds `plan (en, Qwen/Qwen3-8B-AWQ)` and names its endpoint; it wants
+  `plan (en)`, and can leave the endpoint to be derived. Left for the user, who'll get back to it.
+- **`Seen.facts` is read on every access**, several times a look; cheap at today's sizes (a facts thread per model),
+  and the place to cache per request if it shows.
 
 ## Stage 1: the engine
 

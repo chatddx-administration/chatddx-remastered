@@ -78,7 +78,7 @@ def test_what_isn_t_the_person_s_to_build_on_is_refused(
     with pytest.raises(ValueError, match="at its family's current vignette already"):
         _ = bench.replacement(family.case)
 
-    bobs = Bench(bench.conn, bob, bench.inventory, bench.facts)
+    bobs = Bench(bench.conn, bob, bench.inventory)
     with pytest.raises(NotFound, match=f"no case {family.id} for bob"):
         _ = bobs.appendix(family.id, "x")
 

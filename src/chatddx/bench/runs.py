@@ -32,7 +32,7 @@ REFUSALS = (LookupError, TypeError, ValueError, NotImplementedError, Refused)
 def start(
     seen: Seen,
     variation: TriedVariation,
-    endpoint: str,
+    endpoint: str | None,
     cases: list[str],
     seeds: Sequence[int],
     cleanup: Sequence[CleanupOp] | None = None,
@@ -45,7 +45,7 @@ def start(
             f"{variation.label} is a judge configuration: a judge is asked as runs are "
             + "scored, and isn't run on cases"
         )
-    engine = seen.endpoint(endpoint)
+    endpoint, engine = seen.at(variation, endpoint)
     spec = seen.inventory.endpoint(endpoint)
     canaries = canaries or spec.canaries
     running = _begun(

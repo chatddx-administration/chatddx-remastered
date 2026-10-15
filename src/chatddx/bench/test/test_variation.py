@@ -11,7 +11,9 @@ def digest(c: str) -> str:
     return "sha256:" + c * 64
 
 
-RECIPE = Recipe(prompt=digest("1"), output=digest("2"), sampling=digest("3"))
+RECIPE = Recipe(
+    prompt=digest("1"), output=digest("2"), sampling=digest("3"), engine=digest("7")
+)
 HEAD = Edit(
     id=1,
     thread=1,
@@ -25,17 +27,19 @@ HEAD = Edit(
 
 def test_a_variation_replaces_parts_over_its_configuration() -> None:
     plan = TriedVariation(HEAD, "plan", RECIPE)
-    tried = plan.set("reasoning", digest("4"), "off").set(
-        "prompt", digest("5"), "terse"
+    tried = (
+        plan.set("engine", digest("8"), "gpt-oss")
+        .set("reasoning", digest("4"), "off")
+        .set("prompt", digest("5"), "terse")
     )
 
-    assert tried.label == "plan+prompt=terse+reasoning=off"
+    assert tried.label == "plan+prompt=terse+reasoning=off+engine=gpt-oss"
     assert (tried.held("reasoning"), tried.held("sampling")) == (
         digest("4"),
         digest("3"),
     )
     assert tried.varied == RECIPE.model_copy(
-        update={"reasoning": digest("4"), "prompt": digest("5")}
+        update={"reasoning": digest("4"), "prompt": digest("5"), "engine": digest("8")}
     )
     assert tried.configuration == plan.configuration
 
@@ -56,5 +60,7 @@ def test_only_an_optional_part_can_be_taken_out() -> None:
     assert plan.set("toolset", None, "none").held("toolset") is None
     with pytest.raises(ValueError, match="only .* can be taken out"):
         _ = plan.set("prompt", None, "none")
+    with pytest.raises(ValueError, match="always has an engine"):
+        _ = plan.set("engine", None, "none")
     with pytest.raises(ValueError, match="has no recipe"):
         _ = TriedVariation(HEAD, "by hand").set("prompt", digest("5"), "terse")

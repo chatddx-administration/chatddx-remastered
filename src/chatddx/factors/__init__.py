@@ -1,4 +1,4 @@
-from . import cases, engine, kinds, request, response, scoring, trial
+from . import cases, engine, facts, kinds, request, response, scoring, trial
 from .base import Code, Component, Finding, Fingerprint, StructuralError
 from .bundle import Bundle, Registry
 
@@ -12,6 +12,7 @@ __all__ = [
     "StructuralError",
     "cases",
     "engine",
+    "facts",
     "kinds",
     "request",
     "response",

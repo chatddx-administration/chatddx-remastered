@@ -48,7 +48,7 @@
     configurations = preferred(found.data);
     endpoints = served.data.filter((e) => e.problem === null && e.takes_typed);
     endpoint = endpoints[0]?.name;
-    configuration = fitting(endpoint);
+    configuration = configurations[0]?.id;
   });
 
   function named(thread: Schemas["Thread"]): string {
@@ -59,11 +59,6 @@
   function preferred(threads: Schemas["Thread"][]): Schemas["Thread"][] {
     const own = new Set(threads.filter((t) => t.owner === login).map((t) => t.name ?? t.title));
     return threads.filter((t) => t.owner === login || !own.has(t.name ?? t.title));
-  }
-
-  function fitting(name: string | undefined): number | undefined {
-    const model = endpoints.find((e) => e.name === name)?.model;
-    return (configurations.find((t) => model && named(t).includes(model)) ?? configurations[0])?.id;
   }
 
   async function analyze(event: SubmitEvent) {
@@ -80,8 +75,15 @@
         typed = { text, family: made.data.id };
       }
       phase = "running";
+      const compiled = configurations.find((t) => t.id === configuration)?.head.compilation;
       const started = await api.POST("/api/runs", {
-        body: { configuration, endpoint, families: [typed.family], score: false },
+        body: {
+          configuration,
+          endpoint,
+          parts: compiled ? { engine: endpoints.find((e) => e.name === endpoint)?.engine ?? null } : {},
+          families: [typed.family],
+          score: false,
+        },
       });
       if (!started.data) throw new Error(why(started.error));
       const run = started.data.run;
@@ -170,7 +172,6 @@
                 id="endpoint"
                 class="min-w-52"
                 bind:value={endpoint}
-                onchange={() => (configuration = fitting(endpoint))}
                 disabled={busy}
               >
                 {#each endpoints as e (e.name)}

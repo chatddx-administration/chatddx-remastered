@@ -14,7 +14,6 @@ from chatddx.api import (
     world as api_world,
 )
 from chatddx.bench import OPTIONAL, PARTS, Bench
-from chatddx.catalog import made_for
 from chatddx.factors.request import Purpose
 
 from .pages import BenchDep, page
@@ -47,11 +46,7 @@ def configuration(
     purpose = "generation" if held.recipe is None else held.recipe.purpose
     endpoints = api_world.endpoints(bench)
     siblings = api.threads(bench, "configuration", purpose=purpose)
-    model, variants = _variants(bench, thread, siblings, endpoints)
-    endpoint = query.endpoint or next(
-        (e.name for e in endpoints if e.problem is None and e.model == model), None
-    )
-    look = api.variation(bench, thread, query.model_copy(update={"endpoint": endpoint}))
+    look = api.variation(bench, thread, query)
     shown = api.detail(bench, thread)
     forked = None if shown.forked_from is None else bench.rows.edit(shown.forked_from)
     mine = shown.owner == bench.person.login
@@ -73,14 +68,14 @@ def configuration(
         "base": base,
         "optional": list(OPTIONAL),
         "look": look.model_dump(mode="json"),
-        "endpoint": endpoint,
+        "endpoint": query.endpoint,
         "tags": query.tag,
         "choices": {
-            p: [t.model_dump(mode="json") for t in api.threads(bench, p)] for p in PARTS
+            p: [t.model_dump(mode="json") for t in _choices(bench, p, endpoints)]
+            for p in PARTS
         },
         "configurations": [t.model_dump(mode="json") for t in siblings],
         "endpoints": [e.model_dump(mode="json") for e in endpoints],
-        "variants": {e: t.model_dump(mode="json") for e, t in variants.items()},
         "everyTag": api_families.tags(bench),
         "families": [f.model_dump(mode="json") for f in api_families.families(bench)],
         "itemsPerRun": settings.ITEMS_PER_RUN,
@@ -122,27 +117,11 @@ def linked(query: schemas.Varying, head: int, latest: int) -> str:
     return "?" + urlencode(given) if given else "?"
 
 
-def _variants(
-    bench: Bench,
-    thread: int,
-    siblings: list[schemas.Thread],
-    endpoints: list[schemas.Endpoint],
-) -> tuple[str | None, dict[str, schemas.Thread]]:
-    models = {e.model for e in endpoints if e.model is not None}
-    by_id = {t.id: t for t in siblings}
-    shown = by_id.get(thread)
-    made = None if shown is None else made_for(shown.name or "", models)
-    if made is None:
-        return None, {}
-    base, language, model = made
-    own = sorted(siblings, key=lambda t: t.owner != bench.person.login)
-    fitting: dict[str, schemas.Thread] = {}
-    for t in own:
-        other = made_for(t.name or "", models)
-        if other is not None and other[:2] == (base, language) and other[2] != model:
-            _ = fitting.setdefault(str(other[2]), t)
-    return model, {
-        e.name: fitting[e.model]
-        for e in endpoints
-        if e.model is not None and e.model in fitting
-    }
+def _choices(
+    bench: Bench, part: str, endpoints: list[schemas.Endpoint]
+) -> list[schemas.Thread]:
+    found = api.threads(bench, part)
+    if part != "engine":
+        return found
+    served = {e.engine for e in endpoints}
+    return [t for t in found if t.head.digest in served]

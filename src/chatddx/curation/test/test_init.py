@@ -18,7 +18,6 @@ from chatddx.test.world import (
     FACT_LINTS,
     FACTOR_LINTS,
     LINTS,
-    MODELS,
     NATIVE,
     NATIVE_TOOLS,
     TEST,
@@ -230,11 +229,8 @@ def test_init_data_says_when_a_thread_is_held_as_another_fork_than_the_data_s(
             + "forks it from lines-instructed (en)"
             for language in ("en", "sv")
         ),
-        *(
-            f"[archive skeleton] native-tools (en, {model}): held as a fork of native "
-            + f"(en, {model}); the data forks it from nothing"
-            for model in sorted(MODELS)
-        ),
+        "[archive skeleton] native-tools (en): held as a fork of native (en); the data "
+        + "forks it from nothing",
     ]
 
 
@@ -251,7 +247,9 @@ def test_init_data_withdraws_only_the_tags_the_archive_gave(
     for subject in (Subject(thread=native), Subject(family=family)):
         catalog.note(subject, Entry(field=EntryField.TAG, value="alice's"), alice.id)
 
-    described = 'description = "A native contract, made per model."\n'
+    described = (
+        'description = "A native contract, sampled as the model\'s makers recommend."\n'
+    )
     world = edited(
         tmp_path,
         "_data/factors.toml",
@@ -356,16 +354,12 @@ def test_a_world_brings_its_engines_and_their_models_facts(
         f"[world warning] ghost: endpoint.engine_unknown: {ghost} is not in the registry",
         f"[world] 1 finding in 6 endpoints of {world}",
     ]
-    assert any(
-        line.startswith(
-            "[archive chunk.sampling] recommended (test/mistral-7b): created"
-        )
-        for line in out
-    )
-    assert any(
-        line.startswith("[archive skeleton] native (en, test/mistral-7b): created")
-        for line in out
-    )
+    for made in (
+        "[archive facts] test/mistral-7b: created",
+        "[archive chunk.sampling] recommended: created",
+        "[archive skeleton] native (en): created",
+    ):
+        assert any(line.startswith(made) for line in out), made
 
 
 @pytest.mark.slow

@@ -204,12 +204,10 @@ def _seed_of(repl: Repl, value: str) -> int | None:
 
 def _whole(repl: Repl) -> tuple[TriedVariation, str] | None:
     cell = repl.cell
-    if cell.variation is None or cell.endpoint is None:
-        repl.error(
-            "the cell needs a configuration and an endpoint: cell CONFIGURATION ENDPOINT"
-        )
+    if cell.variation is None:
+        repl.error("the cell has no configuration: use CONFIGURATION")
         return None
-    return cell.variation, cell.endpoint
+    return cell.variation, repl.bench.at(cell.variation, cell.endpoint)[0]
 
 
 def _started(

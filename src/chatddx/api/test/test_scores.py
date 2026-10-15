@@ -25,13 +25,13 @@ from chatddx.identity import Person
 from chatddx.inventory import Inventory
 from chatddx.store import Queue, Store
 from chatddx.store.store import Connection
-from chatddx.test.world import LINES, faked, world_facts
+from chatddx.test.world import LINES, faked
 
 
 @pytest.fixture
 def served(db: str, world: Inventory) -> FastAPI:
     conninfo = make_conninfo(settings.database(), dbname=db)
-    return app(world, world_facts(), conninfo, worker=True)
+    return app(world, conninfo, worker=True)
 
 
 @pytest.mark.slow

@@ -6,7 +6,7 @@ from rich.console import Console
 from rich.text import Text
 
 from chatddx.bench import KINDS, OPTIONAL, PARTS, Bench, TriedVariation
-from chatddx.catalog import made_for
+from chatddx.catalog import made_in
 from chatddx.factors.base import Finding
 
 from .render import REFUSED, counted, finding
@@ -30,23 +30,32 @@ def console(record: bool = False, width: int | None = None) -> Console:
 class Cell:
     variation: TriedVariation | None = None
     endpoint: str | None = None
-    engine: str | None = None
-    name: str | None = None
+    served: str | None = None
 
-    def trying(self, variation: TriedVariation, name: str | None = None) -> "Cell":
-        return replace(self, variation=variation, name=name or self.name)
+    def trying(self, variation: TriedVariation) -> "Cell":
+        return replace(self, variation=variation)
 
-    def holding(self, name: str) -> "Cell":
-        return replace(self, variation=None, name=name)
+    def on(self, endpoint: str | None, served: str | None) -> "Cell":
+        return replace(self, endpoint=endpoint, served=served)
 
-    def on(self, endpoint: str, engine: str) -> "Cell":
-        return replace(self, endpoint=endpoint, engine=engine)
+    @property
+    def engine(self) -> str | None:
+        if self.variation is not None and self.variation.recipe is not None:
+            return self.variation.held("engine")
+        return self.served
 
     @property
     def label(self) -> str:
-        if self.variation is None:
-            return self.name or ""
-        return self.variation.label
+        return "" if self.variation is None else self.variation.label
+
+
+def _by_name(names: list[str]) -> list[str]:
+    held: dict[str, list[str]] = {}
+    for name in names:
+        held.setdefault(made_in(name)[0], []).append(name)
+    return sorted(
+        {base if len(found) == 1 else n for base, found in held.items() for n in found}
+    )
 
 
 class Repl:
@@ -60,10 +69,19 @@ class Repl:
 
     @property
     def prompt(self) -> str:
-        cell = self.cell
-        endpoint = f"×{cell.endpoint}" if cell.endpoint else ""
-        held = f" {cell.label}{endpoint}" if cell.label or cell.endpoint else ""
+        cell, where = self.cell, self.where()
+        endpoint = f"×{where}" if where else ""
+        held = f" {cell.label}{endpoint}" if cell.label or where else ""
         return f"{self.bench.person.login}{held} #{self.seed}> "
+
+    def where(self) -> str | None:
+        cell = self.cell
+        if cell.variation is None:
+            return cell.endpoint
+        try:
+            return self.bench.at(cell.variation, cell.endpoint)[0]
+        except (LookupError, ValueError):
+            return cell.endpoint
 
     def completions(self) -> dict[str, list[str]]:
         runs = self.bench.runs()[:20]
@@ -76,7 +94,7 @@ class Repl:
         if self._completions is not None:
             return self._completions
         bench = self.bench
-        names = {word: self._per_model(bench.names(word)) for word in KINDS}
+        names = {word: _by_name(bench.names(word)) for word in KINDS}
         for part in OPTIONAL:
             names[f"set:{part}"] = [*names[part], NONE]
         names |= {
@@ -92,26 +110,9 @@ class Repl:
     def forget(self) -> None:
         self._completions = None
 
-    def _per_model(self, names: list[str]) -> list[str]:
-        models = self.bench.facts.models
-        found: set[str] = set()
-        languages: dict[str, set[str | None]] = {}
-        for name in names:
-            made = made_for(name, models)
-            if made is None or made[2] is None:
-                found.add(name)
-            else:
-                languages.setdefault(made[0], set()).add(made[1])
-        for base, held in languages.items():
-            if len(held) == 1:
-                found.add(base)
-            else:
-                found |= {f"{base} {language}" for language in held if language}
-        return sorted(found)
-
     def say_cell(self) -> None:
         configuration = self.cell.label or "?"
-        endpoint = self.cell.endpoint or "?"
+        endpoint = self.where() or "?"
         self.console.print(Text(f"cell: {configuration} × {endpoint}"))
 
     def say_changed(self) -> None:

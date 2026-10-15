@@ -25,7 +25,7 @@ ALTER TABLE catalog.entry
             AND value ~ '^[1-9][0-9]{0,17}$'
             AND person IS NULL AND present
         WHEN 'replaced' THEN value IS NOT NULL
-            AND value ~ '^(instructions|few_shot|prompt|output|sampling|reasoning|passthrough|translations|toolset)=(sha256:[0-9a-f]{64})?$'
+            AND value ~ '^(instructions|few_shot|prompt|output|sampling|reasoning|passthrough|translations|toolset|engine)=(sha256:[0-9a-f]{64})?$'
             AND person IS NULL AND present
     END),
     ADD CONSTRAINT entry_run_check
@@ -33,18 +33,22 @@ ALTER TABLE catalog.entry
 
 CREATE FUNCTION catalog.check_varied() RETURNS trigger LANGUAGE plpgsql AS $$
 DECLARE
-    chunk_part text := split_part(NEW.value, '=', 1);
-    chunk text := split_part(NEW.value, '=', 2);
+    part text := split_part(NEW.value, '=', 1);
+    held text := split_part(NEW.value, '=', 2);
+    kinds text[] := CASE part
+        WHEN 'engine' THEN ARRAY['engine.local', 'engine.remote']
+        ELSE ARRAY['chunk.' || part]
+    END;
 BEGIN
     IF NEW.field = 'varied' AND NOT EXISTS (
         SELECT FROM catalog.edit WHERE id = NEW.value::bigint AND kind = 'skeleton'
     ) THEN
         RAISE EXCEPTION 'edit % is no configuration''s', NEW.value;
     END IF;
-    IF NEW.field = 'replaced' AND chunk <> '' AND NOT EXISTS (
-        SELECT FROM factor.component WHERE digest = chunk AND kind = 'chunk.' || chunk_part
+    IF NEW.field = 'replaced' AND held <> '' AND NOT EXISTS (
+        SELECT FROM factor.component WHERE digest = held AND kind = ANY (kinds)
     ) THEN
-        RAISE EXCEPTION '% isn''t a stored chunk of %', chunk, chunk_part;
+        RAISE EXCEPTION '% isn''t a stored %', held, part;
     END IF;
     RETURN NEW;
 END

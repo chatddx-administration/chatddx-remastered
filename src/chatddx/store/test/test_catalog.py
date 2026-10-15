@@ -3,7 +3,7 @@ from uuid import uuid4
 
 import pytest
 from psycopg import errors, sql
-from pydantic import ValidationError
+from pydantic import JsonValue, ValidationError
 
 from chatddx.catalog import (
     LANGUAGE_KINDS,
@@ -19,6 +19,7 @@ from chatddx.factors import request
 from chatddx.factors.base import Code, resolve
 from chatddx.factors.bundle import Registry
 from chatddx.factors.cases import Appendix, Case, Vignette
+from chatddx.factors.facts import Intent, ModelFacts, ReasoningFacts, Writes
 from chatddx.factors.kinds import BY_KIND
 from chatddx.factors.lint import lint
 from chatddx.factors.request import (
@@ -28,6 +29,7 @@ from chatddx.factors.request import (
     NativeOutput,
     Output,
     Prompt,
+    Reasoning,
     Recipe,
     Sampling,
     Slot,
@@ -310,6 +312,43 @@ def test_threads_behind_are_proposed_not_moved(conn: Connection) -> None:
     assert catalog.behind(trial.thread) == []
 
 
+def test_a_configuration_is_behind_facts_corrected_where_it_reaches(
+    conn: Connection,
+) -> None:
+    catalog, store, reg, _, alice = stored_world(conn)
+
+    def facts(default: Intent, **more: JsonValue) -> str:
+        reasoning = ReasoningFacts(
+            default=default,
+            on=Writes(chat_template_kwargs={"enable_thinking": True}),
+            off=Writes(chat_template_kwargs={"enable_thinking": False}),
+        )
+        return reg.add(
+            ModelFacts.model_validate(
+                {"model": "google/gemma-3-12b-it", "reasoning": reasoning, **more}
+            )
+        )
+
+    old, longer, cooler = facts("on"), facts("on", context_length=8192), facts("off")
+    _ = store.add(reg, [old, longer, cooler])
+    held = catalog.create(old, alice.id)
+    asked = reg.add(Reasoning(level="default"))
+    base = generation_recipe(reg).model_copy(update={"reasoning": asked})
+    skeleton, made = request.compiled(
+        base, reg.get, RIG, resolve(reg.get, old, ModelFacts)
+    )
+    _ = reg.add(skeleton)
+    _ = store.add(reg, [reg.add(made)])
+    configuration = catalog.create(skeleton.digest, alice.id, compilation=made.digest)
+    assert catalog.behind(configuration.thread) == []
+
+    _ = catalog.edit(held.thread, longer, alice.id)
+    assert catalog.behind(configuration.thread) == []
+    moved = catalog.edit(held.thread, cooler, alice.id)
+    [behind] = catalog.behind(configuration.thread)
+    assert (behind.path, behind.digest, behind.head) == ("/facts", old, moved)
+
+
 def test_entries(conn: Connection) -> None:
     catalog, store, _, ids, alice = stored_world(conn)
     bob = People(conn).add("bob", "Bob")
@@ -379,17 +418,19 @@ def test_a_run_says_what_it_varied(conn: Connection) -> None:
         Entry.varied(configuration.id),
         Entry.replaced("instructions", other),
         Entry.replaced("reasoning", None),
+        Entry.replaced("engine", ids["engine"]),
     ):
         catalog.note(subject, entry, alice.id)
     assert catalog.about(subject) == About(
         varied=configuration.id,
-        replaced={"instructions": other, "reasoning": None},
+        replaced={"instructions": other, "reasoning": None, "engine": ids["engine"]},
     )
 
     for refused, said in (
         ((Subject(thread=configuration.thread), Entry.varied(configuration.id)), "run"),
         ((subject, Entry.varied(chunk.id)), "no configuration's"),
-        ((subject, Entry.replaced("prompt", other)), "isn't a stored chunk of prompt"),
+        ((subject, Entry.replaced("prompt", other)), "isn't a chunk of prompt"),
+        ((subject, Entry.replaced("engine", other)), "isn't an engine"),
     ):
         with pytest.raises(ValueError, match=said):
             catalog.note(*refused, alice.id)
@@ -423,7 +464,11 @@ def test_a_run_says_what_it_varied(conn: Connection) -> None:
     ):
         with pytest.raises(errors.CheckViolation), conn.transaction():
             written(field, value, at)
-    for field, value in (("varied", str(chunk.id)), ("replaced", f"prompt={other}")):
+    for field, value in (
+        ("varied", str(chunk.id)),
+        ("replaced", f"prompt={other}"),
+        ("replaced", f"engine={other}"),
+    ):
         with pytest.raises(errors.RaiseException), conn.transaction():
             written(field, value)
 
@@ -478,11 +523,12 @@ def test_titles_fall_back_to_what_a_thread_holds(conn: Connection) -> None:
         (base.output, "management-plan"),
         (base.sampling, "recommended"),
         (base.reasoning, "off"),
+        (base.engine, "gemma@pelle"),
     ):
         assert part is not None
         name(catalog.create(part, alice.id).thread, value)
     assert catalog.title(origin.thread) == (
-        "ddx · case · management-plan · recommended · off"
+        "ddx · case · management-plan · recommended · off · gemma@pelle"
     )
     name(origin.thread, "plan")
     assert catalog.title(origin.thread) == "plan"
@@ -510,9 +556,7 @@ def test_titles_fall_back_to_what_a_thread_holds(conn: Connection) -> None:
     assert catalog.title_of(plan.skeleton) == "plan (earlier)"
 
     trial = catalog.title_of(ids["trial"])
-    assert trial.endswith(
-        " on google/gemma-3-12b-it on vllm 0.24.0 (RTX 5090), 1 case, 2 seeds"
-    )
+    assert trial.endswith(" on gemma@pelle, 1 case, 2 seeds")
     troponin = '"Troponin 80 ng/L."'
     assert catalog.title_of(ids["case"]) == f"registry/c1 with {troponin}"
     family = catalog.adopt(ids["case"], alice.id)
@@ -821,7 +865,7 @@ def test_languages_are_kept_on_digests(conn: Connection) -> None:
     in_language(swedish, "sv")
     assert catalog.language_of(translated.skeleton) == "sv"
     assert catalog.title_of(translated.skeleton).endswith(
-        f" · sv translations, {len(needed)} texts"
+        f" · sv translations, {len(needed)} texts · " + catalog.title_of(base.engine)
     )
 
     vignette, appendices = Slot(slot="vignette"), Slot(slot="appendices")

@@ -60,9 +60,9 @@ def test_what_can_t_be_typed_is_refused(
 def test_a_typed_case_runs_as_any_case(
     bench: Bench, world: Inventory, alice: Person
 ) -> None:
-    on_world = Bench(bench.conn, alice, world, bench.facts)
+    on_world = Bench(bench.conn, alice, world)
     family = on_world.type_case(TYPED)
-    variation = on_world.configuration(LINES, on_world.endpoint(QWEN))
+    variation = on_world.configuration(LINES)
     running = on_world.start(variation, QWEN, [family.case], (7,))
     running.send(lambda _: None)
     assert running.finish() == []

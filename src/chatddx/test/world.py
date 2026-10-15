@@ -32,11 +32,11 @@ GPT_OSS = "gpt-oss@fake"
 MISTRAL = "mistral@fake"
 REMOTE = "unknown@remote"
 
-LINES = f"lines (en, {QWEN_MODEL})"
-NATIVE = f"native (en, {QWEN_MODEL})"
-NATIVE_TOOLS = f"native-tools (en, {QWEN_MODEL})"
+LINES = "lines (en)"
+NATIVE = "native (en)"
+NATIVE_TOOLS = "native-tools (en)"
 TOOL_ANSWER = "tool-answer (en)"
-OFF = f"off ({QWEN_MODEL})"
+OFF = "off"
 
 # What loading the test World lints: the factors' lints, then the facts'.
 FACTOR_LINTS = [

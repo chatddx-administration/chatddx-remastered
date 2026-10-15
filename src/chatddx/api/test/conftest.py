@@ -18,7 +18,7 @@ from chatddx.identity import Person
 from chatddx.inventory import Inventory
 from chatddx.store import People
 from chatddx.store.store import Connection
-from chatddx.test.world import TEST, world_facts
+from chatddx.test.world import TEST
 
 PASSWORD = "correct horse battery staple"
 
@@ -46,7 +46,6 @@ def alice(conn: Connection) -> Person:
 def served(db: str) -> FastAPI:
     return app(
         Inventory.load(TEST / "inventory.toml"),
-        world_facts(),
         make_conninfo(settings.database(), dbname=db),
         worker=True,
     )
@@ -100,4 +99,4 @@ def bob(conn: Connection) -> dict[str, str]:
 @pytest.fixture
 def bench(served: FastAPI, conn: Connection, alice: Person) -> Bench:
     held = served.state.chatddx
-    return Bench(conn, alice, held.inventory, held.facts)
+    return Bench(conn, alice, held.inventory)

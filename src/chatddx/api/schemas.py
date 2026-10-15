@@ -142,6 +142,11 @@ type Chunk = Annotated[
 ]
 
 
+type EngineDigest = Annotated[
+    str | None, Field(description="an engine's digest, which can't be taken out")
+]
+
+
 class Parts(_Schema):
     instructions: Chunk = None
     few_shot: Chunk = None
@@ -152,6 +157,7 @@ class Parts(_Schema):
     passthrough: Chunk = None
     translations: Chunk = None
     toolset: Chunk = None
+    engine: EngineDigest = None
 
     def given(self) -> dict[str, str | None]:
         return {
@@ -164,7 +170,11 @@ class Varying(Parts):
         None,
         description="the edit it varies, by id: the configuration's head unless given",
     )
-    endpoint: str | None = Field(None, description="to render and lint it for")
+    endpoint: str | None = Field(
+        None,
+        description="to render and lint it for: a configuration's engine's unless "
+        + "named, and one a hand-written configuration names",
+    )
     tag: list[str] = Field(
         default_factory=list[str],
         description="the cases its reach is over: any of these, else every one",
@@ -237,6 +247,15 @@ class Part(_Schema):
     title: str | None
     summary: str | None
     replaced: bool
+    landed: str | None = Field(
+        None,
+        description="a reasoning level's, or the one a recommended sampling follows: "
+        + "the level the engine's model is asked for",
+    )
+    nearest: list[str] = Field(
+        default_factory=list[str],
+        description="why the level asked for landed on its nearest instead",
+    )
 
 
 class Finding(_Schema):
@@ -513,7 +532,11 @@ class NewRun(Seeds):
         description="the edit it varies, by id: the configuration's head unless given",
     )
     parts: Parts = Parts()
-    endpoint: str
+    endpoint: str | None = Field(
+        None,
+        description="where to send it: the one serving its engine unless named, and "
+        + "one a hand-written configuration names",
+    )
     families: list[int] | None = Field(None, description="the cases to run, by family")
     tags: list[str] | None = Field(
         None, description="or the cases of the families with any of these"

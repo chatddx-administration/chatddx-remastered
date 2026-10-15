@@ -4,6 +4,7 @@ from typing import cast
 from .base import Component, StructuralError
 from .cases import Appendix, Case
 from .engine import LocalEngine, ModelArtifact, RemoteEngine
+from .facts import ModelFacts
 from .request import (
     Compilation,
     FewShot,
@@ -27,6 +28,7 @@ KINDS: tuple[type[Component], ...] = (
     ModelArtifact,
     LocalEngine,
     RemoteEngine,
+    ModelFacts,
     Instructions,
     FewShot,
     Prompt,

@@ -117,10 +117,10 @@
             "required": true,
             "schema": {
               "type": "string",
-              "description": "one of configuration, instructions, few_shot, prompt, output, sampling, reasoning, passthrough, translations, toolset, tool, scorer, judge, expectation_schema, expectation, appendix, canary_set, model, engine",
+              "description": "one of configuration, instructions, few_shot, prompt, output, sampling, reasoning, passthrough, translations, toolset, tool, scorer, judge, expectation_schema, expectation, appendix, canary_set, model, engine, facts",
               "title": "Kind"
             },
-            "description": "one of configuration, instructions, few_shot, prompt, output, sampling, reasoning, passthrough, translations, toolset, tool, scorer, judge, expectation_schema, expectation, appendix, canary_set, model, engine"
+            "description": "one of configuration, instructions, few_shot, prompt, output, sampling, reasoning, passthrough, translations, toolset, tool, scorer, judge, expectation_schema, expectation, appendix, canary_set, model, engine, facts"
           },
           {
             "name": "name",
@@ -670,6 +670,14 @@
             }
           },
           {
+            "name": "engine",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/EngineDigest"
+            }
+          },
+          {
             "name": "head",
             "in": "query",
             "required": false,
@@ -700,10 +708,10 @@
                   "type": "null"
                 }
               ],
-              "description": "to render and lint it for",
+              "description": "to render and lint it for: a configuration's engine's unless named, and one a hand-written configuration names",
               "title": "Endpoint"
             },
-            "description": "to render and lint it for"
+            "description": "to render and lint it for: a configuration's engine's unless named, and one a hand-written configuration names"
           },
           {
             "name": "tag",
@@ -3090,6 +3098,17 @@
         ],
         "title": "Endpoint"
       },
+      "EngineDigest": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "description": "an engine's digest, which can't be taken out"
+      },
       "Expected": {
         "properties": {
           "expectation_schema": {
@@ -4288,8 +4307,16 @@
             "default": {}
           },
           "endpoint": {
-            "type": "string",
-            "title": "Endpoint"
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Endpoint",
+            "description": "where to send it: the one serving its engine unless named, and one a hand-written configuration names"
           },
           "families": {
             "anyOf": [
@@ -4397,8 +4424,7 @@
         "additionalProperties": false,
         "type": "object",
         "required": [
-          "configuration",
-          "endpoint"
+          "configuration"
         ],
         "title": "NewRun"
       },
@@ -4644,6 +4670,26 @@
           "replaced": {
             "type": "boolean",
             "title": "Replaced"
+          },
+          "landed": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Landed",
+            "description": "a reasoning level's, or the one a recommended sampling follows: the level the engine's model is asked for"
+          },
+          "nearest": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Nearest",
+            "description": "why the level asked for landed on its nearest instead"
           }
         },
         "additionalProperties": false,
@@ -4685,6 +4731,9 @@
           },
           "toolset": {
             "$ref": "#/components/schemas/Chunk"
+          },
+          "engine": {
+            "$ref": "#/components/schemas/EngineDigest"
           }
         },
         "additionalProperties": false,

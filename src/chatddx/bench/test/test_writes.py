@@ -9,7 +9,7 @@ from chatddx.factors.request import Recipe
 from chatddx.factors.scoring import Expectation, Judge
 from chatddx.identity import Person
 from chatddx.store import Catalog
-from chatddx.test.world import LINES, QWEN
+from chatddx.test.world import LINES, MISTRAL, MISTRAL_MODEL, QWEN
 
 ZERO = "sha256:" + "0" * 64
 
@@ -143,7 +143,8 @@ def test_a_recipe_of_the_person_s_making_is_compiled_into_a_configuration(
         prompt=bench.chunk("prompt", "case"),
         output=bench.chunk("output", "lines (en)"),
         sampling=bench.chunk("sampling", "greedy"),
-        reasoning=bench.chunk("reasoning", "off", engine),
+        reasoning=bench.chunk("reasoning", "off"),
+        engine=engine,
     )
 
     made = bench.new(recipe, "my own")
@@ -153,7 +154,7 @@ def test_a_recipe_of_the_person_s_making_is_compiled_into_a_configuration(
     assert catalog.recipe(thread) == recipe
     assert made.edit.compilation is not None
     assert catalog.language_of(made.edit.digest) == "en"
-    found = bench.configuration("my own", engine)
+    found = bench.configuration("my own")
     assert found.configuration == made.edit
     messages = bench.request(found, engine, 7)["messages"]
     assert isinstance(messages, list) and len(messages) == 4
@@ -163,10 +164,21 @@ def test_a_recipe_is_refused_what_doesn_t_compile(bench: Bench) -> None:
     prompt = bench.chunk("prompt", "case")
     output = bench.chunk("output", "lines (en)")
     sampling = bench.chunk("sampling", "greedy")
-    recipe = Recipe(prompt=prompt, output=output, sampling=sampling)
+    engine = bench.endpoint(QWEN)
+    recipe = Recipe(prompt=prompt, output=output, sampling=sampling, engine=engine)
 
     with pytest.raises(ValueError, match=f"{output} isn't a stored chunk of prompt"):
         _ = bench.new(recipe.model_copy(update={"prompt": output}), "x")
+    with pytest.raises(ValueError, match=f"{output} isn't a stored engine"):
+        _ = bench.new(recipe.model_copy(update={"engine": output}), "x")
+    on = recipe.model_copy(
+        update={
+            "reasoning": bench.chunk("reasoning", "on"),
+            "engine": bench.endpoint(MISTRAL),
+        }
+    )
+    with pytest.raises(ValueError, match=f"{MISTRAL_MODEL}: .*doesn't reason"):
+        _ = bench.new(on, "x")
     with pytest.raises(ValueError, match=f"{ZERO} isn't a stored chunk of toolset"):
         _ = bench.new(recipe.model_copy(update={"toolset": ZERO}), "x")
     with pytest.raises(ValueError, match="language comes from its recipe"):

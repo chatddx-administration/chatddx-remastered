@@ -44,7 +44,7 @@ def listed(bench: Bench, line: str) -> str:
 
 
 @pytest.mark.slow
-def test_configurations_are_listed_a_row_per_name_and_language_with_their_models(
+def test_configurations_are_listed_a_row_per_name_and_language_with_their_parts(
     bench: Bench,
 ):
     written = listed(bench, "configurations")
@@ -52,7 +52,6 @@ def test_configurations_are_listed_a_row_per_name_and_language_with_their_models
 
     assert lines[0].split() == [
         "configuration",
-        "models",
         "instructions",
         "few_shot",
         "prompt",
@@ -62,23 +61,17 @@ def test_configurations_are_listed_a_row_per_name_and_language_with_their_models
         "passthrough",
         "translations",
         "toolset",
+        "engine",
         "owner",
     ]
-    [at] = [i for i, line in enumerate(lines) if line.split()[:2] == ["lines", "(en)"]]
-    assert lines[at].split() == [
-        *("lines", "(en)", "gpt-oss-20b", "—", "—", "case", "lines", "(en)"),
-        *("recommended", "—", "—", "—", "—", "yours,", "from", "archive"),
-    ]
-    assert [line.split() for line in lines[at + 1 : at + 3]] == [
-        ["mistral-7b"],
-        ["Qwen3-8B-AWQ"],
+    assert line_of(written, LINES).split() == [
+        *("lines", "(en)", "—", "—", "case", "lines", "(en)", "recommended", "—"),
+        *("—", "—", "—", QWEN, "yours,", "from", "archive"),
     ]
     assert not [line for line in lines if line.rstrip().endswith("  archive")]
-    assert "Qwen3-8B-AWQ  " in line_of(written, "budgeted (en)")
     assert "on-budget" in line_of(written, "budgeted (en)")
-    assert "differs" in line_of(written, "reasoned (en)")
-    guided = line_of(written, "lines-guided (sv)")
-    assert "every model" in guided and "guided (sv)" in guided
+    assert "high" in line_of(written, "reasoned (en)")
+    assert "guided (sv)" in line_of(written, "lines-guided (sv)")
 
 
 @pytest.mark.slow
@@ -93,15 +86,14 @@ def test_judge_configurations_are_listed_apart(bench: Bench):
 
 
 @pytest.mark.slow
-def test_configurations_name_lists_its_variants_per_model(bench: Bench):
+def test_configurations_name_lists_each_one_by_that_name(bench: Bench):
     written = listed(bench, "configurations lines")
     rows = [
         line.split() for line in written.splitlines() if line.strip().startswith(LINES)
     ]
 
-    row = [*LINES.split(), "case", "lines", "(en)", "recommended", f"({QWEN_MODEL})"]
+    row = [*LINES.split(), "case", "lines", "(en)", "recommended", QWEN]
     assert rows == [row, [*row, "archive"]]
-    assert len([line for line in written.splitlines() if "lines (en, " in line]) == 6
     assert "lookup (en)" in line_of(
         listed(bench, f"configurations {NATIVE_TOOLS}"), NATIVE_TOOLS
     )

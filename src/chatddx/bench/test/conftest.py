@@ -6,7 +6,7 @@ from chatddx.identity import Person
 from chatddx.inventory import World
 from chatddx.store import People
 from chatddx.store.store import Connection
-from chatddx.test.world import TEST, world_facts
+from chatddx.test.world import TEST
 
 
 @pytest.fixture
@@ -34,4 +34,4 @@ def bob(conn: Connection) -> Person:
 @pytest.fixture
 def bench(conn: Connection, alice: Person) -> Bench:
     inventory = World.load(TEST).inventory
-    return Bench(conn, alice, inventory, world_facts())
+    return Bench(conn, alice, inventory)

@@ -15,7 +15,6 @@ from chatddx import settings
 from chatddx.api import schemas
 from chatddx.api.events import graded_of, scoring_of
 from chatddx.bench import Bench, Graded, ScoreHalt
-from chatddx.facts import Facts
 from chatddx.inventory import Inventory
 from chatddx.ledger import RunStarted
 from chatddx.runner.run import Running
@@ -74,7 +73,6 @@ class Worker:
         self,
         conninfo: str,
         inventory: Inventory,
-        facts: Facts,
         beat: timedelta = settings.WORKER_BEAT,
         lost: timedelta = settings.WORKER_LOST,
         deadline: timedelta = settings.WORKER_DEADLINE,
@@ -82,7 +80,6 @@ class Worker:
         self.id: UUID = uuid4()
         self._conninfo: str = conninfo
         self._inventory: Inventory = inventory
-        self._facts: Facts = facts
         self._beat_every: float = beat.total_seconds()
         self._lost: timedelta = lost
         self._deadline: float = deadline.total_seconds()
@@ -205,7 +202,7 @@ class Worker:
         self, conn: Connection, publisher: Publisher, held: _Held
     ) -> Literal["finished", "stopped", "queued"]:
         job = held.job
-        bench = Bench(conn, People(conn).get(job.owner), self._inventory, self._facts)
+        bench = Bench(conn, People(conn).get(job.owner), self._inventory)
         started = bench.run_by_id(job.run)
         try:
             if bench.store.run(job.run).finished is None:

@@ -15,7 +15,6 @@ from chatddx import settings
 from chatddx.api.app import app
 from chatddx.bench import Bench
 from chatddx.curation import Plan, init, load_cases
-from chatddx.facts import BUNDLED, Facts
 from chatddx.identity import identity
 from chatddx.inventory import Inventory, World
 from chatddx.runner.test import tools as test_tools
@@ -28,7 +27,6 @@ from chatddx.test.world import (
     TEST,
     faked,
     free_world,
-    world_facts,
     world_plan,
 )
 
@@ -65,7 +63,7 @@ def unsynced_commits() -> Iterator[None]:
 # As src/chatddx/cli.py:_openapi makes it.
 @pytest.fixture(scope="session")
 def described() -> dict[str, Any]:
-    return app(Inventory(), Facts.load(BUNDLED), "").openapi()
+    return app(Inventory(), "").openapi()
 
 
 @pytest.fixture
@@ -208,7 +206,7 @@ def ran(copies: Copies, curated: str) -> Iterator[str]:
         with psycopg.connect(settings.database(), dbname=name, autocommit=True) as conn:
             alice = People(conn).find("alice")
             assert alice is not None
-            bench = Bench(conn, alice, free_world(), world_facts())
+            bench = Bench(conn, alice, free_world())
             for scripted in scripted_runs(TEST / RUNS):
                 _ = run(bench, scripted)
         yield name

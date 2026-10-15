@@ -6,7 +6,7 @@ segments = [{ slot = "vignette" }, { slot = "appendices" }]
 contract = { kind = "text" }
 
 [sampling.recommended]
-from_facts = { effort = "default" }
+recommended = true
 
 [sampling.greedy]
 temperature = 0
@@ -16,16 +16,17 @@ temperature = 0
 temperature = 0.005
 
 [reasoning.off]
-from_facts = { effort = "off" }
+level = "off"
 
 [reasoning.on]
-from_facts = { effort = "on" }
+level = "on"
 
 [reasoning.high]
-from_facts = { effort = "high" }
+level = "high"
 
 [reasoning.on-budget]
-from_facts = { effort = "on", budget = 1024 }
+level = "on"
+thinking_token_budget = 1024
 
 [passthrough.min-tokens]
 body = { min_tokens = 8 }
@@ -56,7 +57,7 @@ additionalProperties = false
 
 # Recipes, one per output contract and per way a recipe is made or skipped.
 [recipe.native]
-description = "A native contract, made per model."
+description = "A native contract, sampled as the model's makers recommend."
 tags = ["structured"]
 prompt = "case"
 output = "native"
@@ -101,7 +102,7 @@ sampling = "greedy"
 toolset = "lookup"
 
 [recipe.lines]
-description = "Free text, a diagnosis a line, made per model."
+description = "Free text, a diagnosis a line, sampled as recommended."
 tags = ["text"]
 prompt = "case"
 output = "lines"
@@ -187,14 +188,14 @@ output = "verdict"
 sampling = "greedy"
 
 [recipe.judge-graded]
-description = "A sampled judge's request, made per model: a grade of the answer against an expectation."
+description = "A sampled judge's request: a grade of the answer against an expectation."
 tags = ["judge"]
 purpose = "judge"
 prompt = "judge"
 output = "grade"
 sampling = "recommended"
 
-# Judges: a recipe, the variant made for the model of the endpoint the World binds it to (inventory.toml), seeds.
+# Judges: a recipe, compiled for the engine of the endpoint the World binds it to (inventory.toml), and seeds.
 [judge.verdict]
 description = "Whether the answer meets the expectation, greedy, so one seed."
 recipe = "judge"

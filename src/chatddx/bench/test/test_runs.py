@@ -10,15 +10,15 @@ from chatddx.identity import Person
 from chatddx.inventory import Inventory
 from chatddx.runner.run import Event, ItemEnded
 from chatddx.store.store import Connection
-from chatddx.test.world import LINES, QWEN, world_facts
+from chatddx.test.world import GPT_OSS, LINES, QWEN, faked
 
 
 @pytest.mark.usefixtures("fake")
 def test_a_run_keeps_its_seeds_cleanup_execution_and_canaries_and_again_too(
     conn: Connection, world: Inventory, alice: Person, plan: Plan
 ):
-    bench = Bench(conn, alice, world, world_facts())
-    variation = bench.configuration(LINES, bench.endpoint(QWEN))
+    bench = Bench(conn, alice, world)
+    variation = bench.configuration(LINES)
     probe = plan.named("canary_set", "probe").digest
     cleanup = ("newlines.lf@1", "strip@1")
     running = bench.start(
@@ -49,10 +49,9 @@ def test_a_run_keeps_its_seeds_cleanup_execution_and_canaries_and_again_too(
 def test_a_run_says_what_it_varied_and_running_again_too(
     conn: Connection, world: Inventory, alice: Person
 ):
-    bench = Bench(conn, alice, world, world_facts())
-    engine = bench.endpoint(QWEN)
-    named = bench.configuration(LINES, engine)
-    off = bench.chunk("reasoning", "off", engine)
+    bench = Bench(conn, alice, world)
+    named = bench.configuration(LINES)
+    off = bench.chunk("reasoning", "off")
     cases = [bench.family("crlf").case]
 
     plain = bench.start(named, QWEN, cases, (7,)).started
@@ -65,11 +64,36 @@ def test_a_run_says_what_it_varied_and_running_again_too(
     assert bench.ran(bench.again(started, (8,)).run) == ran
 
 
+def test_a_run_goes_to_the_endpoint_serving_its_engine_unless_one_is_named(
+    conn: Connection, world: Inventory, alice: Person
+):
+    bench = Bench(conn, alice, world)
+    named = bench.configuration(LINES)
+    gpt_oss = bench.endpoint(GPT_OSS)
+    swapped = named.set("engine", gpt_oss, GPT_OSS)
+    cases = [bench.family("crlf").case]
+
+    with faked(world, bench.get, GPT_OSS):
+        started = bench.start(swapped, None, cases, (7,)).started
+    assert started.endpoint is not None and started.endpoint.name == GPT_OSS
+    assert resolve(bench.get, started.trial, Trial).engine == gpt_oss
+    assert bench.ran(started.run) == (named.configuration, {"engine": gpt_oss})
+    with pytest.raises(ValueError, match=f"endpoint '{QWEN}' serves another engine"):
+        _ = bench.start(swapped, QWEN, cases, (7,))
+
+    endpoints = dict(world.endpoints)
+    endpoints["twin@fake"] = endpoints[GPT_OSS]
+    twice = Bench(conn, alice, world.model_copy(update={"endpoints": endpoints}))
+    with pytest.raises(ValueError, match=f"{GPT_OSS}, twin@fake serve engine"):
+        _ = twice.start(swapped, None, cases, (7,))
+    assert twice.at(swapped, "twin@fake") == ("twin@fake", gpt_oss)
+
+
 def test_a_run_holds_its_cases_times_its_seeds_in_items(
     bench: Bench, monkeypatch: pytest.MonkeyPatch
 ):
     monkeypatch.setattr(settings, "ITEMS_PER_RUN", 3)
-    variation = bench.configuration(LINES, bench.endpoint(QWEN))
+    variation = bench.configuration(LINES)
     cases = [bench.family(name).case for name in ("crlf", "svenska")]
     with pytest.raises(OverQuota, match="at most 3 items, not 4"):
         _ = bench.start(variation, QWEN, cases, (1, 2))
@@ -79,8 +103,8 @@ def test_a_run_holds_its_cases_times_its_seeds_in_items(
 def test_a_person_resumes_their_own_unfinished_run(
     conn: Connection, world: Inventory, alice: Person, bob: Person
 ):
-    bench = Bench(conn, alice, world, world_facts())
-    variation = bench.configuration(LINES, bench.endpoint(QWEN))
+    bench = Bench(conn, alice, world)
+    variation = bench.configuration(LINES)
     cases = [bench.family(name).case for name in ("crlf", "svenska")]
     running = bench.start(variation, QWEN, cases, (7,))
 
@@ -89,7 +113,7 @@ def test_a_person_resumes_their_own_unfinished_run(
             running.stop()
 
     running.send(stop)
-    others = Bench(conn, bob, world, world_facts())
+    others = Bench(conn, bob, world)
     with pytest.raises(NotFound, match=f"no run {running.run} of yours"):
         _ = others.resume(running.run)
 
@@ -114,8 +138,8 @@ def test_a_run_takes_its_sources_cleanup_and_its_endpoint_s_canaries_and_executi
         update={"canaries": probe, "execution": execution}
     )
     declared = world.model_copy(update={"sources": sources, "endpoints": endpoints})
-    bench = Bench(conn, alice, declared, world_facts())
-    variation = bench.configuration(LINES, bench.endpoint(QWEN))
+    bench = Bench(conn, alice, declared)
+    variation = bench.configuration(LINES)
     cases = [bench.family("crlf").case]
 
     started = bench.start(variation, QWEN, cases, (7,)).started

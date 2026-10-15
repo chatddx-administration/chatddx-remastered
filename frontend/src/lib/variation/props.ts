@@ -13,7 +13,6 @@ export type Props = {
   choices: Record<Part, Schemas["Thread"][]>;
   configurations: Schemas["Thread"][];
   endpoints: Schemas["Endpoint"][];
-  variants: Record<string, Schemas["Thread"]>;
   everyTag: string[];
   families: Schemas["Family"][];
   itemsPerRun: number;

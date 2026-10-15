@@ -30,7 +30,6 @@ from chatddx.test.world import (
     OFF,
     QWEN,
     faked,
-    world_facts,
 )
 
 type Told = list[tuple[int | None, str, dict[str, Any]]]
@@ -43,7 +42,7 @@ UNDER_WAY = 0.02
 @pytest.fixture
 def served(db: str, world: Inventory) -> FastAPI:
     conninfo = make_conninfo(settings.database(), dbname=db)
-    return app(world, world_facts(), conninfo, worker=True)
+    return app(world, conninfo, worker=True)
 
 
 def family(signed: TestClient, name: str) -> dict[str, Any]:
@@ -56,11 +55,14 @@ def asked(
 ) -> dict[str, Any]:
     return {
         "configuration": thread(signed, "configuration", configuration)["id"],
-        "endpoint": QWEN,
         "families": [family(signed, "crlf")["id"]],
         "seeds": [7],
         **more,
     }
+
+
+def engine(signed: TestClient, endpoint: str) -> str:
+    return signed.get(f"/api/endpoints/{endpoint}").json()["engine"]
 
 
 def told(text: str) -> Told:
@@ -206,7 +208,7 @@ def test_a_run_is_told_alike_by_its_rows_in_another_process(
     signed: TestClient, db: str, world: Inventory
 ) -> None:
     made, said = sent(signed, asked(signed))
-    elsewhere = app(world, world_facts(), make_conninfo(settings.database(), dbname=db))
+    elsewhere = app(world, make_conninfo(settings.database(), dbname=db))
     with TestClient(elsewhere, base_url="https://testserver") as other:
         other.headers.update(signed.headers)
         recorded = followed(other, made["id"])
@@ -266,7 +268,10 @@ def test_a_run_the_gate_refuses_is_unprocessable_and_isn_t_recorded(
             asked(signed, NATIVE_TOOLS),
             "the configuration's tools would get content from source test",
         ),
-        ({**asked(signed), "endpoint": GPT_OSS}, f"endpoint '{GPT_OSS}' can't be"),
+        (
+            asked(signed, parts={"engine": engine(signed, GPT_OSS)}),
+            f"endpoint '{GPT_OSS}' can't be",
+        ),
     ):
         got = signed.post("/api/runs", json=body)
         assert got.status_code == 422
@@ -287,6 +292,8 @@ def test_a_run_the_request_names_wrong_is_unprocessable(signed: TestClient) -> N
         ({"families": [999]}, "no case 999 for alice"),
         ({"families": None, "tags": ["nowhere"]}, "no case tagged nowhere for alice"),
         ({"endpoint": "nowhere@fake"}, "no endpoint 'nowhere@fake' in the inventory"),
+        ({"endpoint": GPT_OSS}, f"endpoint '{GPT_OSS}' serves another engine"),
+        ({"parts": {"engine": None}}, "a configuration always has an engine"),
         ({"configuration": chunk["id"]}, f"no configuration {chunk['id']} for alice"),
         ({"parts": {"prompt": chunk["head"]["digest"]}}, "isn't a stored chunk"),
         ({"configuration": judge["id"]}, "judge (en) is a judge configuration"),

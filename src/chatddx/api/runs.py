@@ -66,10 +66,10 @@ def _seeds(given: schemas.Seeds, replicates: int) -> tuple[int, ...]:
     return suggest_seeds(given.replicates or replicates)
 
 
-def _execution(bench: Bench, given: schemas.NewRun) -> Execution | None:
+def _execution(bench: Bench, endpoint: str, given: schemas.NewRun) -> Execution | None:
     if given.concurrency is None and given.order is None:
         return None
-    held = bench.inventory.endpoint(given.endpoint).execution
+    held = bench.inventory.endpoint(endpoint).execution
     order = given.order or held.order
     shuffled = held.shuffle_seed if order == held.order else suggest_seeds(1)[0]
     return Execution.model_validate(
@@ -88,18 +88,18 @@ def _new(bench: Bench, given: schemas.NewRun) -> Running:
             variation = bench.variation(
                 given.configuration, given.parts.given(), given.head
             )
-        _ = bench.endpoint(given.endpoint)
+            endpoint, _ = bench.at(variation, given.endpoint)
     except LookupError as e:
         raise HTTPException(422, str(e)) from None
     cases = _cases(bench, given)
     with refused():
         return bench.start(
             variation,
-            given.endpoint,
+            endpoint,
             cases,
             _seeds(given, 1),
             given.cleanup,
-            _execution(bench, given),
+            _execution(bench, endpoint, given),
         )
 
 

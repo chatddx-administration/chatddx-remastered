@@ -4,15 +4,15 @@ from fastapi.testclient import TestClient
 from chatddx.api.test.test_variations import thread
 from chatddx.bench import Bench
 from chatddx.store import People
-from chatddx.test.world import LINES, QWEN
+from chatddx.test.world import LINES
 
 
 def _moved(bench: Bench) -> int:
     found = People(bench.conn).find("archive")
     assert found is not None
-    archive = Bench(bench.conn, found, bench.inventory, bench.facts)
+    archive = Bench(bench.conn, found, bench.inventory)
     theirs = archive.thread("configuration", LINES)[0].thread
-    greedy = bench.chunk("sampling", "greedy", bench.endpoint(QWEN))
+    greedy = bench.chunk("sampling", "greedy")
     moved = archive.variation(theirs, {"sampling": greedy})
     head = bench.catalog.head(theirs).id
     return archive.edit(theirs, moved, head).variation.configuration.id
@@ -42,9 +42,7 @@ def test_a_fork_follows_its_origin_once_it_has_moved_on(
     forked_from = signed.get(f"/api/threads/{mine['id']}").json()["forked_from"]
     assert proposed["base"]["id"] == forked_from
     assert proposed["varies"] == [] and proposed["component"] is None
-    assert proposed["recipe"]["sampling"] == bench.chunk(
-        "sampling", "greedy", bench.endpoint(QWEN)
-    )
+    assert proposed["recipe"]["sampling"] == bench.chunk("sampling", "greedy")
     assert signed.get(proposal, headers=bob).status_code == 404
 
     stale = signed.post(follows, json={"head": mine["head"]["id"] - 1})

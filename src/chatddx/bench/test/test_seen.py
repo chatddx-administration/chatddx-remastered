@@ -18,7 +18,7 @@ from chatddx.bench import (
 from chatddx.bench.test.helpers import another_expectation, ran, trial
 from chatddx.catalog import Entry, EntryField, Subject
 from chatddx.curation import Plan, load_cases
-from chatddx.factors.base import resolve
+from chatddx.factors.base import StructuralError, resolve
 from chatddx.factors.bundle import Registry
 from chatddx.factors.request import Prompt
 from chatddx.factors.scoring import Expectation, Judge, View
@@ -32,14 +32,13 @@ from chatddx.test.world import (
     DATA,
     GPT_OSS,
     LINES,
-    MODELS,
+    MISTRAL,
+    MISTRAL_MODEL,
     NATIVE,
     QWEN,
-    QWEN_MODEL,
     REMOTE,
     TEST,
     TOOL_ANSWER,
-    world_facts,
 )
 
 
@@ -65,7 +64,7 @@ def test_a_person_sees_their_own_and_shared_threads_and_families(
         name: set(c.tags) for name, c in cases.items()
     }
     assert all(f.about.tags for f in families)
-    bobs = Bench(conn, bob, bench.inventory, bench.facts)
+    bobs = Bench(conn, bob, bench.inventory)
     assert bobs.threads("configuration") == [] and bobs.families() == []
 
 
@@ -88,7 +87,7 @@ def test_threads_cases_and_runs_are_found_by_id_among_what_the_person_sees(
         _ = bench.thread_by_id(mine.thread, "reasoning")
     with pytest.raises(NotFound, match="no thread 0 for alice"):
         _ = bench.thread_by_id(0)
-    bobs = Bench(conn, bob, bench.inventory, bench.facts)
+    bobs = Bench(conn, bob, bench.inventory)
     with pytest.raises(NotFound, match=f"no thread {mine.thread} for bob"):
         _ = bobs.thread_by_id(mine.thread)
     Catalog(conn).note(
@@ -114,9 +113,8 @@ def test_threads_cases_and_runs_are_found_by_id_among_what_the_person_sees(
 def test_a_variation_is_made_from_a_configuration_s_id_and_digests(
     bench: Bench,
 ) -> None:
-    engine = bench.endpoint(QWEN)
-    named = bench.configuration(LINES, engine)
-    off = bench.chunk("reasoning", "off", engine)
+    named = bench.configuration(LINES)
+    off = bench.chunk("reasoning", "off")
     thread = named.configuration.thread
 
     assert bench.variation(thread) == named
@@ -124,11 +122,13 @@ def test_a_variation_is_made_from_a_configuration_s_id_and_digests(
     assert bench.skeleton(varied) == bench.skeleton(named.set("reasoning", off, "off"))
     with pytest.raises(ValueError, match="isn't a stored chunk of prompt"):
         _ = bench.variation(thread, {"prompt": off})
+    with pytest.raises(ValueError, match="isn't a stored engine"):
+        _ = bench.variation(thread, {"engine": off})
     with pytest.raises(ValueError, match="no part 'stack'"):
         _ = bench.variation(thread, {"stack": off})
     with pytest.raises(ValueError, match="can be taken out"):
         _ = bench.variation(thread, {"prompt": None})
-    chunk = bench.thread("reasoning", "off", bench.model(engine))[0].thread
+    chunk = bench.thread("reasoning", "off")[0].thread
     with pytest.raises(NotFound, match=f"no configuration {chunk} for alice"):
         _ = bench.variation(chunk)
 
@@ -257,7 +257,7 @@ def test_a_case_is_held_to_the_expectation_scoring_picks(
     expecting = Catalog(conn).expecting([case], schema)[case]
     assert [e.digest for e, a in expecting if owns(alice.id, a)] == [held.digest]
 
-    theirs = Bench(conn, bob, bench.inventory, bench.facts)
+    theirs = Bench(conn, bob, bench.inventory)
     assert theirs.expectation_schemas(case) == []
     assert theirs.expectation(case, schema) is None
 
@@ -299,34 +299,53 @@ def test_several_expectations_to_choose_from_are_ambiguous(
     assert Store(conn).scores_of(started.run) == []
 
     family = bench.family("crlf")
-    variation = bench.configuration(LINES, bench.endpoint(QWEN))
+    variation = bench.configuration(LINES)
     [held] = [
         r for r in bench.reach(variation, [family]) if r.offered and r.scorer == "whole"
     ]
     assert (held.choosing, held.missing, held.have) == ([family], [], 0)
 
 
-def test_a_per_model_configuration_is_picked_by_the_engine_s_model(
+def test_a_swapped_engine_keeps_every_other_pick_and_works_the_rest_out(
     bench: Bench,
 ) -> None:
-    with pytest.raises(NotFound) as refused:
-        _ = bench.configuration("native")
-    assert refused.value.per_model == tuple(sorted(f"native (en, {m})" for m in MODELS))
+    lines = bench.configuration(LINES)
+    off = lines.set("reasoning", bench.chunk("reasoning", "off"), "off")
+    gpt_oss = off.set("engine", bench.endpoint(GPT_OSS), GPT_OSS)
 
-    variation = bench.configuration("native", bench.endpoint(QWEN))
+    assert gpt_oss.label == f"{LINES}+reasoning=off+engine={GPT_OSS}"
+    assert gpt_oss.held("reasoning") == off.held("reasoning")
+    assert bench.skeleton(off).body["chat_template_kwargs"] == {
+        "enable_thinking": False
+    }
+    body = bench.skeleton(gpt_oss).body
+    assert (body["reasoning_effort"], body["temperature"]) == ("low", 1.0)
+    landed = bench.landed(gpt_oss)
+    assert (landed["reasoning"].level, landed["sampling"].level) == ("low", "low")
+    assert "always reasons" in landed["reasoning"].nearest[0]
+    assert bench.landed(off)["reasoning"].nearest == ()
+    assert bench.landed(lines).keys() == {"sampling"}
+
+    on = lines.set("reasoning", bench.chunk("reasoning", "on"), "on")
+    mistral = on.set("engine", bench.endpoint(MISTRAL), MISTRAL)
+    with pytest.raises(StructuralError, match=f"{MISTRAL_MODEL}: .*doesn't reason"):
+        _ = bench.skeleton(mistral)
+
+
+def test_a_configuration_is_found_by_its_name_without_its_language(
+    bench: Bench,
+) -> None:
+    variation = bench.configuration("native")
     assert (variation.name, variation.label, variation.parts) == (NATIVE, NATIVE, {})
-
-    with pytest.raises(NotFound) as refused:
-        _ = bench.configuration("nope", bench.endpoint(QWEN))
-    assert refused.value.per_model == ()
+    with pytest.raises(NotFound, match="no configuration 'nope' for alice"):
+        _ = bench.configuration("nope")
 
 
 def test_a_configuration_made_in_several_languages_is_named_whole(
     bench: Bench, alice: Person
 ) -> None:
-    engine = bench.endpoint(QWEN)
-    english = bench.configuration("native", engine).configuration
-    swedish = f"native (sv, {QWEN_MODEL})"
+    english = bench.configuration("native").configuration
+    swedish = "native (sv)"
     assert swedish not in bench.names("configuration")
     _ = bench.catalog.create(english.digest, alice.id, name=swedish)
     several = (
@@ -334,21 +353,17 @@ def test_a_configuration_made_in_several_languages_is_named_whole(
         + "name one as 'native en' or 'native sv'"
     )
     with pytest.raises(Ambiguous, match=re.escape(several)):
-        _ = bench.configuration("native", engine)
-    assert bench.configuration(swedish, engine).name == swedish
-    assert bench.configuration("native sv", engine).name == swedish
-    assert bench.configuration("native (en)", engine).name == NATIVE
-    with pytest.raises(NotFound) as refused:
-        _ = bench.configuration("native sv")
-    assert refused.value.per_model == (swedish,)
+        _ = bench.configuration("native")
+    assert bench.configuration(swedish).name == swedish
+    assert bench.configuration("native sv").name == swedish
+    assert bench.configuration("native (en)").name == NATIVE
     with pytest.raises(NotFound, match="no configuration 'native fi'"):
-        _ = bench.configuration("native fi", engine)
+        _ = bench.configuration("native fi")
 
 
 def test_a_variation_compiles_to_a_skeleton_of_its_own(bench: Bench) -> None:
-    engine = bench.endpoint(QWEN)
-    configuration = bench.configuration(LINES, engine)
-    off = configuration.set("reasoning", bench.chunk("reasoning", "off", engine), "off")
+    configuration = bench.configuration(LINES)
+    off = configuration.set("reasoning", bench.chunk("reasoning", "off"), "off")
 
     assert bench.skeleton(configuration).digest == configuration.configuration.digest
     assert bench.skeleton(off).digest != configuration.configuration.digest
@@ -361,7 +376,7 @@ def test_a_variation_s_request_shows_placeholders_for_what_it_is_sent_with(
     bench: Bench,
 ) -> None:
     engine = bench.endpoint(QWEN)
-    variation = bench.configuration(LINES, engine)
+    variation = bench.configuration(LINES)
 
     unplaced = bench.request(variation, None, 7)
     placed = bench.request(variation, engine, 7)
@@ -373,7 +388,7 @@ def test_a_variation_s_request_shows_placeholders_for_what_it_is_sent_with(
 
 
 def test_several_configurations_of_one_name_are_refused_a_save(bench: Bench) -> None:
-    variation = bench.configuration(LINES, bench.endpoint(QWEN))
+    variation = bench.configuration(LINES)
     _ = Catalog(bench.conn).create(
         variation.configuration.digest, bench.person.id, name="twice"
     )
@@ -388,9 +403,8 @@ def test_several_configurations_of_one_name_are_refused_a_save(bench: Bench) -> 
 def test_a_fork_is_a_new_configuration_and_an_edit_a_new_version_of_one_s_own(
     bench: Bench,
 ) -> None:
-    engine = bench.endpoint(QWEN)
-    variation = bench.configuration(LINES, engine)
-    off = variation.set("reasoning", bench.chunk("reasoning", "off", engine), "off")
+    variation = bench.configuration(LINES)
+    off = variation.set("reasoning", bench.chunk("reasoning", "off"), "off")
     catalog = Catalog(bench.conn)
 
     forked = bench.fork(off, "terse")
@@ -550,7 +564,7 @@ def test_a_judged_scorer_applies_where_the_world_lets_its_judges_run(
     cleared = bench.inventory.model_copy(
         update={"cleared": bench.inventory.cleared | {REMOTE: ("test",)}}
     )
-    opened = Bench(conn, alice, cleared, bench.facts)
+    opened = Bench(conn, alice, cleared)
     assert "judged-remote" in {a.name for _, a in opened.scorers_for(started)}
     [refused] = [g for g in opened.score(started) if g.name == "judged-remote"]
     assert refused.refused == (
@@ -582,7 +596,7 @@ def test_a_run_s_scores_are_read_the_latest_every_one_or_one_by_id(
 
     with pytest.raises(NotFound, match=f"no score {scored(first)} of run {other}"):
         _ = bench.score_of(other, scored(first))
-    theirs = Bench(conn, bob, bench.inventory, bench.facts)
+    theirs = Bench(conn, bob, bench.inventory)
     with pytest.raises(NotFound, match=f"no run {run} of yours"):
         _ = theirs.score_of(run, scored(first))
 
@@ -606,10 +620,10 @@ def test_a_judge_configuration_is_looked_at_as_a_judge_and_isn_t_run(
     configurations = bench.threads("configuration")
     judges = {a.name for _, a in bench.purposed(configurations, "judge")}
     generation = {a.name for _, a in bench.purposed(configurations, "generation")}
-    assert f"judge-graded (en, {QWEN_MODEL})" in judges and LINES in generation
+    assert "judge-graded (en)" in judges and LINES in generation
     assert not judges & generation
 
-    variation = bench.configuration(f"judge-graded (en, {QWEN_MODEL})")
+    variation = bench.configuration("judge-graded (en)")
     engine = bench.endpoint(GPT_OSS)
     findings = bench.findings(variation, engine, 7, bench.families())
     judge = Judge(skeleton=variation.configuration.digest, engine=engine, seeds=(7,))
@@ -635,7 +649,7 @@ def test_a_run_runs_again_on_its_trial_s_engine_or_not_at_all(
     endpoints = dict(inventory.endpoints)
     endpoints[QWEN] = endpoints[QWEN].model_copy(update={"engine": other})
     moved = inventory.model_copy(update={"endpoints": endpoints})
-    bench = Bench(conn, alice, moved, world_facts())
+    bench = Bench(conn, alice, moved)
     with pytest.raises(
         Refused, match=f"serves engine {other}, the trial's is {made.engine}"
     ):

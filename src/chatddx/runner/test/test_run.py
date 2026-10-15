@@ -56,7 +56,6 @@ from chatddx.store import Catalog, Store
 from chatddx.store.store import Connection
 from chatddx.test.world import (
     GPT_OSS,
-    GPT_OSS_MODEL,
     LINES,
     NATIVE_TOOLS,
     QWEN,
@@ -309,7 +308,7 @@ def test_nothing_is_sent_or_written_where_the_gate_refuses(
     )
     assert "serves engine" in refused(trial(plan), GPT_OSS)
     assert f"endpoint {GPT_OSS!r} can't be confirmed" in refused(
-        trial(plan, f"lines (en, {GPT_OSS_MODEL})", engine=GPT_OSS), GPT_OSS
+        trial(plan, engine=GPT_OSS), GPT_OSS
     )
     assert "tools can't be cleared yet" in refused(trial(plan, NATIVE_TOOLS), QWEN)
     assert rows(db, "run_stage") == 0
@@ -610,6 +609,7 @@ def tooled(
     skeleton = compile_request(
         compiled.model_copy(update={"toolset": plan.registry.add(toolset)}),
         plan.registry.get,
+        plan.facts.about(compiled.engine, plan.registry.get),
     )
     made = trial(plan, cases=cases, seeds=seeds).model_copy(
         update={"skeleton": plan.registry.add(skeleton)}

@@ -26,6 +26,17 @@ from .base import (
     resolve,
     sorted_keys,
 )
+from .engine import EngineRef
+from .facts import (
+    Effort,
+    FactsRef,
+    Landing,
+    ModelFacts,
+    Refused,
+    SamplingValues,
+    Writes,
+    model_name,
+)
 from .response import message, tool_calls
 
 SlotName = Literal["vignette", "appendices", "completion", "expectation"]
@@ -321,16 +332,27 @@ class Sampling(Component):
     max_tokens_key: Literal["max_completion_tokens", "max_tokens"] = (
         "max_completion_tokens"
     )
+    recommended: bool = False
 
     @model_validator(mode="before")
     @classmethod
     def _greedy(cls, data: object) -> object:
         return _canonical_sampling(data)
 
+    def over(self, values: SamplingValues) -> "Sampling":
+        own = self.model_dump(exclude={"kind", "recommended"}, exclude_none=True)
+        return Sampling.model_validate({**values.model_dump(exclude_none=True), **own})
+
     def body(self) -> dict[str, JsonValue]:
         body: dict[str, JsonValue] = self.model_dump(
             exclude_none=True,
-            exclude={"kind", "stop", "max_output_tokens", "max_tokens_key"},
+            exclude={
+                "kind",
+                "stop",
+                "max_output_tokens",
+                "max_tokens_key",
+                "recommended",
+            },
         )
         if self.stop:
             body["stop"] = list(self.stop)
@@ -344,6 +366,18 @@ class Reasoning(Component):
     effort: Literal["none", "minimal", "low", "medium", "high"] | None = None
     thinking_token_budget: int | None = Field(default=None, ge=0)
     chat_template_kwargs: Settings = Field(default_factory=dict)
+    level: Effort | None = None
+
+    @model_validator(mode="after")
+    def _level_or_settings(self) -> "Reasoning":
+        if self.level is not None and (
+            self.effort is not None or self.chat_template_kwargs
+        ):
+            raise ValueError(
+                "a reasoning level is worked out from the model's facts, so it comes "
+                + "without an effort or chat template arguments"
+            )
+        return self
 
 
 class Passthrough(Component):
@@ -430,9 +464,10 @@ class Recipe(Frozen):
     appendix_layout: AppendixLayout = AppendixLayout()
     translations: Annotated[Digest, RefTo("chunk.translations")] | None = None
     toolset: Annotated[Digest, RefTo("chunk.toolset")] | None = None
+    engine: EngineRef
 
 
-RECIPE_PARTS = (
+CHUNK_PARTS = (
     "instructions",
     "few_shot",
     "prompt",
@@ -443,6 +478,7 @@ RECIPE_PARTS = (
     "translations",
     "toolset",
 )
+RECIPE_PARTS = (*CHUNK_PARTS, "engine")
 
 
 class Skeleton(Component):
@@ -558,10 +594,21 @@ SkeletonRef = Annotated[Digest, RefTo("skeleton")]
 
 
 class Compilation(Component):
+    schema_version: ClassVar[int] = 2
     kind: Literal["compilation"] = "compilation"
     recipe: Recipe
     skeleton: SkeletonRef
     compiler: Code
+    facts: FactsRef | None = None
+
+    @override
+    def cross_check(self, get: Resolver) -> list[str]:
+        if self.facts is None:
+            return []
+        facts = resolve(get, self.facts, ModelFacts)
+        if (model := model_name(self.recipe.engine, get)) != facts.model:
+            return [f"facts about {facts.model} compiled a recipe for {model}"]
+        return []
 
 
 def _tool_name(tool: JsonValue) -> str:
@@ -805,7 +852,41 @@ def own_texts(chunk: Component, get: Resolver) -> tuple[str, ...]:
     return tuple(seen)
 
 
-def compile_request(recipe: Recipe, get: Resolver) -> Skeleton:
+def landings(
+    recipe: Recipe, get: Resolver, facts: ModelFacts | None
+) -> tuple[Landing | None, Landing | None]:
+    if facts is not None and (model := model_name(recipe.engine, get)) != facts.model:
+        raise StructuralError(f"facts about {facts.model} can't compile for {model}")
+    reasoning = (
+        None if recipe.reasoning is None else resolve(get, recipe.reasoning, Reasoning)
+    )
+    sampling = resolve(get, recipe.sampling, Sampling)
+    asked = None if reasoning is None else reasoning.level
+    if asked is None and not sampling.recommended:
+        return None, None
+    if facts is None:
+        what = "a recommended sampling" if asked is None else f"reasoning {asked!r}"
+        raise StructuralError(
+            f"{what} is worked out from the facts about the engine's model, which has "
+            + "none"
+        )
+    try:
+        landed = None if asked is None else facts.reasoning.resolve(asked)
+        if landed is not None and reasoning and reasoning.thinking_token_budget:
+            facts.check_budget()
+        followed = None
+        if sampling.recommended:
+            followed = landed or facts.reasoning.resolve("default")
+            _ = facts.recommended(followed.level)
+    except Refused as e:
+        raise StructuralError(f"{facts.model}: {e}") from None
+    return landed, followed
+
+
+def compile_request(
+    recipe: Recipe, get: Resolver, facts: ModelFacts | None = None
+) -> Skeleton:
+    landed, followed = landings(recipe, get, facts)
     entries = (
         None
         if recipe.translations is None
@@ -871,15 +952,22 @@ def compile_request(recipe: Recipe, get: Resolver) -> Skeleton:
     if recipe.passthrough is not None:
         passthrough = resolve(get, recipe.passthrough, Passthrough)
         body.update(passthrough.body)
+    if facts is not None and followed is not None:
+        sampling = sampling.over(facts.recommended(followed.level))
     managed = sampling.body()
     if recipe.reasoning is not None:
         reasoning = resolve(get, recipe.reasoning, Reasoning)
-        if reasoning.effort is not None:
-            managed["reasoning_effort"] = reasoning.effort
+        asked = Writes(
+            effort=reasoning.effort,
+            chat_template_kwargs=reasoning.chat_template_kwargs,
+        )
+        writes = asked if landed is None else landed.writes
+        if writes.effort is not None:
+            managed["reasoning_effort"] = writes.effort
         if reasoning.thinking_token_budget is not None:
             managed["thinking_token_budget"] = reasoning.thinking_token_budget
-        if reasoning.chat_template_kwargs:
-            managed["chat_template_kwargs"] = reasoning.chat_template_kwargs
+        if writes.chat_template_kwargs:
+            managed["chat_template_kwargs"] = writes.chat_template_kwargs
     offered: list[JsonValue] = [
         {
             "type": "function",
@@ -935,10 +1023,15 @@ def compile_request(recipe: Recipe, get: Resolver) -> Skeleton:
 
 
 def compiled(
-    recipe: Recipe, get: Resolver, compiler: Code
+    recipe: Recipe, get: Resolver, compiler: Code, facts: ModelFacts | None = None
 ) -> tuple[Skeleton, Compilation]:
-    skeleton = compile_request(recipe, get)
-    record = Compilation(recipe=recipe, skeleton=skeleton.digest, compiler=compiler)
+    skeleton = compile_request(recipe, get, facts)
+    record = Compilation(
+        recipe=recipe,
+        skeleton=skeleton.digest,
+        compiler=compiler,
+        facts=None if facts is None else facts.digest,
+    )
     return skeleton, record
 
 

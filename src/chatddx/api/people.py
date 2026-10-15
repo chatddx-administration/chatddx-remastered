@@ -94,7 +94,7 @@ def bench(
     request: Request, conn: ConnDep, person: Annotated[Person, Depends(signed_in)]
 ) -> Bench:
     held = state(request)
-    return Bench(conn, person, held.inventory, held.facts)
+    return Bench(conn, person, held.inventory)
 
 
 type BenchDep = Annotated[Bench, Depends(bench)]

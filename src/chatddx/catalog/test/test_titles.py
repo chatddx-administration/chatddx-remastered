@@ -49,7 +49,7 @@ def test_unnamed_components_are_described_by_what_they_hold() -> None:
     assert describe_recipe(recipe, title) == (
         '"You are an emergency physician." · "Case: {vignette}{appendices}…"'
         + " · native output: ddx · temperature 0.7, top_p 0.9, max_output_tokens 1024"
-        + " · enable_thinking false"
+        + " · enable_thinking false · google/gemma-3-12b-it on vllm 0.24.0 (RTX 5090)"
     )
     assert title(ids["engine"]) == "google/gemma-3-12b-it on vllm 0.24.0 (RTX 5090)"
     assert title(ids["case"]) == 'registry/c1 with "Troponin 80 ng/L."'
@@ -58,6 +58,16 @@ def test_unnamed_components_are_described_by_what_they_hold() -> None:
     )
     assert title(ids["canaries"]) == "1 canary"
     assert title(reg.add(Sampling())) == "default sampling"
+    assert title(reg.add(Sampling(recommended=True))) == "recommended sampling"
+    assert (
+        title(reg.add(Sampling(recommended=True, max_output_tokens=512)))
+        == "recommended sampling, max_output_tokens 512"
+    )
+    assert title(reg.add(Reasoning(level="off"))) == "reasoning off"
+    assert (
+        title(reg.add(Reasoning(level="default", thinking_token_budget=64)))
+        == "default reasoning, budget 64"
+    )
     assert title(reg.add(Reasoning(effort="low", thinking_token_budget=512))) == (
         "effort low, budget 512"
     )
@@ -89,17 +99,18 @@ def test_recipes_are_described_by_every_part() -> None:
         )
     )
     tools = reg.add(Toolset(tools=(search,)))
-    english = describe_recipe(recipe, title)
+    on = " · " + title(recipe.engine)
+    english = describe_recipe(recipe, title).removesuffix(on)
     translated = recipe.model_copy(update={"translations": swedish})
     assert describe_recipe(translated, title) == (
-        english + f" · translations, {len(needed)} texts"
+        english + f" · translations, {len(needed)} texts" + on
     )
     assert (
         describe(reg.get(swedish), title, "sv")
         == f"sv translations, {len(needed)} texts"
     )
     with_tools = recipe.model_copy(update={"toolset": tools})
-    assert describe_recipe(with_tools, title) == english + " · with web_search"
+    assert describe_recipe(with_tools, title) == english + " · with web_search" + on
 
 
 def test_changes_are_described_by_path_and_value() -> None:

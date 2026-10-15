@@ -3,15 +3,15 @@ from typing import Literal
 
 from chatddx.catalog import About, Divergence, Edit, Kept, Part
 from chatddx.factors.base import Component, Finding
-from chatddx.factors.request import Recipe, SlotName
+from chatddx.factors.request import CHUNK_PARTS, Recipe, SlotName
 from chatddx.factors.scoring import Scorer
 from chatddx.ledger import Score
 
-from .variation import PARTS, TriedVariation
+from .variation import TriedVariation
 
 KINDS: dict[str, tuple[str, ...]] = {
     "configuration": ("skeleton",),
-    **{part: (f"chunk.{part}",) for part in PARTS},
+    **{part: (f"chunk.{part}",) for part in CHUNK_PARTS},
     "tool": ("tool",),
     "scorer": ("scorer",),
     "judge": ("judge",),
@@ -21,6 +21,7 @@ KINDS: dict[str, tuple[str, ...]] = {
     "canary_set": ("canary_set",),
     "model": ("model",),
     "engine": ("engine.local", "engine.remote"),
+    "facts": ("facts",),
 }
 
 
@@ -29,7 +30,13 @@ def word_of(kind: str) -> str:
 
 
 WRITTEN: frozenset[str] = frozenset(
-    {*(f"chunk.{part}" for part in PARTS), "expectation", "appendix", "scorer", "judge"}
+    {
+        *(f"chunk.{part}" for part in CHUNK_PARTS),
+        "expectation",
+        "appendix",
+        "scorer",
+        "judge",
+    }
 )
 
 LABELLED: tuple[Part, ...] = ("view", "resource")

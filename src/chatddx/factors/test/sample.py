@@ -106,6 +106,7 @@ def generation_recipe(
             )
         ),
         reasoning=reg.add(Reasoning(chat_template_kwargs={"enable_thinking": False})),
+        engine=reg.add(local_engine(reg)),
     )
 
 

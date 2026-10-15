@@ -5,8 +5,6 @@ from dataclasses import dataclass
 import psycopg
 from rich.table import Table
 
-from chatddx.bench import NotFound
-
 from . import choosing, inspecting, listing, reviewing, running, scoring
 from .shell import Repl
 
@@ -35,7 +33,7 @@ COMMANDS: dict[str, Command] = {
     "configurations": Command(
         ("[NAME]",),
         "list the configurations you can use, a row per name and language; NAME's "
-        + "per model",
+        + "parts",
         listing.configurations,
         rest=0,
     ),
@@ -49,14 +47,19 @@ COMMANDS: dict[str, Command] = {
         choosing.use,
         rest=0,
     ),
-    "on": Command(("ENDPOINT",), "put an endpoint in the cell", choosing.on),
+    "on": Command(
+        ("ENDPOINT",),
+        "put an endpoint in the cell, and the engine it serves in the cell's "
+        + "configuration",
+        choosing.on,
+    ),
     "cell": Command(
         ("CONFIGURATION", "ENDPOINT"), "put both in the cell", choosing.cell, rest=0
     ),
     "set": Command(
         ("PART", "CHUNK"),
-        "put another chunk in a part of the cell's configuration; none takes an "
-        + "optional part out",
+        "put another chunk, or engine, in a part of the cell's configuration; none "
+        + "takes an optional part out",
         choosing.set_,
         rest=1,
     ),
@@ -169,7 +172,7 @@ def handle(repl: Repl, line: str) -> bool:
     try:
         command.run(repl, *args)
     except (LookupError, ValueError) as e:
-        repl.error(_said(e))
+        repl.error(str(e))
     except psycopg.Error as e:
         said = str(e).strip()
         repl.error(
@@ -177,12 +180,6 @@ def handle(repl: Repl, line: str) -> bool:
         )
 
     return True
-
-
-def _said(e: LookupError | ValueError) -> str:
-    if isinstance(e, NotFound) and e.per_model:
-        return f"{e}, picked by the endpoint in the cell"
-    return str(e)
 
 
 def _next_words(names: Iterable[str], typed: list[str]) -> list[str]:

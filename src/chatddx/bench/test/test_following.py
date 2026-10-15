@@ -13,7 +13,7 @@ from chatddx.test.world import LINES, QWEN
 def archive(bench: Bench) -> Bench:
     found = People(bench.conn).find("archive")
     assert found is not None
-    return Bench(bench.conn, found, bench.inventory, bench.facts)
+    return Bench(bench.conn, found, bench.inventory)
 
 
 def _own(bench: Bench) -> int:
@@ -28,14 +28,14 @@ def _own(bench: Bench) -> int:
 def test_a_configuration_follows_its_origin_with_its_own_change_on_top(
     bench: Bench, archive: Bench
 ) -> None:
-    catalog, engine = bench.catalog, bench.endpoint(QWEN)
+    catalog, _engine = bench.catalog, bench.endpoint(QWEN)
     mine = _own(bench)
     theirs = archive.thread("configuration", LINES)[0].thread
     assert bench.proposal(mine) is None
 
-    off = bench.chunk("reasoning", "off", engine)
-    greedy = bench.chunk("sampling", "greedy", engine)
-    varied = bench.configuration(LINES, engine).set("reasoning", off, "off")
+    off = bench.chunk("reasoning", "off")
+    greedy = bench.chunk("sampling", "greedy")
+    varied = bench.configuration(LINES).set("reasoning", off, "off")
     seen = bench.edit(mine, varied, catalog.head(mine).id).variation.configuration
     moved = archive.variation(theirs, {"sampling": greedy})
     origin = archive.edit(
@@ -97,7 +97,7 @@ def test_only_what_has_something_to_follow_is_followed(
     with pytest.raises(NotFound, match=f"no configuration {theirs} of yours"):
         _ = bench.follow(theirs, catalog.head(theirs).id)
 
-    greedy = bench.chunk("sampling", "greedy", bench.endpoint(QWEN))
+    greedy = bench.chunk("sampling", "greedy")
     moved = archive.variation(theirs, {"sampling": greedy})
     _ = archive.edit(theirs, moved, catalog.head(theirs).id)
     with pytest.raises(MovedOn, match=f"since edit {head - 1}"):

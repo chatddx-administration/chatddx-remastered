@@ -19,7 +19,7 @@ from chatddx.portal.assets import Assets
 from chatddx.portal.test.conftest import PASSWORD
 from chatddx.store import Store
 from chatddx.store.store import Connection
-from chatddx.test.world import LINES, QWEN, faked, world_facts
+from chatddx.test.world import GPT_OSS, LINES, QWEN, faked
 
 pytestmark = pytest.mark.slow
 
@@ -36,7 +36,6 @@ def built() -> Path:
 def served(db: str, built: Path, world: Inventory) -> FastAPI:
     return app(
         world,
-        world_facts(),
         make_conninfo(settings.database(), dbname=db),
         built,
         worker=True,
@@ -97,8 +96,15 @@ def test_a_variation_is_run_watched_halted_scored_again_and_run_again(
     with faked(world, Store(conn).get, delay=0.3):
         _ = page.goto(f"/configurations/{lines['id']}")
         expect(page.get_by_role("heading", name="Running it")).to_be_visible()
-        with page.expect_response(re.compile(r"/variation\?")):
-            _ = page.select_option("#endpoint", QWEN)
+        expect(
+            page.get_by_text(f"Sent to {QWEN}, which serves its engine.")
+        ).to_be_visible()
+        for endpoint in (GPT_OSS, QWEN):
+            engine = page.request.get(f"/api/endpoints/{endpoint}").json()["engine"]
+            with page.expect_response(re.compile(r"/variation\?")):
+                _ = page.select_option("#part-engine", engine)
+            sent = f"Sent to {endpoint}, which serves its engine."
+            expect(page.get_by_text(sent)).to_be_visible()
         page.get_by_label("of the families picked").check()
         page.get_by_label("Find a family").fill("crlf")
         page.get_by_label("crlf", exact=True).check()

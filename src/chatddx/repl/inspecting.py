@@ -13,9 +13,17 @@ from chatddx.catalog.titles import describe, short
 from chatddx.factors.base import Component, resolve
 from chatddx.factors.cases import Appendix, Case
 from chatddx.factors.engine import LocalEngine
-from chatddx.factors.request import Reasoning, Skeleton
+from chatddx.factors.request import Reasoning, Sampling, Skeleton
 from chatddx.factors.scoring import Expectation, Scoring
-from chatddx.facts import INTENTS, Effort, ModelFacts, Refusal, Refused
+from chatddx.facts import (
+    INTENTS,
+    Effort,
+    Landing,
+    ModelFacts,
+    Refusal,
+    Refused,
+    Writes,
+)
 from chatddx.inventory import url_of
 from chatddx.ledger import RunStarted
 from chatddx.store import fetch_vignette
@@ -77,20 +85,21 @@ def _show_cell(repl: Repl, tags: tuple[str, ...] = ()) -> None:
     for column in ("part", "chunk", "is"):
         table.add_column(column)
 
-    if cell.endpoint and cell.engine:
+    endpoint = repl.where()
+    if endpoint and cell.engine:
         served = bench.served(cell.engine)
-        url = url_of(bench.inventory, bench.get, cell.endpoint)
+        url = url_of(bench.inventory, bench.get, endpoint)
         where = f"{bench.title(cell.engine)}, served as {served} at {url}"
-        table.add_row("endpoint", cell.endpoint, where)
+        table.add_row("endpoint", endpoint, where)
 
     if variation:
+        landed = bench.landed(variation)
         for part in PARTS:
             held = variation.held(part)
             component = None if held is None else bench.get(held)
+            said = "" if component is None else describe(component, bench.title)
             table.add_row(
-                part,
-                _chunk(repl, variation, part),
-                "" if component is None else describe(component, bench.title),
+                part, _chunk(repl, variation, part), _landed(component, said, landed)
             )
 
     repl.console.print(table)
@@ -125,6 +134,22 @@ def _show_cell(repl: Repl, tags: tuple[str, ...] = ()) -> None:
             repl.console.print("no findings", style=LABEL)
 
     _show_scorers(repl, variation, families, tags)
+
+
+def _landed(component: Component | None, said: str, landed: dict[str, Landing]) -> Text:
+    text = Text(said)
+    match component:
+        case Reasoning(level=asked) if "reasoning" in landed:
+            at = landed["reasoning"]
+            if at.level != asked:
+                _ = text.append(f" → {at.level}", style="bold")
+            for reason in at.nearest:
+                _ = text.append(f", its nearest: {reason}", style=LATER)
+        case Sampling() if "sampling" in landed:
+            _ = text.append(f", for reasoning {landed['sampling'].level}")
+        case _:
+            pass
+    return text
 
 
 def _chunk(repl: Repl, variation: TriedVariation, part: str) -> Text:
@@ -174,8 +199,7 @@ def _show_thread(repl: Repl, word: str, name: str | None) -> None:
     bench, cell = repl.bench, repl.cell
 
     if name is not None:
-        model = None if cell.engine is None else bench.model(cell.engine)
-        edit, found = bench.thread(word, name, model)
+        edit, found = bench.thread(word, name)
         _show_component(repl, word, found, edit.digest, bench.about(edit.thread))
         return
 
@@ -207,11 +231,6 @@ def _in_cell(repl: Repl, word: str) -> str | None:
 
     if word == "configuration" and variation:
         digest = variation.configuration.digest
-    elif word in PARTS and variation:
-        digest = variation.held(word)
-        if digest is None:
-            repl.error(f"the cell has no {word}")
-            return None
     elif word in ("engine", "model") and cell.engine:
         digest = cell.engine
         engine = bench.get(cell.engine)
@@ -220,10 +239,15 @@ def _in_cell(repl: Repl, word: str) -> str | None:
                 repl.error(f"the cell's engine is a {engine.kind_name}, with no model")
                 return None
             digest = engine.model
+    elif word in PARTS and variation:
+        digest = variation.held(word)
+        if digest is None:
+            repl.error(f"the cell has no {word}")
+            return None
+    elif word in ("engine", "model"):
+        repl.error(f"the cell has no configuration or endpoint: show {word} NAME")
     elif word in PARTS or word == "configuration":
         repl.error(f"the cell has no configuration: show {word} NAME")
-    elif word in ("engine", "model"):
-        repl.error(f"the cell has no endpoint: show {word} NAME")
     else:
         repl.error(f"no {word} in the cell: show {word} NAME")
 
@@ -512,7 +536,7 @@ def _titled(repl: Repl, value: JsonValue) -> JsonValue:
 
 def _show_endpoint(repl: Repl, name: str | None) -> None:
     bench = repl.bench
-    name = name or repl.cell.endpoint
+    name = name or repl.where()
 
     if name is None:
         repl.error("the cell has no endpoint: show endpoint NAME")
@@ -569,6 +593,7 @@ def reasoning(repl: Repl) -> None:
     bench, cell = repl.bench, repl.cell
     models = bench.facts.models
     serving: dict[str, list[str]] = {}
+    where = repl.where()
 
     for endpoint in sorted(bench.inventory.endpoints):
         try:
@@ -576,16 +601,15 @@ def reasoning(repl: Repl) -> None:
         except LookupError:
             continue
         if model is not None:
-            marked = f"▸ {endpoint}" if endpoint == cell.endpoint else endpoint
+            marked = f"▸ {endpoint}" if endpoint == where else endpoint
             serving.setdefault(model, []).append(marked)
 
     current = None if cell.engine is None else bench.model(cell.engine)
-    variation = cell.variation
-    held = variation.held("reasoning") if variation else None
+    asked = _asked(repl, cell.variation)
     caption = (
-        "▸ the cell's reasoning, as its model's facts say"
-        if variation and current in models
-        else "the cell has no configuration on a model the facts know"
+        "▸ the level the cell's configuration asks for, as its model's facts say"
+        if asked is not None and current in models
+        else "the cell has no configuration asking for a level on a model the facts know"
     )
     table = Table(header_style="bold", show_lines=True, caption=caption)
     table.add_column("reasoning")
@@ -594,37 +618,40 @@ def reasoning(repl: Repl) -> None:
         table.add_column("\n".join([model, *serving.get(model, [])]), overflow="fold")
 
     for effort in ("default", *INTENTS):
-        levels = {model: _level(facts, effort) for model, facts in models.items()}
-        mine = levels.get(current or "", (None, None))[1]
-        marked = variation is not None and (
-            mine == held if held is not None else effort == "default"
-        )
-        cells = [text for text, _ in levels.values()]
-        table.add_row(f"▸ {effort}" if marked else effort, *cells)
+        cells = [_level(facts, effort) for facts in models.values()]
+        table.add_row(f"▸ {effort}" if effort == asked else effort, *cells)
 
     table.add_row("budget", *(_budget(facts) for facts in models.values()))
     repl.console.print(table)
 
 
-def _level(facts: ModelFacts, effort: Effort) -> tuple[Text, str | None]:
+def _asked(repl: Repl, variation: TriedVariation | None) -> Effort | None:
+    if variation is None or variation.recipe is None:
+        return None
+    held = variation.held("reasoning")
+    if held is None:
+        return "default"
+    return resolve(repl.bench.get, held, Reasoning).level
+
+
+def _level(facts: ModelFacts, effort: Effort) -> Text:
     try:
-        landed, _ = facts.reasoning.resolve(effort)
-        chunk = facts.reasoning_chunk(effort)
+        landed = facts.reasoning.resolve(effort)
     except Refused as e:
-        return Text(f"refused: {e}", style=REFUSED), None
+        return Text(f"refused: {e}", style=REFUSED)
 
-    text = Text(f"→ {landed}\n" if landed != effort else "")
-    _ = text.append(
-        "nothing sent" if effort == "default" else _writes(chunk) or "nothing"
-    )
+    text = Text(f"→ {landed.level}\n" if landed.level != effort else "")
+    for reason in landed.nearest:
+        _ = text.append(f"its nearest: {reason}\n", style=LATER)
+    _ = text.append(_writes(landed.writes) or "nothing")
 
     try:
-        sampling = facts.sampling_chunk(effort)
+        sampling = Sampling().over(facts.recommended(landed.level))
         _ = text.append(f"\n{writes(sampling.body()) or 'no sampling'}", style=LABEL)
     except Refused as e:
         _ = text.append(f"\n{e}", style=LABEL)
 
-    return text, None if effort == "default" else chunk.digest
+    return text
 
 
 def _budget(facts: ModelFacts) -> Text:
@@ -637,12 +664,10 @@ def _budget(facts: ModelFacts) -> Text:
             return Text(f"{key}=N")
 
 
-def _writes(chunk: Reasoning) -> str:
+def _writes(written: Writes) -> str:
     sent: dict[str, JsonValue] = {}
-    if chunk.effort is not None:
-        sent["reasoning_effort"] = chunk.effort
-    if chunk.thinking_token_budget is not None:
-        sent["thinking_token_budget"] = chunk.thinking_token_budget
-    if chunk.chat_template_kwargs:
-        sent["chat_template_kwargs"] = chunk.chat_template_kwargs
+    if written.effort is not None:
+        sent["reasoning_effort"] = written.effort
+    if written.chat_template_kwargs:
+        sent["chat_template_kwargs"] = written.chat_template_kwargs
     return writes(sent)

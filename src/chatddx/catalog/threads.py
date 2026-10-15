@@ -3,13 +3,15 @@ from collections.abc import Mapping, Sequence
 from pydantic import JsonValue
 
 from chatddx.factors.base import Component, canonical_bytes, iter_refs, resolve
+from chatddx.factors.facts import ModelFacts
 from chatddx.factors.kinds import parse_component
-from chatddx.factors.request import Compilation, Recipe
+from chatddx.factors.request import Compilation, Recipe, compile_request
 from chatddx.factors.scoring import Expectation, Scorer
 from chatddx.identity import owns
 
 from .families import stale_cases
 from .model import (
+    ENGINE_KINDS,
     RUN_FIELDS,
     THREAD_KINDS,
     About,
@@ -76,8 +78,12 @@ def check_varied(rows: Reader, subject: Subject, entry: Entry) -> None:
             raise ValueError(f"edit {entry.value} is no configuration's")
         return
     part, digest = (entry.value or "").split("=")
-    if digest and rows.kind(digest) != f"chunk.{part}":
-        raise ValueError(f"{digest} isn't a stored chunk of {part}")
+    engine = part == "engine"
+    if digest and rows.kind(digest) not in (
+        ENGINE_KINDS if engine else (f"chunk.{part}",)
+    ):
+        what = "an engine" if engine else f"a chunk of {part}"
+        raise ValueError(f"{digest} isn't {what} in the store")
 
 
 def thread(rows: Reader, id: int) -> Thread:
@@ -206,8 +212,12 @@ def holds(rows: Reader, edit: Edit, digest: str, compilation: str | None) -> boo
 def behind(rows: Reader, thread: int) -> list[Behind]:
     current = head(rows, thread)
     refs = [(s.path, s.digest) for s in rows.get(current.digest).refs()]
-    if (r := recipe(rows, current)) is not None:
-        refs += [(s.path, s.digest) for s in iter_refs(r, "/recipe")]
+    made = None
+    if current.compilation is not None:
+        made = resolve(rows.get, current.compilation, Compilation)
+        refs += [(s.path, s.digest) for s in iter_refs(made.recipe, "/recipe")]
+        if made.facts is not None:
+            refs.append(("/facts", made.facts))
     refs += [
         (path + s.path, s.digest)
         for path, digest in refs
@@ -224,10 +234,22 @@ def behind(rows: Reader, thread: int) -> list[Behind]:
         (path, t, digest): Behind(path=path, digest=digest, head=found[t])
         for path, digest in refs
         for t in held.get(digest, ())
-        if found[t].digest != digest and not known[Subject(thread=t)].deleted
+        if found[t].digest != digest
+        and not known[Subject(thread=t)].deleted
+        and (path != "/facts" or made is None or _sends_else(rows, made, found[t]))
     }
     ordered = [moved[k] for k in sorted(moved)]
     return sorted([*ordered, *stale_cases(rows, refs)], key=lambda b: b.path)
+
+
+# Facts corrected where a configuration doesn't reach leave it as it is: following them
+# would write nothing (holds).
+def _sends_else(rows: Reader, made: Compilation, facts: Edit) -> bool:
+    newer = resolve(rows.get, facts.digest, ModelFacts)
+    try:
+        return compile_request(made.recipe, rows.get, newer).digest != made.skeleton
+    except ValueError:
+        return True
 
 
 def divergence(rows: Reader, id: int) -> Divergence | None:

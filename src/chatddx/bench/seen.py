@@ -9,7 +9,7 @@ from chatddx.catalog import (
     Subject,
     language_of,
     latest,
-    made_for,
+    made_in,
     variants_for,
 )
 from chatddx.catalog.threads import picked, recipe as recipe_of
@@ -24,6 +24,7 @@ from chatddx.factors.base import (
 from chatddx.factors.bundle import Registry
 from chatddx.factors.cases import Case, CleanupOp, Vignette
 from chatddx.factors.engine import LocalEngine, RemoteEngine
+from chatddx.factors.facts import Landing, ModelFacts, model_name
 from chatddx.factors.request import (
     Compilation,
     Purpose,
@@ -31,11 +32,12 @@ from chatddx.factors.request import (
     Skeleton,
     compile_request,
     compiled,
+    landings,
     render,
 )
 from chatddx.factors.scoring import Expectation, Judge, Scorer, Scoring
 from chatddx.factors.trial import Trial
-from chatddx.facts import Facts, lints, model_name
+from chatddx.facts import Facts, lints
 from chatddx.identity import Person, collaborates, owns, preferred, sees
 from chatddx.inventory import Inventory
 from chatddx.ledger import (
@@ -61,13 +63,10 @@ from .variation import PARTS, TriedVariation
 
 
 class Seen:
-    def __init__(
-        self, conn: Connection, person: Person, inventory: Inventory, facts: Facts
-    ) -> None:
+    def __init__(self, conn: Connection, person: Person, inventory: Inventory) -> None:
         self.conn: Connection = conn
         self.person: Person = person
         self.inventory: Inventory = inventory
-        self.facts: Facts = facts
         self.store: Store = Store(conn)
         self.catalog: Catalog = Catalog(conn)
         self.rows: Rows = Rows(conn)
@@ -82,6 +81,20 @@ class Seen:
             self._logins[person] = self.people.get(person).login
         return self._logins[person]
 
+    # Read when asked, so that facts corrected while a connection lasts are used.
+    @property
+    def facts(self) -> Facts:
+        live = [(e, a) for e, a in self.catalog.heads("facts") if not a.deleted]
+        read = dict(self.rows.components([e.digest for e, _ in live]))
+        return Facts.of(
+            resolve(read.__getitem__, e.digest, ModelFacts)
+            for e, _ in sorted(live, key=lambda found: found[0].id)
+        )
+
+    def facts_for(self, engine: str) -> ModelFacts | None:
+        model = self.model(engine)
+        return None if model is None else self.facts.models.get(model)
+
     def owner(self, about: About) -> str:
         return "" if about.owner == self.person.id else self.login(about.owner)
 
@@ -94,9 +107,7 @@ class Seen:
     def names(self, word: str) -> list[str]:
         return sorted({a.name for _, a in self.threads(word) if a.name is not None})
 
-    def thread(
-        self, word: str, name: str, model: str | None = None
-    ) -> tuple[Edit, str]:
+    def thread(self, word: str, name: str) -> tuple[Edit, str]:
         seen = {kind: self.visible(kind) for kind in KINDS[word]}
         addresses = {
             kind: {
@@ -108,18 +119,16 @@ class Seen:
             for kind, found in seen.items()
         }
         every = set[str]().union(*addresses.values())
-        base, language = name, None
         if name not in every:
             base, language = language_of(name)
-            match variants_for(base, every, model, language):
+            match variants_for(base, every, language):
                 case [one]:
                     name = one
                 case []:
                     pass
                 case several:
-                    models = [] if model is None else [model]
                     languages = sorted(
-                        {m[1] for n in several if (m := made_for(n, models)) and m[1]}
+                        {made for n in several if (made := made_in(n)[1]) is not None}
                     )
                     raise Ambiguous(
                         f"{word} {name!r} is made in more than one language: "
@@ -133,11 +142,7 @@ class Seen:
                     [(e, a.name, a) for e, a in seen[kind]], name, word
                 ), name
             case []:
-                said = f"no {word} {name!r} for {self.person.login}"
-                made = f"{base} ({language}, " if language else f"{base} ("
-                if per_model := sorted(n for n in every if n.startswith(made)):
-                    said += f"; per model: {', '.join(per_model)}"
-                raise NotFound(said, per_model if model is None else ())
+                raise NotFound(f"no {word} {name!r} for {self.person.login}")
             case _:
                 raise Ambiguous(f"{word} {name!r} names a {' and a '.join(kinds)}")
 
@@ -210,7 +215,7 @@ class Seen:
     def model(self, engine: str) -> str | None:
         if engine not in self._models:
             registry = self.store.load([engine])
-            self._models[engine] = model_name(registry.get(engine), registry)
+            self._models[engine] = model_name(engine, registry.get)
         return self._models[engine]
 
     def endpoint(self, name: str) -> str:
@@ -222,15 +227,13 @@ class Seen:
             )
         return engine
 
-    def configuration(self, name: str, engine: str | None = None) -> TriedVariation:
-        model = None if engine is None else self.model(engine)
-        edit, found = self.thread("configuration", name, model)
+    def configuration(self, name: str) -> TriedVariation:
+        edit, found = self.thread("configuration", name)
         called = found.removeprefix(f"{self.person.login}/")
         return TriedVariation(edit, called, self.catalog.recipe(edit.thread))
 
-    def chunk(self, part: str, name: str, engine: str | None = None) -> str:
-        model = None if engine is None else self.model(engine)
-        return self.thread(part, name, model)[0].digest
+    def chunk(self, part: str, name: str) -> str:
+        return self.thread(part, name)[0].digest
 
     def variation(
         self,
@@ -249,16 +252,50 @@ class Seen:
             if part not in PARTS:
                 raise ValueError(f"no part {part!r}: the parts are {', '.join(PARTS)}")
             if digest is not None and self.rows.kind(digest) not in KINDS[part]:
-                raise ValueError(f"{digest} isn't a stored chunk of {part}")
+                what = "engine" if part == "engine" else f"chunk of {part}"
+                raise ValueError(f"{digest} isn't a stored {what}")
             found = found.set(part, digest, self.title(digest))
         return found
+
+    def at(self, variation: TriedVariation, endpoint: str | None) -> tuple[str, str]:
+        engine = variation.held("engine")
+        if engine is None:
+            if endpoint is None:
+                raise ValueError(
+                    f"{variation.label} names no engine: name the endpoint to send it to"
+                )
+            return endpoint, self.endpoint(endpoint)
+        if endpoint is None:
+            try:
+                endpoint = self.inventory.serving(engine, self.title(engine))
+            except LookupError as e:
+                raise ValueError(str(e)) from None
+        if self.endpoint(endpoint) != engine:
+            raise ValueError(
+                f"endpoint {endpoint!r} serves another engine than {variation.label}'s, "
+                + f"{self.title(engine)}"
+            )
+        return endpoint, engine
 
     def skeleton(self, variation: TriedVariation) -> Skeleton:
         recipe = variation.varied
         if not variation.parts or recipe is None:
             return resolve(self.get, variation.configuration.digest, Skeleton)
         registry = self.store.load(s.digest for s in iter_refs(recipe))
-        return compile_request(recipe, registry.get)
+        return compile_request(recipe, registry.get, self.facts_for(recipe.engine))
+
+    def landed(self, variation: TriedVariation) -> dict[str, Landing]:
+        recipe = variation.varied
+        if recipe is None:
+            return {}
+        registry = self.store.load(s.digest for s in iter_refs(recipe))
+        facts = self.facts_for(recipe.engine)
+        made = variation.configuration.compilation
+        if not variation.parts and made is not None:
+            pinned = resolve(self.get, made, Compilation).facts
+            facts = None if pinned is None else resolve(self.get, pinned, ModelFacts)
+        found = landings(recipe, registry.get, facts)
+        return {p: at for p, at in zip(("reasoning", "sampling"), found) if at}
 
     def served(self, engine: str) -> str:
         found = self.get(engine)
@@ -549,7 +586,10 @@ class Seen:
 
     def compiled(self, recipe: Recipe) -> tuple[Registry, Compilation]:
         registry = self.store.load(s.digest for s in iter_refs(recipe))
-        skeleton, compilation = compiled(recipe, registry.get, rig())
+        facts = self.facts_for(recipe.engine)
+        if facts is not None:
+            _ = registry.add(facts)
+        skeleton, compilation = compiled(recipe, registry.get, rig(), facts)
         _ = registry.add(skeleton)
         _ = registry.add(compilation)
         return registry, compilation

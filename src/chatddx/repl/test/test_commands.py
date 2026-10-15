@@ -7,12 +7,10 @@ from chatddx.repl.test.helpers import Say, tried
 from chatddx.test.world import (
     CASES,
     GPT_OSS,
-    GPT_OSS_MODEL,
     MISTRAL,
     NATIVE,
     QWEN,
     QWEN_BARE,
-    QWEN_MODEL,
     REMOTE,
 )
 
@@ -20,10 +18,10 @@ from chatddx.test.world import (
 def test_the_prompt_shows_the_cell(repl: Repl, say: Say):
     assert repl.prompt == "alice #7> "
 
-    _ = say(f"use {NATIVE}")
-    assert repl.prompt == f"alice {NATIVE} #7> "
-
     _ = say(f"on {QWEN}")
+    assert repl.prompt == f"alice ×{QWEN} #7> "
+
+    _ = say(f"use {NATIVE}")
     assert repl.prompt == f"alice {NATIVE}×{QWEN} #7> "
 
 
@@ -72,29 +70,25 @@ def test_quit_takes_no_words(repl: Repl, say: Say):
 
 def test_it_completes_a_command_and_then_its_names_word_by_word():
     names = {
-        "configuration": ["lines", NATIVE, "native", f"native (en, {GPT_OSS_MODEL})"],
+        "configuration": ["lines", "lines-guided (en)", "lines-guided (sv)", "native"],
         "endpoint": [QWEN, GPT_OSS],
         "part": ["prompt", "reasoning", "sampling"],
-        "reasoning": ["off", f"off ({QWEN_MODEL})", "on"],
-        "set:reasoning": ["off", f"off ({QWEN_MODEL})", "on", "none"],
+        "reasoning": ["off", "on"],
+        "set:reasoning": ["off", "on", "none"],
         "case": ["case-1", "case-2"],
         "kind": ["tag", "case", "configuration", "tool", "toolset"],
     }
 
     assert complete(names, "us") == ["use"]
     assert complete(names, "use na") == ["native"]
-    assert complete(names, "use native ") == ["(en,"]
-    assert complete(names, "use native (en, ") == [
-        f"{QWEN_MODEL})",
-        f"{GPT_OSS_MODEL})",
-    ]
-    assert complete(names, "use native (en, o") == [f"{GPT_OSS_MODEL})"]
-    assert complete(names, f"cell {NATIVE} q") == [QWEN]
-    assert complete(names, "cell native ") == ["(en,", QWEN, GPT_OSS]
+    assert complete(names, "use lines") == ["lines", "lines-guided"]
+    assert complete(names, "use lines-guided ") == ["(en)", "(sv)"]
+    assert complete(names, "cell native q") == [QWEN]
+    assert complete(names, "cell native ") == [QWEN, GPT_OSS]
     assert complete(names, "on g") == [GPT_OSS]
     assert complete(names, "set r") == ["reasoning"]
     assert complete(names, "set reasoning o") == ["off", "on"]
-    assert complete(names, "set reasoning off ") == [f"({QWEN_MODEL})"]
+    assert complete(names, "set reasoning off ") == []
     assert complete(names, "set reasoning n") == ["none"]
     assert complete(names, "show c") == ["case", "configuration"]
     assert complete(names, "show case case-") == ["case-1", "case-2"]
@@ -137,9 +131,7 @@ def test_the_names_complete_as_the_person_sees_them(repl: Repl):
     assert names["tag"] == sorted({tag for case in CASES.values() for tag in case.tags})
     assert "native" in names["configuration"] and NATIVE not in names["configuration"]
     assert {"lines-guided (en)", "lines-guided (sv)"} <= set(names["configuration"])
-    assert (
-        "off" in names["reasoning"] and f"off ({QWEN_MODEL})" not in names["reasoning"]
-    )
+    assert "off" in names["reasoning"]
     assert "none" not in names["reasoning"]
     assert "none" in names["set:reasoning"]
     assert "set:sampling" not in names

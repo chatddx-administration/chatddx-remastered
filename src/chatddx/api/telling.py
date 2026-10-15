@@ -165,7 +165,7 @@ async def told(
 ) -> AsyncIterator[str]:
     conn = await run_in_threadpool(held.connect)
     try:
-        bench = Bench(conn, person, held.inventory, held.facts)
+        bench = Bench(conn, person, held.inventory)
         queue = Queue(conn)
         async with held.listener.heard(run) as hearing:
             telling = await run_in_threadpool(Telling, bench, run, after)

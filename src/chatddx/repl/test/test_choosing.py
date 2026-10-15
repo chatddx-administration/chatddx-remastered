@@ -12,14 +12,12 @@ from chatddx.store import Catalog, People
 from chatddx.store.store import Connection
 from chatddx.test.world import (
     GPT_OSS,
-    GPT_OSS_MODEL,
     LINES,
     MISTRAL,
     MISTRAL_MODEL,
     NATIVE,
     NATIVE_TOOLS,
     QWEN,
-    QWEN_MODEL,
 )
 
 
@@ -55,48 +53,62 @@ def alice_s(conn: Connection) -> int:
     return thread
 
 
-def test_a_per_model_configuration_is_picked_by_the_endpoint(repl: Repl, say: Say):
-    written = say("use native")
-
-    assert "native is made per model: on ENDPOINT picks its variant" in written
-    assert repl.cell.variation is None and repl.prompt == "alice native #7> "
-
-    written = say(f"on {QWEN}")
-    assert f"native on {QWEN_MODEL}: {NATIVE}" in written
+def test_on_puts_its_endpoint_s_engine_in_the_configuration_keeping_every_pick(
+    repl: Repl, bench: Bench, say: Say
+):
+    _ = say("use native")
     assert tried(repl).name == NATIVE
+    assert repl.prompt == f"alice {NATIVE}×{QWEN} #7> "
+
+    written = say("set reasoning off", f"on {GPT_OSS}")
+    assert f"cell: {NATIVE}+reasoning=off+engine={GPT_OSS} × {GPT_OSS}" in written
+    assert bench.skeleton(tried(repl)).body["reasoning_effort"] == "low"
+
+    _ = say(f"on {QWEN}")
+    assert repl.prompt == f"alice {NATIVE}+reasoning=off×{QWEN} #7> "
 
     _ = say(f"cell native {GPT_OSS}")
-    assert tried(repl).name == f"native (en, {GPT_OSS_MODEL})"
+    assert repl.prompt == f"alice {NATIVE}+engine={GPT_OSS}×{GPT_OSS} #7> "
+
+    _ = say(f"use {LINES}")
+    assert repl.prompt == f"alice {LINES}+engine={GPT_OSS}×{GPT_OSS} #7> "
 
 
 @pytest.mark.slow
-def test_on_picks_the_cell_s_configuration_for_its_model_with_what_was_set(
+def test_a_level_the_engine_s_model_refuses_is_said_until_it_is_set_otherwise(
     repl: Repl, say: Say
 ):
-    _ = say(f"cell native {QWEN}", "set reasoning off")
+    _ = say(f"cell native {QWEN}", "set reasoning on")
 
     written = say(f"on {MISTRAL}")
-    assert f"native on {MISTRAL_MODEL}: native (en, {MISTRAL_MODEL})+reasoning=off" in (
-        written
+    assert f"{MISTRAL_MODEL}: " in written and "doesn't reason" in written
+    assert repl.prompt == f"alice {NATIVE}+reasoning=on+engine={MISTRAL}×{MISTRAL} #7> "
+
+    written = say("set reasoning off")
+    assert "doesn't reason" not in written
+    assert (
+        repl.prompt == f"alice {NATIVE}+reasoning=off+engine={MISTRAL}×{MISTRAL} #7> "
     )
-    assert tried(repl).held("reasoning") is not None
 
-    written = say(f"on {GPT_OSS}")
-    assert "no reasoning 'off' for alice; per model:" in written
-    assert f"the cell keeps native (en, {MISTRAL_MODEL})+reasoning=off" in written
-    assert repl.prompt.startswith(f"alice native (en, {MISTRAL_MODEL})+reasoning=off×")
 
-    _ = say(f"use {NATIVE}", f"on {GPT_OSS}")
-    assert tried(repl).name == NATIVE
+def test_set_engine_swaps_the_engine_and_leaves_an_endpoint_serving_another(
+    repl: Repl, say: Say
+):
+    _ = say(f"cell {LINES} {QWEN}", f"set engine {GPT_OSS}")
+    assert repl.cell.endpoint is None
+    assert repl.prompt == f"alice {LINES}+engine={GPT_OSS}×{GPT_OSS} #7> "
+
+    _ = say(f"on {QWEN}", f"set engine {QWEN}")
+    assert repl.cell.endpoint == QWEN
+    assert repl.prompt == f"alice {LINES}×{QWEN} #7> "
 
 
 @pytest.mark.slow
 def test_a_configuration_made_in_several_languages_is_named_with_its_language(
     repl: Repl, say: Say
 ):
-    written = say("use lines-guided sv", f"on {QWEN}")
+    _ = say("use lines-guided sv", f"on {QWEN}")
 
-    assert "lines-guided sv is made per model" not in written
     assert tried(repl).name == "lines-guided (sv)"
 
 
@@ -143,15 +155,18 @@ def test_use_puts_a_configuration_in_as_it_is(repl: Repl, say: Say):
 
 def test_set_says_what_it_can_t_set(say: Say):
     written = say("set reasoning off", f"cell {LINES} {QWEN}", "set colour red")
-    written += say("set reasoning nope", "set prompt none")
+    written += say("set reasoning nope", "set prompt none", "set engine none")
+    written += say("set engine nope")
 
     assert "the cell has no configuration to set it in" in written
     assert (
         "no part 'colour': instructions, few_shot, prompt, output, sampling, "
-        + "reasoning, passthrough, translations, toolset"
+        + "reasoning, passthrough, translations, toolset, engine"
     ) in written
     assert "no reasoning 'nope' for alice" in written
     assert "a configuration always has a prompt: only instructions" in written
+    assert "a configuration always has an engine" in written
+    assert "no engine 'nope' for alice" in written
 
 
 @pytest.mark.slow
@@ -174,7 +189,7 @@ def test_save_keeps_the_cell_as_a_configuration_of_one_s_own(
     recipe = resolve(bench.get, head.compilation, Compilation).recipe
     assert recipe.reasoning is not None
     reasoning = resolve(bench.get, recipe.reasoning, Reasoning)
-    assert reasoning.chat_template_kwargs == {"enable_thinking": False}
+    assert reasoning.level == "off"
     assert resolve(bench.get, head.digest, Skeleton).body["chat_template_kwargs"] == {
         "enable_thinking": False
     }
@@ -216,7 +231,7 @@ def test_one_s_own_configuration_shadows_the_archive_s(
 
     _ = say(f"use archive/{NATIVE}")
     assert bench.about(tried(repl).configuration.thread).owner != bench.person.id
-    assert repl.prompt == f"alice archive/{NATIVE} #7> "
+    assert repl.prompt == f"alice archive/{NATIVE}×{QWEN} #7> "
 
 
 @pytest.mark.slow
@@ -243,15 +258,10 @@ def test_another_s_configuration_isn_t_found_where_it_isn_t_shared(
     assert "no configuration 'bobs-native' for alice" in written
 
 
-def test_the_cell_warns_when_its_configuration_was_made_for_another_model(say: Say):
-    written = say(f"cell {NATIVE} {QWEN}")
+def test_the_cell_s_recommended_sampling_follows_its_engine_s_model(say: Say):
+    written = say(f"cell {NATIVE} {QWEN}", f"on {GPT_OSS}")
 
     assert "facts.sampling_unmatched" not in written
-
-    written = say(f"on {GPT_OSS}")
-
-    assert "[warning] facts.sampling_unmatched" in written
-    assert f"not for {GPT_OSS_MODEL}" in written
 
 
 def test_an_endpoint_whose_engine_isn_t_stored_is_refused(

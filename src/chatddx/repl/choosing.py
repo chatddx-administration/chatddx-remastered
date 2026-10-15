@@ -1,66 +1,36 @@
 from rich.text import Text
 
-from chatddx.bench import PARTS, NotFound, TriedVariation
+from chatddx.bench import PARTS, TriedVariation
 from chatddx.catalog.titles import short
 
-from .render import LABEL, LATER
 from .shell import NONE, Cell, Repl
 
 
 def use(repl: Repl, name: str) -> None:
-    try:
-        variation = repl.bench.configuration(name, repl.cell.engine)
-    except NotFound as e:
-        if repl.cell.engine is not None or not e.per_model:
-            raise
-        repl.cell = repl.cell.holding(name)
-        repl.console.print(
-            Text(f"{name} is made per model: on ENDPOINT picks its variant", LABEL)
-        )
-        repl.say_changed()
-        return
-    repl.cell = repl.cell.trying(variation, name)
+    variation = repl.bench.configuration(name)
+    repl.cell = repl.cell.trying(_served(repl, repl.cell, variation))
     repl.say_changed()
 
 
 def on(repl: Repl, name: str) -> None:
     cell = repl.cell.on(name, repl.bench.endpoint(name))
-    repl.cell = cell if cell.name is None else _picked(repl, cell)
+    if cell.variation is not None:
+        cell = cell.trying(_served(repl, cell, cell.variation))
+    repl.cell = cell
     repl.say_changed()
 
 
 def cell(repl: Repl, configuration: str, endpoint: str) -> None:
     on_it = Cell().on(endpoint, repl.bench.endpoint(endpoint))
-    variation = repl.bench.configuration(configuration, on_it.engine)
-    repl.cell = on_it.trying(variation, configuration)
+    variation = repl.bench.configuration(configuration)
+    repl.cell = on_it.trying(_served(repl, on_it, variation))
     repl.say_changed()
 
 
-def _picked(repl: Repl, cell: Cell) -> Cell:
-    bench, held = repl.bench, cell.variation
-    assert cell.name is not None and cell.engine is not None
-    try:
-        picked = _again(repl, cell.name, cell.engine, held)
-    except LookupError as e:
-        if held is None:
-            raise
-        repl.console.print(Text(f"{e}; the cell keeps {held.label}", LATER))
-        return cell
-    if held is None or picked.configuration.thread != held.configuration.thread:
-        model = bench.model(cell.engine) or cell.endpoint
-        repl.console.print(Text(f"{cell.name} on {model}: {picked.label}", LABEL))
-    return cell.trying(picked)
-
-
-def _again(
-    repl: Repl, name: str, engine: str, held: TriedVariation | None
-) -> TriedVariation:
-    bench = repl.bench
-    picked = bench.configuration(name, engine)
-    for part, (_, said) in () if held is None else held.parts.items():
-        digest = None if said == NONE else bench.chunk(part, said, engine)
-        picked = picked.set(part, digest, said)
-    return picked
+def _served(repl: Repl, cell: Cell, variation: TriedVariation) -> TriedVariation:
+    if cell.served is None or variation.recipe is None:
+        return variation
+    return variation.set("engine", cell.served, repl.bench.title(cell.served))
 
 
 def set_(repl: Repl, part: str, name: str) -> None:
@@ -74,10 +44,13 @@ def set_(repl: Repl, part: str, name: str) -> None:
         repl.error("the cell has no configuration to set it in: use CONFIGURATION")
         return
 
-    digest = None if name == NONE else repl.bench.chunk(part, name, repl.cell.engine)
+    digest = None if name == NONE else repl.bench.chunk(part, name)
     changed = variation.set(part, digest, name)
     _ = repl.bench.skeleton(changed)
-    repl.cell = repl.cell.trying(changed)
+    cell = repl.cell.trying(changed)
+    if part == "engine" and cell.served not in (None, digest):
+        cell = cell.on(None, None)
+    repl.cell = cell
     repl.say_changed()
 
 
@@ -89,7 +62,7 @@ def save(repl: Repl, name: str) -> None:
         return
 
     saved = repl.bench.save(variation, name)
-    repl.cell = repl.cell.trying(saved.variation, name)
+    repl.cell = repl.cell.trying(saved.variation)
     repl.forget()
     repl.console.print(Text(f"saved as {name}: {saved.what} {short(saved.digest)}"))
     repl.say_cell()

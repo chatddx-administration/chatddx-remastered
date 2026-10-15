@@ -82,10 +82,15 @@ def test_each_run_is_recorded_as_a_run_of_its_trial(bench: Bench, say: Say):
     assert len({r.started.trial for r in ran(bench)}) == 1
 
 
-def test_run_needs_a_whole_cell(bench: Bench, say: Say):
-    written = say(f"use {LINES}", "run noted")
+def test_run_needs_a_configuration_and_an_endpoint_serving_its_engine(
+    bench: Bench, world: Inventory, say: Say
+):
+    assert "the cell has no configuration" in say("run noted")
 
-    assert "the cell needs a configuration and an endpoint" in written
+    endpoints = {**world.endpoints, "twin@fake": world.endpoints[QWEN]}
+    bench.inventory = world.model_copy(update={"endpoints": endpoints})
+    written = say(f"use {LINES}", "run noted")
+    assert f"{QWEN}, twin@fake serve engine {QWEN}; name the one to use" in written
     assert ran(bench) == []
 
 
@@ -229,7 +234,7 @@ def test_run_tag_runs_the_cell_on_each_case_tagged_a_line_to_each(
 
 
 def test_run_tag_says_what_it_can_t_run(say: Say):
-    assert "the cell needs a configuration and an endpoint" in say("run tag targets")
+    assert "the cell has no configuration" in say("run tag targets")
     assert "usage: run tag TAG..." in say(f"cell {LINES} {QWEN}", "run tag")
     assert "no case tagged nowhere for alice" in say("run tag nowhere")
 

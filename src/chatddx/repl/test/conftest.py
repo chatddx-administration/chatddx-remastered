@@ -8,7 +8,6 @@ from chatddx.repl.shell import Repl, console
 from chatddx.repl.test.helpers import Say
 from chatddx.store import People
 from chatddx.store.store import Connection
-from chatddx.test.world import world_facts
 
 
 @pytest.fixture
@@ -25,7 +24,7 @@ def autocommit() -> bool:
 def bench(conn: Connection, world: Inventory) -> Bench:
     alice = People(conn).find("alice")
     assert alice is not None
-    return Bench(conn, alice, world, world_facts())
+    return Bench(conn, alice, world)
 
 
 @pytest.fixture

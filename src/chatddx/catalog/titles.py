@@ -8,6 +8,7 @@ from pydantic import JsonValue
 from chatddx.factors.base import Component, resolve
 from chatddx.factors.cases import Appendix, Case
 from chatddx.factors.engine import LocalEngine, ModelArtifact, RemoteEngine
+from chatddx.factors.facts import ModelFacts
 from chatddx.factors.request import (
     Compilation,
     FewShot,
@@ -106,6 +107,7 @@ def describe_recipe(recipe: Recipe, title: Title) -> str:
         recipe.passthrough,
         recipe.translations,
         recipe.toolset,
+        recipe.engine,
     )
     described = " · ".join(title(p) for p in parts if p is not None)
     return described if recipe.purpose == "generation" else f"judge: {described}"
@@ -141,11 +143,15 @@ def describe(component: Component, title: Title, language: str | None = None) ->
             kind = f"tool {contract.name}" if contract.kind == "tool" else contract.kind
             described = _schema(schema)
             return f"{kind} output" + ("" if described is None else f": {described}")
-        case Sampling():
+        case Sampling(recommended=recommended):
             values = component.model_dump(include=set(_SAMPLED), exclude_none=True)
-            if not values:
-                return "default sampling"
-            return ", ".join(f"{k} {_value(v)}" for k, v in values.items())
+            given = [f"{k} {_value(v)}" for k, v in values.items()]
+            if recommended:
+                return ", ".join(["recommended sampling", *given])
+            return ", ".join(given) or "default sampling"
+        case Reasoning(level=str() as level, thinking_token_budget=budget):
+            said = "default reasoning" if level == "default" else f"reasoning {level}"
+            return said if budget is None else f"{said}, budget {budget}"
         case Reasoning(effort=effort, thinking_token_budget=budget):
             parts = [] if effort is None else [f"effort {effort}"]
             parts += [
@@ -188,6 +194,8 @@ def describe(component: Component, title: Title, language: str | None = None) ->
             return f"{title(model)} on {runs}"
         case RemoteEngine(model=model, provider=provider):
             return f"{model} from {provider}"
+        case ModelFacts(model=model):
+            return f"facts about {model}"
         case ExpectationSchema(json_schema=schema):
             return _schema(schema) or f"expectation schema {short(component.digest)}"
         case CanarySet(canaries=canaries):

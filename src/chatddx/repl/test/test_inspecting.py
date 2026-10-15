@@ -49,7 +49,8 @@ def test_show_sets_each_part_beside_what_it_is_and_renders_the_request(say: Say)
     sv = [id for id, case in CASES.items() if case.language == "sv"]
 
     assert f"cell: {LINES} × {QWEN}" in written
-    assert "temperature 0.6, top_p 0.95" in line_of(written, "sampling")
+    assert "recommended sampling, for reasoning on" in line_of(written, "sampling")
+    assert '"temperature": 0.6' in written
     assert "text output" in line_of(written, "output")
     assert "List the plausible diagnoses, one per line, most likely first." in written
     assert "‹vignette›‹appendices›" in written
@@ -65,7 +66,7 @@ def test_show_says_what_is_set_and_what_the_configuration_has(say: Say):
     written = say(f"cell {LINES} {QWEN}", "set reasoning off", "show")
 
     assert f"off (set; {LINES} has —)" in written
-    assert "enable_thinking false" in line_of(written, "reasoning")
+    assert "reasoning off" in line_of(written, "reasoning")
     assert '"enable_thinking": false' in written
 
 
@@ -212,7 +213,9 @@ def test_show_says_what_it_can_t_show(say: Say):
     assert "no case in the cell: show case NAME" in say("show case")
     assert "no case 'nope' for alice" in say("show case nope")
     assert "the cell has no configuration: show output NAME" in say("show output")
-    assert "the cell has no endpoint: show engine NAME" in say("show engine")
+    assert "the cell has no configuration or endpoint: show engine NAME" in say(
+        "show engine"
+    )
     assert "no scorer in the cell: show scorer NAME" in say("show scorer")
     assert "the cell has no reasoning" in say(f"cell {LINES} {QWEN}", "show reasoning")
 
@@ -224,10 +227,10 @@ def test_the_reasoning_table_sets_every_level_on_every_model(say: Say):
     assert written.count(QWEN) == 1
     assert written.count(GPT_OSS) == 1
     assert written.count(MISTRAL) == 1
-    assert "refused: always reasons" in written
+    assert "its nearest: always reasons" in written
     assert f"refused: {MISTRAL_MODEL} doesn't reason" in written
     assert "thinking_token_budget=N" in written
-    assert "the cell has no configuration on a model the facts know" in written
+    assert "the cell has no configuration asking for a level" in written
 
 
 @pytest.mark.slow

@@ -6,7 +6,6 @@ from httpx2 import Response
 
 from chatddx import cli
 from chatddx.api.people import COOKIE
-from chatddx.facts import Facts
 from chatddx.identity import Person
 from chatddx.inventory import Inventory
 from chatddx.portal.app import app
@@ -130,11 +129,9 @@ def test_chatddx_portal_and_run_serve_the_portal_and_the_api(
     heard: list[tuple[object, str, int]] = []
     workers: list[bool] = []
 
-    def portal(
-        inventory: Inventory, facts: Facts, conninfo: str, worker: bool = False
-    ) -> FastAPI:
+    def portal(inventory: Inventory, conninfo: str, worker: bool = False) -> FastAPI:
         workers.append(worker)
-        return app(inventory, facts, conninfo, worker=worker)
+        return app(inventory, conninfo, worker=worker)
 
     def run(served: object, host: str, port: int) -> None:
         heard.append((served, host, port))

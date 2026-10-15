@@ -50,9 +50,8 @@ def test_the_sample_s_texts_are_english_and_free_text_guided_swedish_too() -> No
         ("few_shot", "worked-example (sv)"),
         ("translations", "sample (sv)"),
     }
-    models = ("Qwen/Qwen3-8B-AWQ", "openai/gpt-oss-20b", MISTRAL_SMALL)
     assert {r.name for r in sample.records if r.table == "recipe"} == {
-        f"{name} (en, {model})"
+        f"{name} (en)"
         for name in (
             "plan",
             "plan-shown",
@@ -63,9 +62,9 @@ def test_the_sample_s_texts_are_english_and_free_text_guided_swedish_too() -> No
             "free-text",
             "free-text-guided",
             "judge-graded",
+            "judge",
         )
-        for model in models
-    } | {f"free-text-guided (sv, {model})" for model in models} | {"judge (en)"}
+    } | {"free-text-guided (sv)"}
 
 
 @pytest.mark.slow
@@ -73,12 +72,13 @@ def test_the_sample_s_translations_carry_every_recipe_into_swedish() -> None:
     sample = sample_plan()
     translations = sample.named("translations", "sample (sv)").digest
     for r in sample.records:
-        if r.table != "recipe" or r.compilation is None or "(en," not in r.name:
+        if r.table != "recipe" or r.compilation is None or "(en)" not in r.name:
             continue
         held = sample.registry.get(r.compilation)
         assert isinstance(held, Compilation)
         recipe = held.recipe.model_copy(update={"translations": translations})
-        skeleton, _ = compiled(recipe, sample.registry.get, rig())
+        facts = sample.facts.about(recipe.engine, sample.registry.get)
+        skeleton, _ = compiled(recipe, sample.registry.get, rig(), facts)
         assert skeleton.digest != r.digest, r.name
 
 
@@ -190,41 +190,7 @@ def template(sampled: Loaded) -> str:
 def test_the_sample_loads_with_its_world_s_fakes(
     conn: Connection, sampled: Loaded
 ) -> None:
-    plan = sample_plan()
-    harmony = {
-        "off": "always reasons: vLLM rejects reasoning_effort = none for harmony",
-        "minimal": "harmony has no minimal effort, only low, medium and high",
-        "xhigh": "harmony has no xhigh effort, only low, medium and high",
-        "on-budget-2048": "no thinking budget is documented for harmony",
-    }
-    efforts = [
-        "off",
-        "on",
-        "minimal",
-        "low",
-        "medium",
-        "high",
-        "xhigh",
-        "on-budget-2048",
-    ]
-    assert plan.skipped == [
-        line
-        for effort in efforts
-        for line in (
-            *(
-                [
-                    f"reasoning {effort} ({MISTRAL_SMALL}): Mistral Small 3.2 doesn't reason"
-                ]
-                if effort != "off"
-                else []
-            ),
-            *(
-                [f"reasoning {effort} (openai/gpt-oss-20b): {harmony[effort]}"]
-                if effort in harmony
-                else []
-            ),
-        )
-    ]
+    assert sample_plan().skipped == []
     lines = sampled.said
     fakes = ("qwen3-8b-awq@fake", "gpt-oss-20b@fake")
     assert [line for line in lines if line.startswith("[lint warning]")] == [
@@ -243,12 +209,8 @@ def test_the_sample_loads_with_its_world_s_fakes(
     catalog = Catalog(conn)
     archive = People(conn).find("archive")
     assert archive is not None
-    [plan_thread] = catalog.find(
-        "skeleton", "plan (en, Qwen/Qwen3-8B-AWQ)", owner=archive.id
-    )
-    [shown] = catalog.find(
-        "skeleton", "plan-shown (en, Qwen/Qwen3-8B-AWQ)", owner=archive.id
-    )
+    [plan_thread] = catalog.find("skeleton", "plan (en)", owner=archive.id)
+    [shown] = catalog.find("skeleton", "plan-shown (en)", owner=archive.id)
     diverged = catalog.divergence(shown)
     assert diverged is not None and set(diverged.varies) == {"/recipe/output"}
     assert diverged.base.thread == plan_thread
@@ -258,7 +220,7 @@ def test_the_sample_loads_with_its_world_s_fakes(
 # World can hold at least once.
 def test_the_sample_uses_every_table_a_data_set_and_a_world_hold() -> None:
     plan = sample_plan()
-    assert {r.table for r in plan.records} == set(PLANNED_TABLES)
+    assert {r.table for r in plan.records} == {*PLANNED_TABLES, "facts"}
     cases = load_cases(SAMPLE).values()
     assert any(c.appendices for c in cases) and any(c.ordered for c in cases)
     assert {c.language for c in cases} == {"en", "sv"}

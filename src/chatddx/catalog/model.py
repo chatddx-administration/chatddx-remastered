@@ -35,6 +35,7 @@ THREAD_KINDS = frozenset(
         "model",
         "engine.local",
         "engine.remote",
+        "facts",
         "expectation_schema",
         "canary_set",
     }
@@ -87,6 +88,7 @@ class EntryField(StrEnum):
 
 
 RUN_FIELDS = frozenset({EntryField.VARIED, EntryField.REPLACED})
+ENGINE_KINDS = ("engine.local", "engine.remote")
 
 
 Part = Literal["view", "resource"]

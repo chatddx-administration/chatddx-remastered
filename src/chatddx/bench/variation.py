@@ -33,7 +33,8 @@ class TriedVariation:
             raise ValueError(f"{self.name} has no recipe to set its {part} in")
         if digest is None and part not in OPTIONAL:
             raise ValueError(
-                f"a configuration always has a {part}: only {', '.join(OPTIONAL)} "
+                f"a configuration always has {'an' if part[0] in 'aeiou' else 'a'} "
+                + f"{part}: only {', '.join(OPTIONAL)} "
                 + "can be taken out"
             )
         parts = {p: held for p, held in self.parts.items() if p != part}

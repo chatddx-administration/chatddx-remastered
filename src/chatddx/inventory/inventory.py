@@ -9,7 +9,15 @@ from chatddx.factors.trial import Execution
 
 from .sources import DatabaseSource, DirectorySource, ListingSource
 
-_TABLES = ("include", "source", "endpoint", "host", "cleared", "judge")
+_TABLES = (
+    "include",
+    "configurations",
+    "source",
+    "endpoint",
+    "host",
+    "cleared",
+    "judge",
+)
 
 
 class EndpointSpec(Frozen):
@@ -57,6 +65,7 @@ class Inventory(Frozen):
     hosts: dict[str, HostSpec] = Field(default_factory=dict)
     cleared: dict[str, tuple[str, ...]] = Field(default_factory=dict)
     judges: dict[str, str] = Field(default_factory=dict)
+    configurations: str | None = None
 
     @model_validator(mode="after")
     def _sources_named(self) -> Self:
@@ -88,6 +97,13 @@ class Inventory(Frozen):
         for name, endpoint in self.judges.items():
             if endpoint not in self.endpoints:
                 raise ValueError(f"judge {name!r} is bound to no endpoint {endpoint!r}")
+        if (
+            self.configurations is not None
+            and self.configurations not in self.endpoints
+        ):
+            raise ValueError(
+                f"configurations are made for no endpoint {self.configurations!r}"
+            )
         return self
 
     @classmethod
@@ -96,8 +112,9 @@ class Inventory(Frozen):
             data = tomllib.load(f)
         if stray := set(data) - set(_TABLES):
             raise ValueError(
-                f"{path}: the inventory has only 'include', 'source', 'endpoint', "
-                + f"'host', 'cleared' and 'judge', not {sorted(stray)}"
+                f"{path}: the inventory has only 'include', 'configurations', "
+                + "'source', 'endpoint', 'host', 'cleared' and 'judge', not "
+                + f"{sorted(stray)}"
             )
         tables = {t: dict(data.get(t, {})) for t in ("source", "endpoint", "host")}
         for name in data.get("include", []):
@@ -125,8 +142,24 @@ class Inventory(Frozen):
                 "hosts": tables["host"],
                 "cleared": data.get("cleared", {}),
                 "judges": data.get("judge", {}),
+                "configurations": data.get("configurations"),
             }
         )
+
+    # src/chatddx/runner/score.py:judge_at and src/chatddx/bench/seen.py:Seen.at both
+    # refuse rather than pick when several endpoints serve one engine.
+    def serving(self, engine: str, called: str | None = None) -> str:
+        named = sorted(n for n, e in self.endpoints.items() if e.engine == engine)
+        match named:
+            case [one]:
+                return one
+            case []:
+                raise LookupError(f"no endpoint serves engine {called or engine}")
+            case _:
+                raise LookupError(
+                    f"{', '.join(named)} serve engine {called or engine}; name the one "
+                    + "to use"
+                )
 
     def source(self, name: str) -> AnySource:
         source = self.sources.get(name)

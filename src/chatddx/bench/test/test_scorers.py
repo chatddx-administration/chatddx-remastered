@@ -132,7 +132,7 @@ def test_a_fork_keeps_its_origin_s_labels_and_renames_its_own_views(
     assert bench.edit_component(thread, at, scorer).what == "unchanged"
 
     assert bench.labels_of(Catalog(conn).head(origin)) == theirs
-    archive = Bench(conn, _archive(conn), bench.inventory, bench.facts)
+    archive = Bench(conn, _archive(conn), bench.inventory)
     assert archive.labels(head.digest) == theirs
 
     relabelled = bench.fork_component(origin, "relabelled", labels={("view", 1): "x"})

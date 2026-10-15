@@ -10,6 +10,7 @@ export const PARTS = [
   "passthrough",
   "translations",
   "toolset",
+  "engine",
 ] as const;
 
 export type Part = (typeof PARTS)[number];
@@ -42,18 +43,13 @@ export function named(thread: Schemas["Thread"], me: string): string {
   return thread.owner === me || thread.owner === null ? name : `${thread.owner}/${name}`;
 }
 
-export function madeFor(name: string): string {
-  return /\s\(([^()]+)\)$/.exec(name)?.[1] ?? "";
-}
-
 export type Choice = { digest: string; text: string };
-export type Group = { label: string; choices: Choice[] };
 
 export function choicesOf(
   threads: Schemas["Thread"][],
   me: string,
   held: { digest: string; title: string | null }[],
-): Group[] {
+): Choice[] {
   const own = [...threads].sort((a, b) => Number(b.owner === me) - Number(a.owner === me));
   const found = new Map<string, { first: string; names: string[] }>();
   for (const thread of own) {
@@ -68,19 +64,21 @@ export function choicesOf(
       found.set(digest, { first: name, names: [name] });
     }
   }
-  const groups = new Map<string, Choice[]>();
-  for (const [digest, { first, names }] of found) {
-    const label = madeFor(first);
-    const also = names.slice(1).map((n) => (label && madeFor(n) === label ? n.slice(0, -label.length - 3) : n));
-    const text = also.length ? `${first} = ${also.join(", ")}` : first;
-    groups.set(label, [...(groups.get(label) ?? []), { digest, text }]);
-  }
-  return [...groups]
-    .sort(([a], [b]) => (a === "" ? -1 : b === "" ? 1 : a.localeCompare(b)))
-    .map(([label, choices]) => ({
-      label: label || "Made for any model",
-      choices: choices.sort((a, b) => a.text.localeCompare(b.text)),
-    }));
+  return [...found]
+    .map(([digest, { first, names }]) => ({
+      digest,
+      text: names.length > 1 ? `${first} = ${names.slice(1).join(", ")}` : first,
+    }))
+    .sort((a, b) => a.text.localeCompare(b.text));
+}
+
+export type Where = { at: string | null; among: Schemas["Endpoint"][] };
+
+// src/chatddx/inventory/inventory.py:Inventory.serving picks the endpoint a run goes to.
+export function where(endpoints: Schemas["Endpoint"][], engine: string | null, named: string | null): Where {
+  const among = engine === null ? endpoints : endpoints.filter((e) => e.engine === engine);
+  if (named !== null && among.some((e) => e.name === named)) return { at: named, among };
+  return { at: engine !== null && among.length === 1 ? (among[0]?.name ?? null) : null, among };
 }
 
 export function tagged(families: Schemas["Family"][], tags: string[]): Schemas["Family"][] {

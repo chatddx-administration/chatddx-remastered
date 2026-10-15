@@ -18,7 +18,7 @@ from chatddx.inventory import Inventory
 from chatddx.store import Job, People, Queue, Store
 from chatddx.store.notify import Assembler, Events, JobChanged, Rows, channel
 from chatddx.store.store import Connection
-from chatddx.test.world import LINES, QWEN, faked, world_facts
+from chatddx.test.world import LINES, QWEN, faked
 from chatddx.worker import Worker
 from chatddx.worker.worker import LEFT
 
@@ -45,7 +45,7 @@ def alice(conn: Connection) -> Person:
 
 @pytest.fixture
 def bench(conn: Connection, alice: Person, world: Inventory) -> Bench:
-    return Bench(conn, alice, world, world_facts())
+    return Bench(conn, alice, world)
 
 
 @pytest.fixture
@@ -55,7 +55,7 @@ def conninfo(db: str) -> str:
 
 # As the request starts a run, at an endpoint that answers, before it is queued.
 def start(bench: Bench) -> UUID:
-    variation = bench.configuration(LINES, bench.endpoint(QWEN))
+    variation = bench.configuration(LINES)
     cases = [bench.family(name).case for name in ("crlf", "svenska")]
     return bench.start(variation, QWEN, cases, (7,)).run
 
@@ -67,7 +67,7 @@ def serving(
     beat: timedelta = BEAT,
     deadline: timedelta = settings.WORKER_DEADLINE,
 ) -> Generator[Worker]:
-    worker = Worker(conninfo, world, world_facts(), beat, LOST, deadline)
+    worker = Worker(conninfo, world, beat, LOST, deadline)
     stopping = threading.Event()
     thread = threading.Thread(target=worker.serve, args=(stopping,))
     thread.start()
@@ -247,7 +247,7 @@ def test_a_job_whose_worker_is_lost_is_claimed_and_its_run_resumed(
 ) -> None:
     queue, started = Queue(conn), start(bench)
     job = queue.put(alice.id, started, QWEN, 1, False)
-    ghost = Worker(conninfo, world, world_facts()).id
+    ghost = Worker(conninfo, world).id
     queue.enlist(ghost)
     assert queue.claim(ghost, {QWEN: 4}, LOST) is not None
     with admin.transaction():
@@ -282,7 +282,7 @@ def test_a_stopping_worker_cuts_its_scoring_short_at_its_deadline_and_keeps_what
     conn: Connection, conninfo: str, world: Inventory, bench: Bench, alice: Person
 ) -> None:
     queue = Queue(conn)
-    variation = bench.configuration(LINES, bench.endpoint(QWEN))
+    variation = bench.configuration(LINES)
     with faked(world, Store(conn).get):
         running = bench.start(variation, QWEN, [bench.family("noted").case], (7,))
         running.send()

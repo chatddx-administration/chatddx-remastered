@@ -414,7 +414,8 @@ def init(
         writer = _Init(conn, plan, archive)
         compilations = [r.compilation for r in plan.records if r.compilation]
         _ = writer.store.add(
-            plan.registry, [*(r.digest for r in plan.records), *compilations]
+            plan.registry,
+            [*(r.digest for r in plan.records), *compilations, *plan.compilations],
         )
         for r in plan.records:
             writer.record(r)

@@ -7,7 +7,7 @@ from chatddx.cli import main
 from chatddx.ledger import RunStarted
 from chatddx.scripted import RUNS, load, ran_before, scripted_runs
 from chatddx.scripted.test.helpers import UNFINISHED, went
-from chatddx.test.world import QWEN_MODEL as MODEL, TEST, freed
+from chatddx.test.world import LINES, NATIVE, TEST, freed
 
 HELD = {s.name: s for s in scripted_runs(TEST / RUNS)}
 
@@ -92,8 +92,8 @@ def test_the_scripted_runs_command_runs_each_once(
     second = capsys.readouterr().out.splitlines()
 
     assert [line.split(" × ")[0] for line in first] == [
-        f"[scripted run unfinished] lines (en, {MODEL})",
-        f"[scripted run valid] native (en, {MODEL})",
+        f"[scripted run unfinished] {LINES}",
+        f"[scripted run valid] {NATIVE}",
     ]
     assert first[0].split(": ", 1)[1].startswith("1 completed, unfinished, scored by 0")
     assert first[1].split(": ", 1)[1].startswith("1 valid, scored by")

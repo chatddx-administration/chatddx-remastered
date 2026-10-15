@@ -37,7 +37,7 @@ def test_sources_are_declared_in_the_inventory(tmp_path: Path) -> None:
     _ = path.write_text('[machine.pelle]\naddress = "pelle.km"\n')
     with pytest.raises(
         ValueError,
-        match="only 'include', 'source', 'endpoint', 'host', 'cleared' and 'judge'",
+        match="only 'include', 'configurations', 'source', 'endpoint', 'host', 'cleared' and 'judge'",
     ):
         _ = Inventory.load(path)
     _ = path.write_text('[source.test]\nkind = "s3"\npath = "x"\n')

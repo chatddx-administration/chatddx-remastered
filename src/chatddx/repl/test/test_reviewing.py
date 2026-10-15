@@ -110,7 +110,7 @@ def test_replay_says_when_the_request_would_render_otherwise_now(
 
 @pytest.mark.usefixtures("fake")
 def test_an_unfinished_run_is_listed_so_and_left_unscored(bench: Bench, say: Say):
-    variation = bench.configuration(LINES, bench.endpoint(QWEN))
+    variation = bench.configuration(LINES)
     running = bench.start(variation, QWEN, [bench.family("noted").case], (7,))
     running.send()
 

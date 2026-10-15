@@ -10,7 +10,7 @@ from chatddx.bench import PARTS
 from chatddx.identity import Person
 from chatddx.portal.test.test_reading import shown
 from chatddx.portal.test.test_signing_in import signing_in
-from chatddx.test.world import LINES, OFF, QWEN_MODEL
+from chatddx.test.world import LINES, OFF, QWEN
 
 
 @pytest.fixture
@@ -59,18 +59,16 @@ def test_a_configuration_s_page_holds_the_variation_its_address_gives(
     assert all("language" in t for p in PARTS for t in given["choices"][p])
     assert given["me"] == "alice" and given["configuration"]["id"] == mine["id"]
 
-    endpoints = {e["name"]: e for e in given["endpoints"]}
-    assert endpoints[given["endpoint"]]["model"] == QWEN_MODEL
-    assert look["findings"] is not None
-    for at, variant in given["variants"].items():
-        assert variant["name"].endswith(f", {endpoints[at]['model']})")
-        assert variant["id"] != mine["id"]
+    assert given["endpoint"] is None and look["findings"] is not None
+    engines = [t["head"]["digest"] for t in given["choices"]["engine"]]
+    assert recipe["engine"] in engines
+    served = {e["engine"] for e in given["endpoints"]}
+    assert set(engines) <= served and len(engines) == len(set(engines))
 
-    other = next(n for n in endpoints if n != given["endpoint"])
     tagged = held(
-        shown(signed, f"/configurations/{mine['id']}?endpoint={other}&tag=targets")
+        shown(signed, f"/configurations/{mine['id']}?endpoint={QWEN}&tag=targets")
     )
-    assert (tagged["endpoint"], tagged["tags"]) == (other, ["targets"])
+    assert (tagged["endpoint"], tagged["tags"]) == (QWEN, ["targets"])
     assert {r["cases"] for r in tagged["look"]["reach"]} != {0}
 
 

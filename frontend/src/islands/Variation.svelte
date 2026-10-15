@@ -20,6 +20,7 @@
     queryOf,
     replaced,
     tagged,
+    where,
     whereSaveGoes,
   } from "$lib/variation/logic";
   import { untrack } from "svelte";
@@ -27,7 +28,7 @@
 
   let { held }: { held: Props } = $props();
   const given = untrack(() => held);
-  const { configuration, me, versions, base, optional, endpoints, variants, families } = given;
+  const { configuration, me, versions, base, optional, endpoints, families } = given;
   const familyNames: Record<string, string> = Object.fromEntries(families.map((f) => [f.id, f.name]));
   const head = given.look.head.id;
   const latest = versions.at(-1)?.id ?? head;
@@ -52,7 +53,7 @@
   let starting = $state(false);
   let unstarted = $state<string | null>(null);
 
-  const groups = Object.fromEntries(
+  const choices = Object.fromEntries(
     PARTS.map((p) => [
       p,
       choicesOf(given.choices[p], me, [
@@ -63,6 +64,7 @@
       ]),
     ]),
   ) as Record<Part, ReturnType<typeof choicesOf>>;
+  const compiled = given.look.parts !== null;
 
   const changed = $derived(Object.keys(replaced(picked, base)).length > 0);
   const goes = $derived(
@@ -77,7 +79,7 @@
     }),
   );
   const shown = $derived(Object.fromEntries((look.parts ?? []).map((p) => [p.part, p])));
-  const fitting = $derived(endpoint === null ? undefined : variants[endpoint]);
+  const sends = $derived(where(endpoints, compiled ? picked.engine : null, endpoint));
   const sent = $derived(picking ? families.filter((f) => chosen.includes(f.id)) : tagged(families, tags));
   const items = $derived(sent.length * Math.max(1, replicates));
   const listed = $derived(
@@ -133,6 +135,9 @@
 
   function pick(part: Part, digest: string): void {
     picked[part] = digest || null;
+    if (part === "engine" && !where(endpoints, picked.engine, endpoint).among.some((e) => e.name === endpoint)) {
+      endpoint = null;
+    }
     void refresh();
   }
 
@@ -152,7 +157,7 @@
 
   async function run(event: SubmitEvent): Promise<void> {
     event.preventDefault();
-    if (endpoint === null || sent.length === 0) return;
+    if (sends.at === null || sent.length === 0) return;
     starting = true;
     unstarted = null;
     const got = await api.POST("/api/runs", {
@@ -160,7 +165,7 @@
         configuration: configuration.id,
         head,
         parts: replaced(picked, base),
-        endpoint,
+        ...(endpoint === null ? {} : { endpoint }),
         families: sent.map((f) => f.id),
         ...(replicates > 1 ? { replicates } : { seeds: [seed] }),
         score: scored,
@@ -259,20 +264,24 @@
                   {#if optional.includes(part) || picked[part] === null}
                     <NativeSelect.Option value="">None</NativeSelect.Option>
                   {/if}
-                  {#each groups[part] as group (group.label)}
-                    <NativeSelect.OptGroup label={group.label}>
-                      {#each group.choices as choice (choice.digest)}
-                        <NativeSelect.Option value={choice.digest}>
-                          {choice.text}{choice.digest === base[part] ? " (its own)" : ""}
-                        </NativeSelect.Option>
-                      {/each}
-                    </NativeSelect.OptGroup>
+                  {#each choices[part] as choice (choice.digest)}
+                    <NativeSelect.Option value={choice.digest}>
+                      {choice.text}{choice.digest === base[part] ? " (its own)" : ""}
+                    </NativeSelect.Option>
                   {/each}
                 </NativeSelect.Root>
                 {#if picked[part] !== base[part]}<Badge variant="outline">replaced</Badge>{/if}
               </div>
             </td>
-            <td class="py-2 align-top text-muted-foreground">{shown[part]?.summary ?? ""}</td>
+            <td class="py-2 align-top text-muted-foreground">
+              {shown[part]?.summary ?? ""}
+              {#if shown[part]?.landed}
+                <span class="font-medium text-foreground">→ {shown[part]?.landed}</span>
+                {#each shown[part]?.nearest ?? [] as reason (reason)}
+                  <span class="block text-xs text-warning">its nearest: {reason}</span>
+                {/each}
+              {/if}
+            </td>
           </tr>
         {/each}
       </tbody>
@@ -283,22 +292,22 @@
 <section class="glass-card mb-6 rounded-2xl p-5 sm:p-6">
   <h2 class="mb-4 text-lg font-semibold">What it makes</h2>
   <div class="mb-4 flex flex-wrap items-end gap-4">
-    <div class="space-y-1.5">
-      <Label for="endpoint">At the endpoint</Label>
-      <NativeSelect.Root id="endpoint" size="sm" value={endpoint ?? ""} onchange={(e) => at(e.currentTarget.value)}>
-        <NativeSelect.Option value="">None: no lints</NativeSelect.Option>
-        {#each endpoints as e (e.name)}
-          <NativeSelect.Option value={e.name} disabled={e.problem !== null}>
-            {e.name}{e.model ? ` (${e.model})` : ""}
-          </NativeSelect.Option>
-        {/each}
-      </NativeSelect.Root>
-    </div>
-    {#if fitting && fitting.id !== configuration.id}
-      <p class="text-sm text-muted-foreground">
-        <a class="text-primary hover:underline" href="/configurations/{fitting.id}?endpoint={encodeURIComponent(endpoint ?? '')}">{named(fitting, me)}</a>
-        is made for this endpoint's model.
-      </p>
+    {#if !compiled || sends.among.length > 1}
+      <div class="space-y-1.5">
+        <Label for="endpoint">At the endpoint</Label>
+        <NativeSelect.Root id="endpoint" size="sm" value={endpoint ?? ""} onchange={(e) => at(e.currentTarget.value)}>
+          <NativeSelect.Option value="">{compiled ? "Pick one to run it" : "None: no lints"}</NativeSelect.Option>
+          {#each sends.among as e (e.name)}
+            <NativeSelect.Option value={e.name} disabled={e.problem !== null}>
+              {e.name}{e.model ? ` (${e.model})` : ""}
+            </NativeSelect.Option>
+          {/each}
+        </NativeSelect.Root>
+      </div>
+    {:else if sends.at !== null}
+      <p class="text-sm text-muted-foreground">Sent to {sends.at}, which serves its engine.</p>
+    {:else}
+      <p class="text-sm text-warning">No endpoint of the World serves its engine.</p>
     {/if}
   </div>
   {#if given.everyTag.length}
@@ -459,12 +468,12 @@
       </label>
     </div>
     <p class="text-sm" aria-live="polite">
-      {#if endpoint === null}
-        Pick an endpoint to run it at.
+      {#if sends.at === null}
+        {compiled && sends.among.length === 0 ? "No endpoint serves its engine." : "Pick an endpoint to run it at."}
       {:else if sent.length === 0}
         Pick a case to run it on.
       {:else}
-        Sends {items} {items === 1 ? "item" : "items"} to {endpoint}, one at a time{replicates > 1
+        Sends {items} {items === 1 ? "item" : "items"} to {sends.at}, one at a time{replicates > 1
           ? `, a replicate each under ${replicates} seeds drawn`
           : ""}{look.greedy
           ? replicates > 1
@@ -484,7 +493,7 @@
     {/if}
     <Button
       type="submit"
-      disabled={endpoint === null || sent.length === 0 || items > given.itemsPerRun || starting || failure !== null}
+      disabled={sends.at === null || sent.length === 0 || items > given.itemsPerRun || starting || failure !== null}
     >
       {#if starting}<LoaderCircleIcon class="animate-spin" />{/if}
       Run it

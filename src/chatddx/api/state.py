@@ -4,7 +4,6 @@ from dataclasses import dataclass
 import psycopg
 from fastapi import Request, Response
 
-from chatddx.facts import Facts
 from chatddx.inventory import Inventory
 from chatddx.store.store import Connection
 
@@ -15,7 +14,6 @@ from .listening import Listener
 class AppState:
     conninfo: str
     inventory: Inventory
-    facts: Facts
     listener: Listener
 
     def connect(self) -> Connection:

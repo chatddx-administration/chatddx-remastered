@@ -11,22 +11,11 @@ from chatddx.store.store import Connection
 from chatddx.test.world import DATA, LINTS, TEST, world_plan
 
 SKIPPED = [
-    "from_facts records for test/unknown: the facts don't know it, served by "
-    + "engine.remote unknown@remote",
-    "from_facts records for test/unserved: no planned engine serves it",
-    "reasoning off (openai/gpt-oss-20b): always reasons: vLLM rejects reasoning_effort "
-    + "= none for harmony",
-    "reasoning on (test/mistral-7b): test/mistral-7b doesn't reason",
-    "reasoning high (test/mistral-7b): test/mistral-7b doesn't reason",
-    "reasoning on-budget (openai/gpt-oss-20b): no thinking budget is documented for "
-    + "harmony",
-    "reasoning on-budget (test/mistral-7b): test/mistral-7b doesn't reason",
+    "facts about test/unknown: none are known, so engine.remote unknown@remote can't "
+    + "compile a reasoning level or a recommended sampling",
     "recipe lines-instructed (sv): its output in en needs translations in sv, and "
     + "recipe.lines-instructed names none there",
     "recipe headed (sv): it has no prompt in sv",
-    "recipe reasoned (en, test/mistral-7b): the facts refuse its reasoning",
-    "recipe budgeted (en, openai/gpt-oss-20b): the facts refuse its reasoning",
-    "recipe budgeted (en, test/mistral-7b): the facts refuse its reasoning",
 ]
 
 
@@ -37,19 +26,20 @@ def test_the_test_world_plans_and_loads_as_designed(conn: Connection) -> None:
         "model": 3,
         "local_engine": 4,
         "remote_engine": 1,
+        "facts": 3,
         "instructions": 2,
         "few_shot": 2,
         "prompt": 3,
         "output": 8,
-        "sampling": 5,
-        "reasoning": 7,
+        "sampling": 3,
+        "reasoning": 4,
         "passthrough": 1,
         "translations": 1,
         "tool": 2,
         "toolset": 1,
         "expectation_schema": 1,
         "scorer": 6,
-        "recipe": 27,
+        "recipe": 18,
         "judge": 3,
         "canary_set": 1,
     }

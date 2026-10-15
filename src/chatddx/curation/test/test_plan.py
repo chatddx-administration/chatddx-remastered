@@ -1,41 +1,44 @@
+import tomllib
 from pathlib import Path
 
 import pytest
 
 from chatddx.curation import Plan, load_cases, plan_factors
+from chatddx.factors.base import resolve
+from chatddx.factors.engine import RemoteEngine
 from chatddx.factors.request import Compilation, Skeleton
 from chatddx.facts import BUNDLED, Facts
-from chatddx.inventory import Inventory, World
+from chatddx.inventory import EndpointSpec, Inventory, World
 from chatddx.rig import rig
 from chatddx.test.world import DATA
 
+QWEN, GPT_OSS = "Qwen/Qwen3-8B-AWQ", "openai/gpt-oss-20b"
 
-def plan(tmp_path: Path, **files: str) -> Plan:
+
+def remote(name: str, model: str) -> str:
+    return f'\n[remote_engine."{name}"]\nprovider = "example"\nmodel = "{model}"\n'
+
+
+def plan(tmp_path: Path, configurations: str | None = "qwen@api", **files: str) -> Plan:
+    tmp_path.mkdir(exist_ok=True)
     for name, text in files.items():
         _ = (tmp_path / name.replace("_", "-")).with_suffix(".toml").write_text(text)
-    engines = (tmp_path / "engines.toml",) if "engines" in files else ()
-    world = World(tmp_path, Inventory(), engines=engines)
+    engines = tomllib.loads(files.get("engines", "")).get("remote_engine", {})
+    endpoints = {
+        name: EndpointSpec(engine=RemoteEngine.model_validate(body).digest)
+        for name, body in engines.items()
+    }
+    inventory = Inventory(
+        endpoints=endpoints,
+        configurations=configurations if configurations in endpoints else None,
+    )
+    paths = (tmp_path / "engines.toml",) if engines else ()
+    world = World(tmp_path, inventory, engines=paths)
     return plan_factors(tmp_path, Facts.load(BUNDLED), rig(), world)
 
 
-def test_from_facts_records_follow_the_models_the_engines_serve(
-    tmp_path: Path,
-) -> None:
-    engines = tmp_path / "engines.toml"
-    _ = engines.write_text(
-        """
-[remote_engine."qwen@api"]
-provider = "example"
-model = "Qwen/Qwen3-8B-AWQ"
-
-[remote_engine."gemma@api"]
-provider = "example"
-model = "google/gemma-3-27b-it"
-"""
-    )
-    factors = tmp_path / "factors.toml"
-    _ = factors.write_text(
-        """
+ENGINE = remote("qwen@api", QWEN)
+INTENTS = """
 [prompt.case]
 segments = [{ slot = "vignette" }]
 
@@ -43,36 +46,79 @@ segments = [{ slot = "vignette" }]
 contract = { kind = "text" }
 
 [sampling.recommended]
-from_facts = { effort = "default" }
+recommended = true
+
+[reasoning.off]
+level = "off"
 
 [recipe.raw]
 prompt = "case"
 output = "raw"
 sampling = "recommended"
+reasoning = "off"
 """
+
+
+def test_facts_are_planned_for_the_models_served_and_recipes_for_the_world_s_engine(
+    tmp_path: Path,
+) -> None:
+    engines = (
+        ENGINE
+        + remote("gpt-oss@api", GPT_OSS)
+        + remote("gemma@api", "google/gemma-3-27b-it")
     )
-    world = World(tmp_path, Inventory(), engines=(engines,))
-    plan = plan_factors(tmp_path, Facts.load(BUNDLED), rig(), world)
-    assert [(r.table, r.name) for r in plan.records] == [
+    planned = plan(tmp_path, engines=engines, factors=INTENTS)
+    assert [(r.table, r.name) for r in planned.records] == [
         ("remote_engine", "qwen@api"),
+        ("remote_engine", "gpt-oss@api"),
         ("remote_engine", "gemma@api"),
+        ("facts", QWEN),
+        ("facts", GPT_OSS),
         ("prompt", "case"),
         ("output", "raw"),
-        ("sampling", "recommended (Qwen/Qwen3-8B-AWQ)"),
-        ("recipe", "raw (Qwen/Qwen3-8B-AWQ)"),
+        ("sampling", "recommended"),
+        ("reasoning", "off"),
+        ("recipe", "raw"),
     ]
-    assert plan.skipped == [
-        "from_facts records for google/gemma-3-27b-it: the facts don't know it, served "
-        + "by engine.remote gemma@api",
-        "from_facts records for openai/gpt-oss-20b: no planned engine serves it",
+    assert planned.skipped == [
+        "facts about google/gemma-3-27b-it: none are known, so engine.remote "
+        + "gemma@api can't compile a reasoning level or a recommended sampling",
     ]
+    get = planned.registry.get
+    raw = planned.named("recipe", "raw")
+    assert raw.compilation is not None
+    compilation = resolve(get, raw.compilation, Compilation)
+    assert (
+        compilation.recipe.engine == planned.named("remote_engine", "qwen@api").digest
+    )
+    assert compilation.facts == planned.named("facts", QWEN).digest
+    body = resolve(get, raw.digest, Skeleton).body
+    assert body["chat_template_kwargs"] == {"enable_thinking": False}
+
+    def on(endpoint: str | None, **files: str) -> Plan:
+        return plan(tmp_path / str(endpoint), endpoint, **{"engines": engines, **files})
+
+    nearest = on("gpt-oss@api", factors=INTENTS)
+    landed = resolve(
+        nearest.registry.get, nearest.named("recipe", "raw").digest, Skeleton
+    )
+    assert landed.body["reasoning_effort"] == "low"
+    assert on("gemma@api", factors=INTENTS).skipped[-1] == (
+        "recipe raw: reasoning 'off' is worked out from the facts about the engine's "
+        + "model, which has none, on engine.remote gemma@api"
+    )
+    assert on(None, factors=INTENTS).skipped[-1] == (
+        "recipe raw: the World names no endpoint configurations are made for"
+    )
+    old = '[sampling.recommended]\nfrom_facts = { effort = "default" }\n'
+    with pytest.raises(ValueError, match="sampling: from_facts is gone"):
+        _ = on("qwen@api", factors=old)
+    with pytest.raises(
+        ValueError, match="recipe.raw: a recipe's engine is the World's"
+    ):
+        _ = on("qwen@api", factors=INTENTS + 'engine = "qwen@api"\n')
 
 
-ENGINE = """
-[remote_engine."qwen@api"]
-provider = "example"
-model = "Qwen/Qwen3-8B-AWQ"
-"""
 NEUTRAL = """
 [prompt.case]
 segments = [{ slot = "vignette" }]
@@ -81,7 +127,7 @@ segments = [{ slot = "vignette" }]
 contract = { kind = "text" }
 
 [sampling.recommended]
-from_facts = { effort = "default" }
+recommended = true
 
 [sampling.greedy]
 temperature = 0
@@ -132,21 +178,22 @@ entries = { "Fill in the plan." = "Fyll i planen." }
     )
     assert [(r.table, r.name, r.language) for r in planned.records] == [
         ("remote_engine", "qwen@api", None),
+        ("facts", QWEN, None),
         ("instructions", "physician (en)", "en"),
         ("instructions", "physician (sv)", "sv"),
         ("prompt", "case", None),
         ("output", "raw", None),
         ("output", "plan (en)", "en"),
-        ("sampling", "recommended (Qwen/Qwen3-8B-AWQ)", None),
+        ("sampling", "recommended", None),
         ("sampling", "greedy", None),
         ("translations", "ui (sv)", "sv"),
         ("recipe", "plan (en)", None),
         ("recipe", "plan (sv)", None),
-        ("recipe", "asked (en, Qwen/Qwen3-8B-AWQ)", None),
+        ("recipe", "asked (en)", None),
         ("recipe", "raw", None),
     ]
     assert planned.skipped[-1] == (
-        "recipe asked (sv, Qwen/Qwen3-8B-AWQ): its output in en needs translations in "
+        "recipe asked (sv): its output in en needs translations in "
         + "sv, and recipe.asked names none there"
     )
 
@@ -157,7 +204,7 @@ entries = { "Fill in the plan." = "Fyll i planen." }
 
     assert said("plan (en)")[0] == "Fill in the plan."
     assert said("plan (sv)")[0] == "Fyll i planen."
-    assert said("asked (en, Qwen/Qwen3-8B-AWQ)")[0] == (
+    assert said("asked (en)")[0] == (
         "You are an emergency physician.\n\nFill in the plan."
     )
     compilation = planned.named("recipe", "plan (en)").compilation
@@ -169,16 +216,11 @@ entries = { "Fill in the plan." = "Fyll i planen." }
 def test_a_fork_forks_its_origin_in_the_one_language_it_has(tmp_path: Path) -> None:
     planned = plan(
         tmp_path,
-        engines=ENGINE
-        + """
-[remote_engine."gpt-oss@api"]
-provider = "example"
-model = "openai/gpt-oss-20b"
-""",
+        engines=ENGINE + remote("gpt-oss@api", GPT_OSS),
         factors=NEUTRAL
         + """
 [reasoning.off]
-from_facts = { effort = "off" }
+level = "off"
 
 [recipe.plan]
 prompt = "case"
@@ -209,23 +251,13 @@ text = "Du är akutläkare."
 entries = { "Fill in the plan." = "Fyll i planen." }
 """,
     )
-    qwen, gpt_oss = "Qwen/Qwen3-8B-AWQ", "openai/gpt-oss-20b"
     assert {r.name: r.fork_of for r in planned.records if r.table == "recipe"} == {
-        f"plan (en, {qwen})": None,
-        f"asked (en, {qwen})": f"plan (en, {qwen})",
-        f"asked (en, {gpt_oss})": None,
-        f"asked (sv, {qwen})": f"plan (en, {qwen})",
-        f"asked (sv, {gpt_oss})": None,
-        "greedy (en)": None,
+        "plan (en)": None,
+        "asked (en)": "plan (en)",
+        "asked (sv)": "plan (en)",
+        "greedy (en)": "plan (en)",
     }
-    assert [s for s in planned.skipped if ": no fork of " in s] == [
-        f"recipe asked (en, {gpt_oss}): no fork of recipe.plan, which has no variant "
-        + f"for {gpt_oss}",
-        f"recipe asked (sv, {gpt_oss}): no fork of recipe.plan, which has no variant "
-        + f"for {gpt_oss}",
-        "recipe greedy (en): no fork of recipe.plan, which is made per model, and it "
-        + "isn't",
-    ]
+    assert planned.skipped == []
 
 
 def test_a_fork_whose_origin_has_other_languages_is_refused(tmp_path: Path) -> None:

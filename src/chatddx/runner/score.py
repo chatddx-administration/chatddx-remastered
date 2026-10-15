@@ -82,17 +82,6 @@ def _ignore(_: Event) -> None:
     pass
 
 
-def _serving(inventory: Inventory, engine: str) -> str:
-    named = sorted(n for n, e in inventory.endpoints.items() if e.engine == engine)
-    if len(named) != 1:
-        raise gate.Refused(
-            f"{'no endpoint serves' if not named else ', '.join(named) + ' serve'} the "
-            + f"judge's engine {engine}"
-            + ("" if not named else "; name the one to judge at")
-        )
-    return named[0]
-
-
 def judge_at(
     inventory: Inventory | None,
     get: Resolver,
@@ -108,7 +97,10 @@ def judge_at(
         )
     if inventory is None:
         raise ValueError("judged views need the World's inventory")
-    name = named or _serving(inventory, judge.engine)
+    try:
+        name = named or inventory.serving(judge.engine)
+    except LookupError as e:
+        raise gate.Refused(str(e)) from None
     gate.bar(inventory, get, name, judge.engine, cases, False, "judge")
     return judge, skeleton, name
 

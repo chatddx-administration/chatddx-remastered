@@ -57,7 +57,7 @@ def test_a_check_says_what_the_lints_say(signed: TestClient) -> None:
 
 @pytest.mark.slow
 def test_a_check_refuses_what_a_write_would(signed: TestClient) -> None:
-    held = body(signed, thread(signed, "reasoning", "off (Qwen/Qwen3-8B-AWQ)"))
+    held = body(signed, thread(signed, "reasoning", "off"))
     expectation = body(
         signed,
         signed.get(

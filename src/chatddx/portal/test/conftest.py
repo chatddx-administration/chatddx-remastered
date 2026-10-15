@@ -13,7 +13,7 @@ from chatddx.inventory import Inventory
 from chatddx.portal.app import app
 from chatddx.store import People
 from chatddx.store.store import Connection
-from chatddx.test.world import TEST, world_facts
+from chatddx.test.world import TEST
 
 PASSWORD = "correct horse battery staple"
 
@@ -46,7 +46,6 @@ def built(tmp_path: Path) -> Path:
 def served(db: str, built: Path) -> FastAPI:
     return app(
         Inventory.load(TEST / "inventory.toml"),
-        world_facts(),
         make_conninfo(settings.database(), dbname=db),
         built,
         worker=True,

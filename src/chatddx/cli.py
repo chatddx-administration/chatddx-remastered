@@ -216,14 +216,13 @@ def _import_engine(args: argparse.Namespace) -> None:
 
 def _repl(args: argparse.Namespace) -> None:
     world = _world("repl", args.world)
-    facts = Facts.load(BUNDLED, *world.facts, *(args.facts or ()))
     with psycopg.connect(settings.database(), autocommit=True) as conn:
         person = People(conn).find(args.login)
         if person is None:
             raise SystemExit(
                 f"no person {args.login!r}: chatddx init-data {args.login} adds them"
             )
-        bench = Bench(conn, person, world.inventory, facts)
+        bench = Bench(conn, person, world.inventory)
         if loop(Repl(bench, console()), args.history):
             raise SystemExit(1)
 
@@ -232,7 +231,6 @@ def _scripted_runs(args: argparse.Namespace) -> None:
     world = _world("scripted-runs", args.world)
     try:
         held = scripted_runs(world.path / RUNS)
-        facts = Facts.load(BUNDLED, *world.facts)
     except ValueError as e:
         raise SystemExit(f"scripted-runs: {e}") from None
     if unknown := sorted(set(args.name) - {s.name for s in held}):
@@ -248,7 +246,7 @@ def _scripted_runs(args: argparse.Namespace) -> None:
             raise SystemExit(
                 f"no person {args.login!r}: chatddx init-data {args.login} adds them"
             )
-        bench = Bench(conn, person, world.inventory, facts)
+        bench = Bench(conn, person, world.inventory)
         for scripted in chosen:
             try:
                 before = None if args.again else ran_before(bench, scripted)
@@ -282,15 +280,14 @@ def _ran(bench: Bench, started: RunStarted) -> str:
 def _serve(
     command: str,
     args: argparse.Namespace,
-    made: Callable[[Inventory, Facts, str], FastAPI],
+    made: Callable[[Inventory, str], FastAPI],
 ) -> None:
     world = _world(command, args.world)
-    facts = Facts.load(BUNDLED, *world.facts, *(args.facts or ()))
     bind: str = args.bind or settings.host()
     host, _, port = bind.rpartition(":")
     if not host or not port.isdigit():
         raise SystemExit(f"{command}: bind to HOST:PORT, not {bind!r}")
-    served = made(world.inventory, facts, settings.database())
+    served = made(world.inventory, settings.database())
     uvicorn.run(served, host=host.strip("[]"), port=int(port))
 
 
@@ -308,7 +305,7 @@ def _run(args: argparse.Namespace) -> None:
         _unbuilt("run", "or --watch")
     watching = _watching() if args.watch else None
     try:
-        _serve("run", args, lambda i, f, c: portal(i, f, c, worker=True))
+        _serve("run", args, lambda i, c: portal(i, c, worker=True))
     finally:
         if watching is not None:
             watching.terminate()
@@ -339,9 +336,8 @@ def _watching() -> subprocess.Popen[bytes]:
 
 def _worker(args: argparse.Namespace) -> None:
     world = _world("worker", args.world)
-    facts = Facts.load(BUNDLED, *world.facts, *(args.facts or ()))
     logging.basicConfig(level=logging.INFO, format="%(message)s")
-    worker = Worker(settings.database(), world.inventory, facts)
+    worker = Worker(settings.database(), world.inventory)
     stopping = threading.Event()
 
     def stop(_signal: int, _frame: FrameType | None) -> None:
@@ -356,7 +352,7 @@ def _worker(args: argparse.Namespace) -> None:
 
 
 def _openapi(_: argparse.Namespace) -> None:
-    document = app(Inventory(), Facts.load(BUNDLED), "").openapi()
+    document = app(Inventory(), "").openapi()
     print(json.dumps(document, indent=2, ensure_ascii=False))
 
 
@@ -386,15 +382,8 @@ def _serving(parser: argparse.ArgumentParser, what: str) -> None:
     _ = parser.add_argument(
         "--world",
         type=Path,
-        help=f"the World directory whose endpoints, vignettes and facts {what} uses "
+        help=f"the World directory whose endpoints and vignettes {what} uses "
         + "(CHATDDX_WORLD)",
-    )
-    _ = parser.add_argument(
-        "--facts",
-        type=Path,
-        action="append",
-        help="more model facts, beside the bundled ones and the World's, as init-data "
-        + "was given",
     )
     _ = parser.add_argument(
         "--bind", help=f"where to listen, as HOST:PORT ($HOST, else {settings.host()})"
@@ -463,8 +452,7 @@ def main(argv: Sequence[str] | None = None) -> None:
         "--facts",
         type=Path,
         action="append",
-        help="more model facts to write per-model chunks from, beside the bundled "
-        + "ones and the World's",
+        help="more model facts to load, beside the bundled ones and the World's",
     )
     init.set_defaults(run=_init_data)
 
@@ -542,15 +530,8 @@ def main(argv: Sequence[str] | None = None) -> None:
     _ = shell.add_argument(
         "--world",
         type=Path,
-        help="the World directory whose endpoints, vignettes and facts the shell uses "
+        help="the World directory whose endpoints and vignettes the shell uses "
         + "(CHATDDX_WORLD)",
-    )
-    _ = shell.add_argument(
-        "--facts",
-        type=Path,
-        action="append",
-        help="more model facts, beside the bundled ones and the World's, as init-data "
-        + "was given",
     )
     _ = shell.add_argument(
         "--history",
@@ -617,15 +598,8 @@ def main(argv: Sequence[str] | None = None) -> None:
     _ = worker.add_argument(
         "--world",
         type=Path,
-        help="the World directory whose endpoints, vignettes and facts the worker uses "
+        help="the World directory whose endpoints and vignettes the worker uses "
         + "(CHATDDX_WORLD)",
-    )
-    _ = worker.add_argument(
-        "--facts",
-        type=Path,
-        action="append",
-        help="more model facts, beside the bundled ones and the World's, as init-data "
-        + "was given",
     )
     worker.set_defaults(run=_worker)
 
