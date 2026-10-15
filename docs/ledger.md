@@ -245,6 +245,15 @@ These are open questions of design. Where the code falls short of this document,
 
 ### Some of what happened isn't checked
 Most of the plan is compared with what happened (see "What a record holds"), but not all:
+```
+AGENT: replace
+Recording each attempt would close it, and would make keeping or dropping an earlier attempt's error body a decision;
+today only the last attempt's is kept (src/chatddx/runner/send.py).
+---
+- timeouts: a call's times span all its attempts, so an attempt that ran past the timeout can't be told from them.
+  Recording each attempt's times, status and error would tell them; a call keeps only the last refusal's body, as its
+  response;
+```
 - timeouts: a call's times span all its attempts, so an attempt that ran past the timeout can't be told from them;
 - the request a call sent and the request it should have been:
   The repl's replay rebuilds each item's first request from the trial and the vignette and holds it to the call's

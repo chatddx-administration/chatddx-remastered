@@ -376,6 +376,14 @@ the recipe's, a missing translation, a guidance placed in both the instructions 
 named like one of the toolset's tools.
 
 With a toolset, the request offers the toolset's tools, in order. Under a native or a text contract, the model answers
+```
+AGENT: replace
+"Turn" is the tool round's word (`Turn`, docs/ledger-api.md); here it means a response. The paragraph.
+---
+With a toolset, the request offers the toolset's tools, in order. Under a native or a text contract, the model answers
+when it stops calling tools. Under a tool contract, the answer function is offered last, every response calls a tool,
+and calling the answer function ends the item.
+```
 when it stops calling tools. Under a tool contract, the answer function is offered last, every turn calls a tool, and
 calling the answer function ends the item.
 

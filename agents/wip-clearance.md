@@ -14,7 +14,7 @@ ledger provide the means; the runner enforces.
 Decided: this plan also holds every concern about running real patient data until it is resolved (see "Before real
 patient data").
 
-Decided (`agents/wip-requests.md`, B2 and C1): the boundary is every destination of sensitive content, the vignette
+Decided: the boundary is every destination of sensitive content, the vignette
 included: engines and judge engines, the third parties tools send to, the database (records, the notification queue,
 a job's reasons, typed texts), the edges and exports. The gate keeps deciding per run, from what the run pins, and
 covers every request a run sends; each other destination is cleared as this plan builds it.
@@ -52,6 +52,10 @@ The gate enforces it against the inventory's `[cleared]` table until the clearan
   the tools returned, judge responses, the scorer's `detail`, and findings that quote the answer. Start records, a
   run's finish and canary calls are not. Compilations are components (`src/chatddx/factors/request.py:Compilation`),
   not records, and hold no case text.
+- The label is still `case_derived` in the code (`Record.case_derived`, its test and the comment in
+  `src/chatddx/store/migrations/0005-t1-ledger.sql`) and in `docs/ledger-api.md` and `docs/migrations.md`, while
+  `docs/chatddx.md` ("Vignettes and anything made from them are sensitive") has every part that touches this content
+  label it sensitive. Take: rename it `sensitive`, with those docs.
 - No policy has settled. Options: a database-level read restriction on sensitive tables; a destination check
   when records are exported.
 - Part of it exists: the sensitive tables are in schema `ledger`, and at tier 1 `chatddx_reader` can read
@@ -89,6 +93,21 @@ The gate enforces it against the inventory's `[cleared]` table until the clearan
 - Judge calls record their endpoints, by judge, name and URL (`ScoreStarted.endpoints`,
   `src/chatddx/ledger/score.py:JudgeEndpoint`), as a run records its own (`RunStarted.endpoint`), so whether a judged
   scoring was cleared can be audited from the ledger as a run's can.
+
+### A request's sensitive content
+Where it is at each stage of a request (`docs/factors.md`, "Requests"), beyond the records above:
+- **Fills and the rendered request**: in the runner's memory only. The ledger keeps the request's fingerprint
+  (`Call.request`), not the request, nor the prompt's token ids.
+- **The wire body**: sent to the endpoint the run's start record names, every tool round's and attempt's included
+  (`docs/runner.md`, "The gate").
+- **Attempts**: only their count is kept. A refusal's body is kept as the call's response, the last attempt's only;
+  an earlier attempt's is dropped (`src/chatddx/runner/send.py`).
+- **A tool round**: the model's arguments go wherever the tool's code sends them; the results are kept in the ledger.
+- **Live deltas and tool runs**: through the database's notification queue, as they come (`docs/worker.md`).
+- **Rendered again**: an item's first request rendered with its real fills, in memory, and only compared with the
+  call's fingerprint; nothing is sent (`Bench.rendered_again`).
+- **Not sensitive**: the chunks, the recipe, the skeleton and the trial, which names its cases by fingerprint; a
+  canary's request; the look's request, rendered with placeholders.
 
 ## What the code offers
 - `Vignette.source` (`src/chatddx/factors/cases.py:Vignette`) names a vignette's source, and is part of the case's
@@ -138,6 +157,10 @@ The gate enforces it against the inventory's `[cleared]` table until the clearan
    client is one, nor who may read the vignette or a run's items through it. Open: whether edges are vetted like
    endpoints, by what (the edge, the person, or the client's address), and whether the repl falls under the same
    rule.
+6. **A clearance withdrawn during a run.** The gate decides as a run starts and as it resumes, and as a judged scoring
+   starts, so a run under way keeps sending after its endpoint's clearance is withdrawn. Asking the gate at every send,
+   a round's, an attempt's and a judge call's, would stop it. Take: as is, since a dated grant tells whether a run was
+   cleared when it started (see "When to build it").
 
 ## Before real patient data
 The healthcheck at 08ae453 (`healthchecks/2026-10-14-08ae453.md`) lists what has to hold before real patient data, or
