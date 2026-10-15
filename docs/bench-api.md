@@ -183,6 +183,13 @@ The recipe with `parts` replaced over it, validated as a `Recipe`; `None` withou
 - `SAVED: dict[Kept, …]`: what `Saved.what` and `Written.what` call each of the catalog's `Kept`: `created`,
   `a new version` for `edited`, and `unchanged`.
 
+```
+AGENT: add
+Moved from src/chatddx/portal/threads.py, for the API's `Thread.word` (agents/wip-configurations.md, W1). The end
+of "model.py", "Constants".
+---
+- `word_of(kind: str) -> str`: the word in `KINDS` that names `kind`, `configuration` for `skeleton`.
+```
 ### Values
 Frozen dataclasses that `Bench` returns.
 
@@ -297,6 +304,14 @@ The heads of `Catalog.heads(kind)` that are deleted and the person's own, each w
 #### `about(thread: int) -> About`
 `Catalog.about` of the thread.
 
+```
+AGENT: replace
+`recipe` is new; the API's look gives it (agents/wip-configurations.md, I2).
+---
+#### `holder(word: str, digest: str, recipe: Recipe | None = None) -> tuple[Edit, About] | None`
+The first of `threads(word)` whose head is `digest`, with `recipe` when it is given, of the person's own if any;
+`None` when none is.
+```
 #### `holder(word: str, digest: str) -> tuple[Edit, About] | None`
 The first of `threads(word)` whose head is `digest`, of the person's own if any; `None` when none is.
 
@@ -532,6 +547,13 @@ keeps the configuration's.
 A new configuration of the person's own named `name`, forked from `variation.configuration`.
 
 ### `edit(thread: int, variation: TriedVariation, head: int) -> Saved`
+```
+AGENT: replace
+Decided (agents/wip-configurations.md, I2).
+---
+A new version of `thread`, named by its name or else its title; `unchanged` when its head is the skeleton already,
+with the same recipe (`Catalog.keep`).
+```
 A new version of `thread`, named by its name or else its title; `unchanged` when the skeleton is its head already.
 - `head`: the head the person saw.
 

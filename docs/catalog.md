@@ -64,6 +64,14 @@ Researchers refine their configurations by trying variations, keeping what works
 it (docs/chatddx.md, "Intended evolution of configurations"). The catalog supports that workflow without having objects
 of its own for it.
 
+```
+AGENT: replace
+Decided (agents/wip-configurations.md, I2): a configuration's versions are requests with their recipes. Only
+the first sentence changes; what a variation is waits for agents/wip-variants.md.
+---
+A *configuration* is a skeleton thread: requests, each version with the recipe it was compiled from (see
+"Recipes"). A *variation* is a fork, of any kind, together with what it changes from the
+```
 A *configuration* is a skeleton thread. A *variation* is a fork, of any kind, together with what it changes from the
 version it came from. Trying a variation costs nothing in the catalog, since any component can be run without a thread.
 A variation worth keeping becomes an edit of its thread, or a fork. Configurations are organised by their lineage, the
@@ -75,6 +83,16 @@ thread can name the compilation that produced its skeleton, and the compilation 
 "Compilation"). The compilation must be one of that very skeleton, and only skeleton edits name one. A hand-written
 skeleton has no compilation, so its edits name none.
 
+```
+AGENT: add
+Decided (agents/wip-configurations.md, I2), as `Catalog.keep` now does
+(src/chatddx/catalog/threads.py:holds). The end of "Recipes".
+---
+A skeleton thread's versions hold the recipes people chose: an edit is written when its skeleton or its recipe
+differs from the head's, so a recipe that compiles to the head's skeleton is a new version. The head's recipe
+compiled by other code is none, or every configuration init-data loads would get a version at each deploy, and its
+forks a proposal that changes nothing.
+```
 ### Forks
 A *fork* is a new thread started from a version of another thread of the same kind, its *origin*. A fork is compared
 with its *base*: the version it was forked from, or the origin version its changes were last re-applied onto. What it
@@ -183,6 +201,15 @@ its own source and id.
 What a component holds is described by what tells it apart from others of its kind, and the components it uses are
 shown by their titles in turn.
 
+```
+AGENT: replace
+Decided (agents/wip-configurations.md, W1): the titles people read say configuration.
+---
+A configuration is described by its recipe's parts, translations and toolset included, when a compilation of it is
+stored: "ddx · case · management-plan · recommended · off". A judge's recipe says so first. Without a stored
+compilation, as for a hand-written skeleton, it is shown by its purpose and the start of its digest:
+"generation configuration 1a2b3c".
+```
 A configuration is described by its recipe's parts, translations and toolset included, when a compilation of it is
 stored: "ddx · case · management-plan · recommended · off". A judge's recipe says so first. Without a stored
 compilation, as for a hand-written skeleton, it is shown by its purpose and the start of its digest:
@@ -289,6 +316,14 @@ skeletons. A compiled skeleton's language comes from its recipe.
 The language of any component can be worked out:
 - a case's is its family's, and an expectation's is its case's;
 - a trial's and a judge's are their skeleton's;
+```
+AGENT: add
+Decided (agents/wip-configurations.md, I2): a configuration's version is in its own recipe's language
+(src/chatddx/catalog/language.py:edit_languages), which the API gives.
+---
+- a configuration's version's comes from the recipe its edit names, when it names one, so two configurations that
+  hold one skeleton can be in two languages;
+```
 - a compiled skeleton's comes from its recipes, which vote. A recipe with translations votes for the translations'
   language. A recipe without translations votes for the language that all its text-bearing chunks share, toolset
   included and appendix layout not. A recipe whose chunks lack a language or disagree doesn't vote. When the votes
@@ -312,6 +347,12 @@ records. At tier 2 it repeats the rules above that two writers at once could bre
 
 ## Terms
 
+```
+AGENT: replace
+The row Configuration, decided (agents/wip-configurations.md, I2).
+---
+| Configuration | A skeleton thread: requests, each version with the recipe it was compiled from. |
+```
 | Term | Meaning |
 | --- | --- |
 | Catalog | People's handles on components and records: names, versions, owners, sharing, deletions, languages and labels. |

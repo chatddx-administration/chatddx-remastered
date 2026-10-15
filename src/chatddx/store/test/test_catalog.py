@@ -14,8 +14,9 @@ from chatddx.catalog import (
     Subject,
     Survey,
 )
+from chatddx.catalog.titles import short
 from chatddx.factors import request
-from chatddx.factors.base import resolve
+from chatddx.factors.base import Code, resolve
 from chatddx.factors.bundle import Registry
 from chatddx.factors.cases import Appendix, Case, Vignette
 from chatddx.factors.kinds import BY_KIND
@@ -128,6 +129,47 @@ def test_skeleton_threads_carry_their_recipe(conn: Connection) -> None:
     judge = resolve(reg.get, ids["judge"], Judge)
     hand_written = catalog.create(judge.skeleton, alice.id)
     assert hand_written.compilation is None
+    shown = f"judge configuration {short(judge.skeleton)}"
+    assert catalog.title(hand_written.thread) == shown
+
+
+def test_a_skeleton_thread_keeps_each_recipe_of_its_request(conn: Connection) -> None:
+    catalog, store, reg, _, alice = stored_world(conn)
+    base = generation_recipe(reg)
+    plan = compiled_recipe(store, reg, base)
+    split = reg.add(
+        Prompt(
+            segments=(
+                "Case:",
+                "\n",
+                Slot(slot="vignette"),
+                Slot(slot="appendices"),
+                "\n\nDifferential?",
+            )
+        )
+    )
+    resplit = compiled_recipe(store, reg, base.model_copy(update={"prompt": split}))
+    assert resplit.skeleton == plan.skeleton
+    newer = Code(distribution="chatddx", version="0.0.1", revision="def456")
+    _, recompiled = request.compiled(base, reg.get, newer)
+    _ = store.add(reg, [reg.add(recompiled)])
+    assert recompiled.digest != plan.digest
+
+    first = catalog.create(plan.skeleton, alice.id, compilation=plan.digest)
+    for same in (None, plan.digest, recompiled.digest):
+        kept = catalog.keep(plan.skeleton, alice.id, first.thread, compilation=same)
+        assert kept == (first, "unchanged")
+    second, kept = catalog.keep(
+        plan.skeleton, alice.id, first.thread, compilation=resplit.digest
+    )
+    assert (kept, second.compilation) == ("edited", resplit.digest)
+    assert catalog.recipe(first.thread) == resplit.recipe
+
+    hand_written = catalog.create(plan.skeleton, alice.id)
+    _, kept = catalog.keep(
+        plan.skeleton, alice.id, hand_written.thread, compilation=plan.digest
+    )
+    assert kept == "edited"
 
 
 def test_forks(conn: Connection) -> None:

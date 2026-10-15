@@ -82,6 +82,17 @@ def test_configurations_are_listed_a_row_per_name_and_language_with_their_models
 
 
 @pytest.mark.slow
+def test_judge_configurations_are_listed_apart(bench: Bench):
+    lines = listed(bench, "configurations").splitlines()
+
+    [apart] = [i for i, line in enumerate(lines) if line == "judge configurations"]
+    names = [line.split("  ")[0].strip() for line in lines]
+    assert "lines (en)" in names[:apart]
+    assert "judge (en)" in names[apart:] and "judge (en)" not in names[:apart]
+    assert lines[apart + 1].split()[0] == "configuration"
+
+
+@pytest.mark.slow
 def test_configurations_name_lists_its_variants_per_model(bench: Bench):
     written = listed(bench, "configurations lines")
     rows = [

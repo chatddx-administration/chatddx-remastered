@@ -196,7 +196,7 @@ def test_facts_check_that_a_pair_s_sampling_is_for_its_model(facts: Facts) -> No
     assert findings(QWEN, **qwen_on) == findings(QWEN, **qwen_off) == {}
     assert findings(GPT_OSS, **gpt_oss) == findings(GPT_OSS) == {}
     assert findings(GPT_OSS, **qwen_on) == {
-        "facts.sampling_unmatched": "the skeleton's sampling is what the facts "
+        "facts.sampling_unmatched": "the configuration's sampling is what the facts "
         + f"recommend for {QWEN}, not for {GPT_OSS}"
     }
     assert set(findings(QWEN, **gpt_oss)) == {"facts.sampling_unmatched"}
@@ -208,6 +208,6 @@ def test_facts_check_that_a_pair_s_sampling_is_for_its_model(facts: Facts) -> No
     assert findings(GPT_OSS, **greedy) == {}
     assert findings(GPT_OSS, **{**qwen_on, "temperature": 0.5}) == {}
     assert findings(GPT_OSS, **qwen_on, reasoning_effort="low") == {
-        "facts.sampling_unmatched": "the skeleton's sampling is what the facts "
+        "facts.sampling_unmatched": "the configuration's sampling is what the facts "
         + f"recommend for {QWEN}, not for {GPT_OSS}"
     }

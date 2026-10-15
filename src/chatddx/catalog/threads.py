@@ -178,6 +178,14 @@ def recipe(rows: Reader, edit: Edit) -> Recipe | None:
     return resolve(rows.get, edit.compilation, Compilation).recipe
 
 
+def holds(rows: Reader, edit: Edit, digest: str, compilation: str | None) -> bool:
+    if edit.digest != digest:
+        return False
+    if compilation is None or compilation == edit.compilation:
+        return True
+    return recipe(rows, edit) == resolve(rows.get, compilation, Compilation).recipe
+
+
 def behind(rows: Reader, thread: int) -> list[Behind]:
     current = head(rows, thread)
     refs = [(s.path, s.digest) for s in rows.get(current.digest).refs()]

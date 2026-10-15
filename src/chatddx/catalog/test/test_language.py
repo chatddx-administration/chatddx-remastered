@@ -74,6 +74,28 @@ def test_every_compilation_of_a_skeleton_votes() -> None:
     assert language.language_of(rows, plan.skeleton) is None
 
 
+def test_an_edit_is_in_the_language_of_its_own_recipe() -> None:
+    reg = Registry()
+    rows = Memory(reg)
+    base = generation_recipe(reg)
+    plan = compiled(reg, base)
+    assert base.instructions is not None
+    for part in (base.instructions, base.prompt, base.output):
+        rows.set_language(part, "en")
+    needed = [t for part in texts(base, reg.get).values() for t in part]
+    unchanged = reg.add(Translations(entries={t: t for t in needed}))
+    rows.set_language(unchanged, "sv")
+    retold = compiled(reg, base.model_copy(update={"translations": unchanged}))
+    assert retold.skeleton == plan.skeleton
+
+    english = rows.start(plan.skeleton, compilation=plan.digest)
+    swedish = rows.start(plan.skeleton, compilation=retold.digest)
+    uncompiled = rows.start(plan.skeleton)
+    found = language.edit_languages(rows, [english, swedish, uncompiled])
+    assert found == {english.id: "en", swedish.id: "sv", uncompiled.id: None}
+    assert language.language_of(rows, plan.skeleton) is None
+
+
 def test_judges_follow_their_skeleton_and_cases_their_family() -> None:
     reg = Registry()
     ids = world(reg)

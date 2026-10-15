@@ -313,6 +313,14 @@ several.
 ### `recipe(rows: Reader, edit: Edit) -> Recipe | None`
 The recipe of the edit's compilation, or `None` when it names none.
 
+```
+AGENT: add
+New in src/chatddx/catalog/threads.py, for `Catalog.keep` (agents/wip-configurations.md, I2).
+---
+### `holds(rows: Reader, edit: Edit, digest: str, compilation: str | None) -> bool`
+Whether `edit` holds `digest` with `compilation`'s recipe: it holds `digest`, and `compilation` is `None`, the edit's
+own, or a compilation of the recipe the edit's holds, by other code.
+```
 ### `expecting(rows: Reader, cases: Sequence[str], schema: str) -> dict[str, list[tuple[Edit, About]]]`
 For each case, the head and `About` of each thread whose head is an expectation of that case under `schema`, whoever
 owns it, deleted ones included, in thread id order. Every case given is a key, with `[]` for none.
@@ -470,6 +478,14 @@ A recipe votes:
 ### `languages_of(rows: Reader, digests: Collection[str]) -> dict[str, str | None]`
 `language_of` of each digest, reading what they need once for them all.
 
+```
+AGENT: add
+New in src/chatddx/catalog/language.py (agents/wip-configurations.md, I2).
+---
+### `edit_languages(rows: Reader, edits: Collection[Edit]) -> dict[int, str | None]`
+Each edit's language, by its id: the language its compilation's recipe votes for when it names one, else
+`languages_of` its digest, reading what they need once for them all.
+```
 ### `recipe_language(rows: Reader, recipe: Recipe) -> str | None`
 The language `recipe` votes for, or `None` when it casts no vote.
 
@@ -523,6 +539,12 @@ What a component holds, by its kind. `language` is used for translations only.
 - `chunk.translations`: `[<language> ]translations, <n> text(s)`.
 - `chunk.toolset`: `with <each tool's title>`.
 - `tool`: its name.
+```
+AGENT: replace
+Decided (agents/wip-configurations.md, W1).
+---
+- `skeleton`: `<purpose> configuration <short>`.
+```
 - `skeleton`: `<purpose> skeleton <short>`.
 - `trial`: `<skeleton's title> on <engine's title>, <n> case(s), <n> seed(s)`.
 - `judge`: `judge <skeleton's title> on <engine's title>`.
@@ -587,6 +609,12 @@ Reads, each the package function of that name, or the one given, over `Rows`:
 - `recipe(thread)`: `threads.recipe` of the thread's head.
 - `containing(digest) -> list[Edit]`: `Reader.edits_holding([digest])`.
 - `title(thread)`, `title_of(digest)`: `titles`.
+```
+AGENT: replace
+`edit_languages` is new (agents/wip-configurations.md, I2).
+---
+- `language_of(digest)`, `languages_of(digests)`, `edit_languages(edits)`, `recipe_language(recipe)`: `language`.
+```
 - `language_of(digest)`, `languages_of(digests)`, `recipe_language(recipe)`: `language`.
 - `family(case)`: `families.family_of`.
 - `bindings(family)`, `survey(source, listing)`: `families`.
@@ -613,6 +641,13 @@ Raises:
 
 ### `keep(digest: str, by: int, thread: int | None, *, name: str | None = None, compilation: str | None = None, forked_from: int | None = None, head: int | None = None, labels: Labels | None = None) -> tuple[Edit, Kept]`
 - `thread` `None`: `create`, `created`.
+```
+AGENT: replace
+Decided (agents/wip-configurations.md, I2): a new recipe of the head's skeleton is a new version.
+---
+- Else, under the thread's lock: the head, `unchanged`, when `threads.holds(head, digest, compilation)` and
+  `labels`, when given, are the head's; else `edit`, `edited`.
+```
 - Else, under the thread's lock: the head, `unchanged`, when it is `digest` already and `labels`, when given, are the
   head's; else `edit`, `edited`.
 

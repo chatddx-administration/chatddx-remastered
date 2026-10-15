@@ -92,6 +92,15 @@ Nothing here is sent anywhere.
   (`Bench.case_titled`): a family's name for its case, or `FAMILY with APPENDIX, …` as the catalog titles a case that
   sends appendices (docs/catalog.md, "Titles"). Such a case shows its appendices' texts and its own expectation; a
   family's case names the family's appendices and the cases that send them.
+```
+AGENT: replace
+Done (agents/wip-configurations.md, J1): judge configurations are listed apart, as the API and the portal list them.
+---
+- **`configurations [NAME]`** lists a row per configuration name and language: its models, each part as its variants
+  share it with the model taken off (`recommended`), or `varies`, and its owner; a fork reads `yours, from OWNER`, and
+  the origin it forks is left out. Judge configurations follow, in a table of their own. With NAME, its variants, a
+  row per model and owner.
+```
 - **`configurations [NAME]`** lists a row per configuration name and language: its models, each part as its variants
   share it with the model taken off (`recommended`), or `varies`, and its owner; a fork reads `yours, from OWNER`, and
   the origin it forks is left out. With NAME, its variants, a row per model and owner.

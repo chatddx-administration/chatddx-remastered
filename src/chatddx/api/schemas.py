@@ -107,6 +107,7 @@ class Edit(_Schema):
 class Thread(_Schema):
     id: int
     kind: str
+    word: str = Field(description="the word for its kind: configuration for a skeleton")
     name: str | None
     title: str
     owner: str | None

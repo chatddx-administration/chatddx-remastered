@@ -129,6 +129,13 @@ command's `rest` param takes whole is followed by the next param's names once it
 
 ## The commands
 
+```
+AGENT: replace
+The row `configurations [NAME]`: it reads `purposed` too, to list judge configurations apart
+(agents/wip-configurations.md, J1).
+---
+| `configurations [NAME]` | `listing.configurations` | `threads`, `purposed`, `catalog.recipe`, `catalog.origin`, `about`, `title` |
+```
 | Command | Function | On the bench |
 | --- | --- | --- |
 | `configurations [NAME]` | `listing.configurations` | `threads`, `catalog.recipe`, `catalog.origin`, `about`, `title` |

@@ -4,7 +4,7 @@ from fastapi import APIRouter, Form, HTTPException, Request, Response
 from fastapi.responses import RedirectResponse
 
 from chatddx.api import schemas, threads as api
-from chatddx.bench import KINDS, WRITTEN, Bench
+from chatddx.bench import KINDS, WRITTEN, Bench, word_of
 from chatddx.factors.base import resolve
 from chatddx.factors.cases import Appendix
 from chatddx.factors.scoring import Expectation, ExpectationSchema
@@ -14,10 +14,6 @@ from .pages import BenchDep, page, within
 WORDS = [w for w in KINDS if w != "configuration"]
 
 router = APIRouter()
-
-
-def word_of(kind: str) -> str:
-    return next(w for w, held in KINDS.items() if kind in held)
 
 
 def _listed(bench: Bench, found: list[schemas.Thread]) -> list[schemas.Thread]:

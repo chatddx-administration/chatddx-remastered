@@ -247,6 +247,13 @@ variation's query parameters to them with `endpoint`, `tag` and `seed`.
 
 ## threads.py
 
+```
+AGENT: replace
+The row `thread_of`: the word for its kind, and a configuration's language its head's recipe's
+(agents/wip-configurations.md, W1 and I2).
+---
+| `thread_of(bench, kind: str, edit, about, languages=None) -> schemas.Thread` | A thread from its head and `About`, titled by `Catalog.title`, with the word `chatddx.bench.word_of` gives its kind, in the language `languages` gives its head by id, else `Catalog.edit_languages` of it. |
+```
 | Name | Does |
 | --- | --- |
 | `login(bench, person: int \| None) -> str \| None` | `None` for no one, else `Bench.login`. |
@@ -260,6 +267,13 @@ variation's query parameters to them with `endpoint`, `tag` and `seed`.
 | `part_of(bench, variation: TriedVariation, part: str) -> schemas.Part` | The part's digest (`TriedVariation.held`), its title (`Bench.title`), what it holds (`catalog.titles.describe`), and whether the variation replaced it. A part not held has `None` for each. |
 | `reach_of(reach: chatddx.bench.Reach) -> schemas.Reach` | The bench's reach, with the scorer's thread as `scorer`, its name as `name`, the missing families by id, and those with expectations to choose from as `choosing`. |
 
+```
+AGENT: replace
+The rows `threads` and `variation` (agents/wip-configurations.md, I2).
+---
+| `threads`, `GET /threads` | … kept by `name` (whole), `owner` (a login) and any of `tag`; `Catalog.edit_languages` of the kept heads, given to `thread_of`. |
+| `variation`, `GET /threads/{thread}/variation` | Within `refused()`: `Bench.variation(thread, query.given(), query.head)` and `Bench.skeleton`. … `label` is `TriedVariation.label`, and `held_by` is `thread_of` of `Bench.holder("configuration", skeleton, varied)`, `varied` the variation's recipe (`TriedVariation.varied`), or `None`. |
+```
 | Route | Does |
 | --- | --- |
 | `threads`, `GET /threads` | … kept by `name` (whole), `owner` (a login) and any of `tag`; `Catalog.languages_of` of the kept heads' digests, given to `thread_of`. |

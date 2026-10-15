@@ -22,7 +22,7 @@ def test_threads_are_listed_by_kind_among_those_the_person_sees(
 ) -> None:
     listed = signed.get("/api/threads", params={"kind": "configuration"}).json()
     assert {t["owner"] for t in listed} == {"alice", "archive"}
-    assert {t["kind"] for t in listed} == {"skeleton"}
+    assert {(t["kind"], t["word"]) for t in listed} == {("skeleton", "configuration")}
     assert all(t["title"] and t["head"]["digest"].startswith("sha256:") for t in listed)
     assert configuration(signed, "alice")["language"] == "en"
     for kind, name, language in (

@@ -51,6 +51,7 @@ def configuration(
     )
     look = api.variation(bench, thread, query.model_copy(update={"endpoint": endpoint}))
     shown = api.detail(bench, thread)
+    forked = None if shown.forked_from is None else bench.rows.edit(shown.forked_from)
     versions = api.edits(bench, thread)
     at = next(i for i, v in enumerate(versions) if v.id == look.head.id)
     runs = api_runs.runs(bench, reaching=look.skeleton, limit=20)
@@ -80,6 +81,7 @@ def configuration(
         "configuration.html",
         person=bench.person,
         configuration=shown,
+        origin=None if forked is None else forked.thread,
         versions=versions,
         at=at,
         look=look,

@@ -36,7 +36,7 @@ def _model(subject: str, skeleton: Skeleton, model: ModelFacts) -> Iterable[Find
     if asked != (None, {}) and asked not in known:
         yield Finding(
             code="facts.reasoning_unmatched",
-            message="the skeleton's reasoning settings match none of the model's "
+            message="the configuration's reasoning settings match none of the model's "
             + "reasoning levels",
             subject=subject,
         )
@@ -82,7 +82,7 @@ def _sampled_for(
     ):
         yield Finding(
             code="facts.sampling_unmatched",
-            message="the skeleton's sampling is what the facts recommend for "
+            message="the configuration's sampling is what the facts recommend for "
             + f"{', '.join(others)}, not for {name}",
             subject=subject,
         )
