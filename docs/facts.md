@@ -4,6 +4,17 @@ Facts about models are used to smooth over implementation details and make the m
 How each reasoning level is expressed for a model, which sampling its makers recommend for each level, which
 output contracts work with it and with what caveats.
 
+```
+AGENT: replace
+The facts a compilation names, and following them. The paragraph.
+---
+They never reach the wire themselves. A chunk may ask for an intent, a reasoning level or the recommended sampling,
+and compiling a recipe works out what it sends from the facts about the recipe's engine's model; the skeleton holds
+the result, and its compilation names the facts it was worked out from. Correcting a guessed fact changes nothing
+stored: a skeleton still means exactly what it sends, and a configuration compiled against the old facts is behind
+where the new ones change what it sends (docs/catalog.md, "What has moved on"), until it follows them
+(docs/bench.md, "Following its facts").
+```
 They never reach the wire themselves. A chunk may ask for an intent, a reasoning level or the recommended sampling,
 and compiling a recipe works out what it sends from the facts about the recipe's engine's model; the skeleton holds
 the result, and its compilation names the facts it was compiled against. Correcting a guessed fact changes nothing

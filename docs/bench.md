@@ -304,6 +304,25 @@ Any kind the person owns a fork of is followed, since a proposal holds only the 
 changes, which are stored already. That is how a correction to the archive's expectations reaches the person's taken
 ones, and a scorer pinned again by a deploy reaches the person's fork of it.
 
+```
+AGENT: add
+Following corrected facts (`Bench.corrected`, `Bench.follow_facts`). A section before this heading.
+---
+### Following its facts
+A configuration is behind its facts when the facts about its engine's model were corrected where they change what it
+sends (docs/catalog.md, "What has moved on"). The bench shows what following them would keep, to anyone who sees the
+configuration: the model, the facts it was compiled against and the facts thread's head that corrects them, and the
+skeleton its recipe compiles to against them with the running code, or why the corrected facts refuse what it asks.
+
+Following them keeps its recipe, compiled against the facts as they are stored now, as an edit of the person's own
+configuration, naming the head they saw; the recipe, and so what a fork varies, doesn't change. Facts that now
+refuse what it asks are said rather than followed, so that a part set in its place mends it first. A configuration
+with nothing behind has nothing to follow, and only its owner follows it; the archive's follow when init-data loads
+the corrected facts.
+
+Following an origin compiles against the facts as they are stored then, so a fork following its origin follows its
+facts too.
+```
 ## Runs and scores
 - **Starting** runs a variation at the endpoint serving its engine, or the one named (see "The engine"), on some
   cases with some seeds, through the runner (docs/runner.md), under an execution. As it starts, the run is named by
@@ -363,6 +382,12 @@ check before the other has written.
 
 ## Terms
 
+```
+AGENT: add
+A row after `Following`.
+---
+| Following its facts | Keeping a configuration's recipe, compiled against the facts corrected since, as an edit of the person's own. |
+```
 | Term | Meaning |
 | --- | --- |
 | Bench | What one person sees and does, whatever the edge. |

@@ -77,6 +77,16 @@ A variation worth keeping becomes an edit of its thread, or a fork. Configuratio
 recipe parts they use, what is said about them and their runs, not by their names, which are optional.
 
 ### Recipes
+```
+AGENT: replace
+A compilation names the facts only where they work something out of its recipe. The paragraph.
+---
+A recipe has no thread of its own; its history is kept on the skeleton thread it compiles to. Each edit of a skeleton
+thread can name the compilation that produced its skeleton, and the compilation holds the recipe, which names its
+engine, and the facts about the engine's model it was worked out from, when it asks them for anything (docs/factors.md,
+"Compilation"). The compilation must be one of that very skeleton, and only skeleton edits name one. A hand-written
+skeleton has no compilation, so its edits name none.
+```
 A recipe has no thread of its own; its history is kept on the skeleton thread it compiles to. Each edit of a skeleton
 thread can name the compilation that produced its skeleton, and the compilation holds the recipe, which names its
 engine, and the facts about the engine's model it was compiled against, when there are any (docs/factors.md,
@@ -112,6 +122,14 @@ A reference is *behind* when a live thread that held it has since moved on to an
 by several threads, so a reference can be behind several of them: for example, when a chunk was forked and both threads
 moved on. Deleted threads aren't proposed.
 
+```
+AGENT: add
+Who brings a configuration onto its corrected facts. A paragraph after this one.
+---
+Facts are behind only in a configuration that asks them for something: one with a literal sampling and reasoning
+names none. Its owner follows them by keeping its recipe compiled against the corrected facts, as a new version
+(docs/bench.md, "Following its facts"); init-data does so for the archive's.
+```
 A configuration's facts are behind only when their thread's head would change what it sends: compiling its recipe
 against the newer facts gives another skeleton, or is refused. A correction it doesn't reach, such as a level it
 doesn't ask for or the model's context length, leaves it as it is, since a version compiled against it would hold the

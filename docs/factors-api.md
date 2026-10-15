@@ -492,6 +492,15 @@ Before validation, a `body` with `temperature == 0` loses `top_p`, `top_k` and `
 | `cross_check` | `"the body offers tools […], the skeleton names […]"` when the offered functions, apart from the answer function, differ from `tools` by name or order. Descriptions may differ. |
 
 ### `class Compilation(Component)`, kind `compilation`, v2
+```
+AGENT: replace
+The facts it was worked out from, none for a literal recipe. The paragraph.
+---
+`recipe: Recipe`, `skeleton: SkeletonRef`, `compiler: Code`, `facts: FactsRef | None = None`, the facts the skeleton
+was worked out from: `None` when the recipe asks for no intent. Provenance: no component refers to a compilation, and
+nothing checks that the recipe compiles to the skeleton. `cross_check`: `"facts about <facts' model> compiled a recipe
+for <the recipe's engine's model>"`.
+```
 `recipe: Recipe`, `skeleton: SkeletonRef`, `compiler: Code`, `facts: FactsRef | None = None`, the facts compiled
 against. Provenance: no component refers to a compilation, and nothing checks that the recipe compiles to the
 skeleton. `cross_check`: `"facts about <facts' model> compiled a recipe for <the recipe's engine's model>"`.
@@ -544,6 +553,14 @@ model's facts, so engines of one model give one skeleton, and without intents ev
 translations, how a chunk splits its text doesn't change the skeleton.
 
 ### `compiled(recipe, get, compiler, facts=None) -> tuple[Skeleton, Compilation]`
+```
+AGENT: replace
+`compiled` pins the facts only where `landings` finds an intent. The paragraph.
+---
+A recipe compiled by `compiler`, the running code, against `facts` (`compile_request`), with the compilation that
+records what the skeleton was compiled from: the recipe, the skeleton, `compiler`, and `facts.digest` when the recipe
+asks for an intent (`landings` lands a level or a recommended sampling), else `None`.
+```
 A recipe compiled by `compiler`, the running code, against `facts` (`compile_request`), with the compilation that
 records what the skeleton was compiled from: the recipe, the skeleton, `compiler`, and `facts.digest` when there are
 facts, whether or not the recipe asks for an intent.
@@ -929,6 +946,19 @@ On any other engine (a remote engine, or another vLLM version):
 | --- | --- | --- |
 | `schema.ref_unverified` | warning | a `native` or `tool` skeleton's output schema holds `$ref`. `inline_refs@1` removes it. Also a toolset tool whose parameters hold `$ref`, a finding per tool, which nothing removes. |
 
+```
+AGENT: add
+trial.engine_unmatched and judge.engine_unmatched (`lint.py:_made_for`). A subsection before Judges.
+---
+#### Trials and judges, with their skeletons' compilations
+The compilations of the pair's skeleton are those in the registry; the caller puts them there, with the facts they
+name (`src/chatddx/bench/seen.py:Seen.add_compilations`).
+
+| Code | Level | When |
+| --- | --- | --- |
+| `trial.engine_unmatched` | warning | every compilation of the trial's skeleton names facts, and none about the model its engine serves (`model_name`): the skeleton was worked out for another model. Two engines of one model, a compilation with no facts, or none in the registry, give nothing. |
+| `judge.engine_unmatched` | warning | the same, for a judge |
+```
 #### Judges
 | Code | Level | When |
 | --- | --- | --- |
@@ -944,6 +974,10 @@ Checks against the model facts (`facts.*`) are in `src/chatddx/facts/lint.py`.
 
 ## Finding codes
 
+```
+AGENT: add
+Two rows after `schema.ref_unverified`: `trial.engine_unmatched` and `judge.engine_unmatched`, warning, `lint`.
+```
 | Code | Level | Reported by |
 | --- | --- | --- |
 | `bundle.recanonicalized` | warning | `Bundle.load` |

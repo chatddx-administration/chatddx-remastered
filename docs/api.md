@@ -165,6 +165,18 @@ origin"). Asking for it gives nothing when there is none. Following is an edit o
 the head it was made on and comes back with what the lints say. Following a fork with nothing to follow, or whose
 changes no longer fit, is unprocessable.
 
+```
+AGENT: add
+Following corrected facts (`GET /threads/{thread}/facts`, `POST /threads/{thread}/facts/follows`). A section before this heading.
+---
+## Following its facts
+A configuration whose facts were corrected where they change what it sends has corrected facts: the facts thread and
+its head, the model they are about, the facts it was compiled against, and the skeleton following them comes to, or
+why the corrected facts refuse what it asks (`docs/bench.md`, "Following its facts"). Asking for them gives nothing
+when there are none. Following them is an edit of the person's own configuration, which names the head it was made on
+and comes back with what the lints say. Following a configuration with no corrected facts, or facts that refuse what
+it asks, is unprocessable.
+```
 ## Taking expectations
 A person is scored against their own expectations only, so they take the shared ones (`docs/bench.md`,
 "Taking"):

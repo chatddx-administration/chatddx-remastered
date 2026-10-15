@@ -75,21 +75,24 @@ Stage 1, as designed below, with these details the design left open:
   with its engine set to the endpoint's (`parts.engine`).
 - **Scripted runs** set the engine to the scripted endpoint's.
 - **Docs**: suggestions in the docs this touches (item 13).
+- **Following corrected facts**: whoever sees a configuration sees its corrected facts and what following them keeps
+  (`Bench.corrected`, `GET /api/threads/{thread}/facts`, the configuration page); its owner follows them as an edit
+  of the same recipe compiled against them (`Bench.follow_facts`, `POST /api/threads/{thread}/facts/follows`, "Follow
+  the facts"). Facts that now refuse what it asks are said, not followed. The repl has no following, of an origin or
+  of facts.
+- **A compilation pins the facts only where they work something out**, so a literal configuration is for any model,
+  and is never behind its facts.
+- **`trial.engine_unmatched` and `judge.engine_unmatched`**: a skeleton every compilation of which was worked out for
+  another model than the engine serves. The factors' lint reads the compilations from the registry, and the bench puts
+  them there for a judge it lints (a person writing a judge from a judge configuration's skeleton and another model's
+  engine is the case that happens), and for a hand-written configuration's trial; a configuration with a recipe pairs
+  its own engine. Runs don't lint their trial when they start, so a run again on an old trial isn't checked.
 
 Outstanding:
 - **The NixOS test** (`nix/test.nix`) still finds `plan (en, Qwen/Qwen3-8B-AWQ)` and names its endpoint; it wants
   `plan (en)`, and can leave the endpoint to be derived. Left for the user, who'll get back to it.
 - **`Seen.facts` is read on every access**, several times a look; cheap at today's sizes (a facts thread per model),
   and the place to cache per request if it shows.
-- **Following corrected facts** isn't built at an edge, as following a chunk that moved on isn't: the catalog says a
-  configuration is behind its facts (`behind`, `/facts`), but no edge reads `behind`, and a configuration with nothing
-  replaced is its stored skeleton (`Seen.skeleton`), so an edit with the same recipe writes nothing. Following wants a
-  variation that recompiles against the current facts, and an edge that offers it where `behind` names `/facts`.
-- **A trial's engine and its skeleton's** aren't tied by the factors: a trial may pair a skeleton compiled for one
-  model with an engine of another. The bench never does (a run takes its recipe's engine, `Seen.at`), and the facts'
-  pairing lints catch a sampling or level meant for another model; a hand-made trial or a run again on a trial made
-  before is where it can happen. Take: a lint, `trial.engine_unmatched`, from the skeleton's compilation when it has
-  one.
 
 ## Stage 1: the engine
 

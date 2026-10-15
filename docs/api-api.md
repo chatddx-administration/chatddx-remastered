@@ -198,6 +198,13 @@ The token set as `COOKIE`: `Max-Age` `settings.SESSION_TTL` in seconds, `Secure`
 ## schemas.py
 The models' fields are in the OpenAPI document. Besides them:
 
+```
+AGENT: add
+Two rows after `NewFollow`.
+---
+| `CorrectedFacts` | What following a configuration's facts would keep: `facts` (the facts thread's id), `model`, `compiled` (the facts its head was compiled against), `head` (the facts thread's head), `digest` and `compilation`, or `refused`. |
+| `NewFollowFacts` | A follow of the facts' body: `head` (required). |
+```
 | Name | Is |
 | --- | --- |
 | `_Schema` | The base of every model: frozen, `extra="forbid"`. |
@@ -262,6 +269,13 @@ variation's query parameters to them with `endpoint`, `tag` and `seed`.
 | `part_of(bench, variation: TriedVariation, part: str, landed: Landing \| None = None) -> schemas.Part` | The part's digest (`TriedVariation.held`), its title (`Bench.title`), what it holds (`catalog.titles.describe`), and whether the variation replaced it; with `landed`, a reasoning level's or a recommended sampling's landing, as `Bench.landed` gives it, its level as `landed` and its reasons as `nearest`. A part not held has `None` for each. |
 | `reach_of(reach: chatddx.bench.Reach) -> schemas.Reach` | The bench's reach, with the scorer's thread as `scorer`, its name as `name`, the missing families by id, and those with expectations to choose from as `choosing`. |
 
+```
+AGENT: add
+Two rows after `follow`.
+---
+| `facts`, `GET /threads/{thread}/facts` | Within `refused()`: `Bench.corrected`. `null` when there are none. |
+| `follow_facts`, `POST /threads/{thread}/facts/follows` | Within `refused()`: `Bench.follow_facts(thread, head)`. 201 with the edit's `edit_of` and findings. |
+```
 | Route | Does |
 | --- | --- |
 | `threads`, `GET /threads` | … kept by `name` (whole), `owner` (a login) and any of `tag`; `Catalog.edit_languages` of the kept heads, given to `thread_of`. |
@@ -503,6 +517,12 @@ docs/worker-api.md, "The command").
 
 ## Tests
 
+```
+AGENT: replace
+Following facts. The `test_following.py` row.
+---
+| `test_following.py` | A fork with nothing to follow, then a proposal once the archive's configuration moved on, a stale head, following, and nothing proposed after; a configuration's corrected facts, none for bob, a stale head, following them, and none after. |
+```
 | Module | Holds |
 | --- | --- |
 | `conftest.py` | `template` is `curated`, the test World as init-data lands it; `autocommit`; `alice`, with `PASSWORD`; `served`, the app on the test World's inventory, with a worker; `listening`, `served` by uvicorn on a thread; `client`, a `TestClient` over `https://testserver`; `signed`, the client with alice's bearer; `bob`, his bearer's header; `bench`, alice's; and the helpers `sign_in` and `bearer`. |

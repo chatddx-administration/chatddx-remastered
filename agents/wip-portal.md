@@ -43,7 +43,7 @@ In remastered's terms:
 | Configurations | each with its versions, its recipe part by part, and its runs | `Bench.threads`, `Bench.reaching`, `Bench.scored_by`; `GET /api/threads?kind=configuration` |
 | The variation being tried | a chunk picked per part, with the skeleton's digest, the findings at an endpoint, each scorer view's reach and the request rendered, as you pick | `GET /api/threads/{id}/variation` |
 | Families | filtered by tag and name; a family's cases, appendices, and the expectation each is scored against under each schema, with those shared to take; the vignette in a place of its own | `Bench.families`, `Bench.family_by_id`, `Bench.expectation`; `GET /api/families` and below it |
-| Authoring | a form per kind people write: chunks, recipes, appendices, cases, expectations, scorers and judges; what is said of a thread; following an origin; taking expectations | the bench's writes (`docs/bench.md`, "Writes for the person") |
+| Authoring | a form per kind people write: chunks, recipes, appendices, cases, expectations, scorers and judges; what is said of a thread; following an origin, and a configuration's corrected facts; taking expectations | the bench's writes (`docs/bench.md`, "Writes for the person") |
 | Endpoints and models | each endpoint's engine, model, host and clearances; the facts of each model | `GET /api/endpoints`, `GET /api/models` |
 | Comparing runs | runs side by side over the cases they share, a column per run under each view; several variations started together from the variation's page (see "Comparing variations") | `Bench.runs`, `Bench.scores_of`, the look per variation; `GET /api/runs`, `POST /api/runs` |
 | Status | the worker at the person's jobs, with pause, resume, stop and stop now; built on the runs page | the worker (`docs/worker.md`) |
@@ -200,8 +200,8 @@ Decided (phase 5), from the options W1 to W11:
 - **W8. Saving** says where it goes, as the variation's page does: a new version of the person's own, a new thread, or
   a fork, with their namesakes; a text's language offered from the previous version; a conflict shown with a reload
   that keeps what was typed.
-- **W9. The simple writes are plain forms**: what is said, deleting and restoring, following, taking, carrying, and a
-  fork as it is.
+- **W9. The simple writes are plain forms**: what is said, deleting and restoring, following an origin or the facts,
+  taking, carrying, and a fork as it is.
 - **W10. Every form for everyone**; what each role is offered first waits for Z1 (phase 7).
 - **W11. Tests**: the pages', vitest for the differences and the schema's form, and a browser test of a clinician's
   flow: an appendix, its case, the expectation, and the variation's reach counting it.

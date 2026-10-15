@@ -408,6 +408,15 @@ engine.
 ### Compilation
 Principal author: none; written by the compiler.
 
+```
+AGENT: replace
+A compilation names the facts only where they work something out of its recipe. The paragraph.
+---
+A compilation says that a recipe compiled to a skeleton. It holds the recipe, the skeleton, the version of the
+compiler and the facts it was worked out from: none when the recipe asks them for nothing, a literal sampling and
+reasoning, since such a skeleton is the same on every model. It is the only place a recipe is kept, and so the lineage
+from the chunks written in the portal to the frozen request.
+```
 A compilation says that a recipe compiled to a skeleton. It holds the recipe, the skeleton, the version of the
 compiler and the facts compiled against, none when the engine's model has none. It is the only place a recipe is
 kept, and so the lineage from the chunks written in the portal to the frozen request.
@@ -513,6 +522,15 @@ repository a local engine's model comes from or the model a remote engine names,
 for, the sampling recommended per level, the output contracts that work, and specs. Compiling a recipe reads the facts
 about its engine's model to work out its intents, and its compilation names them.
 
+```
+AGENT: replace
+A configuration behind its facts is followed by its owner. The paragraph.
+---
+They are knowledge, not a factor: no component but a compilation refers to them, and a skeleton holds what they did.
+init-data writes them from facts files, a thread per model (docs/curation.md); correcting a fact is a new version of
+its thread, and a configuration compiled against the old one is then behind where the new one changes what it sends
+(docs/catalog.md, "What has moved on"), until its owner follows them (docs/bench.md, "Following its facts").
+```
 They are knowledge, not a factor: no component but a compilation refers to them, and a skeleton holds what they did.
 init-data writes them from facts files, a thread per model (docs/curation.md); correcting a fact is a new version of
 its thread, and a configuration compiled against the old one is then behind where the new one changes what it sends
@@ -687,6 +705,14 @@ They look at:
   that a native contract leaves uncallable, and a constrained answer that the model can't reason before giving. On any
   other engine, a schema reference the engine isn't known to resolve, in the output's schema or a toolset tool's
   parameters.
+```
+AGENT: add
+trial.engine_unmatched and judge.engine_unmatched. An item.
+---
+- each trial and judge whose skeleton its compilations say was worked out for another model than its engine serves:
+  a level or a recommended sampling meant for one model, sent to another. Two engines of one model, and a skeleton
+  worked out from no facts, pair with any; a skeleton with no compilation at hand isn't checked.
+```
 - with languages known, trials whose cases are in another language than the request, or in an unknown one.
 
 Checks against the model facts belong to the facts (docs/facts.md). Other findings come from the steps that observe
