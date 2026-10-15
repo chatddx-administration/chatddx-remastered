@@ -44,14 +44,7 @@ Building one validates it. The seven row types derive from `Record`; `ItemKey`, 
 `ToolCode`, `Endpoint`, `JudgeCall` are parts of rows, and `Run` and `Score` are logs put back together from rows.
 Only records have `v`, `canonical` and `parse`.
 
-```
-AGENT: replace
-`Record.case_derived` is renamed `sensitive`, as docs/chatddx.md ("Vignettes and anything made from them are
-sensitive") has every part label it. The table's header.
----
 | Record | Module | `stage` | `sensitive` | Table |
-```
-| Record | Module | `stage` | `case_derived` | Table |
 | --- | --- | --- | --- | --- |
 | `RunStarted` | `run.py` | `"started"` | no | `ledger.run_stage` |
 | `RunItem` | `run.py` | | yes | `ledger.run_item` |
@@ -92,15 +85,9 @@ annotated with the kind it may point to).
 ### `class Record(Frozen)`
 The base of every row type.
 
-```
-AGENT: replace
-`Record.case_derived` is renamed `sensitive`. The row `case_derived` of `class Record`.
----
-| `sensitive: ClassVar[bool] = True` | Whether the type may hold sensitive content: the vignette or content produced from it. A subclass that holds none sets it to `False`. |
-```
 | Member | Description |
 | --- | --- |
-| `case_derived: ClassVar[bool] = True` | Whether the type may hold content produced from a vignette. A subclass that holds none sets it to `False`. |
+| `sensitive: ClassVar[bool] = True` | Whether the type may hold sensitive content: the vignette or content produced from it. A subclass that holds none sets it to `False`. |
 | `schema_version: ClassVar[int] = 1` | Written as `v`. Bump it when an existing field's meaning or default changes; an added field with a backward-compatible default needs no bump. |
 | `canonical_doc() -> dict[str, JsonValue]` | The canonical JSON document, `v` included. |
 | `canonical -> bytes` | `canonical_bytes(canonical_doc())`. Not cached. |
