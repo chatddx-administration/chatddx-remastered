@@ -93,7 +93,7 @@ pkgs.testers.runNixOSTest {
         assert job["status"] == "finished", job
 
     with subtest("nginx sends the headers and limits sign-ins"):
-        headers = machine.succeed("curl -sfI https://${host}/sign-in").lower()
+        headers = machine.succeed("curl -sf -o /dev/null -D - https://${host}/sign-in").lower()
         assert "strict-transport-security" in headers, headers
         codes = [
             machine.succeed("curl -s -o /dev/null -w '%{http_code}' -X POST -d login=nobody -d password=wrong https://${host}/sign-in")

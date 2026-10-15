@@ -163,8 +163,9 @@ boots it in a VM.
   inventory gives.
 - **Egress**: Take: a NetworkPolicy that lets the pods reach Postgres and the inventory's endpoints only, so that the
   network holds what the gate holds (`agents/wip-clearance.md`, "Vetted endpoints").
-- **Probes**: the app has no health route, and the worker no HTTP at all. Open: a route for readiness, and whether the
-  worker's beats (`settings.WORKER_BEAT`) can serve as its liveness.
+- **Probes**: the app has no health route, and the worker no HTTP at all. The app answers HEAD with 405, as FastAPI
+  adds no HEAD to a GET route, so a probe has to GET. Open: a route for readiness, and whether the worker's beats
+  (`settings.WORKER_BEAT`) can serve as its liveness.
 - **Reaching the inference hosts**: pelle and malborg are on Kompismoln's VPN (README, "Kompismoln's hosts"). Open:
   how the cluster's pods reach them.
 - Open: where the manifests live and what writes them (plain YAML in the repository, Helm, or Nix).
