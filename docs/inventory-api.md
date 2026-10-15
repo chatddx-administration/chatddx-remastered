@@ -295,6 +295,22 @@ shared addresses, hosts, clearance. A finding's subject is the endpoint's or the
 
 ## Worlds
 A World is a directory with `inventory.toml`, the files it includes, and `engines.toml`, the models and engines its
+```
+AGENT: replace
+`worlds/` holds three; the sample's row lacks its database source and `mistral-small@remote`, and the test World
+has none. The sentence, the table and the `configurations` sentence after it.
+---
+endpoints serve. `worlds/` holds three:
+
+| World | Sources | Endpoints | Hosts | `[cleared]` |
+| --- | --- | --- | --- | --- |
+| `worlds/sample/` | `sample`, `path = "vignettes"`, sensitive; `typed`, a database source | `qwen3-8b-awq@fake` (port 12099) and `gpt-oss-20b@fake` (port 12100), `max_jobs = 4`; `mistral-small@remote` (port 12101), `max_jobs = 2`, `credential = "CHATDDX_SAMPLE_KEY"` | `fake`: `bind = "127.0.0.1"`, models by repo ID, the empty template at `/dev/null` | the fakes for `sample` and `typed`, `mistral-small@remote` for `sample` |
+| `worlds/kompismoln/` | `sample`, `path = "../sample/vignettes"`, sensitive | from `endpoints.toml`: `qwen3-8b@pelle` (`max_jobs = 1`), `gpt-oss-20b@malborg` (`max_jobs = 4`) | from `endpoints.toml`: `pelle`, `malborg`, `bind = "::"` | both endpoints for `sample` |
+| `worlds/test/` | `test`, `path = "vignettes"`, sensitive; `typed`, a database source | `qwen3@fake` (port 12201) and `gpt-oss@fake` (port 12203), `max_jobs = 4`; `qwen3-bare@fake` (port 12202); `mistral@fake` (port 12204), `max_jobs = 2`; `unknown@remote` at `https://remote.invalid/v1/`, `credential = "CHATDDX_TEST_REMOTE"` | `fake`: `bind = "127.0.0.1"`, models by repo ID, `test/mistral-7b` among them, the empty template at `/dev/null` | `qwen3@fake`, `gpt-oss@fake` and `mistral@fake` for `test` and `typed`, `qwen3-bare@fake` for `test`, `unknown@remote` for nothing |
+
+`configurations` is `qwen3-8b-awq@fake` in `worlds/sample/`, `qwen3-8b@pelle` in `worlds/kompismoln/`, and
+`qwen3@fake` in `worlds/test/`.
+```
 endpoints serve. `worlds/` holds two:
 
 | World | Sources | Endpoints | Hosts | `[cleared]` |

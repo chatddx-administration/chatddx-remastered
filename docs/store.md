@@ -133,6 +133,17 @@ These are known shortcomings of the store's design. Some have more details in do
   it has no start record. Logs are validated only when they are read.
 - A run's canary set isn't tied to the run in the database, so a run can name a canary set that isn't stored, and
   then can't be checked.
+```
+AGENT: replace
+The last two sentences are an operational step for these stores, decision O2, not a gap of the store's design;
+docs/migrations.md says it already, at `0012` and `0026`. The item without them.
+---
+- A schema-version bump strands stored rows. Reading parses every row, and parsing refuses another version
+  (docs/factors.md, "Versions"; docs/ledger.md, "Canonical form and versions"), so after a bump the store can't return
+  rows of the old version, nor load a closure that holds one. The rows can't be rewritten either: the tables are
+  append-only, and digests and seals depend on the bytes. docs/factors.md, "Splitting expectations", already considers
+  a bump of the scorer's schema version.
+```
 - A schema-version bump strands stored rows. Reading parses every row, and parsing refuses another version
   (docs/factors.md, "Versions"; docs/ledger.md, "Canonical form and versions"), so after a bump the store can't return
   rows of the old version, nor load a closure that holds one. The rows can't be rewritten either: the tables are

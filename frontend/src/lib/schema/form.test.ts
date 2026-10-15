@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import { blank, deref, kept, type Schema, widget } from "./form";
 
 const TARGETS = JSON.parse(
-  readFileSync(new URL("../../../../worlds/sample/_data/schemas/targets.json", import.meta.url), "utf8"),
+  readFileSync(new URL("../../../../worlds/test/_data/schemas/targets.json", import.meta.url), "utf8"),
 ) as Schema;
 const at = (name: string) => (TARGETS.properties as Record<string, Schema>)[name] ?? {};
 

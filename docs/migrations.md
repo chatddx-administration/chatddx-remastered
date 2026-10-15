@@ -132,6 +132,11 @@ it, if any. A new schema gets its own section with all three tiers.
 
 ### Tier 2
 - `0016-t2-source.sql`: triggers refusing UPDATE and TRUNCATE on `text`; DELETE is held back by the grants alone.
+```
+AGENT: move
+The item is the catalog's, so it goes under "catalog", Tier 2, after `0018-t2-catalog-label-edit.sql`; here it
+sits under "source".
+```
 - `0026-t2-catalog-run-variation.sql`: the entry fields `varied` and `replaced`, which only a run takes
   (`entry_run_check`); `entry_field_check` and `entry_shape_check` dropped and made again with them, their values
   as `src/chatddx/catalog/model.py:VARIED` and `REPLACED` have them, the engine among a `replaced` entry's parts; and
