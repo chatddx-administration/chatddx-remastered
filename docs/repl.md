@@ -134,14 +134,7 @@ summary per view.
 ### Outcomes
 An item's outcome comes from its last call and its answer, read by the skeleton's contract (docs/factors.md,
 "Scorer"):
-```
-AGENT: replace
-A turn left unsent is a tool round whose request wasn't sent (src/chatddx/bench/outcome.py:outcome); "turn" is the
-tool round's word.
----
 - `stopped`: halted, or its last tool round stopped before its request was sent;
-```
-- `stopped`: halted, or a turn left unsent;
 - `errored`: no answer, and the call ended in an error;
 - `unread`: no answer, and no error;
 - `completed`: a text answer;
