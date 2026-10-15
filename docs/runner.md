@@ -151,16 +151,9 @@ Finishing writes the finish record with those findings and returns what checking
 
 ### Judges
 A judged view's metric reads the verdicts of the view's judge, one per seed (docs/factors.md, "Judge"):
-```
-AGENT: replace
-Decided (agents/wip-engine-part.md, "Several endpoints"): the link to the rule runs will share. The item.
----
 - **Where its calls go.** A judge names an engine; its calls go to the one endpoint serving that engine, unless the
   caller names another, and through the gate as a run's do, for the run's cases, since a judge reads a completion.
   Several serving it and none named is refused rather than picked from, as for a run (docs/bench.md, "Outstanding").
-```
-- **Where its calls go.** A judge names an engine; its calls go to the one endpoint serving that engine, unless the
-  caller names another, and through the gate as a run's do, for the run's cases, since a judge reads a completion.
 - **What it reads.** The completion and the expectation, as the view picks them. A judge whose skeleton reads the
   vignette or the appendices is refused: no vignette goes to a judge.
 - **When it isn't asked.** When the answer can't be read, the view picks nothing from it, or the judge reads the

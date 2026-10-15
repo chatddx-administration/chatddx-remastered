@@ -384,21 +384,12 @@ the person were planned in `agents/wip-authoring.md` at b6f76b8. Its takes were 
   a collaborator may withdraw themselves, an entry the catalog would hold as any other, is open.
 - **Z1**: the map from roles to the kinds each role sees goes in `identity` once the portal's views give it meaning
   (docs/identity.md, "Z1: what each role is shown"). `sees` then takes the person's roles and the kind.
-```
-AGENT: replace
-Decided (agents/wip-engine-part.md, "Several endpoints"): a run takes the judges' rule once the engine is a part of
-its configuration; one item for both, written up as unlikely. The item.
----
 - **An engine served at several endpoints** isn't picked from them, for a judge's calls or, once the engine is a part
   of a configuration (agents/wip-engine-part.md), for a run: the scoring or the run is refused until the endpoint is
   named. `Bench.score` names none, so a judge whose engine two endpoints serve bars its scorer, in the repl and the API
   alike (docs/repl.md, "What the repl doesn't reach"; docs/runner.md, "Judges"). It probably won't happen: a World
   serving one engine at two endpoints serves one model on identical machines, a load balancer's job. Decided: as it
   is, until a World does; then the scoring names an endpoint per judge, as a run names its own.
-```
-- **A judge's endpoint can't be named**: `Bench.score` names none, so a judge whose engine two endpoints serve bars its
-  scorer, in the repl and the API alike (docs/repl.md, "What the repl doesn't reach"). Decided: as it is, until a World
-  serves an engine at two endpoints; then the scoring names an endpoint per judge.
 - **A person's runs are all read**, and paged afterwards, in the API too (`Bench.runs`), and what is left to score is
   worked out for each of them, about 40 ms a run under five scorers. Page in the store once that is slow.
 - **The archive's configuration saved under another name** is saved with no finding: a hand-made recipe that is a
