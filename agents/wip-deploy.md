@@ -1,7 +1,7 @@
 # Deploy: work in progress
 
 How chatddx is to run outside a development shell: a NixOS module whose systemd services run it on a host, and
-containers for a Kubernetes cluster. Nothing of either is built.
+containers for a Kubernetes cluster. The NixOS module is built; the containers aren't.
 "Decided" means the user said so; "Take" is the agent's recommendation and still open.
 
 ## Start with this
@@ -18,8 +18,8 @@ containers for a Kubernetes cluster. Nothing of either is built.
 ## What holds now
 - **The flake** (`flake.nix`) has `packages.default`, the Python environment with `chatddx` on its PATH, and
   `packages.frontend`, the portal's build, which a deployment points `CHATDDX_PORTAL_ASSETS` at
-  (`agents/wip-portal.md`, "Open"). It has no `nixosModules`, no image and no `checks`, and nothing builds it but a
-  person: there is no CI.
+  (`agents/wip-portal.md`, "Open"); `nixosModules.default`, and its test in `checks` (see "The NixOS module"). It
+  has no image, and nothing builds it but a person: there is no CI.
 - **What serves**, by command (`src/chatddx/cli.py`):
 
   | Command | Serves |
@@ -98,37 +98,50 @@ Take: "the HTTP server" of `docs/worker.md` ("The deployment") is the proxy in f
 the API are one app on one origin.
 
 ## The NixOS module
-A `nixosModules.default` in the flake, as `services.chatddx`:
-- **Options**: the package (`packages.default`) and the frontend (`packages.frontend`, as `CHATDDX_PORTAL_ASSETS`);
-  the World; more facts; where to listen; the database's host and name; the tier to migrate to; how many workers; and
-  a file of endpoint secrets.
-- **Services** (see "Services and commands"):
-  - `chatddx-migrate`, a oneshot as the admin, that the others start after;
+Built: `nix/module.nix`, the flake's `nixosModules.default`, as `services.chatddx`. Decided: it takes `inputs` among
+the system's `specialArgs`, with this flake as `inputs.chatddx`. `nix/test.nix`, the flake's `checks.<system>.module`,
+boots it in a VM.
+- **Options**: `package` and `frontend`, the flake's; `revision`, the flake's, as `CHATDDX_REVISION`; `world`;
+  `facts`; `listen`; `workers`; `environmentFile`; `database` (`createLocally`, `host`, `name`, `tier`); and `nginx`
+  (`enable`, `hostName`, `signInRate`).
+- **Services**, under `chatddx.target` (see "Services and commands"):
+  - `chatddx-migrate`, a oneshot as the admin, after `postgresql.target`. The others require it, so a switch that
+    changes it restarts them after it;
   - `chatddx-portal`, `chatddx portal` as the writer;
-  - `chatddx-worker@`, `chatddx worker` as the writer, one instance per worker, with `TimeoutStopSec` above
-    `WORKER_DEADLINE`;
-  - a timer that purges expired sessions, once there is a command for it.
-- **The operator's `chatddx`**: Take: a wrapper on the system's PATH with the services' environment, run as the
-  writer, or as the admin for `migrate`.
-- **The database**: Take: `services.postgresql` 16 on the same host, its roles and database made as `setup.sql` makes
-  them, with peer authentication mapped as AGENTS.md maps it. Two system users, one for the admin and one for the
-  writer, so that the app can't act as the admin.
-- **Secrets**: endpoint credentials from a file outside the Nix store (`EnvironmentFile`, or systemd credentials),
-  under the names the inventory gives, for the app and the workers alike.
-- **The World**: the Nix store is readable by every user of the host, so a World with a sensitive directory source
-  isn't a store path. Take: the option is a path on the host as a string, readable by the writer alone, and only a
-  World with no sensitive directory source may come from the store.
-- **In front**: Take: nginx (`services.nginx`) with TLS from ACME, `/static/` served from the frontend's build, and a
-  run's event stream passed through unbuffered (the API sends a keep-alive every 15 s,
-  `src/chatddx/api/telling.py:KEEP_ALIVE`). The headers, the body limit and the sign-in limit that
-  `agents/wip-clearance.md` lists could be set here, though the Kubernetes target would need them too.
-- **Hardening**: the services sandboxed (`ProtectSystem=strict`, `PrivateTmp`, `NoNewPrivileges` and the like), and no
-  `HTTP_PROXY` or `HTTPS_PROXY` in their environment, since the engine client follows them
-  (`agents/wip-clearance.md`, "Before real patient data", Proxies).
-- **A test**: Take: a NixOS VM test (`pkgs.testers.runNixOSTest`) in the flake's `checks` that boots the module with
-  the test World and its fake engines, signs in and runs a case.
-- Open: whether the module also serves an inference host's vLLM from an endpoint's start-up, as `fake-engines` serves
-  a fake from it, or that stays with the hosts' own NixOS containers (`docs/chatddx.md`, "Target stack").
+  - `chatddx-worker-1` and on, `chatddx worker` as the writer, with `TimeoutStopSec` at 90 s, above
+    `WORKER_DEADLINE`.
+- **Users**: the system users `chatddx` and `chatddx_writer`, named as the roles, so that NixOS' default
+  `local all all peer` needs no map.
+- **The database**, with `createLocally`, the default: `services.postgresql`, the database owned by the admin
+  (`ensureDBOwnership`, so it is named `chatddx`), the admin with `createrole` for tier 1's reader, and the writer.
+  Without `createdb`, which only the tests use. The module leaves PostgreSQL's version to the host, whose cluster is
+  tied to its own, and warns when it isn't 16.
+- **The operator's `chatddx`**, on the system's PATH: the services' environment, and the secrets when it can read
+  them; run as root, it runs as the writer, or as the admin for `migrate`.
+- **Secrets**: `environmentFile`, read by systemd for the portal and the workers. A path in the store is refused
+  (`types.externalPath`).
+- **The World**: a path in the store is refused too, as the store is readable by every user of the host. The services
+  can't see /home (`ProtectHome`).
+- **nginx**, with `nginx.enable`:
+  - HTTPS, from ACME unless the host gives a certificate, and everything proxied to the app, `/static/` included;
+  - HSTS, `nosniff`, `Referrer-Policy: same-origin` and `frame-ancestors 'none'`;
+  - sign-ins (`POST /sign-in`, `POST /api/session`) limited per address to `signInRate`, 10 a minute, with a burst of
+    5, and 429 beyond;
+  - nginx's default limit on a request's body, 1 MB;
+  - a run's event stream unbuffered, as the API asks with `X-Accel-Buffering: no`.
+- **Hardening**: every service sandboxed (`ProtectSystem=strict`, `ProtectHome`, `PrivateTmp`, `PrivateDevices`, no
+  capabilities, `@system-service` system calls, `UMask=0077` and the like), and `http_proxy`, `https_proxy` and
+  `all_proxy`, in either case, unset for them even when the host sets them for every service.
+- **The test**: the sample World copied out of the store, and its secret in a file. Through the operator's command,
+  init-data and a password; then the fake engines. Through nginx, with a certificate made for the test: a typed case
+  run by the portal, sent and scored by a worker; the headers; a 429 after a burst of sign-ins. Last, a worker that
+  doesn't see a proxy set for every service.
+- Open:
+  - static files from nginx rather than the app, left with caching the build (`agents/wip-portal.md`, "Open");
+  - a `script-src` and `/api/docs` (`agents/wip-clearance.md`, "Before real patient data", Headers);
+  - a timer that purges expired sessions, once there is a command for it;
+  - whether the module also serves an inference host's vLLM from an endpoint's start-up, as `fake-engines` serves a
+    fake from it, or that stays with the hosts' own NixOS containers (`docs/chatddx.md`, "Target stack").
 
 ## Containers for Kubernetes
 - **The image**: Take: built by Nix (`dockerTools.streamLayeredImage`) from `packages.default` and

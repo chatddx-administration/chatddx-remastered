@@ -151,6 +151,8 @@ runs out of the app, in the healthcheck's order, with where else it is tracked. 
    - Tracked: `docs/api.md` ("Outstanding", "Signing in") and `docs/identity.md` ("Open design issues") take no limit
      until Keycloak is in front, while `agents/wip-portal.md` ("Protection") puts the portal on the public web before
      Keycloak, with its limit open. The connection before the token is untracked.
+   - The NixOS module's nginx limits sign-ins per address (`agents/wip-deploy.md`, "The NixOS module"); the app and
+     the Kubernetes target don't.
 2. **Connections** are unbounded.
    - There is no pool: each request opens its own (`src/chatddx/api/state.py:21-33`).
    - A run's event stream holds two for as long as it is open, the request's and its own
@@ -189,8 +191,9 @@ runs out of the app, in the healthcheck's order, with where else it is tracked. 
 5. **Headers.** There is no CSP, frame-ancestors, nosniff, Referrer-Policy or HSTS (`src/chatddx/api/app.py:app`,
    `src/chatddx/portal/app.py:app`). `/api/docs` and `/api/openapi.json` are public, and Swagger UI loads
    `swagger-ui-dist@5` from jsdelivr, with a floating major and no SRI, onto the session cookie's origin. With no
-   inline script, `script-src 'self'` fits every portal page. Untracked but for `agents/wip-deploy.md`, which leaves
-   open whether the app or the proxy in front sets them.
+   inline script, `script-src 'self'` fits every portal page. The NixOS module's nginx sends HSTS, `nosniff`,
+   `Referrer-Policy` and `frame-ancestors`, but no `script-src`, which would refuse Swagger UI's scripts; the app sends
+   none, so the Kubernetes target has none (`agents/wip-deploy.md`, "The NixOS module").
 6. **Engine errors** are stored verbatim: a rejected request's body (`src/chatddx/runner/send.py:158-160`), with only
    `prompt_token_ids` stripped (`src/chatddx/ledger/call.py:47`), and the engine's message in `Call.error`
    (`src/chatddx/runner/wire.py:17-35`). An engine that echoes its input in an error puts vignette text in the store.
@@ -226,12 +229,14 @@ runs out of the app, in the healthcheck's order, with where else it is tracked. 
       `docs/api.md` ("Case-derived content") says nothing outside its no-store places carries any.
 11. **Writes** are unlimited. Appendices, threads, forks, edits, components and scorings have no count or size limit,
     and the app none on a request's body; a typed text's size is checked only once its body is parsed
-    (`src/chatddx/bench/cases.py:112-116`). The only limits are runs a day, items a run and seeds.
+    (`src/chatddx/bench/cases.py:112-116`). The only limits are runs a day, items a run and seeds. Behind the NixOS
+    module's nginx, a body is held to nginx's default, 1 MB.
 12. **Proxies.** The engine client sends through urllib's default opener (`src/chatddx/runner/wire.py:112-116`), which
     follows `HTTP_PROXY` and `HTTPS_PROXY`, so vignette-bearing requests go through any proxy the environment names;
     so do confirming an endpoint (`src/chatddx/inventory/serving.py:104`) and the web search tool
-    (`src/chatddx/tools/web_search.py:23`). Take: the client opens without proxies, rather than every deployment
-    keeping them out of its environment (`agents/wip-deploy.md`, "The NixOS module").
+    (`src/chatddx/tools/web_search.py:23`). The NixOS module unsets them for its services
+    (`agents/wip-deploy.md`, "The NixOS module"). Take: the client opens without proxies, rather than every deployment
+    keeping them out of its environment.
 
 ## When to build it
 Nothing built so far waits on it:
