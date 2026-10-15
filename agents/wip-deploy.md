@@ -8,9 +8,10 @@ containers for a Kubernetes cluster. Nothing of either is built.
 1. **Decided: deploy is the last wip.** It can be solidified only once every other wip is resolved, and
    `agents/wip-clearance.md` above all: a deployment is where real patient data first arrives, and what has to hold
    before then is listed there ("Before real patient data").
-2. **Decided, built: `chatddx portal` is now `chatddx run`**, the portal, the API and a worker in one process, with
-   `--watch`, as the convenience for development. The NixOS module's systemd services each run a command of their own
-   (see "Services and commands").
+2. **Decided, built: `chatddx run` and `chatddx portal`.** `chatddx run` is what `chatddx portal` was, the portal,
+   the API and a worker in one process, with `--watch`, as the convenience for development. `chatddx portal` now
+   serves the portal and the API with no worker, so that the NixOS module's systemd services each run a command of
+   their own (see "Services and commands").
 3. **Decided: two targets**, a NixOS module (see "The NixOS module") and containers for a Kubernetes cluster (see
    "Containers for Kubernetes"). Which of them serves real patient data first is open.
 
@@ -24,12 +25,12 @@ containers for a Kubernetes cluster. Nothing of either is built.
   | Command | Serves |
   |---|---|
   | `chatddx run` | the portal at `/` and the API at `/api/`, with a worker on a thread of its process; `--watch` builds the frontend with pnpm as it changes |
+  | `chatddx portal` | the portal at `/` and the API at `/api/`, with no worker; `chatddx worker` runs beside it |
   | `chatddx api` | the API at `/api/`, with no worker; `chatddx worker` runs beside it |
   | `chatddx worker` | the queue for a World, until SIGTERM or SIGINT; what it holds then is queued again |
   | `chatddx migrate` | the migrations, as the admin, up to a tier (`docs/store.md`, "Tiers") |
   | `chatddx fake-engines` | the World's fake engines, for development |
 
-  Nothing serves the portal without a worker.
 - **Stopping a worker**: its scorings go on for `settings.WORKER_DEADLINE` (60 s), which is to be "within the stop
   timeout of the service that runs the worker" (`src/chatddx/settings.py`). systemd's default stop timeout is 90 s;
   Kubernetes' default grace period is 30 s.
@@ -83,17 +84,17 @@ containers for a Kubernetes cluster. Nothing of either is built.
   "Before real patient data", Sessions).
 
 ## Services and commands
-Take: each service runs one command, with no flag that changes what it serves; `chatddx portal`, free since the
-rename, serves the app without a worker (`chatddx.portal.app.app` with `worker=False`).
+Decided, built: each service runs one command, with no flag that changes what it serves. `chatddx portal` serves the
+app without a worker (`src/chatddx/cli.py:_portal`), as `chatddx api` serves the API.
 
 | Service | Command |
 |---|---|
-| the app, the portal with the API | `chatddx portal` (not built) |
+| the app, the portal with the API | `chatddx portal` |
 | the API alone, where nothing serves the portal | `chatddx api` |
 | each worker | `chatddx worker` |
 | the migrations, before the others start | `chatddx migrate` |
 
-So "the HTTP server" of `docs/worker.md` ("The deployment") is the proxy in front of the app, since the portal and
+Take: "the HTTP server" of `docs/worker.md` ("The deployment") is the proxy in front of the app, since the portal and
 the API are one app on one origin.
 
 ## The NixOS module

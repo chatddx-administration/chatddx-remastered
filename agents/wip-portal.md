@@ -15,7 +15,7 @@ it.
 3. **Decided: `chatddx run`** serves the portal, and starts everything the portal needs with it: the API and a
    worker (see "P3b, concretely"). It is a convenience for development: a deployment runs the HTTP server, the API and
    the worker as separate systemd services on NixOS (`docs/worker.md`, "Where it runs"; `agents/wip-deploy.md`). It
-   was `chatddx portal`.
+   was `chatddx portal`, which now serves the portal and the API with no worker, a deployment's service.
 4. **Phases 0 to 4, and the first half of 5, are built** (see "Built"): `chatddx.portal`, signing in and out,
    `Cache-Control: no-store`, a code beside each error's detail in the API (decided); then the frontend in
    `frontend/`, swift's theme and components, and the home page, the first island; then the pages to read; then the
@@ -362,7 +362,8 @@ Phase 0:
   form again, with the login kept. Forms pass `same_origin` first. Every page says `Cache-Control: no-store`, since
   pages are per person and most will show case-derived content.
 - **`src/chatddx/portal/templates/`**: `base.html`, `sign-in.html` and `home.html`, autoescaped.
-- **`chatddx run`** (`src/chatddx/cli.py:_run`, sharing `_serve` and `_serving` with `chatddx api`).
+- **`chatddx run`** (`src/chatddx/cli.py:_run`, sharing `_serve` and `_serving` with `chatddx api`), and
+  `chatddx portal`, the same with no worker and no `--watch` (`_portal`).
 - **The API**: `Cache-Control: no-store` on a family's vignette, a run's items, a score's items and a run's events
   (`src/chatddx/api/state.py:no_store`, `NO_STORE`); every refusal as `{"detail", "code"}`
   (`src/chatddx/api/app.py:STATUSES`, `CODES`; `src/chatddx/api/schemas.py:Error`), described in `docs/api.md` and

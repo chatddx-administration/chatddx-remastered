@@ -93,10 +93,12 @@ prints the worker's id and the World as it starts, and serves `settings.database
 stopping event and wakes it; then it prints that what it held is queued again.
 
 ```
-AGENT: rename
-`chatddx portal` is renamed `chatddx run` (agents/wip-deploy.md).
+AGENT: replace
+`chatddx portal` is renamed `chatddx run`, and `chatddx portal` now serves the portal and the API with no worker
+(agents/wip-deploy.md).
 ---
-`chatddx run` runs one in its process (`src/chatddx/api/app.py:app`, `worker=True`); `chatddx api` runs none.
+`chatddx run` runs one in its process (`src/chatddx/api/app.py:app`, `worker=True`); `chatddx api` and
+`chatddx portal` run none.
 ```
 `chatddx portal` runs one in its process (`src/chatddx/api/app.py:app`, `worker=True`); `chatddx api` runs none.
 

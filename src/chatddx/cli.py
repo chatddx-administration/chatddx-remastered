@@ -298,13 +298,14 @@ def _api(args: argparse.Namespace) -> None:
     _serve("api", args, app)
 
 
+def _portal(args: argparse.Namespace) -> None:
+    _unbuilt("portal", "or CHATDDX_PORTAL_ASSETS")
+    _serve("portal", args, portal)
+
+
 def _run(args: argparse.Namespace) -> None:
-    built = settings.portal_assets()
-    if not args.watch and not Assets(built).built:
-        print(
-            f"run: nothing built in {built}: pnpm --dir frontend build, or --watch",
-            file=sys.stderr,
-        )
+    if not args.watch:
+        _unbuilt("run", "or --watch")
     watching = _watching() if args.watch else None
     try:
         _serve("run", args, lambda i, f, c: portal(i, f, c, worker=True))
@@ -312,6 +313,15 @@ def _run(args: argparse.Namespace) -> None:
         if watching is not None:
             watching.terminate()
             _ = watching.wait()
+
+
+def _unbuilt(command: str, otherwise: str) -> None:
+    built = settings.portal_assets()
+    if not Assets(built).built:
+        print(
+            f"{command}: nothing built in {built}: pnpm --dir frontend build, {otherwise}",
+            file=sys.stderr,
+        )
 
 
 def _watching() -> subprocess.Popen[bytes]:
@@ -577,6 +587,14 @@ def main(argv: Sequence[str] | None = None) -> None:
     )
     _serving(api, "the API")
     api.set_defaults(run=_api)
+
+    portal_parser = commands.add_parser(
+        "portal",
+        help="serve the portal over HTTP, and the API with it at /api/, with no "
+        + "worker: chatddx worker runs beside it",
+    )
+    _serving(portal_parser, "the portal")
+    portal_parser.set_defaults(run=_portal)
 
     run_parser = commands.add_parser(
         "run",
