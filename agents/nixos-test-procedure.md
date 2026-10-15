@@ -208,7 +208,8 @@ mode 0400. Then:
    `plan (en, Qwen/Qwen3-8B-AWQ)` of alice's, store a typed case, start a scored run at `qwen3-8b-awq@fake`, and wait
    until its job is no longer queued or under way; it must be finished. `chatddx portal` runs no worker, so this
    shows a worker service took it.
-3. **nginx**: the headers of a GET of `/sign-in`, HSTS among them, and a 429 among eight quick failed sign-ins.
+3. **nginx**: the headers of a GET of `/sign-in`, HSTS among them, and a 429 among twelve failed sign-ins sent at
+   once, with `signInRate` at `1r/m` for the test.
 4. **No proxy**: with `HTTPS_PROXY` set in the service manager's environment, a restarted worker's environment holds
    none.
 
@@ -242,6 +243,9 @@ About 20 minutes up to the end of subtest 2. With KVM it would be a few minutes.
 ## What went wrong on the way
 - **`curl -I` against the app** fails: FastAPI adds no HEAD to a GET route, so HEAD is 405. The test reads headers
   from a GET (`curl -sf -o /dev/null -D -`).
+- **A limit that emulation doesn't reach**: at 10 a minute with a burst of 5, nginx takes a sign-in every 6 s beyond
+  the burst. By emulation each `curl`, and the argon2 behind it, takes several seconds, so eight in a row all got 200.
+  The test sends its sign-ins at once (`curl … &` in a loop, then `wait`), at `1r/m`.
 - **`getpass` with no terminal**: `chatddx person password` reads `/dev/tty` when there is one. Under the test driver,
   `setsid -w` runs it without a controlling terminal, so that it reads the password from stdin.
 - **`retry`** in the test driver takes `timeout` as a `datetime.timedelta`; a number of seconds is deprecated.
@@ -253,3 +257,5 @@ About 20 minutes up to the end of subtest 2. With KVM it would be a few minutes.
 
 ## Runs
 - **First run**: subtests 1 and 2 passed; subtest 3 failed on `curl -sfI` (see "What went wrong on the way").
+- **Second run**: subtests 1 and 2 passed, and the headers; the limit didn't answer 429 to sign-ins in a row (see
+  "What went wrong on the way"). Its timings were within 10% of the first's.

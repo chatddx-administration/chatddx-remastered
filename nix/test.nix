@@ -27,6 +27,7 @@ pkgs.testers.runNixOSTest {
       nginx = {
         enable = true;
         hostName = host;
+        signInRate = "1r/m";
       };
     };
     services.nginx.virtualHosts.${host} = {
@@ -95,10 +96,10 @@ pkgs.testers.runNixOSTest {
     with subtest("nginx sends the headers and limits sign-ins"):
         headers = machine.succeed("curl -sf -o /dev/null -D - https://${host}/sign-in").lower()
         assert "strict-transport-security" in headers, headers
-        codes = [
-            machine.succeed("curl -s -o /dev/null -w '%{http_code}' -X POST -d login=nobody -d password=wrong https://${host}/sign-in")
-            for _ in range(8)
-        ]
+        codes = machine.succeed(
+            "for _ in $(seq 12); do curl -s -o /dev/null -w '%{http_code}\\n' -X POST"
+            + " -d login=nobody -d password=wrong https://${host}/sign-in & done; wait"
+        ).split()
         assert "429" in codes, codes
 
     with subtest("the services see no proxy"):
