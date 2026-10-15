@@ -146,15 +146,8 @@ it, if any. A new schema gets its own section with all three tiers.
 - `0020-t1-worker.sql`: PUBLIC loses all access. Each table is granted explicitly, without default privileges, as the
   tables are updated in place: the writer gets SELECT, INSERT, UPDATE, and no DELETE. The reader gets nothing, since
   why a job failed can quote what it was sending.
-```
-AGENT: replace
-The worker is solidified as docs/worker.md.
----
 - `0024-t0-worker-scored.sql`: `job.scored`, the scorers a job has finished, so that a job queued again mid-scoring
   scores what is left (docs/worker.md, "Stopping").
-```
-- `0024-t0-worker-scored.sql`: `job.scored`, the scorers a job has finished, so that a job queued again mid-scoring
-  scores what is left (agents/wip-worker.md, W2).
 
 ### Tier 2
 - `0021-t2-worker.sql`: CHECKs on a job's status (`src/chatddx/store/queue.py:Status`, tested against the check in
