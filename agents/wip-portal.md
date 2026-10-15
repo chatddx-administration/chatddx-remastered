@@ -14,7 +14,7 @@ it.
    that work sets the structure of the portal's frontend, and shows what Lovable has to teach (see "Swift").
 3. **Decided: `chatddx portal`** serves the portal, and starts everything the portal needs with it: the API now, the
    worker once the API queues runs (see "P3b, concretely"). It is a convenience for development: a deployment runs
-   the HTTP server, the API and the worker as separate systemd services on NixOS (`agents/wip-worker.md`, W1).
+   the HTTP server, the API and the worker as separate systemd services on NixOS (`docs/worker.md`, "Where it runs").
 4. **Phases 0 to 4, and the first half of 5, are built** (see "Built"): `chatddx.portal`, signing in and out,
    `Cache-Control: no-store`, a code beside each error's detail in the API (decided); then the frontend in
    `frontend/`, swift's theme and components, and the home page, the first island; then the pages to read; then the
@@ -45,7 +45,7 @@ In remastered's terms:
 | Authoring | a form per kind people write: chunks, recipes, appendices, cases, expectations, scorers and judges; what is said of a thread; following an origin; taking expectations | the bench's writes (`docs/bench.md`, "Writes for the person") |
 | Endpoints and models | each endpoint's engine, model, host and clearances; the facts of each model | `GET /api/endpoints`, `GET /api/models` |
 | Comparing runs | runs side by side over the cases they share, a column per run under each view; several variations started together from the variation's page (see "Comparing variations") | `Bench.runs`, `Bench.scores_of`, the look per variation; `GET /api/runs`, `POST /api/runs` |
-| Status | the worker at the person's jobs, with pause, resume, stop and stop now; built on the runs page (the worker's step 4) | the worker (`agents/wip-worker.md`) |
+| Status | the worker at the person's jobs, with pause, resume, stop and stop now; built on the runs page | the worker (`docs/worker.md`) |
 
 Ways of showing things the pages keep:
 - **A version timeline** on every thread: ◀ and ▶, "version i of n", and what each version changed, word by word.
@@ -85,7 +85,7 @@ where it is interactive. Its look and the structure of its frontend come from sw
 Decided:
 - **`chatddx portal`** serves the app, the portal at `/` and the API at `/api/`, as `chatddx api` serves the API
   alone, with the same `--world`, `--facts` and `--bind`. It starts everything the portal needs with it: a basic
-  worker in its process (`agents/wip-worker.md`, W1, built with step 3), and the frontend's build when it has one.
+  worker in its process (`docs/worker.md`, "Where it runs"), and the frontend's build when it has one.
 - **One app.** `src/chatddx/portal/`, a package beside `src/chatddx/api/`, mounted at `/` in the same FastAPI app as
   the API at `/api/` (`src/chatddx/api/app.py:app`). Its routes return HTML rendered with Jinja2 (Starlette's
   `Jinja2Templates`), and build a bench per request, as the API's routes do (`src/chatddx/api/people.py:bench`).
@@ -107,7 +107,7 @@ Decided: Svelte with TypeScript, only where a page needs feedback that takes a r
   events").
 - **Several started together**: more than one chunk picked per part, with the number of runs, what the gate refuses
   and each scorer's reach as you pick (see "Comparing variations", C2).
-- **The worker's state** (`agents/wip-worker.md`).
+- **The worker's state** (`docs/worker.md`).
 - Perhaps editors for structured chunks and expectations, checked against their JSON Schema as you type.
 
 Decided, for how, and built in phase 1:
@@ -169,8 +169,8 @@ Decided (phase 4), from the options R1 to R12:
   "Starting one").
 - **R8. Limits in `settings`**: runs a day per person and items per run, kept by the bench for every edge, refused as
   over quota.
-- **R9. Concurrency** stays 1 until the worker shares an endpoint's `max_jobs` between runs, which ends it with the
-  worker's step 3; a run's request then chooses a concurrency up to `max_jobs` (`agents/wip-worker.md`, R4). Since
+- **R9. Concurrency** stays 1 until the worker shares an endpoint's `max_jobs` between runs, which the worker
+  does; a run's request then chooses a concurrency up to `max_jobs` (`docs/api.md`, "Starting one"). Since
   step 3 the API's runs take one; the variation's island doesn't offer it yet.
 - **R10. On the jobs in the app's process**; the worker takes their place with the API as it is. Since step 3 they
   are the worker's queue's.
@@ -225,7 +225,7 @@ Take:
   start, a confirmation from a look per variation (`GET /api/threads/{id}/variation`): the runs, what each sets, what
   the gate refuses and why, the cases, and each scorer's reach. Each is a `POST /api/runs`; nothing else is stored,
   and the comparison page follows them.
-- **C3. Replicates and text cleanup** on a run's form, as `POST /api/runs` takes them (`agents/wip-worker.md`, R1
+- **C3. Replicates and text cleanup** on a run's form, as `POST /api/runs` takes them (`docs/api.md`, "Starting one"; R1
   and R2). Built: a replicates count beside the seed. Cleanup, a concurrency and an order aren't offered yet: a run
   takes its sources' and its endpoint's.
 - **C4. Grouping by hand**: tags on runs, which the catalog takes on any subject (`docs/catalog.md`, "Entries") and
@@ -237,7 +237,7 @@ Open:
 - **How many runs** a confirmation starts before it warns, with `settings.RUNS_PER_DAY` runs a day.
 - **Several started together**: each is a job in the worker's queue, holding its run's concurrency in slots at its
   endpoint, so runs on one endpoint take turns within its `max_jobs`; the repl's runs and judge calls aren't counted
-  (`agents/wip-worker.md`, "Below the worker").
+  (`docs/worker.md`, "Smaller issues").
 - **Runs to compare in the tests**: none of the test World's scripted runs sets a part, and no two are over the
   same cases (`docs/scripted.md`, "The runs").
 - **A study kept for publication**: a selection of runs frozen with the scorings it is scored by, designed with the
@@ -472,7 +472,7 @@ Phase 4, as decided (see "Starting and watching a run"):
   starts, which `Bench.described` reads first; `POST /api/runs/{id}/again` runs a run's trial again with another seed
   (`Bench.again`), so a run of a variation nobody saved can run again without it; runs a day and items a run are
   limited (`settings.RUNS_PER_DAY`, `ITEMS_PER_RUN`; `Catalog.runs_started`), refused as over quota; and a quiet event
-  stream sends `: keep-alive` every 15 s (`src/chatddx/api/telling.py:KEEP_ALIVE` since the worker's step 3), described in `docs/api.md`,
+  stream sends `: keep-alive` every 15 s (`src/chatddx/api/telling.py:KEEP_ALIVE`), described in `docs/api.md`,
   `docs/api-api.md`, `docs/bench.md`, `docs/bench-api.md`, `docs/catalog-api.md` and `docs/repl.md`.
 - **Following a run** (`frontend/src/lib/runs/`): `watch`, a run's events through `EventSource`, and `fold`, which
   folds them into a run's progress: its items as they are sent, stream and end, what is noted, and each scorer's
@@ -512,9 +512,9 @@ Phase 5, first half, as decided (see "Authoring"):
 
 ## Below the UI
 What the portal needs below its pages that isn't built:
-1. **The worker** (`agents/wip-worker.md`): runs that outlive the app's process and are seen from every replica.
+1. **The worker** (`docs/worker.md`): runs that outlive the app's process and are seen from every replica.
    Built through its step 3: the API's runs, scorings and halts go through its queue, with the API as it was.
-2. **The worker's controls and status** (`agents/wip-worker.md`, "The plan", 4), built: the runs page's queue, each
+2. **The worker's controls and status** (`docs/worker.md`, "A person's queue"), built: the runs page's queue, each
    run's job, and Resume on an unfinished run's page.
 3. **Z1**, the map from roles to kinds, which waits for the portal's views (`docs/bench.md`, "Outstanding";
    `docs/identity.md`, "Z1: what each role is shown").
@@ -529,12 +529,12 @@ What the portal needs below its pages that isn't built:
    families with their expectations (the vignette in its own place), endpoints and models.
 3. **The variation being tried**, and its island, built (see "Built").
 4. **Starting and watching a run**, built (see "Built"): the run's island, on the API's runs and events; the worker
-   under them when it is built (`agents/wip-worker.md`).
+   under them (`docs/worker.md`).
 5. **Authoring**: the pages for the bench's writes, which are built; a scorer's pickers read `GET /api/scorer-code`.
    Its first half is built (see "Built"): a page for every thread, and the clinicians' appendices, cases and
    expectations.
 6. **Comparing variations**: the page to compare runs, then several started together (see "Comparing variations"),
-   and the worker's status (`agents/wip-worker.md`).
+   and the worker's status (`docs/worker.md`).
 7. **Z1**, and what deleting hides.
 8. **Docs**: material for a `docs/portal.md`.
 
@@ -609,12 +609,12 @@ From "What the portal shows", not on the pages yet:
 - **Concurrency** is 1 from the variation's page (R9): a run of the sample World's 104 cases sends them one at a
   time. The API's runs take a concurrency up to the endpoint's `max_jobs`.
 - **A page that joins a run late** is told its rows, then what the worker says from then on: an item's text from when
-  it joined, the whole once the run's page reloads (`agents/wip-worker.md`, T2).
+  it joined, the whole once the run's page reloads (`docs/api.md`, "Its events").
 - **The live view holds every item's text** as it streams, in the page; a large run with long answers makes a heavy
   page. Take: drop the text of an item once it has ended, which the run's page shows after it is done.
 - **Replicates**: a run takes several seeds, or a count drawn, and the run's island takes a count; cleanup, a
-  concurrency and an order are the API's alone so far (`agents/wip-worker.md`, R1 to R4).
-- **The limits** (`settings.RUNS_PER_DAY`, 100, and `ITEMS_PER_RUN`, 1,000 since the worker's step 3) are takes, as is counting a day back from
+  concurrency and an order are the API's alone so far (`docs/api.md`, "Starting one").
+- **The limits** (`settings.RUNS_PER_DAY`, 100, and `ITEMS_PER_RUN`, 1,000) are takes, as is counting a day back from
   now. A scoring isn't limited.
 - **Running again** re-sends a run's trial; it doesn't follow the configuration if it has moved on since.
 

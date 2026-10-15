@@ -189,6 +189,12 @@ The API lists them (docs/runner-api.md, "Finding codes").
 
 ## Elsewhere
 - **Scripted runs**, `chatddx scripted-runs` on the bench: `docs/scripted.md`.
+```
+AGENT: replace
+The worker is solidified as docs/worker.md.
+---
+- **`max_jobs` across runs**, and a lost run resumed: `docs/worker.md`, "Claiming".
+```
 - **`max_jobs` across runs**, and asking for a lost run to resume: `agents/wip-worker.md`, "Below the worker".
 - **Canary sets are each endpoint's**, in the inventory (docs/inventory.md, "Endpoints"); no World's endpoint names
   one yet, though data sets hold them.

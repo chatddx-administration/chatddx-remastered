@@ -62,6 +62,13 @@ The modules that serve build on FastAPI, `telling.py` among them for its thread 
 request's connection (`state.py:connection`), in autocommit mode and closed when the request is done with it. A stream
 gets a connection of its own (`telling.py:told`), closed when it ends.
 
+```
+AGENT: replace
+In the paragraph below: the worker is solidified as docs/worker.md.
+---
+**Jobs.** What a request asks to be run or scored is a job in the store's queue (`chatddx.store.Queue`;
+docs/worker.md), which a worker takes: `chatddx worker`, or the one `app` runs on a thread of its own when made
+```
 **Jobs.** What a request asks to be run or scored is a job in the store's queue (`chatddx.store.Queue`;
 agents/wip-worker.md), which a worker takes: `chatddx worker`, or the one `app` runs on a thread of its own when made
 with `worker=True`. A stream reads the run's rows, and hears what the worker says and the rows as they land through
@@ -489,6 +496,13 @@ or `CHATDDX_WORLD`; the bundled facts, the World's and those given; and `--bind`
 `HOST:PORT` is `SystemExit("api: bind to HOST:PORT, not '<bind>'")`. `uvicorn.run` serves `app(world.inventory, facts,
 settings.database())`.
 
+```
+AGENT: replace
+In the paragraph below: the worker is solidified as docs/worker.md.
+---
+`chatddx api` runs none: `chatddx worker` runs beside it (docs/worker.md, "Where it runs"; docs/worker-api.md, "The
+command").
+```
 `chatddx portal` takes the same arguments and serves `chatddx.portal.app.app` the same way, with a worker in its
 process (`worker=True`), its `SystemExit` saying `portal:` (`src/chatddx/cli.py:_serve`; agents/wip-portal.md).
 `chatddx api` runs none: `chatddx worker` runs beside it (agents/wip-worker.md).
