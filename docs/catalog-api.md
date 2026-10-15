@@ -795,12 +795,6 @@ It checks:
 - that an entry has exactly one subject, a run or score that has started, a known field and the right shape, a
   language only on a family, and what a run varied only on a run, naming a configuration's edit and stored chunks and
   engines;
-```
-AGENT: remove
-The item repeats the one above it, as it was before runs took what they varied.
-```
-- that an entry has exactly one subject, a run or score that has started, a known field and the right shape, and a
-  language only on a family;
 - that a label names a view or resource its scorer has;
 - that a family's bindings keep their source, and the id or the fingerprint;
 - that languages are tags on components of `LANGUAGE_KINDS`, and not on a skeleton known to be compiled;

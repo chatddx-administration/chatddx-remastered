@@ -102,10 +102,6 @@ Lists the configurations you can use: yours, and those shared with you.
 Each row is a configuration in one language, with what each part is, its
 engine last. Judge configurations follow, in a table of their own.
 
-````
-AGENT: replace
-Recorded on the sample World with its fakes, after its scripted runs; `...` marks what is cut. The transcript.
----
 ```
 alice #2475> configurations
  configuration          instructions    few_shot             prompt  output                         ...  engine             owner
@@ -124,19 +120,6 @@ judge configurations
  judge (en)         judge (en)    judge (en)  verdict (en)  ...  qwen3-8b-awq@fake  yours, from archive
  judge-graded (en)  judge (en)    judge (en)  grade (en)    ...  qwen3-8b-awq@fake  yours, from archive
 ```
-````
-```
-alice #2475> configurations
- configuration          instructions    few_shot             prompt  output                ...  engine             owner
- diagnoses (en)         —               —                    case    diagnoses (en)        ...  qwen3-8b-awq@fake  yours, from archive
- free-text-guided (sv)  clinician (sv)  worked-example (sv)  case    free-text (en)        ...  qwen3-8b-awq@fake  yours, from archive
- plan (en)              —               —                    case    management-plan (en)  ...  qwen3-8b-awq@fake  yours, from archive
- ...
-
-judge configurations
- configuration  instructions  prompt  output        ...  engine             owner
- judge (en)     judge (en)    judge   verdict (en)  ...  qwen3-8b-awq@fake  yours, from archive
-```
 
 `yours, from archive` is your copy of a configuration the archive (the
 shared data set) holds; the archive's own row is left out. With a name,
@@ -147,23 +130,6 @@ alice #2475> configurations plan
  configuration  prompt  output                sampling     engine             owner
  plan (en)      case    management-plan (en)  recommended  qwen3-8b-awq@fake
  plan (en)      case    management-plan (en)  recommended  qwen3-8b-awq@fake  archive
-```
-
-```
-AGENT: remove
-The paragraph and the transcript after it repeat the two above as they were, when names carried a model.
-```
-`yours, from archive` is your copy of a configuration the archive (the
-shared data set) holds; the archive's own row is left out. A part that
-differs between models reads `differs`. With a name, it lists that
-configuration's variants, one per model and owner:
-
-```
-alice #2475> configurations plan
- configuration                  prompt  output                sampling                          owner
- plan (en, Qwen/Qwen3-8B-AWQ)   case    management-plan (en)  recommended (Qwen/Qwen3-8B-AWQ)
- plan (en, Qwen/Qwen3-8B-AWQ)   case    management-plan (en)  recommended (Qwen/Qwen3-8B-AWQ)   archive
- ...
 ```
 
 ### `endpoints`
@@ -224,20 +190,10 @@ Puts an endpoint in the cell, and the engine it serves in the cell's
 configuration, keeping everything else you chose. The configuration is
 worked out again for the new engine's model:
 
-````
-AGENT: replace
-Recorded on the sample World with its fakes, after its scripted runs; `...` marks what is cut. The transcript.
----
 ```
 alice plan (en)×qwen3-8b-awq@fake #2475> on gpt-oss-20b@fake
 cell: plan (en)+engine=gpt-oss-20b@fake × gpt-oss-20b@fake
 [info] facts.output_note: harmony renders no response_format: the model reads the schema only if the guidance shows it
-alice plan (en)+engine=gpt-oss-20b@fake×gpt-oss-20b@fake #2475>
-```
-````
-```
-alice plan (en)×qwen3-8b-awq@fake #2475> on gpt-oss-20b@fake
-cell: plan (en)+engine=gpt-oss-20b@fake × gpt-oss-20b@fake
 alice plan (en)+engine=gpt-oss-20b@fake×gpt-oss-20b@fake #2475>
 ```
 
@@ -250,18 +206,9 @@ lints find in it, and what the new engine's model can't do (see `set`).
 
 Both at once: the configuration, with the endpoint's engine in it.
 
-````
-AGENT: replace
-Recorded on the sample World with its fakes, after its scripted runs; `...` marks what is cut. The transcript.
----
 ```
 alice #2475> cell free-text qwen3-8b-awq@fake
 cell: free-text (en) × qwen3-8b-awq@fake
-```
-````
-```
-alice #2475> cell free-text qwen3-8b-awq@fake
-cell: free-text (en, Qwen/Qwen3-8B-AWQ) × qwen3-8b-awq@fake
 ```
 
 ### `set PART CHUNK`
@@ -269,18 +216,9 @@ cell: free-text (en, Qwen/Qwen3-8B-AWQ) × qwen3-8b-awq@fake
 Changes one part of the cell's configuration, leaving the rest as it is.
 For example, to have the model answer without thinking first:
 
-````
-AGENT: replace
-Recorded on the sample World with its fakes, after its scripted runs; `...` marks what is cut. The transcript.
----
 ```
 alice plan (en)×qwen3-8b-awq@fake #2475> set reasoning off
 cell: plan (en)+reasoning=off × qwen3-8b-awq@fake
-```
-````
-```
-alice plan (en, Qwen/Qwen3-8B-AWQ)×qwen3-8b-awq@fake #2475> set reasoning off
-cell: plan (en, Qwen/Qwen3-8B-AWQ)+reasoning=off × qwen3-8b-awq@fake
 ```
 
 The prompt shows what you changed (`+reasoning=off`). A reasoning chunk
@@ -294,26 +232,12 @@ keeps it all, worked out again for the new engine's model. A level the
 model can't honour lands on the nearest it can, where its facts say so,
 and `show` says where (see below):
 
-````
-AGENT: replace
-Recorded on the sample World with its fakes, after its scripted runs; `...` marks what is cut. The transcript.
----
 ```
 alice plan (en)+reasoning=off×qwen3-8b-awq@fake #2475> on gpt-oss-20b@fake
 cell: plan (en)+reasoning=off+engine=gpt-oss-20b@fake × gpt-oss-20b@fake
 [info] facts.output_note: harmony renders no response_format: the model reads the schema only if the guidance shows it
 ```
-````
-```
-alice plan (en)+reasoning=off×qwen3-8b-awq@fake #2475> on gpt-oss-20b@fake
-cell: plan (en)+reasoning=off+engine=gpt-oss-20b@fake × gpt-oss-20b@fake
-```
 
-````
-AGENT: replace
-Recorded on the sample World with its fakes, after its scripted runs; `...` marks what is cut.
-A refusal is said in yellow, as a note, so a piped session goes on. The paragraph and its transcript.
----
 Where the facts refuse it, as gpt-oss refuses a thinking budget, the
 cell changes all the same, and the shell says why in yellow; `set`
 another chunk to mend it:
@@ -322,16 +246,6 @@ another chunk to mend it:
 alice plan (en)+reasoning=on-budget-2048×qwen3-8b-awq@fake #2475> on gpt-oss-20b@fake
 cell: plan (en)+reasoning=on-budget-2048+engine=gpt-oss-20b@fake × gpt-oss-20b@fake
 openai/gpt-oss-20b: no thinking budget is documented for harmony: set another in its place
-```
-````
-Where the facts refuse it, as gpt-oss refuses a thinking budget, the
-cell changes all the same, and the shell says why in red; `set` another
-chunk to mend it:
-
-```
-alice plan (en)+reasoning=on-budget-2048×qwen3-8b-awq@fake #2475> on gpt-oss-20b@fake
-cell: plan (en)+reasoning=on-budget-2048+engine=gpt-oss-20b@fake × gpt-oss-20b@fake
-openai/gpt-oss-20b: no thinking budget is documented for harmony
 ```
 
 `set engine NAME` swaps the engine alone, named as `endpoints` lists it,
@@ -348,10 +262,6 @@ settings that will be sent. Then what the lints find, and a table of the
 scorers: for each view, whether this kind of answer gives it anything to
 read, and how many cases have the target it needs. Nothing is sent.
 
-````
-AGENT: replace
-Recorded on the sample World with its fakes, after its scripted runs; `...` marks what is cut. The transcript.
----
 ```
 alice plan (en)×qwen3-8b-awq@fake #4479> show
 cell: plan (en) × qwen3-8b-awq@fake
@@ -400,53 +310,6 @@ lints
  plan       disposition   99 have it
  ...
 ```
-````
-```
-alice plan (en)×qwen3-8b-awq@fake #4479> show
-cell: plan (en) × qwen3-8b-awq@fake
- part          chunk                 is
- endpoint      qwen3-8b-awq@fake     qwen3-8b-awq@fake, served as sha256:cc0dc8… at http://127.0.0.1:12099/v1/
- instructions  —
- few_shot      —
- prompt        case                  "{vignette}{appendices}"
- output        management-plan (en)  native output: management_plan_v1
- sampling      recommended           recommended sampling, for reasoning on
- reasoning     —
- ...
- engine        qwen3-8b-awq@fake     qwen3-8b-awq@fake on vllm 0.24.0+fake (none)
-system
-Fill in the management plan for the case.
-user
-‹vignette›‹appendices›
-body
-{
-  "model": "sha256:cc0dc8…",
-  "presence_penalty": 1.5,
-  "response_format": {
-    "type": "json_schema",
-    "json_schema": {
-      "name": "output",
-      "strict": true,
-      "schema": "‹the output's schema›"
-    }
-  },
-  "temperature": 0.6,
-  ...
-  "seed": 4479,
-  "return_token_ids": true
-}
-lints
-[warning] language.mixed: the request is en, but 20 of 99 cases are sv
- scorer     view          of 99 cases
- diagnoses  differential  99 have it
- diagnoses  dont-miss     6 have it; missing: Dutchfall11w Dutchfall13w Dutchfall16w ... and 83 more
- free-text  text          the output offers no such view
- ...
- plan       differential  99 have it
- plan       warning       99 have it
- plan       disposition   99 have it
- ...
-```
 
 A view that reads the whole answer is offered by free text only. Cases
 with missing targets can still be run; the views that need the missing
@@ -457,10 +320,6 @@ With `set reasoning off` and `on gpt-oss-20b@fake`, `show` says where
 the level landed on gpt-oss, which always reasons, and why, and the
 sampling follows the level it landed on:
 
-````
-AGENT: replace
-Recorded on the sample World with its fakes, after its scripted runs; `...` marks what is cut. The transcript.
----
 ```
 alice plan (en)+reasoning=off+engine=gpt-oss-20b@fake×gpt-oss-20b@fake #4479> show
 cell: plan (en)+reasoning=off+engine=gpt-oss-20b@fake × gpt-oss-20b@fake
@@ -476,41 +335,14 @@ cell: plan (en)+reasoning=off+engine=gpt-oss-20b@fake × gpt-oss-20b@fake
  engine        gpt-oss-20b@fake (set; plan (en) has qwen3-8b-awq@fake)  gpt-oss-20b@fake on vllm 0.24.0+fake (none)
 ...
 ```
-````
-```
-alice plan (en)+reasoning=off+engine=gpt-oss-20b@fake×gpt-oss-20b@fake #4479> show
-cell: plan (en)+reasoning=off+engine=gpt-oss-20b@fake × gpt-oss-20b@fake
- part          chunk                                                    is
- endpoint      gpt-oss-20b@fake                                         gpt-oss-20b@fake, served as sha256:fc08c4… at http://127.0.0.1:12100/v1/
- ...
- sampling      recommended                                              recommended sampling, for reasoning low
- reasoning     off (set; plan (en) has —)                               reasoning off → low, its nearest: always reasons: vLLM rejects reasoning_effort = none for harmony
- ...
- engine        gpt-oss-20b@fake (set; plan (en) has qwen3-8b-awq@fake)  gpt-oss-20b@fake on vllm 0.24.0+fake (none)
-...
-```
 
 ### `show tag TAG...`
 
 The same, with the lints and the scorers' table counting only the cases
 with any of the tags: the cases `run tag` would run.
 
-````
-AGENT: replace
-Recorded on the sample World with its fakes, after its scripted runs; `...` marks what is cut. The transcript.
----
 ```
 alice plan (en)×qwen3-8b-awq@fake #4479> show tag edn
-...
-lints
-[warning] language.mixed: the request is en, but 20 of 20 cases are sv
- scorer     view          of 20 cases tagged edn
- diagnoses  differential  20 have it
- ...
-```
-````
-```
-alice plan (en, Qwen/Qwen3-8B-AWQ)×qwen3-8b-awq@fake #4479> show tag edn
 ...
 lints
 [warning] language.mixed: the request is en, but 20 of 20 cases are sv
@@ -528,11 +360,6 @@ scored against, and your scores on it; a case that sends appendices shows
 them, and a case's family names its appendices and the cases that send
 them:
 
-````
-AGENT: replace
-Recorded on the sample World with its fakes, after its scripted runs; `...` marks what is cut.
-The scripted run `judged` ran it, so the case has a run and scores. The transcript.
----
 ```
 alice #4479> show case Dutchfall11w
 case Dutchfall11w, archive's  74c4d5
@@ -557,24 +384,6 @@ case Dutchfall11w, archive's  74c4d5
             answer        1       1     0
             graded        1       0.5   0
  raw        text          1       @44   0
-```
-````
-```
-alice #4479> show case Dutchfall11w
-case Dutchfall11w, archive's  74c4d5
- source                           sample/Dutchfall11w
- vignette                         Main complaint: general weakness and lower abdominal pain
-                                  ...
- appendices                       labs, ultrasound
- cases                            Dutchfall11w with ultrasound  its own expectation
-                                  Dutchfall11w with labs, ultrasound  its own expectation
- tags                             dutch-fall
- language                         en
- expectation.diagnosis.pattern    aaa | (abdominal | aortic) & aneurysm | dissection
- expectation.warning.pattern      rupture* | dissection | shock | aneurysm*
- expectation.disposition.pattern  surg* | operat* | vascular | icu | intensive & care
- expectation.notes                [ ... ]
-no runs of yours with this case
 ```
 
 `show case Dutchfall11w with ultrasound` shows that case, with the
@@ -611,21 +420,10 @@ a run can be repeated, and it is recorded with its seed.
 - `seed` draws a new random seed, below 100,000.
 - `seed 42` holds 42; any whole number from 0 to 2147483647 will do.
 
-````
-AGENT: replace
-Recorded on the sample World with its fakes, after its scripted runs; `...` marks what is cut. The transcript.
----
 ```
 alice free-text (en)×qwen3-8b-awq@fake #66272> seed
 seed: #24970
 alice free-text (en)×qwen3-8b-awq@fake #24970> seed 42
-seed: #42
-```
-````
-```
-alice free-text (en, Qwen/Qwen3-8B-AWQ)×qwen3-8b-awq@fake #66272> seed
-seed: #6035
-alice free-text (en, Qwen/Qwen3-8B-AWQ)×qwen3-8b-awq@fake #6035> seed 42
 seed: #42
 ```
 
@@ -645,10 +443,6 @@ model's thinking first, labelled, then the answer, and each tool call with
 its result. Then come the tokens it used, what each view reads from the
 answer, and the scores.
 
-````
-AGENT: replace
-Recorded on the sample World with its fakes, after its scripted runs; `...` marks what is cut. The transcript.
----
 ```
 alice free-text (en)×qwen3-8b-awq@fake #42> run DutchFall10w
 trial: free-text (en) × qwen3-8b-awq@fake × DutchFall10w (seed 42)
@@ -669,27 +463,6 @@ scores
 no target: notes comment, answer, graded
 recorded as run 1 of trial 5624e3, run 2a43210e
 ```
-````
-```
-alice free-text (en, Qwen/Qwen3-8B-AWQ)×qwen3-8b-awq@fake #42> run DutchFall10w
-trial: free-text (en, Qwen/Qwen3-8B-AWQ) × qwen3-8b-awq@fake × DutchFall10w (seed 42)
-[thinking] I am the fake vLLM, and nothing here reads the case. ...
-Fake diagnosis A
-Fake diagnosis B
-Fake diagnosis C
-(285 in, 43 out)
-differential
-  1. Fake diagnosis A
-  2. Fake diagnosis B
-  3. Fake diagnosis C
-scores
-  free-text   text           —   never named
-              differential   0   not listed
-              dont-miss      0   not named
-  raw         text           —   never named
-no target: notes comment, answer, graded
-recorded as run 1 of trial 5624e3, run 126f0b9d
-```
 
 A seed after the case is used for this run alone, and the shell keeps its
 own: `run DutchFall10w 7`. A case that sends appendices is named as
@@ -700,10 +473,6 @@ under the scores. When a view asks a judge, the shell says each call to it
 as it goes, with the judge's verdict, and lists what each call said and
 why after the scores:
 
-````
-AGENT: replace
-Recorded on the sample World with its fakes, after its scripted runs; `...` marks what is cut. The transcript.
----
 ```
 alice free-text (en)×qwen3-8b-awq@fake #42> run Dutchfall11w
 ...
@@ -729,32 +498,6 @@ judged
             graded, seed 3    points 2     It reaches the note's reading of the case and its essential actions.
 recorded as run 1 of trial 03cf2d, run a9effd21
 ```
-````
-```
-alice free-text (en, Qwen/Qwen3-8B-AWQ)×qwen3-8b-awq@fake #42> run Dutchfall11w
-...
-judging Dutchfall11w: comment by verdict, seed 1 of 1      51  meets true
-judging Dutchfall11w: answer by verdict, seed 1 of 1      51  meets true
-judging Dutchfall11w: graded by graded, seed 1 of 3      52  points 1
-judging Dutchfall11w: graded by graded, seed 2 of 3      45  points 0
-judging Dutchfall11w: graded by graded, seed 3 of 3      50  points 2
-...
-scores
-  free-text   text           —     never named
-              differential   0     not listed
-  notes       comment        1     by seed: 1
-              answer         1     by seed: 1
-              graded         0.5   by seed: 0.5, 0, 1
-  raw         text           —     never named
-no target: free-text dont-miss
-judged
-  comment   verdict, seed 1   meets true   It reads the case as the note does and would lead to the same actions.
-  answer    verdict, seed 1   meets true   It reads the case as the note does and would lead to the same actions.
-  graded    graded, seed 1    points 1     It gets the reading right but leaves out an action the note calls for.
-            graded, seed 2    points 0     It misses what the note leads with.
-            graded, seed 3    points 2     It reaches the note's reading of the case and its essential actions.
-recorded as run 1 of trial 03cf2d, run 7c620419
-```
 
 When the answer should follow a structure (a management plan, a list of
 diagnoses), the shell also says whether it did: `valid`, or `invalid` with
@@ -763,17 +506,8 @@ can't be read is said in red, and the run is recorded all the same. A case
 whose source the endpoint isn't cleared for is refused before anything is
 sent, as are tools on a sensitive source:
 
-````
-AGENT: replace
-Recorded on the sample World with its fakes, after its scripted runs; `...` marks what is cut. The transcript.
----
 ```
 alice plan-web (en)×qwen3-8b-awq@fake #69535> run DutchFall10w
-refused: the configuration's tools would get content from source sample, which is sensitive, and tools can't be cleared yet
-```
-````
-```
-alice plan-web (en, Qwen/Qwen3-8B-AWQ)×qwen3-8b-awq@fake #69535> run DutchFall10w
 refused: the configuration's tools would get content from source sample, which is sensitive, and tools can't be cleared yet
 ```
 
@@ -799,10 +533,6 @@ shell's seed, a line per case. The token count climbs while the case runs;
 then the line fills in with how it went. The run is then scored, and a
 table gives each case's score per view, by case, and a summary per view.
 
-````
-AGENT: replace
-Recorded on the sample World with its fakes, after its scripted runs; `...` marks what is cut. The transcript.
----
 ```
 alice free-text-guided (sv)×qwen3-8b-awq@fake #42> run tag edn
 trial: free-text-guided (sv) × qwen3-8b-awq@fake × 20 cases tagged edn (seed 42)
@@ -824,29 +554,6 @@ judging casesfromedn1: comment by verdict, seed 1 of 1      51  meets true
  notes      comment       1       1     0                  19
  ...
 recorded as run 1 of trial 9319f5, run d6be97bb
-```
-````
-```
-alice free-text-guided (sv, Qwen/Qwen3-8B-AWQ)×qwen3-8b-awq@fake #42> run tag edn
-trial: free-text-guided (sv, Qwen/Qwen3-8B-AWQ) × qwen3-8b-awq@fake × 20 cases tagged edn (seed 42)
-case            tokens  outcome
-casesfromedn13      50  completed
-casesfromedn9       50  completed
-...
-judging casesfromedn1: comment by verdict, seed 1 of 1      51  meets true
-...
-                 free-text  free-text     free-text  notes    notes   notes   raw
- case            text       differential  dont-miss  comment  answer  graded  text
- casesfromedn1   —          0             —          1        1       0.5     —
- casesfromedn10  —          0             —          —        —       —       —
- ...
- scorer     view          scored  mean  stderr  no answer  no target  no value
- free-text  text          0       —     —                             20
-            differential  20      0     0
-            dont-miss     1       0     0                  19
- notes      comment       1       1     0                  19
- ...
-recorded as run 1 of trial 9319f5, run e4a95af3
 ```
 
 - **Tags** say which set a case belongs to: `dutch-fall`, `edn` and
@@ -879,10 +586,6 @@ Lists your latest runs, the last 20, or as many as you say: when, what ran
 (configuration, endpoint, case and seed), how it went, and per scorer the
 mean of each view.
 
-````
-AGENT: replace
-Recorded on the sample World with its fakes, after its scripted runs; `...` marks what is cut. The transcript.
----
 ```
 alice #42> runs 2
  run       when              trial   what ran                                                        outcome       scores
@@ -893,28 +596,12 @@ alice #42> runs 2
                                                                                                                    notes 1/1/0.5
                                                                                                                    raw —
 ```
-````
-```
-alice #42> runs 2
- run       when              trial   what ran                                            outcome       scores
- e4a95af3  2026-10-12 23:24  9319f5  free-text-guided (sv, Qwen/Qwen3-8B-AWQ) ×          20 completed  free-text —/0/0
-                                     qwen3-8b-awq@fake × 20 cases (seed 42)                            notes 1/1/0.5
-                                                                                                       raw —
- ceb350fd  2026-10-12 23:24  492da1  diagnoses (en, Qwen/Qwen3-8B-AWQ) ×                 valid         diagnoses 0/—
-                                     qwen3-8b-awq@fake × Dutchfall11w with ultrasound
-                                     (seed 7)
-```
 
 A run that never finished, as when the shell is killed mid-run, says
 `unfinished`.
 
 ### `replay [RUN]`
 
-````
-AGENT: replace
-Recorded on the sample World with its fakes, after its scripted runs; `...` marks what is cut.
-The run is the scripted run `runaway`, whose id is drawn as it runs. The paragraph and its transcript.
----
 Shows a run again as it streamed, with when it ran, where, and on which
 build of chatddx. Without a run, the latest; otherwise the first letters of
 its id from `runs` are enough: `replay b97b`. The request isn't kept, so
@@ -925,32 +612,6 @@ A run of several cases is shown by its lines and tables.
 alice #69535> replay b97b2980
 run b97b2980 of trial c5cd8e: diagnoses (en)+engine=gpt-oss-20b@fake × gpt-oss-20b@fake × Dutchfall14w (seed 17)
 2026-10-15 23:35, finished, at http://127.0.0.1:12100/v1/, on chatddx 0.0.0+dev
-the request, rendered again from the trial and the source, is the one that was sent
-[thinking] Breathlessness in known COPD with a viral trigger.
-{"diagnoses": ["COPD exacerbation", "Pneumonia", "Pulmonary embolism"]
-(114 out)
-stopped: nothing but whitespace for 100 tokens
-salvaged: cut short, and read with its structure closed
-valid
-differential
-  1. COPD exacerbation
-  2. Pneumonia
-  3. Pulmonary embolism
-scores
-  diagnoses   differential   1   1. COPD exacerbation
-              dont-miss      1   Pulmonary embolism
-```
-````
-Shows a run again as it streamed, with when it ran, where, and on which
-build of chatddx. Without a run, the latest; otherwise the first letters of
-its id from `runs` are enough: `replay 809b`. The request isn't kept, so
-the shell renders it again and says whether it is the one that was sent.
-A run of several cases is shown by its lines and tables.
-
-```
-alice #69535> replay 809be1a5
-run 809be1a5 of trial c5cd8e: diagnoses (en, openai/gpt-oss-20b) × gpt-oss-20b@fake × Dutchfall14w (seed 17)
-2026-10-12 23:24, finished, at http://127.0.0.1:12100/v1/, on chatddx 0.0.0+dev
 the request, rendered again from the trial and the source, is the one that was sent
 [thinking] Breathlessness in known COPD with a viral trigger.
 {"diagnoses": ["COPD exacerbation", "Pneumonia", "Pulmonary embolism"]
@@ -979,10 +640,6 @@ Lists the scorers, view by view: the metric, what part of an answer it
 reads, which part of the expectation it holds that to, whose it is, and
 whether the cell's output offers what it reads.
 
-````
-AGENT: replace
-Recorded on the sample World with its fakes, after its scripted runs; `...` marks what is cut. The transcript.
----
 ```
 alice plan (en)×qwen3-8b-awq@fake #4479> scorers
  scorer     view          metric                      reads                                       held to                               owner    the cell
@@ -999,19 +656,6 @@ alice plan (en)×qwen3-8b-awq@fake #4479> scorers
             disposition   mentions                    $.management.disposition                    /disposition                                   offers it
             dont-miss     mentions                    $.diagnoses[?@.critical == true].diagnosis  /dont_miss                                     offers it
  raw        text          first_mention               the whole answer                            /diagnosis                            archive  doesn't offer it
-```
-````
-```
-alice plan (en, Qwen/Qwen3-8B-AWQ)×qwen3-8b-awq@fake #4479> scorers
- scorer     view          metric                     reads                      held to                               owner    the cell
- diagnoses  differential  reciprocal_rank            $.diagnoses[*]             /diagnosis                            archive  offers it
-            dont-miss     mentions                   $.diagnoses[*]             /dont_miss                                     offers it
- free-text  text          first_mention              the whole answer           /diagnosis                            archive  doesn't offer it
-            differential  reciprocal_rank            the whole answer, lines@1  /diagnosis                                     doesn't offer it
- notes      comment       verdict, judged by verdict the whole answer           $.notes[?@.author == 'Olof'].comment  archive  doesn't offer it
-            graded        points, judged by graded   the whole answer           $.notes[?@.author == 'Olof'].comment           doesn't offer it
- plan       differential  reciprocal_rank            $.diagnoses[*].diagnosis   /diagnosis                            archive  offers it
- ...
 ```
 
 - `reciprocal_rank`: 1 if the diagnosis is first in the differential, 1/2
@@ -1036,10 +680,6 @@ to be scored again; `score` catches them up, and ends with each view's
 summary. With a run, it scores that run, or says why not, or shows its
 scores when it is scored already.
 
-````
-AGENT: replace
-Recorded on the sample World with its fakes, after its scripted runs; `...` marks what is cut. The transcript.
----
 ```
 alice #69535> score b97b2980
 run b97b2980 of trial c5cd8e: diagnoses (en)+engine=gpt-oss-20b@fake × gpt-oss-20b@fake × Dutchfall14w (seed 17)
@@ -1048,17 +688,6 @@ scores
   diagnoses   differential   1   1. COPD exacerbation
               dont-miss      1   Pulmonary embolism
 [info] answer.salvaged: cut short, and read with its structure closed; the call ended with: stopped: nothing but whitespace for 100 tokens
-```
-````
-```
-alice #69535> score 809be1a5
-run 809be1a5 of trial c5cd8e: diagnoses (en, openai/gpt-oss-20b) × gpt-oss-20b@fake × Dutchfall14w (seed 17)
-scored already, as the scorings are now
-scores
-  diagnoses   differential   1   1. COPD exacerbation
-              dont-miss      1   Pulmonary embolism
-[info] answer.salvaged: cut short, and read with its structure closed; the call ended with: stopped: nothing but
-whitespace for 100 tokens
 ```
 
 ### `take [from OWNER] [TAG...]`
@@ -1084,19 +713,9 @@ configuration of your own under NAME, and puts it in the cell. Saving
 again under a name you have makes a new version of it, or none if nothing
 changed.
 
-````
-AGENT: replace
-Recorded on the sample World with its fakes, after its scripted runs; `...` marks what is cut. The transcript.
----
 ```
 alice free-text-guided (sv)+reasoning=off×qwen3-8b-awq@fake #42> save my-free-text
 saved as my-free-text: created 90721e
-cell: my-free-text × qwen3-8b-awq@fake
-```
-````
-```
-alice free-text-guided (sv, Qwen/Qwen3-8B-AWQ)+reasoning=off×qwen3-8b-awq@fake #42> save my-free-text
-saved as my-free-text: created 4bc0cb
 cell: my-free-text × qwen3-8b-awq@fake
 ```
 

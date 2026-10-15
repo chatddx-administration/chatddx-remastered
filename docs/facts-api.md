@@ -18,10 +18,6 @@ Paths are relative to `src/chatddx/facts/` unless they start with `src/`, `docs/
 - [Finding codes](#finding-codes)
 - [Bundled facts](#bundled-facts)
 - [Known gaps](#known-gaps)
-```
-AGENT: remove
-No section of this document is called so.
-```
 - [Beyond docs/facts.md](#beyond-docsfactsmd)
 
 ## Package
@@ -54,22 +50,6 @@ component, kind `facts`, with a digest and a canonical form; a compilation refer
 **Levels and efforts.** A level is an `Intent`. An effort is a level or `"default"`, the level the model uses when a
 request says nothing about reasoning. `ReasoningFacts.resolve` takes an effort, as `Reasoning.level` holds one.
 
-**Errors.**
-
-| Exception | When |
-| --- | --- |
-| `Refused` (a `ValueError`) | The facts refuse an intent, or don't know enough to compile one: `ReasoningFacts.resolve`, `ModelFacts.check_budget`, `ModelFacts.recommended`. `reasons_by_default` catches it, and `chatddx.factors.request.landings` turns it into a `StructuralError`. |
-| `ValueError` | `Facts.load`: a top-level table other than `model`, or a model with facts in more than one file. `ReasoningFacts.land`: collapses that go round. |
-| `pydantic.ValidationError` | Facts that break their own rules: an unknown key, a wrong type, collapses or nearests that go round or land on nothing. Rules written as validators raise `ValueError`, which pydantic wraps. |
-| `tomllib.TOMLDecodeError` (a `ValueError`), `OSError` | `Facts.load` of a file that isn't TOML or can't be read. |
-| `chatddx.factors.base.StructuralError` (a `ValueError`) | `model_name`, `Facts.about`, `reasons` and `check_pairs` when a component they look up isn't known to the resolver or is of the wrong kind (`Registry.get`, `resolve`). |
-
-```
-AGENT: deduplicate
-From `Refused` to `model_name`, the names are `chatddx.factors.facts`'s, and docs/factors-api.md, "facts.py",
-describes them too, in short. One home would keep them from drifting apart: here, with that section a pointer, or
-there, where the code is, with this section keeping `Facts` and the facts file. Which is for the humans.
-```
 ## models.py
 
 `BUNDLED` and `Facts` are defined here; every other name of this section is defined in `src/chatddx/factors/facts.py`

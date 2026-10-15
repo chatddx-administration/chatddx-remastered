@@ -119,6 +119,13 @@ it, if any. A new schema gets its own section with all three tiers.
     and its position is within the views or resources of the edit's scorer (`src/chatddx/catalog/model.py:check_label`,
     `src/chatddx/catalog/threads.py:check_labels`). The trigger and the insert-only triggers go back on the new table,
     dropped first where a store migrated to tier 0 has them from `0012`.
+  - `0026-t2-catalog-run-variation.sql`: the entry fields `varied` and `replaced`, which only a run takes
+    (`entry_run_check`); `entry_field_check` and `entry_shape_check` dropped and made again with them, their values
+    as `src/chatddx/catalog/model.py:VARIED` and `REPLACED` have them, the engine among a `replaced` entry's parts; and
+    a constraint trigger, after the row's checks, that a `varied` entry names an edit of a configuration and a
+    `replaced` one a stored chunk of its part, or for the engine a stored local or remote engine
+    (`catalog.check_varied()`, `src/chatddx/catalog/threads.py:check_varied`). The engine was added in place, as
+    `0012`'s `facts` was.
 
 ## source
 
@@ -132,18 +139,6 @@ it, if any. A new schema gets its own section with all three tiers.
 
 ### Tier 2
 - `0016-t2-source.sql`: triggers refusing UPDATE and TRUNCATE on `text`; DELETE is held back by the grants alone.
-```
-AGENT: move
-The item is the catalog's, so it goes under "catalog", Tier 2, after `0018-t2-catalog-label-edit.sql`; here it
-sits under "source".
-```
-- `0026-t2-catalog-run-variation.sql`: the entry fields `varied` and `replaced`, which only a run takes
-  (`entry_run_check`); `entry_field_check` and `entry_shape_check` dropped and made again with them, their values
-  as `src/chatddx/catalog/model.py:VARIED` and `REPLACED` have them, the engine among a `replaced` entry's parts; and
-  a constraint trigger, after the row's checks, that a `varied` entry names an edit of a configuration and a
-  `replaced` one a stored chunk of its part, or for the engine a stored local or remote engine
-  (`catalog.check_varied()`, `src/chatddx/catalog/threads.py:check_varied`). The engine was added in place, as
-  `0012`'s `facts` was.
 
 ## worker
 

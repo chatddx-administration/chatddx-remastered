@@ -295,11 +295,6 @@ shared addresses, hosts, clearance. A finding's subject is the endpoint's or the
 
 ## Worlds
 A World is a directory with `inventory.toml`, the files it includes, and `engines.toml`, the models and engines its
-```
-AGENT: replace
-`worlds/` holds three; the sample's row lacks its database source and `mistral-small@remote`, and the test World
-has none. The sentence, the table and the `configurations` sentence after it.
----
 endpoints serve. `worlds/` holds three:
 
 | World | Sources | Endpoints | Hosts | `[cleared]` |
@@ -310,16 +305,6 @@ endpoints serve. `worlds/` holds three:
 
 `configurations` is `qwen3-8b-awq@fake` in `worlds/sample/`, `qwen3-8b@pelle` in `worlds/kompismoln/`, and
 `qwen3@fake` in `worlds/test/`.
-```
-endpoints serve. `worlds/` holds two:
-
-| World | Sources | Endpoints | Hosts | `[cleared]` |
-| --- | --- | --- | --- | --- |
-| `worlds/sample/` | `sample`, `path = "vignettes"`, sensitive | `qwen3-8b-awq@fake` (port 12099), `gpt-oss-20b@fake` (port 12100), `max_jobs = 4` | `fake`: `bind = "127.0.0.1"`, models by repo ID, the empty template at `/dev/null` | both endpoints for `sample` |
-| `worlds/kompismoln/` | `sample`, `path = "../sample/vignettes"`, sensitive | from `endpoints.toml`: `qwen3-8b@pelle` (`max_jobs = 1`), `gpt-oss-20b@malborg` (`max_jobs = 4`) | from `endpoints.toml`: `pelle`, `malborg`, `bind = "::"` | both endpoints for `sample` |
-`configurations` is `qwen3-8b-awq@fake` in `worlds/sample/`, `qwen3-8b@pelle` in `worlds/kompismoln/`, and
-`qwen3@fake` in `worlds/test/`.
-`endpoints.toml` and `engines.toml` in `worlds/kompismoln/` are what `chatddx import-engine` writes.
 
 `src/chatddx/test/test_worlds.py:test_each_endpoint_serves_the_engine_planned_under_its_name` asserts the check finds
 nothing in each World in the repository against its plan.
