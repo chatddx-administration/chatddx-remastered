@@ -100,18 +100,10 @@ it, if any. A new schema gets its own section with all three tiers.
 
 ### Tier 2
 - `0012-t2-catalog.sql`: repeats the rules of `chatddx.catalog` that concurrent writers could break.
-```
-AGENT: replace
-Built (agents/wip-engine-part.md, stage 1, take O2): `facts` is a thread kind, added to this migration in place. The
-item.
----
   - Thread kinds, `facts` among them, entry fields and language kinds, mirrored by `src/chatddx/catalog/model.py`
     and tested against it (`test/test_catalog.py`). `facts` was added in place rather than by a new migration: a
     store migrated before it is dropped and migrated again, and its data sets loaded again, as its compilations are
     v1, which can't be read any more (agents/wip-engine-part.md, "O. Configurations stored before").
-```
-  - Thread kinds, entry fields and language kinds, mirrored by `src/chatddx/catalog/model.py` and tested against it
-    (`test/test_catalog.py`).
   - Entry shapes (`src/chatddx/catalog/model.py:Entry._shape`): a name can be removed (no value, `present` false),
     language tags follow `model.py:LANGUAGE`, NULL values are ruled out explicitly (a NULL check passes), and a
     `language` entry is only on a family (`src/chatddx/catalog/language.py:check_entry`).
@@ -140,11 +132,6 @@ item.
 
 ### Tier 2
 - `0016-t2-source.sql`: triggers refusing UPDATE and TRUNCATE on `text`; DELETE is held back by the grants alone.
-```
-AGENT: replace
-Built (agents/wip-engine-part.md, stage 1, take O2): a run's `replaced` entries take the engine, edited in place.
-The item, which belongs under catalog, tier 2.
----
 - `0026-t2-catalog-run-variation.sql`: the entry fields `varied` and `replaced`, which only a run takes
   (`entry_run_check`); `entry_field_check` and `entry_shape_check` dropped and made again with them, their values
   as `src/chatddx/catalog/model.py:VARIED` and `REPLACED` have them, the engine among a `replaced` entry's parts; and
@@ -152,12 +139,6 @@ The item, which belongs under catalog, tier 2.
   `replaced` one a stored chunk of its part, or for the engine a stored local or remote engine
   (`catalog.check_varied()`, `src/chatddx/catalog/threads.py:check_varied`). The engine was added in place, as
   `0012`'s `facts` was.
-```
-- `0026-t2-catalog-run-variation.sql`: the entry fields `varied` and `replaced`, which only a run takes
-  (`entry_run_check`); `entry_field_check` and `entry_shape_check` dropped and made again with them, their values
-  as `src/chatddx/catalog/model.py:VARIED` and `REPLACED` have them; and a constraint trigger, after the row's
-  checks, that a `varied` entry names an edit of a configuration and a `replaced` one a stored chunk of its part
-  (`catalog.check_varied()`, `src/chatddx/catalog/threads.py:check_varied`).
 
 ## worker
 

@@ -18,32 +18,18 @@ functions in `identity` and utilize them here.
 ## How the bench works
 
 ### One person, one connection
-```
-AGENT: replace
-Built (agents/wip-engine-part.md, stage 1): the facts are read from the store, and not cached.
----
 A connection lasts as long as its caller, and caches logins and the model each engine serves for that long. The facts
 about models aren't cached: they are read from the store each time they are asked for, so that a fact corrected while
 a connection lasts is used at once.
-```
-A connection lasts as long as its caller, and caches logins and the model each engine serves for that long.
 
 Each write is made in one transaction, so one that is refused leaves nothing behind. Starting and scoring are the
 exception: the runner and the scoring pass write each row as it lands, so that a run or a score that dies leaves a log
 to read, and they need the bench's connection in autocommit mode.
 
 ## What a person sees
-```
-AGENT: replace
-Built (agents/wip-engine-part.md, stage 1): the engine is a recipe part, and the facts a word.
----
 - **Threads** they own or collaborate on, while they are live. A kind of thread is asked for by the word for it:
   configuration, each recipe part, the engine among them, tool, scorer, judge, expectation, appendix, expectation
   schema, canary set, model or facts.
-```
-- **Threads** they own or collaborate on, while they are live. A kind of thread is asked for by the word for it:
-  configuration, each recipe part, tool, scorer, judge, expectation, appendix, expectation schema, canary set, model
-  or engine.
 - **Families** they own or collaborate on, while they are live. A family stands for its case: the one its current
   vignette makes alone, else the first that holds the vignette. A family without a case isn't shown.
 - **Their own deleted threads**, listed apart and found by id, so that they can be read and restored. Nothing else
@@ -53,33 +39,14 @@ Built (agents/wip-engine-part.md, stage 1): the engine is a recipe part, and the
   serves, once that engine is in the store.
 
 ### Finding things by name
-```
-AGENT: replace
-Built (agents/wip-engine-part.md, stage 1): names carry no model; the facts' do, by the model's repository.
----
 A thread or a family is found by its name, matched whole first, since names may hold a slash, as the facts
 `Qwen/Qwen3-8B-AWQ` do; only when nothing has the whole name is it read as `OWNER/NAME`. Among those it names, the
 person's own win, else the ones shared with them. Several raise `Ambiguous`, which asks for `OWNER/NAME`; none raises
 `NotFound`.
-```
-A thread or a family is found by its name, matched whole first, since names may hold a slash, as
-`plan (Qwen/Qwen3-8B-AWQ)` does; only when nothing has the whole name is it read as `OWNER/NAME`. Among those it
-names, the person's own win, else the ones shared with them. Several raise `Ambiguous`, which asks for `OWNER/NAME`;
-none raises `NotFound`.
 
-```
-AGENT: replace
-Built (agents/wip-engine-part.md, stage 1): nothing is made per model, so no engine picks a name.
----
 A thread made per language is found by its plain name too, `NAME (LANGUAGE)` (src/chatddx/catalog/variants.py), when
 it is made in one language alone. A name made in several languages is ambiguous, unless it names one, as
 `NAME LANGUAGE` or `NAME (LANGUAGE)`.
-```
-A thread made per model or per language is found by its plain name too: `NAME (MODEL)`, `NAME (LANGUAGE)` or
-`NAME (LANGUAGE, MODEL)`, the one the model an engine serves may use (src/chatddx/catalog/variants.py). Without an
-engine, a name that only per-model threads have isn't found, and the error names them, so that an edge can say the
-endpoint picks one. A name made in several languages is ambiguous, unless it names one, as `NAME LANGUAGE` or
-`NAME (LANGUAGE)`.
 
 ### Finding things by id
 By id, a thread, a family or a run is found only among what the person sees, and a thread only among the kinds its
@@ -133,67 +100,33 @@ still leave a person two to choose from. Then nothing picks one, and each place 
 - the case's expectation under that schema says it has expectations to choose from.
 
 ## The variation being tried
-```
-AGENT: replace
-Built (agents/wip-engine-part.md, stage 1): the endpoint is found from the variation's engine. The paragraph.
----
 Variation is a configuration with recipe parts replaced (docs/catalog.md, "Configurations and variations"):
 a configuration's edit's recipe, the name the person called it by, and the parts replaced over it with the name it was
-set by. With nothing replaced, it is the configuration itself. It is a plain value and an unsaved one is just a digest.
-It runs at the endpoint serving its engine (see "The engine"), so an edge needs an endpoint beside it only for a
-hand-written configuration, which has no engine part, or an engine several endpoints serve.
-```
-Variation is a configuration with recipe parts replaced (docs/catalog.md, "Configurations and variations"):
-a configuration's edit's recipe, the name the person called it by, and the parts replaced over it with the name it was
-set by. With nothing replaced, it is the configuration itself. It is a plain value and an unsaved one is just a digest.
-An edge holds it beside the endpoint it is to run at.
+set by. With nothing replaced, it is the configuration itself.
 
-```
-AGENT: replace
-Built (agents/wip-engine-part.md, stage 1): the engine is the tenth part.
----
+It is a plain value and an unsaved one is just a digest. It runs at the endpoint serving its engine (see "The engine"),
+so an edge needs an endpoint beside it only for a hand-written configuration, which has no engine part, or an engine
+several endpoints serve.
+
 A variation replaces the recipe's ten parts, its nine chunks and its engine, and nothing else. The engine can't be
 taken out. A configuration's purpose and appendix layout are set when it is made from a recipe (see
 "Configurations"): the purpose for good, since a judge configuration is no use where a run's is wanted, and the
 appendix layout until someone wants to vary it, when it becomes a part.
-```
-A variation replaces the recipe's nine parts and nothing else. A configuration's purpose and appendix layout are set
-when it is made from a recipe (see "Configurations"): the purpose for good, since a judge configuration is no use
-where a run's is wanted, and the appendix layout until someone wants to vary it, when it becomes a part.
 
-```
-AGENT: replace
-Built (agents/wip-engine-part.md, stage 1): a compilation names the facts it was compiled against.
----
 Looking at a variation writes nothing. What an unsaved skeleton was compiled from, its recipe and the facts about its
 engine's model, is stored when it is saved or started, by the running code (docs/catalog.md, "Recipes").
-```
-Looking at a variation writes nothing. What an unsaved skeleton was compiled from is stored when it is saved or
-started, by the running code (docs/catalog.md, "Recipes").
 
 Its label, `NAME+PART=CHUNK`, is a short title for it, where the catalog would give the long one of a variation nobody
 saved (docs/catalog.md, "Titles"). Neither is stored.
 
 For a variation, the bench gives:
-```
-AGENT: replace
-Built (agents/wip-engine-part.md, stage 1): compiled against the stored facts.
----
 - **its skeleton**: the stored edit it varies when nothing is replaced, the head unless an earlier edit was named,
   else the varied recipe compiled against the facts about its engine's model as they are stored now, a skeleton nobody
   has saved;
-```
-- **its skeleton**: the stored edit it varies when nothing is replaced, the head unless an earlier edit was named,
-  else the varied recipe compiled, a skeleton nobody has saved;
 - **the request it would send**, with placeholders for the slots, and for the model without an engine;
-```
-AGENT: add
-Built (agents/wip-engine-part.md, stage 1): an item after "the request it would send".
----
 - **where its intents landed**: for a reasoning level and a recommended sampling, the level the engine's model is
   asked for, and why, when the facts land it on its nearest; read from the facts its compilation was compiled against
   when nothing is replaced;
-```
 - **its lints**, as a trial on an engine: the pair's checks, over any one case since they read none, and with
   families, the languages of their cases too. An unsaved variation is linted in its recipe's language, since a
   skeleton's language otherwise comes from its stored compilations;
@@ -208,10 +141,6 @@ use where a run's is wanted.
 An edge also lists configurations by what they answer (`Bench.answering`): the title of their answer's JSON Schema, as
 a page that shows management plans offers only the configurations that answer one.
 
-```
-AGENT: add
-Built (agents/wip-engine-part.md, stage 1): a section at the end of "The variation being tried".
----
 ### The engine
 The engine is a part like any other: swapping it keeps every other pick, and what depends on the model is worked out
 again for the new engine's. A reasoning level and a recommended sampling are intents rather than settings: compiling
@@ -223,21 +152,12 @@ A run goes to the endpoint serving its variation's engine. An endpoint named mus
 serves another is refused before the gate would refuse it. An engine no endpoint serves is refused, and so is one
 several serve, unless one of them is named (see "Outstanding"). A hand-written configuration has no engine part, and
 runs at the endpoint named.
-```
+
 ## Writes for the person
-```
-AGENT: replace
-Built (agents/wip-engine-part.md, stage 1): the facts are written by init-data, as engines are.
----
 The bench writes, in the person's name: configurations, chunks, appendices, expectations, scorers, judges, typed
 cases, what is said about a thread, runs and scores. Tools, expectation schemas, engines, models, the facts about
 models and canary sets are developers' and ops', written through data sets and facts files (docs/chatddx.md,
 "Requirements"; docs/facts.md), and a scoring is built when a run is scored rather than written by hand.
-```
-The bench writes, in the person's name: configurations, chunks, appendices, expectations, scorers, judges, typed
-cases, what is said about a thread, runs and scores. Tools, expectation schemas, engines, models and canary sets are
-developers' and ops', written through data sets (docs/chatddx.md, "Requirements"), and a scoring is built when a run
-is scored rather than written by hand.
 
 What every write has in common:
 - **One set of writes for every kind.** A thread is made new, forked from one the person sees, or edited when it is
@@ -264,19 +184,11 @@ What every write has in common:
 - **Editing** keeps it as a new version of a configuration the person owns.
 - **Saving** by name is one of the two: a new version of the person's own configuration of that name, else a fork.
   Several of their own by that name are refused.
-```
-AGENT: replace
-Built (agents/wip-engine-part.md, stage 1): a recipe names its engine, and compiles against its model's facts.
----
 - **Making one from a recipe** of the person's own, by the chunks' digests for each part and an engine's, its purpose
   and its appendix layout: compiled by the running code against the facts about the engine's model, and kept as a new
   configuration with no origin. Each part must be a stored chunk of that part, the engine a stored engine, and the
   recipe must compile: an intent the facts refuse doesn't, nor one on a model they don't know. Its language comes
   from its recipe, so none is given.
-```
-- **Making one from a recipe** of the person's own, by the chunks' digests for each part, its purpose and its appendix
-  layout: compiled by the running code and kept as a new configuration with no origin. Each part must be a stored
-  chunk of that part, and the recipe must compile. Its language comes from its recipe, so none is given.
 
 A configuration is kept with the compilation that makes it: for a variation with parts replaced, or a recipe, the one
 the running code compiles; otherwise the configuration's own.
@@ -375,22 +287,12 @@ refused. A thread isn't shared with its owner, a name and a tag aren't empty, an
 refused. Handing a thread over to another owner isn't offered.
 
 ### Following an origin
-```
-AGENT: replace
-Built (agents/wip-engine-part.md, stage 1): a proposal compiles against the stored facts.
----
 When a fork's origin has moved on, the catalog proposes the origin's head with the fork's changes on top
 (docs/catalog.md, "Forks"). The bench shows what following would keep before it is followed: the base and the origin's
 head, what the fork varies, the proposal, and the digest it comes to, a recipe compiled by the running code against
 the facts as they are stored now, so that an edge can tell a fork it wouldn't change. Nothing is proposed when the
 origin hasn't moved on, or when the person no longer sees it, deleted or unshared, since its head is then not theirs
 to read.
-```
-When a fork's origin has moved on, the catalog proposes the origin's head with the fork's changes on top
-(docs/catalog.md, "Forks"). The bench shows what following would keep before it is followed: the base and the origin's
-head, what the fork varies, the proposal, and the digest it comes to, a recipe compiled by the running code, so that an
-edge can tell a fork it wouldn't change. Nothing is proposed when the origin hasn't moved on, or when the person no
-longer sees it, deleted or unshared, since its head is then not theirs to read.
 
 Following keeps the proposal as an edit of the person's own fork, based on the origin's head and naming the head
 they saw. It does so even when the proposal holds what the fork's head holds already, since otherwise the fork would
@@ -403,20 +305,11 @@ changes, which are stored already. That is how a correction to the archive's exp
 ones, and a scorer pinned again by a deploy reaches the person's fork of it.
 
 ## Runs and scores
-```
-AGENT: replace
-Built (agents/wip-engine-part.md, stage 1): the endpoint is found from the engine.
----
 - **Starting** runs a variation at the endpoint serving its engine, or the one named (see "The engine"), on some
   cases with some seeds, through the runner (docs/runner.md), under an execution. As it starts, the run is named by
   the variation's label and says what it varied: the edit it was built on and the parts replaced over it, its engine
   among them (docs/catalog.md, "What a run ran"). Running again keeps a run's cleanup, execution, canary set, name
   and what it varied under new seeds.
-```
-- **Starting** runs a variation at an endpoint, on some cases with some seeds, through the runner (docs/runner.md),
-  under an execution. As it starts, the run is named by the variation's label and says what it varied: the edit it
-  was built on and the parts replaced over it (docs/catalog.md, "What a run ran"). Running again keeps a run's
-  cleanup, execution, canary set, name and what it varied under new seeds.
 - **Resuming** a run of the person's own that isn't finished sends what its log lacks (docs/runner.md, "Resuming").
 - **A person's runs** are their own, newest first, found by the start of their id, or by a component their trial is
   built on.
@@ -453,25 +346,11 @@ The bench's errors are told apart by their class, so that an edge can answer eac
 | `Conflict` | `ValueError` | a write that would undo what the person has unless they say so: taking one thread when they have their own of its case under its schema |
 | `MovedOn` | `ValueError`, the catalog's | an edit made on a head that isn't the head any more |
 | `OverQuota` | `ValueError` | more of something than a day takes, or a run of more items than one takes |
-```
-AGENT: replace
-Built (agents/wip-engine-part.md, stage 1): the engine part, where a run goes, and what the facts refuse.
----
 | any other `ValueError` | | what the bench refuses: an unknown part, a digest that isn't a stored chunk of its part or a stored engine, or a part that can't be taken out, the engine among them; an endpoint that serves another engine than the variation's, and an engine no endpoint, or several, serve; an intent the facts about the engine's model refuse, or a model they don't know; a component that isn't one, or of a kind the person doesn't write; a scorer the code can't score with; taking an expectation of one's own; and the rest, each worded for what was wrong |
-```
-| any other `ValueError` | | what the bench refuses: an unknown part, a digest that isn't a stored chunk of its part, or a part that can't be taken out; a component that isn't one, or of a kind the person doesn't write; a scorer the code can't score with; taking an expectation of one's own; and the rest, each worded for what was wrong |
 
-```
-AGENT: replace
-Built (agents/wip-engine-part.md, stage 1): no name is made per model, so the repl's hint is gone.
----
 The messages are worded for a person, without the edge's terms; an edge adds its own hint where it has one. The API
 answers `NotFound` with 404, `Ambiguous`, `Conflict` and `MovedOn` with 409, `OverQuota` with 429, and the other
 refusals with 422 (docs/api.md, "Errors").
-```
-The messages are worded for a person, without the edge's terms; an edge adds its own hint where it has one, as the
-repl does for a name its endpoint would pick a model for. The API answers `NotFound` with 404, `Ambiguous`, `Conflict`
-and `MovedOn` with 409, `OverQuota` with 429, and the other refusals with 422 (docs/api.md, "Errors").
 
 ## Tests
 The tests start from the test World (`worlds/test`; docs/inventory.md, "Worlds") as `chatddx init-data` lands it, with
@@ -501,13 +380,7 @@ check before the other has written.
 | Saying | Writing what holds of a thread: its name, description, tags, collaborators, and whether it is deleted. |
 | Following | Keeping the catalog's proposal as an edit of the person's fork, based on its origin's head. |
 | Typed case | A case whose vignette is a text the person typed, kept in a database source. |
-```
-AGENT: replace
-Built (agents/wip-engine-part.md, stage 1): the cell's endpoint is named or found from its engine.
----
 | Cell | The repl's word for a variation being tried together with the endpoint it runs at, named or found from its engine. |
-```
-| Cell | The repl's word for a variation being tried together with an endpoint. |
 
 ## Outstanding
 Left for later. The API's are in docs/api.md, "Outstanding". The plan the bench was built from, with the options
@@ -535,31 +408,14 @@ the person were planned in `agents/wip-authoring.md` at b6f76b8. Its takes were 
   a collaborator may withdraw themselves, an entry the catalog would hold as any other, is open.
 - **Z1**: the map from roles to the kinds each role sees goes in `identity` once the portal's views give it meaning
   (docs/identity.md, "Z1: what each role is shown"). `sees` then takes the person's roles and the kind.
-```
-AGENT: replace
-Built (agents/wip-engine-part.md, stage 1): the engine is a part, so a run takes the judges' rule now, one rule for
-both (src/chatddx/inventory/inventory.py:Inventory.serving).
----
 - **An engine served at several endpoints** isn't picked from them, for a judge's calls or for a run: the scoring or
   the run is refused until the endpoint is named. `Bench.score` names none, so a judge whose engine two endpoints
   serve bars its scorer, in the repl and the API alike (docs/repl.md, "What the repl doesn't reach"; docs/runner.md,
   "Judges"). It probably won't happen: a World serving one engine at two endpoints serves one model on identical
   machines, a load balancer's job. Decided: as it is, until a World does; then the scoring names an endpoint per
   judge, as a run names its own.
-```
-- **An engine served at several endpoints** isn't picked from them, for a judge's calls or, once the engine is a part
-  of a configuration (agents/wip-engine-part.md), for a run: the scoring or the run is refused until the endpoint is
-  named. `Bench.score` names none, so a judge whose engine two endpoints serve bars its scorer, in the repl and the API
-  alike (docs/repl.md, "What the repl doesn't reach"; docs/runner.md, "Judges"). It probably won't happen: a World
-  serving one engine at two endpoints serves one model on identical machines, a load balancer's job. Decided: as it
-  is, until a World does; then the scoring names an endpoint per judge, as a run names its own.
-```
-AGENT: add
-Built (agents/wip-engine-part.md, stage 1, "Outstanding"): an item before this one.
----
 - **The facts are read from the store each time they are asked for** (`Seen.facts`), several times a look. That is
   cheap with a facts thread per model; cache them per request if it shows.
-```
 - **A person's runs are all read**, and paged afterwards, in the API too (`Bench.runs`), and what is left to score is
   worked out for each of them, about 40 ms a run under five scorers. Page in the store once that is slow.
 - **The archive's configuration saved under another name** is saved with no finding: a hand-made recipe that is a

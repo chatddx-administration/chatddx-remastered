@@ -17,12 +17,7 @@ Paths are relative to `src/chatddx/factors/` unless they start with `src/` or `d
 - [cases.py](#casespy): vignettes, appendices, cases, text cleanup, `prepare_case`
 - [request.py](#requestpy): chunks, recipes, compilation, skeletons, rendering, tool rounds
 - [response.py](#responsepy): a response's first choice, its message, reasoning, parts and tool calls
-```
-AGENT: add
-Built (agents/wip-engine-part.md, stage 1): the facts' classes moved into the factors. A line after this one.
----
 - [facts.py](#factspy): levels, refusals, landings, `ModelFacts`, `model_name`
-```
 - [engine.py](#enginepy): model artifacts, local and remote engines
 - [trial.py](#trialpy): trials, seeds, canaries, execution
 - [scoring.py](#scoringpy): expectations, judges, views, scorers, scorings
@@ -34,16 +29,8 @@ Built (agents/wip-engine-part.md, stage 1): the facts' classes moved into the fa
 
 ## Package
 
-```
-AGENT: replace
-Built (agents/wip-engine-part.md, stage 1): `facts` is one of the modules. The paragraph.
----
 `chatddx.factors` re-exports `Bundle`, `Code`, `Component`, `Finding`, `Fingerprint`, `Registry`, `StructuralError`
 and the modules `cases`, `engine`, `facts`, `kinds`, `request`, `response`, `scoring` and `trial`. Import
-`chatddx.factors.lint` and `chatddx.factors.select` by path.
-```
-`chatddx.factors` re-exports `Bundle`, `Code`, `Component`, `Finding`, `Fingerprint`, `Registry`, `StructuralError`
-and the modules `cases`, `engine`, `kinds`, `request`, `response`, `scoring` and `trial`. Import
 `chatddx.factors.lint` and `chatddx.factors.select` by path.
 
 The package imports no other chatddx package. It depends on pydantic, and `lint.py` also depends on `jsonschema` and
@@ -56,16 +43,10 @@ one validates it. Sequences are tuples.
 
 **Errors.**
 
-```
-AGENT: replace
-Built (agents/wip-engine-part.md, stage 1): compiling refuses intents the facts refuse. The `StructuralError` row.
----
-| `base.py:StructuralError` (a `ValueError`) | A problem that takes other components, stored bytes or inputs to see: a missing or wrongly typed reference, a failed cross-check, a digest that doesn't match its bytes, an unknown kind or version, a missing translation, an intent the facts about the engine's model refuse or can't work out, a vignette that isn't UTF-8. |
-```
 | Exception | When |
 | --- | --- |
 | `pydantic.ValidationError` | A model breaks its own rules: a wrong type, a duplicate seed, an owned flag in `argv`, U+0000 in a component. Rules written as validators raise `ValueError`, which pydantic wraps. |
-| `base.py:StructuralError` (a `ValueError`) | A problem that takes other components, stored bytes or inputs to see: a missing or wrongly typed reference, a failed cross-check, a digest that doesn't match its bytes, an unknown kind or version, a missing translation, a vignette that isn't UTF-8. |
+| `base.py:StructuralError` (a `ValueError`) | A problem that takes other components, stored bytes or inputs to see: a missing or wrongly typed reference, a failed cross-check, a digest that doesn't match its bytes, an unknown kind or version, a missing translation, an intent the facts about the engine's model refuse or can't work out, a vignette that isn't UTF-8. |
 | `KeyError` | `render` with a slot fill missing (a known gap), and `Registry.raw` with an unknown digest. |
 | `TypeError` | At class definition: a `Component` subclass whose `kind` has no literal default, or a duplicate kind. |
 
@@ -217,19 +198,12 @@ A self-contained package that can be verified offline.
 
 ## Component kinds
 
-```
-AGENT: replace
-Built (agents/wip-engine-part.md, stage 1): facts are a kind, and a compilation references its recipe's engine and
-its facts. A `facts` row after `engine.remote`, and the `compilation` row.
----
-| `facts` | `facts.py:ModelFacts` | | |
-| `compilation` | `request.py:Compilation` | `/recipe/<part>`: `chunk.<part>`; `/recipe/engine`: `engine.local`, `engine.remote`; `/skeleton`: `skeleton`; `/facts`: `facts` | its facts are about the model of its recipe's engine |
-```
 | Kind | Class | References (path: kinds) | `cross_check` |
 | --- | --- | --- | --- |
 | `model` | `engine.py:ModelArtifact` | | |
 | `engine.local` | `engine.py:LocalEngine` | `/model`: `model` | |
 | `engine.remote` | `engine.py:RemoteEngine` | | |
+| `facts` | `facts.py:ModelFacts` | | |
 | `chunk.instructions` | `request.py:Instructions` | | |
 | `chunk.few_shot` | `request.py:FewShot` | | |
 | `chunk.prompt` | `request.py:Prompt` | | |
@@ -241,7 +215,7 @@ its facts. A `facts` row after `engine.remote`, and the `compilation` row.
 | `chunk.translations` | `request.py:Translations` | | |
 | `tool` | `request.py:Tool` | | |
 | `skeleton` | `request.py:Skeleton` | `/tools/<i>`: `tool` | the body's functions, apart from the answer function, are the referenced tools, by name and in order |
-| `compilation` | `request.py:Compilation` | `/recipe/<part>`: `chunk.<part>`; `/skeleton`: `skeleton` | |
+| `compilation` | `request.py:Compilation` | `/recipe/<part>`: `chunk.<part>`; `/recipe/engine`: `engine.local`, `engine.remote`; `/skeleton`: `skeleton`; `/facts`: `facts` | its facts are about the model of its recipe's engine |
 | `appendix` | `cases.py:Appendix` | | |
 | `case` | `cases.py:Case` | `/appendices/<i>`: `appendix` | every appendix is bound to the case's vignette |
 | `trial` | `trial.py:Trial` | `/skeleton`: `skeleton`; `/engine`: `engine.local`, `engine.remote`; `/cases/<i>`: `case` | the skeleton's purpose is `generation` |
@@ -255,11 +229,6 @@ its facts. A `facts` row after `engine.remote`, and the `compilation` row.
 `kinds.py:KINDS` lists them in this order, and a test checks that every component class the package defines is listed
 (src/chatddx/factors/test/test_factors.py, `test_every_kind_defined_is_written_down`).
 
-```
-AGENT: replace
-Built (agents/wip-engine-part.md, stage 1): a recipe's engine is a reference of the compilation, and facts have a
-reference type. Both paragraphs.
----
 A compilation's `<part>` is one of `CHUNK_PARTS` (`instructions`, `few_shot`, `prompt`, `output`, `sampling`,
 `reasoning`, `passthrough`, `translations` and `toolset`), pointing to the chunk kind of the same name;
 `/recipe/engine` points to either engine kind.
@@ -267,13 +236,6 @@ A compilation's `<part>` is one of `CHUNK_PARTS` (`instructions`, `few_shot`, `p
 Each kind also has a reference type for fields that point to it: `AppendixRef`, `CaseRef`, `ModelRef`, `EngineRef`
 (both engine kinds), `FactsRef`, `ToolRef`, `SkeletonRef`, `TrialRef`, `CanarySetRef`, `ExpectationSchemaRef`,
 `ExpectationRef`, `JudgeRef`, `ScorerRef` and `ScoringRef`.
-```
-A compilation's `<part>` is one of `instructions`, `few_shot`, `prompt`, `output`, `sampling`, `reasoning`,
-`passthrough`, `translations` and `toolset`, pointing to the chunk kind of the same name.
-
-Each kind also has a reference type for fields that point to it: `AppendixRef`, `CaseRef`, `ModelRef`, `EngineRef`
-(both engine kinds), `ToolRef`, `SkeletonRef`, `TrialRef`, `CanarySetRef`, `ExpectationSchemaRef`, `ExpectationRef`,
-`JudgeRef`, `ScorerRef` and `ScoringRef`.
 
 ## cases.py
 
@@ -332,14 +294,6 @@ stored.
 
 ### Names and constants
 
-```
-AGENT: replace
-Built (agents/wip-engine-part.md, stage 1): the engine is a recipe part, not a chunk. The `RECIPE_PARTS` row, and a
-`CHUNK_PARTS` row before it.
----
-| `CHUNK_PARTS` | `instructions`, `few_shot`, `prompt`, `output`, `sampling`, `reasoning`, `passthrough`, `translations`, `toolset`: the parts a chunk fills |
-| `RECIPE_PARTS` | `(*CHUNK_PARTS, "engine")` |
-```
 | Name | Value |
 | --- | --- |
 | `SlotName` | `Literal["vignette", "appendices", "completion", "expectation"]`: filled at send time |
@@ -357,7 +311,8 @@ Built (agents/wip-engine-part.md, stage 1): the engine is a recipe part, not a c
 | `ToolName` | `str` matching `^[A-Za-z0-9_-]{1,64}$` |
 | `EntryPoint` | `str` matching `^[\w.]+:[\w.]+$`, as `module:attribute` |
 | `TRANSLATED` | `output`, `appendix_layout`, `toolset` |
-| `RECIPE_PARTS` |  `instructions`, `few_shot`, `prompt`, `output`, `sampling`, `reasoning`, `passthrough`, `translations`, `toolset` |
+| `RECIPE_PARTS` | `(*CHUNK_PARTS, "engine")` |
+| `CHUNK_PARTS` | `instructions`, `few_shot`, `prompt`, `output`, `sampling`, `reasoning`, `passthrough`, `translations`, `toolset`: the parts a chunk fills |
 
 ### Segments and text
 
@@ -421,16 +376,6 @@ beside a `$ref` override the target's. It refuses refs outside the schema, refs 
 Refs inside top-level definitions that nothing uses are dropped unchecked.
 
 #### `Sampling`, kind `chunk.sampling`
-```
-AGENT: add
-Built (agents/wip-engine-part.md, stage 1): a sampling chunk may ask for the recommended sampling. A row at the end
-of the table, and a member after `body()`.
----
-| `recommended` | `bool` | `False`; an intent: compiling fills in what the facts recommend, and the fields set here override it |
-
-`over(values: SamplingValues) -> Sampling`: a literal chunk, `values` with every field this chunk sets over them,
-`recommended` left out, validated anew, so the greedy rule applies. `body()` leaves `recommended` out.
-```
 | Field | Type | Default |
 | --- | --- | --- |
 | `temperature`, `top_p`, `min_p`, `presence_penalty`, `frequency_penalty`, `repetition_penalty` | `float \| None` | `None` |
@@ -438,6 +383,10 @@ of the table, and a member after `body()`.
 | `stop` | `tuple[str, ...]` | `()` |
 | `max_output_tokens` | `int \| None`, at least 1 | `None` |
 | `max_tokens_key` | `Literal["max_completion_tokens", "max_tokens"]` | `"max_completion_tokens"` |
+| `recommended` | `bool` | `False`; an intent: compiling fills in what the facts recommend, and the fields set here override it |
+
+`over(values: SamplingValues) -> Sampling`: a literal chunk, `values` with every field this chunk sets over them,
+`recommended` left out, validated anew, so the greedy rule applies. `body()` leaves `recommended` out.
 
 With `temperature == 0`, `top_p`, `top_k` and `min_p` are dropped before validation, so equivalent greedy chunks
 share a digest.
@@ -446,22 +395,16 @@ share a digest.
 `max_output_tokens` under `max_tokens_key`.
 
 #### `Reasoning`, kind `chunk.reasoning`
-```
-AGENT: add
-Built (agents/wip-engine-part.md, stage 1): a reasoning chunk may ask for a level. A row at the end of the table, and
-its rule.
----
-| `level` | `facts.py:Effort \| None` | `None`; an intent: a reasoning level or `"default"`, sent as the facts about the engine's model say |
-
-A `level` comes with no `effort` and no `chat_template_kwargs`: `ValueError("a reasoning level is worked out from the
-model's facts, so it comes without an effort or chat template arguments")`, wrapped in `ValidationError`. A
-`thinking_token_budget` may stand beside it.
-```
 | Field | Type | Default |
 | --- | --- | --- |
 | `effort` | `Literal["none", "minimal", "low", "medium", "high"] \| None` | `None`; sent as `reasoning_effort` |
 | `thinking_token_budget` | `int \| None`, at least 0 | `None` |
 | `chat_template_kwargs` | `Settings` | `{}`; sent when not empty |
+| `level` | `facts.py:Effort \| None` | `None`; an intent: a reasoning level or `"default"`, sent as the facts about the engine's model say |
+
+A `level` comes with no `effort` and no `chat_template_kwargs`: `ValueError("a reasoning level is worked out from the
+model's facts, so it comes without an effort or chat template arguments")`, wrapped in `ValidationError`. A
+`thinking_token_budget` may stand beside it.
 
 #### `Passthrough`, kind `chunk.passthrough`
 `body: Settings`, required. It may not set `RUNTIME_KEYS`, `OUTPUT_KEYS`, `MANAGED_KEYS` or `BYPASS_KEYS`
@@ -497,12 +440,6 @@ translation must be non-empty.
 
 ### `class Recipe(Frozen)`
 Not a component; kept only inside a `Compilation`.
-```
-AGENT: add
-Built (agents/wip-engine-part.md, stage 1): every recipe names its engine. A row after `sampling`.
----
-| `engine` | `EngineRef` | required |
-```
 
 | Field | Type | Default |
 | --- | --- | --- |
@@ -510,6 +447,7 @@ Built (agents/wip-engine-part.md, stage 1): every recipe names its engine. A row
 | `prompt` | ref `chunk.prompt` | required |
 | `output` | ref `chunk.output` | required |
 | `sampling` | ref `chunk.sampling` | required |
+| `engine` | `EngineRef` | required |
 | `instructions` | ref `chunk.instructions` \| `None` | `None` |
 | `few_shot` | ref `chunk.few_shot` \| `None` | `None` |
 | `reasoning` | ref `chunk.reasoning` \| `None` | `None` |
@@ -553,19 +491,10 @@ Before validation, a `body` with `temperature == 0` loses `top_p`, `top_k` and `
 | `output_schema -> JsonValue` | `native`: `body["response_format"]["json_schema"]["schema"]`. `tool`: the answer function's `parameters`. `text`: `contract.json_schema`. `None` when absent. |
 | `cross_check` | `"the body offers tools […], the skeleton names […]"` when the offered functions, apart from the answer function, differ from `tools` by name or order. Descriptions may differ. |
 
-```
-AGENT: replace
-Built (agents/wip-engine-part.md, stage 1): a compilation names its facts, and its version went up. The heading
-and the paragraph.
----
 ### `class Compilation(Component)`, kind `compilation`, v2
 `recipe: Recipe`, `skeleton: SkeletonRef`, `compiler: Code`, `facts: FactsRef | None = None`, the facts compiled
 against. Provenance: no component refers to a compilation, and nothing checks that the recipe compiles to the
 skeleton. `cross_check`: `"facts about <facts' model> compiled a recipe for <the recipe's engine's model>"`.
-```
-### `class Compilation(Component)`, kind `compilation`
-`recipe: Recipe`, `skeleton: SkeletonRef`, `compiler: Code`. Provenance: no component refers to a compilation, and
-nothing checks that the recipe compiles to the skeleton.
 
 ### `texts(recipe: Recipe, get: Resolver) -> dict[str, tuple[str, ...]]`
 The texts of each part of the recipe, in first-seen order, without duplicates; a translation needs those of the
@@ -583,22 +512,9 @@ The texts of each part of the recipe, in first-seen order, without duplicates; a
 In schemas, member names under `properties`, `patternProperties`, `$defs`, `definitions` and `dependentSchemas` are
 kept, and nothing under `enum`, `const`, `default` or `examples` is translated.
 
-```
-AGENT: replace
-Built (agents/wip-engine-part.md, stage 1): compiling takes the facts about the engine's model. The heading, a
-step before step 1 (the rest renumbered), and step 6's first lines, its sub-items kept.
----
 ### `compile_request(recipe: Recipe, get: Resolver, facts: ModelFacts | None = None) -> Skeleton`
 1. `landings(recipe, get, facts)`: where the reasoning level lands and the level a recommended sampling follows,
    raising as described there.
-
-6. Body: the passthrough's keys, then `Sampling.body()`, of `Sampling.over(facts.recommended(<level followed>))` for
-   a recommended sampling, then `reasoning_effort`, `thinking_token_budget` and `chat_template_kwargs` (each when
-   set), the effort and the chat template arguments being the reasoning chunk's own, or for a `level` the writes it
-   lands on, then:
-```
-### `compile_request(recipe: Recipe, get: Resolver) -> Skeleton`
-1. Resolves every chunk (`StructuralError` for a missing or wrongly typed one).
 2. With `recipe.translations`, passes every text listed under `texts` through its entries. Whitespace-only texts
    pass unchanged. `StructuralError("no translation for …")` lists every missing text.
 3. `StructuralError` when the prompt's purpose isn't the recipe's.
@@ -608,8 +524,10 @@ step before step 1 (the rest renumbered), and step 6's first lines, its sub-item
    first, or becomes the whole first message.
 5. Messages: the first message with the instructions' role (`system` without instructions), left out when empty;
    then the few-shot examples; then the prompt as a `user` message, its strings merged.
-6. Body: the passthrough's keys, then `Sampling.body()`, `reasoning_effort`, `thinking_token_budget` and
-   `chat_template_kwargs` (when set), then:
+6. Body: the passthrough's keys, then `Sampling.body()`, of `Sampling.over(facts.recommended(<level followed>))` for
+   a recommended sampling, then `reasoning_effort`, `thinking_token_budget` and `chat_template_kwargs` (each when
+   set), the effort and the chat template arguments being the reasoning chunk's own, or for a `level` the writes it
+   lands on, then:
    - with a toolset, `tools` (its tools as functions with `name`, `description` and `parameters`, in order) and
      `tool_choice: "auto"`;
    - `native`: `response_format = {"type": "json_schema", "json_schema": {"name": "output", "strict": true,
@@ -621,34 +539,15 @@ step before step 1 (the rest renumbered), and step 6's first lines, its sub-item
 7. Returns the skeleton with the recipe's purpose, the translated appendix layout, and the toolset's tools and
    `max_rounds`.
 
-```
-AGENT: replace
-Built (agents/wip-engine-part.md, stage 1): the skeleton depends on the facts too. The paragraph.
----
 The same recipe, compiler and facts always give the same skeleton. The engine reaches the skeleton only through its
 model's facts, so engines of one model give one skeleton, and without intents every engine does. Without
 translations, how a chunk splits its text doesn't change the skeleton.
-```
-The same recipe and the same compiler always give the same skeleton. Without translations, how a chunk splits its
-text doesn't change the skeleton.
 
-```
-AGENT: replace
-Built (agents/wip-engine-part.md, stage 1): compiled takes the facts and records them. The section.
----
 ### `compiled(recipe, get, compiler, facts=None) -> tuple[Skeleton, Compilation]`
 A recipe compiled by `compiler`, the running code, against `facts` (`compile_request`), with the compilation that
 records what the skeleton was compiled from: the recipe, the skeleton, `compiler`, and `facts.digest` when there are
 facts, whether or not the recipe asks for an intent.
-```
-### `compiled(recipe, get, compiler) -> tuple[Skeleton, Compilation]`
-A recipe compiled by `compiler`, the running code, with the compilation that records what the skeleton was compiled
-from.
 
-```
-AGENT: add
-Built (agents/wip-engine-part.md, stage 1): where intents land. A section before this one, after `compiled`.
----
 ### `landings(recipe: Recipe, get: Resolver, facts: ModelFacts | None) -> tuple[Landing | None, Landing | None]`
 Where the recipe's intents land on `facts`: the reasoning level's landing, and the landing a recommended sampling
 follows, each `None` when not asked for.
@@ -660,7 +559,7 @@ follows, each `None` when not asked for.
 4. The level's `ReasoningFacts.resolve`, and `ModelFacts.check_budget()` with a `thinking_token_budget` beside it. A
    recommended sampling follows that landing, or `resolve("default")` without one, and needs
    `ModelFacts.recommended` for its level. A `Refused` becomes `StructuralError("<facts' model>: <reason>")`.
-```
+
 ### `render(skeleton, *, model, seed, fills, return_token_ids=True) -> dict[str, JsonValue]`
 | Parameter | Type |
 | --- | --- |
@@ -763,11 +662,6 @@ the portal's run page.
 
 Both have the engine's digest as subject.
 
-```
-AGENT: add
-Built (agents/wip-engine-part.md, stage 1): the facts' classes moved here from `chatddx.facts`, which re-exports
-them. A section before trial.py's.
----
 ## facts.py
 What is known about a model, as a component, and how a level lands on it. Fields, the facts file and the bundled facts
 are in `docs/facts-api.md`.

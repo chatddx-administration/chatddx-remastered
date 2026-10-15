@@ -40,25 +40,12 @@ Every command is a function `(repl: Repl, *args: str) -> None` that says what it
 through `repl.error`. Only the bench writes (`src/chatddx/bench/`).
 
 ## The entry
-```
-AGENT: replace
-Built (agents/wip-engine-part.md, stage 1): the bench reads the stored facts; `--facts` is init-data's alone.
----
 `cli.py:_repl`, for `chatddx repl LOGIN [--world DIR] [--history PATH]`:
 1. the World from `--world`, else `CHATDDX_WORLD`, else `SystemExit("repl: give a World with --world DIR or
    CHATDDX_WORLD")`;
 2. a psycopg connection to `settings.database()` in autocommit mode;
 3. the person by login, else `SystemExit("no person 'LOGIN': chatddx init-data LOGIN adds them")`;
 4. `loop(Repl(Bench(conn, person, world.inventory), console()), history)`, and `SystemExit(1)` when it returns 1.
-```
-`cli.py:_repl`, for `chatddx repl LOGIN [--world DIR] [--facts PATH …] [--history PATH]`:
-1. the World from `--world`, else `CHATDDX_WORLD`, else `SystemExit("repl: give a World with --world DIR or
-   CHATDDX_WORLD")`;
-2. `Facts.load` of the bundled facts, the World's and each `--facts`;
-3. a psycopg connection to `settings.database()` in autocommit mode;
-4. the person by login, else `SystemExit("no person 'LOGIN': chatddx init-data LOGIN adds them")`;
-5. `loop(Repl(Bench(conn, person, world.inventory, facts), console()), history)`, and `SystemExit(1)` when it returns
-   1.
 
 ## loop.py
 ### `HISTORY`
@@ -80,11 +67,6 @@ as `shell.failed` is set. Otherwise it returns 0.
 A rich console with markup off, since names, vignettes and answers hold brackets.
 
 ### `class Cell`
-```
-AGENT: replace
-Built (agents/wip-engine-part.md, stage 1): the cell holds the endpoint named and the engine it serves; its engine is
-the configuration's. The paragraph and the table.
----
 Frozen: `variation: TriedVariation | None`, `endpoint: str | None`, the endpoint named, and `served: str | None`, the
 engine it serves.
 
@@ -94,15 +76,6 @@ engine it serves.
 | `on(endpoint, served)` | the cell at `endpoint`, serving `served`; `on(None, None)` drops the endpoint |
 | `engine` | the variation's engine part when it has a recipe, else `served` |
 | `label` | the variation's label, `NAME+PART=CHUNK…`, else `""` |
-```
-Frozen: `variation: TriedVariation | None`, `endpoint: str | None`, `engine: str | None`, `name: str | None`.
-
-| Name | Gives |
-| --- | --- |
-| `trying(variation, name=None)` | the cell with `variation`, and `name` when given, else the name it held |
-| `holding(name)` | the cell with no variation, holding `name` |
-| `on(endpoint, engine)` | the cell at `endpoint`, serving `engine` |
-| `label` | the variation's label, `NAME+PART=CHUNK…`; the held name with no variation; else `""` |
 
 ### `class Repl(bench: Bench, console: Console, seed: int | None = None)`
 The shell's state: `bench`, `console`, `cell` (a `Cell()` to begin with), `seed` (`drawn_seed()` unless given) and
@@ -110,39 +83,18 @@ The shell's state: `bench`, `console`, `cell` (a `Cell()` to begin with), `seed`
 
 | Name | Does |
 | --- | --- |
-```
-AGENT: replace
-Built (agents/wip-engine-part.md, stage 1): the endpoint shown is the one the cell runs at, named or derived. A row
-for `where()` after it.
----
 | `prompt` | `LOGIN #SEED> `, with ` LABEL×ENDPOINT` after the login as the cell fills, ENDPOINT being `where()` |
 | `where()` | the endpoint the cell runs at: with no configuration, the one named; else `Bench.at` of the variation and the endpoint named, the named one when it refuses, `None` for none |
-```
-| `prompt` | `LOGIN #SEED> `, with ` LABEL×ENDPOINT` after the login as the cell fills |
 | `completions()` | the names Tab offers, by key (see `complete`): `_names()` plus `replay:run`, the latest 20 runs' id prefixes, and `score:run`, the runs left to score |
 | `forget()` | drops the kept names, so the next Tab reads them again; `save` calls it |
-```
-AGENT: replace
-Built (agents/wip-engine-part.md, stage 1): the endpoint is `where()`'s.
----
 | `say_cell()` | prints `cell: LABEL × ENDPOINT`, ENDPOINT being `where()`, `?` for what is missing |
-```
-| `say_cell()` | prints `cell: LABEL × ENDPOINT`, `?` for what is missing |
 | `say_changed()` | `say_cell`, then the cell's lints (`Bench.findings` of the variation, the engine and the seed) when it holds both |
 | `say_findings(findings, tally=False)` | a line per finding, `[level] code: message`; with `tally`, each once with `(×N)` |
 | `error(message)` | prints `message` in red and sets `failed` |
 
-```
-AGENT: replace
-Built (agents/wip-engine-part.md, stage 1): `_per_model` is gone for `_by_name`.
----
 `_names()` keeps, per kind of `bench/model.py:KINDS`, the names the person sees, as `_by_name` gives them: a name
 made in one language alone without it, and those made in several whole (`catalog.made_in`); `set:PART` adds `none`
 for an optional part; and `endpoint`, `case` (family names and `Bench.case_titles()`), `tag`, `part` and `kind`.
-```
-`_names()` keeps, per kind of `bench/model.py:KINDS`, the names the person sees, a per-model name by what it is made
-from, and one made in several languages as `NAME LANG`; `set:PART` adds `none` for an optional part; and `endpoint`,
-`case` (family names and `Bench.case_titles()`), `tag`, `part` and `kind`.
 
 ## commands.py
 ### `class Command`
@@ -165,13 +117,7 @@ calls the command. It returns `False` for `quit` and `exit`, else `True`. What i
 | a quote left open | `shlex`'s, as `No closing quotation` |
 | an unknown verb | `no command 'VERB': try help` |
 | too few or too many words | `usage: VERB PARAMS…` |
-```
-AGENT: replace
-Built (agents/wip-engine-part.md, stage 1): `NotFound.per_model` is gone.
----
 | the command raises `LookupError` or `ValueError` | its message |
-```
-| the command raises `LookupError` or `ValueError` | its message; for a `NotFound` with per-model variants, `…, picked by the endpoint in the cell` |
 | the command raises `psycopg.Error` | `the database failed: FIRST LINE` |
 
 ### `complete(names: Mapping[str, list[str]], line: str) -> list[str]`
@@ -188,33 +134,14 @@ command's `rest` param takes whole is followed by the next param's names once it
 | `configurations [NAME]` | `listing.configurations` | `threads`, `purposed`, `catalog.recipe`, `catalog.origin`, `about`, `title` |
 | `endpoints` | `listing.endpoints` | `inventory`, `endpoint`, `model`, `url_of` |
 | `cases` | `listing.cases` | `families` |
-```
-AGENT: replace
-Built (agents/wip-engine-part.md, stage 1): `use`, `on` and `cell` put the named endpoint's engine in the configuration.
-The rows of `use`, `on` and `cell`.
----
 | `use CONFIGURATION` | `choosing.use` | `configuration`, and `title` of the named endpoint's engine, set in it (`TriedVariation.set`) |
 | `on ENDPOINT` | `choosing.on` | `endpoint`, and `title` of its engine, set in the cell's configuration |
 | `cell CONFIGURATION ENDPOINT` | `choosing.cell` | `endpoint`, `configuration`, and `title` of the endpoint's engine, set in it |
-```
-| `use CONFIGURATION` | `choosing.use` | `configuration` |
-| `on ENDPOINT` | `choosing.on` | `endpoint`, then `configuration`, `chunk` and `model` for a held name |
-| `cell CONFIGURATION ENDPOINT` | `choosing.cell` | `endpoint`, `configuration` |
 | `set PART CHUNK` | `choosing.set_` | `chunk`, `skeleton` |
-```
-AGENT: replace
-Built (agents/wip-engine-part.md, stage 1): where the cell runs, and where its intents landed. The rows of `show`,
-`reasoning`, `run` and `run tag`.
----
 | `show [KIND] [NAME...]` | `inspecting.show` | `at`, `skeleton`, `landed`, `findings`, `reach`, `thread`, `get`, `reaching`, `scored_by`, `scores_of`, `runs`, `case_titled`, `appendices_of`, `cases`, `expectation_schemas`, `expectation`, `shared`, `store.scores_of` |
 | `reasoning` | `inspecting.reasoning` | `facts`, `inventory`, `endpoint`, `model`, `get`, `at` |
 | `run CASE [SEED]` | `running.run` | `case_titled`, `skeleton`, `at`, `start`, then `score` through `Held`, `runs` |
 | `run tag TAG...` | `running.tagged` | `families`, `skeleton`, `at`, `start`, `score` through `Held`, `runs` |
-```
-| `show [KIND] [NAME...]` | `inspecting.show` | `skeleton`, `findings`, `reach`, `thread`, `get`, `reaching`, `scored_by`, `scores_of`, `runs`, `case_titled`, `appendices_of`, `cases`, `expectation_schemas`, `expectation`, `shared`, `store.scores_of` |
-| `reasoning` | `inspecting.reasoning` | `facts`, `inventory`, `endpoint`, `model` |
-| `run CASE [SEED]` | `running.run` | `case_titled`, `skeleton`, `start`, then `score` through `Held`, `runs` |
-| `run tag TAG...` | `running.tagged` | `families`, `skeleton`, `start`, `score` through `Held`, `runs` |
 | `seed [SEED]` | `running.seed` | `skeleton` |
 | `save NAME` | `choosing.save` | `save` |
 | `runs [COUNT]` | `reviewing.runs` | `runs`, `store.run`, `scores_of`, `described` |
@@ -274,13 +201,7 @@ scores what is left` when it did. `WRITING` and `SCORING` are its two messages, 
 | --- | --- |
 | `template` | `curated`, so each test starts from the test World loaded |
 | `autocommit` | `True`, as the runner needs |
-```
-AGENT: replace
-Built (agents/wip-engine-part.md, stage 1): the bench reads the facts init-data stored.
----
 | `bench` | alice's `Bench` on the World with freed ports, reading the facts init-data stored |
-```
-| `bench` | alice's `Bench` on the World with freed ports and its facts |
 | `repl` | a `Repl` on that bench, a recorded console 200 wide, seed 7 |
 | `say(*lines) -> str` | each line handled in turn, then all the console recorded |
 

@@ -23,17 +23,9 @@ The archive is never wiped.
 A data set is a directory of authored files: a `factors.toml`, the texts in `texts-<language>.toml` files, the cases
 in `cases-<language>.toml` files, and the files they load, such as JSON schemas.
 
-```
-AGENT: replace
-Built (agents/wip-engine-part.md, stage 1, take D1): the World names the engine configurations are made for. The
-paragraph.
----
 A record holds text the model reads, which language it is in, and whether it is a record or a case.
 What a data set can't hold, engines, which engine judges and which engine its configurations are made for, is its
 World's (docs/inventory.md, "Worlds").
-```
-A record holds text the model reads, which language it is in, and whether it is a record or a case.
-What a data set can't hold, engines and which engine judges, is its World's (docs/inventory.md, "Worlds").
 
 A World may carry one beside its vignettes, in `_data/`. A World is what lies outside chatddx, and a data set is
 chatddx's own authored content, so the leading `_` marks it as no part of the World: `World.load` doesn't read it.
@@ -52,11 +44,6 @@ Both kinds of file hold one table per kind of component, keyed by name, whose ke
 On top of the fields:
 - **References by name.** A toolset's tools, a scorer's expectation schema and a view's judge, a local engine's model
   and a recipe's parts name records, not digests.
-```
-AGENT: replace
-Built (agents/wip-engine-part.md, stage 1): a judge's recipe is compiled for its own engine, not picked by model. The
-item.
----
 - **Judges.** A judge names a `recipe`, its `seeds` and its `fill`, and no engine: the World binds it to an endpoint
   (docs/inventory.md, "Judges"), whose engine judges. The recipe is compiled for that engine, in the recipe's language
   (`language` picks one when it is written in several), and the skeleton and its compilation are stored with the
@@ -64,17 +51,7 @@ item.
   World has, whose recipe has none in its language, or whose recipe the facts refuse on that engine, is skipped and
   reported, and so is every scorer whose views name it; a binding for a judge the data set doesn't have is reported
   too. A judge's skeleton may not have tools.
-```
-- **Judges.** A judge names a `recipe`, its `seeds` and its `fill`, and no engine: the World binds it to an endpoint
-  (docs/inventory.md, "Judges"), whose engine judges. It takes the recipe's variant for the model that engine serves,
-  in the recipe's language (`language` picks one when it is written in several). A judge the World binds to no
-  endpoint, or whose recipe has no variant for its model, is skipped and reported, and so is every scorer whose views
-  name it; a binding for a judge the data set doesn't have is reported too. A judge's skeleton may not have tools.
 - **Files.** `json_schema_path` loads a JSON file, relative to the file that names it, in place of `json_schema`.
-```
-AGENT: replace
-Built (agents/wip-engine-part.md, stage 1): variants are by language only. The item.
----
 - **Forks.** `fork_of` names a record of the same kind that this one is a fork of. It is loaded as a fork of
   that record's thread, so the catalog knows what it varies (docs/catalog.md, "Forks"). It inherits no fields. Each
   variant forks the origin's variant in its language. An origin written in one language only is forked in that
@@ -82,49 +59,26 @@ Built (agents/wip-engine-part.md, stage 1): variants are by language only. The i
   written in several languages, none of them the variant's, is refused. A variant whose origin has no variant to fork,
   as when the origin's recipe was skipped, is loaded as no fork and reported. A thread's origin is set when the thread
   is created, so a re-run only reports a held thread whose origin differs from the data's.
-```
-- **Forks.** `fork_of` names a record of the same kind that this one is a fork of. It is loaded as a fork of
-  that record's thread, so the catalog knows what it varies (docs/catalog.md, "Forks"). It inherits no fields. Each
-  variant forks the origin's variant in its language and for its model. An origin written in one language only is
-  forked in that language, as a part is taken from it (see "Texts"), so `free-text-guided (sv, …)` forks
-  `free-text (en, …)`; an origin written in several languages, none of them the variant's, is refused. A variant
-  whose origin has none for its model, or is made per model where the variant isn't, is loaded as no fork and
-  reported. A thread's origin is set when the thread is created, so a re-run only reports a held thread whose origin
-  differs from the data's.
 - **Code.** A tool or a scorer that names no `version` pins the version of its entry point that the running chatddx
   ships, so loading the data again after a deploy that raises a version moves it on. Its entry point must be shipped,
   at the version pinned, and a scorer's views must name metrics the code publishes, with params its schemas take.
 - **Catalog entries.** `tags` and `description` are entries on the record's thread, and a scorer view's `label` is a
   label of the edit the scorer is kept with, so a renamed view is a new edit of the same scorer. A tool's
   `description` is also a field, the one the model reads.
-```
-AGENT: replace
-Built (agents/wip-engine-part.md, stage 1): intents replace `from_facts`. The item.
----
 - **Intents.** A reasoning chunk may ask for a `level` and a sampling chunk for the `recommended` sampling, worked
   out from the facts when a recipe is compiled (docs/factors.md, "Reasoning" and "Sampling"). A `from_facts` record
   is refused: "from_facts is gone; the facts are applied when a recipe is compiled, so ask for a reasoning `level` or
   a `recommended` sampling".
-```
-- **From facts.** `from_facts` asks for a sampling or reasoning chunk per model (see "Per model").
 - **Translations by record.** A translations chunk's entries may be written in `of`, grouped by the record whose texts
   they translate, an output, a toolset or a recipe's appendix layout, each entry a `text` and its `translation`:
   `[[translations.sample.of."output.management-plan"]]`. Loading makes them the chunk's `entries`, and refuses a text
   its record doesn't hold, so an entry no text uses any more is found. A text that several records hold is written
   once, under any of them. Missing texts still fail the compilation of the recipe that needs them.
 
-```
-AGENT: replace
-Built (agents/wip-engine-part.md, stage 1, take D1): a recipe's engine is the World's. The paragraph.
----
 A name is defined once per kind, and a text's name may come back in each texts file, as the same text in another
 language. A data set's `factors.toml` holds no `model`, `local_engine` or `remote_engine` table, and a recipe names
 no `engine`: engines are the World's (see "The World"), and a recipe that names one is refused ("a recipe's engine is
 the World's: its inventory names the endpoint configurations are made for").
-```
-A name is defined once per kind, and a text's name may come back in each texts file, as the same text in another
-language. A data set's `factors.toml` holds no `model`, `local_engine` or `remote_engine` table: engines are the World's
-(see "The World").
 
 ### Texts
 What the model reads is written in a language, and a texts file's name gives it: every text in `texts-sv.toml` is
@@ -139,21 +93,11 @@ are. Outputs and toolsets bring text with code, guidance and schemas, and may be
 translated into the others by a translations chunk of each (docs/factors.md, "Translations"); a native one can
 still be written in a language of its own.
 
-```
-AGENT: replace
-Built (agents/wip-engine-part.md, stage 1): names carry only a language. The paragraph.
----
 A recipe that names a text is made in each language that has it, named after the language, such as `plan (en)`. In a
 language, it takes each text written in that language. An output or a toolset written only in another language is
 taken from there, and the recipe's translations in its language stand in for it; a recipe without them there is
 skipped and reported. In the language its output and toolset are written in, it needs no translations and is made
 without them. A recipe that names no text is made once, as before.
-```
-A recipe that names a text is made in each language that has it, named after the language, such as
-`plan (en, Qwen/Qwen3-8B-AWQ)`. In a language, it takes each text written in that language. An output or a toolset
-written only in another language is taken from there, and the recipe's translations in its language stand in for it;
-a recipe without them there is skipped and reported. In the language its output and toolset are written in, it needs
-no translations and is made without them. A recipe that names no text is made once, as before.
 
 The sample is written in English, and one recipe in Swedish too. Its outputs, toolset and judge are in
 `texts-en.toml`, and every recipe is made in English. `free-text-guided`'s instructions and worked example are written
@@ -176,11 +120,6 @@ Splitting by language rather than tagging each case keeps a language's cases tog
 scored and compared together: a case runs in the language it was written in (docs/catalog.md, "Languages"). Notes in
 the targets keep a language of their own.
 
-```
-AGENT: replace
-Built (agents/wip-engine-part.md, stage 1): nothing is made per model; the facts are loaded as threads, and recipes
-are made for one engine. The section.
----
 ### Facts and the engine
 Some of what a request sends can only be worked out for a model: the sampling its makers recommend, the way a
 reasoning level is asked for. The facts about each model an engine of the World serves are loaded as a thread of kind
@@ -190,43 +129,17 @@ model's facts (docs/facts.md, "Compiling intents"). A served model the facts don
 engines can't compile a reasoning level or a recommended sampling, and a recipe is skipped and reported when the
 facts refuse it on that engine, or when the World names no endpoint for configurations. Engines and facts are
 planned first for this reason. A researcher swaps the engine at the bench, as any other part (docs/bench.md).
-```
-### Per model
-Some chunks can only be written for a model: the sampling its makers recommend, the way a reasoning level is asked
-for. A `from_facts` record is written from each model's facts (docs/facts.md, "Writing chunks") for every model an
-engine of the plan serves and the facts know, and named after it, such as `recommended (Qwen/Qwen3-8B-AWQ)`. A recipe
-that uses one is made per model too. What the facts refuse is skipped, together with the recipes that need it, and
-reported, and so are a served model the facts don't know and a known model no engine serves. Models and engines are
-planned first for this reason.
 
 ## The World
-```
-AGENT: replace
-Built (agents/wip-engine-part.md, stage 1, take D1): the inventory names the endpoint configurations are made for,
-and the facts are stored. The paragraph.
----
 A World is a directory (docs/inventory.md, "Worlds"). Loading reads its `inventory.toml` for the source of the cases'
 vignettes, the endpoints its judges are bound to and the endpoint whose engine its configurations are made for, and
 takes its `engines.toml`, the models and engines its endpoints serve and nothing else, with the data set's factors,
 and its `facts.toml`, facts about models the bundled facts don't know, with the bundled ones. So the sample World's
 fake engines are loaded only with the sample World, and a World that serves a model of its own brings what is known
 about it, which loading stores for the models its engines serve.
-```
-A World is a directory (docs/inventory.md, "Worlds"). Loading reads its `inventory.toml` for the source of the cases'
-vignettes and the endpoints its judges are bound to, and takes its `engines.toml`, the models and engines its endpoints
-serve and nothing else, with the data set's factors, and its `facts.toml`, facts about models the bundled facts don't
-know, with the bundled ones. So the sample World's fake engines are loaded only with the sample World, and a World
-that serves a model of its own brings what is known about it.
 
-```
-AGENT: replace
-Built (agents/wip-engine-part.md, stage 1): the repl reads the stored facts. The paragraph.
----
 The World is `--world DIR`, or by default the directory `CHATDDX_WORLD` names. The repl reads the same World for its
 endpoints and vignettes, and the facts from the store, as loading stored them.
-```
-The World is `--world DIR`, or by default the directory `CHATDDX_WORLD` names. The repl reads the same World, for its
-endpoints, vignettes and facts.
 
 A loading ends with the inventory checked against the engines just planned, all at once: what starting or reaching
 each endpoint would refuse, and what is likely a slip (docs/inventory.md, "Checks happen when an entry is used").
@@ -237,19 +150,10 @@ loads a data set, the World's `_data/` unless `--data` names another, for the ar
 who is added when missing. It connects as the writer and does everything in one transaction. It prints a line for each
 thing it comes to.
 
-```
-AGENT: replace
-Built (agents/wip-engine-part.md, stage 1): no per-model records; facts planned after engines, recipes for one
-engine. The item.
----
 1. **Plan.** The data set and the World's engines are planned into components, without the store: references
    resolved, the facts about each served model the facts know, recipes made per language and compiled for the
    engine the World names for configurations, judges' recipes compiled for their own engines, texts and entry points
    checked. A data set that can't be planned is refused before anything is written.
-```
-1. **Plan.** The data set and the World's engines are planned into components, without the
-   store: references resolved, per-model records written, recipes made per language and compiled, texts and entry
-   points checked. A data set that can't be planned is refused before anything is written.
 2. **Records.** Each planned record becomes a thread named after it. A record the archive already has, by kind and
    name, is validated when its digest is unchanged and gets a new edit when it changed; a compiled skeleton's edit
    records its compilation. Its tags, description, view labels and language are brought in line with the data.
@@ -262,23 +166,12 @@ engine. The item.
    changed, and the family repair-data would move.
 4. **Leftovers.** The archive's threads and families that the data no longer names are listed, but not deleted.
 5. **Sharing.** USER becomes a collaborator on every thread and family the run came to.
-```
-AGENT: replace
-Built (agents/wip-engine-part.md, stage 1): facts stay the archive's too. The item.
----
 6. **Giftbag.** With `--giftbag`, USER also gets a fork of every chunk, tool, skeleton and expectation thread, so
    what has moved on in the archive is proposed to them (docs/catalog.md, "What has moved on"). The forks of the
    expectation threads are also what USER is scored against: without them, the archive's shared expectations score
    nothing for USER. Expectation schemas, scorers, models, engines and facts stay the archive's. A fork they already
    have is kept, and one they deleted comes back, unless they own an expectation of that case under that schema by
    then: a person owns one at most (docs/catalog.md, "Owners"), so theirs is kept instead.
-```
-6. **Giftbag.** With `--giftbag`, USER also gets a fork of every chunk, tool, skeleton and expectation thread, so
-   what has moved on in the archive is proposed to them (docs/catalog.md, "What has moved on"). The forks of the
-   expectation threads are also what USER is scored against: without them, the archive's shared expectations score
-   nothing for USER. Expectation schemas, scorers, models and engines stay the archive's. A fork they already have is
-   kept, and one they deleted comes back, unless they own an expectation of that case under that schema by then: a
-   person owns one at most (docs/catalog.md, "Owners"), so theirs is kept instead.
 7. **Lints.** Every component the run came to is linted, with the catalog's languages and the facts' reasons, and
    the findings are printed, not stored. For the sample the fake models and engines say they are fake.
 8. **The World.** The inventory check's findings, and a count.
@@ -348,13 +241,6 @@ test_sample_world.py (src/chatddx/conftest.py, `sampled`).
 
 ## Terms
 
-```
-AGENT: replace
-Built (agents/wip-engine-part.md, stage 1): nothing is made per model. The `Per-model record` row goes, the
-`Variant` row changes.
----
-| Variant | A record made for a language, named after it: `plan (en)`. |
-```
 | Term | Meaning |
 | --- | --- |
 | Curation | Getting authored content into the store as the archive's, keeping it in step with its files, and taking it out of people's way. |
@@ -363,7 +249,7 @@ Built (agents/wip-engine-part.md, stage 1): nothing is made per model. The `Per-
 | Record | A named entry of a data set's factors file, loaded as a thread. |
 | Per-model record | A record written from each served model's facts, named after the model. |
 | Text | A chunk that holds text the model reads, written in a texts file whose name gives its language. |
-| Variant | A record made for a language, a model or both, named after them: `plan (en, Qwen/Qwen3-8B-AWQ)`. |
+| Variant | A record made for a language, named after it: `plan (en)`. |
 | Giftbag | A person's own forks of the archive's chunks, tools, skeletons and expectations. |
 | Leftover | An archive thread or family the data set no longer names. |
 
@@ -388,20 +274,11 @@ Curation is the place for the rest of the store's authored content to come and g
 Trials, executions, scorings and hand-written skeletons have no tables, and a data set has one expectation schema.
 
 ### Picking a variant by the case's language
-```
-AGENT: replace
-Built (agents/wip-engine-part.md, stage 1): the model left the names; languages remain. The paragraph.
----
 The bench completes a configuration's name with its language when it is made in one language alone, and asks for the
 language when it is made in several (src/chatddx/catalog/variants.py, src/chatddx/bench/seen.py:Seen.thread). With
 texts in several languages, the cases a variation runs on should run the variant in their own language, so a run over
 English and Swedish cases runs each under its own. The model left the names when the engine became a part of a
 configuration; languages leave them in stage 2 (agents/wip-engine-part.md).
-```
-The bench picks a configuration's variant by the model the engine it runs on serves, and by language only when there
-is one (src/chatddx/catalog/variants.py). With texts in several languages, the cases a variation runs on should run the
-variant in their own language, so a run over English and Swedish cases runs each under its own. The model leaves the
-names once the engine is a part of a configuration, and languages after it (agents/wip-engine-part.md, stage 2).
 
 ### Smaller issues
 - **One source a run.** A data set's cases all come from the source `--source` names.

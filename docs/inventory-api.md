@@ -54,40 +54,22 @@ them up through a `Resolver` (`get`), such as `Registry.get` or `Store.get`.
 
 **Errors.**
 
-```
-AGENT: replace
-Built (agents/wip-engine-part.md, stage 1): `serving` refuses, and `configurations` must name an endpoint. The
-`LookupError` and `pydantic.ValidationError` rows.
----
-| `LookupError` | A source, endpoint or vignette that isn't there; an id that would reach outside a directory source; an endpoint whose engine `get` doesn't know (the resolver's `StructuralError`, turned into `endpoint '<name>': <its message>`), isn't an engine, or can't be started or reached as the inventory says; a server that doesn't list the engine's served name; an engine no endpoint, or several, serve (`Inventory.serving`). |
-| `pydantic.ValidationError` | An inventory that breaks its own rules: an unknown key, a wrong type, a source named other than its table, an endpoint naming no host, `[cleared]` naming no endpoint or source, `[judge]` binding a judge to no endpoint, `configurations` naming no endpoint. Rules written as validators raise `ValueError`, which pydantic wraps. |
-```
 | Exception | When |
 | --- | --- |
-| `LookupError` | A source, endpoint or vignette that isn't there; an id that would reach outside a directory source; an endpoint whose engine `get` doesn't know (the resolver's `StructuralError`, turned into `endpoint '<name>': <its message>`), isn't an engine, or can't be started or reached as the inventory says; a server that doesn't list the engine's served name. |
+| `LookupError` | A source, endpoint or vignette that isn't there; an id that would reach outside a directory source; an endpoint whose engine `get` doesn't know (the resolver's `StructuralError`, turned into `endpoint '<name>': <its message>`), isn't an engine, or can't be started or reached as the inventory says; a server that doesn't list the engine's served name; an engine no endpoint, or several, serve (`Inventory.serving`). |
 | `ValueError` | `Inventory.load`: a top-level key it doesn't know, a table an included file may not hold, a name defined twice. |
-| `pydantic.ValidationError` | An inventory that breaks its own rules: an unknown key, a wrong type, a source named other than its table, an endpoint naming no host, `[cleared]` naming no endpoint or source, `[judge]` binding a judge to no endpoint. Rules written as validators raise `ValueError`, which pydantic wraps. |
+| `pydantic.ValidationError` | An inventory that breaks its own rules: an unknown key, a wrong type, a source named other than its table, an endpoint naming no host, `[cleared]` naming no endpoint or source, `[judge]` binding a judge to no endpoint, `configurations` naming no endpoint. Rules written as validators raise `ValueError`, which pydantic wraps. |
 | `tomllib.TOMLDecodeError` (a `ValueError`), `OSError` | `Inventory.load` of a file, or an included file, that isn't TOML or can't be read. |
 | `OSError` | `served` and `confirm` when the server can't be reached, times out or answers with an HTTP error (`urllib.error.URLError`, `HTTPError`); `DirectorySource` for a directory it can't list or a file it can't read, other than a missing one. |
 | `chatddx.factors.base.StructuralError` (a `ValueError`) | `start_up` when the engine's model artifact isn't known to `get` or isn't a model. |
 
 ## The file
-````
-AGENT: replace
-Built (agents/wip-engine-part.md, stage 1, take D1): a top-level `configurations` key. The sentence, and a line of
-the example after `include`.
----
 An inventory file is TOML with the top-level keys `include`, `configurations`, `source`, `endpoint`, `host`, `cleared`
 and `judge`:
 
 ```toml
-configurations = "qwen3-8b-awq@fake"  # the endpoint whose engine a data set's configurations are made for
-```
-````
-An inventory file is TOML with the top-level keys `include`, `source`, `endpoint`, `host`, `cleared` and `judge`:
-
-```toml
 include = ["endpoints.toml"]          # files whose [endpoint] and [host] tables count too
+configurations = "qwen3-8b-awq@fake"  # the endpoint whose engine a data set's configurations are made for
 
 [source.sample]                       # a DirectorySource named "sample"
 path = "vignettes"                    # relative to this file
@@ -113,15 +95,8 @@ bind = "127.0.0.1"
 "qwen3-8b-awq@fake" = ["sample"]
 ```
 
-```
-AGENT: replace
-Built (agents/wip-engine-part.md, stage 1, take D1): `configurations` is the inventory's own too. The paragraph.
----
 An included file holds only `endpoint` and `host` tables. Sources, `configurations`, `[cleared]` and `[judge]` are
 read only from the inventory's own file.
-```
-An included file holds only `endpoint` and `host` tables. Sources, `[cleared]` and `[judge]` are read only from the
-inventory's own file.
 
 ## inventory.py
 
@@ -151,12 +126,6 @@ A location is the host's own, a path or a Hugging Face repo ID, and isn't resolv
 
 ### `class Inventory(Frozen)`
 
-```
-AGENT: add
-Built (agents/wip-engine-part.md, stage 1, take D1): a row at the end of the table.
----
-| `configurations` | `str \| None` | `None`; the endpoint whose engine a data set's configurations are made for (`src/chatddx/curation/plan.py:plan_factors`) |
-```
 | Field | Type | Default |
 | --- | --- | --- |
 | `sources` | `dict[str, DirectorySource \| DatabaseSource]` | `{}`; by `kind`, `directory` when it has none |
@@ -164,14 +133,10 @@ Built (agents/wip-engine-part.md, stage 1, take D1): a row at the end of the tab
 | `hosts` | `dict[str, HostSpec]` | `{}` |
 | `cleared` | `dict[str, tuple[str, ...]]` | `{}`; endpoint → sources |
 | `judges` | `dict[str, str]` | `{}`; judge → endpoint, from `[judge]` |
+| `configurations` | `str \| None` | `None`; the endpoint whose engine a data set's configurations are made for (`src/chatddx/curation/plan.py:plan_factors`) |
 
 A `kind` other than `directory` and `database` is a `ValidationError`.
 
-```
-AGENT: replace
-Built (agents/wip-engine-part.md, stage 1, take D1): `configurations` must name an endpoint. The list, with the
-clearance message put back beside its check.
----
 Building one checks, each a `ValueError` wrapped in `ValidationError`:
 - each source's `name` is its key: `source '<key>' is named '<name>'`;
 - each endpoint's `host`, when set, is a key of `hosts`: `endpoint '<name>' names no host '<host>'`;
@@ -179,20 +144,7 @@ Building one checks, each a `ValueError` wrapped in `ValidationError`:
   `endpoint '<name>' is cleared for no source <names, joined by ", ">`;
 - each judge's endpoint is an endpoint: `judge '<name>' is bound to no endpoint '<endpoint>'`;
 - `configurations`, when set, is an endpoint: `configurations are made for no endpoint '<name>'`.
-```
-Building one checks, each a `ValueError` wrapped in `ValidationError`:
-- each source's `name` is its key: `source '<key>' is named '<name>'`;
-- each endpoint's `host`, when set, is a key of `hosts`: `endpoint '<name>' names no host '<host>'`;
-- each key of `cleared` is an endpoint, `cleared names no endpoint '<name>'`, and each of its sources is a source,
-- each judge's endpoint is an endpoint: `judge '<name>' is bound to no endpoint '<endpoint>'`.
-  `endpoint '<name>' is cleared for no source <names, joined by ", ">`.
 
-```
-AGENT: add
-Built (agents/wip-engine-part.md, "Several endpoints"): where a run or a judge goes. A row at the end of the table.
----
-| `serving(engine: str, called: str \| None = None) -> str` | The one endpoint serving `engine`, by digest. `LookupError("no endpoint serves engine <called or engine>")` when none does, `LookupError("<names, joined by ", "> serve engine <called or engine>; name the one to use")` when several do. `called` names the engine in the message. `src/chatddx/runner/score.py:judge_at` turns it into `gate.Refused`, and `src/chatddx/bench/seen.py:Seen.at` into a `ValueError`. |
-```
 | Member | Returns / raises |
 | --- | --- |
 | `load(path: Path) -> Self` (classmethod) | See below. |
@@ -200,17 +152,11 @@ Built (agents/wip-engine-part.md, "Several endpoints"): where a run or a judge g
 | `listing(name: str \| None = None) -> ListingSource` | The source `name` names, or with no name the only source that lists its vignettes. `LookupError("no source in the inventory lists its vignettes")` or `LookupError("<n> sources list their vignettes (<names>), so one must be named")` without a name; `source`'s `LookupError` for a name it doesn't know; `LookupError("source '<name>' is a database source, whose vignettes are read through the store, not listed")`. |
 | `endpoint(name: str) -> EndpointSpec` | `LookupError("no endpoint '<name>' in the inventory")` when there is none. |
 | `cleared_for(endpoint: str) -> frozenset[str]` | The sources `[cleared]` lists for the endpoint; empty when it lists none, also for an endpoint that doesn't exist. |
+| `serving(engine: str, called: str \| None = None) -> str` | The one endpoint serving `engine`, by digest. `LookupError("no endpoint serves engine <called or engine>")` when none does, `LookupError("<names, joined by ", "> serve engine <called or engine>; name the one to use")` when several do. `called` names the engine in the message. `src/chatddx/runner/score.py:judge_at` turns it into `gate.Refused`, and `src/chatddx/bench/seen.py:Seen.at` into a `ValueError`. |
 
 #### `Inventory.load(path: Path) -> Self`
-```
-AGENT: replace
-Built (agents/wip-engine-part.md, stage 1, take D1): the message names `configurations` too. The item.
----
 1. Reads `path`. `ValueError("<path>: the inventory has only 'include', 'configurations', 'source', 'endpoint',
    'host', 'cleared' and 'judge', not [<keys>]")` for any other top-level key.
-```
-1. Reads `path`. `ValueError("<path>: the inventory has only 'include', 'source', 'endpoint', 'host', 'cleared' and
-   'judge', not [<keys>]")` for any other top-level key.
 2. For each name in `include`, in order, reads `path.parent / name`. `ValueError("<included>: an included inventory
    has only 'endpoint' and 'host' tables, not [<keys>]")` for any other key, `include` included, so includes don't
    nest. `ValueError("<included>: <table> [<names>] are in <path> too")` for a name already read, from `path` or from
@@ -355,14 +301,8 @@ endpoints serve. `worlds/` holds two:
 | --- | --- | --- | --- | --- |
 | `worlds/sample/` | `sample`, `path = "vignettes"`, sensitive | `qwen3-8b-awq@fake` (port 12099), `gpt-oss-20b@fake` (port 12100), `max_jobs = 4` | `fake`: `bind = "127.0.0.1"`, models by repo ID, the empty template at `/dev/null` | both endpoints for `sample` |
 | `worlds/kompismoln/` | `sample`, `path = "../sample/vignettes"`, sensitive | from `endpoints.toml`: `qwen3-8b@pelle` (`max_jobs = 1`), `gpt-oss-20b@malborg` (`max_jobs = 4`) | from `endpoints.toml`: `pelle`, `malborg`, `bind = "::"` | both endpoints for `sample` |
-
-```
-AGENT: add
-Built (agents/wip-engine-part.md, stage 1, take D1): each World's `configurations`. A paragraph before this one.
----
 `configurations` is `qwen3-8b-awq@fake` in `worlds/sample/`, `qwen3-8b@pelle` in `worlds/kompismoln/`, and
 `qwen3@fake` in `worlds/test/`.
-```
 `endpoints.toml` and `engines.toml` in `worlds/kompismoln/` are what `chatddx import-engine` writes.
 
 `src/chatddx/test/test_worlds.py:test_each_endpoint_serves_the_engine_planned_under_its_name` asserts the check finds

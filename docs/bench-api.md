@@ -1,9 +1,5 @@
 # Bench API
 
-```
-AGENT: replace
-Built (agents/wip-engine-part.md, stage 1): the facts' types are the factors' now.
----
 Reference for the `chatddx.bench` package: each name's signature, what it returns and what it raises. What the bench
 is and why it is shaped this way is in docs/bench.md. The types it passes through are in docs/catalog-api.md (`Edit`,
 `About`, `Subject`, `Kept`), docs/factors-api.md (`Component`, `Registry`, `Skeleton`, `Recipe`, `Trial`, `Case`,
@@ -12,15 +8,6 @@ is and why it is shaped this way is in docs/bench.md. The types it passes throug
 `Connection`), docs/inventory-api.md (`Inventory`), docs/facts-api.md (`Facts`, `lints`), docs/identity-api.md
 (`Person`, `preferred`, `sees`, `owns`, `collaborates`) and docs/runner-api.md (`Runner`, `Running`, `Grader`,
 `Grading`, `Event`, `Refused`, `judge_at`, `Items`).
-```
-Reference for the `chatddx.bench` package: each name's signature, what it returns and what it raises. What the bench
-is and why it is shaped this way is in docs/bench.md. The types it passes through are in docs/catalog-api.md (`Edit`,
-`About`, `Subject`, `Kept`), docs/factors-api.md (`Component`, `Registry`, `Skeleton`, `Recipe`, `Trial`, `Case`,
-`Scorer`, `Scoring`, `Expectation`, `Finding`, `StructuralError`), docs/ledger-api.md (`RunStarted`, `Run`, `RunItem`,
-`ItemKey`, `Call`, `Score`), docs/store-api.md (`Store`, `People`, `Rows`, `Connection`), docs/inventory-api.md
-(`Inventory`), docs/facts-api.md (`Facts`, `lints`), docs/identity-api.md (`Person`, `preferred`, `sees`, `owns`,
-`collaborates`) and docs/runner-api.md (`Runner`, `Running`, `Grader`, `Grading`, `Event`, `Refused`, `judge_at`,
-`Items`).
 
 Paths are relative to `src/chatddx/bench/` unless they start with `src/`, `docs/` or `agents/`.
 
@@ -82,28 +69,13 @@ Organisational principles:
   (`chatddx.factors.scoring.View`). The bench writes for the person only through what `Seen` finds.
 
 ## Conventions
-```
-AGENT: replace
-Built (agents/wip-engine-part.md, stage 1): the facts come from the store, not the caller.
----
 - **One person, one connection.** `Bench(conn, person, inventory)` keeps them as `conn`, `person` and `inventory`,
   with a `Store`, a `Catalog`, `Rows` and `People` on the connection as `store`, `catalog`, `rows` and `people`. Edges
   read through these what doesn't depend on the person. `start` and `score` need `conn` in autocommit mode.
-```
-- **One person, one connection.** `Bench(conn, person, inventory, facts)` keeps them as `conn`, `person`, `inventory`
-  and `facts`, with a `Store`, a `Catalog`, `Rows` and `People` on the connection as `store`, `catalog`, `rows` and
-  `people`. Edges read through these what doesn't depend on the person. `start` and `score` need `conn` in autocommit
-  mode.
 - **Writes** are functions of the module that holds them, with a `Seen` as their first parameter, which `Bench` binds,
   so an edge calls `bench.take(cases, schema)`. Below, a write's signature is as `Bench` gives it.
-```
-AGENT: replace
-Built (agents/wip-engine-part.md, stage 1): the facts aren't cached.
----
 - **Caches.** The login of each person id and the model each engine serves are cached for the bench's life; the facts
   aren't, and `facts` reads them from the store each time.
-```
-- **Caches.** The login of each person id and the model each engine serves are cached for the bench's life.
 - **Words.** A method that takes `word` takes a key of `KINDS`; another raises `KeyError`.
 - **What the person sees.** The catalog takes no person: it gives every thread and expectation with its `About`, and
   the bench keeps what the person `chatddx.identity.sees` (live, and owned or shared), what they `owns` (live, and
@@ -122,15 +94,7 @@ Built (agents/wip-engine-part.md, stage 1): the facts aren't cached.
 ## errors.py
 
 ### `class NotFound(LookupError)`
-```
-AGENT: replace
-Built (agents/wip-engine-part.md, stage 1): nothing is made per model, so `per_model` is gone. The entry's two lines.
----
 Nothing the person sees goes by that name or id.
-```
-`NotFound(message: str, per_model: Iterable[str] = ())`: nothing the person sees goes by that name or id.
-- `per_model`: the names of the threads made per model under the name, when no model was given to pick one by; kept as
-  a `tuple[str, ...]`.
 
 ### `class Ambiguous(LookupError)`
 More than one thing the person sees goes by that name or id, or a case has several expectations of theirs to choose
@@ -173,14 +137,8 @@ the prompt tokens 0.
 ## variation.py
 
 ### `PARTS: tuple[str, ...]`
-```
-AGENT: replace
-Built (agents/wip-engine-part.md, stage 1): the engine is a part.
----
 `chatddx.factors.request.RECIPE_PARTS`, the recipe's parts in order: the nine chunk parts, `CHUNK_PARTS`, then
 `engine`.
-```
-`chatddx.factors.request.RECIPE_PARTS`, the recipe's parts in order.
 
 ### `OPTIONAL: tuple[str, ...]`
 The parts `Recipe` doesn't require, which a variation can take out.
@@ -190,15 +148,8 @@ A frozen dataclass: a configuration, or a variation of it being tried.
 - `configuration: Edit`: the configuration's edit.
 - `name: str`: the name the person called it by.
 - `recipe: Recipe | None = None`: its recipe; `None` for a configuration without a compilation.
-```
-AGENT: replace
-Built (agents/wip-engine-part.md, stage 1): the engine is a part.
----
 - `parts: Mapping[str, tuple[str | None, str]] = {}`: for each part replaced, a chunk's digest, or an engine's for
   `engine`, or `None` for one taken out, and the name it was set by.
-```
-- `parts: Mapping[str, tuple[str | None, str]] = {}`: for each part replaced, a chunk's digest, or `None` for one taken
-  out, and the name it was set by.
 
 #### `label: str` (property)
 `name`, then `+PART=NAME` for each replaced part, in `PARTS` order.
@@ -209,15 +160,8 @@ The digest the part holds: the replaced one, `None` when it was taken out; else 
 #### `set(part: str, digest: str | None, name: str) -> TriedVariation`
 A copy with `part` set to `digest`, by `name`. Setting a part to the recipe's own digest takes it out of `parts`.
 - Raises `ValueError("<name> has no recipe to set its <part> in")` without a recipe.
-```
-AGENT: replace
-Built (agents/wip-engine-part.md, stage 1): the article follows the part, for `engine`, which can't be taken out.
----
 - Raises `ValueError("a configuration always has a <part>: only <OPTIONAL> can be taken out")`, `an engine` for the
   engine, for `None` and a part not in `OPTIONAL`.
-```
-- Raises `ValueError("a configuration always has a <part>: only <OPTIONAL> can be taken out")` for `None` and a part
-  not in `OPTIONAL`.
 
 #### `varied: Recipe | None` (property)
 The recipe with `parts` replaced over it, validated as a `Recipe`; `None` without a recipe.
@@ -225,21 +169,12 @@ The recipe with `parts` replaced over it, validated as a `Recipe`; `None` withou
 ## model.py
 
 ### Constants
-```
-AGENT: replace
-Built (agents/wip-engine-part.md, stage 1): the chunk parts are `CHUNK_PARTS`, and `facts` a word. The first two
-items.
----
 - `KINDS: dict[str, tuple[str, ...]]`: the thread kinds each word names. `configuration` is `skeleton`, each chunk
   part, of `CHUNK_PARTS`, is `chunk.<part>`, `engine` is `engine.local` and `engine.remote`, and `tool`, `scorer`,
   `judge`, `expectation`, `appendix`, `expectation_schema`, `canary_set`, `model` and `facts` are their own kind.
-- `WRITTEN: frozenset[str]`: the kinds a person writes as components: `chunk.<part>` for each of `CHUNK_PARTS`,
-  `expectation`, `appendix`, `scorer` and `judge`.
-```
-- `KINDS: dict[str, tuple[str, ...]]`: the thread kinds each word names. `configuration` is `skeleton`, each part of
   `PARTS` is `chunk.<part>`, `engine` is `engine.local` and `engine.remote`, and `tool`, `scorer`, `judge`,
   `expectation`, `appendix`, `expectation_schema`, `canary_set` and `model` are their own kind.
-- `WRITTEN: frozenset[str]`: the kinds a person writes as components: `chunk.<part>` for each of `PARTS`,
+- `WRITTEN: frozenset[str]`: the kinds a person writes as components: `chunk.<part>` for each of `CHUNK_PARTS`,
   `expectation`, `appendix`, `scorer` and `judge`.
 - `LABELLED: tuple[Part, ...]`: `("view", "resource")`, the parts of a scorer that have labels.
 - `COMPILED_LANGUAGE: str`: `"a compiled configuration's language comes from its recipe"`, what `new` and `follow`
@@ -313,15 +248,8 @@ By case digest:
 ## seen.py
 
 ### `class Seen`
-```
-AGENT: replace
-Built (agents/wip-engine-part.md, stage 1): no facts are passed.
----
 `Seen(conn: Connection, person: Person, inventory: Inventory)`: what the person sees, and the checks the writes share.
 It writes nothing.
-```
-`Seen(conn: Connection, person: Person, inventory: Inventory, facts: Facts)`: what the person sees, and the checks the
-writes share. It writes nothing.
 
 ### People
 
@@ -343,10 +271,6 @@ The heads of `Catalog.heads(kind)` the person `sees`, each with its `About`, in 
 #### `names(word: str) -> list[str]`
 The names of `threads(word)`, sorted, without repeats.
 
-```
-AGENT: replace
-Built (agents/wip-engine-part.md, stage 1): names carry a language only, so no model picks one. The entry.
----
 #### `thread(word: str, name: str) -> tuple[Edit, str]`
 The head of the thread `name` names among `threads(word)`, and the name that found it.
 - `name`: a thread's name, or `<owner's login>/NAME`. A name nothing goes by is read as its one variant,
@@ -359,21 +283,6 @@ Of the threads called `name`, the person's own are taken when they own any, else
 - `Ambiguous("<word> '<name>' names a <kind> and a <kind>")`, for a name held in two of the word's kinds.
 - `Ambiguous("<word> '<name>' names <n>; name one as OWNER/NAME")`
 - `NotFound("no <word> '<name>' for <login>")`
-```
-#### `thread(word: str, name: str, model: str | None = None) -> tuple[Edit, str]`
-The head of the thread `name` names among `threads(word)`, and the name that found it.
-- `name`: a thread's name, or `<owner's login>/NAME`. A name nothing goes by is read as its one variant `model` may
-  use, `NAME (LANGUAGE)`, `NAME (MODEL)` or `NAME (LANGUAGE, MODEL)` (`chatddx.catalog.variants_for`), in the language
-  the name ends in, as `NAME LANGUAGE` or `NAME (LANGUAGE)`, if any.
-- `model`: the model of the engine the thread is to be used with.
-
-Of the threads called `name`, the person's own are taken when they own any, else all of them; when none is called
-`name`, the same among those whose qualified name it is. Raises:
-- `Ambiguous("<word> '<name>' is made in more than one language: <names>; name one as '<base> <language>' or …")`
-- `Ambiguous("<word> '<name>' names a <kind> and a <kind>")`, for a name held in two of the word's kinds.
-- `Ambiguous("<word> '<name>' names <n>; name one as OWNER/NAME")`
-- `NotFound("no <word> '<name>' for <login>")`, followed by `; per model: <names>` when threads are made per model
-  under it. Without `model`, those names are its `per_model`.
 
 #### `thread_by_id(id: int, word: str | None = None, *, deleted: bool = False) -> tuple[Edit, About]`
 The head of thread `id`, and its `About`, when the person sees it.
@@ -404,11 +313,6 @@ The first of `threads(word)` whose head is `digest`, with `recipe` when it is gi
 #### `title(digest: str | None) -> str`
 `Catalog.title_of`, or `—` for `None`.
 
-```
-AGENT: replace
-Built (agents/wip-engine-part.md, stage 1): `model_name` moved to the factors; the facts read from the store, after
-`model`.
----
 #### `model(engine: str) -> str | None`
 The model the engine serves, as the facts name it (`chatddx.factors.facts.model_name`): a local engine's model's
 repository, a remote engine's model.
@@ -420,9 +324,6 @@ bench lasts is used.
 
 #### `facts_for(engine: str) -> ModelFacts | None`
 The `facts` about the model the engine serves, or `None` for a model they don't know.
-```
-#### `model(engine: str) -> str | None`
-The model the engine serves, as the facts name it (`chatddx.facts.model_name`).
 
 #### `served(engine: str) -> str`
 The engine's `served_model_name`, the model a request to it carries.
@@ -475,53 +376,26 @@ order: what they could take.
 
 ### The variation being tried
 
-```
-AGENT: replace
-Built (agents/wip-engine-part.md, stage 1): plain names. The two entries.
----
 #### `configuration(name: str) -> TriedVariation`
 The configuration `thread("configuration", name)` finds, with nothing replaced, named without the person's own
 `<login>/`.
 
 #### `chunk(part: str, name: str) -> str`
 The digest of the head `thread(part, name)` finds.
-```
-#### `configuration(name: str, engine: str | None = None) -> TriedVariation`
-The configuration `thread("configuration", name, model(engine))` finds, with nothing replaced, named without the
-person's own `<login>/`.
-
-#### `chunk(part: str, name: str, engine: str | None = None) -> str`
-The digest of the head `thread(part, name, model(engine))` finds.
 
 #### `variation(configuration: int, parts: Mapping[str, str | None] | None = None, head: int | None = None) -> TriedVariation`
 The configuration `thread_by_id(configuration, "configuration")` finds, with `parts` replaced.
-```
-AGENT: replace
-Built (agents/wip-engine-part.md, stage 1): the engine is a part.
----
 - `parts`: part → chunk digest, an engine's digest for `engine`, or `None` to take the part out.
-```
-- `parts`: part → chunk digest, or `None` to take the part out.
 - `head`: an earlier edit of the configuration to start from.
 
 Raises:
 - `thread_by_id`'s `NotFound`.
 - `NotFound("no edit <head> of configuration <configuration>")`
 - `ValueError("no part '<part>': the parts are <PARTS>")`
-```
-AGENT: replace
-Built (agents/wip-engine-part.md, stage 1): the engine part.
----
 - `ValueError("<digest> isn't a stored chunk of <part>")`, or `ValueError("<digest> isn't a stored engine")` for
   `engine`.
-```
-- `ValueError("<digest> isn't a stored chunk of <part>")`
 - `TriedVariation.set`'s.
 
-```
-AGENT: add
-Built (agents/wip-engine-part.md, stage 1): where a variation runs, after `variation`.
----
 #### `at(variation: TriedVariation, endpoint: str | None) -> tuple[str, str]`
 Where the variation runs: the endpoint's name and the engine's digest. For a configuration with a recipe, its engine,
 at `endpoint`, or without one at the one endpoint serving it (`Inventory.serving`); for one without, `endpoint` and
@@ -532,31 +406,19 @@ the engine it serves (`endpoint(name)`). Raises:
   use")`, without `endpoint`: `Inventory.serving`'s.
 - `ValueError("endpoint '<endpoint>' serves another engine than <label>'s, <title>")`
 - `endpoint(name)`'s.
-```
-```
-AGENT: replace
-Built (agents/wip-engine-part.md, stage 1): compiled against the stored facts.
----
+
 #### `skeleton(variation: TriedVariation) -> Skeleton`
 The configuration's head when nothing is replaced or it has no recipe; else the varied recipe compiled against
 `facts_for` its engine.
 - Raises the compiler's errors, the facts' refusals among them (`StructuralError`).
-```
-#### `skeleton(variation: TriedVariation) -> Skeleton`
-The configuration's head when nothing is replaced or it has no recipe; else the varied recipe compiled.
-- Raises the compiler's errors.
 
-```
-AGENT: add
-Built (agents/wip-engine-part.md, stage 1): where intents land, after `skeleton`.
----
 #### `landed(variation: TriedVariation) -> dict[str, Landing]`
 Where the varied recipe's intents land, by part: `reasoning` for a reasoning level, `sampling` for a recommended
 sampling, each the level the engine's model is asked for, with `nearest`, why, when the facts land it on its nearest
 (`chatddx.factors.request.landings`). Against the facts its compilation names when nothing is replaced, else
 `facts_for` its engine. `{}` without a recipe; no key for a part that holds no intent.
 - Raises `landings`' `StructuralError` for what the facts refuse.
-```
+
 #### `request(variation: TriedVariation, engine: str | None, seed: int) -> dict[str, JsonValue]`
 The request rendered from the skeleton with `PLACEHOLDERS` for its slots and `seed`.
 - `engine`: whose `served` model the request carries; `‹model›` without one.
@@ -665,17 +527,9 @@ sent: `None` when it is, else why not:
 
 ### Checks the writes share
 
-```
-AGENT: replace
-Built (agents/wip-engine-part.md, stage 1): compiled against the stored facts, which the compilation names.
----
 #### `compiled(recipe: Recipe) -> tuple[Registry, Compilation]`
 The recipe compiled by the running code against `facts_for` its engine, in a registry with what it refers to and
 those facts, which the compilation names. Nothing is stored.
-```
-#### `compiled(recipe: Recipe) -> tuple[Registry, Compilation]`
-The recipe compiled by the running code, in a registry with what it refers to. Nothing is stored.
-- Raises the compiler's errors.
 
 #### `linted(digest: str) -> list[Finding]`
 `lints` of the stored component, with `Catalog.language_of` for languages.
@@ -758,22 +612,12 @@ The component as a write would store it, with its lints. Nothing is written.
 - `component`: a `Recipe` is compiled by the running code and kept as a configuration.
 - `labels`: a scorer's view and resource labels.
 
-```
-AGENT: replace
-Built (agents/wip-engine-part.md, stage 1): the engine part, and the facts' refusals. The list.
----
 For a recipe, raises:
 - `ValueError(COMPILED_LANGUAGE)` for a language.
 - `ValueError("only a scorer's views and resources have labels")` for labels.
 - `ValueError("<digest> isn't a stored chunk of <part>")`, or `ValueError("<digest> isn't a stored engine")` for
   `engine`.
 - the compiler's errors, the facts' refusals among them (`Seen.compiled`).
-```
-For a recipe, raises:
-- `ValueError(COMPILED_LANGUAGE)` for a language.
-- `ValueError("only a scorer's views and resources have labels")` for labels.
-- `ValueError("<digest> isn't a stored chunk of <part>")`
-- the compiler's errors.
 
 ### `fork_component(thread: int, name: str, component: Component | None = None, language: str | None = None, labels: Labels | None = None) -> Written`
 A new thread of the person's own named `name`, forked from the head of `thread`, holding `component`, else the head. A
@@ -930,10 +774,6 @@ Raises:
 ### `REFUSALS`
 `(LookupError, TypeError, ValueError, NotImplementedError, Refused)`: what `score` takes as a scorer refused.
 
-```
-AGENT: replace
-Built (agents/wip-engine-part.md, stage 1): the endpoint is optional, found from the variation's engine. The entry.
----
 ### `start(variation: TriedVariation, endpoint: str | None, cases: list[str], seeds: Sequence[int], cleanup: Sequence[CleanupOp] | None = None, execution: Execution | None = None, canaries: str | None = None) -> Running`
 
 The variation run where `Seen.at(variation, endpoint)` says, over `cases` with `seeds`, its replicates, its cleanup
@@ -948,22 +788,6 @@ Raises:
 - `OverQuota("a run holds at most <ITEMS_PER_RUN> items, not <n>")`, the cases times the seeds
 - `OverQuota("<login> has started <n> runs in the last day, as many as a day takes")`
 - `Seen.at`'s, `resolve`'s for `canaries`, the runner's and its gate's; the runner's `ValueError` for a
-  connection not in autocommit mode.
-```
-### `start(variation: TriedVariation, endpoint: str, cases: list[str], seeds: Sequence[int], cleanup: Sequence[CleanupOp] | None = None, execution: Execution | None = None, canaries: str | None = None) -> Running`
-
-The variation run at `endpoint` over `cases` with `seeds`, its replicates, its cleanup steps, its execution and the
-canary set stored under the digest `canaries`. Once the run has started, its `name` entry, `variation.label`, its
-`varied` entry, `variation.configuration`, and a `replaced` entry for each part replaced are written in one
-transaction (docs/catalog-api.md, "Entry"). Not given: the steps the cases' sources ask for, in `CleanupOp`'s order
-(`()` for none); the endpoint's execution and canary set, from the inventory. The compilation of a varied skeleton is
-stored once the run has started.
-
-Raises:
-- `ValueError("<label> is a judge configuration: a judge is asked as runs are scored, and isn't run on cases")`
-- `OverQuota("a run holds at most <ITEMS_PER_RUN> items, not <n>")`, the cases times the seeds
-- `OverQuota("<login> has started <n> runs in the last day, as many as a day takes")`
-- `Seen.endpoint`'s, `resolve`'s for `canaries`, the runner's and its gate's; the runner's `ValueError` for a
   connection not in autocommit mode.
 
 ### `again(run: RunStarted, seeds: Sequence[int]) -> Running`
@@ -1007,42 +831,21 @@ A halt for `score` that another thread sets.
 ## Tests
 In `src/chatddx/bench/test/`. The repl's and the API's tests reach the bench too, through their own fixtures over the
 same test World.
-```
-AGENT: replace
-Built (agents/wip-engine-part.md, stage 1): the bench takes no facts.
----
 - `conftest.py`: `template` is `curated`, the test World as init-data lands it, with alice's giftbag, copied for each
   test; `autocommit` is on; `alice` is the test World's person, `bob` a new one with nothing; `bench` is alice's, on
   the test World's inventory.
-```
-- `conftest.py`: `template` is `curated`, the test World as init-data lands it, with alice's giftbag, copied for each
-  test; `autocommit` is on; `alice` is the test World's person, `bob` a new one with nothing; `bench` is alice's, on
-  the test World's inventory and its facts beside the bundled ones.
 - `helpers.py`: `SOURCE`, the test World's vignette source; `trial(conn, plan, recipe, *ids)`, a stored trial of one
   of its recipes on `QWEN`, seed 7, over its cases of those vignette ids; `ran(conn, by, made, finished=True)`, a run
   of it recorded without sending; `another_expectation(bench, case, data)`, a second expectation of the person's own
   for the case, left by two writers at once.
-```
-AGENT: replace
-Built (agents/wip-engine-part.md, stage 1): no names per model; a swapped engine.
----
 - `test_seen.py`: what a person sees, by name, `OWNER/NAME` and id; variations; runs and what reaches a digest; what is
   left to score; the expectation a case is held to, and several to choose from; scorers that apply, judged or not;
   a run's scores; judge configurations; a swapped engine keeping every other pick, where its intents land, on their
   nearest or not, and a level its model refuses; names per language; saving, forking and editing; taking.
-```
-- `test_seen.py`: what a person sees, by name, `OWNER/NAME` and id; variations; runs and what reaches a digest; what is
-  left to score; the expectation a case is held to, and several to choose from; scorers that apply, judged or not;
-  a run's scores; judge configurations; per-model and per-language names; saving, forking and editing; taking.
-```
-AGENT: add
-Built (agents/wip-engine-part.md, stage 1): the runs' tests, which the list leaves out, before `test_writes.py`.
----
 - `test_runs.py`: a run's seeds, cleanup, execution and canaries, kept when it runs again; what it varied; a run at
   the endpoint serving its engine, or one named, refused for an endpoint serving another engine and for an engine two
   endpoints serve; its items, cases times seeds; resuming one's own; the sources' cleanup and the endpoint's canaries
   and execution.
-```
 - `test_writes.py`: configurations from recipes; chunks and expectations, new, edited and forked, with their
   languages; what is refused; an expectation's lints and the one-expectation rule; judges.
 - `test_cases.py`: appendices, cases of them, and an appendix's edit storing a replacement; carrying an expectation;

@@ -26,13 +26,7 @@ It must be possible to deliver the cage together with the results, for scientifi
   sorted, so equivalent settings share a digest.
 
 - **Chunk:** a factor authored in the portal that fills one part of a recipe (not to be confused with a slot).
-```
-AGENT: replace
-Built (agents/wip-engine-part.md, stage 1): a recipe names its engine.
----
 - **Recipe:** the chunks and the engine a skeleton was compiled from.
-```
-- **Recipe:** the chunks a skeleton was compiled from.
 - **Skeleton:** the frozen request.
 - **Slot:** a placeholder filled at send time.
 - **Insert:** a placeholder filled at compile time: `schema` in an output chunk's guidance, filled with that
@@ -56,13 +50,7 @@ Built (agents/wip-engine-part.md, stage 1): a recipe names its engine.
 - **Execution:** how a run sends its items, and a score its judge calls: order, concurrency, timeout, retries and the
   runaway cutoff.
 - **View:** the part of an output and of an expectation that a scorer scores, and how.
-```
-AGENT: replace
-Built (agents/wip-engine-part.md, stage 1): a compilation pins the facts it was compiled against.
----
 - **Compilation:** A provenance (component) that says which recipe, compiler and facts produced a skeleton
-```
-- **Compilation:** A provenance (component) that says which recipe and compiler produced a skeleton
 - **Run** and **Score:** a stage log.
 - **Worker:** the process that runs the trials queued for it, outside the request that asked for them.
 - **Job:** a started run or scoring queued for the worker, at its endpoint, for its owner, scored afterwards or not.
@@ -75,19 +63,11 @@ Built (agents/wip-engine-part.md, stage 1): a compilation pins the facts it was 
 - **Portal:** the web-interface used to configure factors, watch runs and export results.
 - **World:** factor parameters outside of the orchestrator's direct control. (the vignette source, model files, the Nix closure, the chat-template file, the remote engine)
 - **Inventory:** files written by ops that say where vignette sources, endpoints and hosts are (`docs/inventory.md`).
-```
-AGENT: replace
-Built (agents/wip-engine-part.md, stage 1): facts are stored components, applied when a recipe is compiled.
----
 - **Facts:** ops- or developer-authored knowledge about models (how each reasoning level is expressed, collapsed,
   refused or landed on its nearest, recommended sampling, output caveats, specs), typed in code, written in TOML and
   stored by init-data as components of kind `facts`, a thread per model, corrected by a new version. Not factors:
   they work out a reasoning level and a recommended sampling for the engine's model when a recipe is compiled, and
   check literal chunks; a compilation pins them, as it pins the compiler.
-```
-- **Facts:** ops- or developer-authored knowledge about models (how each reasoning level is expressed or refused,
-  recommended sampling, output caveats, specs), typed in code, written in TOML and keyed by model name.
-  Not factors: they write and check literal chunks, and no digest depends on them.
 - **Start-up:** what the start-up script runs for one endpoint, joining an engine (what) with inventory entries (where)
   (`docs/inventory.md`, "The start-up").
 - **Rig:** the chatddx software that builds cages from factors, runs and scores inside them and records what happened.
@@ -221,43 +201,24 @@ together in whatever way they deem fit. There is however an intended flow of dat
 described below.
 
 ### Before a run
-```
-AGENT: replace
-Built (agents/wip-engine-part.md, stage 1): a recipe names its engine, and compiling reads the facts. Item 1, and
-item 2's first line.
----
-1. A Recipe is created from stored instances of each Chunk: Prompt, Output and Sampling are required, Instructions, FewShot, Reasoning and Passthrough are optional; and it names an engine, LocalEngine or RemoteEngine. A Reasoning chunk may ask for a level, and a Sampling chunk for the sampling the model's makers recommend, rather than say what is sent.
+1. A Recipe is created from stored instances of each Chunk: Prompt, Output and Sampling are required, Instructions,
+   FewShot, Reasoning and Passthrough are optional; and it names an engine, LocalEngine or RemoteEngine. A Reasoning
+   chunk may ask for a level, and a Sampling chunk for the sampling the model's makers recommend, rather than say what
+   is sent.
 
 2. The Recipe is compiled into a Skeleton, against the facts about its engine's model: a reasoning level asked for is
    sent as they say the model is asked for it, once it has collapsed into another or landed on its nearest, or is
    refused; a recommended sampling is what they recommend for the level the reasoning landed on, or for the model's
    default level when the recipe asks for none. The Skeleton is stored as a frozen factor, holding:
-```
-1. A Recipe is created from stored instances of each Chunk: Prompt, Output and Sampling are required, Instructions, FewShot, Reasoning and Passthrough are optional.
+   A Compilation notes which recipe produced which skeleton, against which facts, none for a model without facts; it is
+   stored as a component, but isn't a factor. Two engines of one model compile a recipe to one skeleton.
 
-2. The Recipe is compiled into a Skeleton, which is stored as a frozen factor, holding:
-  - messages: each message's content is a list of plain text pieces or Slots (`vignette`, `appendices`)
-  - body: sampling, output format and reasoning settings; greedy sampling has already dropped top_p, top_k and min_p
-  - if few shots were included in the recipe, they're baked into the skeleton as plain text
-  - appendix_layout: how appendices are joined into one piece of text
+3. A Case is a vignette, named by its source, its id there and the fingerprint of its raw bytes, and a list of Appendix
+   references.
 
-```
-AGENT: replace
-Built (agents/wip-engine-part.md, stage 1): a compilation pins the facts.
----
-  A Compilation notes which recipe produced which skeleton, against which facts, none for a model without facts; it is
-  stored as a component, but isn't a factor. Two engines of one model compile a recipe to one skeleton.
-```
-  A Compilation notes which recipe produced which skeleton, it is stored as a component, but isn't a factor.
-
-3. A Case is a vignette, named by its source, its id there and the fingerprint of its raw bytes, and a list of Appendix references.
-```
-AGENT: replace
-Built (agents/wip-engine-part.md, stage 1): a configuration's trial takes its recipe's engine.
----
-4. A Trial names a skeleton, an engine (LocalEngine or RemoteEngine), the case inputs, the text-cleanup steps and the seeds. A trial of a configuration with a recipe takes the recipe's engine, and its run goes to the endpoint serving it.
-```
-4. A Trial names a skeleton, an engine (LocalEngine or RemoteEngine), the case inputs, the text-cleanup steps and the seeds.
+4. A Trial names a skeleton, an engine (LocalEngine or RemoteEngine), the case inputs, the text-cleanup steps and the
+   seeds. A trial of a configuration with a recipe takes the recipe's engine, and its run goes to the endpoint serving
+   it.
 
 ### Per run
 1. The runner records a RunStarted row which holds the trial, the execution settings (Execution), the canary set, and the version of the rig code.

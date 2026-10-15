@@ -35,35 +35,17 @@ Paths are relative to `src/chatddx/api/` unless they start with `src/`, `docs/` 
 | Module | Builds on |
 | --- | --- |
 | `listening.py` | psycopg, `chatddx.store.notify` |
-```
-AGENT: replace
-Built (agents/wip-engine-part.md, stage 1): the app holds no facts.
----
 | `state.py` | `listening.py`, psycopg, `chatddx.{inventory,store}` |
-```
-| `state.py` | `listening.py`, psycopg, `chatddx.{facts,inventory,store}` |
 | `schemas.py` | `chatddx.bench`, `chatddx.catalog`, `chatddx.factors.base`, `chatddx.identity` |
 | `people.py` | `schemas.py`, `state.py`, `chatddx.bench`, `chatddx.identity`, `chatddx.settings`, `chatddx.store` |
-```
-AGENT: replace
-Built (agents/wip-engine-part.md, stage 1): a part's landing.
----
 | `threads.py` | `schemas.py`, `people.py`, `chatddx.bench`, `chatddx.catalog`, `chatddx.factors.{base,facts,request,trial}` |
-```
-| `threads.py` | `schemas.py`, `people.py`, `chatddx.bench`, `chatddx.catalog`, `chatddx.factors.{base,request,trial}` |
 | `families.py` | `schemas.py`, `people.py`, `state.py`, `threads.py`, `chatddx.bench`, `chatddx.factors.{base,cases}`, `chatddx.store` |
 | `world.py` | `schemas.py`, `people.py`, `threads.py`, `chatddx.bench`, `chatddx.factors.kinds`, `chatddx.inventory`, `chatddx.scorers.{scorer,shipped}` |
 | `events.py` | `schemas.py`, `chatddx.bench`, `chatddx.factors.{base,request,scoring,trial}`, `chatddx.ledger`, `chatddx.runner.{run,score}`, `chatddx.scorers.aggregate` |
 | `queue.py` | `schemas.py`, `people.py`, `chatddx.bench`, `chatddx.settings`, `chatddx.store` |
 | `runs.py` | `schemas.py`, `events.py`, `people.py`, `state.py`, `telling.py`, `threads.py`, `chatddx.bench`, `chatddx.factors.{base,request,trial}`, `chatddx.ledger`, `chatddx.runner.run`, `chatddx.scorers.answer`, `chatddx.store` |
 | `scores.py` | `schemas.py`, `events.py`, `people.py`, `state.py`, `chatddx.store` |
-```
-AGENT: replace
-Built (agents/wip-engine-part.md, stage 1): the app holds no facts.
----
 | `app.py` | every module above but `events.py` and `telling.py`, `chatddx.bench`, `chatddx.inventory`, `chatddx.runner.gate`, `chatddx.store`, `chatddx.worker` |
-```
-| `app.py` | every module above but `events.py` and `telling.py`, `chatddx.bench`, `chatddx.facts`, `chatddx.inventory`, `chatddx.runner.gate`, `chatddx.store`, `chatddx.worker` |
 | `telling.py` | `schemas.py`, `events.py`, `listening.py`, `state.py`, `chatddx.bench`, `chatddx.factors.{base,bundle,request,scoring,trial}`, `chatddx.identity`, `chatddx.ledger`, `chatddx.store` |
 
 The modules that serve build on FastAPI, `telling.py` among them for its thread pool; `schemas.py`, `events.py` and
@@ -85,19 +67,10 @@ docs/worker.md), which a worker takes: `chatddx worker`, or the one `app` runs o
 with `worker=True`. A stream reads the run's rows, and hears what the worker says and the rows as they land through
 the app's one `listening.py:Listener`.
 
-```
-AGENT: replace
-Built (agents/wip-engine-part.md, stage 1): the facts are read from the store.
----
 **Who it depends on.** What depends on the person is asked of the bench. What doesn't is the same for everyone: the
 endpoints and models (`world.py`), a component by its digest, and the scoring code the running chatddx ships, read
 from the World and the store, the facts among the store's, through the bench's reads that take no person
 (`Bench.endpoint`, `title`, `model`, `get`, `facts`) and its `rows`, or straight (`chatddx.scorers.shipped.SCORERS`).
-```
-**Who it depends on.** What depends on the person is asked of the bench. What doesn't is the same for everyone: the
-endpoints and models (`world.py`), a component by its digest, and the scoring code the running chatddx ships, read
-from the World, the facts and the store through the bench's reads that take no person (`Bench.endpoint`, `title`,
-`model`, `get`) and its `rows`, or straight (`chatddx.scorers.shipped.SCORERS`).
 
 **People by login.** Owners, collaborators and an edit's author are given as logins (`Bench.login`); a subject with
 no owner has `None` (`threads.py:login`).
@@ -137,13 +110,7 @@ The code of an `HTTPException`, a route's or Starlette's own, by its status: 401
 404 `not_found`, 405 `not_allowed`, 409 `conflict`, 422 `refused` and 429 `over_quota`; any other is `error`. Its
 headers are kept, as a 401's `WWW-Authenticate`.
 
-```
-AGENT: replace
-Built (agents/wip-engine-part.md, stage 1): the app is made without facts; the bench reads the stored ones.
----
 ### `app(inventory: Inventory, conninfo: str, worker: bool = False) -> FastAPI`
-```
-### `app(inventory: Inventory, facts: Facts, conninfo: str, worker: bool = False) -> FastAPI`
 A FastAPI app titled `chatddx`, versioned as the installed package is, with its OpenAPI document at
 `/api/openapi.json`, its pages at `/api/docs` and no ReDoc. `state.chatddx` holds an `AppState` of what it was made
 with, and a `Listener` of `conninfo`. Its lifespan runs a `chatddx.worker.Worker` on a thread named `chatddx-worker`
@@ -161,15 +128,8 @@ FastAPI's own `openapi`, with the model of each event in `schemas.py:EVENTS`, an
 ## state.py
 
 ### `class AppState`
-```
-AGENT: replace
-Built (agents/wip-engine-part.md, stage 1): the app holds no facts.
----
 A frozen dataclass of what the app is made with, loaded once: `conninfo: str`, `inventory: Inventory`, and
 `listener: Listener`.
-```
-A frozen dataclass of what the app is made with, loaded once: `conninfo: str`, `inventory: Inventory`,
-`facts: Facts`, and `listener: Listener`.
 
 #### `connect() -> Connection`
 A new connection to `conninfo` in autocommit mode, as the runner needs.
@@ -218,13 +178,7 @@ in again")` for one `People.session` doesn't know.
 A dependency: the session's person.
 
 ### `bench(request, conn, person) -> Bench`
-```
-AGENT: replace
-Built (agents/wip-engine-part.md, stage 1): the bench reads the stored facts itself.
----
 A dependency: `Bench(conn, person, inventory)`, with the app's inventory.
-```
-A dependency: `Bench(conn, person, inventory, facts)`, with the app's inventory and facts.
 
 ### `keep_cookie(response: Response, token: str) -> None`
 The token set as `COOKIE`: `Max-Age` `settings.SESSION_TTL` in seconds, `Secure`, `HttpOnly`, `SameSite=Lax`,
@@ -252,22 +206,10 @@ The models' fields are in the OpenAPI document. Besides them:
 | `Me.of(person: Person) -> Me` | The person, with their roles sorted. |
 | `Finding.of(finding: chatddx.factors.base.Finding) -> Finding` | The same finding, field for field. |
 | `Chunk` | `str \| None`, a chunk's digest, described for the OpenAPI document. |
-```
-AGENT: replace
-Built (agents/wip-engine-part.md, stage 1): the engine is a part; a row for its type, and `Parts`.
----
 | `EngineDigest` | `str \| None`, an engine's digest, described for the OpenAPI document as one that can't be taken out. |
 | `Parts` | A `Chunk` field for each chunk part, and `engine`, an `EngineDigest`, in `chatddx.bench.PARTS`' order. |
-```
-| `Parts` | A `Chunk` field for each recipe part, in `chatddx.bench.PARTS`' order. |
 | `Parts.given() -> dict[str, str \| None]` | The parts the request gave, by `model_fields_set`: each its digest, or `None` where it was empty or null. A part not given isn't a key. |
-```
-AGENT: replace
-Built (agents/wip-engine-part.md, stage 1): a look's endpoint is optional.
----
 | `Varying(Parts)` | A variation's query: the parts, `head` (an edit id, the configuration's head unless given), `endpoint` (to render and lint for: the one a hand-written configuration needs, else checked against the engine), `tag` (a list, empty by default) and `seed`. |
-```
-| `Varying(Parts)` | A variation's query: the parts, `head` (an edit id, the configuration's head unless given), `endpoint`, `tag` (a list, empty by default) and `seed`. |
 | `Labels` | What a scorer edit calls its views and resources: `views` and `resources`, each a list by position with `null` for none. |
 | `Labels.given() -> chatddx.catalog.Labels` | The labels by part and position, the nulls left out. |
 | `Labels.of(labels: Mapping[tuple[Part, int], str]) -> Labels` | The lists, each as long as its last label's position. |
@@ -286,13 +228,7 @@ Built (agents/wip-engine-part.md, stage 1): a look's endpoint is optional.
 | `NewTakes`, `Taken` | A take's body for many cases, `families` (not empty), `expectation_schema` and `owner`, and its answer, `chatddx.bench.Taken` keyed by family id. |
 | `NewTake` | A take's body for one thread, `replace`. |
 | `Metric`, `ScorerCode` | Scoring code the running chatddx ships: its `entry_point`, `version`, `metrics` (each its `name`, what it `measures`, a JSON Schema for a view's `params`, whether it is `judged`, reading a judge's verdicts, and the `unit` that marks a value that isn't a score from 0 to 1, if any) and a JSON Schema for the scorer's own `params`. |
-```
-AGENT: replace
-Built (agents/wip-engine-part.md, stage 1): a run's endpoint is optional, derived from its engine.
----
 | `NewRun(Seeds)` | A run's body, with `head`, the edit it varies, the configuration's head unless given; `endpoint`, where to send it, the one serving its engine unless given, and needed by a hand-written configuration; `cleanup`, the steps, else the sources'; `concurrency` and `order`, else the endpoint's. Its validator raises `ValueError("a run takes one of families, tags or cases")` unless exactly one of `families`, `tags` and `cases` is given, which FastAPI answers 422. |
-```
-| `NewRun(Seeds)` | A run's body, with `head`, the edit it varies, the configuration's head unless given; `cleanup`, the steps, else the sources'; `concurrency` and `order`, else the endpoint's. Its validator raises `ValueError("a run takes one of families, tags or cases")` unless exactly one of `families`, `tags` and `cases` is given, which FastAPI answers 422. |
 | `Run` | A run as listed, with `ran`, a `Ran`, else `None`; `unscored`, its scorers left as `Unscored` (`scorer`, `name`), when the listing asked for them, else `None`; and `job`, its latest job as a `RunJob`, else `None`. |
 | `Ran` | What a run ran: its `configuration`, `head`, the edit it varied, and `parts`, each part replaced over it, by its chunk's digest or `null` for a part taken out. |
 | `Graded` | A score under one scorer: the scorer and its name, the score's id, its `scoring`, when it started (`at`) and whether it `finished`, each view's label and mean, each item's value, or why it was refused. |
@@ -323,13 +259,7 @@ variation's query parameters to them with `endpoint`, `tag` and `seed`.
 | `made(request, response, bench, thread: int, findings) -> schemas.MadeThread` | `detail` of the thread with the findings, and `Location` its path. |
 | `configures(bench, thread: int) -> bool` | Whether the thread, read without a person, is a configuration's. |
 | `check_given(configuration: bool, given) -> None` | `HTTPException(422, "a configuration is written with parts, not a component")` for a component or a language given a configuration, `HTTPException(422, "only a configuration has parts")`, or `HTTPException(422, "only a scorer has labels")` for labels given a configuration. |
-```
-AGENT: replace
-Built (agents/wip-engine-part.md, stage 1): a part says where an intent landed.
----
 | `part_of(bench, variation: TriedVariation, part: str, landed: Landing \| None = None) -> schemas.Part` | The part's digest (`TriedVariation.held`), its title (`Bench.title`), what it holds (`catalog.titles.describe`), and whether the variation replaced it; with `landed`, a reasoning level's or a recommended sampling's landing, as `Bench.landed` gives it, its level as `landed` and its reasons as `nearest`. A part not held has `None` for each. |
-```
-| `part_of(bench, variation: TriedVariation, part: str) -> schemas.Part` | The part's digest (`TriedVariation.held`), its title (`Bench.title`), what it holds (`catalog.titles.describe`), and whether the variation replaced it. A part not held has `None` for each. |
 | `reach_of(reach: chatddx.bench.Reach) -> schemas.Reach` | The bench's reach, with the scorer's thread as `scorer`, its name as `name`, the missing families by id, and those with expectations to choose from as `choosing`. |
 
 | Route | Does |
@@ -337,13 +267,7 @@ Built (agents/wip-engine-part.md, stage 1): a part says where an intent landed.
 | `threads`, `GET /threads` | … kept by `name` (whole), `owner` (a login) and any of `tag`; `Catalog.edit_languages` of the kept heads, given to `thread_of`. |
 | `thread`, `GET /threads/{thread}` | `detail`. |
 | `edits`, `GET /threads/{thread}/edits` | `Bench.thread_by_id(thread, deleted=True)`, then `Catalog.history`. |
-```
-AGENT: replace
-Built (agents/wip-engine-part.md, stage 1): a look renders and lints for the variation's engine.
----
 | `variation`, `GET /threads/{thread}/variation` | Within `refused()`: `Bench.variation(thread, query.given(), query.head)`, `Bench.skeleton` and `Bench.landed`; the engine is the variation's (`TriedVariation.held("engine")`), else, with `endpoint`, the one `Bench.at(varied, endpoint)` gives, which also refuses an endpoint that serves another engine; a `LookupError` from it is `HTTPException(422)`. `findings` are `Bench.findings` at the engine over `Bench.families(tag)`, or one case when none has the tags, and `None` without an engine; `parts` are `part_of` each of `PARTS` with its landing, `None` without a recipe; `request` is `Bench.request` at the engine. … `label` is `TriedVariation.label`, and `held_by` is `thread_of` of `Bench.holder("configuration", skeleton, varied)`, `varied` the variation's recipe (`TriedVariation.varied`), or `None`. |
-```
-| `variation`, `GET /threads/{thread}/variation` | Within `refused()`: `Bench.variation(thread, query.given(), query.head)` and `Bench.skeleton`. … `label` is `TriedVariation.label`, and `held_by` is `thread_of` of `Bench.holder("configuration", skeleton, varied)`, `varied` the variation's recipe (`TriedVariation.varied`), or `None`. |
 | `say`, `PATCH /threads/{thread}` | `HTTPException(422, "a description is replaced, never taken away")` for a null `description`, and `HTTPException(422, "no person '<login>'")` for a collaborator nobody is (`People.find`). Within `refused()`: `Bench.say`, with `...` for a `name` not given. 200, `detail`. |
 | `proposal`, `GET /threads/{thread}/proposal` | Within `refused()`: `Bench.proposal`. `null` when there is none. |
 | `follow`, `POST /threads/{thread}/follows` | Within `refused()`: `Bench.follow(thread, head, language)`. 201 with the edit's `edit_of` and findings. |
@@ -384,13 +308,7 @@ Built (agents/wip-engine-part.md, stage 1): a look renders and lints for the var
 | --- | --- |
 | `endpoints`, `GET /endpoints` | `endpoint_of` each of the inventory's endpoints, by name. |
 | `endpoint`, `GET /endpoints/{name}` | `Inventory.endpoint`, whose `LookupError` is raised as `NotFound`, then `endpoint_of`. |
-```
-AGENT: replace
-Built (agents/wip-engine-part.md, stage 1): the facts are the store's.
----
 | `models`, `GET /models` | Each model the stored facts know (`Bench.facts`, the live heads of the `facts` threads) or an endpoint serves, by name, with its facts dumped or `None`, and the endpoints serving it (`Bench.model` of `Bench.endpoint`, skipping an endpoint whose engine isn't stored). |
-```
-| `models`, `GET /models` | Each model the facts know or an endpoint serves, by name, with its facts dumped or `None`, and the endpoints serving it (`Bench.model` of `Bench.endpoint`, skipping an endpoint whose engine isn't stored). |
 | `component`, `GET /components/{digest}` | `Rows.kind`; `NotFound("no component <digest> in the store")` when it is `None`. The kind, `Bench.title` and `Bench.get` dumped. |
 | `kinds`, `GET /kinds` | A `Kind` for each kind in `chatddx.bench.KINDS`: its word, whether it is in `WRITTEN`, and `BY_KIND[kind].model_json_schema()`. |
 | `check`, `POST /components/check` | Within `refused()`: `Bench.check(Bench.component(body))`, a `LookupError` as `HTTPException(422)`. The digest and its findings. |
@@ -417,24 +335,11 @@ for the first that isn't among `Bench.cases` of a family of `Bench.families()`.
 ### `_seeds(given: schemas.Seeds, replicates: int) -> tuple[int, ...]`
 The seeds given, else `suggest_seeds` of the replicates asked, else of `replicates`.
 
-```
-AGENT: replace
-Built (agents/wip-engine-part.md, stage 1): the endpoint is `_new`'s, given or derived.
----
 ### `_execution(bench, endpoint: str, given: schemas.NewRun) -> Execution | None`
 `None` when the request gives neither a concurrency nor an order, so that `Bench.start` takes the endpoint's. Else
 `endpoint`'s execution with them in place, validated: a shuffled order keeps the endpoint's shuffle seed when the
 endpoint shuffles, and draws one otherwise.
-```
-### `_execution(bench, given: schemas.NewRun) -> Execution | None`
-`None` when the request gives neither a concurrency nor an order, so that `Bench.start` takes the endpoint's. Else the
-endpoint's execution with them in place, validated: a shuffled order keeps the endpoint's shuffle seed when the
-endpoint shuffles, and draws one otherwise.
 
-```
-AGENT: replace
-Built (agents/wip-engine-part.md, stage 1): the endpoint is derived from the engine unless given.
----
 ### `_new(bench, given: schemas.NewRun) -> Running`
 Within `refused()`, `Bench.variation`, then `Bench.at(variation, given.endpoint)`: the endpoint given, which must
 serve the variation's engine, else the one serving it, and the one given for a hand-written configuration. A
@@ -442,11 +347,6 @@ serve the variation's engine, else the one serving it, and the one given for a h
 `ValueError` is a 422 through `refused()`. The cases of `_cases`; and, within `refused()`, `Bench.start` at that
 endpoint with `_seeds(given, 1)`, the cleanup given and `_execution(bench, endpoint, given)`, whose `Refused` passes
 to `STATUSES`.
-```
-### `_new(bench, given: schemas.NewRun) -> Running`
-Within `refused()`, `Bench.variation`; then `Bench.endpoint`. A `LookupError` from those, `NotFound` among them, is
-raised as `HTTPException(422)` with its message. The cases of `_cases`; and, within `refused()`, `Bench.start` with
-`_seeds(given, 1)`, the cleanup given and `_execution`, whose `Refused` passes to `STATUSES`.
 
 ### `_repeated(bench, run: UUID, given: schemas.NewAgain) -> Running`
 `Bench.run_by_id` (`NotFound`); each case of the run's trial of a family of `Bench.families()`, else
@@ -589,20 +489,10 @@ The worker publishes `run.scoring` and `run.scored` itself (`src/chatddx/worker/
 `telling.py`'s.
 
 ## The command
-```
-AGENT: replace
-Built (agents/wip-engine-part.md, stage 1): `--facts` is init-data's alone; the app reads the stored facts.
----
 `chatddx api [--world DIR] [--bind HOST:PORT]` (`src/chatddx/cli.py:_api`): the World, from `--world` or
 `CHATDDX_WORLD`; and `--bind`, else `settings.host()` (`HOST`, `localhost:8000` when unset), split at its last colon,
 with brackets stripped from an IPv6 host. One that isn't `HOST:PORT` is `SystemExit("api: bind to HOST:PORT, not
 '<bind>'")`. `uvicorn.run` serves `app(world.inventory, settings.database())`.
-```
-`chatddx api [--world DIR] [--facts PATH]… [--bind HOST:PORT]` (`src/chatddx/cli.py:_api`): the World, from `--world`
-or `CHATDDX_WORLD`; the bundled facts, the World's and those given; and `--bind`, else `settings.host()` (`HOST`,
-`localhost:8000` when unset), split at its last colon, with brackets stripped from an IPv6 host. One that isn't
-`HOST:PORT` is `SystemExit("api: bind to HOST:PORT, not '<bind>'")`. `uvicorn.run` serves `app(world.inventory, facts,
-settings.database())`.
 
 `chatddx portal` takes the same arguments and serves `chatddx.portal.app.app` the same way, its `SystemExit` saying
 `portal:` (`src/chatddx/cli.py:_portal`). `chatddx run` takes them and `--watch`, and serves it with a worker in its
@@ -615,13 +505,7 @@ docs/worker-api.md, "The command").
 
 | Module | Holds |
 | --- | --- |
-```
-AGENT: replace
-Built (agents/wip-engine-part.md, stage 1): `world_facts` is gone; the app reads the facts init-data stored.
----
 | `conftest.py` | `template` is `curated`, the test World as init-data lands it; `autocommit`; `alice`, with `PASSWORD`; `served`, the app on the test World's inventory, with a worker; `listening`, `served` by uvicorn on a thread; `client`, a `TestClient` over `https://testserver`; `signed`, the client with alice's bearer; `bob`, his bearer's header; `bench`, alice's; and the helpers `sign_in` and `bearer`. |
-```
-| `conftest.py` | `template` is `curated`, the test World as init-data lands it; `autocommit`; `alice`, with `PASSWORD`; `served`, the app on the test World's inventory and facts (`chatddx.test.world.world_facts`), with a worker; `listening`, `served` by uvicorn on a thread; `client`, a `TestClient` over `https://testserver`; `signed`, the client with alice's bearer; `bob`, his bearer's header; `bench`, alice's; and the helpers `sign_in` and `bearer`. |
 | `test_people.py` | Signing in and out by bearer and cookie, the same-origin check, validation, the statuses and codes (incl. Starlette's), the OpenAPI document and the command. |
 | `test_threads.py`, `test_families.py`, `test_world.py` | The reads, configurations by purpose, taking expectations, and what bob doesn't see of threads and families; that every read needs a session. |
 | `test_writes.py` | A configuration made from a recipe, and what is refused of one; chunks and expectations written new, edited and forked; a judge written over a judge configuration, and one over a generation configuration refused; what is refused, and with which status; an expectation's findings. |
@@ -631,20 +515,8 @@ Built (agents/wip-engine-part.md, stage 1): `world_facts` is gone; the app reads
 | `test_following.py` | A fork with nothing to follow, then a proposal once the archive's configuration moved on, a stale head, following, and nothing proposed after. |
 | `test_scorers.py` | The scoring code shipped, as pickers read it; a scorer of the archive's forked with its labels, a view renamed by an edit and the history's labels, and one written new; scorers refused, and labels given where nothing has them. |
 | `test_said.py` | Saying what holds of a thread, sharing it with bob and taking it back; refusals; deleting, listing and reading the deleted thread, and restoring it; a session needed. |
-```
-AGENT: replace
-Built (agents/wip-engine-part.md, stage 1): the engine swapped, and looks without an endpoint.
----
 | `test_variations.py` | Looks, forks and edits; a look rendered and linted for its engine without an endpoint, and the same with its endpoint named; an engine swapped, a level landing on its nearest and the sampling following it, and an engine taken out or an endpoint serving another refused; a judge configuration looked at as a judge, with no reach; that a look's queries don't grow with its cases, counted on the test's database (the fixtures create the next test's meanwhile). |
-```
-| `test_variations.py` | Looks, forks and edits; a judge configuration looked at as a judge, with no reach; that a look's queries don't grow with its cases, counted on the test's database (the fixtures create the next test's meanwhile). |
-```
-AGENT: replace
-Built (agents/wip-engine-part.md, stage 1): runs go to the endpoint serving their engine.
----
 | `test_runs.py` | Runs, over its own `served` on `world`, the test World on free ports, with a worker, each at the endpoint serving its engine: accepted and told by their events, numbered by their rows, which stream as they come, go on after an id, and are told alike by an app with no worker; a job in the queue until scored; refused, among them an endpoint named that serves another engine and an engine taken out... `joined` follows a run from before its job is claimed, the owner's queue paused until the stream has told its first row. |
-```
-| `test_runs.py` | Runs, over its own `served` on `world`, the test World on free ports, with a worker: accepted and told by their events, numbered by their rows, which stream as they come, go on after an id, and are told alike by an app with no worker; a job in the queue until scored; refused... `joined` follows a run from before its job is claimed, the owner's queue paused until the stream has told its first row. |
 | `test_scores.py` | A judged run's scores, the latest and every one, one by id, and its items with their judge calls; the run scored again when asked, with the scoring's events after the run's rows; what bob can't read; the runs left to score with their scorers, and one leaving the listing once scored; a scoring refused for a run unfinished, a scorer that doesn't apply and a run with a job open, and halted; a session needed. |
 | `test_telling.py` | A stream joined mid-item told the item started and each tool once, and nothing of it once it ended; the listener fanning a run's messages out to two streams, again on another loop, and a stream that falls behind told `Lagged`. |
 | `test_queue.py` | A paused queue holding a run, which a stop takes out, left unfinished, and which resumes once the queue does; a finished run's and bob's resume refused; stopping, then stopping now, halting a run under way. |
@@ -654,12 +526,5 @@ ports (`chatddx.test.world.free_world`), and `fake`, `faked` on the test's store
 endpoint=QWEN, delay=0.0)` is the fake vLLM serving an endpoint's engine as its start-up says, `delay` seconds a
 token.
 
-```
-AGENT: replace
-Built (agents/wip-engine-part.md, stage 1): the app is made without facts.
----
 `chatddx openapi` prints the API's OpenAPI document, of an app made with an empty inventory, since it doesn't change
 it (`src/chatddx/cli.py:_openapi`). `frontend/openapi.json` keeps it.
-```
-`chatddx openapi` prints the API's OpenAPI document, of an app made with an empty inventory and the bundled facts,
-since neither changes it (`src/chatddx/cli.py:_openapi`). `frontend/openapi.json` keeps it.

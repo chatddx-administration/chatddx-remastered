@@ -15,13 +15,7 @@ the World itself doesn't read it, as with the data set in `_data/` (docs/invento
 | Key | Meaning |
 | --- | --- |
 | `description` | What the run shows. Required. |
-```
-AGENT: replace
-Built (agents/wip-engine-part.md, stage 1): names carry no model, and the engine is set to the endpoint's.
----
 | `configuration` | The configuration, as the bench finds it by name (`Bench.configuration`): `plan` is `plan (en)`. One made in several languages is named whole, such as `free-text-guided (sv)`. Its engine is set to the endpoint's. Required. |
-```
-| `configuration` | The configuration, as the bench finds it on the endpoint's model (`Bench.configuration`): `plan` is `plan (en, Qwen/Qwen3-8B-AWQ)` on a Qwen3 endpoint. One made in several languages is named whole, such as `free-text-guided (sv, Qwen/Qwen3-8B-AWQ)`. Required. |
 | `set` | Parts to set in the variation, each part to a chunk's name, or to `none` for none. |
 | `endpoint` | The World's endpoint the run goes to. Required. |
 | `cases` | The cases, by family id, or `<id> with <appendix>[, <appendix>]` for a case that sends appendices, as init-data titles it. At least one. |
@@ -34,30 +28,21 @@ Built (agents/wip-engine-part.md, stage 1): names carry no model, and the engine
 A file with any other key, or a turn the fake can't read, is refused when it is read, naming the file.
 
 ## Running one
-```
-AGENT: replace
-Built (agents/wip-engine-part.md, stage 1): the variation's engine is the endpoint's. The paragraph.
----
 The variation is the configuration with its engine set to the endpoint's, unless it is hand-written and has none, and
 `set` applied, and the cases are found by their titles (`Bench.case_titled`). So a configuration sent to an endpoint
 serving another engine than its own runs as a variation, its engine replaced and the rest worked out for that
-engine's model, and is named so: `plan-prompted (en)+engine=gpt-oss-20b@fake`. The fake for the endpoint is served
-at the endpoint's address with the run's turns as its script, and the run is started, sent and finished through the
-bench, as the repl runs one (`Bench.start`, `Running.send`, `Running.finish`). `stop_after` is the run's own halt. A
-scored run is then scored by `Bench.score`, with a fake without a script at each judge's endpoint, so a judge
-answers as the fake does by itself.
-```
-The variation is the configuration with `set` applied, and the cases are found by their titles (`Bench.case_titled`).
+engine's model, and is named so: `plan-prompted (en)+engine=gpt-oss-20b@fake`.
+
 The fake for the endpoint is served at the endpoint's address with the run's turns as its script, and the run is
 started, sent and finished through the bench, as the repl runs one (`Bench.start`, `Running.send`, `Running.finish`).
 `stop_after` is the run's own halt. A scored run is then scored by `Bench.score`, with a fake without a script at each
 judge's endpoint, so a judge answers as the fake does by itself.
 
-The fake for an endpoint is the one `chatddx fake-engines` serves there (`fakes.py:fake_at`, which the command uses
-too): for a local engine, from its start-up, which must run the fake vLLM; for a remote engine, a stand-in on this
-machine that asks for the key in the variable the endpoint's credential names: in the sample World,
-`CHATDDX_SAMPLE_KEY`, which `.env-devshell` and `.env-container` set to `sample-key`. A scripted run serves its own
-fakes on the endpoints' ports, so nothing else may listen there.
+`chatddx fake-engines` serves the fake engine (`fakes.py:fake_at`, which the command uses too): for a local engine, from
+its start-up, which must run the fake vLLM; for a remote engine, a stand-in on this machine that asks for the key in the
+variable the endpoint's credential names: in the sample World, `CHATDDX_SAMPLE_KEY`, which `.env-devshell` and
+`.env-container` set to `sample-key`. A scripted run serves its own fakes on the endpoints' ports, so nothing else may
+listen there.
 
 The fake stays a leaf: it reads a script and knows nothing of the bench. The scripted runs are the edge that joins
 them.
@@ -77,13 +62,7 @@ The sample World's ten:
 | `invalid` | `plan-prompted` on `gpt-oss-20b@fake` | `Dutchfall12w` | A plan shown its schema with nothing enforcing it, which breaks it. |
 | `broken` | `free-text` on `qwen3-8b-awq@fake` | `Dutchfall13w` | A server that goes away halfway through the answer. |
 | `runaway` | `diagnoses` on `gpt-oss-20b@fake` | `Dutchfall14w` | A structured answer that runs away in newlines, cut short by the runner. |
-```
-AGENT: replace
-Built (agents/wip-engine-part.md, stage 1): names carry no model.
----
 | `stopped` | `free-text-guided (sv)` on `qwen3-8b-awq@fake` | `casesfromedn2` | A Swedish run halted as it streams. |
-```
-| `stopped` | `free-text-guided (sv, …)` on `qwen3-8b-awq@fake` | `casesfromedn2` | A Swedish run halted as it streams. |
 | `unfinished` | `diagnoses` on `qwen3-8b-awq@fake` | `Dutchfall15w` | A run never finished, and so never scored. |
 | `judged` | `free-text` on `qwen3-8b-awq@fake` | `Dutchfall11w` | An answer to a case Olof wrote notes on, scored by the judges as well as the patterns. |
 | `appendix` | `diagnoses` on `qwen3-8b-awq@fake` | `Dutchfall11w with ultrasound` | An appendix that changes the right answer. |

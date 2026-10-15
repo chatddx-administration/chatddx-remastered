@@ -16,19 +16,10 @@ writes and the edits and proposals between people, is the API's and the portal's
 a World and its data set, and the sample World (`worlds/sample/`) is the example a new World follows.
 
 ## Starting
-```
-AGENT: replace
-Built (agents/wip-engine-part.md, stage 1): `--facts` is init-data's alone; the facts are read from the store.
----
 `chatddx repl LOGIN [--world DIR] [--history PATH]`. The World is `--world`, else `CHATDDX_WORLD`: its inventory
 locates the sources and the endpoints. The model facts are the store's, as init-data wrote them (docs/facts.md), read
 when they are needed, so facts corrected meanwhile are used. The shell connects as `DB_USER` in autocommit mode, as
 the runner needs, and refuses a login with no person.
-```
-`chatddx repl LOGIN [--world DIR] [--facts PATH …] [--history PATH]`. The World is `--world`, else `CHATDDX_WORLD`: its
-inventory locates the sources and the endpoints, and the model facts are the bundled ones, the World's `facts.toml` and
-each `--facts`, as for init-data. The shell connects as `DB_USER` in autocommit mode, as the runner needs, and refuses a
-login with no person.
 
 Lines are read with readline, which keeps a history (`~/.chatddx_history`, or `--history`) and completes with Tab (see
 "Completion"). Lines from a pipe are echoed, and the session stops at the first that fails, exiting with 1, so a piped
@@ -44,87 +35,42 @@ A person is scored against their own expectations only. One shared with them cou
 what they're scored against never changes under them when someone else edits theirs.
 
 ## The cell
-```
-AGENT: replace
-Built (agents/wip-engine-part.md, stage 1): the engine is the configuration's, and the endpoint follows from it.
----
 The cell is what the shell runs: a configuration, and the endpoint named for it, if any. The configuration is a
 variation of a configuration thread: the edit the cell holds, its recipe, and the parts set on it (`TriedVariation`),
 its engine among them. The cell's engine is its configuration's engine part, or, for a configuration with no recipe,
 the named endpoint's. It runs at the endpoint named, which must serve that engine, else at the one serving it
 (`Bench.at`; docs/bench.md): with none serving it a run is refused, and with several until one is named. Every `run`
 and `run tag` runs the cell.
-```
-The cell is what the shell runs: a configuration, an endpoint and the engine it serves, and the name the configuration
-was given. The configuration is a variation of a configuration thread: the edit the cell holds, its recipe, and the
-parts set on it (`TriedVariation`). Every `run` and `run tag` runs the cell.
 
-```
-AGENT: replace
-Built (agents/wip-engine-part.md, stage 1): what the facts refuse is said as the engine changes, and the cell changes.
----
 Whenever the cell changes, the shell says what the lints find in it: `factors.lint` and the facts' checks on the pair,
 run as a trial of the cell and one case. A reasoning level or a recommended sampling that the facts about a new
 engine's model refuse, or that can't be worked out for a model without facts, is said as soon as the engine changes,
 as a note rather than a failure, so a piped session goes on; the cell changes all the same, so that `set` can mend it.
 Lints warn and never refuse (docs/chatddx.md, "Compromises").
-```
-Whenever the cell changes, the shell says what the lints find in it: `factors.lint` and the facts' checks on the pair,
-run as a trial of the cell and one case. A configuration made for another model than the endpoint's is said as soon as
-the endpoint changes. Lints warn and never refuse (docs/chatddx.md, "Compromises").
 
 ### Names
-```
-AGENT: replace
-Built (agents/wip-engine-part.md, stage 1): names carry no model.
----
 Texts are made per language (docs/curation.md), so a configuration is a thread per language it is written in,
 `plan (en)`; its engine is a part, and its name carries no model. A name is looked for as given, and else as the one
 variant of it in a language, `NAME (LANGUAGE)` (`catalog/variants.py:variants_for`). A name ending in a language,
 `free-text-guided sv` or `free-text-guided (sv)`, narrows the variants to it (`language_of`). Variants in several
 languages are refused, saying how to name one: `name one as 'free-text-guided en' or 'free-text-guided sv'`.
-```
-What depends on the model is made per model, and texts per language (docs/curation.md, "Per model"), so a
-configuration is a thread per variant: `plan (en, Qwen/Qwen3-8B-AWQ)`. A name is looked for as given, and else as the
-one variant of it the cell's model may use, `NAME (LANGUAGE)`, `NAME (MODEL)` or `NAME (LANGUAGE, MODEL)`
-(`catalog/variants.py:variants_for`). A name ending in a language, `free-text-guided sv` or `free-text-guided (sv)`,
-narrows the variants to it (`language_of`). Variants in several languages are refused, saying how to name one: `name
-one as 'free-text-guided en' or 'free-text-guided sv'`.
 
-```
-AGENT: replace
-Built (agents/wip-engine-part.md, stage 1): `on ENDPOINT` sets the engine part; nothing is picked again by name.
----
 The cell holds the configuration a name finds, by the name it is found under (`TriedVariation.name`): `use plan`
 holds `plan (en)`, and nothing is picked again by name. `on ENDPOINT` puts the engine the endpoint serves in the
 cell's configuration, as `set engine` would, and keeps every part set on it, worked out again for the new engine's
 model; `use` and `cell` put the named endpoint's engine in the configuration they put in. An endpoint serving the
 configuration's own engine unsets the part (see "Parts").
-```
-The cell holds the name as given (`Cell.name`). With no endpoint, a name only per-model variants have is held until
-there is one. Each time the endpoint changes, the held name's variant for the new model is picked again, and what was
-set on the cell is set again by name; where a part set has no variant for that model, the cell keeps what it held and
-says why. A variant named whole, `plan (en, Qwen/Qwen3-8B-AWQ)`, finds itself, so it is held as named, and another
-model's endpoint only gets the lints.
 
 Names hold spaces and need no quotes: a command's last name takes the rest of the line, and `cell` takes its endpoint
 from the last word. `run` takes a seed only as a whole number after a case's title.
 
 ### Parts
-```
-AGENT: replace
-Built (agents/wip-engine-part.md, stage 1): `set engine NAME`; a chunk asking for an intent is named plainly.
----
 `set PART CHUNK` puts another chunk in one of the recipe's nine chunk parts, and `set engine NAME` another engine in
 its tenth, named as `endpoints` lists it (docs/factors.md, "Recipe and compilation"). A chunk is named plainly, as
 `off`, a reasoning chunk asking for a level that the facts work out for the engine's model. The variation compiles at
 once, so a part that doesn't compile is refused and the cell stays as it was. Setting the configuration's own chunk
 or engine unsets the part, and `none` takes an optional part out. `set engine` keeps an endpoint named that serves the
 new engine, and drops one that serves another, so the cell runs where the new engine is served.
-```
-`set PART CHUNK` puts another chunk in one of the recipe's nine parts (docs/factors.md, "Recipe and compilation"), a
-chunk made per model named plainly. The variation compiles at once, so a part that doesn't compile is refused and the
-cell stays as it was. Setting the configuration's own chunk unsets the part, and `none` takes an optional part out.
 
 ### Saving
 `save NAME` makes the cell's configuration the person's own. Their live thread named NAME gets a new edit, or none when
@@ -133,10 +79,6 @@ set, the compilation is written with the running code as compiler. The cell then
 
 ## Looking
 Nothing here is sent anywhere.
-```
-AGENT: replace
-Built (agents/wip-engine-part.md, stage 1): the engine is a part, and `show` says where an intent landed.
----
 - **`show`** is the cell: each part with its chunk's title and what it is (`catalog/titles.py:describe`), the engine
   among them; the level a reasoning level landed on, when the engine's model is asked for another, as `reasoning off
   → low`, with why for a nearest, `its nearest: always reasons: …`; the level a recommended sampling follows, as
@@ -146,19 +88,7 @@ Built (agents/wip-engine-part.md, stage 1): the engine is a part, and `show` say
   and every case it counts, so a language mismatch shows, and per scorer view how many cases it can hold the cell to:
   a case has it when the expectation the person is scored against gives the view's expectation selector something to
   pick, and the view is offered by the cell's output (see "Scoring").
-```
-- **`show`** is the cell: each part with its chunk's title and what it is (`catalog/titles.py:describe`), the
-  endpoint and the name its engine is served under, the messages rendered with placeholder fills (`‹vignette›`), and
-  the body, with the output's schema and the tools' parameters left to `show output` and `show tool`. A greedy cell
-  says its seed isn't sent. Then the lints of a trial of the cell and every case it counts, so a language mismatch
-  shows, and per scorer view how many cases it can hold the cell to: a case has it when the expectation the person is
-  scored against gives the view's expectation selector something to pick, and the view is offered by the cell's
-  output (see "Scoring").
 - **`show tag TAG...`** is the same over the cases with any of the tags, those `run tag` would run.
-```
-AGENT: replace
-Built (agents/wip-engine-part.md, stage 1): the facts are a kind; the parts are nine chunks and the engine.
----
 - **`show KIND [NAME]`** is a component the person sees, by kind and name, or the cell's own: its fields, digests in
   them titled, its catalog entries, and a summary of the person's runs with it. Runs are found through compilations
   for a configuration and its parts (`Bench.reaching`), through scorings for a scorer, an expectation and a schema
@@ -166,47 +96,22 @@ Built (agents/wip-engine-part.md, stage 1): the facts are a kind; the parts are 
   counts the runs at it and the judge calls made at it, from the scores' judge endpoints. The kinds are `case`,
   `endpoint`, `tag`, `configuration`, the nine chunk parts, `tool`, `scorer`, `judge`, `expectation`,
   `expectation_schema`, `appendix`, `canary_set`, `model`, `engine` and `facts`, a model's stored facts by its name.
-```
-- **`show KIND [NAME]`** is a component the person sees, by kind and name, or the cell's own: its fields, digests in
-  them titled, its catalog entries, and a summary of the person's runs with it. Runs are found through compilations
-  for a configuration and its parts (`Bench.reaching`), through scorings for a scorer, an expectation and a schema
-  (`Bench.scored_by`); a judge counts the runs it judged and its calls, and sums up its own views only; an endpoint
-  counts the runs at it and the judge calls made at it, from the scores' judge endpoints. The kinds are `case`,
-  `endpoint`, `tag`, `configuration`, the nine parts, `tool`, `scorer`, `judge`, `expectation`, `expectation_schema`,
-  `appendix`, `canary_set`, `model` and `engine`.
 - **A case** is shown with its source, its vignette fetched from the World's source, its tags and language, and the
   expectation the person is scored against, or one shared with them to take. Cases are named by title
   (`Bench.case_titled`): a family's name for its case, or `FAMILY with APPENDIX, …` as the catalog titles a case that
   sends appendices (docs/catalog.md, "Titles"). Such a case shows its appendices' texts and its own expectation; a
   family's case names the family's appendices and the cases that send them.
-```
-AGENT: replace
-Built (agents/wip-engine-part.md, stage 1): no models column; the engine is a part, so a column.
----
 - **`configurations [NAME]`** lists a row per configuration name and language: each part as its chunk's title, the
   engine last, or `differs` where configurations of one name and language differ, and its owner; a fork reads
   `yours, from OWNER`, and the origin it forks is left out. Judge configurations follow, in a table of their own. With
   NAME, the configurations of that name, or made from it in a language, a row each with its parts and owner.
-```
-- **`configurations [NAME]`** lists a row per configuration name and language: its models, each part as its variants
-  share it with the model taken off (`recommended`), or `differs`, and its owner; a fork reads `yours, from OWNER`, and
-  the origin it forks is left out. Judge configurations follow, in a table of their own. With NAME, its variants, a
-  row per model and owner.
 - **`endpoints`** lists the World's endpoints: engine, model, URL and the sources each is cleared for.
 - **`cases`** lists the person's cases, and how many carry each tag.
-```
-AGENT: replace
-Built (agents/wip-engine-part.md, stage 1): the stored facts, nearest levels, and the level asked for marked.
----
 - **`reasoning`** is a table of every reasoning level, `default` first, on every model the stored facts know, headed
   by the endpoints serving it: the level it collapses into or lands on as its nearest, with why, what is sent, and the
   sampling recommended for it, or why the model refuses it; a last row, `budget`, says how a thinking budget is sent,
   or why it is refused. `▸` marks the level the cell's configuration asks for, `default` without a reasoning part, and
   the endpoint the cell runs at (docs/facts.md, "Reasoning").
-```
-- **`reasoning`** is a table of every reasoning level on every model the facts know, headed by the endpoints serving
-  it: what is written, the sampling it brings, the level it falls back to, or why the model refuses it; `▸` marks the
-  cell's (docs/facts.md, "Reasoning").
 - **`scorers`** lists every view of every scorer: its metric, the judge of a judged one, what it reads, what it is held
   to, the scorer's owner, and whether the cell's output offers it.
 
@@ -217,21 +122,11 @@ seed: drawn below 100,000 for a readable prompt, and held from 0 to 2³¹−1. O
 (docs/factors.md, "Rendering"); the shell says so and runs, and the trial holds the seed all the same.
 
 ### A run
-```
-AGENT: replace
-Built (agents/wip-engine-part.md, stage 1): the trial takes the cell's engine, and the run goes where it is served.
----
 `run CASE [SEED]` makes a trial of the cell's skeleton, its engine, one case and one seed, the shell's unless one is
 given, and starts it at the endpoint the cell runs at (see "The cell"; docs/runner.md, "A run"). The trial is stored
 and not threaded: a thread per trial would flood the catalog. An unsaved variation's compilation is stored before its
 run, with the running code as compiler, so the run's skeleton keeps a recipe and a title. The gate refuses before
 anything is written (docs/runner.md, "The gate"), said as `refused: …`.
-```
-`run CASE [SEED]` makes a trial of the cell's skeleton, the endpoint's engine, one case and one seed, the shell's
-unless one is given, and starts it at the cell's endpoint (docs/runner.md, "A run"). The trial is stored and not
-threaded: a thread per trial would flood the catalog. An unsaved variation's compilation is stored before its run,
-with the running code as compiler, so the run's skeleton keeps a recipe and a title. The gate refuses before anything
-is written (docs/runner.md, "The gate"), said as `refused: …`.
 
 The transcript streams the thinking, labelled, then the answer, each tool call as `[name] arguments` with its
 `[result]`, and the tokens used. Trailing whitespace is left out, so a runaway's newlines don't fill the screen. The
@@ -314,42 +209,20 @@ its scoring as it would be built now: the scorer, and the person's own expectati
   a case, it names them, and `take from OWNER` takes theirs.
 
 ## Completion
-```
-AGENT: replace
-Built (agents/wip-engine-part.md, stage 1): no per-model names; a name in one language is offered without it.
----
 Tab completes a command, then its names, word by word, from what the person sees: configurations, chunks and engines
 by their names, a name made in one language alone without it (`plan` for `plan (en)`), and those made in several by
 their whole names, `free-text-guided (sv)`, whose bare name isn't offered; cases by name and the titles of those that
 send appendices; endpoints, parts, kinds, and tags, each once. `replay` completes the latest 20 runs' ids, and `score`
 the runs left to score, both fresh at each Tab. The rest is read once, and again after a `save`.
-```
-Tab completes a command, then its names, word by word, from what the person sees: configurations and chunks by their
-plain names, a per-model name by what it is made from and one made in several languages as `NAME LANG`, whose bare
-name isn't offered; cases by name and the titles of those that send appendices; endpoints, parts, kinds, and tags,
-each once. `replay` completes the latest 20 runs' ids, and `score` the runs left to score, both fresh at each Tab.
-The rest is read once, and again after a `save`.
 
 ## Terms
 
 | Term | Meaning |
 | --- | --- |
 | Repl, shell | `chatddx repl`, for one person over a World. |
-```
-AGENT: replace
-Built (agents/wip-engine-part.md, stage 1): the cell holds no name, and its engine is a part.
----
 | Cell | What the shell runs: a configuration, its engine one of its parts, and the endpoint named for it, if any. |
-```
-| Cell | What the shell runs: a configuration, an endpoint and the name the configuration was given. |
 | Variation | A configuration thread's edit with parts set on it, as the cell holds it. |
-```
-AGENT: replace
-Built (agents/wip-engine-part.md, stage 1): nothing is made per model.
----
 | Variant | A configuration or chunk made in one language, named after it: `plan (en)`. |
-```
-| Variant | A configuration or chunk made for one model or language, named after it. |
 | Case title | A family's name, or `FAMILY with APPENDIX, …` for a case that sends appendices. |
 | Outcome | How an item went, from its last call and its answer. |
 | Salvaged | A structured answer cut short, read with its structure closed. |
@@ -374,22 +247,11 @@ Built (agents/wip-engine-part.md, stage 1): nothing is made per model.
 
 ## Outstanding
 Suggested, and left for later:
-```
-AGENT: replace
-Built (agents/wip-engine-part.md, stage 1): the cell holds no name, so it can't hold one without a language; stage 2
-has a take on it.
----
 - **The language of a run.** A run is in its configuration's language, and nothing picks it from the cases: a run
   over Swedish cases under an English configuration runs them in English, and only `language.mixed` warns.
   docs/catalog.md, "Languages", has the request follow the case. Stage 2 of agents/wip-engine-part.md takes it up: a
   configuration written in one language carries its translations into others, and `run tag` over cases in several
   languages is a run per language, each under the translations into it.
-```
-- **The language of a run.** A run is in its configuration's language, and nothing picks it from the cases: a run
-  over Swedish cases under an English configuration runs them in English, and only `language.mixed` warns.
-  docs/catalog.md, "Languages", has the request follow the case. The cell could hold a name without a language, as it
-  holds one without a model, and run each case under that name's variant in the case's language; `run tag` over cases
-  in several languages would then be a run per language.
 - **`diagnoses` applies to a plan**, since a plan's `$.diagnoses[*]` reaches its schema, but the items are objects, so
   its differential lists them as JSON and scores their text. A reach that knew the type of what a view picks would leave
   it out, as `View.offered_by` leaves whole-answer views out of structured runs.
