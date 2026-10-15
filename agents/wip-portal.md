@@ -283,14 +283,14 @@ Built, as takes (see "Built", "Phase 1"):
 - **The theme skeleton** is the tokens, both sets, and Tailwind's mapping of them, shared by the pages and the islands,
   in `frontend/src/portal.css`. The tokens stay swift's HSL, written as whole colors, which Tailwind 4 mixes itself.
   The dark set follows the system's preference (`prefers-color-scheme`), as swift had no switch. The fonts are served
-  by the app (`@fontsource-variable`), so that a page showing case-derived content fetches nothing from a third party.
+  by the app (`@fontsource-variable`), so that a page showing sensitive content fetches nothing from a third party.
   `glass-card`, `gradient-bg`, `gradient-text`, `glow-primary` and the animations come along.
 - **The primitives come from shadcn-svelte** (v1.7, its "vega" style, the classic shadcn/ui look), and only the ones
   used: alert, badge, button, card, label, native-select and textarea. A native select stands in for Radix's, which
   plain forms on the server's pages can use too.
 - **The three answer components are ported to Svelte** as the renderer of a management plan
   (`frontend/src/lib/plan/`), and show what swift didn't: a critical diagnosis, and a workup's priority. The older
-  answers' fields are gone. Copying the answer as text isn't ported: it puts case-derived content on the clipboard
+  answers' fields are gone. Copying the answer as text isn't ported: it puts sensitive content on the clipboard
   (`agents/wip-clearance.md`, "Open", 5).
 
 ### What Lovable teaches
@@ -360,7 +360,7 @@ Phase 0:
   `/sign-in?next=` the page. Signing in sets the API's cookie (`src/chatddx/api/people.py:keep_cookie`) and leads to
   `next`, but only within the site: anything not starting with one `/` leads home. A wrong login or password shows the
   form again, with the login kept. Forms pass `same_origin` first. Every page says `Cache-Control: no-store`, since
-  pages are per person and most will show case-derived content.
+  pages are per person and most will show sensitive content.
 - **`src/chatddx/portal/templates/`**: `base.html`, `sign-in.html` and `home.html`, autoescaped.
 - **`chatddx run`** (`src/chatddx/cli.py:_run`, sharing `_serve` and `_serving` with `chatddx api`), and
   `chatddx portal`, the same with no worker and no `--watch` (`_portal`).
@@ -523,7 +523,7 @@ What the portal needs below its pages that isn't built:
 
 ## Phases
 0. **Before the first page**, built (see "Built"): `chatddx run`, `chatddx.portal` mounted beside the API, signing
-   in and out, `Cache-Control: no-store` where case-derived content is served, and the API's error codes.
+   in and out, `Cache-Control: no-store` where sensitive content is served, and the API's error codes.
 1. **Swift**, built (see "Built"): the frontend's structure, Node, Vite and the build in the flake; Svelte, TypeScript
    and Tailwind; types from `/api/openapi.json`. The theme skeleton and the salvaged components, then the home page,
    the first island.
@@ -619,4 +619,3 @@ From "What the portal shows", not on the pages yet:
 - **The limits** (`settings.RUNS_PER_DAY`, 100, and `ITEMS_PER_RUN`, 1,000) are takes, as is counting a day back from
   now. A scoring isn't limited.
 - **Running again** re-sends a run's trial; it doesn't follow the configuration if it has moved on since.
-

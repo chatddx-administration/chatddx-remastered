@@ -1,12 +1,20 @@
-from collections.abc import Callable, Collection, Iterable
+from collections.abc import Callable, Collection, Iterable, Mapping
 
 from chatddx.factors.base import Component, Resolver, iter_refs, resolve
-from chatddx.factors.request import Recipe, texts
+from chatddx.factors.request import Compilation, Recipe, texts
 from chatddx.factors.scoring import Expectation, Judge
 from chatddx.factors.trial import Trial
 
 from .families import family_of
-from .model import LANGUAGE_KINDS, Entry, EntryField, Subject, language_tag, latest
+from .model import (
+    LANGUAGE_KINDS,
+    Edit,
+    Entry,
+    EntryField,
+    Subject,
+    language_tag,
+    latest,
+)
 from .read import Reader, about
 
 
@@ -39,36 +47,34 @@ def language_of(rows: Reader, digest: str) -> str | None:
 def languages_of(rows: Reader, digests: Collection[str]) -> dict[str, str | None]:
     wanted = set(digests)
     kinds = {d: c.kind_name for d, c in rows.components(wanted)}
-    compiled = {d: rows.compilations(d) for d, k in kinds.items() if k == "skeleton"}
-    refs = {
-        r.digest
-        for found in compiled.values()
-        for c in found
-        for r in iter_refs(c.recipe)
+    compiled = {
+        d: [c.recipe for c in compilations]
+        for d, k in kinds.items()
+        if k == "skeleton" and (compilations := rows.compilations(d))
     }
-    chunks = dict(rows.components(refs))
-
-    def get(digest: str) -> Component:
-        return chunks[digest] if digest in chunks else rows.get(digest)
-
-    voters = {
-        d: [_voters(c.recipe, get) for c in found] for d, found in compiled.items()
-    }
-    written = {
-        v for found in voters.values() for each in found for v in each if v is not None
-    }
-    owned = latest(rows.languages(wanted | written))
+    voted, owned = _voted(rows, compiled, wanted)
     found: dict[str, str | None] = {}
     for digest in wanted:
         match kinds.get(digest):
             case "case" | "expectation" | "trial" | "judge":
                 found[digest] = language_of(rows, digest)
-            case "skeleton" if voters[digest]:
-                votes = (_vote(each, owned.get) for each in voters[digest])
-                found[digest] = _agreed(votes)
+            case "skeleton" if digest in voted:
+                found[digest] = voted[digest]
             case _:
                 found[digest] = owned.get(digest)
     return found
+
+
+def edit_languages(rows: Reader, edits: Collection[Edit]) -> dict[int, str | None]:
+    named = {e.id: e.compilation for e in edits if e.compilation is not None}
+    read = dict(rows.components(set(named.values())))
+    compiled = {
+        id: [resolve(read.__getitem__, digest, Compilation).recipe]
+        for id, digest in named.items()
+    }
+    voted, _ = _voted(rows, compiled, ())
+    rest = languages_of(rows, {e.digest for e in edits if e.id not in voted})
+    return {e.id: voted[e.id] if e.id in voted else rest[e.digest] for e in edits}
 
 
 # src/chatddx/store/migrations/0012-t2-catalog.sql repeats these checks.
@@ -117,3 +123,26 @@ def _vote(voters: list[str | None], owned: Callable[[str], str | None]) -> str |
 def _agreed(votes: Iterable[str | None]) -> str | None:
     known = {v for v in votes if v is not None}
     return known.pop() if len(known) == 1 else None
+
+
+def _voted[K](
+    rows: Reader, compiled: Mapping[K, list[Recipe]], wanted: Collection[str]
+) -> tuple[dict[K, str | None], dict[str, str]]:
+    refs = {
+        r.digest for found in compiled.values() for c in found for r in iter_refs(c)
+    }
+    chunks = dict(rows.components(refs))
+
+    def get(digest: str) -> Component:
+        return chunks[digest] if digest in chunks else rows.get(digest)
+
+    voters = {k: [_voters(c, get) for c in found] for k, found in compiled.items()}
+    written = {
+        v for found in voters.values() for each in found for v in each if v is not None
+    }
+    owned = latest(rows.languages(set(wanted) | written))
+    votes = {
+        k: _agreed(_vote(each, owned.get) for each in found)
+        for k, found in voters.items()
+    }
+    return votes, owned

@@ -3762,6 +3762,11 @@
             "type": "string",
             "title": "Kind"
           },
+          "word": {
+            "type": "string",
+            "title": "Word",
+            "description": "the word for its kind: configuration for a skeleton"
+          },
           "name": {
             "anyOf": [
               {
@@ -3859,6 +3864,7 @@
         "required": [
           "id",
           "kind",
+          "word",
           "name",
           "title",
           "owner",
@@ -5635,6 +5641,11 @@
             "type": "string",
             "title": "Kind"
           },
+          "word": {
+            "type": "string",
+            "title": "Word",
+            "description": "the word for its kind: configuration for a skeleton"
+          },
           "name": {
             "anyOf": [
               {
@@ -5689,6 +5700,7 @@
         "required": [
           "id",
           "kind",
+          "word",
           "name",
           "title",
           "owner",
@@ -5707,6 +5719,11 @@
           "kind": {
             "type": "string",
             "title": "Kind"
+          },
+          "word": {
+            "type": "string",
+            "title": "Word",
+            "description": "the word for its kind: configuration for a skeleton"
           },
           "name": {
             "anyOf": [
@@ -5798,6 +5815,7 @@
         "required": [
           "id",
           "kind",
+          "word",
           "name",
           "title",
           "owner",

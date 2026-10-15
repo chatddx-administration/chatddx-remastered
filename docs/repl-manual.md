@@ -93,10 +93,10 @@ Lists every command, with the words it takes. A word in brackets is
 optional; `TAG...` means one tag or several.
 
 ### `configurations [NAME]`
-
 Lists the configurations you can use: yours, and those shared with you.
 Each row is a configuration in one language, with the models it is made
-for and what each part is.
+for and what each part is. Judge configurations follow, in a table of
+their own.
 
 ```
 alice #2475> configurations
@@ -107,9 +107,12 @@ alice #2475> configurations
  free-text-guided (sv)  gpt-oss-20b     clinician (sv)  worked-example (sv)  case    free-text (en)        ...  yours, from archive
                         Mistral-Small…
                         Qwen3-8B-AWQ
- judge (en)             every model     judge (en)      —                    judge   verdict (en)          ...  yours, from archive
  plan (en)              gpt-oss-20b     —               —                    case    management-plan (en)  ...  yours, from archive
  ...
+
+judge configurations
+ configuration  models       instructions  prompt  output        ...  owner
+ judge (en)     every model  judge (en)    judge   verdict (en)  ...  yours, from archive
 ```
 
 `yours, from archive` is your copy of a configuration the archive (the
@@ -224,8 +227,8 @@ alice plan (en, Qwen/Qwen3-8B-AWQ)+reasoning=off×qwen3-8b-awq@fake #2475> on gp
 no reasoning 'off' for alice; per model: off (Qwen/Qwen3-8B-AWQ), off (mistralai/Mistral-Small-3.2-24B-Instruct-2506);
 the cell keeps plan (en, Qwen/Qwen3-8B-AWQ)+reasoning=off
 cell: plan (en, Qwen/Qwen3-8B-AWQ)+reasoning=off × gpt-oss-20b@fake
-[warning] facts.reasoning_unmatched: the skeleton's reasoning settings match none of the model's reasoning levels
-[warning] facts.sampling_unmatched: the skeleton's sampling is what the facts recommend for Qwen/Qwen3-8B-AWQ, not for
+[warning] facts.reasoning_unmatched: the configuration's reasoning settings match none of the model's reasoning levels
+[warning] facts.sampling_unmatched: the configuration's sampling is what the facts recommend for Qwen/Qwen3-8B-AWQ, not for
 openai/gpt-oss-20b
 ```
 
@@ -447,6 +450,15 @@ can't be read is said in red, and the run is recorded all the same. A case
 whose source the endpoint isn't cleared for is refused before anything is
 sent, as are tools on a sensitive source:
 
+````
+AGENT: replace
+The gate's refusal says configuration (src/chatddx/runner/gate.py:bar).
+---
+```
+alice plan-web (en, Qwen/Qwen3-8B-AWQ)×qwen3-8b-awq@fake #69535> run DutchFall10w
+refused: the configuration's tools would get content from source sample, which is sensitive, and tools can't be cleared yet
+```
+````
 ```
 alice plan-web (en, Qwen/Qwen3-8B-AWQ)×qwen3-8b-awq@fake #69535> run DutchFall10w
 refused: the skeleton's tools would get content from source sample, which is sensitive, and tools can't be cleared yet

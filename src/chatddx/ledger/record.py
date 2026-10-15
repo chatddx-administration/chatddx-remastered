@@ -30,7 +30,7 @@ def in_order(started: datetime, finished: datetime) -> None:
 
 
 class Record(Frozen):
-    case_derived: ClassVar[bool] = True
+    sensitive: ClassVar[bool] = True
     schema_version: ClassVar[int] = 1
 
     def canonical_doc(self) -> dict[str, JsonValue]:

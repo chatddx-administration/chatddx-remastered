@@ -12,11 +12,9 @@ It must be possible to deliver the cage together with the results, for scientifi
 
 ## Glossary
 - **Factor:** Anything that can change an output or its score (`docs/factors.md`, "What a factor is").
-- **Fingerprint:** a hash of content that must *not* be stored: vignette, wire body, prompt token ids. It carries its algorithm: `sha256`, or `hmac-sha256` with a `key_id`
+- **Fingerprint:** a hash of content that must *not* be stored: vignette, request, prompt token ids. It carries its algorithm: `sha256`, or `hmac-sha256` with a `key_id`
 - **Pinned:** a value that can't be altered without changing the digest of one or more factors.
-- **Sensitive:** data that is forbidden from being stored on, or passed to, non-approved sources. Vignettes and
-  case-derived content are sensitive. Appendices, expectations and people's names are not (`docs/factors.md`,
-  "Appendix" and "Expectation"; `docs/identity.md`).
+- **Sensitive:** data that may only be stored or sent where it is cleared to go (see "Vignettes and anything made from them are sensitive").
 - **Bundle:** a set of root components plus everything they reference (the closure), stored as canonical text keyed by digest, together with the code version that produced it.
 - **Cage:** the constrained environment a bundle enforces
 - **Digest:** the factor's identity and how it's referenced, an `sha256:<hex>` over the component's canonical bytes.
@@ -33,7 +31,7 @@ It must be possible to deliver the cage together with the results, for scientifi
 - **Slot:** a placeholder filled at send time.
 - **Insert:** a placeholder filled at compile time: `schema` in an output chunk's guidance, filled with that
   output's schema, and `output_guidance` and `tool_guidance` in the instructions or the prompt, filled with the output's
-  guidance. An insert's `before` and `after` text appear only when what it inserts isn't empty.
+  guidance and the toolset's. An insert's `before` and `after` text appear only when what it inserts isn't empty.
 - **Segment:** a literal string, a slot or an insert
 - **Purpose:** whether a prompt or skeleton is for `generation` or for a `judge`; it decides which slots are allowed.
 - **Contract:** how an output chunk constrains the answer: `native`, `tool` or `text`.
@@ -42,8 +40,15 @@ It must be possible to deliver the cage together with the results, for scientifi
   compile time, so the skeleton sends and shows the rewritten schema. Today the only one is `inline_refs@1`.
 - **Trial:** The smallest unit of an scientific intent (i.e. Experiment): skeleton + engine + cases + text-cleanup steps + seeds.
 - **Replicate:** one seed of a trial, identified by its index.
-- **Item key:** (case, replicate index), which identifies one request of a run.
-- **Execution:** how a run issues requests: order, concurrency, timeout and retries.
+- **Request:** the body one call sends to an engine: a skeleton rendered with its fills, the served model and the
+  seed, or a tool round's next request.
+- **Call:** one exchange with an engine: a request sent, in one or more attempts, and what came back.
+- **Attempt:** one try at sending a call's request; a call is tried again only when the request didn't get through.
+- **Tool round:** the tools a response called, run, and the next request, sent with their results.
+- **Item:** one case's replicate in a run: its first request and each tool round's, each sent as a call.
+- **Item key:** (case, replicate index), which identifies an item of a run, and with a view an item of a score.
+- **Execution:** how a run sends its items, and a score its judge calls: order, concurrency, timeout, retries and the
+  runaway cutoff.
 - **View:** the part of an output and of an expectation that a scorer scores, and how.
 - **Compilation:** A provenance (component) that says which recipe and compiler produced a skeleton
 - **Run** and **Score:** a stage log.
@@ -53,8 +58,7 @@ It must be possible to deliver the cage together with the results, for scientifi
 - **Seal:** the hash over a log's started row and item rows, kept in its finished row.
 - **Finding:** a warning or info produced when something declared doesn't match what was observed, or when a setting is risky.
 - **Canary:** a fixed, non-sensitive probe request.
-- **Case-derived:** content produced from a vignette.
-- **Wire-body:** the exact request sent, is sensitive if it contains a vignette.
+- **Wire-body:** a request as sent: with the streaming options, and the secret in a header. May hold sensitive content.
 - **Vetted:** a fact within the planned clearance pipeline.
 - **Portal:** the web-interface used to configure factors, watch runs and export results.
 - **World:** factor parameters outside of the orchestrator's direct control. (the vignette source, model files, the Nix closure, the chat-template file, the remote engine)
@@ -95,8 +99,10 @@ The researchers will want to iterate and continuously refine configurations acco
 4. A configuration with several successful variations branch out
 5. Unsuccessful configurations are deleted
 
-A configuration is a set of pinned factors kept on a skeleton thread, and a variation replaces one or more of them.
-A variation being tried is just a digest; saved, it's a fork, which is a configuration of its own.
+A configuration is a request kept on a skeleton thread, each version with the recipe it was compiled from, and a
+variation replaces one or more of the recipe's parts. A variation being tried is just a digest, saving it will make it
+a configuration of its own.
+
 Names are optional: an unnamed configuration is shown by its title, e.g. its base and what it varies (`docs/catalog.md`, "Titles").
 Variations allow controlled experiments without the combinatorial explosion; they are a supported portal workflow, not an object in the code:
  - `src/chatddx/store/catalog.py:Catalog.behind`
@@ -164,7 +170,9 @@ Canaries, prompt-token fingerprints and comparing completions show which one app
 
 The runner warns; it does not refuse. Only structurally malformed specs and records raise errors:
 
-The one exception to "warnings, not crashes": sending case-derived content to an engine without clearance is a hard block, judge engines included.
+The one exception to "warnings, not crashes": vignette's and anything made from it going where it isn't
+cleared to go is a hard block: an engine, judge engines included, a tool's third party, the store, an edge or an
+export.
 
 Other compromises decided during reconciliation:
  - plain sha256 fingerprints instead of HMAC
@@ -194,7 +202,7 @@ described below.
 1. A Recipe is created from stored instances of each Chunk: Prompt, Output and Sampling are required, Instructions, FewShot, Reasoning and Passthrough are optional.
 
 2. The Recipe is compiled into a Skeleton, which is stored as a frozen factor, holding:
-  - messages: each message's content is a list of plain text pieces or Slots (`case`, `appendices`)
+  - messages: each message's content is a list of plain text pieces or Slots (`vignette`, `appendices`)
   - body: sampling, output format and reasoning settings; greedy sampling has already dropped top_p, top_k and min_p
   - if few shots were included in the recipe, they're baked into the skeleton as plain text
   - appendix_layout: how appendices are joined into one piece of text
@@ -217,7 +225,7 @@ described below.
 6. Pick the model name from the engine: `engine.served_model_name`, the engine's digest for a local engine and its
    `model` for a remote one.
 7. Pick the seed: `trial.seeds[replicate]`.
-8. Render the request: render(skeleton, model=…, seed=…, fills={"case": …, "appendices": …}). This:
+8. Render the request: render(skeleton, model=…, seed=…, fills={"vignette": …, "appendices": …}). This:
   - replaces each slot with its text by plain concatenation, with no templating
   - adds model, messages and the skeleton's body;
   - adds seed only if the sampling isn't greedy;
@@ -227,9 +235,12 @@ described below.
   - Canaries are sent the same way, from their literal bodies (`Canary.render`), one at a time before the first
     item and after the last, at the phases `verify_at` names. Nothing compares canary outputs yet (see "Possible
     design issues").
+10. When the skeleton offers tools and the response calls some, run them and send the next request: the last one,
+  the assistant's message and the tools' results, until a response calls none or the skeleton's round limit
+  (`docs/factors.md`, "Tool rounds"). Each request is a call, tried again only when it didn't get through.
 
 ### After the run
-1. After each response, fingerprint_prompt_tokens(response) takes prompt_token_ids out of the response and returns their fingerprint. The runner stores a RunItem row with the key (case, replicate), the observed vignette fingerprint and a Call. The Call holds the request's fingerprint, the timings, the attempt count, the response without its prompt token IDs, and the prompt-token fingerprint.
+1. After each response, fingerprint_prompt_tokens(response) takes prompt_token_ids out of the response and returns their fingerprint. Once an item's last call is done, the runner stores a RunItem row with the key (case, replicate), the observed vignette fingerprint, its first Call and each tool round's. A Call holds the request's fingerprint, the timings, the attempt count, the response without its prompt token IDs, and the prompt-token fingerprint.
 2. At the end, Run(...).finish() produces a RunFinished row with the seal. check_run then compares what the run declared with what came back.
 
 ### Scoring records
@@ -271,12 +282,24 @@ described below.
 
 The "scored results" are just those ScoreItem rows. What aggregates them isn't named yet.
 
+## Vignettes and anything made from them are sensitive
+The vignette and content produced from it: fills, requests, completions, tool arguments and results, judge requests and
+responses, an engine's error that echoes a request; are all sensitive. Every part in the system that touches this data
+must label it "sensitive".
+
+## The clearance pipeline
+Sensitive content may go only where it is cleared to go, so sending it to an engine
+that isn't cleared, judge engines included, must be refused, and so must storing it, showing it at an edge, handing it
+to a tool's third party or exporting it where it isn't. Clearance has a dedicated pipeline (agents/wip-clearance.md)
+and the factors do not enforce it. The runner's gate guards the engines and the tools today; the other destinations are
+cleared as the pipeline comes.
+
 ## Findings and errors
 A finding (`src/chatddx/factors/base.py: Finding`) has a level (`warning` by default, or `info`), a code, a message and optionally the subject it concerns. Findings are how "warnings, not crashes" is implemented: anything declared that doesn't match what was observed, and anything risky, becomes a finding. The run and score checks return their findings, and a finished row holds the findings the runner or scorer saw while working, such as `case.drift`; the run and score checks can be repeated from the stored rows at any time, so their findings aren't stored.
 
 Structurally malformed input raises instead. Constructing a component, canary or record that breaks its own rules raises pydantic's `ValidationError`: for example flags the start-up script owns in `argv`, slots unsuitable for the purpose, a skeleton body at odds with its contract, runtime keys in a body, duplicate seeds or cases, a shuffle seed without shuffled order, or a stage log out of order. Problems that need other components or records to see raise `StructuralError`: a digest that doesn't match its bytes, an unknown kind or schema version, a missing or wrongly typed reference, a failed `cross_check`, a recipe whose prompt purpose differs from its own or whose passthrough overrides a managed key, and the run and score checks' own violations (items outside the trial, unplanned canary calls, a score of another run, views, items, judges or seeds that don't exist).
 
-The one hard block is clearance: sending case-derived content to an engine that isn't cleared, judge engines included, must be refused. Clearance has a dedicated pipeline and the factors do not enforce it; the runner must.
+The one hard block is clearance (see "Vignettes and anything made from them are sensitive").
 
 Each code is described where it's produced: `docs/factors.md`, "Lints"; `docs/ledger.md`, "Findings"; for the
 `facts.*` codes, `docs/facts.md`, "Checking pairs"; and for the engine import's, `docs/inventory.md`, "Importing from

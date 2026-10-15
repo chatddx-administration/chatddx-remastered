@@ -23,6 +23,11 @@ KINDS: dict[str, tuple[str, ...]] = {
     "engine": ("engine.local", "engine.remote"),
 }
 
+
+def word_of(kind: str) -> str:
+    return next(w for w, held in KINDS.items() if kind in held)
+
+
 WRITTEN: frozenset[str] = frozenset(
     {*(f"chunk.{part}" for part in PARTS), "expectation", "appendix", "scorer", "judge"}
 )

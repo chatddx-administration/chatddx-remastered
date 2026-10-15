@@ -18,6 +18,7 @@ function thread(id: number, name: string | null, owner: string | null, digest: s
   return {
     id,
     kind: "chunk.reasoning",
+    word: "reasoning",
     name,
     title: name ?? `untitled ${id}`,
     owner,
@@ -123,6 +124,7 @@ describe("where a save goes", () => {
   const configuration = (owner: string, name: string | null): Schemas["ThreadDetail"] => ({
     ...thread(1, name, owner, DIGEST(1)),
     kind: "skeleton",
+    word: "configuration",
     description: null,
     collaborators: [],
     forked_from: null,

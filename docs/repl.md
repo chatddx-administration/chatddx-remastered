@@ -94,7 +94,8 @@ Nothing here is sent anywhere.
   family's case names the family's appendices and the cases that send them.
 - **`configurations [NAME]`** lists a row per configuration name and language: its models, each part as its variants
   share it with the model taken off (`recommended`), or `varies`, and its owner; a fork reads `yours, from OWNER`, and
-  the origin it forks is left out. With NAME, its variants, a row per model and owner.
+  the origin it forks is left out. Judge configurations follow, in a table of their own. With NAME, its variants, a
+  row per model and owner.
 - **`endpoints`** lists the World's endpoints: engine, model, URL and the sources each is cleared for.
 - **`cases`** lists the person's cases, and how many carry each tag.
 - **`reasoning`** is a table of every reasoning level on every model the facts know, headed by the endpoints serving
@@ -133,7 +134,7 @@ summary per view.
 ### Outcomes
 An item's outcome comes from its last call and its answer, read by the skeleton's contract (docs/factors.md,
 "Scorer"):
-- `stopped`: halted, or a turn left unsent;
+- `stopped`: halted, or its last tool round stopped before its request was sent;
 - `errored`: no answer, and the call ended in an error;
 - `unread`: no answer, and no error;
 - `completed`: a text answer;

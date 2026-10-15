@@ -91,8 +91,8 @@ field a model doesn't name is a 422, and so is a query parameter where the query
 query parameter a route doesn't name is ignored. Components,
 recipes, facts, calls, tool runs and fingerprints are given as the JSON they dump to, not as models of their own.
 
-**Case-derived places.** `families.py:vignette`, `runs.py:items`, `scores.py:items` and a run's stream are the only
-routes that give case-derived content, and each says `Cache-Control: no-store`: the first three through
+**Sensitive places.** `families.py:vignette`, `runs.py:items`, `scores.py:items` and a run's stream are the only
+routes that give sensitive content, and each says `Cache-Control: no-store`: the first three through
 `state.py:no_store`, the stream with `state.py:NO_STORE` among its headers.
 
 ## app.py
@@ -144,7 +144,7 @@ A dependency: a connection for the request, closed when the request is done with
 `{"Cache-Control": "no-store"}`.
 
 ### `no_store(response: Response) -> None`
-A dependency of the case-derived routes: `NO_STORE` among the response's headers.
+A dependency of the sensitive routes: `NO_STORE` among the response's headers.
 
 ## people.py
 
@@ -251,7 +251,7 @@ variation's query parameters to them with `endpoint`, `tag` and `seed`.
 | --- | --- |
 | `login(bench, person: int \| None) -> str \| None` | `None` for no one, else `Bench.login`. |
 | `edit_of(bench, edit: catalog.Edit, kind: str \| None = None) -> schemas.Edit` | The edit, with its author's login, and for a scorer thread's its labels (`Catalog.labels`). `kind` is the thread's, looked up with `Catalog.thread` when not given. |
-| `thread_of(bench, kind: str, edit, about, languages=None) -> schemas.Thread` | A thread from its head and `About`, titled by `Catalog.title`, in the language `languages` gives its head's digest, else `Catalog.languages_of` of it. |
+| `thread_of(bench, kind: str, edit, about, languages=None) -> schemas.Thread` | A thread from its head and `About`, titled by `Catalog.title`, with the word `chatddx.bench.word_of` gives its kind, in the language `languages` gives its head by id, else `Catalog.edit_languages` of it. |
 | `detail(bench, thread: int) -> schemas.ThreadDetail` | `Bench.thread_by_id(thread, deleted=True)` (`NotFound`), so the person's own deleted thread too, with `deleted`, `Catalog.thread` for its kind and `forked_from`, and `Catalog.recipe` dumped, or `None` without a compilation. |
 | `refused() -> Generator[None]` | A context manager: a `ValueError` within, other than a `Conflict`, a `MovedOn` or an `OverQuota`, is raised as `HTTPException(422)` with its message. Those three pass to `STATUSES`. |
 | `made(request, response, bench, thread: int, findings) -> schemas.MadeThread` | `detail` of the thread with the findings, and `Location` its path. |
@@ -262,10 +262,10 @@ variation's query parameters to them with `endpoint`, `tag` and `seed`.
 
 | Route | Does |
 | --- | --- |
-| `threads`, `GET /threads` | … kept by `name` (whole), `owner` (a login) and any of `tag`; `Catalog.languages_of` of the kept heads' digests, given to `thread_of`. |
+| `threads`, `GET /threads` | … kept by `name` (whole), `owner` (a login) and any of `tag`; `Catalog.edit_languages` of the kept heads, given to `thread_of`. |
 | `thread`, `GET /threads/{thread}` | `detail`. |
 | `edits`, `GET /threads/{thread}/edits` | `Bench.thread_by_id(thread, deleted=True)`, then `Catalog.history`. |
-| `variation`, `GET /threads/{thread}/variation` | Within `refused()`: `Bench.variation(thread, query.given(), query.head)` and `Bench.skeleton`. … `label` is `TriedVariation.label`, and `held_by` is `thread_of` of `Bench.holder("configuration", skeleton)`, or `None`. |
+| `variation`, `GET /threads/{thread}/variation` | Within `refused()`: `Bench.variation(thread, query.given(), query.head)` and `Bench.skeleton`. … `label` is `TriedVariation.label`, and `held_by` is `thread_of` of `Bench.holder("configuration", skeleton, varied)`, `varied` the variation's recipe (`TriedVariation.varied`), or `None`. |
 | `say`, `PATCH /threads/{thread}` | `HTTPException(422, "a description is replaced, never taken away")` for a null `description`, and `HTTPException(422, "no person '<login>'")` for a collaborator nobody is (`People.find`). Within `refused()`: `Bench.say`, with `...` for a `name` not given. 200, `detail`. |
 | `proposal`, `GET /threads/{thread}/proposal` | Within `refused()`: `Bench.proposal`. `null` when there is none. |
 | `follow`, `POST /threads/{thread}/follows` | Within `refused()`: `Bench.follow(thread, head, language)`. 201 with the edit's `edit_of` and findings. |
@@ -381,7 +381,7 @@ A run is named by a `UUID`, so anything else in its place is a 422.
 | `score_now`, `POST /runs/{run}/scores` | `Bench.run_by_id` (`NotFound`); `HTTPException(422)`: `"run <run> hasn't finished"`, `"scorer <digest> doesn't apply to run <run>"` for the first of `scorers` that doesn't, and `"no scorer applies to run <run>"`. `Queue.put` of a job scoring the run by the scorers `events.py:scoring_of` gives, at the run's endpoint, `""` for none, holding no slots; `UnderWay` while the run has one queued or under way (409). 202, with `Location` the run's scores' path and `run.scoring`'s data. |
 | `scores`, `GET /runs/{run}/scores` | `Bench.run_by_id` (`NotFound`), then `graded_of` each of `Bench.scores_of(run, every)`, `every` being the query's `all`: the latest under each scorer by name, or every score, newest first. |
 | `score`, `GET /runs/{run}/scores/{score}` | `graded_of` of `Bench.score_of(run, score)`, whose `NotFound` is for a run that isn't the person's and a score that isn't the run's. |
-| `items`, `GET /runs/{run}/scores/{score}/items` | `Bench.score_of(run, score)`, then each of its score's items with its detail and judge calls dumped, and its finish's findings, none when it hasn't finished. Case-derived. |
+| `items`, `GET /runs/{run}/scores/{score}/items` | `Bench.score_of(run, score)`, then each of its score's items with its detail and judge calls dumped, and its finish's findings, none when it hasn't finished. Sensitive. |
 
 ## queue.py
 

@@ -7,13 +7,13 @@
   {{ heading(configuration.name or configuration.title, configuration.title if configuration.name not in (None, configuration.title) else None) }}
 
   {% call section("About it") %}
-  {% set origin %}{% if configuration.forked_from %}<a class="text-primary hover:underline" href="/configurations/{{ configuration.forked_from }}">a fork</a>{% else %}—{% endif %}{% endset %}
+  {% set origin_link %}{% if origin %}<a class="text-primary hover:underline" href="/configurations/{{ origin }}">a fork</a>{% else %}—{% endif %}{% endset %}
   {% set tagged %}{% for t in configuration.tags %}{{ chip(t) }} {% else %}—{% endfor %}{% endset %}
   {{ facts([
     ("Owner", configuration.owner or "—"),
     ("Shared with", configuration.collaborators | join(", ") or "—"),
     ("Language", configuration.language or "—"),
-    ("Forked from", origin),
+    ("Forked from", origin_link),
     ("Tags", tagged),
     ("Description", configuration.description or "—"),
   ]) }}

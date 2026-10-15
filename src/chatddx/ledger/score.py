@@ -44,7 +44,7 @@ class JudgeEndpoint(Frozen):
 
 
 class ScoreStarted(Record):
-    case_derived: ClassVar[bool] = False
+    sensitive: ClassVar[bool] = False
     schema_version: ClassVar[int] = 2
     stage: Literal["started"] = "started"
     score: UUID

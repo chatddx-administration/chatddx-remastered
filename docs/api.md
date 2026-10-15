@@ -46,8 +46,9 @@ A configuration made per language or model is a thread under its full name, unti
 (agents/wip-variants.md).
 
 ## What a person sees
-- **Threads** gives its kind, name, title, owner, tags and head, and on its own also its description, collaborators,
-  language, the edit it was forked from, whether it is deleted, and for a configuration its recipe.
+- **Threads** gives its kind and the word for it, name, title, owner, tags, language and head, and on its own also
+  its description, collaborators, the edit it was forked from, whether it is deleted, and for a configuration its
+  recipe. A configuration's language is its head's recipe's.
   Its versions come oldest first. Configurations are listed by purpose, those that give answers unless the judges'
   are asked for, since a judge configuration is no use at a run.
   A configuration can also be asked for by what it answers: the title of its answer's JSON Schema, such as
@@ -58,7 +59,7 @@ A configuration made per language or model is a thread under its full name, unti
   (`docs/bench.md`, "What a person is scored against"). Several to choose from don't fail the request; that
   schema says so instead. Each schema also lists the expectation threads shared with the person they could take.
 - **A family's vignette**, fetched from the World's source, and whether it still is the text the case was made from
-  (unknown under a keyed fingerprint). It is case-derived (see "Case-derived content").
+  (unknown under a keyed fingerprint). It is sensitive (see "Sensitive content").
 - **Tags** on the families the person sees.
 - **Endpoints**: each one's engine and the engine's title, the model it serves, its URL and host, how many requests
   it takes at once, its credential's name, the sources it is cleared for, and whether a typed case can run there. One
@@ -80,8 +81,8 @@ one run moments later can differ if the configuration moved in between; each run
 
 A look at a variation gives:
 - the edit it was built on, its label (`NAME+PART=CHUNK`, `docs/bench.md`, "The variation being tried"), the digest
-  of the skeleton it compiles to, the configuration whose head that skeleton is, the person's own first, and whether
-  its sampling is greedy.
+  of the skeleton it compiles to, the configuration whose head is that skeleton with the variation's recipe, the
+  person's own first, and whether its sampling is greedy.
 - each part's chunk, its title and what it holds, and whether it was replaced.
 - the request it would send, with placeholders for the case and, without an endpoint, for the model.
 - a seed, drawn from the trial's whole range unless one is given, and given back so a run can send the same.
@@ -246,10 +247,10 @@ It cancels the calls under way, record them as stopped and the run is finished u
   now, each item's outcome and tokens, and its latest score under each scorer.
 - **A run's scores**: the latest under each scorer, or every one, newest first, or one by its id. A score says its
   scoring, when it started and whether it finished, each item's value under each view, and each view's mean.
-- **A score's items**: each item's detail and judge calls, and the findings of the score. They are case-derived.
+- **A score's items**: each item's detail and judge calls, and the findings of the score. They are sensitive.
 - **A run's items**: each call as it was recorded, with its response and tool rounds, why the item ended as it did,
   and its answer as read from its last call, as the scorers read it, with why it couldn't be read or breaks its schema.
-  They are case-derived.
+  They are sensitive.
 - **Whether each item renders again** as it was sent: only a request's fingerprint is kept, so the request is
   rendered again from the trial and the source, and compared.
 
@@ -265,7 +266,7 @@ A judged view's value is the mean over the seeds whose verdicts were read.
 A finished run is scored again when asked, under every scorer that applies or some, queued as a run is: answered 202
 with the scorers it is to score by, it goes on whoever listens, and its events are the run's, after its rows.
 
-## Case-derived content
+## Sensitive content
 What is made from a vignette is shown to whoever signed in, but only in its own places, so that a policy for edges
 can gate those few when clearance has one (agents/wip-clearance.md):
 - a family's vignette;
@@ -276,9 +277,10 @@ can gate those few when clearance has one (agents/wip-clearance.md):
 
 Each is sent with `Cache-Control: no-store`, so that a browser keeps none of it.
 
-Nothing else carries any. Why an item ended can quote the answer, since checking it against a schema names the value
-it refused, so it is in the items and the events only. For the same reason a score gives values, and its detail,
-judge calls and findings are its items'.
+Nothing else should carry any, but why a job failed can quote what it was sending, and is served with the runs
+(agents/wip-clearance.md, "Before real patient data" 10). Why an item ended can quote the answer, since checking it
+against a schema names the value it refused, so it is in the items and the events only. For the same reason a score
+gives values, and its detail, judge calls and findings are its items'.
 
 ## Errors
 A refusal's body is `{"detail": "…", "code": "…"}`. The detail says why, or, where a request doesn't validate, lists
@@ -336,12 +338,11 @@ first row, by when it listens, and then lets the worker take the job.
 | Saying | Writing what holds of a thread: its name, description, tags, collaborators, and whether it is deleted. |
 | Reach | Of a scorer's view: whether a variation's output offers what it reads, and which cases have an expectation it picks from. |
 | Run | A variation sent at an endpoint on some cases with some seeds, recorded as it goes. |
-| Item | One case's request in a run, with its calls. |
+| Item | One case's replicate in a run: its first request and each tool round's, each a call. |
 | Outcome | How an item ended: stopped, errored, unread, salvaged, completed, invalid or valid. |
 | Event | One step of what is under way for a run, as its events tell it. |
 | Job | What the app has under way for a run: the run, or a scoring of it, with its events. |
 | Halt | Ending what is under way for a run early: its sending, hanging up the calls under way, or its scoring. |
-| Case-derived | Made from a vignette, or quoting what was: the vignette, answers, tool runs. |
 
 ## Outstanding
 Left for later, each with what holds and the take on it, the agent's recommendation, which waits for a word. The
@@ -349,7 +350,7 @@ bench's are in docs/bench.md, "Outstanding".
 
 ### Takes the API is built on
 Built as the takes of the plan at 100a078 had them, and not confirmed since. Decided there: who it is for, kept open;
-FastAPI and uvicorn; signing in; and case-derived content in places of its own. Decided since: where a run runs and
+FastAPI and uvicorn; signing in; and sensitive content in places of its own. Decided since: where a run runs and
 its events (see "Where it runs" and "Its events").
 - **Ids**: a path takes a whole id, and a name is a filter on a list, which gives every match.
 - **The variation**: stated whole in each request, the configuration by id and its parts by digest, with nothing

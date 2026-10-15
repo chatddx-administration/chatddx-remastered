@@ -30,8 +30,9 @@ def configurations(repl: Repl, name: str | None = None) -> None:
     bench = repl.bench
     models = list(bench.facts.models)
     made: list[_Made] = []
+    heads = bench.threads("configuration")
 
-    for edit, about in bench.threads("configuration"):
+    for edit, about in heads:
         recipe = bench.catalog.recipe(edit.thread)
         parts = None if recipe is None else [getattr(recipe, p) for p in PARTS]
         full = about.name or bench.catalog.title(edit.thread)
@@ -39,7 +40,11 @@ def configurations(repl: Repl, name: str | None = None) -> None:
         made.append(_Made(full, base, language, model, edit.thread, about.owner, parts))
 
     if name is None:
-        _grouped(repl, made, models)
+        judging = {e.thread for e, _ in bench.purposed(heads, "judge")}
+        _grouped(repl, [m for m in made if m.thread not in judging], models)
+        if judges := [m for m in made if m.thread in judging]:
+            repl.console.print(Text("\njudge configurations", style="bold"))
+            _grouped(repl, judges, models)
         return
 
     base, language = language_of(name)

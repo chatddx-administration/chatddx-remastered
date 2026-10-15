@@ -131,7 +131,7 @@ command's `rest` param takes whole is followed by the next param's names once it
 
 | Command | Function | On the bench |
 | --- | --- | --- |
-| `configurations [NAME]` | `listing.configurations` | `threads`, `catalog.recipe`, `catalog.origin`, `about`, `title` |
+| `configurations [NAME]` | `listing.configurations` | `threads`, `purposed`, `catalog.recipe`, `catalog.origin`, `about`, `title` |
 | `endpoints` | `listing.endpoints` | `inventory`, `endpoint`, `model`, `url_of` |
 | `cases` | `listing.cases` | `families` |
 | `use CONFIGURATION` | `choosing.use` | `configuration` |

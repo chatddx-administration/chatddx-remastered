@@ -7,17 +7,22 @@ gate are built; the clearance pipeline (a `clearance` schema and its grants) isn
 
 ## Scope
 Decided: clearance tracks sensitive sources, sensitive derived content and vetted endpoints, both engines and
-databases. It is enforcement, not curation: sending case-derived content to an engine that isn't cleared, judge
+databases. It is enforcement, not curation: sending sensitive content to an engine that isn't cleared, judge
 engines included, is the system's one hard block (`docs/chatddx.md`, "Findings and errors"). The factors and the
 ledger provide the means; the runner enforces.
 
 Decided: this plan also holds every concern about running real patient data until it is resolved (see "Before real
 patient data").
 
+Decided: the boundary is every destination of sensitive content, the vignette
+included: engines and judge engines, the third parties tools send to, the database (records, the notification queue,
+a job's reasons, typed texts), the edges and exports. The gate keeps deciding per run, from what the run pins, and
+covers every request a run sends; each other destination is cleared as this plan builds it.
+
 ## What holds now
 ### Vetted endpoints
 Until clearance has a database grant, a World inventory's `[cleared]` table (`docs/inventory.md`, "Clearance") says
-which sensitive sources each endpoint may receive case-derived content from.
+which sensitive sources each endpoint may receive sensitive content from.
 
 Decided: Kompismoln's endpoints, `qwen3-8b@pelle` and `gpt-oss-20b@malborg`, are cleared for the sample World's
 vignettes, in `worlds/kompismoln/inventory.toml`. Kompismoln will need to be cleared for the sample World in the
@@ -42,14 +47,14 @@ The gate enforces it against the inventory's `[cleared]` table until the clearan
 `docs/inventory.md`, "Checks happen when an entry is used").
 
 ### Completions derived from vignettes
-- Case-derived records are run items, score items and a score's finish (`docs/ledger.md`, "Case-derived records";
-  `src/chatddx/ledger/record.py:Record.case_derived`): completions, the arguments the model passed to tools and what
+- Sensitive records are run items, score items and a score's finish (`docs/ledger.md`, "Sensitive records";
+  `src/chatddx/ledger/record.py:Record.sensitive`): completions, the arguments the model passed to tools and what
   the tools returned, judge responses, the scorer's `detail`, and findings that quote the answer. Start records, a
   run's finish and canary calls are not. Compilations are components (`src/chatddx/factors/request.py:Compilation`),
   not records, and hold no case text.
-- No policy has settled. Options: a database-level read restriction on case-derived tables; a destination check
+- No policy has settled. Options: a database-level read restriction on sensitive tables; a destination check
   when records are exported.
-- Part of it exists: the case-derived tables are in schema `ledger`, and at tier 1 `chatddx_reader` can read
+- Part of it exists: the sensitive tables are in schema `ledger`, and at tier 1 `chatddx_reader` can read
   `factor` but not `ledger` (`src/chatddx/store/migrations/0005-t1-ledger.sql`), nor the typed texts in `source`
   (`0015-t1-source.sql`). Nothing uses the reader yet (`docs/store.md`, "Roles and connections"), and who gets it is
   open.
@@ -66,7 +71,7 @@ The gate enforces it against the inventory's `[cleared]` table until the clearan
 
 ### Tools
 - A tool's arguments are written by the model from the case. A tool that sends them off the host (a web search;
-  the sample's `chatddx.tools.web_search` goes to DuckDuckGo) sends case-derived content to a third party, so the
+  the sample's `chatddx.tools.web_search` goes to DuckDuckGo) sends sensitive content to a third party, so the
   hard block covers tools as it covers engines and judges.
 - Tools are pinned by their entry point and the version of it chatddx ships (`Tool.entry_point`, `Tool.version`;
   `src/chatddx/tools/shipped.py:TOOLS`), and a run records the version that ran (`RunStarted.tool_code`). So the
@@ -78,28 +83,43 @@ The gate enforces it against the inventory's `[cleared]` table until the clearan
   tool can be cleared. What ships a tool is in `docs/factors-api.md` ("Tool").
 
 ### Judges
-- A judge's engine falls under the hard block: a judge prompt always holds a completion, which is case-derived. The
+- A judge's engine falls under the hard block: a judge prompt always holds a completion, which is sensitive. The
   scoring pass gates each judge's endpoint as a run's (`gate.bar` in `runner/score.py:judge_at`, `gate.admit` in
   `Grader.start`), and refuses a judge reading the vignette or appendices.
 - Judge calls record their endpoints, by judge, name and URL (`ScoreStarted.endpoints`,
   `src/chatddx/ledger/score.py:JudgeEndpoint`), as a run records its own (`RunStarted.endpoint`), so whether a judged
   scoring was cleared can be audited from the ledger as a run's can.
 
+### A request's sensitive content
+Where it is at each stage of a request (`docs/factors.md`, "Requests"), beyond the records above:
+- **Fills and the rendered request**: in the runner's memory only. The ledger keeps the request's fingerprint
+  (`Call.request`), not the request, nor the prompt's token ids.
+- **The wire body**: sent to the endpoint the run's start record names, every tool round's and attempt's included
+  (`docs/runner.md`, "The gate").
+- **Attempts**: only their count is kept. A refusal's body is kept as the call's response, the last attempt's only;
+  an earlier attempt's is dropped (`src/chatddx/runner/send.py`).
+- **A tool round**: the model's arguments go wherever the tool's code sends them; the results are kept in the ledger.
+- **Live deltas and tool runs**: through the database's notification queue, as they come (`docs/worker.md`).
+- **Rendered again**: an item's first request rendered with its real fills, in memory, and only compared with the
+  call's fingerprint; nothing is sent (`Bench.rendered_again`).
+- **Not sensitive**: the chunks, the recipe, the skeleton and the trial, which names its cases by fingerprint; a
+  canary's request; the look's request, rendered with placeholders.
+
 ## What the code offers
 - `Vignette.source` (`src/chatddx/factors/cases.py:Vignette`) names a vignette's source, and is part of the case's
   digest.
-- `prepare_case` produces the case-derived fills the hard block guards (`docs/factors.md`, "Preparing a case").
+- `prepare_case` produces the sensitive fills the hard block guards (`docs/factors.md`, "Preparing a case").
 - No factor holds an endpoint: every engine is located by the inventory (`docs/inventory.md`, "Endpoints"). A remote
   engine names its provider and model (`src/chatddx/factors/engine.py:RemoteEngine`); its address is its endpoint's.
 - `RunStarted.endpoint` and `ScoreStarted.endpoints` (`src/chatddx/ledger/run.py:Endpoint`) record where a run's and
   a scoring's calls went, by the endpoint's name and URL.
 - The old module had `EndpointBinding(engine, base_url, clearances)` and `CaseSourcePolicy(source,
-  required_clearances)`, with a check that every endpoint reached by case-derived content held the clearances its
+  required_clearances)`, with a check that every endpoint reached by sensitive content held the clearances its
   sources require (`git show de843eb:src/chatddx/core/manifest.py`, around L1913 and L2258). That shape still fits:
   sources require clearances, endpoints hold them, and the gate refuses when one is missing.
 
 ## Takes
-- Databases count as endpoints, because the ledger *is* case-derived storage, and the `source` schema holds typed
+- Databases count as endpoints, because the ledger *is* sensitive storage, and the `source` schema holds typed
   vignettes themselves. The Postgres instance holding them has to be vetted like an engine, and an export target
   (records leaving for publication) is another endpoint.
 - Storage: schema `clearance`, append-only like the catalog (SELECT, INSERT for the writer; t2 insert-only triggers).
@@ -123,16 +143,20 @@ The gate enforces it against the inventory's `[cleared]` table until the clearan
 3. **Who may grant clearance**, and whether that needs its own role.
 4. **Sources.** Sources say only whether they are sensitive. Still unspecified: what clearance each requires beyond
    that.
-5. **Edges as destinations.** The repl shows case-derived content at its terminal: `show case` prints the vignette and
+5. **Edges as destinations.** The repl shows sensitive content at its terminal: `show case` prints the vignette and
    `run` streams the completion. The API sends it over the network to whoever signed in, but only from its own places,
-   each with `Cache-Control: no-store` (`docs/api.md`, "Case-derived content": the vignette, a run's items, a score's
+   each with `Cache-Control: no-store` (`docs/api.md`, "Sensitive content": the vignette, a run's items, a score's
    items and findings, and a run's events). The portal is an edge too: every page is `no-store`, the vignette has a
    page of its own, its fonts are served by the app so that a page fetches nothing from a third party, and copying an
-   answer as text wasn't ported, since it puts case-derived content on the clipboard (`agents/wip-portal.md`,
+   answer as text wasn't ported, since it puts sensitive content on the clipboard (`agents/wip-portal.md`,
    "Swift"). The takes count a database and an export target as endpoints to vet, but nothing says whether an edge's
    client is one, nor who may read the vignette or a run's items through it. Open: whether edges are vetted like
    endpoints, by what (the edge, the person, or the client's address), and whether the repl falls under the same
    rule.
+6. **A clearance withdrawn during a run.** The gate decides as a run starts and as it resumes, and as a judged scoring
+   starts, so a run under way keeps sending after its endpoint's clearance is withdrawn. Asking the gate at every send,
+   a round's, an attempt's and a judge call's, would stop it. Take: as is, since a dated grant tells whether a run was
+   cleared when it started (see "When to build it").
 
 ## Before real patient data
 The healthcheck at 08ae453 (`healthchecks/2026-10-14-08ae453.md`) lists what has to hold before real patient data, or
@@ -194,9 +218,10 @@ runs out of the app, in the healthcheck's order, with where else it is tracked. 
    inline script, `script-src 'self'` fits every portal page. The NixOS module's nginx sends HSTS, `nosniff`,
    `Referrer-Policy` and `frame-ancestors`, but no `script-src`, which would refuse Swagger UI's scripts; the app sends
    none, so the Kubernetes target has none (`agents/wip-deploy.md`, "The NixOS module").
-6. **Engine errors** are stored verbatim: a rejected request's body (`src/chatddx/runner/send.py:158-160`), with only
-   `prompt_token_ids` stripped (`src/chatddx/ledger/call.py:47`), and the engine's message in `Call.error`
-   (`src/chatddx/runner/wire.py:17-35`). An engine that echoes its input in an error puts vignette text in the store.
+6. **Engine errors** are stored verbatim: the engine's error response to a rejected request, as the call's response
+   (`src/chatddx/runner/send.py:158-160`), with only `prompt_token_ids` stripped (`src/chatddx/ledger/call.py:47`),
+   and the engine's message in `Call.error` (`src/chatddx/runner/wire.py:17-35`). An engine that echoes its input in
+   an error puts vignette text in the store.
    They are served with a run's items only, which are no-store. Not checked against real vLLM.
 7. **Digests** work as capabilities.
    - `GET /api/components/{digest}` checks no visibility (`src/chatddx/api/world.py:77-87`), by design: appendices and
@@ -226,7 +251,7 @@ runs out of the app, in the healthcheck's order, with where else it is tracked. 
     - The gate's messages hold an `OSError` (`src/chatddx/runner/gate.py:40-43`), answered as a 422 and shown on the
       portal's error page.
     - `docs/migrations.md` ("Tier 1", `0020-t1-worker.sql`) says why a job failed can quote what it was sending;
-      `docs/api.md` ("Case-derived content") says nothing outside its no-store places carries any.
+      `docs/api.md` ("Sensitive content") says nothing outside its no-store places carries any.
 11. **Writes** are unlimited. Appendices, threads, forks, edits, components and scorings have no count or size limit,
     and the app none on a request's body; a typed text's size is checked only once its body is parsed
     (`src/chatddx/bench/cases.py:112-116`). The only limits are runs a day, items a run and seeds. Behind the NixOS

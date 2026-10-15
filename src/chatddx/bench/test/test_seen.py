@@ -19,6 +19,8 @@ from chatddx.bench.test.helpers import another_expectation, ran, trial
 from chatddx.catalog import Entry, EntryField, Subject
 from chatddx.curation import Plan, load_cases
 from chatddx.factors.base import resolve
+from chatddx.factors.bundle import Registry
+from chatddx.factors.request import Prompt
 from chatddx.factors.scoring import Expectation, Judge, View
 from chatddx.identity import Person, owns
 from chatddx.inventory import World
@@ -415,6 +417,32 @@ def test_a_fork_is_a_new_configuration_and_an_edit_a_new_version_of_one_s_own(
     archives = bench.thread("configuration", f"archive/{LINES}")[0].thread
     with pytest.raises(NotFound, match=f"no configuration {archives} of yours"):
         _ = bench.edit(archives, variation, now)
+
+
+def test_a_new_recipe_of_the_same_request_is_a_new_version(bench: Bench) -> None:
+    variation = bench.configuration("headed (en)")
+    prompt = resolve(bench.get, variation.held("prompt") or "", Prompt)
+    head, *rest = prompt.segments
+    assert isinstance(head, str)
+    split = Prompt(segments=(head[:-1], head[-1], *rest))
+    registry = Registry()
+    _ = bench.store.add(registry, [registry.add(split)])
+    resplit = variation.set("prompt", split.digest, "split")
+    skeleton = variation.configuration.digest
+    assert bench.skeleton(resplit).digest == skeleton
+
+    forked = bench.fork(variation, "headed, split")
+    thread = forked.variation.configuration.thread
+    edited = bench.edit(thread, resplit, forked.variation.configuration.id)
+    history = Catalog(bench.conn).history(thread)
+    assert edited.what == "a new version"
+    assert [e.digest for e in history] == [skeleton, skeleton]
+    assert bench.catalog.recipe(thread) == resplit.varied
+    assert bench.edit(thread, resplit, history[-1].id).what == "unchanged"
+    held = bench.holder("configuration", skeleton, resplit.varied)
+    assert held is not None and held[0].thread == thread
+    held = bench.holder("configuration", skeleton, variation.varied)
+    assert held is not None and held[0].thread != thread
 
 
 def _expectation_of(catalog: Catalog, case: str, owner: int) -> int:

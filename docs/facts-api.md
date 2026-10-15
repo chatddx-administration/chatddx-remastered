@@ -260,11 +260,11 @@ The factors' lints of `digests` (`chatddx.factors.lint.lint`, with `reasons(fact
 | Code | Level | Message |
 | --- | --- | --- |
 | `facts.missing` | info | `no facts about '<name>', so model-level checks were skipped` (`<name>` is the model name's `repr`) |
-| `facts.reasoning_unmatched` | warning | `the skeleton's reasoning settings match none of the model's reasoning levels` |
+| `facts.reasoning_unmatched` | warning | `the configuration's reasoning settings match none of the model's reasoning levels` |
 | `facts.budget_refused` | warning | the budget's refusal reason |
 | `facts.output_refused` | warning | the contract's refusal reason |
 | `facts.output_note` | info | the contract's note |
-| `facts.sampling_unmatched` | warning | `the skeleton's sampling is what the facts recommend for <models, joined by ", ">, not for <name>` |
+| `facts.sampling_unmatched` | warning | `the configuration's sampling is what the facts recommend for <models, joined by ", ">, not for <name>` |
 
 The subject is always the trial's or judge's digest.
 

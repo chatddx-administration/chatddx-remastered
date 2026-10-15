@@ -38,8 +38,7 @@ A call streams on the wire only (see "Calls"). When the skeleton has tools, the 
 rounds"). Each item is written as soon as its last call is done, so a run that stops leaves every item it finished.
 
 Canaries are sent one at a time, the start phase's before the first item and the end phase's after the last, whatever
-the concurrency, so they bracket the items. They need no clearance, as they aren't case-derived, and they go only where
-the run goes, after the gate.
+the concurrency, so they bracket the items. They are not sensitive and need no clearance.
 
 ### Resuming
 A run that wasn't finished can resume, the items and canary calls its log holds are kept, and only what it lacks is
@@ -55,8 +54,12 @@ Finishing writes the finish record, with the findings the runner saw while it ra
 finds (docs/ledger.md, "Run"). A run is finished once.
 
 ## The gate
-Sending case-derived content to an engine that isn't cleared for its source is the one hard block (docs/chatddx.md,
-"Findings and errors"). The gate refuses, in order:
+The gate guards the engines so that sensitive content may go only where it is cleared to go
+(docs/chatddx.md, "Vignettes and anything made from them are sensitive").
+
+It decides once per run, as it starts and as it resumes, and once per judge as a judged scoring starts, from what they
+pin, before anything is prepared or rendered: every request a run sends, each tool round's and attempt's included, goes
+to the endpoint the gate admitted. The gate refuses, in order:
 - an endpoint that serves another engine than the one asked for;
 - a sensitive source of the cases the endpoint isn't cleared for (docs/inventory.md, "Clearance");
 - tools on a sensitive source, since a tool can't be cleared yet;
@@ -69,10 +72,11 @@ comes up. The bench uses the difference (see "What applies to a run").
 The secret goes only into the request's `Authorization` header. No stored row holds it.
 
 ## Calls
-A call is one exchange with an engine (docs/ledger.md, "Call"). Every call streams: the request's fingerprint is taken
-before the streaming options are added, and the streamed chunks are added up to the completion an unstreamed request
-would have had. Streaming is only how a call travels; what is stored is the same either way. The prompt's token ids
-leave the response and become its fingerprint. HTTP is the standard library's.
+A call is one exchange with an engine: one request, sent in one or more attempts, and what came back
+(docs/ledger.md, "Call"). Every call streams: the request's fingerprint is taken before the streaming options are added,
+and the streamed chunks are added up to the completion an unstreamed request would have had. Streaming is only how a
+call travels; what is stored is the same either way. The prompt's token ids leave the response and become its
+fingerprint. HTTP is the standard library's.
 
 A call is tried again only when the request didn't get through: a connection that failed, a 429 or a 5xx, after a
 pause that doubles each time, up to the execution's retries. Once a stream has started, what comes is the answer, and
@@ -180,7 +184,7 @@ The API lists them (docs/runner-api.md, "Finding codes").
 | --- | --- |
 | Runner | What sends a trial's requests and writes the run. |
 | Scoring pass | What grades a finished run with a scoring and writes the score. |
-| Gate | What refuses an endpoint before case-derived content goes to it. |
+| Gate | What refuses an endpoint before sensitive content goes to it. |
 | Endpoint | Where an engine is reached, by the World inventory's name (docs/inventory.md, "Endpoints"). |
 | Round | Running the tools a response called and sending the next request. |
 | Cutoff | Ending a call early, keeping what came: a runaway, or a timeout. |

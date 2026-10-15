@@ -138,7 +138,7 @@ concretely"), and its `__Host-` cookie wants one host for both.
 - **A call still waiting for its engine to answer at all** waits on after a halt (docs/runner.md, "What a stop leaves
   out"), and the job's thread with it.
 - **`NOTIFY`'s queue**: a payload waits in the database's notification queue, kept on disk, until every listener has
-  read it, and a listener that stops reading holds the queue up for all. Deltas are case-derived, and pass through the
+  read it, and a listener that stops reading holds the queue up for all. Deltas are sensitive, and pass through the
   database that holds the ledger's completions already.
 - **"Ahead" counts jobs, not items**, and the workers seen are counted for anyone's jobs, not the person's endpoints.
 - **A job at an endpoint the inventory lost** is claimed and fails at the gate, rather than waiting.

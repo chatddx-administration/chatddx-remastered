@@ -75,6 +75,24 @@ def test_a_configuration_s_page_holds_the_variation_its_address_gives(
 
 
 @pytest.mark.slow
+def test_a_fork_links_the_configuration_it_was_forked_from(signed: TestClient) -> None:
+    mine = thread(signed, "configuration", LINES)
+    off = thread(signed, "reasoning", OFF)["head"]["digest"]
+    edits = f"/api/threads/{mine['id']}/edits"
+    later = signed.post(
+        edits, json={"head": mine["head"]["id"], "parts": {"reasoning": off}}
+    )
+    forks = f"/api/threads/{mine['id']}/forks"
+    fork = signed.post(forks, json={"name": "terse"}).json()
+    assert later.json()["id"] != mine["id"]
+
+    page = shown(signed, f"/configurations/{fork['id']}")
+    assert f'href="/configurations/{mine["id"]}">a fork</a>' in page
+    archives = thread(signed, "configuration", LINES, "archive")
+    assert ">a fork</a>" not in shown(signed, f"/configurations/{archives['id']}")
+
+
+@pytest.mark.slow
 def test_its_versions_are_stepped_through_keeping_what_is_set(
     signed: TestClient,
 ) -> None:

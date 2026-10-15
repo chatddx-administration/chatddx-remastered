@@ -264,7 +264,7 @@ def test_a_run_the_gate_refuses_is_unprocessable_and_isn_t_recorded(
     for body, said in (
         (
             asked(signed, NATIVE_TOOLS),
-            "the skeleton's tools would get content from source test",
+            "the configuration's tools would get content from source test",
         ),
         ({**asked(signed), "endpoint": GPT_OSS}, f"endpoint '{GPT_OSS}' can't be"),
     ):
@@ -329,7 +329,7 @@ def test_runs_are_listed_newest_first_and_filtered(signed: TestClient) -> None:
 
 @pytest.mark.usefixtures("fake")
 @pytest.mark.slow
-def test_no_browser_keeps_what_is_case_derived(signed: TestClient) -> None:
+def test_no_browser_keeps_what_is_sensitive(signed: TestClient) -> None:
     made, _ = sent(signed, asked(signed))
     run, [score, *_] = made["id"], made["scores"]
     kept = {

@@ -44,7 +44,7 @@ Building one validates it. The seven row types derive from `Record`; `ItemKey`, 
 `ToolCode`, `Endpoint`, `JudgeCall` are parts of rows, and `Run` and `Score` are logs put back together from rows.
 Only records have `v`, `canonical` and `parse`.
 
-| Record | Module | `stage` | `case_derived` | Table |
+| Record | Module | `stage` | `sensitive` | Table |
 | --- | --- | --- | --- | --- |
 | `RunStarted` | `run.py` | `"started"` | no | `ledger.run_stage` |
 | `RunItem` | `run.py` | | yes | `ledger.run_item` |
@@ -87,7 +87,7 @@ The base of every row type.
 
 | Member | Description |
 | --- | --- |
-| `case_derived: ClassVar[bool] = True` | Whether the type may hold content produced from a vignette. A subclass that holds none sets it to `False`. |
+| `sensitive: ClassVar[bool] = True` | Whether the type may hold sensitive content: the vignette or content produced from it. A subclass that holds none sets it to `False`. |
 | `schema_version: ClassVar[int] = 1` | Written as `v`. Bump it when an existing field's meaning or default changes; an added field with a backward-compatible default needs no bump. |
 | `canonical_doc() -> dict[str, JsonValue]` | The canonical JSON document, `v` included. |
 | `canonical -> bytes` | `canonical_bytes(canonical_doc())`. Not cached. |
@@ -109,7 +109,7 @@ As for components (`docs/factors-api.md`, "Canonical form"):
 ```
 
 ### `class ItemKey(Frozen)`
-Which request of a run an item is.
+Which item of a run a record is, by case and replicate; with a view, which item of a score.
 
 | Field | Type | Default |
 | --- | --- | --- |
@@ -216,7 +216,7 @@ The World inventory's endpoint a run's calls went to (`docs/inventory.md`, "Endp
 Neither is checked.
 
 ### `class RunStarted(Record)`, stage `started`
-Opens a run with its recorded factors. Not case-derived. `schema_version` 2: `tool_code` holds versions.
+Opens a run with its recorded factors. `schema_version` 2: `tool_code` holds versions.
 
 | Field | Type | Default |
 | --- | --- | --- |
@@ -232,7 +232,7 @@ Opens a run with its recorded factors. Not case-derived. `schema_version` 2: `to
 | `endpoint` | `Endpoint \| None` | `None` |
 
 ### `class RunItem(Record)`
-One request of the trial and what came back. Case-derived.
+A case's replicate in a run: its first call and its tool rounds. Sensitive.
 
 | Field | Type | Default |
 | --- | --- | --- |
@@ -246,7 +246,7 @@ One request of the trial and what came back. Case-derived.
 refused: `only the last round may lack its call`.
 
 ### `class CanaryCall(Record)`
-One canary of the run's set, sent at one phase. Not case-derived.
+One canary of the run's set, sent at one phase.
 
 | Field | Type | Default |
 | --- | --- | --- |
@@ -256,7 +256,7 @@ One canary of the run's set, sent at one phase. Not case-derived.
 | `call` | `Call` | required |
 
 ### `class RunFinished(Record)`, stage `finished`
-Closes a run. Not case-derived.
+Closes a run.
 
 | Field | Type | Default |
 | --- | --- | --- |
@@ -346,7 +346,7 @@ too, where the two differ. Later calls aren't compared; items of `b` missing fro
 | `call` | `Call` | required |
 
 ### `class ScoreStarted(Record)`, stage `started`
-Not case-derived. `schema_version` 2. Its `scorer_code: Code` is `scorer_version: int` (from 1): the version of the
+`schema_version` 2. Its `scorer_code: Code` is `scorer_version: int` (from 1): the version of the
 scorer's entry point the scoring pass ran.
 
 | Field | Type | Default |
@@ -362,7 +362,7 @@ scorer's entry point the scoring pass ran.
 | `endpoints` | `tuple[JudgeEndpoint, ...]` | `()`; each judge's endpoint, `JudgeEndpoint(judge: JudgeRef, endpoint: Endpoint)` |
 
 ### `class ScoreItem(Record)`
-One run item graded by one view. Case-derived.
+One run item graded by one view. Sensitive.
 
 | Field | Type | Default |
 | --- | --- | --- |
@@ -374,7 +374,7 @@ One run item graded by one view. Case-derived.
 | `judge_calls` | `tuple[JudgeCall, ...]` | `()` |
 
 ### `class ScoreFinished(Record)`, stage `finished`
-Case-derived: its findings can quote the answer. Fields as `RunFinished`, with `score: UUID` in place of `run`.
+Sensitive: its findings can quote the answer. Fields as `RunFinished`, with `score: UUID` in place of `run`.
 
 ### `class Score(Frozen)`
 A score's log put back together from its rows.
@@ -544,7 +544,7 @@ TRUNCATE, per statement) call `factor.refuse_change()`, which raises `<schema>.<
 ### Roles (`0005`)
 PUBLIC loses all access to the schema and its tables. `chatddx_writer` gets `USAGE` and `SELECT, INSERT` on existing
 tables and, through default privileges, on tables created later. `chatddx_reader` gets nothing, because `run_item` and
-`score_item` hold case-derived records; the other tables sit beside them so each log stays in one schema.
+`score_item` hold sensitive records; the other tables sit beside them so each log stays in one schema.
 
 ### What the database checks, and what it doesn't
 It checks that `doc` and the key columns agree with `payload`, that keys are unique (the same keys `check_run` and
@@ -561,7 +561,8 @@ It doesn't
 ## Known gaps
 From `docs/ledger.md`, "Open design issues", where they concern this API:
 - `Execution.timeout_s` isn't checked: a call's times span all its attempts.
-- Nothing rebuilds a request to compare with `Call.request`.
+- Nothing here rebuilds a request to compare with `Call.request`; the bench rebuilds an item's first
+  (`Bench.rendered_again`), not a later round's or a judge's.
 - Canary outputs aren't compared between phases or runs.
 - Canary calls get no model check, and neither canary calls nor judge calls a prompt-token check.
 - `Call.system_fingerprint` is never compared.

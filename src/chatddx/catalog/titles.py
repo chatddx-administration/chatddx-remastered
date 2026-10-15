@@ -163,7 +163,7 @@ def describe(component: Component, title: Title, language: str | None = None) ->
         case Passthrough(body=body):
             return "passthrough: " + ", ".join(body)
         case Skeleton(purpose=purpose):
-            return f"{purpose} skeleton {short(component.digest)}"
+            return f"{purpose} configuration {short(component.digest)}"
         case Trial(skeleton=skeleton, engine=engine, cases=cases, seeds=seeds):
             return (
                 f"{title(skeleton)} on {title(engine)}, "

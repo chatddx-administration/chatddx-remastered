@@ -190,8 +190,15 @@ class Seen:
     def about(self, thread: int) -> About:
         return self.catalog.about(Subject(thread=thread))
 
-    def holder(self, word: str, digest: str) -> tuple[Edit, About] | None:
-        held = [((e, a), a.owner) for e, a in self.threads(word) if e.digest == digest]
+    def holder(
+        self, word: str, digest: str, recipe: Recipe | None = None
+    ) -> tuple[Edit, About] | None:
+        held = [
+            ((e, a), a.owner)
+            for e, a in self.threads(word)
+            if e.digest == digest
+            and (recipe is None or recipe_of(self.rows, e) == recipe)
+        ]
         return next(iter(preferred(self.person.id, held)), None)
 
     def get(self, digest: str) -> Component:

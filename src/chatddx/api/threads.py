@@ -14,6 +14,7 @@ from chatddx.bench import (
     OverQuota,
     Reach,
     TriedVariation,
+    word_of,
 )
 from chatddx.catalog.titles import describe
 from chatddx.factors.base import Finding
@@ -52,18 +53,19 @@ def thread_of(
     kind: str,
     edit: catalog.Edit,
     about: catalog.About,
-    languages: Mapping[str, str | None] | None = None,
+    languages: Mapping[int, str | None] | None = None,
 ) -> schemas.Thread:
     if languages is None:
-        languages = bench.catalog.languages_of([edit.digest])
+        languages = bench.catalog.edit_languages([edit])
     return schemas.Thread(
         id=edit.thread,
         kind=kind,
+        word=word_of(kind),
         name=about.name,
         title=bench.catalog.title(edit.thread),
         owner=login(bench, about.owner),
         tags=sorted(about.tags),
-        language=languages[edit.digest],
+        language=languages[edit.id],
         head=edit_of(bench, edit, kind),
     )
 
@@ -113,7 +115,7 @@ def threads(
         and (owner is None or login(bench, about.owner) == owner)
         and (not wanted or wanted & about.tags)
     ]
-    languages = bench.catalog.languages_of({edit.digest for _, edit, _ in shown})
+    languages = bench.catalog.edit_languages([edit for _, edit, _ in shown])
     return [thread_of(bench, *each, languages) for each in shown]
 
 
@@ -199,7 +201,7 @@ def variation(
     parts = None
     if varied.recipe is not None:
         parts = [part_of(bench, varied, p) for p in PARTS]
-    held = bench.holder("configuration", skeleton.digest)
+    held = bench.holder("configuration", skeleton.digest, varied.varied)
     return schemas.Variation(
         head=edit_of(bench, varied.configuration, "skeleton"),
         label=varied.label,

@@ -10,6 +10,7 @@ from .model import (
     Saved,
     Taken,
     Written,
+    word_of,
 )
 from .outcome import Outcome, outcome, usage, used
 from .runs import ScoreHalt, ScorerStarted, ScoringEvent
@@ -41,4 +42,5 @@ __all__ = [
     "outcome",
     "usage",
     "used",
+    "word_of",
 ]

@@ -402,7 +402,7 @@ class Catalog:
             if head is not None:
                 threads.check_head(self._rows, thread, head)
             current = self.head(thread)
-            if current.digest == digest and (
+            if threads.holds(self._rows, current, digest, compilation) and (
                 labels is None or self.labels(current.id) == dict(labels)
             ):
                 return current, "unchanged"
@@ -464,6 +464,9 @@ class Catalog:
 
     def languages_of(self, digests: Collection[str]) -> dict[str, str | None]:
         return language.languages_of(self._rows, digests)
+
+    def edit_languages(self, edits: Collection[Edit]) -> dict[int, str | None]:
+        return language.edit_languages(self._rows, edits)
 
     def recipe_language(self, recipe: Recipe) -> str | None:
         return language.recipe_language(self._rows, recipe)

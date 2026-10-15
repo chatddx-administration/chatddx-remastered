@@ -156,6 +156,8 @@ every digest. A bundle is exported from the store, and imported by loading it an
 | Pinned, recorded, observed | The three ways a factor is held: fixed in advance by digest, written into a run's or a score's start record, or only detected afterwards. |
 | Component | An immutable set of parameters identified by its digest. Pinned factors are held in components. |
 | Digest | The hash of a component's canonical form. Components are told apart and referred to by it. |
+| Request | The body one call sends to an engine: a skeleton rendered, or a tool round's next request. |
+| Item | One case's replicate in a run: its first request and each tool round's. |
 | Instrument | A component that measures without being a factor: canary sets. |
 | Provenance | A component that says how another was made, without being a factor: compilations. |
 | Run | One execution of a trial: its requests, responses and records. |
@@ -233,7 +235,8 @@ longer match the case.
 ## Requests
 
 ### Overview
-A request is built in three layers:
+A *request* is the body one call sends to an engine: a skeleton rendered with its fills, the served model and the
+seed (see "Rendering"), or a tool round's next request (see "Tool rounds"). It is built in three layers:
 1. Chunks are written in the portal, one component per part of the request.
 2. A recipe picks one chunk per part.
 3. The compiler turns the recipe into a skeleton: the frozen request that trials and judges reference.
@@ -373,8 +376,8 @@ the recipe's, a missing translation, a guidance placed in both the instructions 
 named like one of the toolset's tools.
 
 With a toolset, the request offers the toolset's tools, in order. Under a native or a text contract, the model answers
-when it stops calling tools. Under a tool contract, the answer function is offered last, every turn calls a tool, and
-calling the answer function ends the item.
+when it stops calling tools. Under a tool contract, the answer function is offered last, every response calls a tool,
+and calling the answer function ends the item.
 
 The recipe is kept only in the compilation, next to the compiler's version (see "Compilation"). Trials reference the
 skeleton, not the recipe, so the compiler's code is not a separate factor: whatever it did is frozen in the skeleton.
@@ -417,11 +420,13 @@ Rendering produces the request that is sent:
 4. The response is asked to carry the prompt's token ids, so a run can fingerprint what the model was actually given.
 
 What the rig adds at send time can't be set by any chunk, skeleton or canary. The runner streams every request and
-reassembles the completion it records; what it records as the request is the request as rendered.
+reassembles the completion it records; the request it fingerprints is the request as rendered, without the streaming
+options.
 
 ### Tool rounds
-A response that calls tools gets another request: the same request, plus the assistant's message (its content and tool
-calls, without its reasoning) and one answer per call, in the calls' order. Everything else stays, the seed included.
+A response that calls tools gets another request: the last one, plus the assistant's message (its content and tool
+calls, without its reasoning) and one answer per call, in the calls' order. Its settings stay, the seed included; its
+body, and so its fingerprint, is its own.
 
 The loop belongs to the runner. It ends when a response calls no tool, calls the answer function, or has no whole answer
 (an error or a cutoff), or after the round limit. A tool is called with the call's arguments and returns text. A call
@@ -501,7 +506,7 @@ the seeds still count toward the trial's digest (see "Greedy sampling and seeds"
 When a run issues its requests, or a score its judge requests, its execution settings say:
 - the order in which items are sent: every replicate of a case before the next case (the default), every case once per
   replicate, or shuffled by a declared seed;
-- how many requests may be in flight at once (one by default);
+- how many items may be in flight at once, each sending its requests one after another (one by default);
 - an optional timeout;
 - how many transport retries a call may take (none by default);
 - a runaway cutoff, on by default: a call that answers a long run of nothing but whitespace is cut short and keeps what
@@ -684,8 +689,9 @@ changes the shape of a trial, so it is cheapest decided before trials are stored
 - **Judge engines are never probed.** Canary probes run on the run's engine only. Probing judge engines would put
   canaries in a score's start record, as in a run's; added with defaults, they keep every stored digest.
 - **Skeleton provenance.** Should a skeleton be accepted only with a compilation? Hand-written ones, such as judge
-  prompts, are possible today. A take: keep hand-written skeletons. Provenance is whether a compilation names the
-  skeleton, a question a lint can ask once the catalog or ledger is queried for it.
+  prompts, are possible today. Decided: keep hand-written skeletons, configurations without a recipe that nothing
+  varies, which only the store writes. Provenance is whether a compilation names the skeleton, a question a lint can
+  ask once the catalog or ledger is queried for it.
 - **A scoring doesn't say which cases it lacks.** Only checking a score warns, once a run is scored under it.
 - **Judge calls aren't fully attested.** Their returned model is checked against the judge engine's, but their
   prompt-token fingerprint isn't, as the request would have to be rebuilt from the answer as the scorer read it.

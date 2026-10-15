@@ -64,8 +64,10 @@ Researchers refine their configurations by trying variations, keeping what works
 it (docs/chatddx.md, "Intended evolution of configurations"). The catalog supports that workflow without having objects
 of its own for it.
 
-A *configuration* is a skeleton thread. A *variation* is a fork, of any kind, together with what it changes from the
-version it came from. Trying a variation costs nothing in the catalog, since any component can be run without a thread.
+A *configuration* is a skeleton thread: requests with the recipe it was compiled from (see "Recipes").
+A *variation* is a fork, of any kind, together with what it changes from the version it came from.
+
+Trying a variation costs nothing in the catalog, since any component can be run without a thread.
 A variation worth keeping becomes an edit of its thread, or a fork. Configurations are organised by their lineage, the
 recipe parts they use, what is said about them and their runs, not by their names, which are optional.
 
@@ -74,6 +76,11 @@ A recipe has no thread of its own; its history is kept on the skeleton thread it
 thread can name the compilation that produced its skeleton, and the compilation holds the recipe (docs/factors.md,
 "Compilation"). The compilation must be one of that very skeleton, and only skeleton edits name one. A hand-written
 skeleton has no compilation, so its edits name none.
+
+A skeleton thread's versions hold the recipes people chose: an edit is written when its skeleton or its recipe
+differs from the head's, so a recipe that compiles to the head's skeleton is a new version. The head's recipe
+compiled by other code is none, or every configuration init-data loads would get a version at each deploy, and its
+forks a proposal that changes nothing.
 
 ### Forks
 A *fork* is a new thread started from a version of another thread of the same kind, its *origin*. A fork is compared
@@ -186,7 +193,7 @@ shown by their titles in turn.
 A configuration is described by its recipe's parts, translations and toolset included, when a compilation of it is
 stored: "ddx · case · management-plan · recommended · off". A judge's recipe says so first. Without a stored
 compilation, as for a hand-written skeleton, it is shown by its purpose and the start of its digest:
-"generation skeleton 1a2b3c".
+"generation configuration 1a2b3c".
 
 Each kind is described by:
 
@@ -287,12 +294,14 @@ few-shot, prompt, output, toolset, and translations, whose language is the one t
 skeletons. A compiled skeleton's language comes from its recipe.
 
 The language of any component can be worked out:
-- a case's is its family's, and an expectation's is its case's;
-- a trial's and a judge's are their skeleton's;
+- a case's is its family's, and an expectation's is its case's.
+- a trial's and a judge's are their skeleton's.
+- a configuration's version's comes from the recipe its edit names, when it names one, so two configurations that
+  hold one skeleton can be in two languages.
 - a compiled skeleton's comes from its recipes, which vote. A recipe with translations votes for the translations'
   language. A recipe without translations votes for the language that all its text-bearing chunks share, toolset
   included and appendix layout not. A recipe whose chunks lack a language or disagree doesn't vote. When the votes
-  disagree, the skeleton has no language;
+  disagree, the skeleton has no language.
 - a chunk's and a hand-written skeleton's are their own.
 
 An unknown or disagreeing language gives none.
@@ -320,7 +329,7 @@ records. At tier 2 it repeats the rules above that two writers at once could bre
 | Head | A thread's latest edit, its current version. |
 | Fork | A thread started from a version of another thread of the same kind, its origin. |
 | Base | The version a fork is compared with: the one it came from, or the one its changes were last re-applied onto. |
-| Configuration | A skeleton thread. |
+| Configuration | A skeleton thread: requests, each version with the recipe it was compiled from. |
 | Variation | A fork, and what it changes from its base. |
 | Proposal | The origin's head with a fork's changes on top. |
 | Behind | A reference whose thread has moved on, or a case whose family has a newer binding. |

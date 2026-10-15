@@ -122,6 +122,9 @@ def test_a_greedy_judge_with_several_seeds_is_linted() -> None:
     verdict = resolve(plan.registry.get, plan.named("judge", "verdict").digest, Judge)
     twice = plan.registry.add(verdict.model_copy(update={"seeds": (1, 2)}))
     assert [(f.code, f.message) for f in lint(plan.registry, [twice])] == [
-        ("judge.greedy_seeds", "the judge is greedy, so its 2 seeds send one request")
+        (
+            "judge.greedy_seeds",
+            "the judge is greedy, so its 2 seeds send the same request",
+        )
     ]
     assert lint(plan.registry, [plan.named("judge", "verdict").digest]) == []

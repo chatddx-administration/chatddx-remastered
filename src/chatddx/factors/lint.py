@@ -309,7 +309,7 @@ def _judge(c: Judge, registry: Registry) -> Iterable[Finding]:
     if resolve(registry.get, c.skeleton, Skeleton).greedy and len(c.seeds) > 1:
         yield Finding(
             code="judge.greedy_seeds",
-            message=f"the judge is greedy, so its {len(c.seeds)} seeds send one request",
+            message=f"the judge is greedy, so its {len(c.seeds)} seeds send the same request",
             subject=c.digest,
         )
 
