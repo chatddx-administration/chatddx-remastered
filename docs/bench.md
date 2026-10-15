@@ -142,16 +142,9 @@ What every write has in common:
 - **An edit names the head it was made on**, configurations included, and is refused as `MovedOn` when the thread has
   moved on since, so that a change made on an older version doesn't undo what came after it unseen. Saving by name
   names the head it found. The catalog checks it while it holds the thread, so it holds with several writers too.
-```
-AGENT: replace
-Decided (agents/wip-configurations.md, I2): a configuration's head is there already only with the same recipe.
----
 - **Nothing is written that is there already.** An edit that is its thread's head already writes nothing, and says
   so; for a configuration, a head with the same recipe (docs/catalog.md, "Recipes"). Saying what holds of a thread
   writes only what changes.
-```
-- **Nothing is written that is there already.** An edit that is its thread's head already writes nothing, and says
-  so; saying what holds of a thread writes only what changes.
 - **What was written comes back with its lints**, and no write refuses on one: an expectation whose data its schema
   refuses is written, and said so (docs/factors.md, "Lints"). A component does, whether new, forked, edited, followed
   or carried, and so does a configuration made from a recipe or followed. A variation saved, forked or edited comes
@@ -389,25 +382,11 @@ the person were planned in `agents/wip-authoring.md` at b6f76b8. Its takes were 
 - **A judge's endpoint can't be named**: `Bench.score` names none, so a judge whose engine two endpoints serve bars its
   scorer, in the repl and the API alike (docs/repl.md, "What the repl doesn't reach"). Decided: as it is, until a World
   serves an engine at two endpoints; then the scoring names an endpoint per judge.
-```
-AGENT: remove
-Done: the repl's `configurations` lists them in a table of their own (agents/wip-configurations.md, J1).
-```
-- **The repl lists judge configurations among the rest**, as the API doesn't.
 - **A person's runs are all read**, and paged afterwards, in the API too (`Bench.runs`), and what is left to score is
   worked out for each of them, about 40 ms a run under five scorers. Page in the store once that is slow.
-```
-AGENT: replace
-A look's `held_by` compares recipes too now (agents/wip-configurations.md, I2), so it says so only of a hand-made
-recipe that is the shared configuration's.
----
 - **The archive's configuration saved under another name** is saved with no finding: a hand-made recipe that is a
   shared configuration's, compiled to its skeleton, becomes a thread of the person's own, and only a look's `held_by`
   says so (docs/api-api.md, "threads.py"). An expectation the same as one the person holds is refused.
-```
-- **The archive's configuration saved under another name** is saved with no finding: a hand-made recipe that compiles
-  to a skeleton a shared configuration holds becomes a thread of the person's own, and only a look's `held_by` says so
-  (docs/api-api.md, "threads.py"). An expectation the same as one the person holds is refused.
 - **Two saves of one name at once** can both create a configuration, in the repl's `save` (`docs/catalog.md`,
   "Concurrent writers").
 - **Taking counts shared threads, not owners**: a case with two threads shared by one owner is to choose from, and

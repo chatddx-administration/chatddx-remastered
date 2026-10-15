@@ -95,16 +95,10 @@ The researchers will want to iterate and continuously refine configurations acco
 4. A configuration with several successful variations branch out
 5. Unsuccessful configurations are deleted
 
-```
-AGENT: replace
-Decided (agents/wip-configurations.md, I2): a trial pins the skeleton, not the recipe's chunks, and a
-configuration's versions keep the recipes they were compiled from.
----
 A configuration is a request kept on a skeleton thread, each version with the recipe it was compiled from, and a
-variation replaces one or more of the recipe's parts.
-```
-A configuration is a set of pinned factors kept on a skeleton thread, and a variation replaces one or more of them.
-A variation being tried is just a digest; saved, it's a fork, which is a configuration of its own.
+variation replaces one or more of the recipe's parts. A variation being tried is just a digest, saving it will make it
+a configuration of its own.
+
 Names are optional: an unnamed configuration is shown by its title, e.g. its base and what it varies (`docs/catalog.md`, "Titles").
 Variations allow controlled experiments without the combinatorial explosion; they are a supported portal workflow, not an object in the code:
  - `src/chatddx/store/catalog.py:Catalog.behind`

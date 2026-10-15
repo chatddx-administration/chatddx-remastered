@@ -93,12 +93,6 @@ Lists every command, with the words it takes. A word in brackets is
 optional; `TAG...` means one tag or several.
 
 ### `configurations [NAME]`
-
-````
-AGENT: replace
-Done (agents/wip-configurations.md, J1): judge configurations follow in a table of their own. The paragraph and
-its example.
----
 Lists the configurations you can use: yours, and those shared with you.
 Each row is a configuration in one language, with the models it is made
 for and what each part is. Judge configurations follow, in a table of
@@ -119,24 +113,6 @@ alice #2475> configurations
 judge configurations
  configuration  models       instructions  prompt  output        ...  owner
  judge (en)     every model  judge (en)    judge   verdict (en)  ...  yours, from archive
-```
-````
-Lists the configurations you can use: yours, and those shared with you.
-Each row is a configuration in one language, with the models it is made
-for and what each part is.
-
-```
-alice #2475> configurations
- configuration          models          instructions    few_shot             prompt  output                ...  owner
- diagnoses (en)         gpt-oss-20b     —               —                    case    diagnoses (en)        ...  yours, from archive
-                        Mistral-Small…
-                        Qwen3-8B-AWQ
- free-text-guided (sv)  gpt-oss-20b     clinician (sv)  worked-example (sv)  case    free-text (en)        ...  yours, from archive
-                        Mistral-Small…
-                        Qwen3-8B-AWQ
- judge (en)             every model     judge (en)      —                    judge   verdict (en)          ...  yours, from archive
- plan (en)              gpt-oss-20b     —               —                    case    management-plan (en)  ...  yours, from archive
- ...
 ```
 
 `yours, from archive` is your copy of a configuration the archive (the
@@ -246,10 +222,6 @@ configuration again with `use` or `cell` forgets what you set; `on`
 another endpoint keeps it, picked again for the new model. Where the new
 model has no such chunk, the cell stays as it was, and says why:
 
-````
-AGENT: replace
-The findings people read say configuration (agents/wip-configurations.md, W1).
----
 ```
 alice plan (en, Qwen/Qwen3-8B-AWQ)+reasoning=off×qwen3-8b-awq@fake #2475> on gpt-oss-20b@fake
 no reasoning 'off' for alice; per model: off (Qwen/Qwen3-8B-AWQ), off (mistralai/Mistral-Small-3.2-24B-Instruct-2506);
@@ -257,16 +229,6 @@ the cell keeps plan (en, Qwen/Qwen3-8B-AWQ)+reasoning=off
 cell: plan (en, Qwen/Qwen3-8B-AWQ)+reasoning=off × gpt-oss-20b@fake
 [warning] facts.reasoning_unmatched: the configuration's reasoning settings match none of the model's reasoning levels
 [warning] facts.sampling_unmatched: the configuration's sampling is what the facts recommend for Qwen/Qwen3-8B-AWQ, not for
-openai/gpt-oss-20b
-```
-````
-```
-alice plan (en, Qwen/Qwen3-8B-AWQ)+reasoning=off×qwen3-8b-awq@fake #2475> on gpt-oss-20b@fake
-no reasoning 'off' for alice; per model: off (Qwen/Qwen3-8B-AWQ), off (mistralai/Mistral-Small-3.2-24B-Instruct-2506);
-the cell keeps plan (en, Qwen/Qwen3-8B-AWQ)+reasoning=off
-cell: plan (en, Qwen/Qwen3-8B-AWQ)+reasoning=off × gpt-oss-20b@fake
-[warning] facts.reasoning_unmatched: the skeleton's reasoning settings match none of the model's reasoning levels
-[warning] facts.sampling_unmatched: the skeleton's sampling is what the facts recommend for Qwen/Qwen3-8B-AWQ, not for
 openai/gpt-oss-20b
 ```
 

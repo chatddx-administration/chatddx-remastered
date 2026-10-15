@@ -46,17 +46,9 @@ A configuration made per language or model is a thread under its full name, unti
 (agents/wip-variants.md).
 
 ## What a person sees
-```
-AGENT: replace
-Decided (agents/wip-configurations.md, W1 and I2): the word for its kind beside the kind, `configuration` for
-`skeleton`, and a configuration's language its head's recipe's. A listing gives the language already.
----
 - **Threads** gives its kind and the word for it, name, title, owner, tags, language and head, and on its own also
   its description, collaborators, the edit it was forked from, whether it is deleted, and for a configuration its
   recipe. A configuration's language is its head's recipe's.
-```
-- **Threads** gives its kind, name, title, owner, tags and head, and on its own also its description, collaborators,
-  language, the edit it was forked from, whether it is deleted, and for a configuration its recipe.
   Its versions come oldest first. Configurations are listed by purpose, those that give answers unless the judges'
   are asked for, since a judge configuration is no use at a run.
   A configuration can also be asked for by what it answers: the title of its answer's JSON Schema, such as
@@ -88,17 +80,9 @@ The latest configuration means its head when the request comes (unless an edit i
 one run moments later can differ if the configuration moved in between; each run records the skeleton it ran.
 
 A look at a variation gives:
-```
-AGENT: replace
-Decided (agents/wip-configurations.md, I2): the configuration that is the variation already has its recipe too.
----
 - the edit it was built on, its label (`NAME+PART=CHUNK`, `docs/bench.md`, "The variation being tried"), the digest
   of the skeleton it compiles to, the configuration whose head is that skeleton with the variation's recipe, the
   person's own first, and whether its sampling is greedy.
-```
-- the edit it was built on, its label (`NAME+PART=CHUNK`, `docs/bench.md`, "The variation being tried"), the digest
-  of the skeleton it compiles to, the configuration whose head that skeleton is, the person's own first, and whether
-  its sampling is greedy.
 - each part's chunk, its title and what it holds, and whether it was replaced.
 - the request it would send, with placeholders for the case and, without an endpoint, for the model.
 - a seed, drawn from the trial's whole range unless one is given, and given back so a run can send the same.

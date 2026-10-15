@@ -683,18 +683,10 @@ changes the shape of a trial, so it is cheapest decided before trials are stored
 - **Canary drift isn't checked.** Nothing compares canary outputs between phases or between runs yet.
 - **Judge engines are never probed.** Canary probes run on the run's engine only. Probing judge engines would put
   canaries in a score's start record, as in a run's; added with defaults, they keep every stored digest.
-```
-AGENT: replace
-Decided (agents/wip-configurations.md, H1).
----
 - **Skeleton provenance.** Should a skeleton be accepted only with a compilation? Hand-written ones, such as judge
   prompts, are possible today. Decided: keep hand-written skeletons, configurations without a recipe that nothing
   varies, which only the store writes. Provenance is whether a compilation names the skeleton, a question a lint can
   ask once the catalog or ledger is queried for it.
-```
-- **Skeleton provenance.** Should a skeleton be accepted only with a compilation? Hand-written ones, such as judge
-  prompts, are possible today. A take: keep hand-written skeletons. Provenance is whether a compilation names the
-  skeleton, a question a lint can ask once the catalog or ledger is queried for it.
 - **A scoring doesn't say which cases it lacks.** Only checking a score warns, once a run is scored under it.
 - **Judge calls aren't fully attested.** Their returned model is checked against the judge engine's, but their
   prompt-token fingerprint isn't, as the request would have to be rebuilt from the answer as the scorer read it.
