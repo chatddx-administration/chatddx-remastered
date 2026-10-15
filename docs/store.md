@@ -53,14 +53,6 @@ workers never take the same one, and claims take turns, so that the runs on an e
 
 Heads-up: The worker's queue is state, not factors or records, and is updated in place.
 
-```
-AGENT: add
-After this paragraph: an owner's controls.
----
-An owner pauses their queue and resumes it, and stops it: their queued jobs end stopped, their runs left unfinished,
-and, stopped now, their jobs under way are asked to halt. Each run's latest job is read with how many jobs at its
-endpoint come before it.
-```
 Claims take turns, so that the runs on an endpoint keep to its `max_jobs` between them. Queuing, halting, pausing,
 ending and queuing again wake the workers, and tell those following the run how its job stands (`NOTIFY`).
 

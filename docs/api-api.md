@@ -23,12 +23,7 @@ Paths are relative to `src/chatddx/api/` unless they start with `src/`, `docs/` 
 - [scores.py](#scorespy): scoring a run, its scores and a score's items
 - [telling.py](#tellingpy): a run's events, from the ledger's rows and what the worker says
 - [listening.py](#listeningpy): the app's one listening connection, fanning out to its streams
-```
-AGENT: add
-A line above this one: `queue.py`.
----
 - [queue.py](#queuepy): a person's queue, paused, resumed and stopped
-```
 - [events.py](#eventspy): the runner's and the scoring pass's events as a run's events
 - [The command](#the-command)
 - [Tests](#tests)
@@ -37,12 +32,6 @@ A line above this one: `queue.py`.
 
 `chatddx.api` re-exports nothing; its modules are imported by path. `src/chatddx/cli.py` imports `app.py:app`.
 
-```
-AGENT: replace
-In the table: `jobs.py`'s row is gone since step 3; `queue.py`'s is new, and `app.py` mounts it.
----
-| `queue.py` | `schemas.py`, `people.py`, `chatddx.bench`, `chatddx.settings`, `chatddx.store` |
-```
 | Module | Builds on |
 | --- | --- |
 | `listening.py` | psycopg, `chatddx.store.notify` |
@@ -53,7 +42,7 @@ In the table: `jobs.py`'s row is gone since step 3; `queue.py`'s is new, and `ap
 | `families.py` | `schemas.py`, `people.py`, `state.py`, `threads.py`, `chatddx.bench`, `chatddx.factors.{base,cases}`, `chatddx.store` |
 | `world.py` | `schemas.py`, `people.py`, `threads.py`, `chatddx.bench`, `chatddx.factors.kinds`, `chatddx.inventory`, `chatddx.scorers.{scorer,shipped}` |
 | `events.py` | `schemas.py`, `chatddx.bench`, `chatddx.factors.{base,request,scoring,trial}`, `chatddx.ledger`, `chatddx.runner.{run,score}`, `chatddx.scorers.aggregate` |
-| `jobs.py` | `schemas.py`, `events.py`, `chatddx.bench`, `chatddx.ledger`, `chatddx.runner.run` |
+| `queue.py` | `schemas.py`, `people.py`, `chatddx.bench`, `chatddx.settings`, `chatddx.store` |
 | `runs.py` | `schemas.py`, `events.py`, `people.py`, `state.py`, `telling.py`, `threads.py`, `chatddx.bench`, `chatddx.factors.{base,request,trial}`, `chatddx.ledger`, `chatddx.runner.run`, `chatddx.scorers.answer`, `chatddx.store` |
 | `scores.py` | `schemas.py`, `events.py`, `people.py`, `state.py`, `chatddx.store` |
 | `app.py` | every module above but `events.py` and `telling.py`, `chatddx.bench`, `chatddx.facts`, `chatddx.inventory`, `chatddx.runner.gate`, `chatddx.store`, `chatddx.worker` |
@@ -109,16 +98,12 @@ routes that give case-derived content, and each says `Cache-Control: no-store`: 
 ## app.py
 
 ### `STATUSES: dict[type[Exception], tuple[int, Code]]`
-```
-AGENT: add
-After this subsection: the routers `app` mounts include `queue.py`'s.
----
-`app` mounts the routers of `people.py`, `threads.py`, `families.py`, `world.py`, `runs.py`, `scores.py` and
-`queue.py`.
-```
 `NotFound` 404 `not_found`, `Ambiguous` 409 `ambiguous`, `Conflict` 409 `conflict`, `MovedOn` 409 `moved_on`,
 `OverQuota` 429 `over_quota`, `Refused` 422 `refused`, and the queue's `UnderWay` 409 `conflict`. Each is answered
 `Error(detail=str(error), code=code)`.
+
+`app` mounts the routers of `people.py`, `threads.py`, `families.py`, `world.py`, `runs.py`, `scores.py` and
+`queue.py`.
 
 ### `CODES: dict[int, Code]`
 The code of an `HTTPException`, a route's or Starlette's own, by its status: 401 `unauthenticated`, 403 `cross_site`,
@@ -213,17 +198,6 @@ The token set as `COOKIE`: `Max-Age` `settings.SESSION_TTL` in seconds, `Secure`
 ## schemas.py
 The models' fields are in the OpenAPI document. Besides them:
 
-```
-AGENT: replace
-In the table below: the row of `Run`, and rows for `RunJob`, `NewResume`, `NewStop`, `Queue` and `Stopped`.
----
-| `Run` | A run as listed, with `unscored`, its scorers left as `Unscored` (`scorer`, `name`), when the listing asked for them, else `None`; and `job`, its latest job as a `RunJob`, else `None`. |
-| `RunJob` | A run's job: its `status`, `why`, `halt`, `ahead` (`chatddx.store.queue.Placed`), `queued` and `ended`. |
-| `NewResume` | Resuming's body: `score`. |
-| `NewStop` | A stop's body: `now`, the second press. |
-| `Queue` | A person's queue: `paused`, `queued`, `under_way` and `workers` (`chatddx.store.queue.Standing`). |
-| `Stopped` | What a stop did: the runs `taken_out` of the queue, and those `halting`. |
-```
 | Name | Is |
 | --- | --- |
 | `_Schema` | The base of every model: frozen, `extra="forbid"`. |
@@ -254,7 +228,7 @@ In the table below: the row of `Run`, and rows for `RunJob`, `NewResume`, `NewSt
 | `NewTake` | A take's body for one thread, `replace`. |
 | `Metric`, `ScorerCode` | Scoring code the running chatddx ships: its `entry_point`, `version`, `metrics` (each its `name`, what it `measures`, a JSON Schema for a view's `params`, whether it is `judged`, reading a judge's verdicts, and the `unit` that marks a value that isn't a score from 0 to 1, if any) and a JSON Schema for the scorer's own `params`. |
 | `NewRun(Seeds)` | A run's body, with `head`, the edit it varies, the configuration's head unless given; `cleanup`, the steps, else the sources'; `concurrency` and `order`, else the endpoint's. Its validator raises `ValueError("a run takes one of families, tags or cases")` unless exactly one of `families`, `tags` and `cases` is given, which FastAPI answers 422. |
-| `Run` | A run as listed, with `unscored`, its scorers left as `Unscored` (`scorer`, `name`), when the listing asked for them, else `None`. |
+| `Run` | A run as listed, with `unscored`, its scorers left as `Unscored` (`scorer`, `name`), when the listing asked for them, else `None`; and `job`, its latest job as a `RunJob`, else `None`. |
 | `Graded` | A score under one scorer: the scorer and its name, the score's id, its `scoring`, when it started (`at`) and whether it `finished`, each view's label and mean, each item's value, or why it was refused. |
 | `ScoreItemDetail`, `ScoreItems` | A score item with its `detail` and `judge_calls` as their JSON; and a score's items with its `findings`. |
 | `EVENTS: dict[str, type[_Schema]]` | Each event of a run's events, by name, and the model of its data, in the order they can come; `run.noted` and `score.noted` have `Finding`, and `done` `DoneData`, whose `halted` is `None` when told from the ledger. |
@@ -262,6 +236,11 @@ In the table below: the row of `Run`, and rows for `RunJob`, `NewResume`, `NewSt
 | `Answer` | what was read, why it couldn't be or breaks its schema, and whether it was salvaged. |
 | `NewAgain(Seeds)` | Running again's body: the seeds or replicates, as many as the run had, drawn, when neither is given; and `score`. |
 | `Seeds` | `seeds`, at least one, or `replicates`, from 1 to `settings.ITEMS_PER_RUN`. Its validator raises `ValueError("a run takes seeds or replicates, not both")`. |
+| `RunJob` | A run's job: its `status`, `why`, `halt`, `ahead` (`chatddx.store.queue.Placed`), `queued` and `ended`. |
+| `NewResume` | Resuming's body: `score`. |
+| `NewStop` | A stop's body: `now`, the second press. |
+| `Queue` | A person's queue: `paused`, `queued`, `under_way` and `workers` (`chatddx.store.queue.Standing`). |
+| `Stopped` | What a stop did: the runs `taken_out` of the queue, and those `halting`. |
 
 `test/test_variations.py:test_a_request_names_the_recipe_s_parts` holds `Parts`' fields to `PARTS`, and a
 variation's query parameters to them with `endpoint`, `tag` and `seed`.
@@ -381,11 +360,6 @@ and scoring it or not; `Location` the run's path (`url_path_for("run")`). Return
 | `events`, `GET /runs/{run}/events` | `async`. `Bench.run_by_id` (`NotFound`), then `telling.py:told` for the person, after the `Last-Event-ID` header's id, else from the first row. A `StreamingResponse` of `STREAM`, with `NO_STORE` and `X-Accel-Buffering: no`; its description names the events. |
 | `halt`, `POST /runs/{run}/halt` | `Bench.run_by_id` (`NotFound`), then `Queue.halt`, whose `LookupError` is `HTTPException(409, "run <run> has nothing under way")`. 204. |
 
-```
-AGENT: replace
-`run_of` takes a run's placed job, `job_of` is new, and `detail` and `runs` place each run's latest job; `resume` is a
-route of its own.
----
 ### `job_of(placed: Placed | None) -> schemas.RunJob | None`, `run_of(bench, started, finished, unscored=None, placed=None) -> schemas.Run` and `detail(bench, run: UUID) -> schemas.RunDetail`
 `job_of` is a job as `Queue.placed` places it, or `None`. `run_of` is the run as listed: its trial's parts, its
 endpoint's name, `Bench.described`, the scorers of `unscored`, each by its digest and `Bench.scorer_name`, or `None`,
@@ -397,20 +371,6 @@ and findings as `noted`; `check_run`'s findings over the trial and canary set `S
 | --- | --- |
 | `resume`, `POST /runs/{run}/resume` | Within `refused()`, `Bench.resume` (`NotFound` for a run not the person's; `"run <run> is finished"` and the gate's refusals, 422), then `_queued` with `score`. 202, with `Location` the run's path and `run.started`'s data; `UnderWay` while the run has a job open (409). |
 | `runs`, `GET /runs` | `Bench.runs`, kept by `trial`, then by the runs of `Bench.reaching(reaching)` and `Bench.scored_by(scored_by)`, then with `unscored` by those of `Bench.outstanding`, each with its scorers left; the page `[offset:offset + limit]`, `limit` from 1 to 200 and 20 by default; `Store.finished` and `Queue.placed` for the page. |
-```
-### `run_of(bench, started: RunStarted, finished: bool, unscored: list[str] | None = None) -> schemas.Run` and `detail(bench, run: UUID) -> schemas.RunDetail`
-`run_of` is the run as listed: its trial's parts, its endpoint's name, `Bench.described`, and the scorers of
-`unscored`, each by its digest and `Bench.scorer_name`, or `None`. `detail` adds, from
-`Bench.run_by_id` (`NotFound`) and `Store.run`: the rig; the finish's time and findings as `noted`; `check_run`'s
-findings over the trial and canary set `Store.load` gives; each item's `item_of`; and `graded_of` each of
-`Bench.scores_of`.
-
-| Route | Does |
-| --- | --- |
-| `runs`, `GET /runs` | `Bench.runs`, kept by `trial`, then by the runs of `Bench.reaching(reaching)` and `Bench.scored_by(scored_by)`, then with `unscored` by those of `Bench.outstanding`, each with its scorers left; the page `[offset:offset + limit]`, `limit` from 1 to 200 and 20 by default; `Store.finished` for the page. |
-| `run`, `GET /runs/{run}` | `detail`. |
-| `items`, `GET /runs/{run}/items` | `Bench.run_by_id`, then each of `Store.run`'s items: `item_of`, with `no_store`, the outcome's why, the vignette's fingerprint, the call, the turns dumped and the answer `chatddx.scorers.answer.read`. |
-| `rendered_again`, `GET /runs/{run}/rendered-again` | `Bench.run_by_id`, then `Bench.rendered_again` of `Store.run`: each item's key, and why it renders otherwise, or `None`. |
 
 A run is named by a `UUID`, so anything else in its place is a 422.
 
@@ -423,10 +383,6 @@ A run is named by a `UUID`, so anything else in its place is a 422.
 | `score`, `GET /runs/{run}/scores/{score}` | `graded_of` of `Bench.score_of(run, score)`, whose `NotFound` is for a run that isn't the person's and a score that isn't the run's. |
 | `items`, `GET /runs/{run}/scores/{score}/items` | `Bench.score_of(run, score)`, then each of its score's items with its detail and judge calls dumped, and its finish's findings, none when it hasn't finished. Case-derived. |
 
-```
-AGENT: add
-A section above this heading: `queue.py`.
----
 ## queue.py
 
 ### `standing(bench) -> schemas.Queue`
@@ -438,7 +394,7 @@ A section above this heading: `queue.py`.
 | `pause`, `POST /queue/pause` | `Queue.pause` of the person, then `standing`. |
 | `resume`, `POST /queue/resume` | `Queue.pause(person, False)`, then `standing`. |
 | `stop`, `POST /queue/stop` | `Queue.stop` of the person, `now` as given: the runs taken out and those halting. |
-```
+
 ## telling.py
 
 | Name | Value |
@@ -539,12 +495,6 @@ process (`worker=True`), its `SystemExit` saying `portal:` (`src/chatddx/cli.py:
 
 ## Tests
 
-```
-AGENT: add
-A row for the table below, after `test_scores.py`'s.
----
-| `test_queue.py` | A paused queue holding a run, which a stop takes out, left unfinished, and which resumes once the queue does; a finished run's and bob's resume refused; stopping, then stopping now, halting a run under way. |
-```
 | Module | Holds |
 | --- | --- |
 | `conftest.py` | `template` is `curated`, the test World as init-data lands it; `autocommit`; `alice`, with `PASSWORD`; `served`, the app on the test World's inventory and facts (`chatddx.test.world.world_facts`), with a worker; `listening`, `served` by uvicorn on a thread; `client`, a `TestClient` over `https://testserver`; `signed`, the client with alice's bearer; `bob`, his bearer's header; `bench`, alice's; and the helpers `sign_in` and `bearer`. |
@@ -561,6 +511,7 @@ A row for the table below, after `test_scores.py`'s.
 | `test_runs.py` | Runs, over its own `served` on `world`, the test World on free ports, with a worker: accepted and told by their events, numbered by their rows, which stream as they come, go on after an id, and are told alike by an app with no worker; a job in the queue until scored; refused... `joined` follows a run from before its job is claimed, the owner's queue paused until the stream has told its first row. |
 | `test_scores.py` | A judged run's scores, the latest and every one, one by id, and its items with their judge calls; the run scored again when asked, with the scoring's events after the run's rows; what bob can't read; the runs left to score with their scorers, and one leaving the listing once scored; a scoring refused for a run unfinished, a scorer that doesn't apply and a run with a job open, and halted; a session needed. |
 | `test_telling.py` | A stream joined mid-item told the item started and each tool once, and nothing of it once it ended; the listener fanning a run's messages out to two streams, again on another loop, and a stream that falls behind told `Lagged`. |
+| `test_queue.py` | A paused queue holding a run, which a stop takes out, left unfinished, and which resumes once the queue does; a finished run's and bob's resume refused; stopping, then stopping now, halting a run under way. |
 
 `src/chatddx/conftest.py` holds what the repl's tests share with these: `world`, the test World's inventory on free
 ports (`chatddx.test.world.free_world`), and `fake`, `faked` on the test's store. `chatddx.test.world.faked(world, get,

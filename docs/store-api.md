@@ -167,14 +167,6 @@ The vignette's bytes: from `Texts.get` when its source is a `DatabaseSource`, el
 `worker`, `queued`, `claimed`, `beat`, `ended`. `Status` is `queued`, `under way`, `finished`, `stopped` or
 `failed`; `ENDED` the last three.
 
-```
-AGENT: add
-Rows for the table below, before `waiting`: `placed`, `standing` and `stop`; `TAKEN_OUT`, `Placed`, `Standing` and `Stopped` beside `Job`.
----
-| `placed(runs) -> dict[UUID, Placed]` | Each run's latest job, and `ahead`: while it is queued and its owner hasn't paused, or it is to halt, how many jobs at its endpoint are under way, or queued before it in queue order and to be taken (their owner not paused, or to halt); else `None`. Runs without a job are left out. |
-| `standing(owner, lost) -> Standing` | Whether the owner has paused, how many of their jobs are queued and under way, and how many workers were seen within `lost`. |
-| `stop(owner, now=False) -> Stopped` | The owner's queued jobs ended stopped, why `TAKEN_OUT` (`"taken out of the queue"`), their runs left as they are; with `now`, their jobs under way asked to halt. The runs taken out and those halting. It notifies as `end` does. |
-```
 | Method | Returns / raises |
 | --- | --- |
 | `put(owner, run, endpoint, slots, score, scorers=None) -> Job` | Queues a job for a started run, its scorers deduplicated and sorted. `UnderWay("run <id> has something under way")` when the run has a job queued or under way; `ForeignKeyViolation` for a run that hasn't started; `CheckViolation` at tier 2 for scorers without `score`. |
@@ -190,6 +182,9 @@ Rows for the table below, before `waiting`: `placed`, `standing` and `stop`; `TA
 | `end(job, worker, status, why=None) -> bool` | Ends a job the worker holds. `ValueError` for a status not in `ENDED`. |
 | `requeue(job, worker, why=None) -> bool` | Puts a job the worker holds back in the queue. |
 | `waiting() -> int` | How many jobs are queued or under way. |
+| `placed(runs) -> dict[UUID, Placed]` | Each run's latest job, and `ahead`: while it is queued and its owner hasn't paused, or it is to halt, how many jobs at its endpoint are under way, or queued before it in queue order and to be taken (their owner not paused, or to halt); else `None`. Runs without a job are left out. |
+| `standing(owner, lost) -> Standing` | Whether the owner has paused, how many of their jobs are queued and under way, and how many workers were seen within `lost`. |
+| `stop(owner, now=False) -> Stopped` | The owner's queued jobs ended stopped, why `TAKEN_OUT` (`"taken out of the queue"`), their runs left as they are; with `now`, their jobs under way asked to halt. The runs taken out and those halting. It notifies as `end` does. |
 
 In the transaction of the change, `put`, `halt`, `pause`, `end` and `requeue` notify `WORKERS` (`notify.py`), and
 `put`, `end` and `requeue` the run's channel with `JOB` and the status the job is left in.
