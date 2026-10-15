@@ -134,8 +134,9 @@ boots it in a VM.
   `all_proxy`, in either case, unset for them even when the host sets them for every service.
 - **The test**: the sample World copied out of the store, and its secret in a file. Through the operator's command,
   init-data and a password; then the fake engines. Through nginx, with a certificate made for the test: a typed case
-  run by the portal, sent and scored by a worker; the headers; a 429 after a burst of sign-ins. Last, a worker that
-  doesn't see a proxy set for every service.
+  run by the portal, sent and scored by a worker; the headers; a 429 among sign-ins sent at once. Last, a worker that
+  doesn't see a proxy set for every service. It passes, run by emulation in a cloud session as
+  `agents/nixos-test-procedure.md` says.
 - Open:
   - static files from nginx rather than the app, left with caching the build (`agents/wip-portal.md`, "Open");
   - a `script-src` and `/api/docs` (`agents/wip-clearance.md`, "Before real patient data", Headers);

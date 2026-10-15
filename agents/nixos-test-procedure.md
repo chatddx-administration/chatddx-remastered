@@ -259,3 +259,4 @@ About 20 minutes up to the end of subtest 2. With KVM it would be a few minutes.
 - **First run**: subtests 1 and 2 passed; subtest 3 failed on `curl -sfI` (see "What went wrong on the way").
 - **Second run**: subtests 1 and 2 passed, and the headers; the limit didn't answer 429 to sign-ins in a row (see
   "What went wrong on the way"). Its timings were within 10% of the first's.
+- **Third run**: passed, all four subtests, the script in 1,146 s (subtests 1 to 4: 248, 45, 70 and 5 s).
