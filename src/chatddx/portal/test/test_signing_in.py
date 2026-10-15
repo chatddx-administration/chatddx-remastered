@@ -120,7 +120,7 @@ def test_the_portal_s_pages_aren_t_the_api_s(client: TestClient) -> None:
     assert all(path.startswith("/api/") for path in described["paths"])
 
 
-def test_chatddx_portal_serves_the_portal_and_the_api(
+def test_chatddx_run_serves_the_portal_and_the_api(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     heard: list[tuple[object, str, int]] = []
@@ -129,7 +129,7 @@ def test_chatddx_portal_serves_the_portal_and_the_api(
         heard.append((served, host, port))
 
     monkeypatch.setattr(uvicorn, "run", run)
-    cli.main(["portal", "--world", str(TEST), "--bind", "127.0.0.1:9999"])
+    cli.main(["run", "--world", str(TEST), "--bind", "127.0.0.1:9999"])
     [(served, host, port)] = heard
     assert isinstance(served, FastAPI) and (host, port) == ("127.0.0.1", 9999)
     paths = ("home", "signing_in_page", "signing_in", "signing_out", "me")

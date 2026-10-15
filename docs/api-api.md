@@ -489,6 +489,13 @@ or `CHATDDX_WORLD`; the bundled facts, the World's and those given; and `--bind`
 `HOST:PORT` is `SystemExit("api: bind to HOST:PORT, not '<bind>'")`. `uvicorn.run` serves `app(world.inventory, facts,
 settings.database())`.
 
+```
+AGENT: rename
+`chatddx portal` is renamed `chatddx run` (agents/wip-deploy.md).
+---
+`chatddx run` takes the same arguments, and `--watch`, and serves `chatddx.portal.app.app` the same way, with a worker
+in its process (`worker=True`), its `SystemExit` saying `run:` (`src/chatddx/cli.py:_serve`; agents/wip-portal.md).
+```
 `chatddx portal` takes the same arguments and serves `chatddx.portal.app.app` the same way, with a worker in its
 process (`worker=True`), its `SystemExit` saying `portal:` (`src/chatddx/cli.py:_serve`; agents/wip-portal.md).
 

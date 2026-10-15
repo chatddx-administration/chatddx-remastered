@@ -11,6 +11,9 @@ databases. It is enforcement, not curation: sending case-derived content to an e
 engines included, is the system's one hard block (`docs/chatddx.md`, "Findings and errors"). The factors and the
 ledger provide the means; the runner enforces.
 
+Decided: this plan also holds every concern about running real patient data until it is resolved (see "Before real
+patient data").
+
 ## What holds now
 ### Vetted endpoints
 Until clearance has a database grant, a World inventory's `[cleared]` table (`docs/inventory.md`, "Clearance") says
@@ -131,6 +134,105 @@ The gate enforces it against the inventory's `[cleared]` table until the clearan
    endpoints, by what (the edge, the person, or the client's address), and whether the repl falls under the same
    rule.
 
+## Before real patient data
+The healthcheck at 08ae453 (`healthchecks/2026-10-14-08ae453.md`) lists what has to hold before real patient data, or
+the public web, in its §4, by weight, and its bug 7. Each is restated here as the code stands since the worker took
+runs out of the app, in the healthcheck's order, with where else it is tracked. Some of them a deployment can carry
+(`agents/wip-deploy.md`); the code has to carry the rest.
+
+1. **Signing in** can stall the app.
+   - Each attempt runs argon2id with its defaults (t=3, 64 MiB, p=4; `src/chatddx/identity/identity.py:72`), and an
+     unknown login pays the same through a dummy hash. Both sign-in routes are synchronous
+     (`src/chatddx/api/people.py:103-114`, `src/chatddx/portal/pages.py:120-135`) and share anyio's 40 threads with
+     every synchronous route. Nothing limits the attempts, nor a password's length. About 40 concurrent POSTs stall
+     every page and hold about 2.5 GiB (the healthcheck's arithmetic, not measured).
+   - Every request opens a Postgres connection before its token is checked (`src/chatddx/api/people.py:55-70`,
+     `src/chatddx/portal/pages.py:68-78`), and a portal error page opens a second (`src/chatddx/portal/pages.py:100`).
+   - Tracked: `docs/api.md` ("Outstanding", "Signing in") and `docs/identity.md` ("Open design issues") take no limit
+     until Keycloak is in front, while `agents/wip-portal.md` ("Protection") puts the portal on the public web before
+     Keycloak, with its limit open. The connection before the token is untracked.
+2. **Connections** are unbounded.
+   - There is no pool: each request opens its own (`src/chatddx/api/state.py:21-33`).
+   - A run's event stream holds two for as long as it is open, the request's and its own
+     (`src/chatddx/api/runs.py:215-229`, `src/chatddx/api/telling.py:166`), and each app one more for its listener
+     (`src/chatddx/api/listening.py:114`). `docs/api.md` ("Outstanding", "Serving") and `docs/worker.md` ("Smaller
+     issues") count one per stream.
+   - A worker holds one, and two more and a thread for each job it holds (`src/chatddx/worker/worker.py:178-185`). A
+     run's job is held to its endpoint's `max_jobs`, but a scoring alone holds no slots
+     (`src/chatddx/api/scores.py:45-47`), and a job asked to halt or at an endpoint the inventory doesn't name isn't
+     counted (`src/chatddx/store/queue.py:342`), so a worker takes as many of those as are queued.
+   - The quotas read a count and then insert, so a burst can overshoot them: `TYPED_PER_DAY`
+     (`src/chatddx/bench/cases.py:124-131`) and `RUNS_PER_DAY` (`src/chatddx/bench/runs.py:129-138`). Scoring again
+     has no quota, beyond one job per run at a time.
+   - So one account can exhaust Postgres' default 100 connections, and replicas multiply what each process holds
+     (`agents/wip-deploy.md`, "Containers for Kubernetes").
+3. **Shutdown.** The worker resolved most of it: nothing in the app grows with each run, a stopping worker queues
+   what it holds again, and a killed one's jobs are claimed again once lost (`docs/worker.md`, "Stopping"). Left:
+   - a stopping worker's sending has no deadline (`docs/worker.md`, "Smaller issues");
+   - past its deadline, a stopping worker waits with a timeout of 0 (`src/chatddx/worker/worker.py:144-147`), so it
+     beats the queue, a transaction each time, as fast as it can until its last run stops;
+   - uvicorn waits for open responses before the app's lifespan ends, and a run's event stream ends only when its job
+     does (`src/chatddx/api/telling.py:174-185`), so under `chatddx portal` a watched run may hold a shutdown up until
+     it ends. Read, not tried.
+4. **Typed cases** are kept for good.
+   - `source.text` is insert-only (`src/chatddx/store/migrations/0016-t2-source.sql`), only the admin can delete a
+     text (`docs/store.md`, "Texts"), and no route or command erases a text or its family.
+   - A refused run leaves its text stored and counted against `TYPED_PER_DAY` (the healthcheck's bug 7): the home page
+     stores the text (`frontend/src/islands/Home.svelte:78`) before it starts the run (:83-85). A retry of the same
+     text reuses its family (`agents/wip-portal.md`, "Typed cases"), but an edited text or a reloaded page makes a
+     new one, and a job that fails in the worker leaves its text too.
+   - Why a job failed is kept for good as well, since the writer can't delete from `worker.job`
+     (`src/chatddx/store/migrations/0020-t1-worker.sql`), and it can quote what was sent (10).
+   - The fingerprints are unkeyed, the typed text's (`src/chatddx/bench/cases.py:133`) and a run's
+     (`src/chatddx/runner/rounds.py:152-161`); see "Typed vignettes".
+   - Untracked elsewhere: how long a typed text is kept, and how it is erased.
+5. **Headers.** There is no CSP, frame-ancestors, nosniff, Referrer-Policy or HSTS (`src/chatddx/api/app.py:app`,
+   `src/chatddx/portal/app.py:app`). `/api/docs` and `/api/openapi.json` are public, and Swagger UI loads
+   `swagger-ui-dist@5` from jsdelivr, with a floating major and no SRI, onto the session cookie's origin. With no
+   inline script, `script-src 'self'` fits every portal page. Untracked but for `agents/wip-deploy.md`, which leaves
+   open whether the app or the proxy in front sets them.
+6. **Engine errors** are stored verbatim: a rejected request's body (`src/chatddx/runner/send.py:158-160`), with only
+   `prompt_token_ids` stripped (`src/chatddx/ledger/call.py:47`), and the engine's message in `Call.error`
+   (`src/chatddx/runner/wire.py:17-35`). An engine that echoes its input in an error puts vignette text in the store.
+   They are served with a run's items only, which are no-store. Not checked against real vLLM.
+7. **Digests** work as capabilities.
+   - `GET /api/components/{digest}` checks no visibility (`src/chatddx/api/world.py:77-87`), by design: appendices and
+     expectations aren't sensitive (`docs/chatddx.md`; `docs/api.md`, "What a person sees").
+   - `Seen.variation` checks only a part's kind (`src/chatddx/bench/seen.py:241-246`), so `/threads/{id}/variation`
+     shows another person's unshared chunk, and `POST /runs` with `parts` runs one (`src/chatddx/api/runs.py:84-90`).
+     Untracked.
+   - `/threads/{id}/proposal` returns appendix text without no-store (`src/chatddx/api/threads.py:384-403`).
+8. **Sessions** and people.
+   - A password change leaves sessions open (`src/chatddx/store/people.py:87-94`), and so does signing in again.
+   - Nothing schedules `People.purge_sessions`, and no command runs it.
+   - `Role` is shown, never checked.
+   - No command deactivates anyone, though `People` can (`src/chatddx/store/people.py:81-84`), and a deactivated
+     person's queued jobs still run: the worker finds a job's owner by id, active or not
+     (`src/chatddx/worker/worker.py:208`).
+   - `chatddx person password` refuses an empty password; `People.set_password` doesn't.
+   - Tracked in `docs/identity.md` ("Open design issues"), but for signing in again, the deactivated person's jobs and
+     the empty password.
+9. **Migrations** are known by name only (`src/chatddx/store/migrate.py:27-32`). Applied files were edited in place
+   before 08ae453, and none has been since. Tracked: `docs/store.md` ("Known gaps") freezes them, or keeps their
+   checksums, before a shared database.
+10. **Error text** goes to clients.
+    - Any exception in a job becomes the job's `why` (`src/chatddx/worker/worker.py:189-191`), served by
+      `GET /api/runs` and `GET /api/runs/{run}` (`src/chatddx/api/runs.py:246-257`), which aren't no-store, shown on
+      the portal's runs pages, and told in a run's `error` event (`src/chatddx/api/telling.py:113-115`). The worker
+      logs it with its traceback (:190). A scoring's refusal carries its exception's text in `run.scored`.
+    - The gate's messages hold an `OSError` (`src/chatddx/runner/gate.py:40-43`), answered as a 422 and shown on the
+      portal's error page.
+    - `docs/migrations.md` ("Tier 1", `0020-t1-worker.sql`) says why a job failed can quote what it was sending;
+      `docs/api.md` ("Case-derived content") says nothing outside its no-store places carries any.
+11. **Writes** are unlimited. Appendices, threads, forks, edits, components and scorings have no count or size limit,
+    and the app none on a request's body; a typed text's size is checked only once its body is parsed
+    (`src/chatddx/bench/cases.py:112-116`). The only limits are runs a day, items a run and seeds.
+12. **Proxies.** The engine client sends through urllib's default opener (`src/chatddx/runner/wire.py:112-116`), which
+    follows `HTTP_PROXY` and `HTTPS_PROXY`, so vignette-bearing requests go through any proxy the environment names;
+    so do confirming an endpoint (`src/chatddx/inventory/serving.py:104`) and the web search tool
+    (`src/chatddx/tools/web_search.py:23`). Take: the client opens without proxies, rather than every deployment
+    keeping them out of its environment (`agents/wip-deploy.md`, "The NixOS module").
+
 ## When to build it
 Nothing built so far waits on it:
 - The gate reads `Inventory.cleared_for` once per endpoint it admits (`gate.bar`), for runs and judges. A database
@@ -146,4 +248,6 @@ It becomes the next blocker at:
   ("Tools"). The runner's tests declare the test World's source not sensitive for them, and `plan-web` can't call its
   tool on vLLM 0.24 anyway (`docs/vllm.md`, item 10);
 - the first real sensitive source, typed cases from clinicians included, or the first runs on `pelle` and `malborg`
-  whose clearance should be auditable from the database rather than from the inventory's git history.
+  whose clearance should be auditable from the database rather than from the inventory's git history;
+- a deployment: `agents/wip-deploy.md` is solidified only once this plan, "Before real patient data" included, is
+  resolved.

@@ -318,6 +318,12 @@ alice signed in by a bearer token and bob for what isn't his to see. They speak 
 client over HTTPS, since the cookie is only sent over it. Runs are sent to the fake vLLM serving the test World's
 endpoints on ports nothing else uses.
 
+```
+AGENT: rename
+`chatddx portal` is renamed `chatddx run` (agents/wip-deploy.md).
+---
+The app the tests serve runs a worker in its process, as `chatddx run` does. What isn't a row is told only to a
+```
 The app the tests serve runs a worker in its process, as `chatddx portal` does. What isn't a row is told only to a
 stream listening as it happens, so a test that looks for it pauses alice's queue, starts the run, reads the stream's
 first row, by when it listens, and then lets the worker take the job.

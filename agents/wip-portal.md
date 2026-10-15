@@ -12,9 +12,10 @@ it.
 2. **Decided: swift is the portal now.** There is no swift page apart from the portal: what swift showed is the
    portal's home page. A theme skeleton is extracted from swift-dx-guide and its reusable components are salvaged;
    that work sets the structure of the portal's frontend, and shows what Lovable has to teach (see "Swift").
-3. **Decided: `chatddx portal`** serves the portal, and starts everything the portal needs with it: the API now, the
-   worker once the API queues runs (see "P3b, concretely"). It is a convenience for development: a deployment runs
-   the HTTP server, the API and the worker as separate systemd services on NixOS (`docs/worker.md`, "Where it runs").
+3. **Decided: `chatddx run`** serves the portal, and starts everything the portal needs with it: the API and a
+   worker (see "P3b, concretely"). It is a convenience for development: a deployment runs the HTTP server, the API and
+   the worker as separate systemd services on NixOS (`docs/worker.md`, "Where it runs"; `agents/wip-deploy.md`). It
+   was `chatddx portal`.
 4. **Phases 0 to 4, and the first half of 5, are built** (see "Built"): `chatddx.portal`, signing in and out,
    `Cache-Control: no-store`, a code beside each error's detail in the API (decided); then the frontend in
    `frontend/`, swift's theme and components, and the home page, the first island; then the pages to read; then the
@@ -83,7 +84,7 @@ where it is interactive. Its look and the structure of its frontend come from sw
 
 ### P3b, concretely
 Decided:
-- **`chatddx portal`** serves the app, the portal at `/` and the API at `/api/`, as `chatddx api` serves the API
+- **`chatddx run`** serves the app, the portal at `/` and the API at `/api/`, as `chatddx api` serves the API
   alone, with the same `--world`, `--facts` and `--bind`. It starts everything the portal needs with it: a basic
   worker in its process (`docs/worker.md`, "Where it runs"), and the frontend's build when it has one.
 - **One app.** `src/chatddx/portal/`, a package beside `src/chatddx/api/`, mounted at `/` in the same FastAPI app as
@@ -361,7 +362,7 @@ Phase 0:
   form again, with the login kept. Forms pass `same_origin` first. Every page says `Cache-Control: no-store`, since
   pages are per person and most will show case-derived content.
 - **`src/chatddx/portal/templates/`**: `base.html`, `sign-in.html` and `home.html`, autoescaped.
-- **`chatddx portal`** (`src/chatddx/cli.py:_portal`, sharing `_serve` and `_serving` with `chatddx api`).
+- **`chatddx run`** (`src/chatddx/cli.py:_run`, sharing `_serve` and `_serving` with `chatddx api`).
 - **The API**: `Cache-Control: no-store` on a family's vignette, a run's items, a score's items and a run's events
   (`src/chatddx/api/state.py:no_store`, `NO_STORE`); every refusal as `{"detail", "code"}`
   (`src/chatddx/api/app.py:STATUSES`, `CODES`; `src/chatddx/api/schemas.py:Error`), described in `docs/api.md` and
@@ -396,7 +397,7 @@ Phase 1:
   from `settings.portal_assets()`, `CHATDDX_PORTAL_ASSETS` or else `frontend/dist`
   (`src/chatddx/portal/app.py:app` takes another for the tests). The templates are themed, and Tailwind reads them
   (`@source` in `portal.css`, as a glob: the directory alone wasn't read).
-- **`chatddx portal --watch`** runs `pnpm install --frozen-lockfile` and then `pnpm run watch` in `frontend/` for as
+- **`chatddx run --watch`** runs `pnpm install --frozen-lockfile` and then `pnpm run watch` in `frontend/` for as
   long as the portal is served. Without it, and nothing built, it says so and serves unstyled pages.
 - **The flake**: Node 22 and pnpm (11) in the dev shell, and `packages.frontend`, the build, from the templates and
   `frontend/`, its dependencies fetched by `fetchPnpmDeps` (`fetcherVersion = 4`) under a hash that changes with
@@ -520,7 +521,7 @@ What the portal needs below its pages that isn't built:
    `docs/identity.md`, "Z1: what each role is shown").
 
 ## Phases
-0. **Before the first page**, built (see "Built"): `chatddx portal`, `chatddx.portal` mounted beside the API, signing
+0. **Before the first page**, built (see "Built"): `chatddx run`, `chatddx.portal` mounted beside the API, signing
    in and out, `Cache-Control: no-store` where case-derived content is served, and the API's error codes.
 1. **Swift**, built (see "Built"): the frontend's structure, Node, Vite and the build in the flake; Svelte, TypeScript
    and Tailwind; types from `/api/openapi.json`. The theme skeleton and the salvaged components, then the home page,

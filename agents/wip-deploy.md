@@ -8,8 +8,9 @@ containers for a Kubernetes cluster. Nothing of either is built.
 1. **Decided: deploy is the last wip.** It can be solidified only once every other wip is resolved, and
    `agents/wip-clearance.md` above all: a deployment is where real patient data first arrives, and what has to hold
    before then is listed there ("Before real patient data").
-2. **Decided: `chatddx portal` is renamed `chatddx run`**, so that the NixOS module's systemd services each run a
-   command of their own (see "Renaming `chatddx portal`").
+2. **Decided, built: `chatddx portal` is now `chatddx run`**, the portal, the API and a worker in one process, with
+   `--watch`, as the convenience for development. The NixOS module's systemd services each run a command of their own
+   (see "Services and commands").
 3. **Decided: two targets**, a NixOS module (see "The NixOS module") and containers for a Kubernetes cluster (see
    "Containers for Kubernetes"). Which of them serves real patient data first is open.
 
@@ -22,12 +23,13 @@ containers for a Kubernetes cluster. Nothing of either is built.
 
   | Command | Serves |
   |---|---|
+  | `chatddx run` | the portal at `/` and the API at `/api/`, with a worker on a thread of its process; `--watch` builds the frontend with pnpm as it changes |
   | `chatddx api` | the API at `/api/`, with no worker; `chatddx worker` runs beside it |
-  | `chatddx portal` | the portal at `/` and the API at `/api/`, with a worker on a thread of its process; `--watch` builds the frontend with pnpm as it changes |
   | `chatddx worker` | the queue for a World, until SIGTERM or SIGINT; what it holds then is queued again |
   | `chatddx migrate` | the migrations, as the admin, up to a tier (`docs/store.md`, "Tiers") |
   | `chatddx fake-engines` | the World's fake engines, for development |
 
+  Nothing serves the portal without a worker.
 - **Stopping a worker**: its scorings go on for `settings.WORKER_DEADLINE` (60 s), which is to be "within the stop
   timeout of the service that runs the worker" (`src/chatddx/settings.py`). systemd's default stop timeout is 90 s;
   Kubernetes' default grace period is 30 s.
@@ -48,53 +50,70 @@ containers for a Kubernetes cluster. Nothing of either is built.
 - **Where it is to run**, in two places that don't agree yet:
   - `docs/chatddx.md` ("Target stack"): the orchestrator "Runs in Kubernetes, writes the start-ups and hosts the
     portal", and each inference server serves vLLM in a NixOS container;
-  - `docs/worker.md` ("Where it runs") and `agents/wip-portal.md` (item 3 of "Start with this"): a deployment runs
-    the HTTP server, the API and the worker as separate services, systemd services on NixOS.
+  - `docs/worker.md` ("The deployment"): decided, "the HTTP server, the API and the worker as separate systemd
+    services on NixOS", with the module's stop timeout above the worker's deadline. What the HTTP server is stays
+    open there: the portal's pages served apart from the API, or a proxy in front of both.
 - **Identity**: "The deployment is to sit behind Keycloak" (`docs/identity.md`, "Keycloak"), which isn't decided
-  further.
+  further. `docs/api.md` ("Outstanding", "Signing in") takes a proxy such as oauth2-proxy in front.
 
-## Renaming `chatddx portal`
-Decided: `chatddx portal` becomes `chatddx run`.
-- `chatddx run` is what `chatddx portal` is now: the portal, the API and a worker in one process, and `--watch`. It is
-  the convenience for development, and the README's command.
-- Take: `chatddx portal` then serves the portal and the API without a worker (`chatddx.portal.app.app` with
-  `worker=False`), the web service of a deployment. Each service runs one command, with no flag that changes what it
-  serves:
+## What a deployment runs
+- **The app**: one Python process (uvicorn), the portal's pages at `/`, rendered on the server with Jinja2, and the API
+  at `/api/`. They are one FastAPI app, not two services: the portal mounts the API (`src/chatddx/portal/app.py:app`),
+  calls its route functions, and shares its `__Host-` session cookie and its same-origin check. `chatddx api` serves
+  the API alone, without the pages.
+- **The frontend's build**: static files, hashed JS and CSS, fonts and Vite's manifest, built by Nix
+  (`packages.frontend`). There is no Node at run time: the islands are Svelte compiled for the browser, with no
+  server-side rendering, and pnpm and Node only build them (`--watch` runs `vite build --watch`). The app serves them
+  at `/static/`, and reads the manifest to name them in its pages, so it needs `CHATDDX_PORTAL_ASSETS` even when a
+  proxy serves the files.
+- **Workers**: `chatddx worker`, one or more, which send queued runs and score them, judges included.
+- **Engines**, which both reach: the worker to send, and the app to confirm an endpoint before it starts a run
+  (`src/chatddx/runner/gate.py:admit`, a request with the endpoint's secret). vLLM runs on the inference hosts, outside
+  the module; `chatddx fake-engines` could stand in on a demo host.
+- **PostgreSQL 16**: the database, the admin and the writer, and `LISTEN`/`NOTIFY` for a run's events and for waking
+  workers.
+- **Migrations**: `chatddx migrate`, once, as the admin, before the app and the workers start.
+- **The World**: a directory both read, with sensitive vignettes in it.
+- **Secrets**: the endpoints' credentials, which both the app and the workers need, and the database's, beyond peer
+  authentication.
+- **In front**: TLS and a reverse proxy, and later Keycloak.
+- **The operator's commands**, not services: `chatddx person add` and `password`, `init-data`, `import-engine` and
+  `repl`, with the same World and database as the services.
+- **Something on a schedule**, once there is a command for it: purging expired sessions (`agents/wip-clearance.md`,
+  "Before real patient data", Sessions).
 
-  | Service | Command |
-  |---|---|
-  | the portal, with the API | `chatddx portal` |
-  | the API alone, where nothing serves the portal | `chatddx api` |
-  | each worker | `chatddx worker` |
-  | the migrations, before the others start | `chatddx migrate` |
+## Services and commands
+Take: each service runs one command, with no flag that changes what it serves; `chatddx portal`, free since the
+rename, serves the app without a worker (`chatddx.portal.app.app` with `worker=False`).
 
-- What it touches:
-  - `src/chatddx/cli.py`: `_portal`, its parser, and the messages that say `portal:`; the tests that call it
-    (`src/chatddx/portal/test/test_frontend.py:108`, `src/chatddx/portal/test/test_signing_in.py:132`);
-  - as suggestions, the docs that name it: README ("The portal"), `docs/worker.md` ("Where it runs"),
-    `docs/worker-api.md` ("The command"), `docs/api-api.md` ("The command") and `docs/api.md` ("Tests");
-  - `agents/wip-portal.md`: item 3 of "Start with this", "P3b, concretely", "Built" and "Phases".
-- Open: what "the HTTP server" is beside "the API" in `docs/worker.md` ("Where it runs"). Take: a reverse proxy in
-  front of `chatddx portal` (see "The NixOS module"), since the portal's islands call the API on the portal's own
-  origin.
+| Service | Command |
+|---|---|
+| the app, the portal with the API | `chatddx portal` (not built) |
+| the API alone, where nothing serves the portal | `chatddx api` |
+| each worker | `chatddx worker` |
+| the migrations, before the others start | `chatddx migrate` |
+
+So "the HTTP server" of `docs/worker.md` ("The deployment") is the proxy in front of the app, since the portal and
+the API are one app on one origin.
 
 ## The NixOS module
 A `nixosModules.default` in the flake, as `services.chatddx`:
 - **Options**: the package (`packages.default`) and the frontend (`packages.frontend`, as `CHATDDX_PORTAL_ASSETS`);
   the World; more facts; where to listen; the database's host and name; the tier to migrate to; how many workers; and
   a file of endpoint secrets.
-- **Services**:
+- **Services** (see "Services and commands"):
   - `chatddx-migrate`, a oneshot as the admin, that the others start after;
   - `chatddx-portal`, `chatddx portal` as the writer;
   - `chatddx-worker@`, `chatddx worker` as the writer, one instance per worker, with `TimeoutStopSec` above
     `WORKER_DEADLINE`;
-  - and once there is a command for it, a timer that purges expired sessions (`agents/wip-clearance.md`, "Before real
-    patient data", Sessions).
+  - a timer that purges expired sessions, once there is a command for it.
+- **The operator's `chatddx`**: Take: a wrapper on the system's PATH with the services' environment, run as the
+  writer, or as the admin for `migrate`.
 - **The database**: Take: `services.postgresql` 16 on the same host, its roles and database made as `setup.sql` makes
   them, with peer authentication mapped as AGENTS.md maps it. Two system users, one for the admin and one for the
-  writer, so that the web process can't act as the admin.
+  writer, so that the app can't act as the admin.
 - **Secrets**: endpoint credentials from a file outside the Nix store (`EnvironmentFile`, or systemd credentials),
-  under the names the inventory gives.
+  under the names the inventory gives, for the app and the workers alike.
 - **The World**: the Nix store is readable by every user of the host, so a World with a sensitive directory source
   isn't a store path. Take: the option is a path on the host as a string, readable by the writer alone, and only a
   World with no sensitive directory source may come from the store.
@@ -104,7 +123,7 @@ A `nixosModules.default` in the flake, as `services.chatddx`:
   `agents/wip-clearance.md` lists could be set here, though the Kubernetes target would need them too.
 - **Hardening**: the services sandboxed (`ProtectSystem=strict`, `PrivateTmp`, `NoNewPrivileges` and the like), and no
   `HTTP_PROXY` or `HTTPS_PROXY` in their environment, since the engine client follows them
-  (`agents/wip-clearance.md`, "Before real patient data").
+  (`agents/wip-clearance.md`, "Before real patient data", Proxies).
 - **A test**: Take: a NixOS VM test (`pkgs.testers.runNixOSTest`) in the flake's `checks` that boots the module with
   the test World and its fake engines, signs in and runs a case.
 - Open: whether the module also serves an inference host's vLLM from an endpoint's start-up, as `fake-engines` serves
@@ -113,7 +132,7 @@ A `nixosModules.default` in the flake, as `services.chatddx`:
 ## Containers for Kubernetes
 - **The image**: Take: built by Nix (`dockerTools.streamLayeredImage`) from `packages.default` and
   `packages.frontend`, so that it holds the flake's closure and nothing else, with `CHATDDX_REVISION` set from the
-  flake's revision. One image; each workload names its command.
+  flake's revision. One image; each workload names its command (see "Services and commands").
 - **Workloads**:
   - a Deployment for `chatddx portal`, with a Service and an Ingress, the event stream unbuffered there too;
   - a Deployment for `chatddx worker`, with `terminationGracePeriodSeconds` above `WORKER_DEADLINE`, since the
@@ -138,7 +157,7 @@ A `nixosModules.default` in the flake, as `services.chatddx`:
 
 ## Open
 - Which target serves real patient data first, and whether the other stays (`docs/chatddx.md` puts the orchestrator
-  in Kubernetes; `docs/worker.md` and `agents/wip-portal.md` name systemd on NixOS).
+  in Kubernetes; `docs/worker.md` decides systemd on NixOS).
 - Keycloak in front (`docs/identity.md`, "Keycloak"; `agents/wip-portal.md`, "Open"): which target runs it, and how it
   hands the app a login.
 - CI: what builds the image and the module's test, and runs `pytest` and the frontend's checks, before a deployment
