@@ -10,8 +10,8 @@ Checked against the code at fcef71a: the runner, the ledger, the gate, the facto
 Besides the HTTP requests people send the API and the portal, which are left aside here, "request" names an LLM
 request at every stage of its life, and one thing that is several:
 - **The layers it is built in**: chunks, a recipe, and the skeleton, "the frozen request" (`docs/factors.md`,
-  "Requests"; `docs/chatddx.md`, glossary). A configuration is "a request kept on a skeleton thread" in a suggestion
-  in `docs/chatddx.md` (`agents/wip-configurations.md`, I2).
+  "Requests"; `docs/chatddx.md`, glossary), and a configuration, "a request kept on a skeleton thread, each version
+  with the recipe it was compiled from" (`docs/chatddx.md`, "Intended evolution of configurations").
 - **What is sent**: "Rendering produces the request that is sent" (`docs/factors.md`, "Rendering"), and the
   glossary's wire body, "the exact request sent". What is fingerprinted is the request as rendered, without the
   streaming options and the `Authorization` header the wire adds.

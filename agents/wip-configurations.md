@@ -37,12 +37,11 @@ Checked against the code at fcef71a, and against the old chatddx's `docs/repl.md
 - **The "a fork" link** on a configuration's page opens the thread it was forked from, not the thread whose id is the
   edit's (`src/chatddx/portal/configurations.py`;
   `portal/test/test_varying.py:test_a_fork_links_the_configuration_it_was_forked_from`).
-- **The docs**: suggestions, as rule one has it, in `docs/chatddx.md`, `catalog.md`, `catalog-api.md`, `bench.md`,
-  `bench-api.md`, `api.md`, `api-api.md`, `repl.md`, `repl-api.md`, `repl-manual.md`, `facts-api.md` and
+- **The docs**: suggested, as rule one has it, and written in, in `docs/chatddx.md`, `catalog.md`, `catalog-api.md`,
+  `bench.md`, `bench-api.md`, `api.md`, `api-api.md`, `repl.md`, `repl-api.md`, `repl-manual.md`, `facts-api.md` and
   `factors.md`.
 
 ## Left
-- **The suggestions** wait for a human to write them in.
 - **Errors and refusals still say skeleton**, as W1 named titles and findings only: the cross-checks ("trial uses a
   judge skeleton", "judge uses a generation skeleton"), the gate ("the skeleton's tools would get content from source
   …"), `check_language` ("a compiled skeleton's language comes from its recipe") and the repl's `show configuration`,
