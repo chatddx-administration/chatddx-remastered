@@ -39,6 +39,15 @@ Every kind of component has threads except two:
 - compilations, which record how a skeleton was made and which nobody edits. Skeleton edits point at them (see
   "Recipes").
 
+```
+AGENT: replace
+Built (agents/wip-engine-part.md, stage 1): the facts about a model are a kind with threads.
+---
+That includes the kinds ops and developers write, such as models, engines, the facts about models, expectation schemas
+and canary sets. They are rarely edited, but threads are where names attach for everything except cases. The facts
+about a model are a thread of the archive's, named by the model, which `chatddx init-data` writes from the facts files
+(docs/facts.md); correcting a fact is a new version of it.
+```
 That includes the kinds ops and developers write, such as models, engines, expectation schemas and canary sets. They
 are rarely edited, but threads are where names attach for everything except cases.
 
@@ -75,11 +84,31 @@ A variation worth keeping becomes an edit of its thread, or a fork. Configuratio
 recipe parts they use, what is said about them and their runs, not by their names, which are optional.
 
 ### Recipes
+```
+AGENT: replace
+Built (agents/wip-engine-part.md, stage 1): a recipe names its engine, and a compilation the facts it was compiled
+against.
+---
+A recipe has no thread of its own; its history is kept on the skeleton thread it compiles to. Each edit of a skeleton
+thread can name the compilation that produced its skeleton, and the compilation holds the recipe, which names its
+engine, and the facts about the engine's model it was compiled against, when there are any (docs/factors.md,
+"Compilation"). The compilation must be one of that very skeleton, and only skeleton edits name one. A hand-written
+skeleton has no compilation, so its edits name none.
+```
 A recipe has no thread of its own; its history is kept on the skeleton thread it compiles to. Each edit of a skeleton
 thread can name the compilation that produced its skeleton, and the compilation holds the recipe (docs/factors.md,
 "Compilation"). The compilation must be one of that very skeleton, and only skeleton edits name one. A hand-written
 skeleton has no compilation, so its edits name none.
 
+```
+AGENT: replace
+Built (agents/wip-engine-part.md, stage 1): the facts compiled against count for as little as the code that compiled.
+---
+A skeleton thread's versions hold the recipes people chose: an edit is written when its skeleton or its recipe
+differs from the head's, so a recipe that compiles to the head's skeleton is a new version. The head's recipe
+compiled by other code, or against other facts, is none, or every configuration init-data loads would get a version
+at each deploy and at each correction of a fact, and its forks a proposal that changes nothing.
+```
 A skeleton thread's versions hold the recipes people chose: an edit is written when its skeleton or its recipe
 differs from the head's, so a recipe that compiles to the head's skeleton is a new version. The head's recipe
 compiled by other code is none, or every configuration init-data loads would get a version at each deploy, and its
@@ -100,6 +129,15 @@ The old chatddx let a configuration extend another and follow it automatically; 
 when someone accepts a proposal.
 
 ### What has moved on
+```
+AGENT: replace
+Built (agents/wip-engine-part.md, stage 1): a configuration's engine and facts are looked at too.
+---
+For any thread, the catalog lists the references of its head that could be updated. It looks at:
+- the head's own references, such as a trial's skeleton, engine and cases;
+- for a configuration, the parts of its recipe, its engine among them, and the facts it was compiled against;
+- the appendices of each case the head references, since cases have no threads of their own.
+```
 For any thread, the catalog lists the references of its head that could be updated. It looks at:
 - the head's own references, such as a trial's skeleton, engine and cases;
 - for a configuration, the parts of its recipe;
@@ -109,6 +147,15 @@ A reference is *behind* when a live thread that held it has since moved on to an
 by several threads, so a reference can be behind several of them: for example, when a chunk was forked and both threads
 moved on. Deleted threads aren't proposed.
 
+```
+AGENT: add
+Built (agents/wip-engine-part.md, stage 1): a paragraph before this one.
+---
+A configuration's facts are behind only when their thread's head would change what it sends: compiling its recipe
+against the newer facts gives another skeleton, or is refused. A correction it doesn't reach, such as a level it
+doesn't ask for or the model's context length, leaves it as it is, since a version compiled against it would hold the
+same skeleton and recipe, and write nothing (see "Recipes").
+```
 A case is also behind when its family has a newer binding (see "Families and repairs"). The catalog then offers its
 *replacement*: the same appendix texts, bound to the family's current vignette. Cases without appendices are flagged
 this way too.
@@ -133,6 +180,12 @@ collaborator. A subject nothing has been said about has no name, no owner, and n
 | Deleted | a flag | an entry restoring the subject | see "Deleting" |
 | Language | a language, only on a family | nothing: it can only be replaced | see "Languages" |
 | Varied | an edit of a configuration, only on a run | nothing: it can only be replaced | see "What a run ran" |
+```
+AGENT: replace
+Built (agents/wip-engine-part.md, stage 1): the engine is a part.
+---
+| Replaced | a part and the chunk or engine it was set to, or none; a run has one per part | nothing: it can only be replaced | see "What a run ran" |
+```
 | Replaced | a part and the chunk it was set to, or none; a run has one per part | nothing: it can only be replaced | see "What a run ran" |
 
 Every field but the language, the varied edit and the replaced parts can be said about any subject. The fields the
@@ -175,6 +228,19 @@ with them; loading the sample data again restores a deleted fork rather than for
 What the portal hides is open (see "Open design issues").
 
 ### What a run ran
+```
+AGENT: replace
+Built (agents/wip-engine-part.md, stage 1): the engine is a part a variation replaces. The section's two paragraphs.
+---
+The ledger records the trial a run ran (docs/ledger.md); what a person called it and what they varied are said here.
+As a run starts, the bench names it by its variation's label and says what it varied: the configuration's edit it
+was built on, and each part replaced over it, by the chunk or engine it was set to, or none for a part taken out. A run
+started from a trial alone, as the runner starts one, says neither. Running again says what the run it repeats said.
+
+So a run of a variation nobody saved links the configuration it came from, while the ledger keeps what was sent. The
+database holds a varied edit to a configuration's, a replaced part's chunk to a stored one of that part, and a
+replaced engine to a stored engine.
+```
 The ledger records the trial a run ran (docs/ledger.md); what a person called it and what they varied are said here.
 As a run starts, the bench names it by its variation's label and says what it varied: the configuration's edit it
 was built on, and each part replaced over it, by the chunk it was set to, or none for a part taken out. A run started
@@ -204,6 +270,15 @@ its own source and id.
 What a component holds is described by what tells it apart from others of its kind, and the components it uses are
 shown by their titles in turn.
 
+```
+AGENT: replace
+Built (agents/wip-engine-part.md, stage 1): the engine is a part, described last.
+---
+A configuration is described by its recipe's parts, translations, toolset and engine included, the engine last, when a
+compilation of it is stored: "ddx · case · management-plan · recommended · off · qwen3-8b@pelle". A judge's recipe
+says so first. Without a stored compilation, as for a hand-written skeleton, it is shown by its purpose and the start
+of its digest: "generation configuration 1a2b3c".
+```
 A configuration is described by its recipe's parts, translations and toolset included, when a compilation of it is
 stored: "ddx · case · management-plan · recommended · off". A judge's recipe says so first. Without a stored
 compilation, as for a hand-written skeleton, it is shown by its purpose and the start of its digest:
@@ -214,6 +289,13 @@ Each kind is described by:
 | Component | Described by | Example |
 | --- | --- | --- |
 | Chunk | Its values or the opening words of its text. | `temperature 1.0, top_p 1.0` or `"{vignette}{appendices}"` |
+```
+AGENT: add
+Built (agents/wip-engine-part.md, stage 1): rows for the chunks that hold intents, after "Chunk".
+---
+| Chunk (recommended sampling) | That it is recommended, and the values it sets over the recommendation. | `recommended sampling` or `recommended sampling, max_output_tokens 512` |
+| Chunk (reasoning level) | The level it asks for, and its budget. | `reasoning off` or `default reasoning, budget 2048` |
+```
 | Chunk (few-shot) | How many messages it has. | `few-shot, 2 messages` |
 | Chunk (output) | Its contract, and its schema's title or properties. | `native output: management_plan_v1` |
 | Chunk (toolset) | Its tools. | `with web_search` |
@@ -225,6 +307,12 @@ Each kind is described by:
 | Model | Its repository. | `google/gemma-3-12b-it` |
 | Local engine | Its model, server and GPU. | `google/gemma-3-12b-it on vllm 0.24.0 (NVIDIA GeForce RTX 5090)` |
 | Remote engine | Its model and provider. | `gpt-4o from openai` |
+```
+AGENT: add
+Built (agents/wip-engine-part.md, stage 1): a row after "Remote engine".
+---
+| Facts | The model they are about. | `facts about Qwen/Qwen3-8B-AWQ` |
+```
 | Trial | Its skeleton, its engine, and how many cases and seeds it has. | `plan on qwen3-8b@pelle, 20 cases, 1 seed` |
 | Scoring | Its scorer and how many expectations it has. | `scorer chatddx.scorers.metrics:score v2 against 20 expectations` |
 | Judge | Its skeleton and engine. | `judge grader on qwen3-8b@pelle` |
@@ -407,10 +495,28 @@ writes at the same moment can leave a person several expectations to choose from
 - **Judges aren't checked for language.** A judge's language could be compared with the cases its scoring grades, the
   way lints check a trial's. An English judge grading Swedish answers may be intended, so it would be a notice rather
   than a warning.
+```
+AGENT: replace
+Built (agents/wip-engine-part.md, stage 1): names carry no model, and the recipe names its engine.
+---
+- **A variation nobody saved has a long title.** It is described by its whole recipe:
+  "case · diagnoses-tool · recommended · off · qwen3-8b@pelle", where the repl called it
+  "diagnoses-tool (en)+reasoning=off": the configuration it came from and the parts set over it. A run of one is
+  named so and says what it varied (see "What a run ran"), but its skeleton is still titled by its recipe.
+```
 - **A variation nobody saved has a long title.** It is described by its whole recipe:
   "case · diagnoses-tool · recommended (Qwen/Qwen3-8B-AWQ) · off (Qwen/Qwen3-8B-AWQ)", where the repl called it
   "diagnoses-tool (Qwen/Qwen3-8B-AWQ)+reasoning=off": the configuration it came from and the parts set over it. A run
   of one is named so and says what it varied (see "What a run ran"), but its skeleton is still titled by its recipe.
+```
+AGENT: replace
+Built (agents/wip-engine-part.md, stage 1): compiling depends on the stored facts too.
+---
+- **What a fork varies is compared by recipe.** A variation with a part replaced is compiled whole by the running code
+  and against the facts as they are stored then (docs/bench.md, "The variation being tried"), so after a change to the
+  compiler, or a corrected fact, it can send otherwise than the edit it was built on where nothing was replaced, and
+  what its fork varies doesn't say so.
+```
 - **What a fork varies is compared by recipe.** A variation with a part replaced is compiled whole by the running code
   (docs/bench.md, "The variation being tried"), so after a change to the compiler it can send otherwise than the edit
   it was built on where nothing was replaced, and what its fork varies doesn't say so.

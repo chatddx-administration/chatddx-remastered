@@ -36,12 +36,28 @@ no browser adds a bearer by itself.
 The check stands in for a CSRF token, which would need one stored per session.
 
 ## Ids
+```
+AGENT: replace
+Built (agents/wip-engine-part.md, stage 1): names carry no model, so the example is gone.
+---
+Threads and families are named by their integer ids, runs by their whole UUIDs, components by their digests, and
+endpoints by their names in the inventory. Names are for people: they needn't be unique, they hold spaces, as
+`plan (en)` does, and slashes, and they change. So a list takes a name as a filter and returns every match, and a path
+takes an id. An id's prefix, handy at a prompt, could name another run tomorrow, so only whole ids are taken.
+```
 Threads and families are named by their integer ids, runs by their whole UUIDs, components by their digests, and
 endpoints by their names in the inventory. Names are for people: they needn't be unique, they hold slashes and
 spaces, as `plan (en, Qwen/Qwen3-8B-AWQ)` does, and they change. So a list takes a name as a filter and returns
 every match, and a path takes an id. An id's prefix, handy at a prompt, could name another run tomorrow, so only
 whole ids are taken.
 
+```
+AGENT: replace
+Built (agents/wip-engine-part.md, stage 1): the engine is a part, and the model has left the name.
+---
+A configuration made per language is a thread under its full name, `plan (en)`, until the language is a part of it
+too (agents/wip-engine-part.md, stage 2). Its engine is one of its parts, and its name carries no model.
+```
 A configuration made per language or model is a thread under its full name, until the engine is a part of it and the
 model leaves its name (agents/wip-engine-part.md).
 
@@ -64,6 +80,13 @@ model leaves its name (agents/wip-engine-part.md).
 - **Endpoints**: each one's engine and the engine's title, the model it serves, its URL and host, how many requests
   it takes at once, its credential's name, the sources it is cleared for, and whether a typed case can run there. One
   whose engine isn't stored, or whose URL can't be told, says why rather than failing the listing.
+```
+AGENT: replace
+Built (agents/wip-engine-part.md, stage 1): the facts are stored, a `facts` thread per model.
+---
+- **Models**: what the stored facts say of each, the head of its `facts` thread, so a corrected fact shows at once;
+  and the endpoints serving it. A `facts` thread is listed as any thread is, under the word `facts`.
+```
 - **Models**: what the facts know of each, and the endpoints serving it.
 - **Components**: any stored component by its digest, with its kind and title; and the kinds of component, each
   with the bench's word for it, whether a person writes it, and its JSON Schema, in which a reference names the kinds
@@ -76,6 +99,15 @@ threads are listed apart, and each can still be read by its id, with its version
 A configuration's variation is the configuration with some of its parts replaced. A request states it whole each
 time and nothing is stored by looking.
 
+```
+AGENT: replace
+Built (agents/wip-engine-part.md, stage 1): a variation compiles against the stored facts.
+---
+The latest configuration means its head when the request comes (unless an edit is given), and a variation with parts
+replaced is compiled against the facts about its engine's model as they are stored then, so a variation looked at and
+one run moments later can differ if the configuration or the facts moved in between; each run records the skeleton it
+ran, and its compilation the facts.
+```
 The latest configuration means its head when the request comes (unless an edit is given) so a variation looked at and
 one run moments later can differ if the configuration moved in between; each run records the skeleton it ran.
 
@@ -83,9 +115,33 @@ A look at a variation gives:
 - the edit it was built on, its label (`NAME+PART=CHUNK`, `docs/bench.md`, "The variation being tried"), the digest
   of the skeleton it compiles to, the configuration whose head is that skeleton with the variation's recipe, the
   person's own first, and whether its sampling is greedy.
+```
+AGENT: replace
+Built (agents/wip-engine-part.md, stage 1): the engine is a part, and a part says where an intent landed.
+---
+- each part's chunk, its title and what it holds, and whether it was replaced; the engine is a part too, by its
+  digest. A reasoning level, and a recommended sampling, also say the level the engine's model is asked for
+  (`landed`), and why the level asked for landed on its nearest instead, when it did (`nearest`; docs/facts.md).
+```
 - each part's chunk, its title and what it holds, and whether it was replaced.
+```
+AGENT: replace
+Built (agents/wip-engine-part.md, stage 1): a configuration with a recipe names its engine, so its model is known.
+---
+- the request it would send, with placeholders for the case and, for a hand-written configuration looked at without
+  an endpoint, for the model.
+```
 - the request it would send, with placeholders for the case and, without an endpoint, for the model.
 - a seed, drawn from the trial's whole range unless one is given, and given back so a run can send the same.
+```
+AGENT: replace
+Built (agents/wip-engine-part.md, stage 1): a look needs no endpoint; one named is checked against the engine.
+---
+- at its engine, so always for a configuration with a recipe, the lints of it as a trial over the cases with any of
+  the given tags, else over every case the person sees; where no case has the tags, over one case the person sees,
+  without the cases' languages. An endpoint named must serve the variation's engine; a hand-written configuration,
+  which names none, is linted only at an endpoint named, at the engine it serves.
+```
 - at an endpoint, the lints of it as a trial over the cases with any of the given tags, else over every case the
   person sees; where no case has the tags, over one case the person sees, without the cases' languages.
 - for each view of each scorer, whether the variation's output offers what the view reads, which families have no
@@ -95,6 +151,16 @@ A case with expectations to choose from is listed apart, as `choosing`, rather t
 (`docs/bench.md`, "What a person is scored against"). An unsaved variation is linted in its recipe's
 language, since the language of a skeleton otherwise comes from its stored compilations, which it hasn't got yet.
 
+```
+AGENT: replace
+Built (agents/wip-engine-part.md, stage 1): the engine's refusals, and the facts'.
+---
+A variation the bench refuses is unprocessable: a digest that isn't a stored chunk of its part, or a stored engine; a
+part that can't be taken out, the engine among them; parts that don't compile together, among them a reasoning level
+or a recommended sampling that the facts about the engine's model refuse, or that a model without facts can't work
+out; an endpoint named that serves another engine; or a parameter the request doesn't know, so that a misspelt part is
+refused rather than ignored. A look's queries don't grow with the number of cases it is over.
+```
 A variation the bench refuses is unprocessable: a digest that isn't a stored chunk of its part, a part that can't be
 taken out, parts that don't compile together, or a parameter the request doesn't know, so that a misspelt part is
 refused rather than ignored. A look's queries don't grow with the number of cases it is over.
@@ -118,6 +184,14 @@ Chunks, appendices, expectations and scorers are written the same way, with a co
 parts, as its JSON as a component's own request gives it, and a scorer with the labels of its views and resources
 (`docs/bench.md`, "Components" and "Scorers"). A judge is written the same way, over a judge configuration,
 an engine and its seeds:
+```
+AGENT: replace
+Built (agents/wip-engine-part.md, stage 1): a recipe names its engine.
+---
+- **New**: a component, a name, and the language of its text when it has one, as a thread of the person's own; or a
+  recipe, by the chunks' digests for its parts and the digest of its engine, its purpose and its appendix layout,
+  made into a new configuration of their own with no origin.
+```
 - **New**: a component, a name, and the language of its text when it has one, as a thread of the person's own; or a
   recipe, by the chunks' digests for its parts, its purpose and its appendix layout, made into a new configuration
   of their own with no origin.
@@ -177,6 +251,15 @@ The run gives back the cases' digests, and is named by the variation's label, `N
 run says what it ran (`ran`): the configuration, the edit the variation was built on and the parts replaced over it,
 or nothing for a run started from a trial alone (docs/catalog.md, "What a run ran").
 
+```
+AGENT: add
+Built (agents/wip-engine-part.md, stage 1, "Several endpoints"): a paragraph on where a run goes, before the gate's.
+---
+A run's trial takes its variation's engine, and goes to the endpoint serving it, or to the endpoint the request names,
+which must serve it; a hand-written configuration names no engine, so it needs an endpoint named, and its trial takes
+that endpoint's engine. No endpoint serving the engine, or several when none is named, is refused before
+the gate is asked, as an endpoint named that serves another engine is (agents/wip-engine-part.md, "Several endpoints").
+```
 The gate refuses an endpoint that doesn't serve the trial's engine, isn't cleared for a sensitive source among the
 cases', or lacks its secret; tools that would get a sensitive source's content; and an endpoint that doesn't answer.
 
@@ -332,6 +415,12 @@ first row, by when it listens, and then lets the worker take the job.
 | --- | --- |
 | Session | A person signed in: a token, carried as a bearer or as a cookie, for 12 hours. |
 | Look | Asking for a configuration's variation: what it would send, its lints and its reach, with nothing stored. |
+```
+AGENT: replace
+Built (agents/wip-engine-part.md, stage 1): the engine is a part, which can't be taken out.
+---
+| Parts | The chunks and the engine a variation replaces over a configuration, each by its digest, or nothing to take an optional chunk out. |
+```
 | Parts | The chunks a variation replaces over a configuration, each by its digest, or nothing to take it out. |
 | Head | A configuration's latest version, which a request's variation is built on. |
 | Fork | A new configuration of one's own, made from one the person sees. |
@@ -388,6 +477,13 @@ its events (see "Where it runs" and "Its events").
 - **Roles aren't checked**; Z1 shapes what each role is shown, with the portal (docs/bench.md, "Outstanding").
 
 ### Variations
+```
+AGENT: replace
+Built (agents/wip-engine-part.md, stage 1): the engine is a part, and the name `plan (en)`.
+---
+- **Variants.** A client finds `plan (en)` by its full name, and its engine among its parts. Take: so until the
+  language is a part too (agents/wip-engine-part.md, stage 2), when it finds `plan`.
+```
 - **Variants.** A client finds `plan (en, Qwen/Qwen3-8B-AWQ)` by its full name. Take: so until the engine is a part
   (agents/wip-engine-part.md), when it finds `plan (en)`, and the engine is one of its parts.
 ### Writes

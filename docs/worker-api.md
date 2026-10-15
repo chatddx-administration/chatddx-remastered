@@ -21,6 +21,12 @@ Paths are relative to `src/chatddx/worker/` unless they start with `src/` or `do
 | Module | Builds on |
 | --- | --- |
 | `publish.py` | psycopg, pydantic, `chatddx.api.{schemas,events}`, `chatddx.bench`, `chatddx.runner.run`, `chatddx.store.{notify,store}` |
+```
+AGENT: replace
+Built (agents/wip-engine-part.md, stage 1): the worker takes no facts.
+---
+| `worker.py` | `publish.py`, psycopg, `chatddx.settings`, `chatddx.api.{schemas,events}`, `chatddx.bench`, `chatddx.inventory`, `chatddx.ledger`, `chatddx.runner.run`, `chatddx.store` |
+```
 | `worker.py` | `publish.py`, psycopg, `chatddx.settings`, `chatddx.api.{schemas,events}`, `chatddx.bench`, `chatddx.facts`, `chatddx.inventory`, `chatddx.ledger`, `chatddx.runner.run`, `chatddx.store` |
 
 The worker says a run's events as the API's models have them (`chatddx.api.events`, `chatddx.api.schemas`), which
@@ -33,6 +39,14 @@ build on pydantic only.
 | `PAUSED` | `"paused"`: why a job is queued again when its owner pauses. |
 | `LEFT` | `"its worker stopped"`: why a job is queued again when its worker stops. |
 
+```
+AGENT: replace
+Built (agents/wip-engine-part.md, stage 1): the bench reads the facts from the store. The heading and its paragraph.
+---
+### `class Worker(conninfo, inventory, beat=settings.WORKER_BEAT, lost=settings.WORKER_LOST, deadline=settings.WORKER_DEADLINE)`
+A worker with an `id` of its own (`uuid4`), for the World's inventory, on connections to `conninfo` in autocommit
+mode.
+```
 ### `class Worker(conninfo, inventory, facts, beat=settings.WORKER_BEAT, lost=settings.WORKER_LOST, deadline=settings.WORKER_DEADLINE)`
 A worker with an `id` of its own (`uuid4`), for the World's inventory and facts, on connections to `conninfo` in
 autocommit mode.
@@ -87,6 +101,14 @@ In `chatddx.settings`:
 | `WORKER_DEADLINE` | 60 s: how long a stopping worker's scorings go on; within the stop timeout of the service that runs it. |
 
 ## The command
+```
+AGENT: replace
+Built (agents/wip-engine-part.md, stage 1): `--facts` is init-data's alone. The paragraph.
+---
+`chatddx worker [--world DIR]` (`src/chatddx/cli.py:_worker`): the World, from `--world` or `CHATDDX_WORLD`. It logs
+at INFO, prints the worker's id and the World as it starts, and serves `settings.database()` until SIGTERM or SIGINT
+sets its stopping event and wakes it; then it prints that what it held is queued again.
+```
 `chatddx worker [--world DIR] [--facts PATH]…` (`src/chatddx/cli.py:_worker`): the World, from `--world` or
 `CHATDDX_WORLD`, and the bundled facts, the World's and those given, as `chatddx api` takes them. It logs at INFO,
 prints the worker's id and the World as it starts, and serves `settings.database()` until SIGTERM or SIGINT sets its

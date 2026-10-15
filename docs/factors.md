@@ -48,10 +48,27 @@ runs of the same trial are interchangeable only when those agree too (see "Open 
 - Sensitivity and vetting: [agents/wip-clearance.md].
 - Facts from model cards: [docs/facts.md].
 - Inventory: [docs/inventory.md].
+```
+AGENT: replace
+Built (agents/wip-engine-part.md, stage 1): facts are applied when a recipe is compiled, not when a chunk is written.
+The item.
+---
+- Knowledge about models (reasoning levels, recommended sampling, output caveats, specs): the model facts
+  (docs/facts.md). Facts work out what a recipe's intents send when it is compiled, and check skeletons against
+  engines; the skeleton holds what they did, so no factor's digest depends on them (see "Components but not
+  factors").
+```
 - Knowledge about models (reasoning levels, recommended sampling, output caveats, specs): the model facts
   (docs/facts.md). Facts help write chunks and check them, but no digest depends on them.
 
 #### Components but not factors
+```
+AGENT: add
+Built (agents/wip-engine-part.md, stage 1): facts are components of kind `facts`. A third item, after compilations.
+---
+- Model facts are *knowledge*: what is known about a model, which compiling a recipe's intents reads (see "Model
+  facts"). Only a compilation refers to them, so they change no factor's digest.
+```
 Most components are factors, these are the exceptions:
 - Canary sets are *instruments*: fixed probe requests that measure observed factors without changing any output
   (see "Canary sets").
@@ -97,6 +114,13 @@ applies, and they fall into a few groups:
 - **Grading**: expectations and the schemas they follow, scorers, and judges: how answers are scored.
 - **Roots**: trials and scorings. A trial ties a request, an engine and cases into one experimental condition; a scoring
   ties a scorer to the expectations it grades against. Pinning a root pins everything it references.
+```
+AGENT: replace
+Built (agents/wip-engine-part.md, stage 1): facts are a kind, and no factor. The item.
+---
+- **Instruments, knowledge and provenance**: canary sets, model facts and compilations, components that aren't
+  factors.
+```
 - **Instruments and provenance**: canary sets and compilations, components that aren't factors.
 
 The sections below take each kind in turn.
@@ -150,6 +174,15 @@ every digest. A bundle is exported from the store, and imported by loading it an
 
 ## Terms
 
+```
+AGENT: replace
+Built (agents/wip-engine-part.md, stage 1): a recipe names its engine; intents and facts are new terms. The `Recipe`
+row, and two rows after it.
+---
+| Recipe | The choice of chunks, and the engine, a request is compiled from. Not a component. |
+| Intent | What a reasoning or sampling chunk asks of the model, a reasoning level or the recommended sampling, worked out from the facts about the engine's model when the recipe is compiled. |
+| Facts | What is known about a model that a request doesn't say. A component, but not a factor. |
+```
 | Term | Meaning |
 | --- | --- |
 | Factor | Anything that can change an output or its score. |
@@ -238,6 +271,15 @@ longer match the case.
 A *request* is the body one call sends to an engine: a skeleton rendered with its fills, the served model and the
 seed (see "Rendering"), or a tool round's next request (see "Tool rounds"). It is built in three layers:
 1. Chunks are written in the portal, one component per part of the request.
+```
+AGENT: replace
+Built (agents/wip-engine-part.md, stage 1): the recipe names its engine, and compiling reads the facts about its
+model. Items 2 and 3.
+---
+2. A recipe picks one chunk per part, and the engine the request is for.
+3. The compiler turns the recipe into a skeleton, the frozen request that trials and judges reference, working out
+   what its intents send from the facts about the engine's model.
+```
 2. A recipe picks one chunk per part.
 3. The compiler turns the recipe into a skeleton: the frozen request that trials and judges reference.
 
@@ -250,6 +292,16 @@ There are no validation retries: a run stores the raw completion, and parsing it
 are a separate matter, declared per run (see "Execution") and counted per call.
 
 ### How chunks affect each other
+```
+AGENT: add
+Built (agents/wip-engine-part.md, stage 1): intents depend on the engine and on each other. Two items at the end of
+the list.
+---
+- A reasoning level and a recommended sampling send what the facts about the recipe's engine's model say; the engine
+  changes the skeleton in no other way.
+- A recommended sampling follows the reasoning level the recipe asks for, where it lands, or the model's default level
+  when the reasoning chunk asks for none or the recipe has none.
+```
 Chunks affect each other only in a few fixed ways, all decided in code:
 - The output's guidance goes where the instructions or the prompt place it. Otherwise it is appended to the
   instructions, and it becomes the whole first message when there are no instructions.
@@ -302,6 +354,16 @@ don't resolve them themselves; vLLM 0.24 does (docs/vllm.md).
 ### Sampling
 Principal author: researchers.
 
+```
+AGENT: add
+Built (agents/wip-engine-part.md, stage 1): a sampling chunk may ask for the recommended sampling. A paragraph at
+the end of the section.
+---
+A sampling chunk may instead ask for the sampling the model's makers recommend, an intent: compiling fills it in from
+the facts about the recipe's engine's model, for the level the reasoning chunk asks for, where it lands, or the
+model's default when the reasoning chunk asks for no level or the recipe has none. A value the chunk sets beside it
+replaces the recommended one, and the recipe doesn't compile when nothing is recommended for that level.
+```
 A sampling chunk holds the temperature, top-p, top-k and min-p, the presence, frequency and repetition penalties, stop
 sequences, and the most tokens an answer may take, sent under the name the engine expects. Whatever a chunk leaves out
 is left to the server.
@@ -312,6 +374,17 @@ is sent.
 ### Reasoning
 Principal author: researchers.
 
+```
+AGENT: replace
+Built (agents/wip-engine-part.md, stage 1): a reasoning chunk may ask for a level. The paragraph.
+---
+A reasoning chunk holds the reasoning effort, a thinking-token budget and arguments for the chat template, or asks for
+a reasoning level (off, on, minimal, low, medium, high, xhigh, or the model's default), an intent, with at most a
+thinking-token budget beside it. Compiling works out what a level sends from the facts about the recipe's engine's
+model: the effort and chat template arguments of the level it lands on, which may be another, its nearest, when the
+model can't be asked for the first (docs/facts.md, "Reasoning"). A level the model refuses, or a budget it refuses or
+isn't known to take, doesn't compile. A recipe without a reasoning chunk leaves reasoning to the model.
+```
 A reasoning chunk holds the reasoning effort, a thinking-token budget and arguments for the chat template. A recipe
 without one leaves reasoning to the model.
 
@@ -368,6 +441,20 @@ keeps the recipe, which names the translations.
 ### Recipe and compilation
 Principal author: researchers.
 
+```
+AGENT: replace
+Built (agents/wip-engine-part.md, stage 1): a recipe names its engine; intents compile against the facts. The first
+two paragraphs.
+---
+A recipe is not a component. It holds a purpose and an appendix layout, a prompt, an output, a sampling chunk and an
+engine, and optionally instructions, few-shot examples, reasoning, a passthrough, translations and a toolset.
+
+Compiling a recipe gives a skeleton. It reads the facts about the engine's model for the chunks that ask for an
+intent, and fails on a missing or wrongly typed chunk or engine, a prompt whose purpose differs from the recipe's, a
+missing translation, a guidance placed in both the instructions and the prompt, an answer function named like one of
+the toolset's tools, an intent the facts refuse or know nothing of, an intent on an engine whose model has no facts,
+and facts about another model than the engine's.
+```
 A recipe is not a component. It holds a purpose and an appendix layout, a prompt, an output and a sampling chunk, and
 optionally instructions, few-shot examples, reasoning, a passthrough, translations and a toolset.
 
@@ -379,12 +466,42 @@ With a toolset, the request offers the toolset's tools, in order. Under a native
 when it stops calling tools. Under a tool contract, the answer function is offered last, every response calls a tool,
 and calling the answer function ends the item.
 
+```
+AGENT: replace
+Built (agents/wip-engine-part.md, stage 1): the compilation names the facts too, and the engine reaches the
+skeleton only through them. The paragraph.
+---
+The recipe is kept only in the compilation, next to the compiler's version and the facts compiled against (see
+"Compilation"). Trials reference the skeleton, not the recipe, so neither the compiler's code nor the facts are a
+separate factor: whatever they did is frozen in the skeleton. The engine changes a skeleton only through the facts
+about its model, so a recipe compiles to one skeleton on every engine of one model, and, without intents, on every
+engine.
+```
 The recipe is kept only in the compilation, next to the compiler's version (see "Compilation"). Trials reference the
 skeleton, not the recipe, so the compiler's code is not a separate factor: whatever it did is frozen in the skeleton.
 
 ### Compilation
 Principal author: none; written by the compiler.
 
+```
+AGENT: replace
+Built (agents/wip-engine-part.md, stage 1): a compilation names the facts it was compiled against. The three
+paragraphs.
+---
+A compilation says that a recipe compiled to a skeleton. It holds the recipe, the skeleton, the version of the
+compiler and the facts compiled against, none when the engine's model has none. It is the only place a recipe is
+kept, and so the lineage from the chunks written in the portal to the frozen request.
+
+A compilation is provenance, not a factor: no component refers to it, so it changes no digest and no output. Trials and
+judges reference the skeleton, which holds whatever the compiler did. The same recipe compiled by the same compiler
+against the same facts always gives the same compilation. Different recipes can give the same skeleton (see "How
+chunks affect each other"), a recipe on two engines of one model among them, so a skeleton may have several
+compilations, and a hand-written one has none.
+
+A bundle carries a compilation when it is one of the roots, and the chunks, the engine and the facts then come with
+it, so the bundle shows how its skeleton was made. Nothing checks that the recipe compiles to the skeleton, only that
+the compilation's facts are about the recipe's engine's model.
+```
 A compilation says that a recipe compiled to a skeleton. It holds the recipe, the skeleton and the version of the
 compiler. It is the only place a recipe is kept, and so the lineage from the chunks written in the portal to the frozen
 request.
@@ -434,6 +551,13 @@ that names no offered tool, arguments that don't fit the tool's parameters, and 
 an error for the model to read.
 
 ## Engines
+```
+AGENT: replace
+Built (agents/wip-engine-part.md, stage 1): the engine is a part of a recipe. The paragraph.
+---
+An engine is where requests are sent. Researchers pick engines for recipes, as one more part, and for trials and
+judges. Every engine speaks the same API: OpenAI-compatible chat completions.
+```
 An engine is where requests are sent. Researchers pick engines for trials and judges. Every engine speaks the same API:
 OpenAI-compatible chat completions.
 
@@ -479,6 +603,24 @@ is served is the inventory's (docs/inventory.md, "Endpoints"), and its chat temp
 Canary probes at the start and end of a run apply to any engine and are planned per run, so they are not part of the
 engine.
 
+```
+AGENT: add
+Built (agents/wip-engine-part.md, stage 1): facts are a kind. A section, after "Remote engine".
+---
+### Model facts
+Principal author: developers, for the bundled facts; whoever adds a model they don't know, for a World's
+(docs/inventory.md, "Worlds").
+
+Model facts are what is known about one model that a request doesn't say (docs/facts.md): the model's name, the
+repository a local engine's model comes from or the model a remote engine names, how each reasoning level is asked
+for, the sampling recommended per level, the output contracts that work, and specs. Compiling a recipe reads the facts
+about its engine's model to work out its intents, and its compilation names them.
+
+They are knowledge, not a factor: no component but a compilation refers to them, and a skeleton holds what they did.
+init-data writes them from facts files, a thread per model (docs/curation.md); correcting a fact is a new version of
+its thread, and a configuration compiled against the old one is then behind where the new one changes what it sends
+(docs/catalog.md, "What has moved on").
+```
 ## Trials
 
 ### Trial

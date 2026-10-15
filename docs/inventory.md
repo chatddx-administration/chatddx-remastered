@@ -3,6 +3,15 @@
 The inventory says which directory holds a source's vignettes, at which address an engine is served, where a host keeps
 the model files and chat template an engine pins.
 
+```
+AGENT: replace
+Built (agents/wip-engine-part.md, stage 1, take D1): the inventory names the endpoint configurations are made for.
+The paragraph.
+---
+Until clearance has a pipeline of its own, the inventory also says which endpoints may receive content from which
+sensitive sources. It also says at which endpoint each of a data set's judges judges, and the endpoint whose engine
+its configurations are made for.
+```
 Until clearance has a pipeline of its own, the inventory also says which endpoints may receive content from which
 sensitive sources. It also says at which endpoint each of a data set's judges judges.
 
@@ -20,12 +29,33 @@ table's key. Paths in the file are relative to the file, so a World can be moved
 own files are the host's (see "Hosts").
 
 ### Includes
+```
+AGENT: replace
+Built (agents/wip-engine-part.md, stage 1, take D1): an included file can't name the endpoint configurations are
+made for either. The paragraph.
+---
+An inventory can include other files, whose endpoints and hosts count as its own. Includes keep what the engine
+import writes apart from what people write, so an import can rewrite its file whole. An included file holds only
+endpoints and hosts: it can't include another file, add a source, clear an endpoint, bind a judge or name the endpoint
+configurations are made for, so importing again can't either. A name is defined once, across the inventory and
+everything it includes.
+```
 An inventory can include other files, whose endpoints and hosts count as its own. Includes keep what the engine
 import writes apart from what people write, so an import can rewrite its file whole. An included file holds only
 endpoints and hosts: it can't include another file, add a source, clear an endpoint or bind a judge, so importing again
 can't either. A name is defined once, across the inventory and everything it includes.
 
 ### What loading checks
+```
+AGENT: replace
+Built (agents/wip-engine-part.md, stage 1, take D1): the endpoint configurations are made for must exist. The
+paragraph.
+---
+Loading checks what the files themselves show: that each endpoint's host is defined, that the clearance table names
+endpoints and sources that exist, that each judge is bound to an endpoint that exists, that the endpoint
+configurations are made for exists, and that each source is named by its table. Anything that needs the engines is
+checked when an entry is used (see "Checks happen when an entry is used").
+```
 Loading checks what the files themselves show: that each endpoint's host is defined, that the clearance table names
 endpoints and sources that exist, that each judge is bound to an endpoint that exists, and that each source is named
 by its table. Anything that needs the engines is checked when an entry is used (see "Checks happen when an entry is
@@ -39,6 +69,15 @@ Command line tools take `--world DIR` or fall back to `CHATDDX_WORLD`.
 
 The directory must contain an `inventory.toml` and may contain the others, see table.
 
+```
+AGENT: replace
+Built (agents/wip-engine-part.md, stage 1, take D1): `inventory.toml` names the endpoint configurations are made for.
+Its row here, and its line in the tree below.
+---
+| `inventory.toml` | ops, by hand | sources, clearance, which endpoint judges each judge, and which endpoint's engine configurations are made for |
+
+  inventory.toml   sources, clearance, judges bound to endpoints, configurations, include = ["endpoints.toml"]
+```
 | File | Author | Holds |
 | --- | --- | --- |
 | `inventory.toml` | ops, by hand | sources, clearance, and which endpoint judges each judge |
@@ -84,6 +123,14 @@ This repository has three, in `worlds/`:
   vignettes, and binds the sample's judges to pelle and malborg; its endpoints, hosts and engines are what the engine
   import writes from the hosts' reports. Both endpoints are cleared for the sample.
 
+```
+AGENT: add
+Built (agents/wip-engine-part.md, stage 1, take D1): each World names the endpoint configurations are made for. A
+paragraph before this one.
+---
+Each names the endpoint its configurations are made for: `qwen3@fake` in the test World, `qwen3-8b-awq@fake` in the
+sample World, and `qwen3-8b@pelle` in Kompismoln's.
+```
 src/chatddx/test/test_worlds.py fails when a World's engines change and its endpoints don't.
 
 ## Sources
@@ -131,6 +178,16 @@ An endpoint may name a canary set, by digest, which every run at it sends, so th
 alike and can be compared; and a default execution, a timeout and retries among it, which a run's request may change
 the concurrency and order of. Loading refuses a default concurrency above the capacity.
 
+```
+AGENT: add
+Built (agents/wip-engine-part.md, "Several endpoints"): a run and a judge find their endpoint by their engine. A
+paragraph at the end of "Endpoints".
+---
+A run goes to the endpoint serving its configuration's engine, and a judge's calls to the endpoint serving the judge's
+engine, unless one is named. When no endpoint serves the engine, or several do and none is named, the run or the
+scoring is refused rather than an endpoint picked; an endpoint named that serves another engine is refused too
+(docs/bench.md, "Outstanding"). A hand-written configuration has no engine part, and goes to the endpoint named.
+```
 ## Hosts
 A host says the address its servers listen on, and where it keeps what its engines pin. A local engine pins its model
 and chat template by hash (docs/factors.md, "Model artifact" and "Local engine"), and its host says where each file is.
@@ -156,6 +213,19 @@ inventory's own file, and no command writes it.
 A judge a person writes names its engine itself (docs/bench.md, "Components"), and the scoring pass finds the endpoint
 that serves a judge's engine either way (docs/runner.md, "Judges").
 
+```
+AGENT: add
+Built (agents/wip-engine-part.md, stage 1, take D1): the engine a data set's configurations are made for. A section
+before this one.
+---
+## Configurations
+`configurations = "qwen3-8b@pelle"`, at the top of the inventory, names the endpoint whose engine a data set's
+configurations are made for: init-data makes each recipe once per language with that engine (docs/curation.md).
+Which engine a configuration starts on is the World's choice, as which engine judges is, and a researcher swaps it
+at the bench as any other part (docs/bench.md). A World that names none loads no configurations: each recipe is
+skipped and reported. Like a judge's binding, it is read only from the inventory's own file, and no command writes
+it.
+```
 ## Starting and reaching an engine
 An endpoint is joined with the engine it serves and, for a local engine, with the host that runs it. When the
 inventory or the engine falls short of what that needs, starting or reaching the endpoint is refused with the reason.
@@ -229,6 +299,12 @@ The import's findings have the engine's digest as subject:
 
 ## Terms
 
+```
+AGENT: add
+Built (agents/wip-engine-part.md, stage 1, take D1): a row after `Bound`.
+---
+| Configurations | The endpoint whose engine a data set's configurations are made for. |
+```
 | Term | Meaning |
 | --- | --- |
 | Inventory | Files written by ops that say where things are: vignette sources, endpoints and hosts. For now, they also say which endpoints are cleared for which sources. |

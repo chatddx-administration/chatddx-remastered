@@ -339,6 +339,13 @@ expectation for.
 | `Noted` | `finding` | A finding noted. |
 
 ### `judge_at(inventory, get, ref, cases, named=None) -> tuple[Judge, Skeleton, str]`
+```
+AGENT: replace
+Built (agents/wip-engine-part.md, stage 1): the rule is the inventory's, shared with runs. Its first sentence.
+---
+The judge `ref`, its skeleton, and the endpoint its calls go to: `named`, or the one endpoint serving the judge's
+engine (`Inventory.serving`, which `src/chatddx/bench/seen.py:Seen.at` uses for a run).
+```
 The judge `ref`, its skeleton, and the endpoint its calls go to: `named`, or the one endpoint serving the judge's
 engine. Checks only what holds for as long as the World is as it is (`gate.bar`, `whose` `"judge"`, no tools).
 
@@ -346,6 +353,12 @@ engine. Checks only what holds for as long as the World is as it is (`gate.bar`,
 | --- | --- |
 | `ValueError` | `judge <digest> reads the <vignette and/or appendices>, which no judge is given`, when its skeleton has either slot |
 | `ValueError` | `judged views need the World's inventory`, when `inventory` is `None` |
+```
+AGENT: replace
+Built (agents/wip-engine-part.md, stage 1): `Inventory.serving`'s messages, which `judge_at` raises as `Refused`.
+---
+| `gate.Refused` | `no endpoint serves engine <digest>`, or `<names> serve engine <digest>; name the one to use`: `Inventory.serving`'s `LookupError`, without `named` |
+```
 | `gate.Refused` | `no endpoint serves the judge's engine <digest>`, or `<names> serve the judge's engine <digest>; name the one to judge at` |
 | `gate.Refused` | as `gate.bar` |
 

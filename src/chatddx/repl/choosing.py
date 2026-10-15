@@ -2,14 +2,16 @@ from rich.text import Text
 
 from chatddx.bench import PARTS, TriedVariation
 from chatddx.catalog.titles import short
+from chatddx.factors.base import StructuralError
 
+from .render import LATER
 from .shell import NONE, Cell, Repl
 
 
 def use(repl: Repl, name: str) -> None:
     variation = repl.bench.configuration(name)
     repl.cell = repl.cell.trying(_served(repl, repl.cell, variation))
-    repl.say_changed()
+    _changed(repl)
 
 
 def on(repl: Repl, name: str) -> None:
@@ -17,20 +19,28 @@ def on(repl: Repl, name: str) -> None:
     if cell.variation is not None:
         cell = cell.trying(_served(repl, cell, cell.variation))
     repl.cell = cell
-    repl.say_changed()
+    _changed(repl)
 
 
 def cell(repl: Repl, configuration: str, endpoint: str) -> None:
     on_it = Cell().on(endpoint, repl.bench.endpoint(endpoint))
     variation = repl.bench.configuration(configuration)
     repl.cell = on_it.trying(_served(repl, on_it, variation))
-    repl.say_changed()
+    _changed(repl)
 
 
 def _served(repl: Repl, cell: Cell, variation: TriedVariation) -> TriedVariation:
     if cell.served is None or variation.recipe is None:
         return variation
     return variation.set("engine", cell.served, repl.bench.title(cell.served))
+
+
+# The cell takes the engine even where its model refuses a pick, so that a set mends it.
+def _changed(repl: Repl) -> None:
+    try:
+        repl.say_changed()
+    except StructuralError as e:
+        repl.console.print(Text(f"{e}: set another in its place", style=LATER))
 
 
 def set_(repl: Repl, part: str, name: str) -> None:

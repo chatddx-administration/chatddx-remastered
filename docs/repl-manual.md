@@ -5,6 +5,15 @@ language model and see what comes back. You pick what to ask and which
 endpoint to ask, run one case or a whole set of them, and every answer is
 recorded and scored as it arrives.
 
+```
+AGENT: re-record
+Built (agents/wip-engine-part.md, stage 1): the transcripts below were recorded when names carried a model. Record
+them again on the sample World. Until then, read `plan (en)` for `plan (en, Qwen/Qwen3-8B-AWQ)` and `recommended`
+for `recommended (Qwen/Qwen3-8B-AWQ)`, and know that a prompt and a `cell:` line name the endpoint serving the
+configuration's engine as soon as there is a configuration: `alice plan (en)×qwen3-8b-awq@fake #2475>`. The sections
+whose behaviour changed have suggestions of their own, with transcripts derived from the code, not recorded.
+---
+```
 This manual goes through the shell command by command. The examples use
 the sample World (`worlds/sample`) and its fake engines (`@fake`), which
 answer every case the same way, so you can try everything without a GPU.
@@ -33,6 +42,15 @@ Then start the shell:
 chatddx repl alice
 ```
 
+```
+AGENT: replace
+Built (agents/wip-engine-part.md, stage 1): `--facts` is init-data's alone; the shell reads the stored facts.
+---
+The World is the one `--world DIR` names, else `CHATDDX_WORLD`; the
+development environments set it to the sample. The model facts are those
+init-data stored: the bundled ones and the World's own `facts.toml`, and
+any `chatddx init-data --facts PATH` adds.
+```
 The World is the one `--world DIR` names, else `CHATDDX_WORLD`; the
 development environments set it to the sample. `--facts PATH` adds model
 facts to the bundled ones and the World's own `facts.toml`.
@@ -56,6 +74,30 @@ chatddx scripted-runs alice
 
 ## A few words first
 
+```
+AGENT: replace
+Built (agents/wip-engine-part.md, stage 1): the engine is a part, and names carry no model. The bullets on
+configurations, endpoints and the cell.
+---
+- **Configuration:** what to ask, how, and which engine to ask. The
+  instructions, the prompt the case goes into, the kind of answer wanted
+  (free text, a list of diagnoses, a management plan), whether the model
+  should think first, how it samples its words, and the engine, the model
+  as a machine serves it. Its parts are called `instructions`,
+  `few_shot`, `prompt`, `output`, `sampling`, `reasoning`, `passthrough`,
+  `translations`, `toolset` and `engine`. Texts are made for each
+  language, so one configuration has a variant per language, `plan (en)`,
+  which you name `plan`. What depends on the model, such as how it is told
+  to think first, is worked out for the engine's model as the
+  configuration is put together.
+- **Endpoint:** where an engine is served: `qwen3-8b@pelle` is Qwen3-8B
+  as pelle serves it. A configuration runs at the endpoint serving its
+  engine; naming another endpoint puts its engine in the configuration
+  (see `on`). Each endpoint is cleared for the sources whose cases may be
+  sent to it.
+- **The cell:** the configuration you have chosen, and the endpoint, if
+  you named one. Every run uses the cell.
+```
 - **Configuration:** what to ask and how. The instructions, the prompt the
   case goes into, the kind of answer wanted (free text, a list of
   diagnoses, a management plan), whether the model should think first, and
@@ -93,6 +135,40 @@ Lists every command, with the words it takes. A word in brackets is
 optional; `TAG...` means one tag or several.
 
 ### `configurations [NAME]`
+````
+AGENT: replace
+Built (agents/wip-engine-part.md, stage 1): no models column, and an engine column; a name lists one row per
+configuration of that name. The section's text and transcripts, derived from the code (`repl/listing.py`), not
+recorded.
+---
+Lists the configurations you can use: yours, and those shared with you.
+Each row is a configuration in one language, with what each part is, its
+engine last. Judge configurations follow, in a table of their own.
+
+```
+alice #2475> configurations
+ configuration          instructions    few_shot             prompt  output                ...  engine             owner
+ diagnoses (en)         —               —                    case    diagnoses (en)        ...  qwen3-8b-awq@fake  yours, from archive
+ free-text-guided (sv)  clinician (sv)  worked-example (sv)  case    free-text (en)        ...  qwen3-8b-awq@fake  yours, from archive
+ plan (en)              —               —                    case    management-plan (en)  ...  qwen3-8b-awq@fake  yours, from archive
+ ...
+
+judge configurations
+ configuration  instructions  prompt  output        ...  engine             owner
+ judge (en)     judge (en)    judge   verdict (en)  ...  qwen3-8b-awq@fake  yours, from archive
+```
+
+`yours, from archive` is your copy of a configuration the archive (the
+shared data set) holds; the archive's own row is left out. With a name,
+it lists the configurations of that name, a row each:
+
+```
+alice #2475> configurations plan
+ configuration  prompt  output                sampling     engine             owner
+ plan (en)      case    management-plan (en)  recommended  qwen3-8b-awq@fake
+ plan (en)      case    management-plan (en)  recommended  qwen3-8b-awq@fake  archive
+```
+````
 Lists the configurations you can use: yours, and those shared with you.
 Each row is a configuration in one language, with the models it is made
 for and what each part is. Judge configurations follow, in a table of
@@ -152,6 +228,17 @@ DutchFall10w  Dutchfall11w  ...  casesfromedn1  ...  openxddx-case_9
 99 cases; tagged dutch-fall 30, edn 20, openxddx 49
 ```
 
+```
+AGENT: replace
+Built (agents/wip-engine-part.md, stage 1): a name made in one language is offered without it, in several whole.
+---
+Press Tab at any point to complete a command, or a name after it, word by
+word: a configuration after `use`, an endpoint after `on`, an engine
+after `set engine`, a case after `run` (`Dutchfall11w with ultrasound`
+included), a tag after `run tag` or `show tag`, a run after `replay`. A
+configuration made in one language is offered by its plain name, `plan`,
+and one made in several by its whole name: `free-text-guided (sv)`.
+```
 Press Tab at any point to complete a command, or a name after it, word by
 word: a configuration after `use`, an endpoint after `on`, a case after
 `run` (`Dutchfall11w with ultrasound` included), a tag after `run tag` or
@@ -165,6 +252,26 @@ name, and one made in several languages by its name and language:
 
 Puts a configuration in the cell.
 
+````
+AGENT: replace
+Built (agents/wip-engine-part.md, stage 1): the endpoint follows from the configuration's engine, so `use` needs no
+`on`. The transcript and the paragraph after it; the transcript derived from `repl/choosing.py`, not recorded.
+---
+```
+alice #2475> use plan
+cell: plan (en) × qwen3-8b-awq@fake
+alice plan (en)×qwen3-8b-awq@fake #2475>
+```
+
+The endpoint is the one serving the configuration's engine, here the
+engine the sample's configurations are made for. A configuration someone
+else shares with you is named with its owner first: `use bob/bobs-plan`.
+A configuration made in several languages is named with the one you
+want, `use free-text-guided sv`; its plain name is refused, saying which
+there are. Names may hold spaces, and need no quotes: `use plan (en)`
+names it whole. With an endpoint you named in the cell (see `on`), `use`
+puts that endpoint's engine in the configuration.
+````
 ```
 alice #2475> use plan
 plan is made per model: on ENDPOINT picks its variant
@@ -181,6 +288,26 @@ Qwen/Qwen3-8B-AWQ)` names one variant, and holds it whatever the endpoint.
 
 ### `on ENDPOINT`
 
+````
+AGENT: replace
+Built (agents/wip-engine-part.md, stage 1): `on` puts the endpoint's engine in the configuration and keeps every
+pick. The section's text and transcript, derived from `repl/choosing.py`, not recorded.
+---
+Puts an endpoint in the cell, and the engine it serves in the cell's
+configuration, keeping everything else you chose. The configuration is
+worked out again for the new engine's model:
+
+```
+alice plan (en)×qwen3-8b-awq@fake #2475> on gpt-oss-20b@fake
+cell: plan (en)+engine=gpt-oss-20b@fake × gpt-oss-20b@fake
+alice plan (en)+engine=gpt-oss-20b@fake×gpt-oss-20b@fake #2475>
+```
+
+The prompt shows the engine you swapped in (`+engine=gpt-oss-20b@fake`);
+`on qwen3-8b-awq@fake` takes it out again, since that endpoint serves the
+configuration's own. Whenever the cell changes, the shell says what the
+lints find in it, and what the new engine's model can't do (see `set`).
+````
 Puts an endpoint in the cell, and picks the variant of the cell's
 configuration made for its model, saying which:
 
@@ -196,6 +323,12 @@ as a sampling made for another model than the endpoint's.
 
 ### `cell CONFIGURATION ENDPOINT`
 
+```
+AGENT: replace
+Built (agents/wip-engine-part.md, stage 1): the endpoint's engine goes in the configuration.
+---
+Both at once: the configuration, with the endpoint's engine in it.
+```
 Both at once.
 
 ```
@@ -213,6 +346,42 @@ alice plan (en, Qwen/Qwen3-8B-AWQ)×qwen3-8b-awq@fake #2475> set reasoning off
 cell: plan (en, Qwen/Qwen3-8B-AWQ)+reasoning=off × qwen3-8b-awq@fake
 ```
 
+````
+AGENT: replace
+Built (agents/wip-engine-part.md, stage 1): chunks ask for a level, which lands on the engine's model as its facts
+say; `set engine`. The paragraph after the first transcript, and the second; the transcripts derived from
+`repl/choosing.py` and the bundled facts, not recorded.
+---
+The prompt shows what you changed (`+reasoning=off`). A reasoning chunk
+asks for a level, as `off`, and the engine's model is asked for it as its
+facts say. `none` takes an optional part out: `set toolset none` takes
+the tools away. Setting the configuration's own chunk again unsets the
+part, and a chunk that doesn't fit is refused, leaving the cell as it
+was. Choosing a configuration again with `use` or `cell` forgets what you
+set, but for the engine of an endpoint you named; `on` another endpoint
+keeps it all, worked out again for the new engine's model. A level the
+model can't honour lands on the nearest it can, where its facts say so,
+and `show` says where (see below):
+
+```
+alice plan (en)+reasoning=off×qwen3-8b-awq@fake #2475> on gpt-oss-20b@fake
+cell: plan (en)+reasoning=off+engine=gpt-oss-20b@fake × gpt-oss-20b@fake
+```
+
+Where the facts refuse it, as gpt-oss refuses a thinking budget, the
+cell changes all the same, and the shell says why in red; `set` another
+chunk to mend it:
+
+```
+alice plan (en)+reasoning=on-budget-2048×qwen3-8b-awq@fake #2475> on gpt-oss-20b@fake
+cell: plan (en)+reasoning=on-budget-2048+engine=gpt-oss-20b@fake × gpt-oss-20b@fake
+openai/gpt-oss-20b: no thinking budget is documented for harmony
+```
+
+`set engine NAME` swaps the engine alone, named as `endpoints` lists it,
+and the cell runs at the endpoint serving it; an endpoint you named that
+serves another engine is let go.
+````
 The prompt shows what you changed (`+reasoning=off`). A chunk made per
 model is named plainly, as `off`, and picked for the endpoint's model.
 `none` takes an optional part out: `set toolset none` takes the tools away.
@@ -234,6 +403,18 @@ openai/gpt-oss-20b
 
 ### `show`
 
+```
+AGENT: replace
+Built (agents/wip-engine-part.md, stage 1): the engine is a part, and `show` says where a level landed.
+---
+Shows the cell: each part and what it is, the engine among them, where
+a reasoning level or a recommended sampling landed on the engine's model,
+the endpoint and the name its engine is served under, the messages the
+model will read, with the case's place marked (`‹vignette›`), and the
+settings that will be sent. Then what the lints find, and a table of the
+scorers: for each view, whether this kind of answer gives it anything to
+read, and how many cases have the target it needs. Nothing is sent.
+```
 Shows the cell: each part and what it is, the endpoint and the name its
 engine is served under, the messages the model will read, with the case's
 place marked (`‹vignette›`), and the settings that will be sent. Then what
@@ -241,6 +422,59 @@ the lints find, and a table of the scorers: for each view, whether this
 kind of answer gives it anything to read, and how many cases have the
 target it needs. Nothing is sent.
 
+````
+AGENT: replace
+Built (agents/wip-engine-part.md, stage 1): the names, the sampling's row and the engine's. Derived from
+`repl/inspecting.py` and `catalog/titles.py`, not recorded: the `sampling` and `engine` rows and the first two
+lines; the rest as recorded.
+---
+```
+alice plan (en)×qwen3-8b-awq@fake #4479> show
+cell: plan (en) × qwen3-8b-awq@fake
+ part          chunk                 is
+ endpoint      qwen3-8b-awq@fake     qwen3-8b-awq@fake, served as sha256:cc0dc8… at http://127.0.0.1:12099/v1/
+ instructions  —
+ few_shot      —
+ prompt        case                  "{vignette}{appendices}"
+ output        management-plan (en)  native output: management_plan_v1
+ sampling      recommended           recommended sampling, for reasoning on
+ reasoning     —
+ ...
+ engine        qwen3-8b-awq@fake     qwen3-8b-awq@fake on vllm 0.24.0+fake (none)
+system
+Fill in the management plan for the case.
+user
+‹vignette›‹appendices›
+body
+{
+  "model": "sha256:cc0dc8…",
+  "presence_penalty": 1.5,
+  "response_format": {
+    "type": "json_schema",
+    "json_schema": {
+      "name": "output",
+      "strict": true,
+      "schema": "‹the output's schema›"
+    }
+  },
+  "temperature": 0.6,
+  ...
+  "seed": 4479,
+  "return_token_ids": true
+}
+lints
+[warning] language.mixed: the request is en, but 20 of 99 cases are sv
+ scorer     view          of 99 cases
+ diagnoses  differential  99 have it
+ diagnoses  dont-miss     6 have it; missing: Dutchfall11w Dutchfall13w Dutchfall16w ... and 83 more
+ free-text  text          the output offers no such view
+ ...
+ plan       differential  99 have it
+ plan       warning       99 have it
+ plan       disposition   99 have it
+ ...
+```
+````
 ```
 alice plan (en, Qwen/Qwen3-8B-AWQ)×qwen3-8b-awq@fake #4479> show
 cell: plan (en, Qwen/Qwen3-8B-AWQ) × qwen3-8b-awq@fake
@@ -292,6 +526,28 @@ with missing targets can still be run; the views that need the missing
 target just leave them out. The output's schema and the tools' parameters
 are left to `show output` and `show tool`.
 
+````
+AGENT: add
+Built (agents/wip-engine-part.md, stage 1): a paragraph and a transcript at the end of `show`, on a level landing on
+its nearest. The transcript is derived from `repl/inspecting.py` and the bundled facts, not recorded.
+---
+With `set reasoning off` and `on gpt-oss-20b@fake`, `show` says where
+the level landed on gpt-oss, which always reasons, and why, and the
+sampling follows the level it landed on:
+
+```
+alice plan (en)+reasoning=off+engine=gpt-oss-20b@fake×gpt-oss-20b@fake #4479> show
+cell: plan (en)+reasoning=off+engine=gpt-oss-20b@fake × gpt-oss-20b@fake
+ part          chunk                                                    is
+ endpoint      gpt-oss-20b@fake                                         gpt-oss-20b@fake, served as sha256:fc08c4… at http://127.0.0.1:12100/v1/
+ ...
+ sampling      recommended                                              recommended sampling, for reasoning low
+ reasoning     off (set; plan (en) has —)                               reasoning off → low, its nearest: always reasons: vLLM rejects reasoning_effort = none for harmony
+ ...
+ engine        gpt-oss-20b@fake (set; plan (en) has qwen3-8b-awq@fake)  gpt-oss-20b@fake on vllm 0.24.0+fake (none)
+...
+```
+````
 ### `show tag TAG...`
 
 The same, with the lints and the scorers' table counting only the cases
@@ -338,6 +594,18 @@ no runs of yours with this case
 ultrasound's text and the expectation of its own. An expectation shared
 with you that you haven't taken says so (see `take`).
 
+```
+AGENT: replace
+Built (agents/wip-engine-part.md, stage 1): the facts are stored, a thread per model; the parts are nine chunks and the
+engine.
+---
+The kinds are `case`, `endpoint`, `configuration`, the nine chunk parts,
+`tool`, `scorer`, `judge`, `expectation`, `expectation_schema`,
+`appendix`, `canary_set`, `model`, `engine` and `facts`: `show facts
+openai/gpt-oss-20b` is what the facts say of gpt-oss. A judge counts the
+runs it judged and its calls, an endpoint the judge calls made at it too,
+and a scorer the runs it scored.
+```
 The kinds are `case`, `endpoint`, `configuration`, the nine parts, `tool`,
 `scorer`, `judge`, `expectation`, `expectation_schema`, `appendix`,
 `canary_set`, `model` and `engine`. A judge counts the runs it judged and
@@ -346,6 +614,19 @@ runs it scored.
 
 ### `reasoning`
 
+```
+AGENT: replace
+Built (agents/wip-engine-part.md, stage 1): the stored facts, nearest levels, and the level asked for marked.
+---
+Shows, in one table, what every reasoning level becomes on every model
+the stored facts know, with the endpoints serving each: the switch or
+effort that gets sent, the sampling recommended with it, the level it
+falls back to (`→ on`), the nearest it lands on and why (`→ low`, `its
+nearest: always reasons: …`, since gpt-oss can't stop thinking), or why
+a model refuses it. The last row says how a thinking budget is sent, or
+why a model refuses one. The level your configuration asks for, and the
+endpoint the cell runs at, are marked with `▸`.
+```
 Shows, in one table, what every reasoning level becomes on every model,
 with the endpoints serving each: the switch or effort that gets sent, the
 sampling it brings with it, the level it falls back to (`→ on`), or why a

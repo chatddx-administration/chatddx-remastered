@@ -82,6 +82,7 @@ def test_a_level_the_engine_s_model_refuses_is_said_until_it_is_set_otherwise(
 
     written = say(f"on {MISTRAL}")
     assert f"{MISTRAL_MODEL}: " in written and "doesn't reason" in written
+    assert "set another in its place" in written and not repl.failed
     assert repl.prompt == f"alice {NATIVE}+reasoning=on+engine={MISTRAL}×{MISTRAL} #7> "
 
     written = say("set reasoning off")

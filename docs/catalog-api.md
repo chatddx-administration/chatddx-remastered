@@ -16,12 +16,28 @@ Paths are relative to `src/chatddx/catalog/` unless they start with `src/` or `d
 - [families.py](#familiespy): bindings, `family_of`, adopting, surveying, repairing, stale cases
 - [language.py](#languagepy): a component's language, and the checks on writing one
 - [titles.py](#titlespy): descriptions and titles
+```
+AGENT: replace
+Built (agents/wip-engine-part.md, stage 1): names carry no model.
+---
+- [variants.py](#variantspy): the names of what's made for a language
+```
 - [variants.py](#variantspy): the names of what's made for a language or a model
 - [The store's Catalog](#the-stores-catalog)
 - [Database: schema `catalog`](#database-schema-catalog)
 - [Known gaps](#known-gaps)
 
 ## Package
+```
+AGENT: replace
+Built (agents/wip-engine-part.md, stage 1): `made_in` in place of `made_for`.
+---
+`chatddx.catalog` re-exports `LANGUAGE`, `LANGUAGE_KINDS`, `THREAD_KINDS`, `About`, `Behind`, `Binding`, `Divergence`,
+`Edit`, `Entry`, `EntryField`, `Kept`, `Labels`, `MovedOn`, `Part`, `Reader`, `Repair`, `RepairPlan`, `Subject`,
+`Survey`, `Thread`, `check_label`, `language_of`, `language_tag`, `latest`, `made_in`, `variant_name`,
+`variants_for`, and the modules `families`, `language`, `read`, `threads`, `titles` and `variants`. Functions are
+called through their module (`threads.behind(rows, thread)`); `model.py` is imported by path.
+```
 `chatddx.catalog` re-exports `LANGUAGE`, `LANGUAGE_KINDS`, `THREAD_KINDS`, `About`, `Behind`, `Binding`, `Divergence`,
 `Edit`, `Entry`, `EntryField`, `Kept`, `Labels`, `MovedOn`, `Part`, `Reader`, `Repair`, `RepairPlan`, `Subject`,
 `Survey`, `Thread`, `check_label`, `language_of`, `language_tag`, `latest`, `made_for`, `variant_name`,
@@ -79,6 +95,13 @@ third-party package but pydantic. It holds no SQL: it reads through a `Reader` a
 ## model.py
 
 ### Constants
+```
+AGENT: replace
+Built (agents/wip-engine-part.md, stage 1): `facts` has threads.
+---
+- `THREAD_KINDS`: the 23 kinds that have threads, every component kind but `case` and `compilation`, `facts` among
+  them. `0012` repeats them (`thread_kind_check`).
+```
 - `THREAD_KINDS`: the 22 kinds that have threads, every component kind but `case` and `compilation`. `0012` repeats
   them (`thread_kind_check`).
 - `LANGUAGE_KINDS`: the 7 kinds with a language of their own: `chunk.instructions`, `chunk.few_shot`, `chunk.prompt`,
@@ -86,10 +109,26 @@ third-party package but pydantic. It holds no SQL: it reads through a `Reader` a
 - `LANGUAGE`: `^[a-z]{2,3}(-[A-Za-z0-9]{1,8})*$`, which takes `sv`, `pt-BR` and `zh-Hant-TW` and refuses `SV` and
   `en_US`. `0012` repeats it.
 - `VARIED`: `^[1-9][0-9]{0,17}$`, an edit's id as a `varied` entry holds it. `0026` repeats it.
+```
+AGENT: replace
+Built (agents/wip-engine-part.md, stage 1): the engine is a part.
+---
+- `REPLACED`: `^(<the parts, RECIPE_PARTS, joined by |>)=(sha256:[0-9a-f]{64})?$`, a part and the chunk or engine it
+  was set to, or nothing for a part taken out, as a `replaced` entry holds them. `RECIPE_PARTS` is the nine chunk
+  parts, `CHUNK_PARTS`, then `engine`. `0026` repeats it, and `src/chatddx/store/test/test_catalog.py` holds the
+  database's to `RECIPE_PARTS`.
+```
 - `REPLACED`: `^(<the parts, RECIPE_PARTS, joined by |>)=(sha256:[0-9a-f]{64})?$`, a part and the chunk it was set to,
   or nothing for a part taken out, as a `replaced` entry holds them. `0026` repeats it, and
   `src/chatddx/store/test/test_catalog.py` holds the database's to `RECIPE_PARTS`.
 - `RUN_FIELDS`: `VARIED` and `REPLACED`, the fields only a run takes.
+```
+AGENT: add
+Built (agents/wip-engine-part.md, stage 1): after `RUN_FIELDS`.
+---
+- `ENGINE_KINDS`: `("engine.local", "engine.remote")`, the kinds a `replaced` entry's engine is stored as. Not
+  re-exported.
+```
 - `Part`: `Literal["view", "resource"]`.
 - `Labels`: `Mapping[tuple[Part, int], str]`, what a scorer edit calls its views and resources, by part and position.
 - `Kept`: `Literal["created", "edited", "unchanged"]`, what `Catalog.keep` did.
@@ -184,6 +223,13 @@ What a subject's entries say now. It is a `chatddx.identity.Owned`, by its `owne
 - `deleted: bool = False`
 - `language: str | None = None`
 - `varied: int | None = None`: for a run, the configuration's edit its variation was built on.
+```
+AGENT: replace
+Built (agents/wip-engine-part.md, stage 1): the engine is a part.
+---
+- `replaced: dict[str, str | None] = {}`: for a run, each part replaced over it, the chunk's or the engine's digest,
+  or `None` for a part taken out, in `RECIPE_PARTS` order.
+```
 - `replaced: dict[str, str | None] = {}`: for a run, each part replaced over it, the chunk's digest or `None` for a
   part taken out, in `RECIPE_PARTS` order.
 
@@ -312,6 +358,14 @@ Nothing for an entry of another field than `RUN_FIELDS`. `0026` repeats it (`ent
 - Raises `ValueError("a <field> entry is about a run, and what it ran")` for a subject that isn't a run.
 - Raises `ValueError("edit <id> is no configuration's")` for a `varied` entry naming an edit that isn't a skeleton
   thread's, or none.
+```
+AGENT: replace
+Built (agents/wip-engine-part.md, stage 1): the engine part, and the messages as they are now.
+---
+- Raises `ValueError("<digest> isn't a chunk of <part> in the store")` for a `replaced` entry whose chunk isn't stored
+  as that part's kind, and `ValueError("<digest> isn't an engine in the store")` for an `engine` one whose digest isn't
+  stored as one of `ENGINE_KINDS`.
+```
 - Raises `ValueError("<digest> isn't a stored chunk of <part>")` for a `replaced` entry whose chunk isn't stored as
   that part's kind.
 
@@ -341,6 +395,13 @@ several.
 The recipe of the edit's compilation, or `None` when it names none.
 
 ### `holds(rows: Reader, edit: Edit, digest: str, compilation: str | None) -> bool`
+```
+AGENT: replace
+Built (agents/wip-engine-part.md, stage 1): the facts are ignored, as the compiler is.
+---
+Whether `edit` holds `digest` with `compilation`'s recipe: it holds `digest`, and `compilation` is `None`, the edit's
+own, or a compilation of the recipe the edit's holds, by other code or against other facts.
+```
 Whether `edit` holds `digest` with `compilation`'s recipe: it holds `digest`, and `compilation` is `None`, the edit's
 own, or a compilation of the recipe the edit's holds, by other code.
 
@@ -378,6 +439,23 @@ The ids, sorted, of the threads whose head is an expectation of `case`, deleted 
 The references of the thread's head that could be updated, by path; within a path, the newer heads in thread id order,
 then a newer binding. One level only: a reference's own references aren't followed, but a case's are.
 
+```
+AGENT: replace
+Built (agents/wip-engine-part.md, stage 1): a configuration's facts. The two lists.
+---
+The references looked at:
+- the head's own (`Component.refs()`), such as `/skeleton`, `/engine` and `/cases/0`;
+- the recipe of the compilation the head names, under `/recipe`, its engine as `/recipe/engine`;
+- the facts that compilation names, as `/facts`;
+- each case's appendices, under the case's path, such as `/cases/0/appendices/0`.
+
+What is behind:
+- A reference held earlier by a live thread whose head is now another digest: a `Behind` with that `head`, one per
+  thread that moved on. For `/facts`, only when the head's recipe compiled against that head gives another skeleton
+  than the head's, or doesn't compile (`_sends_else`).
+- A case of a live family with a newer binding: a `Behind` with that `binding` and the `replacement`
+  (`families.stale_cases`). The replacement may not be stored.
+```
 The references looked at:
 - the head's own (`Component.refs()`), such as `/skeleton`, `/engine` and `/cases/0`;
 - the recipe of the compilation the head names, under `/recipe`;
@@ -538,6 +616,13 @@ followed by `…` when it is longer than `limit`.
 `<root> with <the appendices' titles, joined by ", ">`, or `root` without appendices.
 
 ### `describe_recipe(recipe: Recipe, title: Title) -> str`
+```
+AGENT: replace
+Built (agents/wip-engine-part.md, stage 1): the engine is the last part.
+---
+The titles of the recipe's parts that are set, in recipe order, so the engine last, joined by ` · `, after `judge: `
+for a judge's. `appendix_layout` isn't shown.
+```
 The titles of the recipe's parts that are set, in recipe order, joined by ` · `, after `judge: ` for a judge's.
 `appendix_layout` isn't shown.
 
@@ -551,6 +636,17 @@ What a component holds, by its kind. `language` is used for translations only.
 - `chunk.few_shot`: `few-shot, <n> message(s)`.
 - `chunk.output`: `native output`, `text output` or `tool <name> output`, then `: <schema title>` or
   `: <property names>` when its schema has one.
+```
+AGENT: replace
+Built (agents/wip-engine-part.md, stage 1): chunks that hold intents. The two items.
+---
+- `chunk.sampling`: the values that are set, such as `temperature 0.2, top_p 0.9`, or `default sampling`; a
+  recommended one is `recommended sampling`, then the values it sets, such as `recommended sampling, max_output_tokens
+  512`.
+- `chunk.reasoning`: for a level, `reasoning <level>`, or `default reasoning` for `default`, then `, budget <n>` when
+  it has a budget; otherwise `effort <e>`, each chat template kwarg as `<key> <JSON>`, and `budget <n>`, joined by
+  `, `; or `default reasoning`.
+```
 - `chunk.sampling`: the values that are set, such as `temperature 0.2, top_p 0.9`, or `default sampling`.
 - `chunk.reasoning`: `effort <e>`, each chat template kwarg as `<key> <JSON>`, and `budget <n>`, joined by `, `; or
   `default reasoning`.
@@ -568,6 +664,12 @@ What a component holds, by its kind. `language` is used for translations only.
 - `model`: its repository.
 - `engine.local`: `<model's title> on <server> <version> (<gpu>)`.
 - `engine.remote`: `<model> from <provider>`.
+```
+AGENT: add
+Built (agents/wip-engine-part.md, stage 1): after `engine.remote`.
+---
+- `facts`: `facts about <model>`.
+```
 - `expectation_schema`: its schema's title or property names, else `expectation schema <short>`.
 - `canary_set`: `<n> canary` or `<n> canaries`.
 - anything else: `<kind> <short>`.
@@ -594,6 +696,22 @@ Without such a thread, what it holds, as `title`'s step 3. Raises `StructuralErr
 
 ## variants.py
 
+```
+AGENT: replace
+Built (agents/wip-engine-part.md, stage 1): names carry a language only, and `made_in` takes `made_for`'s place. The
+first three entries; `language_of` stays.
+---
+### `variant_name(name: str, language: str | None) -> str`
+The name of what's made for a language, `NAME (LANGUAGE)`; `name` for none.
+
+### `made_in(name: str) -> tuple[str, str | None]`
+(name, language) that a variant's name says it was made from and in; `(name, None)` for a name that isn't a
+variant's.
+
+### `variants_for(name: str, names: Iterable[str], language: str | None = None) -> list[str]`
+The variants of `name` among `names`, those made in a language, sorted.
+- `language`: only those made in it.
+```
 ### `variant_name(name: str, language: str | None, model: str | None) -> str`
 The name of what's made for a language, a model or both: `NAME (LANGUAGE)`, `NAME (MODEL)` or
 `NAME (LANGUAGE, MODEL)`; `name` for neither.
@@ -745,6 +863,15 @@ Checks:
 - `entry_shape_check` (0012): the shapes under `Entry`.
 - `entry_shape_check` again (0026), with `varied` and `replaced`.
 - `entry_run_check` (0026): `field NOT IN ('varied', 'replaced') OR run IS NOT NULL`.
+```
+AGENT: replace
+Built (agents/wip-engine-part.md, stage 1): `0026`, edited in place for the engine part.
+---
+- Constraint trigger `entry_varied` (0026), after the row's checks: `catalog.check_varied()` raises `edit <id> is no
+  configuration's` for a `varied` entry naming no skeleton edit, and `<digest> isn't a stored <part>` for a `replaced`
+  entry whose chunk isn't stored as that part's kind, or whose engine isn't stored as `engine.local` or
+  `engine.remote`, as `threads.check_varied` does.
+```
 - Constraint trigger `entry_varied` (0026), after the row's checks: `catalog.check_varied()` raises `edit <id> is no
   configuration's` for a `varied` entry naming no skeleton edit, and `<digest> isn't a stored chunk of <part>` for a
   `replaced` entry whose chunk isn't stored as that part's kind, as `threads.check_varied` does.
@@ -783,6 +910,14 @@ It checks:
 - thread kinds;
 - that an edit holds a stored component of its thread's kind;
 - where forks, `based_on` and compilations point (see `catalog.edit`);
+```
+AGENT: replace
+Built (agents/wip-engine-part.md, stage 1): the engine part.
+---
+- that an entry has exactly one subject, a run or score that has started, a known field and the right shape, a
+  language only on a family, and what a run varied only on a run, naming a configuration's edit and stored chunks and
+  engines;
+```
 - that an entry has exactly one subject, a run or score that has started, a known field and the right shape, a
   language only on a family, and what a run varied only on a run, naming a configuration's edit and stored chunks;
 - that an entry has exactly one subject, a run or score that has started, a known field and the right shape, and a

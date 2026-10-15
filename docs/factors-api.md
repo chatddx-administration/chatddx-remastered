@@ -17,6 +17,12 @@ Paths are relative to `src/chatddx/factors/` unless they start with `src/` or `d
 - [cases.py](#casespy): vignettes, appendices, cases, text cleanup, `prepare_case`
 - [request.py](#requestpy): chunks, recipes, compilation, skeletons, rendering, tool rounds
 - [response.py](#responsepy): a response's first choice, its message, reasoning, parts and tool calls
+```
+AGENT: add
+Built (agents/wip-engine-part.md, stage 1): the facts' classes moved into the factors. A line after this one.
+---
+- [facts.py](#factspy): levels, refusals, landings, `ModelFacts`, `model_name`
+```
 - [engine.py](#enginepy): model artifacts, local and remote engines
 - [trial.py](#trialpy): trials, seeds, canaries, execution
 - [scoring.py](#scoringpy): expectations, judges, views, scorers, scorings
@@ -28,6 +34,14 @@ Paths are relative to `src/chatddx/factors/` unless they start with `src/` or `d
 
 ## Package
 
+```
+AGENT: replace
+Built (agents/wip-engine-part.md, stage 1): `facts` is one of the modules. The paragraph.
+---
+`chatddx.factors` re-exports `Bundle`, `Code`, `Component`, `Finding`, `Fingerprint`, `Registry`, `StructuralError`
+and the modules `cases`, `engine`, `facts`, `kinds`, `request`, `response`, `scoring` and `trial`. Import
+`chatddx.factors.lint` and `chatddx.factors.select` by path.
+```
 `chatddx.factors` re-exports `Bundle`, `Code`, `Component`, `Finding`, `Fingerprint`, `Registry`, `StructuralError`
 and the modules `cases`, `engine`, `kinds`, `request`, `response`, `scoring` and `trial`. Import
 `chatddx.factors.lint` and `chatddx.factors.select` by path.
@@ -42,6 +56,12 @@ one validates it. Sequences are tuples.
 
 **Errors.**
 
+```
+AGENT: replace
+Built (agents/wip-engine-part.md, stage 1): compiling refuses intents the facts refuse. The `StructuralError` row.
+---
+| `base.py:StructuralError` (a `ValueError`) | A problem that takes other components, stored bytes or inputs to see: a missing or wrongly typed reference, a failed cross-check, a digest that doesn't match its bytes, an unknown kind or version, a missing translation, an intent the facts about the engine's model refuse or can't work out, a vignette that isn't UTF-8. |
+```
 | Exception | When |
 | --- | --- |
 | `pydantic.ValidationError` | A model breaks its own rules: a wrong type, a duplicate seed, an owned flag in `argv`, U+0000 in a component. Rules written as validators raise `ValueError`, which pydantic wraps. |
@@ -197,6 +217,14 @@ A self-contained package that can be verified offline.
 
 ## Component kinds
 
+```
+AGENT: replace
+Built (agents/wip-engine-part.md, stage 1): facts are a kind, and a compilation references its recipe's engine and
+its facts. A `facts` row after `engine.remote`, and the `compilation` row.
+---
+| `facts` | `facts.py:ModelFacts` | | |
+| `compilation` | `request.py:Compilation` | `/recipe/<part>`: `chunk.<part>`; `/recipe/engine`: `engine.local`, `engine.remote`; `/skeleton`: `skeleton`; `/facts`: `facts` | its facts are about the model of its recipe's engine |
+```
 | Kind | Class | References (path: kinds) | `cross_check` |
 | --- | --- | --- | --- |
 | `model` | `engine.py:ModelArtifact` | | |
@@ -227,6 +255,19 @@ A self-contained package that can be verified offline.
 `kinds.py:KINDS` lists them in this order, and a test checks that every component class the package defines is listed
 (src/chatddx/factors/test/test_factors.py, `test_every_kind_defined_is_written_down`).
 
+```
+AGENT: replace
+Built (agents/wip-engine-part.md, stage 1): a recipe's engine is a reference of the compilation, and facts have a
+reference type. Both paragraphs.
+---
+A compilation's `<part>` is one of `CHUNK_PARTS` (`instructions`, `few_shot`, `prompt`, `output`, `sampling`,
+`reasoning`, `passthrough`, `translations` and `toolset`), pointing to the chunk kind of the same name;
+`/recipe/engine` points to either engine kind.
+
+Each kind also has a reference type for fields that point to it: `AppendixRef`, `CaseRef`, `ModelRef`, `EngineRef`
+(both engine kinds), `FactsRef`, `ToolRef`, `SkeletonRef`, `TrialRef`, `CanarySetRef`, `ExpectationSchemaRef`,
+`ExpectationRef`, `JudgeRef`, `ScorerRef` and `ScoringRef`.
+```
 A compilation's `<part>` is one of `instructions`, `few_shot`, `prompt`, `output`, `sampling`, `reasoning`,
 `passthrough`, `translations` and `toolset`, pointing to the chunk kind of the same name.
 
@@ -291,6 +332,14 @@ stored.
 
 ### Names and constants
 
+```
+AGENT: replace
+Built (agents/wip-engine-part.md, stage 1): the engine is a recipe part, not a chunk. The `RECIPE_PARTS` row, and a
+`CHUNK_PARTS` row before it.
+---
+| `CHUNK_PARTS` | `instructions`, `few_shot`, `prompt`, `output`, `sampling`, `reasoning`, `passthrough`, `translations`, `toolset`: the parts a chunk fills |
+| `RECIPE_PARTS` | `(*CHUNK_PARTS, "engine")` |
+```
 | Name | Value |
 | --- | --- |
 | `SlotName` | `Literal["vignette", "appendices", "completion", "expectation"]`: filled at send time |
@@ -372,6 +421,16 @@ beside a `$ref` override the target's. It refuses refs outside the schema, refs 
 Refs inside top-level definitions that nothing uses are dropped unchecked.
 
 #### `Sampling`, kind `chunk.sampling`
+```
+AGENT: add
+Built (agents/wip-engine-part.md, stage 1): a sampling chunk may ask for the recommended sampling. A row at the end
+of the table, and a member after `body()`.
+---
+| `recommended` | `bool` | `False`; an intent: compiling fills in what the facts recommend, and the fields set here override it |
+
+`over(values: SamplingValues) -> Sampling`: a literal chunk, `values` with every field this chunk sets over them,
+`recommended` left out, validated anew, so the greedy rule applies. `body()` leaves `recommended` out.
+```
 | Field | Type | Default |
 | --- | --- | --- |
 | `temperature`, `top_p`, `min_p`, `presence_penalty`, `frequency_penalty`, `repetition_penalty` | `float \| None` | `None` |
@@ -387,6 +446,17 @@ share a digest.
 `max_output_tokens` under `max_tokens_key`.
 
 #### `Reasoning`, kind `chunk.reasoning`
+```
+AGENT: add
+Built (agents/wip-engine-part.md, stage 1): a reasoning chunk may ask for a level. A row at the end of the table, and
+its rule.
+---
+| `level` | `facts.py:Effort \| None` | `None`; an intent: a reasoning level or `"default"`, sent as the facts about the engine's model say |
+
+A `level` comes with no `effort` and no `chat_template_kwargs`: `ValueError("a reasoning level is worked out from the
+model's facts, so it comes without an effort or chat template arguments")`, wrapped in `ValidationError`. A
+`thinking_token_budget` may stand beside it.
+```
 | Field | Type | Default |
 | --- | --- | --- |
 | `effort` | `Literal["none", "minimal", "low", "medium", "high"] \| None` | `None`; sent as `reasoning_effort` |
@@ -427,6 +497,12 @@ translation must be non-empty.
 
 ### `class Recipe(Frozen)`
 Not a component; kept only inside a `Compilation`.
+```
+AGENT: add
+Built (agents/wip-engine-part.md, stage 1): every recipe names its engine. A row after `sampling`.
+---
+| `engine` | `EngineRef` | required |
+```
 
 | Field | Type | Default |
 | --- | --- | --- |
@@ -477,6 +553,16 @@ Before validation, a `body` with `temperature == 0` loses `top_p`, `top_k` and `
 | `output_schema -> JsonValue` | `native`: `body["response_format"]["json_schema"]["schema"]`. `tool`: the answer function's `parameters`. `text`: `contract.json_schema`. `None` when absent. |
 | `cross_check` | `"the body offers tools […], the skeleton names […]"` when the offered functions, apart from the answer function, differ from `tools` by name or order. Descriptions may differ. |
 
+```
+AGENT: replace
+Built (agents/wip-engine-part.md, stage 1): a compilation names its facts, and its version went up. The heading
+and the paragraph.
+---
+### `class Compilation(Component)`, kind `compilation`, v2
+`recipe: Recipe`, `skeleton: SkeletonRef`, `compiler: Code`, `facts: FactsRef | None = None`, the facts compiled
+against. Provenance: no component refers to a compilation, and nothing checks that the recipe compiles to the
+skeleton. `cross_check`: `"facts about <facts' model> compiled a recipe for <the recipe's engine's model>"`.
+```
 ### `class Compilation(Component)`, kind `compilation`
 `recipe: Recipe`, `skeleton: SkeletonRef`, `compiler: Code`. Provenance: no component refers to a compilation, and
 nothing checks that the recipe compiles to the skeleton.
@@ -497,6 +583,20 @@ The texts of each part of the recipe, in first-seen order, without duplicates; a
 In schemas, member names under `properties`, `patternProperties`, `$defs`, `definitions` and `dependentSchemas` are
 kept, and nothing under `enum`, `const`, `default` or `examples` is translated.
 
+```
+AGENT: replace
+Built (agents/wip-engine-part.md, stage 1): compiling takes the facts about the engine's model. The heading, a
+step before step 1 (the rest renumbered), and step 6's first lines, its sub-items kept.
+---
+### `compile_request(recipe: Recipe, get: Resolver, facts: ModelFacts | None = None) -> Skeleton`
+1. `landings(recipe, get, facts)`: where the reasoning level lands and the level a recommended sampling follows,
+   raising as described there.
+
+6. Body: the passthrough's keys, then `Sampling.body()`, of `Sampling.over(facts.recommended(<level followed>))` for
+   a recommended sampling, then `reasoning_effort`, `thinking_token_budget` and `chat_template_kwargs` (each when
+   set), the effort and the chat template arguments being the reasoning chunk's own, or for a `level` the writes it
+   lands on, then:
+```
 ### `compile_request(recipe: Recipe, get: Resolver) -> Skeleton`
 1. Resolves every chunk (`StructuralError` for a missing or wrongly typed one).
 2. With `recipe.translations`, passes every text listed under `texts` through its entries. Whitespace-only texts
@@ -521,13 +621,46 @@ kept, and nothing under `enum`, `const`, `default` or `examples` is translated.
 7. Returns the skeleton with the recipe's purpose, the translated appendix layout, and the toolset's tools and
    `max_rounds`.
 
+```
+AGENT: replace
+Built (agents/wip-engine-part.md, stage 1): the skeleton depends on the facts too. The paragraph.
+---
+The same recipe, compiler and facts always give the same skeleton. The engine reaches the skeleton only through its
+model's facts, so engines of one model give one skeleton, and without intents every engine does. Without
+translations, how a chunk splits its text doesn't change the skeleton.
+```
 The same recipe and the same compiler always give the same skeleton. Without translations, how a chunk splits its
 text doesn't change the skeleton.
 
+```
+AGENT: replace
+Built (agents/wip-engine-part.md, stage 1): compiled takes the facts and records them. The section.
+---
+### `compiled(recipe, get, compiler, facts=None) -> tuple[Skeleton, Compilation]`
+A recipe compiled by `compiler`, the running code, against `facts` (`compile_request`), with the compilation that
+records what the skeleton was compiled from: the recipe, the skeleton, `compiler`, and `facts.digest` when there are
+facts, whether or not the recipe asks for an intent.
+```
 ### `compiled(recipe, get, compiler) -> tuple[Skeleton, Compilation]`
 A recipe compiled by `compiler`, the running code, with the compilation that records what the skeleton was compiled
 from.
 
+```
+AGENT: add
+Built (agents/wip-engine-part.md, stage 1): where intents land. A section before this one, after `compiled`.
+---
+### `landings(recipe: Recipe, get: Resolver, facts: ModelFacts | None) -> tuple[Landing | None, Landing | None]`
+Where the recipe's intents land on `facts`: the reasoning level's landing, and the landing a recommended sampling
+follows, each `None` when not asked for.
+1. `StructuralError("facts about <facts' model> can't compile for <model>")` when `facts` aren't about the model of
+   the recipe's engine (`facts.py:model_name`).
+2. `(None, None)` when the reasoning chunk asks for no `level` and the sampling isn't `recommended`.
+3. Without facts: `StructuralError("reasoning '<level>' is worked out from the facts about the engine's model, which
+   has none")`, or `"a recommended sampling is worked out …"` when only the sampling asks.
+4. The level's `ReasoningFacts.resolve`, and `ModelFacts.check_budget()` with a `thinking_token_budget` beside it. A
+   recommended sampling follows that landing, or `resolve("default")` without one, and needs
+   `ModelFacts.recommended` for its level. A `Refused` becomes `StructuralError("<facts' model>: <reason>")`.
+```
 ### `render(skeleton, *, model, seed, fills, return_token_ids=True) -> dict[str, JsonValue]`
 | Parameter | Type |
 | --- | --- |
@@ -630,6 +763,43 @@ the portal's run page.
 
 Both have the engine's digest as subject.
 
+```
+AGENT: add
+Built (agents/wip-engine-part.md, stage 1): the facts' classes moved here from `chatddx.facts`, which re-exports
+them. A section before trial.py's.
+---
+## facts.py
+What is known about a model, as a component, and how a level lands on it. Fields, the facts file and the bundled facts
+are in `docs/facts-api.md`.
+
+| Name | Value |
+| --- | --- |
+| `Intent` | `Literal["off", "on", "minimal", "low", "medium", "high", "xhigh"]`: a reasoning level |
+| `Effort` | `Intent \| Literal["default"]`, the type of `Reasoning.level` |
+| `INTENTS` | the levels, in that order |
+| `FactsRef` | a digest that points to `facts` |
+
+- `Refused(ValueError)`: the facts refuse an intent, or don't know enough to compile it. `landings` turns it into a
+  `StructuralError`.
+- `Refusal(refused: str, nearest: Intent | None = None)`: why the model can't, and the level to land on instead.
+- `Writes(effort, chat_template_kwargs)`: what a level sends as `reasoning_effort` and `chat_template_kwargs`.
+- `Landing(level: Intent, writes: Writes, nearest: tuple[str, ...] = ())`: the level landed on, what it sends, and the
+  reasons of the refusals passed on to their nearest, in order.
+- `ReasoningFacts`, `SamplingValues`, `SamplingFacts`, `ContractFact`, `OutputFacts`: a model's facts, by part.
+
+### `class ModelFacts(Component)`, kind `facts`
+`model: str`, at least one character, the name the facts are about; the specs; `reasoning`, `sampling` and `output`.
+
+| Member | Returns / raises |
+| --- | --- |
+| `check_budget() -> None` | `Refused` unless `reasoning.budget` is `"thinking_token_budget"` |
+| `recommended(level: Intent) -> SamplingValues` | `sampling.recommended[level]`, or `Refused("no sampling is recommended for reasoning '<level>'")` |
+| `reasons_by_default() -> bool \| None` | whether the default lands on a level other than `off`; `None` when it raises `Refused` |
+
+### `model_name(engine: str, get: Resolver) -> str | None`
+The name facts are keyed by, for the component `get` resolves the digest `engine` to: a local engine's model
+artifact's `repo`, a remote engine's `model`, `None` for anything else.
+```
 ## trial.py
 
 ### `class Trial(Component)`, kind `trial`

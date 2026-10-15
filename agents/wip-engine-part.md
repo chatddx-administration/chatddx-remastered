@@ -68,7 +68,8 @@ Stage 1, as designed below, with these details the design left open:
 - **The repl**: the cell's engine is its configuration's engine part; `on ENDPOINT`, `use` and `cell` put the
   endpoint's engine in it and keep every pick; `set engine NAME` swaps it and leaves an endpoint that serves another;
   the prompt and `cell:` show the endpoint named or derived. A level the new engine's model refuses is said as the cell
-  changes (the cell changes anyway, so `set reasoning` can mend it), where `_again` kept the cell as it was.
+  changes, as a note rather than a failure, and the cell changes anyway so that `set reasoning` can mend it, where
+  `_again` kept the cell as it was.
 - **The portal**: the engine picker lists the engines the World's endpoints serve; the endpoint picker shows only for a
   hand-written configuration or an engine served at several endpoints. The home page runs the configuration it picks
   with its engine set to the endpoint's (`parts.engine`).
@@ -80,6 +81,15 @@ Outstanding:
   `plan (en)`, and can leave the endpoint to be derived. Left for the user, who'll get back to it.
 - **`Seen.facts` is read on every access**, several times a look; cheap at today's sizes (a facts thread per model),
   and the place to cache per request if it shows.
+- **Following corrected facts** isn't built at an edge, as following a chunk that moved on isn't: the catalog says a
+  configuration is behind its facts (`behind`, `/facts`), but no edge reads `behind`, and a configuration with nothing
+  replaced is its stored skeleton (`Seen.skeleton`), so an edit with the same recipe writes nothing. Following wants a
+  variation that recompiles against the current facts, and an edge that offers it where `behind` names `/facts`.
+- **A trial's engine and its skeleton's** aren't tied by the factors: a trial may pair a skeleton compiled for one
+  model with an engine of another. The bench never does (a run takes its recipe's engine, `Seen.at`), and the facts'
+  pairing lints catch a sampling or level meant for another model; a hand-made trial or a run again on a trial made
+  before is where it can happen. Take: a lint, `trial.engine_unmatched`, from the skeleton's compilation when it has
+  one.
 
 ## Stage 1: the engine
 
