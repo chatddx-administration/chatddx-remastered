@@ -92,7 +92,8 @@ In `chatddx.settings`:
 prints the worker's id and the World as it starts, and serves `settings.database()` until SIGTERM or SIGINT sets its
 stopping event and wakes it; then it prints that what it held is queued again.
 
-`chatddx portal` runs one in its process (`src/chatddx/api/app.py:app`, `worker=True`); `chatddx api` runs none.
+`chatddx run` runs one in its process (`src/chatddx/api/app.py:app`, `worker=True`); `chatddx api` and
+`chatddx portal` run none.
 
 ## Tests
 `test/`, against the `curated` template, in autocommit mode:

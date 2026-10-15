@@ -6,7 +6,10 @@ from httpx2 import Response
 
 from chatddx import cli
 from chatddx.api.people import COOKIE
+from chatddx.facts import Facts
 from chatddx.identity import Person
+from chatddx.inventory import Inventory
+from chatddx.portal.app import app
 from chatddx.portal.test.conftest import PASSWORD
 from chatddx.store import People
 from chatddx.store.store import Connection
@@ -120,16 +123,26 @@ def test_the_portal_s_pages_aren_t_the_api_s(client: TestClient) -> None:
     assert all(path.startswith("/api/") for path in described["paths"])
 
 
-def test_chatddx_portal_serves_the_portal_and_the_api(
-    monkeypatch: pytest.MonkeyPatch,
+@pytest.mark.parametrize(("command", "worker"), [("portal", False), ("run", True)])
+def test_chatddx_portal_and_run_serve_the_portal_and_the_api(
+    monkeypatch: pytest.MonkeyPatch, command: str, worker: bool
 ) -> None:
     heard: list[tuple[object, str, int]] = []
+    workers: list[bool] = []
+
+    def portal(
+        inventory: Inventory, facts: Facts, conninfo: str, worker: bool = False
+    ) -> FastAPI:
+        workers.append(worker)
+        return app(inventory, facts, conninfo, worker=worker)
 
     def run(served: object, host: str, port: int) -> None:
         heard.append((served, host, port))
 
+    monkeypatch.setattr(cli, "portal", portal)
     monkeypatch.setattr(uvicorn, "run", run)
-    cli.main(["portal", "--world", str(TEST), "--bind", "127.0.0.1:9999"])
+    cli.main([command, "--world", str(TEST), "--bind", "127.0.0.1:9999"])
+    assert workers == [worker]
     [(served, host, port)] = heard
     assert isinstance(served, FastAPI) and (host, port) == ("127.0.0.1", 9999)
     paths = ("home", "signing_in_page", "signing_in", "signing_out", "me")

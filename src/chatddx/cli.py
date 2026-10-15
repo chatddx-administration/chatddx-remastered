@@ -299,19 +299,29 @@ def _api(args: argparse.Namespace) -> None:
 
 
 def _portal(args: argparse.Namespace) -> None:
-    built = settings.portal_assets()
-    if not args.watch and not Assets(built).built:
-        print(
-            f"portal: nothing built in {built}: pnpm --dir frontend build, or --watch",
-            file=sys.stderr,
-        )
+    _unbuilt("portal", "or CHATDDX_PORTAL_ASSETS")
+    _serve("portal", args, portal)
+
+
+def _run(args: argparse.Namespace) -> None:
+    if not args.watch:
+        _unbuilt("run", "or --watch")
     watching = _watching() if args.watch else None
     try:
-        _serve("portal", args, lambda i, f, c: portal(i, f, c, worker=True))
+        _serve("run", args, lambda i, f, c: portal(i, f, c, worker=True))
     finally:
         if watching is not None:
             watching.terminate()
             _ = watching.wait()
+
+
+def _unbuilt(command: str, otherwise: str) -> None:
+    built = settings.portal_assets()
+    if not Assets(built).built:
+        print(
+            f"{command}: nothing built in {built}: pnpm --dir frontend build, {otherwise}",
+            file=sys.stderr,
+        )
 
 
 def _watching() -> subprocess.Popen[bytes]:
@@ -322,11 +332,9 @@ def _watching() -> subprocess.Popen[bytes]:
         )
         return subprocess.Popen(["pnpm", "--dir", frontend, "run", "watch"])
     except FileNotFoundError:
-        raise SystemExit(
-            "portal: --watch builds with pnpm, which isn't on PATH"
-        ) from None
+        raise SystemExit("run: --watch builds with pnpm, which isn't on PATH") from None
     except subprocess.CalledProcessError as e:
-        raise SystemExit(f"portal: pnpm install ended with {e.returncode}") from None
+        raise SystemExit(f"run: pnpm install ended with {e.returncode}") from None
 
 
 def _worker(args: argparse.Namespace) -> None:
@@ -581,15 +589,25 @@ def main(argv: Sequence[str] | None = None) -> None:
     api.set_defaults(run=_api)
 
     portal_parser = commands.add_parser(
-        "portal", help="serve the portal over HTTP, and the API with it at /api/"
+        "portal",
+        help="serve the portal over HTTP, and the API with it at /api/, with no "
+        + "worker: chatddx worker runs beside it",
     )
     _serving(portal_parser, "the portal")
-    _ = portal_parser.add_argument(
+    portal_parser.set_defaults(run=_portal)
+
+    run_parser = commands.add_parser(
+        "run",
+        help="serve the portal over HTTP, the API with it at /api/, and a worker in "
+        + "the same process, for development",
+    )
+    _serving(run_parser, "the portal")
+    _ = run_parser.add_argument(
         "--watch",
         action="store_true",
         help="build the frontend in frontend/ as it changes, while the portal is served",
     )
-    portal_parser.set_defaults(run=_portal)
+    run_parser.set_defaults(run=_run)
 
     worker = commands.add_parser(
         "worker",

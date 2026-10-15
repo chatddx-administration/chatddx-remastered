@@ -79,7 +79,7 @@ def test_the_frontend_s_openapi_document_is_the_api_s(
     assert kept == described, "chatddx openapi > frontend/openapi.json"
 
 
-def test_chatddx_portal_watch_builds_the_frontend_while_it_serves(
+def test_chatddx_run_watch_builds_the_frontend_while_it_serves(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     ran: list[list[str]] = []
@@ -105,7 +105,7 @@ def test_chatddx_portal_watch_builds_the_frontend_while_it_serves(
         ran.append([type(served).__name__, host, str(port)])
 
     monkeypatch.setattr(uvicorn, "run", serve)
-    cli.main(["portal", "--world", str(TEST), "--watch", "--bind", "127.0.0.1:9999"])
+    cli.main(["run", "--world", str(TEST), "--watch", "--bind", "127.0.0.1:9999"])
     frontend = str(FRONTEND)
     assert ran == [
         ["pnpm", "--dir", frontend, "install", "--frozen-lockfile"],
