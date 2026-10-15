@@ -151,7 +151,7 @@ DutchFall10w  Dutchfall11w  ...  casesfromedn1  ...  openxddx-case_9
 
 Press Tab at any point to complete a command, or a name after it, word by
 word: a configuration after `use`, an endpoint after `on`, a case after
-`run` (`Dutchfall11w with ultrasound` included), a tag after `batch` or
+`run` (`Dutchfall11w with ultrasound` included), a tag after `run tag` or
 `show tag`, a run after `replay`. A configuration is offered by its plain
 name, and one made in several languages by its name and language:
 `free-text-guided sv`.
@@ -292,7 +292,7 @@ are left to `show output` and `show tool`.
 ### `show tag TAG...`
 
 The same, with the lints and the scorers' table counting only the cases
-with any of the tags: the cases `batch` would run.
+with any of the tags: the cases `run tag` would run.
 
 ```
 alice plan (en, Qwen/Qwen3-8B-AWQ)×qwen3-8b-awq@fake #4479> show tag edn
@@ -369,8 +369,8 @@ seed: #42
 ```
 
 Draw a new seed whenever you want fresh answers rather than a repeat of
-ones you already have: running a batch twice under the same seed asks the
-same questions the same way twice.
+ones you already have: the same `run tag` twice under the same seed asks
+the same questions the same way twice.
 
 A cell whose sampling is greedy (temperature 0) always gives the model's
 single most likely answer, and a seed changes nothing. The shell runs it
@@ -467,7 +467,7 @@ Press Ctrl-C to stop a run while it streams. What came so far is recorded,
 as stopped. While the run is written down and scored, a first Ctrl-C waits
 for it, and a second stops the scoring; `score` scores what is left.
 
-### `batch TAG...`
+### `run tag TAG...`
 
 Runs the cell on every case with any of the tags, as one run under the
 shell's seed, a line per case. The token count climbs while the case runs;
@@ -475,8 +475,8 @@ then the line fills in with how it went. The run is then scored, and a
 table gives each case's score per view, by case, and a summary per view.
 
 ```
-alice free-text-guided (sv, Qwen/Qwen3-8B-AWQ)×qwen3-8b-awq@fake #42> batch edn
-batch: free-text-guided (sv, Qwen/Qwen3-8B-AWQ) × qwen3-8b-awq@fake × 20 cases tagged edn, seed 42
+alice free-text-guided (sv, Qwen/Qwen3-8B-AWQ)×qwen3-8b-awq@fake #42> run tag edn
+trial: free-text-guided (sv, Qwen/Qwen3-8B-AWQ) × qwen3-8b-awq@fake × 20 cases tagged edn (seed 42)
 case            tokens  outcome
 casesfromedn13      50  completed
 casesfromedn9       50  completed
@@ -498,13 +498,13 @@ recorded as run 1 of trial 9319f5, run e4a95af3
 ```
 
 - **Tags** say which set a case belongs to: `dutch-fall`, `edn` and
-  `openxddx` in the sample. `batch edn dutch-fall` runs both sets.
+  `openxddx` in the sample. `run tag edn dutch-fall` runs both sets.
 - **The lines** come in the order the cases are sent; the table goes by
   case.
 - **The outcome** is `completed`, or `valid`, `invalid` or `salvaged` for
   structured answers; `unread`, `errored` or `stopped` when no answer came,
   with the error at the end of the line. A case whose model runs away is
-  stopped as `run` stops it, and the batch goes on.
+  stopped as `run` stops it, and the run goes on.
 - **In the table**, `—` means no value. **The summary** counts the cases
   scored, their mean and standard error, and apart those with no value:
   where no answer came, where the case has no target, and for any other
@@ -514,7 +514,7 @@ recorded as run 1 of trial 9319f5, run e4a95af3
   after the tables, with how often: `(×4)`.
 - **The seed** is the shell's, the same for every case, and shown in the
   first line. A single `run CASE` afterwards, under the same seed, repeats
-  what the batch did for that case.
+  what `run tag` did for that case.
 - **Ctrl-C once** lets the case under way finish, and then stops; the line
   says so. **Ctrl-C again** stops that case too, recorded as stopped.
 - The same vignette is in one case only, so it is never run twice.
@@ -547,7 +547,7 @@ Shows a run again as it streamed, with when it ran, where, and on which
 build of chatddx. Without a run, the latest; otherwise the first letters of
 its id from `runs` are enough: `replay 809b`. The request isn't kept, so
 the shell renders it again and says whether it is the one that was sent.
-A batch is shown by its lines and tables.
+A run of several cases is shown by its lines and tables.
 
 ```
 alice #69535> replay 809be1a5
@@ -667,5 +667,5 @@ reads lines from a pipe, which is handy for a fixed routine; it echoes each
 line, and stops at the first that fails, exiting with 1:
 
 ```
-printf 'cell plan qwen3-8b@pelle\nseed\nbatch edn\n' | chatddx repl alice
+printf 'cell plan qwen3-8b@pelle\nseed\nrun tag edn\n' | chatddx repl alice
 ```

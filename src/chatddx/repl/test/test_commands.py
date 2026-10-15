@@ -37,6 +37,7 @@ def test_help_lists_every_command_with_the_words_it_takes(say: Say):
     assert "cell CONFIGURATION ENDPOINT" in written
     assert "show [KIND] [NAME...]" in written
     assert "take [from OWNER] [TAG...]" in written
+    assert "run tag TAG..." in written
 
 
 def test_what_it_doesn_t_know_is_said_and_nothing_changes(repl: Repl, say: Say):
@@ -101,12 +102,14 @@ def test_it_completes_a_command_and_then_its_names_word_by_word():
     assert complete(names, "frobnicate x") == []
 
 
-def test_batch_completes_each_tag_once():
-    names = {"tag": ["bytes", "swedish", "targets"]}
+def test_run_tag_completes_each_tag_once():
+    names = {"case": ["targeted", "whitespace"], "tag": ["bytes", "swedish", "targets"]}
 
-    assert complete(names, "batch ") == ["bytes", "swedish", "targets"]
-    assert complete(names, "batch targets ") == ["bytes", "swedish"]
-    assert complete(names, "batch targets s") == ["swedish"]
+    assert complete(names, "run t") == ["tag", "targeted"]
+    assert complete(names, "run tag ") == ["bytes", "swedish", "targets"]
+    assert complete(names, "run tag targets ") == ["bytes", "swedish"]
+    assert complete(names, "run tag targets s") == ["swedish"]
+    assert complete(names, "ru") == ["run", "runs"]
 
 
 def test_tags_complete_after_show_tag_each_once():

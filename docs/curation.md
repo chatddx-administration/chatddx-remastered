@@ -266,7 +266,7 @@ Trials, executions, scorings and hand-written skeletons have no tables, and a da
 ### Picking a variant by the case's language
 The bench picks a configuration's variant by the model the engine it runs on serves, and by language only when there
 is one (src/chatddx/catalog/variants.py). With texts in several languages, the cases a variation runs on should run the
-variant in their own language, so a batch of English and Swedish cases runs each under its own. A variant is known
+variant in their own language, so a run over English and Swedish cases runs each under its own. A variant is known
 only by its name today; what recording it would take is in agents/wip-variants.md.
 
 ### Smaller issues

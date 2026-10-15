@@ -130,7 +130,7 @@ def _skeleton(repl: Repl, started: RunStarted) -> Skeleton:
     return resolve(repl.bench.get, trial.skeleton, Skeleton)
 
 
-# A batch's lines again: each item's tokens and how its call went.
+# The lines `run tag` writes, again: each item's tokens and how its call went.
 def _lines(repl: Repl, skeleton: Skeleton, items: tuple[RunItem, ...]) -> None:
     names = {item.key.case: repl.bench.title(item.key.case) for item in items}
     width = max(len("case"), *(len(n) for n in names.values()))

@@ -1,11 +1,11 @@
 # The object layer: a purist take
 
 Not a plan, and not on the work queue: a take on how `chatddx.factors` would split if how a thing is stored and what
-it means to the research were kept apart. Execution settings are a factor but not a component, and canary sets,
-compilations and, once they are built (`agents/wip-batch.md`), batches are components but not factors. This file
-follows that split to its end, where how something is stored is a layer of its own and "factor" is a label for what
-something means to the research. It also says why, for now, the kinds stay together, and what would make the split
-worth it. On that day the work goes into a `wip-` plan of its own.
+it means to the research were kept apart. Execution settings are a factor but not a component, and canary sets and
+compilations are components but not factors. This file follows that split to its end, where how something is stored
+is a layer of its own and "factor" is a label for what something means to the research. It also says why, for now,
+the kinds stay together, and what would make the split worth it. On that day the work goes into a `wip-` plan of its
+own.
 
 "Decided" means the user said so. "Take" is the agent's recommendation and still open.
 
@@ -15,8 +15,8 @@ worth it. On that day the work goes into a `wip-` plan of its own.
    whether it is a factor.
 3. **Decided, built: the kinds are written down** (see "Kinds written down"): `src/chatddx/factors/kinds.py:KINDS`
    replaces self-registration.
-4. **Keep the kinds together** (see "The pragmatic take"): every kind stays in `chatddx.factors`, the batch kind too
-   when it is built, and the package reads as "the factors, and the objects built alongside them". Take.
+4. **Keep the kinds together** (see "The pragmatic take"): every kind stays in `chatddx.factors`, and the package
+   reads as "the factors, and the objects built alongside them". Take.
 5. **The trigger** (see "The split"): the day an object kind has to import something above `factors`. Until then,
    the split is the plan for that day.
 6. **Open**: the name (see "Naming"), and declaring `kind` as a class keyword (see "Kinds written down").
@@ -27,13 +27,12 @@ worth it. On that day the work goes into a `wip-` plan of its own.
 | object: immutable, content-addressed, identified by its digest | factor: pinned, recorded or observed (`docs/factors.md`, "What a factor is") |
 | record: append-only, a log sealed per run or score (`docs/ledger.md`) | instrument: measures observed factors without changing an output (canary sets) |
 | state: rows updated in place (people; the worker's queue, `docs/store.md`, "The queue") | provenance: says how another object was made (compilations) |
-| text: added under an id and never changed, deleted only by the admin (typed vignettes, `docs/store.md`, "Texts") | work: what is run together (batches) |
+| text: added under an id and never changed, deleted only by the admin (typed vignettes, `docs/store.md`, "Texts") | |
 | World: outside the store (`docs/inventory.md`) | |
 
 Pinned factors are all objects, which is why the two looked the same. The exceptions run both ways:
 - Execution settings are a recorded factor held in records (`src/chatddx/ledger/run.py:RunStarted.execution`).
-- Canary sets and compilations are objects that aren't factors, and batches will be (`docs/factors.md`, "Components
-  but not factors").
+- Canary sets and compilations are objects that aren't factors (`docs/factors.md`, "Components but not factors").
 
 ## What exists today
 - `src/chatddx/factors/base.py` and `bundle.py` define no factor kind: `Digest`, `JsonPointer`, `Sha256Hex`,
@@ -54,12 +53,11 @@ Pinned factors are all objects, which is why the two looked the same. The except
   - The catalog imports no chatddx package but `chatddx.factors` and `chatddx.identity` (`docs/catalog-api.md`).
   - The inventory's check and serving read engines, and its sources build cases (`docs/inventory-api.md`).
 - All 24 kinds are defined in `factors` and listed in `factors/kinds.py:KINDS`, which is all `parse_component`
-  reads. There is no batch kind yet, and a typed case's text is no component: it is kept in the `source` schema.
+  reads. A typed case's text is no component: it is kept in the `source` schema.
 
 ## The pragmatic take
-Take: keep every kind in `factors`, and put batches there too when they are built (`factors/batch.py`, beside
-`trial.py`; the batch's section in `docs/factors.md` sits under "Trials"). Don't extract the object layer, don't move
-kinds, and don't rename the schema. The reasons:
+Take: keep every kind in `factors`. Don't extract the object layer, don't move kinds, and don't rename the schema. The
+reasons:
 - **Reproducibility needs the set of kinds to stay closed.** What the research needs from this layer is that digests
   never change, and that a bundle still loads offline years from now. With every kind in one package, every reader
   knows every kind. The split would have to rebuild that (see "Every kind in one place"), and it adds a new way to
@@ -67,8 +65,6 @@ kinds, and don't rename the schema. The reasons:
 - **Nothing forces the move.** None of the non-factor kinds needs anything above `factors`:
   - canary sets use `RUNTIME_KEYS` (`factors/trial.py`);
   - compilations use `Recipe` and `Code`;
-  - a batch would hold digests and an endpoint's name, which is just a string.
-
   The only cost of keeping them together is vocabulary, and `docs/factors.md` already says "Being a factor and being
   a component are separate questions".
 - **The split's cost lands now, in the wrong places.** 64 import statements in 51 modules would change, the
@@ -140,7 +136,7 @@ The usual name for an immutable, typed thing referred to by a hash of its conten
 - Merkle-DAG writing says node or block.
 
 In Python, `Object` reads badly beside the built-in `object`, which is probably why "component" was chosen. "Component"
-also suggests being part of a trial's closure, and compilations and batches are part of no closure. Options:
+also suggests being part of a trial's closure, and compilations are part of no closure. Options:
 - **A**: `chatddx.objects`, with `Object` and the `object` schema. Take.
 - **B**: `chatddx.objects`, keeping `Component` as the class name and `component` for the tables.
 
@@ -153,7 +149,6 @@ Open: a question for the user.
 | Execution | a recorded factor, not an object | `factors`, as now | nothing |
 | canary set | an instrument | `ledger` | `catalog/titles.py` titles canary sets, so the catalog imports the ledger. Its SQL already points at the ledger's (`catalog.entry` → `ledger.run_stage`). |
 | compilation | provenance | `catalog` | `compiled()` moves with it, while `compile_request` stays in `factors/request.py`. Every user (`catalog/{threads,titles,read}.py`, `store/{catalog,store}.py`, `curation/plan.py`, `bench/seen.py`) sits at or above the catalog. |
-| batch, once built | work | a package of its own below the catalog, e.g. `chatddx.batch` | The catalog would thread and title batches (`agents/wip-batch.md`, "Kept batches"), and the store read them, so the type can't live in the bench, which sits above both. The planner (`Bench.plan`, `bench/plan.py`) stays in the bench, and the worker's jobs name a batch by digest (`agents/wip-worker.md`, "The contract"). This is the same split as a trial in `factors` and its running in `runner`. |
 
 Execution settings stay inside the start records of runs and scores (`ledger/run.py:RunStarted`,
 `ledger/score.py:ScoreStarted`) either way. "Execution settings as a component" (`docs/factors.md`, "Potential design
@@ -199,8 +194,7 @@ To suggest when built:
   isn't about what each kind means to the research. They also take the `base.py`, `bundle.py` and `kinds.py` sections
   and "Database: schema `factor`" from `docs/factors-api.md`.
 - **`docs/factors.md`, "What a factor is"**: pinned factors are held as objects (`docs/objects.md`). The paragraphs
-  on canary sets and compilations move to `docs/ledger.md` and `docs/catalog.md` if those kinds move. The "Batch"
-  section moves to the batch package's doc.
+  on canary sets and compilations move to `docs/ledger.md` and `docs/catalog.md` if those kinds move.
 - **Dependency statements**: `docs/factors.md` ("depend on nothing else in chatddx"), `docs/ledger-api.md` and
   `docs/catalog-api.md` name `chatddx.objects`.
 - **Glossary and migrations**: `docs/chatddx.md`'s "Digest", "Kind", "Bundle" and "Canonical form" refer to objects,

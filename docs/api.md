@@ -314,8 +314,8 @@ many cases is answered 200, whatever it took, and a carry 201, even when the exp
 ## Not covered
 - **A vignette in a run's request.** A run takes cases; a text to run is typed first, and kept in the World's
   database source as a case of its own (see "Typed cases").
-- **A trial beyond one seed**: replicates, an execution's settings, canary sets and text cleanup are the batch
-  planner's and the worker's (agents/wip-batch.md, agents/wip-worker.md).
+- **A trial beyond one seed**: replicates, text cleanup, an execution's settings and canary sets wait on
+  `Bench.start` taking them (agents/wip-worker.md, "Below the worker").
 - **A proxy's forward auth**: once a proxy authenticates, that is its job.
 - **A person's secrets.** An endpoint's credential comes from an environment variable, as in the repl.
 - **Scoring every outstanding run in one request.** A client scores one run at a time (see "Scoring").

@@ -69,10 +69,6 @@ version it came from. Trying a variation costs nothing in the catalog, since any
 A variation worth keeping becomes an edit of its thread, or a fork. Configurations are organised by their lineage, the
 recipe parts they use, what is said about them and their runs, not by their names, which are optional.
 
-A *batch* is to be kept on a thread of its own (docs/factors.md, "Batch"; not built yet): the variations of a
-configuration that a person runs together over the same cases, kept to run again or later. Adding cases to a batch
-will be an edit of its thread, since a batch's trials pin their cases.
-
 ### Recipes
 A recipe has no thread of its own; its history is kept on the skeleton thread it compiles to. Each edit of a skeleton
 thread can name the compilation that produced its skeleton, and the compilation holds the recipe (docs/factors.md,

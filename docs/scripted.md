@@ -62,10 +62,10 @@ The sample World's ten:
 | `unfinished` | `diagnoses` on `qwen3-8b-awq@fake` | `Dutchfall15w` | A run never finished, and so never scored. |
 | `judged` | `free-text` on `qwen3-8b-awq@fake` | `Dutchfall11w` | An answer to a case Olof wrote notes on, scored by the judges as well as the patterns. |
 | `appendix` | `diagnoses` on `qwen3-8b-awq@fake` | `Dutchfall11w with ultrasound` | An appendix that changes the right answer. |
-| `batch` | `diagnoses` on `qwen3-8b-awq@fake` | four | Answers well, a 503 while the engine loads, and a server that goes away. |
+| `several` | `diagnoses` on `qwen3-8b-awq@fake` | four | Answers well, a 503 while the engine loads, and a server that goes away. |
 | `remote` | `free-text` on `mistral-small@remote` | `Dutchfall14w` | A run on the remote engine, whose endpoint asks for a key. |
 
-The test World's six are the same shapes on its cases: `valid`, `stopped`, `unfinished`, `batch` (not scored),
+The test World's six are the same shapes on its cases: `valid`, `stopped`, `unfinished`, `several` (not scored),
 `judged` and `appendix`.
 
 ## Tests
@@ -101,6 +101,6 @@ with the web patched in the process that runs the tools (`urllib.request.urlopen
 ### Smaller issues
 - **No scripted run sends a canary set.** `Bench.start` passes none (docs/bench.md, "Runs and scores"), though both
   data sets hold one.
-- **A scripted run is one run.** `batch` is one run of four cases; a batch of trials, crossing variations, is the batch
-  planner's (agents/wip-batch.md), and a scripted batch waits on it.
+- **No two scripted runs vary a part over the same cases**, as the page to compare runs wants
+  (agents/wip-portal.md, "Comparing variations").
 - **`set` and `--again` have no test**, and no scripted run sets a part.
