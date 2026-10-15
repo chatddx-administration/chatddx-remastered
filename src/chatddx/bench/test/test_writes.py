@@ -9,7 +9,14 @@ from chatddx.factors.request import Recipe
 from chatddx.factors.scoring import Expectation, Judge
 from chatddx.identity import Person
 from chatddx.store import Catalog
-from chatddx.test.world import LINES, MISTRAL, MISTRAL_MODEL, QWEN
+from chatddx.test.world import (
+    GPT_OSS,
+    LINES,
+    MISTRAL,
+    MISTRAL_MODEL,
+    QWEN,
+    QWEN_MODEL,
+)
 
 ZERO = "sha256:" + "0" * 64
 
@@ -208,3 +215,27 @@ def test_a_person_writes_a_judge_over_a_judge_configuration(bench: Bench) -> Non
     generation = bench.configuration(LINES).configuration.digest
     with pytest.raises(ValueError, match="judge uses a generation skeleton"):
         _ = bench.new(Judge(skeleton=generation, engine=engine, seeds=(1,)), "wrong")
+
+
+def test_a_judge_on_another_model_than_its_skeleton_is_worked_out_for_says_so(
+    bench: Bench,
+) -> None:
+    graded = bench.configuration("judge-graded (en)").configuration.digest
+    gpt_oss = bench.endpoint(GPT_OSS)
+    judge = Judge(skeleton=graded, engine=gpt_oss, seeds=(1,))
+    said = f"the skeleton is worked out for {QWEN_MODEL}, and the engine serves "
+    for findings in (
+        bench.check(judge).findings,
+        bench.new(judge, "elsewhere").findings,
+    ):
+        [unmatched] = [f for f in findings if f.code == "judge.engine_unmatched"]
+        assert unmatched.message.startswith(said)
+    on_qwen = Judge(skeleton=graded, engine=bench.endpoint(QWEN), seeds=(1,))
+    assert "judge.engine_unmatched" not in {
+        f.code for f in bench.check(on_qwen).findings
+    }
+    greedy = bench.configuration("judge (en)").configuration.digest
+    anywhere = Judge(skeleton=greedy, engine=gpt_oss, seeds=(1,))
+    assert "judge.engine_unmatched" not in {
+        f.code for f in bench.check(anywhere).findings
+    }

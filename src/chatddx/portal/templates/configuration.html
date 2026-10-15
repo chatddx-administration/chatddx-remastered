@@ -35,6 +35,19 @@
   {% endcall %}
   {% endif %}
 
+  {% if corrected %}
+  {% call section("The facts about its model were corrected") %}
+  <p class="mb-3 text-sm">It was compiled against facts about {{ corrected.model }} that have been corrected since, where they change what it sends{% if corrected.refused %}. They now refuse what it asks: {{ corrected.refused }}. Set another chunk in its place to follow them.{% else %}. Following them keeps its recipe, compiled against the corrected facts.{% endif %}</p>
+  {% if not corrected.refused %}
+  <form method="post" action="/threads/{{ configuration.id }}/facts/follow">
+    <input type="hidden" name="head" value="{{ configuration.head.id }}">
+    <input type="hidden" name="next" value="/configurations/{{ configuration.id }}">
+    <button class="inline-flex h-9 items-center rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground hover:bg-primary/90">Follow the facts</button>
+  </form>
+  {% endif %}
+  {% endcall %}
+  {% endif %}
+
   {% call section("Its versions") %}
   {% set last = versions | length - 1 %}
   <nav class="mb-4 flex items-center gap-3 text-sm" aria-label="Versions">

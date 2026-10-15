@@ -7,7 +7,7 @@ from chatddx.factors.base import Component, resolve
 from chatddx.factors.cases import Appendix, Case
 from chatddx.factors.kinds import BY_KIND
 from chatddx.factors.request import Recipe
-from chatddx.factors.scoring import Expectation, Scorer
+from chatddx.factors.scoring import Expectation, Judge, Scorer
 from chatddx.facts import lints
 from chatddx.identity import owns, sees
 
@@ -44,6 +44,8 @@ def check(seen: Seen, component: Component) -> Checked:
     registry = seen.store.load(s.digest for s in component.refs())
     _ = registry.add(component)
     registry.check(registry.closure([component.digest]))
+    if isinstance(component, Judge):
+        seen.add_compilations(registry, component.skeleton)
     findings = lints(registry, seen.facts, [component.digest], seen.catalog.language_of)
     return Checked(component.digest, findings)
 

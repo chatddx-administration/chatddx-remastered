@@ -1,7 +1,7 @@
 from dataclasses import dataclass, field
 from typing import Literal
 
-from chatddx.catalog import About, Divergence, Edit, Kept, Part
+from chatddx.catalog import About, Behind, Divergence, Edit, Kept, Part
 from chatddx.factors.base import Component, Finding
 from chatddx.factors.request import CHUNK_PARTS, Recipe, SlotName
 from chatddx.factors.scoring import Scorer
@@ -105,6 +105,15 @@ class Proposed:
     proposal: Recipe | Component
     digest: str
     compilation: str | None
+
+
+@dataclass(frozen=True)
+class Corrected:
+    behind: Behind
+    model: str
+    digest: str | None
+    compilation: str | None
+    refused: str | None
 
 
 @dataclass(frozen=True)

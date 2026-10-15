@@ -7,16 +7,18 @@ from pydantic import JsonValue
 
 from chatddx import settings
 from chatddx.bench import Bench
-from chatddx.catalog import Entry, EntryField, Subject
+from chatddx.catalog import Edit, Entry, EntryField, Subject
 from chatddx.curation import Plan
 from chatddx.factors.base import Finding
+from chatddx.factors.bundle import Registry
+from chatddx.factors.facts import ModelFacts
 from chatddx.factors.scoring import Expectation
 from chatddx.factors.trial import Trial
 from chatddx.identity import Person
 from chatddx.inventory import World
 from chatddx.ledger import Endpoint, Run, RunStarted
 from chatddx.rig import rig
-from chatddx.store import Catalog, Store
+from chatddx.store import Catalog, People, Store
 from chatddx.store.store import Connection
 from chatddx.test.world import QWEN, TEST
 
@@ -82,3 +84,15 @@ def another_expectation(bench: Bench, case: str, data: JsonValue) -> str:
         catalog.note(Subject(thread=mine), restored, person)
         _ = Catalog(rival).create(other, person)
     return other
+
+
+# As init-data writes a corrected facts file: a new version of the archive's thread.
+def correct_facts(bench: Bench, model: str, **changes: JsonValue) -> Edit:
+    held = bench.facts.models[model].model_dump(mode="json")
+    newer = ModelFacts.model_validate({**held, **changes})
+    registry = Registry()
+    _ = Store(bench.conn).add(registry, [registry.add(newer)])
+    archive = People(bench.conn).find("archive")
+    assert archive is not None
+    [thread] = bench.catalog.find("facts", model)
+    return bench.catalog.edit(thread, newer.digest, archive.id)

@@ -36,6 +36,7 @@ from chatddx.test.world import (
     MISTRAL_MODEL,
     NATIVE,
     QWEN,
+    QWEN_BARE,
     REMOTE,
     TEST,
     TOOL_ANSWER,
@@ -672,3 +673,18 @@ def test_a_scoring_says_each_score_it_starts_and_a_halt_stops_the_rest(
     before = len(bench.scores_of(started.run, every=True))
     assert {g.refused for g in bench.score(started, chosen, halt=halt)} == {"stopped"}
     assert len(bench.scores_of(started.run, every=True)) == before
+
+
+def test_a_hand_written_configuration_on_another_model_than_its_skeleton_s_says_so(
+    bench: Bench, alice: Person
+) -> None:
+    lines = bench.configuration(LINES).configuration
+    _ = bench.catalog.create(lines.digest, alice.id, name="by hand")
+    variation = bench.configuration("by hand")
+    assert variation.recipe is None
+
+    def codes(endpoint: str) -> set[str]:
+        return {f.code for f in bench.findings(variation, bench.endpoint(endpoint), 7)}
+
+    assert "trial.engine_unmatched" in codes(GPT_OSS)
+    assert "trial.engine_unmatched" not in codes(QWEN_BARE)

@@ -5,12 +5,16 @@ from urllib.parse import urlencode
 import pytest
 from fastapi.testclient import TestClient
 from markupsafe import escape
+from pydantic import JsonValue
 
-from chatddx.bench import PARTS
+from chatddx.bench import PARTS, Bench
+from chatddx.bench.test.helpers import correct_facts
 from chatddx.identity import Person
+from chatddx.inventory import Inventory
 from chatddx.portal.test.test_reading import shown
 from chatddx.portal.test.test_signing_in import signing_in
-from chatddx.test.world import LINES, OFF, QWEN
+from chatddx.store.store import Connection
+from chatddx.test.world import LINES, OFF, QWEN, QWEN_MODEL, TEST
 
 
 @pytest.fixture
@@ -122,6 +126,31 @@ def test_a_fork_follows_its_origin_from_its_page(signed: TestClient) -> None:
     assert "Its origin has moved on" not in shown(signed, path)
     followed = signed.get(f"/api/threads/{fork['id']}/variation").json()
     assert {p["part"]: p["digest"] for p in followed["parts"]}["sampling"] == greedy
+
+
+@pytest.mark.slow
+def test_a_configuration_follows_its_corrected_facts_from_its_page(
+    signed: TestClient, conn: Connection, alice: Person
+) -> None:
+    mine = thread(signed, "configuration", LINES)
+    path = f"/configurations/{mine['id']}"
+    corrected = "The facts about its model were corrected"
+    assert corrected not in shown(signed, path)
+
+    bench = Bench(conn, alice, Inventory.load(TEST / "inventory.toml"))
+    recommended: dict[str, JsonValue] = {"on": {"temperature": 0.2}}
+    _ = correct_facts(bench, QWEN_MODEL, sampling={"recommended": recommended})
+    page = shown(signed, path)
+    assert corrected in page and "Follow the facts" in page
+
+    got = signed.post(
+        f"/threads/{mine['id']}/facts/follow",
+        data={"head": mine["head"]["id"], "next": path},
+    )
+    assert (got.status_code, got.headers["location"]) == (303, path)
+    assert corrected not in shown(signed, path)
+    request = signed.get(f"/api/threads/{mine['id']}/variation").json()["request"]
+    assert request["temperature"] == 0.2
 
 
 @pytest.mark.slow

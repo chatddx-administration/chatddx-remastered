@@ -3,6 +3,7 @@ from .errors import Ambiguous, Conflict, MovedOn, NotFound, OverQuota
 from .model import (
     KINDS,
     WRITTEN,
+    Corrected,
     Family,
     Graded,
     Proposed,
@@ -24,6 +25,7 @@ __all__ = [
     "Ambiguous",
     "Bench",
     "Conflict",
+    "Corrected",
     "Family",
     "Graded",
     "MovedOn",

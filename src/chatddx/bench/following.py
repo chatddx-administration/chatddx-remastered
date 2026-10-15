@@ -1,12 +1,14 @@
 from chatddx.catalog import LANGUAGE_KINDS, Divergence, Labels, Part
+from chatddx.factors.base import resolve
 from chatddx.factors.bundle import Registry
-from chatddx.factors.request import Recipe
+from chatddx.factors.facts import ModelFacts
+from chatddx.factors.request import Compilation, Recipe
 from chatddx.factors.scoring import Expectation, Scorer
 from chatddx.identity import owns, sees
 
 from .components import keep_language
 from .errors import NotFound
-from .model import COMPILED_LANGUAGE, LABELLED, Proposed, Written
+from .model import COMPILED_LANGUAGE, LABELLED, Corrected, Proposed, Written
 from .seen import Seen
 
 
@@ -50,6 +52,58 @@ def follow(seen: Seen, thread: int, head: int, language: str | None = None) -> W
             labels=labels,
         )
     return Written(edit, "a new version", seen.linted(proposed.digest))
+
+
+def corrected(seen: Seen, thread: int) -> Corrected | None:
+    found = _corrected(seen, thread)
+    return None if found is None else found[0]
+
+
+def follow_facts(seen: Seen, thread: int, head: int) -> Written:
+    _, about = seen.thread_by_id(thread, "configuration")
+    if not owns(seen.person.id, about):
+        raise NotFound(f"no configuration {thread} of yours")
+    found = _corrected(seen, thread)
+    if found is None:
+        raise ValueError(f"configuration {thread} has no corrected facts to follow")
+    made, registry = found
+    if made.digest is None or made.compilation is None or registry is None:
+        raise ValueError(
+            f"configuration {thread} can't follow the facts about {made.model}: "
+            + f"{made.refused}"
+        )
+    with seen.conn.transaction():
+        _ = seen.store.add(registry, [made.compilation])
+        edit = seen.catalog.edit(
+            thread,
+            made.digest,
+            seen.person.id,
+            compilation=made.compilation,
+            head=head,
+        )
+    return Written(edit, "a new version", seen.linted(made.digest))
+
+
+def _corrected(seen: Seen, thread: int) -> tuple[Corrected, Registry | None] | None:
+    edit, _ = seen.thread_by_id(thread, "configuration")
+    if edit.compilation is None:
+        return None
+    moved = [
+        (b, b.head)
+        for b in seen.catalog.behind(thread)
+        if b.path == "/facts" and b.head is not None
+    ]
+    if not moved:
+        return None
+    behind, head = moved[0]
+    model = resolve(seen.get, head.digest, ModelFacts).model
+    recipe = resolve(seen.get, edit.compilation, Compilation).recipe
+    try:
+        registry, compilation = seen.compiled(recipe)
+    except ValueError as e:
+        return Corrected(behind, model, None, None, str(e)), None
+    made = Corrected(behind, model, compilation.skeleton, compilation.digest, None)
+    return made, registry
 
 
 def _followed_labels(seen: Seen, thread: int, diverged: Divergence) -> Labels:

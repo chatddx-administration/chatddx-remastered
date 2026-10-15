@@ -1,10 +1,12 @@
 import pytest
 from fastapi.testclient import TestClient
+from pydantic import JsonValue
 
 from chatddx.api.test.test_variations import thread
 from chatddx.bench import Bench
+from chatddx.bench.test.helpers import correct_facts
 from chatddx.store import People
-from chatddx.test.world import LINES
+from chatddx.test.world import LINES, QWEN_MODEL
 
 
 def _moved(bench: Bench) -> int:
@@ -56,3 +58,45 @@ def test_a_fork_follows_its_origin_once_it_has_moved_on(
         [],
     )
     assert signed.get(proposal).json() is None
+
+
+@pytest.mark.slow
+def test_a_configuration_follows_its_corrected_facts(
+    signed: TestClient, bench: Bench, bob: dict[str, str]
+) -> None:
+    mine = thread(signed, "configuration", LINES)
+    facts, follows = (
+        f"/api/threads/{mine['id']}/{to}" for to in ("facts", "facts/follows")
+    )
+    assert signed.get(facts).json() is None
+    got = signed.post(follows, json={"head": mine["head"]["id"]})
+    assert (got.status_code, got.json()) == (
+        422,
+        {
+            "detail": f"configuration {mine['id']} has no corrected facts to follow",
+            "code": "refused",
+        },
+    )
+
+    recommended: dict[str, JsonValue] = {"on": {"temperature": 0.2}}
+    moved = correct_facts(bench, QWEN_MODEL, sampling={"recommended": recommended})
+    corrected = signed.get(facts).json()
+    assert corrected["model"] == QWEN_MODEL and corrected["refused"] is None
+    assert (corrected["facts"], corrected["head"]["digest"]) == (
+        moved.thread,
+        moved.digest,
+    )
+    assert corrected["digest"] != mine["head"]["digest"]
+    assert signed.get(facts, headers=bob).status_code == 404
+
+    assert (
+        signed.post(follows, json={"head": mine["head"]["id"] - 1}).status_code == 409
+    )
+    got = signed.post(follows, json={"head": mine["head"]["id"]})
+    assert got.status_code == 201
+    followed = got.json()
+    assert (followed["digest"], followed["compilation"]) == (
+        corrected["digest"],
+        corrected["compilation"],
+    )
+    assert signed.get(facts).json() is None

@@ -1644,3 +1644,65 @@ def test_intents_are_worked_out_from_the_facts_of_the_engine_s_model() -> None:
     ).cross_check(reg.get) == [
         "facts about other/model compiled a recipe for google/gemma-3-12b-it"
     ]
+
+
+GEMMA = ModelFacts(
+    model="google/gemma-3-12b-it",
+    reasoning=ReasoningFacts(default="low", low=Writes(effort="low")),
+    sampling=SamplingFacts(recommended={"low": SamplingValues(temperature=1.0)}),
+)
+
+
+def test_a_compilation_pins_the_facts_only_where_they_work_something_out() -> None:
+    reg = Registry()
+    _ = reg.add(GEMMA)
+    literal = generation_recipe(reg)
+    asked = literal.model_copy(update={"sampling": reg.add(Sampling(recommended=True))})
+
+    assert compiled(literal, reg.get, RIG, GEMMA)[1].facts is None
+    assert compiled(asked, reg.get, RIG, GEMMA)[1].facts == GEMMA.digest
+
+
+def test_a_trial_or_judge_on_another_model_than_its_skeleton_s_is_linted() -> None:
+    reg = Registry()
+    ids = world(reg)
+    _ = reg.add(GEMMA)
+    asked = generation_recipe(reg).model_copy(
+        update={"sampling": reg.add(Sampling(recommended=True))}
+    )
+    skeleton, compilation = compiled(asked, reg.get, RIG, GEMMA)
+    _ = reg.add(skeleton)
+    gpt_oss = reg.add(RemoteEngine(provider="example", model="openai/gpt-oss-20b"))
+    gemma = reg.add(RemoteEngine(provider="example", model="google/gemma-3-12b-it"))
+    judging = resolve(reg.get, ids["judge"], Judge).skeleton
+
+    def found(engine: str, judged: bool = False) -> list[tuple[str, str]]:
+        held = judging if judged else skeleton.digest
+        paired = (
+            Judge(skeleton=held, engine=engine, seeds=(1,))
+            if judged
+            else Trial(skeleton=held, engine=engine, cases=(ids["case"],), seeds=(1,))
+        )
+        return [
+            (f.code, f.message)
+            for f in lint(reg, [reg.add(paired)])
+            if f.code.endswith(".engine_unmatched")
+        ]
+
+    assert found(gpt_oss) == []
+    _ = reg.add(compilation)
+    assert found(gpt_oss) == [
+        (
+            "trial.engine_unmatched",
+            "the skeleton is worked out for google/gemma-3-12b-it, and the engine "
+            + "serves openai/gpt-oss-20b",
+        )
+    ]
+    assert found(gemma) == found(ids["engine"]) == []
+    for_judge = compilation.model_copy(update={"skeleton": judging})
+    _ = reg.add(for_judge)
+    assert [code for code, _ in found(gpt_oss, judged=True)] == [
+        "judge.engine_unmatched"
+    ]
+    _ = reg.add(compilation.model_copy(update={"facts": None}))
+    assert found(gpt_oss) == []

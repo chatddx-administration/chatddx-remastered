@@ -53,6 +53,7 @@ def configuration(
     proposal = None
     if mine and forked is not None and not shown.deleted:
         proposal = api.proposal(bench, thread)
+    corrected = None if not mine or shown.deleted else api.facts(bench, thread)
     changes = [
         (v.path.removeprefix("/recipe/"), _held(bench, v.base), _held(bench, v.fork))
         for v in ([] if proposal is None else proposal.varies)
@@ -88,6 +89,7 @@ def configuration(
         configuration=shown,
         origin=None if forked is None else forked.thread,
         proposal=proposal,
+        corrected=corrected,
         changes=changes,
         versions=versions,
         at=at,

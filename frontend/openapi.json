@@ -1014,6 +1014,127 @@
         }
       }
     },
+    "/api/threads/{thread}/facts": {
+      "get": {
+        "tags": [
+          "threads"
+        ],
+        "summary": "Facts",
+        "operationId": "facts_api_threads__thread__facts_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          },
+          {
+            "APIKeyCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "thread",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Thread"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/CorrectedFacts"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "title": "Response Facts Api Threads  Thread  Facts Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/threads/{thread}/facts/follows": {
+      "post": {
+        "tags": [
+          "threads"
+        ],
+        "summary": "Follow Facts",
+        "operationId": "follow_facts_api_threads__thread__facts_follows_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          },
+          {
+            "APIKeyCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "thread",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Thread"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NewFollowFacts"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MadeEdit"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The thread has moved on since the head the edit names"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/threads/{thread}/carries": {
       "post": {
         "tags": [
@@ -2923,6 +3044,75 @@
         "type": "object",
         "description": "a component's JSON as GET /api/components/{digest} gives its body, kind included"
       },
+      "CorrectedFacts": {
+        "properties": {
+          "facts": {
+            "type": "integer",
+            "title": "Facts",
+            "description": "the thread of the facts about its engine's model"
+          },
+          "model": {
+            "type": "string",
+            "title": "Model"
+          },
+          "compiled": {
+            "type": "string",
+            "title": "Compiled",
+            "description": "the facts its head was compiled against"
+          },
+          "head": {
+            "$ref": "#/components/schemas/Edit",
+            "description": "the facts thread's head, which corrects them"
+          },
+          "digest": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Digest",
+            "description": "the skeleton following them comes to"
+          },
+          "compilation": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Compilation"
+          },
+          "refused": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Refused",
+            "description": "why following them is refused: the corrected facts refuse what its recipe asks"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "facts",
+          "model",
+          "compiled",
+          "head",
+          "digest",
+          "compilation",
+          "refused"
+        ],
+        "title": "CorrectedFacts"
+      },
       "Edit": {
         "properties": {
           "id": {
@@ -4183,6 +4373,21 @@
           "head"
         ],
         "title": "NewFollow"
+      },
+      "NewFollowFacts": {
+        "properties": {
+          "head": {
+            "type": "integer",
+            "title": "Head",
+            "description": "the edit the change was made on: the head seen"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "head"
+        ],
+        "title": "NewFollowFacts"
       },
       "NewFork": {
         "properties": {

@@ -1026,11 +1026,12 @@ def compiled(
     recipe: Recipe, get: Resolver, compiler: Code, facts: ModelFacts | None = None
 ) -> tuple[Skeleton, Compilation]:
     skeleton = compile_request(recipe, get, facts)
+    worked_out = any(landings(recipe, get, facts))
     record = Compilation(
         recipe=recipe,
         skeleton=skeleton.digest,
         compiler=compiler,
-        facts=None if facts is None else facts.digest,
+        facts=facts.digest if facts is not None and worked_out else None,
     )
     return skeleton, record
 

@@ -420,7 +420,7 @@ class Seen:
     ) -> list[Finding]:
         skeleton = self.skeleton(variation)
         if skeleton.purpose == "judge":
-            return self._judged(skeleton, engine, seed)
+            return self._judged(skeleton, engine, seed, variation.recipe is None)
         if families is None:
             held = self._cases([f for f, _ in self._families()]).values()
             first = next((c for c in held if c is not None), None)
@@ -430,6 +430,8 @@ class Seen:
         if not some:
             return []
         registry, trial = self.trial(skeleton, engine, some, (seed,))
+        if variation.recipe is None:
+            self.add_compilations(registry, skeleton.digest)
         if families is None:
             return lints(registry, self.facts, [trial.digest])
         known = {f.case: f.about.language for f in families}
@@ -444,9 +446,13 @@ class Seen:
 
         return lints(registry, self.facts, [trial.digest], languages)
 
-    def _judged(self, skeleton: Skeleton, engine: str, seed: int) -> list[Finding]:
+    def _judged(
+        self, skeleton: Skeleton, engine: str, seed: int, by_hand: bool
+    ) -> list[Finding]:
         registry = self.store.load([engine, *(s.digest for s in skeleton.refs())])
         _ = registry.add(skeleton)
+        if by_hand:
+            self.add_compilations(registry, skeleton.digest)
         judge = Judge(skeleton=skeleton.digest, engine=engine, seeds=(seed,))
         _ = registry.add(judge)
         return lints(registry, self.facts, [judge.digest])
@@ -596,7 +602,16 @@ class Seen:
 
     def linted(self, digest: str) -> list[Finding]:
         registry = self.store.load([digest])
+        if isinstance(paired := registry.get(digest), Trial | Judge):
+            self.add_compilations(registry, paired.skeleton)
         return lints(registry, self.facts, [digest], self.catalog.language_of)
+
+    # src/chatddx/factors/lint.py:_made_for reads them from the registry.
+    def add_compilations(self, registry: Registry, skeleton: str) -> None:
+        for compilation in self.store.compilations(skeleton):
+            _ = registry.add(compilation)
+            if compilation.facts is not None:
+                _ = registry.add(self.get(compilation.facts))
 
     def current(self, family: int) -> Vignette:
         return self.rows.bindings([family])[-1].vignette

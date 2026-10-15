@@ -290,6 +290,23 @@ class NewFollow(_Schema):
     language: Language = None
 
 
+class CorrectedFacts(_Schema):
+    facts: int = Field(description="the thread of the facts about its engine's model")
+    model: str
+    compiled: str = Field(description="the facts its head was compiled against")
+    head: Edit = Field(description="the facts thread's head, which corrects them")
+    digest: str | None = Field(description="the skeleton following them comes to")
+    compilation: str | None
+    refused: str | None = Field(
+        description="why following them is refused: the corrected facts refuse what "
+        + "its recipe asks"
+    )
+
+
+class NewFollowFacts(_Schema):
+    head: int = Field(description="the edit the change was made on: the head seen")
+
+
 class MadeThread(ThreadDetail):
     findings: list[Finding]
 
