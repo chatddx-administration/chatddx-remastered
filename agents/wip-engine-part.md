@@ -13,6 +13,13 @@ name. Checked against the code once variations were built. Nothing below is buil
 - **The engine as a recipe part** (option 1 of the spectrum below), in two stages: the engine now, the language next.
   Large refactors are affordable.
 - **"A configuration is made for a model by its chunks" is reversed**, decided when configurations were settled (M1).
+- **The takes F1, N1, S1 and D1, and O2** (see "Options"): no store has data worth keeping, so stores are dropped and
+  loaded again, and migrations are edited in place rather than added to.
+- **A level the model can't honour lands on the nearest it can**, gpt-oss's `off` on `low`, to set the precedent for
+  the feature; whether a particular level is refused or lands on its nearest is a line of its model's facts, simple to
+  change either way (see "Nearest").
+- **An engine served at several endpoints** is refused rather than picked, for a run as for a judge, unless the endpoint
+  is named; written up as unlikely, for both, and linked in the docs (see "Several endpoints").
 
 ## Where it comes from
 In the old chatddx a configuration named no model: the stack was a slice of the cell, and compiling turned
@@ -49,8 +56,9 @@ configuration sends without an edit of it; keeping the facts in the store, as ve
 `plan` is one configuration. Its parts are its texts, its output, `sampling: recommended`, `reasoning: off` and
 `engine: qwen3-8b-awq@pelle`. Picking another engine on the variation page is a variation like any other,
 `plan+engine=gpt-oss-20b@pelle`: every other pick stays, the request is worked out for gpt-oss, and what the model
-can't do is said before anything runs. Saving it keeps one configuration with that engine. The endpoint is where the
-engine is served, picked for it, and named only when several serve one engine. Names carry no model.
+can't do is said before anything runs, as is a level that lands on its nearest: `reasoning: off → low on
+gpt-oss-20b, which always reasons`. Saving it keeps one configuration with that engine. The endpoint is where the
+engine is served, found from it. Names carry no model.
 
 ### Design
 1. **Facts are components.** A kind `facts`: a model's name, the repository a local engine's model comes from or the
@@ -59,47 +67,45 @@ engine is served, picked for it, and named only when several serve one engine. N
    `reasoning_chunk`, `sampling_chunk`) move into `chatddx.factors`, since compiling needs them and the factors depend
    on no other package; `chatddx.facts` keeps reading facts files, for init-data, and the lints. A `facts` thread per
    model, the archive's, written by init-data from the files as engines are; nobody writes facts at the bench, as
-   nobody writes engines. Correcting a fact is a new version of its thread.
+   nobody writes engines. Correcting a fact is a new version of its thread. A refused level may name its nearest (see
+   "Nearest").
 2. **Intent chunks.** `Reasoning` gains `level` (a reasoning level or `default`), with `thinking_token_budget`
    allowed beside it, and none of the literal fields. `Sampling` gains `recommended`, with any literal field beside it
    overriding the recommendation, as `sampling_chunk(**overrides)` does today. A recommended sampling follows the
    recipe's reasoning level, the model's default when the reasoning part is literal or absent, which fixes the old
    chatddx's coupling bug of a non-thinking request on thinking-mode sampling (`docs/research/a-new-datamodel.md` at
-   504792c in chatddx-administration/chatddx, "Reasoning"). Literal chunks stay as they are: greedy, a hand-tuned
-   sampling, and every chunk stored before.
-3. **The recipe names its engine; the compilation names its facts.** `Recipe.engine` (an engine's digest) and
-   `Compilation.facts` (the facts compiled against), both new fields with defaults, so no version is bumped and every
-   stored compilation still reads. `compile_request(recipe, get, facts)` resolves the intents with the facts of the
-   engine's model and refuses what they refuse ("gpt-oss-20b always reasons: …"); a recipe with an intent and no
-   engine, or an engine whose model has no facts, doesn't compile. The skeleton stays the literal request, so two
-   engines of one model compile a recipe to one skeleton, and trials, judges, runs and scores pin exactly what they
-   pin today.
-   `Compilation.cross_check`: its facts are of the recipe's engine's model.
-4. **The catalog.** `facts` is a thread kind (a tier-2 migration repeating `THREAD_KINDS`). What has moved on also looks
-   at a configuration's head's compilation's facts, so a corrected fact makes every configuration compiled against the
-   old one behind, and following compiles it against the new; `holds` ignores the facts, as it ignores the compiler,
-   so recompiling to the same skeleton writes nothing. A title names the engine and describes an intent by what it
-   asks: "ddx · case · management-plan · recommended · off on qwen3-8b-awq@pelle". `catalog/variants.py` loses
-   models; languages stay in names until stage 2.
+   504792c in chatddx-administration/chatddx, "Reasoning"). Literal chunks stay: greedy, or a hand-tuned sampling.
+3. **The recipe names its engine; the compilation names its facts.** `Recipe.engine`, an engine's digest, which every
+   recipe has, and `Compilation.facts`, the facts compiled against, none for a model without facts; the compilation's
+   version goes up, and nothing reads the old one, since stores are loaded again. `compile_request(recipe, get,
+   facts)` resolves the intents with the facts of the engine's model, lands each level where they say, and refuses
+   what they refuse; an intent on an engine whose model has no facts doesn't compile. The skeleton stays the literal
+   request, so two engines of one model compile a recipe to one skeleton, and trials, judges, runs and scores pin
+   exactly what they pin today. `Compilation.cross_check`: its facts are of the recipe's engine's model.
+4. **The catalog.** `facts` is a thread kind (`0012`'s `thread_kind_check`, edited in place). What has moved on also
+   looks at a configuration's head's compilation's facts, so a corrected fact makes every configuration compiled against
+   the old one behind, and following compiles it against the new; `holds` ignores the facts, as it ignores the compiler,
+   so recompiling to the same skeleton writes nothing. A title names the engine and describes an intent by what it asks:
+   "ddx · case · management-plan · recommended · off on qwen3-8b-awq@pelle". `catalog/variants.py` loses models;
+   languages stay in names until stage 2.
 5. **The bench.** `PARTS` gains `engine`, which can't be taken out. A variation compiles against the current facts of
-   its engine's model, as it compiles with the running code. A run's trial takes the recipe's engine; the endpoint is
-   the one serving it, named when several do, and an endpoint serving another engine is refused before the gate does.
-   A configuration without an engine, a hand-written skeleton or one stored before, runs where the endpoint says, as
-   today. `Seen.thread` and `NotFound.per_model` lose the model; `Bench.chunk` and `Bench.configuration` take plain
-   names. `Bench`'s facts come from the store, so the `Facts` passed to it today (`cli.py`, `worker/worker.py`,
-   `api/state.py`, `api/telling.py`, `portal/app.py`, `conftest.py`) goes. A judge's engine is its configuration's.
-6. **Runs.** `replaced` entries take the engine (a migration redoing `0026`'s pattern and `catalog.check_varied` for
+   its engine's model, as it compiles with the running code, and a look says, for each intent, what it asked and where
+   it landed. A run's trial takes the recipe's engine and goes to the endpoint serving it (see "Several endpoints"); an
+   endpoint named that serves another engine is refused before the gate does. A hand-written skeleton runs where the
+   endpoint says, as today. `Seen.thread` and `NotFound.per_model` lose the model; `Bench.chunk` and
+   `Bench.configuration` take plain names. `Bench`'s facts come from the store, so the `Facts` passed to it today
+   (`cli.py`, `worker/worker.py`, `api/state.py`, `api/telling.py`, `portal/app.py`, `conftest.py`) goes. A judge's
+   engine is its configuration's.
+6. **Runs.** `replaced` entries take the engine (`0026`'s pattern and `catalog.check_varied`, edited in place for
    `engine.local` and `engine.remote`). Nothing in the ledger changes.
 7. **Curation.** A `from_facts` record becomes one intent chunk named plainly (`off`, `recommended`). A recipe is made
    once per language, with the engine of the endpoint the World names for configurations (see D), and a judge's
    recipe with the engine of the endpoint the World binds it to. Facts are loaded as threads. The per-model loop of
    `plan_factors`, planning engines first, `_component`'s expansion and `_recipe`'s per-model crossing go. A recipe the
    facts refuse on that engine is skipped and reported, as today.
-8. **Loaded stores.** Running init-data again writes the new configurations and chunks and deletes the archive's
-   per-model threads it wrote before, found by their old names; a person's forks of them stay theirs, forks of deleted
-   threads.
-9. **The API.** `Parts.engine`; a look's and a run's `endpoint` become optional, derived from the engine; a `facts`
-   word for threads; `chatddx openapi > frontend/openapi.json`.
+8. **Loaded stores** are dropped and loaded again (O2); nothing reads what they held.
+9. **The API.** `Parts.engine`; a look's and a run's `endpoint` become optional, derived from the engine; a look's
+   `Part` says where an intent landed; a `facts` word for threads; `chatddx openapi > frontend/openapi.json`.
 10. **The portal.** The engine is a row of the parts table, its picker the engines the World's endpoints serve; the
     endpoint picker, the "made for this endpoint's model" link and the `variants` prop go, and the pickers lose their
     model groups. The home page picks a configuration and an endpoint, and runs the configuration with its engine set
@@ -116,9 +122,33 @@ engine is served, picked for it, and named only when several serve one engine. N
     `repl/test/test_choosing.py`, `test_listing.py`, `test_commands.py`, `portal/test/test_varying.py`,
     `curation/test/test_plan.py`, `test_judges.py`, `test_init.py`, `test/test_sample.py`,
     `frontend/src/lib/variation/logic.test.ts`), every `world_facts()` caller, the test World's data set, and
-    `nix/test.nix`, which finds `plan (en, Qwen/Qwen3-8B-AWQ)` by name. New: compiling intents per model, refusals,
-    a fact corrected making configurations behind and following it, an engine swapped keeping the other picks, a run
-    at a derived endpoint.
+    `nix/test.nix`, which finds `plan (en, Qwen/Qwen3-8B-AWQ)` by name. New: compiling intents per model, a level
+    landing on its nearest and one refused (the test World keeps a plain refusal), a fact corrected making
+    configurations behind and following it, an engine swapped keeping the other picks, a run at a derived endpoint
+    and one refused for an engine at two.
+
+### Nearest
+A refused level may name the level it lands on instead:
+`off = { refused = "always reasons: vLLM rejects reasoning_effort = none for harmony", nearest = "low" }`. Landing
+follows it as it follows a collapse, but says it is a nearest, with the reason, so a look, a run's page and a title
+can say `off → low`. A collapse says the two levels are one request (Qwen3's `low` is its `on`); a nearest says they
+aren't, and the model can't be asked for the first. Taking `nearest` out makes the level a refusal again, and adding
+it back the nearest, so the choice per model and level is one line of its facts, and a new version of them, which
+makes the configurations compiled against them behind.
+
+The precedent: every level the shipped facts and the sample World's refuse gets its nearest: gpt-oss's `off` and
+`minimal` land on `low`, its `xhigh` on `high`, and Mistral Small's `on` on `off`, with minimal to xhigh, which
+collapse into its `on`. Take: a thinking budget a model refuses has no nearest, and stays refused, since a budget
+isn't a level.
+
+### Several endpoints
+A run goes to the endpoint serving its engine, and a judge's calls to the endpoint serving the judge's engine
+(`docs/runner.md`, "Judges"). When several serve it, neither is picked: the run, or the scoring, is refused until the
+endpoint is named. The judges' rule is `src/chatddx/runner/score.py:_serving`, which moves to the inventory to serve
+both. It probably won't happen: an engine is a server we run on one host, or an API, and a World serving one at two
+endpoints would be serving the same model on identical machines, a load balancer's job rather than the World's. Both
+are written up together as such in `docs/bench.md`, "Outstanding", and linked from `docs/runner.md`, "Judges",
+as suggestions.
 
 ### What gets simpler, and what harder
 Simpler: one configuration per recipe and language; no model in any name and no name parsed for one; a variation
@@ -147,22 +177,23 @@ built.
 - **F2. In the recipe**, as a part set from the engine. A corrected fact that changes nothing sent is a new version of
   every configuration compiled against it.
 
-Take: F1. The facts are how a configuration is compiled, not something a researcher picks.
+Decided: F1. The facts are how a configuration is compiled, not something a researcher picks.
 
 ### N. A level the model can't honour
-- **N1. As the facts say.** A level collapses into another, which is the nearest the facts author says it is, or is
-  refused. gpt-oss's `off` is refused today; writing `off = "low"` in its facts makes it the nearest. What a run asked
-  for is in its compilation's recipe, and what it landed on follows from its facts, so both can be shown.
+- **N1. As the facts say.** A level collapses into another, lands on its nearest, or is refused, as the facts author
+  says per model (see "Nearest"). What a run asked for is in its compilation's recipe, and what it landed on follows
+  from its facts, so both can be shown.
 - **N2. A rule in code**: the nearest level the model honours, in the order off, minimal, low, medium, high, xhigh,
   for every refusal.
 
-Take: N1. Whether `off` on a model that always reasons is comparable to `low` is a research judgement, per model.
+Decided: N1, with every refusal landing on its nearest as the precedent. Whether `off` on a model that always reasons
+is comparable to `low` is a research judgement, per model.
 
 ### S. What a recommended sampling follows
 - **S1. The recipe's reasoning level.**
 - **S2. The model's default level**, as `[sampling.recommended] from_facts = { effort = "default" }` writes it today.
 
-Take: S1, the coupling the old note asked for; S2 is a literal chunk away.
+Decided: S1, the coupling the old note asked for; S2 is a literal chunk away.
 
 ### D. The engine of a data set's configurations
 - **D1. One the World names**: a top-level key in `inventory.toml`, beside `[judge]`, naming the endpoint whose engine
@@ -170,7 +201,7 @@ Take: S1, the coupling the old note asked for; S2 is a literal chunk away.
 - **D2. The first endpoint** the inventory lists.
 - **D3. Every engine the World serves**: a configuration per engine, which is what this removes.
 
-Take: D1, as the World binds judges.
+Decided: D1, as the World binds judges.
 
 ### O. Configurations stored before
 - **O1. Kept readable**: the new fields default, so an old recipe has no engine and runs where the endpoint says;
@@ -178,10 +209,9 @@ Take: D1, as the World binds judges.
 - **O2. Rebuilt**: stores loaded before are dropped and loaded again, as for v1 scorers (`docs/migrations.md`,
   `0017`).
 
-Take: O1; it costs one branch, the one hand-written skeletons need anyway.
+Decided: O2. No store holds anything worth keeping, so migrations are edited in place too.
 
 ## Questions for the user
-- **The takes** F1, N1, S1, D1 and O1.
-- **gpt-oss and `off`**: refused, as its facts say, or `low` as the nearest?
-- **Several endpoints for one engine**: a variation names the engine; is picking the endpoint per run, the first
-  that serves it unless one is named, enough?
+- **A refused thinking budget**: refused, as taken above, or dropped as its nearest, so the run thinks unbounded?
+- **The inventory key** of D1: `configurations = "qwen3-8b-awq@pelle"` at the top of `inventory.toml`, or another
+  name?
