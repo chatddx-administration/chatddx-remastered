@@ -1,26 +1,23 @@
-# Variants and variations: work in progress
+# Variants: work in progress
 
-What "variant" and "variation" mean across the docs and the code, where they meet, and what solidifying them takes.
-Both build on what a configuration is (`docs/catalog.md`, "Configurations and variations"). Checked against the
-code at fcef71a, and its quotes again at f7fd2b0, once configurations and requests were settled. Nothing of the
-options below is built: a variant is still known by its name only.
-"Decided" means the user said so; "Take" is the agent's and still open.
+What a variant is in the catalog today, why it rests on names alone, what recording it would take, and which variant
+a variation belongs to. What a variation is, is `agents/wip-variations.md`'s, which is to be started first (see its
+"Start here"). Checked against the code at fcef71a, and its quotes again at f7fd2b0, once configurations and requests
+were settled. Nothing of the options below is built: a variant is still known by its name only. "Decided" means the
+user said so; "Take" is the agent's and still open.
 
-## Where the words come from
+## Where variants come from
 In the old chatddx a configuration was "what to ask and how … A configuration names no model" (`docs/repl.md` at
-504792c in chatddx-administration/chatddx, "A few words first"). Its parts were *slices*: instruction, output,
-coercion, reasoning, sampling and toolset. A slice's alternatives were its *variations*: `set reasoning off` set the
-variation `off`, and compiling turned it into settings for the model of the stack the configuration was paired with,
-`compile(configuration, case, stack facts, seed)` (`docs/research/a-new-datamodel.md` at 504792c, "2.4 Compile"). The
-research note behind it asked for "settings that can be varied one at a time and compared across models … each
-setting lives in one place and means the same thing whatever it is paired with". A configuration could extend another
-and follow it.
+504792c in chatddx-administration/chatddx, "A few words first"), and compiling turned its parts into settings for the
+model of the stack it was paired with, `compile(configuration, case, stack facts, seed)`
+(`docs/research/a-new-datamodel.md` at 504792c, "2.4 Compile"). The research note behind it asked for "settings that
+can be varied one at a time and compared across models … each setting lives in one place and means the same thing
+whatever it is paired with". A configuration could extend another and follow it.
 
-Remastered kept the cell, the parts and the label `NAME+PART=CHUNK`, and took the model out of compiling: facts "never
-reach the wire themselves but write literal chunks before compilation so no digest depends on them" (`docs/facts.md`).
-So a sampling or reasoning chunk is written for one model, init-data writes one per model, and a configuration that
-uses one is made per model: that is where per-model variants come from. Per-language ones come from texts written per
-language. And a variation became a configuration with parts replaced, where it was a part's alternative.
+Remastered took the model out of compiling: facts "never reach the wire themselves but write literal chunks before
+compilation so no digest depends on them" (`docs/facts.md`). So a sampling or reasoning chunk is written for one
+model, init-data writes one per model, and a configuration that uses one is made per model: that is where per-model
+variants come from. Per-language ones come from texts written per language.
 
 Decided, when configurations were settled: a configuration is made for a model by its chunks, so what it sends changes
 only by an edit, and its siblings for other models are variants. Put aside: a configuration for no model, its
@@ -35,50 +32,8 @@ fact would change what a configuration sends without an edit of it, and it neede
 Every doc that defines it agrees: a thread made for a language, a model or both, from one record of a data set, and
 named after them (`docs/curation.md` and `docs/repl.md`, "Terms"). The record, such as `[recipe.plan]` with its
 description and tags, is what the variants are of, and the catalog has nothing that stands for it. The shadcn
-components' `variant` prop is a styling word and unrelated.
-
-### Variation: one idea, two definitions, three types
-The idea: a configuration seen as recipe parts replaced over a version of a configuration. The docs define it two ways:
-- **Kept, of any kind.** `docs/catalog.md` ("Configurations and variations", "Terms"): "a fork, of any kind, together
-  with what it changes from the version it came from". `docs/curation.md`'s `fork_of` uses it so: a record "that this
-  one is a variation of".
-- **Tried, of a configuration.** `docs/bench.md`, `docs/api.md`, `docs/repl.md` and `agents/wip-portal.md`: "a
-  configuration with recipe parts replaced over it, or none, that nobody has saved".
-
-`docs/chatddx.md` ("Intended evolution of configurations") has a variation replace "one or more of the recipe's
-parts", and holds both as stages of one thing: "a variation being tried is just a digest, saving it will make it a
-configuration of its own", which a fork or an edit is. It also says variations are "not an object in the code". The
-code has three types of that name:
-- **`catalog.Variation`** (`src/chatddx/catalog/model.py`; `catalog/threads.py:variation`): a fork's base, its origin's
-  head, and what it `varies`, derived from stored edits. Compared by whole recipes (`purpose` and `appendix_layout`
-  too) when both are compiled, else by the component's fields. Read by following (`bench/following.py`), titles
-  (`catalog/titles.py`) and `GET /api/threads/{id}/proposal`.
-- **`bench.TriedVariation`** (`src/chatddx/bench/variation.py`): an edit, the name it was called by, and the nine parts
-  replaced over it, a plain value. What `Bench.variation`, the repl's cell, scripted runs, `NewRun`, a configuration's
-  forks and edits, and the `variation` island hold.
-- **`api.schemas.Variation`**: a look at a `TriedVariation`, a response with no id.
-
-Where they part:
-- **Kept or tried.** A `TriedVariation` loses its parts when it is saved (`Saved.variation`, "with nothing replaced");
-  what was replaced is known afterwards only if the save was a fork, as the catalog's `varies`. A save that is an edit
-  is no variation in the catalog's sense, and a run of an unsaved one keeps only its label, as the run's name
-  (`agents/wip-portal.md`, "What the variation being tried leaves").
-- **Compared with what.** The catalog compares a fork's head with its base, which moves when a proposal is followed,
-  and any field of the recipe; the bench compares with the edit it was built on, and replaces the nine parts.
-- **Compiled by which code.** Varying a part compiles the whole recipe with the running code
-  (`src/chatddx/bench/seen.py:Seen.skeleton`), so after a change to the compiler a variation can differ from the edit
-  it was built on where nothing was replaced, and the catalog's `varies`, which compares recipes, says nothing of it.
-- **Kinds.** The catalog's is of any kind, a chunk's fork too; everywhere else a variation is a configuration's.
-- **Same identifiers.** `bench.variation()` gives a `TriedVariation` and `catalog.variation()` a `catalog.Variation`;
-  `Saved.variation` and `Proposed.variation` are one of each (`bench/model.py`); `TriedVariation.varied` is a `Recipe`.
-- **"Varies"** is what a fork changes from its base in the catalog, and in the repl's `configurations` table a part
-  whose chunk differs between a name's variants (`repl/listing.py:_alike`), which is no variation at all.
-
-`docs/factors.md` speaks of runs of one trial as "a second source of variation": plain English, and no conflict.
-
-In the old chatddx a variation was a part's alternative, a chunk: `set reasoning off` set the reasoning slice's
-variation `off`, which compiling turned into settings for the stack's model (see "Where the words come from"). The
-label `NAME+PART=CHUNK` is from then.
+components' `variant` prop is a styling word and unrelated. Whether the word stays is `agents/wip-variations.md`'s
+(W).
 
 ### Configuration: three levels
 - **A skeleton thread**, its versions requests with their recipes (`docs/catalog.md`, "Terms").
@@ -89,17 +44,15 @@ label `NAME+PART=CHUNK` is from then.
 - **What an edge holds**: "the configuration is a variation of a configuration thread" (`docs/repl.md`, "The cell"),
   and `TriedVariation` is "a configuration, or a variation of it being tried" (`docs/bench-api.md`).
 
-### How they differ
-- A **configuration** is what is kept: a thread with an id, an owner, a name and versions.
-- A **variation** is a directed, deliberate change: this configuration is that one with these parts replaced. It is
-  what a researcher varies to measure it, and a fork records it.
-- A **variant** is a sameness: this configuration is that one made for another language or model. It is meant to hold
-  the research question fixed, since the request follows the case's language (`docs/catalog.md`, "Languages") and
-  sampling and reasoning follow the model's facts. Only names record it.
+### They cross
+A variant is a sameness: this configuration is that one made for another language or model. It is meant to hold the
+research question fixed, since the request follows the case's language (`docs/catalog.md`, "Languages") and sampling
+and reasoning follow the model's facts. Only names record it. A variation is a deliberate change
+(`agents/wip-variations.md`), and the two cross.
 
-They cross. Init-data makes a variation per variant: `plan-shown (en, Qwen/Qwen3-8B-AWQ)` forks
-`plan (en, Qwen/Qwen3-8B-AWQ)`, and nothing but its name ties it to `plan-shown (en, mistralai/…)`. And the edges
-disagree on what a variation is of:
+Init-data makes a variation per variant: `plan-shown (en, Qwen/Qwen3-8B-AWQ)` forks `plan (en, Qwen/Qwen3-8B-AWQ)`,
+and nothing but its name ties it to `plan-shown (en, mistralai/…)`. And the edges disagree on which variant a
+variation belongs to:
 - **The repl holds it by names.** The cell keeps the configuration's name as given and each part by the name it was set
   by, and picks both again for a new endpoint's model (`src/chatddx/repl/choosing.py:_again`). Its variation is the
   name's, `plan+reasoning=off`, whatever the model.
@@ -143,54 +96,29 @@ The earlier version of this file holds, with these corrections:
   (`catalog.language`), for the kinds that hold text; sampling and reasoning have none.
 
 Other things the check turned up:
-- **A configuration's page never offers its proposal.** The thread page that does redirects a skeleton to
-  `/configurations/{id}` (`src/chatddx/portal/threads.py:thread_page`), which shows the variation being tried only.
 - **Two functions are named `language_of`**: the catalog's, of a digest, and `catalog/variants.py`'s, of a name, which
   is the one `chatddx.catalog` exports.
 
 ## The work ahead
 Solidifying (`AGENTS.md`, "Staging") means built, described in `docs/`, and this file removed. Here that is:
-1. **The words**: one definition of variation in every doc, and identifiers that follow it; "varies" in the repl's
-   table renamed. In the docs, as suggestions (see W).
-2. **Recording a variant** (see V): the catalog's model, its migrations, init-data writing it, and every reader above
+1. **Recording a variant** (see V): the catalog's model, its migrations, init-data writing it, and every reader above
    reading it in place of the name: the bench's `Seen.thread` and `NotFound.per_model`, the repl's completion, listing
    and cell, scripted runs, the API's threads and their filters (`chatddx openapi > frontend/openapi.json`), the
    configuration page, the island's pickers and the home page. `catalog/variants.py` goes, or keeps only what names a
    variant for people.
-3. **What a variation is of** (see L): whether every edge holds it by names, as the repl does, and what saving one
-   keeps.
-4. **Picking by the cases' language** (see P), at every edge.
-5. **Loaded stores**: the names init-data already wrote, and people's giftbag forks under them, moved onto what is
+2. **Which variant a variation belongs to** (see L): whether every edge holds a variation by names, as the repl does,
+   and what saving one keeps.
+3. **Picking by the cases' language** (see P), at every edge.
+4. **Loaded stores**: the names init-data already wrote, and people's giftbag forks under them, moved onto what is
    recorded when init-data runs again.
-6. **Tests**: those that read variants today (`catalog/test/test_variants.py`, `bench/test/test_seen.py`,
+5. **Tests**: those that read variants today (`catalog/test/test_variants.py`, `bench/test/test_seen.py`,
    `repl/test/test_choosing.py`, `test_listing.py`, `test_commands.py`, `portal/test/test_varying.py`,
    `curation/test/test_plan.py`, `test_judges.py`, `test_init.py`, `test/test_sample.py`,
    `frontend/src/lib/variation/logic.test.ts`), and `nix/test.nix`, which finds a configuration by its whole name.
-7. **The smaller things**: a configuration's proposal on its page, the island's link keeping what was picked, and one
-   label for one variation whatever the edge.
-8. **What a run records of what it ran**: its trial, so its skeleton, and its variation's label as its name; not the
-   configuration, the edit or the parts set (`src/chatddx/ledger/run.py:RunStarted`). A run's page links any
-   configuration with an edit that holds its skeleton (`src/chatddx/portal/runs.py:_version`).
-9. **Purpose and appendix layout** are a configuration's, and the catalog's `varies` compares them, but a variation
-   replaces the nine parts only, so only a new configuration from a recipe sets them. Take: the appendix layout as a
-   part a variation can replace, when someone wants to vary it; the purpose never, since a judge configuration is no
-   use at a run.
+6. **The smaller things**: the island's link to another model's variant keeping what was picked, and one label for one
+   variation whatever the edge.
 
 ## Options
-
-### W. The words
-- **W1. Keep both, defined against each other.** A variation is a configuration with parts replaced over a version of
-  another, tried or kept; a variant is a thread made for a language or a model. The catalog's type is renamed after
-  what it is, a fork compared with its base, so that one word names one type, and the repl's "varies" becomes
-  "differs". "Configuration" stays the thread; the cell holds a variation of one. The cheapest, but the distinction
-  stays a convention: in plain English the two words are near-synonyms.
-- **W2. Rename "variant"**, while it is rebuilt anyway, to a word that doesn't share a stem with "variation", such as
-  "adaptation", so that "a variation of a variant" is never written. Costs the docs and the repl's manual.
-- **W3. One word**: a variant as a variation along the language and model axes. A variant isn't a change from a base,
-  and nobody chooses one to measure it, so this blurs the distinction rather than drawing it.
-
-Take: W1. "Variant" has kept one meaning; what drifted is "variation" (two definitions, three types) and
-"configuration" (three levels). W2 if the solidified docs still read awkwardly.
 
 ### V. What records a variant
 - **A. Names, guarded.** Qualifiers are read only on the archive's threads and their forks. Cheap; a person's
@@ -219,7 +147,7 @@ Take: B2. It records the one thing the catalog can't know, the model, uses what 
 keeps the name as people's handle on the group, which is how the repl, the home page and the island speak of it. D if
 a group needs its own description, sharing or deleting.
 
-### L. What a variation is of
+### L. Which variant a variation belongs to
 - **L1. A thread's**, as the API, the portal and the catalog have it. The repl's picking again stays the cell's
   convenience.
 - **L2. A group's.** A variation is a name with parts set by name (`plan+reasoning=off`), picked per model and
@@ -249,9 +177,7 @@ case's language").
 Take: S1. In the code it is `chatddx.catalog.variants`, part of the catalog, and its readers are in every layer.
 
 ## Questions for the user
-- **The name of this file.** The session's task named `agents/wip-variations.md`, and this is `wip-variants.md`.
-  Should it be renamed, with the words settled by W?
-- **The takes** W1, B2, L3, P1 and S1.
+- **The takes** B2, L3, P1 and S1.
 - **Whose variants?** Are variants only what a data set makes, or may a person make their own, such as a Swedish
   variation of their configuration?
 - **Forks.** Should a person's fork of a variant stay a variant of the same thing, made for the same model, as a
