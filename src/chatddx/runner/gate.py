@@ -72,7 +72,7 @@ def bar(
         )
     if tools and sensitive:
         raise Refused(
-            f"the skeleton's tools would get content from source {', '.join(sensitive)}, "
+            f"the configuration's tools would get content from source {', '.join(sensitive)}, "
             + "which is sensitive, and tools can't be cleared yet"
         )
 

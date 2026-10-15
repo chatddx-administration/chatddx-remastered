@@ -182,6 +182,13 @@ The value of the environment variable the endpoint's `credential` names, or `Non
 ### Refusals
 `Refused`, in the order they're checked:
 
+```
+AGENT: replace
+The gate's refusal says configuration, as the titles and findings people read do (src/chatddx/runner/gate.py:bar).
+The row raised by `bar` for tools.
+---
+| `the configuration's tools would get content from source <names>, which is sensitive, and tools can't be cleared yet` | `bar` |
+```
 | Message | Raised by |
 | --- | --- |
 | an endpoint, source or case that doesn't exist (the `LookupError`'s message) | `bar` |

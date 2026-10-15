@@ -450,6 +450,15 @@ can't be read is said in red, and the run is recorded all the same. A case
 whose source the endpoint isn't cleared for is refused before anything is
 sent, as are tools on a sensitive source:
 
+````
+AGENT: replace
+The gate's refusal says configuration (src/chatddx/runner/gate.py:bar).
+---
+```
+alice plan-web (en, Qwen/Qwen3-8B-AWQ)×qwen3-8b-awq@fake #69535> run DutchFall10w
+refused: the configuration's tools would get content from source sample, which is sensitive, and tools can't be cleared yet
+```
+````
 ```
 alice plan-web (en, Qwen/Qwen3-8B-AWQ)×qwen3-8b-awq@fake #69535> run DutchFall10w
 refused: the skeleton's tools would get content from source sample, which is sensitive, and tools can't be cleared yet

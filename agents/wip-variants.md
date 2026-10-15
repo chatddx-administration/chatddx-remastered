@@ -2,7 +2,8 @@
 
 What "variant" and "variation" mean across the docs and the code, where they meet, and what solidifying them takes.
 Both build on what a configuration is (`docs/catalog.md`, "Configurations and variations"). Checked against the
-code at fcef71a. Nothing of the options below is built: a variant is still known by its name only.
+code at fcef71a, and its quotes again at f7fd2b0, once configurations and requests were settled. Nothing of the
+options below is built: a variant is still known by its name only.
 "Decided" means the user said so; "Take" is the agent's and still open.
 
 ## Where the words come from
@@ -44,9 +45,10 @@ The idea: a configuration seen as recipe parts replaced over a version of a conf
 - **Tried, of a configuration.** `docs/bench.md`, `docs/api.md`, `docs/repl.md` and `agents/wip-portal.md`: "a
   configuration with recipe parts replaced over it, or none, that nobody has saved".
 
-`docs/chatddx.md` ("Intended evolution of configurations") holds both as stages of one thing, "a variation being tried
-is just a digest; saved, it's a fork", and says variations are "not an object in the code". The code has three types
-of that name:
+`docs/chatddx.md` ("Intended evolution of configurations") has a variation replace "one or more of the recipe's
+parts", and holds both as stages of one thing: "a variation being tried is just a digest, saving it will make it a
+configuration of its own", which a fork or an edit is. It also says variations are "not an object in the code". The
+code has three types of that name:
 - **`catalog.Variation`** (`src/chatddx/catalog/model.py`; `catalog/threads.py:variation`): a fork's base, its origin's
   head, and what it `varies`, derived from stored edits. Compared by whole recipes (`purpose` and `appendix_layout`
   too) when both are compiled, else by the component's fields. Read by following (`bench/following.py`), titles
@@ -79,8 +81,8 @@ variation `off`, which compiling turned into settings for the stack's model (see
 label `NAME+PART=CHUNK` is from then.
 
 ### Configuration: three levels
-- **A skeleton thread** (`docs/catalog.md`, "Terms"). `plan (en, Qwen/Qwen3-8B-AWQ)` is one, and the sample makes 31
-  of them from 10 recipes.
+- **A skeleton thread**, its versions requests with their recipes (`docs/catalog.md`, "Terms").
+  `plan (en, Qwen/Qwen3-8B-AWQ)` is one, and the sample makes 31 of them from 10 recipes.
 - **A name that stands for its variants**, as people pick one: the repl's `use plan` and its `configurations`, "a row
   per configuration name and language"; the home page, where "picking an endpoint picks the configuration made for its
   model" (`agents/wip-portal.md`, "The home page").
@@ -123,8 +125,9 @@ The earlier version of this file holds, with these corrections:
   beside the models' groups, and a title ending in `(earlier)` makes one too
   (`frontend/src/lib/variation/logic.ts:madeFor`). The home page takes any configuration whose name holds the
   endpoint's model, as a substring (`frontend/src/islands/Home.svelte:fitting`).
-- **The API** parses no names, but already gives every listed thread its head's language
-  (`src/chatddx/api/threads.py:thread_of`), which the portal's templates show and the frontend doesn't read.
+- **The API** parses no names, but gives every listed thread its language, a configuration's its head's recipe's,
+  and the word for its kind (`src/chatddx/api/threads.py:thread_of`); the portal's templates show the language and
+  the frontend doesn't read it.
 - **Any name that looks like one is one**, and `NAME LANGUAGE` is looser: any last word of two or three small letters
   reads as a language when the whole name isn't found, so `plan for icu` is `plan for` in `icu`
   (`catalog/variants.py:language_of`). Alice's `native (sv, …)` being a variant is tested

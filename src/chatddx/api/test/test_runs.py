@@ -264,7 +264,7 @@ def test_a_run_the_gate_refuses_is_unprocessable_and_isn_t_recorded(
     for body, said in (
         (
             asked(signed, NATIVE_TOOLS),
-            "the skeleton's tools would get content from source test",
+            "the configuration's tools would get content from source test",
         ),
         ({**asked(signed), "endpoint": GPT_OSS}, f"endpoint '{GPT_OSS}' can't be"),
     ):

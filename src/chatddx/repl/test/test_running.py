@@ -129,7 +129,7 @@ def test_a_tool_contract_shows_the_call_the_answer_is_given_through(say: Say):
 def test_run_is_refused_where_the_gate_refuses(bench: Bench, say: Say):
     written = say(f"cell native-tools {QWEN}", "run svenska")
 
-    assert "refused: the skeleton's tools would get content from source test" in (
+    assert "refused: the configuration's tools would get content from source test" in (
         written
     )
     assert "trial:" not in written
