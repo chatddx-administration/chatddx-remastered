@@ -20,6 +20,9 @@ name. Checked against the code once variations were built. Nothing below is buil
   change either way (see "Nearest").
 - **An engine served at several endpoints** is refused rather than picked, for a run as for a judge, unless the endpoint
   is named; written up as unlikely, for both, and linked in the docs (see "Several endpoints").
+- **A thinking budget a model refuses stays refused**; a budget has no nearest.
+- **The inventory names the endpoint whose engine a data set's configurations are made for** at its top:
+  `configurations = "qwen3-8b-awq@pelle"`.
 
 ## Where it comes from
 In the old chatddx a configuration named no model: the stack was a slice of the cell, and compiling turned
@@ -138,8 +141,8 @@ makes the configurations compiled against them behind.
 
 The precedent: every level the shipped facts and the sample World's refuse gets its nearest: gpt-oss's `off` and
 `minimal` land on `low`, its `xhigh` on `high`, and Mistral Small's `on` on `off`, with minimal to xhigh, which
-collapse into its `on`. Take: a thinking budget a model refuses has no nearest, and stays refused, since a budget
-isn't a level.
+collapse into its `on`. A thinking budget a model refuses has no nearest, and stays refused, since a budget isn't a
+level.
 
 ### Several endpoints
 A run goes to the endpoint serving its engine, and a judge's calls to the endpoint serving the judge's engine
@@ -197,7 +200,7 @@ Decided: S1, the coupling the old note asked for; S2 is a literal chunk away.
 
 ### D. The engine of a data set's configurations
 - **D1. One the World names**: a top-level key in `inventory.toml`, beside `[judge]`, naming the endpoint whose engine
-  configurations are made for.
+  configurations are made for: `configurations = "qwen3-8b-awq@pelle"`.
 - **D2. The first endpoint** the inventory lists.
 - **D3. Every engine the World serves**: a configuration per engine, which is what this removes.
 
@@ -210,8 +213,3 @@ Decided: D1, as the World binds judges.
   `0017`).
 
 Decided: O2. No store holds anything worth keeping, so migrations are edited in place too.
-
-## Questions for the user
-- **A refused thinking budget**: refused, as taken above, or dropped as its nearest, so the run thinks unbounded?
-- **The inventory key** of D1: `configurations = "qwen3-8b-awq@pelle"` at the top of `inventory.toml`, or another
-  name?
