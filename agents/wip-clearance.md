@@ -48,14 +48,10 @@ The gate enforces it against the inventory's `[cleared]` table until the clearan
 
 ### Completions derived from vignettes
 - Sensitive records are run items, score items and a score's finish (`docs/ledger.md`, "Sensitive records";
-  `src/chatddx/ledger/record.py:Record.case_derived`): completions, the arguments the model passed to tools and what
+  `src/chatddx/ledger/record.py:Record.sensitive`): completions, the arguments the model passed to tools and what
   the tools returned, judge responses, the scorer's `detail`, and findings that quote the answer. Start records, a
   run's finish and canary calls are not. Compilations are components (`src/chatddx/factors/request.py:Compilation`),
   not records, and hold no case text.
-- The label is still `case_derived` in the code (`Record.case_derived`, its test and the comment in
-  `src/chatddx/store/migrations/0005-t1-ledger.sql`) and in `docs/ledger-api.md` and `docs/migrations.md`, while
-  `docs/chatddx.md` ("Vignettes and anything made from them are sensitive") has every part that touches this content
-  label it sensitive. Take: rename it `sensitive`, with those docs.
 - No policy has settled. Options: a database-level read restriction on sensitive tables; a destination check
   when records are exported.
 - Part of it exists: the sensitive tables are in schema `ledger`, and at tier 1 `chatddx_reader` can read

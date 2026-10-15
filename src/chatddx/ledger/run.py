@@ -60,7 +60,7 @@ class Endpoint(Frozen):
 
 
 class RunStarted(Record):
-    case_derived: ClassVar[bool] = False
+    sensitive: ClassVar[bool] = False
     schema_version: ClassVar[int] = 2
     stage: Literal["started"] = "started"
     run: UUID
@@ -83,7 +83,7 @@ class RunStarted(Record):
 
 
 class RunFinished(Record):
-    case_derived: ClassVar[bool] = False
+    sensitive: ClassVar[bool] = False
     stage: Literal["finished"] = "finished"
     run: UUID
     at: UtcDatetime
@@ -114,7 +114,7 @@ class RunItem(Record):
 
 
 class CanaryCall(Record):
-    case_derived: ClassVar[bool] = False
+    sensitive: ClassVar[bool] = False
     run: UUID
     phase: Phase
     canary: int = Field(ge=0)

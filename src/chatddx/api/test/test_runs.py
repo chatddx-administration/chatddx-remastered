@@ -329,7 +329,7 @@ def test_runs_are_listed_newest_first_and_filtered(signed: TestClient) -> None:
 
 @pytest.mark.usefixtures("fake")
 @pytest.mark.slow
-def test_no_browser_keeps_what_is_case_derived(signed: TestClient) -> None:
+def test_no_browser_keeps_what_is_sensitive(signed: TestClient) -> None:
     made, _ = sent(signed, asked(signed))
     run, [score, *_] = made["id"], made["scores"]
     kept = {

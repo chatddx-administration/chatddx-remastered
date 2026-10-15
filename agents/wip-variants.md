@@ -1,9 +1,32 @@
 # Variants and variations: work in progress
 
 What "variant" and "variation" mean across the docs and the code, where they meet, and what solidifying them takes.
-Both build on what a configuration is, which is settled first (`agents/wip-configurations.md`). Checked against the
+Both build on what a configuration is (`docs/catalog.md`, "Configurations and variations"). Checked against the
 code at fcef71a. Nothing of the options below is built: a variant is still known by its name only.
 "Decided" means the user said so; "Take" is the agent's and still open.
+
+## Where the words come from
+In the old chatddx a configuration was "what to ask and how … A configuration names no model" (`docs/repl.md` at
+504792c in chatddx-administration/chatddx, "A few words first"). Its parts were *slices*: instruction, output,
+coercion, reasoning, sampling and toolset. A slice's alternatives were its *variations*: `set reasoning off` set the
+variation `off`, and compiling turned it into settings for the model of the stack the configuration was paired with,
+`compile(configuration, case, stack facts, seed)` (`docs/research/a-new-datamodel.md` at 504792c, "2.4 Compile"). The
+research note behind it asked for "settings that can be varied one at a time and compared across models … each
+setting lives in one place and means the same thing whatever it is paired with". A configuration could extend another
+and follow it.
+
+Remastered kept the cell, the parts and the label `NAME+PART=CHUNK`, and took the model out of compiling: facts "never
+reach the wire themselves but write literal chunks before compilation so no digest depends on them" (`docs/facts.md`).
+So a sampling or reasoning chunk is written for one model, init-data writes one per model, and a configuration that
+uses one is made per model: that is where per-model variants come from. Per-language ones come from texts written per
+language. And a variation became a configuration with parts replaced, where it was a part's alternative.
+
+Decided, when configurations were settled: a configuration is made for a model by its chunks, so what it sends changes
+only by an edit, and its siblings for other models are variants. Put aside: a configuration for no model, its
+model-dependent parts asked for as levels and recommendations (`reasoning: off`, `sampling: recommended`) and its
+texts by a name they have in every language, compiled for a model and a language when paired with an engine and
+cases. Variants would have become compilations and a variation would mean the same on every model, but a corrected
+fact would change what a configuration sends without an edit of it, and it needed recipes as components of their own.
 
 ## The words
 
@@ -40,6 +63,9 @@ Where they part:
   (`agents/wip-portal.md`, "What the variation being tried leaves").
 - **Compared with what.** The catalog compares a fork's head with its base, which moves when a proposal is followed,
   and any field of the recipe; the bench compares with the edit it was built on, and replaces the nine parts.
+- **Compiled by which code.** Varying a part compiles the whole recipe with the running code
+  (`src/chatddx/bench/seen.py:Seen.skeleton`), so after a change to the compiler a variation can differ from the edit
+  it was built on where nothing was replaced, and the catalog's `varies`, which compares recipes, says nothing of it.
 - **Kinds.** The catalog's is of any kind, a chunk's fork too; everywhere else a variation is a configuration's.
 - **Same identifiers.** `bench.variation()` gives a `TriedVariation` and `catalog.variation()` a `catalog.Variation`;
   `Saved.variation` and `Proposed.variation` are one of each (`bench/model.py`); `TriedVariation.varied` is a `Recipe`.
@@ -49,8 +75,8 @@ Where they part:
 `docs/factors.md` speaks of runs of one trial as "a second source of variation": plain English, and no conflict.
 
 In the old chatddx a variation was a part's alternative, a chunk: `set reasoning off` set the reasoning slice's
-variation `off`, which compiling turned into settings for the stack's model (`agents/wip-configurations.md`, "Where
-the word comes from"). The label `NAME+PART=CHUNK` is from then.
+variation `off`, which compiling turned into settings for the stack's model (see "Where the words come from"). The
+label `NAME+PART=CHUNK` is from then.
 
 ### Configuration: three levels
 - **A skeleton thread** (`docs/catalog.md`, "Terms"). `plan (en, Qwen/Qwen3-8B-AWQ)` is one, and the sample makes 31
@@ -139,6 +165,13 @@ Solidifying (`AGENTS.md`, "Staging") means built, described in `docs/`, and this
    `frontend/src/lib/variation/logic.test.ts`), and `nix/test.nix`, which finds a configuration by its whole name.
 7. **The smaller things**: a configuration's proposal on its page, the island's link keeping what was picked, and one
    label for one variation whatever the edge.
+8. **What a run records of what it ran**: its trial, so its skeleton, and its variation's label as its name; not the
+   configuration, the edit or the parts set (`src/chatddx/ledger/run.py:RunStarted`). A run's page links any
+   configuration with an edit that holds its skeleton (`src/chatddx/portal/runs.py:_version`).
+9. **Purpose and appendix layout** are a configuration's, and the catalog's `varies` compares them, but a variation
+   replaces the nine parts only, so only a new configuration from a recipe sets them. Take: the appendix layout as a
+   part a variation can replace, when someone wants to vary it; the purpose never, since a judge configuration is no
+   use at a run.
 
 ## Options
 

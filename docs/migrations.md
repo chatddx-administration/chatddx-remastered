@@ -35,6 +35,15 @@ it, if any. A new schema gets its own section with all three tiers.
   row references its run's. Trials, scorings and cases reference `factor.component`.
 
 ### Tier 1
+```
+AGENT: replace
+`Record.case_derived` is renamed `sensitive`, and so is the reference in the migration's comment.
+---
+- `0005-t1-ledger.sql`: PUBLIC loses all access; the writer gets SELECT, INSERT, with default privileges. The reader
+  gets nothing: `run_item` and `score_item` hold sensitive records
+  (`src/chatddx/ledger/record.py:Record.sensitive`), and the stage rows and canary calls sit beside them so that
+  each log stays in one schema.
+```
 - `0005-t1-ledger.sql`: PUBLIC loses all access; the writer gets SELECT, INSERT, with default privileges. The reader
   gets nothing: `run_item` and `score_item` hold sensitive records
   (`src/chatddx/ledger/record.py:Record.case_derived`), and the stage rows and canary calls sit beside them so that

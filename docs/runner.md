@@ -224,3 +224,12 @@ The API lists them (docs/runner-api.md, "Finding codes").
 - **Every engine is asked for the prompt's token ids** (docs/factors.md, "Smaller issues").
 - **No finding for reasoning that wasn't heeded**, as the old chatddx had.
 - **`max_jobs` across runs** belongs to the worker, and so does asking for a lost run to resume.
+```
+AGENT: add
+From the configurations work: the titles and findings people read say configuration, and the errors and refusals were
+left saying skeleton. The end of "Smaller issues".
+---
+- **Refusals say skeleton** where people read configuration: the gate's "the skeleton's tools would get content from
+  source …", shown when a run is refused, and the cross-checks' "trial uses a judge skeleton" and "judge uses a
+  generation skeleton". Take: the gate's says configuration; the cross-checks stay the factors' own.
+```
