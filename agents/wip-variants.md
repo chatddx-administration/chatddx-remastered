@@ -1,7 +1,8 @@
 # Variants and variations: work in progress
 
 What "variant" and "variation" mean across the docs and the code, where they meet, and what solidifying them takes.
-Checked against the code at fcef71a. Nothing of the options below is built: a variant is still known by its name only.
+Both build on what a configuration is, which is settled first (`agents/wip-configurations.md`). Checked against the
+code at fcef71a. Nothing of the options below is built: a variant is still known by its name only.
 "Decided" means the user said so; "Take" is the agent's and still open.
 
 ## The words
@@ -46,6 +47,10 @@ Where they part:
   whose chunk differs between a name's variants (`repl/listing.py:_alike`), which is no variation at all.
 
 `docs/factors.md` speaks of runs of one trial as "a second source of variation": plain English, and no conflict.
+
+In the old chatddx a variation was a part's alternative, a chunk: `set reasoning off` set the reasoning slice's
+variation `off`, which compiling turned into settings for the stack's model (`agents/wip-configurations.md`, "Where
+the word comes from"). The label `NAME+PART=CHUNK` is from then.
 
 ### Configuration: three levels
 - **A skeleton thread** (`docs/catalog.md`, "Terms"). `plan (en, Qwen/Qwen3-8B-AWQ)` is one, and the sample makes 31
