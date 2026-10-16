@@ -92,6 +92,15 @@ The shell's state: `bench`, `console`, `cell` (a `Cell()` to begin with), `seed`
 | `say_findings(findings, tally=False)` | a line per finding, `[level] code: message`; with `tally`, each once with `(×N)` |
 | `error(message)` | prints `message` in red and sets `failed` |
 
+```
+AGENT: replace
+Built (agents/wip-engine-part.md, stage 2): names carry no language; `_by_name` and `catalog.made_in` are gone.
+The paragraph.
+---
+`_names()` keeps, per kind of `bench/model.py:KINDS`, the names the person sees (`Bench.names`); `set:PART` adds
+`none` for an optional part; and `endpoint`, `case` (family names and `Bench.case_titles()`), `tag`, `part` and
+`kind`.
+```
 `_names()` keeps, per kind of `bench/model.py:KINDS`, the names the person sees, as `_by_name` gives them: a name
 made in one language alone without it, and those made in several whole (`catalog.made_in`); `set:PART` adds `none`
 for an optional part; and `endpoint`, `case` (family names and `Bench.case_titles()`), `tag`, `part` and `kind`.
@@ -131,6 +140,12 @@ command's `rest` param takes whole is followed by the next param's names once it
 
 | Command | Function | On the bench |
 | --- | --- | --- |
+```
+AGENT: replace
+Built (stage 2): the `languages` column, the own language and the translations'. The row.
+---
+| `configurations [NAME]` | `listing.configurations` | `threads`, `catalog.edit_languages`, `purposed`, `catalog.recipe`, `translated`, `catalog.origin`, `about`, `title` |
+```
 | `configurations [NAME]` | `listing.configurations` | `threads`, `purposed`, `catalog.recipe`, `catalog.origin`, `about`, `title` |
 | `endpoints` | `listing.endpoints` | `inventory`, `endpoint`, `model`, `url_of` |
 | `cases` | `listing.cases` | `families` |
@@ -138,6 +153,12 @@ command's `rest` param takes whole is followed by the next param's names once it
 | `on ENDPOINT` | `choosing.on` | `endpoint`, and `title` of its engine, set in the cell's configuration |
 | `cell CONFIGURATION ENDPOINT` | `choosing.cell` | `endpoint`, `configuration`, and `title` of the endpoint's engine, set in it |
 | `set PART CHUNK` | `choosing.set_` | `chunk`, `skeleton` |
+```
+AGENT: replace
+Built (stage 2): `show` says the cell's languages (`Bench.languages`) and lints each (`findings` with them). The row.
+---
+| `show [KIND] [NAME...]` | `inspecting.show` | `at`, `skeleton`, `landed`, `languages`, `findings`, `reach`, `thread`, `get`, `reaching`, `scored_by`, `scores_of`, `runs`, `case_titled`, `appendices_of`, `cases`, `expectation_schemas`, `expectation`, `shared`, `store.scores_of` |
+```
 | `show [KIND] [NAME...]` | `inspecting.show` | `at`, `skeleton`, `landed`, `findings`, `reach`, `thread`, `get`, `reaching`, `scored_by`, `scores_of`, `runs`, `case_titled`, `appendices_of`, `cases`, `expectation_schemas`, `expectation`, `shared`, `store.scores_of` |
 | `reasoning` | `inspecting.reasoning` | `facts`, `inventory`, `endpoint`, `model`, `get`, `at` |
 | `run CASE [SEED]` | `running.run` | `case_titled`, `skeleton`, `at`, `start`, then `score` through `Held`, `runs` |
@@ -155,6 +176,17 @@ command's `rest` param takes whole is followed by the next param's names once it
 `use`, `cell`, `configurations` and `save` take their name with `rest=0`; `set` its chunk with `rest=1`; `run` groups
 its words with `running.case_and_seed`.
 
+```
+AGENT: add
+Built (stage 2, G1): what `run` and `run tag` do with a start of several runs. A paragraph at the end of "The
+commands".
+---
+`run` and `run tag` take the runs `Bench.start` begins (`Started`, a run per language its cases are in, the
+configuration's own first): `run` its one, titled with `, in LANGUAGE, translated` when it is translated
+(`running.py:_sent_in`); `run tag` each in turn, titled with its language when there are several or it is translated,
+a Ctrl-C that stops one stopping those after it before they send (`Running.stop`), and then `left out: …` per
+`Started.left_out`. A start that sends no case raises `ValueError("no case can be sent: …")`, said as its message.
+```
 ## render.py
 ### Styles
 `LABEL` (dim), `REFUSED` (red), `VALID` (green), `LATER` (yellow) and `THINKING`. `STYLES` maps each outcome to its

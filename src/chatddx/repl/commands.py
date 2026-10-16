@@ -32,8 +32,8 @@ def help_(repl: Repl) -> None:
 COMMANDS: dict[str, Command] = {
     "configurations": Command(
         ("[NAME]",),
-        "list the configurations you can use, a row per name and language; NAME's "
-        + "parts",
+        "list the configurations you can use, a row per name with its languages; "
+        + "NAME's parts",
         listing.configurations,
         rest=0,
     ),
@@ -82,7 +82,7 @@ COMMANDS: dict[str, Command] = {
     ),
     "run tag": Command(
         ("TAG...",),
-        "run the cell on each case with any TAG, as one run, then score them "
+        "run the cell on each case with any TAG, a run per language, then score them "
         + "(Ctrl-C stops)",
         running.tagged,
     ),

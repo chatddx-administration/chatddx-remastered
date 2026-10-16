@@ -114,6 +114,8 @@ Stage 2, as designed below, with these details the design left open:
 Outstanding:
 - **The NixOS test** (`nix/test.nix`) still finds `plan (en, Qwen/Qwen3-8B-AWQ)` and names its endpoint; it wants
   `plan`, and can leave the endpoint to be derived. Left for the user, who'll get back to it.
+- **The repl's `runs` says a translated run's language** (`Seen.described`), not the own language's run of a start,
+  nor that the two were started together; `GET /api/runs?with=` and a run's page do.
 - **`Seen.facts` is read on every access**, several times a look; cheap at today's sizes (a facts thread per model),
   and the place to cache per request if it shows.
 
