@@ -515,6 +515,17 @@ Phase 5, first half, as decided (see "Authoring"):
   (`test_browser.py`); vitest for the differences, the schema's form and where a save goes; and by hand on the sample
   World.
 
+Languages (agents/wip-engine-part.md, stage 2):
+- **The variation page** says, under its run line, where it runs ("A run per language: in en, 1 case; in sv, 3 cases,
+  translated.") and lists the cases left out with why, from the look's `languages` and each family's language
+  (`frontend/src/lib/variation/logic.ts:carried`); a family picked beyond the look's goes as its language's, said as
+  "if it can be" when the look didn't see it. Starting opens the first run.
+- **A run's page** says its language and links the runs started with it (`Bench.together`).
+- **The home page** asks the language a case is written in, from the configuration's own and its translations'
+  (`Thread.translated`), `en` for one with none.
+- **Tests**: a browser test of the variation page's languages and a start's two runs linking each other
+  (`test_browser.py`); vitest for `carried`.
+
 ## Below the UI
 What the portal needs below its pages that isn't built:
 1. **The worker** (`docs/worker.md`): runs that outlive the app's process and are seen from every replica.
