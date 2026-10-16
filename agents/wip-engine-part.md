@@ -3,8 +3,8 @@
 What it takes to make the engine one more part of a configuration, as researchers see it, with what depends on the model
 worked out from the facts when a configuration is compiled. Replaces `agents/wip-variants.md` (at d417267), whose
 question, how to record which model a configuration is made for, this answers by making the model a part rather than a
-name. Checked against the code once variations were built. Stage 1 is built (see "Built"), but for the NixOS test;
-stage 2 isn't. "Decided" means the user said so; "Take" is the agent's and still open.
+name. Checked against the code once variations were built. Stages 1 and 2 are built (see "Built"), but for the NixOS
+test. "Decided" means the user said so; "Take" is the agent's and still open.
 
 ## Decided
 - **For a researcher the engine is just another part.** They swap it as they swap a sampling chunk and expect the rest
@@ -88,9 +88,32 @@ Stage 1, as designed below, with these details the design left open:
   engine is the case that happens), and for a hand-written configuration's trial; a configuration with a recipe pairs
   its own engine. Runs don't lint their trial when they start, so a run again on an old trial isn't checked.
 
+Stage 2, as designed below, with these details the design left open:
+- **A configuration's own language** is its recipe's vote (`Seen.own_language`), a hand-written skeleton's its own
+  row. A case of no language goes as written with the configuration's own (U1). When the own language is unknown, a
+  case of a language its translations don't cover goes as written too, linted `language.unknown`, rather than left out:
+  nothing says it isn't the configuration's language.
+- **A translation differs by its texts only**: an unvaried configuration is translated against the facts its own
+  compilation pinned (`Seen.compiled_with`), not the current ones. Its compilation is stored when a run is started,
+  as a varied one's is (`keep_compilation(seen, variation, into)`), so a translated run's skeleton has a language.
+- **A start** (`bench.start -> Started`): the runs in order, the own language first as written, each a `(Carried,
+  Running)`, and the cases left out. Every case left out is "no case can be sent", a refusal. The quota is checked
+  for all the runs before any starts. All runs carry the variation's label as their name; `with` names the first.
+  `Seen.together(first)` is a start's runs; `GET /api/runs?with=` and a run's page read it.
+- **The look's languages** are of the families it is over (its tags); the variation page groups the families picked
+  beyond them by their language, unknown where the look didn't see it (`logic.ts:carried`).
+- **The home page** offers a typed case the configuration's languages (`Thread.translated`), its own first, `en` for a
+  configuration with none.
+- **The repl** runs a start's runs in turn; a Ctrl-C that stops one stops the ones after it. `show` lists the
+  languages before the lints.
+- **Scripted runs** keep one run each: their cases must be sent in one language. The test World's `several` runs on
+  crlf and whitespace, as `lines` leaves Swedish cases out.
+- **The test World** keeps every configuration but `lines-guided` untranslated, so Swedish cases under `lines` are left
+  out; tests that ran `svenska` as any case run an English one.
+
 Outstanding:
 - **The NixOS test** (`nix/test.nix`) still finds `plan (en, Qwen/Qwen3-8B-AWQ)` and names its endpoint; it wants
-  `plan (en)`, and can leave the endpoint to be derived. Left for the user, who'll get back to it.
+  `plan`, and can leave the endpoint to be derived. Left for the user, who'll get back to it.
 - **`Seen.facts` is read on every access**, several times a look; cheap at today's sizes (a facts thread per model),
   and the place to cache per request if it shows.
 
