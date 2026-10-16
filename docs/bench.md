@@ -447,6 +447,15 @@ the person were planned in `agents/wip-authoring.md` at b6f76b8. Its takes were 
   offered;
 - configurations listed by purpose, in the API.
 
+```
+AGENT: replace
+agents/wip-engine-part.md now describes the solution without its options, so U1 is its section "A case of no
+language". The item.
+---
+- **A case of no language** goes as written, linted `language.unknown`, rather than left out (agents/wip-engine-part.md,
+  "A case of no language"); so does a case of a language the translations don't cover when the configuration's own is
+  unknown.
+```
 - **A case of no language** goes as written, linted `language.unknown`, rather than left out (agents/wip-engine-part.md,
   U1, a take); so does a case of a language the translations don't cover when the configuration's own is unknown.
 - **A low-level manual for the bench**, made from `agents/wip-authoring.md` at b6f76b8.

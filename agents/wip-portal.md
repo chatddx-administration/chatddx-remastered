@@ -595,8 +595,7 @@ From "What the portal shows", not on the pages yet:
   shown.
 
 ### What the variation being tried leaves
-- **The pickers rest on names** for what a chunk is made for (`agents/wip-engine-part.md` takes the model out of
-  them); a chunk older than its thread's head is offered only when the variation holds it.
+- **A chunk older than its thread's head** is offered only when the variation holds it.
 - **The part pickers are native selects**: a long list (26 reasoning chunks in the sample World) wants a searchable
   picker, perhaps bits-ui's combobox.
 - **A seed** is drawn for each look and kept while the page is open; it isn't in the address, so a reload draws

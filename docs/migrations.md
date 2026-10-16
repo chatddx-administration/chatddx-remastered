@@ -99,6 +99,19 @@ it, if any. A new schema gets its own section with all three tiers.
   default privileges.
 
 ### Tier 2
+```
+AGENT: replace
+agents/wip-engine-part.md now describes the solution without its options, so "O. Configurations stored before" is
+its section "Stores loaded before". The sub-item "Thread kinds" below.
+---
+  - Thread kinds, `facts` among them, entry fields and language kinds, `chunk.translations` not among them, mirrored
+    by `src/chatddx/catalog/model.py` and tested against it (`test/test_catalog.py`). `facts` was added in place
+    rather than by a new migration: a store migrated before it is dropped and migrated again, and its data sets
+    loaded again, as its compilations are v1, which can't be read any more (agents/wip-engine-part.md, "Stores
+    loaded before"). `chunk.translations` was taken out in place too, as a translations chunk names its
+    languages itself; a store migrated before it is dropped and loaded again the same way, as its compilations are v2
+    and its translations v1.
+```
 - `0012-t2-catalog.sql`: repeats the rules of `chatddx.catalog` that concurrent writers could break.
   - Thread kinds, `facts` among them, entry fields and language kinds, `chunk.translations` not among them, mirrored
     by `src/chatddx/catalog/model.py` and tested against it (`test/test_catalog.py`). `facts` was added in place
