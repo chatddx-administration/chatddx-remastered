@@ -205,13 +205,101 @@ variation of an old configuration can differ from it where nothing was replaced 
 compiler, `docs/catalog.md`, "Smaller issues"); refusals come when an engine is picked, at every edge; the facts are
 read from the store wherever they are read today.
 
-## Stage 2: the language (outline)
+## Stage 2: the language
+Planned in full at e260e87, against the code as stage 1 left it. Nothing below is built. "Decided" means the user said
+so; "Take" is the agent's and still open (see "Options", T to U).
+
 Decided: people mark cases with a language, and are told when a trial is about to run without translations into it;
-otherwise they see little of languages. Take: translations cover every text, instructions, few-shot and prompts too,
-so a configuration is written in one language and carries a translations chunk per other language; a run over cases in
-several languages is a run per language, each under the configuration's translations into it, and a language it has
-none for is said and left out. Per-language threads and `catalog/variants.py` then go. Planned in full once stage 1 is
-built.
+otherwise they see little of languages. Vignettes are never translated (docs/catalog.md, "Languages"), so the request
+follows the case: a Swedish case runs under the configuration translated into Swedish.
+
+### Where it stands
+A language is a `catalog.language` row on a text-bearing chunk, or an entry on a case's family; a configuration's is
+worked out from its recipe's chunks (`catalog/language.py:recipe_language`, a vote). Instructions, few-shot and prompts
+are written once per language and never translated (`request.py:TRANSLATED` is the output, the appendix layout and
+the toolset); a `Translations` chunk translates into one language, the one its catalog row says. So init-data makes a
+recipe per language, `plan (en)` and `free-text-guided (sv)`, a thread each (`curation/plan.py:_recipe`), names carry
+the language, and `catalog/variants.py` parses them back at every edge (`Seen.thread`, the repl's completions and
+`configurations`). A trial is in one language; a run over cases in several is linted `language.mixed` and runs the
+Swedish cases under the English request. Nothing in a run, a trial or the ledger holds a language.
+
+### What a researcher sees
+`plan` is one configuration, written in English, with its translations as one of its parts: `translations: sample`,
+into Swedish. They run it over the cases they pick, in whatever languages: each case is sent in its own language, the
+English ones as written, the Swedish ones translated. Before anything runs, the variation's page says in which
+languages it runs, with how many cases each, and which cases it can't run, with why: `3 cases in de, which plan has
+no translations into, are left out`. Names carry no language, and nothing asks for one but a typed case.
+
+### Design
+1. **Translations cover every text.** `TRANSLATED` becomes every part that holds text: instructions, few-shot,
+   prompt, output, toolset and the appendix layout. A configuration is written in one language, its own, and its
+   translations carry it into others.
+2. **One translations chunk holds every language** (T1): `Translations(into: dict[Language, dict[str, str]])`, the
+   texts translated into each language. The recipe's `translations` part stays one chunk. A translations chunk says its
+   languages itself, so the catalog keeps no language row for it (`LANGUAGE_KINDS` and `0012`'s
+   `language_kind_check` lose `chunk.translations`), and the factors validate language tags (`LANGUAGE` moves to
+   `chatddx.factors`, the catalog imports it).
+3. **Compiling into a language.** `compile_request(recipe, get, facts, into=None)` compiles the recipe as written, or
+   with every text translated into `into`; a text without a translation there, or a recipe without translations into
+   it, is a `StructuralError`, said: `no translation into sv for 'Fill in the plan.'`. `Compilation.into`, the language
+   compiled into, `None` for the recipe as written; its version goes up (O2 again: stores are dropped and loaded).
+   A recipe compiles to a skeleton per language it can be sent in.
+4. **The configuration.** Its thread holds the skeleton as written, and its compilation names no `into`, as today.
+   Its language is its texts' (`recipe_language`, which no longer counts the translations), and the languages it can
+   run in are its own and each its translations cover. A translated skeleton is compiled when a look or a run needs
+   it, and its compilation is stored when a run is, as a judge's is (`Plan.compilations`); a skeleton's language is
+   its compilations' `into`, or else its recipe's.
+5. **A run per language** (G1). Starting a variation on cases groups them by their family's language: the
+   configuration's own is sent as written, a language its translations cover is sent translated, and a case of a
+   language it can't be sent in is left out and said (M1). Each group is a run of its own, a trial of one skeleton as
+   now, so trials, the ledger and scoring don't change. The runs started together are told apart by their language
+   and kept together by a `with` entry naming the first of them, so an edge lists and links them as one start.
+6. **A case of no language** runs as written, said as `language.unknown` (U1): a typed case is given one where it is
+   typed, so only a family loaded without one has none.
+7. **Names lose the language.** `plan (en)` and `clinician (en)` are `plan` and `clinician`; `catalog/variants.py`
+   goes, and with it `Seen.thread`'s language resolution, the repl's `_by_name`, and the `Ambiguous` "made in more
+   than one language".
+8. **Curation** (C1). A texts file holds what is written in its language: text records, as now, and translations
+   records, whose entries translate into it. `[translations.X.of]` groups by any text record, instructions, few-shot
+   and prompts too, and a translations record of one name in several texts files is one chunk, into each of their
+   languages. A recipe is made once, in its texts' language, and names its translations as now. Loading says, per
+   recipe, the languages its translations can't carry it into, and why (`recipe plan: no translation into sv for
+   'Case:'`), and makes it all the same. The sample and test Worlds' Swedish instructions and worked examples become
+   translations of their English ones, and `free-text-guided` becomes one configuration translated into Swedish.
+9. **Lints.** `language.mixed` stays for a trial made by hand, since the bench no longer makes one. A look says, for
+   the cases it is over, the languages it runs in and the cases left out (`translations.missing`, a warning, with the
+   reason when translations into the language exist but lack a text). `language.unknown` stays.
+10. **The bench.** `Seen.languages(variation, families)`: each language among the cases, with its cases, and the
+    skeleton it is sent as, or why it can't be; `start` returns a `Running` per language, and `again` runs a run's
+    trial again, one language. `findings` lints each language's trial. `type_case` keeps its language, now required.
+11. **The API.** A look gains `languages`: per language, its cases, whether it is translated, and the refusal for one
+    that can't run; `POST /api/runs` answers with every run it started (`runs`) and the cases left out, `Location` the
+    first's; a run's summary says its language, and `GET /api/runs?with=` lists a start's runs. `Thread.language`
+    stays, the configuration's own.
+12. **The portal.** The variation's page says where it runs ("in en, 79 cases; in sv, 20, translated") and what is
+    left out, before the run button; starting several runs opens the first, whose page links the others. The home
+    page asks the language of a typed case, the configuration's by default.
+13. **The repl.** `configurations` lists one row per configuration, with its translations' languages; `use plan`;
+    `show` says the languages its cases run in; `run tag` over several languages starts a run per language and says
+    each, and what is left out.
+14. **Judges** stay in their configuration's language, a take: a judge reads a Swedish note against an answer in either
+    language, as its instructions say today.
+15. **Docs**, as suggestions: docs/catalog.md ("Languages", titles, names), docs/factors.md ("Translations",
+    compilation), docs/curation.md ("Texts", "Picking a variant by the case's language" goes), docs/bench.md, docs/api.md,
+    docs/repl.md and the manual, the `*-api.md` docs, docs/migrations.md.
+16. **Tests**: compiling into a language and the refusals; a translations chunk into several languages; a run over
+    English and Swedish cases making two runs, one translated; cases left out and said; a typed case's language; the
+    test and sample Worlds' data sets in the new shape; every test that names `(en)` or `(sv)`.
+
+### What gets simpler, and what harder
+Simpler: a configuration per recipe, not per recipe and language; no name parsed for a language anywhere; a variation
+survives a change of cases; a run over several languages sends each case in its own, instead of linting the mix; one
+translations part to swap.
+
+Harder: a variation compiles to a skeleton per language, so a look and a start compile several; a start is several
+runs, which the edges show together; translations must cover every text, instructions and prompts too, and a data set
+says that by translation pairs rather than by a second record; a translations chunk holds languages in its body, unlike
+every other text.
 
 ## Options
 
@@ -254,3 +342,41 @@ Decided: D1, as the World binds judges.
   `0017`).
 
 Decided: O2. No store holds anything worth keeping, so migrations are edited in place too.
+
+### T. Where a configuration's translations are held
+- **T1. One chunk, every language**: `Translations(into: {sv: {...}, de: {...}})`, one part of the recipe. One picker,
+  and a language added is a new version of the chunk.
+- **T2. A chunk per language, several in the part**: `translations: (sample-sv, sample-de)`, each chunk's language its
+  own. A language swapped alone, at the cost of a part that holds several chunks.
+- **T3. A configuration per language, grouped**: today's threads, picked by the case's language at the edges.
+
+Take: T1, what "see little of languages" asks for.
+
+### C. How a data set writes its translations
+- **C1. Translation pairs**: a texts file holds the text records written in its language and the translations into
+  it, grouped by the record they translate (`[translations.sample.of."instructions.clinician"]`).
+- **C2. A record per language, paired by name**: `texts-sv.toml` holds `instructions.clinician` in Swedish, and
+  loading pairs its texts with the English record's, position by position.
+
+Take: C1, explicit, and the grouping by record already exists; C2 pairs by position, which a schema reordered breaks.
+
+### M. A case in a language the configuration can't be sent in
+- **M1. Left out, and said**, before and when it runs; the rest run.
+- **M2. Sent as written, and said**, a trial mixing languages, as today.
+- **M3. Refused**, the whole start, until the cases or the translations change.
+
+Take: M1, so a trial never mixes languages and a start isn't lost to one case.
+
+### G. Runs over several languages
+- **G1. A run per language, kept together** by a `with` entry, so trials, the ledger and scoring stay as they are.
+- **G2. A run per language, not kept together**: the edges show what one start made, and nothing more.
+- **G3. One run of several trials**, a trial per language: one run per start, at the cost of a run's trial becoming
+  trials in the ledger, the runner, scoring and every edge (some 70 places read a run's one trial).
+
+Take: G1.
+
+### U. A case of no language
+- **U1. Sent as written, said** (`language.unknown`, as today).
+- **U2. Left out**, as a language without translations is.
+
+Take: U1, since a family without a language is one loaded without, and typed cases get one.
