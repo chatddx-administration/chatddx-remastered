@@ -268,14 +268,7 @@ Chunks affect each other only in a few fixed ways, all decided in code:
 - Compiled into a language, translations replace every text the other chunks and the appendix layout bring (see
   "Translations").
 - Greedy sampling drops the settings that only matter when sampling, and no seed is sent.
-```
-AGENT: replace
-The recipe names a model, not an engine: `Recipe.model`, a `model` or `model.remote` component, and `RECIPE_PARTS` ends
-in `model`. The intents send what the facts about the recipe's model say; the engine is the trial's, at the endpoint
-serving the model. Read "the recipe's model" for "the engine's model" in this section and in "Lints".
-```
-- A reasoning level and a recommended sampling send what the facts about the recipe's engine's model say; the engine
-  changes the skeleton in no other way.
+- A reasoning level and a recommended sampling send what the facts about the recipe's model say.
 - A recommended sampling follows the reasoning level the recipe asks for, where it lands, or the model's default level
   when the reasoning chunk asks for none or the recipe has none.
 
@@ -455,14 +448,7 @@ The appendix layout says what goes before, between and after the appendices.
 ### Rendering
 Rendering produces the request that is sent:
 1. Every slot is replaced by its fill. A slot without a fill is an error.
-```
-AGENT: replace
-`served_model_name(engine, get)`, a function: a local engine's digest, or the `name` of the `model.remote` component a
-remote engine references.
----
 2. The model is added: the engine's digest for a local engine, or its model's name for a remote one.
-```
-2. The model is added: the engine's digest for a local engine, or the configured model for a remote one.
 3. The seed is added, unless sampling is greedy.
 4. The response is asked to carry the prompt's token ids, so a run can fingerprint what the model was actually given.
 
@@ -530,15 +516,8 @@ engine.
 Principal author: developers, for the bundled facts; whoever adds a model they don't know, for a World's
 (docs/inventory.md, "Worlds").
 
-Model facts are what is known about one model that a request doesn't say (docs/facts.md): the model's name, the
-```
-AGENT: replace
-A model's name is a `model` artifact's repository or a `model.remote` component's `name`; `model_name` reads either, or the
-model an engine references.
-```
-repository a local engine's model comes from or the model a remote engine names, how each reasoning level is asked
-for, the sampling recommended per level, the output contracts that work, and specs. Compiling a recipe reads the facts
-about its engine's model to work out its intents, and its compilation names them.
+Model facts are what is known about one model that a request doesn't say (docs/facts.md): the model's name, is a `model`
+artifact's repository or a `model.remote` component's `name`; `model_name` reads either.
 
 They are knowledge, not a factor: no component but a compilation refers to them, and a skeleton holds what they did.
 init-data writes them from facts files, a thread per model (docs/curation.md); correcting a fact is a new version of

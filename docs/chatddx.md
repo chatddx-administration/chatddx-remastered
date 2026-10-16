@@ -67,13 +67,7 @@ It must be possible to deliver the cage together with the results, for scientifi
 - **Facts:** ops- or developer-authored knowledge about models (how each reasoning level is expressed, collapsed,
   refused or landed on its nearest, recommended sampling, output caveats, specs), typed in code, written in TOML and
   stored by init-data as components of kind `facts`, a thread per model, corrected by a new version. Not factors:
-```
-AGENT: replace
-"for the recipe's model": a recipe names its model, a `model` or `model.remote` component, and the engine is the
-trial's.
-```
-  they work out a reasoning level and a recommended sampling for the engine's model when a recipe is compiled, and
-  check literal chunks; a compilation pins them, as it pins the compiler.
+  they work out a reasoning level and a recommended sampling for the recipe's model when compiled.
 - **Start-up:** what the start-up script runs for one endpoint, joining an engine (what) with inventory entries (where)
   (`docs/inventory.md`, "The start-up").
 - **Rig:** the chatddx software that builds cages from factors, runs and scores inside them and records what happened.
@@ -212,18 +206,10 @@ described below.
    chunk may ask for a level, and a Sampling chunk for the sampling the model's makers recommend, rather than say what
    is sent.
 
-```
-AGENT: replace
-"against the facts about its model".
-```
-2. The Recipe is compiled into a Skeleton, against the facts about its engine's model: a reasoning level asked for is
-   sent as they say the model is asked for it, once it has collapsed into another or landed on its nearest, or is
-   refused; a recommended sampling is what they recommend for the level the reasoning landed on, or for the model's
-   default level when the recipe asks for none. It is compiled as written, or into a language its translations cover,
-   every text translated. The Skeleton is stored as a frozen factor, holding:
-   A Compilation notes which recipe produced which skeleton, against which facts, none for a model without facts, and
-   into which language, none for the recipe as written; it is stored as a component, but isn't a factor. Two engines
-   of one model compile a recipe to one skeleton.
+2. The Recipe is compiled into a Skeleton against the facts about its model and into a language its translations cover.
+   The Skeleton is stored as a frozen factor, holding:
+   A Compilation notes which recipe produced which skeleton, against which facts, and into which language.
+   Two engines of one model compile a recipe to one skeleton.
 
 3. A Case is a vignette, named by its source, its id there and the fingerprint of its raw bytes, and a list of Appendix
    references.
@@ -242,12 +228,8 @@ AGENT: replace
 3. `prepare_case(case, raw, get, layout, cleanup)` checks drift (a mismatch is the warning `case.drift`)
 4. cleans the vignette
 5. joins the appendices, and returns the fills together with the observed fingerprint for `RunItem.vignette`.
-```
-AGENT: replace
-`served_model_name(engine, get)`: a local engine's digest, a remote engine's model's name.
-```
-6. Pick the model name from the engine: `engine.served_model_name`, the engine's digest for a local engine and its
-   `model` for a remote one.
+6. Pick the model name from the engine: `served_model_name(engine, get)`, a local engine's digest, a remote engine's
+   model's name.
 7. Pick the seed: `trial.seeds[replicate]`.
 8. Render the request: render(skeleton, model=…, seed=…, fills={"vignette": …, "appendices": …}). This:
   - replaces each slot with its text by plain concatenation, with no templating

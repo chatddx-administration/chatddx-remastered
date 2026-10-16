@@ -45,11 +45,7 @@ The modules, and the ones each builds on:
   `WITH`; on `components.py`, `errors.py`, `model.py` and `seen.py`.
 - `taking.py`: `take`, `take_from`; on `errors.py`, `model.py` and `seen.py`.
 - `saying.py`: `say`; on `errors.py`, `model.py` and `seen.py`.
-```
-AGENT: replace
-`corrected` and `follow_facts` are `moved` and `follow_moved`.
-```
-- `following.py`: `proposal`, `follow`, `corrected`, `follow_facts`; on `components.py`, `errors.py`, `model.py` and
+- `following.py`: `proposal`, `follow`, `moved`, `follow_moved`; on `components.py`, `errors.py`, `model.py` and
   `seen.py`.
 - `runs.py`: `start`, `again`, `score`, `REFUSALS`, `ScorerStarted`, `ScoringEvent`, `ScoreHalt`; on
   `configurations.py`, `errors.py`, `model.py`, `seen.py` and `variation.py`.
@@ -143,6 +139,7 @@ the prompt tokens 0.
 ## variation.py
 
 ### `PARTS: tuple[str, ...]`
+> Consier using RECIPE_PARTS throughout
 `chatddx.factors.request.RECIPE_PARTS`, the recipe's parts in order: the nine chunk parts, `CHUNK_PARTS`, then
 `engine`.
 
@@ -154,12 +151,8 @@ A frozen dataclass: a configuration, or a variation of it being tried.
 - `configuration: Edit`: the configuration's edit.
 - `name: str`: the name the person called it by.
 - `recipe: Recipe | None = None`: its recipe; `None` for a configuration without a compilation.
-```
-AGENT: replace
-`PARTS` ends in `model`, and `parts` hold a model's digest for `model`.
-```
-- `parts: Mapping[str, tuple[str | None, str]] = {}`: for each part replaced, a chunk's digest, or an engine's for
-  `engine`, or `None` for one taken out, and the name it was set by.
+- `parts: Mapping[str, tuple[str | None, str]] = {}`: for each part replaced, a chunk's digest, or a model's digest for
+  `model`, or `None` for one taken out, and the name it was set by.
 
 #### `label: str` (property)
 `name`, then `+PART=NAME` for each replaced part, in `PARTS` order.
@@ -238,19 +231,23 @@ A run's score under one scorer, or why there is none.
 - `digest: str`: the component's, or the compiled skeleton's.
 - `compilation: str | None`: for a recipe.
 
-#### `class Corrected`
-```
-AGENT: replace
-`Corrected` is `Moved`: `facts: Behind | None`, the catalog's `/facts` entry; `model: Behind | None`, its
-`/recipe/model` entry, the model held and its thread's head; `about: str`, the model's name; `digest`, `compilation`
-and `refused` as below, for the recipe with the model's head compiled against the current facts.
-```
-- `behind: Behind`: the catalog's `/facts` entry, with the facts compiled against and the facts thread's head.
-- `model: str`: the model the facts are about.
-- `digest: str | None`: the skeleton the head's recipe compiles to against the corrected facts.
-- `compilation: str | None`: its compilation.
-- `refused: str | None`: why the corrected facts refuse what the recipe asks; `digest` and `compilation` are then
-  `None`.
+#### `class Moved`
+What a configuration was compiled for that has since moved on and what following it would keep. Made by `moved`,
+stored by `follow_moved`.
+
+- `facts: Behind | None`: the catalog's `/facts` entry when the facts that was compiled against were corrected
+  where they change what it sends: the facts compiled against as `digest`, and the facts thread's head as `head`.
+  `None` when they're already correct.
+- `model: Behind | None`: the catalog's `/recipe/model` entry when the model thread has moved on: the
+  model held as `digest`, and its thread's head as `head`. `None` when it's unmoved.
+- `about: str`: the name of the model the recipe names, as the facts name it; the model's head's name when the
+  model moved on.
+- `digest: str | None`: the skeleton the head's recipe, with the model's head where it moved on, compiles to against
+  the current facts about it. `None` when the facts refuse it.
+- `compilation: str | None`: that compilation's digest, naming the facts it was compiled against. `None` as for
+  `digest`.
+- `refused: str | None`: why compiling is refused: the current facts refuse what the recipe asks, or can't work it
+  out. `None` when `digest` and `compilation` are set.
 
 #### `class Written`
 - `edit: Edit`: what was kept.
@@ -349,14 +346,20 @@ The first of `threads(word)` whose head is `digest`, with `recipe` when it is gi
 `Catalog.title_of`, or `—` for `None`.
 
 #### `model(engine: str) -> str | None`
-```
-AGENT: replace
-Also `model_of(engine: str) -> str | None`, the digest of the model an engine references, `None` for an engine not in
-the store, cached for the connection; and `model_at(name: str) -> str`, the model the endpoint's engine serves,
-`ValueError` when it serves none.
-```
-The model the engine serves, as the facts name it (`chatddx.factors.facts.model_name`): a local engine's model's
-repository, a remote engine's model.
+> reduce or move or rename to model_name
+
+Takes an engine's digest, looks up and caches the name of the model it references.
+Returns the name or `None` for an engine that references no model.
+
+The name returned is what the facts are keyed by (`chatddx.factors.facts.model_name`): a local engine's model's
+repository, or a remote engine's model's `name`.
+
+#### `model_of(engine: str) -> str | None`
+> reduce
+
+#### `model_at(name: str) -> str`
+> reduce, also the _at/_of thing should go or be formalized projectwide
+> src/chatddx/api/world.py:63
 
 #### `facts: Facts` (property)
 The facts about each model, from the store: the head of every live `facts` thread, whoever owns it, through
@@ -371,6 +374,8 @@ The engine's `served_model_name`, the model a request to it carries.
 - Raises `StructuralError("<digest> is a <kind>, not an engine")`.
 
 #### `endpoint(name: str) -> str`
+> unify pathways with inventory and api, it bounces around a lot
+
 The digest of the engine the World's endpoint serves.
 - Raises the inventory's `LookupError` for an unknown endpoint.
 - Raises `NotFound("endpoint '<name>' serves engine <short>, which isn't in the store: load its World with
@@ -438,35 +443,29 @@ Raises:
 - `TriedVariation.set`'s.
 
 #### `at(variation: TriedVariation, endpoint: str | None) -> tuple[str, str]`
-```
-AGENT: replace
-For a configuration with a recipe, the endpoints whose engine's model is the recipe's (`Inventory.serving_model`
-with `model_of`): one, else `ValueError` unless one is named; a named endpoint serving another model is refused,
-`"endpoint '<name>' serves another model than <label>'s, <title>"`; the engine is the endpoint's. A hand-written
-configuration needs the endpoint named: `"<label> names no model: name the endpoint to send it to"`.
-```
-Where the variation runs: the endpoint's name and the engine's digest. For a configuration with a recipe, its engine,
-at `endpoint`, or without one at the one endpoint serving it (`Inventory.serving`); for one without, `endpoint` and
-the engine it serves (`endpoint(name)`). Raises:
-- `ValueError("<label> names no engine: name the endpoint to send it to")`, for a configuration without a recipe and
-  no `endpoint`.
-- `ValueError("no endpoint serves engine <title>")`, and `ValueError("<names> serve engine <title>; name the one to
-  use")`, without `endpoint`: `Inventory.serving`'s.
-- `ValueError("endpoint '<endpoint>' serves another engine than <label>'s, <title>")`
-- `endpoint(name)`'s.
+> formalize or refactor, is this two functions in one or does the tuple[str, str] stand for something real?
+
+Takes a `variation` and an `endpoint`'s name, or `None`, and returns the endpoint's name and the `digest` of
+the `engine` served there.
+
+Raises `ValueError`:
+- `"<label> names no model: name the endpoint to send it to"` for a hand-written configuration and no endpoint;
+- `"no endpoint serves model <title>"` when none serves the recipe's model;
+- `"<names> serve model <title>; name the one to use"` when several do and none is named;
+- `"endpoint '<name>' serves another model than <label>'s, <title>"` for a named endpoint serving another model.
 
 #### `skeleton(variation: TriedVariation, into: str | None = None) -> Skeleton`
-The configuration's head when nothing is replaced or it has no recipe; else the varied recipe compiled against
-```
-AGENT: replace
-`facts_for(model: str)` takes a model's digest, `model_name` reading its name; `compiled_with`, `landed` and
-`compiled` pass `recipe.model`. Read "its model" for "its engine" in this item and the next three.
-```
-`facts_for` its engine. With `into`, the recipe compiled into that language against `compiled_with(variation)`, whatever
-is replaced.
-- Raises the compiler's errors, the facts' refusals among them (`StructuralError`); for `into`, also
-  `StructuralError("no translations into <into>")`, `StructuralError("no translation into <into> for '<text>', …")`
-  and, without a recipe, `StructuralError("<label> has no translations into <into>")`.
+Takes a `variation` and a language, or `None`, and returns the request it sends. With nothing replaced and no `into`,
+the configuration's own skeleton, resolved from the store; otherwise the varied recipe compiled with the running
+code, against `compiled_with(variation)`, the facts about its model (the configuration's pinned facts for an
+unvaried one, the current facts for a varied one), and into `into` when given, every text translated. Nothing is
+stored.
+
+Raises `StructuralError`:
+- `"<label> has no translations into <into>"` for `into` on a configuration with no recipe;
+- what `compile_request` raises: `"no translations into <into>"` and
+  `"no translation into <into> for '<text>'"` when the recipe's translations don't carry it there, and a level or
+  recommended sampling the facts refuse, or can't work out for a model without facts, as `"<model>: <why>"`.
 
 #### `landed(variation: TriedVariation) -> dict[str, Landing]`
 Where the varied recipe's intents land, by part: `reasoning` for a reasoning level, `sampling` for a recommended
@@ -864,27 +863,14 @@ Raises:
 - `Seen.check_expecting`'s and `Seen.check_scorer`'s.
 - `MovedOn`
 
-```
-AGENT: replace
-`moved(thread: int) -> Moved | None`: `None` when the head has no compilation or `behind` names neither `/facts` nor
-`/recipe/model`.
-```
-### `corrected(thread: int) -> Corrected | None`
-What following the facts of `thread`, a configuration the person sees, would keep: its head's recipe compiled by
-`Seen.compiled`, against the facts as they are stored now. `None` when the head has no compilation, or the catalog's
-`behind` names no `/facts`. Nothing is stored.
-- Raises `thread_by_id`'s `NotFound`.
+### `moved(thread: int) -> Moved | None`
+`None` when the head has no compilation or `behind` names neither `/facts` nor `/recipe/model`.
 
-```
-AGENT: replace
-`follow_moved(thread: int, head: int) -> Written`: the head's recipe, with the model's head where it moved on, compiled
+### `follow_moved(thread: int, head: int) -> Written`
+the head's recipe, with the model's head where it moved on, compiled
 against the current facts about it, kept as a new version with its compilation; refused as
 `ValueError("configuration <thread> was compiled for nothing that has moved on")` and
 `ValueError("configuration <thread> can't follow <what> <model>: <why>")`.
-```
-### `follow_facts(thread: int, head: int) -> Written`
-The head's recipe, compiled against the corrected facts, kept as a new version of `thread` with its compilation;
-`what` is `a new version`, and the findings are `linted`'s of the skeleton. Its base doesn't change.
 
 Raises:
 - `thread_by_id`'s `NotFound`.
@@ -904,11 +890,7 @@ A run of the variation for each language `Seen.languages(variation, cases)` send
 `Seen.at(variation, endpoint)` says, over that language's cases with `seeds`, its replicates, its cleanup steps, its
 execution and the canary set stored under the digest `canaries`; the languages left out are `Started.left_out`. Once
 each run has started, its `name` entry, `variation.label`, its `varied` entry, `variation.configuration`, a `replaced`
-```
-AGENT: replace
-"the model among them".
-```
-entry for each part replaced, the engine among them, and for every run but the first a `with` entry naming the first,
+entry for each part replaced, the model among them, and for every run but the first a `with` entry naming the first,
 are written in one transaction (docs/catalog-api.md, "Entry"). Not given: the steps each run's cases' sources ask for,
 in `CleanupOp`'s order (`()` for none); the endpoint's execution and canary set, from the inventory. The compilation
 of a translated skeleton is stored once its run has started, and of a varied one once all have. The runs start in one
@@ -975,16 +957,11 @@ same test World.
   for the case, left by two writers at once.
 - `test_seen.py`: what a person sees, by name, `OWNER/NAME` and id; variations; runs and what reaches a digest; what is
   left to score; the expectation a case is held to, and several to choose from; scorers that apply, judged or not;
-```
-AGENT: replace
-A swapped model, not engine; a run at the endpoint serving its model, refused for an endpoint serving another model and
-for a model two serve; a configuration following its model to a new version (`test_following.py`).
-```
-  a run's scores; judge configurations; a swapped engine keeping every other pick, where its intents land, on their
+  a run's scores; judge configurations; a swapped model keeping every other pick, where its intents land, on their
   nearest or not, and a level its model refuses; a hand-written configuration on another model than its skeleton is
   worked out for; a configuration found by its name; saving, forking and editing; taking.
 - `test_runs.py`: a run's seeds, cleanup, execution and canaries, kept when it runs again; what it varied; a run at
-  the endpoint serving its engine, or one named, refused for an endpoint serving another engine and for an engine two
+  the endpoint serving its model, or one named, refused for an endpoint serving another model and for a model two
   endpoints serve; its items, cases times seeds; resuming one's own; the sources' cleanup and the endpoint's canaries
   and execution; a start of a run per language, one translated and started with the first, the cases left out, a start
   that can send none refused, and the day's quota over several runs.
@@ -995,9 +972,7 @@ for a model two serve; a configuration following its model to a new version (`te
   refusals; a late case's replacement after a repair; cases found by title.
 - `test_typed.py`: a typed case with its family, name and language; the same text typed twice; refusals and the day's
   quota; a typed case run on the fake vLLM.
-- `test_following.py`: a configuration and a taken expectation following the archive; nothing to follow, another's
-  thread, a head that moved on, a language for a compiled configuration, and an origin no longer shared; a
-  configuration following its corrected facts, a correction that doesn't reach it, and one that refuses it.
+- `test_following.py`: a configuration following its model to a new version
 - `test_scorers.py`: a scorer of the person's own, with its labels, the runs it applies to and its lints; refusals;
   forks and their labels; following; a scorer refused once a deploy raises its version.
 - `test_said.py`: names, descriptions, tags and collaborators; refusals; deleting, listing and finding deleted

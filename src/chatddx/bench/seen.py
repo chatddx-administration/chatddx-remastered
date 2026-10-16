@@ -282,8 +282,6 @@ class Seen:
             recipe, registry.get, self.compiled_with(variation), into
         )
 
-    # The facts the configuration was compiled against, so that a translation of it
-    # differs from it by its texts only.
     def compiled_with(self, variation: TriedVariation) -> ModelFacts | None:
         recipe = variation.varied
         if recipe is None:

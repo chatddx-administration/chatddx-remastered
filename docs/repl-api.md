@@ -74,12 +74,7 @@ engine it serves.
 | --- | --- |
 | `trying(variation)` | the cell with `variation` |
 | `on(endpoint, served)` | the cell at `endpoint`, serving `served`; `on(None, None)` drops the endpoint |
-```
-AGENT: replace
-`Cell.engine` is gone; `Repl.engine` is the endpoint's engine, else the one serving the configuration's model, else
-`None`.
-```
-| `engine` | the variation's engine part when it has a recipe, else `served` |
+| `model` | the variation's model part |
 | `label` | the variation's label, `NAME+PART=CHUNK…`, else `""` |
 
 ### `class Repl(bench: Bench, console: Console, seed: int | None = None)`
@@ -140,13 +135,7 @@ command's `rest` param takes whole is followed by the next param's names once it
 | `endpoints` | `listing.endpoints` | `inventory`, `endpoint`, `model`, `url_of` |
 | `cases` | `listing.cases` | `families` |
 | `use CONFIGURATION` | `choosing.use` | `configuration`, and `title` of the named endpoint's engine, set in it (`TriedVariation.set`) |
-```
-AGENT: replace
-The line below, as given.
----
 | `on ENDPOINT` | `choosing.on` | `endpoint`, and `title` of its engine's model, set in the cell's configuration |
-```
-| `on ENDPOINT` | `choosing.on` | `endpoint`, and `title` of its engine, set in the cell's configuration |
 | `cell CONFIGURATION ENDPOINT` | `choosing.cell` | `endpoint`, `configuration`, and `title` of the endpoint's engine, set in it |
 | `set PART CHUNK` | `choosing.set_` | `chunk`, `skeleton` |
 | `show [KIND] [NAME...]` | `inspecting.show` | `at`, `skeleton`, `landed`, `languages`, `findings`, `reach`, `thread`, `get`, `reaching`, `scored_by`, `scores_of`, `runs`, `case_titled`, `appendices_of`, `cases`, `expectation_schemas`, `expectation`, `shared`, `store.scores_of` |

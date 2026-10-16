@@ -201,12 +201,14 @@ A self-contained package that can be verified offline.
 `BY_KIND: dict[str, type[Component]]`: kind name → class, `TypeError` at import for a kind listed twice.
 
 ## Component kinds
+> rename ModelArtifact -> LocalModel and model -> model.local
 
 | Kind | Class | References (path: kinds) | `cross_check` |
 | --- | --- | --- | --- |
 | `model` | `engine.py:ModelArtifact` | | |
+| `model.remote` | `engine.py:RemoteModel` | | |
 | `engine.local` | `engine.py:LocalEngine` | `/model`: `model` | |
-| `engine.remote` | `engine.py:RemoteEngine` | | |
+| `engine.remote` | `engine.py:RemoteEngine` | `/model`: `model.remote` | |
 | `facts` | `facts.py:ModelFacts` | | |
 | `chunk.instructions` | `request.py:Instructions` | | |
 | `chunk.few_shot` | `request.py:FewShot` | | |
@@ -454,13 +456,7 @@ Not a component; kept only inside a `Compilation`.
 | `prompt` | ref `chunk.prompt` | required |
 | `output` | ref `chunk.output` | required |
 | `sampling` | ref `chunk.sampling` | required |
-```
-AGENT: replace
-The recipe's tenth part is its model.
----
 | `model` | `ModelRef` | required; a `model` or `model.remote` component |
-```
-| `engine` | `EngineRef` | required |
 | `instructions` | ref `chunk.instructions` \| `None` | `None` |
 | `few_shot` | ref `chunk.few_shot` \| `None` | `None` |
 | `reasoning` | ref `chunk.reasoning` \| `None` | `None` |
@@ -575,11 +571,7 @@ follows, each `None` when not asked for.
 1. `StructuralError("facts about <facts' model> can't compile for <model>")` when `facts` aren't about the model of
    the recipe's engine (`facts.py:model_name`).
 2. `(None, None)` when the reasoning chunk asks for no `level` and the sampling isn't `recommended`.
-```
-AGENT: replace
-The message says "the recipe's model".
-```
-3. Without facts: `StructuralError("reasoning '<level>' is worked out from the facts about the engine's model, which
+3. Without facts: `StructuralError("reasoning '<level>' is worked out from the facts about the recipe's model, which
    has none")`, or `"a recommended sampling is worked out …"` when only the sampling asks.
 4. The level's `ReasoningFacts.resolve`, and `ModelFacts.check_budget()` with a `thinking_token_budget` beside it. A
    recommended sampling follows that landing, or `resolve("default")` without one, and needs
@@ -673,15 +665,6 @@ the portal's run page.
 - has a bare argument. An argument after `--` is bare, and an argument right after a flag written without `=` is
   taken to be that flag's value. Negative numbers such as `-1` aren't flags.
 
-```
-AGENT: replace
-`served_model_name(engine: Engine, get: Resolver) -> str` is a function of `engine.py`: a local engine's digest, a remote
-engine's model's `name`. `RemoteEngine` has `api` and `model: RemoteModelRef` and no `provider`; `RemoteModel`
-(`model.remote`) has `provider` and `name`. `ModelRef` covers `model` and `model.remote`; `ArtifactRef` is `model`
-alone, `LocalEngine.model`'s.
-```
-`served_model_name -> str`: the engine's digest.
-
 ### `class RemoteEngine(Component)`, kind `engine.remote`
 `api: Api = "chat.completions"`, `provider: str` (not empty), `model: str`.
 `served_model_name -> str`: `model`.
@@ -692,9 +675,14 @@ alone, `LocalEngine.model`'s.
 - `engine.chat_template` (warning): the template's SHA-256 isn't `engine.chat_template`.
 - `engine.chat_template_date` (warning): the template matches `strftime_now`, `date_string` or `now(`.
 
-Both have the engine's digest as subject.
+### `served_model_name(engine: Engine, get: Resolver) -> str`
+Takes an engine and a resolver (e.g. `store.get` or `registry.get`) and returns local engine's digest, a remote engine's
+model's `name`. `RemoteEngine` has `api` and `model: RemoteModelRef` and no `provider`; `RemoteModel` (`model.remote`)
+has `provider` and `name`. `ModelRef` covers `model` and `model.remote`; `ArtifactRef` is `model` alone,
+`LocalEngine.model`'s.
 
 ## facts.py
+
 What is known about a model, as a component, and how a level lands on it. Fields, the facts file and the bundled facts
 are in `docs/facts-api.md`.
 
@@ -711,6 +699,7 @@ are in `docs/facts-api.md`.
 - `Writes(effort, chat_template_kwargs)`: what a level sends as `reasoning_effort` and `chat_template_kwargs`.
 - `Landing(level: Intent, writes: Writes, nearest: tuple[str, ...] = ())`: the level landed on, what it sends, and the
   reasons of the refusals passed on to their nearest, in order.
+> ReasoningFact's `resolve` should be renamed to `landing`
 - `ReasoningFacts`, `SamplingValues`, `SamplingFacts`, `ContractFact`, `OutputFacts`: a model's facts, by part.
 
 ### `class ModelFacts(Component)`, kind `facts`
@@ -722,14 +711,13 @@ are in `docs/facts-api.md`.
 | `recommended(level: Intent) -> SamplingValues` | `sampling.recommended[level]`, or `Refused("no sampling is recommended for reasoning '<level>'")` |
 | `reasons_by_default() -> bool \| None` | whether the default lands on a level other than `off`; `None` when it raises `Refused` |
 
-### `model_name(engine: str, get: Resolver) -> str | None`
-```
-AGENT: replace
-`model_name(digest, get)`: the name of a model (`ModelArtifact.repo`, `RemoteModel.name`), or of the model the engine
-`digest` names references. `model_of(engine, get) -> str | None`: the digest of the model an engine references.
-```
-The name facts are keyed by, for the component `get` resolves the digest `engine` to: a local engine's model
-artifact's `repo`, a remote engine's `model`, `None` for anything else.
+### `model_name(digest: str, get: Resolver) -> str | None`
+The name of a model (`ModelArtifact.repo`, `RemoteModel.name`), or of the model the engine `digest` names references.
+
+### `model_of(engine, get) -> str | None`
+> reduce, also the _at/_of thing should go or be formalized projectwide
+
+The digest of the model an engine references.
 
 ## trial.py
 

@@ -306,24 +306,19 @@ Raises `StructuralError`:
 | `tool code recorded for tools the skeleton lacks: […]` | A `tool_code` entry for a tool not in `skeleton.tools`. |
 
 Returns findings, in this order:
-1. `ledger.seal`, subject the run id;
-2. `run.incomplete` when finished: one for missing items, one for missing planned canary calls;
-3. `case.drift` for each item whose `vignette` differs from its case's `vignette.fingerprint`;
+1. `ledger.seal`, subject the run id.
+2. `run.incomplete` when finished: one for missing items, one for missing planned canary calls.
+3. `case.drift` for each item whose `vignette` differs from its case's `vignette.fingerprint`.
 4. `call.failed` for each item whose last call has an `error`, subject the item key, then for each canary call with
    one, subject `<phase>/<position>`; the message is the error. Earlier calls of an item can't have one: a failed call
-   ends its rounds;
+   ends its rounds.
 5. `tools.unanswered` for each item whose last call still has tool calls other than the answer function's, or
-   `tools.stopped` when its last turn has no call (skeletons with tools only);
-6.  `tools.code` for each tool of the skeleton whose version isn't recorded or isn't the one `Tool.version` pins;
+   `tools.stopped` when its last turn has no call (skeletons with tools only).
+6.  `tools.code` for each tool of the skeleton whose version isn't recorded or isn't the one `Tool.version` pins.
 7.  `attestation.model` for each item: one per distinct wrong model name, and one when some call has a response but no
-```
-AGENT: replace
-`served_model_name(engine, get)`, a function.
-```
-    model name. The declared name is the engine's `served_model_name`: a local engine's digest, a remote engine's
-    `model`. Calls without a response aren't checked;
-8.  `attestation.prompt_tokens` when some items have a call, failed calls included, without `prompt_tokens`;
-9.  `execution.*` over every item call and canary call, an item counting as sent when its first call starts;
+    model name. The declared name is the engine's `served_model_name(engine, get)`.
+8.  `attestation.prompt_tokens` when some items have a call, failed calls included, without `prompt_tokens`.
+9.  `execution.*` over every item call and canary call, an item counting as sent when its first call starts.
 10. `canary.phase`: start-phase calls that finish after the first item call starts, and end-phase calls that start
     before the last item call, tool rounds included, finishes. One finding per phase. Nothing when there are no items.
 

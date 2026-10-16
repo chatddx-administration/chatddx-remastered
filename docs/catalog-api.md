@@ -84,15 +84,11 @@ third-party package but pydantic. It holds no SQL: it reads through a `Reader` a
 - `VARIED`: `^[1-9][0-9]{0,17}$`, an edit's id as a `varied` entry holds it. `0026` repeats it.
 - `REPLACED`: `^(<the parts, RECIPE_PARTS, joined by |>)=(sha256:[0-9a-f]{64})?$`, a part and the chunk or engine it
   was set to, or nothing for a part taken out, as a `replaced` entry holds them. `RECIPE_PARTS` is the nine chunk
-```
-AGENT: replace
-"then `model`"; and `MODEL_KINDS = ("model", "model.remote")` replaces `ENGINE_KINDS`.
-```
-  parts, `CHUNK_PARTS`, then `engine`. `0026` repeats it, and `src/chatddx/store/test/test_catalog.py` holds the
+  parts, `CHUNK_PARTS`, then `model`. `0026` repeats it, and `src/chatddx/store/test/test_catalog.py` holds the
   database's to `RECIPE_PARTS`.
 - `WITH`: `^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$`, a run's id as `str(UUID)` writes it, as a
   `with` entry holds it. `0026` repeats it.
-- `ENGINE_KINDS`: `("engine.local", "engine.remote")`, the kinds a `replaced` entry's engine is stored as. Not
+- `MODEL_KINDS`: `("model", "model.remote")`, the kinds a `replaced` entry's engine is stored as. Not
   re-exported.
 - `Part`: `Literal["view", "resource"]`.
 - `Labels`: `Mapping[tuple[Part, int], str]`, what a scorer edit calls its views and resources, by part and position.
@@ -187,11 +183,7 @@ What a subject's entries say now. It is a `chatddx.identity.Owned`, by its `owne
 - `deleted: bool = False`
 - `language: str | None = None`
 - `varied: int | None = None`: for a run, the configuration's edit its variation was built on.
-```
-AGENT: replace
-"the chunk's or the model's digest".
-```
-- `replaced: dict[str, str | None] = {}`: for a run, each part replaced over it, the chunk's or the engine's digest,
+- `replaced: dict[str, str | None] = {}`: for a run, each part replaced over it, the chunk's or the model's digest,
   or `None` for a part taken out, in `RECIPE_PARTS` order.
 - `started_with: UUID | None = None`: for a run, the first run of the start it is one of; `None` for the first, and
   for a run started alone.
@@ -322,12 +314,8 @@ Nothing for an entry of another field than `RUN_FIELDS`. `0026` repeats it (`ent
 - Raises `ValueError("edit <id> is no configuration's")` for a `varied` entry naming an edit that isn't a skeleton
   thread's, or none.
 - Raises `ValueError("<digest> isn't a chunk of <part> in the store")` for a `replaced` entry whose chunk isn't stored
-```
-AGENT: replace
-`ValueError("<digest> isn't a model in the store")` for a `model` one whose digest isn't a `model` or `model.remote`.
-```
-  as that part's kind, and `ValueError("<digest> isn't an engine in the store")` for an `engine` one whose digest isn't
-  stored as one of `ENGINE_KINDS`.
+  as that part's kind, and `ValueError("<digest> isn't an model in the store")` for a `model` one whose digest isn't
+  stored a `model` or `model.remote`.
 - A `with` entry is checked no further: runs are the ledger's, which the catalog doesn't read, so `0026` alone checks
   that it names a run that has started (`catalog.check_varied()`).
 
@@ -396,13 +384,7 @@ then a newer binding. One level only: a reference's own references aren't follow
 
 The references looked at:
 - the head's own (`Component.refs()`), such as `/skeleton`, `/engine` and `/cases/0`;
-```
-AGENT: replace
-The line below, as given.
----
 - the recipe of the compilation the head names, under `/recipe`, its model as `/recipe/model`;
-```
-- the recipe of the compilation the head names, under `/recipe`, its engine as `/recipe/engine`;
 - the facts that compilation names, as `/facts`;
 - each case's appendices, under the case's path, such as `/cases/0/appendices/0`.
 
@@ -562,11 +544,7 @@ followed by `…` when it is longer than `limit`.
 `<root> with <the appendices' titles, joined by ", ">`, or `root` without appendices.
 
 ### `describe_recipe(recipe: Recipe, title: Title) -> str`
-```
-AGENT: replace
-"so the model last".
-```
-The titles of the recipe's parts that are set, in recipe order, so the engine last, joined by ` · `, after `judge: `
+The titles of the recipe's parts that are set, in recipe order, so the model last, joined by ` · `, after `judge: `
 for a judge's. `appendix_layout` isn't shown.
 
 ### `describe_change(path: str, after: JsonValue, title: Title) -> str`

@@ -169,11 +169,7 @@ is never asked for. `Sampling.over` puts a chunk's own values over it (docs/fact
 Whether the model reasons when a request says nothing: `reasoning.resolve("default")` lands on a level other than
 `off`. `None` when that raises `Refused`: no default, or a default that lands on a refusal.
 
-### `model_name(engine: str, get: Resolver) -> str | None`
-```
-AGENT: replace
-`model_name` takes a model's digest as well as an engine's (docs/factors-api.md, `model_name`), so `Facts.about` does.
-```
+### `model_name(digest: str, get: Resolver) -> str | None`
 The name facts are keyed by, for the component `get` resolves the digest `engine` to:
 - a `LocalEngine`: its model artifact's `repo`, through `resolve(get, engine.model, ModelArtifact)`;
 - a `RemoteEngine`: its `model`;

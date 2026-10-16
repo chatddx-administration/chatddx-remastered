@@ -5,11 +5,7 @@ How each reasoning level is expressed for a model, which sampling its makers rec
 output contracts work with it and with what caveats.
 
 They never reach the wire themselves. A chunk may ask for an intent, a reasoning level or the recommended sampling,
-```
-AGENT: replace
-"the recipe's model": a recipe names its model.
-```
-and compiling a recipe works out what it sends from the facts about the recipe's engine's model; the skeleton holds
+and compiling a recipe works out what it sends from the facts about the recipe's model; the skeleton holds
 the result, and its compilation names the facts it was worked out from. Correcting a guessed fact changes nothing
 stored: a skeleton still means exactly what it sends, and a configuration compiled against the old facts is behind
 where the new ones change what it sends (docs/catalog.md, "What has moved on"), until it follows them
@@ -26,13 +22,9 @@ when it has one, and the files `--facts` names, beside each other, and stores th
 the World serves as a component of kind `facts`, a thread of the archive's named after the model
 (docs/curation.md). Correcting a fact and loading again makes a new version of its thread.
 
-```
-AGENT: replace
-A model's name is a `model` component's repository or a `model.remote` component's `name`; an engine's facts are its
-model's.
-```
 Facts are about a model, by its name: the repository a local engine's model comes from, or the model a remote engine
-names. An engine's facts are its model's, and an engine whose model has none has none.
+names. A model's name is a `model` component's repository or a `model.remote` component's `name`; an engine's facts are
+its model's.
 
 The bench, and the repl, the API, the portal and the worker through it, read the facts from the store: the current
 version of every facts thread, read when they are needed, so a correction loaded meanwhile is used.

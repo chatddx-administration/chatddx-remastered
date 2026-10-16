@@ -94,9 +94,6 @@ def _what(made: Moved) -> str:
     return "the facts about"
 
 
-# The facts a configuration was compiled against, or the model it was compiled for, moved
-# on: following keeps its recipe, with the model's head, compiled against the current
-# facts about it.
 def _moved(seen: Seen, thread: int) -> tuple[Moved, Registry | None] | None:
     edit, _ = seen.thread_by_id(thread, "configuration")
     if edit.compilation is None:

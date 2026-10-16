@@ -37,15 +37,8 @@ what they're scored against never changes under them when someone else edits the
 ## The cell
 The cell is what the shell runs: a configuration, and the endpoint named for it, if any. The configuration is a
 variation of a configuration thread: the edit the cell holds, its recipe, and the parts set on it (`TriedVariation`),
-```
-AGENT: replace
-"its model among them". The engine the cell is rendered and linted for is the endpoint's, or the one serving the
-configuration's model when the cell has no endpoint and one does (`Repl.engine`); `Cell.engine` is gone.
-```
-its engine among them. The cell's engine is its configuration's engine part, or, for a configuration with no recipe,
-the named endpoint's. It runs at the endpoint named, which must serve that engine, else at the one serving it
-(`Bench.at`; docs/bench.md): with none serving it a run is refused, and with several until one is named. Every `run`
-and `run tag` runs the cell.
+its model among them. The engine the cell is rendered and linted for is the endpoint's, or the one serving the
+configuration's model when the cell has no endpoint and one does (`Repl.engine`);
 
 Whenever the cell changes, the shell says what the lints find in it: `factors.lint` and the facts' checks on the pair,
 run as a trial of the cell and one case. A reasoning level or a recommended sampling that the facts about a new
@@ -55,42 +48,28 @@ Lints warn and never refuse (docs/chatddx.md, "Compromises").
 
 ### Names
 A configuration is a thread written in one language, which its translations carry into others (docs/curation.md,
-```
-AGENT: replace
-"its model is a part".
-```
-"Texts"), so it is one thread whatever the languages its cases are in, `plan`; its engine is a part, and its name
+"Texts"), so it is one thread whatever the languages its cases are in, `plan`; its model is a part, and its name
 carries neither a model nor a language. A name is looked for as given: `plan (en)` and `free-text-guided sv` name
 nothing.
 
-The cell holds the configuration a name finds, by the name it is found under (`TriedVariation.name`), and nothing
-is picked again by name. `on ENDPOINT` puts the engine the endpoint serves in the cell's configuration, as `set
-```
-AGENT: replace
-`on ENDPOINT` puts the endpoint's model in the configuration, as `set model` would, and keeps every part set on it,
-worked out again for the new model; `use` and `cell` put the named endpoint's model in. An endpoint serving the
-configuration's own model unsets the part.
-```
-engine` would, and keeps every part set on it, worked out again for the new engine's model; `use` and `cell` put the
-named endpoint's engine in the configuration they put in. An endpoint serving the configuration's own engine unsets
-the part (see "Parts").
+The cell holds the configuration a name finds, by the name it is found under (`TriedVariation.name`), and nothing is
+picked again by name. `on ENDPOINT` puts the endpoint's model in the configuration, as `set model` would, and keeps
+every part set on it, worked out again for the new endpoints's model; `use` and `cell` put the named endpoint's model in.
+An endpoint serving the configuration's own model unsets the part (see "Parts").
 
 Names hold spaces and need no quotes: a command's last name takes the rest of the line, and `cell` takes its endpoint
 from the last word. `run` takes a seed only as a whole number after a case's title.
 
 ### Parts
-```
-AGENT: replace
-`set model NAME` puts another model in the tenth part, named as its thread is (`qwen3-8b-awq`), and keeps an endpoint
-named that serves it, unsetting one that serves another; the prompt then shows the endpoint serving the model, when one
-does.
-```
-`set PART CHUNK` puts another chunk in one of the recipe's nine chunk parts, and `set engine NAME` another engine in
-its tenth, named as `endpoints` lists it (docs/factors.md, "Recipe and compilation"). A chunk is named plainly, as
-`off`, a reasoning chunk asking for a level that the facts work out for the engine's model. The variation compiles at
-once, so a part that doesn't compile is refused and the cell stays as it was. Setting the configuration's own chunk
-or engine unsets the part, and `none` takes an optional part out. `set engine` keeps an endpoint named that serves the
-new engine, and drops one that serves another, so the cell runs where the new engine is served.
+`set PART CHUNK` puts another chunk in one of the recipe's nine chunk parts, and `set model NAME` another model named as
+its thread is (`qwen3-8b-awq`), and keeps an endpoint named that serves it, unsetting one that serves another;
+the prompt then shows the endpoint serving the model, when one does.
+
+A chunk is named plainly, as `off`, a reasoning chunk asking for a level that the facts work out for the model.
+The variation compiles at once, so a part that doesn't compile is refused and the cell stays as it was.
+Setting the configuration's own chunk or model unsets the part, and `none` takes an optional part out.
+`set model` keeps an endpoint named that serves the new model, and drops one that serves another,
+so the cell runs where the new model is served.
 
 ### Saving
 `save NAME` makes the cell's configuration the person's own. Their live thread named NAME gets a new edit, or none when
@@ -126,11 +105,7 @@ Nothing here is sent anywhere.
   family's case names the family's appendices and the cases that send them.
 - **`configurations [NAME]`** lists a row per configuration name: the languages it can be sent in, its own first
   (`catalog/language.py:edit_languages`), then those its translations cover (`Bench.translated`), as `en, sv`, or
-```
-AGENT: replace
-"the model last".
-```
-  `—`; each part as its chunk's title, the engine last, or `differs` where configurations of one name differ; and its
+  `—`; each part as its chunk's title, the model last, or `differs` where configurations of one name differ; and its
   owner; a fork reads `yours, from OWNER`, and the origin it forks is left out. Judge configurations follow, in a
   table of their own. With NAME, the configurations of exactly that name, a row each with its languages, parts and
   owner.
@@ -151,12 +126,7 @@ seed: drawn below 100,000 for a readable prompt, and held from 0 to 2³¹−1. O
 (docs/factors.md, "Rendering"); the shell says so and runs, and the trial holds the seed all the same.
 
 ### A run
-```
-AGENT: replace
-"the endpoint's engine": the one named, or the one serving the configuration's model; several serving it refuse the
-run until one is named.
-```
-`run CASE [SEED]` makes a trial of the cell's skeleton, its engine, one case and one seed, the shell's unless one is
+`run CASE [SEED]` makes a trial of the cell's skeleton, the endpoint's engine, one case and one seed, the shell's unless one is
 given, and starts it at the endpoint the cell runs at (see "The cell"; docs/runner.md, "A run"). The case is sent in
 its own language (`Bench.start`, docs/bench.md): as written, in the configuration's own or a case of none, or
 translated, and the title says so, `trial: free-text-guided × qwen3-8b-awq@fake × casesfromedn1, in sv, translated
@@ -262,13 +232,7 @@ is read once, and again after a `save`.
 | Term | Meaning |
 | --- | --- |
 | Repl, shell | `chatddx repl`, for one person over a World. |
-```
-AGENT: replace
-The line below, as given.
----
 | Cell | What the shell runs: a configuration, its model one of its parts, and the endpoint named for it, if any. |
-```
-| Cell | What the shell runs: a configuration, its engine one of its parts, and the endpoint named for it, if any. |
 | Variation | A configuration thread's edit with parts set on it, as the cell holds it. |
 | Translated | A run whose skeleton is the configuration's compiled into its cases' language by its translations. |
 | Left out | Cases in a language the configuration's translations don't cover: said, and not sent. |

@@ -28,11 +28,7 @@ to read, and they need the bench's connection in autocommit mode.
 
 ## What a person sees
 - **Threads** they own or collaborate on, while they are live. A kind of thread is asked for by the word for it:
-```
-AGENT: replace
-The model is among the recipe parts, not the engine; the word `model` asks for `model` and `model.remote` threads.
-```
-  configuration, each recipe part, the engine among them, tool, scorer, judge, expectation, appendix, expectation
+  configuration, each recipe part, the model among them, tool, scorer, judge, expectation, appendix, expectation
   schema, canary set, model or facts.
 - **Families** they own or collaborate on, while they are live. A family stands for its case: the one its current
   vignette makes alone, else the first that holds the vignette. A family without a case isn't shown.
@@ -107,44 +103,37 @@ Variation is a configuration with recipe parts replaced (docs/catalog.md, "Confi
 a configuration's edit's recipe, the name the person called it by, and the parts replaced over it with the name it was
 set by. With nothing replaced, it is the configuration itself.
 
-```
-AGENT: replace
-The model is the part. A variation replaces the recipe's nine chunks and its model, which can't be taken out; it runs at
-the endpoint serving its model, named when several do; a hand-written configuration has no model part and goes where
-named. Read "model" for "engine" as a part through this section.
-```
-It is a plain value and an unsaved one is just a digest. It runs at the endpoint serving its engine (see "The engine"),
-so an edge needs an endpoint beside it only for a hand-written configuration, which has no engine part, or an engine
-several endpoints serve.
+It is a plain value and an unsaved one is just a digest. It runs at the endpoint serving its model,
+so an edge needs an endpoint beside it only for a hand-written configuration, which has no model part and goes where
+named.
 
-A variation replaces the recipe's ten parts, its nine chunks and its engine, and nothing else. The engine can't be
-taken out. A configuration's purpose and appendix layout are set when it is made from a recipe (see
-"Configurations"): the purpose for good, since a judge configuration is no use where a run's is wanted, and the
-appendix layout until someone wants to vary it, when it becomes a part.
+A variation replaces the recipe's nine chunks and its model, which can't be taken out.
 
 Looking at a variation writes nothing. What an unsaved skeleton was compiled from, its recipe and the facts about its
-engine's model, is stored when it is saved or started, by the running code (docs/catalog.md, "Recipes").
+model, is stored when it is saved or started, by the running code (docs/catalog.md, "Recipes").
 
 Its label, `NAME+PART=CHUNK`, is a short title for it, where the catalog would give the long one of a variation nobody
 saved (docs/catalog.md, "Titles"). Neither is stored.
 
 For a variation, the bench gives:
 - **its skeleton**: the stored edit it varies when nothing is replaced, the head unless an earlier edit was named,
-  else the varied recipe compiled against the facts about its engine's model as they are stored now, a skeleton nobody
-  has saved;
-- **the request it would send**, with placeholders for the slots, and for the model without an engine;
-- **where its intents landed**: for a reasoning level and a recommended sampling, the level the engine's model is
+  else the varied recipe compiled against the facts about its model as they are stored now, a skeleton nobody
+  has saved; compiled into a language, against the facts its compilation pinned when nothing is replaced;
+- **the request it would send**, with placeholders for the slots, and for the model when no engine is at hand;
+- **where its intents landed**: for a reasoning level and a recommended sampling, the level the recipe's model is
   asked for, and why, when the facts land it on its nearest; read from the facts its compilation was compiled against
   when nothing is replaced;
-- **its lints**, as a trial on an engine: the pair's checks, over any one case since they read none; with families,
-  a trial for each language their cases are sent in, its skeleton in that language and its cases in theirs, and a
-  `translations.missing` warning for each language left out, with why;
+- **its lints**, as a trial on the engine of the endpoint it runs at, the one serving its model or the one named
+  (see "The model"); none when no endpoint serves its model, or several do and none is named. The pair's checks,
+  over any one case since they read none; with families, a trial for each language their cases are sent in, its
+  skeleton in that language and its cases in theirs, and a `translations.missing` warning for each language left
+  out, with why;
 - **the languages it runs in**, over some families: each language among their cases, with its cases and the
   skeleton they are sent as, or why they are left out (see "The languages it runs in");
 - **its reach**: for each view of each scorer the person sees, whether the variation's output offers what the view
   reads, and which of the given families have no expectation it picks something from, or several to choose from.
 
-A judge configuration, one whose purpose is `judge`, is looked at as the judge it would make on the engine: its lints
+A judge configuration, one whose purpose is `judge`, is looked at as the judge it would make on that engine: its lints
 are the judge's, it reads no case, and it has no reach, as no scorer reads what a judge answers. It isn't run on cases:
 starting it is refused. An edge lists configurations by purpose (`Bench.purposed`), since a judge configuration is no
 use where a run's is wanted.
@@ -152,23 +141,20 @@ use where a run's is wanted.
 An edge also lists configurations by what they answer (`Bench.answering`): the title of their answer's JSON Schema, as
 a page that shows management plans offers only the configurations that answer one.
 
-### The engine
-```
-AGENT: replace
-This section is "The model": the model is a part like any other, swapping it keeps every other pick, and what depends
-on it is worked out from the facts about it. A run goes to the endpoint serving the model (`Seen.at`,
-`Inventory.serving_model`); several serving one model, as the test World's two Qwen3 endpoints do, refuse a run that
-names none, and a look rendered for none has no findings. The engine is the trial's: the endpoint's.
-```
-The engine is a part like any other: swapping it keeps every other pick, and what depends on the model is worked out
-again for the new engine's. A reasoning level and a recommended sampling are intents rather than settings: compiling
-resolves them with the facts about the engine's model as they are stored then (docs/facts.md), lands each level where
-the facts say, on its nearest when the model can't be asked for it, and refuses what they refuse, and any intent on a
-model they don't know. So a variation is refused for its engine as it is looked at, before anything runs.
+### The model
+The model is a part like any other: swapping it keeps every other pick, and what depends on the model is worked out
+from the facts about it. A run goes to the endpoint serving the model (`Seen.at`, `Inventory.serving_model`);
+several serving one model, as the test World's two Qwen3 endpoints do, refuse a run that names none, and a look rendered
+for none has no findings. The engine is the trial's: the endpoint's.
 
-A run goes to the endpoint serving its variation's engine. An endpoint named must serve that engine, and one that
-serves another is refused before the gate would refuse it. An engine no endpoint serves is refused, and so is one
-several serve, unless one of them is named (see "Outstanding"). A hand-written configuration has no engine part, and
+A reasoning level and a recommended sampling are intents rather than settings: compiling
+resolves them with the facts about the model as they are stored then (docs/facts.md), lands each level where
+the facts say, on its nearest when the model can't be asked for it, and refuses what they refuse, and any intent on a
+model they don't know. So a variation is refused for its model as it is looked at, before anything runs.
+
+A run goes to the endpoint serving its variation's model. An endpoint named must serve that model, and one that
+serves another is refused before the gate would refuse it. An model no endpoint serves is refused, and so is one
+several serve, unless one of them is named (see "Outstanding"). A hand-written configuration has no model part, and
 runs at the endpoint named.
 
 ### The languages it runs in
@@ -342,39 +328,12 @@ Any kind the person owns a fork of is followed, since a proposal holds only the 
 changes, which are stored already. That is how a correction to the archive's expectations reaches the person's taken
 ones, and a scorer pinned again by a deploy reaches the person's fork of it.
 
-### Following its facts
-```
-AGENT: replace
-This section is "Following what has moved on": a configuration is behind what it was compiled for when the facts about
-its model were corrected where they change what it sends, or its model's thread moved on, as to a new revision of the
-weights. Whoever sees it sees both (`Bench.moved`, `GET /api/threads/{thread}/moved`, the configuration page); its
-owner follows them as one edit, the recipe with the model's head compiled against the current facts
-(`Bench.follow_moved`, `POST .../moved/follows`). Facts that refuse what it asks are said, not followed.
-```
-A configuration is behind its facts when the facts about its engine's model were corrected where they change what it
-sends (docs/catalog.md, "What has moved on"). The bench shows what following them would keep, to anyone who sees the
-configuration: the model, the facts it was compiled against and the facts thread's head that corrects them, and the
-skeleton its recipe compiles to against them with the running code, or why the corrected facts refuse what it asks.
-
-Following them keeps its recipe, compiled against the facts as they are stored now, as an edit of the person's own
-configuration, naming the head they saw; the recipe, and so what a fork varies, doesn't change. Facts that now
-refuse what it asks are said rather than followed, so that a part set in its place mends it first. A configuration
-with nothing behind has nothing to follow, and only its owner follows it; the archive's follow when init-data loads
-the corrected facts.
-
-Following an origin compiles against the facts as they are stored then, so a fork following its origin follows its
-facts too.
-
 ## Runs and scores
-```
-AGENT: replace
-"serving its model", and "The model".
-```
-- **Starting** runs a variation at the endpoint serving its engine, or the one named (see "The engine"), on some
+- **Starting** runs a variation at the endpoint serving its model, or the one named (see "The model"), on some
   cases with some seeds, through the runner (docs/runner.md), under an execution: a run for each language its cases
   are sent in (see "The languages it runs in"), those sent as written first. Each run is a trial of one skeleton, so
   trials, the ledger and scoring are as they are for one. As it starts, each is named by the variation's label and says
-  what it varied: the edit it was built on and the parts replaced over it, its engine among them (docs/catalog.md,
+  what it varied: the edit it was built on and the parts replaced over it, its model among them (docs/catalog.md,
   "What a run ran"); every run but the first also names the first, by a `with` entry, so that an edge shows them as
   one start. The cases left out are said, and a start that can send none of its cases is refused. The day's quota and
   the items a run takes are held for every run of a start before any starts. Running again keeps a run's cleanup,
@@ -392,7 +351,7 @@ AGENT: replace
   without one are left out, and a run whose cases have none has no scoring under that scorer.
 - **Scoring** scores a finished run under each scorer that applies to it, or some of them, through the scoring pass.
   A scorer that can't score the run gives why instead, and the others score it all the same. A judged view's calls go
-  to the one endpoint serving its judge's engine, as the bench names none (docs/runner.md, "Judges"). The scoring
+  to the one endpoint serving its judge's model, as the bench names none (docs/runner.md, "Judges"). The scoring
   pass's events, each item scored and each judge call, go to the edge as they come, when it asks for them, after a
   word that each scorer's score has started. Another thread can halt it, as a second Ctrl-C does in the repl.
 - **What is left to score** of a run is each scorer that applies, under which some of its cases have an expectation,
@@ -417,7 +376,7 @@ The bench's errors are told apart by their class, so that an edge can answer eac
 | `Conflict` | `ValueError` | a write that would undo what the person has unless they say so: taking one thread when they have their own of its case under its schema |
 | `MovedOn` | `ValueError`, the catalog's | an edit made on a head that isn't the head any more |
 | `OverQuota` | `ValueError` | more of something than a day takes, or a run of more items than one takes |
-| any other `ValueError` | | what the bench refuses: an unknown part, a digest that isn't a stored chunk of its part or a stored engine, or a part that can't be taken out, the engine among them; an endpoint that serves another engine than the variation's, and an engine no endpoint, or several, serve; an intent the facts about the engine's model refuse, or a model they don't know; a start none of whose cases can be sent; a component that isn't one, or of a kind the person doesn't write; a scorer the code can't score with; taking an expectation of one's own; and the rest, each worded for what was wrong |
+| any other `ValueError` | | what the bench refuses: an unknown part, a digest that isn't a stored chunk of its part or model |
 
 The messages are worded for a person, without the edge's terms; an edge adds its own hint where it has one. The API
 answers `NotFound` with 404, `Ambiguous`, `Conflict` and `MovedOn` with 409, `OverQuota` with 429, and the other
@@ -455,13 +414,7 @@ check before the other has written.
 | Left out | The cases of a language a configuration's translations can't carry it into, said and not sent. |
 | Start | The runs one start makes: a run per language its cases are sent in, the later ones `with` the first. |
 | Typed case | A case whose vignette is a text the person typed, kept in a database source. |
-```
-AGENT: replace
-The line below, as given.
----
 | Cell | The repl's word for a variation being tried together with the endpoint it runs at, named or found from its model. |
-```
-| Cell | The repl's word for a variation being tried together with the endpoint it runs at, named or found from its engine. |
 
 ## Outstanding
 Left for later. The API's are in docs/api.md, "Outstanding". The plan the bench was built from, with the options
@@ -482,17 +435,9 @@ the person were planned in `agents/wip-authoring.md` at b6f76b8. Its takes were 
   offered;
 - configurations listed by purpose, in the API.
 
-```
-AGENT: replace
-agents/wip-engine-part.md now describes the solution without its options, so U1 is its section "A case of no
-language". The item.
----
 - **A case of no language** goes as written, linted `language.unknown`, rather than left out (agents/wip-engine-part.md,
   "A case of no language"); so does a case of a language the translations don't cover when the configuration's own is
   unknown.
-```
-- **A case of no language** goes as written, linted `language.unknown`, rather than left out (agents/wip-engine-part.md,
-  U1, a take); so does a case of a language the translations don't cover when the configuration's own is unknown.
 - **A low-level manual for the bench**, made from `agents/wip-authoring.md` at b6f76b8.
 - **Correcting a wrong language** stays curation's: the bench refuses a language that differs from the text's own.
   What a person may correct, such as a text only their own threads hold, is open.

@@ -79,13 +79,9 @@ recipe parts they use, what is said about them and their runs, not by their name
 ### Recipes
 A recipe has no thread of its own; its history is kept on the skeleton thread it compiles to. Each edit of a skeleton
 thread can name the compilation that produced its skeleton, and the compilation holds the recipe, which names its
-```
-AGENT: replace
-"its model, and the facts about it".
-```
-engine, and the facts about the engine's model it was worked out from, when it asks them for anything (docs/factors.md,
-"Compilation"). The compilation must be one of that very skeleton, and only skeleton edits name one. A hand-written
-skeleton has no compilation, so its edits name none.
+model, and the facts about it was worked out from, when it asks them for anything (docs/factors.md, "Compilation").
+The compilation must be one of that very skeleton, and only skeleton edits name one. A hand-written skeleton has no
+compilation, so its edits name none.
 
 A skeleton thread's versions hold the recipes people chose: an edit is written when its skeleton or its recipe
 differs from the head's, so a recipe that compiles to the head's skeleton is a new version. The head's recipe
@@ -109,13 +105,11 @@ when someone accepts a proposal.
 ### What has moved on
 For any thread, the catalog lists the references of its head that could be updated. It looks at:
 - the head's own references, such as a trial's skeleton, engine and cases;
-```
-AGENT: replace
-"its model among them": a model moved on, as to a new revision of the weights, puts the configuration behind it, and its
-owner follows it with the facts (docs/bench.md, "Following what has moved on").
-```
-- for a configuration, the parts of its recipe, its engine among them, and the facts it was compiled against;
+- for a configuration, the parts of its recipe, its model among them, and the facts it was compiled against;
 - the appendices of each case the head references, since cases have no threads of their own.
+
+A model change puts the configuration behind it, and its owner follows it with the facts (docs/bench.md,
+"Following what has moved on").
 
 A reference is *behind* when a live thread that held it has since moved on to another version. A component can be held
 by several threads, so a reference can be behind several of them: for example, when a chunk was forked and both threads
@@ -137,6 +131,13 @@ this way too.
 Moving on goes one level at a time. A chunk edit makes its skeleton threads behind; saving one of those makes its trial
 threads behind. A fork makes nothing behind until it moves on.
 
+#### Following facts
+A configuration is behind what it was compiled for when the facts about
+its model were corrected where they change what it sends, or its model's thread moved on, as to a new revision of the
+weights. Whoever sees it sees both (`Bench.moved`, `GET /api/threads/{thread}/moved`, the configuration page); its
+owner follows them as one edit, the recipe with the model's head compiled against the current facts
+(`Bench.follow_moved`, `POST .../moved/follows`). Facts that refuse what it asks are said, not followed.
+
 ## Entries
 Names, and everything else people say about something, are *entries*. An entry is about exactly one thread, family, run
 or score, its *subject*. A run or a score has to have started before anything can be said about it.
@@ -154,13 +155,7 @@ collaborator. A subject nothing has been said about has no name, no owner, and n
 | Deleted | a flag | an entry restoring the subject | see "Deleting" |
 | Language | a language, only on a family | nothing: it can only be replaced | see "Languages" |
 | Varied | an edit of a configuration, only on a run | nothing: it can only be replaced | see "What a run ran" |
-```
-AGENT: replace
-The line below, as given.
----
 | Replaced | a part and the chunk or model it was set to, or none; a run has one per part | nothing: it can only be replaced | see "What a run ran" |
-```
-| Replaced | a part and the chunk or engine it was set to, or none; a run has one per part | nothing: it can only be replaced | see "What a run ran" |
 | With | the first run of the start a run is one of, only on a run | nothing: it can only be replaced | see "What a run ran" |
 
 Every field but the language, the varied edit, the replaced parts and the run a run was started with can be said
@@ -205,11 +200,7 @@ What the portal hides is open (see "Open design issues").
 ### What a run ran
 The ledger records the trial a run ran (docs/ledger.md); what a person called it and what they varied are said here.
 As a run starts, the bench names it by its variation's label and says what it varied: the configuration's edit it
-```
-AGENT: replace
-"the chunk or model".
-```
-was built on, and each part replaced over it, by the chunk or engine it was set to, or none for a part taken out. A
+was built on, and each part replaced over it, by the chunk or model it was set to, or none for a part taken out. A
 start over cases in several languages is a run per language (docs/bench.md), and each run after the first says the
 first, the run it was started *with*, so the runs of one start are found together. A run started from a trial alone,
 as the runner starts one, says none of it. Running again says what the run it repeats varied, and starts alone.
@@ -239,13 +230,8 @@ its own source and id.
 What a component holds is described by what tells it apart from others of its kind, and the components it uses are
 shown by their titles in turn.
 
-```
-AGENT: replace
-"model included, the model last": `qwen3-8b-awq`, or the model's repository when its thread is unnamed; a remote
-model is `<name> from <provider>`, and a remote engine `<model> remotely`.
-```
-A configuration is described by its recipe's parts, translations, toolset and engine included, the engine last, when a
-compilation of it is stored: "ddx · case · management-plan · recommended · off · qwen3-8b@pelle". A judge's recipe
+A configuration is described by its recipe's parts, translations, toolset and model included, the model last, when a
+compilation of it is stored: "ddx · case · management-plan · recommended · off · qwen3-8b-awq". A judge's recipe
 says so first. Without a stored compilation, as for a hand-written skeleton, it is shown by its purpose and the start
 of its digest: "generation configuration 1a2b3c".
 

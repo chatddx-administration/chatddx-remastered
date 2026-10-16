@@ -42,12 +42,9 @@ Both kinds of file hold one table per kind of component, keyed by name, whose ke
 (docs/factors-api.md).
 
 On top of the fields:
-```
-AGENT: replace
-"a local engine's model, a `model` record, and a remote engine's model, a `remote_model` record".
-```
 - **References by name.** A toolset's tools, a scorer's expectation schema and a view's judge, a local engine's model
-  and a recipe's parts name records, not digests.
+  a `model` record, and a remote engine's model, a `remote_model` record; and a recipe's parts name records,
+  not digests.
 - **Judges.** A judge names a `recipe`, its `seeds` and its `fill`, and no engine: the World binds it to an endpoint
   (docs/inventory.md, "Judges"), whose engine judges. The recipe is compiled for that engine, as written, and the
   skeleton and its compilation are stored with the judge, without a thread of their own; a judge names no `language`.
@@ -81,15 +78,9 @@ AGENT: replace
   stop the loading (see "Texts").
 
 A name is defined once per kind: a text is written in one texts file, and only a translations record's name comes
-back in several, as one chunk (see "Texts"). A data set's `factors.toml` holds no `model`, `local_engine` or
-```
-AGENT: replace
-The engines file holds `model`, `remote_model`, `local_engine` and `remote_engine` tables; a recipe names no `model`:
-its inventory names the endpoint whose engine's model configurations are made for.
-```
-`remote_engine` table, and a recipe names no `engine`: engines are the World's (see "The World"), and a recipe that
-names one is refused ("a recipe's engine is the World's: its inventory names the endpoint configurations are made
-for").
+back in several, as one chunk (see "Texts"). A data set's `factors.toml` holds no `model`, `local_model`,
+`local_engine` or `remote_engine` tables, and a recipe names no `model`: engines are the World's (see "The World"),
+and a recipe that names one is refused.
 
 ### Texts
 What the model reads is written in a language, and a texts file's name gives it: every text record in
@@ -137,23 +128,13 @@ own.
 ### Facts and the engine
 Some of what a request sends can only be worked out for a model: the sampling its makers recommend, the way a
 reasoning level is asked for. The facts about each model an engine of the World serves are loaded as a thread of kind
-`facts`, named after the model, such as `Qwen/Qwen3-8B-AWQ`, and a recipe is made once, with the engine of the
-```
-AGENT: replace
-"made for that endpoint's engine's model, its intents compiled against its facts"; a judge's recipe for the model of the
-endpoint the World binds it to, the judge keeping that engine.
-```
-endpoint the World names for configurations (docs/inventory.md), its intents compiled against that engine's model's
-facts (docs/facts.md, "Compiling intents"). A served model the facts don't know is reported, since its engines can't
-compile a reasoning level or a recommended sampling, and a recipe is skipped and reported when the facts refuse it on
-that engine, or when the World names no endpoint for configurations. Engines and facts are planned first for this
-```
-AGENT: replace
-The line below, as given.
----
-reason. A researcher swaps the model at the bench, as any other part (docs/bench.md).
-```
-reason. A researcher swaps the engine at the bench, as any other part (docs/bench.md).
+`facts`, named after the model, such as `Qwen/Qwen3-8B-AWQ`, and a recipe is made for that endpoint's engine's model,
+its intents compiled against its facts (docs/facts.md, "Compiling intents").
+
+A served model the facts don't know is reported, since its engines can't compile a reasoning level or a recommended
+sampling, and a recipe is skipped and reported when the facts refuse it on that engine, or when the World names no
+endpoint for configurations. Engines and facts are planned first for this reason. A researcher swaps the model at the
+bench, as any other part (docs/bench.md).
 
 ## The World
 A World is a directory (docs/inventory.md, "Worlds"). Loading reads its `inventory.toml` for the source of the cases'

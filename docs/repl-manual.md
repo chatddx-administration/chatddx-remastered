@@ -55,48 +55,6 @@ stopped: they serve their own fakes):
 chatddx scripted-runs alice
 ```
 
-## A few words first
-
-- **Configuration:** what to ask, how, and which engine to ask. The
-  instructions, the prompt the case goes into, the kind of answer wanted
-  (free text, a list of diagnoses, a management plan), whether the model
-  should think first, how it samples its words, and the engine, the model
-  as a machine serves it. Its parts are called `instructions`,
-  `few_shot`, `prompt`, `output`, `sampling`, `reasoning`, `passthrough`,
-```
-AGENT: replace
-The tenth part is `model`, not `engine`: `set model NAME`, `+model=gpt-oss-20b@fake` in a label, the model named as its
-thread is, and the prompt names the endpoint serving the model when one does. The transcripts below were recorded
-with the engine as the part: read `model` for `engine` and the model's thread name for the endpoint's in a label, and
-record them again on the sample World.
-```
-  `translations`, `toolset` and `engine`. A configuration is written in
-  one language, and its translations carry it into others, so that each
-  case is sent in its own (see `run tag`). What depends on the model,
-  such as how it is told to think first, is worked out for the engine's
-  model as the configuration is put together.
-- **Endpoint:** where an engine is served: `qwen3-8b@pelle` is Qwen3-8B
-  as pelle serves it. A configuration runs at the endpoint serving its
-  engine; naming another endpoint puts its engine in the configuration
-  (see `on`). Each endpoint is cleared for the sources whose cases may be
-  sent to it.
-- **The cell:** the configuration you have chosen, and the endpoint, if
-  you named one. Every run uses the cell.
-- **Case:** a clinical vignette, from a source the World names. Some cases
-  send appendices after the vignette, such as lab results, and are named
-  after them: `Dutchfall11w with ultrasound`.
-- **Expectation:** what a case is expected to yield: its targets, each a
-  few plain words and a pattern the scorers look for in an answer, and
-  clinicians' notes, which judges read. You are scored against your own
-  expectations.
-- **Run:** answers from the cell to one case or several, recorded with
-  everything that was received.
-- **Trial:** the cell, the cases and a seed together. Running the same
-  trial twice gives two runs of one trial.
-- **Scorer:** what compares an answer with a case's expectation, view by
-  view. A judged view asks a judge, a model of its own, whether the answer
-  meets a note.
-
 ## Getting around
 
 ### `help`
