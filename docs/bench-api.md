@@ -298,14 +298,6 @@ The names of `threads(word)`, sorted, without repeats.
 
 #### `thread(word: str, name: str) -> tuple[Edit, str]`
 The head of the thread `name` names among `threads(word)`, and the name that found it.
-```
-AGENT: remove
-The doc fixes kept the old item's last two lines, which name `variants_for`, gone with the languages in names. The
-two lines after this item's first.
-```
-- `name`: a thread's name, or `<owner's login>/NAME`.
-  `NAME (LANGUAGE)` (`chatddx.catalog.variants_for`), in the language the name ends in, as `NAME LANGUAGE` or
-  `NAME (LANGUAGE)`, if any.
 
 Of the threads called `name`, the person's own are taken when they own any, else all of them; when none is called
 `name`, the same among those whose qualified name it is. Raises:

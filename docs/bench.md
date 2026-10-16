@@ -1,17 +1,8 @@
 # Bench
 
-```
-AGENT: replace
-The portal is built, so it isn't "to come". The paragraph.
----
 The bench is what one person sees and does, whatever the edge they reach it through: the threads, families and runs
 they see, the World's endpoints, the variation they are trying, and what is written in their name. Its edges are the
 repl (docs/repl.md), the API (docs/api.md) and the portal (agents/wip-portal.md). This document
-describes what the bench does and why it is shaped like it is. Names, signatures and errors are in docs/bench-api.md.
-```
-The bench is what one person sees and does, whatever the edge they reach it through: the threads, families and runs
-they see, the World's endpoints, the variation they are trying, and what is written in their name. Its edges are the
-repl (docs/repl.md), the API (docs/api.md) and the portal to come (agents/wip-portal.md). This document
 describes what the bench does and why it is shaped like it is. Names, signatures and errors are in docs/bench-api.md.
 
 The bench builds on the store, the catalog, the World, the facts, the runner and the scoring pass, and holds no SQL of
@@ -414,16 +405,10 @@ check before the other has written.
 
 ## Terms
 
-```
-AGENT: replace
-The portal is built, so it isn't "to come". The `Edge` row.
----
-| Edge | What a person reaches the bench through: the repl, the API, the portal. |
-```
 | Term | Meaning |
 | --- | --- |
 | Bench | What one person sees and does, whatever the edge. |
-| Edge | What a person reaches the bench through: the repl, the API, the portal to come. |
+| Edge | What a person reaches the bench through: the repl, the API, the portal. |
 | Sees | Owns or collaborates on, while it is live. |
 | Own | Owned by the person, while it is live. |
 | Word | What a kind of thread is asked for by: configuration, a recipe part, engine and the rest. |

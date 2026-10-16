@@ -23,13 +23,7 @@ The archive is never wiped.
 A data set is a directory of authored files: a `factors.toml`, the texts in `texts-<language>.toml` files, the cases
 in `cases-<language>.toml` files, and the files they load, such as JSON schemas.
 
-```
-AGENT: replace
-The sentence reads as if a record could be a case; it seems to mean what a data set's files say. A guess at it.
----
 A data set says what the model reads, the language each text is written in, and the cases it is run on.
-```
-A record holds text the model reads, which language it is in, and whether it is a record or a case.
 What a data set can't hold, engines, which engine judges and which engine its configurations are made for, is its
 World's (docs/inventory.md, "Worlds").
 
@@ -126,19 +120,10 @@ A cases file holds `[case.<id>]` tables, keyed by the vignette's id at the sourc
 family, and `targets`, its expectation, which must fit the data set's one expectation schema. A case is in exactly one
 file, and the file's name gives its language: every case in `cases-sv.toml` is in Swedish.
 
-```
-AGENT: replace
-Vignettes are never translated (docs/catalog.md, "Languages"): a case is sent in its own language, the
-configuration translated into it where it isn't its own. The paragraph.
----
 Splitting by language rather than tagging each case keeps a language's cases together, as they are sent, scored and
 compared together: a case runs in the language it was written in, under the configuration translated into it where
 that isn't the configuration's own (docs/catalog.md, "Languages"). Notes in the targets keep a language of their
 own.
-```
-Splitting by language rather than tagging each case keeps a language's cases together, as they will be translated,
-scored and compared together: a case runs in the language it was written in (docs/catalog.md, "Languages"). Notes in
-the targets keep a language of their own.
 
 ### Facts and the engine
 Some of what a request sends can only be worked out for a model: the sampling its makers recommend, the way a
@@ -264,21 +249,13 @@ test_sample_world.py (src/chatddx/conftest.py, `sampled`).
 
 ## Terms
 
-```
-AGENT: remove
-Rows naming what is gone: `Per-model record`, as recipes stopped being made per model (agents/wip-engine-part.md,
-stage 1), and `Variant`, as names lost their language (stage 2), which the doc fixes kept beside the new
-`Translations` row.
-```
 | Term | Meaning |
 | --- | --- |
 | Curation | Getting authored content into the store as the archive's, keeping it in step with its files, and taking it out of people's way. |
 | Archive | The person who owns what a data set loads, and shares it with everyone else. |
 | Data set | A directory of authored files: factors, cases by language, and what they load. |
 | Record | A named entry of a data set's factors file, loaded as a thread. |
-| Per-model record | A record written from each served model's facts, named after the model. |
 | Text | A chunk that holds text the model reads, written in a texts file whose name gives its language. |
-| Variant | A record made for a language, named after it: `plan (en)`. |
 | Giftbag | A person's own forks of the archive's chunks, tools, skeletons and expectations. |
 | Leftover | An archive thread or family the data set no longer names. |
 | Translations | A chunk that translates a data set's texts into other languages, written in the texts file of each language it translates into. |

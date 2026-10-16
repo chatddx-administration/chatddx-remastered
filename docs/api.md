@@ -224,19 +224,10 @@ endpoint's `max_jobs`, and the order the request gives, a shuffled order's seed 
 and with the cleanup steps the request gives, else those its cases' sources ask for (docs/inventory.md, "Sources").
 
 ### Where it runs
-```
-AGENT: replace
-The paragraph stops mid-sentence, "followed and halted from any", as written when the worker was solidified.
-A completion from what the sections after it say.
----
 A started run is queued as a job in the store, and a worker sends it, finishes it and scores it under every scorer
 that applies to it, unless asked not to be. A job outlives the process that queued it, and is followed and halted from
 any process: its events are told from the store (see "Its events"), and a halt goes through the queue (see
 "Halting").
-```
-A started run is queued as a job in the store, and a worker sends it, finishes it and scores it under every scorer
-that applies to it, unless asked not to be. A job outlives the process that queued it, and is followed and halted from
-any
 
 ### Its events
 `GET /api/runs/{id}/events` tells the run's rows, its scores' included, in the order they were written; then, while a
