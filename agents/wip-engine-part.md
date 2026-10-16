@@ -145,8 +145,9 @@ The migrations are edited in place: `0012` (the `facts` thread kind, `chunk.tran
 its compilations and translations are of versions nothing reads.
 
 ## Outstanding
-- **The NixOS test** (`nix/test.nix`) still finds `plan (en, Qwen/Qwen3-8B-AWQ)` and names its endpoint; it wants
-  `plan`, and can leave the endpoint to be derived.
+- **The NixOS test** (`nix/test.nix`) still finds `plan (en, Qwen/Qwen3-8B-AWQ)` and names its endpoint, and reads
+  the run from the top of what `POST /api/runs` answers, which is `StartedRuns` now; it wants `plan`, can leave the
+  endpoint to be derived, and takes the first of `runs`.
 - **`Seen.thread`'s `name` is undescribed.** The doc fixes that took out the `variants_for` lines in docs/bench-api.md,
   "`thread(word, name)`", took the item's first line too, so `OWNER/NAME` is said only as a qualified name.
 - **The repl's `runs` doesn't show a start**: a translated run says its language, the own language's run of the same
@@ -160,3 +161,121 @@ its compilations and translations are of versions nothing reads.
   goes as its language's, or is said as "if it can be" when the look didn't see its language.
 - **`Seen.facts` is read on every access**, several times a look; cheap at today's sizes (a facts thread per model),
   and the place to cache per request if it shows.
+
+## Review
+A read of the branch before merge, by a session that didn't build it: the code against this document and against
+`agents/wip-variants.md` as main holds it, the suite and the static checks, and a second reader over curation and the
+edges. "Take" is the reviewer's.
+
+### Checked
+- `pytest -n 4`: 862 passed, 3 skipped. ruff, its formatter and basedpyright are clean. `chatddx openapi` matches
+  `frontend/openapi.json`. `pnpm --dir frontend check`, `test` and `build` pass.
+- What this document claims is tested where it matters: an engine swap keeping every other pick and working the rest
+  out (`src/chatddx/bench/test/test_seen.py`); facts corrected flagging a configuration only where they reach it, and
+  following them, refused when they now refuse (`bench/test/test_following.py`); a start over English and Swedish
+  cases making two runs, the second translated and `started_with` the first, cases left out and said, the quota
+  checked for all of them, and a gate refusal partway beginning none (`bench/test/test_runs.py`).
+- No name is read for a model or a language anywhere: `catalog/variants.py` is gone and nothing imports what it
+  exported; the frontend's `madeFor` and `fitting` are gone; the only regular expressions left over names are the
+  language tag's and the entry shapes'.
+- Rule one of documentation held: the agent's commits add suggestions to `docs/` and remove one of their own; the
+  doc fixes are the user's. No docstring was added, and the new comments link code or say why, but for four (below).
+- Two engines of one model compile a recipe to one skeleton: `compile_request` reads the engine for its model only,
+  and the skeleton holds no engine.
+
+### Must fix before merge
+- **`nix/test.nix` fails twice**, not once; "Outstanding" names the first: it looks up
+  `plan (en, Qwen/Qwen3-8B-AWQ)`, and it reads `["run"]` from what `POST /api/runs` answers, which is `StartedRuns`.
+- **Names tests share are spelled as literals**: `lines-guided` is in six test files over five packages, `judge` and
+  `clinician` likewise, and `src/chatddx/test/world.py` gained only `LINES`, `NATIVE`, `NATIVE_TOOLS`, `TOOL_ANSWER`
+  and `OFF` (`AGENTS.md`, "Testing").
+- **Four comments in `src/chatddx/curation/plan.py:plan_factors` say what the code does** (the records by name, the
+  translations' bodies, a record tried and not planned, the texts a translations record may translate), which
+  `AGENTS.md` says to take out.
+
+### Smaller
+- `curation/plan.py:plan_factors`: when the configurations endpoint's engine has no engine file in the data set,
+  every recipe is skipped as "the World names no endpoint configurations are made for"; it names one, whose engine
+  the data set doesn't hold.
+- `repl/shell.py:Repl.prompt` reads the store on every render, to derive the endpoint, where the prompt read nothing
+  before; a connection dropped surfaces at the prompt, outside `handle`'s catch.
+- `api/threads.py:thread_of` reads a compilation per configuration listed, for `translated`.
+- A case tagged `en-GB` on an `en` configuration is left out as untranslatable (`Seen.languages` compares tags
+  whole); before, it ran with `language.mixed`.
+- A start's runs all go to one endpoint, and the gate confirms it once per language inside the transaction
+  ("Outstanding"); confirming it once, before the transaction, removes most of what the transaction holds open.
+
+### Consequences of the design
+Not bugs: what the solution does to the model, each with how it can be managed.
+- **The engine part pins a server, not a model.** `LocalEngine`'s digest covers runtime, argv, env, chat template and
+  model files. A vLLM upgrade or a flag changed on an endpoint leaves every saved configuration naming an engine
+  nothing serves: the API and the variation page refuse to run it until the engine is picked again, and unlike
+  corrected facts nothing flags it as behind. Manageable: an engine no endpoint serves flagged as behind, followed to
+  the endpoint's engine of the same model, as facts are; or the recipe naming the model (see the last take).
+- **Which engine a configuration runs on depends on the edge.** The repl's `use`, `on` and `cell`, and the home page,
+  put the session's endpoint's engine in; the API and the variation page honour the stored one. The run records the
+  swap in `replaced`, so this is a milder form of the edges' old disagreement, but the same shape. Manageable by saying
+  it: at the repl and the home page a configuration is run *at* an endpoint, as a variation.
+- **A variation compiles against the current facts, a configuration against the facts it pinned**
+  (`Seen.compiled_with`). After a correction, `plan+prompt=x` sends another sampling than `plan`, without that being
+  picked, where `agents/wip-variations.md` promised a variation differs in what was replaced. Manageable: a variation
+  whose engine isn't replaced compiles against the configuration's pinned facts, one whose engine is replaced against
+  the new model's current ones.
+- **The archive's configurations can't follow corrected facts**: only an owner may, and the archive is nobody at the
+  bench (`test_following.py` shows them flagged and stops there). Manageable: init-data follows the facts for the
+  threads it wrote when it runs again; a decision, then a few lines.
+- **Translations are keyed by their source text, for every text now.** Editing an instruction detaches its
+  translations, and the next start leaves those cases out, said in the look and in the answer. Manageable as is; a
+  lint on a configuration whose translations no longer cover a text of its own would close it.
+- **Migrations edited in place and stores reloaded** (O2) is open while no store holds data worth keeping. The
+  deploy (`agents/wip-deploy.md`) closes it; this should land before, and be the last to use it.
+
+### Take: how far it is a natural conclusion of the design
+Where it is:
+- **It restores the old chatddx's premise with the remastered invariant kept.** A configuration names no model and
+  is compiled for what it is paired with, as the research note asked (each setting "means the same thing whatever
+  it is paired with"), and the skeleton is still the literal request, so a trial pins what is sent. Moving the facts
+  from load time to compile time corrects one choice; it isn't a new design. Nearest levels (N1) are that premise
+  made honest: `off` on a model that always reasons means `low`, said and recorded, rather than a sibling thread
+  that silently didn't exist.
+- **Facts as components is what the catalog does to every input**: pinned by digest, versioned, behind when moved
+  on, followed as an edit. Pinning them on the compilation beside the compiler (F1) is the move the compilation
+  already made for code.
+- **The engine as a part costs no mechanism**: `TriedVariation.set`, `replaced` entries, forks and titles take it as
+  they take a chunk, which is why a swap keeps every other pick for free.
+- **It removes a layer rather than adding one**: 31 threads from 10 recipes, init-data's per-model loop, a name
+  grammar read at five edges and in the NixOS test, and a variation lost on switching models. A solution that deletes
+  `catalog/variants.py` instead of feeding it is the stronger sign of fit.
+
+Where it isn't:
+- **The configuration is server-bound where the rest of the design is model-keyed.** Facts, lints, landings and the
+  skeleton are per model; the engine part alone is per server, and it sits in the recipe beside what to ask. Before,
+  where a request goes was the trial's and the run's; now the recipe holds a piece of it, and `inventory.toml`'s
+  `configurations` key puts an operational choice into the research data for the same reason. The edges overriding
+  the engine is the design pushing back.
+- **Compiling is no longer a function of the recipe alone.** `Compilation` records the facts and `into`, so
+  provenance is whole, but "what a configuration sends changes only by an edit", decided when configurations were
+  settled, is now "or by a correction, flagged and followed", and for a variation not even that. Literal chunks keep
+  the old guarantee available per configuration, which is the right escape hatch.
+- **A start isn't a subject.** Its runs are tied by a `with` entry and found by a scan (`Seen.together`); the group
+  that a run over mixed-language cases forms is known by an entry, as variants were known by a name, one level up.
+  Small today, and the same shape.
+
+### Take: whether the consequences are manageable
+Yes, and none asks for the approach to be undone. Two shape what a configuration *is* and are worth settling before
+more is built on it: the server-bound engine, and which facts a variation compiles against. The rest are a lint, a
+decision for init-data, a sentence in the docs, or a cache later.
+
+### Take: whether an alternative should be made and weighed first
+Not against the approach. Recording variants (`agents/wip-variants.md`, B2) keeps the per-model threads and turns
+name-reading at every edge into entry-reading at every edge, and never gives a variation that survives a swap. The
+reversal was right, and the spectrum's options 2 to 5 were dismissed for reasons that hold.
+
+Against one part of it, yes, on paper and now: **the recipe naming a model rather than an engine**, the engine
+staying the trial's, picked per run as the endpoint serving the model. It is what the facts and the lints are keyed
+by; it removes the staleness, the `configurations` key and the overriding edges, and `replaced` need record no
+engine. What stops it is real: a remote engine's model is a name, not a component, so a model part would be the one
+recipe part without a digest, or would need a component standing for a remote model. That is a page to write and a
+day to weigh, not a build: the two differ in one part's kind and in `Seen.at`'s derivation, and the one is reached
+from the other as a follow-up. It should be weighed before this lands rather than after, because O2 is what makes
+changing a part's kind cheap, and the deploy closes it.
