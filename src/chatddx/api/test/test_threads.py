@@ -26,7 +26,7 @@ def test_threads_are_listed_by_kind_among_those_the_person_sees(
     assert all(t["title"] and t["head"]["digest"].startswith("sha256:") for t in listed)
     assert configuration(signed, "alice")["language"] == "en"
     for kind, name, language in (
-        ("output", "lines (en)", "en"),
+        ("output", "lines", "en"),
         ("sampling", "greedy", None),
     ):
         query = {"kind": kind, "name": name, "owner": "alice"}
@@ -58,7 +58,7 @@ def test_configurations_are_listed_by_purpose(signed: TestClient) -> None:
 
     generation, judges = names(), names(purpose="judge")
     assert names(purpose="generation") == generation
-    assert LINES in generation and "judge (en)" in judges
+    assert LINES in generation and "judge" in judges
     assert not generation & judges
     got = signed.get("/api/threads", params={"kind": "scorer", "purpose": "judge"})
     assert got.status_code == 422

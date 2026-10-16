@@ -1,17 +1,11 @@
-from collections.abc import Iterable, Mapping, Sequence
+from collections.abc import Callable, Iterable, Mapping, Sequence
+from functools import partial
+from typing import Literal
 from uuid import UUID
 
 from pydantic import JsonValue
 
-from chatddx.catalog import (
-    About,
-    Edit,
-    Subject,
-    language_of,
-    latest,
-    made_in,
-    variants_for,
-)
+from chatddx.catalog import About, Edit, Subject, latest
 from chatddx.catalog.threads import picked, recipe as recipe_of
 from chatddx.catalog.titles import short
 from chatddx.factors.base import (
@@ -30,6 +24,7 @@ from chatddx.factors.request import (
     Purpose,
     Recipe,
     Skeleton,
+    Translations,
     compile_request,
     compiled,
     landings,
@@ -58,7 +53,7 @@ from chatddx.store.catalog import Rows
 from chatddx.store.store import Connection
 
 from .errors import Ambiguous, NotFound
-from .model import KINDS, PLACEHOLDERS, Family, Graded, Reach
+from .model import KINDS, PLACEHOLDERS, Carried, Family, Graded, Reach
 from .variation import PARTS, TriedVariation
 
 
@@ -118,23 +113,6 @@ class Seen:
             }
             for kind, found in seen.items()
         }
-        every = set[str]().union(*addresses.values())
-        if name not in every:
-            base, language = language_of(name)
-            match variants_for(base, every, language):
-                case [one]:
-                    name = one
-                case []:
-                    pass
-                case several:
-                    languages = sorted(
-                        {made for n in several if (made := made_in(n)[1]) is not None}
-                    )
-                    raise Ambiguous(
-                        f"{word} {name!r} is made in more than one language: "
-                        + f"{', '.join(several)}; name one as "
-                        + " or ".join(f"'{base} {lang}'" for lang in languages)
-                    )
         kinds = [kind for kind, held in addresses.items() if name in held]
         match kinds:
             case [kind]:
@@ -277,25 +255,82 @@ class Seen:
             )
         return endpoint, engine
 
-    def skeleton(self, variation: TriedVariation) -> Skeleton:
+    def skeleton(self, variation: TriedVariation, into: str | None = None) -> Skeleton:
         recipe = variation.varied
-        if not variation.parts or recipe is None:
+        if into is None and (not variation.parts or recipe is None):
             return resolve(self.get, variation.configuration.digest, Skeleton)
+        if recipe is None:
+            raise StructuralError(f"{variation.label} has no translations into {into}")
         registry = self.store.load(s.digest for s in iter_refs(recipe))
-        return compile_request(recipe, registry.get, self.facts_for(recipe.engine))
+        return compile_request(
+            recipe, registry.get, self.compiled_with(variation), into
+        )
+
+    # The facts the configuration was compiled against, so that a translation of it
+    # differs from it by its texts only.
+    def compiled_with(self, variation: TriedVariation) -> ModelFacts | None:
+        recipe = variation.varied
+        if recipe is None:
+            return None
+        made = variation.configuration.compilation
+        if not variation.parts and made is not None:
+            pinned = resolve(self.get, made, Compilation).facts
+            return None if pinned is None else resolve(self.get, pinned, ModelFacts)
+        return self.facts_for(recipe.engine)
 
     def landed(self, variation: TriedVariation) -> dict[str, Landing]:
         recipe = variation.varied
         if recipe is None:
             return {}
         registry = self.store.load(s.digest for s in iter_refs(recipe))
-        facts = self.facts_for(recipe.engine)
-        made = variation.configuration.compilation
-        if not variation.parts and made is not None:
-            pinned = resolve(self.get, made, Compilation).facts
-            facts = None if pinned is None else resolve(self.get, pinned, ModelFacts)
-        found = landings(recipe, registry.get, facts)
+        found = landings(recipe, registry.get, self.compiled_with(variation))
         return {p: at for p, at in zip(("reasoning", "sampling"), found) if at}
+
+    def own_language(self, variation: TriedVariation) -> str | None:
+        recipe = variation.varied
+        if recipe is None:
+            return self.catalog.language_of(variation.configuration.digest)
+        return self.catalog.recipe_language(recipe)
+
+    def translated(self, recipe: Recipe | None) -> list[str]:
+        if recipe is None or recipe.translations is None:
+            return []
+        return list(resolve(self.get, recipe.translations, Translations).into)
+
+    def languages(
+        self,
+        variation: TriedVariation,
+        cases: Sequence[str],
+        known: Mapping[str, str | None] | None = None,
+    ) -> list[Carried]:
+        own = self.own_language(variation)
+        held = dict(known) if known is not None else self.catalog.languages_of(cases)
+        into = self.translated(variation.varied)
+
+        def sent_in(language: str | None) -> str | None:
+            if language is None or language == own:
+                return None
+            if language not in into and own is None:
+                return None
+            return language
+
+        sent = {case: sent_in(held.get(case)) for case in cases}
+        found: list[Carried] = []
+        if written := [c for c in cases if sent[c] is None]:
+            found.append(Carried(own, written, self.skeleton(variation)))
+        for language in sorted({s for s in sent.values() if s is not None}):
+            some = [c for c in cases if sent[c] == language]
+            if language not in into:
+                refused = f"{variation.label} has no translations into {language}"
+                found.append(Carried(language, some, refused=refused))
+                continue
+            try:
+                skeleton = self.skeleton(variation, language)
+            except StructuralError as e:
+                found.append(Carried(language, some, refused=str(e)))
+                continue
+            found.append(Carried(language, some, skeleton, translated=True))
+        return found
 
     def served(self, engine: str) -> str:
         found = self.get(engine)
@@ -417,6 +452,7 @@ class Seen:
         engine: str,
         seed: int,
         families: list[Family] | None = None,
+        carried: list[Carried] | None = None,
     ) -> list[Finding]:
         skeleton = self.skeleton(variation)
         if skeleton.purpose == "judge":
@@ -424,27 +460,32 @@ class Seen:
         if families is None:
             held = self._cases([f for f, _ in self._families()]).values()
             first = next((c for c in held if c is not None), None)
-            some = [] if first is None else [first]
-        else:
-            some = [f.case for f in families]
-        if not some:
-            return []
-        registry, trial = self.trial(skeleton, engine, some, (seed,))
-        if variation.recipe is None:
-            self.add_compilations(registry, skeleton.digest)
-        if families is None:
+            if first is None:
+                return []
+            registry, trial = self.trial(skeleton, engine, [first], (seed,))
+            if variation.recipe is None:
+                self.add_compilations(registry, skeleton.digest)
             return lints(registry, self.facts, [trial.digest])
         known = {f.case: f.about.language for f in families}
-        recipe = variation.varied
-
-        def languages(digest: str) -> str | None:
-            if digest in known:
-                return known[digest]
-            if digest == trial.skeleton and recipe is not None:
-                return self.catalog.recipe_language(recipe)
-            return self.catalog.language_of(digest)
-
-        return lints(registry, self.facts, [trial.digest], languages)
+        if carried is None:
+            carried = self.languages(variation, list(known), known)
+        found: list[Finding] = []
+        for each in carried:
+            if each.skeleton is None:
+                found.append(left_out(each, variation.configuration.digest))
+                continue
+            registry, trial = self.trial(each.skeleton, engine, each.cases, (seed,))
+            if variation.recipe is None:
+                self.add_compilations(registry, each.skeleton.digest)
+            languages = partial(
+                _language_in,
+                {**known, trial.skeleton: each.language},
+                self.catalog.language_of,
+            )
+            for finding in lints(registry, self.facts, [trial.digest], languages):
+                if finding not in found:
+                    found.append(finding)
+        return found
 
     def _judged(
         self, skeleton: Skeleton, engine: str, seed: int, by_hand: bool
@@ -590,12 +631,18 @@ class Seen:
                 )
         return found
 
-    def compiled(self, recipe: Recipe) -> tuple[Registry, Compilation]:
+    def compiled(
+        self,
+        recipe: Recipe,
+        facts: ModelFacts | None | Literal["current"] = "current",
+        into: str | None = None,
+    ) -> tuple[Registry, Compilation]:
         registry = self.store.load(s.digest for s in iter_refs(recipe))
-        facts = self.facts_for(recipe.engine)
+        if facts == "current":
+            facts = self.facts_for(recipe.engine)
         if facts is not None:
             _ = registry.add(facts)
-        skeleton, compilation = compiled(recipe, registry.get, rig(), facts)
+        skeleton, compilation = compiled(recipe, registry.get, rig(), facts, into)
         _ = registry.add(skeleton)
         _ = registry.add(compilation)
         return registry, compilation
@@ -682,6 +729,16 @@ class Seen:
         if not owns(self.person.id, about) or not found:
             raise NotFound(f"no run {run} of yours")
         return found[0]
+
+    def started_with(self, run: UUID) -> UUID | None:
+        return self.catalog.about(Subject(run=run)).started_with
+
+    def together(self, first: UUID) -> list[RunStarted]:
+        found = self.runs()
+        known = self.catalog.abouts([Subject(run=r.run) for r in found])
+        return [
+            r for r in found if first in (r.run, known[Subject(run=r.run)].started_with)
+        ]
 
     def ran(self, run: UUID) -> tuple[Edit, dict[str, str | None]] | None:
         about = self.catalog.about(Subject(run=run))
@@ -803,6 +860,23 @@ class Seen:
             else:
                 found[item.key] = None
         return found
+
+
+def _language_in(
+    known: Mapping[str, str | None], otherwise: Callable[[str], str | None], digest: str
+) -> str | None:
+    return known[digest] if digest in known else otherwise(digest)
+
+
+def left_out(carried: Carried, subject: str) -> Finding:
+    cases = (
+        "1 case is" if len(carried.cases) == 1 else f"{len(carried.cases)} cases are"
+    )
+    return Finding(
+        code="translations.missing",
+        message=f"{cases} in {carried.language}, and left out: {carried.refused}",
+        subject=subject,
+    )
 
 
 def _titled(schema: JsonValue) -> str | None:

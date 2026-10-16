@@ -113,6 +113,10 @@ class Thread(_Schema):
     owner: str | None
     tags: list[str]
     language: str | None = Field(description="its head's")
+    translated: list[str] = Field(
+        description="a configuration's: the languages its head's translations carry it "
+        + "into"
+    )
     head: Edit
 
 
@@ -336,6 +340,17 @@ class Reach(_Schema):
     choosing: list[int]
 
 
+class Carried(_Schema):
+    language: str | None = Field(
+        description="the cases' language; null for the configuration's own when it is "
+        + "unknown"
+    )
+    families: list[int]
+    translated: bool
+    skeleton: str | None = Field(description="the request they are sent as")
+    refused: str | None = Field(description="why they can't be sent, and are left out")
+
+
 class Variation(_Schema):
     head: Edit
     label: str = Field(description="its name, and the chunks it replaces")
@@ -348,6 +363,10 @@ class Variation(_Schema):
     seed: int
     request: dict[str, JsonValue]
     findings: list[Finding] | None
+    languages: list[Carried] = Field(
+        description="the languages its cases are sent in, the configuration's own "
+        + "first, and those it can't be sent in"
+    )
     reach: list[Reach]
 
 
@@ -398,7 +417,7 @@ class NewTake(_Schema):
 class NewTyped(_Schema):
     text: str = Field(description="the case as typed, kept as written")
     name: str | None = None
-    language: str | None = Field(None, description="the language it is typed in")
+    language: str = Field(description="the language it is typed in, such as 'sv'")
     source: str | None = Field(
         None,
         description="the database source it is kept in, when the World has several",
@@ -628,6 +647,11 @@ class Run(_Schema):
     at: datetime
     trial: str
     skeleton: str
+    language: str | None = Field(description="the language its request is sent in")
+    started_with: UUID | None = Field(
+        description="the first run of the start it is one of; null for the first, and "
+        + "for a run started alone"
+    )
     engine: str
     endpoint: str | None
     cases: list[str]
@@ -760,10 +784,27 @@ class RunStartedData(_Schema):
     run: UUID
     trial: str
     skeleton: str
+    language: str | None = Field(description="the language its request is sent in")
     endpoint: str | None
     cases: list[str]
     seeds: list[int]
     greedy: bool
+
+
+class LeftOut(_Schema):
+    language: str
+    cases: list[str]
+    why: str
+
+
+class StartedRuns(_Schema):
+    runs: list[RunStartedData] = Field(
+        description="a run per language its cases are sent in: the configuration's "
+        + "own first, as written, then each it is translated into"
+    )
+    left_out: list[LeftOut] = Field(
+        description="the cases of each language the configuration can't be sent in"
+    )
 
 
 class ItemStartedData(_Schema):

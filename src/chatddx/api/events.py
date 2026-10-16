@@ -77,12 +77,13 @@ def scoring_of(
 
 
 def started_of(
-    started: RunStarted, trial: Trial, skeleton: Skeleton
+    started: RunStarted, trial: Trial, skeleton: Skeleton, language: str | None
 ) -> schemas.RunStartedData:
     return schemas.RunStartedData(
         run=started.run,
         trial=trial.digest,
         skeleton=trial.skeleton,
+        language=language,
         endpoint=None if started.endpoint is None else started.endpoint.name,
         cases=list(trial.cases),
         seeds=list(trial.seeds),

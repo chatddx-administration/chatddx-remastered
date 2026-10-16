@@ -6,7 +6,6 @@ from rich.console import Console
 from rich.text import Text
 
 from chatddx.bench import KINDS, OPTIONAL, PARTS, Bench, TriedVariation
-from chatddx.catalog import made_in
 from chatddx.factors.base import Finding
 
 from .render import REFUSED, counted, finding
@@ -49,15 +48,6 @@ class Cell:
         return "" if self.variation is None else self.variation.label
 
 
-def _by_name(names: list[str]) -> list[str]:
-    held: dict[str, list[str]] = {}
-    for name in names:
-        held.setdefault(made_in(name)[0], []).append(name)
-    return sorted(
-        {base if len(found) == 1 else n for base, found in held.items() for n in found}
-    )
-
-
 class Repl:
     def __init__(self, bench: Bench, console: Console, seed: int | None = None):
         self.bench: Bench = bench
@@ -94,7 +84,7 @@ class Repl:
         if self._completions is not None:
             return self._completions
         bench = self.bench
-        names = {word: _by_name(bench.names(word)) for word in KINDS}
+        names = {word: bench.names(word) for word in KINDS}
         for part in OPTIONAL:
             names[f"set:{part}"] = [*names[part], NONE]
         names |= {

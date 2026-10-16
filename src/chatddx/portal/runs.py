@@ -10,6 +10,7 @@ from chatddx.bench import Bench
 from chatddx.factors.base import resolve
 from chatddx.factors.request import Skeleton
 from chatddx.factors.response import parts
+from chatddx.factors.trial import Trial
 from chatddx.store import Queue
 
 from .configurations import linked
@@ -54,6 +55,11 @@ def run(request: Request, bench: BenchDep, run: UUID) -> Response:
         else bench.unscored(bench.run_by_id(run))
     )
     titles = {case: bench.title(case) for case in shown.cases}
+    together = [
+        (r.run, bench.catalog.language_of(resolve(bench.get, r.trial, Trial).skeleton))
+        for r in bench.together(shown.started_with or run)
+        if r.run != run
+    ]
     resumable = not under_way and shown.finished_at is None and shown.endpoint
     return page(
         request,
@@ -70,6 +76,7 @@ def run(request: Request, bench: BenchDep, run: UUID) -> Response:
         under_way=under_way,
         resumable=resumable,
         left=[bench.scorer_name(s) for s in left],
+        together=sorted(together, key=lambda r: str(r[1])),
         live={"run": str(run), "titles": titles},
         island="run",
     )

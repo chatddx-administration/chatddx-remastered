@@ -68,7 +68,7 @@ def test_a_text_answer_is_the_content(plan: Plan) -> None:
 
 
 def test_a_text_answer_with_a_schema_is_the_json_in_it(plan: Plan) -> None:
-    made = skeleton(plan, "prompted (en)")
+    made = skeleton(plan, "prompted")
     document = instance(made.output_schema)
     text = json.dumps(document)
     assert read(made, said(text)) == Answer(document)
@@ -114,5 +114,5 @@ def test_json_that_breaks_before_its_end_isn_t_salvaged(
 
 
 def test_a_text_answer_cut_short_isn_t_salvaged(plan: Plan) -> None:
-    found = read(skeleton(plan, "prompted (en)"), said('{"diagnoses": ["Sepsis"'))
+    found = read(skeleton(plan, "prompted"), said('{"diagnoses": ["Sepsis"'))
     assert (found.value, found.salvaged) == (None, False)

@@ -43,7 +43,7 @@ def started(signed: TestClient, **more: Any) -> str:
     body = {"configuration": lines["id"], "endpoint": QWEN, "families": [crlf["id"]]}
     got = signed.post("/api/runs", json={**body, **more})
     assert got.status_code == 202, got.json()
-    return got.json()["run"]
+    return got.json()["runs"][0]["run"]
 
 
 def settled(signed: TestClient, run: str) -> dict[str, Any]:

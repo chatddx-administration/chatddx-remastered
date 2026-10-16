@@ -94,7 +94,7 @@ ALTER TABLE catalog.language
     ADD CONSTRAINT language_value_check CHECK (value ~ '^[a-z]{2,3}(-[A-Za-z0-9]{1,8})*$'),
     ADD CONSTRAINT language_kind_check CHECK (kind IN (
         'chunk.instructions', 'chunk.few_shot', 'chunk.prompt', 'chunk.output',
-        'chunk.toolset', 'chunk.translations', 'skeleton'
+        'chunk.toolset', 'skeleton'
     ));
 
 -- A skeleton compiled later still takes its language from its recipe; this only refuses what is

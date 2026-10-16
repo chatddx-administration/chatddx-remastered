@@ -6,7 +6,12 @@ import pytest
 from chatddx.curation import Plan, load_cases, plan_factors
 from chatddx.factors.base import resolve
 from chatddx.factors.engine import RemoteEngine
-from chatddx.factors.request import Compilation, Skeleton
+from chatddx.factors.request import (
+    Compilation,
+    Skeleton,
+    Translations,
+    compile_request,
+)
 from chatddx.facts import BUNDLED, Facts
 from chatddx.inventory import EndpointSpec, Inventory, World
 from chatddx.rig import rig
@@ -142,7 +147,7 @@ guidance = "Fill in the plan."
 """
 
 
-def test_texts_are_written_by_language_and_recipes_made_in_each(
+def test_a_text_is_written_in_one_language_and_translated_into_others(
     tmp_path: Path,
 ) -> None:
     planned = plan(
@@ -160,7 +165,8 @@ translations = "ui"
 instructions = "physician"
 prompt = "case"
 output = "plan"
-sampling = "recommended"
+sampling = "greedy"
+translations = "ui"
 
 [recipe.raw]
 prompt = "case"
@@ -169,64 +175,63 @@ sampling = "greedy"
 """,
         texts_en=ENGLISH,
         texts_sv="""
-[instructions.physician]
-text = "Du är akutläkare."
-
 [translations.ui]
+description = "The plan in Swedish and German."
 entries = { "Fill in the plan." = "Fyll i planen." }
+""",
+        texts_de="""
+[translations.ui.entries]
+"Fill in the plan." = "Füll den Plan aus."
+"You are an emergency physician." = "Du bist Notarzt."
 """,
     )
     assert [(r.table, r.name, r.language) for r in planned.records] == [
         ("remote_engine", "qwen@api", None),
         ("facts", QWEN, None),
-        ("instructions", "physician (en)", "en"),
-        ("instructions", "physician (sv)", "sv"),
+        ("instructions", "physician", "en"),
         ("prompt", "case", None),
         ("output", "raw", None),
-        ("output", "plan (en)", "en"),
+        ("output", "plan", "en"),
         ("sampling", "recommended", None),
         ("sampling", "greedy", None),
-        ("translations", "ui (sv)", "sv"),
-        ("recipe", "plan (en)", None),
-        ("recipe", "plan (sv)", None),
-        ("recipe", "asked (en)", None),
+        ("translations", "ui", None),
+        ("recipe", "plan", None),
+        ("recipe", "asked", None),
         ("recipe", "raw", None),
     ]
-    assert planned.skipped[-1] == (
-        "recipe asked (sv): its output in en needs translations in "
-        + "sv, and recipe.asked names none there"
-    )
+    assert planned.skipped == []
+    assert planned.untranslated == [
+        "recipe asked: no translation into sv for 'You are an emergency physician.'"
+    ]
+    get = planned.registry.get
+    ui = planned.named("translations", "ui")
+    assert ui.description == "The plan in Swedish and German."
+    assert list(resolve(get, ui.digest, Translations).into) == ["de", "sv"]
 
-    def said(name: str) -> list[str]:
-        skeleton = planned.registry.get(planned.named("recipe", name).digest)
-        assert isinstance(skeleton, Skeleton)
+    def said(name: str, into: str | None = None) -> list[str]:
+        compilation = planned.named("recipe", name).compilation
+        assert compilation is not None
+        made = resolve(get, compilation, Compilation)
+        assert made.into is None and made.recipe.translations == ui.digest
+        skeleton = compile_request(made.recipe, get, into=into)
         return [str(m.content[0]) for m in skeleton.messages]
 
-    assert said("plan (en)")[0] == "Fill in the plan."
-    assert said("plan (sv)")[0] == "Fyll i planen."
-    assert said("asked (en)")[0] == (
-        "You are an emergency physician.\n\nFill in the plan."
-    )
-    compilation = planned.named("recipe", "plan (en)").compilation
-    assert compilation is not None
-    recipe = planned.registry.get(compilation)
-    assert isinstance(recipe, Compilation) and recipe.recipe.translations is None
+    assert said("plan")[0] == "Fill in the plan."
+    assert said("plan", "sv")[0] == "Fyll i planen."
+    assert said("asked")[0] == "You are an emergency physician.\n\nFill in the plan."
+    assert said("asked", "de")[0] == "Du bist Notarzt.\n\nFüll den Plan aus."
 
 
-def test_a_fork_forks_its_origin_in_the_one_language_it_has(tmp_path: Path) -> None:
+def test_a_fork_names_its_origin(tmp_path: Path) -> None:
     planned = plan(
         tmp_path,
-        engines=ENGINE + remote("gpt-oss@api", GPT_OSS),
+        engines=ENGINE,
         factors=NEUTRAL
         + """
-[reasoning.off]
-level = "off"
-
 [recipe.plan]
 prompt = "case"
 output = "plan"
 sampling = "recommended"
-reasoning = "off"
 
 [recipe.asked]
 fork_of = "plan"
@@ -234,7 +239,6 @@ instructions = "physician"
 prompt = "case"
 output = "plan"
 sampling = "recommended"
-translations = "ui"
 
 [recipe.greedy]
 fork_of = "plan"
@@ -243,51 +247,13 @@ output = "plan"
 sampling = "greedy"
 """,
         texts_en=ENGLISH,
-        texts_sv="""
-[instructions.physician]
-text = "Du är akutläkare."
-
-[translations.ui]
-entries = { "Fill in the plan." = "Fyll i planen." }
-""",
     )
     assert {r.name: r.fork_of for r in planned.records if r.table == "recipe"} == {
-        "plan (en)": None,
-        "asked (en)": "plan (en)",
-        "asked (sv)": "plan (en)",
-        "greedy (en)": "plan (en)",
+        "plan": None,
+        "asked": "plan",
+        "greedy": "plan",
     }
     assert planned.skipped == []
-
-
-def test_a_fork_whose_origin_has_other_languages_is_refused(tmp_path: Path) -> None:
-    with pytest.raises(
-        ValueError,
-        match="recipe.asked: recipe.plan has no variant in sv to fork, and is written "
-        + "in de, en",
-    ):
-        _ = plan(
-            tmp_path,
-            engines=ENGINE,
-            factors=NEUTRAL
-            + """
-[recipe.plan]
-instructions = "intro"
-prompt = "case"
-output = "raw"
-sampling = "greedy"
-
-[recipe.asked]
-fork_of = "plan"
-instructions = "physician"
-prompt = "case"
-output = "raw"
-sampling = "greedy"
-""",
-            texts_en='[instructions.intro]\ntext = "Hello."\n',
-            texts_de='[instructions.intro]\ntext = "Hallo."\n',
-            texts_sv='[instructions.physician]\ntext = "Du är akutläkare."\n',
-        )
 
 
 @pytest.mark.parametrize(
@@ -308,6 +274,16 @@ sampling = "greedy"
                 "texts_en": '[prompt.case]\nsegments = ["Case: ", { slot = "vignette" }]\n',
             },
             "prompt.case is in factors.toml and texts-en.toml",
+        ),
+        (
+            {"factors": "", "texts_en": ENGLISH, "texts_sv": ENGLISH},
+            "instructions.physician is in texts-en.toml and texts-sv.toml: a text is "
+            + "written in one language, and translated into others",
+        ),
+        (
+            {"factors": '[translations.ui]\nentries = { "a" = "b" }\n'},
+            "translations are written in the texts-<language>.toml of the language "
+            + "they translate into",
         ),
         ({"factors": 'language = "en"\n'}, r"unknown tables \['language'\]"),
         (
@@ -354,8 +330,11 @@ def test_translations_are_grouped_by_the_record_whose_texts_they_translate(
 ) -> None:
     files = {"engines": ENGINE, "factors": NEUTRAL + LAID_OUT, "texts_en": ENGLISH}
     planned = plan(tmp_path, **files, texts_sv=GROUPED)
-    skeleton = planned.registry.get(planned.named("recipe", "plan (sv)").digest)
-    assert isinstance(skeleton, Skeleton)
+    get = planned.registry.get
+    compilation = planned.named("recipe", "plan").compilation
+    assert compilation is not None
+    recipe = resolve(get, compilation, Compilation).recipe
+    skeleton = compile_request(recipe, get, into="sv")
     assert str(skeleton.messages[0].content[0]) == "Fyll i planen."
     assert skeleton.appendix_layout.before == "\n\nBilagor:\n"
 
@@ -368,9 +347,24 @@ def test_translations_are_grouped_by_the_record_whose_texts_they_translate(
 """
     as_entries = plan(flat, **files, texts_sv=entries)
     assert (
-        as_entries.named("translations", "ui (sv)").digest
-        == planned.named("translations", "ui (sv)").digest
+        as_entries.named("translations", "ui").digest
+        == planned.named("translations", "ui").digest
     )
+
+    instructed = tmp_path / "instructed"
+    instructed.mkdir()
+    physician = """
+[[translations.ui.of."instructions.physician"]]
+text = "You are an emergency physician."
+translation = "Du är akutläkare."
+"""
+    files["factors"] += 'instructions = "physician"\n'
+    held = plan(instructed, **files, texts_sv=GROUPED + physician)
+    into = resolve(
+        held.registry.get, held.named("translations", "ui").digest, Translations
+    ).into
+    assert into["sv"]["You are an emergency physician."] == "Du är akutläkare."
+    assert held.untranslated == []
 
 
 @pytest.mark.parametrize(
@@ -386,7 +380,11 @@ def test_translations_are_grouped_by_the_record_whose_texts_they_translate(
         ),
         (
             '"prompt.case" = [{ text = "x", translation = "x" }]',
-            "'prompt.case' names no output, toolset or recipe",
+            "translations.ui: prompt.case holds no text 'x'",
+        ),
+        (
+            '"sampling.greedy" = [{ text = "x", translation = "x" }]',
+            "'sampling.greedy' names no record of texts",
         ),
         (
             '"output.nope" = [{ text = "x", translation = "x" }]',
@@ -410,8 +408,28 @@ def test_grouped_translations_are_refused_where_they_say_the_wrong_thing(
     with pytest.raises(ValueError, match=refusal):
         _ = plan(tmp_path, **files, texts_sv=f"[translations.ui.of]\n{of}\n")
     both = '[translations.ui]\nentries = { "Fill in the plan." = "Fyll i planen." }\n'
-    with pytest.raises(ValueError, match="give its entries or its `of`, not both"):
+    with pytest.raises(ValueError, match="give its entries or its `of`, and nothing"):
         _ = plan(tmp_path, **files, texts_sv=both + "[translations.ui.of]\n")
+    english = '[[translations.ui.of."output.plan"]]\ntext = "Fill in the plan."\n'
+    with pytest.raises(
+        ValueError,
+        match="texts-en.toml: translations.ui: output.plan " + "is written in en",
+    ):
+        _ = plan(
+            tmp_path, **{**files, "texts_en": ENGLISH + english + 'translation = "x"\n'}
+        )
+    told = '[translations.ui]\ndescription = "{}"\nentries = {{ "Fill in the plan." = "x" }}\n'
+    with pytest.raises(
+        ValueError,
+        match="texts-sv.toml: translations.ui: its description "
+        + "isn't the one another texts file gives",
+    ):
+        _ = plan(
+            tmp_path,
+            **files,
+            texts_de=told.format("German"),
+            texts_sv=told.format("Swedish"),
+        )
 
 
 def test_engines_are_the_world_s_and_only_engines_are(tmp_path: Path) -> None:

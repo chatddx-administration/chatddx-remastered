@@ -135,6 +135,49 @@ def test_a_variation_is_run_watched_halted_scored_again_and_run_again(
     assert errors == []
 
 
+def test_a_variation_says_where_it_runs_and_a_start_s_runs_link_each_other(
+    page: Page,
+    world: Inventory,
+    conn: Connection,
+) -> None:
+    errors: list[str] = []
+    page.on("pageerror", lambda e: errors.append(str(e)))
+
+    def configuration(name: str) -> int:
+        query: dict[str, str | float | bool] = {
+            "kind": "configuration",
+            "name": name,
+            "owner": "alice",
+        }
+        return page.request.get("/api/threads", params=query).json()[0]["id"]
+
+    _ = page.goto(f"/configurations/{configuration(LINES)}?tag=swedish")
+    expect(
+        page.get_by_text(
+            "Left out: 3 cases in sv, as lines has no translations into sv."
+        )
+    ).to_be_visible()
+
+    with faked(world, Store(conn).get):
+        _ = page.goto(f"/configurations/{configuration('lines-guided')}?tag=swedish")
+        expect(
+            page.get_by_text(
+                "A run per language: in en, 1 case; in sv, 3 cases, translated."
+            )
+        ).to_be_visible()
+        expect(page.get_by_text("Left out")).to_have_count(0)
+        page.get_by_role("button", name="Run it").click()
+        page.wait_for_url(re.compile(r"/runs/[0-9a-f-]{36}$"))
+        first = page.url.rsplit("/", 1)[1]
+        other = page.get_by_role("link", name=re.compile(r", in sv$"))
+        expect(other).to_be_visible()
+        other.click()
+        page.wait_for_url(re.compile(r"/runs/[0-9a-f-]{36}$"))
+        expect(page.get_by_role("link", name=f"{first[:8]}, in en")).to_be_visible()
+
+    assert errors == []
+
+
 def test_a_clinician_s_appendix_case_and_expectation_are_written_and_counted(
     page: Page,
 ) -> None:

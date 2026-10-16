@@ -1997,11 +1997,11 @@
         },
         "responses": {
           "202": {
-            "description": "The run, started and queued: the worker sends it, finishes it and scores it whoever listens, and its events are at `/api/runs/{run}/events`.",
+            "description": "The runs, started and queued, a run per language its cases are sent in, `Location` the first's: the worker sends each, finishes it and scores it whoever listens, and its events are at `/api/runs/{run}/events`.",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/RunStartedData"
+                  "$ref": "#/components/schemas/StartedRuns"
                 }
               }
             }
@@ -2121,6 +2121,25 @@
               "title": "Unscored"
             },
             "description": "only the finished runs left to be scored by some scorer"
+          },
+          {
+            "name": "with",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "a run: the runs started with it, itself the first of them",
+              "title": "With"
+            },
+            "description": "a run: the runs started with it, itself the first of them"
           }
         ],
         "responses": {
@@ -2975,6 +2994,67 @@
           "salvaged"
         ],
         "title": "Answer"
+      },
+      "Carried": {
+        "properties": {
+          "language": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Language",
+            "description": "the cases' language; null for the configuration's own when it is unknown"
+          },
+          "families": {
+            "items": {
+              "type": "integer"
+            },
+            "type": "array",
+            "title": "Families"
+          },
+          "translated": {
+            "type": "boolean",
+            "title": "Translated"
+          },
+          "skeleton": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Skeleton",
+            "description": "the request they are sent as"
+          },
+          "refused": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Refused",
+            "description": "why they can't be sent, and are left out"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "language",
+          "families",
+          "translated",
+          "skeleton",
+          "refused"
+        ],
+        "title": "Carried"
       },
       "Checked": {
         "properties": {
@@ -3880,6 +3960,33 @@
         ],
         "description": "the language of the text the component holds, such as 'sv'"
       },
+      "LeftOut": {
+        "properties": {
+          "language": {
+            "type": "string",
+            "title": "Language"
+          },
+          "cases": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Cases"
+          },
+          "why": {
+            "type": "string",
+            "title": "Why"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "language",
+          "cases",
+          "why"
+        ],
+        "title": "LeftOut"
+      },
       "MadeEdit": {
         "properties": {
           "id": {
@@ -4021,6 +4128,14 @@
             "title": "Language",
             "description": "its head's"
           },
+          "translated": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Translated",
+            "description": "a configuration's: the languages its head's translations carry it into"
+          },
           "head": {
             "$ref": "#/components/schemas/Edit"
           },
@@ -4079,6 +4194,7 @@
           "owner",
           "tags",
           "language",
+          "translated",
           "head",
           "description",
           "collaborators",
@@ -4790,16 +4906,9 @@
             "title": "Name"
           },
           "language": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
+            "type": "string",
             "title": "Language",
-            "description": "the language it is typed in"
+            "description": "the language it is typed in, such as 'sv'"
           },
           "source": {
             "anyOf": [
@@ -4817,7 +4926,8 @@
         "additionalProperties": false,
         "type": "object",
         "required": [
-          "text"
+          "text",
+          "language"
         ],
         "title": "NewTyped"
       },
@@ -5218,6 +5328,31 @@
             "type": "string",
             "title": "Skeleton"
           },
+          "language": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Language",
+            "description": "the language its request is sent in"
+          },
+          "started_with": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Started With",
+            "description": "the first run of the start it is one of; null for the first, and for a run started alone"
+          },
           "engine": {
             "type": "string",
             "title": "Engine"
@@ -5300,6 +5435,8 @@
           "at",
           "trial",
           "skeleton",
+          "language",
+          "started_with",
           "engine",
           "endpoint",
           "cases",
@@ -5329,6 +5466,31 @@
           "skeleton": {
             "type": "string",
             "title": "Skeleton"
+          },
+          "language": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Language",
+            "description": "the language its request is sent in"
+          },
+          "started_with": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Started With",
+            "description": "the first run of the start it is one of; null for the first, and for a run started alone"
           },
           "engine": {
             "type": "string",
@@ -5455,6 +5617,8 @@
           "at",
           "trial",
           "skeleton",
+          "language",
+          "started_with",
           "engine",
           "endpoint",
           "cases",
@@ -5559,6 +5723,18 @@
             "title": "Skeleton",
             "type": "string"
           },
+          "language": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "the language its request is sent in",
+            "title": "Language"
+          },
           "endpoint": {
             "anyOf": [
               {
@@ -5593,6 +5769,7 @@
           "run",
           "trial",
           "skeleton",
+          "language",
           "endpoint",
           "cases",
           "seeds",
@@ -5868,6 +6045,33 @@
         ],
         "title": "SignedIn"
       },
+      "StartedRuns": {
+        "properties": {
+          "runs": {
+            "items": {
+              "$ref": "#/components/schemas/RunStartedData"
+            },
+            "type": "array",
+            "title": "Runs",
+            "description": "a run per language its cases are sent in: the configuration's own first, as written, then each it is translated into"
+          },
+          "left_out": {
+            "items": {
+              "$ref": "#/components/schemas/LeftOut"
+            },
+            "type": "array",
+            "title": "Left Out",
+            "description": "the cases of each language the configuration can't be sent in"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "runs",
+          "left_out"
+        ],
+        "title": "StartedRuns"
+      },
       "Stopped": {
         "properties": {
           "taken_out": {
@@ -6005,6 +6209,14 @@
             "title": "Language",
             "description": "its head's"
           },
+          "translated": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Translated",
+            "description": "a configuration's: the languages its head's translations carry it into"
+          },
           "head": {
             "$ref": "#/components/schemas/Edit"
           }
@@ -6020,6 +6232,7 @@
           "owner",
           "tags",
           "language",
+          "translated",
           "head"
         ],
         "title": "Thread"
@@ -6084,6 +6297,14 @@
             "title": "Language",
             "description": "its head's"
           },
+          "translated": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Translated",
+            "description": "a configuration's: the languages its head's translations carry it into"
+          },
           "head": {
             "$ref": "#/components/schemas/Edit"
           },
@@ -6135,6 +6356,7 @@
           "owner",
           "tags",
           "language",
+          "translated",
           "head",
           "description",
           "collaborators",
@@ -6271,6 +6493,14 @@
             ],
             "title": "Findings"
           },
+          "languages": {
+            "items": {
+              "$ref": "#/components/schemas/Carried"
+            },
+            "type": "array",
+            "title": "Languages",
+            "description": "the languages its cases are sent in, the configuration's own first, and those it can't be sent in"
+          },
           "reach": {
             "items": {
               "$ref": "#/components/schemas/Reach"
@@ -6291,6 +6521,7 @@
           "seed",
           "request",
           "findings",
+          "languages",
           "reach"
         ],
         "title": "Variation"

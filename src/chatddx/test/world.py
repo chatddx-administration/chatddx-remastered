@@ -32,10 +32,10 @@ GPT_OSS = "gpt-oss@fake"
 MISTRAL = "mistral@fake"
 REMOTE = "unknown@remote"
 
-LINES = "lines (en)"
-NATIVE = "native (en)"
-NATIVE_TOOLS = "native-tools (en)"
-TOOL_ANSWER = "tool-answer (en)"
+LINES = "lines"
+NATIVE = "native"
+NATIVE_TOOLS = "native-tools"
+TOOL_ANSWER = "tool-answer"
 OFF = "off"
 
 # What loading the test World lints: the factors' lints, then the facts'.

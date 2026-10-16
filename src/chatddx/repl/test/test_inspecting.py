@@ -55,10 +55,12 @@ def test_show_sets_each_part_beside_what_it_is_and_renders_the_request(say: Say)
     assert "List the plausible diagnoses, one per line, most likely first." in written
     assert "‹vignette›‹appendices›" in written
     assert '"seed": 7' in written
+    assert f"en: {len(CASES) - len(sv)} cases, as written" in written
     assert (
-        f"[warning] language.mixed: the request is en, but {len(sv)} of {len(CASES)} "
-        + "cases are sv"
+        f"[warning] translations.missing: {len(sv)} cases are in sv, and left out: "
+        + "lines has no translations into sv"
     ) in written
+    assert "sv: 3 cases, translated" in say("use lines-guided", "show")
 
 
 @pytest.mark.slow
@@ -178,7 +180,7 @@ def test_show_case_says_when_none_of_the_expectations_is_yours(bench: Bench, say
 def test_show_without_a_name_shows_the_cell_s(say: Say):
     written = say(f"cell {LINES} {QWEN}", "show output")
 
-    assert "output lines (en)  " in written
+    assert "output lines  " in written
     assert "List the plausible diagnoses" in line_of(written, "guidance")
     assert "no runs of yours with this output" in written
 

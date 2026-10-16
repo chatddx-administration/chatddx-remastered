@@ -5,7 +5,7 @@ ALTER TABLE catalog.entry
     DROP CONSTRAINT entry_field_check,
     ADD CONSTRAINT entry_field_check CHECK (field IN (
         'name', 'description', 'tag', 'owner', 'collaborator', 'deleted', 'language',
-        'varied', 'replaced'
+        'varied', 'replaced', 'with'
     )),
     DROP CONSTRAINT entry_shape_check,
     ADD CONSTRAINT entry_shape_check CHECK (CASE field
@@ -27,9 +27,12 @@ ALTER TABLE catalog.entry
         WHEN 'replaced' THEN value IS NOT NULL
             AND value ~ '^(instructions|few_shot|prompt|output|sampling|reasoning|passthrough|translations|toolset|engine)=(sha256:[0-9a-f]{64})?$'
             AND person IS NULL AND present
+        WHEN 'with' THEN value IS NOT NULL
+            AND value ~ '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+            AND person IS NULL AND present
     END),
     ADD CONSTRAINT entry_run_check
-        CHECK (field NOT IN ('varied', 'replaced') OR run IS NOT NULL);
+        CHECK (field NOT IN ('varied', 'replaced', 'with') OR run IS NOT NULL);
 
 CREATE FUNCTION catalog.check_varied() RETURNS trigger LANGUAGE plpgsql AS $$
 DECLARE
@@ -50,11 +53,16 @@ BEGIN
     ) THEN
         RAISE EXCEPTION '% isn''t a stored %', held, part;
     END IF;
+    IF NEW.field = 'with' AND NOT EXISTS (
+        SELECT FROM ledger.run_stage WHERE run = NEW.value::uuid AND stage = 'started'
+    ) THEN
+        RAISE EXCEPTION 'run % hasn''t started', NEW.value;
+    END IF;
     RETURN NEW;
 END
 $$;
 
 -- A constraint trigger fires after the row's checks, so the value has its shape.
 CREATE CONSTRAINT TRIGGER entry_varied AFTER INSERT ON catalog.entry
-FOR EACH ROW WHEN (NEW.field IN ('varied', 'replaced'))
+FOR EACH ROW WHEN (NEW.field IN ('varied', 'replaced', 'with'))
 EXECUTE FUNCTION catalog.check_varied();

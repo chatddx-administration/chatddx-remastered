@@ -66,7 +66,7 @@ def test_a_configuration_with_nothing_replaced_is_itself(signed: TestClient) -> 
     assert {p: held[p]["digest"] for p in PARTS} == {p: recipe[p] for p in PARTS}
     assert not any(p["replaced"] for p in held.values())
     assert (held["output"]["title"], held["output"]["summary"]) == (
-        "lines (en)",
+        "lines",
         "text output",
     )
     assert held["reasoning"] == {
@@ -83,7 +83,24 @@ def test_a_configuration_with_nothing_replaced_is_itself(signed: TestClient) -> 
     request = shown["request"]
     assert (request["model"], request["seed"]) == (recipe["engine"], 7)
     assert "‹vignette›‹appendices›" in str(request["messages"])
-    assert [f["code"] for f in shown["findings"]] == ["language.mixed"]
+    assert [(f["code"], f["message"]) for f in shown["findings"]] == [
+        (
+            "translations.missing",
+            "3 cases are in sv, and left out: lines has no translations into sv",
+        )
+    ]
+    english, swedish = shown["languages"]
+    assert (english["language"], english["translated"], english["refused"]) == (
+        "en",
+        False,
+        None,
+    )
+    assert english["skeleton"] == shown["skeleton"]
+    assert (swedish["language"], len(swedish["families"]), swedish["skeleton"]) == (
+        "sv",
+        3,
+        None,
+    )
 
 
 @pytest.mark.slow
@@ -225,11 +242,12 @@ def test_a_variation_is_rendered_and_linted_for_its_engine(
     shown = variation(signed, web)
     assert shown["request"]["model"] == engine
     codes = {f["code"] for f in shown["findings"]}
-    assert {"vllm.native_tools_uncallable", "language.mixed"} <= codes
+    assert {"vllm.native_tools_uncallable", "translations.missing"} <= codes
     assert variation(signed, web, endpoint=QWEN, seed=shown["seed"]) == shown
 
     english = variation(signed, web, endpoint=QWEN, tag="targets")
-    assert "language.mixed" not in {f["code"] for f in english["findings"]}
+    assert "translations.missing" not in {f["code"] for f in english["findings"]}
+    assert [c["language"] for c in english["languages"]] == ["en"]
     tagged = signed.get("/api/families", params={"tag": "targets"}).json()
     assert {f["language"] for f in tagged} == {"en"}
     assert {r["cases"] for r in english["reach"]} == {len(tagged)}
@@ -237,6 +255,7 @@ def test_a_variation_is_rendered_and_linted_for_its_engine(
     nowhere = variation(signed, web, endpoint=QWEN, tag="nowhere")
     assert {r["cases"] for r in nowhere["reach"]} == {0}
     assert [f["code"] for f in nowhere["findings"]] == ["vllm.native_tools_uncallable"]
+    assert nowhere["languages"] == []
 
 
 @pytest.mark.slow
@@ -291,7 +310,7 @@ def test_a_case_with_expectations_to_choose_from_is_shown_apart_in_the_reach(
 
 
 @pytest.mark.slow
-def test_an_unsaved_variation_is_linted_in_its_recipe_s_language(
+def test_an_unsaved_variation_is_linted_in_each_language_it_runs_in(
     signed: TestClient,
 ) -> None:
     web = thread(signed, "configuration", NATIVE_TOOLS)
@@ -302,13 +321,27 @@ def test_an_unsaved_variation_is_linted_in_its_recipe_s_language(
         assert shown["skeleton"] != web["head"]["digest"]
         return {f["code"] for f in shown["findings"]}
 
-    assert "language.unknown" not in codes(tag="targets")
-    assert "language.mixed" in codes()
+    assert not {"language.unknown", "translations.missing"} & codes(tag="targets")
+    assert "translations.missing" in codes()
+
+    guided = thread(signed, "configuration", "lines-guided")
+    shown = variation(signed, guided, endpoint=QWEN, reasoning=off)
+    english, swedish = shown["languages"]
+    assert (english["language"], english["skeleton"]) == ("en", shown["skeleton"])
+    assert (swedish["language"], swedish["translated"], swedish["refused"]) == (
+        "sv",
+        True,
+        None,
+    )
+    assert swedish["skeleton"] not in (None, shown["skeleton"])
+    assert not {"language.mixed", "translations.missing"} & {
+        f["code"] for f in shown["findings"]
+    }
 
 
 @pytest.mark.slow
 def test_a_judge_configuration_is_looked_at_as_a_judge(signed: TestClient) -> None:
-    query = {"kind": "configuration", "purpose": "judge", "name": "judge (en)"}
+    query = {"kind": "configuration", "purpose": "judge", "name": "judge"}
     [judging] = signed.get("/api/threads", params={**query, "owner": "alice"}).json()
     shown = variation(signed, judging, endpoint=QWEN)
     assert shown["reach"] == [] and shown["findings"] == []
@@ -323,7 +356,7 @@ def test_a_variation_the_bench_refuses_is_unprocessable(
     off = digest(signed, "reasoning", OFF)
     store = Store(conn)
     registry = store.load([])
-    untranslated = registry.add(Translations(entries={"Hello": "Hej"}))
+    untranslated = registry.add(Translations(into={"sv": {"Hello": "Hej"}}))
     _ = store.add(registry, [untranslated])
     path = f"/api/threads/{mine['id']}/variation"
     for params, said in (
@@ -333,7 +366,6 @@ def test_a_variation_the_bench_refuses_is_unprocessable(
             "a configuration always has a prompt: only "
             + f"{', '.join(OPTIONAL)} can be taken out",
         ),
-        ({"translations": untranslated}, "no translation for "),
         ({"engine": ""}, "a configuration always has an engine"),
         ({"endpoint": "nowhere@fake"}, "no endpoint 'nowhere@fake' in the inventory"),
         ({"endpoint": GPT_OSS}, f"endpoint '{GPT_OSS}' serves another engine"),
@@ -341,6 +373,13 @@ def test_a_variation_the_bench_refuses_is_unprocessable(
         got = signed.get(path, params=params)
         assert got.status_code == 422, params
         assert got.json()["detail"].startswith(said)
+
+    swedish = signed.get(path, params={"translations": untranslated}).json()
+    assert [c["refused"] for c in swedish["languages"]] == [
+        None,
+        "no translation into sv for 'List the plausible diagnoses, one per line, most "
+        + "likely first.'",
+    ]
 
     got = signed.get(path, params={"stack": off})
     assert got.status_code == 422

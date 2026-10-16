@@ -7,7 +7,6 @@ from rich.table import Table
 from rich.text import Text
 
 from chatddx.bench import PARTS
-from chatddx.catalog import language_of, made_in, variant_name
 from chatddx.catalog.titles import short
 from chatddx.inventory import url_of
 
@@ -18,8 +17,7 @@ from .shell import Repl
 @dataclass(frozen=True)
 class _Made:
     name: str
-    base: str
-    language: str | None
+    languages: tuple[str, ...]
     thread: int
     owner: int | None
     parts: list[str | None] | None
@@ -29,13 +27,17 @@ def configurations(repl: Repl, name: str | None = None) -> None:
     bench = repl.bench
     made: list[_Made] = []
     heads = bench.threads("configuration")
+    own = bench.catalog.edit_languages([e for e, _ in heads])
 
     for edit, about in heads:
         recipe = bench.catalog.recipe(edit.thread)
         parts = None if recipe is None else [getattr(recipe, p) for p in PARTS]
         full = about.name or bench.catalog.title(edit.thread)
-        base, language = made_in(full)
-        made.append(_Made(full, base, language, edit.thread, about.owner, parts))
+        held = own[edit.id]
+        languages = tuple([] if held is None else [held]) + tuple(
+            lang for lang in bench.translated(recipe) if lang != held
+        )
+        made.append(_Made(full, languages, edit.thread, about.owner, parts))
 
     if name is None:
         judging = {e.thread for e, _ in bench.purposed(heads, "judge")}
@@ -45,19 +47,19 @@ def configurations(repl: Repl, name: str | None = None) -> None:
             _grouped(repl, judges)
         return
 
-    base, language = language_of(name)
-    found = [
-        m
-        for m in made
-        if name == m.name or (m.base == base and language in (None, m.language))
-    ]
+    found = [m for m in made if m.name == name]
 
     if not found:
         repl.error(f"no configuration {name!r} for {bench.person.login}")
         return
 
     rows = [
-        (m.name, bench.login(m.owner) if m.owner != bench.person.id else "", m.parts)
+        (
+            m.name,
+            _languages([m.languages]),
+            bench.login(m.owner) if m.owner != bench.person.id else "",
+            m.parts,
+        )
         for m in found
     ]
     _table(repl, rows, cache(bench.title))
@@ -65,10 +67,10 @@ def configurations(repl: Repl, name: str | None = None) -> None:
 
 def _grouped(repl: Repl, made: list[_Made]) -> None:
     bench = repl.bench
-    groups: dict[tuple[str, str | None, int | None], list[_Made]] = {}
+    groups: dict[tuple[str, int | None], list[_Made]] = {}
 
     for m in made:
-        groups.setdefault((m.base, m.language, m.owner), []).append(m)
+        groups.setdefault((m.name, m.owner), []).append(m)
 
     forked = {
         origin: m.thread
@@ -77,9 +79,9 @@ def _grouped(repl: Repl, made: list[_Made]) -> None:
         if (origin := bench.catalog.origin(m.thread)) is not None
     }
     title = cache(bench.title)
-    rows: list[tuple[str, str, list[str | None] | None]] = []
+    rows: list[tuple[str, str, str, list[str | None] | None]] = []
 
-    for (base, language, owner), held in groups.items():
+    for (name, owner), held in groups.items():
         if owner != bench.person.id and all(m.thread in forked for m in held):
             continue
         threads = {m.thread for m in held}
@@ -94,30 +96,37 @@ def _grouped(repl: Repl, made: list[_Made]) -> None:
             said += f", from {', '.join(sorted(origins))}"
         rows.append(
             (
-                variant_name(base, language),
+                name,
+                _languages([m.languages for m in held]),
                 said,
                 _alike([m.parts for m in held], title),
             )
         )
 
-    shown = _shown([parts for _, _, parts in rows])
+    shown = _shown([parts for _, _, _, parts in rows])
     table = Table(box=None, header_style="bold")
 
     table.add_column("configuration", no_wrap=True)
+    table.add_column("languages", no_wrap=True)
 
     for i in shown:
         table.add_column(PARTS[i])
 
     table.add_column("owner", no_wrap=True)
 
-    for name, owner, parts in sorted(rows, key=lambda r: (r[0], r[1])):
+    for name, languages, owner, parts in sorted(rows, key=lambda r: (r[0], r[2])):
         if parts is None:
             cells = [Text("no recipe", style=LABEL), *([""] * (len(shown) - 1))]
         else:
             cells = [parts[i] or "—" for i in shown]
-        table.add_row(name, *cells, owner)
+        table.add_row(name, languages, *cells, owner)
 
     repl.console.print(table)
+
+
+def _languages(held: list[tuple[str, ...]]) -> str:
+    found = list(dict.fromkeys(lang for each in held for lang in each))
+    return ", ".join(found) or "—"
 
 
 def _alike(
@@ -144,21 +153,21 @@ def _shown(rows: list[list[str | None] | None]) -> list[int]:
 
 def _table(
     repl: Repl,
-    rows: list[tuple[str, str, list[str | None] | None]],
+    rows: list[tuple[str, str, str, list[str | None] | None]],
     title: Callable[[str | None], str],
 ) -> None:
-    shown = _shown([parts for _, _, parts in rows])
+    shown = _shown([parts for _, _, _, parts in rows])
     table = Table(box=None, header_style="bold")
 
-    for column in ("configuration", *(PARTS[i] for i in shown), "owner"):
+    for column in ("configuration", "languages", *(PARTS[i] for i in shown), "owner"):
         table.add_column(column)
 
-    for name, owner, parts in sorted(rows, key=lambda r: (r[0], r[1])):
+    for name, languages, owner, parts in sorted(rows, key=lambda r: (r[0], r[2])):
         if parts is None:
             cells = [Text("no recipe", style=LABEL), *([""] * (len(shown) - 1))]
         else:
             cells = [title(parts[i]) for i in shown]
-        table.add_row(name, *cells, owner)
+        table.add_row(name, languages, *cells, owner)
 
     repl.console.print(table)
 

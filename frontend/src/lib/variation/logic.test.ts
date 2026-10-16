@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import type { Schemas } from "$lib/api/client";
 import {
+  carried,
   choicesOf,
   PARTS,
   type Picked,
@@ -24,6 +25,7 @@ function thread(id: number, name: string | null, owner: string | null, digest: s
     owner,
     tags: [],
     language: null,
+    translated: [],
     head: { id: id * 10, digest, compilation: null, based_on: null, by: owner ?? "nobody", at: "2026-10-13T12:00:00Z", labels: null },
   };
 }
@@ -128,6 +130,40 @@ describe("the cases a run is sent", () => {
     expect(tagged(families, ["a"]).map((f) => f.id)).toEqual([1, 3]);
     expect(tagged(families, ["a", "b"]).map((f) => f.id)).toEqual([1, 2, 3]);
     expect(tagged(families, []).map((f) => f.id)).toEqual([1, 2, 3, 4]);
+  });
+});
+
+describe("the languages a run is sent in", () => {
+  const family = (id: number, language: string | null): Schemas["Family"] => ({
+    id,
+    name: `f${id}`,
+    owner: "archive",
+    tags: [],
+    language,
+    case: DIGEST(id),
+  });
+  const look: Schemas["Carried"][] = [
+    { language: "en", families: [1, 4], translated: false, skeleton: DIGEST(10), refused: null },
+    { language: "sv", families: [2], translated: true, skeleton: DIGEST(11), refused: null },
+    { language: "de", families: [3], translated: false, skeleton: null, refused: "no translations into de" },
+  ];
+
+  it("are the look's, a family picked beyond it going as its language's, or unknown", () => {
+    const sent = [family(3, "de"), family(2, "sv"), family(5, "sv"), family(6, null), family(7, "fi")];
+    const said = carried(sent, look).map((c) => [c.language, c.families.map((f) => f.id), c.translated, c.known]);
+    expect(said).toEqual([
+      ["en", [6], false, true],
+      ["sv", [2, 5], true, true],
+      ["de", [3], false, true],
+      ["fi", [7], false, false],
+    ]);
+    expect(carried(sent, look)[2]?.refused).toBe("no translations into de");
+  });
+
+  it("are each family's own, unknown, when the look has none", () => {
+    expect(carried([family(1, "sv")], []).map((c) => [c.language, c.families.length, c.known])).toEqual([
+      ["sv", 1, false],
+    ]);
   });
 });
 

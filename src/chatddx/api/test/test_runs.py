@@ -103,7 +103,7 @@ def joined(
 def sent(signed: TestClient, body: dict[str, Any]) -> tuple[dict[str, Any], Told]:
     got = signed.post("/api/runs", json=body)
     assert got.status_code == 202, got.json()
-    said = followed(signed, got.json()["run"])
+    said = followed(signed, got.json()["runs"][0]["run"])
     return signed.get(got.headers["location"]).json(), said
 
 
@@ -128,7 +128,8 @@ def test_a_run_is_accepted_and_told_by_its_events(
     with faked(world, Store(conn).get, delay=UNDER_WAY):
         got = signed.post("/api/runs", json=asked(signed))
         assert got.status_code == 202
-        started = got.json()
+        [started] = got.json()["runs"]
+        assert got.json()["left_out"] == []
         said = followed(signed, started["run"])
     assert got.headers["location"] == f"/api/runs/{started['run']}"
     assert (started["endpoint"], started["cases"]) == (QWEN, [case])
@@ -179,7 +180,9 @@ def test_a_run_s_events_stream_as_they_come_and_then_the_ledger_tells_them(
         faked(world, Store(conn).get, delay=UNDER_WAY),
         httpx2.Client(headers=bearer) as http,
     ):
-        run = signed.post("/api/runs", json=asked(signed, score=False)).json()["run"]
+        run = signed.post("/api/runs", json=asked(signed, score=False)).json()["runs"][
+            0
+        ]["run"]
         said = joined(http, listening, run, lambda: queue.pause(alice.id, False))
     content = [d for _, n, d in said if n == "item.delta" and d["kind"] == "content"]
     assert "".join(d["text"] for d in content).strip()
@@ -251,11 +254,51 @@ def test_a_run_is_a_job_in_the_queue_until_it_is_scored(
 @pytest.mark.usefixtures("fake")
 @pytest.mark.slow
 def test_a_run_of_tags_runs_the_case_of_each_family_tagged(signed: TestClient) -> None:
-    tagged = signed.get("/api/families", params={"tag": "swedish"}).json()
-    body = {**asked(signed), "families": None, "tags": ["swedish"], "score": False}
+    tagged = signed.get("/api/families", params={"tag": "targets"}).json()
+    body = {**asked(signed), "families": None, "tags": ["targets"], "score": False}
     made, said = sent(signed, body)
     assert sorted(i["case"] for i in made["items"]) == sorted(f["case"] for f in tagged)
     assert made["scores"] == [] and "run.scoring" not in names(said)
+
+
+@pytest.mark.usefixtures("fake")
+@pytest.mark.slow
+def test_a_start_is_a_run_per_language_and_leaves_out_what_it_can_t_send(
+    signed: TestClient,
+) -> None:
+    tagged = signed.get("/api/families", params={"tag": "swedish"}).json()
+    language = {f["case"]: f["language"] for f in tagged}
+    swedish = sorted(case for case, said in language.items() if said == "sv")
+    body = {"families": None, "tags": ["swedish"], "score": False}
+    got = signed.post("/api/runs", json={**asked(signed, "lines-guided"), **body})
+    assert got.status_code == 202, got.json()
+    first, translated = got.json()["runs"]
+    assert got.json()["left_out"] == []
+    assert got.headers["location"] == f"/api/runs/{first['run']}"
+    assert (first["language"], translated["language"]) == ("en", "sv")
+    assert first["cases"] == [c for c in language if language[c] == "en"]
+    assert sorted(translated["cases"]) == swedish
+    for run in (first, translated):
+        assert names(followed(signed, run["run"]))[-1] == "done"
+    listed = signed.get("/api/runs", params={"with": first["run"]}).json()
+    assert {(r["id"], r["language"], r["started_with"]) for r in listed} == {
+        (first["run"], "en", None),
+        (translated["run"], "sv", first["run"]),
+    }
+
+    plain = signed.post("/api/runs", json={**asked(signed), **body}).json()
+    [run] = plain["runs"]
+    assert run["cases"] == first["cases"]
+    assert [
+        (o["language"], sorted(o["cases"]), o["why"]) for o in plain["left_out"]
+    ] == [("sv", swedish, "lines has no translations into sv")]
+    _ = followed(signed, run["run"])
+    alone = [f["id"] for f in tagged if f["language"] == "sv"][:1]
+    got = signed.post("/api/runs", json={**asked(signed), "families": alone})
+    assert got.status_code == 422
+    assert got.json()["detail"] == (
+        "no case can be sent: lines has no translations into sv"
+    )
 
 
 @pytest.mark.usefixtures("fake")
@@ -283,7 +326,7 @@ def test_a_run_the_gate_refuses_is_unprocessable_and_isn_t_recorded(
 def test_a_run_the_request_names_wrong_is_unprocessable(signed: TestClient) -> None:
     good = asked(signed)
     chunk = thread(signed, "reasoning", OFF)
-    query = {"kind": "configuration", "purpose": "judge", "name": "judge (en)"}
+    query = {"kind": "configuration", "purpose": "judge", "name": "judge"}
     judge = signed.get("/api/threads", params={**query, "owner": "alice"}).json()[0]
     wrong: list[tuple[dict[str, Any], str]] = [
         ({"tags": ["swedish"]}, "a run takes one of families, tags or cases"),
@@ -296,7 +339,7 @@ def test_a_run_the_request_names_wrong_is_unprocessable(signed: TestClient) -> N
         ({"parts": {"engine": None}}, "a configuration always has an engine"),
         ({"configuration": chunk["id"]}, f"no configuration {chunk['id']} for alice"),
         ({"parts": {"prompt": chunk["head"]["digest"]}}, "isn't a stored chunk"),
-        ({"configuration": judge["id"]}, "judge (en) is a judge configuration"),
+        ({"configuration": judge["id"]}, "judge is a judge configuration"),
         ({"replicates": 2}, "a run takes seeds or replicates, not both"),
         ({"seeds": []}, "at least 1 item"),
         ({"cleanup": ["tidy@1"]}, "newlines.lf@1"),
@@ -417,7 +460,7 @@ def test_a_halt_stops_a_run_which_is_finished_and_left_to_score(
         faked(world, Store(conn).get, delay=0.1),
         httpx2.Client(headers=alice) as http,
     ):
-        run = signed.post("/api/runs", json=asked(signed)).json()["run"]
+        run = signed.post("/api/runs", json=asked(signed)).json()["runs"][0]["run"]
         with http.stream(
             "GET", f"{listening}/api/runs/{run}/events", timeout=10
         ) as got:
@@ -453,7 +496,7 @@ def test_a_run_whose_listener_goes_away_goes_on(
         faked(world, Store(conn).get, delay=0.005),
         httpx2.Client(headers=alice) as http,
     ):
-        run = signed.post("/api/runs", json=asked(signed)).json()["run"]
+        run = signed.post("/api/runs", json=asked(signed)).json()["runs"][0]["run"]
         with http.stream(
             "GET", f"{listening}/api/runs/{run}/events", timeout=10
         ) as got:
@@ -516,7 +559,7 @@ def test_runs_are_held_to_a_day_s_quota_and_a_run_to_its_items(
     monkeypatch.setattr(settings, "RUNS_PER_DAY", 1)
     first = signed.post("/api/runs", json=asked(signed))
     assert first.status_code == 202
-    _ = finished(signed, first.json()["run"])
+    _ = finished(signed, first.json()["runs"][0]["run"])
     got = signed.post("/api/runs", json=asked(signed))
     assert (got.status_code, got.json()) == (
         429,
@@ -542,7 +585,7 @@ def test_a_quiet_stream_is_kept_alive(
         faked(world, Store(conn).get, delay=0.2),
         httpx2.Client(headers=alice) as http,
     ):
-        run = signed.post("/api/runs", json=asked(signed)).json()["run"]
+        run = signed.post("/api/runs", json=asked(signed)).json()["runs"][0]["run"]
         with http.stream(
             "GET", f"{listening}/api/runs/{run}/events", timeout=10
         ) as got:

@@ -25,12 +25,14 @@
   let endpoints = $state<Schemas["Endpoint"][]>([]);
   let configuration = $state<number>();
   let endpoint = $state<string>();
+  let language = $state<string>();
+  const languages = $derived(spoken(configurations.find((t) => t.id === configuration)));
   let phase = $state<Phase>("idle");
   let progress = $state(begun());
   const streamed = $derived(progress.items[0]?.kind ? progress.items[0] : null);
   let failure = $state<string | null>(null);
   let item = $state<Schemas["ItemDetail"] | null>(null);
-  let typed: { text: string; family: number } | null = null;
+  let typed: { text: string; language: string; family: number } | null = null;
 
   const busy = $derived(phase === "typing" || phase === "running" || phase === "reading");
 
@@ -51,6 +53,16 @@
     configuration = configurations[0]?.id;
   });
 
+  $effect(() => {
+    if (language === undefined || !languages.includes(language)) language = languages[0];
+  });
+
+  function spoken(thread: Schemas["Thread"] | undefined): string[] {
+    if (thread === undefined) return [];
+    const found = [...new Set([thread.language, ...thread.translated].filter((l) => l !== null))];
+    return found.length ? found : ["en"];
+  }
+
   function named(thread: Schemas["Thread"]): string {
     const name = thread.name ?? thread.title;
     return thread.owner === login || thread.owner === null ? name : `${thread.owner}/${name}`;
@@ -63,16 +75,16 @@
 
   async function analyze(event: SubmitEvent) {
     event.preventDefault();
-    if (configuration === undefined || endpoint === undefined || !text.trim()) return;
+    if (configuration === undefined || endpoint === undefined || language === undefined || !text.trim()) return;
     failure = null;
     item = null;
     progress = begun();
     try {
       phase = "typing";
-      if (typed?.text !== text) {
-        const made = await api.POST("/api/families", { body: { text } });
+      if (typed?.text !== text || typed.language !== language) {
+        const made = await api.POST("/api/families", { body: { text, language } });
         if (!made.data) throw new Error(why(made.error));
-        typed = { text, family: made.data.id };
+        typed = { text, language, family: made.data.id };
       }
       phase = "running";
       const compiled = configurations.find((t) => t.id === configuration)?.head.compilation;
@@ -86,7 +98,8 @@
         },
       });
       if (!started.data) throw new Error(why(started.error));
-      const run = started.data.run;
+      const run = started.data.runs[0]?.run;
+      if (run === undefined) throw new Error("no run was started");
       await watch(run, (name, data) => fold(progress, name, data));
       failure = failed(progress);
       phase = "reading";
@@ -184,6 +197,14 @@
               <NativeSelect.Root id="configuration" bind:value={configuration} disabled={busy}>
                 {#each configurations as c (c.id)}
                   <NativeSelect.Option value={c.id}>{named(c)}</NativeSelect.Option>
+                {/each}
+              </NativeSelect.Root>
+            </div>
+            <div class="grid gap-2">
+              <Label for="language">Written in</Label>
+              <NativeSelect.Root id="language" bind:value={language} disabled={busy}>
+                {#each languages as l (l)}
+                  <NativeSelect.Option value={l}>{l}</NativeSelect.Option>
                 {/each}
               </NativeSelect.Root>
             </div>

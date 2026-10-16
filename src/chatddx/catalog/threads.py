@@ -77,6 +77,9 @@ def check_varied(rows: Reader, subject: Subject, entry: Entry) -> None:
         if found is None or thread(rows, found.thread).kind != "skeleton":
             raise ValueError(f"edit {entry.value} is no configuration's")
         return
+    # Runs are the ledger's, which the catalog doesn't read: the store checks this one.
+    if entry.field == EntryField.WITH:
+        return
     part, digest = (entry.value or "").split("=")
     engine = part == "engine"
     if digest and rows.kind(digest) not in (

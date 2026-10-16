@@ -59,8 +59,10 @@ def compiled(store: Store, reg: Registry, *instructions: str) -> Compilation:
     return compiled_recipe(store, reg, generation_recipe(reg, *instructions))
 
 
-def compiled_recipe(store: Store, reg: Registry, recipe: Recipe) -> Compilation:
-    skeleton, compilation = request.compiled(recipe, reg.get, RIG)
+def compiled_recipe(
+    store: Store, reg: Registry, recipe: Recipe, into: str | None = None
+) -> Compilation:
+    skeleton, compilation = request.compiled(recipe, reg.get, RIG, into=into)
     _ = reg.add(skeleton)
     _ = store.add(reg, [reg.add(compilation)])
     return compilation
@@ -425,6 +427,10 @@ def test_a_run_says_what_it_varied(conn: Connection) -> None:
         varied=configuration.id,
         replaced={"instructions": other, "reasoning": None, "engine": ids["engine"]},
     )
+    later = uuid4()
+    store.append(RunStarted(run=later, at=NOW, rig=RIG, trial=ids["trial"]))
+    catalog.note(Subject(run=later), Entry.started_with(run), alice.id)
+    assert catalog.about(Subject(run=later)).started_with == run
 
     for refused, said in (
         ((Subject(thread=configuration.thread), Entry.varied(configuration.id)), "run"),
@@ -439,6 +445,8 @@ def test_a_run_says_what_it_varied(conn: Connection) -> None:
             _ = Entry(field=EntryField.REPLACED, value=value)
     with pytest.raises(ValidationError):
         _ = Entry(field=EntryField.VARIED, value="first")
+    with pytest.raises(ValidationError):
+        _ = Entry(field=EntryField.WITH, value="the first run")
 
     def written(field: str, value: str, at: Subject = subject) -> None:
         _ = conn.execute(
@@ -461,6 +469,8 @@ def test_a_run_says_what_it_varied(conn: Connection) -> None:
         ("varied", "first", subject),
         ("replaced", "reasoning", subject),
         ("replaced", f"few-shot={other}", subject),
+        ("with", str(run), Subject(thread=configuration.thread)),
+        ("with", "the first run", subject),
     ):
         with pytest.raises(errors.CheckViolation), conn.transaction():
             written(field, value, at)
@@ -468,6 +478,7 @@ def test_a_run_says_what_it_varied(conn: Connection) -> None:
         ("varied", str(chunk.id)),
         ("replaced", f"prompt={other}"),
         ("replaced", f"engine={other}"),
+        ("with", str(uuid4())),
     ):
         with pytest.raises(errors.RaiseException), conn.transaction():
             written(field, value)
@@ -857,16 +868,17 @@ def test_languages_are_kept_on_digests(conn: Connection) -> None:
     assert catalog.language_of(plan.skeleton) == "en"
 
     needed = [t for part in texts(base, reg.get).values() for t in part]
-    swedish = reg.add(Translations(entries={t: f"[sv] {t}" for t in needed}))
+    swedish = reg.add(Translations(into={"sv": {t: f"[sv] {t}" for t in needed}}))
     translated = compiled_recipe(
-        store, reg, base.model_copy(update={"translations": swedish})
+        store, reg, base.model_copy(update={"translations": swedish}), "sv"
     )
-    assert catalog.language_of(translated.skeleton) is None
-    in_language(swedish, "sv")
     assert catalog.language_of(translated.skeleton) == "sv"
     assert catalog.title_of(translated.skeleton).endswith(
-        f" · sv translations, {len(needed)} texts · " + catalog.title_of(base.engine)
+        f" · translations into sv, {len(needed)} texts · "
+        + catalog.title_of(base.engine)
     )
+    with pytest.raises(ValueError, match="translations components have no language"):
+        in_language(swedish, "sv")
 
     vignette, appendices = Slot(slot="vignette"), Slot(slot="appendices")
     split = reg.add(
@@ -875,16 +887,12 @@ def test_languages_are_kept_on_digests(conn: Connection) -> None:
     resplit = compiled_recipe(store, reg, base.model_copy(update={"prompt": split}))
     assert resplit.skeleton == plan.skeleton
     assert catalog.language_of(plan.skeleton) == "en"
-    unchanged = reg.add(Translations(entries={t: t for t in needed}))
+    unchanged = reg.add(Translations(into={"sv": {t: t for t in needed}}))
     retold = compiled_recipe(
-        store, reg, base.model_copy(update={"translations": unchanged})
+        store, reg, base.model_copy(update={"translations": unchanged}), "sv"
     )
     assert retold.skeleton == plan.skeleton
-    in_language(unchanged, "en")
-    assert catalog.language_of(plan.skeleton) == "en"
-    in_language(unchanged, "sv")
     assert catalog.language_of(plan.skeleton) is None
-    in_language(unchanged, "en")
 
     hand_written = resolve(reg.get, ids["judge"], Judge).skeleton
     assert catalog.language_of(hand_written) is None
@@ -902,7 +910,7 @@ def test_languages_are_kept_on_digests(conn: Connection) -> None:
     assert catalog.language_of(scoring.expectations[0]) == "sv"
     findings = lint(reg, [ids["trial"]], languages=catalog.language_of)
     assert [(f.code, f.message) for f in findings] == [
-        ("language.mixed", "the request is en, but 1 of 1 cases is sv")
+        ("language.unknown", "the request's language is unknown")
     ]
 
     with pytest.raises(ValueError, match="not a language tag"):
@@ -939,6 +947,14 @@ def test_languages_are_kept_on_digests(conn: Connection) -> None:
             VALUES (%s, 'trial', 'en', %s)
             """,
             (ids["trial"], alice.id),
+        )
+    with pytest.raises(errors.CheckViolation), conn.transaction():
+        _ = conn.execute(
+            """
+            INSERT INTO catalog.language (digest, kind, value, by)
+            VALUES (%s, 'chunk.translations', 'sv', %s)
+            """,
+            (swedish, alice.id),
         )
     with (
         pytest.raises(errors.RaiseException, match="comes from its recipe"),

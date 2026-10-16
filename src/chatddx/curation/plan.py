@@ -8,14 +8,12 @@ from typing import Any, cast
 
 from pydantic import JsonValue, ValidationError
 
-from chatddx.catalog import language_tag, variant_name
-from chatddx.factors.base import Code, Component
+from chatddx.factors.base import Code, Component, StructuralError, language_tag, resolve
 from chatddx.factors.bundle import Registry
 from chatddx.factors.engine import LocalEngine, ModelArtifact, RemoteEngine
 from chatddx.factors.facts import ModelFacts, model_name
 from chatddx.factors.request import (
     CHUNK_PARTS,
-    TRANSLATED,
     AppendixLayout,
     FewShot,
     Instructions,
@@ -28,6 +26,7 @@ from chatddx.factors.request import (
     Tool,
     Toolset,
     Translations,
+    compile_request,
     compiled,
     landings,
     own_texts,
@@ -94,6 +93,7 @@ class Plan:
     facts: Facts
     records: list[Planned] = field(default_factory=list)
     skipped: list[str] = field(default_factory=list)
+    untranslated: list[str] = field(default_factory=list)
     compilations: list[str] = field(default_factory=list)
 
     def named(self, table: str, name: str) -> Planned:
@@ -103,10 +103,6 @@ class Plan:
         raise LookupError(f"no {table} named {name!r} in the plan")
 
 
-# A record's language: None for one that serves every language.
-Key = str | None
-Variants = dict[Key, Planned]
-ALL: Key = None
 TEXT_TABLES = frozenset(
     {"instructions", "few_shot", "prompt", "output", "toolset", "translations"}
 )
@@ -115,14 +111,6 @@ _TEXTS = re.compile(r"^texts-(.+)\.toml$")
 
 def _short(text: str) -> str:
     return repr(text if len(text) <= 60 else text[:57] + "…")
-
-
-def _named(name: str, key: Key) -> str:
-    return variant_name(name, key)
-
-
-def _pick[T](variants: Mapping[Key, T], key: Key) -> T | None:
-    return variants.get(key, variants.get(ALL))
 
 
 def _with_files(node: JsonValue, root: Path) -> JsonValue:
@@ -241,58 +229,61 @@ def plan_factors(
             if twice := sorted(set(known) & set(records)):
                 raise ValueError(f"{path}: {table} {twice} are named before it too")
             known.update(records)
-    # Each table's records by name, then by language: None for factors.toml's.
-    bodies: dict[str, dict[str, dict[str | None, JsonValue]]] = {
-        table: {name: {None: body} for name, body in records.items()}
+    # Each table's records by name, with the language a text record is written in.
+    bodies: dict[str, dict[str, tuple[str | None, JsonValue]]] = {
+        table: {name: (None, body) for name, body in records.items()}
         for table, records in found.items()
     }
+    if "translations" in bodies:
+        raise ValueError(
+            f"{factors}: translations are written in the texts-<language>.toml of the "
+            + "language they translate into"
+        )
+    # Each translations record's body in each language it translates into.
+    translating: dict[str, dict[str, JsonValue]] = {}
     for language, tables in _texts(data).items():
         for table, records in tables.items():
             for name, body in records.items():
-                if None in (
-                    written := bodies.setdefault(table, {}).setdefault(name, {})
-                ):
+                if table == "translations":
+                    translating.setdefault(name, {})[language] = body
+                    continue
+                held = bodies.setdefault(table, {})
+                if name in held:
+                    was = held[name][0]
+                    where = "factors.toml" if was is None else f"texts-{was}.toml"
                     raise ValueError(
-                        f"{table}.{name} is in factors.toml and texts-{language}.toml"
+                        f"{table}.{name} is in {where} and texts-{language}.toml: a "
+                        + "text is written in one language, and translated into others"
                     )
-                written[language] = body
+                held[name] = (language, body)
     plan = Plan(Registry(), facts)
-    planned: dict[tuple[str, str], Variants] = {}
+    # None for a record tried and not planned.
+    planned: dict[tuple[str, str], Planned | None] = {}
 
-    def add(table: str, name: str, variants: Variants) -> None:
-        planned[(table, name)] = variants
-        plan.records.extend(variants.values())
+    def add(table: str, name: str, record: Planned | None) -> None:
+        planned[(table, name)] = record
+        if record is not None:
+            plan.records.append(record)
 
-    # Crosses into the origin's one language as _recipe does for a part.
-    def base(table: str, name: str, fork_of: object, key: Key) -> str | None:
+    def base(table: str, name: str, fork_of: object) -> str | None:
         if fork_of is None:
             return None
         assert isinstance(fork_of, str)
-        variants = planned.get((table, fork_of))
-        if variants is None:
+        if (table, fork_of) not in planned:
             raise ValueError(f"{table}.{fork_of} must come before its forks")
-        found = _pick(variants, key)
-        written = sorted(k for k in variants if k is not None)
-        if found is None and key is not None and key not in written:
-            if len(written) > 1:
-                raise ValueError(
-                    f"{table}.{name}: {table}.{fork_of} has no variant in {key} "
-                    + f"to fork, and is written in {', '.join(written)}"
-                )
-            if written:
-                found = variants[written[0]]
-        if found is None:
+        if (origin := planned[(table, fork_of)]) is None:
             plan.skipped.append(
-                f"{table} {_named(name, key)}: no fork of {table}.{fork_of}, which "
-                + "isn't planned"
+                f"{table} {name}: no fork of {table}.{fork_of}, which isn't planned"
             )
-        return None if found is None else found.name
+            return None
+        return origin.name
 
-    # The texts a translations record in `language` may translate, of the record named.
-    def texts_of(record: str, language: str | None) -> set[str]:
+    # The texts a translations record into `language` may translate, of the record
+    # named.
+    def texts_of(record: str, language: str) -> set[str]:
         table, _, name = record.partition(".")
-        if table == "recipe" and name in bodies.get("recipe", {}):
-            raw = bodies["recipe"][name][None]
+        if table == "recipe" and name in found.get("recipe", {}):
+            raw = found["recipe"][name]
             assert isinstance(raw, dict)
             try:
                 layout = AppendixLayout.model_validate(raw.get("appendix_layout", {}))
@@ -301,20 +292,17 @@ def plan_factors(
             return {
                 t for t in (layout.before, layout.between, layout.after) if t.strip()
             }
-        if table not in ("output", "toolset", "recipe"):
-            raise ValueError(f"{record!r} names no output, toolset or recipe")
-        if (variants := planned.get((table, name))) is None:
+        if table not in TEXT_TABLES - {"translations"} and table != "recipe":
+            raise ValueError(f"{record!r} names no record of texts")
+        if (r := planned.get((table, name))) is None:
             raise ValueError(f"{record!r}: no {table} named {name!r}")
+        if r.language == language:
+            raise ValueError(f"{record} is written in {language}")
         get = plan.registry.get
-        return {
-            text
-            for written, r in variants.items()
-            if written != language
-            for text in own_texts(get(r.digest), get)
-        }
+        return set(own_texts(get(r.digest), get))
 
-    def grouped(name: str, language: str | None, of: object) -> dict[str, JsonValue]:
-        where = f"translations.{name}"
+    def grouped(name: str, language: str, of: object) -> dict[str, JsonValue]:
+        where = f"texts-{language}.toml: translations.{name}"
         match of:
             case dict():
                 groups = cast(dict[str, object], of)
@@ -346,80 +334,118 @@ def plan_factors(
 
     def plan_table(table: str) -> None:
         kind = TABLES[table]
-        for name, written in bodies.get(table, {}).items():
-            variants: Variants = {}
-            for language, raw in written.items():
-                assert isinstance(raw, dict)
-                where = "factors.toml" if language is None else f"texts-{language}.toml"
-                body = dict(raw)
-                tags = _tags(body.pop("tags", []))
-                # A tool's description is a field, what the model reads; it's the entry
-                # too.
-                if "description" in kind.model_fields:
-                    description = body.get("description")
-                else:
-                    description = body.pop("description", None)
-                fork_of = body.pop("fork_of", None)
-                if table == "translations" and "of" in body:
-                    if "entries" in body:
-                        raise ValueError(
-                            f"{where}: translations.{name}: give its entries or its "
-                            + "`of`, not both"
-                        )
-                    body["entries"] = grouped(name, language, body.pop("of"))
-                for field_name, target in REFERENCES.get(table, {}).items():
-                    match body.get(field_name):
-                        case str() as one:
-                            body[field_name] = plan.named(target, one).digest
-                        case list() as names:
-                            body[field_name] = [
-                                plan.named(target, str(n)).digest for n in names
-                            ]
-                        case _:
-                            pass
-                if table in SHIPPED and "version" not in body:
-                    shipped = SHIPPED[table].get(str(body.get("entry_point")))
-                    if shipped is not None:
-                        body["version"] = shipped.version
-                if table == "scorer" and (
-                    unplanned := _judged(name, body, planned, found.get("judge", {}))
-                ):
-                    plan.skipped.append(
-                        f"scorer {name}: judge {unplanned} isn't planned"
-                    )
-                    continue
-                labels = _labels(table, body)
-                try:
-                    component = _component(table, body)
-                except ValidationError as e:
-                    raise ValueError(f"{where}: {table}.{name}: {e}") from None
-                try:
-                    _check_runs(component)
-                except LookupError as e:
-                    raise ValueError(f"{table}.{name}: {e}") from None
-                holds = bool(own_texts(component, plan.registry.get))
-                if language is None and holds and table in TEXT_TABLES:
-                    raise ValueError(
-                        f"{table}.{name} holds text, so it's written in a "
-                        + "texts-<language>.toml"
-                    )
-                if language is not None and not holds:
-                    raise ValueError(
-                        f"{where}: {table}.{name} holds no text, so it belongs in "
-                        + "factors.toml"
-                    )
-                variants[language] = Planned(
+        for name, (language, raw) in bodies.get(table, {}).items():
+            assert isinstance(raw, dict)
+            where = "factors.toml" if language is None else f"texts-{language}.toml"
+            body = dict(raw)
+            tags = _tags(body.pop("tags", []))
+            # A tool's description is a field, what the model reads; it's the entry
+            # too.
+            if "description" in kind.model_fields:
+                description = body.get("description")
+            else:
+                description = body.pop("description", None)
+            fork_of = body.pop("fork_of", None)
+            for field_name, target in REFERENCES.get(table, {}).items():
+                match body.get(field_name):
+                    case str() as one:
+                        body[field_name] = plan.named(target, one).digest
+                    case list() as names:
+                        body[field_name] = [
+                            plan.named(target, str(n)).digest for n in names
+                        ]
+                    case _:
+                        pass
+            if table in SHIPPED and "version" not in body:
+                shipped = SHIPPED[table].get(str(body.get("entry_point")))
+                if shipped is not None:
+                    body["version"] = shipped.version
+            if table == "scorer" and (
+                unplanned := _judged(name, body, planned, found.get("judge", {}))
+            ):
+                plan.skipped.append(f"scorer {name}: judge {unplanned} isn't planned")
+                add(table, name, None)
+                continue
+            labels = _labels(table, body)
+            try:
+                component = _component(table, body)
+            except ValidationError as e:
+                raise ValueError(f"{where}: {table}.{name}: {e}") from None
+            try:
+                _check_runs(component)
+            except LookupError as e:
+                raise ValueError(f"{table}.{name}: {e}") from None
+            holds = bool(own_texts(component, plan.registry.get))
+            if language is None and holds and table in TEXT_TABLES:
+                raise ValueError(
+                    f"{table}.{name} holds text, so it's written in a "
+                    + "texts-<language>.toml"
+                )
+            if language is not None and not holds:
+                raise ValueError(
+                    f"{where}: {table}.{name} holds no text, so it belongs in "
+                    + "factors.toml"
+                )
+            add(
+                table,
+                name,
+                Planned(
                     table=table,
-                    name=_named(name, language),
+                    name=name,
                     kind=component.kind_name,
                     digest=plan.registry.add(component),
                     tags=tags,
                     description=None if description is None else str(description),
-                    fork_of=base(table, name, fork_of, language),
+                    fork_of=base(table, name, fork_of),
                     labels=labels,
                     language=language,
-                )
-            add(table, name, variants)
+                ),
+            )
+
+    def plan_translations() -> None:
+        for name, written in translating.items():
+            tags: set[str] = set()
+            said: dict[str, object] = {}
+            into: dict[str, JsonValue] = {}
+            for language, raw in written.items():
+                assert isinstance(raw, dict)
+                where = f"texts-{language}.toml: translations.{name}"
+                body = dict(raw)
+                tags.update(_tags(body.pop("tags", [])))
+                for key in ("description", "fork_of"):
+                    if (value := body.pop(key, None)) is None:
+                        continue
+                    if said.setdefault(key, value) != value:
+                        raise ValueError(
+                            f"{where}: its {key} isn't the one another texts file gives"
+                        )
+                match body:
+                    case {"of": of, **rest} if not rest:
+                        into[language] = grouped(name, language, of)
+                    case {"entries": entries, **rest} if not rest:
+                        into[language] = entries
+                    case _:
+                        raise ValueError(
+                            f"{where}: give its entries or its `of`, and nothing else"
+                        )
+            try:
+                component = Translations.model_validate({"into": into})
+            except ValidationError as e:
+                raise ValueError(f"translations.{name}: {e}") from None
+            description = said.get("description")
+            add(
+                "translations",
+                name,
+                Planned(
+                    table="translations",
+                    name=name,
+                    kind=component.kind_name,
+                    digest=plan.registry.add(component),
+                    tags=tuple(sorted(tags)),
+                    description=None if description is None else str(description),
+                    fork_of=base("translations", name, said.get("fork_of")),
+                ),
+            )
 
     for table in ENGINE_TABLES:
         plan_table(table)
@@ -441,11 +467,7 @@ def plan_factors(
             )
             continue
         facts_of[model] = about
-        add(
-            "facts",
-            model,
-            {ALL: Planned("facts", model, "facts", plan.registry.add(about))},
-        )
+        add("facts", model, Planned("facts", model, "facts", plan.registry.add(about)))
 
     def compiled_for(
         what: str, body: dict[str, JsonValue], engine: Planned
@@ -462,10 +484,18 @@ def plan_factors(
             plan.skipped.append(f"{what}: {e}, on {engine.kind} {engine.name}")
             return None
         skeleton, compilation = compiled(recipe, get, compiler, about)
+        if what.startswith("recipe ") and recipe.translations is not None:
+            for language in resolve(get, recipe.translations, Translations).into:
+                try:
+                    _ = compile_request(recipe, get, about, language)
+                except StructuralError as e:
+                    plan.untranslated.append(f"{what}: {e}")
         return plan.registry.add(skeleton), plan.registry.add(compilation)
 
     for table in TABLES:
-        if table not in (*ENGINE_TABLES, *LATE_TABLES):
+        if table == "translations":
+            plan_translations()
+        elif table not in (*ENGINE_TABLES, *LATE_TABLES):
             plan_table(table)
 
     inventory = None if world is None else world.inventory
@@ -475,7 +505,7 @@ def plan_factors(
         if inventory is None or configured is None
         else engines.get(inventory.endpoint(configured).engine)
     )
-    made: dict[str, dict[Key, dict[str, JsonValue]]] = {}
+    made: dict[str, dict[str, JsonValue]] = {}
     for name, raw in found.get("recipe", {}).items():
         assert isinstance(raw, dict)
         body = dict(raw)
@@ -487,39 +517,39 @@ def plan_factors(
                 f"recipe.{name}: a recipe's engine is the World's: its inventory names "
                 + "the endpoint configurations are made for"
             )
-        parts = {p: planned[(p, str(body.pop(p)))] for p in CHUNK_PARTS if p in body}
-        languages = sorted({k for v in parts.values() for k in v if k is not None})
-        variants: Variants = {}
-        made[name] = {}
-        for language in languages or [ALL]:
-            chosen = _recipe(name, language, parts)
-            if isinstance(chosen, str):
-                plan.skipped.append(f"recipe {_named(name, language)}: {chosen}")
+        for part in CHUNK_PARTS:
+            if part not in body:
                 continue
-            made[name][language] = {**body, **chosen}
-            if target is None:
-                plan.skipped.append(
-                    f"recipe {_named(name, language)}: the World names no endpoint "
-                    + "configurations are made for"
-                )
-                continue
-            held = compiled_for(
-                f"recipe {_named(name, language)}", made[name][language], target
+            if (chunk := planned.get((part, str(body[part])))) is None:
+                raise ValueError(f"recipe.{name}: no {part} named {body[part]!r}")
+            body[part] = chunk.digest
+        made[name] = body
+        if target is None:
+            plan.skipped.append(
+                f"recipe {name}: the World names no endpoint configurations are "
+                + "made for"
             )
-            if held is None:
-                continue
-            skeleton, compilation = held
-            variants[language] = Planned(
+            add("recipe", name, None)
+            continue
+        held = compiled_for(f"recipe {name}", body, target)
+        if held is None:
+            add("recipe", name, None)
+            continue
+        skeleton, compilation = held
+        add(
+            "recipe",
+            name,
+            Planned(
                 table="recipe",
-                name=_named(name, language),
+                name=name,
                 kind="skeleton",
                 digest=skeleton,
                 tags=tags,
                 description=None if description is None else str(description),
-                fork_of=base("recipe", name, fork_of, language),
+                fork_of=base("recipe", name, fork_of),
                 compilation=compilation,
-            )
-        add("recipe", name, variants)
+            ),
+        )
 
     bound = {} if inventory is None else inventory.judges
     judges = found.get("judge", {})
@@ -534,33 +564,21 @@ def plan_factors(
         tags = _tags(body.pop("tags", []))
         description = body.pop("description", None)
         recipe = str(body.pop("recipe", ""))
-        language = body.pop("language", None)
-        if (recipes := made.get(recipe)) is None:
+        if (asked := made.get(recipe)) is None:
             raise ValueError(f"judge.{name}: no recipe named {recipe!r}")
         if inventory is None or (endpoint := bound.get(name)) is None:
             plan.skipped.append(f"judge {name}: the World binds it to no endpoint")
-            add("judge", name, {})
+            add("judge", name, None)
             continue
         if (at := engines.get(inventory.endpoint(endpoint).engine)) is None:
             plan.skipped.append(
                 f"judge {name}: endpoint {endpoint} serves no engine the World has"
             )
-            add("judge", name, {})
-            continue
-        written = sorted(k for k in recipes if k is not None)
-        if language is None and len(written) > 1:
-            raise ValueError(
-                f"judge.{name}: recipe.{recipe} is written in {', '.join(written)}, "
-                + "so the judge names its language"
-            )
-        key = str(language) if language else (written or [ALL])[0]
-        if (asked := _pick(recipes, key)) is None:
-            plan.skipped.append(f"judge {name}: recipe.{recipe} has none in {key}")
-            add("judge", name, {})
+            add("judge", name, None)
             continue
         held = compiled_for(f"judge {name}", asked, at)
         if held is None:
-            add("judge", name, {})
+            add("judge", name, None)
             continue
         skeleton, compilation = held
         plan.compilations.append(compilation)
@@ -572,15 +590,18 @@ def plan_factors(
             raise ValueError(f"judge.{name}: {e}") from None
         if refused := judge.cross_check(plan.registry.get):
             raise ValueError(f"judge.{name}: {'; '.join(refused)}")
-        judged = Planned(
-            table="judge",
-            name=name,
-            kind="judge",
-            digest=plan.registry.add(judge),
-            tags=tags,
-            description=None if description is None else str(description),
+        add(
+            "judge",
+            name,
+            Planned(
+                table="judge",
+                name=name,
+                kind="judge",
+                digest=plan.registry.add(judge),
+                tags=tags,
+                description=None if description is None else str(description),
+            ),
         )
-        add("judge", name, {ALL: judged})
     for name in sorted(set(bound) - set(judges)):
         plan.skipped.append(
             f"judge {name}: the World binds it to {bound[name]}, but the data has none"
@@ -594,7 +615,7 @@ def plan_factors(
 def _judged(
     scorer: str,
     body: dict[str, JsonValue],
-    planned: Mapping[tuple[str, str], Variants],
+    planned: Mapping[tuple[str, str], Planned | None],
     judges: Collection[str],
 ) -> str | None:
     views = body.get("views")
@@ -606,42 +627,11 @@ def _judged(
             continue
         if not isinstance(named, str) or named not in judges:
             raise ValueError(f"scorer.{scorer}: no judge named {named!r}")
-        if (judge := planned[("judge", named)].get(ALL)) is None:
+        if (judge := planned.get(("judge", named))) is None:
             return named
         view["judge"] = judge.digest
     body["views"] = cast(list[JsonValue], copied)
     return None
-
-
-def _recipe(name: str, key: Key, parts: dict[str, Variants]) -> dict[str, str] | str:
-    chosen: dict[str, str] = {}
-    missing: list[str] = []
-    translated: list[str] = []
-    for part, variants in parts.items():
-        if part == "translations":
-            continue
-        found = _pick(variants, key)
-        if found is None and part in TRANSLATED and key is not None:
-            written = sorted(k for k in variants if k is not None)
-            if len(written) == 1:
-                found = variants[written[0]]
-                translated.append(f"{part} in {written[0]}")
-        if found is not None:
-            chosen[part] = found.digest
-        else:
-            missing.append(part)
-    if missing:
-        return f"it has no {', '.join(missing)} in {key}"
-    if translated:
-        named = parts.get("translations")
-        found = None if named is None else _pick(named, key)
-        if found is None:
-            return (
-                f"its {', '.join(translated)} needs translations in {key}, and "
-                + f"recipe.{name} names none there"
-            )
-        chosen["translations"] = found.digest
-    return chosen
 
 
 @dataclass(frozen=True)

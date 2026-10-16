@@ -9,6 +9,7 @@ from chatddx.bench import (
     KINDS,
     PARTS,
     Bench,
+    Carried,
     Conflict,
     MovedOn,
     OverQuota,
@@ -17,9 +18,9 @@ from chatddx.bench import (
     word_of,
 )
 from chatddx.catalog.titles import describe
-from chatddx.factors.base import Finding
+from chatddx.factors.base import Finding, resolve
 from chatddx.factors.facts import Landing
-from chatddx.factors.request import Purpose, Recipe
+from chatddx.factors.request import Compilation, Purpose, Recipe
 from chatddx.factors.trial import suggest_seeds
 
 from . import schemas
@@ -67,6 +68,9 @@ def thread_of(
         owner=login(bench, about.owner),
         tags=sorted(about.tags),
         language=languages[edit.id],
+        translated=[]
+        if edit.compilation is None
+        else bench.translated(resolve(bench.get, edit.compilation, Compilation).recipe),
         head=edit_of(bench, edit, kind),
     )
 
@@ -200,12 +204,20 @@ def variation(
                 raise HTTPException(422, str(e)) from None
     seed = suggest_seeds(1)[0] if query.seed is None else query.seed
     families = bench.families(query.tag)
+    carried: list[Carried] = []
+    if families and skeleton.purpose != "judge":
+        known = {f.case: f.about.language for f in families}
+        with refused():
+            carried = bench.languages(varied, list(known), known)
     findings = None
     if engine is not None:
         findings = [
             schemas.Finding.of(f)
-            for f in bench.findings(varied, engine, seed, families or None)
+            for f in bench.findings(
+                varied, engine, seed, families or None, carried or None
+            )
         ]
+    family_of = {f.case: f.id for f in families}
     parts = None
     if varied.recipe is not None:
         parts = [part_of(bench, varied, p, landed.get(p)) for p in PARTS]
@@ -220,6 +232,16 @@ def variation(
         seed=seed,
         request=bench.request(varied, engine, seed),
         findings=findings,
+        languages=[
+            schemas.Carried(
+                language=c.language,
+                families=[family_of[case] for case in c.cases],
+                translated=c.translated,
+                skeleton=None if c.skeleton is None else c.skeleton.digest,
+                refused=c.refused,
+            )
+            for c in carried
+        ],
         reach=[reach_of(r) for r in bench.reach(varied, families)],
     )
 

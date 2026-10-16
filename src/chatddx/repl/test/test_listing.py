@@ -44,7 +44,7 @@ def listed(bench: Bench, line: str) -> str:
 
 
 @pytest.mark.slow
-def test_configurations_are_listed_a_row_per_name_and_language_with_their_parts(
+def test_configurations_are_listed_a_row_per_name_with_its_languages_and_parts(
     bench: Bench,
 ):
     written = listed(bench, "configurations")
@@ -52,6 +52,7 @@ def test_configurations_are_listed_a_row_per_name_and_language_with_their_parts(
 
     assert lines[0].split() == [
         "configuration",
+        "languages",
         "instructions",
         "few_shot",
         "prompt",
@@ -64,14 +65,14 @@ def test_configurations_are_listed_a_row_per_name_and_language_with_their_parts(
         "engine",
         "owner",
     ]
-    assert line_of(written, LINES).split() == [
-        *("lines", "(en)", "—", "—", "case", "lines", "(en)", "recommended", "—"),
+    assert line_of(written, f"{LINES} ").split() == [
+        *("lines", "en", "—", "—", "case", "lines", "recommended", "—"),
         *("—", "—", "—", QWEN, "yours,", "from", "archive"),
     ]
     assert not [line for line in lines if line.rstrip().endswith("  archive")]
-    assert "on-budget" in line_of(written, "budgeted (en)")
-    assert "high" in line_of(written, "reasoned (en)")
-    assert "guided (sv)" in line_of(written, "lines-guided (sv)")
+    assert "on-budget" in line_of(written, "budgeted")
+    assert "high" in line_of(written, "reasoned")
+    assert line_of(written, "lines-guided").split()[1:4] == ["en,", "sv", "clinician"]
 
 
 @pytest.mark.slow
@@ -80,8 +81,8 @@ def test_judge_configurations_are_listed_apart(bench: Bench):
 
     [apart] = [i for i, line in enumerate(lines) if line == "judge configurations"]
     names = [line.split("  ")[0].strip() for line in lines]
-    assert "lines (en)" in names[:apart]
-    assert "judge (en)" in names[apart:] and "judge (en)" not in names[:apart]
+    assert "lines" in names[:apart]
+    assert "judge" in names[apart:] and "judge" not in names[:apart]
     assert lines[apart + 1].split()[0] == "configuration"
 
 
@@ -92,9 +93,9 @@ def test_configurations_name_lists_each_one_by_that_name(bench: Bench):
         line.split() for line in written.splitlines() if line.strip().startswith(LINES)
     ]
 
-    row = [*LINES.split(), "case", "lines", "(en)", "recommended", QWEN]
+    row = [LINES, "en", "case", "lines", "recommended", QWEN]
     assert rows == [row, [*row, "archive"]]
-    assert "lookup (en)" in line_of(
+    assert "lookup" in line_of(
         listed(bench, f"configurations {NATIVE_TOOLS}"), NATIVE_TOOLS
     )
     assert "no configuration 'nope' for alice" in listed(bench, "configurations nope")

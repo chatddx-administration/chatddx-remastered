@@ -70,7 +70,7 @@ def test_quit_takes_no_words(repl: Repl, say: Say):
 
 def test_it_completes_a_command_and_then_its_names_word_by_word():
     names = {
-        "configuration": ["lines", "lines-guided (en)", "lines-guided (sv)", "native"],
+        "configuration": ["lines", "lines-guided", "native"],
         "endpoint": [QWEN, GPT_OSS],
         "part": ["prompt", "reasoning", "sampling"],
         "reasoning": ["off", "on"],
@@ -82,7 +82,7 @@ def test_it_completes_a_command_and_then_its_names_word_by_word():
     assert complete(names, "us") == ["use"]
     assert complete(names, "use na") == ["native"]
     assert complete(names, "use lines") == ["lines", "lines-guided"]
-    assert complete(names, "use lines-guided ") == ["(en)", "(sv)"]
+    assert complete(names, "use lines-guided ") == []
     assert complete(names, "cell native q") == [QWEN]
     assert complete(names, "cell native ") == [QWEN, GPT_OSS]
     assert complete(names, "on g") == [GPT_OSS]
@@ -129,8 +129,7 @@ def test_the_names_complete_as_the_person_sees_them(repl: Repl):
     names = repl.completions()
 
     assert names["tag"] == sorted({tag for case in CASES.values() for tag in case.tags})
-    assert "native" in names["configuration"] and NATIVE not in names["configuration"]
-    assert {"lines-guided (en)", "lines-guided (sv)"} <= set(names["configuration"])
+    assert {NATIVE, "lines-guided"} <= set(names["configuration"])
     assert "off" in names["reasoning"]
     assert "none" not in names["reasoning"]
     assert "none" in names["set:reasoning"]

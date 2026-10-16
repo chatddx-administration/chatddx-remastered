@@ -29,7 +29,7 @@ def test_a_run_keeps_its_seeds_cleanup_execution_and_canaries_and_again_too(
         cleanup,
         Execution(concurrency=2),
         probe,
-    )
+    ).first
     running.send()
     _ = running.finish()
 
@@ -54,10 +54,10 @@ def test_a_run_says_what_it_varied_and_running_again_too(
     off = bench.chunk("reasoning", "off")
     cases = [bench.family("crlf").case]
 
-    plain = bench.start(named, QWEN, cases, (7,)).started
+    plain = bench.start(named, QWEN, cases, (7,)).first.started
     assert bench.ran(plain.run) == (named.configuration, {})
     varied = named.set("reasoning", off, "off")
-    started = bench.start(varied, QWEN, cases, (7,)).started
+    started = bench.start(varied, QWEN, cases, (7,)).first.started
     ran = (named.configuration, {"reasoning": off})
     assert bench.ran(started.run) == ran
     assert bench.catalog.about(Subject(run=started.run)).name == varied.label
@@ -74,7 +74,7 @@ def test_a_run_goes_to_the_endpoint_serving_its_engine_unless_one_is_named(
     cases = [bench.family("crlf").case]
 
     with faked(world, bench.get, GPT_OSS):
-        started = bench.start(swapped, None, cases, (7,)).started
+        started = bench.start(swapped, None, cases, (7,)).first.started
     assert started.endpoint is not None and started.endpoint.name == GPT_OSS
     assert resolve(bench.get, started.trial, Trial).engine == gpt_oss
     assert bench.ran(started.run) == (named.configuration, {"engine": gpt_oss})
@@ -94,7 +94,7 @@ def test_a_run_holds_its_cases_times_its_seeds_in_items(
 ):
     monkeypatch.setattr(settings, "ITEMS_PER_RUN", 3)
     variation = bench.configuration(LINES)
-    cases = [bench.family(name).case for name in ("crlf", "svenska")]
+    cases = [bench.family(name).case for name in ("crlf", "bom")]
     with pytest.raises(OverQuota, match="at most 3 items, not 4"):
         _ = bench.start(variation, QWEN, cases, (1, 2))
 
@@ -105,8 +105,8 @@ def test_a_person_resumes_their_own_unfinished_run(
 ):
     bench = Bench(conn, alice, world)
     variation = bench.configuration(LINES)
-    cases = [bench.family(name).case for name in ("crlf", "svenska")]
-    running = bench.start(variation, QWEN, cases, (7,))
+    cases = [bench.family(name).case for name in ("crlf", "bom")]
+    running = bench.start(variation, QWEN, cases, (7,)).first
 
     def stop(event: Event) -> None:
         if isinstance(event, ItemEnded):
@@ -142,11 +142,70 @@ def test_a_run_takes_its_sources_cleanup_and_its_endpoint_s_canaries_and_executi
     variation = bench.configuration(LINES)
     cases = [bench.family("crlf").case]
 
-    started = bench.start(variation, QWEN, cases, (7,)).started
+    started = bench.start(variation, QWEN, cases, (7,)).first.started
     trial = resolve(bench.get, started.trial, Trial)
     assert trial.cleanup == ("newlines.lf@1", "strip@1")
     assert (started.execution, started.canaries) == (execution, probe)
 
-    given = bench.start(variation, QWEN, cases, (7,), (), Execution(), probe).started
+    given = bench.start(
+        variation, QWEN, cases, (7,), (), Execution(), probe
+    ).first.started
     assert resolve(bench.get, given.trial, Trial).cleanup == ()
     assert given.execution == Execution()
+
+
+@pytest.mark.usefixtures("fake")
+def test_a_start_runs_each_language_its_cases_are_in_and_leaves_out_the_rest(
+    conn: Connection,
+    world: Inventory,
+    alice: Person,
+    monkeypatch: pytest.MonkeyPatch,
+):
+    bench = Bench(conn, alice, world)
+    crlf, svenska, nfd, bom = (
+        bench.family(name).case for name in ("crlf", "svenska", "nfd", "bom")
+    )
+    cases = [crlf, svenska, nfd, bom]
+    guided = bench.configuration("lines-guided")
+    started = bench.start(guided, QWEN, cases, (7,))
+    [(english, first), (swedish, second)] = started.runs
+    assert started.left_out == []
+    assert (english.language, english.translated, english.cases) == (
+        "en",
+        False,
+        [crlf, bom],
+    )
+    assert (swedish.language, swedish.translated, swedish.cases) == (
+        "sv",
+        True,
+        [svenska, nfd],
+    )
+    assert english.skeleton is not None and swedish.skeleton is not None
+    assert english.skeleton.digest == guided.configuration.digest
+    translated = resolve(bench.get, second.started.trial, Trial).skeleton
+    assert translated == swedish.skeleton.digest != english.skeleton.digest
+    assert bench.catalog.language_of(translated) == "sv"
+    assert (bench.started_with(first.run), bench.started_with(second.run)) == (
+        None,
+        first.run,
+    )
+    assert bench.ran(second.run) == bench.ran(first.run)
+
+    lines = bench.configuration(LINES)
+    plain = bench.start(lines, QWEN, cases, (7,))
+    [(sent, _)] = plain.runs
+    [left] = plain.left_out
+    assert sent.cases == [crlf, bom]
+    assert (left.language, left.cases, left.refused) == (
+        "sv",
+        [svenska, nfd],
+        "lines has no translations into sv",
+    )
+    with pytest.raises(
+        ValueError, match="no case can be sent: lines has no translations into sv"
+    ):
+        _ = bench.start(lines, QWEN, [svenska, nfd], (7,))
+
+    monkeypatch.setattr(settings, "RUNS_PER_DAY", 4)
+    with pytest.raises(OverQuota, match="a day takes 4, not 2 more"):
+        _ = bench.start(guided, QWEN, cases, (7,))

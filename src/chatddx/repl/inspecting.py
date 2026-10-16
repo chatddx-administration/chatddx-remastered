@@ -7,7 +7,7 @@ from pydantic import JsonValue
 from rich.table import Table
 from rich.text import Text
 
-from chatddx.bench import KINDS, PARTS, Family, Graded, TriedVariation
+from chatddx.bench import KINDS, PARTS, Carried, Family, Graded, TriedVariation
 from chatddx.catalog import About
 from chatddx.catalog.titles import describe, short
 from chatddx.factors.base import Component, resolve
@@ -126,14 +126,31 @@ def _show_cell(repl: Repl, tags: tuple[str, ...] = ()) -> None:
     if skeleton.greedy:
         repl.console.print("greedy: the seed isn't sent", style=LABEL)
 
+    carried = None
+    if families and skeleton.purpose != "judge":
+        known = {f.case: f.about.language for f in families}
+        carried = bench.languages(variation, list(known), known)
+        repl.console.print("languages", style="bold")
+        for each in carried:
+            repl.console.print(_carried(each))
+
     if cell.engine is not None:
-        findings = bench.findings(variation, cell.engine, repl.seed, families)
+        findings = bench.findings(variation, cell.engine, repl.seed, families, carried)
         repl.console.print("lints", style="bold")
         repl.say_findings(findings)
         if not findings:
             repl.console.print("no findings", style=LABEL)
 
     _show_scorers(repl, variation, families, tags)
+
+
+def _carried(carried: Carried) -> Text:
+    cases = plural(len(carried.cases), "case")
+    if carried.refused is not None:
+        said = f"{carried.language}: {cases}, left out: {carried.refused}"
+        return Text(said, style=LATER)
+    how = "translated" if carried.translated else "as written"
+    return Text(f"{carried.language or 'unknown'}: {cases}, {how}")
 
 
 def _landed(component: Component | None, said: str, landed: dict[str, Landing]) -> Text:

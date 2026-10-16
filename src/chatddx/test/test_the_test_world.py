@@ -13,9 +13,6 @@ from chatddx.test.world import DATA, LINTS, TEST, world_plan
 SKIPPED = [
     "facts about test/unknown: none are known, so engine.remote unknown@remote can't "
     + "compile a reasoning level or a recommended sampling",
-    "recipe lines-instructed (sv): its output in en needs translations in sv, and "
-    + "recipe.lines-instructed names none there",
-    "recipe headed (sv): it has no prompt in sv",
 ]
 
 
@@ -27,8 +24,8 @@ def test_the_test_world_plans_and_loads_as_designed(conn: Connection) -> None:
         "local_engine": 4,
         "remote_engine": 1,
         "facts": 3,
-        "instructions": 2,
-        "few_shot": 2,
+        "instructions": 1,
+        "few_shot": 1,
         "prompt": 3,
         "output": 8,
         "sampling": 3,
@@ -39,11 +36,12 @@ def test_the_test_world_plans_and_loads_as_designed(conn: Connection) -> None:
         "toolset": 1,
         "expectation_schema": 1,
         "scorer": 6,
-        "recipe": 18,
+        "recipe": 17,
         "judge": 3,
         "canary_set": 1,
     }
     assert plan.skipped == SKIPPED
+    assert plan.untranslated == []
     world = World.load(TEST)
 
     alice = People(conn).add("alice", "Alice")

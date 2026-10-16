@@ -1,6 +1,6 @@
 from collections.abc import Callable, Collection, Iterable, Mapping
 
-from chatddx.factors.base import Component, Resolver, iter_refs, resolve
+from chatddx.factors.base import Component, Resolver, iter_refs, language_tag, resolve
 from chatddx.factors.request import Compilation, Recipe, texts
 from chatddx.factors.scoring import Expectation, Judge
 from chatddx.factors.trial import Trial
@@ -12,7 +12,6 @@ from .model import (
     Entry,
     EntryField,
     Subject,
-    language_tag,
     latest,
 )
 from .read import Reader, about
@@ -39,7 +38,10 @@ def language_of(rows: Reader, digest: str) -> str | None:
             compilations = rows.compilations(digest)
             if not compilations:
                 return own(rows, digest)
-            return _agreed(recipe_language(rows, c.recipe) for c in compilations)
+            return _agreed(
+                c.into if c.into is not None else recipe_language(rows, c.recipe)
+                for c in compilations
+            )
         case _:
             return own(rows, digest)
 
@@ -48,7 +50,7 @@ def languages_of(rows: Reader, digests: Collection[str]) -> dict[str, str | None
     wanted = set(digests)
     kinds = {d: c.kind_name for d, c in rows.components(wanted)}
     compiled = {
-        d: [c.recipe for c in compilations]
+        d: compilations
         for d, k in kinds.items()
         if k == "skeleton" and (compilations := rows.compilations(d))
     }
@@ -69,7 +71,7 @@ def edit_languages(rows: Reader, edits: Collection[Edit]) -> dict[int, str | Non
     named = {e.id: e.compilation for e in edits if e.compilation is not None}
     read = dict(rows.components(set(named.values())))
     compiled = {
-        id: [resolve(read.__getitem__, digest, Compilation).recipe]
+        id: [resolve(read.__getitem__, digest, Compilation)]
         for id, digest in named.items()
     }
     voted, _ = _voted(rows, compiled, ())
@@ -106,8 +108,6 @@ def recipe_language(rows: Reader, recipe: Recipe) -> str | None:
 
 
 def _voters(recipe: Recipe, get: Resolver) -> list[str | None]:
-    if recipe.translations is not None:
-        return [recipe.translations]
     return [
         getattr(recipe, part)
         for part in texts(recipe, get)
@@ -126,23 +126,37 @@ def _agreed(votes: Iterable[str | None]) -> str | None:
 
 
 def _voted[K](
-    rows: Reader, compiled: Mapping[K, list[Recipe]], wanted: Collection[str]
+    rows: Reader, compiled: Mapping[K, list[Compilation]], wanted: Collection[str]
 ) -> tuple[dict[K, str | None], dict[str, str]]:
     refs = {
-        r.digest for found in compiled.values() for c in found for r in iter_refs(c)
+        r.digest
+        for found in compiled.values()
+        for c in found
+        if c.into is None
+        for r in iter_refs(c.recipe)
     }
     chunks = dict(rows.components(refs))
 
     def get(digest: str) -> Component:
         return chunks[digest] if digest in chunks else rows.get(digest)
 
-    voters = {k: [_voters(c, get) for c in found] for k, found in compiled.items()}
+    voters = {
+        k: [c.into or _voters(c.recipe, get) for c in found]
+        for k, found in compiled.items()
+    }
     written = {
-        v for found in voters.values() for each in found for v in each if v is not None
+        v
+        for found in voters.values()
+        for each in found
+        if isinstance(each, list)
+        for v in each
+        if v is not None
     }
     owned = latest(rows.languages(set(wanted) | written))
     votes = {
-        k: _agreed(_vote(each, owned.get) for each in found)
+        k: _agreed(
+            each if isinstance(each, str) else _vote(each, owned.get) for each in found
+        )
         for k, found in voters.items()
     }
     return votes, owned

@@ -9,8 +9,8 @@ from pydantic import JsonValue
 from chatddx.conftest import Loaded
 from chatddx.curation import Plan, load_cases
 from chatddx.curation.plan import PLANNED_TABLES
-from chatddx.factors.base import Fingerprint
-from chatddx.factors.request import Compilation, compiled
+from chatddx.factors.base import Fingerprint, StructuralError, resolve
+from chatddx.factors.request import Compilation, Translations, compiled
 from chatddx.inventory import DirectorySource, Inventory, World
 from chatddx.rig import rig
 from chatddx.store import Catalog, People
@@ -24,10 +24,10 @@ def sample_plan() -> Plan:
     return world_plan(WORLDS / "sample", SAMPLE)
 
 
-def test_the_sample_s_texts_are_english_and_free_text_guided_swedish_too() -> None:
+def test_the_sample_s_texts_are_english_and_translated_into_swedish() -> None:
     sample = sample_plan()
     assert {(r.table, r.name) for r in sample.records if r.language == "en"} == {
-        ("output", f"{name} (en)")
+        ("output", name)
         for name in (
             "management-plan",
             "management-plan-shown",
@@ -39,47 +39,60 @@ def test_the_sample_s_texts_are_english_and_free_text_guided_swedish_too() -> No
             "grade",
         )
     } | {
-        ("toolset", "web (en)"),
-        ("instructions", "clinician (en)"),
-        ("instructions", "judge (en)"),
-        ("prompt", "judge (en)"),
-        ("few_shot", "worked-example (en)"),
+        ("toolset", "web"),
+        ("instructions", "clinician"),
+        ("instructions", "judge"),
+        ("prompt", "judge"),
+        ("few_shot", "worked-example"),
     }
-    assert {(r.table, r.name) for r in sample.records if r.language == "sv"} == {
-        ("instructions", "clinician (sv)"),
-        ("few_shot", "worked-example (sv)"),
-        ("translations", "sample (sv)"),
+    assert not [r for r in sample.records if r.language not in (None, "en")]
+    get = sample.registry.get
+    translations = sample.named("translations", "sample")
+    assert list(resolve(get, translations.digest, Translations).into) == ["sv"]
+    recipes = {r.name: r for r in sample.records if r.table == "recipe"}
+    assert set(recipes) == {
+        "plan",
+        "plan-shown",
+        "plan-prompted",
+        "plan-web",
+        "diagnoses",
+        "diagnoses-tool",
+        "free-text",
+        "free-text-guided",
+        "judge-graded",
+        "judge",
     }
-    assert {r.name for r in sample.records if r.table == "recipe"} == {
-        f"{name} (en)"
-        for name in (
-            "plan",
-            "plan-shown",
-            "plan-prompted",
-            "plan-web",
-            "diagnoses",
-            "diagnoses-tool",
-            "free-text",
-            "free-text-guided",
-            "judge-graded",
-            "judge",
-        )
-    } | {"free-text-guided (sv)"}
+    guided = recipes["free-text-guided"].compilation
+    assert guided is not None
+    assert resolve(get, guided, Compilation).recipe.translations == (
+        translations.digest
+    )
+    assert sample.untranslated == []
 
 
 @pytest.mark.slow
-def test_the_sample_s_translations_carry_every_recipe_into_swedish() -> None:
+def test_the_sample_s_translations_carry_its_recipes_into_swedish() -> None:
     sample = sample_plan()
-    translations = sample.named("translations", "sample (sv)").digest
+    get = sample.registry.get
+    translations = sample.named("translations", "sample").digest
+    carried: set[str] = set()
     for r in sample.records:
-        if r.table != "recipe" or r.compilation is None or "(en)" not in r.name:
+        if r.table != "recipe" or r.compilation is None:
             continue
-        held = sample.registry.get(r.compilation)
-        assert isinstance(held, Compilation)
+        held = resolve(get, r.compilation, Compilation)
         recipe = held.recipe.model_copy(update={"translations": translations})
-        facts = sample.facts.about(recipe.engine, sample.registry.get)
-        skeleton, _ = compiled(recipe, sample.registry.get, rig(), facts)
+        facts = sample.facts.about(recipe.engine, get)
+        try:
+            skeleton, _ = compiled(recipe, get, rig(), facts, into="sv")
+        except StructuralError:
+            continue
         assert skeleton.digest != r.digest, r.name
+        carried.add(r.name)
+    assert carried == {
+        r.name
+        for r in sample.records
+        if r.table == "recipe" and not r.name.startswith("judge")
+    }
 
 
 def test_kompismoln_takes_the_sample_s_vignettes() -> None:
@@ -209,8 +222,8 @@ def test_the_sample_loads_with_its_world_s_fakes(
     catalog = Catalog(conn)
     archive = People(conn).find("archive")
     assert archive is not None
-    [plan_thread] = catalog.find("skeleton", "plan (en)", owner=archive.id)
-    [shown] = catalog.find("skeleton", "plan-shown (en)", owner=archive.id)
+    [plan_thread] = catalog.find("skeleton", "plan", owner=archive.id)
+    [shown] = catalog.find("skeleton", "plan-shown", owner=archive.id)
     diverged = catalog.divergence(shown)
     assert diverged is not None and set(diverged.varies) == {"/recipe/output"}
     assert diverged.base.thread == plan_thread

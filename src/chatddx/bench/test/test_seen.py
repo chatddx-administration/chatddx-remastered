@@ -1,4 +1,3 @@
-import re
 from uuid import UUID
 
 import pytest
@@ -154,7 +153,7 @@ def test_a_person_finds_their_runs_and_those_that_reach_a_digest(
         _ = bench.run("zzz")
 
     assert [r.run for r in bench.reaching(lines.skeleton)] == [first]
-    output = plan.named("output", "lines (en)").digest
+    output = plan.named("output", "lines").digest
     assert [r.run for r in bench.reaching(output)] == [first]
     [shared_case] = set(lines.cases) & set(native.cases)
     assert [r.run for r in bench.reaching(shared_case)] == [second, first]
@@ -333,33 +332,13 @@ def test_a_swapped_engine_keeps_every_other_pick_and_works_the_rest_out(
         _ = bench.skeleton(mistral)
 
 
-def test_a_configuration_is_found_by_its_name_without_its_language(
+def test_a_configuration_is_found_by_its_name(
     bench: Bench,
 ) -> None:
     variation = bench.configuration("native")
     assert (variation.name, variation.label, variation.parts) == (NATIVE, NATIVE, {})
     with pytest.raises(NotFound, match="no configuration 'nope' for alice"):
         _ = bench.configuration("nope")
-
-
-def test_a_configuration_made_in_several_languages_is_named_whole(
-    bench: Bench, alice: Person
-) -> None:
-    english = bench.configuration("native").configuration
-    swedish = "native (sv)"
-    assert swedish not in bench.names("configuration")
-    _ = bench.catalog.create(english.digest, alice.id, name=swedish)
-    several = (
-        f"made in more than one language: {NATIVE}, {swedish}; "
-        + "name one as 'native en' or 'native sv'"
-    )
-    with pytest.raises(Ambiguous, match=re.escape(several)):
-        _ = bench.configuration("native")
-    assert bench.configuration(swedish).name == swedish
-    assert bench.configuration("native sv").name == swedish
-    assert bench.configuration("native (en)").name == NATIVE
-    with pytest.raises(NotFound, match="no configuration 'native fi'"):
-        _ = bench.configuration("native fi")
 
 
 def test_a_variation_compiles_to_a_skeleton_of_its_own(bench: Bench) -> None:
@@ -435,7 +414,7 @@ def test_a_fork_is_a_new_configuration_and_an_edit_a_new_version_of_one_s_own(
 
 
 def test_a_new_recipe_of_the_same_request_is_a_new_version(bench: Bench) -> None:
-    variation = bench.configuration("headed (en)")
+    variation = bench.configuration("headed")
     prompt = resolve(bench.get, variation.held("prompt") or "", Prompt)
     head, *rest = prompt.segments
     assert isinstance(head, str)
@@ -621,10 +600,10 @@ def test_a_judge_configuration_is_looked_at_as_a_judge_and_isn_t_run(
     configurations = bench.threads("configuration")
     judges = {a.name for _, a in bench.purposed(configurations, "judge")}
     generation = {a.name for _, a in bench.purposed(configurations, "generation")}
-    assert "judge-graded (en)" in judges and LINES in generation
+    assert "judge-graded" in judges and LINES in generation
     assert not judges & generation
 
-    variation = bench.configuration("judge-graded (en)")
+    variation = bench.configuration("judge-graded")
     engine = bench.endpoint(GPT_OSS)
     findings = bench.findings(variation, engine, 7, bench.families())
     judge = Judge(skeleton=variation.configuration.digest, engine=engine, seeds=(7,))

@@ -107,11 +107,10 @@ def test_init_data_loads_the_archive(conn: Connection) -> None:
         for r in plan.records
         if r.language is not None
     ]
-    assert catalog.language_of(plan.named("toolset", "lookup (en)").digest) == "en"
+    assert catalog.language_of(plan.named("toolset", "lookup").digest) == "en"
     assert catalog.language_of(plan.named("prompt", "case").digest) is None
-    for language in ("en", "sv"):
-        guided = f"lines-guided ({language})"
-        assert catalog.language_of(plan.named("recipe", guided).digest) == language
+    assert catalog.language_of(plan.named("recipe", "lines-guided").digest) == "en"
+    assert catalog.language_of(plan.named("translations", "guided").digest) is None
 
     # The rest of the cases, and their expectations, are left over.
     some = {id: CASES[id] for id in ("crlf", "svenska")}
@@ -171,9 +170,9 @@ def test_init_data_updates_and_gives_forks(
         for line in sorted(lines)
         if line.startswith(
             (
-                "[archive chunk.output] tool-answer (en):",
-                "[archive skeleton] tool-answer (en):",
-                "[archive skeleton] tool-answer-tools (en):",
+                "[archive chunk.output] tool-answer:",
+                "[archive skeleton] tool-answer:",
+                "[archive skeleton] tool-answer-tools:",
             )
         )
     ]
@@ -190,7 +189,7 @@ def test_init_data_updates_and_gives_forks(
     catalog = Catalog(conn)
     archive = People(conn).find("archive")
     assert archive is not None
-    output = "tool-answer (en)"
+    output = "tool-answer"
     [archived] = catalog.find("chunk.output", output, owner=archive.id)
     assert len(catalog.find("chunk.output", output, owner=alice.id)) == 1
     owners = [catalog.about(Subject(thread=t)).owner for t in catalog.forks(archived)]
@@ -224,12 +223,9 @@ def test_init_data_says_when_a_thread_is_held_as_another_fork_than_the_data_s(
     _ = init(conn, world_plan(before, before / "_data"), CASES, vignettes(), alice)
     lines = init(conn, world_plan(after, after / "_data"), CASES, vignettes(), alice)
     assert sorted(line for line in lines if "; the data forks it from " in line) == [
-        *(
-            f"[archive skeleton] lines-guided ({language}): held as no fork; the data "
-            + "forks it from lines-instructed (en)"
-            for language in ("en", "sv")
-        ),
-        "[archive skeleton] native-tools (en): held as a fork of native (en); the data "
+        "[archive skeleton] lines-guided: held as no fork; the data forks it from "
+        + "lines-instructed",
+        "[archive skeleton] native-tools: held as a fork of native; the data "
         + "forks it from nothing",
     ]
 
@@ -357,7 +353,7 @@ def test_a_world_brings_its_engines_and_their_models_facts(
     for made in (
         "[archive facts] test/mistral-7b: created",
         "[archive chunk.sampling] recommended: created",
-        "[archive skeleton] native (en): created",
+        "[archive skeleton] native: created",
     ):
         assert any(line.startswith(made) for line in out), made
 
@@ -389,7 +385,7 @@ def test_wipe_data_deletes_and_unshares_and_init_data_gives_it_back(
     assert any(
         line.startswith("[archive chunk.prompt] case: created") for line in loaded
     )
-    assert any(line.startswith("[giftbag skeleton] native (") for line in loaded)
+    assert any(line.startswith("[giftbag skeleton] native:") for line in loaded)
     assert [line for line in loaded if line.startswith("[world")] == [
         f"[world] 0 findings in 5 endpoints of {TEST}"
     ]

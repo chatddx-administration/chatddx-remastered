@@ -7,7 +7,7 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field, JsonValue, model_validator
 
-from chatddx.factors.base import Fingerprint
+from chatddx.factors.base import Fingerprint, language_tag
 from chatddx.factors.cases import Vignette
 from chatddx.factors.request import RECIPE_PARTS
 from chatddx.factors.scoring import Scorer
@@ -50,25 +50,15 @@ LANGUAGE_KINDS = frozenset(
         "chunk.prompt",
         "chunk.output",
         "chunk.toolset",
-        "chunk.translations",
         "skeleton",
     }
 )
 
 
-# src/chatddx/store/migrations/0012-t2-catalog.sql repeats these fields and the pattern.
-LANGUAGE = re.compile(r"^[a-z]{2,3}(-[A-Za-z0-9]{1,8})*$")
-
-
 # src/chatddx/store/migrations/0026-t2-catalog-run-variation.sql repeats these patterns.
 VARIED = re.compile(r"^[1-9][0-9]{0,17}$")
+WITH = re.compile(r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$")
 REPLACED = re.compile(rf"^({'|'.join(RECIPE_PARTS)})=(sha256:[0-9a-f]{{64}})?$")
-
-
-def language_tag(value: str) -> str:
-    if not LANGUAGE.match(value):
-        raise ValueError(f"{value!r} is not a language tag such as 'sv' or 'pt-BR'")
-    return value
 
 
 class MovedOn(ValueError):
@@ -85,9 +75,10 @@ class EntryField(StrEnum):
     LANGUAGE = "language"
     VARIED = "varied"
     REPLACED = "replaced"
+    WITH = "with"
 
 
-RUN_FIELDS = frozenset({EntryField.VARIED, EntryField.REPLACED})
+RUN_FIELDS = frozenset({EntryField.VARIED, EntryField.REPLACED, EntryField.WITH})
 ENGINE_KINDS = ("engine.local", "engine.remote")
 
 
@@ -219,6 +210,8 @@ class Entry(_Frozen):
             raise ValueError(
                 f"{self.value!r} is not PART=DIGEST, or PART= for a part taken out"
             )
+        if self.field == EntryField.WITH and not WITH.match(self.value or ""):
+            raise ValueError(f"{self.value!r} is not a run's id")
         return self
 
     @classmethod
@@ -228,6 +221,10 @@ class Entry(_Frozen):
     @classmethod
     def replaced(cls, part: str, digest: str | None) -> Self:
         return cls(field=EntryField.REPLACED, value=f"{part}={digest or ''}")
+
+    @classmethod
+    def started_with(cls, run: UUID) -> Self:
+        return cls(field=EntryField.WITH, value=str(run))
 
 
 class About(_Frozen):
@@ -240,11 +237,12 @@ class About(_Frozen):
     language: str | None = None
     varied: int | None = None
     replaced: dict[str, str | None] = Field(default_factory=dict[str, str | None])
+    started_with: UUID | None = None
 
     @classmethod
     def of(cls, entries: Iterable[Entry]) -> Self:
         name = description = language = None
-        owner = varied = None
+        owner = varied = started_with = None
         replaced: dict[str, str | None] = {}
         tags: set[str] = set()
         collaborators: set[int] = set()
@@ -272,6 +270,8 @@ class About(_Frozen):
                 case EntryField.REPLACED:
                     part, digest = (e.value or "").split("=")
                     replaced[part] = digest or None
+                case EntryField.WITH:
+                    started_with = UUID(e.value)
         return cls(
             name=name,
             description=description,
@@ -282,6 +282,7 @@ class About(_Frozen):
             language=language,
             varied=varied,
             replaced={p: replaced[p] for p in RECIPE_PARTS if p in replaced},
+            started_with=started_with,
         )
 
 

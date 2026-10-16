@@ -145,10 +145,10 @@ def test_a_recipe_of_the_person_s_making_is_compiled_into_a_configuration(
 ) -> None:
     catalog, engine = bench.catalog, bench.endpoint(QWEN)
     recipe = Recipe(
-        instructions=bench.chunk("instructions", "clinician (en)"),
-        few_shot=bench.chunk("few_shot", "worked-example (en)"),
+        instructions=bench.chunk("instructions", "clinician"),
+        few_shot=bench.chunk("few_shot", "worked-example"),
         prompt=bench.chunk("prompt", "case"),
-        output=bench.chunk("output", "lines (en)"),
+        output=bench.chunk("output", "lines"),
         sampling=bench.chunk("sampling", "greedy"),
         reasoning=bench.chunk("reasoning", "off"),
         engine=engine,
@@ -169,7 +169,7 @@ def test_a_recipe_of_the_person_s_making_is_compiled_into_a_configuration(
 
 def test_a_recipe_is_refused_what_doesn_t_compile(bench: Bench) -> None:
     prompt = bench.chunk("prompt", "case")
-    output = bench.chunk("output", "lines (en)")
+    output = bench.chunk("output", "lines")
     sampling = bench.chunk("sampling", "greedy")
     engine = bench.endpoint(QWEN)
     recipe = Recipe(prompt=prompt, output=output, sampling=sampling, engine=engine)
@@ -196,7 +196,7 @@ def test_a_recipe_is_refused_what_doesn_t_compile(bench: Bench) -> None:
 
 @pytest.mark.slow
 def test_a_person_writes_a_judge_over_a_judge_configuration(bench: Bench) -> None:
-    skeleton = bench.configuration("judge (en)").configuration.digest
+    skeleton = bench.configuration("judge").configuration.digest
     engine = bench.endpoint(QWEN)
     written = bench.new(Judge(skeleton=skeleton, engine=engine, seeds=(1, 2)), "twice")
     assert written.what == "created"
@@ -220,7 +220,7 @@ def test_a_person_writes_a_judge_over_a_judge_configuration(bench: Bench) -> Non
 def test_a_judge_on_another_model_than_its_skeleton_is_worked_out_for_says_so(
     bench: Bench,
 ) -> None:
-    graded = bench.configuration("judge-graded (en)").configuration.digest
+    graded = bench.configuration("judge-graded").configuration.digest
     gpt_oss = bench.endpoint(GPT_OSS)
     judge = Judge(skeleton=graded, engine=gpt_oss, seeds=(1,))
     said = f"the skeleton is worked out for {QWEN_MODEL}, and the engine serves "
@@ -234,7 +234,7 @@ def test_a_judge_on_another_model_than_its_skeleton_is_worked_out_for_says_so(
     assert "judge.engine_unmatched" not in {
         f.code for f in bench.check(on_qwen).findings
     }
-    greedy = bench.configuration("judge (en)").configuration.digest
+    greedy = bench.configuration("judge").configuration.digest
     anywhere = Judge(skeleton=greedy, engine=gpt_oss, seeds=(1,))
     assert "judge.engine_unmatched" not in {
         f.code for f in bench.check(anywhere).findings

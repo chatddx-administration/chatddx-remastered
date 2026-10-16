@@ -18,6 +18,7 @@ from .base import (
     Component,
     Digest,
     Frozen,
+    Language,
     RefTo,
     Resolver,
     Settings,
@@ -424,21 +425,25 @@ class Toolset(Component):
 
 
 class Translations(Component):
+    schema_version: ClassVar[int] = 2
     kind: Literal["chunk.translations"] = "chunk.translations"
-    entries: Annotated[dict[str, str], AfterValidator(sorted_keys)] = Field(
-        min_length=1
+    into: Annotated[dict[Language, dict[str, str]], AfterValidator(sorted_keys)] = (
+        Field(min_length=1)
     )
 
-    @field_validator("entries")
+    @field_validator("into")
     @classmethod
-    def _entries(cls, entries: dict[str, str]) -> dict[str, str]:
-        if any(not text.strip() for text in entries):
-            raise ValueError("whitespace isn't translated")
-        if empty := sorted(
-            text for text, translation in entries.items() if not translation
-        ):
-            raise ValueError(f"no translation given for {empty}")
-        return entries
+    def _into(cls, into: dict[str, dict[str, str]]) -> dict[str, dict[str, str]]:
+        for language, entries in into.items():
+            if not entries:
+                raise ValueError(f"no translations into {language}")
+            if any(not text.strip() for text in entries):
+                raise ValueError("whitespace isn't translated")
+            if empty := sorted(
+                text for text, translation in entries.items() if not translation
+            ):
+                raise ValueError(f"no translation into {language} given for {empty}")
+        return {language: sorted_keys(entries) for language, entries in into.items()}
 
 
 class AppendixLayout(Frozen):
@@ -594,21 +599,29 @@ SkeletonRef = Annotated[Digest, RefTo("skeleton")]
 
 
 class Compilation(Component):
-    schema_version: ClassVar[int] = 2
+    schema_version: ClassVar[int] = 3
     kind: Literal["compilation"] = "compilation"
     recipe: Recipe
     skeleton: SkeletonRef
     compiler: Code
     facts: FactsRef | None = None
+    into: Language | None = None
 
     @override
     def cross_check(self, get: Resolver) -> list[str]:
-        if self.facts is None:
-            return []
-        facts = resolve(get, self.facts, ModelFacts)
-        if (model := model_name(self.recipe.engine, get)) != facts.model:
-            return [f"facts about {facts.model} compiled a recipe for {model}"]
-        return []
+        found: list[str] = []
+        if self.facts is not None:
+            facts = resolve(get, self.facts, ModelFacts)
+            if (model := model_name(self.recipe.engine, get)) != facts.model:
+                found.append(f"facts about {facts.model} compiled a recipe for {model}")
+        if self.into is not None and self.into not in self._languages(get):
+            found.append(f"the recipe has no translations into {self.into}")
+        return found
+
+    def _languages(self, get: Resolver) -> set[str]:
+        if self.recipe.translations is None:
+            return set()
+        return set(resolve(get, self.recipe.translations, Translations).into)
 
 
 def _tool_name(tool: JsonValue) -> str:
@@ -666,10 +679,6 @@ _NAMED = frozenset(
     {"properties", "patternProperties", "$defs", "definitions", "dependentSchemas"}
 )
 _DATA = frozenset({"enum", "const", "default", "examples"})
-
-
-def _untranslated(text: str) -> str:
-    return text
 
 
 def _tr(text: str, tr: Translate) -> str:
@@ -806,9 +815,6 @@ def _parts(recipe: Recipe, get: Resolver, tr: Callable[[str], Translate]) -> _Pa
     )
 
 
-TRANSLATED = frozenset({"output", "appendix_layout", "toolset"})
-
-
 def texts(recipe: Recipe, get: Resolver) -> dict[str, tuple[str, ...]]:
     found: dict[str, list[str]] = {}
 
@@ -846,7 +852,12 @@ def own_texts(chunk: Component, get: Resolver) -> tuple[str, ...]:
         case Toolset():
             _ = _tr_toolset(chunk, get, tr)
         case Translations():
-            seen.extend(t for t in chunk.entries.values() if t.strip())
+            seen.extend(
+                t
+                for entries in chunk.into.values()
+                for t in entries.values()
+                if t.strip() and t not in seen
+            )
         case _:
             pass
     return tuple(seen)
@@ -883,15 +894,25 @@ def landings(
     return landed, followed
 
 
+def translations_into(recipe: Recipe, get: Resolver, into: str) -> dict[str, str]:
+    held = (
+        {}
+        if recipe.translations is None
+        else resolve(get, recipe.translations, Translations).into
+    )
+    if into not in held:
+        raise StructuralError(f"no translations into {into}")
+    return held[into]
+
+
 def compile_request(
-    recipe: Recipe, get: Resolver, facts: ModelFacts | None = None
+    recipe: Recipe,
+    get: Resolver,
+    facts: ModelFacts | None = None,
+    into: str | None = None,
 ) -> Skeleton:
     landed, followed = landings(recipe, get, facts)
-    entries = (
-        None
-        if recipe.translations is None
-        else resolve(get, recipe.translations, Translations).entries
-    )
+    entries = None if into is None else translations_into(recipe, get, into)
     missing: set[str] = set()
 
     def translate(text: str) -> str:
@@ -902,12 +923,11 @@ def compile_request(
             return text
         return entries[text]
 
-    parts = _parts(
-        recipe, get, lambda part: translate if part in TRANSLATED else _untranslated
-    )
+    parts = _parts(recipe, get, lambda _: translate)
     if missing:
         raise StructuralError(
-            "no translation for " + ", ".join(repr(t) for t in sorted(missing))
+            f"no translation into {into} for "
+            + ", ".join(repr(t) for t in sorted(missing))
         )
     prompt, output = parts.prompt, parts.output
     sampling = resolve(get, recipe.sampling, Sampling)
@@ -1023,15 +1043,20 @@ def compile_request(
 
 
 def compiled(
-    recipe: Recipe, get: Resolver, compiler: Code, facts: ModelFacts | None = None
+    recipe: Recipe,
+    get: Resolver,
+    compiler: Code,
+    facts: ModelFacts | None = None,
+    into: str | None = None,
 ) -> tuple[Skeleton, Compilation]:
-    skeleton = compile_request(recipe, get, facts)
+    skeleton = compile_request(recipe, get, facts, into)
     worked_out = any(landings(recipe, get, facts))
     record = Compilation(
         recipe=recipe,
         skeleton=skeleton.digest,
         compiler=compiler,
         facts=facts.digest if facts is not None and worked_out else None,
+        into=into,
     )
     return skeleton, record
 

@@ -12,6 +12,7 @@
   import * as NativeSelect from "$lib/components/ui/native-select";
   import { api, type Schemas, why } from "$lib/api/client";
   import {
+    carried,
     choicesOf,
     named,
     PARTS,
@@ -81,7 +82,11 @@
   const shown = $derived(Object.fromEntries((look.parts ?? []).map((p) => [p.part, p])));
   const sends = $derived(where(endpoints, compiled ? picked.engine : null, endpoint));
   const sent = $derived(picking ? families.filter((f) => chosen.includes(f.id)) : tagged(families, tags));
-  const items = $derived(sent.length * Math.max(1, replicates));
+  const carriages = $derived(carried(sent, look.languages));
+  const sending = $derived(carriages.filter((c) => c.refused === null));
+  const leftOut = $derived(carriages.filter((c) => c.refused !== null));
+  const items = $derived(sending.reduce((n, c) => n + c.families.length, 0) * Math.max(1, replicates));
+  const largest = $derived(Math.max(0, ...sending.map((c) => c.families.length)) * Math.max(1, replicates));
   const listed = $derived(
     families.filter((f) => f.name.toLowerCase().includes(narrowed.trim().toLowerCase())).slice(0, 200),
   );
@@ -92,6 +97,10 @@
   function pickedOf(variation: Schemas["Variation"]): Picked {
     const found = Object.fromEntries((variation.parts ?? []).map((p) => [p.part, p.digest]));
     return Object.fromEntries(PARTS.map((p) => [p, found[p] ?? null])) as Picked;
+  }
+
+  function cases(n: number): string {
+    return `${n} ${n === 1 ? "case" : "cases"}`;
   }
 
   function when(at: string): string {
@@ -176,7 +185,7 @@
       starting = false;
       return;
     }
-    location.assign(`/runs/${got.data.run}`);
+    location.assign(`/runs/${got.data.runs[0]?.run}`);
   }
 
   async function save(event: SubmitEvent): Promise<void> {
@@ -472,6 +481,8 @@
         {compiled && sends.among.length === 0 ? "No endpoint serves its engine." : "Pick an endpoint to run it at."}
       {:else if sent.length === 0}
         Pick a case to run it on.
+      {:else if items === 0}
+        None of its cases can be sent.
       {:else}
         Sends {items} {items === 1 ? "item" : "items"} to {sends.at}, one at a time{replicates > 1
           ? `, a replicate each under ${replicates} seeds drawn`
@@ -480,11 +491,26 @@
             ? "; its sampling is greedy, so no seed is sent and its replicates send the same request, which measures the engine's nondeterminism"
             : "; its sampling is greedy, so the seed isn't sent"
           : ""}.
-        {#if items > given.itemsPerRun}
+        {#if largest > given.itemsPerRun}
           <span class="text-warning">A run holds at most {given.itemsPerRun}.</span>
         {/if}
       {/if}
     </p>
+    {#if sent.length > 0 && (carriages.length > 1 || carriages.some((c) => c.translated || !c.known))}
+      <p class="text-sm" aria-live="polite">
+        {sending.length > 1 ? `A run per language: ` : ""}{#each sending as c, i (i)}{i ? "; " : ""}in {c.language ??
+            "its own language"}, {cases(c.families.length)}{c.translated ? ", translated" : ""}{c.known
+            ? ""
+            : ", if it can be"}{/each}.
+      </p>
+    {/if}
+    {#if leftOut.length}
+      <ul class="space-y-1 text-sm text-warning" aria-live="polite">
+        {#each leftOut as c (c.language)}
+          <li>Left out: {cases(c.families.length)} in {c.language}, as {c.refused}.</li>
+        {/each}
+      </ul>
+    {/if}
     {#if unstarted}
       <Alert.Root variant="destructive">
         <TriangleAlertIcon />
@@ -493,7 +519,7 @@
     {/if}
     <Button
       type="submit"
-      disabled={sends.at === null || sent.length === 0 || items > given.itemsPerRun || starting || failure !== null}
+      disabled={sends.at === null || items === 0 || largest > given.itemsPerRun || starting || failure !== null}
     >
       {#if starting}<LoaderCircleIcon class="animate-spin" />{/if}
       Run it

@@ -80,7 +80,7 @@ def test_replay_shows_a_run_of_several_cases_again_by_its_lines(say: Say):
 @pytest.mark.usefixtures("fake")
 @pytest.mark.slow
 def test_replay_takes_a_run_by_the_start_of_its_id(bench: Bench, say: Say):
-    _ = say(f"cell {LINES} {QWEN}", "run noted", "run svenska")
+    _ = say(f"cell {LINES} {QWEN}", "run noted", "run crlf")
     first = bench.runs()[-1]
 
     assert "× noted (seed 7)" in say(f"replay {str(first.run)[:8]}")
@@ -111,7 +111,7 @@ def test_replay_says_when_the_request_would_render_otherwise_now(
 @pytest.mark.usefixtures("fake")
 def test_an_unfinished_run_is_listed_so_and_left_unscored(bench: Bench, say: Say):
     variation = bench.configuration(LINES)
-    running = bench.start(variation, QWEN, [bench.family("noted").case], (7,))
+    running = bench.start(variation, QWEN, [bench.family("noted").case], (7,)).first
     running.send()
 
     [row] = rows(say("runs"))

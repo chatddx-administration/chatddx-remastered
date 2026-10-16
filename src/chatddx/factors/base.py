@@ -1,6 +1,7 @@
 import hashlib
 import hmac
 import json
+import re
 import types
 import typing
 from collections.abc import Callable, Iterator, Mapping
@@ -51,6 +52,18 @@ def canonical_bytes(doc: JsonValue) -> bytes:
 
 def sorted_keys[V](mapping: dict[str, V]) -> dict[str, V]:
     return dict(sorted(mapping.items()))
+
+
+LANGUAGE = re.compile(r"^[a-z]{2,3}(-[A-Za-z0-9]{1,8})*$")
+
+
+def language_tag(value: str) -> str:
+    if not LANGUAGE.match(value):
+        raise ValueError(f"{value!r} is not a language tag such as 'sv' or 'pt-BR'")
+    return value
+
+
+type Language = Annotated[str, AfterValidator(language_tag)]
 
 
 def distinct[T](values: tuple[T, ...]) -> tuple[T, ...]:

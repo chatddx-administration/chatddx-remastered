@@ -120,7 +120,8 @@ class Telling:
     def _row(self, record: Record) -> list[Named]:
         match record:
             case RunStarted():
-                data = started_of(record, self._trial, self._skeleton)
+                language = self._bench.catalog.language_of(self._trial.skeleton)
+                data = started_of(record, self._trial, self._skeleton, language)
                 return [("run.started", data)]
             case CanaryCall():
                 return [canary_of(record)]

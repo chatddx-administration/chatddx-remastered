@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends, Header, HTTPException, Query, Request, R
 from fastapi.concurrency import run_in_threadpool
 from fastapi.responses import StreamingResponse
 
-from chatddx.bench import Bench, Family, outcome
+from chatddx.bench import Bench, Family, Started, outcome
 from chatddx.factors.base import resolve
 from chatddx.factors.request import Skeleton
 from chatddx.factors.trial import Execution, Trial, suggest_seeds
@@ -82,7 +82,7 @@ def _execution(bench: Bench, endpoint: str, given: schemas.NewRun) -> Execution 
     )
 
 
-def _new(bench: Bench, given: schemas.NewRun) -> Running:
+def _new(bench: Bench, given: schemas.NewRun) -> Started:
     try:
         with refused():
             variation = bench.variation(
@@ -129,7 +129,8 @@ def _queued(
         score,
     )
     response.headers["Location"] = request.app.url_path_for("run", run=str(started.run))
-    return started_of(started, trial, skeleton)
+    language = bench.catalog.language_of(trial.skeleton)
+    return started_of(started, trial, skeleton, language)
 
 
 @router.post(
@@ -137,7 +138,8 @@ def _queued(
     status_code=202,
     responses={
         202: {
-            "description": "The run, started and queued: the worker sends it, finishes "
+            "description": "The runs, started and queued, a run per language its cases "
+            + "are sent in, `Location` the first's: the worker sends each, finishes "
             + "it and scores it whoever listens, and its events are at "
             + "`/api/runs/{run}/events`."
         }
@@ -145,8 +147,19 @@ def _queued(
 )
 def start(
     request: Request, response: Response, bench: BenchDep, given: schemas.NewRun
-) -> schemas.RunStartedData:
-    return _queued(request, response, bench, _new(bench, given), given.score)
+) -> schemas.StartedRuns:
+    started = _new(bench, given)
+    runs = [_queued(request, response, bench, r, given.score) for _, r in started.runs]
+    first = str(runs[0].run)
+    response.headers["Location"] = request.app.url_path_for("run", run=first)
+    return schemas.StartedRuns(
+        runs=runs,
+        left_out=[
+            schemas.LeftOut(language=c.language, cases=c.cases, why=c.refused)
+            for c in started.left_out
+            if c.language is not None and c.refused is not None
+        ],
+    )
 
 
 @router.post(
@@ -271,6 +284,8 @@ def run_of(
         at=started.at,
         trial=trial.digest,
         skeleton=trial.skeleton,
+        language=bench.catalog.language_of(trial.skeleton),
+        started_with=bench.started_with(started.run),
         engine=trial.engine,
         endpoint=None if started.endpoint is None else started.endpoint.name,
         cases=list(trial.cases),
@@ -322,10 +337,20 @@ def runs(
         bool,
         Query(description="only the finished runs left to be scored by some scorer"),
     ] = False,
+    started_with: Annotated[
+        UUID | None,
+        Query(
+            alias="with",
+            description="a run: the runs started with it, itself the first of them",
+        ),
+    ] = None,
 ) -> list[schemas.Run]:
     found = bench.runs()
     if trial is not None:
         found = [r for r in found if r.trial == trial]
+    if started_with is not None:
+        together = {r.run for r in bench.together(started_with)}
+        found = [r for r in found if r.run in together]
     for kept in (
         None if reaching is None else bench.reaching(reaching),
         None if scored_by is None else bench.scored_by(scored_by),

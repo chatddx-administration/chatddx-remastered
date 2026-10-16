@@ -6,7 +6,7 @@ from fastapi.testclient import TestClient
 from chatddx.api.test.test_variations import thread
 from chatddx.test.world import LINES, QWEN
 
-CLINICIAN = "clinician (en)"
+CLINICIAN = "clinician"
 
 
 def body(signed: TestClient, found: dict[str, Any]) -> dict[str, Any]:
@@ -150,7 +150,7 @@ def test_a_recipe_of_one_s_making_is_a_new_configuration(signed: TestClient) -> 
     recipe = {
         "instructions": digest("instructions", CLINICIAN),
         "prompt": digest("prompt", "case"),
-        "output": digest("output", "native (en)"),
+        "output": digest("output", "native"),
         "sampling": digest("sampling", "greedy"),
         "engine": signed.get(f"/api/endpoints/{QWEN}").json()["engine"],
     }
@@ -182,7 +182,7 @@ def test_a_recipe_of_one_s_making_is_a_new_configuration(signed: TestClient) -> 
 
 @pytest.mark.slow
 def test_a_judge_is_written_over_a_judge_configuration(signed: TestClient) -> None:
-    query = {"kind": "configuration", "purpose": "judge", "name": "judge (en)"}
+    query = {"kind": "configuration", "purpose": "judge", "name": "judge"}
     [judging] = signed.get("/api/threads", params={**query, "owner": "alice"}).json()
     engine = signed.get(f"/api/endpoints/{QWEN}").json()["engine"]
     judge = {

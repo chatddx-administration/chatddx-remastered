@@ -37,15 +37,13 @@ def test_a_judge_s_recipe_is_compiled_with_its_engine() -> None:
         return resolve(plan.registry.get, plan.named("judge", name).digest, Judge)
 
     graded, verdict, remote = judge("graded"), judge("verdict"), judge("remote")
-    skeleton = plan.named("recipe", "judge-graded (en)").digest
+    skeleton = plan.named("recipe", "judge-graded").digest
     assert (graded.skeleton, graded.engine, graded.seeds) == (
         skeleton,
         plan.named("local_engine", QWEN).digest,
         (1, 2, 3),
     )
-    assert (
-        verdict.skeleton == remote.skeleton == plan.named("recipe", "judge (en)").digest
-    )
+    assert verdict.skeleton == remote.skeleton == plan.named("recipe", "judge").digest
     assert remote.engine == plan.named("remote_engine", REMOTE).digest
 
 
@@ -59,7 +57,7 @@ def test_a_judge_takes_its_engine_from_the_endpoint_the_world_binds_it_to(
     graded = resolve(get, plan.named("judge", "graded").digest, Judge)
     engine = plan.named("local_engine", GPT_OSS).digest
     assert graded.engine == engine
-    assert graded.skeleton != plan.named("recipe", "judge-graded (en)").digest
+    assert graded.skeleton != plan.named("recipe", "judge-graded").digest
     [made] = [
         compilation
         for c in plan.compilations

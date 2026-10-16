@@ -3,9 +3,10 @@ from typing import Literal
 
 from chatddx.catalog import About, Behind, Divergence, Edit, Kept, Part
 from chatddx.factors.base import Component, Finding
-from chatddx.factors.request import CHUNK_PARTS, Recipe, SlotName
+from chatddx.factors.request import CHUNK_PARTS, Recipe, Skeleton, SlotName
 from chatddx.factors.scoring import Scorer
 from chatddx.ledger import Score
+from chatddx.runner.run import Running
 
 from .variation import TriedVariation
 
@@ -60,6 +61,25 @@ class Family:
     @property
     def name(self) -> str:
         return self.about.name or f"family {self.id}"
+
+
+@dataclass(frozen=True)
+class Carried:
+    language: str | None
+    cases: list[str]
+    skeleton: Skeleton | None = None
+    translated: bool = False
+    refused: str | None = None
+
+
+@dataclass(frozen=True)
+class Started:
+    runs: list[tuple[Carried, Running]]
+    left_out: list[Carried]
+
+    @property
+    def first(self) -> Running:
+        return self.runs[0][1]
 
 
 @dataclass(frozen=True)

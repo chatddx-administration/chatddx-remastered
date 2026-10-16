@@ -35,7 +35,7 @@ def test_a_paused_queue_holds_a_run_a_stop_takes_it_out_and_it_resumes(
 ) -> None:
     paused = signed.post("/api/queue/pause").json()
     assert (paused["paused"], paused["queued"], paused["under_way"]) == (True, 0, 0)
-    run = signed.post("/api/runs", json=asked(signed)).json()["run"]
+    run = signed.post("/api/runs", json=asked(signed)).json()["runs"][0]["run"]
     waiting = job(signed, run)
     assert (waiting["status"], waiting["ahead"], waiting["ended"]) == (
         "queued",
@@ -85,7 +85,7 @@ def test_stopping_now_halts_what_is_under_way(
         faked(world, Store(conn).get, delay=0.1),
         httpx2.Client(headers=bearer) as http,
     ):
-        run = signed.post("/api/runs", json=asked(signed)).json()["run"]
+        run = signed.post("/api/runs", json=asked(signed)).json()["runs"][0]["run"]
         with http.stream(
             "GET", f"{listening}/api/runs/{run}/events", timeout=30
         ) as got:

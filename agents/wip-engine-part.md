@@ -206,8 +206,8 @@ compiler, `docs/catalog.md`, "Smaller issues"); refusals come when an engine is 
 read from the store wherever they are read today.
 
 ## Stage 2: the language
-Planned in full at e260e87, against the code as stage 1 left it. Nothing below is built. "Decided" means the user said
-so; "Take" is the agent's and still open (see "Options", T to U).
+Planned in full at e260e87, against the code as stage 1 left it. "Decided" means the user said so; "Take" is the
+agent's and still open. Decided: T1, C1, M1 and G1 (see "Options"); U1 is a take.
 
 Decided: people mark cases with a language, and are told when a trial is about to run without translations into it;
 otherwise they see little of languages. Vignettes are never translated (docs/catalog.md, "Languages"), so the request
@@ -350,7 +350,7 @@ Decided: O2. No store holds anything worth keeping, so migrations are edited in 
   own. A language swapped alone, at the cost of a part that holds several chunks.
 - **T3. A configuration per language, grouped**: today's threads, picked by the case's language at the edges.
 
-Take: T1, what "see little of languages" asks for.
+Decided: T1. The take was T1, what "see little of languages" asks for.
 
 ### C. How a data set writes its translations
 - **C1. Translation pairs**: a texts file holds the text records written in its language and the translations into
@@ -358,14 +358,14 @@ Take: T1, what "see little of languages" asks for.
 - **C2. A record per language, paired by name**: `texts-sv.toml` holds `instructions.clinician` in Swedish, and
   loading pairs its texts with the English record's, position by position.
 
-Take: C1, explicit, and the grouping by record already exists; C2 pairs by position, which a schema reordered breaks.
+Decided: C1. The take was C1, explicit, and the grouping by record already exists; C2 pairs by position, which a schema reordered breaks.
 
 ### M. A case in a language the configuration can't be sent in
 - **M1. Left out, and said**, before and when it runs; the rest run.
 - **M2. Sent as written, and said**, a trial mixing languages, as today.
 - **M3. Refused**, the whole start, until the cases or the translations change.
 
-Take: M1, so a trial never mixes languages and a start isn't lost to one case.
+Decided: M1. The take was M1, so a trial never mixes languages and a start isn't lost to one case.
 
 ### G. Runs over several languages
 - **G1. A run per language, kept together** by a `with` entry, so trials, the ledger and scoring stay as they are.
@@ -373,7 +373,7 @@ Take: M1, so a trial never mixes languages and a start isn't lost to one case.
 - **G3. One run of several trials**, a trial per language: one run per start, at the cost of a run's trial becoming
   trials in the ledger, the runner, scoring and every edge (some 70 places read a run's one trial).
 
-Take: G1.
+Decided: G1.
 
 ### U. A case of no language
 - **U1. Sent as written, said** (`language.unknown`, as today).

@@ -29,8 +29,8 @@ def held(bench: Bench, name: str) -> RunStarted:
         (
             "several",
             {
-                "crlf": ("errored", "HTTP 503: loading"),
-                "svenska": ("completed", UNFINISHED),
+                "crlf": ("completed", UNFINISHED),
+                "whitespace": ("errored", "HTTP 503: loading"),
             },
         ),
         ("judged", {"noted": ("completed", None)}),

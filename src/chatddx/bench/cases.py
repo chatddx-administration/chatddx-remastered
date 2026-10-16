@@ -101,8 +101,8 @@ def type_case(
     seen: Seen,
     text: str,
     *,
+    language: str,
     name: str | None = None,
-    language: str | None = None,
     source: str | None = None,
 ) -> Family:
     if not text.strip():
@@ -116,9 +116,9 @@ def type_case(
         )
     if name == "":
         raise ValueError("a name can't be empty: none leaves the case unnamed")
-    entries = [] if name is None else [Entry(field=EntryField.NAME, value=name)]
-    if language is not None:
-        entries.append(Entry(field=EntryField.LANGUAGE, value=language))
+    entries = [Entry(field=EntryField.LANGUAGE, value=language)]
+    if name is not None:
+        entries.append(Entry(field=EntryField.NAME, value=name))
     into = _typed_into(seen, source)
     texts = Texts(seen.conn)
     since = datetime.now(UTC) - timedelta(days=1)

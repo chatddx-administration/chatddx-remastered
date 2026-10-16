@@ -88,7 +88,7 @@ def test_recipes_are_described_by_every_part() -> None:
     title = titler(reg)
     recipe = generation_recipe(reg)
     needed = [t for part in texts(recipe, reg.get).values() for t in part]
-    swedish = reg.add(Translations(entries={t: f"[sv] {t}" for t in needed}))
+    swedish = reg.add(Translations(into={"sv": {t: f"[sv] {t}" for t in needed}}))
     search = reg.add(
         Tool(
             name="web_search",
@@ -103,11 +103,7 @@ def test_recipes_are_described_by_every_part() -> None:
     english = describe_recipe(recipe, title).removesuffix(on)
     translated = recipe.model_copy(update={"translations": swedish})
     assert describe_recipe(translated, title) == (
-        english + f" · translations, {len(needed)} texts" + on
-    )
-    assert (
-        describe(reg.get(swedish), title, "sv")
-        == f"sv translations, {len(needed)} texts"
+        english + f" · translations into sv, {len(needed)} texts" + on
     )
     with_tools = recipe.model_copy(update={"toolset": tools})
     assert describe_recipe(with_tools, title) == english + " · with web_search" + on
@@ -162,10 +158,14 @@ def test_cases_are_titled_by_family_and_appendices() -> None:
     assert titles.title_of(rows, ids["case"]) == f"chest pain (earlier) with {troponin}"
 
 
-def test_translations_are_titled_by_their_language() -> None:
+def test_translations_are_titled_by_their_languages() -> None:
     reg = Registry()
     rows = Memory(reg)
-    hello = reg.add(Translations(entries={"Hello": "Hej"}))
-    assert titles.title_of(rows, hello) == "translations, 1 text"
-    rows.set_language(hello, "sv")
-    assert titles.title_of(rows, hello) == "sv translations, 1 text"
+    hello = reg.add(Translations(into={"sv": {"Hello": "Hej"}}))
+    assert titles.title_of(rows, hello) == "translations into sv, 1 text"
+    both = reg.add(
+        Translations(
+            into={"sv": {"Hello": "Hej"}, "de": {"Hello": "Hallo", "Bye": "Tschüss"}}
+        )
+    )
+    assert titles.title_of(rows, both) == "translations into de, sv, 2 texts"

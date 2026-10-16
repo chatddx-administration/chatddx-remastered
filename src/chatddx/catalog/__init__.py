@@ -1,7 +1,7 @@
-from . import families, language, read, threads, titles, variants
+
+from . import families, language, read, threads, titles
 from .families import RepairPlan
 from .model import (
-    LANGUAGE,
     LANGUAGE_KINDS,
     THREAD_KINDS,
     About,
@@ -20,14 +20,11 @@ from .model import (
     Survey,
     Thread,
     check_label,
-    language_tag,
     latest,
 )
 from .read import Reader
-from .variants import language_of, made_in, variant_name, variants_for
 
 __all__ = [
-    "LANGUAGE",
     "LANGUAGE_KINDS",
     "THREAD_KINDS",
     "About",
@@ -50,14 +47,8 @@ __all__ = [
     "check_label",
     "families",
     "language",
-    "language_of",
-    "language_tag",
     "latest",
-    "made_in",
     "read",
     "threads",
     "titles",
-    "variant_name",
-    "variants",
-    "variants_for",
 ]

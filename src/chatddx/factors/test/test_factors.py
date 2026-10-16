@@ -40,7 +40,6 @@ from chatddx.factors.lint import lint
 from chatddx.factors.request import (
     MANAGED_KEYS,
     OUTPUT_KEYS,
-    TRANSLATED,
     AppendixLayout,
     Compilation,
     Example,
@@ -848,6 +847,10 @@ def test_translations_apply_at_compile_time(reg: Registry) -> None:
         "appendix_layout": ("\n\nLabs:\n",),
     }
     swedish = {
+        "You are an emergency physician.": "Du är akutläkare.",
+        "Chest pain.": "Bröstsmärta.",
+        "ACS.": "AKS.",
+        "Case:\n": "Fall:\n",
         "Answer with:\n\n": "Svara med:\n\n",
         "Plan": "Vårdplan",
         "How urgent.": "Hur brådskande.",
@@ -855,20 +858,24 @@ def test_translations_apply_at_compile_time(reg: Registry) -> None:
         "The plan.": "Planen.",
         "\n\nLabs:\n": "\n\nLabb:\n",
     }
-    assert {t for p in TRANSLATED for t in texts(recipe, reg.get).get(p, ())} == set(
+    assert {t for found in texts(recipe, reg.get).values() for t in found} == set(
         swedish
     )
+    german = {text: f"[de] {text}" for text in swedish if text != "ACS."}
     translated = recipe.model_copy(
-        update={"translations": reg.add(Translations(entries=swedish))}
+        update={
+            "translations": reg.add(Translations(into={"sv": swedish, "de": german}))
+        }
     )
-    skeleton = compile_request(translated, reg.get)
+    assert compile_request(translated, reg.get) == compile_request(recipe, reg.get)
+    skeleton = compile_request(translated, reg.get, into="sv")
     system, user, assistant, prompt = skeleton.messages
     assert system.content[0] == (
-        "You are an emergency physician.\n\nSvara med:\n\n"
+        "Du är akutläkare.\n\nSvara med:\n\n"
         + json.dumps(skeleton.output_schema, indent=2, ensure_ascii=False)
     )
-    assert (user.content, assistant.content) == (("Chest pain.",), ("ACS.",))
-    assert prompt.content == ("Case:\n", Slot(slot="vignette"))
+    assert (user.content, assistant.content) == (("Bröstsmärta.",), ("AKS.",))
+    assert prompt.content == ("Fall:\n", Slot(slot="vignette"))
     assert skeleton.appendix_layout.before == "\n\nLabb:\n"
     assert skeleton.output_schema == {
         "type": "object",
@@ -890,17 +897,37 @@ def test_translations_apply_at_compile_time(reg: Registry) -> None:
         "parameters": skeleton.output_schema,
     }
 
-    partial = {k: v for k, v in swedish.items() if k not in ("Plan", "The plan.")}
-    with pytest.raises(StructuralError, match="no translation for 'Plan', 'The plan.'"):
-        _ = compile_request(
-            recipe.model_copy(
-                update={"translations": reg.add(Translations(entries=partial))}
-            ),
-            reg.get,
-        )
-    for entries in ({}, {"  ": "x"}, {"Plan": ""}):
+    with pytest.raises(StructuralError, match="no translation into de for 'ACS.'"):
+        _ = compile_request(translated, reg.get, into="de")
+    for into in ("fi", "en"):
+        with pytest.raises(StructuralError, match=f"no translations into {into}$"):
+            _ = compile_request(translated, reg.get, into=into)
+    with pytest.raises(StructuralError, match="no translations into sv"):
+        _ = compile_request(recipe, reg.get, into="sv")
+    refused: list[dict[str, dict[str, str]]] = [
+        {},
+        {"sv": {}},
+        {"sv": {"  ": "x"}},
+        {"sv": {"Plan": ""}},
+        {"Swedish": {"Plan": "Vårdplan"}},
+    ]
+    for into in refused:
         with pytest.raises(ValidationError):
-            _ = Translations(entries=entries)
+            _ = Translations.model_validate({"into": into})
+
+
+def test_a_compilation_says_the_language_it_compiled_into(reg: Registry) -> None:
+    _ = world(reg)
+    base = generation_recipe(reg)
+    needed = [t for part in texts(base, reg.get).values() for t in part]
+    swedish = Translations(into={"sv": {t: f"[sv] {t}" for t in needed}})
+    recipe = base.model_copy(update={"translations": reg.add(swedish)})
+    skeleton, compilation = compiled(recipe, reg.get, RIG, into="sv")
+    assert (compilation.into, compilation.skeleton) == ("sv", skeleton.digest)
+    assert skeleton != compile_request(recipe, reg.get)
+    assert compiled(recipe, reg.get, RIG)[1].into is None
+    elsewhere = compilation.model_copy(update={"into": "de"})
+    assert elsewhere.cross_check(reg.get) == ["the recipe has no translations into de"]
 
 
 def web_search(reg: Registry) -> str:

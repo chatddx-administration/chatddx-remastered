@@ -55,10 +55,12 @@ def _kept(
     return Saved(name, skeleton.digest, what, TriedVariation(edit, name, recipe))
 
 
-def keep_compilation(seen: Seen, variation: TriedVariation) -> str | None:
+def keep_compilation(
+    seen: Seen, variation: TriedVariation, into: str | None = None
+) -> str | None:
     recipe = variation.varied
-    if not variation.parts or recipe is None:
+    if recipe is None or (into is None and not variation.parts):
         return None
-    registry, compilation = seen.compiled(recipe)
+    registry, compilation = seen.compiled(recipe, seen.compiled_with(variation), into)
     _ = seen.store.add(registry, [compilation.digest])
     return compilation.digest

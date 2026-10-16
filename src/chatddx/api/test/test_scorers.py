@@ -78,7 +78,7 @@ def test_a_scorer_that_could_never_score_is_refused(signed: TestClient) -> None:
     archives = thread(signed, "scorer", "whole", "archive")
     held = body(signed, archives)
     [view] = held["views"]
-    instructions = thread(signed, "instructions", "clinician (en)", "archive")
+    instructions = thread(signed, "instructions", "clinician", "archive")
     configuration = thread(signed, "configuration", LINES)
     for at, asked, said in (
         (

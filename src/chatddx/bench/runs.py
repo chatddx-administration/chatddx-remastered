@@ -22,7 +22,7 @@ from chatddx.runner.send import STOPPED
 
 from .configurations import keep_compilation
 from .errors import OverQuota
-from .model import Graded
+from .model import Carried, Graded, Started
 from .seen import Seen
 from .variation import PARTS, TriedVariation
 
@@ -38,34 +38,53 @@ def start(
     cleanup: Sequence[CleanupOp] | None = None,
     execution: Execution | None = None,
     canaries: str | None = None,
-) -> Running:
-    skeleton = seen.skeleton(variation)
-    if skeleton.purpose == "judge":
+) -> Started:
+    if seen.skeleton(variation).purpose == "judge":
         raise ValueError(
             f"{variation.label} is a judge configuration: a judge is asked as runs are "
             + "scored, and isn't run on cases"
         )
+    carried = seen.languages(variation, cases)
+    sent = [c for c in carried if c.skeleton is not None]
+    left_out = [c for c in carried if c.skeleton is None]
+    if not sent:
+        raise ValueError(
+            "no case can be sent: " + "; ".join(c.refused or "" for c in left_out)
+        )
     endpoint, engine = seen.at(variation, endpoint)
     spec = seen.inventory.endpoint(endpoint)
     canaries = canaries or spec.canaries
-    running = _begun(
-        seen,
-        skeleton,
-        endpoint,
-        engine,
-        cases,
-        seeds,
-        variation.label,
-        _varying(
-            variation.configuration.id,
-            {p: variation.parts[p][0] for p in PARTS if p in variation.parts},
-        ),
-        cleanup=_cleanup_of(seen, cases) if cleanup is None else tuple(cleanup),
-        execution=execution or spec.execution,
-        canaries=None if canaries is None else resolve(seen.get, canaries, CanarySet),
+    _check_quota(seen, [len(c.cases) * len(seeds) for c in sent])
+    said = _varying(
+        variation.configuration.id,
+        {p: variation.parts[p][0] for p in PARTS if p in variation.parts},
     )
+    runs: list[tuple[Carried, Running]] = []
+    for each in sent:
+        assert each.skeleton is not None
+        with_first = [Entry.started_with(runs[0][1].run)] if runs else []
+        running = _begun(
+            seen,
+            each.skeleton,
+            endpoint,
+            engine,
+            each.cases,
+            seeds,
+            variation.label,
+            [*said, *with_first],
+            cleanup=_cleanup_of(seen, each.cases)
+            if cleanup is None
+            else tuple(cleanup),
+            execution=execution or spec.execution,
+            canaries=None
+            if canaries is None
+            else resolve(seen.get, canaries, CanarySet),
+        )
+        runs.append((each, running))
+        if each.translated:
+            _ = keep_compilation(seen, variation, each.language)
     _ = keep_compilation(seen, variation)
-    return running
+    return Started(runs, left_out)
 
 
 def _cleanup_of(seen: Seen, cases: Sequence[str]) -> tuple[CleanupOp, ...]:
@@ -134,17 +153,7 @@ def _begun(
     canaries: CanarySet | None,
     verify_at: tuple[Phase, ...] = PHASES,
 ) -> Running:
-    if (items := len(cases) * len(seeds)) > settings.ITEMS_PER_RUN:
-        raise OverQuota(
-            f"a run holds at most {settings.ITEMS_PER_RUN} items, not {items}"
-        )
-    since = datetime.now(UTC) - timedelta(days=1)
-    started = seen.catalog.runs_started(seen.person.id, since)
-    if started >= settings.RUNS_PER_DAY:
-        raise OverQuota(
-            f"{seen.person.login} has started {started} runs in the last day, as many "
-            + "as a day takes"
-        )
+    _check_quota(seen, [len(cases) * len(seeds)])
     registry, trial = seen.trial(skeleton, engine, cases, seeds, cleanup)
     runner = Runner(seen.conn, seen.inventory, seen.person)
     running = runner.start(trial, registry, endpoint, execution, canaries, verify_at)
@@ -152,6 +161,23 @@ def _begun(
         for entry in (Entry(field=EntryField.NAME, value=name), *said):
             seen.catalog.note(Subject(run=running.run), entry, seen.person.id)
     return running
+
+
+def _check_quota(seen: Seen, runs: Sequence[int]) -> None:
+    for items in runs:
+        if items > settings.ITEMS_PER_RUN:
+            raise OverQuota(
+                f"a run holds at most {settings.ITEMS_PER_RUN} items, not {items}"
+            )
+    since = datetime.now(UTC) - timedelta(days=1)
+    started = seen.catalog.runs_started(seen.person.id, since)
+    if started + len(runs) > settings.RUNS_PER_DAY:
+        said = f"{seen.person.login} has started {started} runs in the last day"
+        if len(runs) == 1:
+            raise OverQuota(f"{said}, as many as a day takes")
+        raise OverQuota(
+            f"{said}, and a day takes {settings.RUNS_PER_DAY}, not {len(runs)} more"
+        )
 
 
 @dataclass(frozen=True)

@@ -1,7 +1,7 @@
 from collections.abc import Callable, Generator
 from contextlib import ExitStack, contextmanager
 
-from chatddx.bench import Bench, TriedVariation
+from chatddx.bench import Bench, Carried, TriedVariation
 from chatddx.factors.base import resolve
 from chatddx.factors.scoring import Scorer
 from chatddx.factors.trial import Trial
@@ -29,20 +29,36 @@ def variation(bench: Bench, scripted: ScriptedRun) -> TriedVariation:
 
 
 def ran_before(bench: Bench, scripted: ScriptedRun) -> RunStarted | None:
-    skeleton = bench.skeleton(variation(bench, scripted))
-    engine = bench.endpoint(scripted.endpoint)
+    tried = variation(bench, scripted)
     cases = [bench.case_titled(name)[1] for name in scripted.cases]
+    skeleton = _sent(scripted, bench.languages(tried, cases)).skeleton
+    assert skeleton is not None
+    engine = bench.endpoint(scripted.endpoint)
     _, trial = bench.trial(skeleton, engine, cases, (scripted.seed,))
     return next((r for r in bench.runs() if r.trial == trial.digest), None)
+
+
+def _sent(scripted: ScriptedRun, carried: list[Carried]) -> Carried:
+    match carried:
+        case [one] if one.skeleton is not None:
+            return one
+        case _:
+            said = "; ".join(f"{c.language}: {c.refused or 'sent'}" for c in carried)
+            raise ValueError(
+                f"{scripted.configuration}: a scripted run's cases are sent in one "
+                + f"language, not as {said}"
+            )
 
 
 def run(bench: Bench, scripted: ScriptedRun) -> RunStarted:
     tried = variation(bench, scripted)
     cases = [bench.case_titled(name)[1] for name in scripted.cases]
+    _ = _sent(scripted, bench.languages(tried, cases))
     fake = fake_at(bench.inventory, bench.get, scripted.endpoint)
     script = Script(scripted.turns) if scripted.turns else None
     with serving([fake], script=script):
-        running = bench.start(tried, scripted.endpoint, cases, (scripted.seed,))
+        started = bench.start(tried, scripted.endpoint, cases, (scripted.seed,))
+        running = started.first
         running.send(_halting(running, scripted.stop_after))
     if scripted.unfinished:
         return running.started

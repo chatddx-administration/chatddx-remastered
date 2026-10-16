@@ -85,6 +85,43 @@ export function tagged(families: Schemas["Family"][], tags: string[]): Schemas["
   return tags.length ? families.filter((f) => f.tags.some((t) => tags.includes(t))) : families;
 }
 
+export type Carriage = {
+  language: string | null;
+  families: Schemas["Family"][];
+  translated: boolean;
+  refused: string | null;
+  known: boolean;
+};
+
+// The look's languages are of the families it was asked about, not of those picked
+// beyond them.
+export function carried(sent: Schemas["Family"][], languages: Schemas["Carried"][]): Carriage[] {
+  const byFamily = new Map<number, Schemas["Carried"]>();
+  languages.forEach((c) => c.families.forEach((f) => byFamily.set(f, c)));
+  const byLanguage = new Map(languages.map((c) => [c.language, c]));
+  const written = languages.find((c) => !c.translated && c.refused === null);
+  const groups = new Map<string, Carriage>();
+  for (const f of sent) {
+    const c = byFamily.get(f.id) ?? byLanguage.get(f.language) ?? (f.language === null ? written : undefined);
+    const language = c === undefined ? f.language : c.language;
+    const key = `${c === undefined ? "?" : ""}${language}`;
+    const group = groups.get(key) ?? {
+      language,
+      families: [],
+      translated: c?.translated ?? false,
+      refused: c?.refused ?? null,
+      known: c !== undefined,
+    };
+    group.families.push(f);
+    groups.set(key, group);
+  }
+  const order = (g: Carriage) => {
+    const at = languages.findIndex((c) => c.language === g.language);
+    return g.known && at >= 0 ? at : languages.length;
+  };
+  return [...groups.values()].sort((a, b) => order(a) - order(b));
+}
+
 export type Saving =
   | { to: "nothing"; because: "nameless" | "unchanged" }
   | { to: "version"; version: number }

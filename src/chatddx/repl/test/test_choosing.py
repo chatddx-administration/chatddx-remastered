@@ -104,15 +104,6 @@ def test_set_engine_swaps_the_engine_and_leaves_an_endpoint_serving_another(
     assert repl.prompt == f"alice {LINES}×{QWEN} #7> "
 
 
-@pytest.mark.slow
-def test_a_configuration_made_in_several_languages_is_named_with_its_language(
-    repl: Repl, say: Say
-):
-    _ = say("use lines-guided sv", f"on {QWEN}")
-
-    assert tried(repl).name == "lines-guided (sv)"
-
-
 def test_set_puts_another_chunk_in_the_cell(repl: Repl, bench: Bench, say: Say):
     written = say(f"cell {LINES} {QWEN}", "set reasoning off")
 
@@ -135,7 +126,7 @@ def test_none_takes_an_optional_part_out(repl: Repl, bench: Bench, say: Say):
     written = say(f"cell {NATIVE_TOOLS} {QWEN}", "set toolset none", "show")
 
     assert repl.prompt == f"alice {NATIVE_TOOLS}+toolset=none×{QWEN} #7> "
-    assert f"none (set; {NATIVE_TOOLS} has lookup (en))" in written
+    assert f"none (set; {NATIVE_TOOLS} has lookup)" in written
     assert "tools" not in bench.skeleton(tried(repl)).body
 
     _ = say("set toolset lookup")

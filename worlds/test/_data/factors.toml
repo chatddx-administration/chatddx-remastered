@@ -116,7 +116,7 @@ output = "lines"
 sampling = "greedy"
 toolset = "lookup"
 
-# Made in en only: its instructions are written in sv too, but it names no translations for its output there.
+# Runs in en only: it names no translations.
 [recipe.lines-instructed]
 description = "Free text under instructions."
 tags = ["text"]
@@ -125,7 +125,7 @@ prompt = "case"
 output = "lines"
 sampling = "greedy"
 
-# Made in en and sv; in sv it forks lines-instructed's en variant and translates its output and appendix layout.
+# Runs in en, and in sv translated: its translations cover every text it holds.
 [recipe.lines-guided]
 description = "Free text under instructions, with a worked example, a passthrough and an appendix layout."
 tags = ["text"]
@@ -139,7 +139,7 @@ passthrough = "min-tokens"
 translations = "guided"
 appendix_layout = { before = "\n\nAppendices:\n", between = "\n\n" }
 
-# Made in en only: its prompt holds text, written in en alone.
+# Runs in en only: its prompt holds text, and it names no translations.
 [recipe.headed]
 description = "Free text after tool rounds, the toolset's guidance placed in the prompt."
 tags = ["text", "tools"]

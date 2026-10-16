@@ -420,6 +420,7 @@ def init(
         for r in plan.records:
             writer.record(r)
         writer.lines += [f"[skipped] {s}" for s in plan.skipped]
+        writer.lines += [f"[untranslated] {s}" for s in plan.untranslated]
         for id, data in cases.items():
             writer.case(source, id, data, schemas[0].digest)
         writer.leftovers(cases)

@@ -56,8 +56,8 @@ def conninfo(db: str) -> str:
 # As the request starts a run, at an endpoint that answers, before it is queued.
 def start(bench: Bench) -> UUID:
     variation = bench.configuration(LINES)
-    cases = [bench.family(name).case for name in ("crlf", "svenska")]
-    return bench.start(variation, QWEN, cases, (7,)).run
+    cases = [bench.family(name).case for name in ("crlf", "bom")]
+    return bench.start(variation, QWEN, cases, (7,)).first.run
 
 
 @contextmanager
@@ -284,7 +284,7 @@ def test_a_stopping_worker_cuts_its_scoring_short_at_its_deadline_and_keeps_what
     queue = Queue(conn)
     variation = bench.configuration(LINES)
     with faked(world, Store(conn).get):
-        running = bench.start(variation, QWEN, [bench.family("noted").case], (7,))
+        running = bench.start(variation, QWEN, [bench.family("noted").case], (7,)).first
         running.send()
         _ = running.finish()
     started = running.run

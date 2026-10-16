@@ -11,14 +11,14 @@ from chatddx.fake_vllm.served import Served
 from chatddx.fake_vllm.server import serving
 from chatddx.inventory import Inventory, start_up
 from chatddx.ledger import Run
-from chatddx.repl.render import Tally, Transcript
+from chatddx.repl.render import Tally, Transcript, plural
 from chatddx.repl.running import WRITING
 from chatddx.repl.shell import SEEDS, Repl
 from chatddx.repl.test.helpers import Say, cells, tagged
 from chatddx.runner.run import Event, Running, Streamed
 from chatddx.runner.score import Event as ScoreEvent, Grading
 from chatddx.store import Store
-from chatddx.test.world import GPT_OSS, LINES, NATIVE, QWEN, TOOL_ANSWER
+from chatddx.test.world import CASES, GPT_OSS, LINES, NATIVE, QWEN, TOOL_ANSWER
 
 
 def test_seed_draws_a_short_seed_or_holds_one(repl: Repl, say: Say):
@@ -124,7 +124,7 @@ def test_a_structured_answer_is_checked_and_its_views_read(say: Say):
 @pytest.mark.usefixtures("fake")
 @pytest.mark.slow
 def test_a_tool_contract_shows_the_call_the_answer_is_given_through(say: Say):
-    written = say(f"cell {TOOL_ANSWER} {QWEN}", "run svenska")
+    written = say(f"cell {TOOL_ANSWER} {QWEN}", "run bom")
 
     assert '[final_result] {"diagnoses": ["fake diagnoses 1"' in written
     assert "\nvalid\n" in written
@@ -132,7 +132,7 @@ def test_a_tool_contract_shows_the_call_the_answer_is_given_through(say: Say):
 
 @pytest.mark.usefixtures("fake")
 def test_run_is_refused_where_the_gate_refuses(bench: Bench, say: Say):
-    written = say(f"cell native-tools {QWEN}", "run svenska")
+    written = say(f"cell native-tools {QWEN}", "run bom")
 
     assert "refused: the configuration's tools would get content from source test" in (
         written
@@ -142,7 +142,7 @@ def test_run_is_refused_where_the_gate_refuses(bench: Bench, say: Say):
 
 
 def test_run_is_refused_an_endpoint_that_doesn_t_answer(bench: Bench, say: Say):
-    written = say(f"cell native {GPT_OSS}", "run svenska")
+    written = say(f"cell native {GPT_OSS}", "run bom")
 
     assert f"refused: endpoint '{GPT_OSS}' can't be confirmed" in written
     assert ran(bench) == []
@@ -171,7 +171,7 @@ def test_a_structured_answer_cut_short_is_salvaged(
 ):
     startup = start_up(world, bench.get, QWEN)
     with serving([Served.of(startup.argv[0], startup.argv[1:])], runaway=True):
-        written = say(f"cell {NATIVE} {QWEN}", "run svenska")
+        written = say(f"cell {NATIVE} {QWEN}", "run bom")
 
     assert "stopped: nothing but whitespace for 100 tokens" in written
     assert "salvaged: cut short, and read with its structure closed" in written
@@ -244,10 +244,28 @@ def test_run_tag_says_what_it_can_t_run(say: Say):
 def test_run_tag_runs_the_cases_with_any_of_its_tags(bench: Bench, say: Say):
     written = say(f"cell {LINES} {QWEN}", "run tag targets nowhere swedish")
     either = tagged("targets", "swedish")
+    swedish = [name for name in either if CASES[name].language == "sv"]
+    english = len(either) - len(swedish)
 
-    assert f"{len(either)} cases tagged targets or nowhere or swedish" in written
+    assert f"{english} cases tagged targets or nowhere or swedish (seed 7)" in written
+    assert (
+        f"left out: {len(swedish)} cases in sv, as lines has no translations into sv"
+    ) in written
     [run] = ran(bench)
-    assert len(run.items) == len(either)
+    assert len(run.items) == english
+
+
+@pytest.mark.usefixtures("fake")
+@pytest.mark.slow
+def test_run_tag_over_several_languages_runs_each(bench: Bench, say: Say):
+    written = say(f"cell lines-guided {QWEN}", "run tag swedish")
+    swedish = [name for name in tagged("swedish") if CASES[name].language == "sv"]
+    english = len(tagged("swedish")) - len(swedish)
+
+    assert f"{plural(english, 'case')} tagged swedish, in en (seed 7)" in written
+    assert f"{len(swedish)} cases tagged swedish, in sv, translated (seed 7)" in written
+    assert "left out" not in written
+    assert sorted(len(r.items) for r in ran(bench)) == sorted([english, len(swedish)])
 
 
 def pressing(say: Say, *lines: str) -> str:

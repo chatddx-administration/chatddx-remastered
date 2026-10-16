@@ -36,7 +36,6 @@ from chatddx.factors.scoring import (
 from chatddx.factors.trial import CanarySet, Trial
 
 from .families import bindings, family_of
-from .language import own
 from .model import Subject
 from .read import Reader, about, abouts, heads_of
 from .threads import divergence, head
@@ -131,7 +130,7 @@ def describe_change(path: str, after: JsonValue, title: Title) -> str:
             return f"{key}: {_value(after)}"
 
 
-def describe(component: Component, title: Title, language: str | None = None) -> str:
+def describe(component: Component, title: Title) -> str:
     match component:
         case Instructions(text=text):
             return snippet(_text(text))
@@ -163,9 +162,9 @@ def describe(component: Component, title: Title, language: str | None = None) ->
             return name
         case Toolset(tools=tools):
             return "with " + ", ".join(title(t) for t in tools)
-        case Translations(entries=entries):
-            into = "" if language is None else f"{language} "
-            return f"{into}translations, {_count(len(entries), 'text')}"
+        case Translations(into=into):
+            texts = max(len(entries) for entries in into.values())
+            return f"translations into {', '.join(into)}, {_count(texts, 'text')}"
         case Passthrough(body=body):
             return "passthrough: " + ", ".join(body)
         case Skeleton(purpose=purpose):
@@ -264,4 +263,4 @@ def _derive(rows: Reader, digest: str, compilation: str | None = None) -> str:
         )
         if compilations:
             return describe_recipe(compilations[0].recipe, partial(title_of, rows))
-    return describe(component, partial(title_of, rows), own(rows, digest))
+    return describe(component, partial(title_of, rows))
