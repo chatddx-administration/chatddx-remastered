@@ -11,7 +11,7 @@ from chatddx.identity import owns
 
 from .families import stale_cases
 from .model import (
-    ENGINE_KINDS,
+    MODEL_KINDS,
     RUN_FIELDS,
     THREAD_KINDS,
     About,
@@ -81,11 +81,11 @@ def check_varied(rows: Reader, subject: Subject, entry: Entry) -> None:
     if entry.field == EntryField.WITH:
         return
     part, digest = (entry.value or "").split("=")
-    engine = part == "engine"
+    model = part == "model"
     if digest and rows.kind(digest) not in (
-        ENGINE_KINDS if engine else (f"chunk.{part}",)
+        MODEL_KINDS if model else (f"chunk.{part}",)
     ):
-        what = "an engine" if engine else f"a chunk of {part}"
+        what = "a model" if model else f"a chunk of {part}"
         raise ValueError(f"{digest} isn't {what} in the store")
 
 

@@ -2,13 +2,13 @@ import pytest
 from pydantic import JsonValue
 
 from chatddx.bench import Bench, MovedOn, NotFound
-from chatddx.bench.test.helpers import correct_facts
+from chatddx.bench.test.helpers import correct_facts, move_model
 from chatddx.catalog import Entry, EntryField, Subject
 from chatddx.factors.base import resolve
 from chatddx.factors.request import Compilation, Recipe, Skeleton
 from chatddx.factors.scoring import Expectation
 from chatddx.store import People, Store
-from chatddx.test.world import LINES, QWEN_MODEL
+from chatddx.test.world import LINES, QWEN, QWEN_ARTIFACT, QWEN_MODEL
 
 
 @pytest.fixture
@@ -124,7 +124,7 @@ def test_a_configuration_follows_the_facts_corrected_where_they_reach_it(
     mine = _own(bench)
     theirs = archive.thread("configuration", LINES)[0].thread
     head = catalog.head(mine)
-    assert bench.corrected(mine) is None
+    assert bench.moved(mine) is None
 
     recommended = bench.facts.models[QWEN_MODEL].sampling.recommended
     sampled: dict[str, JsonValue] = {
@@ -132,20 +132,21 @@ def test_a_configuration_follows_the_facts_corrected_where_they_reach_it(
     }
     off: dict[str, JsonValue] = {**sampled, "off": {"temperature": 0.1}}
     _ = correct_facts(bench, QWEN_MODEL, sampling={"recommended": off})
-    assert bench.corrected(mine) is None
+    assert bench.moved(mine) is None
 
     on: dict[str, JsonValue] = {**off, "on": {"temperature": 0.2}}
     moved = correct_facts(bench, QWEN_MODEL, sampling={"recommended": on})
-    found = bench.corrected(mine)
-    assert found is not None and archive.corrected(theirs) is not None
-    assert (found.model, found.behind.head, found.refused) == (QWEN_MODEL, moved, None)
+    found = bench.moved(mine)
+    assert found is not None and archive.moved(theirs) is not None
+    assert (found.about, found.model, found.refused) == (QWEN_MODEL, None, None)
+    assert found.facts is not None and found.facts.head == moved
     assert found.digest is not None and found.digest != head.digest
     with pytest.raises(MovedOn, match=f"thread {mine} has moved on"):
-        _ = bench.follow_facts(mine, head.id - 1)
+        _ = bench.follow_moved(mine, head.id - 1)
     with pytest.raises(NotFound, match=f"no configuration {theirs} of yours"):
-        _ = bench.follow_facts(theirs, catalog.head(theirs).id)
+        _ = bench.follow_moved(theirs, catalog.head(theirs).id)
 
-    followed = bench.follow_facts(mine, head.id)
+    followed = bench.follow_moved(mine, head.id)
     assert (followed.what, followed.edit.digest) == ("a new version", found.digest)
     assert found.compilation is not None
     assert followed.edit.compilation == found.compilation
@@ -153,19 +154,53 @@ def test_a_configuration_follows_the_facts_corrected_where_they_reach_it(
     assert (made.facts, made.recipe) == (moved.digest, catalog.recipe(mine))
     body = resolve(bench.get, found.digest, Skeleton).body
     assert (body["temperature"], "top_p" in body) == (0.2, False)
-    assert bench.corrected(mine) is None and bench.proposal(mine) is None
-    with pytest.raises(ValueError, match="has no corrected facts to follow"):
-        _ = bench.follow_facts(mine, followed.edit.id)
+    assert bench.moved(mine) is None and bench.proposal(mine) is None
+    with pytest.raises(ValueError, match="compiled for nothing that has moved on"):
+        _ = bench.follow_moved(mine, followed.edit.id)
 
     unknown: dict[str, JsonValue] = {
         "default": None,
         "on": {"chat_template_kwargs": {"enable_thinking": True}},
     }
     _ = correct_facts(bench, QWEN_MODEL, reasoning=unknown)
-    refused = bench.corrected(mine)
+    refused = bench.moved(mine)
     assert refused is not None and (refused.digest, refused.compilation) == (None, None)
     assert refused.refused is not None and "no default reasoning" in refused.refused
     with pytest.raises(
         ValueError, match=f"can't follow the facts about {QWEN_MODEL}: .*no default"
     ):
-        _ = bench.follow_facts(mine, followed.edit.id)
+        _ = bench.follow_moved(mine, followed.edit.id)
+
+
+def test_a_configuration_follows_its_model_to_a_new_version(
+    bench: Bench, archive: Bench
+) -> None:
+    catalog = bench.catalog
+    mine = _own(bench)
+    head = catalog.head(mine)
+    before = resolve(bench.get, head.digest, Skeleton)
+    recipe = catalog.recipe(mine)
+    assert recipe is not None
+    held = recipe.model
+    assert bench.at(bench.variation(mine), QWEN) == (QWEN, bench.endpoint(QWEN))
+
+    moved = move_model(bench, QWEN_ARTIFACT, revision="moved")
+    theirs = archive.thread("configuration", LINES)[0].thread
+    found = bench.moved(mine)
+    assert found is not None and archive.moved(theirs) is not None
+    assert (found.about, found.facts, found.refused) == (QWEN_MODEL, None, None)
+    assert found.model is not None and found.model.head == moved
+    assert found.model.digest == held != moved.digest
+    assert found.digest == head.digest and found.compilation != head.compilation
+    with pytest.raises(ValueError, match=f"no endpoint serves model {QWEN_ARTIFACT}"):
+        _ = bench.at(bench.variation(mine, {"model": moved.digest}), None)
+
+    followed = bench.follow_moved(mine, head.id)
+    assert (followed.what, followed.edit.digest) == ("a new version", head.digest)
+    assert followed.edit.compilation == found.compilation
+    recipe = catalog.recipe(mine)
+    assert recipe is not None and recipe.model == moved.digest
+    assert resolve(bench.get, followed.edit.digest, Skeleton) == before
+    assert bench.moved(mine) is None
+    with pytest.raises(ValueError, match="compiled for nothing that has moved on"):
+        _ = bench.follow_moved(mine, followed.edit.id)

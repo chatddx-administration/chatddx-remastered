@@ -4,7 +4,7 @@ from pydantic import JsonValue
 
 from chatddx.factors.base import Finding, Fingerprint, Resolver, resolve
 from chatddx.factors.cases import Case, Prepared, prepare_case
-from chatddx.factors.engine import LocalEngine, RemoteEngine
+from chatddx.factors.engine import LocalEngine, RemoteEngine, served_model_name
 from chatddx.factors.request import AppendixLayout, Skeleton, render
 from chatddx.factors.trial import Trial
 from chatddx.inventory import Inventory
@@ -45,7 +45,7 @@ class Items:
         seed = self.trial.seeds[key.replicate]
         body = render(
             self.skeleton,
-            model=self.engine.served_model_name,
+            model=served_model_name(self.engine, self._get),
             seed=seed,
             fills=prepared.fills,
         )

@@ -152,7 +152,7 @@ def test_a_recipe_of_one_s_making_is_a_new_configuration(signed: TestClient) -> 
         "prompt": digest("prompt", "case"),
         "output": digest("output", "native"),
         "sampling": digest("sampling", "greedy"),
-        "engine": signed.get(f"/api/endpoints/{QWEN}").json()["engine"],
+        "model": signed.get(f"/api/endpoints/{QWEN}").json()["serves"],
     }
     listed = signed.get("/api/threads", params={"kind": "configuration"}).json()
     got = signed.post("/api/threads", json={"recipe": recipe, "name": "my own"})

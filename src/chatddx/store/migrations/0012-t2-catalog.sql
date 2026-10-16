@@ -4,7 +4,8 @@ ALTER TABLE catalog.thread
         'chunk.instructions', 'chunk.few_shot', 'chunk.prompt', 'chunk.output',
         'chunk.sampling', 'chunk.reasoning', 'chunk.passthrough', 'chunk.translations',
         'chunk.toolset', 'tool', 'skeleton', 'trial', 'judge', 'scorer', 'scoring',
-        'appendix', 'expectation', 'model', 'engine.local', 'engine.remote', 'facts',
+        'appendix', 'expectation', 'model', 'model.remote', 'engine.local', 'engine.remote',
+        'facts',
         'expectation_schema', 'canary_set'
     ));
 

@@ -137,8 +137,17 @@ its section "Stores loaded before". The sub-item "Thread kinds" below.
     dropped first where a store migrated to tier 0 has them from `0012`.
   - `0026-t2-catalog-run-variation.sql`: the entry fields `varied`, `replaced` and `with`, which only a run takes
     (`entry_run_check`); `entry_field_check` and `entry_shape_check` dropped and made again with them, their values
+```
+AGENT: replace
+"the model among a `replaced` entry's parts"; `0012`'s thread kinds hold `model.remote`, edited in place as `facts`
+was.
+```
     as `src/chatddx/catalog/model.py:VARIED`, `REPLACED` and `WITH` have them, the engine among a `replaced` entry's
     parts; and a constraint trigger, after the row's checks, that a `varied` entry names an edit of a configuration, a
+```
+AGENT: replace
+"or for the model a stored `model` or `model.remote`".
+```
     `replaced` one a stored chunk of its part, or for the engine a stored local or remote engine, and a `with` one a
     run that has started (`catalog.check_varied()`, `src/chatddx/catalog/threads.py:check_varied`, which leaves `with`
     to the database, as the catalog doesn't read the ledger). The engine and `with` were added in place, as `0012`'s

@@ -206,7 +206,19 @@ The models' fields are in the OpenAPI document. Besides them:
 | `Me.of(person: Person) -> Me` | The person, with their roles sorted. |
 | `Finding.of(finding: chatddx.factors.base.Finding) -> Finding` | The same finding, field for field. |
 | `Chunk` | `str \| None`, a chunk's digest, described for the OpenAPI document. |
+```
+AGENT: replace
+The line below, as given.
+---
+| `ModelDigest` | `str \| None`, a model's digest, described for the OpenAPI document as one that can't be taken out. |
+```
 | `EngineDigest` | `str \| None`, an engine's digest, described for the OpenAPI document as one that can't be taken out. |
+```
+AGENT: replace
+The line below, as given.
+---
+| `Parts` | A `Chunk` field for each chunk part, and `model`, a `ModelDigest`, in `chatddx.bench.PARTS`' order. |
+```
 | `Parts` | A `Chunk` field for each chunk part, and `engine`, an `EngineDigest`, in `chatddx.bench.PARTS`' order. |
 | `Parts.given() -> dict[str, str \| None]` | The parts the request gave, by `model_fields_set`: each its digest, or `None` where it was empty or null. A part not given isn't a key. |
 | `Varying(Parts)` | A variation's query: the parts, `head` (an edit id, the configuration's head unless given), `endpoint` (to render and lint for: the one a hand-written configuration needs, else checked against the engine), `tag` (a list, empty by default) and `seed`. |
@@ -219,6 +231,12 @@ The models' fields are in the OpenAPI document. Besides them:
 | `MadeThread(ThreadDetail)`, `MadeEdit(Edit)` | What a write answers: the thread or the edit, with `findings`; an edit also with `cases`, each case an appendix's edit replaced and its replacement. |
 | `Varied`, `Proposal` | A path a fork varies, with the base's and the fork's values; and what following would keep: `base` and `origin_head` (edits), `varies`, `recipe` for a configuration or `component` for another kind, `digest` and `compilation`. |
 | `NewFollow` | A follow's body: `head` (required) and `language`. |
+```
+AGENT: replace
+`Moved`: what following would keep: `about` (the model's name), `facts` (the facts' head, an `Edit`, when they moved),
+`compiled` (the facts compiled against), `model` (the model's head, when it moved), `held` (the model held), `digest`,
+`compilation` and `refused`. `NewFollowMoved`: `head` (required).
+```
 | `CorrectedFacts` | What following a configuration's facts would keep: `facts` (the facts thread's id), `model`, `compiled` (the facts its head was compiled against), `head` (the facts thread's head), `digest` and `compilation`, or `refused`. |
 | `NewFollowFacts` | A follow of the facts' body: `head` (required). |
 | `NewTyped` | A typed case's body: `text` and `language`, required, and `name` and `source`, each optional. |
@@ -231,6 +249,11 @@ The models' fields are in the OpenAPI document. Besides them:
 | `NewTake` | A take's body for one thread, `replace`. |
 | `Metric`, `ScorerCode` | Scoring code the running chatddx ships: its `entry_point`, `version`, `metrics` (each its `name`, what it `measures`, a JSON Schema for a view's `params`, whether it is `judged`, reading a judge's verdicts, and the `unit` that marks a value that isn't a score from 0 to 1, if any) and a JSON Schema for the scorer's own `params`. |
 | `NewRun(Seeds)` | A run's body, with `head`, the edit it varies, the configuration's head unless given; `endpoint`, where to send it, the one serving its engine unless given, and needed by a hand-written configuration; `cleanup`, the steps, else the sources'; `concurrency` and `order`, else the endpoint's. Its validator raises `ValueError("a run takes one of families, tags or cases")` unless exactly one of `families`, `tags` and `cases` is given, which FastAPI answers 422. |
+```
+AGENT: replace
+`Endpoint` gains `serves`, the digest of the model its engine serves, which a configuration's `model` part names and the
+frontend picks the endpoint by.
+```
 | `Run` | A run as listed, with `language`, its skeleton's (`Catalog.language_of`); `started_with`, the first run of its start (`Bench.started_with`), else `None`; `ran`, a `Ran`, else `None`; `unscored`, its scorers left as `Unscored` (`scorer`, `name`), when the listing asked for them, else `None`; and `job`, its latest job as a `RunJob`, else `None`. |
 | `StartedRuns`, `LeftOut` | What a start answers: `runs`, a `RunStartedData` per language its cases are sent in, in the order started; and `left_out`, a `LeftOut` per language left out, its `language`, `cases` and `why`. `RunStartedData`, `run.started`'s data, says the `language` it is sent in. |
 | `Carried` | A language of a look, `Variation.languages`: `language`, null for the configuration's own when it is unknown; `families`, by id; `translated`; `skeleton`, the digest they are sent as, null when left out; and `refused`, why they are left out. |
@@ -275,6 +298,11 @@ variation's query parameters to them with `endpoint`, `tag` and `seed`.
 | `say`, `PATCH /threads/{thread}` | `HTTPException(422, "a description is replaced, never taken away")` for a null `description`, and `HTTPException(422, "no person '<login>'")` for a collaborator nobody is (`People.find`). Within `refused()`: `Bench.say`, with `...` for a `name` not given. 200, `detail`. |
 | `proposal`, `GET /threads/{thread}/proposal` | Within `refused()`: `Bench.proposal`. `null` when there is none. |
 | `follow`, `POST /threads/{thread}/follows` | Within `refused()`: `Bench.follow(thread, head, language)`. 201 with the edit's `edit_of` and findings. |
+```
+AGENT: replace
+`moved`, `GET /threads/{thread}/moved`: `Bench.moved`, `null` when nothing moved on; `follow_moved`,
+`POST /threads/{thread}/moved/follows`: `Bench.follow_moved(thread, head)`.
+```
 | `facts`, `GET /threads/{thread}/facts` | Within `refused()`: `Bench.corrected`. `null` when there are none. |
 | `follow_facts`, `POST /threads/{thread}/facts/follows` | Within `refused()`: `Bench.follow_facts(thread, head)`. 201 with the edit's `edit_of` and findings. |
 | `carry`, `POST /threads/{thread}/carries` | Within `refused()`: `Bench.carry(thread, head, case)`. 201 with the edit's `edit_of` and findings. |

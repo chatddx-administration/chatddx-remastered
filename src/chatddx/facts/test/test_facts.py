@@ -4,7 +4,7 @@ import pytest
 from pydantic import JsonValue, ValidationError
 
 from chatddx.factors.bundle import Registry
-from chatddx.factors.engine import FileDigest, LocalEngine, ModelArtifact, RemoteEngine
+from chatddx.factors.engine import FileDigest, LocalEngine, ModelArtifact
 from chatddx.factors.lint import lint
 from chatddx.factors.request import (
     Message,
@@ -15,7 +15,7 @@ from chatddx.factors.request import (
     Slot,
     TextOutput,
 )
-from chatddx.factors.test.sample import SHA, local_engine, world
+from chatddx.factors.test.sample import SHA, local_engine, remote_engine, world
 from chatddx.factors.trial import Trial
 from chatddx.facts import (
     BUNDLED,
@@ -200,7 +200,7 @@ def test_facts_check_pairs(facts: Facts) -> None:
 
     unknown = engine("someone/unknown")
     assert findings(skeleton(TextOutput()), unknown) == {"facts.missing": "info"}
-    remote = reg.add(RemoteEngine(provider="example", model=GPT_OSS))
+    remote = reg.add(remote_engine(reg, GPT_OSS))
     assert findings(effort, remote) == {}
 
 
@@ -210,7 +210,7 @@ def test_facts_check_that_a_pair_s_sampling_is_for_its_model(facts: Facts) -> No
     user = Message(role="user", content=(Slot(slot="vignette"),))
 
     def findings(engine_model: str, **body: JsonValue) -> dict[str, str]:
-        engine = reg.add(RemoteEngine(provider="example", model=engine_model))
+        engine = reg.add(remote_engine(reg, engine_model))
         skeleton = reg.add(Skeleton(messages=(user,), body=body, contract=TextOutput()))
         trial = reg.add(
             Trial(skeleton=skeleton, engine=engine, cases=(ids["case"],), seeds=(1,))

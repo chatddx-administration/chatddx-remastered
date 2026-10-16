@@ -12,7 +12,7 @@ def digest(c: str) -> str:
 
 
 RECIPE = Recipe(
-    prompt=digest("1"), output=digest("2"), sampling=digest("3"), engine=digest("7")
+    prompt=digest("1"), output=digest("2"), sampling=digest("3"), model=digest("7")
 )
 HEAD = Edit(
     id=1,
@@ -28,18 +28,18 @@ HEAD = Edit(
 def test_a_variation_replaces_parts_over_its_configuration() -> None:
     plan = TriedVariation(HEAD, "plan", RECIPE)
     tried = (
-        plan.set("engine", digest("8"), "gpt-oss")
+        plan.set("model", digest("8"), "gpt-oss")
         .set("reasoning", digest("4"), "off")
         .set("prompt", digest("5"), "terse")
     )
 
-    assert tried.label == "plan+prompt=terse+reasoning=off+engine=gpt-oss"
+    assert tried.label == "plan+prompt=terse+reasoning=off+model=gpt-oss"
     assert (tried.held("reasoning"), tried.held("sampling")) == (
         digest("4"),
         digest("3"),
     )
     assert tried.varied == RECIPE.model_copy(
-        update={"reasoning": digest("4"), "prompt": digest("5"), "engine": digest("8")}
+        update={"reasoning": digest("4"), "prompt": digest("5"), "model": digest("8")}
     )
     assert tried.configuration == plan.configuration
 

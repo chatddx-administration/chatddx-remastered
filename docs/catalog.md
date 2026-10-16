@@ -79,6 +79,10 @@ recipe parts they use, what is said about them and their runs, not by their name
 ### Recipes
 A recipe has no thread of its own; its history is kept on the skeleton thread it compiles to. Each edit of a skeleton
 thread can name the compilation that produced its skeleton, and the compilation holds the recipe, which names its
+```
+AGENT: replace
+"its model, and the facts about it".
+```
 engine, and the facts about the engine's model it was worked out from, when it asks them for anything (docs/factors.md,
 "Compilation"). The compilation must be one of that very skeleton, and only skeleton edits name one. A hand-written
 skeleton has no compilation, so its edits name none.
@@ -105,6 +109,11 @@ when someone accepts a proposal.
 ### What has moved on
 For any thread, the catalog lists the references of its head that could be updated. It looks at:
 - the head's own references, such as a trial's skeleton, engine and cases;
+```
+AGENT: replace
+"its model among them": a model moved on, as to a new revision of the weights, puts the configuration behind it, and its
+owner follows it with the facts (docs/bench.md, "Following what has moved on").
+```
 - for a configuration, the parts of its recipe, its engine among them, and the facts it was compiled against;
 - the appendices of each case the head references, since cases have no threads of their own.
 
@@ -145,6 +154,12 @@ collaborator. A subject nothing has been said about has no name, no owner, and n
 | Deleted | a flag | an entry restoring the subject | see "Deleting" |
 | Language | a language, only on a family | nothing: it can only be replaced | see "Languages" |
 | Varied | an edit of a configuration, only on a run | nothing: it can only be replaced | see "What a run ran" |
+```
+AGENT: replace
+The line below, as given.
+---
+| Replaced | a part and the chunk or model it was set to, or none; a run has one per part | nothing: it can only be replaced | see "What a run ran" |
+```
 | Replaced | a part and the chunk or engine it was set to, or none; a run has one per part | nothing: it can only be replaced | see "What a run ran" |
 | With | the first run of the start a run is one of, only on a run | nothing: it can only be replaced | see "What a run ran" |
 
@@ -190,6 +205,10 @@ What the portal hides is open (see "Open design issues").
 ### What a run ran
 The ledger records the trial a run ran (docs/ledger.md); what a person called it and what they varied are said here.
 As a run starts, the bench names it by its variation's label and says what it varied: the configuration's edit it
+```
+AGENT: replace
+"the chunk or model".
+```
 was built on, and each part replaced over it, by the chunk or engine it was set to, or none for a part taken out. A
 start over cases in several languages is a run per language (docs/bench.md), and each run after the first says the
 first, the run it was started *with*, so the runs of one start are found together. A run started from a trial alone,
@@ -220,6 +239,11 @@ its own source and id.
 What a component holds is described by what tells it apart from others of its kind, and the components it uses are
 shown by their titles in turn.
 
+```
+AGENT: replace
+"model included, the model last": `qwen3-8b-awq`, or the model's repository when its thread is unnamed; a remote
+model is `<name> from <provider>`, and a remote engine `<model> remotely`.
+```
 A configuration is described by its recipe's parts, translations, toolset and engine included, the engine last, when a
 compilation of it is stored: "ddx · case · management-plan · recommended · off · qwen3-8b@pelle". A judge's recipe
 says so first. Without a stored compilation, as for a hand-written skeleton, it is shown by its purpose and the start

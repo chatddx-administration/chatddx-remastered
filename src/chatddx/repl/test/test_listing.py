@@ -14,6 +14,7 @@ from chatddx.test.world import (
     LINES,
     NATIVE_TOOLS,
     QWEN,
+    QWEN_ARTIFACT,
     QWEN_BARE,
     QWEN_MODEL,
 )
@@ -62,12 +63,12 @@ def test_configurations_are_listed_a_row_per_name_with_its_languages_and_parts(
         "passthrough",
         "translations",
         "toolset",
-        "engine",
+        "model",
         "owner",
     ]
     assert line_of(written, f"{LINES} ").split() == [
         *("lines", "en", "—", "—", "case", "lines", "recommended", "—"),
-        *("—", "—", "—", QWEN, "yours,", "from", "archive"),
+        *("—", "—", "—", QWEN_ARTIFACT, "yours,", "from", "archive"),
     ]
     assert not [line for line in lines if line.rstrip().endswith("  archive")]
     assert "on-budget" in line_of(written, "budgeted")
@@ -93,7 +94,7 @@ def test_configurations_name_lists_each_one_by_that_name(bench: Bench):
         line.split() for line in written.splitlines() if line.strip().startswith(LINES)
     ]
 
-    row = [LINES, "en", "case", "lines", "recommended", QWEN]
+    row = [LINES, "en", "case", "lines", "recommended", QWEN_ARTIFACT]
     assert rows == [row, [*row, "archive"]]
     assert "lookup" in line_of(
         listed(bench, f"configurations {NATIVE_TOOLS}"), NATIVE_TOOLS

@@ -57,7 +57,7 @@ def test_a_request_names_the_recipe_s_parts(described: dict[str, Any]) -> None:
 @pytest.mark.slow
 def test_a_configuration_with_nothing_replaced_is_itself(signed: TestClient) -> None:
     mine = thread(signed, "configuration", LINES)
-    shown = variation(signed, mine, seed=7)
+    shown = variation(signed, mine, seed=7, endpoint=QWEN)
     assert (shown["head"], shown["skeleton"]) == (mine["head"], mine["head"]["digest"])
     assert not shown["greedy"]
 
@@ -81,7 +81,8 @@ def test_a_configuration_with_nothing_replaced_is_itself(signed: TestClient) -> 
     assert (held["sampling"]["landed"], held["sampling"]["nearest"]) == ("on", [])
 
     request = shown["request"]
-    assert (request["model"], request["seed"]) == (recipe["engine"], 7)
+    served = signed.get(f"/api/endpoints/{QWEN}").json()["engine"]
+    assert (request["model"], request["seed"]) == (served, 7)
     assert "‹vignette›‹appendices›" in str(request["messages"])
     assert [(f["code"], f["message"]) for f in shown["findings"]] == [
         (
@@ -121,14 +122,15 @@ def test_a_variation_replaces_parts_by_digest_or_takes_them_out(
     assert (reasoning["summary"], reasoning["landed"]) == ("reasoning off", "off")
     assert shown["request"]["chat_template_kwargs"] == {"enable_thinking": False}
 
-    gpt_oss = signed.get(f"/api/endpoints/{GPT_OSS}").json()["engine"]
-    swapped = variation(signed, mine, reasoning=off, engine=gpt_oss)
+    gpt_oss = signed.get(f"/api/endpoints/{GPT_OSS}").json()["serves"]
+    swapped = variation(signed, mine, reasoning=off, model=gpt_oss)
     held = parts(swapped)
-    assert (held["engine"]["digest"], held["engine"]["replaced"]) == (gpt_oss, True)
+    assert (held["model"]["digest"], held["model"]["replaced"]) == (gpt_oss, True)
     assert (held["reasoning"]["landed"], held["sampling"]["landed"]) == ("low", "low")
     assert "always reasons" in held["reasoning"]["nearest"][0]
     request = swapped["request"]
-    assert (request["model"], request["reasoning_effort"]) == (gpt_oss, "low")
+    served = signed.get(f"/api/endpoints/{GPT_OSS}").json()["engine"]
+    assert (request["model"], request["reasoning_effort"]) == (served, "low")
 
     own = parts(shown)["prompt"]["digest"]
     same = variation(signed, mine, prompt=own)
@@ -234,12 +236,12 @@ def test_the_seed_is_drawn_unless_given_and_greedy_sampling_sends_none(
 
 
 @pytest.mark.slow
-def test_a_variation_is_rendered_and_linted_for_its_engine(
+def test_a_variation_is_rendered_and_linted_for_the_engine_serving_its_model(
     signed: TestClient,
 ) -> None:
     web = thread(signed, "configuration", NATIVE_TOOLS)
     engine = signed.get(f"/api/endpoints/{QWEN}").json()["engine"]
-    shown = variation(signed, web)
+    shown = variation(signed, web, endpoint=QWEN)
     assert shown["request"]["model"] == engine
     codes = {f["code"] for f in shown["findings"]}
     assert {"vllm.native_tools_uncallable", "translations.missing"} <= codes
@@ -366,9 +368,9 @@ def test_a_variation_the_bench_refuses_is_unprocessable(
             "a configuration always has a prompt: only "
             + f"{', '.join(OPTIONAL)} can be taken out",
         ),
-        ({"engine": ""}, "a configuration always has an engine"),
+        ({"model": ""}, "a configuration always has a model"),
         ({"endpoint": "nowhere@fake"}, "no endpoint 'nowhere@fake' in the inventory"),
-        ({"endpoint": GPT_OSS}, f"endpoint '{GPT_OSS}' serves another engine"),
+        ({"endpoint": GPT_OSS}, f"endpoint '{GPT_OSS}' serves another model"),
     ):
         got = signed.get(path, params=params)
         assert got.status_code == 422, params

@@ -609,7 +609,7 @@ def tooled(
     skeleton = compile_request(
         compiled.model_copy(update={"toolset": plan.registry.add(toolset)}),
         plan.registry.get,
-        plan.facts.about(compiled.engine, plan.registry.get),
+        plan.facts.about(compiled.model, plan.registry.get),
     )
     made = trial(plan, cases=cases, seeds=seeds).model_copy(
         update={"skeleton": plan.registry.add(skeleton)}
@@ -662,7 +662,7 @@ def test_a_round_runs_the_tools_a_response_calls_and_sends_back_their_results(
         case, raw, plan.registry.get, skeleton.appendix_layout, made.cleanup
     ).fills
     engine = resolve(plan.registry.get, made.engine, LocalEngine)
-    body = render(skeleton, model=engine.served_model_name, seed=7, fills=fills)
+    body = render(skeleton, model=engine.digest, seed=7, fills=fills)
     assert item.call.request == fingerprint_request(body)
     assert item.call.response is not None
     results = {r.id: r.result for r in item.turns[0].tools}

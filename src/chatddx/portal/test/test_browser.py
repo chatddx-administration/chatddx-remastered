@@ -96,15 +96,26 @@ def test_a_variation_is_run_watched_halted_scored_again_and_run_again(
     with faked(world, Store(conn).get, delay=0.3):
         _ = page.goto(f"/configurations/{lines['id']}")
         expect(page.get_by_role("heading", name="Running it")).to_be_visible()
+        # Two endpoints of the test World serve Qwen3, so the page asks which.
+        expect(page.get_by_text("Pick an endpoint to run it at.")).to_be_visible()
+        _ = page.select_option("#endpoint", QWEN)
         expect(
-            page.get_by_text(f"Sent to {QWEN}, which serves its engine.")
+            page.get_by_text(re.compile(rf"Sends \d+ items to {QWEN}"))
         ).to_be_visible()
-        for endpoint in (GPT_OSS, QWEN):
-            engine = page.request.get(f"/api/endpoints/{endpoint}").json()["engine"]
-            with page.expect_response(re.compile(r"/variation\?")):
-                _ = page.select_option("#part-engine", engine)
-            sent = f"Sent to {endpoint}, which serves its engine."
-            expect(page.get_by_text(sent)).to_be_visible()
+        gpt_oss = page.request.get(f"/api/endpoints/{GPT_OSS}").json()["serves"]
+        with page.expect_response(re.compile(r"/variation\?")):
+            _ = page.select_option("#part-model", gpt_oss)
+        expect(
+            page.get_by_text(f"Sent to {GPT_OSS}, which serves its model.")
+        ).to_be_visible()
+        qwen = page.request.get(f"/api/endpoints/{QWEN}").json()["serves"]
+        with page.expect_response(re.compile(r"/variation\?")):
+            _ = page.select_option("#part-model", qwen)
+        expect(page.get_by_text("Pick an endpoint to run it at.")).to_be_visible()
+        _ = page.select_option("#endpoint", QWEN)
+        expect(
+            page.get_by_text(re.compile(rf"Sends \d+ items to {QWEN}"))
+        ).to_be_visible()
         page.get_by_label("of the families picked").check()
         page.get_by_label("Find a family").fill("crlf")
         page.get_by_label("crlf", exact=True).check()
@@ -166,6 +177,8 @@ def test_a_variation_says_where_it_runs_and_a_start_s_runs_link_each_other(
             )
         ).to_be_visible()
         expect(page.get_by_text("Left out")).to_have_count(0)
+        _ = page.select_option("#endpoint", QWEN)
+        expect(page.get_by_text("Sends 4 items to")).to_be_visible()
         page.get_by_role("button", name="Run it").click()
         page.wait_for_url(re.compile(r"/runs/[0-9a-f-]{36}$"))
         first = page.url.rsplit("/", 1)[1]

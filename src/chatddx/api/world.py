@@ -14,10 +14,11 @@ router = APIRouter(tags=["world"])
 
 
 def endpoint_of(bench: Bench, name: str, spec: EndpointSpec) -> schemas.Endpoint:
-    title = model = url = problem = None
+    title = model = serves = url = problem = None
     try:
         engine = bench.endpoint(name)
         title, model = bench.title(engine), bench.model(engine)
+        serves = bench.model_of(engine)
         url = url_of(bench.inventory, bench.get, name)
     except LookupError as e:
         problem = str(e)
@@ -26,6 +27,7 @@ def endpoint_of(bench: Bench, name: str, spec: EndpointSpec) -> schemas.Endpoint
         engine=spec.engine,
         title=title,
         model=model,
+        serves=serves,
         url=url,
         host=spec.host,
         max_jobs=spec.max_jobs,

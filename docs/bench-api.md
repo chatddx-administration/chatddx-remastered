@@ -45,6 +45,10 @@ The modules, and the ones each builds on:
   `WITH`; on `components.py`, `errors.py`, `model.py` and `seen.py`.
 - `taking.py`: `take`, `take_from`; on `errors.py`, `model.py` and `seen.py`.
 - `saying.py`: `say`; on `errors.py`, `model.py` and `seen.py`.
+```
+AGENT: replace
+`corrected` and `follow_facts` are `moved` and `follow_moved`.
+```
 - `following.py`: `proposal`, `follow`, `corrected`, `follow_facts`; on `components.py`, `errors.py`, `model.py` and
   `seen.py`.
 - `runs.py`: `start`, `again`, `score`, `REFUSALS`, `ScorerStarted`, `ScoringEvent`, `ScoreHalt`; on
@@ -150,6 +154,10 @@ A frozen dataclass: a configuration, or a variation of it being tried.
 - `configuration: Edit`: the configuration's edit.
 - `name: str`: the name the person called it by.
 - `recipe: Recipe | None = None`: its recipe; `None` for a configuration without a compilation.
+```
+AGENT: replace
+`PARTS` ends in `model`, and `parts` hold a model's digest for `model`.
+```
 - `parts: Mapping[str, tuple[str | None, str]] = {}`: for each part replaced, a chunk's digest, or an engine's for
   `engine`, or `None` for one taken out, and the name it was set by.
 
@@ -231,6 +239,12 @@ A run's score under one scorer, or why there is none.
 - `compilation: str | None`: for a recipe.
 
 #### `class Corrected`
+```
+AGENT: replace
+`Corrected` is `Moved`: `facts: Behind | None`, the catalog's `/facts` entry; `model: Behind | None`, its
+`/recipe/model` entry, the model held and its thread's head; `about: str`, the model's name; `digest`, `compilation`
+and `refused` as below, for the recipe with the model's head compiled against the current facts.
+```
 - `behind: Behind`: the catalog's `/facts` entry, with the facts compiled against and the facts thread's head.
 - `model: str`: the model the facts are about.
 - `digest: str | None`: the skeleton the head's recipe compiles to against the corrected facts.
@@ -335,6 +349,12 @@ The first of `threads(word)` whose head is `digest`, with `recipe` when it is gi
 `Catalog.title_of`, or `—` for `None`.
 
 #### `model(engine: str) -> str | None`
+```
+AGENT: replace
+Also `model_of(engine: str) -> str | None`, the digest of the model an engine references, `None` for an engine not in
+the store, cached for the connection; and `model_at(name: str) -> str`, the model the endpoint's engine serves,
+`ValueError` when it serves none.
+```
 The model the engine serves, as the facts name it (`chatddx.factors.facts.model_name`): a local engine's model's
 repository, a remote engine's model.
 
@@ -418,6 +438,13 @@ Raises:
 - `TriedVariation.set`'s.
 
 #### `at(variation: TriedVariation, endpoint: str | None) -> tuple[str, str]`
+```
+AGENT: replace
+For a configuration with a recipe, the endpoints whose engine's model is the recipe's (`Inventory.serving_model`
+with `model_of`): one, else `ValueError` unless one is named; a named endpoint serving another model is refused,
+`"endpoint '<name>' serves another model than <label>'s, <title>"`; the engine is the endpoint's. A hand-written
+configuration needs the endpoint named: `"<label> names no model: name the endpoint to send it to"`.
+```
 Where the variation runs: the endpoint's name and the engine's digest. For a configuration with a recipe, its engine,
 at `endpoint`, or without one at the one endpoint serving it (`Inventory.serving`); for one without, `endpoint` and
 the engine it serves (`endpoint(name)`). Raises:
@@ -430,6 +457,11 @@ the engine it serves (`endpoint(name)`). Raises:
 
 #### `skeleton(variation: TriedVariation, into: str | None = None) -> Skeleton`
 The configuration's head when nothing is replaced or it has no recipe; else the varied recipe compiled against
+```
+AGENT: replace
+`facts_for(model: str)` takes a model's digest, `model_name` reading its name; `compiled_with`, `landed` and
+`compiled` pass `recipe.model`. Read "its model" for "its engine" in this item and the next three.
+```
 `facts_for` its engine. With `into`, the recipe compiled into that language against `compiled_with(variation)`, whatever
 is replaced.
 - Raises the compiler's errors, the facts' refusals among them (`StructuralError`); for `into`, also
@@ -832,12 +864,24 @@ Raises:
 - `Seen.check_expecting`'s and `Seen.check_scorer`'s.
 - `MovedOn`
 
+```
+AGENT: replace
+`moved(thread: int) -> Moved | None`: `None` when the head has no compilation or `behind` names neither `/facts` nor
+`/recipe/model`.
+```
 ### `corrected(thread: int) -> Corrected | None`
 What following the facts of `thread`, a configuration the person sees, would keep: its head's recipe compiled by
 `Seen.compiled`, against the facts as they are stored now. `None` when the head has no compilation, or the catalog's
 `behind` names no `/facts`. Nothing is stored.
 - Raises `thread_by_id`'s `NotFound`.
 
+```
+AGENT: replace
+`follow_moved(thread: int, head: int) -> Written`: the head's recipe, with the model's head where it moved on, compiled
+against the current facts about it, kept as a new version with its compilation; refused as
+`ValueError("configuration <thread> was compiled for nothing that has moved on")` and
+`ValueError("configuration <thread> can't follow <what> <model>: <why>")`.
+```
 ### `follow_facts(thread: int, head: int) -> Written`
 The head's recipe, compiled against the corrected facts, kept as a new version of `thread` with its compilation;
 `what` is `a new version`, and the findings are `linted`'s of the skeleton. Its base doesn't change.
@@ -860,6 +904,10 @@ A run of the variation for each language `Seen.languages(variation, cases)` send
 `Seen.at(variation, endpoint)` says, over that language's cases with `seeds`, its replicates, its cleanup steps, its
 execution and the canary set stored under the digest `canaries`; the languages left out are `Started.left_out`. Once
 each run has started, its `name` entry, `variation.label`, its `varied` entry, `variation.configuration`, a `replaced`
+```
+AGENT: replace
+"the model among them".
+```
 entry for each part replaced, the engine among them, and for every run but the first a `with` entry naming the first,
 are written in one transaction (docs/catalog-api.md, "Entry"). Not given: the steps each run's cases' sources ask for,
 in `CleanupOp`'s order (`()` for none); the endpoint's execution and canary set, from the inventory. The compilation
@@ -927,6 +975,11 @@ same test World.
   for the case, left by two writers at once.
 - `test_seen.py`: what a person sees, by name, `OWNER/NAME` and id; variations; runs and what reaches a digest; what is
   left to score; the expectation a case is held to, and several to choose from; scorers that apply, judged or not;
+```
+AGENT: replace
+A swapped model, not engine; a run at the endpoint serving its model, refused for an endpoint serving another model and
+for a model two serve; a configuration following its model to a new version (`test_following.py`).
+```
   a run's scores; judge configurations; a swapped engine keeping every other pick, where its intents land, on their
   nearest or not, and a level its model refuses; a hand-written configuration on another model than its skeleton is
   worked out for; a configuration found by its name; saving, forking and editing; taking.

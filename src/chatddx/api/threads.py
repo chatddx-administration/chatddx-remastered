@@ -160,6 +160,19 @@ def refused() -> Generator[None]:
         raise HTTPException(422, str(e)) from None
 
 
+# A look is rendered and linted for the engine the run would go to; none when nothing
+# serves the model, or a hand-written configuration names no endpoint.
+def _engine_at(
+    bench: Bench, varied: TriedVariation, endpoint: str | None
+) -> str | None:
+    try:
+        return bench.at(varied, endpoint)[1]
+    except (LookupError, ValueError) as e:
+        if endpoint is not None:
+            raise HTTPException(422, str(e)) from None
+        return None
+
+
 def part_of(
     bench: Bench, variation: TriedVariation, part: str, landed: Landing | None = None
 ) -> schemas.Part:
@@ -196,12 +209,7 @@ def variation(
         varied = bench.variation(thread, query.given(), query.head)
         skeleton = bench.skeleton(varied)
         landed = bench.landed(varied)
-        engine = varied.held("engine")
-        if query.endpoint is not None:
-            try:
-                _, engine = bench.at(varied, query.endpoint)
-            except LookupError as e:
-                raise HTTPException(422, str(e)) from None
+        engine = _engine_at(bench, varied, query.endpoint)
     seed = suggest_seeds(1)[0] if query.seed is None else query.seed
     families = bench.families(query.tag)
     carried: list[Carried] = []
@@ -451,17 +459,23 @@ def follow(bench: BenchDep, thread: int, given: schemas.NewFollow) -> schemas.Ma
     )
 
 
-@router.get("/threads/{thread}/facts")
-def facts(bench: BenchDep, thread: int) -> schemas.CorrectedFacts | None:
+@router.get("/threads/{thread}/moved")
+def moved(bench: BenchDep, thread: int) -> schemas.Moved | None:
     with refused():
-        found = bench.corrected(thread)
-    if found is None or found.behind.head is None:
+        found = bench.moved(thread)
+    if found is None:
         return None
-    return schemas.CorrectedFacts(
-        facts=found.behind.head.thread,
-        model=found.model,
-        compiled=found.behind.digest,
-        head=edit_of(bench, found.behind.head, "facts"),
+    facts, model = found.facts, found.model
+    return schemas.Moved(
+        about=found.about,
+        facts=None
+        if facts is None or facts.head is None
+        else edit_of(bench, facts.head, "facts"),
+        compiled=None if facts is None else facts.digest,
+        model=None
+        if model is None or model.head is None
+        else edit_of(bench, model.head, "model"),
+        held=None if model is None else model.digest,
         digest=found.digest,
         compilation=found.compilation,
         refused=found.refused,
@@ -469,17 +483,17 @@ def facts(bench: BenchDep, thread: int) -> schemas.CorrectedFacts | None:
 
 
 @router.post(
-    "/threads/{thread}/facts/follows",
+    "/threads/{thread}/moved/follows",
     status_code=201,
     responses={
         409: {"description": "The thread has moved on since the head the edit names"}
     },
 )
-def follow_facts(
-    bench: BenchDep, thread: int, given: schemas.NewFollowFacts
+def follow_moved(
+    bench: BenchDep, thread: int, given: schemas.NewFollowMoved
 ) -> schemas.MadeEdit:
     with refused():
-        written = bench.follow_facts(thread, given.head)
+        written = bench.follow_moved(thread, given.head)
     return schemas.MadeEdit(
         **edit_of(bench, written.edit).model_dump(),
         findings=[schemas.Finding.of(f) for f in written.findings],

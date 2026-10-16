@@ -80,7 +80,7 @@
     }),
   );
   const shown = $derived(Object.fromEntries((look.parts ?? []).map((p) => [p.part, p])));
-  const sends = $derived(where(endpoints, compiled ? picked.engine : null, endpoint));
+  const sends = $derived(where(endpoints, compiled ? picked.model : null, endpoint));
   const sent = $derived(picking ? families.filter((f) => chosen.includes(f.id)) : tagged(families, tags));
   const carriages = $derived(carried(sent, look.languages));
   const sending = $derived(carriages.filter((c) => c.refused === null));
@@ -144,7 +144,7 @@
 
   function pick(part: Part, digest: string): void {
     picked[part] = digest || null;
-    if (part === "engine" && !where(endpoints, picked.engine, endpoint).among.some((e) => e.name === endpoint)) {
+    if (part === "model" && !where(endpoints, picked.model, endpoint).among.some((e) => e.name === endpoint)) {
       endpoint = null;
     }
     void refresh();
@@ -314,9 +314,9 @@
         </NativeSelect.Root>
       </div>
     {:else if sends.at !== null}
-      <p class="text-sm text-muted-foreground">Sent to {sends.at}, which serves its engine.</p>
+      <p class="text-sm text-muted-foreground">Sent to {sends.at}, which serves its model.</p>
     {:else}
-      <p class="text-sm text-warning">No endpoint of the World serves its engine.</p>
+      <p class="text-sm text-warning">No endpoint of the World serves its model.</p>
     {/if}
   </div>
   {#if given.everyTag.length}
@@ -478,7 +478,7 @@
     </div>
     <p class="text-sm" aria-live="polite">
       {#if sends.at === null}
-        {compiled && sends.among.length === 0 ? "No endpoint serves its engine." : "Pick an endpoint to run it at."}
+        {compiled && sends.among.length === 0 ? "No endpoint serves its model." : "Pick an endpoint to run it at."}
       {:else if sent.length === 0}
         Pick a case to run it on.
       {:else if items === 0}

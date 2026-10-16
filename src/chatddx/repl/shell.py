@@ -38,12 +38,6 @@ class Cell:
         return replace(self, endpoint=endpoint, served=served)
 
     @property
-    def engine(self) -> str | None:
-        if self.variation is not None and self.variation.recipe is not None:
-            return self.variation.held("engine")
-        return self.served
-
-    @property
     def label(self) -> str:
         return "" if self.variation is None else self.variation.label
 
@@ -72,6 +66,18 @@ class Repl:
             return self.bench.at(cell.variation, cell.endpoint)[0]
         except (LookupError, ValueError):
             return cell.endpoint
+
+    # The engine the cell's configuration is rendered and linted for: the endpoint's,
+    # else the one serving the configuration's model.
+    @property
+    def engine(self) -> str | None:
+        cell = self.cell
+        if cell.served is not None or cell.variation is None:
+            return cell.served
+        try:
+            return self.bench.at(cell.variation, None)[1]
+        except (LookupError, ValueError):
+            return None
 
     def completions(self) -> dict[str, list[str]]:
         runs = self.bench.runs()[:20]
@@ -108,9 +114,9 @@ class Repl:
     def say_changed(self) -> None:
         self.say_cell()
         cell = self.cell
-        if cell.variation is not None and cell.engine is not None:
+        if cell.variation is not None and self.engine is not None:
             self.say_findings(
-                self.bench.findings(cell.variation, cell.engine, self.seed)
+                self.bench.findings(cell.variation, self.engine, self.seed)
             )
 
     def say_findings(self, findings: Iterable[Finding], tally: bool = False) -> None:

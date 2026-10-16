@@ -17,9 +17,9 @@ from chatddx.factors.engine import (
     Hardware,
     LocalEngine,
     ModelArtifact,
-    RemoteEngine,
     Runtime,
 )
+from chatddx.factors.test.sample import remote_engine
 from chatddx.fake_vllm.served import Served
 from chatddx.fake_vllm.server import serving
 from chatddx.inventory import (
@@ -222,9 +222,7 @@ def test_a_start_up_is_refused_where_the_inventory_or_the_engine_falls_short() -
     complete = world(listening, {model: "/m"}, {TEMPLATE: "/t"})
     with pytest.raises(LookupError, match="sets --port in its argv"):
         _ = start_up(complete, reg.get, "qwen@pelle")
-    remote = reg.add(
-        RemoteEngine.model_validate({"provider": "example", "model": "gemma"})
-    )
+    remote = reg.add(remote_engine(reg, "gemma"))
     with pytest.raises(LookupError, match="engine.remote, not ours to start"):
         _ = start_up(world(remote), reg.get, "qwen@pelle")
     unknown = world("sha256:" + "c" * 64, {model: "/m"}, {TEMPLATE: "/t"})
@@ -237,9 +235,7 @@ def test_a_check_finds_what_starting_or_reaching_each_endpoint_would_refuse() ->
     reg = Registry()
     model, engine = local(reg)
     _, listening = local(reg, "--port=9000")
-    remote = reg.add(
-        RemoteEngine.model_validate({"provider": "example", "model": "gemma"})
-    )
+    remote = reg.add(remote_engine(reg, "gemma"))
     url = "http://pelle.km:12009/v1/"
     pelle = HostSpec(models={model: "/m", "sha256:" + "e" * 64: "/old"})
     inventory = Inventory.model_validate(
@@ -296,7 +292,7 @@ def test_a_check_finds_what_starting_or_reaching_each_endpoint_would_refuse() ->
 
 def test_a_remote_engine_is_reached_at_its_endpoint_s_url() -> None:
     reg = Registry()
-    remote = reg.add(RemoteEngine(provider="example", model="gemma"))
+    remote = reg.add(remote_engine(reg, "gemma"))
     at = HttpUrl("https://api.example.org/v1/")
     alone = Inventory(
         endpoints={"gemma": EndpointSpec(engine=remote, url=at, credential="KEY")},
@@ -357,9 +353,7 @@ def keyed_models(secret: str, model: str) -> Generator[str]:
 def test_an_endpoint_s_secret_goes_with_the_request_that_confirms_it() -> None:
     reg = Registry()
     with keyed_models("s3cret", "gemma") as url:
-        remote = reg.add(
-            RemoteEngine.model_validate({"provider": "example", "model": "gemma"})
-        )
+        remote = reg.add(remote_engine(reg, "gemma"))
         inventory = Inventory(
             endpoints={"gemma": EndpointSpec(engine=remote, url=HttpUrl(url))}
         )

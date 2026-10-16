@@ -154,7 +154,7 @@ def test_run_and_score_roundtrip(conn: Connection) -> None:
     run_id, score_id = uuid4(), uuid4()
     engine = reg.get(ids["engine"])
     assert isinstance(engine, LocalEngine)
-    served = engine.served_model_name
+    served = engine.digest
     started = RunStarted(
         run=run_id, at=NOW, rig=RIG, trial=ids["trial"], canaries=ids["canaries"]
     )

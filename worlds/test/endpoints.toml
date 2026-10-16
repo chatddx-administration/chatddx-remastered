@@ -22,7 +22,7 @@ host = "fake"
 max_jobs = 2
 
 [endpoint."unknown@remote"]
-engine = "sha256:a9cc8614b691bd2c838770bf17ad6fd1c2a87aded80ab0b49d74c7de2def3bdd"
+engine = "sha256:29a0c07805b0282d97e743d005f6c4aff3261439a6451af7f580667bd3d72566"
 url = "https://remote.invalid/v1/"
 credential = "CHATDDX_TEST_REMOTE"
 

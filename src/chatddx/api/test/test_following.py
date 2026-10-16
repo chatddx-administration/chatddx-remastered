@@ -66,14 +66,15 @@ def test_a_configuration_follows_its_corrected_facts(
 ) -> None:
     mine = thread(signed, "configuration", LINES)
     facts, follows = (
-        f"/api/threads/{mine['id']}/{to}" for to in ("facts", "facts/follows")
+        f"/api/threads/{mine['id']}/{to}" for to in ("moved", "moved/follows")
     )
     assert signed.get(facts).json() is None
     got = signed.post(follows, json={"head": mine["head"]["id"]})
     assert (got.status_code, got.json()) == (
         422,
         {
-            "detail": f"configuration {mine['id']} has no corrected facts to follow",
+            "detail": f"configuration {mine['id']} was compiled for nothing that has "
+            + "moved on",
             "code": "refused",
         },
     )
@@ -81,9 +82,10 @@ def test_a_configuration_follows_its_corrected_facts(
     recommended: dict[str, JsonValue] = {"on": {"temperature": 0.2}}
     moved = correct_facts(bench, QWEN_MODEL, sampling={"recommended": recommended})
     corrected = signed.get(facts).json()
-    assert corrected["model"] == QWEN_MODEL and corrected["refused"] is None
-    assert (corrected["facts"], corrected["head"]["digest"]) == (
-        moved.thread,
+    assert corrected["about"] == QWEN_MODEL and corrected["refused"] is None
+    assert corrected["model"] is None and corrected["held"] is None
+    assert (corrected["facts"]["id"], corrected["facts"]["digest"]) == (
+        moved.id,
         moved.digest,
     )
     assert corrected["digest"] != mine["head"]["digest"]

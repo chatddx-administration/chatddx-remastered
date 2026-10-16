@@ -57,12 +57,17 @@ def asked(
         "configuration": thread(signed, "configuration", configuration)["id"],
         "families": [family(signed, "crlf")["id"]],
         "seeds": [7],
+        "endpoint": QWEN,
         **more,
     }
 
 
 def engine(signed: TestClient, endpoint: str) -> str:
     return signed.get(f"/api/endpoints/{endpoint}").json()["engine"]
+
+
+def model(signed: TestClient, endpoint: str) -> str:
+    return signed.get(f"/api/endpoints/{endpoint}").json()["serves"]
 
 
 def told(text: str) -> Told:
@@ -312,7 +317,7 @@ def test_a_run_the_gate_refuses_is_unprocessable_and_isn_t_recorded(
             "the configuration's tools would get content from source test",
         ),
         (
-            asked(signed, parts={"engine": engine(signed, GPT_OSS)}),
+            asked(signed, parts={"model": model(signed, GPT_OSS)}, endpoint=GPT_OSS),
             f"endpoint '{GPT_OSS}' can't be",
         ),
     ):
@@ -335,8 +340,8 @@ def test_a_run_the_request_names_wrong_is_unprocessable(signed: TestClient) -> N
         ({"families": [999]}, "no case 999 for alice"),
         ({"families": None, "tags": ["nowhere"]}, "no case tagged nowhere for alice"),
         ({"endpoint": "nowhere@fake"}, "no endpoint 'nowhere@fake' in the inventory"),
-        ({"endpoint": GPT_OSS}, f"endpoint '{GPT_OSS}' serves another engine"),
-        ({"parts": {"engine": None}}, "a configuration always has an engine"),
+        ({"endpoint": GPT_OSS}, f"endpoint '{GPT_OSS}' serves another model"),
+        ({"parts": {"model": None}}, "a configuration always has a model"),
         ({"configuration": chunk["id"]}, f"no configuration {chunk['id']} for alice"),
         ({"parts": {"prompt": chunk["head"]["digest"]}}, "isn't a stored chunk"),
         ({"configuration": judge["id"]}, "judge is a judge configuration"),

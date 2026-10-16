@@ -48,7 +48,9 @@ def test_a_configuration_s_page_holds_the_variation_its_address_gives(
 ) -> None:
     mine = thread(signed, "configuration", LINES)
     off = thread(signed, "reasoning", OFF)["head"]["digest"]
-    page = shown(signed, f"/configurations/{mine['id']}?reasoning={off}")
+    page = shown(
+        signed, f"/configurations/{mine['id']}?reasoning={off}&endpoint={QWEN}"
+    )
     assert escape(f"{LINES}+reasoning={OFF}") in page
 
     given = held(page)
@@ -63,11 +65,11 @@ def test_a_configuration_s_page_holds_the_variation_its_address_gives(
     assert all("language" in t for p in PARTS for t in given["choices"][p])
     assert given["me"] == "alice" and given["configuration"]["id"] == mine["id"]
 
-    assert given["endpoint"] is None and look["findings"] is not None
-    engines = [t["head"]["digest"] for t in given["choices"]["engine"]]
-    assert recipe["engine"] in engines
-    served = {e["engine"] for e in given["endpoints"]}
-    assert set(engines) <= served and len(engines) == len(set(engines))
+    assert given["endpoint"] == QWEN and look["findings"] is not None
+    models = [t["head"]["digest"] for t in given["choices"]["model"]]
+    assert recipe["model"] in models
+    served = {e["serves"] for e in given["endpoints"]}
+    assert set(models) <= served and len(models) == len(set(models))
 
     tagged = held(
         shown(signed, f"/configurations/{mine['id']}?endpoint={QWEN}&tag=targets")
@@ -134,17 +136,17 @@ def test_a_configuration_follows_its_corrected_facts_from_its_page(
 ) -> None:
     mine = thread(signed, "configuration", LINES)
     path = f"/configurations/{mine['id']}"
-    corrected = "The facts about its model were corrected"
+    corrected = "What it was compiled for has moved on"
     assert corrected not in shown(signed, path)
 
     bench = Bench(conn, alice, Inventory.load(TEST / "inventory.toml"))
     recommended: dict[str, JsonValue] = {"on": {"temperature": 0.2}}
     _ = correct_facts(bench, QWEN_MODEL, sampling={"recommended": recommended})
     page = shown(signed, path)
-    assert corrected in page and "Follow the facts" in page
+    assert corrected in page and ">Follow<" in page
 
     got = signed.post(
-        f"/threads/{mine['id']}/facts/follow",
+        f"/threads/{mine['id']}/moved/follow",
         data={"head": mine["head"]["id"], "next": path},
     )
     assert (got.status_code, got.headers["location"]) == (303, path)

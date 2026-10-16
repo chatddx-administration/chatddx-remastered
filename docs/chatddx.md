@@ -67,6 +67,11 @@ It must be possible to deliver the cage together with the results, for scientifi
 - **Facts:** ops- or developer-authored knowledge about models (how each reasoning level is expressed, collapsed,
   refused or landed on its nearest, recommended sampling, output caveats, specs), typed in code, written in TOML and
   stored by init-data as components of kind `facts`, a thread per model, corrected by a new version. Not factors:
+```
+AGENT: replace
+"for the recipe's model": a recipe names its model, a `model` or `model.remote` component, and the engine is the
+trial's.
+```
   they work out a reasoning level and a recommended sampling for the engine's model when a recipe is compiled, and
   check literal chunks; a compilation pins them, as it pins the compiler.
 - **Start-up:** what the start-up script runs for one endpoint, joining an engine (what) with inventory entries (where)
@@ -207,6 +212,10 @@ described below.
    chunk may ask for a level, and a Sampling chunk for the sampling the model's makers recommend, rather than say what
    is sent.
 
+```
+AGENT: replace
+"against the facts about its model".
+```
 2. The Recipe is compiled into a Skeleton, against the facts about its engine's model: a reasoning level asked for is
    sent as they say the model is asked for it, once it has collapsed into another or landed on its nearest, or is
    refused; a recommended sampling is what they recommend for the level the reasoning landed on, or for the model's
@@ -233,6 +242,10 @@ described below.
 3. `prepare_case(case, raw, get, layout, cleanup)` checks drift (a mismatch is the warning `case.drift`)
 4. cleans the vignette
 5. joins the appendices, and returns the fills together with the observed fingerprint for `RunItem.vignette`.
+```
+AGENT: replace
+`served_model_name(engine, get)`: a local engine's digest, a remote engine's model's name.
+```
 6. Pick the model name from the engine: `engine.served_model_name`, the engine's digest for a local engine and its
    `model` for a remote one.
 7. Pick the seed: `trial.seeds[replicate]`.

@@ -18,7 +18,16 @@ from chatddx.repl.test.helpers import Say, cells, tagged
 from chatddx.runner.run import Event, Running, Streamed
 from chatddx.runner.score import Event as ScoreEvent, Grading
 from chatddx.store import Store
-from chatddx.test.world import CASES, GPT_OSS, LINES, NATIVE, QWEN, TOOL_ANSWER
+from chatddx.test.world import (
+    CASES,
+    GPT_OSS,
+    LINES,
+    NATIVE,
+    QWEN,
+    QWEN_ARTIFACT,
+    QWEN_BARE,
+    TOOL_ANSWER,
+)
 
 
 def test_seed_draws_a_short_seed_or_holds_one(repl: Repl, say: Say):
@@ -82,7 +91,7 @@ def test_each_run_is_recorded_as_a_run_of_its_trial(bench: Bench, say: Say):
     assert len({r.started.trial for r in ran(bench)}) == 1
 
 
-def test_run_needs_a_configuration_and_an_endpoint_serving_its_engine(
+def test_run_needs_a_configuration_and_an_endpoint_serving_its_model(
     bench: Bench, world: Inventory, say: Say
 ):
     assert "the cell has no configuration" in say("run noted")
@@ -90,7 +99,10 @@ def test_run_needs_a_configuration_and_an_endpoint_serving_its_engine(
     endpoints = {**world.endpoints, "twin@fake": world.endpoints[QWEN]}
     bench.inventory = world.model_copy(update={"endpoints": endpoints})
     written = say(f"use {LINES}", "run noted")
-    assert f"{QWEN}, twin@fake serve engine {QWEN}; name the one to use" in written
+    assert (
+        f"{QWEN_BARE}, {QWEN}, twin@fake serve model {QWEN_ARTIFACT}; name the one to use"
+        in written
+    )
     assert ran(bench) == []
 
 

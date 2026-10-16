@@ -92,7 +92,7 @@
         body: {
           configuration,
           endpoint,
-          parts: compiled ? { engine: endpoints.find((e) => e.name === endpoint)?.engine ?? null } : {},
+          parts: compiled ? { model: endpoints.find((e) => e.name === endpoint)?.serves ?? null } : {},
           families: [typed.family],
           score: false,
         },

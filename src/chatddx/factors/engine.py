@@ -11,7 +11,9 @@ from .base import (
     Finding,
     Frozen,
     RefTo,
+    Resolver,
     Sha256Hex,
+    resolve,
     sorted_keys,
 )
 
@@ -84,7 +86,15 @@ class ModelArtifact(Component):
         return tuple(sorted(files, key=lambda f: f.path))
 
 
-ModelRef = Annotated[Digest, RefTo("model")]
+class RemoteModel(Component):
+    kind: Literal["model.remote"] = "model.remote"
+    provider: str = Field(min_length=1)
+    name: str = Field(min_length=1)
+
+
+ArtifactRef = Annotated[Digest, RefTo("model")]
+RemoteModelRef = Annotated[Digest, RefTo("model.remote")]
+ModelRef = Annotated[Digest, RefTo("model", "model.remote")]
 
 
 class Hardware(Frozen):
@@ -105,7 +115,7 @@ class LocalEngine(Component):
     api: Api = "chat.completions"
     hardware: Hardware
     runtime: Runtime
-    model: ModelRef
+    model: ArtifactRef
     chat_template: Sha256Hex
     argv: tuple[str, ...] = ()
     env: Annotated[dict[str, str], AfterValidator(sorted_keys)] = Field(
@@ -135,24 +145,24 @@ class LocalEngine(Component):
             )
         return argv
 
-    @property
-    def served_model_name(self) -> str:
-        return self.digest
-
 
 class RemoteEngine(Component):
     kind: Literal["engine.remote"] = "engine.remote"
     api: Api = "chat.completions"
-    provider: str = Field(min_length=1)
-    model: str
-
-    @property
-    def served_model_name(self) -> str:
-        return self.model
+    model: RemoteModelRef
 
 
 Engine = LocalEngine | RemoteEngine
 EngineRef = Annotated[Digest, RefTo("engine.local", "engine.remote")]
+
+
+# A local engine is asked for by its digest, which the start-up script serves it as.
+def served_model_name(engine: Engine, get: Resolver) -> str:
+    match engine:
+        case LocalEngine():
+            return engine.digest
+        case RemoteEngine(model=model):
+            return resolve(get, model, RemoteModel).name
 
 
 # Templates that insert the current date make the prompt depend on when a run happens.

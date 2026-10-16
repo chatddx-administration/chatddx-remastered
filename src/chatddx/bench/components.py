@@ -68,7 +68,7 @@ def new(
     for part in PARTS:
         digest = getattr(component, part)
         if digest is not None and seen.rows.kind(digest) not in KINDS[part]:
-            what = "engine" if part == "engine" else f"chunk of {part}"
+            what = "model" if part == "model" else f"chunk of {part}"
             raise ValueError(f"{digest} isn't a stored {what}")
     registry, compilation = seen.compiled(component)
     with seen.conn.transaction():

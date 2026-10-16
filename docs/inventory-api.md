@@ -69,6 +69,12 @@ and `judge`:
 
 ```toml
 include = ["endpoints.toml"]          # files whose [endpoint] and [host] tables count too
+```
+AGENT: replace
+The line below, as given.
+---
+configurations = "qwen3-8b-awq@fake"  # the endpoint whose engine's model a data set's configurations are made for
+```
 configurations = "qwen3-8b-awq@fake"  # the endpoint whose engine a data set's configurations are made for
 
 [source.sample]                       # a DirectorySource named "sample"
@@ -152,6 +158,12 @@ Building one checks, each a `ValueError` wrapped in `ValidationError`:
 | `listing(name: str \| None = None) -> ListingSource` | The source `name` names, or with no name the only source that lists its vignettes. `LookupError("no source in the inventory lists its vignettes")` or `LookupError("<n> sources list their vignettes (<names>), so one must be named")` without a name; `source`'s `LookupError` for a name it doesn't know; `LookupError("source '<name>' is a database source, whose vignettes are read through the store, not listed")`. |
 | `endpoint(name: str) -> EndpointSpec` | `LookupError("no endpoint '<name>' in the inventory")` when there is none. |
 | `cleared_for(endpoint: str) -> frozenset[str]` | The sources `[cleared]` lists for the endpoint; empty when it lists none, also for an endpoint that doesn't exist. |
+```
+AGENT: replace
+Also `serving_model(model: str, model_of: Callable[[str], str | None], called: str | None = None) -> str`: the one
+endpoint whose engine `model_of` maps to `model`; `LookupError("no endpoint serves model <called>")` and
+`LookupError("<names> serve model <called>; name the one to use")`.
+```
 | `serving(engine: str, called: str \| None = None) -> str` | The one endpoint serving `engine`, by digest. `LookupError("no endpoint serves engine <called or engine>")` when none does, `LookupError("<names, joined by ", "> serve engine <called or engine>; name the one to use")` when several do. `called` names the engine in the message. `src/chatddx/runner/score.py:judge_at` turns it into `gate.Refused`, and `src/chatddx/bench/seen.py:Seen.at` into a `ValueError`. |
 
 #### `Inventory.load(path: Path) -> Self`
@@ -264,6 +276,10 @@ Raises `OSError` when the server can't be reached, times out or answers with an 
 isn't.
 
 ### `confirm(inventory: Inventory, get: Resolver, name: str, timeout: float = 10.0, secret: str | None = None) -> None`
+```
+AGENT: replace
+"a remote engine's model's name" (`served_model_name(engine, get)`).
+```
 Refuses an endpoint whose server doesn't list the name its engine is served under: a local engine's digest, a remote
 engine's `model` (`served_model_name`). In order:
 1. `LookupError` for a missing endpoint or an engine `get` doesn't know, as `start_up`;

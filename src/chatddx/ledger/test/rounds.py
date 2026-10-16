@@ -132,5 +132,5 @@ def rounds(reg: Registry) -> Rounds:
         trial=trial,
         started=started,
         vignette=resolve(reg.get, ids["case"], Case).vignette.fingerprint,
-        served=engine.served_model_name,
+        served=engine.digest,
     )

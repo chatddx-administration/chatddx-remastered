@@ -5,7 +5,7 @@ import pytest
 
 from chatddx.curation import Plan, load_cases, plan_factors
 from chatddx.factors.base import resolve
-from chatddx.factors.engine import RemoteEngine
+from chatddx.factors.engine import RemoteEngine, RemoteModel
 from chatddx.factors.request import (
     Compilation,
     Skeleton,
@@ -21,23 +21,34 @@ QWEN, GPT_OSS = "Qwen/Qwen3-8B-AWQ", "openai/gpt-oss-20b"
 
 
 def remote(name: str, model: str) -> str:
-    return f'\n[remote_engine."{name}"]\nprovider = "example"\nmodel = "{model}"\n'
+    return (
+        f'\n[remote_model."{name}"]\nprovider = "example"\nname = "{model}"\n'
+        + f'\n[remote_engine."{name}"]\nmodel = "{name}"\n'
+    )
 
 
 def plan(tmp_path: Path, configurations: str | None = "qwen@api", **files: str) -> Plan:
     tmp_path.mkdir(exist_ok=True)
     for name, text in files.items():
         _ = (tmp_path / name.replace("_", "-")).with_suffix(".toml").write_text(text)
-    engines = tomllib.loads(files.get("engines", "")).get("remote_engine", {})
+    declared = tomllib.loads(files.get("engines", ""))
+    models = {
+        name: RemoteModel.model_validate(body).digest
+        for name, body in declared.get("remote_model", {}).items()
+    }
     endpoints = {
-        name: EndpointSpec(engine=RemoteEngine.model_validate(body).digest)
-        for name, body in engines.items()
+        name: EndpointSpec(
+            engine=RemoteEngine.model_validate(
+                {**body, "model": models[str(body["model"])]}
+            ).digest
+        )
+        for name, body in declared.get("remote_engine", {}).items()
     }
     inventory = Inventory(
         endpoints=endpoints,
         configurations=configurations if configurations in endpoints else None,
     )
-    paths = (tmp_path / "engines.toml",) if engines else ()
+    paths = (tmp_path / "engines.toml",) if declared else ()
     world = World(tmp_path, inventory, engines=paths)
     return plan_factors(tmp_path, Facts.load(BUNDLED), rig(), world)
 
@@ -74,6 +85,9 @@ def test_facts_are_planned_for_the_models_served_and_recipes_for_the_world_s_eng
     )
     planned = plan(tmp_path, engines=engines, factors=INTENTS)
     assert [(r.table, r.name) for r in planned.records] == [
+        ("remote_model", "qwen@api"),
+        ("remote_model", "gpt-oss@api"),
+        ("remote_model", "gemma@api"),
         ("remote_engine", "qwen@api"),
         ("remote_engine", "gpt-oss@api"),
         ("remote_engine", "gemma@api"),
@@ -93,9 +107,7 @@ def test_facts_are_planned_for_the_models_served_and_recipes_for_the_world_s_eng
     raw = planned.named("recipe", "raw")
     assert raw.compilation is not None
     compilation = resolve(get, raw.compilation, Compilation)
-    assert (
-        compilation.recipe.engine == planned.named("remote_engine", "qwen@api").digest
-    )
+    assert compilation.recipe.model == planned.named("remote_model", "qwen@api").digest
     assert compilation.facts == planned.named("facts", QWEN).digest
     body = resolve(get, raw.digest, Skeleton).body
     assert body["chat_template_kwargs"] == {"enable_thinking": False}
@@ -109,8 +121,8 @@ def test_facts_are_planned_for_the_models_served_and_recipes_for_the_world_s_eng
     )
     assert landed.body["reasoning_effort"] == "low"
     assert on("gemma@api", factors=INTENTS).skipped[-1] == (
-        "recipe raw: reasoning 'off' is worked out from the facts about the engine's "
-        + "model, which has none, on engine.remote gemma@api"
+        "recipe raw: reasoning 'off' is worked out from the facts about the recipe's "
+        + "model, which has none, for model.remote gemma@api"
     )
     assert on(None, factors=INTENTS).skipped[-1] == (
         "recipe raw: the World names no endpoint configurations are made for"
@@ -118,10 +130,8 @@ def test_facts_are_planned_for_the_models_served_and_recipes_for_the_world_s_eng
     old = '[sampling.recommended]\nfrom_facts = { effort = "default" }\n'
     with pytest.raises(ValueError, match="sampling: from_facts is gone"):
         _ = on("qwen@api", factors=old)
-    with pytest.raises(
-        ValueError, match="recipe.raw: a recipe's engine is the World's"
-    ):
-        _ = on("qwen@api", factors=INTENTS + 'engine = "qwen@api"\n')
+    with pytest.raises(ValueError, match="recipe.raw: a recipe's model is the World's"):
+        _ = on("qwen@api", factors=INTENTS + 'model = "qwen@api"\n')
 
 
 NEUTRAL = """
@@ -186,6 +196,7 @@ entries = { "Fill in the plan." = "Fyll i planen." }
 """,
     )
     assert [(r.table, r.name, r.language) for r in planned.records] == [
+        ("remote_model", "qwen@api", None),
         ("remote_engine", "qwen@api", None),
         ("facts", QWEN, None),
         ("instructions", "physician", "en"),
@@ -434,12 +445,13 @@ def test_grouped_translations_are_refused_where_they_say_the_wrong_thing(
 
 def test_engines_are_the_world_s_and_only_engines_are(tmp_path: Path) -> None:
     with pytest.raises(
-        ValueError, match="remote_engine tables are the World's, in its"
+        ValueError, match="remote_engine, remote_model tables are the World's, in its"
     ):
         _ = plan(tmp_path, factors=ENGINE)
     with pytest.raises(
         ValueError,
-        match="holds only model, local_engine, remote_engine tables, not sampling",
+        match="holds only model, remote_model, local_engine, remote_engine tables, "
+        + "not sampling",
     ):
         _ = plan(tmp_path, factors="", engines=ENGINE + "[sampling.greedy]\n")
 

@@ -11,7 +11,7 @@ host = "fake"
 max_jobs = 4
 
 [endpoint."mistral-small@remote"]
-engine = "sha256:afbf6e1b915fcea003c35b0d073872f98670bdd214cc2110db7e6ebab548b277"
+engine = "sha256:a130056002714b94daebc3993f806bf1cc6ad178a0d0f9c445b8686dd933421e"
 url = "http://127.0.0.1:12101/v1/"
 max_jobs = 2
 credential = "CHATDDX_SAMPLE_KEY"

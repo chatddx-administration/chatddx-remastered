@@ -53,7 +53,7 @@ def configuration(
     proposal = None
     if mine and forked is not None and not shown.deleted:
         proposal = api.proposal(bench, thread)
-    corrected = None if not mine or shown.deleted else api.facts(bench, thread)
+    moved = None if not mine or shown.deleted else api.moved(bench, thread)
     changes = [
         (v.path.removeprefix("/recipe/"), _held(bench, v.base), _held(bench, v.fork))
         for v in ([] if proposal is None else proposal.varies)
@@ -89,7 +89,7 @@ def configuration(
         configuration=shown,
         origin=None if forked is None else forked.thread,
         proposal=proposal,
-        corrected=corrected,
+        moved=moved,
         changes=changes,
         versions=versions,
         at=at,
@@ -123,7 +123,7 @@ def _choices(
     bench: Bench, part: str, endpoints: list[schemas.Endpoint]
 ) -> list[schemas.Thread]:
     found = api.threads(bench, part)
-    if part != "engine":
+    if part != "model":
         return found
-    served = {e.engine for e in endpoints}
+    served = {e.serves for e in endpoints}
     return [t for t in found if t.head.digest in served]

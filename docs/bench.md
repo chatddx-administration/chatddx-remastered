@@ -28,6 +28,10 @@ to read, and they need the bench's connection in autocommit mode.
 
 ## What a person sees
 - **Threads** they own or collaborate on, while they are live. A kind of thread is asked for by the word for it:
+```
+AGENT: replace
+The model is among the recipe parts, not the engine; the word `model` asks for `model` and `model.remote` threads.
+```
   configuration, each recipe part, the engine among them, tool, scorer, judge, expectation, appendix, expectation
   schema, canary set, model or facts.
 - **Families** they own or collaborate on, while they are live. A family stands for its case: the one its current
@@ -103,6 +107,12 @@ Variation is a configuration with recipe parts replaced (docs/catalog.md, "Confi
 a configuration's edit's recipe, the name the person called it by, and the parts replaced over it with the name it was
 set by. With nothing replaced, it is the configuration itself.
 
+```
+AGENT: replace
+The model is the part. A variation replaces the recipe's nine chunks and its model, which can't be taken out; it runs at
+the endpoint serving its model, named when several do; a hand-written configuration has no model part and goes where
+named. Read "model" for "engine" as a part through this section.
+```
 It is a plain value and an unsaved one is just a digest. It runs at the endpoint serving its engine (see "The engine"),
 so an edge needs an endpoint beside it only for a hand-written configuration, which has no engine part, or an engine
 several endpoints serve.
@@ -143,6 +153,13 @@ An edge also lists configurations by what they answer (`Bench.answering`): the t
 a page that shows management plans offers only the configurations that answer one.
 
 ### The engine
+```
+AGENT: replace
+This section is "The model": the model is a part like any other, swapping it keeps every other pick, and what depends
+on it is worked out from the facts about it. A run goes to the endpoint serving the model (`Seen.at`,
+`Inventory.serving_model`); several serving one model, as the test World's two Qwen3 endpoints do, refuse a run that
+names none, and a look rendered for none has no findings. The engine is the trial's: the endpoint's.
+```
 The engine is a part like any other: swapping it keeps every other pick, and what depends on the model is worked out
 again for the new engine's. A reasoning level and a recommended sampling are intents rather than settings: compiling
 resolves them with the facts about the engine's model as they are stored then (docs/facts.md), lands each level where
@@ -326,6 +343,14 @@ changes, which are stored already. That is how a correction to the archive's exp
 ones, and a scorer pinned again by a deploy reaches the person's fork of it.
 
 ### Following its facts
+```
+AGENT: replace
+This section is "Following what has moved on": a configuration is behind what it was compiled for when the facts about
+its model were corrected where they change what it sends, or its model's thread moved on, as to a new revision of the
+weights. Whoever sees it sees both (`Bench.moved`, `GET /api/threads/{thread}/moved`, the configuration page); its
+owner follows them as one edit, the recipe with the model's head compiled against the current facts
+(`Bench.follow_moved`, `POST .../moved/follows`). Facts that refuse what it asks are said, not followed.
+```
 A configuration is behind its facts when the facts about its engine's model were corrected where they change what it
 sends (docs/catalog.md, "What has moved on"). The bench shows what following them would keep, to anyone who sees the
 configuration: the model, the facts it was compiled against and the facts thread's head that corrects them, and the
@@ -341,6 +366,10 @@ Following an origin compiles against the facts as they are stored then, so a for
 facts too.
 
 ## Runs and scores
+```
+AGENT: replace
+"serving its model", and "The model".
+```
 - **Starting** runs a variation at the endpoint serving its engine, or the one named (see "The engine"), on some
   cases with some seeds, through the runner (docs/runner.md), under an execution: a run for each language its cases
   are sent in (see "The languages it runs in"), those sent as written first. Each run is a trial of one skeleton, so
@@ -426,6 +455,12 @@ check before the other has written.
 | Left out | The cases of a language a configuration's translations can't carry it into, said and not sent. |
 | Start | The runs one start makes: a run per language its cases are sent in, the later ones `with` the first. |
 | Typed case | A case whose vignette is a text the person typed, kept in a database source. |
+```
+AGENT: replace
+The line below, as given.
+---
+| Cell | The repl's word for a variation being tried together with the endpoint it runs at, named or found from its model. |
+```
 | Cell | The repl's word for a variation being tried together with the endpoint it runs at, named or found from its engine. |
 
 ## Outstanding

@@ -42,8 +42,12 @@ argv = [
   "openai"
 ]
 
+[remote_model."mistral-small"]
+description = "Mistral Small 3.2, as an API serves it."
+provider = "fake"
+name = "mistralai/Mistral-Small-3.2-24B-Instruct-2506"
+
 [remote_engine."mistral-small@remote"]
 description = "Mistral Small 3.2 behind an API with a key, stood in for by the fake vLLM."
 tags = ["fake", "remote"]
-provider = "fake"
-model = "mistralai/Mistral-Small-3.2-24B-Instruct-2506"
+model = "mistral-small"

@@ -41,6 +41,10 @@ endpoints by their names in the inventory. Names are for people: they needn't be
 slashes, as `Qwen/Qwen3-8B-AWQ` does, and they change. So a list takes a name as a filter and returns every match, and
 a path takes an id. An id's prefix, handy at a prompt, could name another run tomorrow, so only whole ids are taken.
 
+```
+AGENT: replace
+"its model is a part": the engine is the endpoint's.
+```
 A configuration is one thread whatever the languages it runs in, under a name that carries none, `plan`; its engine
 is one of its parts, and its name carries no model either.
 
@@ -86,11 +90,20 @@ A look at a variation gives:
 - the edit it was built on, its label (`NAME+PART=CHUNK`, `docs/bench.md`, "The variation being tried"), the digest
   of the skeleton it compiles to, the configuration whose head is that skeleton with the variation's recipe, the
   person's own first, and whether its sampling is greedy.
+```
+AGENT: replace
+"the model is a part too, by its digest".
+```
 - each part's chunk, its title and what it holds, and whether it was replaced; the engine is a part too, by its
   digest. A reasoning level, and a recommended sampling, also say the level the engine's model is asked for
   (`landed`), and why the level asked for landed on its nearest instead, when it did (`nearest`; docs/facts.md).
 - the request it would send, with placeholders for the case and, for a hand-written configuration looked at without
   an endpoint, for the model.
+```
+AGENT: replace
+"at the engine of the endpoint serving its model, or the one named": not when none serves it, or several do and none is
+named; the request then carries `‹model›` and the look has no findings.
+```
 - at its engine, so always for a configuration with a recipe, the lints of it as a trial over the cases with any of
   the given tags, else over every case the person sees: a trial for each language they are sent in, in that language,
   and a `translations.missing` warning for the cases left out; where no case has the tags, over one case the person
@@ -107,6 +120,10 @@ sent in, its own as written or the one it is translated into, since the language
 its stored compilations, which it hasn't got yet.
 
 A variation the bench refuses is unprocessable: a digest that isn't a stored chunk of its part, or a stored engine; a
+```
+AGENT: replace
+"the model among them", and "the facts about its model".
+```
 part that can't be taken out, the engine among them; parts that don't compile together, among them a reasoning level
 or a recommended sampling that the facts about the engine's model refuse, or that a model without facts can't work
 out; an endpoint named that serves another engine; or a parameter the request doesn't know, so that a misspelt part is
@@ -132,6 +149,10 @@ parts, as its JSON as a component's own request gives it, and a scorer with the 
 (`docs/bench.md`, "Components" and "Scorers"). A judge is written the same way, over a judge configuration,
 an engine and its seeds:
 - **New**: a component, a name, and the language of its text when it has one, as a thread of the person's own; or a
+```
+AGENT: replace
+"the digest of its model".
+```
   recipe, by the chunks' digests for its parts and the digest of its engine, its purpose and its appendix layout,
   made into a new configuration of their own with no origin.
 - **Fork** any thread of those kinds the person sees, from its head or from a component given in its place.
@@ -172,6 +193,14 @@ the head it was made on and comes back with what the lints say. Following a fork
 changes no longer fit, is unprocessable.
 
 ## Following its facts
+```
+AGENT: replace
+This section is about what has moved on: a configuration whose facts were corrected where they change what it sends,
+or whose model's thread moved on, has moved on (`GET /api/threads/{thread}/moved`, `Moved`): the facts' head and the
+facts compiled against, the model's head and the model held, each when it moved, the model's name, the skeleton
+following comes to, or why the facts refuse it. Following (`POST .../moved/follows`, `NewFollowMoved`) keeps the recipe
+with the model's head compiled against the current facts. `refused` for a configuration nothing of which moved on.
+```
 A configuration whose facts were corrected where they change what it sends has corrected facts: the facts thread and
 its head, the model they are about, the facts it was compiled against, and the skeleton following them comes to, or
 why the corrected facts refuse what it asks (`docs/bench.md`, "Following its facts"). Asking for them gives nothing

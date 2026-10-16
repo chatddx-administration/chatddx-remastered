@@ -146,8 +146,8 @@ type Chunk = Annotated[
 ]
 
 
-type EngineDigest = Annotated[
-    str | None, Field(description="an engine's digest, which can't be taken out")
+type ModelDigest = Annotated[
+    str | None, Field(description="a model's digest, which can't be taken out")
 ]
 
 
@@ -161,7 +161,7 @@ class Parts(_Schema):
     passthrough: Chunk = None
     translations: Chunk = None
     toolset: Chunk = None
-    engine: EngineDigest = None
+    model: ModelDigest = None
 
     def given(self) -> dict[str, str | None]:
         return {
@@ -176,8 +176,8 @@ class Varying(Parts):
     )
     endpoint: str | None = Field(
         None,
-        description="to render and lint it for: a configuration's engine's unless "
-        + "named, and one a hand-written configuration names",
+        description="to render and lint it for: the one serving a configuration's "
+        + "model unless named, and one a hand-written configuration names",
     )
     tag: list[str] = Field(
         default_factory=list[str],
@@ -294,20 +294,25 @@ class NewFollow(_Schema):
     language: Language = None
 
 
-class CorrectedFacts(_Schema):
-    facts: int = Field(description="the thread of the facts about its engine's model")
-    model: str
-    compiled: str = Field(description="the facts its head was compiled against")
-    head: Edit = Field(description="the facts thread's head, which corrects them")
-    digest: str | None = Field(description="the skeleton following them comes to")
+class Moved(_Schema):
+    about: str = Field(description="the model it is compiled for, by name")
+    facts: Edit | None = Field(
+        description="the head of the facts about it, which correct the ones its head "
+        + "was compiled against where they change what it sends"
+    )
+    compiled: str | None = Field(description="the facts its head was compiled against")
+    model: Edit | None = Field(
+        description="its model's head, a new version of the one its recipe names"
+    )
+    held: str | None = Field(description="the model its recipe names")
+    digest: str | None = Field(description="the skeleton following comes to")
     compilation: str | None
     refused: str | None = Field(
-        description="why following them is refused: the corrected facts refuse what "
-        + "its recipe asks"
+        description="why following is refused: the facts refuse what its recipe asks"
     )
 
 
-class NewFollowFacts(_Schema):
+class NewFollowMoved(_Schema):
     head: int = Field(description="the edit the change was made on: the head seen")
 
 
@@ -471,6 +476,7 @@ class Endpoint(_Schema):
     engine: str
     title: str | None
     model: str | None
+    serves: str | None = Field(description="the model its engine serves, by digest")
     url: str | None
     host: str | None
     max_jobs: int
@@ -570,7 +576,7 @@ class NewRun(Seeds):
     parts: Parts = Parts()
     endpoint: str | None = Field(
         None,
-        description="where to send it: the one serving its engine unless named, and "
+        description="where to send it: the one serving its model unless named, and "
         + "one a hand-written configuration names",
     )
     families: list[int] | None = Field(None, description="the cases to run, by family")

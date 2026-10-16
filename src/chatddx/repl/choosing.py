@@ -32,10 +32,13 @@ def cell(repl: Repl, configuration: str, endpoint: str) -> None:
 def _served(repl: Repl, cell: Cell, variation: TriedVariation) -> TriedVariation:
     if cell.served is None or variation.recipe is None:
         return variation
-    return variation.set("engine", cell.served, repl.bench.title(cell.served))
+    model = repl.bench.model_of(cell.served)
+    if model is None:
+        return variation
+    return variation.set("model", model, repl.bench.title(model))
 
 
-# The cell takes the engine even where its model refuses a pick, so that a set mends it.
+# The cell takes the model even where it refuses a pick, so that a set mends it.
 def _changed(repl: Repl) -> None:
     try:
         repl.say_changed()
@@ -58,7 +61,11 @@ def set_(repl: Repl, part: str, name: str) -> None:
     changed = variation.set(part, digest, name)
     _ = repl.bench.skeleton(changed)
     cell = repl.cell.trying(changed)
-    if part == "engine" and cell.served not in (None, digest):
+    if (
+        part == "model"
+        and cell.served is not None
+        and repl.bench.model_of(cell.served) != digest
+    ):
         cell = cell.on(None, None)
     repl.cell = cell
     repl.say_changed()

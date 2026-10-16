@@ -10,8 +10,13 @@ from pydantic import JsonValue, ValidationError
 
 from chatddx.factors.base import Code, Component, StructuralError, language_tag, resolve
 from chatddx.factors.bundle import Registry
-from chatddx.factors.engine import LocalEngine, ModelArtifact, RemoteEngine
-from chatddx.factors.facts import ModelFacts, model_name
+from chatddx.factors.engine import (
+    LocalEngine,
+    ModelArtifact,
+    RemoteEngine,
+    RemoteModel,
+)
+from chatddx.factors.facts import ModelFacts, model_name, model_of
 from chatddx.factors.request import (
     CHUNK_PARTS,
     AppendixLayout,
@@ -41,6 +46,7 @@ from chatddx.tools.shipped import TOOLS
 
 TABLES: dict[str, type[Component]] = {
     "model": ModelArtifact,
+    "remote_model": RemoteModel,
     "local_engine": LocalEngine,
     "remote_engine": RemoteEngine,
     "instructions": Instructions,
@@ -58,7 +64,7 @@ TABLES: dict[str, type[Component]] = {
     "scorer": Scorer,
     "canary_set": CanarySet,
 }
-ENGINE_TABLES = ("model", "local_engine", "remote_engine")
+ENGINE_TABLES = ("model", "remote_model", "local_engine", "remote_engine")
 # Planned after recipes and judges, as a view may name a judge.
 LATE_TABLES = ("scorer",)
 PLANNED_TABLES = (*TABLES, "recipe", "judge")
@@ -70,6 +76,7 @@ REFERENCES: dict[str, dict[str, str]] = {
     "toolset": {"tools": "tool"},
     "scorer": {"expectation_schema": "expectation_schema"},
     "local_engine": {"model": "model"},
+    "remote_engine": {"model": "remote_model"},
 }
 
 
@@ -451,11 +458,22 @@ def plan_factors(
 
     for table in ENGINE_TABLES:
         plan_table(table)
+    inventory = None if world is None else world.inventory
     engines = {
         r.digest: r
         for r in plan.records
         if r.table in ("local_engine", "remote_engine")
     }
+    models = {r.digest: r for r in plan.records if r.table in ("model", "remote_model")}
+
+    def model_at(endpoint: str) -> Planned | None:
+        if inventory is None:
+            return None
+        engine = engines.get(inventory.endpoint(endpoint).engine)
+        if engine is None:
+            return None
+        return models.get(model_of(engine.digest, plan.registry.get) or "")
+
     served: dict[str, list[str]] = {}
     for r in engines.values():
         if (model := model_name(r.digest, plan.registry.get)) is not None:
@@ -472,18 +490,18 @@ def plan_factors(
         add("facts", model, Planned("facts", model, "facts", plan.registry.add(about)))
 
     def compiled_for(
-        what: str, body: dict[str, JsonValue], engine: Planned
+        what: str, body: dict[str, JsonValue], model: Planned
     ) -> tuple[str, str] | None:
         try:
-            recipe = Recipe.model_validate({**body, "engine": engine.digest})
+            recipe = Recipe.model_validate({**body, "model": model.digest})
         except ValidationError as e:
             raise ValueError(f"{what}: {e}") from None
         get = plan.registry.get
-        about = facts_of.get(model_name(engine.digest, get) or "")
+        about = facts_of.get(model_name(model.digest, get) or "")
         try:
             _ = landings(recipe, get, about)
         except ValueError as e:
-            plan.skipped.append(f"{what}: {e}, on {engine.kind} {engine.name}")
+            plan.skipped.append(f"{what}: {e}, for {model.kind} {model.name}")
             return None
         skeleton, compilation = compiled(recipe, get, compiler, about)
         if what.startswith("recipe ") and recipe.translations is not None:
@@ -500,13 +518,8 @@ def plan_factors(
         elif table not in (*ENGINE_TABLES, *LATE_TABLES):
             plan_table(table)
 
-    inventory = None if world is None else world.inventory
     configured = None if inventory is None else inventory.configurations
-    target = (
-        None
-        if inventory is None or configured is None
-        else engines.get(inventory.endpoint(configured).engine)
-    )
+    target = None if configured is None else model_at(configured)
     made: dict[str, dict[str, JsonValue]] = {}
     for name, raw in found.get("recipe", {}).items():
         assert isinstance(raw, dict)
@@ -514,9 +527,9 @@ def plan_factors(
         tags = _tags(body.pop("tags", []))
         description = body.pop("description", None)
         fork_of = body.pop("fork_of", None)
-        if "engine" in body:
+        if "model" in body:
             raise ValueError(
-                f"recipe.{name}: a recipe's engine is the World's: its inventory names "
+                f"recipe.{name}: a recipe's model is the World's: its inventory names "
                 + "the endpoint configurations are made for"
             )
         for part in CHUNK_PARTS:
@@ -572,13 +585,14 @@ def plan_factors(
             plan.skipped.append(f"judge {name}: the World binds it to no endpoint")
             add("judge", name, None)
             continue
-        if (at := engines.get(inventory.endpoint(endpoint).engine)) is None:
+        at = engines.get(inventory.endpoint(endpoint).engine)
+        if at is None or (of := model_at(endpoint)) is None:
             plan.skipped.append(
                 f"judge {name}: endpoint {endpoint} serves no engine the World has"
             )
             add("judge", name, None)
             continue
-        held = compiled_for(f"judge {name}", asked, at)
+        held = compiled_for(f"judge {name}", asked, of)
         if held is None:
             add("judge", name, None)
             continue

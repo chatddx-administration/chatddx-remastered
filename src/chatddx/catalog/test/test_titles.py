@@ -10,7 +10,7 @@ from chatddx.catalog.titles import (
 from chatddx.factors.base import resolve
 from chatddx.factors.bundle import Registry
 from chatddx.factors.cases import Case
-from chatddx.factors.engine import RemoteEngine
+from chatddx.factors.engine import RemoteEngine, RemoteModel
 from chatddx.factors.request import (
     Output,
     Reasoning,
@@ -49,7 +49,7 @@ def test_unnamed_components_are_described_by_what_they_hold() -> None:
     assert describe_recipe(recipe, title) == (
         '"You are an emergency physician." · "Case: {vignette}{appendices}…"'
         + " · native output: ddx · temperature 0.7, top_p 0.9, max_output_tokens 1024"
-        + " · enable_thinking false · google/gemma-3-12b-it on vllm 0.24.0 (RTX 5090)"
+        + " · enable_thinking false · google/gemma-3-12b-it"
     )
     assert title(ids["engine"]) == "google/gemma-3-12b-it on vllm 0.24.0 (RTX 5090)"
     assert title(ids["case"]) == 'registry/c1 with "Troponin 80 ng/L."'
@@ -78,8 +78,9 @@ def test_unnamed_components_are_described_by_what_they_hold() -> None:
     assert title(reg.add(tool)) == "tool plan output: steps, disposition"
     schema = reg.add(ExpectationSchema(json_schema={"title": "Targets"}))
     assert title(schema) == "Targets"
-    remote = reg.add(RemoteEngine(provider="example", model="gpt-x"))
-    assert title(remote) == "gpt-x from example"
+    gpt_x = reg.add(RemoteModel(provider="example", name="gpt-x"))
+    assert title(gpt_x) == "gpt-x from example"
+    assert title(reg.add(RemoteEngine(model=gpt_x))) == "gpt-x from example remotely"
 
 
 def test_recipes_are_described_by_every_part() -> None:
@@ -99,7 +100,7 @@ def test_recipes_are_described_by_every_part() -> None:
         )
     )
     tools = reg.add(Toolset(tools=(search,)))
-    on = " · " + title(recipe.engine)
+    on = " · " + title(recipe.model)
     english = describe_recipe(recipe, title).removesuffix(on)
     translated = recipe.model_copy(update={"translations": swedish})
     assert describe_recipe(translated, title) == (

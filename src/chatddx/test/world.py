@@ -26,6 +26,11 @@ GPT_OSS_MODEL = "openai/gpt-oss-20b"
 MISTRAL_MODEL = "test/mistral-7b"
 MODELS = (QWEN_MODEL, GPT_OSS_MODEL, MISTRAL_MODEL)
 
+QWEN_ARTIFACT = "qwen3-8b-awq"
+GPT_OSS_ARTIFACT = "gpt-oss-20b"
+MISTRAL_ARTIFACT = "mistral-7b"
+UNKNOWN_MODEL = "unknown"
+
 QWEN = "qwen3@fake"
 QWEN_BARE = "qwen3-bare@fake"
 GPT_OSS = "gpt-oss@fake"

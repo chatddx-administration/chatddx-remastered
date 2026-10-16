@@ -7,7 +7,7 @@ from pydantic import AwareDatetime, Field, JsonValue, model_validator
 
 from chatddx.factors.base import Code, Digest, Finding, Frozen, StructuralError, resolve
 from chatddx.factors.bundle import Registry
-from chatddx.factors.engine import LocalEngine, RemoteEngine
+from chatddx.factors.engine import LocalEngine, RemoteEngine, served_model_name
 from chatddx.factors.request import Skeleton
 from chatddx.factors.scoring import (
     Expectation,
@@ -192,7 +192,7 @@ def _attested(
     for judge in dict.fromkeys(jc.judge for jc in item.judge_calls):
         engine = registry.get(judges[judge].engine)
         assert isinstance(engine, LocalEngine | RemoteEngine)
-        want = engine.served_model_name
+        want = served_model_name(engine, registry.get)
         calls = [jc.call for jc in item.judge_calls if jc.judge == judge]
         returned = {c.returned_model for c in calls if c.response is not None}
         for got in sorted(m for m in returned - {want} if m is not None):

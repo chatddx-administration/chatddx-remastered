@@ -50,8 +50,10 @@ def test_endpoints_say_what_they_serve_and_what_they_re_cleared_for(
         sorted(inventory.sources),
     )
     engine = signed.get(f"/api/components/{remote['engine']}").json()["body"]
-    assert (remote["model"], remote["url"], remote["host"]) == (
+    model = signed.get(f"/api/components/{engine['model']}").json()["body"]
+    assert (remote["serves"], remote["model"], remote["url"], remote["host"]) == (
         engine["model"],
+        model["name"],
         str(inventory.endpoint(REMOTE).url),
         None,
     )

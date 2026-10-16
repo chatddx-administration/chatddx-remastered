@@ -1,14 +1,14 @@
-from chatddx.catalog import LANGUAGE_KINDS, Divergence, Labels, Part
+from chatddx.catalog import LANGUAGE_KINDS, Behind, Divergence, Labels, Part
 from chatddx.factors.base import resolve
 from chatddx.factors.bundle import Registry
-from chatddx.factors.facts import ModelFacts
+from chatddx.factors.facts import model_name
 from chatddx.factors.request import Compilation, Recipe
 from chatddx.factors.scoring import Expectation, Scorer
 from chatddx.identity import owns, sees
 
 from .components import keep_language
 from .errors import NotFound
-from .model import COMPILED_LANGUAGE, LABELLED, Corrected, Proposed, Written
+from .model import COMPILED_LANGUAGE, LABELLED, Moved, Proposed, Written
 from .seen import Seen
 
 
@@ -54,22 +54,24 @@ def follow(seen: Seen, thread: int, head: int, language: str | None = None) -> W
     return Written(edit, "a new version", seen.linted(proposed.digest))
 
 
-def corrected(seen: Seen, thread: int) -> Corrected | None:
-    found = _corrected(seen, thread)
+def moved(seen: Seen, thread: int) -> Moved | None:
+    found = _moved(seen, thread)
     return None if found is None else found[0]
 
 
-def follow_facts(seen: Seen, thread: int, head: int) -> Written:
+def follow_moved(seen: Seen, thread: int, head: int) -> Written:
     _, about = seen.thread_by_id(thread, "configuration")
     if not owns(seen.person.id, about):
         raise NotFound(f"no configuration {thread} of yours")
-    found = _corrected(seen, thread)
+    found = _moved(seen, thread)
     if found is None:
-        raise ValueError(f"configuration {thread} has no corrected facts to follow")
+        raise ValueError(
+            f"configuration {thread} was compiled for nothing that has moved on"
+        )
     made, registry = found
     if made.digest is None or made.compilation is None or registry is None:
         raise ValueError(
-            f"configuration {thread} can't follow the facts about {made.model}: "
+            f"configuration {thread} can't follow {_what(made)} {made.about}: "
             + f"{made.refused}"
         )
     with seen.conn.transaction():
@@ -84,25 +86,39 @@ def follow_facts(seen: Seen, thread: int, head: int) -> Written:
     return Written(edit, "a new version", seen.linted(made.digest))
 
 
-def _corrected(seen: Seen, thread: int) -> tuple[Corrected, Registry | None] | None:
+def _what(made: Moved) -> str:
+    if made.model is not None:
+        return "the new version of its model" + (
+            " and the facts about" if made.facts is not None else ""
+        )
+    return "the facts about"
+
+
+# The facts a configuration was compiled against, or the model it was compiled for, moved
+# on: following keeps its recipe, with the model's head, compiled against the current
+# facts about it.
+def _moved(seen: Seen, thread: int) -> tuple[Moved, Registry | None] | None:
     edit, _ = seen.thread_by_id(thread, "configuration")
     if edit.compilation is None:
         return None
-    moved = [
-        (b, b.head)
-        for b in seen.catalog.behind(thread)
-        if b.path == "/facts" and b.head is not None
-    ]
-    if not moved:
+    behind: dict[str, Behind] = {}
+    for b in seen.catalog.behind(thread):
+        if b.path in ("/facts", "/recipe/model") and b.head is not None:
+            _ = behind.setdefault(b.path, b)
+    if not behind:
         return None
-    behind, head = moved[0]
-    model = resolve(seen.get, head.digest, ModelFacts).model
+    facts, model = behind.get("/facts"), behind.get("/recipe/model")
     recipe = resolve(seen.get, edit.compilation, Compilation).recipe
+    if model is not None and model.head is not None:
+        recipe = Recipe.model_validate(
+            recipe.model_dump() | {"model": model.head.digest}
+        )
+    about = model_name(recipe.model, seen.get) or recipe.model
     try:
         registry, compilation = seen.compiled(recipe)
     except ValueError as e:
-        return Corrected(behind, model, None, None, str(e)), None
-    made = Corrected(behind, model, compilation.skeleton, compilation.digest, None)
+        return Moved(facts, model, about, None, None, str(e)), None
+    made = Moved(facts, model, about, compilation.skeleton, compilation.digest, None)
     return made, registry
 
 

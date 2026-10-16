@@ -30,8 +30,10 @@ from chatddx.store.store import Connection
 from chatddx.test.world import (
     DATA,
     GPT_OSS,
+    GPT_OSS_ARTIFACT,
     LINES,
     MISTRAL,
+    MISTRAL_ARTIFACT,
     MISTRAL_MODEL,
     NATIVE,
     QWEN,
@@ -122,8 +124,8 @@ def test_a_variation_is_made_from_a_configuration_s_id_and_digests(
     assert bench.skeleton(varied) == bench.skeleton(named.set("reasoning", off, "off"))
     with pytest.raises(ValueError, match="isn't a stored chunk of prompt"):
         _ = bench.variation(thread, {"prompt": off})
-    with pytest.raises(ValueError, match="isn't a stored engine"):
-        _ = bench.variation(thread, {"engine": off})
+    with pytest.raises(ValueError, match="isn't a stored model"):
+        _ = bench.variation(thread, {"model": off})
     with pytest.raises(ValueError, match="no part 'stack'"):
         _ = bench.variation(thread, {"stack": off})
     with pytest.raises(ValueError, match="can be taken out"):
@@ -306,14 +308,14 @@ def test_several_expectations_to_choose_from_are_ambiguous(
     assert (held.choosing, held.missing, held.have) == ([family], [], 0)
 
 
-def test_a_swapped_engine_keeps_every_other_pick_and_works_the_rest_out(
+def test_a_swapped_model_keeps_every_other_pick_and_works_the_rest_out(
     bench: Bench,
 ) -> None:
     lines = bench.configuration(LINES)
     off = lines.set("reasoning", bench.chunk("reasoning", "off"), "off")
-    gpt_oss = off.set("engine", bench.endpoint(GPT_OSS), GPT_OSS)
+    gpt_oss = off.set("model", bench.model_at(GPT_OSS), GPT_OSS_ARTIFACT)
 
-    assert gpt_oss.label == f"{LINES}+reasoning=off+engine={GPT_OSS}"
+    assert gpt_oss.label == f"{LINES}+reasoning=off+model={GPT_OSS_ARTIFACT}"
     assert gpt_oss.held("reasoning") == off.held("reasoning")
     assert bench.skeleton(off).body["chat_template_kwargs"] == {
         "enable_thinking": False
@@ -327,7 +329,7 @@ def test_a_swapped_engine_keeps_every_other_pick_and_works_the_rest_out(
     assert bench.landed(lines).keys() == {"sampling"}
 
     on = lines.set("reasoning", bench.chunk("reasoning", "on"), "on")
-    mistral = on.set("engine", bench.endpoint(MISTRAL), MISTRAL)
+    mistral = on.set("model", bench.model_at(MISTRAL), MISTRAL_ARTIFACT)
     with pytest.raises(StructuralError, match=f"{MISTRAL_MODEL}: .*doesn't reason"):
         _ = bench.skeleton(mistral)
 

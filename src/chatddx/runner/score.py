@@ -8,7 +8,7 @@ from pydantic import JsonValue
 from chatddx.catalog import Entry, EntryField, Subject
 from chatddx.factors.base import Component, Finding, Resolver, resolve
 from chatddx.factors.bundle import Registry
-from chatddx.factors.engine import LocalEngine, RemoteEngine
+from chatddx.factors.engine import LocalEngine, RemoteEngine, served_model_name
 from chatddx.factors.request import Skeleton, Slot, render
 from chatddx.factors.scoring import Expectation, Judge, Scorer, Scoring
 from chatddx.factors.trial import Execution, Trial
@@ -154,7 +154,7 @@ class Grader:
             assert isinstance(engine, LocalEngine | RemoteEngine)
             url = url_of(self._inventory, get, name)
             judging[ref] = _Judging(
-                judge, skeleton, engine.served_model_name, url, secret
+                judge, skeleton, served_model_name(engine, get), url, secret
             )
             at.append(JudgeEndpoint(judge=ref, endpoint=Endpoint(name=name, url=url)))
 

@@ -12,12 +12,15 @@ from chatddx.store import Catalog, People
 from chatddx.store.store import Connection
 from chatddx.test.world import (
     GPT_OSS,
+    GPT_OSS_ARTIFACT,
     LINES,
     MISTRAL,
+    MISTRAL_ARTIFACT,
     MISTRAL_MODEL,
     NATIVE,
     NATIVE_TOOLS,
     QWEN,
+    QWEN_ARTIFACT,
 )
 
 
@@ -53,25 +56,27 @@ def alice_s(conn: Connection) -> int:
     return thread
 
 
-def test_on_puts_its_endpoint_s_engine_in_the_configuration_keeping_every_pick(
+def test_on_puts_its_endpoint_s_model_in_the_configuration_keeping_every_pick(
     repl: Repl, bench: Bench, say: Say
 ):
     _ = say("use native")
     assert tried(repl).name == NATIVE
-    assert repl.prompt == f"alice {NATIVE}×{QWEN} #7> "
+    assert repl.prompt == f"alice {NATIVE} #7> "
 
     written = say("set reasoning off", f"on {GPT_OSS}")
-    assert f"cell: {NATIVE}+reasoning=off+engine={GPT_OSS} × {GPT_OSS}" in written
+    assert (
+        f"cell: {NATIVE}+reasoning=off+model={GPT_OSS_ARTIFACT} × {GPT_OSS}" in written
+    )
     assert bench.skeleton(tried(repl)).body["reasoning_effort"] == "low"
 
     _ = say(f"on {QWEN}")
     assert repl.prompt == f"alice {NATIVE}+reasoning=off×{QWEN} #7> "
 
     _ = say(f"cell native {GPT_OSS}")
-    assert repl.prompt == f"alice {NATIVE}+engine={GPT_OSS}×{GPT_OSS} #7> "
+    assert repl.prompt == f"alice {NATIVE}+model={GPT_OSS_ARTIFACT}×{GPT_OSS} #7> "
 
     _ = say(f"use {LINES}")
-    assert repl.prompt == f"alice {LINES}+engine={GPT_OSS}×{GPT_OSS} #7> "
+    assert repl.prompt == f"alice {LINES}+model={GPT_OSS_ARTIFACT}×{GPT_OSS} #7> "
 
 
 @pytest.mark.slow
@@ -83,23 +88,27 @@ def test_a_level_the_engine_s_model_refuses_is_said_until_it_is_set_otherwise(
     written = say(f"on {MISTRAL}")
     assert f"{MISTRAL_MODEL}: " in written and "doesn't reason" in written
     assert "set another in its place" in written and not repl.failed
-    assert repl.prompt == f"alice {NATIVE}+reasoning=on+engine={MISTRAL}×{MISTRAL} #7> "
+    assert (
+        repl.prompt
+        == f"alice {NATIVE}+reasoning=on+model={MISTRAL_ARTIFACT}×{MISTRAL} #7> "
+    )
 
     written = say("set reasoning off")
     assert "doesn't reason" not in written
     assert (
-        repl.prompt == f"alice {NATIVE}+reasoning=off+engine={MISTRAL}×{MISTRAL} #7> "
+        repl.prompt
+        == f"alice {NATIVE}+reasoning=off+model={MISTRAL_ARTIFACT}×{MISTRAL} #7> "
     )
 
 
-def test_set_engine_swaps_the_engine_and_leaves_an_endpoint_serving_another(
+def test_set_model_swaps_the_model_and_leaves_an_endpoint_serving_another(
     repl: Repl, say: Say
 ):
-    _ = say(f"cell {LINES} {QWEN}", f"set engine {GPT_OSS}")
+    _ = say(f"cell {LINES} {QWEN}", f"set model {GPT_OSS_ARTIFACT}")
     assert repl.cell.endpoint is None
-    assert repl.prompt == f"alice {LINES}+engine={GPT_OSS}×{GPT_OSS} #7> "
+    assert repl.prompt == f"alice {LINES}+model={GPT_OSS_ARTIFACT}×{GPT_OSS} #7> "
 
-    _ = say(f"on {QWEN}", f"set engine {QWEN}")
+    _ = say(f"on {QWEN}", f"set model {QWEN_ARTIFACT}")
     assert repl.cell.endpoint == QWEN
     assert repl.prompt == f"alice {LINES}×{QWEN} #7> "
 
@@ -147,18 +156,18 @@ def test_use_puts_a_configuration_in_as_it_is(repl: Repl, say: Say):
 
 def test_set_says_what_it_can_t_set(say: Say):
     written = say("set reasoning off", f"cell {LINES} {QWEN}", "set colour red")
-    written += say("set reasoning nope", "set prompt none", "set engine none")
-    written += say("set engine nope")
+    written += say("set reasoning nope", "set prompt none", "set model none")
+    written += say("set model nope")
 
     assert "the cell has no configuration to set it in" in written
     assert (
         "no part 'colour': instructions, few_shot, prompt, output, sampling, "
-        + "reasoning, passthrough, translations, toolset, engine"
+        + "reasoning, passthrough, translations, toolset, model"
     ) in written
     assert "no reasoning 'nope' for alice" in written
     assert "a configuration always has a prompt: only instructions" in written
-    assert "a configuration always has an engine" in written
-    assert "no engine 'nope' for alice" in written
+    assert "a configuration always has a model" in written
+    assert "no model 'nope' for alice" in written
 
 
 @pytest.mark.slow
@@ -223,7 +232,7 @@ def test_one_s_own_configuration_shadows_the_archive_s(
 
     _ = say(f"use archive/{NATIVE}")
     assert bench.about(tried(repl).configuration.thread).owner != bench.person.id
-    assert repl.prompt == f"alice archive/{NATIVE}×{QWEN} #7> "
+    assert repl.prompt == f"alice archive/{NATIVE} #7> "
 
 
 @pytest.mark.slow

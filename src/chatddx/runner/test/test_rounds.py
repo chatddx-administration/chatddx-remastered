@@ -108,7 +108,7 @@ def skeleton(plan: Plan, *made: Tool) -> tuple[Skeleton, Toolset]:
     recipe = resolve(plan.registry.get, named.compilation, Compilation).recipe
     toolset = Toolset(tools=tuple(plan.registry.add(t) for t in made), max_rounds=3)
     with_tools = recipe.model_copy(update={"toolset": plan.registry.add(toolset)})
-    facts = plan.facts.about(recipe.engine, plan.registry.get)
+    facts = plan.facts.about(recipe.model, plan.registry.get)
     return compile_request(with_tools, plan.registry.get, facts), toolset
 
 

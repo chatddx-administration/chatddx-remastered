@@ -35,14 +35,14 @@
   {% endcall %}
   {% endif %}
 
-  {% if corrected %}
-  {% call section("The facts about its model were corrected") %}
-  <p class="mb-3 text-sm">It was compiled against facts about {{ corrected.model }} that have been corrected since, where they change what it sends{% if corrected.refused %}. They now refuse what it asks: {{ corrected.refused }}. Set another chunk in its place to follow them.{% else %}. Following them keeps its recipe, compiled against the corrected facts.{% endif %}</p>
-  {% if not corrected.refused %}
-  <form method="post" action="/threads/{{ configuration.id }}/facts/follow">
+  {% if moved %}
+  {% call section("What it was compiled for has moved on") %}
+  <p class="mb-3 text-sm">{% if moved.model %}Its model, {{ moved.about }}, has a new version{% if moved.facts %}, and the facts about it were corrected since it was compiled, where they change what it sends{% endif %}.{% else %}It was compiled against facts about {{ moved.about }} that have been corrected since, where they change what it sends.{% endif %}{% if moved.refused %} The facts now refuse what it asks: {{ moved.refused }}. Set another chunk in its place to follow them.{% else %} Following keeps its recipe{% if moved.model %}, with the model's new version,{% endif %} compiled against the current facts.{% endif %}</p>
+  {% if not moved.refused %}
+  <form method="post" action="/threads/{{ configuration.id }}/moved/follow">
     <input type="hidden" name="head" value="{{ configuration.head.id }}">
     <input type="hidden" name="next" value="/configurations/{{ configuration.id }}">
-    <button class="inline-flex h-9 items-center rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground hover:bg-primary/90">Follow the facts</button>
+    <button class="inline-flex h-9 items-center rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground hover:bg-primary/90">Follow</button>
   </form>
   {% endif %}
   {% endcall %}

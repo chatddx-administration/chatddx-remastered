@@ -86,11 +86,12 @@ describe("a part's choices", () => {
 });
 
 describe("where a run goes", () => {
-  const endpoint = (name: string, engine: string): Schemas["Endpoint"] => ({
+  const endpoint = (name: string, serves: string): Schemas["Endpoint"] => ({
     name,
-    engine,
+    engine: DIGEST(9),
     title: null,
     model: null,
+    serves,
     url: null,
     host: null,
     max_jobs: 1,
@@ -101,7 +102,7 @@ describe("where a run goes", () => {
   });
   const endpoints = [endpoint("qwen@a", DIGEST(1)), endpoint("qwen@b", DIGEST(1)), endpoint("gpt@a", DIGEST(2))];
 
-  it("is the one endpoint serving the engine, or the one named among several", () => {
+  it("is the one endpoint serving the model, or the one named among several", () => {
     expect(where(endpoints, DIGEST(2), null)).toEqual({ at: "gpt@a", among: [endpoints[2]] });
     expect(where(endpoints, DIGEST(1), null)).toEqual({ at: null, among: endpoints.slice(0, 2) });
     expect(where(endpoints, DIGEST(1), "qwen@b").at).toBe("qwen@b");
@@ -109,7 +110,7 @@ describe("where a run goes", () => {
     expect(where(endpoints, DIGEST(3), null)).toEqual({ at: null, among: [] });
   });
 
-  it("is the one named for a hand-written configuration, which names no engine", () => {
+  it("is the one named for a hand-written configuration, which names no model", () => {
     expect(where(endpoints, null, null)).toEqual({ at: null, among: endpoints });
     expect(where(endpoints, null, "gpt@a").at).toBe("gpt@a");
   });

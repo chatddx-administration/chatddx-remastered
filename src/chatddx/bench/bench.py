@@ -13,7 +13,7 @@ from .cases import (
 )
 from .components import check, component, edit_component, fork_component, new
 from .configurations import edit, fork, save
-from .following import corrected, follow, follow_facts, proposal
+from .following import follow, follow_moved, moved, proposal
 from .runs import again, resume, score, start
 from .saying import say
 from .seen import Seen
@@ -49,8 +49,8 @@ class Bench(Seen):
 
     proposal = proposal
     follow = follow
-    corrected = corrected
-    follow_facts = follow_facts
+    moved = moved
+    follow_moved = follow_moved
 
     start = start
     again = again

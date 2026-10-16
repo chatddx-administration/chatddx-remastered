@@ -79,11 +79,11 @@ pkgs.testers.runNixOSTest {
 
     with subtest("the portal queues a typed case's run, and a worker sends and scores it"):
         token = call("POST", "/api/session", {"login": "alice", "password": "${password}"})["token"]
-        name = "plan (en, Qwen/Qwen3-8B-AWQ)"
+        name = "plan"
         [configuration] = call("GET", "/api/threads?kind=configuration&owner=alice&name=" + name.replace(" ", "%20"), token=token)
         family = call("POST", "/api/families", {"text": "A woman of 79 fell at home."}, token)
         body = {"configuration": configuration["id"], "endpoint": "qwen3-8b-awq@fake", "families": [family["id"]], "score": True}
-        run = call("POST", "/api/runs", body, token)["run"]
+        run = call("POST", "/api/runs", body, token)["runs"][0]["run"]
 
         def ended(_):
             job = call("GET", f"/api/runs/{run}", token=token)["job"]

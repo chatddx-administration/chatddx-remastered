@@ -20,7 +20,7 @@ KINDS: dict[str, tuple[str, ...]] = {
     "expectation": ("expectation",),
     "appendix": ("appendix",),
     "canary_set": ("canary_set",),
-    "model": ("model",),
+    "model": ("model", "model.remote"),
     "engine": ("engine.local", "engine.remote"),
     "facts": ("facts",),
 }
@@ -128,9 +128,10 @@ class Proposed:
 
 
 @dataclass(frozen=True)
-class Corrected:
-    behind: Behind
-    model: str
+class Moved:
+    facts: Behind | None
+    model: Behind | None
+    about: str
     digest: str | None
     compilation: str | None
     refused: str | None

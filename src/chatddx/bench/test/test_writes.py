@@ -151,7 +151,7 @@ def test_a_recipe_of_the_person_s_making_is_compiled_into_a_configuration(
         output=bench.chunk("output", "lines"),
         sampling=bench.chunk("sampling", "greedy"),
         reasoning=bench.chunk("reasoning", "off"),
-        engine=engine,
+        model=bench.model_at(QWEN),
     )
 
     made = bench.new(recipe, "my own")
@@ -171,17 +171,17 @@ def test_a_recipe_is_refused_what_doesn_t_compile(bench: Bench) -> None:
     prompt = bench.chunk("prompt", "case")
     output = bench.chunk("output", "lines")
     sampling = bench.chunk("sampling", "greedy")
-    engine = bench.endpoint(QWEN)
-    recipe = Recipe(prompt=prompt, output=output, sampling=sampling, engine=engine)
+    model = bench.model_at(QWEN)
+    recipe = Recipe(prompt=prompt, output=output, sampling=sampling, model=model)
 
     with pytest.raises(ValueError, match=f"{output} isn't a stored chunk of prompt"):
         _ = bench.new(recipe.model_copy(update={"prompt": output}), "x")
-    with pytest.raises(ValueError, match=f"{output} isn't a stored engine"):
-        _ = bench.new(recipe.model_copy(update={"engine": output}), "x")
+    with pytest.raises(ValueError, match=f"{output} isn't a stored model"):
+        _ = bench.new(recipe.model_copy(update={"model": output}), "x")
     on = recipe.model_copy(
         update={
             "reasoning": bench.chunk("reasoning", "on"),
-            "engine": bench.endpoint(MISTRAL),
+            "model": bench.model_at(MISTRAL),
         }
     )
     with pytest.raises(ValueError, match=f"{MISTRAL_MODEL}: .*doesn't reason"):

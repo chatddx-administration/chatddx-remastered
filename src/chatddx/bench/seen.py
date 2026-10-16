@@ -17,8 +17,8 @@ from chatddx.factors.base import (
 )
 from chatddx.factors.bundle import Registry
 from chatddx.factors.cases import Case, CleanupOp, Vignette
-from chatddx.factors.engine import LocalEngine, RemoteEngine
-from chatddx.factors.facts import Landing, ModelFacts, model_name
+from chatddx.factors.engine import LocalEngine, RemoteEngine, served_model_name
+from chatddx.factors.facts import Landing, ModelFacts, model_name, model_of
 from chatddx.factors.request import (
     Compilation,
     Purpose,
@@ -68,6 +68,7 @@ class Seen:
         self.people: People = People(conn)
         self._logins: dict[int, str] = {}
         self._models: dict[str, str | None] = {}
+        self._serves: dict[str, str | None] = {}
 
     def login(self, person: int | None) -> str:
         if person is None:
@@ -86,9 +87,9 @@ class Seen:
             for e, _ in sorted(live, key=lambda found: found[0].id)
         )
 
-    def facts_for(self, engine: str) -> ModelFacts | None:
-        model = self.model(engine)
-        return None if model is None else self.facts.models.get(model)
+    def facts_for(self, model: str) -> ModelFacts | None:
+        name = model_name(model, self.get)
+        return None if name is None else self.facts.models.get(name)
 
     def owner(self, about: About) -> str:
         return "" if about.owner == self.person.id else self.login(about.owner)
@@ -196,6 +197,18 @@ class Seen:
             self._models[engine] = model_name(engine, registry.get)
         return self._models[engine]
 
+    def model_of(self, engine: str) -> str | None:
+        if engine not in self._serves:
+            stored = self.rows.kind(engine) is not None
+            self._serves[engine] = model_of(engine, self.get) if stored else None
+        return self._serves[engine]
+
+    def model_at(self, name: str) -> str:
+        model = self.model_of(self.endpoint(name))
+        if model is None:
+            raise ValueError(f"endpoint {name!r} serves no model")
+        return model
+
     def endpoint(self, name: str) -> str:
         engine = self.inventory.endpoint(name).engine
         if self.rows.kind(engine) is None:
@@ -230,28 +243,31 @@ class Seen:
             if part not in PARTS:
                 raise ValueError(f"no part {part!r}: the parts are {', '.join(PARTS)}")
             if digest is not None and self.rows.kind(digest) not in KINDS[part]:
-                what = "engine" if part == "engine" else f"chunk of {part}"
+                what = "model" if part == "model" else f"chunk of {part}"
                 raise ValueError(f"{digest} isn't a stored {what}")
             found = found.set(part, digest, self.title(digest))
         return found
 
     def at(self, variation: TriedVariation, endpoint: str | None) -> tuple[str, str]:
-        engine = variation.held("engine")
-        if engine is None:
+        model = variation.held("model")
+        if model is None:
             if endpoint is None:
                 raise ValueError(
-                    f"{variation.label} names no engine: name the endpoint to send it to"
+                    f"{variation.label} names no model: name the endpoint to send it to"
                 )
             return endpoint, self.endpoint(endpoint)
         if endpoint is None:
             try:
-                endpoint = self.inventory.serving(engine, self.title(engine))
+                endpoint = self.inventory.serving_model(
+                    model, self.model_of, self.title(model)
+                )
             except LookupError as e:
                 raise ValueError(str(e)) from None
-        if self.endpoint(endpoint) != engine:
+        engine = self.endpoint(endpoint)
+        if self.model_of(engine) != model:
             raise ValueError(
-                f"endpoint {endpoint!r} serves another engine than {variation.label}'s, "
-                + f"{self.title(engine)}"
+                f"endpoint {endpoint!r} serves another model than {variation.label}'s, "
+                + f"{self.title(model)}"
             )
         return endpoint, engine
 
@@ -276,7 +292,7 @@ class Seen:
         if not variation.parts and made is not None:
             pinned = resolve(self.get, made, Compilation).facts
             return None if pinned is None else resolve(self.get, pinned, ModelFacts)
-        return self.facts_for(recipe.engine)
+        return self.facts_for(recipe.model)
 
     def landed(self, variation: TriedVariation) -> dict[str, Landing]:
         recipe = variation.varied
@@ -336,7 +352,7 @@ class Seen:
         found = self.get(engine)
         if not isinstance(found, LocalEngine | RemoteEngine):
             raise StructuralError(f"{engine} is a {found.kind_name}, not an engine")
-        return found.served_model_name
+        return served_model_name(found, self.get)
 
     def request(
         self, variation: TriedVariation, engine: str | None, seed: int
@@ -639,7 +655,7 @@ class Seen:
     ) -> tuple[Registry, Compilation]:
         registry = self.store.load(s.digest for s in iter_refs(recipe))
         if facts == "current":
-            facts = self.facts_for(recipe.engine)
+            facts = self.facts_for(recipe.model)
         if facts is not None:
             _ = registry.add(facts)
         skeleton, compilation = compiled(recipe, registry.get, rig(), facts, into)
@@ -659,6 +675,8 @@ class Seen:
             _ = registry.add(compilation)
             if compilation.facts is not None:
                 _ = registry.add(self.get(compilation.facts))
+            if compilation.recipe.model not in registry:
+                _ = registry.add(self.get(compilation.recipe.model))
 
     def current(self, family: int) -> Vignette:
         return self.rows.bindings([family])[-1].vignette

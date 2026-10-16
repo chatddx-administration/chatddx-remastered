@@ -77,7 +77,7 @@ def test_run_and_score_checks(reg: Registry) -> None:
     started = RunStarted(
         run=run_id, at=NOW, rig=RIG, trial=ids["trial"], canaries=ids["canaries"]
     )
-    items = (item(0, call(engine.served_model_name)), item(1, call("other")))
+    items = (item(0, call(engine.digest)), item(1, call("other")))
     canaries = tuple(
         CanaryCall(run=run_id, phase=p, canary=0, call=call("c"))
         for p in ("start", "end")
@@ -94,7 +94,7 @@ def test_run_and_score_checks(reg: Registry) -> None:
         )
         if f.code == "run.incomplete"
     ] == ["1 canary calls missing"]
-    assert run.items[0].call.response == {"model": engine.served_model_name}
+    assert run.items[0].call.response == {"model": engine.digest}
     unnamed = items[0].call.model_copy(update={"response": {"choices": []}})
     silent = Run(
         stages=(started,), items=(items[0].model_copy(update={"call": unnamed}),)
@@ -102,12 +102,12 @@ def test_run_and_score_checks(reg: Registry) -> None:
     assert [(f.code, f.message) for f in check_run(silent, reg)] == [
         (
             "attestation.model",
-            f"engine returned no model name, declared {engine.served_model_name!r}",
+            f"engine returned no model name, declared {engine.digest!r}",
         )
     ]
     drifted = Run(
         stages=(started,),
-        items=(item(0, call(engine.served_model_name), fp("edited at the source")),),
+        items=(item(0, call(engine.digest), fp("edited at the source")),),
     )
     assert [(f.code, f.subject) for f in check_run(drifted, reg)] == [
         ("case.drift", str(drifted.items[0].key))
@@ -119,7 +119,7 @@ def test_run_and_score_checks(reg: Registry) -> None:
     rerun = Run(
         stages=(started,),
         items=(
-            item(0, call(engine.served_model_name, [2, 106, 9])),
+            item(0, call(engine.digest, [2, 106, 9])),
             item(1, items[1].call.model_copy(update={"prompt_tokens": None})),
         ),
     )
@@ -178,9 +178,7 @@ def test_run_and_score_checks(reg: Registry) -> None:
         view=1,
         value=1.0,
         judge_calls=(
-            JudgeCall(
-                judge=ids["judge"], seed_index=0, call=call(engine.served_model_name)
-            ),
+            JudgeCall(judge=ids["judge"], seed_index=0, call=call(engine.digest)),
         ),
     )
     assert check_score(score(ok), run, reg) == []
@@ -204,7 +202,7 @@ def test_run_and_score_checks(reg: Registry) -> None:
                             JudgeCall(
                                 judge=ids["judge"],
                                 seed_index=1,
-                                call=call(engine.served_model_name),
+                                call=call(engine.digest),
                             ),
                         )
                     }

@@ -316,6 +316,10 @@ Returns findings, in this order:
    `tools.stopped` when its last turn has no call (skeletons with tools only);
 6.  `tools.code` for each tool of the skeleton whose version isn't recorded or isn't the one `Tool.version` pins;
 7.  `attestation.model` for each item: one per distinct wrong model name, and one when some call has a response but no
+```
+AGENT: replace
+`served_model_name(engine, get)`, a function.
+```
     model name. The declared name is the engine's `served_model_name`: a local engine's digest, a remote engine's
     `model`. Calls without a response aren't checked;
 8.  `attestation.prompt_tokens` when some items have a call, failed calls included, without `prompt_tokens`;

@@ -1,4 +1,5 @@
 import tomllib
+from collections.abc import Callable
 from pathlib import Path
 from typing import Annotated, Any, Self, cast
 
@@ -147,19 +148,21 @@ class Inventory(Frozen):
         )
 
     # src/chatddx/runner/score.py:judge_at and src/chatddx/bench/seen.py:Seen.at both
-    # refuse rather than pick when several endpoints serve one engine.
+    # refuse rather than pick when several endpoints serve one engine, or one model.
     def serving(self, engine: str, called: str | None = None) -> str:
         named = sorted(n for n, e in self.endpoints.items() if e.engine == engine)
-        match named:
-            case [one]:
-                return one
-            case []:
-                raise LookupError(f"no endpoint serves engine {called or engine}")
-            case _:
-                raise LookupError(
-                    f"{', '.join(named)} serve engine {called or engine}; name the one "
-                    + "to use"
-                )
+        return _one(named, f"engine {called or engine}")
+
+    def serving_model(
+        self,
+        model: str,
+        model_of: Callable[[str], str | None],
+        called: str | None = None,
+    ) -> str:
+        named = sorted(
+            n for n, e in self.endpoints.items() if model_of(e.engine) == model
+        )
+        return _one(named, f"model {called or model}")
 
     def source(self, name: str) -> AnySource:
         source = self.sources.get(name)
@@ -197,3 +200,13 @@ class Inventory(Frozen):
 
     def cleared_for(self, endpoint: str) -> frozenset[str]:
         return frozenset(self.cleared.get(endpoint, ()))
+
+
+def _one(named: list[str], what: str) -> str:
+    match named:
+        case [one]:
+            return one
+        case []:
+            raise LookupError(f"no endpoint serves {what}")
+        case _:
+            raise LookupError(f"{', '.join(named)} serve {what}; name the one to use")

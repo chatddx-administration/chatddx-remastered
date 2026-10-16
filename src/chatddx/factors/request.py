@@ -27,7 +27,7 @@ from .base import (
     resolve,
     sorted_keys,
 )
-from .engine import EngineRef
+from .engine import ModelRef
 from .facts import (
     Effort,
     FactsRef,
@@ -469,7 +469,7 @@ class Recipe(Frozen):
     appendix_layout: AppendixLayout = AppendixLayout()
     translations: Annotated[Digest, RefTo("chunk.translations")] | None = None
     toolset: Annotated[Digest, RefTo("chunk.toolset")] | None = None
-    engine: EngineRef
+    model: ModelRef
 
 
 CHUNK_PARTS = (
@@ -483,7 +483,7 @@ CHUNK_PARTS = (
     "translations",
     "toolset",
 )
-RECIPE_PARTS = (*CHUNK_PARTS, "engine")
+RECIPE_PARTS = (*CHUNK_PARTS, "model")
 
 
 class Skeleton(Component):
@@ -612,7 +612,7 @@ class Compilation(Component):
         found: list[str] = []
         if self.facts is not None:
             facts = resolve(get, self.facts, ModelFacts)
-            if (model := model_name(self.recipe.engine, get)) != facts.model:
+            if (model := model_name(self.recipe.model, get)) != facts.model:
                 found.append(f"facts about {facts.model} compiled a recipe for {model}")
         if self.into is not None and self.into not in self._languages(get):
             found.append(f"the recipe has no translations into {self.into}")
@@ -866,7 +866,7 @@ def own_texts(chunk: Component, get: Resolver) -> tuple[str, ...]:
 def landings(
     recipe: Recipe, get: Resolver, facts: ModelFacts | None
 ) -> tuple[Landing | None, Landing | None]:
-    if facts is not None and (model := model_name(recipe.engine, get)) != facts.model:
+    if facts is not None and (model := model_name(recipe.model, get)) != facts.model:
         raise StructuralError(f"facts about {facts.model} can't compile for {model}")
     reasoning = (
         None if recipe.reasoning is None else resolve(get, recipe.reasoning, Reasoning)
@@ -878,7 +878,7 @@ def landings(
     if facts is None:
         what = "a recommended sampling" if asked is None else f"reasoning {asked!r}"
         raise StructuralError(
-            f"{what} is worked out from the facts about the engine's model, which has "
+            f"{what} is worked out from the facts about the recipe's model, which has "
             + "none"
         )
     try:

@@ -153,11 +153,11 @@ def _serving(engine: LocalEngine, server: dict[str, Any]) -> Iterable[Finding]:
         )
     models = cast(list[dict[str, Any]], served.get("models") or [])
     names = [m.get("id") for m in models]
-    if engine.served_model_name not in names:
+    if engine.digest not in names:
         yield finding(
             "endpoint.served_name",
             f"the server answers as {', '.join(map(str, names)) or 'nothing'}; put "
-            + f"{engine.served_model_name} first in its servedModelNames",
+            + f"{engine.digest} first in its servedModelNames",
         )
 
 

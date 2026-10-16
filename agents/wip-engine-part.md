@@ -1,17 +1,19 @@
-# The engine as a part: work in progress
+# The model as a part: work in progress
 
 A solution to the variants problem: configurations made per model and per language, their model and language carried
-in their names and parsed back at every edge. Here a configuration is one recipe, whose engine and translations are
+in their names and parsed back at every edge. Here a configuration is one recipe, whose model and translations are
 parts like any other; what depends on the model is worked out from stored facts when the recipe is compiled, and what
-depends on the language when a case is sent. Built, but for the NixOS test (see "Outstanding").
+depends on the language when a case is sent. The engine is the trial's: the endpoint serving the model. Built first
+with the engine as the part, reviewed ("Review"), and rebuilt with the model as the part ("The model as the part",
+decided M1, R1 and Q1); the sections below describe it as it stands.
 
 ## What a researcher sees
 `plan` is one configuration. Its parts are its texts, its output, `sampling: recommended`, `reasoning: off` and
-`engine: qwen3-8b-awq@pelle`. Picking another engine on the variation page is a variation like any other,
-`plan+engine=gpt-oss-20b@pelle`: every other pick stays, the request is worked out for gpt-oss, and what the model
+`model: qwen3-8b@pelle`. Picking another model on the variation page is a variation like any other,
+`plan+model=gpt-oss-20b@malborg`: every other pick stays, the request is worked out for gpt-oss, and what the model
 can't do is said before anything runs, as is a level that lands on its nearest: `reasoning: off → low on
-gpt-oss-20b, which always reasons`. Saving it keeps one configuration with that engine. The endpoint is where the
-engine is served, found from it.
+gpt-oss-20b, which always reasons`. Saving it keeps one configuration with that model. The endpoint is where the
+model is served, found from it, and named when several serve it.
 
 A configuration with translations, such as the sample's `free-text-guided`, runs over cases in whatever languages:
 each case is sent in its own language, the configuration's own as written, the others translated. Before anything
@@ -48,26 +50,34 @@ Every level the bundled facts and the sample World's refuse has its nearest: gpt
 `on`). A thinking budget a model refuses has no nearest, and stays refused: a budget isn't a level.
 
 ## The recipe and its compilation
-- **The recipe names its engine** (`Recipe.engine`, an engine's digest, required), and **the compilation names its
-  facts** (`Compilation.facts`), only where they work something out, so a literal configuration is never behind its
-  facts. `compile_request(recipe, get, facts=None, into=None)` resolves the intents with the facts of the engine's
-  model, lands each level where they say, and refuses what they refuse; an intent on an engine whose model has no facts
-  doesn't compile. The skeleton stays the literal request, so two engines of one model compile a recipe to one
-  skeleton, and trials, judges, runs and scores pin exactly what is sent.
+- **A model is a component for every engine.** A local engine references a `model` artifact as before; a remote
+  engine references a `model.remote` component (`RemoteModel`: provider and name) rather than naming its model, so
+  `ModelRef` covers both kinds, `model_name` reads the facts' key from either or from an engine, and
+  `served_model_name(engine, get)` is a function: a local engine's digest, a remote engine's model's name.
+- **The recipe names its model** (`Recipe.model`, a `ModelRef`, required), and **the compilation names its facts**
+  (`Compilation.facts`), only where they work something out, so a literal configuration is never behind its facts.
+  `compile_request(recipe, get, facts=None, into=None)` resolves the intents with the facts of the recipe's model,
+  lands each level where they say, and refuses what they refuse; an intent on a model with no facts doesn't compile.
+  The skeleton stays the literal request, so a recipe compiles to one skeleton wherever its model is served, and
+  trials, judges, runs and scores pin exactly what is sent, the engine among them.
 - **What has moved on** looks at a configuration's head's compilation's facts too, and flags them only when compiling
-  against the newer facts changes the skeleton. Whoever sees a configuration sees its corrected facts and what
-  following them keeps (`Bench.corrected`, `GET /api/threads/{thread}/facts`, the configuration page); its owner
-  follows them as an edit of the same recipe compiled against them (`Bench.follow_facts`,
-  `POST /api/threads/{thread}/facts/follows`). Facts that now refuse what it asks are said, not followed.
-- **A title** names the engine last and describes an intent by what it asks: `recommended sampling`, `reasoning off`.
+  against the newer facts changes the skeleton; and at its recipe's model, flagged whenever its thread moved on, as to
+  a new revision of the weights (R1). Whoever sees a configuration sees what moved on and what following keeps
+  (`Bench.moved`, `GET /api/threads/{thread}/moved`, the configuration page); its owner follows both as one edit, the
+  recipe with the model's head compiled against the current facts about it (`Bench.follow_moved`,
+  `POST /api/threads/{thread}/moved/follows`). Facts that now refuse what it asks are said, not followed.
+- **A title** names the model last and describes an intent by what it asks: `recommended sampling`, `reasoning off`.
 
 ### Several endpoints
-A run goes to the endpoint serving its engine, and a judge's calls to the endpoint serving the judge's engine
-(`Inventory.serving`; `Seen.at`, `runner/score.py:judge_at`). When none serves it, or several do and none is named,
-the run, or the scoring, is refused; an endpoint named that serves another engine is refused before the gate is
-asked. A hand-written configuration names no engine, so it needs an endpoint named, and its trial takes that
-endpoint's engine. Several endpoints serving one engine would be the same model served on identical machines, a load
-balancer's job rather than the World's.
+A run goes to the endpoint serving its model (`Inventory.serving_model`, `Seen.at`), and a judge's calls to the
+endpoint serving the judge's engine (`Inventory.serving`, `runner/score.py:judge_at`): a judge pins its engine as a
+trial does, and init-data remakes it for the World's endpoints. When none serves the model, or several do and none is
+named, the run is refused; an endpoint named that serves another model is refused before the gate is asked. A
+hand-written configuration names no model, so it needs an endpoint named, and its trial takes that endpoint's engine.
+Several endpoints serving one model is likely, unlike one engine: the test World serves Qwen3 with and without its
+parsers (`qwen3@fake`, `qwen3-bare@fake`), so a run of a Qwen3 configuration there names its endpoint, and a look
+rendered for neither has no findings until one is picked. The repl's cell on no endpoint shows none, and `run` says
+which to name.
 
 ## Languages
 - **A translations chunk holds every language** it translates into: `Translations(into: {sv: {...}, de: {...}})`,
@@ -107,47 +117,58 @@ nothing says it isn't the configuration's language.
   translate into it, grouped by the record whose texts they translate
   (`[translations.sample.of."instructions.clinician"]`) or given flat (`entries`). A text record is written once; a
   translations record of one name in several texts files is one chunk, into each of their languages.
-- **A recipe is made once**, named plainly, with the engine of the endpoint the World names for configurations
-  (`inventory.toml`'s `configurations = "qwen3-8b-awq@pelle"`); a recipe the facts refuse on that engine is skipped and
+- **A recipe is made once**, named plainly, for the model of the endpoint the World names for configurations
+  (`inventory.toml`'s `configurations = "qwen3-8b-awq@pelle"`); a recipe the facts refuse for that model is skipped and
   said. Loading says, per recipe, the languages its translations can't carry it into
   (`[untranslated] recipe asked: no translation into sv for 'You are an emergency physician.'`), and makes it all the
-  same. A judge's recipe is compiled with the engine of the endpoint the World binds the judge to, its compilation
-  stored without a thread (`Plan.compilations`). Facts are loaded as threads, one per model served that the facts know.
+  same. A judge's recipe is compiled for the model of the endpoint the World binds the judge to, its compilation
+  stored without a thread (`Plan.compilations`), and the judge keeps that endpoint's engine. Facts are loaded as
+  threads, one per model served that the facts know. A remote model is a `[remote_model.*]` record of `engines.toml`
+  (provider, name), which a `[remote_engine.*]` record names as a local engine names its `[model.*]`.
 - **The Worlds**: the sample's and the test World's Swedish instructions and worked examples are translations of their
   English ones. In the sample only `free-text-guided` names them, and in the test World only `lines-guided`; every
   other configuration leaves Swedish cases out.
 
 ## The edges
-- **The bench**: `PARTS` holds `engine`, which can't be taken out; `Seen.at(variation, endpoint)` says where a run goes;
+- **The bench**: `PARTS` holds `model`, which can't be taken out; `Seen.at(variation, endpoint)` says where a run goes,
+  `Seen.model_of(engine)` which model an engine serves and `Seen.model_at(endpoint)` which an endpoint does;
   a look says, for each intent, what it asked and where it landed (`Seen.landed`), the languages it runs in, and lints
   each language's trial, a language left out being `translations.missing`.
-- **The API**: `Parts.engine`; a look's and a run's `endpoint` are optional, derived from the engine; a look's `Part`
-  says where an intent landed, and its `languages` where its cases go; `POST /api/runs` answers with every run it
-  started and the cases left out; a run says its `language` and the run it was `started_with`; `Thread.translated`.
-- **The portal**: the engine is a row of the parts table, its picker the engines the World's endpoints serve; the
-  endpoint picker shows only for a hand-written configuration or an engine served at several endpoints. The variation
-  page says where it runs and what is left out; a run's page links the runs started with it; the home page runs the
-  configuration it picks with its engine set to the endpoint's, and asks the language a case is written in.
-- **The repl**: the cell's engine is its configuration's engine part; `on ENDPOINT`, `use` and `cell` put the
-  endpoint's engine in it and keep every pick; `set engine NAME` swaps it. A level the new engine's model refuses is
-  said as the cell changes, as a note, and the cell changes anyway so that `set reasoning` can mend it.
-  `configurations` lists a row per configuration with its languages; `show` lists the languages before the lints;
-  `run tag` runs a start's runs in turn, and a Ctrl-C that stops one stops the ones after it.
-- **Scripted runs** set the engine to the scripted endpoint's, and keep one run each: their cases are sent in one
+- **The API**: `Parts.model`; `Endpoint.serves`, the model an endpoint's engine serves; a look's and a run's
+  `endpoint` are optional, derived from the model; a look is rendered and linted for the endpoint's engine, or for
+  none when nothing serves the model or several do unnamed; a look's `Part` says where an intent landed, and its
+  `languages` where its cases go; `POST /api/runs` answers with every run it started and the cases left out; a run
+  says its `language` and the run it was `started_with`; `Thread.translated`; `GET /api/threads/{thread}/moved` and
+  `POST .../moved/follows` (`Moved`, `NewFollowMoved`).
+- **The portal**: the model is a row of the parts table, its picker the models the World's endpoints serve; the
+  endpoint picker shows for a hand-written configuration or a model served at several endpoints. The variation page
+  says where it runs and what is left out; a configuration's page says what it was compiled for has moved on, and its
+  owner follows it; a run's page links the runs started with it; the home page runs the configuration it picks with
+  its model set to the endpoint's, and asks the language a case is written in.
+- **The repl** (Q1): `on ENDPOINT`, `use` and `cell` put the endpoint's model in the cell's configuration and keep
+  every pick, a variation only when it differs; `set model NAME` swaps it, named as its thread is, and unsets an
+  endpoint serving another. The engine the cell is rendered and linted for is the endpoint's, else the one serving the
+  configuration's model (`Repl.engine`). A level the new model refuses is said as the cell changes, as a note, and
+  the cell changes anyway so that `set reasoning` can mend it. `configurations` lists a row per configuration with
+  its languages; `show` lists the languages before the lints; `run tag` runs a start's runs in turn, and a Ctrl-C
+  that stops one stops the ones after it.
+- **Scripted runs** set the model to the scripted endpoint's, and keep one run each: their cases are sent in one
   language.
 - **Lints**: `trial.engine_unmatched` and `judge.engine_unmatched`, a skeleton every compilation of which was worked
   out for another model than the engine serves; `facts.reasoning_unmatched` and `facts.sampling_unmatched` for literal
   chunks and hand-written skeletons; `language.mixed` for a trial made by hand, since the bench makes none.
 
 ## Stores loaded before
-The migrations are edited in place: `0012` (the `facts` thread kind, `chunk.translations` out of the language kinds) and
-`0026` (`replaced` entries naming an engine, the `with` entry). A store loaded before is dropped and loaded again, as
-its compilations and translations are of versions nothing reads.
+The migrations are edited in place: `0012` (the `facts` and `model.remote` thread kinds, `chunk.translations` out of
+the language kinds) and `0026` (`replaced` entries naming a model, the `with` entry). A store loaded before is dropped
+and loaded again, as its compilations, translations and remote engines are of versions nothing reads. The Worlds'
+`endpoints.toml` name remote engines by their new digests.
 
 ## Outstanding
-- **The NixOS test** (`nix/test.nix`) still finds `plan (en, Qwen/Qwen3-8B-AWQ)` and names its endpoint, and reads
-  the run from the top of what `POST /api/runs` answers, which is `StartedRuns` now; it wants `plan`, can leave the
-  endpoint to be derived, and takes the first of `runs`.
+- **The docs** describe the engine as the part; the suggestions written in above each statement say what the model
+  as the part changes, and `docs/repl-manual.md`'s transcripts want recording again.
+- **The review's must-fix items** that aren't this build's: names tests share spelled as literals, and four comments
+  in `curation/plan.py:plan_factors`.
 - **`Seen.thread`'s `name` is undescribed.** The doc fixes that took out the `variants_for` lines in docs/bench-api.md,
   "`thread(word, name)`", took the item's first line too, so `OWNER/NAME` is said only as a qualified name.
 - **The repl's `runs` doesn't show a start**: a translated run says its language, the own language's run of the same
@@ -161,11 +182,15 @@ its compilations and translations are of versions nothing reads.
   goes as its language's, or is said as "if it can be" when the look didn't see its language.
 - **`Seen.facts` is read on every access**, several times a look; cheap at today's sizes (a facts thread per model),
   and the place to cache per request if it shows.
+- **A look for a model several endpoints serve** has no findings until an endpoint is named, where the engine part gave
+  it the recipe's engine's. The variation page shows the picker; the repl's `show` shows no lints.
+- **A model that moved on and is served nowhere** is followed to its head whether or not an endpoint serves it; `at`
+  says so afterwards.
 
 ## The model as the part
-An alternative to "The recipe and its compilation", weighed on paper and not built: the recipe names a model, and the
-engine stays the trial's, picked per run as the endpoint serving the model. The review below asked for it; "Take" is
-the agent's and still open.
+Written up as an alternative to the engine as the part, on the review's asking, and then decided and built: M1, R1 and
+Q1, with the `configurations` key kept as an endpoint, whose engine's model the recipes are made for. The sections
+above describe it as built; what follows is the write-up as it was weighed, with its options' decisions.
 
 ### What a researcher sees
 `plan`'s parts are its texts, its output, `sampling: recommended`, `reasoning: off` and `model: Qwen/Qwen3-8B-AWQ`.
@@ -238,7 +263,7 @@ O2 allows while no store holds data worth keeping and the deploy (`agents/wip-de
   weights isn't a new model. Never stale, and the facts are keyed by it already; but the artifact would reference
   it, a kind more than M1, and a configuration would say less than it does today.
 
-Take: M1. A revision of the weights is a change a researcher should see.
+Decided: M1. A revision of the weights is a change a researcher should see.
 
 #### R. A revision of the weights
 Under M1 a configuration names an artifact, and a World that moves to a new revision leaves it naming one nothing
@@ -247,13 +272,13 @@ serves: the engine part's staleness, rarely.
   are followed. The same mechanism would serve the built solution for a stale engine, more often.
 - **R2. Refused until picked again**, as the built solution refuses a stale engine.
 
-Take: R1, and the same for the built solution if it stays.
+Decided: R1; `behind` flags `/recipe/model` whenever its thread moved on, and `follow_moved` follows it with the facts.
 
 #### Q. `use` on an endpoint serving another model
 - **Q1. The model swaps** to the endpoint's, said as a variation, as the engine does today.
 - **Q2. The cell moves** to an endpoint serving the configuration's model, when one does.
 
-Take: Q1; the cell is a session on an endpoint, and Q2 is `on` typed for you.
+Decided: Q1; the cell is a session on an endpoint, and Q2 is `on` typed for you.
 
 ### Weighing
 The two agree on everything but what the recipe pins: the built solution pins what the rig runs on, this one what
@@ -262,13 +287,20 @@ built one is cheaper now by one component kind, and this one cheaper each time a
 that upgrades vLLM and tunes flags is often. Take: this one, if the deploy leaves room for one more reload; else the
 built one with R1 for a stale engine, and this as the follow-up.
 
-### Questions for the user
-- **M1**, and whether a remote model is a record of `engines.toml` or inlined in its engine's.
-- **R1**, for a stale model here and for a stale engine in the built solution.
-- **The `configurations` key**: a model, or an endpoint as now.
+### What building it found
+- **Several endpoints serving one model is the ordinary case**, not the unlikely one it was for engines: the test
+  World's Qwen3 is served with and without its parsers. The decided refusal stands, so a run there names its endpoint,
+  and the API tests do; a look rendered for no endpoint has no findings. A World-level preference among them, such
+  as the `configurations` endpoint, was not built: it would pick silently.
+- **A remote model is a record** of `engines.toml`, `[remote_model.*]`, as a local engine's model is.
+- **The `configurations` key stays an endpoint**: the data sets, the judges' binding and the facts loaded per served
+  model all read endpoints.
+- **The lint `trial.engine_unmatched` keeps its meaning**: it fires only where facts were pinned, not for a literal
+  recipe's model, which `Seen.at` already holds a run to.
 
 ## Review
-A read of the branch before merge, by a session that didn't build it: the code against this document and against
+A read of the branch with the engine as the part, before the model replaced it, by a session that didn't build it: the
+code against this document and against
 `agents/wip-variants.md` as main holds it, the suite and the static checks, and a second reader over curation and the
 edges. "Take" is the reviewer's.
 

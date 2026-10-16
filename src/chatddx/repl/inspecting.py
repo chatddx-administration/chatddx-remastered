@@ -12,7 +12,6 @@ from chatddx.catalog import About
 from chatddx.catalog.titles import describe, short
 from chatddx.factors.base import Component, resolve
 from chatddx.factors.cases import Appendix, Case
-from chatddx.factors.engine import LocalEngine
 from chatddx.factors.request import Reasoning, Sampling, Skeleton
 from chatddx.factors.scoring import Expectation, Scoring
 from chatddx.facts import (
@@ -86,10 +85,10 @@ def _show_cell(repl: Repl, tags: tuple[str, ...] = ()) -> None:
         table.add_column(column)
 
     endpoint = repl.where()
-    if endpoint and cell.engine:
-        served = bench.served(cell.engine)
+    if endpoint and repl.engine:
+        served = bench.served(repl.engine)
         url = url_of(bench.inventory, bench.get, endpoint)
-        where = f"{bench.title(cell.engine)}, served as {served} at {url}"
+        where = f"{bench.title(repl.engine)}, served as {served} at {url}"
         table.add_row("endpoint", endpoint, where)
 
     if variation:
@@ -108,7 +107,7 @@ def _show_cell(repl: Repl, tags: tuple[str, ...] = ()) -> None:
         return
 
     skeleton = bench.skeleton(variation)
-    request = bench.request(variation, cell.engine, repl.seed)
+    request = bench.request(variation, repl.engine, repl.seed)
 
     messages = request.pop("messages")
     assert isinstance(messages, list)
@@ -134,8 +133,8 @@ def _show_cell(repl: Repl, tags: tuple[str, ...] = ()) -> None:
         for each in carried:
             repl.console.print(_carried(each))
 
-    if cell.engine is not None:
-        findings = bench.findings(variation, cell.engine, repl.seed, families, carried)
+    if repl.engine is not None:
+        findings = bench.findings(variation, repl.engine, repl.seed, families, carried)
         repl.console.print("lints", style="bold")
         repl.say_findings(findings)
         if not findings:
@@ -248,14 +247,12 @@ def _in_cell(repl: Repl, word: str) -> str | None:
 
     if word == "configuration" and variation:
         digest = variation.configuration.digest
-    elif word in ("engine", "model") and cell.engine:
-        digest = cell.engine
-        engine = bench.get(cell.engine)
-        if word == "model":
-            if not isinstance(engine, LocalEngine):
-                repl.error(f"the cell's engine is a {engine.kind_name}, with no model")
-                return None
-            digest = engine.model
+    elif word == "model" and variation and variation.recipe is not None:
+        digest = variation.held("model")
+    elif word == "model" and repl.engine:
+        digest = bench.model_of(repl.engine)
+    elif word == "engine" and repl.engine:
+        digest = repl.engine
     elif word in PARTS and variation:
         digest = variation.held(word)
         if digest is None:
@@ -621,7 +618,7 @@ def reasoning(repl: Repl) -> None:
             marked = f"▸ {endpoint}" if endpoint == where else endpoint
             serving.setdefault(model, []).append(marked)
 
-    current = None if cell.engine is None else bench.model(cell.engine)
+    current = None if repl.engine is None else bench.model(repl.engine)
     asked = _asked(repl, cell.variation)
     caption = (
         "▸ the level the cell's configuration asks for, as its model's facts say"

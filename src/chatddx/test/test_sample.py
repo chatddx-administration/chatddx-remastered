@@ -81,7 +81,7 @@ def test_the_sample_s_translations_carry_its_recipes_into_swedish() -> None:
             continue
         held = resolve(get, r.compilation, Compilation)
         recipe = held.recipe.model_copy(update={"translations": translations})
-        facts = sample.facts.about(recipe.engine, get)
+        facts = sample.facts.about(recipe.model, get)
         try:
             skeleton, _ = compiled(recipe, get, rig(), facts, into="sv")
         except StructuralError:

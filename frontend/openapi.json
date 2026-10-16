@@ -670,11 +670,11 @@
             }
           },
           {
-            "name": "engine",
+            "name": "model",
             "in": "query",
             "required": false,
             "schema": {
-              "$ref": "#/components/schemas/EngineDigest"
+              "$ref": "#/components/schemas/ModelDigest"
             }
           },
           {
@@ -708,10 +708,10 @@
                   "type": "null"
                 }
               ],
-              "description": "to render and lint it for: a configuration's engine's unless named, and one a hand-written configuration names",
+              "description": "to render and lint it for: the one serving a configuration's model unless named, and one a hand-written configuration names",
               "title": "Endpoint"
             },
-            "description": "to render and lint it for: a configuration's engine's unless named, and one a hand-written configuration names"
+            "description": "to render and lint it for: the one serving a configuration's model unless named, and one a hand-written configuration names"
           },
           {
             "name": "tag",
@@ -1014,13 +1014,13 @@
         }
       }
     },
-    "/api/threads/{thread}/facts": {
+    "/api/threads/{thread}/moved": {
       "get": {
         "tags": [
           "threads"
         ],
-        "summary": "Facts",
-        "operationId": "facts_api_threads__thread__facts_get",
+        "summary": "Moved",
+        "operationId": "moved_api_threads__thread__moved_get",
         "security": [
           {
             "HTTPBearer": []
@@ -1048,13 +1048,13 @@
                 "schema": {
                   "anyOf": [
                     {
-                      "$ref": "#/components/schemas/CorrectedFacts"
+                      "$ref": "#/components/schemas/Moved"
                     },
                     {
                       "type": "null"
                     }
                   ],
-                  "title": "Response Facts Api Threads  Thread  Facts Get"
+                  "title": "Response Moved Api Threads  Thread  Moved Get"
                 }
               }
             }
@@ -1072,13 +1072,13 @@
         }
       }
     },
-    "/api/threads/{thread}/facts/follows": {
+    "/api/threads/{thread}/moved/follows": {
       "post": {
         "tags": [
           "threads"
         ],
-        "summary": "Follow Facts",
-        "operationId": "follow_facts_api_threads__thread__facts_follows_post",
+        "summary": "Follow Moved",
+        "operationId": "follow_moved_api_threads__thread__moved_follows_post",
         "security": [
           {
             "HTTPBearer": []
@@ -1103,7 +1103,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/NewFollowFacts"
+                "$ref": "#/components/schemas/NewFollowMoved"
               }
             }
           }
@@ -3124,75 +3124,6 @@
         "type": "object",
         "description": "a component's JSON as GET /api/components/{digest} gives its body, kind included"
       },
-      "CorrectedFacts": {
-        "properties": {
-          "facts": {
-            "type": "integer",
-            "title": "Facts",
-            "description": "the thread of the facts about its engine's model"
-          },
-          "model": {
-            "type": "string",
-            "title": "Model"
-          },
-          "compiled": {
-            "type": "string",
-            "title": "Compiled",
-            "description": "the facts its head was compiled against"
-          },
-          "head": {
-            "$ref": "#/components/schemas/Edit",
-            "description": "the facts thread's head, which corrects them"
-          },
-          "digest": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Digest",
-            "description": "the skeleton following them comes to"
-          },
-          "compilation": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Compilation"
-          },
-          "refused": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Refused",
-            "description": "why following them is refused: the corrected facts refuse what its recipe asks"
-          }
-        },
-        "additionalProperties": false,
-        "type": "object",
-        "required": [
-          "facts",
-          "model",
-          "compiled",
-          "head",
-          "digest",
-          "compilation",
-          "refused"
-        ],
-        "title": "CorrectedFacts"
-      },
       "Edit": {
         "properties": {
           "id": {
@@ -3290,6 +3221,18 @@
             ],
             "title": "Model"
           },
+          "serves": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Serves",
+            "description": "the model its engine serves, by digest"
+          },
           "url": {
             "anyOf": [
               {
@@ -3358,6 +3301,7 @@
           "engine",
           "title",
           "model",
+          "serves",
           "url",
           "host",
           "max_jobs",
@@ -3367,17 +3311,6 @@
           "problem"
         ],
         "title": "Endpoint"
-      },
-      "EngineDigest": {
-        "anyOf": [
-          {
-            "type": "string"
-          },
-          {
-            "type": "null"
-          }
-        ],
-        "description": "an engine's digest, which can't be taken out"
       },
       "Expected": {
         "properties": {
@@ -4309,6 +4242,120 @@
         ],
         "title": "Model"
       },
+      "ModelDigest": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "description": "a model's digest, which can't be taken out"
+      },
+      "Moved": {
+        "properties": {
+          "about": {
+            "type": "string",
+            "title": "About",
+            "description": "the model it is compiled for, by name"
+          },
+          "facts": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Edit"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "the head of the facts about it, which correct the ones its head was compiled against where they change what it sends"
+          },
+          "compiled": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Compiled",
+            "description": "the facts its head was compiled against"
+          },
+          "model": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Edit"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "its model's head, a new version of the one its recipe names"
+          },
+          "held": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Held",
+            "description": "the model its recipe names"
+          },
+          "digest": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Digest",
+            "description": "the skeleton following comes to"
+          },
+          "compilation": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Compilation"
+          },
+          "refused": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Refused",
+            "description": "why following is refused: the facts refuse what its recipe asks"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "about",
+          "facts",
+          "compiled",
+          "model",
+          "held",
+          "digest",
+          "compilation",
+          "refused"
+        ],
+        "title": "Moved"
+      },
       "NewAgain": {
         "properties": {
           "seeds": {
@@ -4490,7 +4537,7 @@
         ],
         "title": "NewFollow"
       },
-      "NewFollowFacts": {
+      "NewFollowMoved": {
         "properties": {
           "head": {
             "type": "integer",
@@ -4503,7 +4550,7 @@
         "required": [
           "head"
         ],
-        "title": "NewFollowFacts"
+        "title": "NewFollowMoved"
       },
       "NewFork": {
         "properties": {
@@ -4637,7 +4684,7 @@
               }
             ],
             "title": "Endpoint",
-            "description": "where to send it: the one serving its engine unless named, and one a hand-written configuration names"
+            "description": "where to send it: the one serving its model unless named, and one a hand-written configuration names"
           },
           "families": {
             "anyOf": [
@@ -5047,8 +5094,8 @@
           "toolset": {
             "$ref": "#/components/schemas/Chunk"
           },
-          "engine": {
-            "$ref": "#/components/schemas/EngineDigest"
+          "model": {
+            "$ref": "#/components/schemas/ModelDigest"
           }
         },
         "additionalProperties": false,

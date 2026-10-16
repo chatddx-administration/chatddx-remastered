@@ -8,6 +8,7 @@ from chatddx.factors.request import Compilation, Skeleton
 from chatddx.factors.scoring import Judge
 from chatddx.test.world import (
     GPT_OSS,
+    GPT_OSS_ARTIFACT,
     GPT_OSS_MODEL,
     QWEN,
     REMOTE,
@@ -63,7 +64,7 @@ def test_a_judge_takes_its_engine_from_the_endpoint_the_world_binds_it_to(
         for c in plan.compilations
         if (compilation := resolve(get, c, Compilation)).skeleton == graded.skeleton
     ]
-    assert made.recipe.engine == engine
+    assert made.recipe.model == plan.named("model", GPT_OSS_ARTIFACT).digest
     assert made.facts == plan.named("facts", GPT_OSS_MODEL).digest
     assert resolve(get, graded.skeleton, Skeleton).body["temperature"] == 1.0
 

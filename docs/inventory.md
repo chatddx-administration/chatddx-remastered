@@ -139,6 +139,11 @@ the concurrency and order of. Loading refuses a default concurrency above the ca
 A run goes to the endpoint serving its configuration's engine, and a judge's calls to the endpoint serving the judge's
 engine, unless one is named. When no endpoint serves the engine, or several do and none is named, the run or the
 scoring is refused rather than an endpoint picked; an endpoint named that serves another engine is refused too
+```
+AGENT: replace
+"no model part"; and a run goes to the endpoint serving its model (`Inventory.serving_model`), which the test World's
+two Qwen3 endpoints show must be named when several do.
+```
 (docs/bench.md, "Outstanding"). A hand-written configuration has no engine part, and goes to the endpoint named.
 
 ## Hosts
@@ -167,8 +172,17 @@ A judge a person writes names its engine itself (docs/bench.md, "Components"), a
 that serves a judge's engine either way (docs/runner.md, "Judges").
 
 ## Configurations
+```
+AGENT: replace
+"whose engine's model a data set's configurations are made for".
+```
 `configurations = "qwen3-8b@pelle"`, at the top of the inventory, names the endpoint whose engine a data set's
 configurations are made for: init-data makes each recipe once, with that engine (docs/curation.md).
+```
+AGENT: replace
+"Which model a configuration is made for is the World's choice", and a researcher swaps the model; the engine is the
+endpoint's, and a judge keeps its engine as a trial does.
+```
 Which engine a configuration starts on is the World's choice, as which engine judges is, and a researcher swaps it
 at the bench as any other part (docs/bench.md). A World that names none loads no configurations: each recipe is
 skipped and reported. Like a judge's binding, it is read only from the inventory's own file, and no command writes

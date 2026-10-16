@@ -65,8 +65,12 @@ hardware = { gpu = "none", compute_capability = [0, 0], vram_mib = 0, driver = "
 runtime = { version = "0.24.0+fake", closure = "chatddx fake-vllm" }
 chat_template = "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
 
+[remote_model.unknown]
+description = "A model no facts know, served remotely."
+provider = "test"
+name = "test/unknown"
+
 [remote_engine."unknown@remote"]
 description = "A remote engine that only a fake stands in for, serving a model no facts know."
 tags = ["remote"]
-provider = "test"
-model = "test/unknown"
+model = "unknown"

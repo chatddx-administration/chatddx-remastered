@@ -8,6 +8,7 @@ from uuid import UUID, uuid4
 from chatddx.catalog import Entry, EntryField, Subject
 from chatddx.factors.base import Code, Finding, Fingerprint, StructuralError, resolve
 from chatddx.factors.bundle import Registry
+from chatddx.factors.engine import served_model_name
 from chatddx.factors.request import Skeleton
 from chatddx.factors.trial import CanarySet, Execution, Trial
 from chatddx.identity import Person
@@ -269,7 +270,7 @@ class Running:
         if started.canaries is None or phase not in started.verify_at:
             return
         canaries = resolve(self._registry.get, started.canaries, CanarySet).canaries
-        model = self._prepare.engine.served_model_name
+        model = served_model_name(self._prepare.engine, self._registry.get)
         sent = {(c.phase, c.canary) for c in self._canaries}
         for index, canary in enumerate(canaries):
             if self._stopping or self._finished:

@@ -192,14 +192,14 @@ def following(
     return _back(thread, next)
 
 
-@router.post("/threads/{thread}/facts/follow")
-def following_facts(
+@router.post("/threads/{thread}/moved/follow")
+def following_moved(
     bench: BenchDep,
     thread: int,
     head: Annotated[int, Form()],
     next: Annotated[str | None, Form()] = None,
 ) -> Response:
-    _ = api.follow_facts(bench, thread, schemas.NewFollowFacts(head=head))
+    _ = api.follow_moved(bench, thread, schemas.NewFollowMoved(head=head))
     return _back(thread, next)
 
 

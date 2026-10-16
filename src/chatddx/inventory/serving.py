@@ -10,7 +10,13 @@ from chatddx.factors.base import (
     StructuralError,
     resolve,
 )
-from chatddx.factors.engine import LocalEngine, ModelArtifact, RemoteEngine, flag_names
+from chatddx.factors.engine import (
+    LocalEngine,
+    ModelArtifact,
+    RemoteEngine,
+    flag_names,
+    served_model_name,
+)
 
 from .inventory import Inventory
 
@@ -69,7 +75,7 @@ def start_up(inventory: Inventory, get: Resolver, name: str) -> StartUp:
             "--revision",
             resolve(get, engine.model, ModelArtifact).revision,
             "--served-model-name",
-            engine.served_model_name,
+            served_model_name(engine, get),
             "--chat-template",
             template,
             "--host",
@@ -116,7 +122,7 @@ def confirm(
 ) -> None:
     match _engine(inventory, get, name):
         case LocalEngine() | RemoteEngine() as engine:
-            expected = engine.served_model_name
+            expected = served_model_name(engine, get)
         case other:
             raise LookupError(
                 f"endpoint {name!r} names a {other.kind_name}, not an engine"

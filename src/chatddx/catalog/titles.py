@@ -7,7 +7,12 @@ from pydantic import JsonValue
 
 from chatddx.factors.base import Component, resolve
 from chatddx.factors.cases import Appendix, Case
-from chatddx.factors.engine import LocalEngine, ModelArtifact, RemoteEngine
+from chatddx.factors.engine import (
+    LocalEngine,
+    ModelArtifact,
+    RemoteEngine,
+    RemoteModel,
+)
 from chatddx.factors.facts import ModelFacts
 from chatddx.factors.request import (
     Compilation,
@@ -106,7 +111,7 @@ def describe_recipe(recipe: Recipe, title: Title) -> str:
         recipe.passthrough,
         recipe.translations,
         recipe.toolset,
-        recipe.engine,
+        recipe.model,
     )
     described = " · ".join(title(p) for p in parts if p is not None)
     return described if recipe.purpose == "generation" else f"judge: {described}"
@@ -191,8 +196,10 @@ def describe(component: Component, title: Title) -> str:
         case LocalEngine(model=model, runtime=runtime, hardware=hardware):
             runs = f"{runtime.server} {runtime.version} ({hardware.gpu})"
             return f"{title(model)} on {runs}"
-        case RemoteEngine(model=model, provider=provider):
-            return f"{model} from {provider}"
+        case RemoteModel(name=name, provider=provider):
+            return f"{name} from {provider}"
+        case RemoteEngine(model=model):
+            return f"{title(model)} remotely"
         case ModelFacts(model=model):
             return f"facts about {model}"
         case ExpectationSchema(json_schema=schema):

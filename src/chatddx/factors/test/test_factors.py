@@ -24,7 +24,9 @@ from chatddx.factors.cases import (
 from chatddx.factors.engine import (
     LocalEngine,
     RemoteEngine,
+    RemoteModel,
     check_chat_template,
+    served_model_name,
 )
 from chatddx.factors.facts import (
     Intent,
@@ -87,6 +89,7 @@ from chatddx.factors.test.sample import (
     generation_recipe,
     generation_skeleton,
     local_engine,
+    remote_engine,
     world,
 )
 from chatddx.factors.trial import (
@@ -175,7 +178,7 @@ def test_json_data_keeps_its_order(reg: Registry) -> None:
         },
     }
     recipe = Recipe(
-        engine=reg.add(local_engine(reg)),
+        model=local_engine(reg).model,
         prompt=reg.add(Prompt(segments=(Slot(slot="vignette"),))),
         output=reg.add(Output(contract=NativeOutput(), json_schema=schema)),
         sampling=reg.add(Sampling()),
@@ -230,7 +233,7 @@ def test_stored_bytes_decide_the_digest(reg: Registry) -> None:
     stored = loaded.get(digest)
     assert isinstance(stored, LocalEngine)
     assert stored.canonical == raw
-    assert stored.digest == stored.served_model_name == digest != engine.digest
+    assert stored.digest == digest != engine.digest
 
 
 def test_components_refuse_what_the_store_cannot_hold() -> None:
@@ -341,7 +344,7 @@ def test_outputs_show_their_schema(reg: Registry) -> None:
     assert Registry().add_raw(output.digest, output.canonical) == output
     native = compile_request(
         Recipe(
-            engine=reg.add(local_engine(reg)),
+            model=local_engine(reg).model,
             prompt=prompt,
             output=reg.add(output),
             sampling=sampling,
@@ -355,7 +358,7 @@ def test_outputs_show_their_schema(reg: Registry) -> None:
 
     prompted = compile_request(
         Recipe(
-            engine=reg.add(local_engine(reg)),
+            model=local_engine(reg).model,
             prompt=prompt,
             output=reg.add(
                 Output(contract=TextOutput(), json_schema=schema, guidance=guidance)
@@ -402,7 +405,7 @@ def test_output_guidance_goes_where_it_is_inserted(reg: Registry) -> None:
         instructions: str | None, prompt: str, output: str
     ) -> list[tuple[Segment, ...]]:
         recipe = Recipe(
-            engine=reg.add(local_engine(reg)),
+            model=local_engine(reg).model,
             instructions=instructions,
             prompt=prompt,
             output=output,
@@ -467,7 +470,7 @@ def test_inserts_are_checked_per_chunk() -> None:
 
 def test_few_shot_developer_role_and_budgets(reg: Registry) -> None:
     recipe = Recipe(
-        engine=reg.add(local_engine(reg)),
+        model=local_engine(reg).model,
         instructions=reg.add(Instructions(role="developer", text="Be terse.")),
         few_shot=reg.add(
             FewShot(
@@ -684,7 +687,7 @@ def test_schema_ops_inline_refs(reg: Registry) -> None:
     def compiled(output: Output) -> Skeleton:
         return compile_request(
             Recipe(
-                engine=reg.add(local_engine(reg)),
+                model=local_engine(reg).model,
                 prompt=prompt,
                 output=reg.add(output),
                 sampling=sampling,
@@ -754,7 +757,7 @@ def test_tool_contracts_carry_a_description(reg: Registry) -> None:
     described = ToolOutput(name="final_result", description="Answer by calling this.")
     skeleton = compile_request(
         Recipe(
-            engine=reg.add(local_engine(reg)),
+            model=local_engine(reg).model,
             prompt=reg.add(Prompt(segments=(Slot(slot="vignette"),))),
             output=reg.add(
                 Output(contract=described, json_schema=schema, guidance="Use the tool.")
@@ -805,7 +808,7 @@ def test_translations_apply_at_compile_time(reg: Registry) -> None:
         },
     }
     recipe = Recipe(
-        engine=reg.add(local_engine(reg)),
+        model=local_engine(reg).model,
         instructions=reg.add(
             Instructions(
                 text=(
@@ -1105,7 +1108,7 @@ def test_engine_argv_cannot_override_manifest(reg: Registry) -> None:
         '{"enable_thinking": false}',
     )
     _ = LocalEngine.model_validate({**engine.model_dump(), "argv": accepted})
-    assert engine.served_model_name == engine.digest
+    assert served_model_name(engine, reg.get) == engine.digest
 
 
 def test_bundle_roundtrip_and_tamper(reg: Registry) -> None:
@@ -1251,9 +1254,11 @@ def test_cleanup_ops_are_pinned() -> None:
 
 
 def test_remote_engine_identity() -> None:
-    a = RemoteEngine(provider="example", model="gemma")
-    assert a.digest != RemoteEngine(provider="example", model="gemma-2").digest
-    assert a.digest != RemoteEngine(provider="other", model="gemma").digest
+    a = RemoteModel(provider="example", name="gemma")
+    assert a.digest != RemoteModel(provider="example", name="gemma-2").digest
+    assert a.digest != RemoteModel(provider="other", name="gemma").digest
+    reg = Registry()
+    assert served_model_name(RemoteEngine(model=reg.add(a)), reg.get) == "gemma"
 
 
 def test_chat_template_check(reg: Registry) -> None:
@@ -1450,7 +1455,7 @@ def test_skeleton_and_engine_compatibility(reg: Registry) -> None:
         "--reasoning-parser",
         "qwen3",
     )
-    remote = reg.add(RemoteEngine(provider="example", model="gemma"))
+    remote = reg.add(remote_engine(reg, "gemma"))
     user = Message(role="user", content=(Slot(slot="vignette"),))
     schema: dict[str, JsonValue] = {
         "type": "object",
@@ -1699,8 +1704,8 @@ def test_a_trial_or_judge_on_another_model_than_its_skeleton_s_is_linted() -> No
     )
     skeleton, compilation = compiled(asked, reg.get, RIG, GEMMA)
     _ = reg.add(skeleton)
-    gpt_oss = reg.add(RemoteEngine(provider="example", model="openai/gpt-oss-20b"))
-    gemma = reg.add(RemoteEngine(provider="example", model="google/gemma-3-12b-it"))
+    gpt_oss = reg.add(remote_engine(reg, "openai/gpt-oss-20b"))
+    gemma = reg.add(remote_engine(reg, "google/gemma-3-12b-it"))
     judging = resolve(reg.get, ids["judge"], Judge).skeleton
 
     def found(engine: str, judged: bool = False) -> list[tuple[str, str]]:

@@ -170,6 +170,10 @@ Whether the model reasons when a request says nothing: `reasoning.resolve("defau
 `off`. `None` when that raises `Refused`: no default, or a default that lands on a refusal.
 
 ### `model_name(engine: str, get: Resolver) -> str | None`
+```
+AGENT: replace
+`model_name` takes a model's digest as well as an engine's (docs/factors-api.md, `model_name`), so `Facts.about` does.
+```
 The name facts are keyed by, for the component `get` resolves the digest `engine` to:
 - a `LocalEngine`: its model artifact's `repo`, through `resolve(get, engine.model, ModelArtifact)`;
 - a `RemoteEngine`: its `model`;

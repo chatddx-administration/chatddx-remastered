@@ -3,7 +3,7 @@ from typing import cast
 
 from .base import Component, StructuralError
 from .cases import Appendix, Case
-from .engine import LocalEngine, ModelArtifact, RemoteEngine
+from .engine import LocalEngine, ModelArtifact, RemoteEngine, RemoteModel
 from .facts import ModelFacts
 from .request import (
     Compilation,
@@ -26,6 +26,7 @@ from .trial import CanarySet, Trial
 # src/chatddx/catalog/model.py:THREAD_KINDS threads all but cases and compilations.
 KINDS: tuple[type[Component], ...] = (
     ModelArtifact,
+    RemoteModel,
     LocalEngine,
     RemoteEngine,
     ModelFacts,

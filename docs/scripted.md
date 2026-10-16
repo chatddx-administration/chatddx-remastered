@@ -28,6 +28,11 @@ the World itself doesn't read it, as with the data set in `_data/` (docs/invento
 A file with any other key, or a turn the fake can't read, is refused when it is read, naming the file.
 
 ## Running one
+```
+AGENT: replace
+"with its model set to the endpoint's engine's model"; an endpoint serving another model than the configuration's runs
+it as a variation, its model replaced, named `plan-prompted+model=gpt-oss-20b@fake`.
+```
 The variation is the configuration with its engine set to the endpoint's, unless it is hand-written and has none, and
 `set` applied, and the cases are found by their titles (`Bench.case_titled`). So a configuration sent to an endpoint
 serving another engine than its own runs as a variation, its engine replaced and the rest worked out for that

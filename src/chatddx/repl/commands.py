@@ -49,7 +49,7 @@ COMMANDS: dict[str, Command] = {
     ),
     "on": Command(
         ("ENDPOINT",),
-        "put an endpoint in the cell, and the engine it serves in the cell's "
+        "put an endpoint in the cell, and the model it serves in the cell's "
         + "configuration",
         choosing.on,
     ),
@@ -58,7 +58,7 @@ COMMANDS: dict[str, Command] = {
     ),
     "set": Command(
         ("PART", "CHUNK"),
-        "put another chunk, or engine, in a part of the cell's configuration; none "
+        "put another chunk, or model, in a part of the cell's configuration; none "
         + "takes an optional part out",
         choosing.set_,
         rest=1,

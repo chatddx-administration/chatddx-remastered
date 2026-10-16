@@ -63,6 +63,13 @@ chatddx scripted-runs alice
   should think first, how it samples its words, and the engine, the model
   as a machine serves it. Its parts are called `instructions`,
   `few_shot`, `prompt`, `output`, `sampling`, `reasoning`, `passthrough`,
+```
+AGENT: replace
+The tenth part is `model`, not `engine`: `set model NAME`, `+model=gpt-oss-20b@fake` in a label, the model named as its
+thread is, and the prompt names the endpoint serving the model when one does. The transcripts below were recorded
+with the engine as the part: read `model` for `engine` and the model's thread name for the endpoint's in a label, and
+record them again on the sample World.
+```
   `translations`, `toolset` and `engine`. A configuration is written in
   one language, and its translations carry it into others, so that each
   case is sent in its own (see `run tag`). What depends on the model,

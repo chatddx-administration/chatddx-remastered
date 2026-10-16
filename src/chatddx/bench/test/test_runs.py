@@ -12,7 +12,7 @@ from chatddx.runner import gate
 from chatddx.runner.gate import Refused
 from chatddx.runner.run import Event, ItemEnded
 from chatddx.store.store import Connection
-from chatddx.test.world import GPT_OSS, LINES, QWEN, faked
+from chatddx.test.world import GPT_OSS, GPT_OSS_ARTIFACT, LINES, QWEN, faked
 
 
 @pytest.mark.usefixtures("fake")
@@ -66,29 +66,29 @@ def test_a_run_says_what_it_varied_and_running_again_too(
     assert bench.ran(bench.again(started, (8,)).run) == ran
 
 
-def test_a_run_goes_to_the_endpoint_serving_its_engine_unless_one_is_named(
+def test_a_run_goes_to_the_endpoint_serving_its_model_unless_one_is_named(
     conn: Connection, world: Inventory, alice: Person
 ):
     bench = Bench(conn, alice, world)
     named = bench.configuration(LINES)
-    gpt_oss = bench.endpoint(GPT_OSS)
-    swapped = named.set("engine", gpt_oss, GPT_OSS)
+    gpt_oss, engine = bench.model_at(GPT_OSS), bench.endpoint(GPT_OSS)
+    swapped = named.set("model", gpt_oss, GPT_OSS_ARTIFACT)
     cases = [bench.family("crlf").case]
 
     with faked(world, bench.get, GPT_OSS):
         started = bench.start(swapped, None, cases, (7,)).first.started
     assert started.endpoint is not None and started.endpoint.name == GPT_OSS
-    assert resolve(bench.get, started.trial, Trial).engine == gpt_oss
-    assert bench.ran(started.run) == (named.configuration, {"engine": gpt_oss})
-    with pytest.raises(ValueError, match=f"endpoint '{QWEN}' serves another engine"):
+    assert resolve(bench.get, started.trial, Trial).engine == engine
+    assert bench.ran(started.run) == (named.configuration, {"model": gpt_oss})
+    with pytest.raises(ValueError, match=f"endpoint '{QWEN}' serves another model"):
         _ = bench.start(swapped, QWEN, cases, (7,))
 
     endpoints = dict(world.endpoints)
     endpoints["twin@fake"] = endpoints[GPT_OSS]
     twice = Bench(conn, alice, world.model_copy(update={"endpoints": endpoints}))
-    with pytest.raises(ValueError, match=f"{GPT_OSS}, twin@fake serve engine"):
+    with pytest.raises(ValueError, match=f"{GPT_OSS}, twin@fake serve model"):
         _ = twice.start(swapped, None, cases, (7,))
-    assert twice.at(swapped, "twin@fake") == ("twin@fake", gpt_oss)
+    assert twice.at(swapped, "twin@fake") == ("twin@fake", engine)
 
 
 def test_a_run_holds_its_cases_times_its_seeds_in_items(

@@ -10,7 +10,7 @@ export const PARTS = [
   "passthrough",
   "translations",
   "toolset",
-  "engine",
+  "model",
 ] as const;
 
 export type Part = (typeof PARTS)[number];
@@ -74,11 +74,11 @@ export function choicesOf(
 
 export type Where = { at: string | null; among: Schemas["Endpoint"][] };
 
-// src/chatddx/inventory/inventory.py:Inventory.serving picks the endpoint a run goes to.
-export function where(endpoints: Schemas["Endpoint"][], engine: string | null, named: string | null): Where {
-  const among = engine === null ? endpoints : endpoints.filter((e) => e.engine === engine);
+// src/chatddx/inventory/inventory.py:Inventory.serving_model picks the endpoint a run goes to.
+export function where(endpoints: Schemas["Endpoint"][], model: string | null, named: string | null): Where {
+  const among = model === null ? endpoints : endpoints.filter((e) => e.serves === model);
   if (named !== null && among.some((e) => e.name === named)) return { at: named, among };
-  return { at: engine !== null && among.length === 1 ? (among[0]?.name ?? null) : null, among };
+  return { at: model !== null && among.length === 1 ? (among[0]?.name ?? null) : null, among };
 }
 
 export function tagged(families: Schemas["Family"][], tags: string[]): Schemas["Family"][] {

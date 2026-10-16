@@ -25,7 +25,7 @@ ALTER TABLE catalog.entry
             AND value ~ '^[1-9][0-9]{0,17}$'
             AND person IS NULL AND present
         WHEN 'replaced' THEN value IS NOT NULL
-            AND value ~ '^(instructions|few_shot|prompt|output|sampling|reasoning|passthrough|translations|toolset|engine)=(sha256:[0-9a-f]{64})?$'
+            AND value ~ '^(instructions|few_shot|prompt|output|sampling|reasoning|passthrough|translations|toolset|model)=(sha256:[0-9a-f]{64})?$'
             AND person IS NULL AND present
         WHEN 'with' THEN value IS NOT NULL
             AND value ~ '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
@@ -39,7 +39,7 @@ DECLARE
     part text := split_part(NEW.value, '=', 1);
     held text := split_part(NEW.value, '=', 2);
     kinds text[] := CASE part
-        WHEN 'engine' THEN ARRAY['engine.local', 'engine.remote']
+        WHEN 'model' THEN ARRAY['model', 'model.remote']
         ELSE ARRAY['chunk.' || part]
     END;
 BEGIN

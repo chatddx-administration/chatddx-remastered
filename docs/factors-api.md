@@ -454,6 +454,12 @@ Not a component; kept only inside a `Compilation`.
 | `prompt` | ref `chunk.prompt` | required |
 | `output` | ref `chunk.output` | required |
 | `sampling` | ref `chunk.sampling` | required |
+```
+AGENT: replace
+The recipe's tenth part is its model.
+---
+| `model` | `ModelRef` | required; a `model` or `model.remote` component |
+```
 | `engine` | `EngineRef` | required |
 | `instructions` | ref `chunk.instructions` \| `None` | `None` |
 | `few_shot` | ref `chunk.few_shot` \| `None` | `None` |
@@ -569,6 +575,10 @@ follows, each `None` when not asked for.
 1. `StructuralError("facts about <facts' model> can't compile for <model>")` when `facts` aren't about the model of
    the recipe's engine (`facts.py:model_name`).
 2. `(None, None)` when the reasoning chunk asks for no `level` and the sampling isn't `recommended`.
+```
+AGENT: replace
+The message says "the recipe's model".
+```
 3. Without facts: `StructuralError("reasoning '<level>' is worked out from the facts about the engine's model, which
    has none")`, or `"a recommended sampling is worked out …"` when only the sampling asks.
 4. The level's `ReasoningFacts.resolve`, and `ModelFacts.check_budget()` with a `thinking_token_budget` beside it. A
@@ -663,6 +673,13 @@ the portal's run page.
 - has a bare argument. An argument after `--` is bare, and an argument right after a flag written without `=` is
   taken to be that flag's value. Negative numbers such as `-1` aren't flags.
 
+```
+AGENT: replace
+`served_model_name(engine: Engine, get: Resolver) -> str` is a function of `engine.py`: a local engine's digest, a remote
+engine's model's `name`. `RemoteEngine` has `api` and `model: RemoteModelRef` and no `provider`; `RemoteModel`
+(`model.remote`) has `provider` and `name`. `ModelRef` covers `model` and `model.remote`; `ArtifactRef` is `model`
+alone, `LocalEngine.model`'s.
+```
 `served_model_name -> str`: the engine's digest.
 
 ### `class RemoteEngine(Component)`, kind `engine.remote`
@@ -706,6 +723,11 @@ are in `docs/facts-api.md`.
 | `reasons_by_default() -> bool \| None` | whether the default lands on a level other than `off`; `None` when it raises `Refused` |
 
 ### `model_name(engine: str, get: Resolver) -> str | None`
+```
+AGENT: replace
+`model_name(digest, get)`: the name of a model (`ModelArtifact.repo`, `RemoteModel.name`), or of the model the engine
+`digest` names references. `model_of(engine, get) -> str | None`: the digest of the model an engine references.
+```
 The name facts are keyed by, for the component `get` resolves the digest `engine` to: a local engine's model
 artifact's `repo`, a remote engine's `model`, `None` for anything else.
 

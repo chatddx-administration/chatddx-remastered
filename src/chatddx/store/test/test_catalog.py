@@ -420,12 +420,12 @@ def test_a_run_says_what_it_varied(conn: Connection) -> None:
         Entry.varied(configuration.id),
         Entry.replaced("instructions", other),
         Entry.replaced("reasoning", None),
-        Entry.replaced("engine", ids["engine"]),
+        Entry.replaced("model", ids["model"]),
     ):
         catalog.note(subject, entry, alice.id)
     assert catalog.about(subject) == About(
         varied=configuration.id,
-        replaced={"instructions": other, "reasoning": None, "engine": ids["engine"]},
+        replaced={"instructions": other, "reasoning": None, "model": ids["model"]},
     )
     later = uuid4()
     store.append(RunStarted(run=later, at=NOW, rig=RIG, trial=ids["trial"]))
@@ -436,7 +436,7 @@ def test_a_run_says_what_it_varied(conn: Connection) -> None:
         ((Subject(thread=configuration.thread), Entry.varied(configuration.id)), "run"),
         ((subject, Entry.varied(chunk.id)), "no configuration's"),
         ((subject, Entry.replaced("prompt", other)), "isn't a chunk of prompt"),
-        ((subject, Entry.replaced("engine", other)), "isn't an engine"),
+        ((subject, Entry.replaced("model", other)), "isn't a model"),
     ):
         with pytest.raises(ValueError, match=said):
             catalog.note(*refused, alice.id)
@@ -477,7 +477,7 @@ def test_a_run_says_what_it_varied(conn: Connection) -> None:
     for field, value in (
         ("varied", str(chunk.id)),
         ("replaced", f"prompt={other}"),
-        ("replaced", f"engine={other}"),
+        ("replaced", f"model={other}"),
         ("with", str(uuid4())),
     ):
         with pytest.raises(errors.RaiseException), conn.transaction():
@@ -534,12 +534,12 @@ def test_titles_fall_back_to_what_a_thread_holds(conn: Connection) -> None:
         (base.output, "management-plan"),
         (base.sampling, "recommended"),
         (base.reasoning, "off"),
-        (base.engine, "gemma@pelle"),
+        (base.model, "gemma"),
     ):
         assert part is not None
         name(catalog.create(part, alice.id).thread, value)
     assert catalog.title(origin.thread) == (
-        "ddx · case · management-plan · recommended · off · gemma@pelle"
+        "ddx · case · management-plan · recommended · off · gemma"
     )
     name(origin.thread, "plan")
     assert catalog.title(origin.thread) == "plan"
@@ -567,7 +567,7 @@ def test_titles_fall_back_to_what_a_thread_holds(conn: Connection) -> None:
     assert catalog.title_of(plan.skeleton) == "plan (earlier)"
 
     trial = catalog.title_of(ids["trial"])
-    assert trial.endswith(" on gemma@pelle, 1 case, 2 seeds")
+    assert trial.endswith(" on gemma on vllm 0.24.0 (RTX 5090), 1 case, 2 seeds")
     troponin = '"Troponin 80 ng/L."'
     assert catalog.title_of(ids["case"]) == f"registry/c1 with {troponin}"
     family = catalog.adopt(ids["case"], alice.id)
@@ -875,7 +875,7 @@ def test_languages_are_kept_on_digests(conn: Connection) -> None:
     assert catalog.language_of(translated.skeleton) == "sv"
     assert catalog.title_of(translated.skeleton).endswith(
         f" · translations into sv, {len(needed)} texts · "
-        + catalog.title_of(base.engine)
+        + catalog.title_of(base.model)
     )
     with pytest.raises(ValueError, match="translations components have no language"):
         in_language(swedish, "sv")
