@@ -406,6 +406,16 @@ writes at the same moment can leave a person several expectations to choose from
 - **A skeleton edit may leave out its compilation** even when one exists, and nothing can require it.
 - **A language on a skeleton that is compiled later** is ignored from then on, since the skeleton's language comes from
   its compilations.
+```
+AGENT: add
+Found building agents/wip-engine-part.md, stage 2. Two items before this one.
+---
+- **A language refused on a compiled skeleton is said to come from its recipe**, by
+  `src/chatddx/catalog/language.py:check_language`, `0012`'s `language_compiled` trigger and the bench's
+  `COMPILED_LANGUAGE`; a translated skeleton's comes from the language its compilation names.
+- **A translated skeleton's title doesn't say its language.** It has no thread, so it is titled by its compilation's
+  recipe, as the configuration's own skeleton is.
+```
 - **What deleting hides in the portal**: everywhere, or only in pickers, while the runs that used it stay visible.
 - **Who changed an entry or a language isn't shown.** Every row records who wrote it and when, but for these only
   what holds now is shown.

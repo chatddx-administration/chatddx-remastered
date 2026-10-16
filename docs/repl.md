@@ -263,5 +263,13 @@ Suggested, and left for later:
 - **`diagnoses` applies to a plan**, since a plan's `$.diagnoses[*]` reaches its schema, but the items are objects, so
   its differential lists them as JSON and scores their text. A reach that knew the type of what a view picks would leave
   it out, as `View.offered_by` leaves whole-answer views out of structured runs.
+```
+AGENT: add
+Found building agents/wip-engine-part.md, stage 2: `runs` shows a start's runs apart. An item before this one.
+---
+- **`runs` doesn't show a start.** A translated run says the language it was sent in, the run of the configuration's
+  own language from the same start says none, and nothing says the two were started together; the API's
+  `GET /api/runs?with=` and a run's page in the portal do (`Bench.together`).
+```
 - **The judge lines aren't aligned**, as their labels differ in length; the labels of a scoring's judge calls are known
   when it starts, so their width could be too.

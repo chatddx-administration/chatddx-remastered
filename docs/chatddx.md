@@ -85,6 +85,12 @@ These roles are distinct and not overlapping, a person may inhabit more than one
 - Conversely, simple and reliable scoring methods are needed to produce clean easily processed outputs, which will require strict and simple pattern matching.
 - Due to the sensitive nature of patient data passing through the orchestrator, a separate path is needed where data can be passed along revealing just enough for the orchestrator to fulfill its duty. Cases will enter the system de-identified from a predefined source.
 - Nothing can be expected of the vignettes: They may or may not include labs and imaging results, and may even lack basic details such as age or sex. The source exposes no revision identifier.
+```
+AGENT: replace
+Translations and toolsets, parts a recipe holds, aren't in the list, and "recepies" is misspelt. The item.
+---
+- Portal interfaces for managing instructions, few-shots, prompts, output, sampling, reasoning, passthrough, translations, toolsets, recipes, appendices, expectations, trials, scorers, judges, scorings and starting and monitoring runs.
+```
 - Portal interfaces for managing instructions, few-shots, prompts, output, sampling, reasoning, passthrough, recepies, appendices, expectations, trials, scorers, judges, scorings and starting and monitoring runs.
 - Engines, models, canary sets, expectation schemas and scoring code are authored by ops or developers and shipped. A
   scorer's views, free parameters and labels are written by researchers in the portal, who pick its scoring code,
