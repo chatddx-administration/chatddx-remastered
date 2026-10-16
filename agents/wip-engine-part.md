@@ -162,6 +162,111 @@ its compilations and translations are of versions nothing reads.
 - **`Seen.facts` is read on every access**, several times a look; cheap at today's sizes (a facts thread per model),
   and the place to cache per request if it shows.
 
+## The model as the part
+An alternative to "The recipe and its compilation", weighed on paper and not built: the recipe names a model, and the
+engine stays the trial's, picked per run as the endpoint serving the model. The review below asked for it; "Take" is
+the agent's and still open.
+
+### What a researcher sees
+`plan`'s parts are its texts, its output, `sampling: recommended`, `reasoning: off` and `model: Qwen/Qwen3-8B-AWQ`.
+Picking another model is a variation, `plan+model=openai/gpt-oss-20b`, worked out as the engine swap is today. Where
+it runs is found from the model: the endpoint serving an engine of it, named when several do. A vLLM upgrade, a flag
+or a chat template changed on an endpoint changes nothing a researcher sees; a new revision of the weights does, as it
+should, since the model is another. `plan` runs on Qwen3-8B wherever the World serves it, and at the repl `use plan`
+on an endpoint serving another model swaps the model, said, as it swaps the engine today.
+
+### Design
+1. **A model is a component for every engine.** A local engine already references one (`ModelArtifact`, kind `model`:
+   repo, revision, files; `engines.toml`'s `[model.*]`). A remote engine's model is a name (`RemoteEngine.model`); it
+   gets a component of its own, kind `model.remote`, a provider and a name, which `RemoteEngine.model` references as
+   `LocalEngine.model` does, so that `ModelRef` covers both and `model_name` reads a model rather than an engine. The
+   facts stay keyed by the name: the artifact's `repo`, the remote model's name.
+2. **`Recipe.model`** (a `ModelRef`, required) replaces `Recipe.engine`, and `RECIPE_PARTS` ends in `model`.
+   `compile_request` resolves the intents with the facts of the recipe's model; `Compilation.facts` and `cross_check`
+   mean what they mean now. The skeleton is unchanged: two engines of one model compiled one skeleton already.
+3. **Where a run goes.** `Seen.at(variation, endpoint)`: the endpoints whose engine's model is the recipe's
+   (`Seen.model` per endpoint, cached for the connection); one serves it, so it goes there; none, or several and none
+   named, is refused as today; a named endpoint serving another model is refused before the gate. The trial takes
+   that endpoint's engine, as a hand-written skeleton's does today, so the ledger pins the server as it does now.
+   `Inventory.serving` needs the store to read a model from an engine, so it takes a `model_of` callable, or moves to
+   the bench; `runner/score.py:judge_at` gives it `get`.
+4. **The catalog and runs.** `replaced` entries take `model=` (`0026` in place: `check_varied` with `model` and
+   `model.remote`); `0012`'s thread kinds gain `model.remote`; `KINDS["model"]` too. A title names the model last:
+   "… · reasoning off on Qwen/Qwen3-8B-AWQ".
+5. **Curation.** A recipe is made for a model: `inventory.toml`'s `configurations` names a model of `engines.toml`
+   rather than an endpoint, or stays an endpoint and its engine's model is taken; a judge's recipe takes the model of
+   the endpoint the World binds it to. Remote models are records of `engines.toml` (`[remote_model.*]`), or inlined in
+   a remote engine's record and planned from it. Facts are loaded as now.
+6. **The edges.** The variation page's model picker lists the models the World's endpoints serve, and its endpoint
+   picker shows only when several serve the model. The home page sets the model to the endpoint's. The repl's `on`,
+   `use` and `cell` set the model to the endpoint's, a variation only when it differs; `set model NAME`. Scripted
+   runs set the model to their endpoint's. `Parts.model` at the API.
+7. **Lints.** `trial.engine_unmatched` and `judge.engine_unmatched` stay what they are; the trial's engine's model is
+   also checked against the recipe's, which `Seen.at` already guarantees for runs the bench starts.
+
+### What it changes from the built solution
+- **Nothing a server does to a configuration.** The engine's digest covers runtime, argv, env, chat template and
+  model files, and every saved configuration names one; an endpoint changed leaves them naming an engine nothing
+  serves ("Consequences of the design"). A model's digest covers the weights, which change rarely and mean something
+  when they do.
+- **The edges override less.** The repl and the home page put the session's endpoint's model in, which is a change
+  only when the model differs; across servers of one model, every edge agrees. The `configurations` key names what
+  the recipes are for, a model, rather than a place.
+- **The engine is the trial's alone**, where the ledger has it; the recipe holds what to ask and of which model,
+  and nothing of where.
+- **A new kind** and its tiers, a `RemoteEngine` that references rather than names, a `serving` that needs the store.
+- **The same everywhere else**: facts as components, intents and nearest levels, the compilation pinning its facts,
+  following them, translations, a start per language, the `with` entry.
+
+### Cost
+The places the engine part touched: 17 files outside tests read the recipe's engine, most as a rename and a kind
+check, with the work in `Seen.at`'s derivation, `model_name`, the remote model's component and records, and the
+migrations edited in place. The data sets' `configurations` key and the test World's remote engine change shape.
+Smaller than stage 1 was, and reachable from the built solution as a follow-up with one more drop and reload, which
+O2 allows while no store holds data worth keeping and the deploy (`agents/wip-deploy.md`) hasn't closed it.
+
+### Options
+
+#### M. What the model part is
+- **M1. A model component for both kinds**: `model` as it is, `model.remote` new. One new kind; the facts' key is
+  read from either.
+- **M2. The facts thread's digest** (F2): a correction that changes nothing sent is a new version of every
+  configuration; rejected before for that.
+- **M3. A name**, the facts' key itself: the one part without a digest, which `iter_refs`, `replaced`'s shape and
+  `TriedVariation.set`'s kind check all assume.
+- **M4. A coarser component**, a model's identity (its repo name) apart from its artifact, so that a revision of the
+  weights isn't a new model. Never stale, and the facts are keyed by it already; but the artifact would reference
+  it, a kind more than M1, and a configuration would say less than it does today.
+
+Take: M1. A revision of the weights is a change a researcher should see.
+
+#### R. A revision of the weights
+Under M1 a configuration names an artifact, and a World that moves to a new revision leaves it naming one nothing
+serves: the engine part's staleness, rarely.
+- **R1. Flagged as behind**, with following to the artifact of the same repo the World serves, as corrected facts
+  are followed. The same mechanism would serve the built solution for a stale engine, more often.
+- **R2. Refused until picked again**, as the built solution refuses a stale engine.
+
+Take: R1, and the same for the built solution if it stays.
+
+#### Q. `use` on an endpoint serving another model
+- **Q1. The model swaps** to the endpoint's, said as a variation, as the engine does today.
+- **Q2. The cell moves** to an endpoint serving the configuration's model, when one does.
+
+Take: Q1; the cell is a session on an endpoint, and Q2 is `on` typed for you.
+
+### Weighing
+The two agree on everything but what the recipe pins: the built solution pins what the rig runs on, this one what
+the research question is about, which is what the facts, the lints, the landings and the skeleton are keyed by. The
+built one is cheaper now by one component kind, and this one cheaper each time an engine changes, which in a rig
+that upgrades vLLM and tunes flags is often. Take: this one, if the deploy leaves room for one more reload; else the
+built one with R1 for a stale engine, and this as the follow-up.
+
+### Questions for the user
+- **M1**, and whether a remote model is a record of `engines.toml` or inlined in its engine's.
+- **R1**, for a stale model here and for a stale engine in the built solution.
+- **The `configurations` key**: a model, or an endpoint as now.
+
 ## Review
 A read of the branch before merge, by a session that didn't build it: the code against this document and against
 `agents/wip-variants.md` as main holds it, the suite and the static checks, and a second reader over curation and the
@@ -211,7 +316,7 @@ Not bugs: what the solution does to the model, each with how it can be managed.
   model files. A vLLM upgrade or a flag changed on an endpoint leaves every saved configuration naming an engine
   nothing serves: the API and the variation page refuse to run it until the engine is picked again, and unlike
   corrected facts nothing flags it as behind. Manageable: an engine no endpoint serves flagged as behind, followed to
-  the endpoint's engine of the same model, as facts are; or the recipe naming the model (see the last take).
+  the endpoint's engine of the same model, as facts are; or the recipe naming the model ("The model as the part").
 - **Which engine a configuration runs on depends on the edge.** The repl's `use`, `on` and `cell`, and the home page,
   put the session's endpoint's engine in; the API and the variation page honour the stored one. The run records the
   swap in `replaced`, so this is a milder form of the edges' old disagreement, but the same shape. Manageable by saying
@@ -275,7 +380,7 @@ Against one part of it, yes, on paper and now: **the recipe naming a model rathe
 staying the trial's, picked per run as the endpoint serving the model. It is what the facts and the lints are keyed
 by; it removes the staleness, the `configurations` key and the overriding edges, and `replaced` need record no
 engine. What stops it is real: a remote engine's model is a name, not a component, so a model part would be the one
-recipe part without a digest, or would need a component standing for a remote model. That is a page to write and a
-day to weigh, not a build: the two differ in one part's kind and in `Seen.at`'s derivation, and the one is reached
-from the other as a follow-up. It should be weighed before this lands rather than after, because O2 is what makes
-changing a part's kind cheap, and the deploy closes it.
+recipe part without a digest, or would need a component standing for a remote model. That is a page to weigh, not a
+build: the two differ in one part's kind and in `Seen.at`'s derivation, and the one is reached from the other as a
+follow-up. It should be weighed before this lands rather than after, because O2 is what makes changing a part's
+kind cheap, and the deploy closes it. Written up above as "The model as the part".
