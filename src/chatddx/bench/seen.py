@@ -764,7 +764,13 @@ class Seen:
         name = self.catalog.about(Subject(run=run.run)).name or self.title(
             trial.skeleton
         )
-        return f"{name} × {where} × {cases} (seed {seeds})"
+        into = {c.into for c in self.store.compilations(trial.skeleton)}
+        sent = (
+            f", in {next(iter(into))}, translated"
+            if len(into) == 1 and None not in into
+            else ""
+        )
+        return f"{name} × {where} × {cases}{sent} (seed {seeds})"
 
     def scores_of(self, run: UUID, every: bool = False) -> list[Graded]:
         given = self.store.scores_of(run)

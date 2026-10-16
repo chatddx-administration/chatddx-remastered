@@ -4,10 +4,12 @@ from chatddx import settings
 from chatddx.bench import Bench, NotFound, OverQuota
 from chatddx.catalog import Subject
 from chatddx.curation import Plan
-from chatddx.factors.base import resolve
+from chatddx.factors.base import Resolver, resolve
 from chatddx.factors.trial import Execution, Trial
 from chatddx.identity import Person
 from chatddx.inventory import Inventory
+from chatddx.runner import gate
+from chatddx.runner.gate import Refused
 from chatddx.runner.run import Event, ItemEnded
 from chatddx.store.store import Connection
 from chatddx.test.world import GPT_OSS, LINES, QWEN, faked
@@ -190,6 +192,10 @@ def test_a_start_runs_each_language_its_cases_are_in_and_leaves_out_the_rest(
         first.run,
     )
     assert bench.ran(second.run) == bench.ran(first.run)
+    assert bench.described(second.started) == (
+        f"lines-guided × {QWEN} × 2 cases, in sv, translated (seed 7)"
+    )
+    assert bench.described(first.started) == f"lines-guided × {QWEN} × 2 cases (seed 7)"
 
     lines = bench.configuration(LINES)
     plain = bench.start(lines, QWEN, cases, (7,))
@@ -209,3 +215,28 @@ def test_a_start_runs_each_language_its_cases_are_in_and_leaves_out_the_rest(
     monkeypatch.setattr(settings, "RUNS_PER_DAY", 4)
     with pytest.raises(OverQuota, match="a day takes 4, not 2 more"):
         _ = bench.start(guided, QWEN, cases, (7,))
+
+
+@pytest.mark.usefixtures("fake")
+def test_a_start_one_of_whose_runs_the_gate_refuses_begins_none(
+    conn: Connection,
+    world: Inventory,
+    alice: Person,
+    monkeypatch: pytest.MonkeyPatch,
+):
+    bench = Bench(conn, alice, world)
+    cases = [bench.family(name).case for name in ("crlf", "svenska")]
+    checked = gate.check
+    calls: list[str] = []
+
+    def check(inventory: Inventory, get: Resolver, endpoint: str, trial: Trial):
+        calls.append(trial.digest)
+        if len(calls) == 2:
+            raise Refused("the second is refused")
+        return checked(inventory, get, endpoint, trial)
+
+    monkeypatch.setattr(gate, "check", check)
+    with pytest.raises(Refused, match="the second is refused"):
+        _ = bench.start(bench.configuration("lines-guided"), QWEN, cases, (7,))
+    assert len(calls) == 2
+    assert bench.runs() == []

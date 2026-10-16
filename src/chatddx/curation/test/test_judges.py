@@ -100,6 +100,14 @@ def test_a_judge_names_no_engine_of_its_own(tmp_path: Path) -> None:
         _ = world_plan(world, world / "_data")
 
 
+def test_a_judge_names_no_language_of_its_own(tmp_path: Path) -> None:
+    world = edited(tmp_path, "[judge.verdict]\n", '[judge.verdict]\nlanguage = "sv"\n')
+    with pytest.raises(
+        ValueError, match="judge.verdict: a judge's request is its recipe's, as written"
+    ):
+        _ = world_plan(world, world / "_data")
+
+
 def test_a_view_naming_no_judge_is_refused(tmp_path: Path) -> None:
     world = edited(
         tmp_path,

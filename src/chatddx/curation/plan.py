@@ -185,10 +185,12 @@ def _records(
         found[table] = {}
         for name, raw in records.items():
             if isinstance(raw, dict) and "language" in raw:
-                raise ValueError(
-                    f"{path}: {table}.{name}: a text's language is the texts file it's "
-                    + "written in"
+                said = (
+                    "a judge's request is its recipe's, as written"
+                    if table == "judge"
+                    else "a text's language is the texts file it's written in"
                 )
+                raise ValueError(f"{path}: {table}.{name}: {said}")
             found[table][name] = _with_files(raw, path.parent)
     return found
 

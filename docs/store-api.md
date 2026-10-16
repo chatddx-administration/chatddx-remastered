@@ -342,6 +342,12 @@ from what it has scored, and any change once it has ended.
 ## Migrations
 `migrations/NNNN-tT-<schema>[-<what>].sql`, applied by `migrate`:
 
+```
+AGENT: replace
+Built (agents/wip-engine-part.md, stage 2): `0026` takes a run's `with` entry too. The `0026` row.
+---
+| `0026-t2-catalog-run-variation.sql` | 2 | `varied`, `replaced` and `with` entries, on runs only, and `catalog.check_varied()` | `docs/catalog-api.md`, `docs/migrations.md`, "catalog" |
+```
 | File | Tier | Schema | Documented in |
 | --- | --- | --- | --- |
 | `0001-t0-factor.sql` | 0 | `factor`: `component`, `component_ref` | `docs/factors-api.md`, "Database: schema `factor`" |

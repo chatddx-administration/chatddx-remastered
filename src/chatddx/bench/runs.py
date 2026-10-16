@@ -60,30 +60,32 @@ def start(
         {p: variation.parts[p][0] for p in PARTS if p in variation.parts},
     )
     runs: list[tuple[Carried, Running]] = []
-    for each in sent:
-        assert each.skeleton is not None
-        with_first = [Entry.started_with(runs[0][1].run)] if runs else []
-        running = _begun(
-            seen,
-            each.skeleton,
-            endpoint,
-            engine,
-            each.cases,
-            seeds,
-            variation.label,
-            [*said, *with_first],
-            cleanup=_cleanup_of(seen, each.cases)
-            if cleanup is None
-            else tuple(cleanup),
-            execution=execution or spec.execution,
-            canaries=None
-            if canaries is None
-            else resolve(seen.get, canaries, CanarySet),
-        )
-        runs.append((each, running))
-        if each.translated:
-            _ = keep_compilation(seen, variation, each.language)
-    _ = keep_compilation(seen, variation)
+    # One transaction, so that a run the gate refuses leaves none of the start's begun.
+    with seen.conn.transaction():
+        for each in sent:
+            assert each.skeleton is not None
+            with_first = [Entry.started_with(runs[0][1].run)] if runs else []
+            running = _begun(
+                seen,
+                each.skeleton,
+                endpoint,
+                engine,
+                each.cases,
+                seeds,
+                variation.label,
+                [*said, *with_first],
+                cleanup=_cleanup_of(seen, each.cases)
+                if cleanup is None
+                else tuple(cleanup),
+                execution=execution or spec.execution,
+                canaries=None
+                if canaries is None
+                else resolve(seen.get, canaries, CanarySet),
+            )
+            runs.append((each, running))
+            if each.translated:
+                _ = keep_compilation(seen, variation, each.language)
+        _ = keep_compilation(seen, variation)
     return Started(runs, left_out)
 
 

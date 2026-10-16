@@ -44,6 +44,18 @@ Both kinds of file hold one table per kind of component, keyed by name, whose ke
 On top of the fields:
 - **References by name.** A toolset's tools, a scorer's expectation schema and a view's judge, a local engine's model
   and a recipe's parts name records, not digests.
+```
+AGENT: replace
+Built (agents/wip-engine-part.md, stage 2): a recipe is made once, so a judge compiles it as written and names no
+`language`. The item.
+---
+- **Judges.** A judge names a `recipe`, its `seeds` and its `fill`, and no engine: the World binds it to an endpoint
+  (docs/inventory.md, "Judges"), whose engine judges. The recipe is compiled for that engine, as written, and the
+  skeleton and its compilation are stored with the judge, without a thread of their own; a judge names no `language`.
+  A judge the World binds to no endpoint, whose endpoint serves no engine the World has, or whose recipe the facts
+  refuse on that engine, is skipped and reported, and so is every scorer whose views name it; a binding for a judge
+  the data set doesn't have is reported too. A judge's skeleton may not have tools.
+```
 - **Judges.** A judge names a `recipe`, its `seeds` and its `fill`, and no engine: the World binds it to an endpoint
   (docs/inventory.md, "Judges"), whose engine judges. The recipe is compiled for that engine, in the recipe's language
   (`language` picks one when it is written in several), and the skeleton and its compilation are stored with the
@@ -52,6 +64,16 @@ On top of the fields:
   reported, and so is every scorer whose views name it; a binding for a judge the data set doesn't have is reported
   too. A judge's skeleton may not have tools.
 - **Files.** `json_schema_path` loads a JSON file, relative to the file that names it, in place of `json_schema`.
+```
+AGENT: replace
+Built (agents/wip-engine-part.md, stage 2): records are made once, so a fork names its origin directly. The item.
+---
+- **Forks.** `fork_of` names a record of the same kind that this one is a fork of. It is loaded as a fork of
+  that record's thread, so the catalog knows what it varies (docs/catalog.md, "Forks"). It inherits no fields. A record
+  whose origin isn't planned, as when the origin's recipe was skipped, is loaded as no fork and reported. A thread's
+  origin is set when the thread is created, so a re-run only reports a held thread whose origin differs from the
+  data's.
+```
 - **Forks.** `fork_of` names a record of the same kind that this one is a fork of. It is loaded as a fork of
   that record's thread, so the catalog knows what it varies (docs/catalog.md, "Forks"). It inherits no fields. Each
   variant forks the origin's variant in its language. An origin written in one language only is forked in that
@@ -69,18 +91,57 @@ On top of the fields:
   out from the facts when a recipe is compiled (docs/factors.md, "Reasoning" and "Sampling"). A `from_facts` record
   is refused: "from_facts is gone; the facts are applied when a recipe is compiled, so ask for a reasoning `level` or
   a `recommended` sampling".
+```
+AGENT: replace
+Built (agents/wip-engine-part.md, stage 2, C1): `of` groups by any record of texts, into the texts file's language,
+with refusals of its own, and a text left untranslated no longer fails loading. The item.
+---
+- **Translations by record.** A translations record's entries may be written in `of`, grouped by the record whose
+  texts they translate, any record of texts (instructions, few-shot, prompt, output, toolset) or a recipe, for its
+  appendix layout, each entry a `text` and its `translation`: `[[translations.sample.of."instructions.clinician"]]`.
+  Loading makes them the chunk's entries into the texts file's language, and refuses a record that isn't one of texts
+  ("'sampling.greedy' names no record of texts"), one the data set doesn't have ("'output.nope': no output named
+  'nope'"), one written in the file's own language ("output.plan is written in en"), a text its record doesn't hold,
+  so an entry no text uses any more is found, an entry that isn't a text and its translation, and a text translated
+  two ways. A text that several records hold is written once, under any of them. A text left untranslated doesn't
+  stop the loading (see "Texts").
+```
 - **Translations by record.** A translations chunk's entries may be written in `of`, grouped by the record whose texts
   they translate, an output, a toolset or a recipe's appendix layout, each entry a `text` and its `translation`:
   `[[translations.sample.of."output.management-plan"]]`. Loading makes them the chunk's `entries`, and refuses a text
   its record doesn't hold, so an entry no text uses any more is found. A text that several records hold is written
   once, under any of them. Missing texts still fail the compilation of the recipe that needs them.
 
+```
+AGENT: replace
+Built (agents/wip-engine-part.md, stage 2, C1): a text is written once; only a translations record's name comes
+back in several texts files. The paragraph.
+---
+A name is defined once per kind: a text is written in one texts file, and only a translations record's name comes
+back in several, as one chunk (see "Texts"). A data set's `factors.toml` holds no `model`, `local_engine` or
+`remote_engine` table, and a recipe names no `engine`: engines are the World's (see "The World"), and a recipe that
+names one is refused ("a recipe's engine is the World's: its inventory names the endpoint configurations are made
+for").
+```
 A name is defined once per kind, and a text's name may come back in each texts file, as the same text in another
 language. A data set's `factors.toml` holds no `model`, `local_engine` or `remote_engine` table, and a recipe names
 no `engine`: engines are the World's (see "The World"), and a recipe that names one is refused ("a recipe's engine is
 the World's: its inventory names the endpoint configurations are made for").
 
 ### Texts
+```
+AGENT: replace
+Built (agents/wip-engine-part.md, stage 2, C1): a texts file holds the translations into its language too, and names
+carry no language. The paragraph.
+---
+What the model reads is written in a language, and a texts file's name gives it: every text record in
+`texts-sv.toml` is written in Swedish, every translations record there translates into Swedish, and no record says its
+own language. A chunk holds text when an instruction, an example, a prompt, a guidance, an answer-function or tool
+description, or schema prose says something, so a prompt of slots alone, or an output without guidance or schema,
+holds none. A chunk that holds text is written in a texts file, and one that holds none in `factors.toml`, where it
+serves every language. Loading writes each text's language on its digest, and names it plainly, such as
+`management-plan`; a translations chunk says its languages itself, and is given none.
+```
 What the model reads is written in a language, and a texts file's name gives it: every text in `texts-sv.toml` is
 Swedish, and no record says its own language. A chunk holds text when an instruction, an example, a prompt, a
 guidance, an answer-function or tool description, or schema prose says something, so a prompt of slots alone, or an
@@ -88,17 +149,51 @@ output without guidance or schema, holds none. A chunk that holds text is writte
 none in `factors.toml`, where it serves every language. Loading writes each text's language on its digest, and names
 it after it, such as `management-plan (en)`.
 
+```
+AGENT: replace
+Built (agents/wip-engine-part.md, stage 2, T1 and C1): every text is written once and translated, and the
+translations records of one name are one chunk, into every language. The paragraph.
+---
+A text is written in one language and translated into the others. A text record in two texts files, or in
+`factors.toml` and a texts file, is refused: "instructions.clinician is in texts-en.toml and texts-sv.toml: a text is
+written in one language, and translated into others". A translations record is written in the texts file of the
+language it translates into, and gives its `entries` or its `of`, and no other field; one in `factors.toml` is refused.
+Translations records of one name in several texts files are one chunk, into each file's language (docs/factors.md,
+"Translations"): `description` and `fork_of` may be given in any of them, and must agree, and their tags are merged.
+```
 Texts come in two kinds. Instructions, few-shot and prompts are written in each language they are used in, as cases
 are. Outputs and toolsets bring text with code, guidance and schemas, and may be written in one language and
 translated into the others by a translations chunk of each (docs/factors.md, "Translations"); a native one can
 still be written in a language of its own.
 
+```
+AGENT: replace
+Built (agents/wip-engine-part.md, stage 2): a recipe is made once, in its texts' language, and its translations
+carry it into others. The paragraph.
+---
+A recipe is made once, named plainly, such as `plan`, and names its parts by name: a part the data set doesn't have
+is refused ("recipe.plan: no output named 'plans'"). It is written in its texts' language, and runs in that language
+as written, and in each its translations carry it into, translated (docs/catalog.md, "Languages"). Loading compiles
+it into each language its translations name, and says each it can't carry it into, and why (see "Loading"); the
+recipe is made all the same.
+```
 A recipe that names a text is made in each language that has it, named after the language, such as `plan (en)`. In a
 language, it takes each text written in that language. An output or a toolset written only in another language is
 taken from there, and the recipe's translations in its language stand in for it; a recipe without them there is
 skipped and reported. In the language its output and toolset are written in, it needs no translations and is made
 without them. A recipe that names no text is made once, as before.
 
+```
+AGENT: replace
+Built (agents/wip-engine-part.md, stage 2): the sample's Swedish texts are translations, and the bench leaves out
+the cases a configuration can't be sent to rather than linting a mix. The paragraph.
+---
+The sample is written in English, in `texts-en.toml`. Its `texts-sv.toml` holds only `translations.sample`, into
+Swedish: `free-text-guided`'s instructions and worked example, and every text the outputs and the toolset hold,
+schemas included. Only `free-text-guided` names it, so it runs on the Swedish cases translated, and the other recipes
+run on the English cases, the Swedish ones left out; the sample's translations, set in a variation, carry any of its
+recipes but the judges' into Swedish.
+```
 The sample is written in English, and one recipe in Swedish too. Its outputs, toolset and judge are in
 `texts-en.toml`, and every recipe is made in English. `free-text-guided`'s instructions and worked example are written
 again in `texts-sv.toml`, with translations of every text its outputs and toolset hold, schemas included, so
@@ -121,6 +216,19 @@ scored and compared together: a case runs in the language it was written in (doc
 the targets keep a language of their own.
 
 ### Facts and the engine
+```
+AGENT: replace
+Built (agents/wip-engine-part.md, stage 2): a recipe is made once, not once per language. The paragraph.
+---
+Some of what a request sends can only be worked out for a model: the sampling its makers recommend, the way a
+reasoning level is asked for. The facts about each model an engine of the World serves are loaded as a thread of kind
+`facts`, named after the model, such as `Qwen/Qwen3-8B-AWQ`, and a recipe is made once, with the engine of the
+endpoint the World names for configurations (docs/inventory.md), its intents compiled against that engine's model's
+facts (docs/facts.md, "Compiling intents"). A served model the facts don't know is reported, since its engines can't
+compile a reasoning level or a recommended sampling, and a recipe is skipped and reported when the facts refuse it on
+that engine, or when the World names no endpoint for configurations. Engines and facts are planned first for this
+reason. A researcher swaps the engine at the bench, as any other part (docs/bench.md).
+```
 Some of what a request sends can only be worked out for a model: the sampling its makers recommend, the way a
 reasoning level is asked for. The facts about each model an engine of the World serves are loaded as a thread of kind
 `facts`, named after the model, such as `Qwen/Qwen3-8B-AWQ`, and a recipe is made, once per language, with the engine
@@ -150,6 +258,19 @@ loads a data set, the World's `_data/` unless `--data` names another, for the ar
 who is added when missing. It connects as the writer and does everything in one transaction. It prints a line for each
 thing it comes to.
 
+```
+AGENT: replace
+Built (agents/wip-engine-part.md, stage 2): recipes are made once, and loading says each language a recipe's
+translations can't carry it into. The item.
+---
+1. **Plan.** The data set and the World's engines are planned into components, without the store: references
+   resolved, the facts about each served model the facts know, recipes made once and compiled for the engine the
+   World names for configurations, and into each language their translations name, judges' recipes compiled for
+   their own engines, texts and entry points checked. A data set that can't be planned is refused before anything is
+   written. A recipe its translations can't carry into a language is made all the same, and said after the records:
+   `[untranslated] recipe asked: no translation into sv for 'You are an emergency physician.'`. Neither World's data
+   set gives one.
+```
 1. **Plan.** The data set and the World's engines are planned into components, without the store: references
    resolved, the facts about each served model the facts know, recipes made per language and compiled for the
    engine the World names for configurations, judges' recipes compiled for their own engines, texts and entry points
@@ -249,6 +370,13 @@ test_sample_world.py (src/chatddx/conftest.py, `sampled`).
 | Record | A named entry of a data set's factors file, loaded as a thread. |
 | Per-model record | A record written from each served model's facts, named after the model. |
 | Text | A chunk that holds text the model reads, written in a texts file whose name gives its language. |
+```
+AGENT: replace
+Built (agents/wip-engine-part.md, stage 2): records aren't made per language; translations carry a recipe into
+other languages. The row.
+---
+| Translations | A chunk that translates a data set's texts into other languages, written in the texts file of each language it translates into. |
+```
 | Variant | A record made for a language, named after it: `plan (en)`. |
 | Giftbag | A person's own forks of the archive's chunks, tools, skeletons and expectations. |
 | Leftover | An archive thread or family the data set no longer names. |
@@ -273,6 +401,11 @@ Curation is the place for the rest of the store's authored content to come and g
 ### What a data set can't hold yet
 Trials, executions, scorings and hand-written skeletons have no tables, and a data set has one expectation schema.
 
+```
+AGENT: remove
+Built (agents/wip-engine-part.md, stage 2): names carry no language, and a run over cases in several languages is a
+run per language, each sent the configuration as written or translated into it. The section.
+```
 ### Picking a variant by the case's language
 The bench completes a configuration's name with its language when it is made in one language alone, and asks for the
 language when it is made in several (src/chatddx/catalog/variants.py, src/chatddx/bench/seen.py:Seen.thread). With
@@ -301,6 +434,18 @@ configuration; languages leave them in stage 2 (agents/wip-engine-part.md).
   graded by Olof with a line on why. Open beside it: notes on more cases, and revising the targets where his notes
   disagree, as on `Dutchfall11w` (shock, most likely sepsis, where the targets have an aortic aneurysm or a
   dissection).
+```
+AGENT: replace
+Built (agents/wip-engine-part.md, stage 2): `lines-guided` is one configuration, translated into sv; runs send the
+translation, and no test reads its texts. The item.
+---
+- **What only the test World reaches isn't all read.** No test reads the gate refusing `qwen3-bare@fake` for `typed`
+  cases, the pair lints its records give (`vllm.*` on `qwen3-bare@fake` and `clamped`, `facts.output_refused`,
+  `facts.reasoning_unmatched`, `facts.budget_refused`, `language.unknown`), `headed`'s tool guidance, the texts of
+  `lines-guided` translated into sv, the passthrough, or the vignettes' quirks under the cleanup steps. The lints are
+  tested on synthetic registries, and two of the judge tests in src/chatddx/scorers/test/test_scorers.py use a
+  synthetic judge.
+```
 - **What only the test World reaches isn't all read.** No test reads the gate refusing `qwen3-bare@fake` for `typed`
   cases, the pair lints its records give (`vllm.*` on `qwen3-bare@fake` and `clamped`, `facts.output_refused`,
   `facts.reasoning_unmatched`, `facts.budget_refused`, `language.unknown`), `headed`'s tool guidance,

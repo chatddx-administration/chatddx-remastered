@@ -9,6 +9,13 @@ an engine is reached and whether it may receive a case (docs/inventory.md).
 This document describes what a run and a score do and why. Names, signatures, refusals and messages are in the API,
 docs/runner-api.md.
 
+```
+AGENT: replace
+A start is a run per language its cases are sent in. The paragraph.
+---
+The bench calls the runner for the repl and the API: it starts a run of a variation for each language its cases are
+sent in, and scores a finished run under every scorer that applies to it.
+```
 The bench calls the runner for the repl and the API: it starts a run of a variation, and scores a finished run under
 every scorer that applies to it.
 

@@ -9,6 +9,16 @@ events (docs/api.md, "Runs").
 This document describes what the worker does and why. Names, signatures and settings are in docs/worker-api.md.
 
 ## A job
+```
+AGENT: replace
+A request starts a run per language its cases are sent in, each a job of its own. The paragraph.
+---
+A job is what the worker is asked to do: take a started run to its finish, and score it when asked, or score a
+finished run again. The request starts the runs, a run per language its cases are sent in (docs/api.md, "Starting
+one"), so whatever refuses them does so before anything is queued; each is queued as a job of its own, and counts
+against a person's runs a day as any run does. The worker resumes the run to send it (docs/runner.md, "Resuming"), as
+it resumes one it lost.
+```
 A job is what the worker is asked to do: take a started run to its finish, and score it when asked, or score a
 finished run again. The request starts the run (docs/api.md, "Starting one"), so whatever refuses it does so before
 anything is queued, and a queued run counts against a person's runs a day as any run does. The worker resumes the run

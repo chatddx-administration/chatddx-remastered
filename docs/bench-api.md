@@ -25,6 +25,16 @@ Paths are relative to `src/chatddx/bench/` unless they start with `src/`, `docs/
 - [Tests](#tests)
 
 ## Package
+```
+AGENT: replace
+`Carried` and `Started`; `Corrected` and `word_of` were left out before. The paragraph.
+---
+`chatddx.bench` re-exports `Ambiguous`, `Conflict`, `MovedOn`, `NotFound`, `OverQuota`, `Outcome`, `outcome`, `usage`,
+`used`, `OPTIONAL`, `PARTS`, `TriedVariation`, `KINDS`, `WRITTEN`, `word_of`, `Bench`, `Carried`, `Corrected`,
+`Family`, `Graded`, `Proposed`, `Reach`, `Saved`, `Started`, `Taken`, `Written`, `ScoreHalt`, `ScorerStarted` and
+`ScoringEvent`. Edges import from `chatddx.bench`, never by path; tests import their helpers from
+`chatddx.bench.test.helpers`.
+```
 `chatddx.bench` re-exports `Ambiguous`, `Conflict`, `MovedOn`, `NotFound`, `OverQuota`, `Outcome`, `outcome`, `usage`,
 `used`, `OPTIONAL`, `PARTS`, `TriedVariation`, `KINDS`, `WRITTEN`, `Bench`, `Family`, `Graded`, `Proposed`, `Reach`,
 `Saved`, `Taken`, `Written`, `ScoreHalt`, `ScorerStarted` and `ScoringEvent`. Edges import from `chatddx.bench`,
@@ -254,6 +264,25 @@ By case digest:
 - `choosing: dict[str, list[int]]`: the shared threads offered, when there are several.
 - `missing: list[str]`: the cases with none shared.
 
+```
+AGENT: add
+`Carried` and `Started`. Two classes at the end of model.py.
+---
+#### `class Carried`
+A language a variation's cases are sent in, or left out of.
+- `language: str | None`: the cases' language; `None` for the configuration's own when it is unknown.
+- `cases: list[str]`: the cases, by digest, in the order given.
+- `skeleton: Skeleton | None = None`: what they are sent as, the configuration's skeleton or its translation; `None`
+  when they are left out.
+- `translated: bool = False`: whether `skeleton` is a translation.
+- `refused: str | None = None`: why they are left out.
+
+#### `class Started`
+What `start` started.
+- `runs: list[tuple[Carried, Running]]`: a run per language, those sent as written first.
+- `left_out: list[Carried]`: the languages left out, each with its cases and why.
+- `first: Running` (property): the first run, which the others were started with.
+```
 ## seen.py
 
 ### `class Seen`
@@ -282,12 +311,22 @@ The names of `threads(word)`, sorted, without repeats.
 
 #### `thread(word: str, name: str) -> tuple[Edit, str]`
 The head of the thread `name` names among `threads(word)`, and the name that found it.
+```
+AGENT: replace
+Names carry no language: `chatddx.catalog.variants_for` is gone. The item.
+---
+- `name`: a thread's name, or `<owner's login>/NAME`.
+```
 - `name`: a thread's name, or `<owner's login>/NAME`. A name nothing goes by is read as its one variant,
   `NAME (LANGUAGE)` (`chatddx.catalog.variants_for`), in the language the name ends in, as `NAME LANGUAGE` or
   `NAME (LANGUAGE)`, if any.
 
 Of the threads called `name`, the person's own are taken when they own any, else all of them; when none is called
 `name`, the same among those whose qualified name it is. Raises:
+```
+AGENT: remove
+Gone with the variants. The item.
+```
 - `Ambiguous("<word> '<name>' is made in more than one language: <names>; name one as '<base> <language>' or …")`
 - `Ambiguous("<word> '<name>' names a <kind> and a <kind>")`, for a name held in two of the word's kinds.
 - `Ambiguous("<word> '<name>' names <n>; name one as OWNER/NAME")`
@@ -416,6 +455,18 @@ the engine it serves (`endpoint(name)`). Raises:
 - `ValueError("endpoint '<endpoint>' serves another engine than <label>'s, <title>")`
 - `endpoint(name)`'s.
 
+```
+AGENT: replace
+`into`, and the facts it compiles against (`compiled_with`). The entry.
+---
+#### `skeleton(variation: TriedVariation, into: str | None = None) -> Skeleton`
+The configuration's head when nothing is replaced or it has no recipe; else the varied recipe compiled against
+`facts_for` its engine. With `into`, the recipe compiled into that language against `compiled_with(variation)`, whatever
+is replaced.
+- Raises the compiler's errors, the facts' refusals among them (`StructuralError`); for `into`, also
+  `StructuralError("no translations into <into>")`, `StructuralError("no translation into <into> for '<text>', …")`
+  and, without a recipe, `StructuralError("<label> has no translations into <into>")`.
+```
 #### `skeleton(variation: TriedVariation) -> Skeleton`
 The configuration's head when nothing is replaced or it has no recipe; else the varied recipe compiled against
 `facts_for` its engine.
@@ -428,6 +479,30 @@ sampling, each the level the engine's model is asked for, with `nearest`, why, w
 `facts_for` its engine. `{}` without a recipe; no key for a part that holds no intent.
 - Raises `landings`' `StructuralError` for what the facts refuse.
 
+```
+AGENT: add
+The languages a variation is sent in. Four entries before this one.
+---
+#### `compiled_with(variation: TriedVariation) -> ModelFacts | None`
+The facts the variation is compiled against: those its configuration's compilation names when nothing is replaced, so
+that a translation of it differs from it by its texts alone; else `facts_for` its engine. `None` without a recipe.
+
+#### `own_language(variation: TriedVariation) -> str | None`
+The language the variation is written in: its varied recipe's (`Catalog.recipe_language`, its texts' vote), or,
+without a recipe, its skeleton's (`Catalog.language_of`).
+
+#### `translated(recipe: Recipe | None) -> list[str]`
+The languages the recipe's translations carry it into, sorted; `[]` without a recipe or translations.
+
+#### `languages(variation: TriedVariation, cases: Sequence[str], known: Mapping[str, str | None] | None = None) -> list[Carried]`
+`cases` grouped by the language each is sent in, a `Carried` each. First the cases sent as written, with
+`skeleton(variation)`, in `own_language`: those in it and those of no language. Then each other language, sorted:
+translated, with `skeleton(variation, language)`; or left out, `refused` `<label> has no translations into <language>`
+when the translations hold none, else the compile's `StructuralError`. When `own_language` is `None`, a case of a
+language the translations don't hold goes as written too. Nothing is stored.
+- `known`: each case's language; `Catalog.languages_of` the cases, their families', when not given.
+- Raises `skeleton(variation)`'s errors for the cases sent as written.
+```
 #### `request(variation: TriedVariation, engine: str | None, seed: int) -> dict[str, JsonValue]`
 The request rendered from the skeleton with `PLACEHOLDERS` for its slots and `seed`.
 - `engine`: whose `served` model the request carries; `‹model›` without one.
@@ -436,6 +511,20 @@ The request rendered from the skeleton with `PLACEHOLDERS` for its slots and `se
 A `Trial` of the skeleton, the engine, the cases, the cleanup steps and the seeds, and a registry holding it with
 what it refers to.
 
+```
+AGENT: replace
+A trial per language, and `translations.missing` for a language left out (`seen.py:left_out`). The entry.
+---
+#### `findings(variation: TriedVariation, engine: str, seed: int, families: list[Family] | None = None, carried: list[Carried] | None = None) -> list[Finding]`
+`lints` of the variation's trials on `engine`; for a judge configuration, of a `Judge` of its skeleton on `engine`,
+whatever `families`.
+- `families`: the cases to lint over, each in its family's language: a trial for each language of `languages` that
+  sends some, its skeleton in that language, their findings without repeats; and for each language left out a
+  `translations.missing` warning, subject the configuration's digest, `<n> cases are in <language>, and left out:
+  <why>` (`1 case is` for one). `[]` for none. Without them, the first case of the families the person sees, and `[]`
+  when there is none.
+- `carried`: `languages` of the families' cases, when the caller has it already.
+```
 #### `findings(variation: TriedVariation, engine: str, seed: int, families: list[Family] | None = None) -> list[Finding]`
 `lints` of the variation's trial on `engine`; for a judge configuration, of a `Judge` of its skeleton on `engine`,
 whatever `families`.
@@ -480,6 +569,17 @@ The latest of `runs()`, or the one whose id, as `str(UUID)`, starts with `prefix
 The run, when it has started and the person owns it, live.
 - Raises `NotFound("no run <id> of yours")`.
 
+```
+AGENT: add
+A start's runs, kept together by the `with` entry. Two entries before this one.
+---
+#### `started_with(run: UUID) -> UUID | None`
+The first run of the start `run` is one of, as its `with` entry says (`About.started_with`); `None` for the first, and
+for a run started alone.
+
+#### `together(first: UUID) -> list[RunStarted]`
+The runs of `runs()` that are `first` or were started with it, newest first.
+```
 #### `ran(run: UUID) -> tuple[Edit, dict[str, str | None]] | None`
 What the run says it varied: the configuration's edit, and each part replaced over it, its chunk's digest or `None`
 for a part taken out (`About.varied`, `About.replaced`); `None` for a run that says nothing, as one the runner
@@ -489,6 +589,15 @@ started from a trial alone.
 The runs of `runs()` whose trial holds `digest` in its closure, or whose skeleton was compiled from a recipe that
 does, newest first.
 
+```
+AGENT: replace
+Built (agents/wip-engine-part.md, stage 2): a translated run says its language, as each compilation of its
+skeleton names it. The section.
+---
+#### `described(run: RunStarted) -> str`
+`<run's name, else skeleton's title> × <endpoint, else engine's title> × <case's title, else "<n> cases">[, in
+<language>, translated] (seed <seeds>)`, the language when every compilation of the run's skeleton is one into it.
+```
 #### `described(run: RunStarted) -> str`
 `<run's name, else skeleton's title> × <endpoint, else engine's title> × <case's title, else "<n> cases"> (seed
 <seeds>)`.
@@ -536,6 +645,15 @@ sent: `None` when it is, else why not:
 
 ### Checks the writes share
 
+```
+AGENT: replace
+`facts` and `into`. The entry.
+---
+#### `compiled(recipe: Recipe, facts: ModelFacts | None | Literal["current"] = "current", into: str | None = None) -> tuple[Registry, Compilation]`
+The recipe compiled by the running code against `facts`, `facts_for` its engine for `"current"`, and into `into` when
+it is given (`chatddx.factors.request.compiled`), in a registry with what it refers to and those facts, which the
+compilation names. Nothing is stored.
+```
 #### `compiled(recipe: Recipe) -> tuple[Registry, Compilation]`
 The recipe compiled by the running code against `facts_for` its engine, in a registry with what it refers to and
 those facts, which the compilation names. Nothing is stored.
@@ -592,6 +710,14 @@ Raises:
 - `NotFound("no configuration <thread> of yours")`
 - `MovedOn`
 
+```
+AGENT: replace
+`into`, for a translated run's skeleton. The entry.
+---
+### `keep_compilation(variation: TriedVariation, into: str | None = None) -> str | None`
+For a variation with parts replaced, or translated `into` a language, the compilation of its skeleton by the running
+code, against `Seen.compiled_with`, stored; its digest. `None` otherwise.
+```
 ### `keep_compilation(variation: TriedVariation) -> str | None`
 For a variation with parts replaced, the compilation of its skeleton by the running code, stored; its digest. `None`
 otherwise.
@@ -675,6 +801,17 @@ rebound appendices.
 - Raises `NotFound("no case <case> for <login>")`.
 - Raises `ValueError("<case> is at its family's current vignette already")`.
 
+```
+AGENT: replace
+`language` is required. The signature, and the items under it.
+---
+### `type_case(text: str, *, language: str, name: str | None = None, source: str | None = None) -> Family`
+The family of a case the person typed: the text kept in a database source, its case stored, and its family adopted by
+id alone, owned by the person, in one transaction.
+- `language`: the language it is written in, an entry about the family.
+- `name`: an entry about the family.
+- `source`: the database source to keep it in; the World's one when not given.
+```
 ### `type_case(text: str, *, name: str | None = None, language: str | None = None, source: str | None = None) -> Family`
 The family of a case the person typed: the text kept in a database source, its case stored, and its family adopted by
 id alone, owned by the person, in one transaction.
@@ -806,6 +943,33 @@ Raises:
 ### `REFUSALS`
 `(LookupError, TypeError, ValueError, NotImplementedError, Refused)`: what `score` takes as a scorer refused.
 
+```
+AGENT: replace
+A run per language, `Started`, the `with` entry, the cases left out and the quota over several runs. The entry.
+---
+### `start(variation: TriedVariation, endpoint: str | None, cases: list[str], seeds: Sequence[int], cleanup: Sequence[CleanupOp] | None = None, execution: Execution | None = None, canaries: str | None = None) -> Started`
+
+A run of the variation for each language `Seen.languages(variation, cases)` sends cases in, in its order, where
+`Seen.at(variation, endpoint)` says, over that language's cases with `seeds`, its replicates, its cleanup steps, its
+execution and the canary set stored under the digest `canaries`; the languages left out are `Started.left_out`. Once
+each run has started, its `name` entry, `variation.label`, its `varied` entry, `variation.configuration`, a `replaced`
+entry for each part replaced, the engine among them, and for every run but the first a `with` entry naming the first,
+are written in one transaction (docs/catalog-api.md, "Entry"). Not given: the steps each run's cases' sources ask for,
+in `CleanupOp`'s order (`()` for none); the endpoint's execution and canary set, from the inventory. The compilation
+of a translated skeleton is stored once its run has started, and of a varied one once all have. The runs start in one
+transaction, so that a run refused leaves none of the start's begun.
+
+Raises, before any run starts:
+- `ValueError("<label> is a judge configuration: a judge is asked as runs are scored, and isn't run on cases")`
+- `ValueError("no case can be sent: <why>; …")`, each language's, when every case is left out
+- `OverQuota("a run holds at most <ITEMS_PER_RUN> items, not <n>")`, a language's cases times the seeds
+- `OverQuota("<login> has started <n> runs in the last day, as many as a day takes")` for one run, and
+  `OverQuota("<login> has started <n> runs in the last day, and a day takes <RUNS_PER_DAY>, not <m> more")` for several
+- `Seen.languages`' and `Seen.at`'s.
+
+As each run starts, `resolve`'s for `canaries`, the runner's and its gate's, and the runner's `ValueError` for a
+connection not in autocommit mode; a later run's leaves none of the runs before it begun.
+```
 ### `start(variation: TriedVariation, endpoint: str | None, cases: list[str], seeds: Sequence[int], cleanup: Sequence[CleanupOp] | None = None, execution: Execution | None = None, canaries: str | None = None) -> Running`
 
 The variation run where `Seen.at(variation, endpoint)` says, over `cases` with `seeds`, its replicates, its cleanup
@@ -822,6 +986,16 @@ Raises:
 - `Seen.at`'s, `resolve`'s for `canaries`, the runner's and its gate's; the runner's `ValueError` for a
   connection not in autocommit mode.
 
+```
+AGENT: replace
+One run, in its run's language, with no `with` entry. The entry.
+---
+### `again(run: RunStarted, seeds: Sequence[int]) -> Running`
+The run's trial run again at its endpoint with `seeds`, its engine, cleanup, execution and canary set kept, as `start`
+runs a variation, named by the run's name, else its skeleton's title, and saying what the run said it varied. It is one
+run, in the run's language, and is started alone: it has no `with` entry. The gate refuses an endpoint that serves
+another engine now (`Refused("endpoint '<name>' serves engine <digest>, the trial's is <digest>")`).
+```
 ### `again(run: RunStarted, seeds: Sequence[int]) -> Running`
 The run's trial run again at its endpoint with `seeds`, its engine, cleanup, execution and canary set kept, as `start`
 runs a variation, named by the run's name, else its skeleton's title, and saying what the run said it varied. The gate
@@ -870,11 +1044,31 @@ same test World.
   of its recipes on `QWEN`, seed 7, over its cases of those vignette ids; `ran(conn, by, made, finished=True)`, a run
   of it recorded without sending; `another_expectation(bench, case, data)`, a second expectation of the person's own
   for the case, left by two writers at once.
+```
+AGENT: replace
+Names per language are gone. The item.
+---
+- `test_seen.py`: what a person sees, by name, `OWNER/NAME` and id; variations; runs and what reaches a digest; what is
+  left to score; the expectation a case is held to, and several to choose from; scorers that apply, judged or not;
+  a run's scores; judge configurations; a swapped engine keeping every other pick, where its intents land, on their
+  nearest or not, and a level its model refuses; a hand-written configuration on another model than its skeleton is
+  worked out for; a configuration found by its name; saving, forking and editing; taking.
+```
 - `test_seen.py`: what a person sees, by name, `OWNER/NAME` and id; variations; runs and what reaches a digest; what is
   left to score; the expectation a case is held to, and several to choose from; scorers that apply, judged or not;
   a run's scores; judge configurations; a swapped engine keeping every other pick, where its intents land, on their
   nearest or not, and a level its model refuses; a hand-written configuration on another model than its skeleton is
   worked out for; names per language; saving, forking and editing; taking.
+```
+AGENT: replace
+A start per language. The item.
+---
+- `test_runs.py`: a run's seeds, cleanup, execution and canaries, kept when it runs again; what it varied; a run at
+  the endpoint serving its engine, or one named, refused for an endpoint serving another engine and for an engine two
+  endpoints serve; its items, cases times seeds; resuming one's own; the sources' cleanup and the endpoint's canaries
+  and execution; a start of a run per language, one translated and started with the first, the cases left out, a start
+  that can send none refused, and the day's quota over several runs.
+```
 - `test_runs.py`: a run's seeds, cleanup, execution and canaries, kept when it runs again; what it varied; a run at
   the endpoint serving its engine, or one named, refused for an endpoint serving another engine and for an engine two
   endpoints serve; its items, cases times seeds; resuming one's own; the sources' cleanup and the endpoint's canaries

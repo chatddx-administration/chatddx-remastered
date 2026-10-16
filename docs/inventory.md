@@ -52,6 +52,13 @@ The directory must contain an `inventory.toml` and may contain the others, see t
 | `_runs/` | developers | scripted runs (docs/scripted.md) |
 
 ```
+AGENT: replace
+Built (agents/wip-engine-part.md, stage 2, C1): a texts file holds the texts written in its language and the
+translations into it. Its line in the tree below.
+---
+    texts-<lang>.toml  chunks that hold text, written in that language; translations into it, grouped by record
+```
+```
 worlds/<name>/
   inventory.toml   sources, clearance, judges bound to endpoints, configurations, include = ["endpoints.toml"]
   endpoints.toml   endpoints and hosts
@@ -167,6 +174,17 @@ A judge a person writes names its engine itself (docs/bench.md, "Components"), a
 that serves a judge's engine either way (docs/runner.md, "Judges").
 
 ## Configurations
+```
+AGENT: replace
+Built (agents/wip-engine-part.md, stage 2): a recipe is made once, not once per language. The paragraph.
+---
+`configurations = "qwen3-8b@pelle"`, at the top of the inventory, names the endpoint whose engine a data set's
+configurations are made for: init-data makes each recipe once, with that engine (docs/curation.md).
+Which engine a configuration starts on is the World's choice, as which engine judges is, and a researcher swaps it
+at the bench as any other part (docs/bench.md). A World that names none loads no configurations: each recipe is
+skipped and reported. Like a judge's binding, it is read only from the inventory's own file, and no command writes
+it.
+```
 `configurations = "qwen3-8b@pelle"`, at the top of the inventory, names the endpoint whose engine a data set's
 configurations are made for: init-data makes each recipe once per language with that engine (docs/curation.md).
 Which engine a configuration starts on is the World's choice, as which engine judges is, and a researcher swaps it

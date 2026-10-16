@@ -221,6 +221,12 @@ The models' fields are in the OpenAPI document. Besides them:
 | `NewFollow` | A follow's body: `head` (required) and `language`. |
 | `CorrectedFacts` | What following a configuration's facts would keep: `facts` (the facts thread's id), `model`, `compiled` (the facts its head was compiled against), `head` (the facts thread's head), `digest` and `compilation`, or `refused`. |
 | `NewFollowFacts` | A follow of the facts' body: `head` (required). |
+```
+AGENT: replace
+`language` is required. The row.
+---
+| `NewTyped` | A typed case's body: `text` and `language`, required, and `name` and `source`, each optional. |
+```
 | `NewTyped` | A typed case's body: `text`, and `name`, `language` and `source`, each optional. |
 | `NewAppendix` | An appendix's body: `text` and `name`, neither empty. |
 | `FamilyCase` | A case of a family: `case`, `title`, `appendices`, `default` (the case the family stands for) and `expectations`, as `FamilyDetail`'s. |
@@ -231,7 +237,20 @@ The models' fields are in the OpenAPI document. Besides them:
 | `NewTake` | A take's body for one thread, `replace`. |
 | `Metric`, `ScorerCode` | Scoring code the running chatddx ships: its `entry_point`, `version`, `metrics` (each its `name`, what it `measures`, a JSON Schema for a view's `params`, whether it is `judged`, reading a judge's verdicts, and the `unit` that marks a value that isn't a score from 0 to 1, if any) and a JSON Schema for the scorer's own `params`. |
 | `NewRun(Seeds)` | A run's body, with `head`, the edit it varies, the configuration's head unless given; `endpoint`, where to send it, the one serving its engine unless given, and needed by a hand-written configuration; `cleanup`, the steps, else the sources'; `concurrency` and `order`, else the endpoint's. Its validator raises `ValueError("a run takes one of families, tags or cases")` unless exactly one of `families`, `tags` and `cases` is given, which FastAPI answers 422. |
+```
+AGENT: replace
+`language` and `started_with`. The row.
+---
+| `Run` | A run as listed, with `language`, its skeleton's (`Catalog.language_of`); `started_with`, the first run of its start (`Bench.started_with`), else `None`; `ran`, a `Ran`, else `None`; `unscored`, its scorers left as `Unscored` (`scorer`, `name`), when the listing asked for them, else `None`; and `job`, its latest job as a `RunJob`, else `None`. |
+```
 | `Run` | A run as listed, with `ran`, a `Ran`, else `None`; `unscored`, its scorers left as `Unscored` (`scorer`, `name`), when the listing asked for them, else `None`; and `job`, its latest job as a `RunJob`, else `None`. |
+```
+AGENT: add
+What a start answers, and a look's languages. Rows before this one.
+---
+| `StartedRuns`, `LeftOut` | What a start answers: `runs`, a `RunStartedData` per language its cases are sent in, in the order started; and `left_out`, a `LeftOut` per language left out, its `language`, `cases` and `why`. `RunStartedData`, `run.started`'s data, says the `language` it is sent in. |
+| `Carried` | A language of a look, `Variation.languages`: `language`, null for the configuration's own when it is unknown; `families`, by id; `translated`; `skeleton`, the digest they are sent as, null when left out; and `refused`, why they are left out. |
+```
 | `Ran` | What a run ran: its `configuration`, `head`, the edit it varied, and `parts`, each part replaced over it, by its chunk's digest or `null` for a part taken out. |
 | `Graded` | A score under one scorer: the scorer and its name, the score's id, its `scoring`, when it started (`at`) and whether it `finished`, each view's label and mean, each item's value, or why it was refused. |
 | `ScoreItemDetail`, `ScoreItems` | A score item with its `detail` and `judge_calls` as their JSON; and a score's items with its `findings`. |
@@ -255,6 +274,12 @@ variation's query parameters to them with `endpoint`, `tag` and `seed`.
 | --- | --- |
 | `login(bench, person: int \| None) -> str \| None` | `None` for no one, else `Bench.login`. |
 | `edit_of(bench, edit: catalog.Edit, kind: str \| None = None) -> schemas.Edit` | The edit, with its author's login, and for a scorer thread's its labels (`Catalog.labels`). `kind` is the thread's, looked up with `Catalog.thread` when not given. |
+```
+AGENT: replace
+`translated`. The row.
+---
+| `thread_of(bench, kind: str, edit, about, languages=None) -> schemas.Thread` | A thread from its head and `About`, titled by `Catalog.title`, with the word `chatddx.bench.word_of` gives its kind, in the language `languages` gives its head by id, else `Catalog.edit_languages` of it; `translated` is `Bench.translated` of its head's compilation's recipe, `[]` for a head without a compilation. |
+```
 | `thread_of(bench, kind: str, edit, about, languages=None) -> schemas.Thread` | A thread from its head and `About`, titled by `Catalog.title`, with the word `chatddx.bench.word_of` gives its kind, in the language `languages` gives its head by id, else `Catalog.edit_languages` of it. |
 | `detail(bench, thread: int) -> schemas.ThreadDetail` | `Bench.thread_by_id(thread, deleted=True)` (`NotFound`), so the person's own deleted thread too, with `deleted`, `Catalog.thread` for its kind and `forked_from`, and `Catalog.recipe` dumped, or `None` without a compilation. |
 | `refused() -> Generator[None]` | A context manager: a `ValueError` within, other than a `Conflict`, a `MovedOn` or an `OverQuota`, is raised as `HTTPException(422)` with its message. Those three pass to `STATUSES`. |
@@ -269,6 +294,12 @@ variation's query parameters to them with `endpoint`, `tag` and `seed`.
 | `threads`, `GET /threads` | … kept by `name` (whole), `owner` (a login) and any of `tag`; `Catalog.edit_languages` of the kept heads, given to `thread_of`. |
 | `thread`, `GET /threads/{thread}` | `detail`. |
 | `edits`, `GET /threads/{thread}/edits` | `Bench.thread_by_id(thread, deleted=True)`, then `Catalog.history`. |
+```
+AGENT: replace
+`languages`, and the findings given them. The row.
+---
+| `variation`, `GET /threads/{thread}/variation` | Within `refused()`: `Bench.variation(thread, query.given(), query.head)`, `Bench.skeleton` and `Bench.landed`; the engine is the variation's (`TriedVariation.held("engine")`), else, with `endpoint`, the one `Bench.at(varied, endpoint)` gives, which also refuses an endpoint that serves another engine; a `LookupError` from it is `HTTPException(422)`. `languages` are, within `refused()`, `Bench.languages` of the cases of `Bench.families(tag)`, each in its family's language, each with its families by id and its skeleton's digest; `[]` for a judge configuration or no families. `findings` are `Bench.findings` at the engine over `Bench.families(tag)`, given those languages, or one case when none has the tags, and `None` without an engine; `parts` are `part_of` each of `PARTS` with its landing, `None` without a recipe; `request` is `Bench.request` at the engine. … `label` is `TriedVariation.label`, and `held_by` is `thread_of` of `Bench.holder("configuration", skeleton, varied)`, `varied` the variation's recipe (`TriedVariation.varied`), or `None`. |
+```
 | `variation`, `GET /threads/{thread}/variation` | Within `refused()`: `Bench.variation(thread, query.given(), query.head)`, `Bench.skeleton` and `Bench.landed`; the engine is the variation's (`TriedVariation.held("engine")`), else, with `endpoint`, the one `Bench.at(varied, endpoint)` gives, which also refuses an endpoint that serves another engine; a `LookupError` from it is `HTTPException(422)`. `findings` are `Bench.findings` at the engine over `Bench.families(tag)`, or one case when none has the tags, and `None` without an engine; `parts` are `part_of` each of `PARTS` with its landing, `None` without a recipe; `request` is `Bench.request` at the engine. … `label` is `TriedVariation.label`, and `held_by` is `thread_of` of `Bench.holder("configuration", skeleton, varied)`, `varied` the variation's recipe (`TriedVariation.varied`), or `None`. |
 | `say`, `PATCH /threads/{thread}` | `HTTPException(422, "a description is replaced, never taken away")` for a null `description`, and `HTTPException(422, "no person '<login>'")` for a collaborator nobody is (`People.find`). Within `refused()`: `Bench.say`, with `...` for a `name` not given. 200, `detail`. |
 | `proposal`, `GET /threads/{thread}/proposal` | Within `refused()`: `Bench.proposal`. `null` when there is none. |
@@ -344,6 +375,12 @@ The seeds given, else `suggest_seeds` of the replicates asked, else of `replicat
 `endpoint`'s execution with them in place, validated: a shuffled order keeps the endpoint's shuffle seed when the
 endpoint shuffles, and draws one otherwise.
 
+```
+AGENT: replace
+`Bench.start` gives a `Started`. The heading.
+---
+### `_new(bench, given: schemas.NewRun) -> Started`
+```
 ### `_new(bench, given: schemas.NewRun) -> Running`
 Within `refused()`, `Bench.variation`, then `Bench.at(variation, given.endpoint)`: the endpoint given, which must
 serve the variation's engine, else the one serving it, and the one given for a hand-written configuration. A
@@ -357,6 +394,15 @@ to `STATUSES`.
 `HTTPException(422, "no case <case> for <login>")`; and, within `refused()`, `Bench.again` of the run with
 `_seeds(given, <the trial's seeds>)`, whose `Refused` passes to `STATUSES`.
 
+```
+AGENT: replace
+The run's language. The entry.
+---
+### `_queued(request, response, bench, running: Running, score: bool) -> schemas.RunStartedData`
+`Queue.put` of the started run for the person, at its endpoint, holding as many slots as its execution's concurrency,
+and scoring it or not; `Location` the run's path (`url_path_for("run")`). Returns `run.started`'s data,
+`events.py:started_of` the run, its trial and skeleton, and the skeleton's language (`Catalog.language_of`).
+```
 ### `_queued(request, response, bench, running: Running, score: bool) -> schemas.RunStartedData`
 `Queue.put` of the started run for the person, at its endpoint, holding as many slots as its execution's concurrency,
 and scoring it or not; `Location` the run's path (`url_path_for("run")`). Returns `run.started`'s data,
@@ -364,12 +410,31 @@ and scoring it or not; `Location` the run's path (`url_path_for("run")`). Return
 
 | Route | Does |
 | --- | --- |
+```
+AGENT: replace
+A run per language, each a job of its own, answered as a `StartedRuns`. The row, and `again`'s after it.
+---
+| `start`, `POST /runs` | `_new(bench, given)`, then `_queued` each of its runs, in order, each a job of its own. 202, with `Location` the first run's path, and a `StartedRuns`: each run's `run.started` data, and each language left out, with its cases and why. |
+| `again`, `POST /runs/{run}/again` | `Bench.run_by_id` (`NotFound`), then `_repeated(bench, run, given)` and `_queued`. 202, with `Location` the run's path and `run.started`'s data. |
+```
 | `start`, `POST /runs` | `_new(bench, given)`, then `_queued`. 202, with `Location` the run's path and `run.started`'s data. |
 | `again`, `POST /runs/{run}/again` | `Bench.run_by_id` (`NotFound`), then `_repeated(bench, run, given)` and `_queued`, as `start`. |
 | `events`, `GET /runs/{run}/events` | `async`. `Bench.run_by_id` (`NotFound`), then `telling.py:told` for the person, after the `Last-Event-ID` header's id, else from the first row. A `StreamingResponse` of `STREAM`, with `NO_STORE` and `X-Accel-Buffering: no`; its description names the events. |
 | `halt`, `POST /runs/{run}/halt` | `Bench.run_by_id` (`NotFound`), then `Queue.halt`, whose `LookupError` is `HTTPException(409, "run <run> has nothing under way")`. 204. |
 
 ### `job_of(placed: Placed | None) -> schemas.RunJob | None`, `run_of(bench, started, finished, unscored=None, placed=None) -> schemas.Run` and `detail(bench, run: UUID) -> schemas.RunDetail`
+```
+AGENT: replace
+`run_of` says the run's language and the first run of its start. The paragraph.
+---
+`job_of` is a job as `Queue.placed` places it, or `None`. `run_of` is the run as listed: its trial's parts, its
+skeleton's language (`Catalog.language_of`), the first run of its start (`Bench.started_with`), its endpoint's name,
+`Bench.described`, what it ran from `Bench.ran`, the scorers of `unscored`, each by its digest and
+`Bench.scorer_name`, or `None`, and `job_of(placed)`. `detail` adds, from `Bench.run_by_id` (`NotFound`) and
+`Store.run`: the rig; the finish's time and findings as `noted`; `check_run`'s findings over the trial and canary set
+`Store.load` gives; each item's `item_of`; and `graded_of` each of `Bench.scores_of`; and its job as `Queue.placed`
+places it.
+```
 `job_of` is a job as `Queue.placed` places it, or `None`. `run_of` is the run as listed: its trial's parts, its
 endpoint's name, `Bench.described`, what it ran from `Bench.ran`, the scorers of `unscored`, each by its digest and
 `Bench.scorer_name`, or `None`, and `job_of(placed)`. `detail` adds, from `Bench.run_by_id` (`NotFound`) and
@@ -380,6 +445,12 @@ places it.
 | Route | Does |
 | --- | --- |
 | `resume`, `POST /runs/{run}/resume` | Within `refused()`, `Bench.resume` (`NotFound` for a run not the person's; `"run <run> is finished"` and the gate's refusals, 422), then `_queued` with `score`. 202, with `Location` the run's path and `run.started`'s data; `UnderWay` while the run has a job open (409). |
+```
+AGENT: replace
+`with`, a start's runs. The row.
+---
+| `runs`, `GET /runs` | `Bench.runs`, kept by `trial`, then by `with`, the runs of `Bench.together(with)`, then by the runs of `Bench.reaching(reaching)` and `Bench.scored_by(scored_by)`, then with `unscored` by those of `Bench.outstanding`, each with its scorers left; the page `[offset:offset + limit]`, `limit` from 1 to 200 and 20 by default; `Store.finished` and `Queue.placed` for the page. |
+```
 | `runs`, `GET /runs` | `Bench.runs`, kept by `trial`, then by the runs of `Bench.reaching(reaching)` and `Bench.scored_by(scored_by)`, then with `unscored` by those of `Bench.outstanding`, each with its scorers left; the page `[offset:offset + limit]`, `limit` from 1 to 200 and 20 by default; `Store.finished` and `Queue.placed` for the page. |
 
 A run is named by a `UUID`, so anything else in its place is a 422.
@@ -423,6 +494,12 @@ What one stream has told of a run, from `Bench.run_by_id` (`NotFound`) and the t
 
 | Row | Its events |
 | --- | --- |
+```
+AGENT: replace
+The run's language. The row.
+---
+| `RunStarted` | `run.started`, `events.py:started_of`, with `Catalog.language_of` the trial's skeleton as its language |
+```
 | `RunStarted` | `run.started`, `events.py:started_of` |
 | `CanaryCall` | `canary.ended`, `canary_of` |
 | `RunItem` | `item.started` unless told, `item.tool` for each tool run past those told, `item.ended` |
@@ -471,6 +548,12 @@ it; a later stream starts it again.
 | `item_of(skeleton, item: RunItem) -> schemas.Item` | The item's key, the word of `chatddx.bench.outcome`, and `chatddx.bench.usage`. |
 | `graded_of(graded: chatddx.bench.Graded) -> schemas.Graded` | The scorer's digest and name, the score's id, scoring, start and whether it finished, each view's label (`Graded.label`) and the `mean` of its values that aren't `None` (else `None`), each score item's value, and why it gave none. Neither the score items' detail nor the scoring's findings. |
 | `scoring_of(bench, run, scorers) -> schemas.ScoringData` | The scorers of `Bench.scorers_for(run)`, or those of them in `scorers`, by digest and the thread's name, else its title. |
+```
+AGENT: replace
+`language`. The row.
+---
+| `started_of(started, trial, skeleton, language) -> schemas.RunStartedData` | The run, its trial's digest, skeleton, cases and seeds, the language its request is sent in, the endpoint's name, and the skeleton's `greedy`. |
+```
 | `started_of(started, trial, skeleton) -> schemas.RunStartedData` | The run, its trial's digest, skeleton, cases and seeds, the endpoint's name, and the skeleton's `greedy`. |
 | `item_started_of(case, replicate, seed)`, `tool_of(case, replicate, tool)`, `item_ended_of(skeleton, item)`, `canary_of(call)`, `score_item_of(item)` | `item.started`; `item.tool` with the tool run dumped; `item.ended`, `item_of` and the outcome's why; `canary.ended`, the phase, the canary's index and the call dumped; `score.item`, the score, the key, the view, the value and the detail. |
 | `score_started_of(bench, scorer, score) -> Named` | `score.started`: the scorer, `Bench.scorer_name`, the score, and its views' labels (`Bench.labels`, else `view <i>`). |
@@ -515,11 +598,29 @@ docs/worker-api.md, "The command").
 | `test_writes.py` | A configuration made from a recipe, and what is refused of one; chunks and expectations written new, edited and forked; a judge written over a judge configuration, and one over a generation configuration refused; what is refused, and with which status; an expectation's findings. |
 | `test_kinds.py` | The kinds with their JSON Schemas and what their references take; a component checked as a write would store it, with nothing written, the lints said, and what a write would refuse refused. |
 | `test_cases.py` | A family's cases, an appendix written for it, a case built of it and replaced by the appendix's edit, and an expectation carried onto the replacement; cases refused; a run naming a case that isn't one. |
+```
+AGENT: replace
+A typed case's language is required. The row.
+---
+| `test_typed.py` | A typed case answered as a family, its vignette read back, and bob not seeing it; what can't be typed, among it a case without a language or in one that isn't a tag, and 429 past the day's quota. |
+```
 | `test_typed.py` | A typed case answered as a family, its vignette read back, and bob not seeing it; what can't be typed, and 429 past the day's quota. |
 | `test_following.py` | A fork with nothing to follow, then a proposal once the archive's configuration moved on, a stale head, following, and nothing proposed after; a configuration's corrected facts, none for bob, a stale head, following them, and none after. |
 | `test_scorers.py` | The scoring code shipped, as pickers read it; a scorer of the archive's forked with its labels, a view renamed by an edit and the history's labels, and one written new; scorers refused, and labels given where nothing has them. |
 | `test_said.py` | Saying what holds of a thread, sharing it with bob and taking it back; refusals; deleting, listing and reading the deleted thread, and restoring it; a session needed. |
+```
+AGENT: replace
+A look's languages. The row.
+---
+| `test_variations.py` | Looks, forks and edits; a look rendered and linted for its engine without an endpoint, and the same with its endpoint named; a look's languages, as written, translated and left out, each language's trial linted, and translations lacking a text leaving their language out rather than refusing the look; an engine swapped, a level landing on its nearest and the sampling following it, and an engine taken out or an endpoint serving another refused; a judge configuration looked at as a judge, with no reach; that a look's queries don't grow with its cases, counted on the test's database (the fixtures create the next test's meanwhile). |
+```
 | `test_variations.py` | Looks, forks and edits; a look rendered and linted for its engine without an endpoint, and the same with its endpoint named; an engine swapped, a level landing on its nearest and the sampling following it, and an engine taken out or an endpoint serving another refused; a judge configuration looked at as a judge, with no reach; that a look's queries don't grow with its cases, counted on the test's database (the fixtures create the next test's meanwhile). |
+```
+AGENT: replace
+A start per language. The row.
+---
+| `test_runs.py` | Runs, over its own `served` on `world`, the test World on free ports, with a worker, each at the endpoint serving its engine: accepted and told by their events, numbered by their rows, which stream as they come, go on after an id, and are told alike by an app with no worker; a job in the queue until scored; a start of a run per language, listed by `with`, and the cases it leaves out; refused, among them an endpoint named that serves another engine, an engine taken out and a start that can send none of its cases... `joined` follows a run from before its job is claimed, the owner's queue paused until the stream has told its first row. |
+```
 | `test_runs.py` | Runs, over its own `served` on `world`, the test World on free ports, with a worker, each at the endpoint serving its engine: accepted and told by their events, numbered by their rows, which stream as they come, go on after an id, and are told alike by an app with no worker; a job in the queue until scored; refused, among them an endpoint named that serves another engine and an engine taken out... `joined` follows a run from before its job is claimed, the owner's queue paused until the stream has told its first row. |
 | `test_scores.py` | A judged run's scores, the latest and every one, one by id, and its items with their judge calls; the run scored again when asked, with the scoring's events after the run's rows; what bob can't read; the runs left to score with their scorers, and one leaving the listing once scored; a scoring refused for a run unfinished, a scorer that doesn't apply and a run with a job open, and halted; a session needed. |
 | `test_telling.py` | A stream joined mid-item told the item started and each tool once, and nothing of it once it ended; the listener fanning a run's messages out to two streams, again on another loop, and a stream that falls behind told `Lagged`. |

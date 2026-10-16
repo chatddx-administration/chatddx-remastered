@@ -28,6 +28,15 @@ names. An engine's facts are its model's, and an engine whose model has none has
 The bench, and the repl, the API, the portal and the worker through it, read the facts from the store: the current
 version of every facts thread, read when they are needed, so a correction loaded meanwhile is used.
 
+```
+AGENT: add
+A translation is compiled against the facts its configuration was compiled against. A paragraph before this heading.
+---
+A configuration sent in another language than its own is its recipe compiled into that language, against the facts
+its own compilation names rather than the current ones when nothing is replaced, so that the translation differs
+from it by its texts alone (docs/bench.md, "The languages it runs in"). A correction reaches the translation as it
+reaches the configuration, by following its facts.
+```
 ## What a model's facts hold
 Every part is optional. A missing part means "unknown", not "no". Facts say no with a refusal, which always says why.
 

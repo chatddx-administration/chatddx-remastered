@@ -8,8 +8,8 @@ ALTER TABLE catalog.thread
         'expectation_schema', 'canary_set'
     ));
 
--- src/chatddx/catalog/model.py: EntryField, Entry._shape and LANGUAGE, and check_entry in
--- src/chatddx/catalog/language.py.
+-- src/chatddx/catalog/model.py: EntryField and Entry._shape, src/chatddx/factors/base.py:
+-- LANGUAGE, and check_entry in src/chatddx/catalog/language.py.
 -- A check passes when it is NULL, so NULL values are ruled out explicitly.
 ALTER TABLE catalog.entry
     ADD CONSTRAINT entry_field_check CHECK (field IN (
@@ -88,8 +88,8 @@ $$;
 CREATE TRIGGER binding_anchor BEFORE INSERT ON catalog.binding
 FOR EACH ROW EXECUTE FUNCTION catalog.check_binding();
 
--- src/chatddx/catalog/model.py: LANGUAGE and LANGUAGE_KINDS, and check_language in
--- src/chatddx/catalog/language.py.
+-- src/chatddx/factors/base.py: LANGUAGE, src/chatddx/catalog/model.py: LANGUAGE_KINDS, and
+-- check_language in src/chatddx/catalog/language.py.
 ALTER TABLE catalog.language
     ADD CONSTRAINT language_value_check CHECK (value ~ '^[a-z]{2,3}(-[A-Za-z0-9]{1,8})*$'),
     ADD CONSTRAINT language_kind_check CHECK (kind IN (

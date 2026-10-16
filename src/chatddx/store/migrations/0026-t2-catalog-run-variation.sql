@@ -1,4 +1,4 @@
--- src/chatddx/catalog/model.py: EntryField, Entry._shape, VARIED and REPLACED, and
+-- src/chatddx/catalog/model.py: EntryField, Entry._shape, VARIED, REPLACED and WITH, and
 -- check_varied in src/chatddx/catalog/threads.py.
 -- A check passes when it is NULL, so NULL values are ruled out explicitly.
 ALTER TABLE catalog.entry

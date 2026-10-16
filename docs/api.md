@@ -36,15 +36,40 @@ no browser adds a bearer by itself.
 The check stands in for a CSRF token, which would need one stored per session.
 
 ## Ids
+```
+AGENT: replace
+`plan (en)` is `plan` now. The paragraph.
+---
+Threads and families are named by their integer ids, runs by their whole UUIDs, components by their digests, and
+endpoints by their names in the inventory. Names are for people: they needn't be unique, they may hold spaces, and
+slashes, as `Qwen/Qwen3-8B-AWQ` does, and they change. So a list takes a name as a filter and returns every match, and
+a path takes an id. An id's prefix, handy at a prompt, could name another run tomorrow, so only whole ids are taken.
+```
 Threads and families are named by their integer ids, runs by their whole UUIDs, components by their digests, and
 endpoints by their names in the inventory. Names are for people: they needn't be unique, they hold spaces, as
 `plan (en)` does, and slashes, and they change. So a list takes a name as a filter and returns every match, and a path
 takes an id. An id's prefix, handy at a prompt, could name another run tomorrow, so only whole ids are taken.
 
+```
+AGENT: replace
+Stage 2 is built: a configuration is one thread, translated into its cases' languages. The paragraph.
+---
+A configuration is one thread whatever the languages it runs in, under a name that carries none, `plan`; its engine
+is one of its parts, and its name carries no model either.
+```
 A configuration made per language is a thread under its full name, `plan (en)`, until the language is a part of it
 too (agents/wip-engine-part.md, stage 2). Its engine is one of its parts, and its name carries no model.
 
 ## What a person sees
+```
+AGENT: replace
+`Thread.translated`. The item's first three lines.
+---
+- **Threads** gives its kind and the word for it, name, title, owner, tags, language, the languages it is translated
+  into (`translated`) and head, and on its own also its description, collaborators, the edit it was forked from,
+  whether it is deleted, and for a configuration its recipe. A configuration's language is its head's recipe's, its
+  own, and it is translated into the languages its head's translations hold; any other kind into none.
+```
 - **Threads** gives its kind and the word for it, name, title, owner, tags, language and head, and on its own also
   its description, collaborators, the edit it was forked from, whether it is deleted, and for a configuration its
   recipe. A configuration's language is its head's recipe's.
@@ -81,6 +106,14 @@ replaced is compiled against the facts about its engine's model as they are stor
 one run moments later can differ if the configuration or the facts moved in between; each run records the skeleton it
 ran, and its compilation the facts.
 
+```
+AGENT: add
+A translation is compiled against the facts its configuration's compilation names. A paragraph before this one.
+---
+A configuration sent in another language than its own is its recipe compiled into that language, against the facts
+its own compilation names when nothing is replaced, so that the translation differs from it by its texts alone
+(`docs/bench.md`, "The languages it runs in"); its compilation is stored when a run is started on it.
+```
 A look at a variation gives:
 - the edit it was built on, its label (`NAME+PART=CHUNK`, `docs/bench.md`, "The variation being tried"), the digest
   of the skeleton it compiles to, the configuration whose head is that skeleton with the variation's recipe, the
@@ -90,13 +123,41 @@ A look at a variation gives:
   (`landed`), and why the level asked for landed on its nearest instead, when it did (`nearest`; docs/facts.md).
 - the request it would send, with placeholders for the case and, for a hand-written configuration looked at without
   an endpoint, for the model.
+```
+AGENT: replace
+A trial per language, and `translations.missing` for the cases left out. The item.
+---
+- at its engine, so always for a configuration with a recipe, the lints of it as a trial over the cases with any of
+  the given tags, else over every case the person sees: a trial for each language they are sent in, in that language,
+  and a `translations.missing` warning for the cases left out; where no case has the tags, over one case the person
+  sees, without the cases' languages. An endpoint named must serve the variation's engine; a hand-written
+  configuration, which names none, is linted only at an endpoint named, at the engine it serves.
+```
 - at its engine, so always for a configuration with a recipe, the lints of it as a trial over the cases with any of
   the given tags, else over every case the person sees; where no case has the tags, over one case the person sees,
   without the cases' languages. An endpoint named must serve the variation's engine; a hand-written configuration,
   which names none, is linted only at an endpoint named, at the engine it serves.
+```
+AGENT: add
+A look's `languages`. An item before this one.
+---
+- the languages its cases are sent in, over the same cases: for each, its families, whether it is translated, and
+  the skeleton they are sent as, or why they can't be and are left out; those sent as written first. A judge
+  configuration, and a look over no case, has none. Translations that can't carry the variation into a case's
+  language don't refuse the look: they leave that language's cases out, and say why.
+```
 - for each view of each scorer, whether the variation's output offers what the view reads, which families have no
   expectation it picks something from, and which have several to choose from.
 
+```
+AGENT: replace
+Each language's trial is linted in its own language. The paragraph.
+---
+A case with expectations to choose from is listed apart, as `choosing`, rather than as one without
+(`docs/bench.md`, "What a person is scored against"). An unsaved variation is linted in the language each trial is
+sent in, its own as written or the one it is translated into, since the language of a skeleton otherwise comes from
+its stored compilations, which it hasn't got yet.
+```
 A case with expectations to choose from is listed apart, as `choosing`, rather than as one without
 (`docs/bench.md`, "What a person is scored against"). An unsaved variation is linted in its recipe's
 language, since the language of a skeleton otherwise comes from its stored compilations, which it hasn't got yet.
@@ -145,6 +206,16 @@ found", as "no expectation N of yours" for an expectation; a login that names no
 taking a description away are unprocessable.
 
 ## Typed cases
+```
+AGENT: replace
+`NewTyped.language` is required. The paragraph.
+---
+A person types a case: its text, the language it is written in, and a name if they like; a case typed without a
+language is unprocessable, since a configuration is sent in its case's language. It is kept as written, in the World's
+database source, with its case and a family of their own, which comes back as a family does (`docs/bench.md`, "Typed
+cases"); its vignette is then read as any family's. A text is held to a length and a person to a number of texts a
+day: past the day's is 429.
+```
 A person types a case: its text, and a name and a language if they like. It is kept as written, in the World's
 database source, with its case and a family of their own, which comes back as a family does (`docs/bench.md`,
 "Typed cases"); its vignette is then read as any family's. A text is held to a length and a person to a number of texts
@@ -187,8 +258,30 @@ A person is scored against their own expectations only, so they take the shared 
 ### Starting one
 Runs are started within their request, so whatever refuses them does so before anything is sent.
 
+```
+AGENT: replace
+A start of several runs. The line, and a paragraph before it.
+---
+A start is a run per language its cases are sent in (`docs/bench.md`, "The languages it runs in"): the cases in the
+configuration's own language, and those in none, as written, and those in each language its translations cover
+translated, each a run of its own. The cases of a language they can't carry it into are left out, and the answer says
+which and why; a start that can send none of its cases is refused.
+
+Any person can start at most `settings.RUNS_PER_DAY` runs a day, and a run holds at most `settings.ITEMS_PER_RUN` items;
+a start's runs are held to both before any of them starts, each counting as a run.
+```
 Any person can start at most `settings.RUNS_PER_DAY` runs a day, and a run holds at most `settings.ITEMS_PER_RUN` items.
 
+```
+AGENT: replace
+`language`, `started_with` and `GET /api/runs?with=`. The paragraph.
+---
+Each run gives back its cases' digests and its language, and is named by the variation's label, `NAME+PART=CHUNK`.
+Listed or read, a run says what it ran (`ran`): the configuration, the edit the variation was built on and the parts
+replaced over it, or nothing for a run started from a trial alone (docs/catalog.md, "What a run ran"); the runs of a
+start say the same. A run also says the first run of its start (`started_with`), null for the first and for a run
+started alone, and `GET /api/runs?with=RUN` lists a start's runs, the first among them.
+```
 The run gives back the cases' digests, and is named by the variation's label, `NAME+PART=CHUNK`. Listed or read, a
 run says what it ran (`ran`): the configuration, the edit the variation was built on and the parts replaced over it,
 or nothing for a run started from a trial alone (docs/catalog.md, "What a run ran").
@@ -201,6 +294,14 @@ the gate is asked, as an endpoint named that serves another engine is (agents/wi
 The gate refuses an endpoint that doesn't serve the trial's engine, isn't cleared for a sensitive source among the
 cases', or lacks its secret; tools that would get a sensitive source's content; and an endpoint that doesn't answer.
 
+```
+AGENT: replace
+`StartedRuns`: every run, each a job of its own, and the cases left out. The paragraph.
+---
+Once started, each run is queued for the worker as a job of its own, and the start is answered 202 with `runs`, what
+each run's `run.started` holds, those sent as written first, and `left_out`, each language left out with its cases
+and why; `Location` is the first run's path.
+```
 Once started, it is queued for the worker, and answered 202 with what `run.started` holds, and the run's path as
 `Location`.
 
@@ -231,6 +332,12 @@ A stream joined after its run's job ended, or for a run no job took, is told the
 
 | Event | When | Holds |
 | --- | --- | --- |
+```
+AGENT: replace
+`RunStartedData.language`. The row.
+---
+| `run.started` | first | the run, its trial and skeleton, the language it is sent in, the endpoint, the cases, the seeds, and whether sampling is greedy |
+```
 | `run.started` | first | the run, its trial and skeleton, the endpoint, the cases, the seeds, and whether sampling is greedy |
 | `item.started` | an item is about to be sent, or a stream first hears of it | its case and replicate, and its seed |
 | `item.delta` | a chunk of an answer streams in | its case and replicate, the kind (reasoning, content or a tool call), the text, and the tokens so far |
@@ -254,6 +361,13 @@ An item's outcome is stopped, errored, unread, salvaged, completed, invalid or v
 read from it; salvaged is a structured answer cut short, read with its structure closed.
 
 ### Running again
+```
+AGENT: replace
+Running again is one run, in its run's language. The line.
+---
+Running again draws new seeds, and runs the run's trial in its one language, as a run of its own rather than one of
+the start it was made in.
+```
 Running again draws new seeds.
 
 ### Halting
@@ -261,6 +375,17 @@ A halt goes through the queue, and reaches the job's worker wherever it is.
 It cancels the calls under way, record them as stopped and the run is finished unscored.
 
 ### Reading runs
+```
+AGENT: replace
+Filtered by `with`; each says its language and the first run of its start. The item.
+---
+- **A person's runs**, newest first, a page at a time, filtered by trial, by a digest their trial is built on, by
+  a scorer that scored them, to a start's runs (`with`), or to those left to score, each with the scorers it is left
+  to be scored by. Each says what ran: its trial, skeleton, the language its request is sent in, the first run of its
+  start, engine, endpoint, cases, seeds, and a line saying it as people read it; and its latest job: how it stands and
+  why, whether it was asked to halt, and while it is queued, how many jobs at its endpoint are under way or are to be
+  taken before it, none while its owner has paused.
+```
 - **A person's runs**, newest first, a page at a time, filtered by trial, by a digest their trial is built on, by
   a scorer that scored them, or to those left to score, each with the scorers it is left to be scored by. Each says
   what ran: its trial, skeleton, engine, endpoint, cases, seeds, and a line saying it as people read it; and its
@@ -320,6 +445,12 @@ where. The code says what it is:
 | `moved_on` | 409 | An edit, a follow or a carry whose head has moved on. |
 | `unprocessable` | 422 | A request that doesn't validate, or names a field it shouldn't; the detail lists where. |
 | `refused` | 422 | What the API, the bench or the gate refuses: the rest of 422. |
+```
+AGENT: replace
+Runs over the day's quota, and a run over its items, are 429 too. The row.
+---
+| `over_quota` | 429 | A person who has typed as many cases, or started as many runs, as a day takes; a run of more items than one takes. |
+```
 | `over_quota` | 429 | A person who has typed as many cases as a day takes. |
 | `error` | any other | |
 
@@ -352,6 +483,12 @@ first row, by when it listens, and then lets the worker take the job.
 | Term | Meaning |
 | --- | --- |
 | Session | A person signed in: a token, carried as a bearer or as a cookie, for 12 hours. |
+```
+AGENT: replace
+A look says the languages its cases are sent in. The row.
+---
+| Look | Asking for a configuration's variation: what it would send, its lints, the languages its cases are sent in and its reach, with nothing stored. |
+```
 | Look | Asking for a configuration's variation: what it would send, its lints and its reach, with nothing stored. |
 | Parts | The chunks and the engine a variation replaces over a configuration, each by its digest, or nothing to take an optional chunk out. |
 | Head | A configuration's latest version, which a request's variation is built on. |
@@ -361,6 +498,12 @@ first row, by when it listens, and then lets the worker take the job.
 | Saying | Writing what holds of a thread: its name, description, tags, collaborators, and whether it is deleted. |
 | Reach | Of a scorer's view: whether a variation's output offers what it reads, and which cases have an expectation it picks from. |
 | Run | A variation sent at an endpoint on some cases with some seeds, recorded as it goes. |
+```
+AGENT: add
+Start. A row before this one.
+---
+| Start | The runs one request starts: a run per language its cases are sent in, the later ones started with the first. |
+```
 | Item | One case's replicate in a run: its first request and each tool round's, each a call. |
 | Outcome | How an item ended: stopped, errored, unread, salvaged, completed, invalid or valid. |
 | Event | One step of what is under way for a run, as its events tell it. |
@@ -408,6 +551,10 @@ its events (see "Where it runs" and "Its events").
   Keycloak arrives"), and Keycloak's own tokens as bearers for scripts when they come.
 - **Roles aren't checked**; Z1 shapes what each role is shown, with the portal (docs/bench.md, "Outstanding").
 
+```
+AGENT: remove
+Names carry no language: a client finds `plan`, and a look says its languages. The heading and its one item.
+```
 ### Variations
 - **Variants.** A client finds `plan (en)` by its full name, and its engine among its parts. Take: so until the
   language is a part too (agents/wip-engine-part.md, stage 2), when it finds `plan`.
