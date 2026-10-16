@@ -136,7 +136,7 @@ def _alike(
     for i in range(len(PARTS)):
         titles = {_unmodelled(title(p[i]), models) for p in held if p and p[i]}
         alike.append(
-            None if not titles else titles.pop() if len(titles) == 1 else "varies"
+            None if not titles else titles.pop() if len(titles) == 1 else "differs"
         )
     return alike
 

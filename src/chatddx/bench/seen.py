@@ -628,6 +628,11 @@ class Seen:
             raise NotFound(f"no run {run} of yours")
         return found[0]
 
+    def ran(self, run: UUID) -> tuple[Edit, dict[str, str | None]] | None:
+        about = self.catalog.about(Subject(run=run))
+        edit = None if about.varied is None else self.rows.edit(about.varied)
+        return None if edit is None else (edit, about.replaced)
+
     def reaching(self, digest: str) -> list[RunStarted]:
         trials = set(self.store.reaching(digest, "trial"))
         for made in self.store.reaching(digest, "compilation"):

@@ -79,9 +79,9 @@ def test_init_data_loads_the_archive(conn: Connection) -> None:
     assert archive is not None
     [native] = catalog.find("skeleton", NATIVE, owner=archive.id)
     [tools] = catalog.find("skeleton", NATIVE_TOOLS)
-    variation = catalog.variation(tools)
-    assert variation is not None and set(variation.varies) == {"/recipe/toolset"}
-    assert variation.base.thread == native
+    diverged = catalog.divergence(tools)
+    assert diverged is not None and set(diverged.varies) == {"/recipe/toolset"}
+    assert diverged.base.thread == native
     about = catalog.about(Subject(thread=native))
     assert (about.owner, about.tags, alice.id in about.collaborators) == (
         archive.id,

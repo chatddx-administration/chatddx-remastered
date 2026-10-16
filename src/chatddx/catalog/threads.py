@@ -10,9 +10,11 @@ from chatddx.identity import owns
 
 from .families import stale_cases
 from .model import (
+    RUN_FIELDS,
     THREAD_KINDS,
     About,
     Behind,
+    Divergence,
     Edit,
     Entry,
     EntryField,
@@ -20,7 +22,6 @@ from .model import (
     MovedOn,
     Subject,
     Thread,
-    Variation,
     check_label,
 )
 from .read import Reader, abouts, heads_holding, heads_of
@@ -61,6 +62,22 @@ def check_based_on(rows: Reader, thread: int, based_on: int) -> None:
         e.id == based_on and e.id >= origin.id for e in rows.edits([origin.thread])
     ):
         raise ValueError(f"edit {based_on} is not in the origin of thread {thread}")
+
+
+# src/chatddx/store/migrations/0026-t2-catalog-run-variation.sql repeats this check.
+def check_varied(rows: Reader, subject: Subject, entry: Entry) -> None:
+    if entry.field not in RUN_FIELDS:
+        return
+    if subject.run is None:
+        raise ValueError(f"a {entry.field} entry is about a run, and what it ran")
+    if entry.field == EntryField.VARIED:
+        found = rows.edit(int(entry.value or ""))
+        if found is None or thread(rows, found.thread).kind != "skeleton":
+            raise ValueError(f"edit {entry.value} is no configuration's")
+        return
+    part, digest = (entry.value or "").split("=")
+    if digest and rows.kind(digest) != f"chunk.{part}":
+        raise ValueError(f"{digest} isn't a stored chunk of {part}")
 
 
 def thread(rows: Reader, id: int) -> Thread:
@@ -213,7 +230,7 @@ def behind(rows: Reader, thread: int) -> list[Behind]:
     return sorted([*ordered, *stale_cases(rows, refs)], key=lambda b: b.path)
 
 
-def variation(rows: Reader, id: int) -> Variation | None:
+def divergence(rows: Reader, id: int) -> Divergence | None:
     forked_from = thread(rows, id).forked_from
     if forked_from is None:
         return None
@@ -223,7 +240,7 @@ def variation(rows: Reader, id: int) -> Variation | None:
     fork = edits[-1]
     by_recipe = base.compilation is not None and fork.compilation is not None
     before, after = _shape(rows, base, by_recipe), _shape(rows, fork, by_recipe)
-    return Variation(
+    return Divergence(
         base=base,
         origin_head=head(rows, base.thread),
         varies={
@@ -235,21 +252,21 @@ def variation(rows: Reader, id: int) -> Variation | None:
 
 
 def proposal(rows: Reader, id: int) -> Recipe | Component | None:
-    varied = variation(rows, id)
-    if varied is None or not varied.moved:
+    diverged = divergence(rows, id)
+    if diverged is None or not diverged.moved:
         return None
     fork = head(rows, id)
-    if varied.base.compilation is not None and fork.compilation is not None:
-        origin = recipe(rows, varied.origin_head)
+    if diverged.base.compilation is not None and fork.compilation is not None:
+        origin = recipe(rows, diverged.origin_head)
         if origin is None:
             return None
         changes = {
             path.removeprefix("/recipe/"): after
-            for path, (_, after) in varied.varies.items()
+            for path, (_, after) in diverged.varies.items()
         }
         return Recipe.model_validate({**origin.model_dump(mode="json"), **changes})
-    doc = rows.get(varied.origin_head.digest).canonical_doc()
-    for path, (_, after) in varied.varies.items():
+    doc = rows.get(diverged.origin_head.digest).canonical_doc()
+    for path, (_, after) in diverged.varies.items():
         if after is None:
             _ = doc.pop(path[1:], None)
         else:

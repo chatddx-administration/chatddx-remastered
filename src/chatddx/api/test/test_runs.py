@@ -464,18 +464,26 @@ def test_a_run_is_named_by_its_variation_and_runs_the_edit_given(
     signed: TestClient,
 ) -> None:
     off = digest(signed, "reasoning", OFF)
-    varied, _ = sent(signed, asked(signed, parts={"reasoning": off}, score=False))
-    assert varied["described"].startswith(f"{LINES}+reasoning={OFF} × {QWEN} × ")
-    plain, _ = sent(signed, asked(signed, score=False))
-    assert plain["described"].startswith(f"{LINES} × {QWEN} × ")
-
     mine = thread(signed, "configuration", LINES)
     first = mine["head"]
+    ran: dict[str, Any] = {
+        "configuration": mine["id"],
+        "head": first["id"],
+        "parts": {},
+    }
+    varied, _ = sent(signed, asked(signed, parts={"reasoning": off}, score=False))
+    assert varied["described"].startswith(f"{LINES}+reasoning={OFF} × {QWEN} × ")
+    assert varied["ran"] == {**ran, "parts": {"reasoning": off}}
+    plain, _ = sent(signed, asked(signed, score=False))
+    assert plain["described"].startswith(f"{LINES} × {QWEN} × ")
+    assert plain["ran"] == ran
+
     edits = f"/api/threads/{mine['id']}/edits"
     later = signed.post(edits, json={"head": first["id"], "parts": {"reasoning": off}})
     assert later.status_code == 201
     earlier, _ = sent(signed, asked(signed, head=first["id"], score=False))
     assert earlier["skeleton"] == first["digest"] != later.json()["digest"]
+    assert earlier["ran"] == ran
     got = signed.post("/api/runs", json=asked(signed, head=10**9))
     assert (got.status_code, got.json()) == (
         422,
@@ -589,6 +597,7 @@ def test_a_run_runs_again_with_another_seed_under_its_name(
     again = signed.get(got.headers["location"]).json()
     assert (again["endpoint"], again["seeds"]) == (first["endpoint"], [9])
     assert again["described"] == first["described"].replace("(seed 7)", "(seed 9)")
+    assert again["ran"] == first["ran"] is not None
 
     got = signed.post(f"/api/runs/{first['id']}/again", json={}, headers=bob)
     assert (got.status_code, got.json()["code"]) == (404, "not_found")

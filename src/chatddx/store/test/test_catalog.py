@@ -22,6 +22,7 @@ from chatddx.factors.cases import Appendix, Case, Vignette
 from chatddx.factors.kinds import BY_KIND
 from chatddx.factors.lint import lint
 from chatddx.factors.request import (
+    RECIPE_PARTS,
     Compilation,
     Insert,
     NativeOutput,
@@ -186,7 +187,7 @@ def test_forks(conn: Connection) -> None:
 
 
 @pytest.mark.slow
-def test_variations_are_reapplied_on_request(conn: Connection) -> None:
+def test_a_fork_s_changes_are_reapplied_on_request(conn: Connection) -> None:
     catalog, store, reg, _, alice = stored_world(conn)
     base = generation_recipe(reg)
     shown = reg.add(
@@ -206,12 +207,12 @@ def test_variations_are_reapplied_on_request(conn: Connection) -> None:
         forked_from=origin.id,
     )
     assert catalog.recipe(origin.thread) == base
-    assert catalog.variation(origin.thread) is None
-    variation = catalog.variation(fork.thread)
-    assert variation is not None
-    assert (variation.base, variation.origin_head) == (origin, origin)
-    assert not variation.moved
-    assert variation.varies == {"/recipe/output": (base.output, shown)}
+    assert catalog.divergence(origin.thread) is None
+    diverged = catalog.divergence(fork.thread)
+    assert diverged is not None
+    assert (diverged.base, diverged.origin_head) == (origin, origin)
+    assert not diverged.moved
+    assert diverged.varies == {"/recipe/output": (base.output, shown)}
     assert catalog.proposal(fork.thread) is None
 
     greedy = reg.add(Sampling(temperature=0))
@@ -221,10 +222,10 @@ def test_variations_are_reapplied_on_request(conn: Connection) -> None:
     head = catalog.edit(
         origin.thread, moved.skeleton, alice.id, compilation=moved.digest
     )
-    variation = catalog.variation(fork.thread)
-    assert variation is not None
-    assert (variation.base, variation.origin_head) == (origin, head)
-    assert variation.moved
+    diverged = catalog.divergence(fork.thread)
+    assert diverged is not None
+    assert (diverged.base, diverged.origin_head) == (origin, head)
+    assert diverged.moved
     proposal = catalog.proposal(fork.thread)
     assert proposal == moved_recipe.model_copy(update={"output": shown})
 
@@ -240,10 +241,10 @@ def test_variations_are_reapplied_on_request(conn: Connection) -> None:
         based_on=head.id,
     )
     assert reapplied.based_on == head.id
-    variation = catalog.variation(fork.thread)
-    assert variation is not None
-    assert (variation.base, variation.moved) == (head, False)
-    assert variation.varies == {"/recipe/output": (base.output, shown)}
+    diverged = catalog.divergence(fork.thread)
+    assert diverged is not None
+    assert (diverged.base, diverged.moved) == (head, False)
+    assert diverged.varies == {"/recipe/output": (base.output, shown)}
     assert catalog.proposal(fork.thread) is None
 
     with pytest.raises(errors.RaiseException, match="origin"), conn.transaction():
@@ -256,7 +257,7 @@ def test_variations_are_reapplied_on_request(conn: Connection) -> None:
         )
 
 
-def test_chunk_variations(conn: Connection) -> None:
+def test_a_chunk_fork_diverges_by_its_fields(conn: Connection) -> None:
     catalog, store, reg, _, alice = stored_world(conn)
     recommended, longer, cooler = (
         reg.add(Sampling(temperature=0.6, top_p=0.95)),
@@ -266,9 +267,9 @@ def test_chunk_variations(conn: Connection) -> None:
     _ = store.add(reg, [recommended, longer, cooler])
     origin = catalog.create(recommended, alice.id)
     fork = catalog.create(longer, alice.id, forked_from=origin.id)
-    variation = catalog.variation(fork.thread)
-    assert variation is not None
-    assert variation.varies == {"/max_output_tokens": (None, 4096)}
+    diverged = catalog.divergence(fork.thread)
+    assert diverged is not None
+    assert diverged.varies == {"/max_output_tokens": (None, 4096)}
     _ = catalog.edit(origin.thread, cooler, alice.id)
     assert catalog.proposal(fork.thread) == Sampling(
         temperature=0.7, top_p=0.95, max_output_tokens=4096
@@ -363,6 +364,68 @@ def test_entries(conn: Connection) -> None:
         catalog.note(
             Subject(run=uuid4()), Entry(field=EntryField.TAG, value="x"), bob.id
         )
+
+
+def test_a_run_says_what_it_varied(conn: Connection) -> None:
+    catalog, store, reg, ids, alice = stored_world(conn)
+    plan = compiled(store, reg)
+    configuration = catalog.create(plan.skeleton, alice.id, compilation=plan.digest)
+    chunk = catalog.create(instructions(plan), alice.id)
+    other = instructions(compiled(store, reg, "You are a cardiologist."))
+    run = uuid4()
+    store.append(RunStarted(run=run, at=NOW, rig=RIG, trial=ids["trial"]))
+    subject = Subject(run=run)
+    for entry in (
+        Entry.varied(configuration.id),
+        Entry.replaced("instructions", other),
+        Entry.replaced("reasoning", None),
+    ):
+        catalog.note(subject, entry, alice.id)
+    assert catalog.about(subject) == About(
+        varied=configuration.id,
+        replaced={"instructions": other, "reasoning": None},
+    )
+
+    for refused, said in (
+        ((Subject(thread=configuration.thread), Entry.varied(configuration.id)), "run"),
+        ((subject, Entry.varied(chunk.id)), "no configuration's"),
+        ((subject, Entry.replaced("prompt", other)), "isn't a stored chunk of prompt"),
+    ):
+        with pytest.raises(ValueError, match=said):
+            catalog.note(*refused, alice.id)
+    for value in ("0", "edit 1", "reasoning", "few-shot=", f"output={other[7:]}"):
+        with pytest.raises(ValidationError):
+            _ = Entry(field=EntryField.REPLACED, value=value)
+    with pytest.raises(ValidationError):
+        _ = Entry(field=EntryField.VARIED, value="first")
+
+    def written(field: str, value: str, at: Subject = subject) -> None:
+        _ = conn.execute(
+            """
+            INSERT INTO catalog.entry (thread, run, run_stage, field, value, by)
+            VALUES (%s, %s, %s, %s, %s, %s)
+            """,
+            (
+                at.thread,
+                at.run,
+                None if at.run is None else "started",
+                field,
+                value,
+                alice.id,
+            ),
+        )
+
+    for field, value, at in (
+        ("varied", str(configuration.id), Subject(thread=configuration.thread)),
+        ("varied", "first", subject),
+        ("replaced", "reasoning", subject),
+        ("replaced", f"few-shot={other}", subject),
+    ):
+        with pytest.raises(errors.CheckViolation), conn.transaction():
+            written(field, value, at)
+    for field, value in (("varied", str(chunk.id)), ("replaced", f"prompt={other}")):
+        with pytest.raises(errors.RaiseException), conn.transaction():
+            written(field, value)
 
 
 def test_names_are_optional_and_removable(conn: Connection) -> None:
@@ -932,6 +995,13 @@ def test_kinds_and_fields_match_the_database(admin: Connection) -> None:
             if all(f"'{n}'" in c for n in names) and c.count("'") == 2 * len(names)
         ]
     assert THREAD_KINDS == BY_KIND.keys() - {"case", "compilation"}
+    [shape] = admin.execute(
+        """
+        SELECT pg_get_constraintdef(oid) FROM pg_constraint
+        WHERE conrelid = 'catalog.entry'::regclass AND conname = 'entry_shape_check'
+        """
+    ).fetchall()
+    assert f"'^({'|'.join(RECIPE_PARTS)})=" in str(shape[0])
 
 
 def test_reader_reads_the_catalog(conn: Connection) -> None:

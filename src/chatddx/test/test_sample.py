@@ -249,9 +249,9 @@ def test_the_sample_loads_with_its_world_s_fakes(
     [shown] = catalog.find(
         "skeleton", "plan-shown (en, Qwen/Qwen3-8B-AWQ)", owner=archive.id
     )
-    variation = catalog.variation(shown)
-    assert variation is not None and set(variation.varies) == {"/recipe/output"}
-    assert variation.base.thread == plan_thread
+    diverged = catalog.divergence(shown)
+    assert diverged is not None and set(diverged.varies) == {"/recipe/output"}
+    assert diverged.base.thread == plan_thread
 
 
 # The sample is the example a new World follows, so it uses everything a data set and a

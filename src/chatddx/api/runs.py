@@ -265,6 +265,7 @@ def run_of(
     placed: Placed | None = None,
 ) -> schemas.Run:
     trial = resolve(bench.get, started.trial, Trial)
+    ran = bench.ran(started.run)
     return schemas.Run(
         id=started.run,
         at=started.at,
@@ -275,6 +276,9 @@ def run_of(
         cases=list(trial.cases),
         seeds=list(trial.seeds),
         described=bench.described(started),
+        ran=None
+        if ran is None
+        else schemas.Ran(configuration=ran[0].thread, head=ran[0].id, parts=ran[1]),
         finished=finished,
         unscored=None
         if unscored is None

@@ -130,6 +130,11 @@ it, if any. A new schema gets its own section with all three tiers.
 
 ### Tier 2
 - `0016-t2-source.sql`: triggers refusing UPDATE and TRUNCATE on `text`; DELETE is held back by the grants alone.
+- `0026-t2-catalog-run-variation.sql`: the entry fields `varied` and `replaced`, which only a run takes
+  (`entry_run_check`); `entry_field_check` and `entry_shape_check` dropped and made again with them, their values
+  as `src/chatddx/catalog/model.py:VARIED` and `REPLACED` have them; and a constraint trigger, after the row's
+  checks, that a `varied` entry names an edit of a configuration and a `replaced` one a stored chunk of its part
+  (`catalog.check_varied()`, `src/chatddx/catalog/threads.py:check_varied`).
 
 ## worker
 

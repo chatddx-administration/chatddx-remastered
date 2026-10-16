@@ -5,10 +5,11 @@ from enum import StrEnum
 from typing import ClassVar, Literal, Self
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, JsonValue, model_validator
+from pydantic import BaseModel, ConfigDict, Field, JsonValue, model_validator
 
 from chatddx.factors.base import Fingerprint
 from chatddx.factors.cases import Vignette
+from chatddx.factors.request import RECIPE_PARTS
 from chatddx.factors.scoring import Scorer
 
 # src/chatddx/store/migrations/0012-t2-catalog.sql repeats these kinds.
@@ -58,6 +59,11 @@ LANGUAGE_KINDS = frozenset(
 LANGUAGE = re.compile(r"^[a-z]{2,3}(-[A-Za-z0-9]{1,8})*$")
 
 
+# src/chatddx/store/migrations/0026-t2-catalog-run-variation.sql repeats these patterns.
+VARIED = re.compile(r"^[1-9][0-9]{0,17}$")
+REPLACED = re.compile(rf"^({'|'.join(RECIPE_PARTS)})=(sha256:[0-9a-f]{{64}})?$")
+
+
 def language_tag(value: str) -> str:
     if not LANGUAGE.match(value):
         raise ValueError(f"{value!r} is not a language tag such as 'sv' or 'pt-BR'")
@@ -76,6 +82,11 @@ class EntryField(StrEnum):
     COLLABORATOR = "collaborator"
     DELETED = "deleted"
     LANGUAGE = "language"
+    VARIED = "varied"
+    REPLACED = "replaced"
+
+
+RUN_FIELDS = frozenset({EntryField.VARIED, EntryField.REPLACED})
 
 
 Part = Literal["view", "resource"]
@@ -105,7 +116,7 @@ class Edit(_Frozen):
     at: datetime
 
 
-class Variation(_Frozen):
+class Divergence(_Frozen):
     base: Edit
     origin_head: Edit
     varies: dict[str, tuple[JsonValue, JsonValue]]
@@ -183,6 +194,7 @@ class Entry(_Frozen):
             EntryField.DESCRIPTION,
             EntryField.TAG,
             EntryField.LANGUAGE,
+            *RUN_FIELDS,
         ) or (self.field == EntryField.NAME and self.present)
         person = self.field in (EntryField.OWNER, EntryField.COLLABORATOR)
         removable = self.field in (
@@ -199,7 +211,21 @@ class Entry(_Frozen):
             raise ValueError(f"{self.field} can't be empty")
         if self.field == EntryField.LANGUAGE:
             _ = language_tag(self.value or "")
+        if self.field == EntryField.VARIED and not VARIED.match(self.value or ""):
+            raise ValueError(f"{self.value!r} is not an edit's id")
+        if self.field == EntryField.REPLACED and not REPLACED.match(self.value or ""):
+            raise ValueError(
+                f"{self.value!r} is not PART=DIGEST, or PART= for a part taken out"
+            )
         return self
+
+    @classmethod
+    def varied(cls, edit: int) -> Self:
+        return cls(field=EntryField.VARIED, value=str(edit))
+
+    @classmethod
+    def replaced(cls, part: str, digest: str | None) -> Self:
+        return cls(field=EntryField.REPLACED, value=f"{part}={digest or ''}")
 
 
 class About(_Frozen):
@@ -210,11 +236,14 @@ class About(_Frozen):
     collaborators: frozenset[int] = frozenset()
     deleted: bool = False
     language: str | None = None
+    varied: int | None = None
+    replaced: dict[str, str | None] = Field(default_factory=dict[str, str | None])
 
     @classmethod
     def of(cls, entries: Iterable[Entry]) -> Self:
         name = description = language = None
-        owner = None
+        owner = varied = None
+        replaced: dict[str, str | None] = {}
         tags: set[str] = set()
         collaborators: set[int] = set()
         deleted = False
@@ -236,6 +265,11 @@ class About(_Frozen):
                     deleted = e.present
                 case EntryField.LANGUAGE:
                     language = e.value
+                case EntryField.VARIED:
+                    varied = int(e.value or "")
+                case EntryField.REPLACED:
+                    part, digest = (e.value or "").split("=")
+                    replaced[part] = digest or None
         return cls(
             name=name,
             description=description,
@@ -244,6 +278,8 @@ class About(_Frozen):
             collaborators=frozenset(collaborators),
             deleted=deleted,
             language=language,
+            varied=varied,
+            replaced={p: replaced[p] for p in RECIPE_PARTS if p in replaced},
         )
 
 

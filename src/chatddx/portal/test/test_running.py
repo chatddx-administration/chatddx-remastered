@@ -1,6 +1,7 @@
 import time
 from pathlib import Path
 from typing import Any
+from urllib.parse import urlencode
 
 import pytest
 from fastapi import FastAPI
@@ -15,7 +16,7 @@ from chatddx.portal.test.test_reading import shown
 from chatddx.portal.test.test_signing_in import signing_in
 from chatddx.store import Store
 from chatddx.store.store import Connection
-from chatddx.test.world import LINES, QWEN, faked, world_facts
+from chatddx.test.world import LINES, OFF, QWEN, faked, world_facts
 
 
 @pytest.fixture
@@ -108,6 +109,19 @@ def test_a_run_is_scored_again_and_run_again_from_its_page(signed: TestClient) -
         shown_again["described"].split(" (seed")[0]
         == scored["described"].split(" (seed")[0]
     )
+
+
+@pytest.mark.usefixtures("fake")
+@pytest.mark.slow
+def test_a_run_links_the_variation_it_ran(signed: TestClient) -> None:
+    query = {"kind": "reasoning", "name": OFF, "owner": "alice"}
+    [off] = signed.get("/api/threads", params=query).json()
+    parts = {"reasoning": off["head"]["digest"]}
+    run = started(signed, parts=parts, score=False)
+    ran = settled(signed, run)["ran"]
+    page = shown(signed, f"/runs/{run}")
+    tried = f"/configurations/{ran['configuration']}?{urlencode(parts)}"
+    assert f'href="{tried}">{LINES}+reasoning={OFF}<' in page
 
 
 @pytest.mark.usefixtures("fake")

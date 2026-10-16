@@ -12,6 +12,7 @@ from chatddx.factors.request import Skeleton
 from chatddx.factors.response import parts
 from chatddx.store import Queue
 
+from .configurations import linked
 from .pages import BenchDep, page
 
 PLAN = "management_plan_v1"
@@ -62,7 +63,7 @@ def run(request: Request, bench: BenchDep, run: UUID) -> Response:
         items=api.items(bench, run),
         titles=titles,
         engine=bench.title(shown.engine),
-        configuration=_version(bench, shown.skeleton),
+        configuration=_configuration(bench, shown.ran, shown.skeleton),
         plan=isinstance(schema, dict) and schema.get("title") == PLAN,
         scores=[(graded, _rows(graded)) for graded in shown.scores],
         said=_said,
@@ -116,6 +117,24 @@ def scoring(request: Request, bench: BenchDep, run: UUID) -> Response:
 def running_again(request: Request, bench: BenchDep, run: UUID) -> Response:
     said = api.again(request, Response(), bench, run, schemas.NewAgain(score=True))
     return RedirectResponse(f"/runs/{said.run}", 303)
+
+
+def _configuration(
+    bench: Bench, ran: schemas.Ran | None, skeleton: str
+) -> tuple[str, str] | None:
+    if ran is None:
+        return _version(bench, skeleton)
+    try:
+        tried = bench.variation(ran.configuration, ran.parts, ran.head)
+    except LookupError:
+        return _version(bench, skeleton)
+    latest = bench.catalog.head(ran.configuration).id
+    query = schemas.Varying.model_validate({p: d or "" for p, d in ran.parts.items()})
+    given = linked(query, ran.head, latest).removesuffix("?")
+    link = f"/configurations/{ran.configuration}{given}"
+    if ran.head == latest:
+        return link, tried.label
+    return link, f"{tried.label}, an earlier version"
 
 
 def _version(bench: Bench, skeleton: str) -> tuple[str, str] | None:

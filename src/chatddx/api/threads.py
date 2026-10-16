@@ -389,14 +389,14 @@ def proposal(bench: BenchDep, thread: int) -> schemas.Proposal | None:
         found = bench.proposal(thread)
     if found is None:
         return None
-    varied, held = found.variation, found.proposal
+    diverged, held = found.divergence, found.proposal
     recipe = isinstance(held, Recipe)
     return schemas.Proposal(
-        base=edit_of(bench, varied.base),
-        origin_head=edit_of(bench, varied.origin_head),
+        base=edit_of(bench, diverged.base),
+        origin_head=edit_of(bench, diverged.origin_head),
         varies=[
             schemas.Varied(path=path, base=base, fork=fork)
-            for path, (base, fork) in varied.varies.items()
+            for path, (base, fork) in diverged.varies.items()
         ],
         recipe=held.model_dump(mode="json") if recipe else None,
         component=None if recipe else held.model_dump(mode="json"),

@@ -451,8 +451,9 @@ Phase 3, as decided (see "The variation being tried"):
 - **`GET /configurations/{id}`** takes the API's `Varying` as its query: the parts by digest, `head`, `endpoint`
   and `tag`. Without an endpoint it picks one serving the model the configuration's name is made for. The server
   draws what is said of it and its versions, with ◀ ▶ and every version's link keeping what is set, and a note on an
-  earlier one; the variation's recipe and its runs as the address gives them, for a page without scripts; and the
-  island's props as JSON (`src/chatddx/portal/configurations.py`).
+  earlier one; the variation's recipe and its runs as the address gives them, for a page without scripts; its
+  proposal, to its owner, with what the fork keeps by part and **Follow its origin**, which comes back to the page, as
+  a thread's page offers it; and the island's props as JSON (`src/chatddx/portal/configurations.py`).
 - **The `variation` island** (`frontend/src/islands/Variation.svelte`): a picker per part (one entry per digest,
   the person's own first, others' as `owner/name`, the names it also goes by, grouped by what the name says it is made
   for, the configuration's own marked); the label, the skeleton, greedy, and the configuration that is the variation
@@ -460,8 +461,10 @@ Phase 3, as decided (see "The variation being tried"):
   view's reach with the families it misses, and the request folded; the name and the line saying where a save goes,
   saving by a fork or an edit; and the runs of the skeleton. Each pick asks the API again and keeps the address and
   the versions' links in step (`history.replaceState`). Its pure logic is `frontend/src/lib/variation/logic.ts`.
-- **A run's page** links the version it ran: the person's own configuration first, its head or else an earlier edit
-  (`src/chatddx/portal/runs.py:_version`).
+- **A run's page** links the variation it ran as it was tried, by the run's `ran`: the configuration's edit, as `head`
+  when it isn't the head any more, and the parts set (`src/chatddx/portal/runs.py:_configuration`). A run that says
+  none, or whose configuration the person no longer sees, links a version holding its skeleton, the person's own
+  configuration first, its head or else an earlier edit (`_version`).
 - **An error page** lists what didn't validate.
 - **The frontend**: vitest (`pnpm --dir frontend test`), and shadcn-svelte's input, as the components before. The
   flake's pnpm hash follows the lockfile.
@@ -581,8 +584,6 @@ From "What the portal shows", not on the pages yet:
   shown.
 
 ### What the variation being tried leaves
-- **A run of an unsaved variation** isn't linked to the variation it ran: its recipe is stored with its compilation,
-  but not what it varied, only its label, kept as the run's name (`docs/api.md`, "Starting one").
 - **The pickers rest on names** for what a chunk is made for (`agents/wip-variants.md`); a chunk older than its
   thread's head is offered only when the variation holds it.
 - **The part pickers are native selects**: a long list (26 reasoning chunks in the sample World) wants a searchable

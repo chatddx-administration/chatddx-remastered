@@ -2,6 +2,7 @@ import pytest
 
 from chatddx import settings
 from chatddx.bench import Bench, NotFound, OverQuota
+from chatddx.catalog import Subject
 from chatddx.curation import Plan
 from chatddx.factors.base import resolve
 from chatddx.factors.trial import Execution, Trial
@@ -42,6 +43,26 @@ def test_a_run_keeps_its_seeds_cleanup_execution_and_canaries_and_again_too(
     repeated = resolve(bench.get, again.trial, Trial)
     assert (repeated.seeds, repeated.cleanup) == ((8,), cleanup)
     assert (again.execution, again.canaries) == (started.execution, probe)
+
+
+@pytest.mark.usefixtures("fake")
+def test_a_run_says_what_it_varied_and_running_again_too(
+    conn: Connection, world: Inventory, alice: Person
+):
+    bench = Bench(conn, alice, world, world_facts())
+    engine = bench.endpoint(QWEN)
+    named = bench.configuration(LINES, engine)
+    off = bench.chunk("reasoning", "off", engine)
+    cases = [bench.family("crlf").case]
+
+    plain = bench.start(named, QWEN, cases, (7,)).started
+    assert bench.ran(plain.run) == (named.configuration, {})
+    varied = named.set("reasoning", off, "off")
+    started = bench.start(varied, QWEN, cases, (7,)).started
+    ran = (named.configuration, {"reasoning": off})
+    assert bench.ran(started.run) == ran
+    assert bench.catalog.about(Subject(run=started.run)).name == varied.label
+    assert bench.ran(bench.again(started, (8,)).run) == ran
 
 
 def test_a_run_holds_its_cases_times_its_seeds_in_items(

@@ -45,8 +45,8 @@ def test_a_configuration_follows_its_origin_with_its_own_change_on_top(
     proposed = bench.proposal(mine)
     assert proposed is not None and isinstance(proposed.proposal, Recipe)
     assert (proposed.proposal.sampling, proposed.proposal.reasoning) == (greedy, off)
-    assert set(proposed.variation.varies) == {"/recipe/reasoning"}
-    assert proposed.variation.origin_head == origin
+    assert set(proposed.divergence.varies) == {"/recipe/reasoning"}
+    assert proposed.divergence.origin_head == origin
 
     followed = bench.follow(mine, seen.id)
     assert (followed.what, followed.findings) == ("a new version", [])

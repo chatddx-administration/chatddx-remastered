@@ -100,8 +100,8 @@ The researchers will want to iterate and continuously refine configurations acco
 5. Unsuccessful configurations are deleted
 
 A configuration is a request kept on a skeleton thread, each version with the recipe it was compiled from, and a
-variation replaces one or more of the recipe's parts. A variation being tried is just a digest, saving it will make it
-a configuration of its own.
+variation is one with recipe parts replaced over one of its versions. A variation being tried is just a digest;
+saving it makes it a configuration of its own, a fork, or a new version of one of the person's own.
 
 Names are optional: an unnamed configuration is shown by its title, e.g. its base and what it varies (`docs/catalog.md`, "Titles").
 Variations allow controlled experiments without the combinatorial explosion; they are a supported portal workflow, not an object in the code:
@@ -111,7 +111,7 @@ Variations allow controlled experiments without the combinatorial explosion; the
 "Delete" in this case is a `deleted` flag in the `catalog` layer since true deletions are blocked on database level
 (see tier 2 in `docs/store.md`).
 
-`src/chatddx/store/catalog.py:Catalog.variation` and `Catalog.proposal` (what a fork varies,
+`src/chatddx/store/catalog.py:Catalog.divergence` and `Catalog.proposal` (what a fork varies,
 and re-applying it when its origin moves), and `catalog.edit.based_on`.
 
 ### On the table

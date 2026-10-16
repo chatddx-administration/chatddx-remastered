@@ -38,7 +38,7 @@ from .families import bindings, family_of
 from .language import own
 from .model import Subject
 from .read import Reader, about, abouts, heads_of
-from .threads import head, variation
+from .threads import divergence, head
 
 Title = Callable[[str], str]
 
@@ -200,12 +200,12 @@ def title(rows: Reader, thread: int) -> str:
     name = about(rows, Subject(thread=thread)).name
     if name is not None:
         return name
-    varied = variation(rows, thread)
-    if varied is not None:
-        base = title(rows, varied.base.thread)
+    diverged = divergence(rows, thread)
+    if diverged is not None:
+        base = title(rows, diverged.base.thread)
         changes = [
             describe_change(path, after, partial(title_of, rows))
-            for path, (_, after) in varied.varies.items()
+            for path, (_, after) in diverged.varies.items()
         ]
         return ", ".join([base, *changes]) if changes else f"a fork of {base}"
     current = head(rows, thread)

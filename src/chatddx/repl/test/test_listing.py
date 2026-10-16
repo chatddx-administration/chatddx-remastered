@@ -76,7 +76,7 @@ def test_configurations_are_listed_a_row_per_name_and_language_with_their_models
     assert not [line for line in lines if line.rstrip().endswith("  archive")]
     assert "Qwen3-8B-AWQ  " in line_of(written, "budgeted (en)")
     assert "on-budget" in line_of(written, "budgeted (en)")
-    assert "varies" in line_of(written, "reasoned (en)")
+    assert "differs" in line_of(written, "reasoned (en)")
     guided = line_of(written, "lines-guided (sv)")
     assert "every model" in guided and "guided (sv)" in guided
 

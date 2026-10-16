@@ -222,7 +222,7 @@ A run's score under one scorer, or why there is none.
 - `variation: TriedVariation`: the saved configuration, with nothing replaced.
 
 #### `class Proposed`
-- `variation: Variation`: the catalog's, with the base, the origin's head and what the fork varies.
+- `divergence: Divergence`: the catalog's, with the base, the origin's head and what the fork varies.
 - `proposal: Recipe | Component`
 - `digest: str`: the component's, or the compiled skeleton's.
 - `compilation: str | None`: for a recipe.
@@ -442,6 +442,11 @@ The latest of `runs()`, or the one whose id, as `str(UUID)`, starts with `prefix
 #### `run_by_id(run: UUID) -> RunStarted`
 The run, when it has started and the person owns it, live.
 - Raises `NotFound("no run <id> of yours")`.
+
+#### `ran(run: UUID) -> tuple[Edit, dict[str, str | None]] | None`
+What the run says it varied: the configuration's edit, and each part replaced over it, its chunk's digest or `None`
+for a part taken out (`About.varied`, `About.replaced`); `None` for a run that says nothing, as one the runner
+started from a trial alone.
 
 #### `reaching(digest: str) -> list[RunStarted]`
 The runs of `runs()` whose trial holds `digest` in its closure, or whose skeleton was compiled from a recipe that
@@ -741,10 +746,13 @@ Raises:
 `(LookupError, TypeError, ValueError, NotImplementedError, Refused)`: what `score` takes as a scorer refused.
 
 ### `start(variation: TriedVariation, endpoint: str, cases: list[str], seeds: Sequence[int], cleanup: Sequence[CleanupOp] | None = None, execution: Execution | None = None, canaries: str | None = None) -> Running`
+
 The variation run at `endpoint` over `cases` with `seeds`, its replicates, its cleanup steps, its execution and the
-canary set stored under the digest `canaries`, its run named by `variation.label`. Not given: the steps the cases'
-sources ask for, in `CleanupOp`'s order (`()` for none); the endpoint's execution and canary set, from the
-inventory. The compilation of a varied skeleton is stored once the run has started.
+canary set stored under the digest `canaries`. Once the run has started, its `name` entry, `variation.label`, its
+`varied` entry, `variation.configuration`, and a `replaced` entry for each part replaced are written in one
+transaction (docs/catalog-api.md, "Entry"). Not given: the steps the cases' sources ask for, in `CleanupOp`'s order
+(`()` for none); the endpoint's execution and canary set, from the inventory. The compilation of a varied skeleton is
+stored once the run has started.
 
 Raises:
 - `ValueError("<label> is a judge configuration: a judge is asked as runs are scored, and isn't run on cases")`
@@ -755,8 +763,9 @@ Raises:
 
 ### `again(run: RunStarted, seeds: Sequence[int]) -> Running`
 The run's trial run again at its endpoint with `seeds`, its engine, cleanup, execution and canary set kept, as `start`
-runs a variation, and named by the run's name, else its skeleton's title. The gate refuses an endpoint that serves
-another engine now (`Refused("endpoint '<name>' serves engine <digest>, the trial's is <digest>")`).
+runs a variation, named by the run's name, else its skeleton's title, and saying what the run said it varied. The gate
+refuses an endpoint that serves another engine now (`Refused("endpoint '<name>' serves engine <digest>, the trial's
+is <digest>")`).
 
 ### `resume(run: UUID) -> Running`
 A run of the person's own resumed by the runner (docs/runner-api.md, `Runner.resume`); another's is `NotFound`, as

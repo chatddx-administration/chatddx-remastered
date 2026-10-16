@@ -19,6 +19,22 @@
   ]) }}
   {% endcall %}
 
+  {% if proposal %}
+  {% call section("Its origin has moved on") %}
+  <p class="mb-3 text-sm">Following it keeps the origin's latest version with what yours changes of it{% if proposal.digest == configuration.head.digest %}, which is what yours holds already{% endif %}.</p>
+  {% if changes %}
+  <ul class="mb-4 space-y-1 text-sm">
+    {% for part, base, fork in changes %}<li><span class="font-medium">{{ part | replace("_", " ") }}</span>: yours keeps {{ fork }} over {{ base }}</li>{% endfor %}
+  </ul>
+  {% endif %}
+  <form method="post" action="/threads/{{ configuration.id }}/follow">
+    <input type="hidden" name="head" value="{{ configuration.head.id }}">
+    <input type="hidden" name="next" value="/configurations/{{ configuration.id }}">
+    <button class="inline-flex h-9 items-center rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground hover:bg-primary/90">Follow its origin</button>
+  </form>
+  {% endcall %}
+  {% endif %}
+
   {% call section("Its versions") %}
   {% set last = versions | length - 1 %}
   <nav class="mb-4 flex items-center gap-3 text-sm" aria-label="Versions">

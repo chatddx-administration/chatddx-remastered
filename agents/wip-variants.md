@@ -1,10 +1,11 @@
 # Variants: work in progress
 
-What a variant is in the catalog today, why it rests on names alone, what recording it would take, and which variant
-a variation belongs to. What a variation is, is `agents/wip-variations.md`'s, which is to be started first (see its
-"Start here"). Checked against the code at fcef71a, and its quotes again at f7fd2b0, once configurations and requests
-were settled. Nothing of the options below is built: a variant is still known by its name only. "Decided" means the
-user said so; "Take" is the agent's and still open.
+What a variant is in the catalog today, why it rests on names alone, what recording it would take, and which variant a
+variation belongs to. What a variation is, is `agents/wip-variations.md`'s, built first: both words stay (W1), a
+variation a configuration with parts replaced over a version of a configuration, tried or kept. Checked against the code
+at fcef71a, and its quotes again at f7fd2b0, once configurations and requests were settled. Nothing of the options below
+is built: a variant is still known by its name only. "Decided" means the user said so; "Take" is the agent's and still
+open.
 
 ## Where variants come from
 In the old chatddx a configuration was "what to ask and how … A configuration names no model" (`docs/repl.md` at
@@ -32,8 +33,7 @@ fact would change what a configuration sends without an edit of it, and it neede
 Every doc that defines it agrees: a thread made for a language, a model or both, from one record of a data set, and
 named after them (`docs/curation.md` and `docs/repl.md`, "Terms"). The record, such as `[recipe.plan]` with its
 description and tags, is what the variants are of, and the catalog has nothing that stands for it. The shadcn
-components' `variant` prop is a styling word and unrelated. Whether the word stays is `agents/wip-variations.md`'s
-(W).
+components' `variant` prop is a styling word and unrelated. The word stays (`agents/wip-variations.md`, W1).
 
 ### Configuration: three levels
 - **A skeleton thread**, its versions requests with their recipes (`docs/catalog.md`, "Terms").

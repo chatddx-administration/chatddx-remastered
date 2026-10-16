@@ -173,7 +173,9 @@ Runs are started within their request, so whatever refuses them does so before a
 
 Any person can start at most `settings.RUNS_PER_DAY` runs a day, and a run holds at most `settings.ITEMS_PER_RUN` items.
 
-The run gives back the cases' digests, and is named by the variation's label, `NAME+PART=CHUNK`.
+The run gives back the cases' digests, and is named by the variation's label, `NAME+PART=CHUNK`. Listed or read, a
+run says what it ran (`ran`): the configuration, the edit the variation was built on and the parts replaced over it,
+or nothing for a run started from a trial alone (docs/catalog.md, "What a run ran").
 
 The gate refuses an endpoint that doesn't serve the trial's engine, isn't cleared for a sensitive source among the
 cases', or lacks its secret; tools that would get a sensitive source's content; and an endpoint that doesn't answer.

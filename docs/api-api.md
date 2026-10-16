@@ -228,7 +228,8 @@ The models' fields are in the OpenAPI document. Besides them:
 | `NewTake` | A take's body for one thread, `replace`. |
 | `Metric`, `ScorerCode` | Scoring code the running chatddx ships: its `entry_point`, `version`, `metrics` (each its `name`, what it `measures`, a JSON Schema for a view's `params`, whether it is `judged`, reading a judge's verdicts, and the `unit` that marks a value that isn't a score from 0 to 1, if any) and a JSON Schema for the scorer's own `params`. |
 | `NewRun(Seeds)` | A run's body, with `head`, the edit it varies, the configuration's head unless given; `cleanup`, the steps, else the sources'; `concurrency` and `order`, else the endpoint's. Its validator raises `ValueError("a run takes one of families, tags or cases")` unless exactly one of `families`, `tags` and `cases` is given, which FastAPI answers 422. |
-| `Run` | A run as listed, with `unscored`, its scorers left as `Unscored` (`scorer`, `name`), when the listing asked for them, else `None`; and `job`, its latest job as a `RunJob`, else `None`. |
+| `Run` | A run as listed, with `ran`, a `Ran`, else `None`; `unscored`, its scorers left as `Unscored` (`scorer`, `name`), when the listing asked for them, else `None`; and `job`, its latest job as a `RunJob`, else `None`. |
+| `Ran` | What a run ran: its `configuration`, `head`, the edit it varied, and `parts`, each part replaced over it, by its chunk's digest or `null` for a part taken out. |
 | `Graded` | A score under one scorer: the scorer and its name, the score's id, its `scoring`, when it started (`at`) and whether it `finished`, each view's label and mean, each item's value, or why it was refused. |
 | `ScoreItemDetail`, `ScoreItems` | A score item with its `detail` and `judge_calls` as their JSON; and a score's items with its `findings`. |
 | `EVENTS: dict[str, type[_Schema]]` | Each event of a run's events, by name, and the model of its data, in the order they can come; `run.noted` and `score.noted` have `Finding`, and `done` `DoneData`, whose `halted` is `None` when told from the ledger. |
@@ -362,10 +363,11 @@ and scoring it or not; `Location` the run's path (`url_path_for("run")`). Return
 
 ### `job_of(placed: Placed | None) -> schemas.RunJob | None`, `run_of(bench, started, finished, unscored=None, placed=None) -> schemas.Run` and `detail(bench, run: UUID) -> schemas.RunDetail`
 `job_of` is a job as `Queue.placed` places it, or `None`. `run_of` is the run as listed: its trial's parts, its
-endpoint's name, `Bench.described`, the scorers of `unscored`, each by its digest and `Bench.scorer_name`, or `None`,
-and `job_of(placed)`. `detail` adds, from `Bench.run_by_id` (`NotFound`) and `Store.run`: the rig; the finish's time
-and findings as `noted`; `check_run`'s findings over the trial and canary set `Store.load` gives; each item's
-`item_of`; and `graded_of` each of `Bench.scores_of`; and its job as `Queue.placed` places it.
+endpoint's name, `Bench.described`, what it ran from `Bench.ran`, the scorers of `unscored`, each by its digest and
+`Bench.scorer_name`, or `None`, and `job_of(placed)`. `detail` adds, from `Bench.run_by_id` (`NotFound`) and
+`Store.run`: the rig; the finish's time and findings as `noted`; `check_run`'s findings over the trial and canary set
+`Store.load` gives; each item's `item_of`; and `graded_of` each of `Bench.scores_of`; and its job as `Queue.placed`
+places it.
 
 | Route | Does |
 | --- | --- |

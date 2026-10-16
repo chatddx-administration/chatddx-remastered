@@ -11,7 +11,7 @@ The catalog refers to
   - runs and scores by their start records (docs/ledger.md)
   - people by their identity (docs/identity.md)
 
-It holds nothing no sensitive or sensitive-derived data, so the reader role may read all of catalog.
+It holds nothing sensitive, so the reader role may read all of catalog.
 
 ## How the catalog works
 
@@ -65,7 +65,10 @@ it (docs/chatddx.md, "Intended evolution of configurations"). The catalog suppor
 of its own for it.
 
 A *configuration* is a skeleton thread: requests with the recipe it was compiled from (see "Recipes").
-A *variation* is a fork, of any kind, together with what it changes from the version it came from.
+
+A *variation* is a configuration with recipe parts replaced over a version of a configuration (docs/bench.md, "The
+variation being tried"). It is tried until someone keeps it: as a fork, which then varies from its base (see
+"Forks"), or as a new version of a configuration of their own.
 
 Trying a variation costs nothing in the catalog, since any component can be run without a thread.
 A variation worth keeping becomes an edit of its thread, or a fork. Configurations are organised by their lineage, the
@@ -85,8 +88,8 @@ forks a proposal that changes nothing.
 ### Forks
 A *fork* is a new thread started from a version of another thread of the same kind, its *origin*. A fork is compared
 with its *base*: the version it was forked from, or the origin version its changes were last re-applied onto. What it
-*varies* is what its head changes from the base: the recipe parts it replaced when both are compiled, and otherwise the
-component's own fields.
+*varies* is what its head changes from the base: its recipe's fields when both are compiled, the parts a variation
+replaced and, in a fork a data set wrote, the purpose and appendix layout too; otherwise the component's own fields.
 
 When the origin has moved on, the catalog offers a *proposal*: the origin's head with the fork's changes on top, as a
 recipe to compile or as a component. Nothing is stored until someone accepts it. Accepting is an ordinary edit of the
@@ -129,9 +132,11 @@ collaborator. A subject nothing has been said about has no name, no owner, and n
 | Collaborator | a person; a subject has a set of them | an entry withdrawing that person | what a person sees |
 | Deleted | a flag | an entry restoring the subject | see "Deleting" |
 | Language | a language, only on a family | nothing: it can only be replaced | see "Languages" |
+| Varied | an edit of a configuration, only on a run | nothing: it can only be replaced | see "What a run ran" |
+| Replaced | a part and the chunk it was set to, or none; a run has one per part | nothing: it can only be replaced | see "What a run ran" |
 
-Every field but the language can be said about any subject. The fields the catalog doesn't use itself are for people
-and the portal.
+Every field but the language, the varied edit and the replaced parts can be said about any subject. The fields the
+catalog doesn't use itself are for people and the portal.
 
 ### Names
 A name is for people. None is required, and names needn't be unique: a thread without one is shown by its title (see
@@ -168,6 +173,15 @@ Deleting is undone by another entry. Wiping a person's data deletes what they ow
 with them; loading the sample data again restores a deleted fork rather than forking anew.
 
 What the portal hides is open (see "Open design issues").
+
+### What a run ran
+The ledger records the trial a run ran (docs/ledger.md); what a person called it and what they varied are said here.
+As a run starts, the bench names it by its variation's label and says what it varied: the configuration's edit it
+was built on, and each part replaced over it, by the chunk it was set to, or none for a part taken out. A run started
+from a trial alone, as the runner starts one, says neither. Running again says what the run it repeats said.
+
+So a run of a variation nobody saved links the configuration it came from, while the ledger keeps what was sent. The
+database holds a varied edit to a configuration's, and a replaced part's chunk to a stored one of that part.
 
 ## Titles
 Anything without a name is shown by a *title*, built when asked and never stored.
@@ -330,7 +344,8 @@ records. At tier 2 it repeats the rules above that two writers at once could bre
 | Fork | A thread started from a version of another thread of the same kind, its origin. |
 | Base | The version a fork is compared with: the one it came from, or the one its changes were last re-applied onto. |
 | Configuration | A skeleton thread: requests, each version with the recipe it was compiled from. |
-| Variation | A fork, and what it changes from its base. |
+| Variation | A configuration with recipe parts replaced over a version of a configuration: tried, or kept as a fork or a new version. |
+| Varies | Of a fork: what its head changes from its base. |
 | Proposal | The origin's head with a fork's changes on top. |
 | Behind | A reference whose thread has moved on, or a case whose family has a newer binding. |
 | Entry | Something said about a thread, a family, a run or a score: a name, description, tag, owner, collaborator, deleted flag or language. |
@@ -394,9 +409,11 @@ writes at the same moment can leave a person several expectations to choose from
   than a warning.
 - **A variation nobody saved has a long title.** It is described by its whole recipe:
   "case · diagnoses-tool · recommended (Qwen/Qwen3-8B-AWQ) · off (Qwen/Qwen3-8B-AWQ)", where the repl called it
-  "diagnoses-tool (Qwen/Qwen3-8B-AWQ)+reasoning=off": the configuration it came from and the parts set over it.
-  Neither is stored. An entry on the run, or a title made from the closest configuration and what the variation
-  changes from it, would say it shorter.
+  "diagnoses-tool (Qwen/Qwen3-8B-AWQ)+reasoning=off": the configuration it came from and the parts set over it. A run
+  of one is named so and says what it varied (see "What a run ran"), but its skeleton is still titled by its recipe.
+- **What a fork varies is compared by recipe.** A variation with a part replaced is compiled whole by the running code
+  (docs/bench.md, "The variation being tried"), so after a change to the compiler it can send otherwise than the edit
+  it was built on where nothing was replaced, and what its fork varies doesn't say so.
 - **An edit that names its head holds with several writers without the database repeating the rule**:
   each edit of a thread waits for the one before it to land. The head an edit names is held without the database
   repeating it: every edit takes its thread's advisory lock (src/chatddx/store/catalog.py:Catalog._lock).

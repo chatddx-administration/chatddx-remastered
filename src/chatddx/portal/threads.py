@@ -182,9 +182,14 @@ def forking(
 
 
 @router.post("/threads/{thread}/follow")
-def following(bench: BenchDep, thread: int, head: Annotated[int, Form()]) -> Response:
+def following(
+    bench: BenchDep,
+    thread: int,
+    head: Annotated[int, Form()],
+    next: Annotated[str | None, Form()] = None,
+) -> Response:
     _ = api.follow(bench, thread, schemas.NewFollow(head=head))
-    return _back(thread, None)
+    return _back(thread, next)
 
 
 @router.post("/threads/{thread}/take")
