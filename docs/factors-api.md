@@ -43,17 +43,10 @@ one validates it. Sequences are tuples.
 
 **Errors.**
 
-```
-AGENT: replace
-Built (agents/wip-engine-part.md, stage 2): compiling into a language the recipe's translations don't go into is
-refused. The `base.py:StructuralError` row.
----
-| `base.py:StructuralError` (a `ValueError`) | A problem that takes other components, stored bytes or inputs to see: a missing or wrongly typed reference, a failed cross-check, a digest that doesn't match its bytes, an unknown kind or version, a recipe compiled into a language its translations don't go into, a missing translation, an intent the facts about the engine's model refuse or can't work out, a vignette that isn't UTF-8. |
-```
 | Exception | When |
 | --- | --- |
 | `pydantic.ValidationError` | A model breaks its own rules: a wrong type, a duplicate seed, an owned flag in `argv`, U+0000 in a component. Rules written as validators raise `ValueError`, which pydantic wraps. |
-| `base.py:StructuralError` (a `ValueError`) | A problem that takes other components, stored bytes or inputs to see: a missing or wrongly typed reference, a failed cross-check, a digest that doesn't match its bytes, an unknown kind or version, a missing translation, an intent the facts about the engine's model refuse or can't work out, a vignette that isn't UTF-8. |
+| `base.py:StructuralError` (a `ValueError`) | A problem that takes other components, stored bytes or inputs to see: a missing or wrongly typed reference, a failed cross-check, a digest that doesn't match its bytes, an unknown kind or version, a recipe compiled into a language its translations don't go into, a missing translation, an intent the facts about the engine's model refuse or can't work out, a vignette that isn't UTF-8. |
 | `KeyError` | `render` with a slot fill missing (a known gap), and `Registry.raw` with an unknown digest. |
 | `TypeError` | At class definition: a `Component` subclass whose `kind` has no literal default, or a duplicate kind. |
 
@@ -67,14 +60,6 @@ look components up through one.
 
 ### Common types
 
-```
-AGENT: add
-Built (agents/wip-engine-part.md, stage 2): language tags moved here from the catalog, so the factors check a
-translations chunk's languages. Two rows at the end of the table.
----
-| `LANGUAGE` | `^[a-z]{2,3}(-[A-Za-z0-9]{1,8})*$`, which takes `sv`, `pt-BR` and `zh-Hant-TW` and refuses `SV` and `en_US`. `0012` repeats it (`language_value_check`). |
-| `Language` | `str` that `language_tag` takes |
-```
 | Name | Definition |
 | --- | --- |
 | `Digest` | `str` matching `^sha256:[0-9a-f]{64}$` |
@@ -83,6 +68,8 @@ translations chunk's languages. Two rows at the end of the table.
 | `Api` | `Literal["chat.completions"]` |
 | `Settings` | `dict[str, JsonValue]` whose top-level keys are sorted on validation; values keep their order |
 | `Resolver` | `Callable[[str], Component]` |
+| `LANGUAGE` | `^[a-z]{2,3}(-[A-Za-z0-9]{1,8})*$`, which takes `sv`, `pt-BR` and `zh-Hant-TW` and refuses `SV` and `en_US`. `0012` repeats it (`language_value_check`). |
+| `Language` | `str` that `language_tag` takes |
 
 ### `StructuralError(ValueError)`
 Raised for the problems listed under "Conventions".
@@ -115,32 +102,20 @@ A subclass declares `kind: Literal["<kind>"] = "<kind>"`. The default is the kin
   `kind` (and `stage`) are always kept.
 - `canonical_doc()` adds `v`, the class's `schema_version`, at the top level only.
 - JSON data keeps its key order: schemas, expectation data, canary messages and values inside settings.
-```
-AGENT: replace
-Built (agents/wip-engine-part.md, stage 2): a translations chunk holds its entries per language. The item.
----
 - The top-level keys of settings are sorted: request bodies, `chat_template_kwargs`, `params` and `env`, and so are a
   translations chunk's languages and each language's entries. A model artifact's files are sorted by path, and a
   trial's cases by digest.
-```
-- The top-level keys of settings are sorted: request bodies, `chat_template_kwargs`, `params`, `env` and translation
-  entries. A model artifact's files are sorted by path, and a trial's cases by digest.
 - pydantic writes NaN and infinity as `null` (see "Known gaps").
 
 ### Helpers
 
-```
-AGENT: add
-Built (agents/wip-engine-part.md, stage 2): `language_tag` moved here from the catalog. A row at the end of the table.
----
-| `language_tag(value: str) -> str` | `value`, when `LANGUAGE` matches it. `ValueError("'<value>' is not a language tag such as 'sv' or 'pt-BR'")` otherwise. |
-```
 | Function | Returns / raises |
 | --- | --- |
 | `sorted_keys(mapping: dict[str, V]) -> dict[str, V]` | The mapping with its keys sorted. |
 | `distinct(values: tuple[T, ...]) -> tuple[T, ...]` | The values unchanged. `ValueError("duplicates are not allowed")` otherwise. |
 | `sha256_digest(data: bytes) -> str` | `"sha256:" + hexdigest`. |
 | `resolve(get: Resolver, digest: str, cls: type[C]) -> C` | `get(digest)`. `StructuralError` when it isn't a `cls`; whatever `get` raises when it's missing. |
+| `language_tag(value: str) -> str` | `value`, when `LANGUAGE` matches it. `ValueError("'<value>' is not a language tag such as 'sv' or 'pt-BR'")` otherwise. |
 
 ### References
 
@@ -227,13 +202,6 @@ A self-contained package that can be verified offline.
 
 ## Component kinds
 
-```
-AGENT: replace
-Built (agents/wip-engine-part.md, stage 2): a compilation's `into` is checked against its recipe's translations. The
-`compilation` row.
----
-| `compilation` | `request.py:Compilation` | `/recipe/<part>`: `chunk.<part>`; `/recipe/engine`: `engine.local`, `engine.remote`; `/skeleton`: `skeleton`; `/facts`: `facts` | its facts are about the model of its recipe's engine, and its recipe has translations into its `into` |
-```
 | Kind | Class | References (path: kinds) | `cross_check` |
 | --- | --- | --- | --- |
 | `model` | `engine.py:ModelArtifact` | | |
@@ -251,7 +219,7 @@ Built (agents/wip-engine-part.md, stage 2): a compilation's `into` is checked ag
 | `chunk.translations` | `request.py:Translations` | | |
 | `tool` | `request.py:Tool` | | |
 | `skeleton` | `request.py:Skeleton` | `/tools/<i>`: `tool` | the body's functions, apart from the answer function, are the referenced tools, by name and in order |
-| `compilation` | `request.py:Compilation` | `/recipe/<part>`: `chunk.<part>`; `/recipe/engine`: `engine.local`, `engine.remote`; `/skeleton`: `skeleton`; `/facts`: `facts` | its facts are about the model of its recipe's engine |
+| `compilation` | `request.py:Compilation` | `/recipe/<part>`: `chunk.<part>`; `/recipe/engine`: `engine.local`, `engine.remote`; `/skeleton`: `skeleton`; `/facts`: `facts` | its facts are about the model of its recipe's engine, and its recipe has translations into its `into` |
 | `appendix` | `cases.py:Appendix` | | |
 | `case` | `cases.py:Case` | `/appendices/<i>`: `appendix` | every appendix is bound to the case's vignette |
 | `trial` | `trial.py:Trial` | `/skeleton`: `skeleton`; `/engine`: `engine.local`, `engine.remote`; `/cases/<i>`: `case` | the skeleton's purpose is `generation` |
@@ -330,10 +298,6 @@ stored.
 
 ### Names and constants
 
-```
-AGENT: remove
-Built (agents/wip-engine-part.md, stage 2): every text is translated, so `TRANSLATED` is gone. The `TRANSLATED` row.
-```
 | Name | Value |
 | --- | --- |
 | `SlotName` | `Literal["vignette", "appendices", "completion", "expectation"]`: filled at send time |
@@ -350,7 +314,6 @@ Built (agents/wip-engine-part.md, stage 2): every text is translated, so `TRANSL
 | `GREEDY_DROPS` | `top_p`, `top_k`, `min_p` |
 | `ToolName` | `str` matching `^[A-Za-z0-9_-]{1,64}$` |
 | `EntryPoint` | `str` matching `^[\w.]+:[\w.]+$`, as `module:attribute` |
-| `TRANSLATED` | `output`, `appendix_layout`, `toolset` |
 | `RECIPE_PARTS` | `(*CHUNK_PARTS, "engine")` |
 | `CHUNK_PARTS` | `instructions`, `few_shot`, `prompt`, `output`, `sampling`, `reasoning`, `passthrough`, `translations`, `toolset`: the parts a chunk fills |
 
@@ -470,11 +433,6 @@ refuses one that isn't shipped, or not at the version pinned).
 | `guidance` | `str \| None`, at least 1 character, plain text | `None` |
 | `max_rounds` | `int`, at least 1 | `5` |
 
-```
-AGENT: replace
-Built (agents/wip-engine-part.md, stage 2): one chunk holds every language (take T1), version 2. The heading and the
-paragraph.
----
 #### `Translations`, kind `chunk.translations`, v2
 `into: dict[Language, dict[str, str]]`, at least one language: for each, its entries, source text → translation. The
 languages are sorted, and each one's entries by source text. Raises, wrapped in `ValidationError`:
@@ -482,10 +440,6 @@ languages are sorted, and each one's entries by source text. Raises, wrapped in 
 - `ValueError("whitespace isn't translated")` for a source text of whitespace only;
 - `ValueError("no translation into <language> given for [<texts>]")` for empty translations;
 - `language_tag`'s `ValueError` for a language that isn't a tag.
-```
-#### `Translations`, kind `chunk.translations`
-`entries: dict[str, str]`, at least one, sorted by source text. Source texts may not be whitespace only, and every
-translation must be non-empty.
 
 ### `class AppendixLayout(Frozen)`
 `before: str = "\n\n"`, `between: str = "\n\n"`, `after: str = ""`.
@@ -544,33 +498,16 @@ Before validation, a `body` with `temperature == 0` loses `top_p`, `top_k` and `
 | `output_schema -> JsonValue` | `native`: `body["response_format"]["json_schema"]["schema"]`. `tool`: the answer function's `parameters`. `text`: `contract.json_schema`. `None` when absent. |
 | `cross_check` | `"the body offers tools […], the skeleton names […]"` when the offered functions, apart from the answer function, differ from `tools` by name or order. Descriptions may differ. |
 
-```
-AGENT: replace
-Built (agents/wip-engine-part.md, stage 2): `Compilation.into`, version 3. The heading and the paragraph.
----
 ### `class Compilation(Component)`, kind `compilation`, v3
 `recipe: Recipe`, `skeleton: SkeletonRef`, `compiler: Code`, `facts: FactsRef | None = None`, the facts the skeleton
 was worked out from: `None` when the recipe asks for no intent, and `into: Language | None = None`, the language the
 recipe was compiled into: `None` for the recipe as written. Provenance: no component refers to a compilation, and
 nothing checks that the recipe compiles to the skeleton. `cross_check`: `"facts about <facts' model> compiled a recipe
 for <the recipe's engine's model>"`, and `"the recipe has no translations into <into>"`.
-```
-### `class Compilation(Component)`, kind `compilation`, v2
-`recipe: Recipe`, `skeleton: SkeletonRef`, `compiler: Code`, `facts: FactsRef | None = None`, the facts the skeleton
-was worked out from: `None` when the recipe asks for no intent. Provenance: no component refers to a compilation, and
-nothing checks that the recipe compiles to the skeleton. `cross_check`: `"facts about <facts' model> compiled a recipe
-for <the recipe's engine's model>"`.
 
 ### `texts(recipe: Recipe, get: Resolver) -> dict[str, tuple[str, ...]]`
-```
-AGENT: replace
-Built (agents/wip-engine-part.md, stage 2): every part's texts are translated. The paragraph.
----
 The texts of each part of the recipe, in first-seen order, without duplicates; a translation into a language needs
 them all. Whitespace-only texts are left out, and so are parts without texts. Parts and their texts:
-```
-The texts of each part of the recipe, in first-seen order, without duplicates; a translation needs those of the
-`TRANSLATED` parts. Whitespace-only texts are left out, and so are parts without texts. Parts and their texts:
 
 | Part | Texts |
 | --- | --- |
@@ -584,30 +521,16 @@ The texts of each part of the recipe, in first-seen order, without duplicates; a
 In schemas, member names under `properties`, `patternProperties`, `$defs`, `definitions` and `dependentSchemas` are
 kept, and nothing under `enum`, `const`, `default` or `examples` is translated.
 
-```
-AGENT: replace
-Built (agents/wip-engine-part.md, stage 2): compiling into a language, and `translations_into`. The heading, with a new
-section before it.
----
 ### `translations_into(recipe: Recipe, get: Resolver, into: str) -> dict[str, str]`
 The entries of the recipe's translations into `into`. `StructuralError("no translations into <into>")` when the
 recipe has no translations, or none into `into`.
 
 ### `compile_request(recipe: Recipe, get: Resolver, facts: ModelFacts | None = None, into: str | None = None) -> Skeleton`
-```
-### `compile_request(recipe: Recipe, get: Resolver, facts: ModelFacts | None = None) -> Skeleton`
 1. `landings(recipe, get, facts)`: where the reasoning level lands and the level a recommended sampling follows,
    raising as described there.
-```
-AGENT: replace
-Built (agents/wip-engine-part.md, stage 2): translations are read only with `into`. Step 2.
----
 2. With `into`, passes every text listed under `texts` through `translations_into(recipe, get, into)`, raising as it
    does; without, the recipe's translations aren't read. Whitespace-only texts pass unchanged. `StructuralError("no
    translation into <into> for …")` lists every missing text.
-```
-2. With `recipe.translations`, passes every text listed under `texts` through its entries. Whitespace-only texts
-   pass unchanged. `StructuralError("no translation for …")` lists every missing text.
 3. `StructuralError` when the prompt's purpose isn't the recipe's.
 4. Fills the inserts: `output_guidance` with `Output.guidance_text()`, `tool_guidance` with the toolset's guidance
    (`""` when absent). `StructuralError` when a guidance is inserted in both the instructions and the prompt. A
@@ -630,33 +553,15 @@ Built (agents/wip-engine-part.md, stage 2): translations are read only with `int
 7. Returns the skeleton with the recipe's purpose, the translated appendix layout, and the toolset's tools and
    `max_rounds`.
 
-```
-AGENT: replace
-Built (agents/wip-engine-part.md, stage 2): `into` is part of what gives the same skeleton. The paragraph.
----
 The same recipe, compiler, facts and `into` always give the same skeleton. The engine reaches the skeleton only
 through its model's facts, so engines of one model give one skeleton, and without intents every engine does. Compiled
 as written, how a chunk splits its text doesn't change the skeleton.
-```
-The same recipe, compiler and facts always give the same skeleton. The engine reaches the skeleton only through its
-model's facts, so engines of one model give one skeleton, and without intents every engine does. Without
-translations, how a chunk splits its text doesn't change the skeleton.
 
-```
-AGENT: replace
-Built (agents/wip-engine-part.md, stage 2): compiling into a language, recorded as `Compilation.into`. The heading and
-the paragraph.
----
 ### `compiled(recipe, get, compiler, facts=None, into=None) -> tuple[Skeleton, Compilation]`
 A recipe compiled by `compiler`, the running code, against `facts`, as written or into `into` (`compile_request`),
 with the compilation that records what the skeleton was compiled from: the recipe, the skeleton, `compiler`,
 `facts.digest` when the recipe asks for an intent (`landings` lands a level or a recommended sampling), else `None`,
 and `into`.
-```
-### `compiled(recipe, get, compiler, facts=None) -> tuple[Skeleton, Compilation]`
-A recipe compiled by `compiler`, the running code, against `facts` (`compile_request`), with the compilation that
-records what the skeleton was compiled from: the recipe, the skeleton, `compiler`, and `facts.digest` when the recipe
-asks for an intent (`landings` lands a level or a recommended sampling), else `None`.
 
 ### `landings(recipe: Recipe, get: Resolver, facts: ModelFacts | None) -> tuple[Landing | None, Landing | None]`
 Where the recipe's intents land on `facts`: the reasoning level's landing, and the landing a recommended sampling

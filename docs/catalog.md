@@ -135,13 +135,6 @@ or score, its *subject*. A run or a score has to have started before anything ca
 For each field the latest entry wins, and for tags and collaborators, the latest entry about each tag and each
 collaborator. A subject nothing has been said about has no name, no owner, and nothing else.
 
-```
-AGENT: add
-Built (agents/wip-engine-part.md, stage 2): the runs started together, a run per language, are kept together by a `with`
-entry (take G1). A row at the end of the table.
----
-| With | the first run of the start a run is one of, only on a run | nothing: it can only be replaced | see "What a run ran" |
-```
 | Field | Holds | Removed by | Used for |
 | --- | --- | --- | --- |
 | Name | a text, not empty | an entry without a text; the title takes over | titles, and looking threads up |
@@ -153,16 +146,10 @@ entry (take G1). A row at the end of the table.
 | Language | a language, only on a family | nothing: it can only be replaced | see "Languages" |
 | Varied | an edit of a configuration, only on a run | nothing: it can only be replaced | see "What a run ran" |
 | Replaced | a part and the chunk or engine it was set to, or none; a run has one per part | nothing: it can only be replaced | see "What a run ran" |
+| With | the first run of the start a run is one of, only on a run | nothing: it can only be replaced | see "What a run ran" |
 
-```
-AGENT: replace
-Built (agents/wip-engine-part.md, stage 2): the `with` entry is on runs only. The paragraph.
----
 Every field but the language, the varied edit, the replaced parts and the run a run was started with can be said
 about any subject. The fields the catalog doesn't use itself are for people and the portal.
-```
-Every field but the language, the varied edit and the replaced parts can be said about any subject. The fields the
-catalog doesn't use itself are for people and the portal.
 
 ### Names
 A name is for people. None is required, and names needn't be unique: a thread without one is shown by its title (see
@@ -201,34 +188,16 @@ with them; loading the sample data again restores a deleted fork rather than for
 What the portal hides is open (see "Open design issues").
 
 ### What a run ran
-```
-AGENT: replace
-Built (agents/wip-engine-part.md, stage 2): a start is a run per language, kept together by `with`; running again
-doesn't copy it. The paragraph.
----
 The ledger records the trial a run ran (docs/ledger.md); what a person called it and what they varied are said here.
 As a run starts, the bench names it by its variation's label and says what it varied: the configuration's edit it
 was built on, and each part replaced over it, by the chunk or engine it was set to, or none for a part taken out. A
 start over cases in several languages is a run per language (docs/bench.md), and each run after the first says the
 first, the run it was started *with*, so the runs of one start are found together. A run started from a trial alone,
 as the runner starts one, says none of it. Running again says what the run it repeats varied, and starts alone.
-```
-The ledger records the trial a run ran (docs/ledger.md); what a person called it and what they varied are said here.
-As a run starts, the bench names it by its variation's label and says what it varied: the configuration's edit it
-was built on, and each part replaced over it, by the chunk or engine it was set to, or none for a part taken out. A run
-started from a trial alone, as the runner starts one, says neither. Running again says what the run it repeats said.
 
-```
-AGENT: replace
-Built (agents/wip-engine-part.md, stage 2): the database holds a `with` entry to a run that has started. The paragraph.
----
 So a run of a variation nobody saved links the configuration it came from, while the ledger keeps what was sent. The
 database holds a varied edit to a configuration's, a replaced part's chunk to a stored one of that part, a replaced
 engine to a stored engine, and the run a run was started with to one that has started.
-```
-So a run of a variation nobody saved links the configuration it came from, while the ledger keeps what was sent. The
-database holds a varied edit to a configuration's, a replaced part's chunk to a stored one of that part, and a
-replaced engine to a stored engine.
 
 ## Titles
 Anything without a name is shown by a *title*, built when asked and never stored.
@@ -258,13 +227,6 @@ of its digest: "generation configuration 1a2b3c".
 
 Each kind is described by:
 
-```
-AGENT: replace
-Built (agents/wip-engine-part.md, stage 2): a translations chunk holds every language it translates into. The
-`Translations chunk` row.
----
-| Translations chunk | The languages it translates into, and its size, the texts of the language with the most. | `translations into de, sv, 12 texts` |
-```
 | Component | Described by | Example |
 | --- | --- | --- |
 | Chunk | Its values or the opening words of its text. | `temperature 1.0, top_p 1.0` or `"{vignette}{appendices}"` |
@@ -274,7 +236,7 @@ Built (agents/wip-engine-part.md, stage 2): a translations chunk holds every lan
 | Chunk (output) | Its contract, and its schema's title or properties. | `native output: management_plan_v1` |
 | Chunk (toolset) | Its tools. | `with web_search` |
 | Chunk (passthrough) | The options it sets. | `passthrough: logprobs, top_logprobs` |
-| Translations chunk | Its language and size. | `sv translations, 12 texts` |
+| Translations chunk | The languages it translates into, and its size, the texts of the language with the most. | `translations into de, sv, 12 texts` |
 | Tool | Its name. | `web_search` |
 | Appendix | The opening words of its text. | `"Lab results: CRP 180 mg/L, lactate 2.8…"` |
 | Expectation | Its case. | `expectation for Dutchfall11w` |
@@ -350,16 +312,9 @@ a new family by adopting it, and its names are carried over by hand. The databas
 each new binding to the previous one's id or content.
 
 ## Languages
-```
-AGENT: replace
-Built (agents/wip-engine-part.md, stage 2): the bench sends each case in its family's language. The paragraph.
----
 The rig never tells a model which language a request is in; what is sent is simply in a language. The catalog records
 which one, so that each case is sent in its own language (docs/bench.md) and lints can check that a trial doesn't mix
 languages (docs/factors.md, "Lints").
-```
-The rig never tells a model which language a request is in; what is sent is simply in a language. The catalog records
-which one, so that lints can check that a trial doesn't mix languages (docs/factors.md, "Lints").
 
 A language is a tag such as "sv" or "pt-BR". It can be replaced but not removed, and the latest wins. It is kept in one
 of two places:
@@ -368,53 +323,26 @@ of two places:
   changing one component's language touches no other. A new version has no language until someone gives it one; the
   portal can offer the previous version's.
 
-```
-AGENT: replace
-Built (agents/wip-engine-part.md, stage 2): a translations chunk names its languages, and takes no language row. The
-paragraph.
----
 Only components whose language is their own can have one: the chunks that hold text sent to a model (instructions,
 few-shot, prompt, output and toolset) and hand-written skeletons. A translations chunk names the languages it
 translates into itself, and has none of its own. A compiled skeleton's language comes from its compilations.
-```
-Only components whose language is their own can have one: the chunks that hold text sent to a model (instructions,
-few-shot, prompt, output, toolset, and translations, whose language is the one they translate into) and hand-written
-skeletons. A compiled skeleton's language comes from its recipe.
 
 The language of any component can be worked out:
 - a case's is its family's, and an expectation's is its case's.
 - a trial's and a judge's are their skeleton's.
 - a configuration's version's comes from the recipe its edit names, when it names one, so two configurations that
   hold one skeleton can be in two languages.
-```
-AGENT: replace
-Built (agents/wip-engine-part.md, stage 2): a compilation into a language is in that language, and translations no
-longer vote. The item.
----
 - a compiled skeleton's comes from its compilations: one compiled into a language is in that language, and one as
   written in the language its recipe votes for, the one all its text-bearing chunks share, toolset included and
   appendix layout not. Translations don't vote. A recipe whose chunks lack a language or disagree doesn't vote. When
   the compilations disagree, the skeleton has no language.
-```
-- a compiled skeleton's comes from its recipes, which vote. A recipe with translations votes for the translations'
-  language. A recipe without translations votes for the language that all its text-bearing chunks share, toolset
-  included and appendix layout not. A recipe whose chunks lack a language or disagree doesn't vote. When the votes
-  disagree, the skeleton has no language.
 - a chunk's and a hand-written skeleton's are their own.
 
 An unknown or disagreeing language gives none.
 
-```
-AGENT: replace
-Built (agents/wip-engine-part.md, stage 2): a configuration is translated, not made again in another language. The
-paragraph.
----
 Vignettes are never translated: a case runs in the language it was written in. So the request follows the case (a
 Swedish case runs under its configuration translated into Swedish; docs/factors.md, "Translations"), and comparing
 languages means comparing case sets.
-```
-Vignettes are never translated: a case runs in the language it was written in. So the request follows the case (a
-Swedish case runs under a Swedish-translated configuration), and comparing languages means comparing case sets.
 
 ## Storage
 The catalog is a schema of its own (docs/store.md; tables in docs/migrations.md, "catalog"), with a table each for
@@ -476,15 +404,8 @@ writes at the same moment can leave a person several expectations to choose from
 - **A thread without versions** is possible in the database, and so is a family without bindings; the catalog writes
   each together with its first. A deferred constraint could rule them out at tier 2.
 - **A skeleton edit may leave out its compilation** even when one exists, and nothing can require it.
-```
-AGENT: replace
-Built (agents/wip-engine-part.md, stage 2): a compiled skeleton's language comes from its compilations. The item.
----
 - **A language on a skeleton that is compiled later** is ignored from then on, since the skeleton's language comes from
   its compilations.
-```
-- **A language on a skeleton that is compiled later** is ignored from then on, since the skeleton's language comes from
-  its recipe.
 - **What deleting hides in the portal**: everywhere, or only in pickers, while the runs that used it stay visible.
 - **Who changed an entry or a language isn't shown.** Every row records who wrote it and when, but for these only
   what holds now is shown.
@@ -507,18 +428,9 @@ Built (agents/wip-engine-part.md, stage 2): a compiled skeleton's language comes
 - **Judges aren't checked for language.** A judge's language could be compared with the cases its scoring grades, the
   way lints check a trial's. An English judge grading Swedish answers may be intended, so it would be a notice rather
   than a warning.
-```
-AGENT: replace
-Built (agents/wip-engine-part.md, stage 2): names carry no language, so the repl's label has none. The item.
----
 - **A variation nobody saved has a long title.** It is described by its whole recipe:
   "case · diagnoses-tool · recommended · off · qwen3-8b@pelle", where the repl called it
   "diagnoses-tool+reasoning=off": the configuration it came from and the parts set over it. A run of one is
-  named so and says what it varied (see "What a run ran"), but its skeleton is still titled by its recipe.
-```
-- **A variation nobody saved has a long title.** It is described by its whole recipe:
-  "case · diagnoses-tool · recommended · off · qwen3-8b@pelle", where the repl called it
-  "diagnoses-tool (en)+reasoning=off": the configuration it came from and the parts set over it. A run of one is
   named so and says what it varied (see "What a run ran"), but its skeleton is still titled by its recipe.
 - **What a fork varies is compared by recipe.** A variation with a part replaced is compiled whole by the running code
   and against the facts as they are stored then (docs/bench.md, "The variation being tried"), so after a change to the

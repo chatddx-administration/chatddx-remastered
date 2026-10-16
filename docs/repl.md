@@ -49,37 +49,16 @@ as a note rather than a failure, so a piped session goes on; the cell changes al
 Lints warn and never refuse (docs/chatddx.md, "Compromises").
 
 ### Names
-```
-AGENT: replace
-Built (agents/wip-engine-part.md, stage 2): a configuration is one thread, written in one language and translated
-into others; names carry no language and `catalog/variants.py` is gone. The paragraph.
----
 A configuration is a thread written in one language, which its translations carry into others (docs/curation.md,
 "Texts"), so it is one thread whatever the languages its cases are in, `plan`; its engine is a part, and its name
 carries neither a model nor a language. A name is looked for as given: `plan (en)` and `free-text-guided sv` name
 nothing.
-```
-Texts are made per language (docs/curation.md), so a configuration is a thread per language it is written in,
-`plan (en)`; its engine is a part, and its name carries no model. A name is looked for as given, and else as the one
-variant of it in a language, `NAME (LANGUAGE)` (`catalog/variants.py:variants_for`). A name ending in a language,
-`free-text-guided sv` or `free-text-guided (sv)`, narrows the variants to it (`language_of`). Variants in several
-languages are refused, saying how to name one: `name one as 'free-text-guided en' or 'free-text-guided sv'`.
 
-```
-AGENT: replace
-Names carry no language, so `use plan` holds `plan`. The paragraph.
----
 The cell holds the configuration a name finds, by the name it is found under (`TriedVariation.name`), and nothing
 is picked again by name. `on ENDPOINT` puts the engine the endpoint serves in the cell's configuration, as `set
 engine` would, and keeps every part set on it, worked out again for the new engine's model; `use` and `cell` put the
 named endpoint's engine in the configuration they put in. An endpoint serving the configuration's own engine unsets
 the part (see "Parts").
-```
-The cell holds the configuration a name finds, by the name it is found under (`TriedVariation.name`): `use plan`
-holds `plan (en)`, and nothing is picked again by name. `on ENDPOINT` puts the engine the endpoint serves in the
-cell's configuration, as `set engine` would, and keeps every part set on it, worked out again for the new engine's
-model; `use` and `cell` put the named endpoint's engine in the configuration they put in. An endpoint serving the
-configuration's own engine unsets the part (see "Parts").
 
 Names hold spaces and need no quotes: a command's last name takes the rest of the line, and `cell` takes its endpoint
 from the last word. `run` takes a seed only as a whole number after a case's title.
@@ -99,12 +78,6 @@ set, the compilation is written with the running code as compiler. The cell then
 
 ## Looking
 Nothing here is sent anywhere.
-```
-AGENT: replace
-Built (stage 2): `show` says the languages its cases are sent in before the lints (`inspecting.py:_carried`), and
-the lints are per language, the cases left out said as `translations.missing`; a trial no longer mixes languages.
-The bullet.
----
 - **`show`** is the cell: each part with its chunk's title and what it is (`catalog/titles.py:describe`), the engine
   among them; the level a reasoning level landed on, when the engine's model is asked for another, as `reasoning off
   → low`, with why for a nearest, `its nearest: always reasons: …`; the level a recommended sampling follows, as
@@ -117,16 +90,6 @@ The bullet.
   `translations.missing`, and per scorer view how many cases it can hold the cell to: a case has it when the
   expectation the person is scored against gives the view's expectation selector something to pick, and the view is
   offered by the cell's output (see "Scoring").
-```
-- **`show`** is the cell: each part with its chunk's title and what it is (`catalog/titles.py:describe`), the engine
-  among them; the level a reasoning level landed on, when the engine's model is asked for another, as `reasoning off
-  → low`, with why for a nearest, `its nearest: always reasons: …`; the level a recommended sampling follows, as
-  `recommended sampling, for reasoning on`; the endpoint the cell runs at and the name its engine is served under; the messages
-  rendered with placeholder fills (`‹vignette›`), and the body, with the output's schema and the tools' parameters
-  left to `show output` and `show tool`. A greedy cell says its seed isn't sent. Then the lints of a trial of the cell
-  and every case it counts, so a language mismatch shows, and per scorer view how many cases it can hold the cell to:
-  a case has it when the expectation the person is scored against gives the view's expectation selector something to
-  pick, and the view is offered by the cell's output (see "Scoring").
 - **`show tag TAG...`** is the same over the cases with any of the tags, those `run tag` would run.
 - **`show KIND [NAME]`** is a component the person sees, by kind and name, or the cell's own: its fields, digests in
   them titled, its catalog entries, and a summary of the person's runs with it. Runs are found through compilations
@@ -140,22 +103,12 @@ The bullet.
   (`Bench.case_titled`): a family's name for its case, or `FAMILY with APPENDIX, …` as the catalog titles a case that
   sends appendices (docs/catalog.md, "Titles"). Such a case shows its appendices' texts and its own expectation; a
   family's case names the family's appendices and the cases that send them.
-```
-AGENT: replace
-Built (stage 2): a row per configuration, with a `languages` column, and NAME matched exactly (`listing.py`). The
-bullet.
----
 - **`configurations [NAME]`** lists a row per configuration name: the languages it can be sent in, its own first
   (`catalog/language.py:edit_languages`), then those its translations cover (`Bench.translated`), as `en, sv`, or
   `—`; each part as its chunk's title, the engine last, or `differs` where configurations of one name differ; and its
   owner; a fork reads `yours, from OWNER`, and the origin it forks is left out. Judge configurations follow, in a
   table of their own. With NAME, the configurations of exactly that name, a row each with its languages, parts and
   owner.
-```
-- **`configurations [NAME]`** lists a row per configuration name and language: each part as its chunk's title, the
-  engine last, or `differs` where configurations of one name and language differ, and its owner; a fork reads
-  `yours, from OWNER`, and the origin it forks is left out. Judge configurations follow, in a table of their own. With
-  NAME, the configurations of that name, or made from it in a language, a row each with its parts and owner.
 - **`endpoints`** lists the World's endpoints: engine, model, URL and the sources each is cleared for.
 - **`cases`** lists the person's cases, and how many carry each tag.
 - **`reasoning`** is a table of every reasoning level, `default` first, on every model the stored facts know, headed
@@ -173,11 +126,6 @@ seed: drawn below 100,000 for a readable prompt, and held from 0 to 2³¹−1. O
 (docs/factors.md, "Rendering"); the shell says so and runs, and the trial holds the seed all the same.
 
 ### A run
-```
-AGENT: replace
-Built (stage 2): the case is sent in its own language, as `Bench.start` sends it (`running.py:_sent_in`). The
-paragraph.
----
 `run CASE [SEED]` makes a trial of the cell's skeleton, its engine, one case and one seed, the shell's unless one is
 given, and starts it at the endpoint the cell runs at (see "The cell"; docs/runner.md, "A run"). The case is sent in
 its own language (`Bench.start`, docs/bench.md): as written, in the configuration's own or a case of none, or
@@ -187,12 +135,6 @@ translations into sv`. The trial is stored and not threaded: a thread per trial 
 variation's compilation is stored before its run, with the running code as compiler, as a translated skeleton's is,
 so the run's skeleton keeps a recipe and a title. The gate refuses before anything is written (docs/runner.md, "The
 gate"), said as `refused: …`.
-```
-`run CASE [SEED]` makes a trial of the cell's skeleton, its engine, one case and one seed, the shell's unless one is
-given, and starts it at the endpoint the cell runs at (see "The cell"; docs/runner.md, "A run"). The trial is stored
-and not threaded: a thread per trial would flood the catalog. An unsaved variation's compilation is stored before its
-run, with the running code as compiler, so the run's skeleton keeps a recipe and a title. The gate refuses before
-anything is written (docs/runner.md, "The gate"), said as `refused: …`.
 
 The transcript streams the thinking, labelled, then the answer, each tool call as `[name] arguments` with its
 `[result]`, and the tokens used. Trailing whitespace is left out, so a runaway's newlines don't fill the screen. The
@@ -203,11 +145,6 @@ by the first label that makes it, and a label used again gets its scorer's name;
 isn't listed, as the transcript holds it.
 
 ### A run of tagged cases
-```
-AGENT: replace
-Built (stage 2, G1): a start is a run per language, run in turn (`running.py:tagged`), and the cases left out are
-said. The paragraph.
----
 `run tag TAG...` starts the cases with any of the tags under the shell's seed (`Bench.start`, docs/bench.md): a run
 per language they are in, each a trial of its own, the configuration's own language first, as written, then each its
 translations cover, translated. The runs go in turn, each titled with its cases and, when there are several or it is
@@ -216,11 +153,6 @@ digest (docs/factors.md, "Execution"), a line each, counting its tokens as it st
 Each run is then scored, and a table gives each case's value per view, by case title, and a summary per view. The
 cases left out are said last, in yellow, `left out: 20 cases in sv, as plan has no translations into sv`; with every
 case left out, nothing starts: `no case can be sent: plan has no translations into sv`.
-```
-`run tag TAG...` makes one trial of the cases with any of the tags and the shell's seed, so one run. The cases go in
-the trial's order, by digest (docs/factors.md, "Execution"), a line each, counting its tokens as it streams and then
-saying how it went. The run is then scored, and a table gives each case's value per view, by case title, and a
-summary per view.
 
 ### Outcomes
 An item's outcome comes from its last call and its answer, read by the skeleton's contract (docs/factors.md,
@@ -236,19 +168,9 @@ An item's outcome comes from its last call and its answer, read by the skeleton'
 The call's error goes with the outcome, as `completed: Unfinished: the stream ended before [DONE]`.
 
 ### Stopping
-```
-AGENT: replace
-Built (stage 2): a press that stops one run of a start stops the runs after it, which send nothing
-(`Running.stop`). The paragraph.
----
 In `run`, Ctrl-C hangs the call up, and the item is recorded as stopped. In `run tag`, a first press lets the case
 under way finish and then stops, and a second hangs that call up too (docs/runner.md, "Stopping"); either stops the
 runs of the languages after it too, which send nothing and are finished and scored as they are. While a run is
-finished and scored, a first press waits, saying so; a second stops the scoring: the scorer under way finishes its
-score with what it has, those after it are refused as stopped, and the shell says `score` scores what is left.
-```
-In `run`, Ctrl-C hangs the call up, and the item is recorded as stopped. In `run tag`, a first press lets the case
-under way finish and then stops, and a second hangs that call up too (docs/runner.md, "Stopping"). While a run is
 finished and scored, a first press waits, saying so; a second stops the scoring: the scorer under way finishes its
 score with what it has, those after it are refused as stopped, and the shell says `score` scores what is left.
 
@@ -282,20 +204,10 @@ its scoring as it would be built now: the scorer, and the person's own expectati
   outcome says them.
 
 ## Looking back
-```
-AGENT: replace
-Built (stage 2): what ran says the language of a translated run, `20 cases, in sv, translated` (`Seen.described`).
-The bullet.
----
 - **`runs [COUNT]`** lists the person's runs, newest first, the last 20 or COUNT: the run's and the trial's ids,
   when, what ran (configuration, endpoint, the case or how many, the language a translated run was sent in, the
   seeds), how it went (the one item's outcome, or a count of each; `unfinished` without a finish record), and per
   scorer the latest score's view means, as `plan 1/1/1/—`.
-```
-- **`runs [COUNT]`** lists the person's runs, newest first, the last 20 or COUNT: the run's and the trial's ids,
-  when, what ran (configuration, endpoint, the case or how many, the seeds), how it went (the one item's outcome, or a
-  count of each; `unfinished` without a finish record), and per scorer the latest score's view means, as
-  `plan 1/1/1/—`.
 - **`replay [RUN]`** shows the latest run, or the one an id prefix names: when, whether it finished, the address it
   ran at, and on which chatddx. The request isn't stored (docs/ledger.md, "Some of what happened isn't checked"), so
   each item's first request is rendered again from the trial and the source and held to its fingerprint, saying when
@@ -310,21 +222,10 @@ The bullet.
   a case, it names them, and `take from OWNER` takes theirs.
 
 ## Completion
-```
-AGENT: replace
-Names carry no language, so every name is offered as it is (`Bench.names`); `shell.py:_by_name` is gone. The
-paragraph.
----
 Tab completes a command, then its names, word by word, from what the person sees: configurations, chunks and engines
 by their names; cases by name and the titles of those that send appendices; endpoints, parts, kinds, and tags, each
 once. `replay` completes the latest 20 runs' ids, and `score` the runs left to score, both fresh at each Tab. The rest
 is read once, and again after a `save`.
-```
-Tab completes a command, then its names, word by word, from what the person sees: configurations, chunks and engines
-by their names, a name made in one language alone without it (`plan` for `plan (en)`), and those made in several by
-their whole names, `free-text-guided (sv)`, whose bare name isn't offered; cases by name and the titles of those that
-send appendices; endpoints, parts, kinds, and tags, each once. `replay` completes the latest 20 runs' ids, and `score`
-the runs left to score, both fresh at each Tab. The rest is read once, and again after a `save`.
 
 ## Terms
 
@@ -333,14 +234,8 @@ the runs left to score, both fresh at each Tab. The rest is read once, and again
 | Repl, shell | `chatddx repl`, for one person over a World. |
 | Cell | What the shell runs: a configuration, its engine one of its parts, and the endpoint named for it, if any. |
 | Variation | A configuration thread's edit with parts set on it, as the cell holds it. |
-```
-AGENT: replace
-Variants are gone (stage 2): a configuration is one thread, translated into others' languages. The row.
----
 | Translated | A run whose skeleton is the configuration's compiled into its cases' language by its translations. |
 | Left out | Cases in a language the configuration's translations don't cover: said, and not sent. |
-```
-| Variant | A configuration or chunk made in one language, named after it: `plan (en)`. |
 | Case title | A family's name, or `FAMILY with APPENDIX, …` for a case that sends appendices. |
 | Outcome | How an item went, from its last call and its answer. |
 | Salvaged | A structured answer cut short, read with its structure closed. |
@@ -365,15 +260,6 @@ Variants are gone (stage 2): a configuration is one thread, translated into othe
 
 ## Outstanding
 Suggested, and left for later:
-```
-AGENT: remove
-Built (agents/wip-engine-part.md, stage 2): each case is sent in its own language, a run per language. The item.
-```
-- **The language of a run.** A run is in its configuration's language, and nothing picks it from the cases: a run
-  over Swedish cases under an English configuration runs them in English, and only `language.mixed` warns.
-  docs/catalog.md, "Languages", has the request follow the case. Stage 2 of agents/wip-engine-part.md takes it up: a
-  configuration written in one language carries its translations into others, and `run tag` over cases in several
-  languages is a run per language, each under the translations into it.
 - **`diagnoses` applies to a plan**, since a plan's `$.diagnoses[*]` reaches its schema, but the items are objects, so
   its differential lists them as JSON and scores their text. A reach that knew the type of what a view picks would leave
   it out, as `View.offered_by` leaves whole-answer views out of structured runs.

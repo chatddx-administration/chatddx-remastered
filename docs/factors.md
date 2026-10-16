@@ -74,18 +74,9 @@ A component is written out in one fixed way, its *canonical form*, so that equal
 Its digest is the hash of those bytes, and components are told apart, and referred to, by it.
 
 The canonical form keeps what means something and drops what doesn't:
-```
-AGENT: replace
-Built (agents/wip-engine-part.md, stage 2): a translations chunk holds its entries per language, and both are put in
-order. The item.
----
 - Order that means nothing doesn't change a digest. The keys of settings (request options, chat-template arguments,
   parameters, environment variables), a translations chunk's languages and each language's entries, a model's files
   and a trial's cases are put in a fixed order, so equivalent components share a digest.
-```
-- Order that means nothing doesn't change a digest. The keys of settings (request options, chat-template arguments,
-  parameters, environment variables, translation entries), a model's files and a trial's cases are put in a fixed order,
-  so equivalent components share a digest.
 - Order that means something is kept. A schema's property order is part of what a model reads, so JSON data keeps its
   order, and so do lists whose order carries meaning, such as a case's appendices, a trial's seeds and a scorer's views.
 - Adding a field whose default keeps the old behavior changes no existing digest, since values equal to their defaults
@@ -274,30 +265,16 @@ Chunks affect each other only in a few fixed ways, all decided in code:
 - The toolset's guidance does the same, after the output's.
 - A toolset adds tools to the request, which changes how the output contract is expressed (see "Recipe and
   compilation").
-```
-AGENT: replace
-Built (agents/wip-engine-part.md, stage 2): every text is translated, and only when the recipe is compiled into a
-language. The item.
----
 - Compiled into a language, translations replace every text the other chunks and the appendix layout bring (see
   "Translations").
-```
-- Translations replace the text the output, the toolset and the appendix layout bring (see "Translations").
 - Greedy sampling drops the settings that only matter when sampling, and no seed is sent.
 - A reasoning level and a recommended sampling send what the facts about the recipe's engine's model say; the engine
   changes the skeleton in no other way.
 - A recommended sampling follows the reasoning level the recipe asks for, where it lands, or the model's default level
   when the reasoning chunk asks for none or the recipe has none.
 
-```
-AGENT: replace
-Built (agents/wip-engine-part.md, stage 2): a recipe compiled as written leaves its translations unread. The paragraph.
----
 Compiled as written, how a chunk splits its text never changes the skeleton. Compiled into a language it can, since
 each text is looked up exactly as the chunk holds it.
-```
-Without translations, how a chunk splits its text never changes the skeleton. With translations it can, since each text
-is looked up exactly as the chunk holds it.
 
 ### Instructions
 Principal author: researchers.
@@ -393,22 +370,10 @@ instructions, following the output's guidance.
 ### Translations
 Principal author: researchers (translators).
 
-```
-AGENT: replace
-Built (agents/wip-engine-part.md, stage 2): one translations chunk holds every language (take T1). The paragraph.
----
 Translations map source texts to their translations, the way gettext does, into one language or several. For each
 language, each entry is a text exactly as a chunk holds it, whitespace included, and its translation. One chunk holds
 every language a configuration is translated into, so adding a language is a new version of it.
-```
-Translations map source texts to their translations, the way gettext does. Each entry is a text exactly as a chunk holds
-it, whitespace included, and its translation.
 
-```
-AGENT: replace
-Built (agents/wip-engine-part.md, stage 2): translations cover every text, and are read only when the recipe is compiled
-into one of their languages. The paragraph.
----
 A configuration is written in one language, its own, and its translations carry it into others. A recipe may name
 translations, and compiling it into one of their languages passes every text it holds through that language's
 entries: the instructions, the few-shot examples and the prompt, the guidance and the text around where it is placed,
@@ -417,27 +382,11 @@ layout. Compiled as written, the recipe leaves its translations unread. Cases ar
 What defines the answer's structure, such as property names and allowed values, is not translated, so the answer's
 structure and its scoring don't change. A recipe without translations into the language, or a text without a
 translation there, fails the compilation, which lists every missing text: nothing is guessed, and languages never mix.
-```
-A recipe may name translations, and compilation then passes the text of the output, the toolset and the appendix
-layout through them: the guidance and the text around where it is placed, the descriptions of tools and of the
-answer function, and the titles and descriptions in schemas. Instructions, examples and prompts are written in their
-language, as cases are, and pass through untouched. What defines the answer's structure, such as property names and
-allowed values, is not translated, so the answer's structure and its scoring don't change. A text without a
-translation fails the compilation, which lists every missing text: nothing is guessed, and languages never mix.
 
-```
-AGENT: replace
-Built (agents/wip-engine-part.md, stage 2): translations name their languages, and a compilation the one it was compiled
-into. The paragraph.
----
 Translations name the languages they translate into, as tags such as `sv` or `pt-BR`. A request's language is still
 implicit in its text, and no language tag reaches the model; the languages of the texts a configuration is written in
 are recorded in the catalog (docs/catalog.md, "Languages"). The skeleton holds the translated text, and its
 compilation keeps the recipe, which names the translations, and the language it was compiled into.
-```
-Translations carry no language. A request's language is implicit in its text, and no language tag reaches the model;
-languages are recorded in the catalog (docs/catalog.md). The skeleton holds the translated text, and its compilation
-keeps the recipe, which names the translations.
 
 ### Recipe and compilation
 Principal author: researchers.
@@ -445,93 +394,42 @@ Principal author: researchers.
 A recipe is not a component. It holds a purpose and an appendix layout, a prompt, an output, a sampling chunk and an
 engine, and optionally instructions, few-shot examples, reasoning, a passthrough, translations and a toolset.
 
-```
-AGENT: replace
-Built (agents/wip-engine-part.md, stage 2): a recipe compiles as written or into a language, and fails when its
-translations can't carry it there. The paragraph.
----
 Compiling a recipe gives a skeleton, of the recipe as written or translated into one of its translations' languages.
 It reads the facts about the engine's model for the chunks that ask for an intent, and fails on a missing or wrongly
 typed chunk or engine, a prompt whose purpose differs from the recipe's, translations that don't go into the language
 asked for or a text they leave untranslated, a guidance placed in both the instructions and the prompt, an answer
 function named like one of the toolset's tools, an intent the facts refuse or know nothing of, an intent on an engine
 whose model has no facts, and facts about another model than the engine's.
-```
-Compiling a recipe gives a skeleton. It reads the facts about the engine's model for the chunks that ask for an
-intent, and fails on a missing or wrongly typed chunk or engine, a prompt whose purpose differs from the recipe's, a
-missing translation, a guidance placed in both the instructions and the prompt, an answer function named like one of
-the toolset's tools, an intent the facts refuse or know nothing of, an intent on an engine whose model has no facts,
-and facts about another model than the engine's.
 
 With a toolset, the request offers the toolset's tools, in order. Under a native or a text contract, the model answers
 when it stops calling tools. Under a tool contract, the answer function is offered last, every response calls a tool,
 and calling the answer function ends the item.
 
-```
-AGENT: replace
-Built (agents/wip-engine-part.md, stage 2): the compilation names the language compiled into, and a recipe compiles to a
-skeleton per language. The paragraph.
----
 The recipe is kept only in the compilation, next to the compiler's version, the facts compiled against and the
 language compiled into (see "Compilation"). Trials reference the skeleton, not the recipe, so neither the compiler's
 code nor the facts are a separate factor: whatever they did is frozen in the skeleton. The engine changes a skeleton
 only through the facts about its model, so a recipe compiles to one skeleton per language on every engine of one
 model, and, without intents, on every engine.
-```
-The recipe is kept only in the compilation, next to the compiler's version and the facts compiled against (see
-"Compilation"). Trials reference the skeleton, not the recipe, so neither the compiler's code nor the facts are a
-separate factor: whatever they did is frozen in the skeleton. The engine changes a skeleton only through the facts
-about its model, so a recipe compiles to one skeleton on every engine of one model, and, without intents, on every
-engine.
 
 ### Compilation
 Principal author: none; written by the compiler.
 
-```
-AGENT: replace
-Built (agents/wip-engine-part.md, stage 2): `Compilation.into`, the language compiled into (version 3). The paragraph.
----
 A compilation says that a recipe compiled to a skeleton. It holds the recipe, the skeleton, the version of the
 compiler, the language it was compiled into, none for the recipe as written, and the facts it was worked out from:
 none when the recipe asks them for nothing, a literal sampling and reasoning, since such a skeleton is the same on
 every model. It is the only place a recipe is kept, and so the lineage from the chunks written in the portal to the
 frozen request.
-```
-A compilation says that a recipe compiled to a skeleton. It holds the recipe, the skeleton, the version of the
-compiler and the facts it was worked out from: none when the recipe asks them for nothing, a literal sampling and
-reasoning, since such a skeleton is the same on every model. It is the only place a recipe is kept, and so the lineage
-from the chunks written in the portal to the frozen request.
 
-```
-AGENT: replace
-Built (agents/wip-engine-part.md, stage 2): the language compiled into is part of what gives the same compilation. The
-paragraph.
----
 A compilation is provenance, not a factor: no component refers to it, so it changes no digest and no output. Trials and
 judges reference the skeleton, which holds whatever the compiler did. The same recipe compiled by the same compiler
 against the same facts into the same language always gives the same compilation. Different recipes can give the same
 skeleton (see "How chunks affect each other"), a recipe on two engines of one model among them, so a skeleton may have
 several compilations, and a hand-written one has none.
-```
-A compilation is provenance, not a factor: no component refers to it, so it changes no digest and no output. Trials and
-judges reference the skeleton, which holds whatever the compiler did. The same recipe compiled by the same compiler
-against the same facts always gives the same compilation. Different recipes can give the same skeleton (see "How
-chunks affect each other"), a recipe on two engines of one model among them, so a skeleton may have several
-compilations, and a hand-written one has none.
 
-```
-AGENT: replace
-Built (agents/wip-engine-part.md, stage 2): a compilation's check also refuses a language its recipe's translations
-don't go into. The paragraph.
----
 A bundle carries a compilation when it is one of the roots, and the chunks, the engine and the facts then come with
 it, so the bundle shows how its skeleton was made. Nothing checks that the recipe compiles to the skeleton, only that
 the compilation's facts are about the recipe's engine's model, and that the recipe's translations go into the
 language it names.
-```
-A bundle carries a compilation when it is one of the roots, and the chunks, the engine and the facts then come with
-it, so the bundle shows how its skeleton was made. Nothing checks that the recipe compiles to the skeleton, only that
-the compilation's facts are about the recipe's engine's model.
 
 ### Skeleton
 Principal author: none; normally produced by the compiler.
@@ -833,15 +731,8 @@ changes the shape of a trial, so it is cheapest decided before trials are stored
 ### Smaller issues
 - **One split.** A free-text answer is broken into items only as the lines of a list (`lines@1`), so a scorer can't
   read one written otherwise, as prose or with items on one line.
-```
-AGENT: replace
-Built (agents/wip-engine-part.md, stage 2): few-shot chunks are translated now, each example as one text. The item.
----
 - **Few-shot answers in JSON are translated whole.** An example is one text, so an assistant example that is a JSON
   answer is translated as one entry, by hand, keeping its property names and allowed values as they are.
-```
-- **Few-shot answers in JSON are written whole.** A few-shot chunk is written in its language, so an assistant
-  example that is a JSON answer is translated by hand, keeping its property names and allowed values as they are.
 - **Resources can't be picked yet.** A scorer's resources are plain strings, no kind of component holds one, and the
   scoring code isn't given them. None are offered until a kind of resource exists, with its pins and code that reads
   it.

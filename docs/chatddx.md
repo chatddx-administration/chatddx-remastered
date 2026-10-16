@@ -50,14 +50,8 @@ It must be possible to deliver the cage together with the results, for scientifi
 - **Execution:** how a run sends its items, and a score its judge calls: order, concurrency, timeout, retries and the
   runaway cutoff.
 - **View:** the part of an output and of an expectation that a scorer scores, and how.
-```
-AGENT: replace
-Built (agents/wip-engine-part.md, stage 2): a compilation says the language it compiled into. The item.
----
 - **Compilation:** A provenance (component) that says which recipe, compiler and facts produced a skeleton, and the
   language it was compiled into, none for the recipe as written
-```
-- **Compilation:** A provenance (component) that says which recipe, compiler and facts produced a skeleton
 - **Run** and **Score:** a stage log.
 - **Worker:** the process that runs the trials queued for it, outside the request that asked for them.
 - **Job:** a started run or scoring queued for the worker, at its endpoint, for its owner, scored afterwards or not.
@@ -213,11 +207,6 @@ described below.
    chunk may ask for a level, and a Sampling chunk for the sampling the model's makers recommend, rather than say what
    is sent.
 
-```
-AGENT: replace
-Built (agents/wip-engine-part.md, stage 2): a recipe compiles as written, or into a language its translations
-cover. The item.
----
 2. The Recipe is compiled into a Skeleton, against the facts about its engine's model: a reasoning level asked for is
    sent as they say the model is asked for it, once it has collapsed into another or landed on its nearest, or is
    refused; a recommended sampling is what they recommend for the level the reasoning landed on, or for the model's
@@ -226,31 +215,13 @@ cover. The item.
    A Compilation notes which recipe produced which skeleton, against which facts, none for a model without facts, and
    into which language, none for the recipe as written; it is stored as a component, but isn't a factor. Two engines
    of one model compile a recipe to one skeleton.
-```
-2. The Recipe is compiled into a Skeleton, against the facts about its engine's model: a reasoning level asked for is
-   sent as they say the model is asked for it, once it has collapsed into another or landed on its nearest, or is
-   refused; a recommended sampling is what they recommend for the level the reasoning landed on, or for the model's
-   default level when the recipe asks for none. The Skeleton is stored as a frozen factor, holding:
-   A Compilation notes which recipe produced which skeleton, against which facts, none for a model without facts; it is
-   stored as a component, but isn't a factor. Two engines of one model compile a recipe to one skeleton.
 
 3. A Case is a vignette, named by its source, its id there and the fingerprint of its raw bytes, and a list of Appendix
    references.
 
-```
-AGENT: replace
-Built (agents/wip-engine-part.md, stage 2, G1 and M1): a start over cases in several languages is a trial and a run
-per language. The item.
----
 4. A Trial names a skeleton, an engine (LocalEngine or RemoteEngine), the case inputs, the text-cleanup steps and the
    seeds. A trial of a configuration with a recipe takes the recipe's engine, and its run goes to the endpoint serving
-   it. A vignette is never translated, so a trial's cases are in one language: a configuration started on cases in
-   several is a trial and a run per language, its own language's cases under the skeleton as written, another's under
-   the skeleton compiled into that language, and the cases of a language its translations don't cover left out.
-```
-4. A Trial names a skeleton, an engine (LocalEngine or RemoteEngine), the case inputs, the text-cleanup steps and the
-   seeds. A trial of a configuration with a recipe takes the recipe's engine, and its run goes to the endpoint serving
-   it.
+   it. Cases of a language its translations don't cover are left out.
 
 ### Per run
 1. The runner records a RunStarted row which holds the trial, the execution settings (Execution), the canary set, and the version of the rig code.

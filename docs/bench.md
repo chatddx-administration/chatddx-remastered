@@ -44,16 +44,8 @@ A thread or a family is found by its name, matched whole first, since names may 
 person's own win, else the ones shared with them. Several raise `Ambiguous`, which asks for `OWNER/NAME`; none raises
 `NotFound`.
 
-```
-AGENT: replace
-Names carry no language: `catalog/variants.py` is gone, and with it a plain name read as its one variant, and the `Ambiguous` "made in more than one language". The paragraph.
----
 A configuration's name carries no language: it is one thread, written in one language and translated into others
 (see "The languages it runs in"), so `plan` is found as any name is.
-```
-A thread made per language is found by its plain name too, `NAME (LANGUAGE)` (src/chatddx/catalog/variants.py), when
-it is made in one language alone. A name made in several languages is ambiguous, unless it names one, as
-`NAME LANGUAGE` or `NAME (LANGUAGE)`.
 
 ### Finding things by id
 By id, a thread, a family or a run is found only among what the person sees, and a thread only among the kinds its
@@ -134,19 +126,11 @@ For a variation, the bench gives:
 - **where its intents landed**: for a reasoning level and a recommended sampling, the level the engine's model is
   asked for, and why, when the facts land it on its nearest; read from the facts its compilation was compiled against
   when nothing is replaced;
-```
-AGENT: replace
-A look lints a trial per language its families' cases are sent in, and says the languages left out. The item, and a new one after it.
----
 - **its lints**, as a trial on an engine: the pair's checks, over any one case since they read none; with families,
   a trial for each language their cases are sent in, its skeleton in that language and its cases in theirs, and a
   `translations.missing` warning for each language left out, with why;
 - **the languages it runs in**, over some families: each language among their cases, with its cases and the
   skeleton they are sent as, or why they are left out (see "The languages it runs in");
-```
-- **its lints**, as a trial on an engine: the pair's checks, over any one case since they read none, and with
-  families, the languages of their cases too. An unsaved variation is linted in its recipe's language, since a
-  skeleton's language otherwise comes from its stored compilations;
 - **its reach**: for each view of each scorer the person sees, whether the variation's output offers what the view
   reads, and which of the given families have no expectation it picks something from, or several to choose from.
 
@@ -170,10 +154,6 @@ serves another is refused before the gate would refuse it. An engine no endpoint
 several serve, unless one of them is named (see "Outstanding"). A hand-written configuration has no engine part, and
 runs at the endpoint named.
 
-```
-AGENT: add
-How a variation is sent in its cases' languages (`Seen.languages`, `Carried`). A section before this heading.
----
 ### The languages it runs in
 A configuration is written in one language, its own: its recipe's texts' (docs/catalog.md, "Languages"), or a
 hand-written skeleton's own. Its translations carry it into others. Vignettes are never translated, so the request
@@ -189,7 +169,7 @@ When its own language is unknown, nothing says a case isn't in it, so a case of 
 goes as written too. A translated skeleton is compiled when a look or a run needs it, and its compilation is stored as
 a run starts on it, as a varied one's is, so that the run's skeleton has a language. A judge configuration reads no
 case, and runs in none.
-```
+
 ## Writes for the person
 The bench writes, in the person's name: configurations, chunks, appendices, expectations, scorers, judges, typed
 cases, what is said about a thread, runs and scores. Tools, expectation schemas, engines, models, the facts about
@@ -247,13 +227,9 @@ else holds too would change it for them. So the bench writes one only where the 
 differs from what it has; the person writes another text, or leaves it. A fork that changes nothing keeps its
 language, being the same digest.
 
-```
-AGENT: add
-A translations chunk keeps no language of its own (`LANGUAGE_KINDS`). A paragraph before this one.
----
 A translations chunk has no language of its own: it says the languages it translates into itself, so the bench
 refuses one given it, as it does for any component that isn't a text.
-```
+
 The bench doesn't carry the previous version's language over by itself: an edge offers it, and the person keeps it or
 changes it (docs/catalog.md, "Languages").
 
@@ -307,22 +283,12 @@ the bench stores when asked. An appendix's edit replaces only the cases at its o
 vignette awaits that replacement instead.
 
 ### Typed cases
-```
-AGENT: replace
-A typed case's language is required (`type_case`). The paragraph.
----
 A case can be typed rather than fetched from a directory: the text is kept in the database, in a source of the
 `database` kind (agents/wip-portal.md, "Typed cases"), under a new id and never changed, and its case and a family of
 the person's own are written with it, all at once, in the language the person says it is written in, and named when
 they say so. A typed case always has a language, since a configuration is sent in its case's (see "The languages it
 runs in"). It runs as any case: a vignette is fetched from its source, a directory's file or a database source's text,
 wherever the bench, the runner and the edges read one (src/chatddx/store/texts.py:fetch_vignette).
-```
-A case can be typed rather than fetched from a directory: the text is kept in the database, in a source of the
-`database` kind (agents/wip-portal.md, "Typed cases"), under a new id and never changed, and its case and a family of
-the person's own are written with it, all at once, named and in a language when they say so. It runs as any case: a
-vignette is fetched from its source, a directory's file or a database source's text, wherever the bench, the runner
-and the edges read one (src/chatddx/store/texts.py:fetch_vignette).
 
 A text is held to a length, may not hold U+0000, which can't be stored, and a person to a number of texts a day, as
 set in `chatddx.settings`; over the quota is `OverQuota`. A typed text never moves, so its family is adopted by
@@ -375,10 +341,6 @@ Following an origin compiles against the facts as they are stored then, so a for
 facts too.
 
 ## Runs and scores
-```
-AGENT: replace
-A start is a run per language its cases are sent in, the later ones `with` the first; the cases left out are said, and the quota is held for all of them first. The item.
----
 - **Starting** runs a variation at the endpoint serving its engine, or the one named (see "The engine"), on some
   cases with some seeds, through the runner (docs/runner.md), under an execution: a run for each language its cases
   are sent in (see "The languages it runs in"), those sent as written first. Each run is a trial of one skeleton, so
@@ -388,31 +350,13 @@ A start is a run per language its cases are sent in, the later ones `with` the f
   one start. The cases left out are said, and a start that can send none of its cases is refused. The day's quota and
   the items a run takes are held for every run of a start before any starts. Running again keeps a run's cleanup,
   execution, canary set, name and what it varied under new seeds: one run, in the run's language, started alone.
-```
-- **Starting** runs a variation at the endpoint serving its engine, or the one named (see "The engine"), on some
-  cases with some seeds, through the runner (docs/runner.md), under an execution. As it starts, the run is named by
-  the variation's label and says what it varied: the edit it was built on and the parts replaced over it, its engine
-  among them (docs/catalog.md, "What a run ran"). Running again keeps a run's cleanup, execution, canary set, name
-  and what it varied under new seeds.
 - **Resuming** a run of the person's own that isn't finished sends what its log lacks (docs/runner.md, "Resuming").
 - **A person's runs** are their own, newest first, found by the start of their id, or by a component their trial is
   built on.
-```
-AGENT: add
-`Seen.together` and `Seen.started_with`. An item before this one.
----
 - **A start's runs** are its first and those started with it, found from the first; a run says the first of its
   start, or nothing when it is the first or was started alone.
-```
-```
-AGENT: replace
-Built (agents/wip-engine-part.md, stage 2): a translated run says the language it was sent in. The item.
----
 - **A run is described** as the repl's `run` and `run tag` say it: the run's name, else the configuration, where it
   ran, its case or how many, the language it was translated into, and the seed.
-```
-- **A run is described** as the repl's `run` and `run tag` say it: the run's name, else the configuration, where it
-  ran, its case or how many, and the seed.
 - **A scorer applies** to a run when the run's output offers what each of its views reads, a view of the whole answer
   only a text answer, and the World lets each of its judges run (docs/runner.md, "What applies to a run").
 - **A run's scoring** under a scorer is built now, from the expectation each of its cases is scored against. Cases
@@ -444,13 +388,7 @@ The bench's errors are told apart by their class, so that an edge can answer eac
 | `Conflict` | `ValueError` | a write that would undo what the person has unless they say so: taking one thread when they have their own of its case under its schema |
 | `MovedOn` | `ValueError`, the catalog's | an edit made on a head that isn't the head any more |
 | `OverQuota` | `ValueError` | more of something than a day takes, or a run of more items than one takes |
-```
-AGENT: replace
-A start none of whose cases can be sent. The row.
----
 | any other `ValueError` | | what the bench refuses: an unknown part, a digest that isn't a stored chunk of its part or a stored engine, or a part that can't be taken out, the engine among them; an endpoint that serves another engine than the variation's, and an engine no endpoint, or several, serve; an intent the facts about the engine's model refuse, or a model they don't know; a start none of whose cases can be sent; a component that isn't one, or of a kind the person doesn't write; a scorer the code can't score with; taking an expectation of one's own; and the rest, each worded for what was wrong |
-```
-| any other `ValueError` | | what the bench refuses: an unknown part, a digest that isn't a stored chunk of its part or a stored engine, or a part that can't be taken out, the engine among them; an endpoint that serves another engine than the variation's, and an engine no endpoint, or several, serve; an intent the facts about the engine's model refuse, or a model they don't know; a component that isn't one, or of a kind the person doesn't write; a scorer the code can't score with; taking an expectation of one's own; and the rest, each worded for what was wrong |
 
 The messages are worded for a person, without the edge's terms; an edge adds its own hint where it has one. The API
 answers `NotFound` with 404, `Ambiguous`, `Conflict` and `MovedOn` with 409, `OverQuota` with 429, and the other
@@ -484,14 +422,9 @@ check before the other has written.
 | Saying | Writing what holds of a thread: its name, description, tags, collaborators, and whether it is deleted. |
 | Following | Keeping the catalog's proposal as an edit of the person's fork, based on its origin's head. |
 | Following its facts | Keeping a configuration's recipe, compiled against the facts corrected since, as an edit of the person's own. |
-```
-AGENT: add
-Three terms of the languages. Rows before this one.
----
 | Own language | A configuration's: its recipe's texts', or a hand-written skeleton's. It is sent in it as written. |
 | Left out | The cases of a language a configuration's translations can't carry it into, said and not sent. |
 | Start | The runs one start makes: a run per language its cases are sent in, the later ones `with` the first. |
-```
 | Typed case | A case whose vignette is a text the person typed, kept in a database source. |
 | Cell | The repl's word for a variation being tried together with the endpoint it runs at, named or found from its engine. |
 
@@ -514,13 +447,8 @@ the person were planned in `agents/wip-authoring.md` at b6f76b8. Its takes were 
   offered;
 - configurations listed by purpose, in the API.
 
-```
-AGENT: add
-The takes stage 2 of agents/wip-engine-part.md built on, which wait for a word. An item before this one.
----
 - **A case of no language** goes as written, linted `language.unknown`, rather than left out (agents/wip-engine-part.md,
   U1, a take); so does a case of a language the translations don't cover when the configuration's own is unknown.
-```
 - **A low-level manual for the bench**, made from `agents/wip-authoring.md` at b6f76b8.
 - **Correcting a wrong language** stays curation's: the bench refuses a language that differs from the text's own.
   What a person may correct, such as a text only their own threads hold, is open.
