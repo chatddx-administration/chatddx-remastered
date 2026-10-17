@@ -239,7 +239,6 @@ def plan_factors(
             if twice := sorted(set(known) & set(records)):
                 raise ValueError(f"{path}: {table} {twice} are named before it too")
             known.update(records)
-    # Each table's records by name, with the language a text record is written in.
     bodies: dict[str, dict[str, tuple[str | None, JsonValue]]] = {
         table: {name: (None, body) for name, body in records.items()}
         for table, records in found.items()
@@ -249,7 +248,6 @@ def plan_factors(
             f"{factors}: translations are written in the texts-<language>.toml of the "
             + "language they translate into"
         )
-    # Each translations record's body in each language it translates into.
     translating: dict[str, dict[str, JsonValue]] = {}
     for language, tables in _texts(data).items():
         for table, records in tables.items():
@@ -267,7 +265,6 @@ def plan_factors(
                     )
                 held[name] = (language, body)
     plan = Plan(Registry(), facts)
-    # None for a record tried and not planned.
     planned: dict[tuple[str, str], Planned | None] = {}
 
     def add(table: str, name: str, record: Planned | None) -> None:
@@ -288,8 +285,6 @@ def plan_factors(
             return None
         return origin.name
 
-    # The texts a translations record into `language` may translate, of the record
-    # named.
     def texts_of(record: str, language: str) -> set[str]:
         table, _, name = record.partition(".")
         if table == "recipe" and name in found.get("recipe", {}):

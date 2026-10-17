@@ -7,7 +7,7 @@ from chatddx.catalog import Entry, EntryField, Subject
 from chatddx.identity import Person
 from chatddx.store import Catalog
 from chatddx.store.store import Connection
-from chatddx.test.world import LINES, NATIVE
+from chatddx.test.world import JUDGE, LINES, NATIVE
 
 
 def configuration(signed: TestClient, owner: str) -> dict[str, Any]:
@@ -58,7 +58,7 @@ def test_configurations_are_listed_by_purpose(signed: TestClient) -> None:
 
     generation, judges = names(), names(purpose="judge")
     assert names(purpose="generation") == generation
-    assert LINES in generation and "judge" in judges
+    assert LINES in generation and JUDGE in judges
     assert not generation & judges
     got = signed.get("/api/threads", params={"kind": "scorer", "purpose": "judge"})
     assert got.status_code == 422

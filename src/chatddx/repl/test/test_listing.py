@@ -9,9 +9,12 @@ from chatddx.repl.shell import Repl, console
 from chatddx.repl.test.helpers import Say, line_of
 from chatddx.test.world import (
     CASES,
+    CLINICIAN,
     GPT_OSS,
     GPT_OSS_MODEL,
+    JUDGE,
     LINES,
+    LINES_GUIDED,
     NATIVE_TOOLS,
     QWEN,
     QWEN_ARTIFACT,
@@ -73,7 +76,7 @@ def test_configurations_are_listed_a_row_per_name_with_its_languages_and_parts(
     assert not [line for line in lines if line.rstrip().endswith("  archive")]
     assert "on-budget" in line_of(written, "budgeted")
     assert "high" in line_of(written, "reasoned")
-    assert line_of(written, "lines-guided").split()[1:4] == ["en,", "sv", "clinician"]
+    assert line_of(written, LINES_GUIDED).split()[1:4] == ["en,", "sv", CLINICIAN]
 
 
 @pytest.mark.slow
@@ -83,7 +86,7 @@ def test_judge_configurations_are_listed_apart(bench: Bench):
     [apart] = [i for i, line in enumerate(lines) if line == "judge configurations"]
     names = [line.split("  ")[0].strip() for line in lines]
     assert "lines" in names[:apart]
-    assert "judge" in names[apart:] and "judge" not in names[:apart]
+    assert JUDGE in names[apart:] and JUDGE not in names[:apart]
     assert lines[apart + 1].split()[0] == "configuration"
 
 

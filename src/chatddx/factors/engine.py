@@ -170,7 +170,7 @@ class RemoteEngine(Component):
 EngineRef = Annotated[Digest, RefTo("engine.local", "engine.remote")]
 
 
-# A local engine is asked for by its digest, which the start-up script serves it as.
+# Convention: a local engine is served under its digest, src/chatddx/inventory/serving.py:start_up.
 def served_model_name(engine: str, get: Resolver) -> str:
     match get(engine):
         case LocalEngine():

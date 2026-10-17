@@ -10,6 +10,7 @@ from chatddx.test.world import (
     GPT_OSS,
     GPT_OSS_ARTIFACT,
     GPT_OSS_MODEL,
+    JUDGE,
     QWEN,
     REMOTE,
     copied,
@@ -44,7 +45,7 @@ def test_a_judge_s_recipe_is_compiled_with_its_engine() -> None:
         plan.named("local_engine", QWEN).digest,
         (1, 2, 3),
     )
-    assert verdict.skeleton == remote.skeleton == plan.named("recipe", "judge").digest
+    assert verdict.skeleton == remote.skeleton == plan.named("recipe", JUDGE).digest
     assert remote.engine == plan.named("remote_engine", REMOTE).digest
 
 

@@ -9,6 +9,7 @@ from chatddx.test.world import (
     CASES,
     GPT_OSS,
     LINES,
+    LINES_GUIDED,
     MISTRAL,
     MISTRAL_MODEL,
     NATIVE,
@@ -60,7 +61,7 @@ def test_show_sets_each_part_beside_what_it_is_and_renders_the_request(say: Say)
         f"[warning] translations.missing: {len(sv)} cases are in sv, and left out: "
         + "lines has no translations into sv"
     ) in written
-    assert "sv: 3 cases, translated" in say("use lines-guided", "show")
+    assert "sv: 3 cases, translated" in say(f"use {LINES_GUIDED}", "show")
 
 
 @pytest.mark.slow

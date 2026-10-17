@@ -42,6 +42,9 @@ NATIVE = "native"
 NATIVE_TOOLS = "native-tools"
 TOOL_ANSWER = "tool-answer"
 OFF = "off"
+LINES_GUIDED = "lines-guided"
+JUDGE = "judge"
+CLINICIAN = "clinician"
 
 # What loading the test World lints: the factors' lints, then the facts'.
 FACTOR_LINTS = [

@@ -71,8 +71,6 @@ class Repl:
         except (LookupError, ValueError):
             return cell.named
 
-    # The endpoint the cell's configuration is rendered and linted for: the one named,
-    # else the one serving the configuration's model.
     @property
     def at(self) -> Endpoint | None:
         cell = self.cell

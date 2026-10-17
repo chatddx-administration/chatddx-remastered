@@ -7,6 +7,8 @@ from chatddx.repl.test.helpers import Say, tried
 from chatddx.test.world import (
     CASES,
     GPT_OSS,
+    LINES,
+    LINES_GUIDED,
     MISTRAL,
     NATIVE,
     QWEN,
@@ -70,7 +72,7 @@ def test_quit_takes_no_words(repl: Repl, say: Say):
 
 def test_it_completes_a_command_and_then_its_names_word_by_word():
     names = {
-        "configuration": ["lines", "lines-guided", "native"],
+        "configuration": [LINES, LINES_GUIDED, NATIVE],
         "endpoint": [QWEN, GPT_OSS],
         "part": ["prompt", "reasoning", "sampling"],
         "reasoning": ["off", "on"],
@@ -81,8 +83,8 @@ def test_it_completes_a_command_and_then_its_names_word_by_word():
 
     assert complete(names, "us") == ["use"]
     assert complete(names, "use na") == ["native"]
-    assert complete(names, "use lines") == ["lines", "lines-guided"]
-    assert complete(names, "use lines-guided ") == []
+    assert complete(names, "use lines") == [LINES, LINES_GUIDED]
+    assert complete(names, f"use {LINES_GUIDED} ") == []
     assert complete(names, "cell native q") == [QWEN]
     assert complete(names, "cell native ") == [QWEN, GPT_OSS]
     assert complete(names, "on g") == [GPT_OSS]
@@ -129,7 +131,7 @@ def test_the_names_complete_as_the_person_sees_them(repl: Repl):
     names = repl.completions()
 
     assert names["tag"] == sorted({tag for case in CASES.values() for tag in case.tags})
-    assert {NATIVE, "lines-guided"} <= set(names["configuration"])
+    assert {NATIVE, LINES_GUIDED} <= set(names["configuration"])
     assert "off" in names["reasoning"]
     assert "none" not in names["reasoning"]
     assert "none" in names["set:reasoning"]

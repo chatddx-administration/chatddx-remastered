@@ -454,6 +454,17 @@ the person were planned in `agents/wip-authoring.md` at b6f76b8. Its takes were 
   a collaborator may withdraw themselves, an entry the catalog would hold as any other, is open.
 - **Z1**: the map from roles to the kinds each role sees goes in `identity` once the portal's views give it meaning
   (docs/identity.md, "Z1: what each role is shown"). `sees` then takes the person's roles and the kind.
+```
+AGENT: replace
+With the model as the part, several endpoints serving one model is the ordinary case, not the unlikely one it was for
+an engine: the test World serves Qwen3 with and without its parsers. A run of such a model names its endpoint. A judge
+still pins its engine, so the item holds for judges as it stands.
+---
+- **A model served at several endpoints** isn't picked from them: a run is refused until the endpoint is named, as
+  the test World's two Qwen3 endpoints show; the variation page offers the picker, and a look rendered for none of
+  them has no findings. A judge pins its engine as a trial does, and a judge whose engine two endpoints serve bars
+  its scorer (docs/runner.md, "Judges"), which stays unlikely: it is one engine served twice.
+```
 - **An engine served at several endpoints** isn't picked from them, for a judge's calls or for a run: the scoring or
   the run is refused until the endpoint is named. `Bench.score` names none, so a judge whose engine two endpoints
   serve bars its scorer, in the repl and the API alike (docs/repl.md, "What the repl doesn't reach"; docs/runner.md,
@@ -480,3 +491,15 @@ the person were planned in `agents/wip-authoring.md` at b6f76b8. Its takes were 
   docs/runner.md, "Smaller issues"); the old crossing of variations, which the portal is to start as several runs
   (agents/wip-portal.md, "Comparing variations"); and what holds a configuration, the portal's
   (agents/wip-portal.md), whose part for the repl `Seen.runs(reaching=…)` and `Seen.runs(scored_by=…)` cover.
+
+```
+AGENT: add
+What the model as the part left open (agents/wip-engine-part.md, "Outstanding"), so that the file can go.
+---
+- **A start holds a transaction open while the gate confirms its endpoint**, once per language though every run of a
+  start goes to one endpoint; a few seconds at most against an endpoint that answers. Confirming once, before the
+  transaction, would remove most of it.
+- **A look for a model several endpoints serve has no findings** until an endpoint is named, where the engine as the
+  part linted it for the recipe's engine; the repl's `show` shows no lints either.
+- **A model that moved on is followed to its head whether or not an endpoint serves it**; `at` says so afterwards.
+```

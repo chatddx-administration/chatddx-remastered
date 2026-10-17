@@ -20,7 +20,7 @@ from chatddx.portal.assets import Assets
 from chatddx.portal.test.conftest import PASSWORD
 from chatddx.store import Store
 from chatddx.store.store import Connection
-from chatddx.test.world import GPT_OSS, LINES, QWEN, faked
+from chatddx.test.world import GPT_OSS, LINES, LINES_GUIDED, QWEN, faked
 
 pytestmark = pytest.mark.slow
 
@@ -103,7 +103,7 @@ def test_a_variation_is_run_watched_halted_scored_again_and_run_again(
     with faked(world, Store(conn).get, delay=0.3):
         _ = page.goto(f"/configurations/{lines['id']}")
         expect(page.get_by_role("heading", name="Running it")).to_be_visible()
-        # Two endpoints of the test World serve Qwen3, so the page asks which.
+        # Accommodating for the test World: two endpoints serve Qwen3, so the page asks which.
         expect(page.get_by_text("Pick an endpoint to run it at.")).to_be_visible()
         _ = page.select_option("#endpoint", QWEN)
         expect(
@@ -177,7 +177,7 @@ def test_a_variation_says_where_it_runs_and_a_start_s_runs_link_each_other(
     ).to_be_visible()
 
     with faked(world, Store(conn).get):
-        _ = page.goto(f"/configurations/{configuration('lines-guided')}?tag=swedish")
+        _ = page.goto(f"/configurations/{configuration(LINES_GUIDED)}?tag=swedish")
         expect(
             page.get_by_text(
                 "A run per language: in en, 1 case; in sv, 3 cases, translated."

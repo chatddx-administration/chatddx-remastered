@@ -2,8 +2,9 @@ import pytest
 from fastapi.testclient import TestClient
 
 from chatddx.api.test.test_variations import thread
-from chatddx.api.test.test_writes import CLINICIAN, body
+from chatddx.api.test.test_writes import body
 from chatddx.bench import KINDS, WRITTEN
+from chatddx.test.world import CLINICIAN
 
 GHOST = "sha256:" + "0" * 64
 

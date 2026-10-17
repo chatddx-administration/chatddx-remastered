@@ -26,7 +26,9 @@ from chatddx.store import Catalog, People, Queue, Store
 from chatddx.store.store import Connection
 from chatddx.test.world import (
     GPT_OSS,
+    JUDGE,
     LINES,
+    LINES_GUIDED,
     NATIVE_TOOLS,
     OFF,
     QWEN,
@@ -277,7 +279,7 @@ def test_a_start_is_a_run_per_language_and_leaves_out_what_it_can_t_send(
     language = {f["case"]: f["language"] for f in tagged}
     swedish = sorted(case for case, said in language.items() if said == "sv")
     body = {"families": None, "tags": ["swedish"], "score": False}
-    got = signed.post("/api/runs", json={**asked(signed, "lines-guided"), **body})
+    got = signed.post("/api/runs", json={**asked(signed, LINES_GUIDED), **body})
     assert got.status_code == 202, got.json()
     first, translated = got.json()["runs"]
     assert got.json()["left_out"] == []
@@ -333,7 +335,7 @@ def test_a_run_the_gate_refuses_is_unprocessable_and_isn_t_recorded(
 def test_a_run_the_request_names_wrong_is_unprocessable(signed: TestClient) -> None:
     good = asked(signed)
     chunk = thread(signed, "reasoning", OFF)
-    query = {"kind": "configuration", "purpose": "judge", "name": "judge"}
+    query = {"kind": "configuration", "purpose": "judge", "name": JUDGE}
     judge = signed.get("/api/threads", params={**query, "owner": "alice"}).json()[0]
     wrong: list[tuple[dict[str, Any], str]] = [
         ({"tags": ["swedish"]}, "a run takes one of families, tags or cases"),

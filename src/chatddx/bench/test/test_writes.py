@@ -11,7 +11,9 @@ from chatddx.factors.scoring import Expectation, Judge
 from chatddx.identity import Person
 from chatddx.store import Catalog
 from chatddx.test.world import (
+    CLINICIAN,
     GPT_OSS,
+    JUDGE,
     LINES,
     MISTRAL,
     MISTRAL_MODEL,
@@ -148,7 +150,7 @@ def test_a_recipe_of_the_person_s_making_is_compiled_into_a_configuration(
     engine = bench.endpoint(QWEN).engine
     rows = bench.rows
     recipe = Recipe(
-        instructions=bench.thread("clinician", "instructions")[0].digest,
+        instructions=bench.thread(CLINICIAN, "instructions")[0].digest,
         few_shot=bench.thread("worked-example", "few_shot")[0].digest,
         prompt=bench.thread("case", "prompt")[0].digest,
         output=bench.thread("lines", "output")[0].digest,
@@ -199,13 +201,13 @@ def test_a_recipe_is_refused_what_doesn_t_compile(bench: Bench) -> None:
 
 @pytest.mark.slow
 def test_a_person_writes_a_judge_over_a_judge_configuration(bench: Bench) -> None:
-    skeleton = bench.variation("judge").configuration.digest
+    skeleton = bench.variation(JUDGE).configuration.digest
     engine = bench.endpoint(QWEN).engine
     written = bench.new(Judge(skeleton=skeleton, engine=engine, seeds=(1, 2)), "twice")
     assert written.what == "created"
     assert [f.code for f in written.findings] == ["judge.greedy_seeds"]
 
-    thread, _ = _archive_s(bench, "judge")
+    thread, _ = _archive_s(bench, JUDGE)
     forked = bench.fork(thread, "mine")
     assert (
         forked.what == "created"
@@ -237,7 +239,7 @@ def test_a_judge_on_another_model_than_its_skeleton_is_worked_out_for_says_so(
     assert "judge.engine_unmatched" not in {
         f.code for f in bench.check(on_qwen).findings
     }
-    greedy = bench.variation("judge").configuration.digest
+    greedy = bench.variation(JUDGE).configuration.digest
     anywhere = Judge(skeleton=greedy, engine=gpt_oss, seeds=(1,))
     assert "judge.engine_unmatched" not in {
         f.code for f in bench.check(anywhere).findings

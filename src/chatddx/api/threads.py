@@ -164,8 +164,6 @@ def edits(bench: BenchDep, thread: int) -> list[schemas.Edit]:
     ]
 
 
-# A look is rendered and linted for the engine the run would go to; none when nothing
-# serves the model, or a hand-written configuration names no endpoint.
 def _engine_at(
     bench: Bench, varied: TriedVariation, endpoint: str | None
 ) -> str | None:

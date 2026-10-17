@@ -17,6 +17,7 @@ from chatddx.test.world import (
     DATA,
     FACT_LINTS,
     FACTOR_LINTS,
+    LINES_GUIDED,
     LINTS,
     NATIVE,
     NATIVE_TOOLS,
@@ -109,7 +110,7 @@ def test_init_data_loads_the_archive(conn: Connection) -> None:
     ]
     assert language_of(rows, plan.named("toolset", "lookup").digest) == "en"
     assert language_of(rows, plan.named("prompt", "case").digest) is None
-    assert language_of(rows, plan.named("recipe", "lines-guided").digest) == "en"
+    assert language_of(rows, plan.named("recipe", LINES_GUIDED).digest) == "en"
     assert language_of(rows, plan.named("translations", "guided").digest) is None
 
     # The rest of the cases, and their expectations, are left over.
@@ -225,7 +226,7 @@ def test_init_data_says_when_a_thread_is_held_as_another_fork_than_the_data_s(
     _ = init(conn, world_plan(before, before / "_data"), CASES, vignettes(), alice)
     lines = init(conn, world_plan(after, after / "_data"), CASES, vignettes(), alice)
     assert sorted(line for line in lines if "; the data forks it from " in line) == [
-        "[archive skeleton] lines-guided: held as no fork; the data forks it from "
+        f"[archive skeleton] {LINES_GUIDED}: held as no fork; the data forks it from "
         + "lines-instructed",
         "[archive skeleton] native-tools: held as a fork of native; the data "
         + "forks it from nothing",

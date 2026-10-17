@@ -13,7 +13,17 @@ from chatddx.curation import load_cases
 from chatddx.factors.request import OPTIONAL_PARTS, RECIPE_PARTS, Translations
 from chatddx.store import Store
 from chatddx.store.store import Connection
-from chatddx.test.world import DATA, GPT_OSS, LINES, NATIVE, NATIVE_TOOLS, OFF, QWEN
+from chatddx.test.world import (
+    DATA,
+    GPT_OSS,
+    JUDGE,
+    LINES,
+    LINES_GUIDED,
+    NATIVE,
+    NATIVE_TOOLS,
+    OFF,
+    QWEN,
+)
 
 DIFFERENTIAL = ("answer", "differential")
 
@@ -329,7 +339,7 @@ def test_an_unsaved_variation_is_linted_in_each_language_it_runs_in(
     assert not {"language.unknown", "translations.missing"} & codes(tag="targets")
     assert "translations.missing" in codes()
 
-    guided = thread(signed, "configuration", "lines-guided")
+    guided = thread(signed, "configuration", LINES_GUIDED)
     shown = variation(signed, guided, endpoint=QWEN, reasoning=off)
     english, swedish = shown["languages"]
     assert (english["language"], english["skeleton"]) == ("en", shown["skeleton"])
@@ -346,7 +356,7 @@ def test_an_unsaved_variation_is_linted_in_each_language_it_runs_in(
 
 @pytest.mark.slow
 def test_a_judge_configuration_is_looked_at_as_a_judge(signed: TestClient) -> None:
-    query = {"kind": "configuration", "purpose": "judge", "name": "judge"}
+    query = {"kind": "configuration", "purpose": "judge", "name": JUDGE}
     [judging] = signed.get("/api/threads", params={**query, "owner": "alice"}).json()
     shown = variation(signed, judging, endpoint=QWEN)
     assert shown["reach"] == [] and shown["findings"] == []

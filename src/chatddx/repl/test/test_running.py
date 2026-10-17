@@ -21,6 +21,7 @@ from chatddx.test.world import (
     CASES,
     GPT_OSS,
     LINES,
+    LINES_GUIDED,
     NATIVE,
     QWEN,
     QWEN_ARTIFACT,
@@ -269,7 +270,7 @@ def test_run_tag_runs_the_cases_with_any_of_its_tags(bench: Bench, say: Say):
 @pytest.mark.usefixtures("fake")
 @pytest.mark.slow
 def test_run_tag_over_several_languages_runs_each(bench: Bench, say: Say):
-    written = say(f"cell lines-guided {QWEN}", "run tag swedish")
+    written = say(f"cell {LINES_GUIDED} {QWEN}", "run tag swedish")
     swedish = [name for name in tagged("swedish") if CASES[name].language == "sv"]
     english = len(tagged("swedish")) - len(swedish)
 

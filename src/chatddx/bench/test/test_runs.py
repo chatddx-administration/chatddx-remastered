@@ -15,7 +15,14 @@ from chatddx.runner import ItemEnded, Refused, RunEvent
 from chatddx.runner.gate import admit as admitted
 from chatddx.store import Catalog
 from chatddx.store.store import Connection
-from chatddx.test.world import GPT_OSS, GPT_OSS_ARTIFACT, LINES, QWEN, faked
+from chatddx.test.world import (
+    GPT_OSS,
+    GPT_OSS_ARTIFACT,
+    LINES,
+    LINES_GUIDED,
+    QWEN,
+    faked,
+)
 
 
 @pytest.mark.usefixtures("fake")
@@ -195,7 +202,7 @@ def test_a_start_runs_each_language_its_cases_are_in_and_leaves_out_the_rest(
         bench.family(name).case for name in ("crlf", "svenska", "nfd", "bom")
     )
     cases = [crlf, svenska, nfd, bom]
-    guided = bench.variation("lines-guided")
+    guided = bench.variation(LINES_GUIDED)
     started = bench.start(guided, QWEN, cases, (7,))
     [(english, first), (swedish, second)] = started.runs
     assert started.left_out == []
@@ -221,9 +228,11 @@ def test_a_start_runs_each_language_its_cases_are_in_and_leaves_out_the_rest(
     )
     assert varying(bench, second.run) == varying(bench, first.run)
     assert bench.described(second.started) == (
-        f"lines-guided × {QWEN} × 2 cases, in sv, translated (seed 7)"
+        f"{LINES_GUIDED} × {QWEN} × 2 cases, in sv, translated (seed 7)"
     )
-    assert bench.described(first.started) == f"lines-guided × {QWEN} × 2 cases (seed 7)"
+    assert (
+        bench.described(first.started) == f"{LINES_GUIDED} × {QWEN} × 2 cases (seed 7)"
+    )
 
     lines = bench.variation(LINES)
     plain = bench.start(lines, QWEN, cases, (7,))
@@ -270,6 +279,6 @@ def test_a_start_one_of_whose_runs_the_gate_refuses_begins_none(
 
     monkeypatch.setattr("chatddx.runner.run.admit", admit)
     with pytest.raises(Refused, match="the second is refused"):
-        _ = bench.start(bench.variation("lines-guided"), QWEN, cases, (7,))
+        _ = bench.start(bench.variation(LINES_GUIDED), QWEN, cases, (7,))
     assert len(calls) == 2
     assert bench.runs() == []

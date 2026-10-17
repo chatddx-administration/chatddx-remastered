@@ -167,28 +167,21 @@ and loaded again, as its compilations, translations and remote engines are of ve
 `endpoints.toml` name remote engines by their new digests.
 
 ## Outstanding
-- **The docs** describe the engine as the part; the suggestions written in above each statement say what the model
-  as the part changes, and `docs/repl-manual.md`'s transcripts want recording again.
-- **The review's must-fix items** that aren't this build's: names tests share spelled as literals, and four comments
-  in `curation/plan.py:plan_factors`.
-- **`Seen.thread`'s `name` is undescribed.** The doc fixes that took out the `variants_for` lines in docs/bench-api.md,
-  "`thread(word, name)`", took the item's first line too, so `OWNER/NAME` is said only as a qualified name. The
-  suggestion for `thread(found, word)` there says it again.
-- **The repl's `runs` doesn't show a start**: a translated run says its language, the own language's run of the same
-  start says none, and nothing says the two were started together; `GET /api/runs?with=` and a run's page do.
-- **A language refused on a compiled skeleton is said to come from its recipe** (`catalog/language.py:check_language`,
-  `0012`'s `language_compiled`, the bench's `COMPILED_LANGUAGE`); a translated skeleton's comes from its compilation.
-- **A translated skeleton's title doesn't say its language**: it has no thread, so it is titled by its recipe.
-- **A start holds a transaction open while the gate confirms its endpoint**, once per language, a few seconds at most
-  against an endpoint that answers; the price of a start that begins whole or not at all.
-- **The variation page knows the languages of the families its look is over**, its tags; a family picked beyond them
-  goes as its language's, or is said as "if it can be" when the look didn't see its language.
-- **`Seen.facts` is read on every access**, several times a look; cheap at today's sizes (a facts thread per model),
-  and the place to cache per request if it shows.
-- **A look for a model several endpoints serve** has no findings until an endpoint is named, where the engine part gave
-  it the recipe's engine's. The variation page shows the picker; the repl's `show` shows no lints.
-- **A model that moved on and is served nowhere** is followed to its head whether or not an endpoint serves it; `at`
-  says so afterwards.
+What this file still holds that the docs don't, and where each item goes; the rest of it is in the docs, and the
+"Review" and "The model as the part" sections are the history of how it got there.
+- **The repl manual's transcripts** (docs/repl-manual.md) were recorded with the engine as the part: `+engine=`
+  and `set engine` stand where `+model=` and `set model` are now. They want recording again on the sample World.
+- **Three items for docs/bench.md, "Outstanding"**, suggested there: a start holding a transaction open while the
+  gate confirms its endpoint once per language; a look for a model several endpoints serve having no findings until
+  one is named; a model that moved on followed to its head whether or not an endpoint serves it.
+- **docs/bench.md's item on an engine served at several endpoints** says it probably won't happen; for a model it
+  does, as the test World's two Qwen3 endpoints show, and the suggestion above it restates it.
+
+Settled, with its home: the repl's `runs` not showing a start (docs/repl.md, "Outstanding"); a language refused on a
+compiled skeleton said to come from its recipe, and a translated skeleton's title (docs/catalog.md); `Seen.facts` read
+on every access (docs/bench.md, "Outstanding"); the variation page knowing the languages of the families its look is
+over (agents/wip-portal.md); `thread(found, word)` describing `OWNER/NAME` (docs/bench-api.md); the names tests share,
+in `src/chatddx/test/world.py`, and the comments in `curation/plan.py:plan_factors`.
 
 ## The model as the part
 Written up as an alternative to the engine as the part, on the review's asking, and then decided and built: M1, R1 and
