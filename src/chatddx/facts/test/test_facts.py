@@ -4,28 +4,30 @@ import pytest
 from pydantic import JsonValue, ValidationError
 
 from chatddx.factors.bundle import Registry
-from chatddx.factors.engine import FileDigest, LocalEngine, ModelArtifact, RemoteEngine
+from chatddx.factors.engine import FileDigest, LocalEngine, LocalModel
 from chatddx.factors.lint import lint
 from chatddx.factors.request import (
     Message,
     NativeOutput,
     OutputContract,
-    Reasoning,
     Sampling,
     Skeleton,
     Slot,
     TextOutput,
 )
-from chatddx.factors.test.sample import SHA, local_engine, world
+from chatddx.factors.test.sample import SHA, local_engine, remote_engine, world
 from chatddx.factors.trial import Trial
 from chatddx.facts import (
     BUNDLED,
     Facts,
+    Intent,
+    Landing,
     ModelFacts,
     OutputFacts,
     ReasoningFacts,
     Refusal,
     Refused,
+    SamplingValues,
     Writes,
     check_pairs,
     lints,
@@ -40,42 +42,61 @@ def facts() -> Facts:
     return Facts.load(BUNDLED)
 
 
-def test_reasoning_levels_become_chunks(facts: Facts) -> None:
+def test_reasoning_levels_land_where_the_facts_say(facts: Facts) -> None:
     qwen, gpt_oss = facts.models[QWEN], facts.models[GPT_OSS]
-    thinking = Reasoning(chat_template_kwargs={"enable_thinking": True})
-    assert qwen.reasoning_chunk("default") == thinking
-    assert qwen.reasoning_chunk("xhigh") == thinking
-    assert qwen.reasoning_chunk("off") == Reasoning(
+    thinking = Writes(chat_template_kwargs={"enable_thinking": True})
+    assert qwen.reasoning.landing("default") == Landing(level="on", writes=thinking)
+    assert qwen.reasoning.landing("xhigh") == Landing(level="on", writes=thinking)
+    assert qwen.reasoning.landing("off").writes == Writes(
         chat_template_kwargs={"enable_thinking": False}
     )
-    assert qwen.reasoning_chunk("on", budget=2048) == Reasoning(
-        chat_template_kwargs={"enable_thinking": True}, thinking_token_budget=2048
+    qwen.check_budget()
+    assert gpt_oss.reasoning.landing("default") == Landing(
+        level="medium", writes=Writes(effort="medium")
     )
-    assert gpt_oss.reasoning_chunk("default") == Reasoning(effort="medium")
-    assert gpt_oss.reasoning_chunk("on") == Reasoning(effort="medium")
-    with pytest.raises(Refused, match="always reasons"):
-        _ = gpt_oss.reasoning_chunk("off")
+    assert gpt_oss.reasoning.landing("on").level == "medium"
+    nearest: list[tuple[Intent, Intent]] = [
+        ("off", "low"),
+        ("minimal", "low"),
+        ("xhigh", "high"),
+    ]
+    for asked, landed in nearest:
+        landing = gpt_oss.reasoning.landing(asked)
+        assert (landing.level, landing.writes.effort) == (landed, landed)
+        assert len(landing.nearest) == 1
+    assert "always reasons" in gpt_oss.reasoning.landing("off").nearest[0]
     with pytest.raises(Refused, match="no thinking budget"):
-        _ = gpt_oss.reasoning_chunk("high", budget=512)
+        gpt_oss.check_budget()
+    unknown = ModelFacts(model="m")
     with pytest.raises(Refused, match="nothing is known"):
-        _ = ModelFacts().reasoning_chunk("high")
+        _ = unknown.reasoning.landing("high")
     assert qwen.reasons_by_default() is True
-    assert ModelFacts().reasons_by_default() is None
+    assert unknown.reasons_by_default() is None
 
 
-def test_recommended_sampling_follows_the_reasoning_level(facts: Facts) -> None:
+def test_a_refusal_lands_on_its_nearest_only_when_it_names_one() -> None:
+    def off(refusal: Refusal) -> ReasoningFacts:
+        return ReasoningFacts(off=refusal, low=Writes(effort="low"))
+
+    refused = off(Refusal(refused="always reasons"))
+    with pytest.raises(Refused, match="always reasons"):
+        _ = refused.landing("off")
+    nearest = off(Refusal(refused="always reasons", nearest="low"))
+    assert nearest.landing("off") == Landing(
+        level="low", writes=Writes(effort="low"), nearest=("always reasons",)
+    )
+
+
+def test_recommended_sampling_is_per_reasoning_level(facts: Facts) -> None:
     qwen = facts.models[QWEN]
-    assert qwen.sampling_chunk("off") == Sampling(
+    assert qwen.recommended("off") == SamplingValues(
         temperature=0.7, top_p=0.8, top_k=20, presence_penalty=1.5
     )
-    assert qwen.sampling_chunk("high", top_k=40) == Sampling(
-        temperature=0.6, top_p=0.95, top_k=40, presence_penalty=1.5
+    unrecommended = ModelFacts(
+        model="m", reasoning=ReasoningFacts(default="on", on=Writes())
     )
-    with pytest.raises(Refused, match="always reasons"):
-        _ = facts.models[GPT_OSS].sampling_chunk("off")
-    unrecommended = ModelFacts(reasoning=ReasoningFacts(default="on", on=Writes()))
     with pytest.raises(Refused, match="no sampling is recommended for reasoning 'on'"):
-        _ = unrecommended.sampling_chunk()
+        _ = unrecommended.recommended("on")
 
 
 def test_facts_are_checked(tmp_path: Path) -> None:
@@ -88,6 +109,10 @@ def test_facts_are_checked(tmp_path: Path) -> None:
         _ = load('[model.m.reasoning]\nlow = "high"\nhigh = "low"\n')
     with pytest.raises(ValidationError, match="ends in no fact"):
         _ = load('[model.m.reasoning]\nlow = "high"\n')
+    with pytest.raises(ValidationError, match="go round"):
+        _ = load('[model.m.reasoning]\noff = { refused = "no", nearest = "off" }\n')
+    with pytest.raises(ValidationError, match="ends in no fact"):
+        _ = load('[model.m.reasoning]\noff = { refused = "no", nearest = "low" }\n')
     with pytest.raises(ValidationError, match="Extra inputs"):
         _ = load('[model.m.reasoning]\nlow = { reasoning_effort = "low" }\n')
     with pytest.raises(ValueError, match="only 'model' tables"):
@@ -105,7 +130,7 @@ def test_facts_check_pairs(facts: Facts) -> None:
 
     def engine(repo: str, *argv: str) -> str:
         model = reg.add(
-            ModelArtifact(
+            LocalModel(
                 repo=repo,
                 revision="0" * 40,
                 files=(FileDigest(path="model.safetensors", sha256=SHA),),
@@ -161,7 +186,9 @@ def test_facts_check_pairs(facts: Facts) -> None:
 
     refusing = Facts(
         models={
-            QWEN: ModelFacts(output=OutputFacts(native=Refusal(refused="no grammar")))
+            QWEN: ModelFacts(
+                model=QWEN, output=OutputFacts(native=Refusal(refused="no grammar"))
+            )
         }
     )
     trial = reg.add(
@@ -173,7 +200,7 @@ def test_facts_check_pairs(facts: Facts) -> None:
 
     unknown = engine("someone/unknown")
     assert findings(skeleton(TextOutput()), unknown) == {"facts.missing": "info"}
-    remote = reg.add(RemoteEngine(provider="example", model=GPT_OSS))
+    remote = reg.add(remote_engine(reg, GPT_OSS))
     assert findings(effort, remote) == {}
 
 
@@ -183,16 +210,18 @@ def test_facts_check_that_a_pair_s_sampling_is_for_its_model(facts: Facts) -> No
     user = Message(role="user", content=(Slot(slot="vignette"),))
 
     def findings(engine_model: str, **body: JsonValue) -> dict[str, str]:
-        engine = reg.add(RemoteEngine(provider="example", model=engine_model))
+        engine = reg.add(remote_engine(reg, engine_model))
         skeleton = reg.add(Skeleton(messages=(user,), body=body, contract=TextOutput()))
         trial = reg.add(
             Trial(skeleton=skeleton, engine=engine, cases=(ids["case"],), seeds=(1,))
         )
         return {f.code: f.message for f in check_pairs(reg, facts, [trial])}
 
-    qwen_on = facts.models[QWEN].sampling_chunk("on").body()
-    qwen_off = facts.models[QWEN].sampling_chunk("off").body()
-    gpt_oss = facts.models[GPT_OSS].sampling_chunk("medium").body()
+    def recommended(model: str, level: Intent) -> dict[str, JsonValue]:
+        return Sampling().over(facts.models[model].recommended(level)).body()
+
+    qwen_on, qwen_off = recommended(QWEN, "on"), recommended(QWEN, "off")
+    gpt_oss = recommended(GPT_OSS, "medium")
     assert findings(QWEN, **qwen_on) == findings(QWEN, **qwen_off) == {}
     assert findings(GPT_OSS, **gpt_oss) == findings(GPT_OSS) == {}
     assert findings(GPT_OSS, **qwen_on) == {

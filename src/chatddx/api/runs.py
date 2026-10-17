@@ -5,12 +5,15 @@ from fastapi import APIRouter, Depends, Header, HTTPException, Query, Request, R
 from fastapi.concurrency import run_in_threadpool
 from fastapi.responses import StreamingResponse
 
-from chatddx.bench import Bench, Family, outcome
+from chatddx.bench import Bench, NotFound, Started
+from chatddx.catalog import Subject
+from chatddx.catalog.language import language_of
+from chatddx.catalog.read import about as about_of
 from chatddx.factors.base import resolve
 from chatddx.factors.request import Skeleton
 from chatddx.factors.trial import Execution, Trial, suggest_seeds
 from chatddx.ledger import RunStarted, check_run
-from chatddx.runner.run import Running
+from chatddx.runner import Running, outcome, rendered_again as rendered
 from chatddx.scorers.answer import read
 from chatddx.store import Queue
 from chatddx.store.queue import Placed
@@ -18,9 +21,8 @@ from chatddx.store.queue import Placed
 from . import schemas
 from .events import graded_of, item_of, started_of
 from .people import BenchDep
-from .state import NO_STORE, no_store, state
+from .state import NO_STORE, no_store, refused, state
 from .telling import told
-from .threads import refused
 
 STREAM = "text/event-stream"
 EVENTS = ", ".join(f"`{name}`" for name in schemas.EVENTS)
@@ -28,36 +30,16 @@ EVENTS = ", ".join(f"`{name}`" for name in schemas.EVENTS)
 router = APIRouter(tags=["runs"])
 
 
-def _families(bench: Bench, given: schemas.NewRun) -> list[Family]:
-    login = bench.person.login
-    if given.tags is not None:
-        tagged = bench.families(given.tags)
-        if not tagged:
-            raise HTTPException(
-                422, f"no case tagged {' or '.join(given.tags)} for {login}"
-            )
-        return tagged
-    seen = {f.id: f for f in bench.families()}
-    wanted = list(dict.fromkeys(given.families or ()))
-    if not wanted:
-        raise HTTPException(422, "a run takes at least one case")
-    if missing := [f for f in wanted if f not in seen]:
-        raise HTTPException(422, f"no case {missing[0]} for {login}")
-    return [seen[f] for f in wanted]
-
-
 def _cases(bench: Bench, given: schemas.NewRun) -> list[str]:
-    if given.cases is None:
-        return [f.case for f in _families(bench, given)]
-    wanted = list(dict.fromkeys(given.cases))
-    if not wanted:
-        raise HTTPException(422, "a run takes at least one case")
-    seen = {f.id for f in bench.families()}
-    for case in wanted:
-        family = bench.catalog.family(case)
-        if family not in seen or case not in bench.cases(family):
-            raise HTTPException(422, f"no case {case} for {bench.person.login}")
-    return wanted
+    if given.cases is not None:
+        return list(dict.fromkeys(given.cases))
+    if given.tags is None:
+        return [bench.family(f).case for f in dict.fromkeys(given.families or ())]
+    if tagged := bench.families(given.tags):
+        return [f.case for f in tagged]
+    raise ValueError(
+        f"no case tagged {' or '.join(given.tags)} for {bench.person.login}"
+    )
 
 
 def _seeds(given: schemas.Seeds, replicates: int) -> tuple[int, ...]:
@@ -66,10 +48,9 @@ def _seeds(given: schemas.Seeds, replicates: int) -> tuple[int, ...]:
     return suggest_seeds(given.replicates or replicates)
 
 
-def _execution(bench: Bench, given: schemas.NewRun) -> Execution | None:
+def _execution(held: Execution, given: schemas.NewRun) -> Execution | None:
     if given.concurrency is None and given.order is None:
         return None
-    held = bench.inventory.endpoint(given.endpoint).execution
     order = given.order or held.order
     shuffled = held.shuffle_seed if order == held.order else suggest_seeds(1)[0]
     return Execution.model_validate(
@@ -82,54 +63,32 @@ def _execution(bench: Bench, given: schemas.NewRun) -> Execution | None:
     )
 
 
-def _new(bench: Bench, given: schemas.NewRun) -> Running:
-    try:
-        with refused():
-            variation = bench.variation(
-                given.configuration, given.parts.given(), given.head
-            )
-        _ = bench.endpoint(given.endpoint)
-    except LookupError as e:
-        raise HTTPException(422, str(e)) from None
-    cases = _cases(bench, given)
-    with refused():
+def _new(bench: Bench, given: schemas.NewRun) -> Started:
+    with refused(NotFound):
+        variation = bench.variation(
+            given.configuration, given.parts.given(), given.head
+        )
+        at = bench.at(variation, given.endpoint)
         return bench.start(
             variation,
-            given.endpoint,
-            cases,
+            at.name,
+            _cases(bench, given),
             _seeds(given, 1),
             given.cleanup,
-            _execution(bench, given),
+            _execution(at.spec.execution, given),
         )
-
-
-def _repeated(bench: Bench, run: UUID, given: schemas.NewAgain) -> Running:
-    before = bench.run_by_id(run)
-    trial = resolve(bench.get, before.trial, Trial)
-    seen = {f.id for f in bench.families()}
-    for case in trial.cases:
-        if bench.catalog.family(case) not in seen:
-            raise HTTPException(422, f"no case {case} for {bench.person.login}")
-    with refused():
-        return bench.again(before, _seeds(given, len(trial.seeds)))
 
 
 def _queued(
     request: Request, response: Response, bench: Bench, running: Running, score: bool
 ) -> schemas.RunStartedData:
     started = running.started
-    assert started.endpoint is not None
-    trial = resolve(bench.get, started.trial, Trial)
-    skeleton = resolve(bench.get, trial.skeleton, Skeleton)
-    _ = Queue(bench.conn).put(
-        bench.person.id,
-        started.run,
-        started.endpoint.name,
-        started.execution.concurrency,
-        score,
-    )
+    trial = resolve(bench.store.get, started.trial, Trial)
+    skeleton = resolve(bench.store.get, trial.skeleton, Skeleton)
+    _ = bench.queue(running, score)
     response.headers["Location"] = request.app.url_path_for("run", run=str(started.run))
-    return started_of(started, trial, skeleton)
+    language = language_of(bench.rows, trial.skeleton)
+    return started_of(started, trial, skeleton, language)
 
 
 @router.post(
@@ -137,7 +96,8 @@ def _queued(
     status_code=202,
     responses={
         202: {
-            "description": "The run, started and queued: the worker sends it, finishes "
+            "description": "The runs, started and queued, a run per language its cases "
+            + "are sent in, `Location` the first's: the worker sends each, finishes "
             + "it and scores it whoever listens, and its events are at "
             + "`/api/runs/{run}/events`."
         }
@@ -145,8 +105,19 @@ def _queued(
 )
 def start(
     request: Request, response: Response, bench: BenchDep, given: schemas.NewRun
-) -> schemas.RunStartedData:
-    return _queued(request, response, bench, _new(bench, given), given.score)
+) -> schemas.StartedRuns:
+    started = _new(bench, given)
+    runs = [_queued(request, response, bench, r, given.score) for _, r in started.runs]
+    first = str(runs[0].run)
+    response.headers["Location"] = request.app.url_path_for("run", run=first)
+    return schemas.StartedRuns(
+        runs=runs,
+        left_out=[
+            schemas.LeftOut(language=c.language, cases=c.cases, why=c.refused)
+            for c in started.left_out
+            if c.language is not None and c.refused is not None
+        ],
+    )
 
 
 @router.post(
@@ -168,8 +139,10 @@ def again(
     run: UUID,
     given: schemas.NewAgain,
 ) -> schemas.RunStartedData:
-    _ = bench.run_by_id(run)
-    running = _repeated(bench, run, given)
+    before = bench.run(run)
+    replicates = len(resolve(bench.store.get, before.trial, Trial).seeds)
+    with refused(NotFound):
+        running = bench.again(before, _seeds(given, replicates))
     return _queued(request, response, bench, running, given.score)
 
 
@@ -192,8 +165,9 @@ def resume(
     run: UUID,
     given: schemas.NewResume,
 ) -> schemas.RunStartedData:
+    started = bench.run(run)
     with refused():
-        running = bench.resume(run)
+        running = bench.resume(started)
     return _queued(request, response, bench, running, given.score)
 
 
@@ -221,7 +195,7 @@ async def events(
         Header(alias="Last-Event-ID", description="the id of the last event had"),
     ] = None,
 ) -> StreamingResponse:
-    _ = await run_in_threadpool(bench.run_by_id, run)
+    _ = await run_in_threadpool(bench.run, run)
     return StreamingResponse(
         told(state(request), bench.person, run, last or 0),
         media_type=STREAM,
@@ -235,7 +209,7 @@ async def events(
     responses={409: {"description": "Nothing is queued or under way for the run"}},
 )
 def halt(bench: BenchDep, run: UUID) -> Response:
-    _ = bench.run_by_id(run)
+    _ = bench.run(run)
     try:
         _ = Queue(bench.conn).halt(run)
     except LookupError as e:
@@ -243,7 +217,7 @@ def halt(bench: BenchDep, run: UUID) -> Response:
     return Response(status_code=204)
 
 
-def job_of(placed: Placed | None) -> schemas.RunJob | None:
+def _job_of(placed: Placed | None) -> schemas.RunJob | None:
     if placed is None:
         return None
     job = placed.job
@@ -257,20 +231,23 @@ def job_of(placed: Placed | None) -> schemas.RunJob | None:
     )
 
 
-def run_of(
+def _run_of(
     bench: Bench,
     started: RunStarted,
     finished: bool,
     unscored: list[str] | None = None,
     placed: Placed | None = None,
 ) -> schemas.Run:
-    trial = resolve(bench.get, started.trial, Trial)
-    ran = bench.ran(started.run)
+    trial = resolve(bench.store.get, started.trial, Trial)
+    about = about_of(bench.rows, Subject(run=started.run))
+    ran = None if about.varied is None else bench.rows.edit(about.varied)
     return schemas.Run(
         id=started.run,
         at=started.at,
         trial=trial.digest,
         skeleton=trial.skeleton,
+        language=language_of(bench.rows, trial.skeleton),
+        started_with=about.started_with,
         engine=trial.engine,
         endpoint=None if started.endpoint is None else started.endpoint.name,
         cases=list(trial.cases),
@@ -278,17 +255,17 @@ def run_of(
         described=bench.described(started),
         ran=None
         if ran is None
-        else schemas.Ran(configuration=ran[0].thread, head=ran[0].id, parts=ran[1]),
+        else schemas.Ran(configuration=ran.thread, head=ran.id, parts=about.replaced),
         finished=finished,
         unscored=None
         if unscored is None
-        else [schemas.Unscored(scorer=s, name=bench.scorer_name(s)) for s in unscored],
-        job=job_of(placed),
+        else [schemas.Unscored(scorer=s, name=bench.title(s)) for s in unscored],
+        job=_job_of(placed),
     )
 
 
-def detail(bench: Bench, run: UUID) -> schemas.RunDetail:
-    started = bench.run_by_id(run)
+def _detail(bench: Bench, run: UUID) -> schemas.RunDetail:
+    started = bench.run(run)
     whole = bench.store.run(run)
     roots = [started.trial, *([] if started.canaries is None else [started.canaries])]
     registry = bench.store.load(roots)
@@ -298,13 +275,13 @@ def detail(bench: Bench, run: UUID) -> schemas.RunDetail:
     noted = () if finished is None else finished.findings
     placed = Queue(bench.conn).placed([run]).get(run)
     return schemas.RunDetail(
-        **run_of(bench, started, finished is not None, placed=placed).model_dump(),
+        **_run_of(bench, started, finished is not None, placed=placed).model_dump(),
         rig=schemas.Rig(**started.rig.model_dump()),
         finished_at=None if finished is None else finished.at,
         noted=[schemas.Finding.of(f) for f in noted],
         findings=[schemas.Finding.of(f) for f in check_run(whole, registry)],
         items=[item_of(skeleton, item) for item in whole.items],
-        scores=[graded_of(g) for g in bench.scores_of(run)],
+        scores=[graded_of(g) for g in bench.scores_of(started)],
     )
 
 
@@ -322,17 +299,19 @@ def runs(
         bool,
         Query(description="only the finished runs left to be scored by some scorer"),
     ] = False,
+    started_with: Annotated[
+        UUID | None,
+        Query(
+            alias="with",
+            description="a run: the runs started with it, itself the first of them",
+        ),
+    ] = None,
 ) -> list[schemas.Run]:
-    found = bench.runs()
+    found = bench.runs(
+        reaching=reaching, scored_by=scored_by, started_with=started_with
+    )
     if trial is not None:
         found = [r for r in found if r.trial == trial]
-    for kept in (
-        None if reaching is None else bench.reaching(reaching),
-        None if scored_by is None else bench.scored_by(scored_by),
-    ):
-        if kept is not None:
-            ids = {r.run for r in kept}
-            found = [r for r in found if r.run in ids]
     left: dict[UUID, list[str]] = {}
     if unscored:
         left = {r.run: scorers for r, scorers in bench.outstanding()}
@@ -341,21 +320,21 @@ def runs(
     finished = bench.store.finished([r.run for r in page])
     placed = Queue(bench.conn).placed([r.run for r in page])
     return [
-        run_of(bench, r, r.run in finished, left.get(r.run), placed.get(r.run))
+        _run_of(bench, r, r.run in finished, left.get(r.run), placed.get(r.run))
         for r in page
     ]
 
 
 @router.get("/runs/{run}")
 def run(bench: BenchDep, run: UUID) -> schemas.RunDetail:
-    return detail(bench, run)
+    return _detail(bench, run)
 
 
 @router.get("/runs/{run}/items", dependencies=[Depends(no_store)])
 def items(bench: BenchDep, run: UUID) -> list[schemas.ItemDetail]:
-    started = bench.run_by_id(run)
-    trial = resolve(bench.get, started.trial, Trial)
-    skeleton = resolve(bench.get, trial.skeleton, Skeleton)
+    started = bench.run(run)
+    trial = resolve(bench.store.get, started.trial, Trial)
+    skeleton = resolve(bench.store.get, trial.skeleton, Skeleton)
     return [
         schemas.ItemDetail(
             **item_of(skeleton, item).model_dump(),
@@ -371,10 +350,11 @@ def items(bench: BenchDep, run: UUID) -> list[schemas.ItemDetail]:
 
 @router.get("/runs/{run}/rendered-again")
 def rendered_again(bench: BenchDep, run: UUID) -> list[schemas.RenderedAgain]:
-    _ = bench.run_by_id(run)
+    _ = bench.run(run)
+    again = rendered(bench.conn, bench.inventory, bench.store.run(run))
     return [
         schemas.RenderedAgain(
             case=key.case, replicate=key.replicate, same=why is None, why=why
         )
-        for key, why in bench.rendered_again(bench.store.run(run)).items()
+        for key, why in again.items()
     ]

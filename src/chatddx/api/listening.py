@@ -10,9 +10,9 @@ from dataclasses import dataclass
 from uuid import UUID
 
 import psycopg
-from psycopg import Notify, sql
+from psycopg import Notify
 
-from chatddx.store.notify import Assembler, Message, channel
+from chatddx.store.notify import Assembler, Message, channel, listen, unlisten
 from chatddx.store.store import Connection
 
 log = logging.getLogger(__name__)
@@ -137,10 +137,8 @@ class Listener:
         with self._guard:
             wanted = set(self._hearing)
             asked, self._asked = self._asked, []
-        for name in sorted(wanted - listening):
-            _ = conn.execute(sql.SQL("LISTEN {}").format(sql.Identifier(name)))
-        for name in sorted(listening - wanted):
-            _ = conn.execute(sql.SQL("UNLISTEN {}").format(sql.Identifier(name)))
+        listen(conn, *sorted(wanted - listening))
+        unlisten(conn, *sorted(listening - wanted))
         listening.clear()
         listening.update(wanted)
         for _, future in asked:

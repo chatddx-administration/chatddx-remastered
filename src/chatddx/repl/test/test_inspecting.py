@@ -1,7 +1,7 @@
 import pytest
 
 from chatddx.bench import Bench
-from chatddx.bench.test.helpers import another_expectation
+from chatddx.bench.test.helpers import another_expectation, owned
 from chatddx.catalog import Entry, EntryField, Subject
 from chatddx.repl.test.helpers import Say, line_of, pattern, row, tagged, targets_of
 from chatddx.store import Catalog
@@ -9,6 +9,7 @@ from chatddx.test.world import (
     CASES,
     GPT_OSS,
     LINES,
+    LINES_GUIDED,
     MISTRAL,
     MISTRAL_MODEL,
     NATIVE,
@@ -49,15 +50,18 @@ def test_show_sets_each_part_beside_what_it_is_and_renders_the_request(say: Say)
     sv = [id for id, case in CASES.items() if case.language == "sv"]
 
     assert f"cell: {LINES} × {QWEN}" in written
-    assert "temperature 0.6, top_p 0.95" in line_of(written, "sampling")
+    assert "recommended sampling, for reasoning on" in line_of(written, "sampling")
+    assert '"temperature": 0.6' in written
     assert "text output" in line_of(written, "output")
     assert "List the plausible diagnoses, one per line, most likely first." in written
     assert "‹vignette›‹appendices›" in written
     assert '"seed": 7' in written
+    assert f"en: {len(CASES) - len(sv)} cases, as written" in written
     assert (
-        f"[warning] language.mixed: the request is en, but {len(sv)} of {len(CASES)} "
-        + "cases are sv"
+        f"[warning] translations.missing: {len(sv)} cases are in sv, and left out: "
+        + "lines has no translations into sv"
     ) in written
+    assert "sv: 3 cases, translated" in say(f"use {LINES_GUIDED}", "show")
 
 
 @pytest.mark.slow
@@ -65,7 +69,7 @@ def test_show_says_what_is_set_and_what_the_configuration_has(say: Say):
     written = say(f"cell {LINES} {QWEN}", "set reasoning off", "show")
 
     assert f"off (set; {LINES} has —)" in written
-    assert "enable_thinking false" in line_of(written, "reasoning")
+    assert "reasoning off" in line_of(written, "reasoning")
     assert '"enable_thinking": false' in written
 
 
@@ -166,7 +170,7 @@ def test_show_case_says_when_none_of_the_expectations_is_yours(bench: Bench, say
     case = bench.family("noted").case
     [schema] = bench.expectation_schemas(case)
     catalog, person = Catalog(bench.conn), bench.person.id
-    [mine] = bench.expectation_choices([case], schema)[case]
+    [mine] = owned(bench, case, schema)
     catalog.note(Subject(thread=mine), Entry(field=EntryField.DELETED), person)
     written = say("show case noted")
 
@@ -177,7 +181,7 @@ def test_show_case_says_when_none_of_the_expectations_is_yours(bench: Bench, say
 def test_show_without_a_name_shows_the_cell_s(say: Say):
     written = say(f"cell {LINES} {QWEN}", "show output")
 
-    assert "output lines (en)  " in written
+    assert "output lines  " in written
     assert "List the plausible diagnoses" in line_of(written, "guidance")
     assert "no runs of yours with this output" in written
 
@@ -212,7 +216,9 @@ def test_show_says_what_it_can_t_show(say: Say):
     assert "no case in the cell: show case NAME" in say("show case")
     assert "no case 'nope' for alice" in say("show case nope")
     assert "the cell has no configuration: show output NAME" in say("show output")
-    assert "the cell has no endpoint: show engine NAME" in say("show engine")
+    assert "the cell has no configuration or endpoint: show engine NAME" in say(
+        "show engine"
+    )
     assert "no scorer in the cell: show scorer NAME" in say("show scorer")
     assert "the cell has no reasoning" in say(f"cell {LINES} {QWEN}", "show reasoning")
 
@@ -224,10 +230,10 @@ def test_the_reasoning_table_sets_every_level_on_every_model(say: Say):
     assert written.count(QWEN) == 1
     assert written.count(GPT_OSS) == 1
     assert written.count(MISTRAL) == 1
-    assert "refused: always reasons" in written
+    assert "its nearest: always reasons" in written
     assert f"refused: {MISTRAL_MODEL} doesn't reason" in written
     assert "thinking_token_budget=N" in written
-    assert "the cell has no configuration on a model the facts know" in written
+    assert "the cell has no configuration asking for a level" in written
 
 
 @pytest.mark.slow

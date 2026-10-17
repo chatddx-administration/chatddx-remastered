@@ -55,7 +55,6 @@ def test_only_a_family_s_current_place_holds_a_vignette() -> None:
     reused = reg.add(
         Case(vignette=vignette.model_copy(update={"fingerprint": fp("another")}))
     )
-    assert families.holder(rows, resolve(reg.get, reused, Case).vignette) is None
     assert families.check_adoptable(rows, reused).id == "c1"
     assert families.family_of(rows, ids["case"]) == 1
 

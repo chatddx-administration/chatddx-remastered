@@ -2,12 +2,12 @@ from pathlib import Path
 
 import pytest
 
-from chatddx.catalog import Subject
+from chatddx.catalog import Subject, families, read, threads, titles
 from chatddx.curation import init, load_cases
 from chatddx.curation.test.cases import CASES, vignettes
 from chatddx.factors.cases import Appendix, Case
 from chatddx.identity import owns
-from chatddx.store import Catalog, People, Store
+from chatddx.store import People, Rows, Store
 from chatddx.store.store import Connection
 from chatddx.test.world import DATA, world_plan
 
@@ -64,29 +64,32 @@ def test_init_data_lands_appendices_the_cases_that_send_them_and_canary_sets(
     alice = People(conn).add("alice", "Alice")
     plan = world_plan()
     lines = init(conn, plan, CASES, vignettes(), alice, giftbag=True)
-    catalog, store = Catalog(conn), Store(conn)
+    store = Store(conn)
+    rows = Rows(conn)
     archive = People(conn).find("archive")
     assert archive is not None
 
-    [thread] = catalog.find("appendix", "labs", owner=archive.id)
-    appendix = store.get(catalog.head(thread).digest)
+    [thread] = threads.find(rows, "appendix", "labs", owner=archive.id)
+    appendix = store.get(threads.head(rows, thread).digest)
     assert (
         isinstance(appendix, Appendix)
         and appendix.text == "CRP 180 mg/L, leukocytes 16."
     )
-    assert alice.id in catalog.about(Subject(thread=thread)).collaborators
+    assert alice.id in read.about(rows, Subject(thread=thread)).collaborators
 
     [bare] = [c for c in vignettes().cases() if c.vignette.id == "whitespace"]
     sent = Case(vignette=bare.vignette, appendices=(appendix.digest,))
     assert store.get(sent.digest) == sent
-    assert catalog.family(sent.digest) == catalog.family(bare.digest)
+    assert families.family_of(rows, sent.digest) == families.family_of(
+        rows, bare.digest
+    )
     assert f"[archive case] whitespace with labs: created {sent.digest[7:13]}" in lines
-    assert catalog.title_of(sent.digest) == "whitespace with labs"
+    assert titles.title_of(rows, sent.digest) == "whitespace with labs"
 
     [schema] = [r.digest for r in plan.records if r.kind == "expectation_schema"]
-    expecting = catalog.expecting([sent.digest], schema)[sent.digest]
+    expecting = threads.expecting(rows, [sent.digest], schema)[sent.digest]
     [mine] = [e.thread for e, a in expecting if owns(alice.id, a)]
-    assert catalog.about(Subject(thread=mine)).owner == alice.id
+    assert read.about(rows, Subject(thread=mine)).owner == alice.id
 
-    [canaries] = catalog.find("canary_set", "probe", owner=archive.id)
-    assert alice.id in catalog.about(Subject(thread=canaries)).collaborators
+    [canaries] = threads.find(rows, "canary_set", "probe", owner=archive.id)
+    assert alice.id in read.about(rows, Subject(thread=canaries)).collaborators

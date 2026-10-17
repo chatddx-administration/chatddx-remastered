@@ -15,7 +15,7 @@ the World itself doesn't read it, as with the data set in `_data/` (docs/invento
 | Key | Meaning |
 | --- | --- |
 | `description` | What the run shows. Required. |
-| `configuration` | The configuration, as the bench finds it on the endpoint's model (`Bench.configuration`): `plan` is `plan (en, Qwen/Qwen3-8B-AWQ)` on a Qwen3 endpoint. One made in several languages is named whole, such as `free-text-guided (sv, Qwen/Qwen3-8B-AWQ)`. Required. |
+| `configuration` | The configuration, as the bench finds it by name (`Bench.variation`), such as `free-text-guided`. Its engine is set to the endpoint's. Required. |
 | `set` | Parts to set in the variation, each part to a chunk's name, or to `none` for none. |
 | `endpoint` | The World's endpoint the run goes to. Required. |
 | `cases` | The cases, by family id, or `<id> with <appendix>[, <appendix>]` for a case that sends appendices, as init-data titles it. At least one. |
@@ -28,17 +28,26 @@ the World itself doesn't read it, as with the data set in `_data/` (docs/invento
 A file with any other key, or a turn the fake can't read, is refused when it is read, naming the file.
 
 ## Running one
-The variation is the configuration with `set` applied, and the cases are found by their titles (`Bench.case_titled`).
+The variation is the configuration with its model set to the endpoint's engine's model, unless it is hand-written and
+has none, and `set` applied, and the cases are found by their titles (`Bench.case_titled`). So a configuration sent to
+an endpoint serving another engine than its own runs as a variation, its engine replaced and the rest worked out for
+that engine's model, and is named so: `plan-prompted+engine=gpt-oss-20b@fake`.
+
+A scripted run's cases are sent in one language: the configuration's own, as written, or one its translations
+cover, translated, so that its start is one run. Cases the bench would send in several, or leave out, are refused
+before anything is served: "lines: a scripted run's cases are sent in one language, not as en: sent; sv: lines has no
+translations into sv".
+
 The fake for the endpoint is served at the endpoint's address with the run's turns as its script, and the run is
 started, sent and finished through the bench, as the repl runs one (`Bench.start`, `Running.send`, `Running.finish`).
 `stop_after` is the run's own halt. A scored run is then scored by `Bench.score`, with a fake without a script at each
 judge's endpoint, so a judge answers as the fake does by itself.
 
-The fake for an endpoint is the one `chatddx fake-engines` serves there (`fakes.py:fake_at`, which the command uses
-too): for a local engine, from its start-up, which must run the fake vLLM; for a remote engine, a stand-in on this
-machine that asks for the key in the variable the endpoint's credential names: in the sample World,
-`CHATDDX_SAMPLE_KEY`, which `.env-devshell` and `.env-container` set to `sample-key`. A scripted run serves its own
-fakes on the endpoints' ports, so nothing else may listen there.
+`chatddx fake-engines` serves the fake engine (`fakes.py:fake_at`, which the command uses too): for a local engine, from
+its start-up, which must run the fake vLLM; for a remote engine, a stand-in on this machine that asks for the key in the
+variable the endpoint's credential names: in the sample World, `CHATDDX_SAMPLE_KEY`, which `.env-devshell` and
+`.env-container` set to `sample-key`. A scripted run serves its own fakes on the endpoints' ports, so nothing else may
+listen there.
 
 The fake stays a leaf: it reads a script and knows nothing of the bench. The scripted runs are the edge that joins
 them.
@@ -58,15 +67,15 @@ The sample World's ten:
 | `invalid` | `plan-prompted` on `gpt-oss-20b@fake` | `Dutchfall12w` | A plan shown its schema with nothing enforcing it, which breaks it. |
 | `broken` | `free-text` on `qwen3-8b-awq@fake` | `Dutchfall13w` | A server that goes away halfway through the answer. |
 | `runaway` | `diagnoses` on `gpt-oss-20b@fake` | `Dutchfall14w` | A structured answer that runs away in newlines, cut short by the runner. |
-| `stopped` | `free-text-guided (sv, …)` on `qwen3-8b-awq@fake` | `casesfromedn2` | A Swedish run halted as it streams. |
+| `stopped` | `free-text-guided` on `qwen3-8b-awq@fake` | `casesfromedn2` | A Swedish run, the configuration translated, halted as it streams. |
 | `unfinished` | `diagnoses` on `qwen3-8b-awq@fake` | `Dutchfall15w` | A run never finished, and so never scored. |
 | `judged` | `free-text` on `qwen3-8b-awq@fake` | `Dutchfall11w` | An answer to a case Olof wrote notes on, scored by the judges as well as the patterns. |
 | `appendix` | `diagnoses` on `qwen3-8b-awq@fake` | `Dutchfall11w with ultrasound` | An appendix that changes the right answer. |
 | `several` | `diagnoses` on `qwen3-8b-awq@fake` | four | Answers well, a 503 while the engine loads, and a server that goes away. |
 | `remote` | `free-text` on `mistral-small@remote` | `Dutchfall14w` | A run on the remote engine, whose endpoint asks for a key. |
 
-The test World's six are the same shapes on its cases: `valid`, `stopped`, `unfinished`, `several` (not scored),
-`judged` and `appendix`.
+The test World's six are the same shapes on its cases: `valid`, `stopped`, `unfinished`, `several` (not scored, on
+`crlf` and `whitespace`, as `lines` leaves Swedish cases out), `judged` and `appendix`.
 
 ## Tests
 src/chatddx/scripted/test/.

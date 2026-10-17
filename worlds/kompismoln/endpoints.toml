@@ -4,13 +4,13 @@
 # includes it.
 
 [endpoint."qwen3-8b@pelle"]
-engine = "sha256:a6845f87061ef01720d1e30820b8918c14dc65511f006bcf59a5ce54981b7ca0"
+engine = "sha256:e28e829cac0c4c9819c0ef80826c58e409f1f078292496e5f1f322541678369a"
 url = "http://pelle.km:12009/v1/"
 host = "pelle"
 max_jobs = 1
 
 [endpoint."gpt-oss-20b@malborg"]
-engine = "sha256:598792a20d41f348bf661d4587cb7e39d24adc8dc56a7461bf312f5197c20ba2"
+engine = "sha256:e0d96eadaa35a1dfe7cfbe5c685d31a2e5a311105b4b3f948455f2e0041ab8b6"
 url = "http://malborg.km:12009/v1/"
 host = "malborg"
 max_jobs = 4
@@ -19,7 +19,7 @@ max_jobs = 4
 bind = "::"
 
 [host.pelle.models]
-"sha256:269a1b722c13eb6692de5fa3b438796ee70c39f79f4f9f16e3711c10eca844f6" = "/srv/models/huggingface/models--Qwen--Qwen3-8B-AWQ/snapshots/4da05a8edb55c6046cce958586c33b61da07bb79"
+"sha256:a22391757f4757a1798ec6f4a599bbd988ff2fedd70685af9931dfe869d292c7" = "/srv/models/huggingface/models--Qwen--Qwen3-8B-AWQ/snapshots/4da05a8edb55c6046cce958586c33b61da07bb79"
 
 [host.pelle.templates]
 e132ae041e1217b5e1114eb9dc292484a7f478df945d72fa49ba01b88d8ec01a = "/nix/store/sxqqnn8jqlch6nklh7g2rwfkz29ya33x-chat_template.jinja"
@@ -28,7 +28,7 @@ e132ae041e1217b5e1114eb9dc292484a7f478df945d72fa49ba01b88d8ec01a = "/nix/store/s
 bind = "::"
 
 [host.malborg.models]
-"sha256:1c249b7c8dfc85748abe853504e35d084adb1ae0cd241713fb8fcbbf5f2f454e" = "/srv/models/huggingface/models--openai--gpt-oss-20b/snapshots/6cee5e81ee83917806bbde320786a8fb61efebee"
+"sha256:8325b4ac257bf3cc56f9e12ec5b9c31cb2d7911da2edb7024ba7a4474c54edef" = "/srv/models/huggingface/models--openai--gpt-oss-20b/snapshots/6cee5e81ee83917806bbde320786a8fb61efebee"
 
 [host.malborg.templates]
 a4c9919cbbd4acdd51ccffe22da049264b1b73e59055fa58811a99efbd7c8146 = "/nix/store/b2wrirjmiw1zk4ciprdgpvjk12cximh9-chat_template.jinja"

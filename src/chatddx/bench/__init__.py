@@ -3,44 +3,44 @@ from .errors import Ambiguous, Conflict, MovedOn, NotFound, OverQuota
 from .model import (
     KINDS,
     WRITTEN,
+    Carried,
+    Checked,
+    Endpoint,
     Family,
     Graded,
+    Moved,
     Proposed,
     Reach,
-    Saved,
+    Started,
     Taken,
     Written,
     word_of,
 )
-from .outcome import Outcome, outcome, usage, used
-from .runs import ScoreHalt, ScorerStarted, ScoringEvent
-from .variation import OPTIONAL, PARTS, TriedVariation
+from .runs import ScorerStarted, ScoringEvent
+from .variation import TriedVariation
 
 __all__ = [
     "KINDS",
-    "OPTIONAL",
-    "PARTS",
     "WRITTEN",
     "Ambiguous",
     "Bench",
+    "Carried",
+    "Checked",
     "Conflict",
+    "Endpoint",
     "Family",
     "Graded",
+    "Moved",
     "MovedOn",
     "NotFound",
-    "Outcome",
     "OverQuota",
     "Proposed",
     "Reach",
-    "Saved",
-    "ScoreHalt",
     "ScorerStarted",
     "ScoringEvent",
+    "Started",
     "Taken",
     "TriedVariation",
     "Written",
-    "outcome",
-    "usage",
-    "used",
     "word_of",
 ]

@@ -7,9 +7,10 @@ import pytest
 
 from chatddx.cli import main
 from chatddx.curation import Plan
-from chatddx.factors.engine import RemoteEngine
+from chatddx.factors.engine import served_model_name
 from chatddx.fake_vllm.served import CLOSURE
-from chatddx.inventory import Inventory, World, served
+from chatddx.inventory import Inventory, World
+from chatddx.runner.wire import served
 from chatddx.store import Store
 from chatddx.store.store import Connection
 from chatddx.test.world import (
@@ -51,7 +52,9 @@ def asking(
                 deadline = time.monotonic() + 5
                 while name not in heard and time.monotonic() < deadline:
                     try:
-                        heard[name] = served(str(endpoint.url), 1, secret)
+                        heard[name] = served(
+                            str(endpoint.url), secret=secret, timeout=1
+                        )
                     except OSError:
                         time.sleep(0.01)
         finally:
@@ -114,9 +117,7 @@ def test_a_remote_engine_on_this_machine_is_stood_in_for_asking_for_its_key(
 
     asker.join()
     remote = plan.named("remote_engine", REMOTE).digest
-    engine = Store(conn).get(remote)
-    assert isinstance(engine, RemoteEngine)
-    assert heard == {REMOTE: [engine.model]}
+    assert heard == {REMOTE: [served_model_name(remote, Store(conn).get)]}
 
 
 @pytest.mark.slow

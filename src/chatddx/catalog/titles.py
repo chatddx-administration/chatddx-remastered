@@ -7,7 +7,13 @@ from pydantic import JsonValue
 
 from chatddx.factors.base import Component, resolve
 from chatddx.factors.cases import Appendix, Case
-from chatddx.factors.engine import LocalEngine, ModelArtifact, RemoteEngine
+from chatddx.factors.engine import (
+    LocalEngine,
+    LocalModel,
+    RemoteEngine,
+    RemoteModel,
+)
+from chatddx.factors.facts import ModelFacts
 from chatddx.factors.request import (
     Compilation,
     FewShot,
@@ -34,8 +40,7 @@ from chatddx.factors.scoring import (
 )
 from chatddx.factors.trial import CanarySet, Trial
 
-from .families import bindings, family_of
-from .language import own
+from .families import family_of
 from .model import Subject
 from .read import Reader, about, abouts, heads_of
 from .threads import divergence, head
@@ -59,7 +64,7 @@ def short(digest: str) -> str:
     return digest.removeprefix("sha256:")[:6]
 
 
-def snippet(text: str, limit: int = 40) -> str:
+def _snippet(text: str, limit: int = 40) -> str:
     words = " ".join(text.split())
     if len(words) > limit:
         words = words[: limit + 1].rsplit(" ", 1)[0] + "…"
@@ -95,7 +100,7 @@ def _schema(schema: dict[str, JsonValue] | None) -> str | None:
             return None
 
 
-def describe_recipe(recipe: Recipe, title: Title) -> str:
+def _describe_recipe(recipe: Recipe, title: Title) -> str:
     parts = (
         recipe.instructions,
         recipe.few_shot,
@@ -106,17 +111,18 @@ def describe_recipe(recipe: Recipe, title: Title) -> str:
         recipe.passthrough,
         recipe.translations,
         recipe.toolset,
+        recipe.model,
     )
     described = " · ".join(title(p) for p in parts if p is not None)
     return described if recipe.purpose == "generation" else f"judge: {described}"
 
 
-def describe_case(root: str, appendices: Iterable[str], title: Title) -> str:
+def _describe_case(root: str, appendices: Iterable[str], title: Title) -> str:
     titles = [title(a) for a in appendices]
     return f"{root} with {', '.join(titles)}" if titles else root
 
 
-def describe_change(path: str, after: JsonValue, title: Title) -> str:
+def _describe_change(path: str, after: JsonValue, title: Title) -> str:
     key = path.removeprefix("/recipe/").removeprefix("/")
     match after:
         case None:
@@ -124,28 +130,32 @@ def describe_change(path: str, after: JsonValue, title: Title) -> str:
         case str() if _DIGEST.match(after):
             return f"{key}: {title(after)}"
         case str():
-            return f"{key}: {snippet(after)}"
+            return f"{key}: {_snippet(after)}"
         case _:
             return f"{key}: {_value(after)}"
 
 
-def describe(component: Component, title: Title, language: str | None = None) -> str:
+def describe(component: Component, title: Title) -> str:
     match component:
         case Instructions(text=text):
-            return snippet(_text(text))
+            return _snippet(_text(text))
         case FewShot(messages=messages):
             return f"few-shot, {_count(len(messages), 'message')}"
         case Prompt(segments=segments):
-            return snippet(_text(segments))
+            return _snippet(_text(segments))
         case Output(contract=contract, json_schema=schema):
             kind = f"tool {contract.name}" if contract.kind == "tool" else contract.kind
             described = _schema(schema)
             return f"{kind} output" + ("" if described is None else f": {described}")
-        case Sampling():
+        case Sampling(recommended=recommended):
             values = component.model_dump(include=set(_SAMPLED), exclude_none=True)
-            if not values:
-                return "default sampling"
-            return ", ".join(f"{k} {_value(v)}" for k, v in values.items())
+            given = [f"{k} {_value(v)}" for k, v in values.items()]
+            if recommended:
+                return ", ".join(["recommended sampling", *given])
+            return ", ".join(given) or "default sampling"
+        case Reasoning(level=str() as level, thinking_token_budget=budget):
+            said = "default reasoning" if level == "default" else f"reasoning {level}"
+            return said if budget is None else f"{said}, budget {budget}"
         case Reasoning(effort=effort, thinking_token_budget=budget):
             parts = [] if effort is None else [f"effort {effort}"]
             parts += [
@@ -157,9 +167,9 @@ def describe(component: Component, title: Title, language: str | None = None) ->
             return name
         case Toolset(tools=tools):
             return "with " + ", ".join(title(t) for t in tools)
-        case Translations(entries=entries):
-            into = "" if language is None else f"{language} "
-            return f"{into}translations, {_count(len(entries), 'text')}"
+        case Translations(into=into):
+            texts = max(len(entries) for entries in into.values())
+            return f"translations into {', '.join(into)}, {_count(texts, 'text')}"
         case Passthrough(body=body):
             return "passthrough: " + ", ".join(body)
         case Skeleton(purpose=purpose):
@@ -176,18 +186,22 @@ def describe(component: Component, title: Title, language: str | None = None) ->
         case Scoring(scorer=scorer, expectations=expectations):
             return f"{title(scorer)} against {_count(len(expectations), 'expectation')}"
         case Appendix(text=text):
-            return snippet(text)
+            return _snippet(text)
         case Expectation(case=case):
             return f"expectation for {title(case)}"
         case Case(vignette=vignette, appendices=appendices):
-            return describe_case(f"{vignette.source}/{vignette.id}", appendices, title)
-        case ModelArtifact(repo=repo):
+            return _describe_case(f"{vignette.source}/{vignette.id}", appendices, title)
+        case LocalModel(repo=repo):
             return repo
         case LocalEngine(model=model, runtime=runtime, hardware=hardware):
             runs = f"{runtime.server} {runtime.version} ({hardware.gpu})"
             return f"{title(model)} on {runs}"
-        case RemoteEngine(model=model, provider=provider):
-            return f"{model} from {provider}"
+        case RemoteModel(name=name, provider=provider):
+            return f"{name} from {provider}"
+        case RemoteEngine(model=model):
+            return f"{title(model)} remotely"
+        case ModelFacts(model=model):
+            return f"facts about {model}"
         case ExpectationSchema(json_schema=schema):
             return _schema(schema) or f"expectation schema {short(component.digest)}"
         case CanarySet(canaries=canaries):
@@ -204,7 +218,7 @@ def title(rows: Reader, thread: int) -> str:
     if diverged is not None:
         base = title(rows, diverged.base.thread)
         changes = [
-            describe_change(path, after, partial(title_of, rows))
+            _describe_change(path, after, partial(title_of, rows))
             for path, (_, after) in diverged.varies.items()
         ]
         return ", ".join([base, *changes]) if changes else f"a fork of {base}"
@@ -238,12 +252,12 @@ def _case_title(rows: Reader, digest: str) -> str:
     if family is None:
         return _derive(rows, digest)
     case = resolve(rows.get, digest, Case)
-    current = bindings(rows, family)[-1].vignette
+    current = rows.bindings([family])[-1].vignette
     name = about(rows, Subject(family=family)).name
     root = name or f"{current.source}/{current.id}"
     if case.vignette != current:
         root += " (earlier)"
-    return describe_case(root, case.appendices, partial(title_of, rows))
+    return _describe_case(root, case.appendices, partial(title_of, rows))
 
 
 def _derive(rows: Reader, digest: str, compilation: str | None = None) -> str:
@@ -255,5 +269,5 @@ def _derive(rows: Reader, digest: str, compilation: str | None = None) -> str:
             else [resolve(rows.get, compilation, Compilation)]
         )
         if compilations:
-            return describe_recipe(compilations[0].recipe, partial(title_of, rows))
-    return describe(component, partial(title_of, rows), own(rows, digest))
+            return _describe_recipe(compilations[0].recipe, partial(title_of, rows))
+    return describe(component, partial(title_of, rows))

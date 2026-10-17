@@ -120,6 +120,17 @@ def post(
     return Stream(response)
 
 
+def served(
+    url: str, *, secret: str | None = None, timeout: float | None = None
+) -> list[str]:
+    headers = {} if secret is None else {"Authorization": f"Bearer {secret}"}
+    listing = urllib.request.Request(url.rstrip("/") + "/models", headers=headers)
+    with urllib.request.urlopen(listing, timeout=timeout) as response:
+        listed: Any = json.loads(response.read())
+    models = cast(list[dict[str, Any]], listed.get("data") or [])
+    return [str(m.get("id")) for m in models]
+
+
 def events(lines: Iterable[bytes]) -> Iterator[str]:
     data: list[str] = []
     for raw in lines:

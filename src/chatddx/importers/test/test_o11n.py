@@ -184,7 +184,7 @@ def test_the_tables_it_prints_plan_the_engine_it_imported_and_start_it_as_served
         tmp_path, Facts(), rig(), World(tmp_path, Inventory(), engines=(engines,))
     )
     for i in imports:
-        assert plan.named("model", i.name).digest == i.model.digest
+        assert plan.named("local_model", i.name).digest == i.model.digest
         assert plan.named("local_engine", i.name).digest == i.engine.digest
         assert plan.named("local_engine", i.name).tags == (i.host,)
     world = tmp_path / "inventory.toml"
@@ -265,7 +265,7 @@ def test_it_refuses_what_an_engine_can_t_record() -> None:
             "no Hugging Face repo at a revision",
         ),
         ({"chat_template": {"error": "OSError: gone"}}, "no chat_template: OSError"),
-        ({"extra_args": ["--port", "1"]}, "set --port"),
+        ({"extra_args": ["--port", "1"]}, r"may not set \['--port'\]"),
         ({"extra_args": ["--served-model-name", "x"]}, "may not set"),
         ({"extra_args": ["--config", "x.yaml"]}, "may not use"),
     ]:

@@ -6,11 +6,12 @@ from uuid import UUID
 from pydantic import BaseModel, ConfigDict, Field, JsonValue, model_validator
 
 from chatddx import catalog, settings
-from chatddx.bench import PARTS, Outcome
 from chatddx.factors import base as factors
 from chatddx.factors.cases import CleanupOp
+from chatddx.factors.request import RECIPE_PARTS
 from chatddx.factors.trial import Order
 from chatddx.identity import Person, Role
+from chatddx.runner import Outcome
 
 
 class _Schema(BaseModel):
@@ -113,6 +114,10 @@ class Thread(_Schema):
     owner: str | None
     tags: list[str]
     language: str | None = Field(description="its head's")
+    translated: list[str] = Field(
+        description="a configuration's: the languages its head's translations carry it "
+        + "into"
+    )
     head: Edit
 
 
@@ -142,6 +147,11 @@ type Chunk = Annotated[
 ]
 
 
+type ModelDigest = Annotated[
+    str | None, Field(description="a model's digest, which can't be taken out")
+]
+
+
 class Parts(_Schema):
     instructions: Chunk = None
     few_shot: Chunk = None
@@ -152,10 +162,13 @@ class Parts(_Schema):
     passthrough: Chunk = None
     translations: Chunk = None
     toolset: Chunk = None
+    model: ModelDigest = None
 
     def given(self) -> dict[str, str | None]:
         return {
-            p: getattr(self, p) or None for p in PARTS if p in self.model_fields_set
+            p: getattr(self, p) or None
+            for p in RECIPE_PARTS
+            if p in self.model_fields_set
         }
 
 
@@ -164,7 +177,11 @@ class Varying(Parts):
         None,
         description="the edit it varies, by id: the configuration's head unless given",
     )
-    endpoint: str | None = Field(None, description="to render and lint it for")
+    endpoint: str | None = Field(
+        None,
+        description="to render and lint it for: the one serving a configuration's "
+        + "model unless named, and one a hand-written configuration names",
+    )
     tag: list[str] = Field(
         default_factory=list[str],
         description="the cases its reach is over: any of these, else every one",
@@ -237,6 +254,15 @@ class Part(_Schema):
     title: str | None
     summary: str | None
     replaced: bool
+    landed: str | None = Field(
+        None,
+        description="a reasoning level's, or the one a recommended sampling follows: "
+        + "the level the engine's model is asked for",
+    )
+    nearest: list[str] = Field(
+        default_factory=list[str],
+        description="why the level asked for landed on its nearest instead",
+    )
 
 
 class Finding(_Schema):
@@ -266,8 +292,39 @@ class Proposal(_Schema):
     compilation: str | None
 
 
+class Moved(_Schema):
+    about: str = Field(description="the model it is compiled for, by name")
+    facts: Edit | None = Field(
+        description="the head of the facts about it, which correct the ones its head "
+        + "was compiled against where they change what it sends"
+    )
+    compiled: str | None = Field(description="the facts its head was compiled against")
+    model: Edit | None = Field(
+        description="its model's head, a new version of the one its recipe names"
+    )
+    held: str | None = Field(description="the model its recipe names")
+    digest: str | None = Field(description="the skeleton following comes to")
+    compilation: str | None
+    refused: str | None = Field(
+        description="why following is refused: the facts refuse what its recipe asks"
+    )
+
+
+class Follows(_Schema):
+    origin: Proposal | None = Field(
+        description="a fork's whose origin has moved on: what following it would keep"
+    )
+    moved: Moved | None = Field(
+        description="a configuration's whose facts or model have moved on: what "
+        + "following them would keep"
+    )
+
+
 class NewFollow(_Schema):
     head: int = Field(description="the edit the change was made on: the head seen")
+    follow: Literal["origin", "moved"] = Field(
+        "origin", description="its origin, or the facts and model that moved on"
+    )
     language: Language = None
 
 
@@ -284,11 +341,6 @@ class MadeEdit(Edit):
     )
 
 
-class NewCarry(_Schema):
-    head: int = Field(description="the edit the change was made on: the head seen")
-    case: str = Field(description="another case of the expectation's family")
-
-
 class Reach(_Schema):
     scorer: int
     name: str
@@ -298,6 +350,17 @@ class Reach(_Schema):
     cases: int
     missing: list[int]
     choosing: list[int]
+
+
+class Carried(_Schema):
+    language: str | None = Field(
+        description="the cases' language; null for the configuration's own when it is "
+        + "unknown"
+    )
+    families: list[int]
+    translated: bool
+    skeleton: str | None = Field(description="the request they are sent as")
+    refused: str | None = Field(description="why they can't be sent, and are left out")
 
 
 class Variation(_Schema):
@@ -312,6 +375,10 @@ class Variation(_Schema):
     seed: int
     request: dict[str, JsonValue]
     findings: list[Finding] | None
+    languages: list[Carried] = Field(
+        description="the languages its cases are sent in, the configuration's own "
+        + "first, and those it can't be sent in"
+    )
     reach: list[Reach]
 
 
@@ -362,7 +429,7 @@ class NewTake(_Schema):
 class NewTyped(_Schema):
     text: str = Field(description="the case as typed, kept as written")
     name: str | None = None
-    language: str | None = Field(None, description="the language it is typed in")
+    language: str = Field(description="the language it is typed in, such as 'sv'")
     source: str | None = Field(
         None,
         description="the database source it is kept in, when the World has several",
@@ -400,8 +467,9 @@ class NewCase(_Schema):
 class FamilyDetail(Family):
     description: str | None
     collaborators: list[str]
-    appendices: list[str]
-    expectations: list[Expected]
+    cases: list[FamilyCase] = Field(
+        description="its cases at its current vignette, the one it stands for first"
+    )
 
 
 class Vignette(_Schema):
@@ -416,7 +484,8 @@ class Endpoint(_Schema):
     engine: str
     title: str | None
     model: str | None
-    url: str | None
+    serves: str | None = Field(description="the model its engine serves, by digest")
+    url: str
     host: str | None
     max_jobs: int
     credential: str | None
@@ -513,13 +582,21 @@ class NewRun(Seeds):
         description="the edit it varies, by id: the configuration's head unless given",
     )
     parts: Parts = Parts()
-    endpoint: str
-    families: list[int] | None = Field(None, description="the cases to run, by family")
+    endpoint: str | None = Field(
+        None,
+        description="where to send it: the one serving its model unless named, and "
+        + "one a hand-written configuration names",
+    )
+    families: list[int] | None = Field(
+        None, min_length=1, description="the cases to run, by family"
+    )
     tags: list[str] | None = Field(
         None, description="or the cases of the families with any of these"
     )
     cases: list[str] | None = Field(
-        None, description="or the cases themselves, each of a family's current ones"
+        None,
+        min_length=1,
+        description="or the cases themselves, each of a family's current ones",
     )
     cleanup: list[CleanupOp] | None = Field(
         None,
@@ -588,6 +665,11 @@ class Run(_Schema):
     at: datetime
     trial: str
     skeleton: str
+    language: str | None = Field(description="the language its request is sent in")
+    started_with: UUID | None = Field(
+        description="the first run of the start it is one of; null for the first, and "
+        + "for a run started alone"
+    )
     engine: str
     endpoint: str | None
     cases: list[str]
@@ -687,6 +769,10 @@ class NewResume(_Schema):
     )
 
 
+class Paused(_Schema):
+    paused: bool
+
+
 class NewStop(_Schema):
     now: bool = Field(
         default=False,
@@ -720,10 +806,27 @@ class RunStartedData(_Schema):
     run: UUID
     trial: str
     skeleton: str
+    language: str | None = Field(description="the language its request is sent in")
     endpoint: str | None
     cases: list[str]
     seeds: list[int]
     greedy: bool
+
+
+class LeftOut(_Schema):
+    language: str
+    cases: list[str]
+    why: str
+
+
+class StartedRuns(_Schema):
+    runs: list[RunStartedData] = Field(
+        description="a run per language its cases are sent in: the configuration's "
+        + "own first, as written, then each it is translated into"
+    )
+    left_out: list[LeftOut] = Field(
+        description="the cases of each language the configuration can't be sent in"
+    )
 
 
 class ItemStartedData(_Schema):

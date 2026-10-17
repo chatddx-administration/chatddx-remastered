@@ -8,8 +8,8 @@ contract = { kind = "text" }
 [sampling.generation-config]
 
 [sampling.recommended]
-description = "What the model's makers recommend for its default reasoning."
-from_facts = { effort = "default" }
+description = "What the model's makers recommend for the reasoning asked for."
+recommended = true
 
 [sampling.greedy]
 temperature = 0
@@ -22,29 +22,30 @@ presence_penalty = 0
 frequency_penalty = 0
 
 [reasoning.off]
-from_facts = { effort = "off" }
+level = "off"
 
 [reasoning.on]
-from_facts = { effort = "on" }
+level = "on"
 
 [reasoning.minimal]
-from_facts = { effort = "minimal" }
+level = "minimal"
 
 [reasoning.low]
-from_facts = { effort = "low" }
+level = "low"
 
 [reasoning.medium]
-from_facts = { effort = "medium" }
+level = "medium"
 
 [reasoning.high]
-from_facts = { effort = "high" }
+level = "high"
 
 [reasoning.xhigh]
-from_facts = { effort = "xhigh" }
+level = "xhigh"
 
 [reasoning.on-budget-2048]
 description = "A budget worth comparing against plain on."
-from_facts = { effort = "on", budget = 2048 }
+level = "on"
+thinking_token_budget = 2048
 
 [passthrough.min-tokens]
 description = "No answer shorter than 8 tokens: vLLM's min_tokens."

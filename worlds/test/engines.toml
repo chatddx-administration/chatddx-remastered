@@ -1,18 +1,18 @@
-[model.qwen3-8b-awq]
+[local_model.qwen3-8b-awq]
 repo = "Qwen/Qwen3-8B-AWQ"
 revision = "fake"
 files = [
   { path = "none", sha256 = "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855" }
 ]
 
-[model.gpt-oss-20b]
+[local_model.gpt-oss-20b]
 repo = "openai/gpt-oss-20b"
 revision = "fake"
 files = [
   { path = "none", sha256 = "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855" }
 ]
 
-[model.mistral-7b]
+[local_model.mistral-7b]
 repo = "test/mistral-7b"
 revision = "fake"
 files = [
@@ -65,8 +65,12 @@ hardware = { gpu = "none", compute_capability = [0, 0], vram_mib = 0, driver = "
 runtime = { version = "0.24.0+fake", closure = "chatddx fake-vllm" }
 chat_template = "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
 
+[remote_model.unknown]
+description = "A model no facts know, served remotely."
+provider = "test"
+name = "test/unknown"
+
 [remote_engine."unknown@remote"]
 description = "A remote engine that only a fake stands in for, serving a model no facts know."
 tags = ["remote"]
-provider = "test"
-model = "test/unknown"
+model = "unknown"

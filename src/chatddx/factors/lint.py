@@ -10,8 +10,9 @@ from referencing.jsonschema import UnknownDialect, specification_with
 
 from .base import Component, Finding, resolve
 from .bundle import Registry
-from .engine import LocalEngine, ModelArtifact, flag_names
-from .request import NativeOutput, Output, Skeleton, ToolOutput
+from .engine import LocalEngine, LocalModel, flag_names, model_of
+from .facts import ModelFacts
+from .request import Compilation, NativeOutput, Output, Skeleton, ToolOutput
 from .scoring import Expectation, ExpectationSchema, Judge, Scorer
 from .select import reaches
 from .trial import Trial
@@ -24,7 +25,7 @@ Reasons = Callable[[str], bool | None]
 Validators = dict[str, Validator | str]
 
 
-def _model(c: ModelArtifact, _: Registry) -> Iterable[Finding]:
+def _model(c: LocalModel, _: Registry) -> Iterable[Finding]:
     if not _COMMIT.match(c.revision):
         yield Finding(
             code="model.revision",
@@ -305,6 +306,28 @@ def _pair(
     yield from _runtime(c.digest, skeleton, registry.get(c.engine), by_default)
 
 
+def _made_for(c: Trial | Judge, registry: Registry) -> Iterable[Finding]:
+    made = [
+        found.facts
+        for d in registry
+        if isinstance(found := registry.get(d), Compilation)
+        and found.skeleton == c.skeleton
+    ]
+    if not made or None in made:
+        return
+    models = {resolve(registry.get, f, ModelFacts).model for f in made if f}
+    serves = model_of(c.engine, registry.get).name
+    if serves in models:
+        return
+    word = "trial" if isinstance(c, Trial) else "judge"
+    yield Finding(
+        code=f"{word}.engine_unmatched",
+        message=f"the skeleton is worked out for {', '.join(sorted(models))}, and the "
+        + f"engine serves {serves}",
+        subject=c.digest,
+    )
+
+
 def _judge(c: Judge, registry: Registry) -> Iterable[Finding]:
     if resolve(registry.get, c.skeleton, Skeleton).greedy and len(c.seeds) > 1:
         yield Finding(
@@ -324,7 +347,7 @@ def lint(
     known: Validators = {}
     for d in registry if digests is None else digests:
         match registry.get(d):
-            case ModelArtifact() as c:
+            case LocalModel() as c:
                 findings.extend(_model(c, registry))
             case LocalEngine() as c:
                 findings.extend(_engine(c, registry))
@@ -338,10 +361,12 @@ def lint(
                 findings.extend(_expectation(c, registry, known))
             case Trial() as c:
                 findings.extend(_pair(c, registry, reasons))
+                findings.extend(_made_for(c, registry))
                 if languages is not None:
                     findings.extend(_languages(c, languages))
             case Judge() as c:
                 findings.extend(_pair(c, registry, reasons))
+                findings.extend(_made_for(c, registry))
                 findings.extend(_judge(c, registry))
             case _:
                 pass

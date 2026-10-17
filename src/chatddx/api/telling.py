@@ -4,6 +4,7 @@ from uuid import UUID
 from fastapi.concurrency import run_in_threadpool
 
 from chatddx.bench import Bench
+from chatddx.catalog.language import language_of
 from chatddx.factors.base import resolve
 from chatddx.factors.bundle import Registry
 from chatddx.factors.request import Skeleton
@@ -48,7 +49,7 @@ type _Key = tuple[str, int]
 
 class Telling:
     def __init__(self, bench: Bench, run: UUID, after: int) -> None:
-        started = bench.run_by_id(run)
+        started = bench.run(run)
         canaries = [] if started.canaries is None else [started.canaries]
         self._bench: Bench = bench
         self._started: RunStarted = started
@@ -107,7 +108,7 @@ class Telling:
 
     def tail(self, job: Job | None) -> list[str]:
         told: list[Named] = []
-        if not self._scored and (graded := self._bench.scores_of(self.run)):
+        if not self._scored and (graded := self._bench.scores_of(self._started)):
             scores = [graded_of(g) for g in graded]
             told.append(("run.scored", schemas.RunScoredData(scores=scores)))
         if job is not None and job.status == "failed":
@@ -120,7 +121,8 @@ class Telling:
     def _row(self, record: Record) -> list[Named]:
         match record:
             case RunStarted():
-                data = started_of(record, self._trial, self._skeleton)
+                language = language_of(self._bench.rows, self._trial.skeleton)
+                data = started_of(record, self._trial, self._skeleton, language)
                 return [("run.started", data)]
             case CanaryCall():
                 return [canary_of(record)]
@@ -141,7 +143,7 @@ class Telling:
                 ]
             case ScoreStarted():
                 self._scored = False
-                scorer = resolve(self._bench.get, record.scoring, Scoring).scorer
+                scorer = resolve(self._bench.store.get, record.scoring, Scoring).scorer
                 return [score_started_of(self._bench, scorer, record.score)]
             case ScoreItem():
                 self._scored = False
@@ -165,7 +167,7 @@ async def told(
 ) -> AsyncIterator[str]:
     conn = await run_in_threadpool(held.connect)
     try:
-        bench = Bench(conn, person, held.inventory, held.facts)
+        bench = Bench(conn, person, held.inventory)
         queue = Queue(conn)
         async with held.listener.heard(run) as hearing:
             telling = await run_in_threadpool(Telling, bench, run, after)
@@ -185,7 +187,8 @@ async def told(
                     under_way = await run_in_threadpool(queue.open, run) is not None
             for text in await run_in_threadpool(telling.rows):
                 yield text
-            job = await run_in_threadpool(queue.last, run)
+            placed = (await run_in_threadpool(queue.placed, [run])).get(run)
+            job = None if placed is None else placed.job
             for text in await run_in_threadpool(telling.tail, job):
                 yield text
     finally:

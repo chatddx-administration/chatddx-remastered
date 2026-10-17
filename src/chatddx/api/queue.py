@@ -10,7 +10,7 @@ from .people import BenchDep
 router = APIRouter(tags=["queue"])
 
 
-def standing(bench: Bench) -> schemas.Queue:
+def _standing(bench: Bench) -> schemas.Queue:
     held = Queue(bench.conn).standing(bench.person.id, settings.WORKER_LOST)
     return schemas.Queue(
         paused=held.paused,
@@ -22,28 +22,22 @@ def standing(bench: Bench) -> schemas.Queue:
 
 @router.get("/queue")
 def queue(bench: BenchDep) -> schemas.Queue:
-    return standing(bench)
+    return _standing(bench)
 
 
-@router.post(
-    "/queue/pause",
+@router.patch(
+    "/queue",
     responses={
         200: {
             "description": "Paused: the person's jobs wait, and their runs under way "
             + "stop after the items being sent and are queued again; a scoring under "
-            + "way goes on."
+            + "way goes on. Resumed: they are taken again."
         }
     },
 )
-def pause(bench: BenchDep) -> schemas.Queue:
-    Queue(bench.conn).pause(bench.person.id)
-    return standing(bench)
-
-
-@router.post("/queue/resume")
-def resume(bench: BenchDep) -> schemas.Queue:
-    Queue(bench.conn).pause(bench.person.id, False)
-    return standing(bench)
+def pause(bench: BenchDep, given: schemas.Paused) -> schemas.Queue:
+    Queue(bench.conn).pause(bench.person.id, given.paused)
+    return _standing(bench)
 
 
 @router.post(

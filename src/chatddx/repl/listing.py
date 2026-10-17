@@ -6,10 +6,12 @@ from functools import cache
 from rich.table import Table
 from rich.text import Text
 
-from chatddx.bench import PARTS
-from chatddx.catalog import language_of, made_for, variant_name
+from chatddx.bench import Bench
+from chatddx.catalog import Subject, read, threads, titles
+from chatddx.catalog.language import edit_languages
 from chatddx.catalog.titles import short
-from chatddx.inventory import url_of
+from chatddx.factors.base import resolve
+from chatddx.factors.request import RECIPE_PARTS, Recipe, Translations
 
 from .render import LABEL, REFUSED, plural
 from .shell import Repl
@@ -18,9 +20,7 @@ from .shell import Repl
 @dataclass(frozen=True)
 class _Made:
     name: str
-    base: str
-    language: str | None
-    model: str | None
+    languages: tuple[str, ...]
     thread: int
     owner: int | None
     parts: list[str | None] | None
@@ -28,155 +28,170 @@ class _Made:
 
 def configurations(repl: Repl, name: str | None = None) -> None:
     bench = repl.bench
-    models = list(bench.facts.models)
     made: list[_Made] = []
     heads = bench.threads("configuration")
+    own = edit_languages(bench.rows, [e for e, _ in heads])
 
     for edit, about in heads:
-        recipe = bench.catalog.recipe(edit.thread)
-        parts = None if recipe is None else [getattr(recipe, p) for p in PARTS]
-        full = about.name or bench.catalog.title(edit.thread)
-        base, language, model = made_for(full, models) or (full, None, None)
-        made.append(_Made(full, base, language, model, edit.thread, about.owner, parts))
+        recipe = threads.recipe(bench.rows, edit)
+        parts = None if recipe is None else [getattr(recipe, p) for p in RECIPE_PARTS]
+        full = about.name or titles.title(bench.rows, edit.thread)
+        held = own[edit.id]
+        languages = tuple([] if held is None else [held]) + tuple(
+            lang for lang in _translated(bench, recipe) if lang != held
+        )
+        made.append(_Made(full, languages, edit.thread, about.owner, parts))
 
     if name is None:
-        judging = {e.thread for e, _ in bench.purposed(heads, "judge")}
-        _grouped(repl, [m for m in made if m.thread not in judging], models)
+        judges = bench.threads("configuration", purpose="judge")
+        judging = {e.thread for e, _ in judges}
+        _grouped(repl, [m for m in made if m.thread not in judging])
         if judges := [m for m in made if m.thread in judging]:
             repl.console.print(Text("\njudge configurations", style="bold"))
-            _grouped(repl, judges, models)
+            _grouped(repl, judges)
         return
 
-    base, language = language_of(name)
-    found = [
-        m
-        for m in made
-        if name == m.name or (m.base == base and language in (None, m.language))
-    ]
+    found = [m for m in made if m.name == name]
 
     if not found:
         repl.error(f"no configuration {name!r} for {bench.person.login}")
         return
 
     rows = [
-        (m.name, bench.login(m.owner) if m.owner != bench.person.id else "", m.parts)
+        (
+            m.name,
+            _languages([m.languages]),
+            bench.login(m.owner) if m.owner != bench.person.id else "",
+            m.parts,
+        )
         for m in found
     ]
-    _table(repl, rows, cache(bench.title))
+    _table(repl, rows, _title(bench))
 
 
-def _grouped(repl: Repl, made: list[_Made], models: list[str]) -> None:
+def _title(bench: Bench) -> Callable[[str | None], str]:
+    @cache
+    def title(digest: str | None) -> str:
+        return "—" if digest is None else bench.title(digest)
+
+    return title
+
+
+def _translated(bench: Bench, recipe: Recipe | None) -> list[str]:
+    if recipe is None or recipe.translations is None:
+        return []
+    return list(resolve(bench.store.get, recipe.translations, Translations).into)
+
+
+def _grouped(repl: Repl, made: list[_Made]) -> None:
     bench = repl.bench
-    groups: dict[tuple[str, str | None, int | None], list[_Made]] = {}
+    groups: dict[tuple[str, int | None], list[_Made]] = {}
 
     for m in made:
-        groups.setdefault((m.base, m.language, m.owner), []).append(m)
+        groups.setdefault((m.name, m.owner), []).append(m)
 
     forked = {
         origin: m.thread
         for m in made
         if m.owner == bench.person.id
-        if (origin := bench.catalog.origin(m.thread)) is not None
+        if (origin := threads.origin(bench.rows, m.thread)) is not None
     }
-    title = cache(bench.title)
-    rows: list[tuple[str, str, list[str | None] | None, str]] = []
+    title = _title(bench)
+    rows: list[tuple[str, str, str, list[str | None] | None]] = []
 
-    for (base, language, owner), held in groups.items():
+    for (name, owner), held in groups.items():
         if owner != bench.person.id and all(m.thread in forked for m in held):
             continue
-        threads = {m.thread for m in held}
+        ids = {m.thread for m in held}
         origins = {
             bench.login(by)
             for origin, thread in forked.items()
-            if thread in threads
-            if (by := bench.about(origin).owner) != bench.person.id
+            if thread in ids
+            if (by := read.about(bench.rows, Subject(thread=origin)).owner)
+            != bench.person.id
         }
         said = "yours" if owner == bench.person.id else bench.login(owner)
         if origins:
             said += f", from {', '.join(sorted(origins))}"
-        on = sorted({_short(m.model) for m in held if m.model}, key=str.casefold)
         rows.append(
             (
-                variant_name(base, language, None),
+                name,
+                _languages([m.languages for m in held]),
                 said,
-                _alike([m.parts for m in held], title, models),
-                "\n".join(on) or "every model",
+                _alike([m.parts for m in held], title),
             )
         )
 
-    shown = _shown([parts for _, _, parts, _ in rows])
+    shown = _shown([parts for _, _, _, parts in rows])
     table = Table(box=None, header_style="bold")
 
     table.add_column("configuration", no_wrap=True)
-    table.add_column("models", no_wrap=True, max_width=14)
+    table.add_column("languages", no_wrap=True)
 
     for i in shown:
-        table.add_column(PARTS[i])
+        table.add_column(RECIPE_PARTS[i])
 
     table.add_column("owner", no_wrap=True)
 
-    for name, owner, parts, on in sorted(rows, key=lambda r: (r[0], r[1])):
+    for name, languages, owner, parts in sorted(rows, key=lambda r: (r[0], r[2])):
         if parts is None:
             cells = [Text("no recipe", style=LABEL), *([""] * (len(shown) - 1))]
         else:
             cells = [parts[i] or "—" for i in shown]
-        table.add_row(name, on, *cells, owner)
+        table.add_row(name, languages, *cells, owner)
 
     repl.console.print(table)
 
 
+def _languages(held: list[tuple[str, ...]]) -> str:
+    found = list(dict.fromkeys(lang for each in held for lang in each))
+    return ", ".join(found) or "—"
+
+
 def _alike(
-    held: list[list[str | None] | None],
-    title: Callable[[str | None], str],
-    models: list[str],
+    held: list[list[str | None] | None], title: Callable[[str | None], str]
 ) -> list[str | None] | None:
     if any(parts is None for parts in held):
         return None
     alike: list[str | None] = []
-    for i in range(len(PARTS)):
-        titles = {_unmodelled(title(p[i]), models) for p in held if p and p[i]}
+    for i in range(len(RECIPE_PARTS)):
+        titles = {title(p[i]) for p in held if p and p[i]}
         alike.append(
             None if not titles else titles.pop() if len(titles) == 1 else "differs"
         )
     return alike
 
 
-def _unmodelled(name: str, models: list[str]) -> str:
-    made = made_for(name, models)
-    if made is None or made[2] is None:
-        return name
-    return variant_name(made[0], made[1], None)
-
-
-def _short(model: str) -> str:
-    return model.rpartition("/")[2]
-
-
 def _shown(rows: list[list[str | None] | None]) -> list[int]:
     return [
         i
-        for i in range(len(PARTS))
+        for i in range(len(RECIPE_PARTS))
         if any(parts and parts[i] is not None for parts in rows)
     ]
 
 
 def _table(
     repl: Repl,
-    rows: list[tuple[str, str, list[str | None] | None]],
+    rows: list[tuple[str, str, str, list[str | None] | None]],
     title: Callable[[str | None], str],
 ) -> None:
-    shown = _shown([parts for _, _, parts in rows])
+    shown = _shown([parts for _, _, _, parts in rows])
     table = Table(box=None, header_style="bold")
 
-    for column in ("configuration", *(PARTS[i] for i in shown), "owner"):
+    for column in (
+        "configuration",
+        "languages",
+        *(RECIPE_PARTS[i] for i in shown),
+        "owner",
+    ):
         table.add_column(column)
 
-    for name, owner, parts in sorted(rows, key=lambda r: (r[0], r[1])):
+    for name, languages, owner, parts in sorted(rows, key=lambda r: (r[0], r[2])):
         if parts is None:
             cells = [Text("no recipe", style=LABEL), *([""] * (len(shown) - 1))]
         else:
             cells = [title(parts[i]) for i in shown]
-        table.add_row(name, *cells, owner)
+        table.add_row(name, languages, *cells, owner)
 
     repl.console.print(table)
 
@@ -189,19 +204,15 @@ def endpoints(repl: Repl) -> None:
         table.add_column(column)
 
     for name, spec in sorted(bench.inventory.endpoints.items()):
-        cleared = " ".join(sorted(bench.inventory.cleared_for(name))) or "—"
+        cleared = " ".join(sorted(bench.inventory.cleared.get(name, ()))) or "—"
         try:
-            engine = bench.endpoint(name)
+            found = bench.endpoint(name)
         except LookupError:
             said = Text(f"{short(spec.engine)}, not in the store", style=REFUSED)
-            table.add_row(name, said, "", str(spec.url or "—"), cleared)
+            table.add_row(name, said, "", str(spec.url), cleared)
             continue
-        try:
-            url = Text(url_of(bench.inventory, bench.get, name))
-        except LookupError as e:
-            url = Text(str(e), style=REFUSED)
         table.add_row(
-            name, bench.title(engine), bench.model(engine) or "—", url, cleared
+            name, bench.title(found.engine), found.model.name, str(spec.url), cleared
         )
 
     repl.console.print(table)

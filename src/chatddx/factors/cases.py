@@ -43,8 +43,7 @@ class Case(Component):
     def cross_check(self, get: Resolver) -> list[str]:
         problems: list[str] = []
         for ref in self.appendices:
-            a = get(ref)
-            assert isinstance(a, Appendix)
+            a = resolve(get, ref, Appendix)
             if a.vignette != self.vignette:
                 problems.append(f"appendix {ref} is bound to another vignette")
         return problems

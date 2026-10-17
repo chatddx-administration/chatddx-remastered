@@ -105,7 +105,8 @@ CREATE TABLE catalog.label (
 );
 CREATE INDEX label_scorer ON catalog.label (scorer);
 
--- src/chatddx/catalog/language.py: own takes a component's latest row here as its language.
+-- src/chatddx/catalog/language.py: languages_of takes a component's latest row here as its
+-- language.
 CREATE TABLE catalog.language (
     id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     digest text NOT NULL,

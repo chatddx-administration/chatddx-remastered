@@ -5,7 +5,16 @@ from typing import Annotated, Literal, override
 
 from pydantic import AfterValidator, Field, JsonValue, field_validator, model_validator
 
-from .base import Component, Digest, Frozen, RefTo, Resolver, Settings, distinct
+from .base import (
+    Component,
+    Digest,
+    Frozen,
+    RefTo,
+    Resolver,
+    Settings,
+    distinct,
+    resolve,
+)
 from .cases import CaseRef, CleanupOp
 from .engine import EngineRef
 from .request import RUNTIME_KEYS, Skeleton, SkeletonRef
@@ -29,8 +38,7 @@ class Trial(Component):
 
     @override
     def cross_check(self, get: Resolver) -> list[str]:
-        skeleton = get(self.skeleton)
-        assert isinstance(skeleton, Skeleton)
+        skeleton = resolve(get, self.skeleton, Skeleton)
         if skeleton.purpose != "generation":
             return [f"trial uses a {skeleton.purpose} skeleton"]
         return []

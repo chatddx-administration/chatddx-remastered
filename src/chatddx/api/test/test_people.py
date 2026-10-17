@@ -12,7 +12,7 @@ from chatddx.api.schemas import Me
 from chatddx.api.test.conftest import PASSWORD, sign_in
 from chatddx.bench import Ambiguous, Conflict, MovedOn, NotFound, OverQuota
 from chatddx.identity import Person
-from chatddx.runner.gate import Refused
+from chatddx.runner import Refused
 from chatddx.test.world import TEST
 
 ELSEWHERE = (

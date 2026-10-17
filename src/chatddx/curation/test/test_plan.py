@@ -1,41 +1,62 @@
+import tomllib
 from pathlib import Path
 
 import pytest
+from pydantic import HttpUrl
 
 from chatddx.curation import Plan, load_cases, plan_factors
-from chatddx.factors.request import Compilation, Skeleton
+from chatddx.factors.base import resolve
+from chatddx.factors.engine import RemoteEngine, RemoteModel
+from chatddx.factors.request import (
+    Compilation,
+    Skeleton,
+    Translations,
+    compile_request,
+)
 from chatddx.facts import BUNDLED, Facts
-from chatddx.inventory import Inventory, World
+from chatddx.inventory import EndpointSpec, Inventory, World
 from chatddx.rig import rig
 from chatddx.test.world import DATA
 
+QWEN, GPT_OSS = "Qwen/Qwen3-8B-AWQ", "openai/gpt-oss-20b"
 
-def plan(tmp_path: Path, **files: str) -> Plan:
+
+def remote(name: str, model: str) -> str:
+    return (
+        f'\n[remote_model."{name}"]\nprovider = "example"\nname = "{model}"\n'
+        + f'\n[remote_engine."{name}"]\nmodel = "{name}"\n'
+    )
+
+
+def plan(tmp_path: Path, configurations: str | None = "qwen@api", **files: str) -> Plan:
+    tmp_path.mkdir(exist_ok=True)
     for name, text in files.items():
         _ = (tmp_path / name.replace("_", "-")).with_suffix(".toml").write_text(text)
-    engines = (tmp_path / "engines.toml",) if "engines" in files else ()
-    world = World(tmp_path, Inventory(), engines=engines)
+    declared = tomllib.loads(files.get("engines", ""))
+    models = {
+        name: RemoteModel.model_validate(body).digest
+        for name, body in declared.get("remote_model", {}).items()
+    }
+    endpoints = {
+        name: EndpointSpec(
+            engine=RemoteEngine.model_validate(
+                {**body, "model": models[str(body["model"])]}
+            ).digest,
+            url=HttpUrl("https://api.example.org/v1/"),
+        )
+        for name, body in declared.get("remote_engine", {}).items()
+    }
+    inventory = Inventory(
+        endpoints=endpoints,
+        configurations=configurations if configurations in endpoints else None,
+    )
+    paths = (tmp_path / "engines.toml",) if declared else ()
+    world = World(tmp_path, inventory, engines=paths)
     return plan_factors(tmp_path, Facts.load(BUNDLED), rig(), world)
 
 
-def test_from_facts_records_follow_the_models_the_engines_serve(
-    tmp_path: Path,
-) -> None:
-    engines = tmp_path / "engines.toml"
-    _ = engines.write_text(
-        """
-[remote_engine."qwen@api"]
-provider = "example"
-model = "Qwen/Qwen3-8B-AWQ"
-
-[remote_engine."gemma@api"]
-provider = "example"
-model = "google/gemma-3-27b-it"
-"""
-    )
-    factors = tmp_path / "factors.toml"
-    _ = factors.write_text(
-        """
+ENGINE = remote("qwen@api", QWEN)
+INTENTS = """
 [prompt.case]
 segments = [{ slot = "vignette" }]
 
@@ -43,36 +64,78 @@ segments = [{ slot = "vignette" }]
 contract = { kind = "text" }
 
 [sampling.recommended]
-from_facts = { effort = "default" }
+recommended = true
+
+[reasoning.off]
+level = "off"
 
 [recipe.raw]
 prompt = "case"
 output = "raw"
 sampling = "recommended"
+reasoning = "off"
 """
+
+
+def test_facts_are_planned_for_the_models_served_and_recipes_for_the_world_s_engine(
+    tmp_path: Path,
+) -> None:
+    engines = (
+        ENGINE
+        + remote("gpt-oss@api", GPT_OSS)
+        + remote("gemma@api", "google/gemma-3-27b-it")
     )
-    world = World(tmp_path, Inventory(), engines=(engines,))
-    plan = plan_factors(tmp_path, Facts.load(BUNDLED), rig(), world)
-    assert [(r.table, r.name) for r in plan.records] == [
+    planned = plan(tmp_path, engines=engines, factors=INTENTS)
+    assert [(r.table, r.name) for r in planned.records] == [
+        ("remote_model", "qwen@api"),
+        ("remote_model", "gpt-oss@api"),
+        ("remote_model", "gemma@api"),
         ("remote_engine", "qwen@api"),
+        ("remote_engine", "gpt-oss@api"),
         ("remote_engine", "gemma@api"),
+        ("facts", QWEN),
+        ("facts", GPT_OSS),
         ("prompt", "case"),
         ("output", "raw"),
-        ("sampling", "recommended (Qwen/Qwen3-8B-AWQ)"),
-        ("recipe", "raw (Qwen/Qwen3-8B-AWQ)"),
+        ("sampling", "recommended"),
+        ("reasoning", "off"),
+        ("recipe", "raw"),
     ]
-    assert plan.skipped == [
-        "from_facts records for google/gemma-3-27b-it: the facts don't know it, served "
-        + "by engine.remote gemma@api",
-        "from_facts records for openai/gpt-oss-20b: no planned engine serves it",
+    assert planned.skipped == [
+        "facts about google/gemma-3-27b-it: none are known, so engine.remote "
+        + "gemma@api can't compile a reasoning level or a recommended sampling",
     ]
+    get = planned.registry.get
+    raw = planned.named("recipe", "raw")
+    assert raw.compilation is not None
+    compilation = resolve(get, raw.compilation, Compilation)
+    assert compilation.recipe.model == planned.named("remote_model", "qwen@api").digest
+    assert compilation.facts == planned.named("facts", QWEN).digest
+    body = resolve(get, raw.digest, Skeleton).body
+    assert body["chat_template_kwargs"] == {"enable_thinking": False}
+
+    def on(endpoint: str | None, **files: str) -> Plan:
+        return plan(tmp_path / str(endpoint), endpoint, **{"engines": engines, **files})
+
+    nearest = on("gpt-oss@api", factors=INTENTS)
+    landed = resolve(
+        nearest.registry.get, nearest.named("recipe", "raw").digest, Skeleton
+    )
+    assert landed.body["reasoning_effort"] == "low"
+    assert on("gemma@api", factors=INTENTS).skipped[-1] == (
+        "recipe raw: reasoning 'off' is worked out from the facts about the recipe's "
+        + "model, which has none, for model.remote gemma@api"
+    )
+    assert on(None, factors=INTENTS).skipped[-1] == (
+        "recipe raw: the World names no endpoint configurations are made for"
+    )
+    old = '[sampling.recommended]\nfrom_facts = { effort = "default" }\n'
+    with pytest.raises(ValueError, match="sampling: from_facts is gone"):
+        _ = on("qwen@api", factors=old)
+    with pytest.raises(ValueError, match="recipe.raw: a recipe's model is the World's"):
+        _ = on("qwen@api", factors=INTENTS + 'model = "qwen@api"\n')
 
 
-ENGINE = """
-[remote_engine."qwen@api"]
-provider = "example"
-model = "Qwen/Qwen3-8B-AWQ"
-"""
 NEUTRAL = """
 [prompt.case]
 segments = [{ slot = "vignette" }]
@@ -81,7 +144,7 @@ segments = [{ slot = "vignette" }]
 contract = { kind = "text" }
 
 [sampling.recommended]
-from_facts = { effort = "default" }
+recommended = true
 
 [sampling.greedy]
 temperature = 0
@@ -96,7 +159,7 @@ guidance = "Fill in the plan."
 """
 
 
-def test_texts_are_written_by_language_and_recipes_made_in_each(
+def test_a_text_is_written_in_one_language_and_translated_into_others(
     tmp_path: Path,
 ) -> None:
     planned = plan(
@@ -114,7 +177,8 @@ translations = "ui"
 instructions = "physician"
 prompt = "case"
 output = "plan"
-sampling = "recommended"
+sampling = "greedy"
+translations = "ui"
 
 [recipe.raw]
 prompt = "case"
@@ -123,68 +187,64 @@ sampling = "greedy"
 """,
         texts_en=ENGLISH,
         texts_sv="""
-[instructions.physician]
-text = "Du är akutläkare."
-
 [translations.ui]
+description = "The plan in Swedish and German."
 entries = { "Fill in the plan." = "Fyll i planen." }
+""",
+        texts_de="""
+[translations.ui.entries]
+"Fill in the plan." = "Füll den Plan aus."
+"You are an emergency physician." = "Du bist Notarzt."
 """,
     )
     assert [(r.table, r.name, r.language) for r in planned.records] == [
+        ("remote_model", "qwen@api", None),
         ("remote_engine", "qwen@api", None),
-        ("instructions", "physician (en)", "en"),
-        ("instructions", "physician (sv)", "sv"),
+        ("facts", QWEN, None),
+        ("instructions", "physician", "en"),
         ("prompt", "case", None),
         ("output", "raw", None),
-        ("output", "plan (en)", "en"),
-        ("sampling", "recommended (Qwen/Qwen3-8B-AWQ)", None),
+        ("output", "plan", "en"),
+        ("sampling", "recommended", None),
         ("sampling", "greedy", None),
-        ("translations", "ui (sv)", "sv"),
-        ("recipe", "plan (en)", None),
-        ("recipe", "plan (sv)", None),
-        ("recipe", "asked (en, Qwen/Qwen3-8B-AWQ)", None),
+        ("translations", "ui", None),
+        ("recipe", "plan", None),
+        ("recipe", "asked", None),
         ("recipe", "raw", None),
     ]
-    assert planned.skipped[-1] == (
-        "recipe asked (sv, Qwen/Qwen3-8B-AWQ): its output in en needs translations in "
-        + "sv, and recipe.asked names none there"
-    )
+    assert planned.skipped == []
+    assert planned.untranslated == [
+        "recipe asked: no translation into sv for 'You are an emergency physician.'"
+    ]
+    get = planned.registry.get
+    ui = planned.named("translations", "ui")
+    assert ui.description == "The plan in Swedish and German."
+    assert list(resolve(get, ui.digest, Translations).into) == ["de", "sv"]
 
-    def said(name: str) -> list[str]:
-        skeleton = planned.registry.get(planned.named("recipe", name).digest)
-        assert isinstance(skeleton, Skeleton)
+    def said(name: str, into: str | None = None) -> list[str]:
+        compilation = planned.named("recipe", name).compilation
+        assert compilation is not None
+        made = resolve(get, compilation, Compilation)
+        assert made.into is None and made.recipe.translations == ui.digest
+        skeleton = compile_request(made.recipe, get, into=into)
         return [str(m.content[0]) for m in skeleton.messages]
 
-    assert said("plan (en)")[0] == "Fill in the plan."
-    assert said("plan (sv)")[0] == "Fyll i planen."
-    assert said("asked (en, Qwen/Qwen3-8B-AWQ)")[0] == (
-        "You are an emergency physician.\n\nFill in the plan."
-    )
-    compilation = planned.named("recipe", "plan (en)").compilation
-    assert compilation is not None
-    recipe = planned.registry.get(compilation)
-    assert isinstance(recipe, Compilation) and recipe.recipe.translations is None
+    assert said("plan")[0] == "Fill in the plan."
+    assert said("plan", "sv")[0] == "Fyll i planen."
+    assert said("asked")[0] == "You are an emergency physician.\n\nFill in the plan."
+    assert said("asked", "de")[0] == "Du bist Notarzt.\n\nFüll den Plan aus."
 
 
-def test_a_fork_forks_its_origin_in_the_one_language_it_has(tmp_path: Path) -> None:
+def test_a_fork_names_its_origin(tmp_path: Path) -> None:
     planned = plan(
         tmp_path,
-        engines=ENGINE
-        + """
-[remote_engine."gpt-oss@api"]
-provider = "example"
-model = "openai/gpt-oss-20b"
-""",
+        engines=ENGINE,
         factors=NEUTRAL
         + """
-[reasoning.off]
-from_facts = { effort = "off" }
-
 [recipe.plan]
 prompt = "case"
 output = "plan"
 sampling = "recommended"
-reasoning = "off"
 
 [recipe.asked]
 fork_of = "plan"
@@ -192,7 +252,6 @@ instructions = "physician"
 prompt = "case"
 output = "plan"
 sampling = "recommended"
-translations = "ui"
 
 [recipe.greedy]
 fork_of = "plan"
@@ -201,61 +260,13 @@ output = "plan"
 sampling = "greedy"
 """,
         texts_en=ENGLISH,
-        texts_sv="""
-[instructions.physician]
-text = "Du är akutläkare."
-
-[translations.ui]
-entries = { "Fill in the plan." = "Fyll i planen." }
-""",
     )
-    qwen, gpt_oss = "Qwen/Qwen3-8B-AWQ", "openai/gpt-oss-20b"
     assert {r.name: r.fork_of for r in planned.records if r.table == "recipe"} == {
-        f"plan (en, {qwen})": None,
-        f"asked (en, {qwen})": f"plan (en, {qwen})",
-        f"asked (en, {gpt_oss})": None,
-        f"asked (sv, {qwen})": f"plan (en, {qwen})",
-        f"asked (sv, {gpt_oss})": None,
-        "greedy (en)": None,
+        "plan": None,
+        "asked": "plan",
+        "greedy": "plan",
     }
-    assert [s for s in planned.skipped if ": no fork of " in s] == [
-        f"recipe asked (en, {gpt_oss}): no fork of recipe.plan, which has no variant "
-        + f"for {gpt_oss}",
-        f"recipe asked (sv, {gpt_oss}): no fork of recipe.plan, which has no variant "
-        + f"for {gpt_oss}",
-        "recipe greedy (en): no fork of recipe.plan, which is made per model, and it "
-        + "isn't",
-    ]
-
-
-def test_a_fork_whose_origin_has_other_languages_is_refused(tmp_path: Path) -> None:
-    with pytest.raises(
-        ValueError,
-        match="recipe.asked: recipe.plan has no variant in sv to fork, and is written "
-        + "in de, en",
-    ):
-        _ = plan(
-            tmp_path,
-            engines=ENGINE,
-            factors=NEUTRAL
-            + """
-[recipe.plan]
-instructions = "intro"
-prompt = "case"
-output = "raw"
-sampling = "greedy"
-
-[recipe.asked]
-fork_of = "plan"
-instructions = "physician"
-prompt = "case"
-output = "raw"
-sampling = "greedy"
-""",
-            texts_en='[instructions.intro]\ntext = "Hello."\n',
-            texts_de='[instructions.intro]\ntext = "Hallo."\n',
-            texts_sv='[instructions.physician]\ntext = "Du är akutläkare."\n',
-        )
+    assert planned.skipped == []
 
 
 @pytest.mark.parametrize(
@@ -276,6 +287,16 @@ sampling = "greedy"
                 "texts_en": '[prompt.case]\nsegments = ["Case: ", { slot = "vignette" }]\n',
             },
             "prompt.case is in factors.toml and texts-en.toml",
+        ),
+        (
+            {"factors": "", "texts_en": ENGLISH, "texts_sv": ENGLISH},
+            "instructions.physician is in texts-en.toml and texts-sv.toml: a text is "
+            + "written in one language, and translated into others",
+        ),
+        (
+            {"factors": '[translations.ui]\nentries = { "a" = "b" }\n'},
+            "translations are written in the texts-<language>.toml of the language "
+            + "they translate into",
         ),
         ({"factors": 'language = "en"\n'}, r"unknown tables \['language'\]"),
         (
@@ -322,8 +343,11 @@ def test_translations_are_grouped_by_the_record_whose_texts_they_translate(
 ) -> None:
     files = {"engines": ENGINE, "factors": NEUTRAL + LAID_OUT, "texts_en": ENGLISH}
     planned = plan(tmp_path, **files, texts_sv=GROUPED)
-    skeleton = planned.registry.get(planned.named("recipe", "plan (sv)").digest)
-    assert isinstance(skeleton, Skeleton)
+    get = planned.registry.get
+    compilation = planned.named("recipe", "plan").compilation
+    assert compilation is not None
+    recipe = resolve(get, compilation, Compilation).recipe
+    skeleton = compile_request(recipe, get, into="sv")
     assert str(skeleton.messages[0].content[0]) == "Fyll i planen."
     assert skeleton.appendix_layout.before == "\n\nBilagor:\n"
 
@@ -336,9 +360,24 @@ def test_translations_are_grouped_by_the_record_whose_texts_they_translate(
 """
     as_entries = plan(flat, **files, texts_sv=entries)
     assert (
-        as_entries.named("translations", "ui (sv)").digest
-        == planned.named("translations", "ui (sv)").digest
+        as_entries.named("translations", "ui").digest
+        == planned.named("translations", "ui").digest
     )
+
+    instructed = tmp_path / "instructed"
+    instructed.mkdir()
+    physician = """
+[[translations.ui.of."instructions.physician"]]
+text = "You are an emergency physician."
+translation = "Du är akutläkare."
+"""
+    files["factors"] += 'instructions = "physician"\n'
+    held = plan(instructed, **files, texts_sv=GROUPED + physician)
+    into = resolve(
+        held.registry.get, held.named("translations", "ui").digest, Translations
+    ).into
+    assert into["sv"]["You are an emergency physician."] == "Du är akutläkare."
+    assert held.untranslated == []
 
 
 @pytest.mark.parametrize(
@@ -354,7 +393,11 @@ def test_translations_are_grouped_by_the_record_whose_texts_they_translate(
         ),
         (
             '"prompt.case" = [{ text = "x", translation = "x" }]',
-            "'prompt.case' names no output, toolset or recipe",
+            "translations.ui: prompt.case holds no text 'x'",
+        ),
+        (
+            '"sampling.greedy" = [{ text = "x", translation = "x" }]',
+            "'sampling.greedy' names no record of texts",
         ),
         (
             '"output.nope" = [{ text = "x", translation = "x" }]',
@@ -378,18 +421,39 @@ def test_grouped_translations_are_refused_where_they_say_the_wrong_thing(
     with pytest.raises(ValueError, match=refusal):
         _ = plan(tmp_path, **files, texts_sv=f"[translations.ui.of]\n{of}\n")
     both = '[translations.ui]\nentries = { "Fill in the plan." = "Fyll i planen." }\n'
-    with pytest.raises(ValueError, match="give its entries or its `of`, not both"):
+    with pytest.raises(ValueError, match="give its entries or its `of`, and nothing"):
         _ = plan(tmp_path, **files, texts_sv=both + "[translations.ui.of]\n")
+    english = '[[translations.ui.of."output.plan"]]\ntext = "Fill in the plan."\n'
+    with pytest.raises(
+        ValueError,
+        match="texts-en.toml: translations.ui: output.plan " + "is written in en",
+    ):
+        _ = plan(
+            tmp_path, **{**files, "texts_en": ENGLISH + english + 'translation = "x"\n'}
+        )
+    told = '[translations.ui]\ndescription = "{}"\nentries = {{ "Fill in the plan." = "x" }}\n'
+    with pytest.raises(
+        ValueError,
+        match="texts-sv.toml: translations.ui: its description "
+        + "isn't the one another texts file gives",
+    ):
+        _ = plan(
+            tmp_path,
+            **files,
+            texts_de=told.format("German"),
+            texts_sv=told.format("Swedish"),
+        )
 
 
 def test_engines_are_the_world_s_and_only_engines_are(tmp_path: Path) -> None:
     with pytest.raises(
-        ValueError, match="remote_engine tables are the World's, in its"
+        ValueError, match="remote_engine, remote_model tables are the World's, in its"
     ):
         _ = plan(tmp_path, factors=ENGINE)
     with pytest.raises(
         ValueError,
-        match="holds only model, local_engine, remote_engine tables, not sampling",
+        match="holds only local_model, remote_model, local_engine, remote_engine tables, "
+        + "not sampling",
     ):
         _ = plan(tmp_path, factors="", engines=ENGINE + "[sampling.greedy]\n")
 

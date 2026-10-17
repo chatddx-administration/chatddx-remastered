@@ -1,15 +1,19 @@
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, Form, Query, Request, Response
+from fastapi import APIRouter, Form, HTTPException, Query, Request, Response
 from fastapi.responses import RedirectResponse
 from pydantic import JsonValue
 
-from chatddx.api import queue as api_queue, runs as api, schemas, scores as api_scores
-from chatddx.bench import Bench
+from chatddx.api import queue as api_queue, runs as api, schemas
+from chatddx.api.state import refused
+from chatddx.bench import Bench, NotFound
+from chatddx.catalog import threads
+from chatddx.catalog.language import language_of
 from chatddx.factors.base import resolve
 from chatddx.factors.request import Skeleton
 from chatddx.factors.response import parts
+from chatddx.factors.trial import Trial, suggest_seeds
 from chatddx.store import Queue
 
 from .configurations import linked
@@ -37,7 +41,7 @@ def runs(
         number=number,
         more=len(found) > SHOWN,
         left=left,
-        queue=api_queue.standing(bench),
+        queue=api_queue.queue(bench),
     )
 
 
@@ -45,15 +49,21 @@ def runs(
 def run(request: Request, bench: BenchDep, run: UUID) -> Response:
     # Asked before the run is read: a job ends once its run's rows are written.
     under_way = Queue(bench.conn).open(run) is not None
-    shown = api.detail(bench, run)
-    skeleton = resolve(bench.get, shown.skeleton, Skeleton)
+    shown = api.run(bench, run)
+    skeleton = resolve(bench.store.get, shown.skeleton, Skeleton)
     schema = skeleton.output_schema
     left = (
-        []
-        if under_way or shown.finished_at is None
-        else bench.unscored(bench.run_by_id(run))
+        [] if under_way or shown.finished_at is None else bench.unscored(bench.run(run))
     )
     titles = {case: bench.title(case) for case in shown.cases}
+    together = [
+        (
+            r.run,
+            language_of(bench.rows, resolve(bench.store.get, r.trial, Trial).skeleton),
+        )
+        for r in bench.runs(started_with=shown.started_with or run)
+        if r.run != run
+    ]
     resumable = not under_way and shown.finished_at is None and shown.endpoint
     return page(
         request,
@@ -69,7 +79,8 @@ def run(request: Request, bench: BenchDep, run: UUID) -> Response:
         said=_said,
         under_way=under_way,
         resumable=resumable,
-        left=[bench.scorer_name(s) for s in left],
+        left=[bench.title(s) for s in left],
+        together=sorted(together, key=lambda r: str(r[1])),
         live={"run": str(run), "titles": titles},
         island="run",
     )
@@ -77,46 +88,55 @@ def run(request: Request, bench: BenchDep, run: UUID) -> Response:
 
 @router.post("/runs/{run}/halt")
 def halting(bench: BenchDep, run: UUID) -> Response:
-    _ = api.halt(bench, run)
+    _ = bench.run(run)
+    try:
+        _ = Queue(bench.conn).halt(run)
+    except LookupError as e:
+        raise HTTPException(409, str(e)) from None
     return RedirectResponse(f"/runs/{run}", 303)
 
 
 @router.post("/runs/{run}/resume")
-def resuming(request: Request, bench: BenchDep, run: UUID) -> Response:
-    _ = api.resume(request, Response(), bench, run, schemas.NewResume())
+def resuming(bench: BenchDep, run: UUID) -> Response:
+    with refused():
+        _ = bench.queue(bench.resume(bench.run(run)))
     return RedirectResponse(f"/runs/{run}", 303)
 
 
 @router.post("/queue/pause")
 def pausing(bench: BenchDep) -> Response:
-    _ = api_queue.pause(bench)
+    Queue(bench.conn).pause(bench.person.id)
     return RedirectResponse("/runs", 303)
 
 
 @router.post("/queue/resume")
 def unpausing(bench: BenchDep) -> Response:
-    _ = api_queue.resume(bench)
+    Queue(bench.conn).pause(bench.person.id, False)
     return RedirectResponse("/runs", 303)
 
 
 @router.post("/queue/stop")
 def stopping(bench: BenchDep, now: Annotated[bool, Form()] = False) -> Response:
-    _ = api_queue.stop(bench, schemas.NewStop(now=now))
+    _ = Queue(bench.conn).stop(bench.person.id, now)
     return RedirectResponse("/runs", 303)
 
 
 @router.post("/runs/{run}/scores")
-def scoring(request: Request, bench: BenchDep, run: UUID) -> Response:
-    left = bench.unscored(bench.run_by_id(run))
-    asked = schemas.NewScoring(scorers=left or None)
-    _ = api_scores.score_now(request, Response(), bench, run, asked)
+def scoring(bench: BenchDep, run: UUID) -> Response:
+    started = bench.run(run)
+    with refused():
+        _ = bench.queue_scoring(started, bench.unscored(started) or None)
     return RedirectResponse(f"/runs/{run}", 303)
 
 
 @router.post("/runs/{run}/again")
-def running_again(request: Request, bench: BenchDep, run: UUID) -> Response:
-    said = api.again(request, Response(), bench, run, schemas.NewAgain(score=True))
-    return RedirectResponse(f"/runs/{said.run}", 303)
+def running_again(bench: BenchDep, run: UUID) -> Response:
+    before = bench.run(run)
+    seeds = suggest_seeds(len(resolve(bench.store.get, before.trial, Trial).seeds))
+    with refused(NotFound):
+        running = bench.again(before, seeds)
+    _ = bench.queue(running)
+    return RedirectResponse(f"/runs/{running.run}", 303)
 
 
 def _configuration(
@@ -128,7 +148,7 @@ def _configuration(
         tried = bench.variation(ran.configuration, ran.parts, ran.head)
     except LookupError:
         return _version(bench, skeleton)
-    latest = bench.catalog.head(ran.configuration).id
+    latest = threads.head(bench.rows, ran.configuration).id
     query = schemas.Varying.model_validate({p: d or "" for p, d in ran.parts.items()})
     given = linked(query, ran.head, latest).removesuffix("?")
     link = f"/configurations/{ran.configuration}{given}"
@@ -139,7 +159,7 @@ def _configuration(
 
 def _version(bench: Bench, skeleton: str) -> tuple[str, str] | None:
     heads = {e.thread: (e, a) for e, a in bench.threads("configuration")}
-    held = [e for e in bench.catalog.containing(skeleton) if e.thread in heads]
+    held = [e for e in bench.rows.edits_holding([skeleton]) if e.thread in heads]
     if not held:
         return None
     found = min(

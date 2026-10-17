@@ -9,18 +9,16 @@ from typing import Literal
 from uuid import UUID, uuid4
 
 import psycopg
-from psycopg import sql
 
 from chatddx import settings
 from chatddx.api import schemas
 from chatddx.api.events import graded_of, scoring_of
-from chatddx.bench import Bench, Graded, ScoreHalt
-from chatddx.facts import Facts
+from chatddx.bench import Bench, Graded
 from chatddx.inventory import Inventory
 from chatddx.ledger import RunStarted
-from chatddx.runner.run import Running
+from chatddx.runner import Halt, Running
 from chatddx.store import Job, People, Queue
-from chatddx.store.notify import WORKERS
+from chatddx.store.notify import WORKERS, listen
 from chatddx.store.store import Connection
 
 from .publish import Publisher
@@ -34,26 +32,25 @@ LEFT = "its worker stopped"
 @dataclass
 class _Held:
     job: Job
-    scoring: ScoreHalt = field(default_factory=ScoreHalt)
+    halting: Halt = field(default_factory=Halt)
+    scoring: Halt = field(default_factory=Halt)
     running: Running | None = None
-    halted: bool = False
     left: str | None = None
     cut: bool = False
     guard: threading.Lock = field(default_factory=threading.Lock)
 
+    @property
+    def halted(self) -> bool:
+        return self.halting.is_set()
+
     def sending(self, running: Running) -> None:
         with self.guard:
             self.running = running
-            if self.halted:
-                running.halt()
-            elif self.left is not None:
+            if self.left is not None:
                 running.stop()
 
     def halt(self) -> None:
-        with self.guard:
-            self.halted = True
-            if self.running is not None:
-                self.running.halt()
+        self.halting.set()
         self.scoring.set()
 
     def cut_short(self) -> None:
@@ -74,7 +71,6 @@ class Worker:
         self,
         conninfo: str,
         inventory: Inventory,
-        facts: Facts,
         beat: timedelta = settings.WORKER_BEAT,
         lost: timedelta = settings.WORKER_LOST,
         deadline: timedelta = settings.WORKER_DEADLINE,
@@ -82,7 +78,6 @@ class Worker:
         self.id: UUID = uuid4()
         self._conninfo: str = conninfo
         self._inventory: Inventory = inventory
-        self._facts: Facts = facts
         self._beat_every: float = beat.total_seconds()
         self._lost: timedelta = lost
         self._deadline: float = deadline.total_seconds()
@@ -100,7 +95,7 @@ class Worker:
             with self._connect() as conn:
                 queue = Queue(conn)
                 queue.enlist(self.id)
-                _ = conn.execute(sql.SQL("LISTEN {}").format(sql.Identifier(WORKERS)))
+                listen(conn, WORKERS)
                 deadline: float | None = None
                 while True:
                     leaving = stopping.is_set()
@@ -205,13 +200,13 @@ class Worker:
         self, conn: Connection, publisher: Publisher, held: _Held
     ) -> Literal["finished", "stopped", "queued"]:
         job = held.job
-        bench = Bench(conn, People(conn).get(job.owner), self._inventory, self._facts)
-        started = bench.run_by_id(job.run)
+        bench = Bench(conn, People(conn).get(job.owner), self._inventory)
+        started = bench.run(job.run)
         try:
             if bench.store.run(job.run).finished is None:
-                running = bench.resume(job.run)
+                running = bench.resume(started)
                 held.sending(running)
-                running.send(publisher.run_event)
+                running.send(publisher.run_event, held.halting)
                 if held.left is not None and not held.halted:
                     return "queued"
                 _ = running.finish()
@@ -238,7 +233,7 @@ class Worker:
         job, queue = held.job, Queue(conn)
         left = [
             e.digest
-            for e, _ in bench.scorers_for(started)
+            for e, _, _ in bench.scorers(started)
             if (job.scorers is None or e.digest in job.scorers)
             and e.digest not in job.scored
         ]

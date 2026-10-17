@@ -2,7 +2,7 @@
 
 The bench is what one person sees and does, whatever the edge they reach it through: the threads, families and runs
 they see, the World's endpoints, the variation they are trying, and what is written in their name. Its edges are the
-repl (docs/repl.md), the API (docs/api.md) and the portal to come (agents/wip-portal.md). This document
+repl (docs/repl.md), the API (docs/api.md) and the portal (agents/wip-portal.md). This document
 describes what the bench does and why it is shaped like it is. Names, signatures and errors are in docs/bench-api.md.
 
 The bench builds on the store, the catalog, the World, the facts, the runner and the scoring pass, and holds no SQL of
@@ -12,13 +12,19 @@ its own.
 functions in `identity` and utilize them here.
 
 ## What a bench is not
-- A facade, and nothing checks that an edge goes through it.
 - Authorization, what the bench shows is what is relevant to show a person, not who may read what.
+- A facade. Claude clarifies:
+> A way to everything an edge reads. What doesn't depend on the person, an edge reads where it is: a component and
+  a run's rows from the store, what is said of a thing from the catalog, how an item ended and whether its requests
+  render the same now from the runner (docs/runner-api.md), and an endpoint's spec and clearances from the
+  inventory.
 
 ## How the bench works
 
 ### One person, one connection
-A connection lasts as long as its caller, and caches logins and the model each engine serves for that long.
+A connection lasts as long as its caller, and caches logins and the model each engine serves for that long. The facts
+about models aren't cached: they are read from the store each time they are asked for, so that a fact corrected while
+a connection lasts is used at once.
 
 Each write is made in one transaction, so one that is refused leaves nothing behind. Starting and scoring are the
 exception: the runner and the scoring pass write each row as it lands, so that a run or a score that dies leaves a log
@@ -26,33 +32,34 @@ to read, and they need the bench's connection in autocommit mode.
 
 ## What a person sees
 - **Threads** they own or collaborate on, while they are live. A kind of thread is asked for by the word for it:
-  configuration, each recipe part, tool, scorer, judge, expectation, appendix, expectation schema, canary set, model
-  or engine.
+  configuration, each recipe part, the model among them, tool, scorer, judge, expectation, appendix, expectation
+  schema, canary set, model or facts.
 - **Families** they own or collaborate on, while they are live. A family stands for its case: the one its current
-  vignette makes alone, else the first that holds the vignette. A family without a case isn't shown.
+  vignette makes alone, else the first, by digest, that holds the vignette, and holds that vignette and its cases. A
+  family without a case isn't shown.
 - **Their own deleted threads**, listed apart and found by id, so that they can be read and restored. Nothing else
   finds them: not names, not lists, not what is run or scored against.
 - **Their own runs**, while they are live. Being a collaborator on a run shows nothing.
-- **The World's endpoints**, which are everyone's, and read from the World. The bench gives the engine an endpoint
-  serves, once that engine is in the store.
+- **The World's endpoints**, which are everyone's, and read from the World. The bench gives an endpoint with its
+  spec and the model its engine serves, once that engine is in the store (`Endpoint`), whether it is named or is the
+  one a variation runs at (`Seen.at`).
+- **What things are called**: a digest by the name of a thread they see whose head it is, their own first, else the
+  catalog's title (`Seen.title`), so a scorer they forked under a name of their own is called by it.
 
 ### Finding things by name
-A thread or a family is found by its name, matched whole first, since names may hold a slash, as
-`plan (Qwen/Qwen3-8B-AWQ)` does; only when nothing has the whole name is it read as `OWNER/NAME`. Among those it
-names, the person's own win, else the ones shared with them. Several raise `Ambiguous`, which asks for `OWNER/NAME`;
-none raises `NotFound`.
+A thread or a family is found by its name, matched whole first, since names may hold a slash, as the facts
+`Qwen/Qwen3-8B-AWQ` do; only when nothing has the whole name is it read as `OWNER/NAME`. Among those it names, the
+person's own win, else the ones shared with them. Several raise `Ambiguous`, which asks for `OWNER/NAME`; none raises
+`NotFound`.
 
-A thread made per model or per language is found by its plain name too: `NAME (MODEL)`, `NAME (LANGUAGE)` or
-`NAME (LANGUAGE, MODEL)`, the one the model an engine serves may use (src/chatddx/catalog/variants.py). Without an
-engine, a name that only per-model threads have isn't found, and the error names them, so that an edge can say the
-endpoint picks one. A name made in several languages is ambiguous, unless it names one, as `NAME LANGUAGE` or
-`NAME (LANGUAGE)`.
+A configuration's name carries no language: it is one thread, written in one language and translated into others
+(see "The languages it runs in"), so `plan` is found as any name is.
 
 ### Finding things by id
 By id, a thread, a family or a run is found only among what the person sees, and a thread only among the kinds its
-word names. A run is also found by the start of its id, among their own, as a person at a prompt types it; an edge
-that names things by id can take whole ids only, since a start could name another run tomorrow (docs/api.md,
-"Ids").
+word names; the same method takes a name or an id. A run is also found by the start of its id, among their own, as a
+person at a prompt types it; an edge that names things by id can take whole ids only, since a start could name
+another run tomorrow (docs/api.md, "Ids").
 
 ## What a person is scored against
 A person is scored against their own expectation of a case, under the scorer's expectation schema. One shared with
@@ -102,42 +109,83 @@ still leave a person two to choose from. Then nothing picks one, and each place 
 ## The variation being tried
 Variation is a configuration with recipe parts replaced (docs/catalog.md, "Configurations and variations"):
 a configuration's edit's recipe, the name the person called it by, and the parts replaced over it with the name it was
-set by. With nothing replaced, it is the configuration itself. It is a plain value and an unsaved one is just a digest.
-An edge holds it beside the endpoint it is to run at.
+set by. With nothing replaced, it is the configuration itself.
 
-A variation replaces the recipe's nine parts and nothing else. A configuration's purpose and appendix layout are set
-when it is made from a recipe (see "Configurations"): the purpose for good, since a judge configuration is no use
-where a run's is wanted, and the appendix layout until someone wants to vary it, when it becomes a part.
+It is a plain value and an unsaved one is just a digest. It runs at the endpoint serving its model,
+so an edge needs an endpoint beside it only for a hand-written configuration, which has no model part and goes where
+named.
 
-Looking at a variation writes nothing. What an unsaved skeleton was compiled from is stored when it is saved or
-started, by the running code (docs/catalog.md, "Recipes").
+A variation replaces the recipe's nine chunks and its model, which can't be taken out.
+
+Looking at a variation writes nothing. What an unsaved skeleton was compiled from, its recipe and the facts about its
+model, is stored when it is saved or started, by the running code (docs/catalog.md, "Recipes").
 
 Its label, `NAME+PART=CHUNK`, is a short title for it, where the catalog would give the long one of a variation nobody
 saved (docs/catalog.md, "Titles"). Neither is stored.
 
 For a variation, the bench gives:
 - **its skeleton**: the stored edit it varies when nothing is replaced, the head unless an earlier edit was named,
-  else the varied recipe compiled, a skeleton nobody has saved;
-- **the request it would send**, with placeholders for the slots, and for the model without an engine;
-- **its lints**, as a trial on an engine: the pair's checks, over any one case since they read none, and with
-  families, the languages of their cases too. An unsaved variation is linted in its recipe's language, since a
-  skeleton's language otherwise comes from its stored compilations;
+  else the varied recipe compiled against the facts about its model as they are stored now, a skeleton nobody
+  has saved; compiled into a language, against the facts its compilation pinned when nothing is replaced;
+- **the request it would send**, with placeholders for the slots, and for the model when no engine is at hand;
+- **where its intents landed**: for a reasoning level and a recommended sampling, the level the recipe's model is
+  asked for, and why, when the facts land it on its nearest; read from the facts its compilation was compiled against
+  when nothing is replaced;
+- **its lints**, as a trial on the engine of the endpoint it runs at, the one serving its model or the one named
+  (see "The model"); none when no endpoint serves its model, or several do and none is named. The pair's checks,
+  over any one case since they read none; with families, a trial for each language their cases are sent in, its
+  skeleton in that language and its cases in theirs, and a `translations.missing` warning for each language left
+  out, with why;
+- **the languages it runs in**, over some families: each language among their cases, with its cases and the
+  skeleton they are sent as, or why they are left out (see "The languages it runs in");
 - **its reach**: for each view of each scorer the person sees, whether the variation's output offers what the view
   reads, and which of the given families have no expectation it picks something from, or several to choose from.
 
-A judge configuration, one whose purpose is `judge`, is looked at as the judge it would make on the engine: its lints
+A judge configuration, one whose purpose is `judge`, is looked at as the judge it would make on that engine: its lints
 are the judge's, it reads no case, and it has no reach, as no scorer reads what a judge answers. It isn't run on cases:
-starting it is refused. An edge lists configurations by purpose (`Bench.purposed`), since a judge configuration is no
-use where a run's is wanted.
+starting it is refused. An edge lists configurations by purpose (`Seen.threads(…, purpose=…)`), since a judge
+configuration is no use where a run's is wanted.
 
-An edge also lists configurations by what they answer (`Bench.answering`): the title of their answer's JSON Schema, as
-a page that shows management plans offers only the configurations that answer one.
+An edge also lists configurations by what they answer (`Seen.threads(…, answering=…)`): the title of their answer's
+JSON Schema, as a page that shows management plans offers only the configurations that answer one.
+
+### The model
+The model is a part like any other: swapping it keeps every other pick, and what depends on the model is worked out
+from the facts about it. A run goes to the endpoint serving the model (`Seen.at`, `Inventory.serving`);
+several serving one model, as the test World's two Qwen3 endpoints do, refuse a run that names none, and a look rendered
+for none has no findings. The engine is the trial's: the endpoint's.
+
+A reasoning level and a recommended sampling are intents rather than settings: compiling
+resolves them with the facts about the model as they are stored then (docs/facts.md), lands each level where
+the facts say, on its nearest when the model can't be asked for it, and refuses what they refuse, and any intent on a
+model they don't know. So a variation is refused for its model as it is looked at, before anything runs.
+
+A run goes to the endpoint serving its variation's model. An endpoint named must serve that model, and one that
+serves another is refused before the gate would refuse it. An model no endpoint serves is refused, and so is one
+several serve, unless one of them is named (see "Outstanding"). A hand-written configuration has no model part, and
+runs at the endpoint named.
+
+### The languages it runs in
+A configuration is written in one language, its own: its recipe's texts' (docs/catalog.md, "Languages"), or a
+hand-written skeleton's own. Its translations carry it into others. Vignettes are never translated, so the request
+follows the case: started on some cases, a variation groups them by their families' languages, and sends
+- the cases in its own language, and those of no language, as written, the latter linted `language.unknown`;
+- the cases in a language its translations cover translated: its recipe compiled into that language, against the
+  facts the configuration was compiled against when nothing is replaced, so that the translation differs from it by
+  its texts alone;
+- none of the cases in a language they don't cover, or cover without a text it holds: those are left out, and said
+  with why, as `lines has no translations into sv` or `no translation into sv for '…'`.
+
+When its own language is unknown, nothing says a case isn't in it, so a case of a language its translations don't cover
+goes as written too. A translated skeleton is compiled when a look or a run needs it, and its compilation is stored as
+a run starts on it, as a varied one's is, so that the run's skeleton has a language. A judge configuration reads no
+case, and runs in none.
 
 ## Writes for the person
 The bench writes, in the person's name: configurations, chunks, appendices, expectations, scorers, judges, typed
-cases, what is said about a thread, runs and scores. Tools, expectation schemas, engines, models and canary sets are
-developers' and ops', written through data sets (docs/chatddx.md, "Requirements"), and a scoring is built when a run
-is scored rather than written by hand.
+cases, what is said about a thread, runs and scores. Tools, expectation schemas, engines, models, the facts about
+models and canary sets are developers' and ops', written through data sets and facts files (docs/chatddx.md,
+"Requirements"; docs/facts.md), and a scoring is built when a run is scored rather than written by hand.
 
 What every write has in common:
 - **One set of writes for every kind.** A thread is made new, forked from one the person sees, or edited when it is
@@ -151,10 +199,9 @@ What every write has in common:
   writes only what changes.
 - **What was written comes back with its lints**, and no write refuses on one: an expectation whose data its schema
   refuses is written, and said so (docs/factors.md, "Lints"). A component does, whether new, forked, edited, followed
-  or carried, and so does a configuration made from a recipe or followed. A variation saved, forked or edited comes
-  back as what was saved, and an edge lints its skeleton itself (`Bench.linted`), as the API does. Taking, saying and
-  and building cases give back what they made. Refusals are the components' own rules, the store's and the catalog's,
-  and the few the bench adds, below.
+  or carried, and so does a configuration, made from a recipe, saved, forked, edited or followed. Taking, saying
+  and building cases give back what they made. Refusals are the components' own rules, the store's and the
+  catalog's, and the few the bench adds, below.
 - **Some refusals come before the write**, in the person's words, where the database or the catalog would refuse
   later in theirs: a component of another kind than the thread's, a second expectation of the person's own for a
   case and schema.
@@ -164,9 +211,11 @@ What every write has in common:
 - **Editing** keeps it as a new version of a configuration the person owns.
 - **Saving** by name is one of the two: a new version of the person's own configuration of that name, else a fork.
   Several of their own by that name are refused.
-- **Making one from a recipe** of the person's own, by the chunks' digests for each part, its purpose and its appendix
-  layout: compiled by the running code and kept as a new configuration with no origin. Each part must be a stored
-  chunk of that part, and the recipe must compile. Its language comes from its recipe, so none is given.
+- **Making one from a recipe** of the person's own, by the chunks' digests for each part and an engine's, its purpose
+  and its appendix layout: compiled by the running code against the facts about the engine's model, and kept as a new
+  configuration with no origin. Each part must be a stored chunk of that part, the engine a stored engine, and the
+  recipe must compile: an intent the facts refuse doesn't, nor one on a model they don't know. Its language comes
+  from its recipe, so none is given.
 
 A configuration is kept with the compilation that makes it: for a variation with parts replaced, or a recipe, the one
 the running code compiles; otherwise the configuration's own.
@@ -187,6 +236,9 @@ the text, wherever it is held: it is kept on the digest, and the latest wins, so
 else holds too would change it for them. So the bench writes one only where the text has none, and refuses one that
 differs from what it has; the person writes another text, or leaves it. A fork that changes nothing keeps its
 language, being the same digest.
+
+A translations chunk has no language of its own: it says the languages it translates into itself, so the bench
+refuses one given it, as it does for any component that isn't a text.
 
 The bench doesn't carry the previous version's language over by itself: an edge offers it, and the person keeps it or
 changes it (docs/catalog.md, "Languages").
@@ -225,16 +277,16 @@ person sees.
 
 An appendix is written like any other component, but always bound to the current vignette of a family the person
 sees, and with its line endings made LF before it is digested, since browsers send CRLF: the bench does it for every
-edge. The bench builds one from a family and a text. A case is built from a family and appendices the person sees, in
-order, at its current vignette, and stored. Nothing is written in the catalog, since a case belongs to its family by
-its vignette (docs/catalog.md, "Families and repairs"), and an appendix bound to another vignette is refused by the
-case's own rule.
+edge as it writes one, which an edge builds of a family's vignette and a text. A case is built from a family and
+appendices the person sees, in order, at its current vignette, and stored. Nothing is written in the catalog, since a
+case belongs to its family by its vignette (docs/catalog.md, "Families and repairs"), and an appendix bound to another
+vignette is refused by the case's own rule.
 
 A new version of an appendix stores each case that held the old one at that vignette again, with the new one in its
 place, so the new cases are there to pick, and says which replaced which. No expectation moves with them, since an
-appendix can change the right answer (docs/factors.md, "Case"). Carrying one is a write of its own: the person's
-expectation, edited onto another case of its family with the same data, as a clinician's word that it still holds
-there.
+appendix can change the right answer (docs/factors.md, "Case"). Carrying one is an edit of the person's
+expectation onto another case of its family, with the same data, as a clinician's word that it still holds there.
+An expectation's edit keeps to its family: a case of another is refused.
 
 A case left at an earlier vignette by a repair is offered a replacement (docs/catalog.md, "What has moved on"), which
 the bench stores when asked. An appendix's edit replaces only the cases at its own vignette, since one at an earlier
@@ -243,9 +295,10 @@ vignette awaits that replacement instead.
 ### Typed cases
 A case can be typed rather than fetched from a directory: the text is kept in the database, in a source of the
 `database` kind (agents/wip-portal.md, "Typed cases"), under a new id and never changed, and its case and a family of
-the person's own are written with it, all at once, named and in a language when they say so. It runs as any case: a
-vignette is fetched from its source, a directory's file or a database source's text, wherever the bench, the runner
-and the edges read one (src/chatddx/store/texts.py:fetch_vignette).
+the person's own are written with it, all at once, in the language the person says it is written in, and named when
+they say so. A typed case always has a language, since a configuration is sent in its case's (see "The languages it
+runs in"). It runs as any case: a vignette is fetched from its source, a directory's file or a database source's text,
+wherever the bench, the runner and the edges read one (src/chatddx/store/texts.py:fetch_vignette).
 
 A text is held to a length, may not hold U+0000, which can't be stored, and a person to a number of texts a day, as
 set in `chatddx.settings`; over the quota is `OverQuota`. A typed text never moves, so its family is adopted by
@@ -267,9 +320,10 @@ refused. Handing a thread over to another owner isn't offered.
 ### Following an origin
 When a fork's origin has moved on, the catalog proposes the origin's head with the fork's changes on top
 (docs/catalog.md, "Forks"). The bench shows what following would keep before it is followed: the base and the origin's
-head, what the fork varies, the proposal, and the digest it comes to, a recipe compiled by the running code, so that an
-edge can tell a fork it wouldn't change. Nothing is proposed when the origin hasn't moved on, or when the person no
-longer sees it, deleted or unshared, since its head is then not theirs to read.
+head, what the fork varies, the proposal, and the digest it comes to, a recipe compiled by the running code against
+the facts as they are stored now, so that an edge can tell a fork it wouldn't change. Nothing is proposed when the
+origin hasn't moved on, or when the person no longer sees it, deleted or unshared, since its head is then not theirs
+to read.
 
 Following keeps the proposal as an edit of the person's own fork, based on the origin's head and naming the head
 they saw. It does so even when the proposal holds what the fork's head holds already, since otherwise the fork would
@@ -282,22 +336,33 @@ changes, which are stored already. That is how a correction to the archive's exp
 ones, and a scorer pinned again by a deploy reaches the person's fork of it.
 
 ## Runs and scores
-- **Starting** runs a variation at an endpoint, on some cases with some seeds, through the runner (docs/runner.md),
-  under an execution. As it starts, the run is named by the variation's label and says what it varied: the edit it
-  was built on and the parts replaced over it (docs/catalog.md, "What a run ran"). Running again keeps a run's
-  cleanup, execution, canary set, name and what it varied under new seeds.
+- **Cases** a run is started on are the current cases of the families the person sees, and running again needs every
+  case's family still seen; another is "not found", as a family is.
+- **Queueing** puts a started run, or a scoring of a finished one under the scorers that apply to it, in the queue for
+  the worker (docs/worker.md), as the person's job; a scoring under no scorer, or of an unfinished run, is refused.
+- **Starting** runs a variation at the endpoint serving its model, or the one named (see "The model"), on some
+  cases with some seeds, through the runner (docs/runner.md), under an execution: a run for each language its cases
+  are sent in (see "The languages it runs in"), those sent as written first. Each run is a trial of one skeleton, so
+  trials, the ledger and scoring are as they are for one. As it starts, each is named by the variation's label and says
+  what it varied: the edit it was built on and the parts replaced over it, its model among them (docs/catalog.md,
+  "What a run ran"); every run but the first also names the first, by a `with` entry, so that an edge shows them as
+  one start. The cases left out are said, and a start that can send none of its cases is refused. The day's quota and
+  the items a run takes are held for every run of a start before any starts. Running again keeps a run's cleanup,
+  execution, canary set, name and what it varied under new seeds: one run, in the run's language, started alone.
 - **Resuming** a run of the person's own that isn't finished sends what its log lacks (docs/runner.md, "Resuming").
 - **A person's runs** are their own, newest first, found by the start of their id, or by a component their trial is
   built on.
+- **A start's runs** are its first and those started with it, found from the first; a run says the first of its
+  start, or nothing when it is the first or was started alone.
 - **A run is described** as the repl's `run` and `run tag` say it: the run's name, else the configuration, where it
-  ran, its case or how many, and the seed.
+  ran, its case or how many, the language it was translated into, and the seed.
 - **A scorer applies** to a run when the run's output offers what each of its views reads, a view of the whole answer
   only a text answer, and the World lets each of its judges run (docs/runner.md, "What applies to a run").
 - **A run's scoring** under a scorer is built now, from the expectation each of its cases is scored against. Cases
   without one are left out, and a run whose cases have none has no scoring under that scorer.
 - **Scoring** scores a finished run under each scorer that applies to it, or some of them, through the scoring pass.
   A scorer that can't score the run gives why instead, and the others score it all the same. A judged view's calls go
-  to the one endpoint serving its judge's engine, as the bench names none (docs/runner.md, "Judges"). The scoring
+  to the one endpoint serving its judge's model, as the bench names none (docs/runner.md, "Judges"). The scoring
   pass's events, each item scored and each judge call, go to the edge as they come, when it asks for them, after a
   word that each scorer's score has started. Another thread can halt it, as a second Ctrl-C does in the repl.
 - **What is left to score** of a run is each scorer that applies, under which some of its cases have an expectation,
@@ -309,8 +374,6 @@ ones, and a scorer pinned again by a deploy reaches the person's fork of it.
   aren't scored.
 - **A run's scores** are the latest under each scorer that scored it, each named by the thread the person sees holding
   that scorer, their own first; or every score of the run, newest first; or one by its id.
-- **Rendering again**: only a request's fingerprint is kept, so whether a run's first requests would be sent the same
-  now is told by rendering them again from the trial and the vignette at its source.
 
 ## Errors
 The bench's errors are told apart by their class, so that an edge can answer each its own way:
@@ -322,11 +385,11 @@ The bench's errors are told apart by their class, so that an edge can answer eac
 | `Conflict` | `ValueError` | a write that would undo what the person has unless they say so: taking one thread when they have their own of its case under its schema |
 | `MovedOn` | `ValueError`, the catalog's | an edit made on a head that isn't the head any more |
 | `OverQuota` | `ValueError` | more of something than a day takes, or a run of more items than one takes |
-| any other `ValueError` | | what the bench refuses: an unknown part, a digest that isn't a stored chunk of its part, or a part that can't be taken out; a component that isn't one, or of a kind the person doesn't write; a scorer the code can't score with; taking an expectation of one's own; and the rest, each worded for what was wrong |
+| any other `ValueError` | | what the bench refuses: an unknown part, a digest that isn't a stored chunk of its part or model |
 
-The messages are worded for a person, without the edge's terms; an edge adds its own hint where it has one, as the
-repl does for a name its endpoint would pick a model for. The API answers `NotFound` with 404, `Ambiguous`, `Conflict`
-and `MovedOn` with 409, `OverQuota` with 429, and the other refusals with 422 (docs/api.md, "Errors").
+The messages are worded for a person, without the edge's terms; an edge adds its own hint where it has one. The API
+answers `NotFound` with 404, `Ambiguous`, `Conflict` and `MovedOn` with 409, `OverQuota` with 429, and the other
+refusals with 422 (docs/api.md, "Errors").
 
 ## Tests
 The tests start from the test World (`worlds/test`; docs/inventory.md, "Worlds") as `chatddx init-data` lands it, with
@@ -342,7 +405,7 @@ check before the other has written.
 | Term | Meaning |
 | --- | --- |
 | Bench | What one person sees and does, whatever the edge. |
-| Edge | What a person reaches the bench through: the repl, the API, the portal to come. |
+| Edge | What a person reaches the bench through: the repl, the API, the portal. |
 | Sees | Owns or collaborates on, while it is live. |
 | Own | Owned by the person, while it is live. |
 | Word | What a kind of thread is asked for by: configuration, a recipe part, engine and the rest. |
@@ -355,8 +418,12 @@ check before the other has written.
 | Carrying | Editing an expectation onto another case of its family, with the same data. |
 | Saying | Writing what holds of a thread: its name, description, tags, collaborators, and whether it is deleted. |
 | Following | Keeping the catalog's proposal as an edit of the person's fork, based on its origin's head. |
+| Following its facts | Keeping a configuration's recipe, compiled against the facts corrected since, as an edit of the person's own. |
+| Own language | A configuration's: its recipe's texts', or a hand-written skeleton's. It is sent in it as written. |
+| Left out | The cases of a language a configuration's translations can't carry it into, said and not sent. |
+| Start | The runs one start makes: a run per language its cases are sent in, the later ones `with` the first. |
 | Typed case | A case whose vignette is a text the person typed, kept in a database source. |
-| Cell | The repl's word for a variation being tried together with an endpoint. |
+| Cell | The repl's word for a variation being tried together with the endpoint it runs at, named or found from its model. |
 
 ## Outstanding
 Left for later. The API's are in docs/api.md, "Outstanding". The plan the bench was built from, with the options
@@ -377,6 +444,9 @@ the person were planned in `agents/wip-authoring.md` at b6f76b8. Its takes were 
   offered;
 - configurations listed by purpose, in the API.
 
+- **A case of no language** goes as written, linted `language.unknown`, rather than left out (agents/wip-engine-part.md,
+  "A case of no language"); so does a case of a language the translations don't cover when the configuration's own is
+  unknown.
 - **A low-level manual for the bench**, made from `agents/wip-authoring.md` at b6f76b8.
 - **Correcting a wrong language** stays curation's: the bench refuses a language that differs from the text's own.
   What a person may correct, such as a text only their own threads hold, is open.
@@ -384,9 +454,14 @@ the person were planned in `agents/wip-authoring.md` at b6f76b8. Its takes were 
   a collaborator may withdraw themselves, an entry the catalog would hold as any other, is open.
 - **Z1**: the map from roles to the kinds each role sees goes in `identity` once the portal's views give it meaning
   (docs/identity.md, "Z1: what each role is shown"). `sees` then takes the person's roles and the kind.
-- **A judge's endpoint can't be named**: `Bench.score` names none, so a judge whose engine two endpoints serve bars its
-  scorer, in the repl and the API alike (docs/repl.md, "What the repl doesn't reach"). Decided: as it is, until a World
-  serves an engine at two endpoints; then the scoring names an endpoint per judge.
+- **A model served at several endpoints** isn't picked from them: a run is refused until the endpoint is named, as
+  the test World's two Qwen3 endpoints show; the variation page offers the picker, and a look rendered for none of
+  them has no findings. A judge pins its engine as a trial does, and a judge whose engine two endpoints serve bars
+  its scorer (docs/runner.md, "Judges"), which stays unlikely: it is one engine served twice.
+- **A case's language** is its family's, read from the families the person sees, in a few queries however many
+  cases (`Seen.languages`, `Seen.findings`); a case of a family they don't see is read one at a time.
+- **The facts are read from the store each time they are asked for** (`Seen.facts`), several times a look. That is
+  cheap with a facts thread per model; cache them per request if it shows.
 - **A person's runs are all read**, and paged afterwards, in the API too (`Bench.runs`), and what is left to score is
   worked out for each of them, about 40 ms a run under five scorers. Page in the store once that is slow.
 - **The archive's configuration saved under another name** is saved with no finding: a hand-made recipe that is a
@@ -402,4 +477,10 @@ the person were planned in `agents/wip-authoring.md` at b6f76b8. Its takes were 
 - **What the old bench had and this one doesn't**: what a run left unheeded (the old `outcome.py:unheeded`;
   docs/runner.md, "Smaller issues"); the old crossing of variations, which the portal is to start as several runs
   (agents/wip-portal.md, "Comparing variations"); and what holds a configuration, the portal's
-  (agents/wip-portal.md), whose part for the repl `Bench.reaching` and `Bench.scored_by` cover.
+  (agents/wip-portal.md), whose part for the repl `Seen.runs(reaching=…)` and `Seen.runs(scored_by=…)` cover.
+- **A start holds a transaction open while the gate confirms its endpoint**, once per language though every run of a
+  start goes to one endpoint; a few seconds at most against an endpoint that answers. Confirming once, before the
+  transaction, would remove most of it.
+- **A look for a model several endpoints serve has no findings** until an endpoint is named, where the engine as the
+  part linted it for the recipe's engine; the repl's `show` shows no lints either.
+- **A model that moved on is followed to its head whether or not an endpoint serves it**; `at` says so afterwards.

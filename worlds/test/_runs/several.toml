@@ -1,7 +1,7 @@
 description = "Two cases: the server refuses the first and goes away from the second."
 configuration = "lines"
 endpoint = "qwen3@fake"
-cases = ["crlf", "svenska"]
+cases = ["crlf", "whitespace"]
 scored = false
 
 [[turn]]

@@ -16,7 +16,7 @@ from chatddx.factors.base import (
 )
 from chatddx.factors.bundle import Registry
 from chatddx.factors.cases import Case
-from chatddx.factors.engine import LocalEngine, RemoteEngine
+from chatddx.factors.engine import served_model_name
 from chatddx.factors.request import (
     Skeleton,
     Tool,
@@ -26,7 +26,7 @@ from chatddx.factors.request import (
 from chatddx.factors.response import tool_calls
 from chatddx.factors.trial import CanarySet, CanarySetRef, Execution, Trial, TrialRef
 
-from .call import Call, Turn, check_execution
+from .call import Call, Turn, attest_model, check_execution
 from .record import (
     ItemKey,
     Record,
@@ -91,10 +91,6 @@ class RunFinished(Record):
     seal: Digest
 
 
-RunStage = Annotated[RunStarted | RunFinished, Field(discriminator="stage")]
-RUN_STAGES = ("started", "finished")
-
-
 class RunItem(Record):
     run: UUID
     key: ItemKey
@@ -122,25 +118,17 @@ class CanaryCall(Record):
 
 
 class Run(Frozen):
-    stages: tuple[RunStage, ...] = Field(min_length=1)
+    started: RunStarted
+    finished: RunFinished | None = None
     items: tuple[RunItem, ...] = ()
     canaries: tuple[CanaryCall, ...] = ()
 
     @model_validator(mode="after")
     def _log(self) -> "Run":
-        rows = (*self.stages, *self.items, *self.canaries)
-        check_log(self.stages, RUN_STAGES, [r.run for r in rows])
+        finished = () if self.finished is None else (self.finished,)
+        rows = (self.started, *finished, *self.items, *self.canaries)
+        check_log(self.started, self.finished, [r.run for r in rows])
         return self
-
-    @property
-    def started(self) -> RunStarted:
-        stage = self.stages[0]
-        assert isinstance(stage, RunStarted)
-        return stage
-
-    @property
-    def finished(self) -> RunFinished | None:
-        return next((s for s in self.stages if isinstance(s, RunFinished)), None)
 
     def seal(self) -> str:
         return seal_rows(self.started, items=self.items, canaries=self.canaries)
@@ -222,27 +210,9 @@ def check_run(run: Run, registry: Registry) -> list[Finding]:
     for item in run.items:
         findings.extend(_rounds(item, skeleton, registry))
     findings.extend(_tool_code(started, skeleton, registry))
-    engine = registry.get(trial.engine)
-    assert isinstance(engine, LocalEngine | RemoteEngine)
-    want = engine.served_model_name
+    want = served_model_name(trial.engine, registry.get)
     for item in run.items:
-        returned = {c.returned_model for c in item.calls if c.response is not None}
-        for got in sorted(m for m in returned - {want} if m is not None):
-            findings.append(
-                Finding(
-                    code="attestation.model",
-                    message=f"engine returned model {got!r}, declared {want!r}",
-                    subject=str(item.key),
-                )
-            )
-        if None in returned:
-            findings.append(
-                Finding(
-                    code="attestation.model",
-                    message=f"engine returned no model name, declared {want!r}",
-                    subject=str(item.key),
-                )
-            )
+        findings.extend(attest_model(item.calls, want, "engine", str(item.key)))
     if unfingerprinted := sum(
         1 for i in run.items if any(c.prompt_tokens is None for c in i.calls)
     ):
@@ -360,25 +330,3 @@ def _tool_code(
             continue
         findings.append(Finding(code="tools.code", message=message, subject=ref))
     return findings
-
-
-def compare_prompt_tokens(a: Run, b: Run, registry: Registry) -> list[Finding]:
-    ta, tb = (resolve(registry.get, r.started.trial, Trial) for r in (a, b))
-    if differ := [
-        f for f in ("skeleton", "engine", "cleanup") if getattr(ta, f) != getattr(tb, f)
-    ]:
-        raise StructuralError(
-            f"the runs build their prompts from different {', '.join(differ)}"
-        )
-    theirs = {i.key: i.call.prompt_tokens for i in b.items}
-    return [
-        Finding(
-            code="attestation.prompt_tokens_drift",
-            message="the engine read different prompt tokens for the same item",
-            subject=str(item.key),
-        )
-        for item in a.items
-        if item.call.prompt_tokens is not None
-        and (other := theirs.get(item.key)) is not None
-        and other != item.call.prompt_tokens
-    ]

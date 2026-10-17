@@ -9,8 +9,8 @@ an engine is reached and whether it may receive a case (docs/inventory.md).
 This document describes what a run and a score do and why. Names, signatures, refusals and messages are in the API,
 docs/runner-api.md.
 
-The bench calls the runner for the repl and the API: it starts a run of a variation, and scores a finished run under
-every scorer that applies to it.
+The bench calls the runner for the repl and the API: it starts a run of a variation for each language its cases are
+sent in, and scores a finished run under every scorer that applies to it.
 
 ## A run
 A run is one execution of a trial at one endpoint (docs/ledger.md, "Runs"). It has three steps, and nothing is
@@ -40,6 +40,9 @@ rounds"). Each item is written as soon as its last call is done, so a run that s
 Canaries are sent one at a time, the start phase's before the first item and the end phase's after the last, whatever
 the concurrency, so they bracket the items. They are not sensitive and need no clearance.
 
+Only a request's fingerprint is kept, so whether a run's first requests would be sent the same now is told by rendering
+them again from the trial and the vignette at its source.
+
 ### Resuming
 A run that wasn't finished can resume, the items and canary calls its log holds are kept, and only what it lacks is
 sent. Resuming refuses what starting refuses, under the run's own execution, and an endpoint whose address is another
@@ -60,13 +63,14 @@ The gate guards the engines so that sensitive content may go only where it is cl
 It decides once per run, as it starts and as it resumes, and once per judge as a judged scoring starts, from what they
 pin, before anything is prepared or rendered: every request a run sends, each tool round's and attempt's included, goes
 to the endpoint the gate admitted. The gate refuses, in order:
+- a judge that reads the vignette or the appendices, which no judge is given (see "Judges");
 - an endpoint that serves another engine than the one asked for;
 - a sensitive source of the cases the endpoint isn't cleared for (docs/inventory.md, "Clearance");
 - tools on a sensitive source, since a tool can't be cleared yet;
 - an endpoint whose credential names a secret that isn't set;
-- an endpoint the inventory can't confirm serves its engine (docs/inventory.md, "Reaching an engine").
+- an endpoint whose server doesn't list the name its engine is served under (docs/runner-api.md, "gate.py").
 
-The first three hold for as long as the World is as it is. The last two may pass later: a secret is set, a server
+The first four hold for as long as the World is as it is. The last two may pass later: a secret is set, a server
 comes up. The bench uses the difference (see "What applies to a run").
 
 The secret goes only into the request's `Authorization` header. No stored row holds it.
@@ -115,7 +119,7 @@ A run can be stopped three ways:
 - **An interrupt** (Ctrl-C) hangs up the calls under way at once, records them as stopped, and is raised again once
   they are written. Another interrupt while they hang up leaves them out.
 - **A halt** does the same from another thread, as a server's request thread must when its client leaves, and returns
-  rather than raises.
+  rather than raises. A halt is given to the send it stops, and one can be given to several in turn.
 
 A halt ends a stream that waits on a stalled engine at once, by shutting the connection down, and ends the pause
 between attempts. A round stopped while its tools run is kept without its call: the tools that ran, one an interrupt
@@ -137,8 +141,7 @@ runner is making, which records it. With an iterator it would land in the caller
 A score grades one finished run with one scoring (docs/ledger.md, "Scores"). It has a run's three steps.
 
 Starting it refuses, before anything is written: a run that hasn't finished, judge calls at a concurrency above 1,
-scorer code the running chatddx can't run, and a judge it can't send (see "Judges").
-A scoring with no judge needs no inventory. Then it stores the scoring and
+scorer code the running chatddx can't run, and a judge it can't send (see "Judges"). Then it stores the scoring and
 writes the start record, with the endpoint each judge's calls go to, and the score's owner entry.
 
 Sending grades the run's items in the score's execution order. Each item's answer is read from its last call, as its
@@ -151,8 +154,9 @@ Finishing writes the finish record with those findings and returns what checking
 
 ### Judges
 A judged view's metric reads the verdicts of the view's judge, one per seed (docs/factors.md, "Judge"):
-- **Where its calls go.** A judge names an engine; its calls go to the one endpoint serving that engine, unless the
-  caller names another, and through the gate as a run's do, for the run's cases, since a judge reads a completion.
+- **Where its calls go.** A judge names an engine; its calls go to the one endpoint serving that engine, and through
+  the gate as a run's do, for the run's cases, since a judge reads a completion. Several serving it is refused rather
+  than picked from, as for a run (docs/bench.md, "Outstanding").
 - **What it reads.** The completion and the expectation, as the view picks them. A judge whose skeleton reads the
   vignette or the appendices is refused: no vignette goes to a judge.
 - **When it isn't asked.** When the answer can't be read, the view picks nothing from it, or the judge reads the
@@ -217,7 +221,7 @@ The API lists them (docs/runner-api.md, "Finding codes").
   writes one.
 - **No World's endpoint names a canary set**, though data sets hold them; canary outputs aren't compared
   (docs/chatddx.md, "Possible design issues"), and canary calls stream without events.
-- **Fingerprints are unkeyed.** A call can take a key, but neither the runner nor the scoring pass passes one
+- **Fingerprints are unkeyed.** Neither `send` nor the ledger takes a key for a call's fingerprints
   (docs/factors.md, "Fingerprints").
 - **Judge calls go one at a time**, and every judged scoring confirms its judges' endpoints, even when no item needs a
   judge; an endpoint that hangs holds it up to the confirmation's timeout.

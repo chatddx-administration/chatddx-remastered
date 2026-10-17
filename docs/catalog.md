@@ -39,8 +39,10 @@ Every kind of component has threads except two:
 - compilations, which record how a skeleton was made and which nobody edits. Skeleton edits point at them (see
   "Recipes").
 
-That includes the kinds ops and developers write, such as models, engines, expectation schemas and canary sets. They
-are rarely edited, but threads are where names attach for everything except cases.
+That includes the kinds ops and developers write, such as models, engines, the facts about models, expectation schemas
+and canary sets. They are rarely edited, but threads are where names attach for everything except cases. The facts
+about a model are a thread of the archive's, named by the model, which `chatddx init-data` writes from the facts files
+(docs/facts.md); correcting a fact is a new version of it.
 
 The same component may appear in several threads, and more than once in one: reverting is an edit that points back at
 an earlier version.
@@ -76,14 +78,15 @@ recipe parts they use, what is said about them and their runs, not by their name
 
 ### Recipes
 A recipe has no thread of its own; its history is kept on the skeleton thread it compiles to. Each edit of a skeleton
-thread can name the compilation that produced its skeleton, and the compilation holds the recipe (docs/factors.md,
-"Compilation"). The compilation must be one of that very skeleton, and only skeleton edits name one. A hand-written
-skeleton has no compilation, so its edits name none.
+thread can name the compilation that produced its skeleton, and the compilation holds the recipe, which names its
+model, and the facts about it was worked out from, when it asks them for anything (docs/factors.md, "Compilation").
+The compilation must be one of that very skeleton, and only skeleton edits name one. A hand-written skeleton has no
+compilation, so its edits name none.
 
 A skeleton thread's versions hold the recipes people chose: an edit is written when its skeleton or its recipe
 differs from the head's, so a recipe that compiles to the head's skeleton is a new version. The head's recipe
-compiled by other code is none, or every configuration init-data loads would get a version at each deploy, and its
-forks a proposal that changes nothing.
+compiled by other code, or against other facts, is none, or every configuration init-data loads would get a version
+at each deploy and at each correction of a fact, and its forks a proposal that changes nothing.
 
 ### Forks
 A *fork* is a new thread started from a version of another thread of the same kind, its *origin*. A fork is compared
@@ -102,12 +105,24 @@ when someone accepts a proposal.
 ### What has moved on
 For any thread, the catalog lists the references of its head that could be updated. It looks at:
 - the head's own references, such as a trial's skeleton, engine and cases;
-- for a configuration, the parts of its recipe;
+- for a configuration, the parts of its recipe, its model among them, and the facts it was compiled against;
 - the appendices of each case the head references, since cases have no threads of their own.
+
+A model change puts the configuration behind it, and its owner follows it with the facts (docs/bench.md,
+"Following what has moved on").
 
 A reference is *behind* when a live thread that held it has since moved on to another version. A component can be held
 by several threads, so a reference can be behind several of them: for example, when a chunk was forked and both threads
 moved on. Deleted threads aren't proposed.
+
+Facts are behind only in a configuration that asks them for something: one with a literal sampling and reasoning
+names none. Its owner follows them by keeping its recipe compiled against the corrected facts, as a new version
+(docs/bench.md, "Following its facts"); init-data does so for the archive's.
+
+A configuration's facts are behind only when their thread's head would change what it sends: compiling its recipe
+against the newer facts gives another skeleton, or is refused. A correction it doesn't reach, such as a level it
+doesn't ask for or the model's context length, leaves it as it is, since a version compiled against it would hold the
+same skeleton and recipe, and write nothing (see "Recipes").
 
 A case is also behind when its family has a newer binding (see "Families and repairs"). The catalog then offers its
 *replacement*: the same appendix texts, bound to the family's current vignette. Cases without appendices are flagged
@@ -115,6 +130,13 @@ this way too.
 
 Moving on goes one level at a time. A chunk edit makes its skeleton threads behind; saving one of those makes its trial
 threads behind. A fork makes nothing behind until it moves on.
+
+#### Following facts
+A configuration is behind what it was compiled for when the facts about its model were corrected where they change what
+it sends, or its model's thread moved on, as to a new revision of the weights. Whoever sees it sees both
+(`Bench.moved`, `GET /api/threads/{thread}/follows` as `moved`, the configuration page); its owner follows them as one
+edit, the recipe with the model's head compiled against the current facts (`Bench.follow_moved`, `POST .../follows`
+with `"follow": "moved"`). Facts that refuse what it asks are said, not followed.
 
 ## Entries
 Names, and everything else people say about something, are *entries*. An entry is about exactly one thread, family, run
@@ -133,10 +155,11 @@ collaborator. A subject nothing has been said about has no name, no owner, and n
 | Deleted | a flag | an entry restoring the subject | see "Deleting" |
 | Language | a language, only on a family | nothing: it can only be replaced | see "Languages" |
 | Varied | an edit of a configuration, only on a run | nothing: it can only be replaced | see "What a run ran" |
-| Replaced | a part and the chunk it was set to, or none; a run has one per part | nothing: it can only be replaced | see "What a run ran" |
+| Replaced | a part and the chunk or model it was set to, or none; a run has one per part | nothing: it can only be replaced | see "What a run ran" |
+| With | the first run of the start a run is one of, only on a run | nothing: it can only be replaced | see "What a run ran" |
 
-Every field but the language, the varied edit and the replaced parts can be said about any subject. The fields the
-catalog doesn't use itself are for people and the portal.
+Every field but the language, the varied edit, the replaced parts and the run a run was started with can be said
+about any subject. The fields the catalog doesn't use itself are for people and the portal.
 
 ### Names
 A name is for people. None is required, and names needn't be unique: a thread without one is shown by its title (see
@@ -177,11 +200,14 @@ What the portal hides is open (see "Open design issues").
 ### What a run ran
 The ledger records the trial a run ran (docs/ledger.md); what a person called it and what they varied are said here.
 As a run starts, the bench names it by its variation's label and says what it varied: the configuration's edit it
-was built on, and each part replaced over it, by the chunk it was set to, or none for a part taken out. A run started
-from a trial alone, as the runner starts one, says neither. Running again says what the run it repeats said.
+was built on, and each part replaced over it, by the chunk or model it was set to, or none for a part taken out. A
+start over cases in several languages is a run per language (docs/bench.md), and each run after the first says the
+first, the run it was started *with*, so the runs of one start are found together. A run started from a trial alone,
+as the runner starts one, says none of it. Running again says what the run it repeats varied, and starts alone.
 
 So a run of a variation nobody saved links the configuration it came from, while the ledger keeps what was sent. The
-database holds a varied edit to a configuration's, and a replaced part's chunk to a stored one of that part.
+database holds a varied edit to a configuration's, a replaced part's chunk to a stored one of that part, a replaced
+engine to a stored engine, and the run a run was started with to one that has started.
 
 ## Titles
 Anything without a name is shown by a *title*, built when asked and never stored.
@@ -204,27 +230,30 @@ its own source and id.
 What a component holds is described by what tells it apart from others of its kind, and the components it uses are
 shown by their titles in turn.
 
-A configuration is described by its recipe's parts, translations and toolset included, when a compilation of it is
-stored: "ddx · case · management-plan · recommended · off". A judge's recipe says so first. Without a stored
-compilation, as for a hand-written skeleton, it is shown by its purpose and the start of its digest:
-"generation configuration 1a2b3c".
+A configuration is described by its recipe's parts, translations, toolset and model included, the model last, when a
+compilation of it is stored: "ddx · case · management-plan · recommended · off · qwen3-8b-awq". A judge's recipe
+says so first. Without a stored compilation, as for a hand-written skeleton, it is shown by its purpose and the start
+of its digest: "generation configuration 1a2b3c".
 
 Each kind is described by:
 
 | Component | Described by | Example |
 | --- | --- | --- |
 | Chunk | Its values or the opening words of its text. | `temperature 1.0, top_p 1.0` or `"{vignette}{appendices}"` |
+| Chunk (recommended sampling) | That it is recommended, and the values it sets over the recommendation. | `recommended sampling` or `recommended sampling, max_output_tokens 512` |
+| Chunk (reasoning level) | The level it asks for, and its budget. | `reasoning off` or `default reasoning, budget 2048` |
 | Chunk (few-shot) | How many messages it has. | `few-shot, 2 messages` |
 | Chunk (output) | Its contract, and its schema's title or properties. | `native output: management_plan_v1` |
 | Chunk (toolset) | Its tools. | `with web_search` |
 | Chunk (passthrough) | The options it sets. | `passthrough: logprobs, top_logprobs` |
-| Translations chunk | Its language and size. | `sv translations, 12 texts` |
+| Translations chunk | The languages it translates into, and its size, the texts of the language with the most. | `translations into de, sv, 12 texts` |
 | Tool | Its name. | `web_search` |
 | Appendix | The opening words of its text. | `"Lab results: CRP 180 mg/L, lactate 2.8…"` |
 | Expectation | Its case. | `expectation for Dutchfall11w` |
 | Model | Its repository. | `google/gemma-3-12b-it` |
 | Local engine | Its model, server and GPU. | `google/gemma-3-12b-it on vllm 0.24.0 (NVIDIA GeForce RTX 5090)` |
 | Remote engine | Its model and provider. | `gpt-4o from openai` |
+| Facts | The model they are about. | `facts about Qwen/Qwen3-8B-AWQ` |
 | Trial | Its skeleton, its engine, and how many cases and seeds it has. | `plan on qwen3-8b@pelle, 20 cases, 1 seed` |
 | Scoring | Its scorer and how many expectations it has. | `scorer chatddx.scorers.metrics:score v2 against 20 expectations` |
 | Judge | Its skeleton and engine. | `judge grader on qwen3-8b@pelle` |
@@ -294,7 +323,8 @@ each new binding to the previous one's id or content.
 
 ## Languages
 The rig never tells a model which language a request is in; what is sent is simply in a language. The catalog records
-which one, so that lints can check that a trial doesn't mix languages (docs/factors.md, "Lints").
+which one, so that each case is sent in its own language (docs/bench.md) and lints can check that a trial doesn't mix
+languages (docs/factors.md, "Lints").
 
 A language is a tag such as "sv" or "pt-BR". It can be replaced but not removed, and the latest wins. It is kept in one
 of two places:
@@ -304,24 +334,25 @@ of two places:
   portal can offer the previous version's.
 
 Only components whose language is their own can have one: the chunks that hold text sent to a model (instructions,
-few-shot, prompt, output, toolset, and translations, whose language is the one they translate into) and hand-written
-skeletons. A compiled skeleton's language comes from its recipe.
+few-shot, prompt, output and toolset) and hand-written skeletons. A translations chunk names the languages it
+translates into itself, and has none of its own. A compiled skeleton's language comes from its compilations.
 
 The language of any component can be worked out:
 - a case's is its family's, and an expectation's is its case's.
 - a trial's and a judge's are their skeleton's.
 - a configuration's version's comes from the recipe its edit names, when it names one, so two configurations that
   hold one skeleton can be in two languages.
-- a compiled skeleton's comes from its recipes, which vote. A recipe with translations votes for the translations'
-  language. A recipe without translations votes for the language that all its text-bearing chunks share, toolset
-  included and appendix layout not. A recipe whose chunks lack a language or disagree doesn't vote. When the votes
-  disagree, the skeleton has no language.
+- a compiled skeleton's comes from its compilations: one compiled into a language is in that language, and one as
+  written in the language its recipe votes for, the one all its text-bearing chunks share, toolset included and
+  appendix layout not. Translations don't vote. A recipe whose chunks lack a language or disagree doesn't vote. When
+  the compilations disagree, the skeleton has no language.
 - a chunk's and a hand-written skeleton's are their own.
 
 An unknown or disagreeing language gives none.
 
 Vignettes are never translated: a case runs in the language it was written in. So the request follows the case (a
-Swedish case runs under a Swedish-translated configuration), and comparing languages means comparing case sets.
+Swedish case runs under its configuration translated into Swedish; docs/factors.md, "Translations"), and comparing
+languages means comparing case sets.
 
 ## Storage
 The catalog is a schema of its own (docs/store.md; tables in docs/migrations.md, "catalog"), with a table each for
@@ -384,7 +415,12 @@ writes at the same moment can leave a person several expectations to choose from
   each together with its first. A deferred constraint could rule them out at tier 2.
 - **A skeleton edit may leave out its compilation** even when one exists, and nothing can require it.
 - **A language on a skeleton that is compiled later** is ignored from then on, since the skeleton's language comes from
-  its recipe.
+  its compilations.
+- **A language refused on a compiled skeleton is said to come from its recipe**, by
+  `src/chatddx/catalog/language.py:check_language`, `0012`'s `language_compiled` trigger and the bench's
+  `COMPILED_LANGUAGE`; a translated skeleton's comes from the language its compilation names.
+- **A translated skeleton's title doesn't say its language.** It has no thread, so it is titled by its compilation's
+  recipe, as the configuration's own skeleton is.
 - **What deleting hides in the portal**: everywhere, or only in pickers, while the runs that used it stay visible.
 - **Who changed an entry or a language isn't shown.** Every row records who wrote it and when, but for these only
   what holds now is shown.
@@ -408,12 +444,13 @@ writes at the same moment can leave a person several expectations to choose from
   way lints check a trial's. An English judge grading Swedish answers may be intended, so it would be a notice rather
   than a warning.
 - **A variation nobody saved has a long title.** It is described by its whole recipe:
-  "case · diagnoses-tool · recommended (Qwen/Qwen3-8B-AWQ) · off (Qwen/Qwen3-8B-AWQ)", where the repl called it
-  "diagnoses-tool (Qwen/Qwen3-8B-AWQ)+reasoning=off": the configuration it came from and the parts set over it. A run
-  of one is named so and says what it varied (see "What a run ran"), but its skeleton is still titled by its recipe.
+  "case · diagnoses-tool · recommended · off · qwen3-8b@pelle", where the repl called it
+  "diagnoses-tool+reasoning=off": the configuration it came from and the parts set over it. A run of one is
+  named so and says what it varied (see "What a run ran"), but its skeleton is still titled by its recipe.
 - **What a fork varies is compared by recipe.** A variation with a part replaced is compiled whole by the running code
-  (docs/bench.md, "The variation being tried"), so after a change to the compiler it can send otherwise than the edit
-  it was built on where nothing was replaced, and what its fork varies doesn't say so.
+  and against the facts as they are stored then (docs/bench.md, "The variation being tried"), so after a change to the
+  compiler, or a corrected fact, it can send otherwise than the edit it was built on where nothing was replaced, and
+  what its fork varies doesn't say so.
 - **An edit that names its head holds with several writers without the database repeating the rule**:
   each edit of a thread waits for the one before it to land. The head an edit names is held without the database
   repeating it: every edit takes its thread's advisory lock (src/chatddx/store/catalog.py:Catalog._lock).

@@ -6,7 +6,8 @@ from pydantic import ValidationError
 from chatddx.factors.base import Fingerprint
 from chatddx.factors.cases import Case, Vignette
 from chatddx.inventory import DirectorySource, Inventory
-from chatddx.inventory.test.memory import MemorySource
+
+URL = "http://pelle.km:12009/v1/"
 
 
 def vignettes(root: Path) -> Path:
@@ -37,7 +38,7 @@ def test_sources_are_declared_in_the_inventory(tmp_path: Path) -> None:
     _ = path.write_text('[machine.pelle]\naddress = "pelle.km"\n')
     with pytest.raises(
         ValueError,
-        match="only 'include', 'source', 'endpoint', 'host', 'cleared' and 'judge'",
+        match="only 'include', 'configurations', 'source', 'endpoint', 'host', 'cleared' and 'judge'",
     ):
         _ = Inventory.load(path)
     _ = path.write_text('[source.test]\nkind = "s3"\npath = "x"\n')
@@ -56,7 +57,8 @@ def test_a_source_s_cleanup_and_an_endpoint_s_canaries_and_execution_are_declare
     engine, probe = "sha256:" + "c" * 64, "sha256:" + "d" * 64
     _ = path.write_text(
         '[source.test]\npath = "vignettes"\ncleanup = ["strip@1", "newlines.lf@1"]\n\n'
-        + f'[endpoint.qwen]\nengine = "{engine}"\nmax_jobs = 2\ncanaries = "{probe}"\n\n'
+        + f'[endpoint.qwen]\nengine = "{engine}"\nurl = "{URL}"\nmax_jobs = 2\n'
+        + f'canaries = "{probe}"\n\n'
         + "[endpoint.qwen.execution]\nconcurrency = 2\ntimeout_s = 60\n"
     )
     inventory = Inventory.load(path)
@@ -66,7 +68,7 @@ def test_a_source_s_cleanup_and_an_endpoint_s_canaries_and_execution_are_declare
     assert (qwen.execution.concurrency, qwen.execution.timeout_s) == (2, 60)
 
     _ = path.write_text(
-        f'[endpoint.qwen]\nengine = "{engine}"\n\n'
+        f'[endpoint.qwen]\nengine = "{engine}"\nurl = "{URL}"\n\n'
         + "[endpoint.qwen.execution]\nconcurrency = 2\n"
     )
     with pytest.raises(ValidationError, match="sends 2 requests at once"):
@@ -81,7 +83,7 @@ def test_a_world_takes_sources_and_endpoints_from_another(tmp_path: Path) -> Non
     other.mkdir()
     directory = vignettes(other)
     _ = (other / "endpoints.toml").write_text(
-        '[endpoint.qwen]\nengine = "sha256:' + "c" * 64 + '"\n'
+        '[endpoint.qwen]\nengine = "sha256:' + "c" * 64 + f'"\nurl = "{URL}"\n'
     )
     world = tmp_path / "world"
     world.mkdir()
@@ -121,12 +123,3 @@ def test_directory_sources_list_fetch_and_make_cases(tmp_path: Path) -> None:
             ),
         ),
     ]
-
-
-def test_memory_sources_stand_in_for_tests() -> None:
-    source = MemorySource(name="inline", vignettes={"c2": b"two", "c1": b"one"})
-    assert source.ids() == ["c1", "c2"]
-    assert source.fetch("c1") == b"one"
-    assert source.sensitive
-    with pytest.raises(LookupError, match="no case 'c3'"):
-        _ = source.fetch("c3")

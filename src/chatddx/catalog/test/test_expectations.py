@@ -81,7 +81,10 @@ def test_one_head_is_picked_from_a_case_s_threads() -> None:
 def test_a_person_owns_one_live_expectation_thread_per_case_and_schema() -> None:
     s = Sample()
     rows = s.rows
-    check = threads.check_expectation
+
+    def note(thread: int, entry: Entry) -> None:
+        threads.check_note(rows, Subject(thread=thread), entry)
+
     to_alice = Entry(field=EntryField.OWNER, person=ALICE)
     deleted = Entry(field=EntryField.DELETED)
     restored = Entry(field=EntryField.DELETED, present=False)
@@ -89,20 +92,20 @@ def test_a_person_owns_one_live_expectation_thread_per_case_and_schema() -> None
     other = s.expecting("PE")
 
     second = rows.start(other)
-    check(rows, second.thread)
+    threads.check_edit(rows, second.thread, other)
     with pytest.raises(ValueError, match=f"already, in thread {mine.thread}"):
-        check(rows, second.thread, entry=to_alice)
-    check(rows, second.thread, entry=Entry(field=EntryField.OWNER, person=BOB))
-    check(rows, second.thread, entry=Entry(field=EntryField.COLLABORATOR, person=ALICE))
+        note(second.thread, to_alice)
+    note(second.thread, Entry(field=EntryField.OWNER, person=BOB))
+    note(second.thread, Entry(field=EntryField.COLLABORATOR, person=ALICE))
 
     elsewhere = owned(rows, rows.start(s.expecting("PE", under=s.other_schema)), ALICE)
     with pytest.raises(ValueError, match="owns an expectation of case"):
-        check(rows, elsewhere.thread, other)
-    check(rows, mine.thread, other)
+        threads.check_edit(rows, elsewhere.thread, other)
+    threads.check_edit(rows, mine.thread, other)
 
     rows.note(Subject(thread=mine.thread), deleted)
-    check(rows, second.thread, entry=to_alice)
+    note(second.thread, to_alice)
     _ = owned(rows, second, ALICE)
     with pytest.raises(ValueError, match=f"already, in thread {second.thread}"):
-        check(rows, mine.thread, entry=restored)
-    check(rows, second.thread, entry=deleted)
+        note(mine.thread, restored)
+    note(second.thread, deleted)

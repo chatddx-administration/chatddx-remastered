@@ -40,14 +40,12 @@ Every command is a function `(repl: Repl, *args: str) -> None` that says what it
 through `repl.error`. Only the bench writes (`src/chatddx/bench/`).
 
 ## The entry
-`cli.py:_repl`, for `chatddx repl LOGIN [--world DIR] [--facts PATH …] [--history PATH]`:
+`cli.py:_repl`, for `chatddx repl LOGIN [--world DIR] [--history PATH]`:
 1. the World from `--world`, else `CHATDDX_WORLD`, else `SystemExit("repl: give a World with --world DIR or
    CHATDDX_WORLD")`;
-2. `Facts.load` of the bundled facts, the World's and each `--facts`;
-3. a psycopg connection to `settings.database()` in autocommit mode;
-4. the person by login, else `SystemExit("no person 'LOGIN': chatddx init-data LOGIN adds them")`;
-5. `loop(Repl(Bench(conn, person, world.inventory, facts), console()), history)`, and `SystemExit(1)` when it returns
-   1.
+2. a psycopg connection to `settings.database()` in autocommit mode;
+3. the person by login, else `SystemExit("no person 'LOGIN': chatddx init-data LOGIN adds them")`;
+4. `loop(Repl(Bench(conn, person, world.inventory), console()), history)`, and `SystemExit(1)` when it returns 1.
 
 ## loop.py
 ### `HISTORY`
@@ -69,14 +67,14 @@ as `shell.failed` is set. Otherwise it returns 0.
 A rich console with markup off, since names, vignettes and answers hold brackets.
 
 ### `class Cell`
-Frozen: `variation: TriedVariation | None`, `endpoint: str | None`, `engine: str | None`, `name: str | None`.
+Frozen: `variation: TriedVariation | None` and `endpoint: chatddx.bench.Endpoint | None`, the endpoint named.
 
 | Name | Gives |
 | --- | --- |
-| `trying(variation, name=None)` | the cell with `variation`, and `name` when given, else the name it held |
-| `holding(name)` | the cell with no variation, holding `name` |
-| `on(endpoint, engine)` | the cell at `endpoint`, serving `engine` |
-| `label` | the variation's label, `NAME+PART=CHUNK…`; the held name with no variation; else `""` |
+| `trying(variation)` | the cell with `variation` |
+| `on(endpoint)` | the cell at `endpoint`; `on(None)` drops it |
+| `named` | the endpoint's name, else `None` |
+| `label` | the variation's label, `NAME+PART=CHUNK…`, else `""` |
 
 ### `class Repl(bench: Bench, console: Console, seed: int | None = None)`
 The shell's state: `bench`, `console`, `cell` (a `Cell()` to begin with), `seed` (`drawn_seed()` unless given) and
@@ -84,17 +82,22 @@ The shell's state: `bench`, `console`, `cell` (a `Cell()` to begin with), `seed`
 
 | Name | Does |
 | --- | --- |
-| `prompt` | `LOGIN #SEED> `, with ` LABEL×ENDPOINT` after the login as the cell fills |
+| `prompt` | `LOGIN #SEED> `, with ` LABEL×ENDPOINT` after the login as the cell fills, ENDPOINT being `where()` |
+| `at` | the `Endpoint` the cell's configuration is rendered and linted for: the one named, else the one `Bench.at` gives for the variation, `None` when it refuses |
+| `engine` | `at`'s engine, else `None` |
+| `where()` | the endpoint the cell runs at: with no configuration, the one named; else `Bench.at` of the variation and the endpoint named, the named one when it refuses, `None` for none |
 | `completions()` | the names Tab offers, by key (see `complete`): `_names()` plus `replay:run`, the latest 20 runs' id prefixes, and `score:run`, the runs left to score |
 | `forget()` | drops the kept names, so the next Tab reads them again; `save` calls it |
-| `say_cell()` | prints `cell: LABEL × ENDPOINT`, `?` for what is missing |
+| `say_cell()` | prints `cell: LABEL × ENDPOINT`, ENDPOINT being `where()`, `?` for what is missing |
 | `say_changed()` | `say_cell`, then the cell's lints (`Bench.findings` of the variation, the engine and the seed) when it holds both |
 | `say_findings(findings, tally=False)` | a line per finding, `[level] code: message`; with `tally`, each once with `(×N)` |
 | `error(message)` | prints `message` in red and sets `failed` |
-
-`_names()` keeps, per kind of `bench/model.py:KINDS`, the names the person sees, a per-model name by what it is made
-from, and one made in several languages as `NAME LANG`; `set:PART` adds `none` for an optional part; and `endpoint`,
-`case` (family names and `Bench.case_titles()`), `tag`, `part` and `kind`.
+`_names()` keeps, per kind of `bench/model.py:KINDS`, the names of the threads the person sees (`Bench.threads`);
+`set:PART` adds `none` for an optional part (`OPTIONAL_PARTS`); and `endpoint`, `case` (family names and the titles
+of their other cases), `tag` (the families'), `part` and `kind`.
+`_names()` keeps, per kind of `bench/model.py:KINDS`, the names the person sees (`Bench.names`); `set:PART` adds
+`none` for an optional part; and `endpoint`, `case` (family names and `Bench.case_titles()`), `tag`, `part` and
+`kind`.
 
 ## commands.py
 ### `class Command`
@@ -117,7 +120,7 @@ calls the command. It returns `False` for `quit` and `exit`, else `True`. What i
 | a quote left open | `shlex`'s, as `No closing quotation` |
 | an unknown verb | `no command 'VERB': try help` |
 | too few or too many words | `usage: VERB PARAMS…` |
-| the command raises `LookupError` or `ValueError` | its message; for a `NotFound` with per-model variants, `…, picked by the endpoint in the cell` |
+| the command raises `LookupError` or `ValueError` | its message |
 | the command raises `psycopg.Error` | `the database failed: FIRST LINE` |
 
 ### `complete(names: Mapping[str, list[str]], line: str) -> list[str]`
@@ -131,17 +134,17 @@ command's `rest` param takes whole is followed by the next param's names once it
 
 | Command | Function | On the bench |
 | --- | --- | --- |
-| `configurations [NAME]` | `listing.configurations` | `threads`, `purposed`, `catalog.recipe`, `catalog.origin`, `about`, `title` |
-| `endpoints` | `listing.endpoints` | `inventory`, `endpoint`, `model`, `url_of` |
+| `configurations [NAME]` | `listing.configurations` | `threads`, `catalog.edit_languages`, `purposed`, `catalog.recipe`, `translated`, `catalog.origin`, `about`, `title` |
+| `endpoints` | `listing.endpoints` | `inventory`, `endpoint`, `model` |
 | `cases` | `listing.cases` | `families` |
-| `use CONFIGURATION` | `choosing.use` | `configuration` |
-| `on ENDPOINT` | `choosing.on` | `endpoint`, then `configuration`, `chunk` and `model` for a held name |
-| `cell CONFIGURATION ENDPOINT` | `choosing.cell` | `endpoint`, `configuration` |
+| `use CONFIGURATION` | `choosing.use` | `configuration`, and `title` of the named endpoint's engine, set in it (`TriedVariation.set`) |
+| `on ENDPOINT` | `choosing.on` | `endpoint`, and `title` of its engine's model, set in the cell's configuration |
+| `cell CONFIGURATION ENDPOINT` | `choosing.cell` | `endpoint`, `configuration`, and `title` of the endpoint's engine, set in it |
 | `set PART CHUNK` | `choosing.set_` | `chunk`, `skeleton` |
-| `show [KIND] [NAME...]` | `inspecting.show` | `skeleton`, `findings`, `reach`, `thread`, `get`, `reaching`, `scored_by`, `scores_of`, `runs`, `case_titled`, `appendices_of`, `cases`, `expectation_schemas`, `expectation`, `shared`, `store.scores_of` |
-| `reasoning` | `inspecting.reasoning` | `facts`, `inventory`, `endpoint`, `model` |
-| `run CASE [SEED]` | `running.run` | `case_titled`, `skeleton`, `start`, then `score` through `Held`, `runs` |
-| `run tag TAG...` | `running.tagged` | `families`, `skeleton`, `start`, `score` through `Held`, `runs` |
+| `show [KIND] [NAME...]` | `inspecting.show` | `at`, `skeleton`, `landed`, `languages`, `findings`, `reach`, `thread`, `get`, `reaching`, `scored_by`, `scores_of`, `runs`, `case_titled`, `appendices_of`, `cases`, `expectation_schemas`, `expectation`, `shared`, `store.scores_of` |
+| `reasoning` | `inspecting.reasoning` | `facts`, `inventory`, `endpoint`, `model`, `get`, `at` |
+| `run CASE [SEED]` | `running.run` | `case_titled`, `skeleton`, `at`, `start`, then `score` through `Held`, `runs` |
+| `run tag TAG...` | `running.tagged` | `families`, `skeleton`, `at`, `start`, `score` through `Held`, `runs` |
 | `seed [SEED]` | `running.seed` | `skeleton` |
 | `save NAME` | `choosing.save` | `save` |
 | `runs [COUNT]` | `reviewing.runs` | `runs`, `store.run`, `scores_of`, `described` |
@@ -155,6 +158,12 @@ command's `rest` param takes whole is followed by the next param's names once it
 `use`, `cell`, `configurations` and `save` take their name with `rest=0`; `set` its chunk with `rest=1`; `run` groups
 its words with `running.case_and_seed`.
 
+`run` and `run tag` take the runs `Bench.start` begins (`Started`, a run per language its cases are in, the
+configuration's own first): `run` its one, titled with `, in LANGUAGE, translated` when it is translated
+(`running.py:_sent_in`); `run tag` each in turn, titled with its language when there are several or it is translated,
+a Ctrl-C that stops one stopping those after it before they send (`Running.stop`), and then `left out: …` per
+`Started.left_out`. A start that sends no case raises `ValueError("no case can be sent: …")`, said as its message.
+
 ## render.py
 ### Styles
 `LABEL` (dim), `REFUSED` (red), `VALID` (green), `LATER` (yellow) and `THINKING`. `STYLES` maps each outcome to its
@@ -166,7 +175,7 @@ style. `TOKENS` is the width of a token count.
 | `Transcript(console)` | `event(event)` streams a run's events: thinking, labelled, the answer, `[name] arguments` and `[result]`, and the tokens after; `item(item)` tells a stored item again |
 | `Tally(console, width, case)` | a live line: `count(tokens)` as they stream, `stopping()`, `end(tokens, word, style, said)`; a context manager |
 | `JudgeLines(console, bench)` | `event(event)` turns the scoring pass's events into a `Tally` per judge call, ended with what the judge said; `close()` |
-| `outcome(skeleton, item)` | `(word, style, why)`, from `bench.outcome` |
+| `outcome(skeleton, item)` | `(word, style, why)`, from `chatddx.runner.outcome.outcome` |
 | `show_answer(console, skeleton, item, graded)` | the call's error, `stopped`, `unread: …`, `salvaged: …`, `valid` or `invalid: …`, then each selection of the views |
 | `show_scores(console, graded)` | one item's scores, a row per view with a target, and `no target: …` once |
 | `show_judged(console, bench, graded)` | each judge call of one item: view, judge and seed, what it said at the view's `at`, and its reason |
@@ -201,7 +210,7 @@ scores what is left` when it did. `WRITING` and `SCORING` are its two messages, 
 | --- | --- |
 | `template` | `curated`, so each test starts from the test World loaded |
 | `autocommit` | `True`, as the runner needs |
-| `bench` | alice's `Bench` on the World with freed ports and its facts |
+| `bench` | alice's `Bench` on the World with freed ports, reading the facts init-data stored |
 | `repl` | a `Repl` on that bench, a recorded console 200 wide, seed 7 |
 | `say(*lines) -> str` | each line handled in turn, then all the console recorded |
 

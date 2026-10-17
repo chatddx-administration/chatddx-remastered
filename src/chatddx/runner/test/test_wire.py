@@ -2,6 +2,7 @@ import json
 import logging
 import threading
 import time
+import urllib.error
 import urllib.request
 from collections.abc import Generator, Iterator
 from contextlib import contextmanager
@@ -21,6 +22,7 @@ from chatddx.runner.wire import (
     events,
     post,
     request,
+    served,
 )
 
 SERVED = Served.of(
@@ -227,3 +229,12 @@ def test_a_secret_goes_in_a_header_and_nowhere_else() -> None:
     assert sent.get_header("Authorization") == "Bearer s3cret"
     assert sent.data == b'{"model": "m"}'
     assert request("http://h/v1", {}).get_header("Authorization") is None
+
+
+def test_the_models_a_server_lists_are_asked_for_with_its_secret() -> None:
+    keyed = Served.of("google/gemma", ["--api-key", "s3cret"])
+    with serving([keyed], "127.0.0.1", 0) as (host, port):
+        url = f"http://{host}:{port}/v1/"
+        assert served(url, secret="s3cret") == ["google/gemma"]
+        with pytest.raises(urllib.error.HTTPError, match="401"):
+            _ = served(url)

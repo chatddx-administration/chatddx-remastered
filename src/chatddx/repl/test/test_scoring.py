@@ -2,26 +2,28 @@ import pytest
 from pydantic import JsonValue
 
 from chatddx.bench import Bench
-from chatddx.catalog import Entry, EntryField, Subject
+from chatddx.bench.test.helpers import owned
+from chatddx.catalog import Entry, EntryField, Subject, threads
 from chatddx.factors.base import resolve
 from chatddx.factors.scoring import Expectation
 from chatddx.repl.commands import complete
 from chatddx.repl.shell import Repl
 from chatddx.repl.test.helpers import Say, cells, line_of, pattern, tagged
-from chatddx.store import Catalog, People, Store
+from chatddx.store import Catalog, People, Rows, Store
 from chatddx.test.world import LINES, QWEN
 
 
 # A new version of the expectation the person reads for a case, from their own thread.
 def retarget(bench: Bench, case: str, data: JsonValue) -> None:
     catalog, store = Catalog(bench.conn), Store(bench.conn)
+    rows = Rows(bench.conn)
     digest = bench.family(case).case
     [thread] = [
-        t
-        for t in catalog.expectations_of(digest)
-        if catalog.about(Subject(thread=t)).owner == bench.person.id
+        e.thread
+        for e, a in threads.expecting(rows, [digest])[digest]
+        if a.owner == bench.person.id
     ]
-    held = resolve(store.get, catalog.head(thread).digest, Expectation)
+    held = resolve(store.get, threads.head(rows, thread).digest, Expectation)
     registry = store.load([held.digest])
     changed = registry.add(
         Expectation(
@@ -93,7 +95,7 @@ def _dropped(bench: Bench, name: str) -> tuple[str, str]:
     case = bench.family(name).case
     [schema] = bench.expectation_schemas(case)
     catalog, person = Catalog(bench.conn), bench.person.id
-    [mine] = bench.expectation_choices([case], schema)[case]
+    [mine] = owned(bench, case, schema)
     catalog.note(Subject(thread=mine), Entry(field=EntryField.DELETED), person)
     return case, schema
 

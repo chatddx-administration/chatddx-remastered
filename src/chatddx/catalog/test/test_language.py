@@ -1,6 +1,6 @@
 import pytest
 
-from chatddx.catalog import Entry, EntryField, Subject, language
+from chatddx.catalog import Entry, EntryField, Subject, language, threads
 from chatddx.catalog.test.memory import Memory, compiled
 from chatddx.factors.base import resolve
 from chatddx.factors.bundle import Registry
@@ -31,10 +31,11 @@ def test_a_request_is_in_the_language_its_parts_agree_on() -> None:
     assert language.language_of(rows, ids["trial"]) == "en"
 
     needed = [t for part in texts(base, reg.get).values() for t in part]
-    swedish = reg.add(Translations(entries={t: f"[sv] {t}" for t in needed}))
-    translated = compiled(reg, base.model_copy(update={"translations": swedish}))
-    assert language.language_of(rows, translated.skeleton) is None
-    rows.set_language(swedish, "sv")
+    swedish = reg.add(Translations(into={"sv": {t: f"[sv] {t}" for t in needed}}))
+    recipe = base.model_copy(update={"translations": swedish})
+    assert compiled(reg, recipe).skeleton == plan.skeleton
+    assert language.recipe_language(rows, recipe) == "en"
+    translated = compiled(reg, recipe, "sv")
     assert language.language_of(rows, translated.skeleton) == "sv"
 
 
@@ -67,10 +68,9 @@ def test_every_compilation_of_a_skeleton_votes() -> None:
     )
     assert language.language_of(rows, plan.skeleton) == "en"
     needed = [t for part in texts(base, reg.get).values() for t in part]
-    unchanged = reg.add(Translations(entries={t: t for t in needed}))
-    retold = compiled(reg, base.model_copy(update={"translations": unchanged}))
+    unchanged = reg.add(Translations(into={"sv": {t: t for t in needed}}))
+    retold = compiled(reg, base.model_copy(update={"translations": unchanged}), "sv")
     assert retold.skeleton == plan.skeleton
-    rows.set_language(unchanged, "sv")
     assert language.language_of(rows, plan.skeleton) is None
 
 
@@ -83,9 +83,8 @@ def test_an_edit_is_in_the_language_of_its_own_recipe() -> None:
     for part in (base.instructions, base.prompt, base.output):
         rows.set_language(part, "en")
     needed = [t for part in texts(base, reg.get).values() for t in part]
-    unchanged = reg.add(Translations(entries={t: t for t in needed}))
-    rows.set_language(unchanged, "sv")
-    retold = compiled(reg, base.model_copy(update={"translations": unchanged}))
+    unchanged = reg.add(Translations(into={"sv": {t: t for t in needed}}))
+    retold = compiled(reg, base.model_copy(update={"translations": unchanged}), "sv")
     assert retold.skeleton == plan.skeleton
 
     english = rows.start(plan.skeleton, compilation=plan.digest)
@@ -121,9 +120,8 @@ def test_many_digests_are_given_the_language_each_has_alone() -> None:
     for part in (base.instructions, base.prompt, base.output):
         rows.set_language(part, "en")
     needed = [t for part in texts(base, reg.get).values() for t in part]
-    swedish = reg.add(Translations(entries={t: f"[sv] {t}" for t in needed}))
-    rows.set_language(swedish, "sv")
-    translated = compiled(reg, base.model_copy(update={"translations": swedish}))
+    swedish = reg.add(Translations(into={"sv": {t: f"[sv] {t}" for t in needed}}))
+    translated = compiled(reg, base.model_copy(update={"translations": swedish}), "sv")
     uncompiled = reg.add(
         compile_request(base.model_copy(update={"instructions": None}), reg.get)
     )
@@ -158,12 +156,15 @@ def test_languages_are_refused_where_they_are_not_read() -> None:
         _ = language.check_language(rows, base.prompt, "Swedish")
     with pytest.raises(ValueError, match="trial components have no language"):
         _ = language.check_language(rows, ids["trial"], "sv")
+    translations = reg.add(Translations(into={"sv": {"Case:": "Fall:"}}))
+    with pytest.raises(ValueError, match="translations components have no language"):
+        _ = language.check_language(rows, translations, "sv")
     with pytest.raises(ValueError, match="comes from its recipe"):
         _ = language.check_language(rows, plan.skeleton, "sv")
     with pytest.raises(LookupError):
         _ = language.check_language(rows, "sha256:" + "9" * 64, "sv")
 
     swedish = Entry(field=EntryField.LANGUAGE, value="sv")
-    language.check_entry(Subject(family=1), swedish)
+    threads.check_note(rows, Subject(family=1), swedish)
     with pytest.raises(ValueError, match="kept on its digest"):
-        language.check_entry(Subject(thread=1), swedish)
+        threads.check_note(rows, Subject(thread=1), swedish)

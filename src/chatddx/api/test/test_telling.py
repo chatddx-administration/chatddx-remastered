@@ -1,6 +1,5 @@
 import asyncio
 from datetime import UTC, datetime
-from itertools import count
 from uuid import uuid4
 
 import psycopg
@@ -19,7 +18,7 @@ from chatddx.factors.test.sample import fp
 from chatddx.identity import Person
 from chatddx.ledger import Call, ItemKey, RunItem, ToolRun, Turn
 from chatddx.store import Store
-from chatddx.store.notify import Events, JobChanged, Rows, channel, payloads
+from chatddx.store.notify import Events, JobChanged, Rows, channel, tell
 from chatddx.store.store import Connection
 from chatddx.test.world import LINES
 
@@ -87,10 +86,11 @@ def test_a_listener_fans_a_run_s_messages_out_to_the_streams_following_it(
     async def follow() -> None:
         async with listener.heard(run) as one, listener.heard(run) as two:
             with psycopg.connect(conninfo, autocommit=True) as conn:
-                for payload in ["rows", "job finished", *payloads(said, count())]:
+                for payload in ["rows", "job finished"]:
                     _ = conn.execute(
                         "SELECT pg_notify(%s, %s)", (channel(run), payload)
                     )
+                tell(conn, run, said)
             expected = [Rows(), JobChanged("finished"), Events(said)]
             for hearing in (one, two):
                 heard: list[Heard] = []

@@ -117,10 +117,10 @@
             "required": true,
             "schema": {
               "type": "string",
-              "description": "one of configuration, instructions, few_shot, prompt, output, sampling, reasoning, passthrough, translations, toolset, tool, scorer, judge, expectation_schema, expectation, appendix, canary_set, model, engine",
+              "description": "one of configuration, instructions, few_shot, prompt, output, sampling, reasoning, passthrough, translations, toolset, tool, scorer, judge, expectation_schema, expectation, appendix, canary_set, model, engine, facts",
               "title": "Kind"
             },
-            "description": "one of configuration, instructions, few_shot, prompt, output, sampling, reasoning, passthrough, translations, toolset, tool, scorer, judge, expectation_schema, expectation, appendix, canary_set, model, engine"
+            "description": "one of configuration, instructions, few_shot, prompt, output, sampling, reasoning, passthrough, translations, toolset, tool, scorer, judge, expectation_schema, expectation, appendix, canary_set, model, engine, facts"
           },
           {
             "name": "name",
@@ -411,47 +411,6 @@
             }
           }
         }
-      },
-      "delete": {
-        "tags": [
-          "threads"
-        ],
-        "summary": "Delete",
-        "operationId": "delete_api_threads__thread__delete",
-        "security": [
-          {
-            "HTTPBearer": []
-          },
-          {
-            "APIKeyCookie": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "thread",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "integer",
-              "title": "Thread"
-            }
-          }
-        ],
-        "responses": {
-          "204": {
-            "description": "Successful Response"
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
       }
     },
     "/api/threads/{thread}/edits": {
@@ -670,6 +629,14 @@
             }
           },
           {
+            "name": "model",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/ModelDigest"
+            }
+          },
+          {
             "name": "head",
             "in": "query",
             "required": false,
@@ -700,10 +667,10 @@
                   "type": "null"
                 }
               ],
-              "description": "to render and lint it for",
+              "description": "to render and lint it for: the one serving a configuration's model unless named, and one a hand-written configuration names",
               "title": "Endpoint"
             },
-            "description": "to render and lint it for"
+            "description": "to render and lint it for: the one serving a configuration's model unless named, and one a hand-written configuration names"
           },
           {
             "name": "tag",
@@ -885,13 +852,13 @@
         }
       }
     },
-    "/api/threads/{thread}/proposal": {
+    "/api/threads/{thread}/follows": {
       "get": {
         "tags": [
           "threads"
         ],
-        "summary": "Proposal",
-        "operationId": "proposal_api_threads__thread__proposal_get",
+        "summary": "Follows",
+        "operationId": "follows_api_threads__thread__follows_get",
         "security": [
           {
             "HTTPBearer": []
@@ -917,15 +884,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "anyOf": [
-                    {
-                      "$ref": "#/components/schemas/Proposal"
-                    },
-                    {
-                      "type": "null"
-                    }
-                  ],
-                  "title": "Response Proposal Api Threads  Thread  Proposal Get"
+                  "$ref": "#/components/schemas/Follows"
                 }
               }
             }
@@ -941,9 +900,7 @@
             }
           }
         }
-      }
-    },
-    "/api/threads/{thread}/follows": {
+      },
       "post": {
         "tags": [
           "threads"
@@ -975,69 +932,6 @@
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/NewFollow"
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/MadeEdit"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "The thread has moved on since the head the edit names"
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/threads/{thread}/carries": {
-      "post": {
-        "tags": [
-          "threads"
-        ],
-        "summary": "Carry",
-        "operationId": "carry_api_threads__thread__carries_post",
-        "security": [
-          {
-            "HTTPBearer": []
-          },
-          {
-            "APIKeyCookie": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "thread",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "integer",
-              "title": "Thread"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/NewCarry"
               }
             }
           }
@@ -1312,58 +1206,6 @@
       }
     },
     "/api/families/{family}/cases": {
-      "get": {
-        "tags": [
-          "families"
-        ],
-        "summary": "Cases",
-        "operationId": "cases_api_families__family__cases_get",
-        "security": [
-          {
-            "HTTPBearer": []
-          },
-          {
-            "APIKeyCookie": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "family",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "integer",
-              "title": "Family"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/FamilyCase"
-                  },
-                  "title": "Response Cases Api Families  Family  Cases Get"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      },
       "post": {
         "tags": [
           "families"
@@ -1522,39 +1364,6 @@
         ]
       }
     },
-    "/api/tags": {
-      "get": {
-        "tags": [
-          "families"
-        ],
-        "summary": "Tags",
-        "operationId": "tags_api_tags_get",
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "items": {
-                    "type": "string"
-                  },
-                  "type": "array",
-                  "title": "Response Tags Api Tags Get"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "HTTPBearer": []
-          },
-          {
-            "APIKeyCookie": []
-          }
-        ]
-      }
-    },
     "/api/endpoints": {
       "get": {
         "tags": [
@@ -1586,56 +1395,6 @@
             "APIKeyCookie": []
           }
         ]
-      }
-    },
-    "/api/endpoints/{name}": {
-      "get": {
-        "tags": [
-          "world"
-        ],
-        "summary": "Endpoint",
-        "operationId": "endpoint_api_endpoints__name__get",
-        "security": [
-          {
-            "HTTPBearer": []
-          },
-          {
-            "APIKeyCookie": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "name",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Name"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Endpoint"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
       }
     },
     "/api/models": {
@@ -1868,11 +1627,11 @@
         },
         "responses": {
           "202": {
-            "description": "The run, started and queued: the worker sends it, finishes it and scores it whoever listens, and its events are at `/api/runs/{run}/events`.",
+            "description": "The runs, started and queued, a run per language its cases are sent in, `Location` the first's: the worker sends each, finishes it and scores it whoever listens, and its events are at `/api/runs/{run}/events`.",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/RunStartedData"
+                  "$ref": "#/components/schemas/StartedRuns"
                 }
               }
             }
@@ -1992,6 +1751,25 @@
               "title": "Unscored"
             },
             "description": "only the finished runs left to be scored by some scorer"
+          },
+          {
+            "name": "with",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "a run: the runs started with it, itself the first of them",
+              "title": "With"
+            },
+            "description": "a run: the runs started with it, itself the first of them"
           }
         ],
         "responses": {
@@ -2553,67 +2331,6 @@
         }
       }
     },
-    "/api/runs/{run}/scores/{score}": {
-      "get": {
-        "tags": [
-          "scores"
-        ],
-        "summary": "Score",
-        "operationId": "score_api_runs__run__scores__score__get",
-        "security": [
-          {
-            "HTTPBearer": []
-          },
-          {
-            "APIKeyCookie": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "run",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid",
-              "title": "Run"
-            }
-          },
-          {
-            "name": "score",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid",
-              "title": "Score"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Graded"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/api/runs/{run}/scores/{score}/items": {
       "get": {
         "tags": [
@@ -2702,18 +2419,26 @@
             "APIKeyCookie": []
           }
         ]
-      }
-    },
-    "/api/queue/pause": {
-      "post": {
+      },
+      "patch": {
         "tags": [
           "queue"
         ],
         "summary": "Pause",
-        "operationId": "pause_api_queue_pause_post",
+        "operationId": "pause_api_queue_patch",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Paused"
+              }
+            }
+          },
+          "required": true
+        },
         "responses": {
           "200": {
-            "description": "Paused: the person's jobs wait, and their runs under way stop after the items being sent and are queued again; a scoring under way goes on.",
+            "description": "Paused: the person's jobs wait, and their runs under way stop after the items being sent and are queued again; a scoring under way goes on. Resumed: they are taken again.",
             "content": {
               "application/json": {
                 "schema": {
@@ -2721,32 +2446,13 @@
                 }
               }
             }
-          }
-        },
-        "security": [
-          {
-            "HTTPBearer": []
           },
-          {
-            "APIKeyCookie": []
-          }
-        ]
-      }
-    },
-    "/api/queue/resume": {
-      "post": {
-        "tags": [
-          "queue"
-        ],
-        "summary": "Resume",
-        "operationId": "resume_api_queue_resume_post",
-        "responses": {
-          "200": {
-            "description": "Successful Response",
+          "422": {
+            "description": "Validation Error",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Queue"
+                  "$ref": "#/components/schemas/HTTPValidationError"
                 }
               }
             }
@@ -2846,6 +2552,67 @@
           "salvaged"
         ],
         "title": "Answer"
+      },
+      "Carried": {
+        "properties": {
+          "language": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Language",
+            "description": "the cases' language; null for the configuration's own when it is unknown"
+          },
+          "families": {
+            "items": {
+              "type": "integer"
+            },
+            "type": "array",
+            "title": "Families"
+          },
+          "translated": {
+            "type": "boolean",
+            "title": "Translated"
+          },
+          "skeleton": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Skeleton",
+            "description": "the request they are sent as"
+          },
+          "refused": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Refused",
+            "description": "why they can't be sent, and are left out"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "language",
+          "families",
+          "translated",
+          "skeleton",
+          "refused"
+        ],
+        "title": "Carried"
       },
       "Checked": {
         "properties": {
@@ -3012,7 +2779,7 @@
             ],
             "title": "Model"
           },
-          "url": {
+          "serves": {
             "anyOf": [
               {
                 "type": "string"
@@ -3021,6 +2788,11 @@
                 "type": "null"
               }
             ],
+            "title": "Serves",
+            "description": "the model its engine serves, by digest"
+          },
+          "url": {
+            "type": "string",
             "title": "Url"
           },
           "host": {
@@ -3080,6 +2852,7 @@
           "engine",
           "title",
           "model",
+          "serves",
           "url",
           "host",
           "max_jobs",
@@ -3304,19 +3077,13 @@
             "type": "array",
             "title": "Collaborators"
           },
-          "appendices": {
+          "cases": {
             "items": {
-              "type": "string"
+              "$ref": "#/components/schemas/FamilyCase"
             },
             "type": "array",
-            "title": "Appendices"
-          },
-          "expectations": {
-            "items": {
-              "$ref": "#/components/schemas/Expected"
-            },
-            "type": "array",
-            "title": "Expectations"
+            "title": "Cases",
+            "description": "its cases at its current vignette, the one it stands for first"
           }
         },
         "additionalProperties": false,
@@ -3330,8 +3097,7 @@
           "case",
           "description",
           "collaborators",
-          "appendices",
-          "expectations"
+          "cases"
         ],
         "title": "FamilyDetail"
       },
@@ -3374,6 +3140,39 @@
         ],
         "title": "Finding",
         "type": "object"
+      },
+      "Follows": {
+        "properties": {
+          "origin": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Proposal"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "a fork's whose origin has moved on: what following it would keep"
+          },
+          "moved": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Moved"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "a configuration's whose facts or model have moved on: what following them would keep"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "origin",
+          "moved"
+        ],
+        "title": "Follows"
       },
       "Graded": {
         "additionalProperties": false,
@@ -3671,6 +3470,33 @@
         ],
         "description": "the language of the text the component holds, such as 'sv'"
       },
+      "LeftOut": {
+        "properties": {
+          "language": {
+            "type": "string",
+            "title": "Language"
+          },
+          "cases": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Cases"
+          },
+          "why": {
+            "type": "string",
+            "title": "Why"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "language",
+          "cases",
+          "why"
+        ],
+        "title": "LeftOut"
+      },
       "MadeEdit": {
         "properties": {
           "id": {
@@ -3812,6 +3638,14 @@
             "title": "Language",
             "description": "its head's"
           },
+          "translated": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Translated",
+            "description": "a configuration's: the languages its head's translations carry it into"
+          },
           "head": {
             "$ref": "#/components/schemas/Edit"
           },
@@ -3870,6 +3704,7 @@
           "owner",
           "tags",
           "language",
+          "translated",
           "head",
           "description",
           "collaborators",
@@ -3984,6 +3819,120 @@
         ],
         "title": "Model"
       },
+      "ModelDigest": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "description": "a model's digest, which can't be taken out"
+      },
+      "Moved": {
+        "properties": {
+          "about": {
+            "type": "string",
+            "title": "About",
+            "description": "the model it is compiled for, by name"
+          },
+          "facts": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Edit"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "the head of the facts about it, which correct the ones its head was compiled against where they change what it sends"
+          },
+          "compiled": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Compiled",
+            "description": "the facts its head was compiled against"
+          },
+          "model": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Edit"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "its model's head, a new version of the one its recipe names"
+          },
+          "held": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Held",
+            "description": "the model its recipe names"
+          },
+          "digest": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Digest",
+            "description": "the skeleton following comes to"
+          },
+          "compilation": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Compilation"
+          },
+          "refused": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Refused",
+            "description": "why following is refused: the facts refuse what its recipe asks"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "about",
+          "facts",
+          "compiled",
+          "model",
+          "held",
+          "digest",
+          "compilation",
+          "refused"
+        ],
+        "title": "Moved"
+      },
       "NewAgain": {
         "properties": {
           "seeds": {
@@ -4048,27 +3997,6 @@
           "name"
         ],
         "title": "NewAppendix"
-      },
-      "NewCarry": {
-        "properties": {
-          "head": {
-            "type": "integer",
-            "title": "Head",
-            "description": "the edit the change was made on: the head seen"
-          },
-          "case": {
-            "type": "string",
-            "title": "Case",
-            "description": "another case of the expectation's family"
-          }
-        },
-        "additionalProperties": false,
-        "type": "object",
-        "required": [
-          "head",
-          "case"
-        ],
-        "title": "NewCarry"
       },
       "NewCase": {
         "properties": {
@@ -4153,6 +4081,16 @@
             "type": "integer",
             "title": "Head",
             "description": "the edit the change was made on: the head seen"
+          },
+          "follow": {
+            "type": "string",
+            "enum": [
+              "origin",
+              "moved"
+            ],
+            "title": "Follow",
+            "description": "its origin, or the facts and model that moved on",
+            "default": "origin"
           },
           "language": {
             "$ref": "#/components/schemas/Language"
@@ -4288,8 +4226,16 @@
             "default": {}
           },
           "endpoint": {
-            "type": "string",
-            "title": "Endpoint"
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Endpoint",
+            "description": "where to send it: the one serving its model unless named, and one a hand-written configuration names"
           },
           "families": {
             "anyOf": [
@@ -4297,7 +4243,8 @@
                 "items": {
                   "type": "integer"
                 },
-                "type": "array"
+                "type": "array",
+                "minItems": 1
               },
               {
                 "type": "null"
@@ -4327,7 +4274,8 @@
                 "items": {
                   "type": "string"
                 },
-                "type": "array"
+                "type": "array",
+                "minItems": 1
               },
               {
                 "type": "null"
@@ -4397,8 +4345,7 @@
         "additionalProperties": false,
         "type": "object",
         "required": [
-          "configuration",
-          "endpoint"
+          "configuration"
         ],
         "title": "NewRun"
       },
@@ -4559,16 +4506,9 @@
             "title": "Name"
           },
           "language": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
+            "type": "string",
             "title": "Language",
-            "description": "the language it is typed in"
+            "description": "the language it is typed in, such as 'sv'"
           },
           "source": {
             "anyOf": [
@@ -4586,7 +4526,8 @@
         "additionalProperties": false,
         "type": "object",
         "required": [
-          "text"
+          "text",
+          "language"
         ],
         "title": "NewTyped"
       },
@@ -4644,6 +4585,26 @@
           "replaced": {
             "type": "boolean",
             "title": "Replaced"
+          },
+          "landed": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Landed",
+            "description": "a reasoning level's, or the one a recommended sampling follows: the level the engine's model is asked for"
+          },
+          "nearest": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Nearest",
+            "description": "why the level asked for landed on its nearest instead"
           }
         },
         "additionalProperties": false,
@@ -4685,11 +4646,28 @@
           },
           "toolset": {
             "$ref": "#/components/schemas/Chunk"
+          },
+          "model": {
+            "$ref": "#/components/schemas/ModelDigest"
           }
         },
         "additionalProperties": false,
         "type": "object",
         "title": "Parts"
+      },
+      "Paused": {
+        "properties": {
+          "paused": {
+            "type": "boolean",
+            "title": "Paused"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "paused"
+        ],
+        "title": "Paused"
       },
       "Proposal": {
         "properties": {
@@ -4964,6 +4942,31 @@
             "type": "string",
             "title": "Skeleton"
           },
+          "language": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Language",
+            "description": "the language its request is sent in"
+          },
+          "started_with": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Started With",
+            "description": "the first run of the start it is one of; null for the first, and for a run started alone"
+          },
           "engine": {
             "type": "string",
             "title": "Engine"
@@ -5046,6 +5049,8 @@
           "at",
           "trial",
           "skeleton",
+          "language",
+          "started_with",
           "engine",
           "endpoint",
           "cases",
@@ -5075,6 +5080,31 @@
           "skeleton": {
             "type": "string",
             "title": "Skeleton"
+          },
+          "language": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Language",
+            "description": "the language its request is sent in"
+          },
+          "started_with": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Started With",
+            "description": "the first run of the start it is one of; null for the first, and for a run started alone"
           },
           "engine": {
             "type": "string",
@@ -5201,6 +5231,8 @@
           "at",
           "trial",
           "skeleton",
+          "language",
+          "started_with",
           "engine",
           "endpoint",
           "cases",
@@ -5305,6 +5337,18 @@
             "title": "Skeleton",
             "type": "string"
           },
+          "language": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "the language its request is sent in",
+            "title": "Language"
+          },
           "endpoint": {
             "anyOf": [
               {
@@ -5339,6 +5383,7 @@
           "run",
           "trial",
           "skeleton",
+          "language",
           "endpoint",
           "cases",
           "seeds",
@@ -5614,6 +5659,33 @@
         ],
         "title": "SignedIn"
       },
+      "StartedRuns": {
+        "properties": {
+          "runs": {
+            "items": {
+              "$ref": "#/components/schemas/RunStartedData"
+            },
+            "type": "array",
+            "title": "Runs",
+            "description": "a run per language its cases are sent in: the configuration's own first, as written, then each it is translated into"
+          },
+          "left_out": {
+            "items": {
+              "$ref": "#/components/schemas/LeftOut"
+            },
+            "type": "array",
+            "title": "Left Out",
+            "description": "the cases of each language the configuration can't be sent in"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "runs",
+          "left_out"
+        ],
+        "title": "StartedRuns"
+      },
       "Stopped": {
         "properties": {
           "taken_out": {
@@ -5751,6 +5823,14 @@
             "title": "Language",
             "description": "its head's"
           },
+          "translated": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Translated",
+            "description": "a configuration's: the languages its head's translations carry it into"
+          },
           "head": {
             "$ref": "#/components/schemas/Edit"
           }
@@ -5766,6 +5846,7 @@
           "owner",
           "tags",
           "language",
+          "translated",
           "head"
         ],
         "title": "Thread"
@@ -5830,6 +5911,14 @@
             "title": "Language",
             "description": "its head's"
           },
+          "translated": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Translated",
+            "description": "a configuration's: the languages its head's translations carry it into"
+          },
           "head": {
             "$ref": "#/components/schemas/Edit"
           },
@@ -5881,6 +5970,7 @@
           "owner",
           "tags",
           "language",
+          "translated",
           "head",
           "description",
           "collaborators",
@@ -6017,6 +6107,14 @@
             ],
             "title": "Findings"
           },
+          "languages": {
+            "items": {
+              "$ref": "#/components/schemas/Carried"
+            },
+            "type": "array",
+            "title": "Languages",
+            "description": "the languages its cases are sent in, the configuration's own first, and those it can't be sent in"
+          },
           "reach": {
             "items": {
               "$ref": "#/components/schemas/Reach"
@@ -6037,6 +6135,7 @@
           "seed",
           "request",
           "findings",
+          "languages",
           "reach"
         ],
         "title": "Variation"

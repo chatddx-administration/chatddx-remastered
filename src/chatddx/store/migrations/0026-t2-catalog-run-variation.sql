@@ -1,11 +1,11 @@
--- src/chatddx/catalog/model.py: EntryField, Entry._shape, VARIED and REPLACED, and
--- check_varied in src/chatddx/catalog/threads.py.
+-- src/chatddx/catalog/model.py: EntryField, Entry._shape, _VARIED, _REPLACED and _WITH, and
+-- check_note in src/chatddx/catalog/threads.py.
 -- A check passes when it is NULL, so NULL values are ruled out explicitly.
 ALTER TABLE catalog.entry
     DROP CONSTRAINT entry_field_check,
     ADD CONSTRAINT entry_field_check CHECK (field IN (
         'name', 'description', 'tag', 'owner', 'collaborator', 'deleted', 'language',
-        'varied', 'replaced'
+        'varied', 'replaced', 'with'
     )),
     DROP CONSTRAINT entry_shape_check,
     ADD CONSTRAINT entry_shape_check CHECK (CASE field
@@ -25,26 +25,38 @@ ALTER TABLE catalog.entry
             AND value ~ '^[1-9][0-9]{0,17}$'
             AND person IS NULL AND present
         WHEN 'replaced' THEN value IS NOT NULL
-            AND value ~ '^(instructions|few_shot|prompt|output|sampling|reasoning|passthrough|translations|toolset)=(sha256:[0-9a-f]{64})?$'
+            AND value ~ '^(instructions|few_shot|prompt|output|sampling|reasoning|passthrough|translations|toolset|model)=(sha256:[0-9a-f]{64})?$'
+            AND person IS NULL AND present
+        WHEN 'with' THEN value IS NOT NULL
+            AND value ~ '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
             AND person IS NULL AND present
     END),
     ADD CONSTRAINT entry_run_check
-        CHECK (field NOT IN ('varied', 'replaced') OR run IS NOT NULL);
+        CHECK (field NOT IN ('varied', 'replaced', 'with') OR run IS NOT NULL);
 
 CREATE FUNCTION catalog.check_varied() RETURNS trigger LANGUAGE plpgsql AS $$
 DECLARE
-    chunk_part text := split_part(NEW.value, '=', 1);
-    chunk text := split_part(NEW.value, '=', 2);
+    part text := split_part(NEW.value, '=', 1);
+    held text := split_part(NEW.value, '=', 2);
+    kinds text[] := CASE part
+        WHEN 'model' THEN ARRAY['model.local', 'model.remote']
+        ELSE ARRAY['chunk.' || part]
+    END;
 BEGIN
     IF NEW.field = 'varied' AND NOT EXISTS (
         SELECT FROM catalog.edit WHERE id = NEW.value::bigint AND kind = 'skeleton'
     ) THEN
         RAISE EXCEPTION 'edit % is no configuration''s', NEW.value;
     END IF;
-    IF NEW.field = 'replaced' AND chunk <> '' AND NOT EXISTS (
-        SELECT FROM factor.component WHERE digest = chunk AND kind = 'chunk.' || chunk_part
+    IF NEW.field = 'replaced' AND held <> '' AND NOT EXISTS (
+        SELECT FROM factor.component WHERE digest = held AND kind = ANY (kinds)
     ) THEN
-        RAISE EXCEPTION '% isn''t a stored chunk of %', chunk, chunk_part;
+        RAISE EXCEPTION '% isn''t a stored %', held, part;
+    END IF;
+    IF NEW.field = 'with' AND NOT EXISTS (
+        SELECT FROM ledger.run_stage WHERE run = NEW.value::uuid AND stage = 'started'
+    ) THEN
+        RAISE EXCEPTION 'run % hasn''t started', NEW.value;
     END IF;
     RETURN NEW;
 END
@@ -52,5 +64,5 @@ $$;
 
 -- A constraint trigger fires after the row's checks, so the value has its shape.
 CREATE CONSTRAINT TRIGGER entry_varied AFTER INSERT ON catalog.entry
-FOR EACH ROW WHEN (NEW.field IN ('varied', 'replaced'))
+FOR EACH ROW WHEN (NEW.field IN ('varied', 'replaced', 'with'))
 EXECUTE FUNCTION catalog.check_varied();

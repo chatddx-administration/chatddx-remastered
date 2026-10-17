@@ -14,13 +14,12 @@ from chatddx.factors.engine import (
     FileDigest,
     Hardware,
     LocalEngine,
-    ModelArtifact,
+    LocalModel,
     Runtime,
     check_chat_template,
-    flag_names,
 )
 from chatddx.factors.lint import lint
-from chatddx.inventory import LISTEN_FLAGS, EndpointSpec, HostSpec
+from chatddx.inventory import EndpointSpec, HostSpec
 
 # What o11n.vllm's report says about the vLLM servers on one host
 # (Kompismoln/o11n, nixos/vllm-report.py).
@@ -38,7 +37,7 @@ class Imported:
     name: str
     server: str
     host: str
-    model: ModelArtifact
+    model: LocalModel
     engine: LocalEngine
     bind: str
     location: str
@@ -153,11 +152,11 @@ def _serving(engine: LocalEngine, server: dict[str, Any]) -> Iterable[Finding]:
         )
     models = cast(list[dict[str, Any]], served.get("models") or [])
     names = [m.get("id") for m in models]
-    if engine.served_model_name not in names:
+    if engine.digest not in names:
         yield finding(
             "endpoint.served_name",
             f"the server answers as {', '.join(map(str, names)) or 'nothing'}; put "
-            + f"{engine.served_model_name} first in its servedModelNames",
+            + f"{engine.digest} first in its servedModelNames",
         )
 
 
@@ -185,7 +184,7 @@ def imported(
                 f"its model {found.get('id')} is no Hugging Face repo at a revision"
             )
         template = cast(dict[str, Any], _section(s, "chat_template"))
-        model = ModelArtifact(
+        model = LocalModel(
             repo=found["id"],
             revision=found["revision"],
             files=tuple(
@@ -193,8 +192,6 @@ def imported(
             ),
         )
         argv = tuple(cast(list[str], s["extra_args"]))
-        if taken := sorted(flag_names(argv) & LISTEN_FLAGS):
-            raise ValueError(f"its extra arguments set {', '.join(taken)}")
         environment = cast(dict[str, str], s["environment"])
         engine = LocalEngine(
             hardware=Hardware.model_validate(
@@ -276,7 +273,7 @@ def engines_toml(imports: Iterable[Imported]) -> str:
             for f in i.model.files
         )
         tables.append(
-            f"[model.{_key(i.name)}]\n"
+            f"[local_model.{_key(i.name)}]\n"
             + f"repo = {_value(i.model.repo)}\n"
             + f"revision = {_value(i.model.revision)}\n"
             + f"files = [{files}\n]\n"

@@ -1,4 +1,5 @@
 import tomllib
+from collections.abc import Callable
 from pathlib import Path
 from typing import Annotated, Any, Self, cast
 
@@ -7,14 +8,22 @@ from pydantic import Discriminator, Field, HttpUrl, Tag, model_validator
 from chatddx.factors.base import Digest, Frozen, Sha256Hex
 from chatddx.factors.trial import Execution
 
-from .sources import DatabaseSource, DirectorySource, ListingSource
+from .sources import DatabaseSource, DirectorySource, Source
 
-_TABLES = ("include", "source", "endpoint", "host", "cleared", "judge")
+_TABLES = (
+    "include",
+    "configurations",
+    "source",
+    "endpoint",
+    "host",
+    "cleared",
+    "judge",
+)
 
 
 class EndpointSpec(Frozen):
     engine: Digest
-    url: HttpUrl | None = None
+    url: HttpUrl
     host: str | None = None
     max_jobs: int = Field(default=1, ge=1)
     credential: str | None = None
@@ -57,6 +66,7 @@ class Inventory(Frozen):
     hosts: dict[str, HostSpec] = Field(default_factory=dict)
     cleared: dict[str, tuple[str, ...]] = Field(default_factory=dict)
     judges: dict[str, str] = Field(default_factory=dict)
+    configurations: str | None = None
 
     @model_validator(mode="after")
     def _sources_named(self) -> Self:
@@ -88,6 +98,13 @@ class Inventory(Frozen):
         for name, endpoint in self.judges.items():
             if endpoint not in self.endpoints:
                 raise ValueError(f"judge {name!r} is bound to no endpoint {endpoint!r}")
+        if (
+            self.configurations is not None
+            and self.configurations not in self.endpoints
+        ):
+            raise ValueError(
+                f"configurations are made for no endpoint {self.configurations!r}"
+            )
         return self
 
     @classmethod
@@ -96,8 +113,9 @@ class Inventory(Frozen):
             data = tomllib.load(f)
         if stray := set(data) - set(_TABLES):
             raise ValueError(
-                f"{path}: the inventory has only 'include', 'source', 'endpoint', "
-                + f"'host', 'cleared' and 'judge', not {sorted(stray)}"
+                f"{path}: the inventory has only 'include', 'configurations', "
+                + "'source', 'endpoint', 'host', 'cleared' and 'judge', not "
+                + f"{sorted(stray)}"
             )
         tables = {t: dict(data.get(t, {})) for t in ("source", "endpoint", "host")}
         for name in data.get("include", []):
@@ -125,36 +143,53 @@ class Inventory(Frozen):
                 "hosts": tables["host"],
                 "cleared": data.get("cleared", {}),
                 "judges": data.get("judge", {}),
+                "configurations": data.get("configurations"),
             }
         )
 
-    def source(self, name: str) -> AnySource:
-        source = self.sources.get(name)
-        if source is None:
-            raise LookupError(f"no source {name!r} in the inventory")
-        return source
+    # Policy: De facto refusal mechanism for
+    # src/chatddx/runner/score.py:judge_at and src/chatddx/bench/seen.py:Seen.at
+    def serving(
+        self,
+        digest: str,
+        serves: Callable[[str], str | None] | None = None,
+        called: str | None = None,
+    ) -> str:
+        named = sorted(
+            n
+            for n, e in self.endpoints.items()
+            if (e.engine if serves is None else serves(e.engine)) == digest
+        )
+        what = called or f"engine {digest}"
+        match named:
+            case [one]:
+                return one
+            case []:
+                raise LookupError(f"no endpoint serves {what}")
+            case _:
+                raise LookupError(
+                    f"{', '.join(named)} serve {what}; name the one to use"
+                )
 
-    def listing(self, name: str | None = None) -> ListingSource:
+    def source[S: Source](self, name: str | None = None, kind: type[S] = Source) -> S:
+        word = _word(kind)
         if name is None:
-            listed = sorted(
-                n for n, s in self.sources.items() if isinstance(s, ListingSource)
-            )
-            if len(listed) != 1:
+            held = sorted(n for n, s in self.sources.items() if isinstance(s, kind))
+            if len(held) != 1:
                 raise LookupError(
-                    f"{len(listed)} sources list their vignettes ({', '.join(listed)}), "
+                    f"{len(held)} {word}s ({', '.join(held)}) are in the inventory, "
                     + "so one must be named"
-                    if listed
-                    else "no source in the inventory lists its vignettes"
+                    if held
+                    else f"no {word} in the inventory"
                 )
-            name = listed[0]
-        match self.source(name):
-            case ListingSource() as source:
+            name = held[0]
+        match self.sources.get(name):
+            case None:
+                raise LookupError(f"no source {name!r} in the inventory")
+            case source if isinstance(source, kind):
                 return source
-            case other:
-                raise LookupError(
-                    f"source {name!r} is a {other.kind} source, whose vignettes are "
-                    + "read through the store, not listed"
-                )
+            case _:
+                raise LookupError(f"source {name!r} isn't a {word}")
 
     def endpoint(self, name: str) -> EndpointSpec:
         spec = self.endpoints.get(name)
@@ -162,5 +197,14 @@ class Inventory(Frozen):
             raise LookupError(f"no endpoint {name!r} in the inventory")
         return spec
 
-    def cleared_for(self, endpoint: str) -> frozenset[str]:
-        return frozenset(self.cleared.get(endpoint, ()))
+    def takes_typed(self, endpoint: str) -> bool:
+        try:
+            into = self.source(kind=DatabaseSource)
+        except LookupError:
+            return False
+        return not into.sensitive or into.name in self.cleared.get(endpoint, ())
+
+
+def _word(kind: type[Source]) -> str:
+    field = kind.model_fields.get("kind")
+    return "source" if field is None else f"{field.default} source"

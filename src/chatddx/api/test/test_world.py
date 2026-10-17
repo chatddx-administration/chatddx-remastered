@@ -4,6 +4,7 @@ from fastapi.testclient import TestClient
 from pydantic import HttpUrl
 
 from chatddx.api.state import AppState
+from chatddx.api.test.helpers import endpoint
 from chatddx.inventory import EndpointSpec, Inventory
 from chatddx.test.world import (
     GPT_OSS,
@@ -30,7 +31,6 @@ def test_endpoints_say_what_they_serve_and_what_they_re_cleared_for(
     for shown in listed:
         name = shown["name"]
         spec = inventory.endpoint(name)
-        assert signed.get(f"/api/endpoints/{name}").json() == shown
         assert (shown["engine"], shown["host"], shown["max_jobs"]) == (
             spec.engine,
             spec.host,
@@ -38,7 +38,7 @@ def test_endpoints_say_what_they_serve_and_what_they_re_cleared_for(
         )
         assert (shown["credential"], shown["cleared_for"], shown["problem"]) == (
             spec.credential,
-            sorted(inventory.cleared_for(name)),
+            sorted(inventory.cleared.get(name, ())),
             None,
         )
 
@@ -50,21 +50,17 @@ def test_endpoints_say_what_they_serve_and_what_they_re_cleared_for(
         sorted(inventory.sources),
     )
     engine = signed.get(f"/api/components/{remote['engine']}").json()["body"]
-    assert (remote["model"], remote["url"], remote["host"]) == (
+    model = signed.get(f"/api/components/{engine['model']}").json()["body"]
+    assert (remote["serves"], remote["model"], remote["url"], remote["host"]) == (
         engine["model"],
+        model["name"],
         str(inventory.endpoint(REMOTE).url),
         None,
     )
     assert remote["credential"] is not None and remote["cleared_for"] == []
     typed = {e["name"] for e in listed if e["takes_typed"]}
-    assert typed == {n for n in endpoints if "typed" in inventory.cleared_for(n)}
+    assert typed == {n for n in endpoints if "typed" in inventory.cleared.get(n, ())}
     assert QWEN in typed and REMOTE not in typed
-    got = signed.get("/api/endpoints/nowhere@fake")
-    assert got.status_code == 404
-    assert got.json() == {
-        "detail": "no endpoint 'nowhere@fake' in the inventory",
-        "code": "not_found",
-    }
 
 
 def test_an_endpoint_whose_engine_isn_t_stored_says_so(
@@ -76,11 +72,14 @@ def test_an_endpoint_whose_engine_isn_t_stored_says_so(
     served.state.chatddx = AppState(
         held.conninfo,
         held.inventory.model_copy(update={"endpoints": endpoints}),
-        held.facts,
         held.listener,
     )
-    shown = signed.get("/api/endpoints/ghost@nowhere").json()
-    assert (shown["title"], shown["model"], shown["url"]) == (None, None, None)
+    shown = endpoint(signed, "ghost@nowhere")
+    assert (shown["title"], shown["model"], shown["url"]) == (
+        None,
+        None,
+        "http://127.0.0.1:1/v1/",
+    )
     assert "isn't in the store" in shown["problem"]
 
 
@@ -92,7 +91,7 @@ def test_models_are_told_by_their_facts_with_the_endpoints_serving_them(
     assert models[GPT_OSS_MODEL]["endpoints"] == [GPT_OSS]
     assert models[MISTRAL_MODEL]["endpoints"] == [MISTRAL]
     assert models[MISTRAL_MODEL]["facts"]["family"] == "mistral"
-    unknown = signed.get(f"/api/endpoints/{REMOTE}").json()["model"]
+    unknown = endpoint(signed, REMOTE)["model"]
     assert models[unknown]["endpoints"] == [REMOTE]
     assert [m for m, held in models.items() if held["facts"] is None] == [unknown]
 

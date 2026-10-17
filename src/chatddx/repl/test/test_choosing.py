@@ -1,25 +1,26 @@
 import pytest
 
 from chatddx.bench import Bench
-from chatddx.catalog import Entry, EntryField, Subject
+from chatddx.catalog import Entry, EntryField, Subject, threads
 from chatddx.factors.base import resolve
 from chatddx.factors.request import Compilation, Reasoning, Skeleton
 from chatddx.identity import Person
 from chatddx.inventory import Inventory
 from chatddx.repl.shell import Repl
 from chatddx.repl.test.helpers import Say, tried
-from chatddx.store import Catalog, People
+from chatddx.store import Catalog, People, Rows
 from chatddx.store.store import Connection
 from chatddx.test.world import (
     GPT_OSS,
-    GPT_OSS_MODEL,
+    GPT_OSS_ARTIFACT,
     LINES,
     MISTRAL,
+    MISTRAL_ARTIFACT,
     MISTRAL_MODEL,
     NATIVE,
     NATIVE_TOOLS,
     QWEN,
-    QWEN_MODEL,
+    QWEN_ARTIFACT,
 )
 
 
@@ -31,8 +32,11 @@ def bob(conn: Connection) -> Person:
 # Bob's own fork of the archive's native, as bobs-native, shared with alice when `shared`.
 def bobs(conn: Connection, bob: Person, alice: Person, shared: bool) -> None:
     catalog = Catalog(conn)
-    [archive] = [t for t in catalog.find("skeleton", NATIVE) if t != alice_s(conn)]
-    head = catalog.head(archive)
+    rows = Rows(conn)
+    [archive] = [
+        t for t in threads.find(rows, "skeleton", NATIVE) if t != alice_s(conn)
+    ]
+    head = threads.head(rows, archive)
     edit = catalog.create(
         head.digest,
         bob.id,
@@ -51,53 +55,65 @@ def bobs(conn: Connection, bob: Person, alice: Person, shared: bool) -> None:
 def alice_s(conn: Connection) -> int:
     alice = People(conn).find("alice")
     assert alice is not None
-    [thread] = Catalog(conn).find("skeleton", NATIVE, owner=alice.id)
+    [thread] = threads.find(Rows(conn), "skeleton", NATIVE, owner=alice.id)
     return thread
 
 
-def test_a_per_model_configuration_is_picked_by_the_endpoint(repl: Repl, say: Say):
-    written = say("use native")
-
-    assert "native is made per model: on ENDPOINT picks its variant" in written
-    assert repl.cell.variation is None and repl.prompt == "alice native #7> "
-
-    written = say(f"on {QWEN}")
-    assert f"native on {QWEN_MODEL}: {NATIVE}" in written
+def test_on_puts_its_endpoint_s_model_in_the_configuration_keeping_every_pick(
+    repl: Repl, bench: Bench, say: Say
+):
+    _ = say("use native")
     assert tried(repl).name == NATIVE
+    assert repl.prompt == f"alice {NATIVE} #7> "
+
+    written = say("set reasoning off", f"on {GPT_OSS}")
+    assert (
+        f"cell: {NATIVE}+reasoning=off+model={GPT_OSS_ARTIFACT} × {GPT_OSS}" in written
+    )
+    assert bench.skeleton(tried(repl)).body["reasoning_effort"] == "low"
+
+    _ = say(f"on {QWEN}")
+    assert repl.prompt == f"alice {NATIVE}+reasoning=off×{QWEN} #7> "
 
     _ = say(f"cell native {GPT_OSS}")
-    assert tried(repl).name == f"native (en, {GPT_OSS_MODEL})"
+    assert repl.prompt == f"alice {NATIVE}+model={GPT_OSS_ARTIFACT}×{GPT_OSS} #7> "
+
+    _ = say(f"use {LINES}")
+    assert repl.prompt == f"alice {LINES}+model={GPT_OSS_ARTIFACT}×{GPT_OSS} #7> "
 
 
 @pytest.mark.slow
-def test_on_picks_the_cell_s_configuration_for_its_model_with_what_was_set(
+def test_a_level_the_engine_s_model_refuses_is_said_until_it_is_set_otherwise(
     repl: Repl, say: Say
 ):
-    _ = say(f"cell native {QWEN}", "set reasoning off")
+    _ = say(f"cell native {QWEN}", "set reasoning on")
 
     written = say(f"on {MISTRAL}")
-    assert f"native on {MISTRAL_MODEL}: native (en, {MISTRAL_MODEL})+reasoning=off" in (
-        written
+    assert f"{MISTRAL_MODEL}: " in written and "doesn't reason" in written
+    assert "set another in its place" in written and not repl.failed
+    assert (
+        repl.prompt
+        == f"alice {NATIVE}+reasoning=on+model={MISTRAL_ARTIFACT}×{MISTRAL} #7> "
     )
-    assert tried(repl).held("reasoning") is not None
 
-    written = say(f"on {GPT_OSS}")
-    assert "no reasoning 'off' for alice; per model:" in written
-    assert f"the cell keeps native (en, {MISTRAL_MODEL})+reasoning=off" in written
-    assert repl.prompt.startswith(f"alice native (en, {MISTRAL_MODEL})+reasoning=off×")
-
-    _ = say(f"use {NATIVE}", f"on {GPT_OSS}")
-    assert tried(repl).name == NATIVE
+    written = say("set reasoning off")
+    assert "doesn't reason" not in written
+    assert (
+        repl.prompt
+        == f"alice {NATIVE}+reasoning=off+model={MISTRAL_ARTIFACT}×{MISTRAL} #7> "
+    )
 
 
-@pytest.mark.slow
-def test_a_configuration_made_in_several_languages_is_named_with_its_language(
+def test_set_model_swaps_the_model_and_leaves_an_endpoint_serving_another(
     repl: Repl, say: Say
 ):
-    written = say("use lines-guided sv", f"on {QWEN}")
+    _ = say(f"cell {LINES} {QWEN}", f"set model {GPT_OSS_ARTIFACT}")
+    assert repl.cell.endpoint is None
+    assert repl.prompt == f"alice {LINES}+model={GPT_OSS_ARTIFACT}×{GPT_OSS} #7> "
 
-    assert "lines-guided sv is made per model" not in written
-    assert tried(repl).name == "lines-guided (sv)"
+    _ = say(f"on {QWEN}", f"set model {QWEN_ARTIFACT}")
+    assert repl.cell.named == QWEN
+    assert repl.prompt == f"alice {LINES}×{QWEN} #7> "
 
 
 def test_set_puts_another_chunk_in_the_cell(repl: Repl, bench: Bench, say: Say):
@@ -122,7 +138,7 @@ def test_none_takes_an_optional_part_out(repl: Repl, bench: Bench, say: Say):
     written = say(f"cell {NATIVE_TOOLS} {QWEN}", "set toolset none", "show")
 
     assert repl.prompt == f"alice {NATIVE_TOOLS}+toolset=none×{QWEN} #7> "
-    assert f"none (set; {NATIVE_TOOLS} has lookup (en))" in written
+    assert f"none (set; {NATIVE_TOOLS} has lookup)" in written
     assert "tools" not in bench.skeleton(tried(repl)).body
 
     _ = say("set toolset lookup")
@@ -143,15 +159,18 @@ def test_use_puts_a_configuration_in_as_it_is(repl: Repl, say: Say):
 
 def test_set_says_what_it_can_t_set(say: Say):
     written = say("set reasoning off", f"cell {LINES} {QWEN}", "set colour red")
-    written += say("set reasoning nope", "set prompt none")
+    written += say("set reasoning nope", "set prompt none", "set model none")
+    written += say("set model nope")
 
     assert "the cell has no configuration to set it in" in written
     assert (
         "no part 'colour': instructions, few_shot, prompt, output, sampling, "
-        + "reasoning, passthrough, translations, toolset"
+        + "reasoning, passthrough, translations, toolset, model"
     ) in written
     assert "no reasoning 'nope' for alice" in written
     assert "a configuration always has a prompt: only instructions" in written
+    assert "a configuration always has a model" in written
+    assert "no model 'nope' for alice" in written
 
 
 @pytest.mark.slow
@@ -165,19 +184,19 @@ def test_save_keeps_the_cell_as_a_configuration_of_one_s_own(
     assert "saved as quiet: created" in written
     assert repl.prompt == f"alice quiet×{QWEN} #7> "
 
-    catalog = Catalog(conn)
-    [thread] = catalog.find("skeleton", "quiet", owner=bench.person.id)
+    rows = Rows(conn)
+    [thread] = threads.find(rows, "skeleton", "quiet", owner=bench.person.id)
     assert origin is not None
-    assert catalog.thread(thread).forked_from == origin.id
-    head = catalog.head(thread)
+    assert threads.thread(rows, thread).forked_from == origin.id
+    head = threads.head(rows, thread)
     assert head.compilation is not None
-    recipe = resolve(bench.get, head.compilation, Compilation).recipe
+    recipe = resolve(bench.store.get, head.compilation, Compilation).recipe
     assert recipe.reasoning is not None
-    reasoning = resolve(bench.get, recipe.reasoning, Reasoning)
-    assert reasoning.chat_template_kwargs == {"enable_thinking": False}
-    assert resolve(bench.get, head.digest, Skeleton).body["chat_template_kwargs"] == {
-        "enable_thinking": False
-    }
+    reasoning = resolve(bench.store.get, recipe.reasoning, Reasoning)
+    assert reasoning.level == "off"
+    assert resolve(bench.store.get, head.digest, Skeleton).body[
+        "chat_template_kwargs"
+    ] == {"enable_thinking": False}
 
     assert "quiet" in repl.completions()["configuration"]
     assert f"cell: quiet × {QWEN}" in say("use quiet")
@@ -199,9 +218,9 @@ def test_saving_again_is_a_new_version_or_nothing(
     assert "saved as mine: created" in written
     assert "saved as mine: unchanged" in written
     assert "saved as mine: a new version" in written
-    catalog = Catalog(conn)
-    [thread] = catalog.find("skeleton", "mine", owner=bench.person.id)
-    assert len(catalog.history(thread)) == 2
+    rows = Rows(conn)
+    [thread] = threads.find(rows, "skeleton", "mine", owner=bench.person.id)
+    assert len(threads.history(rows, thread)) == 2
 
 
 def test_save_says_what_it_can_t_save(say: Say):
@@ -212,10 +231,10 @@ def test_one_s_own_configuration_shadows_the_archive_s(
     repl: Repl, bench: Bench, say: Say
 ):
     _ = say(f"use {NATIVE}")
-    assert bench.about(tried(repl).configuration.thread).owner == bench.person.id
+    assert bench.thread(tried(repl).configuration.thread)[1].owner == bench.person.id
 
     _ = say(f"use archive/{NATIVE}")
-    assert bench.about(tried(repl).configuration.thread).owner != bench.person.id
+    assert bench.thread(tried(repl).configuration.thread)[1].owner != bench.person.id
     assert repl.prompt == f"alice archive/{NATIVE} #7> "
 
 
@@ -243,15 +262,10 @@ def test_another_s_configuration_isn_t_found_where_it_isn_t_shared(
     assert "no configuration 'bobs-native' for alice" in written
 
 
-def test_the_cell_warns_when_its_configuration_was_made_for_another_model(say: Say):
-    written = say(f"cell {NATIVE} {QWEN}")
+def test_the_cell_s_recommended_sampling_follows_its_engine_s_model(say: Say):
+    written = say(f"cell {NATIVE} {QWEN}", f"on {GPT_OSS}")
 
     assert "facts.sampling_unmatched" not in written
-
-    written = say(f"on {GPT_OSS}")
-
-    assert "[warning] facts.sampling_unmatched" in written
-    assert f"not for {GPT_OSS_MODEL}" in written
 
 
 def test_an_endpoint_whose_engine_isn_t_stored_is_refused(

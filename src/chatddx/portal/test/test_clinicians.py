@@ -52,7 +52,7 @@ def test_an_appendix_is_written_and_a_case_built_of_it(signed: TestClient) -> No
         f"/families/{crlf['id']}/cases", data={"appendix": made["head"]["digest"]}
     )
     assert got.status_code == 303
-    cases = signed.get(f"/api/families/{crlf['id']}/cases").json()
+    cases = signed.get(f"/api/families/{crlf['id']}").json()["cases"]
     [built] = [c for c in cases if c["appendices"] == [made["head"]["digest"]]]
     page = shown(signed, f"/families/{crlf['id']}")
     [editor] = editors(page)
@@ -82,7 +82,7 @@ def test_an_expectation_is_moved_to_a_case_that_replaces_its_own(
     _ = signed.post(
         f"/families/{crlf['id']}/cases", data={"appendix": made["head"]["digest"]}
     )
-    cases = signed.get(f"/api/families/{crlf['id']}/cases").json()
+    cases = signed.get(f"/api/families/{crlf['id']}").json()["cases"]
     first = next(c for c in cases if not c["default"])
     default = next(c for c in cases if c["default"])
     data = {"diagnosis": {"pattern": "biliary & colic"}}
@@ -131,7 +131,9 @@ def test_a_shared_expectation_is_taken_and_one_s_own_changed_on_its_page(
     signed: TestClient,
 ) -> None:
     crlf = family(signed)
-    [expected] = signed.get(f"/api/families/{crlf['id']}").json()["expectations"]
+    [expected] = signed.get(f"/api/families/{crlf['id']}").json()["cases"][0][
+        "expectations"
+    ]
     mine = next(
         t
         for t in signed.get(
@@ -147,11 +149,12 @@ def test_a_shared_expectation_is_taken_and_one_s_own_changed_on_its_page(
     )
     assert 'id="edit"' not in shown(signed, f"/threads/{mine['id']}")
 
-    assert signed.delete(f"/api/threads/{mine['id']}").status_code == 204
+    deleted = signed.patch(f"/api/threads/{mine['id']}", json={"deleted": True})
+    assert deleted.status_code == 200
     page = shown(signed, f"/families/{crlf['id']}")
-    [shared] = signed.get(f"/api/families/{crlf['id']}").json()["expectations"][0][
-        "shared"
-    ]
+    [shared] = signed.get(f"/api/families/{crlf['id']}").json()["cases"][0][
+        "expectations"
+    ][0]["shared"]
     assert f'action="/threads/{shared["id"]}/take"' in page
     archives = thread_props(shown(signed, f"/threads/{shared['id']}"))["editor"]
     assert archives["mode"] == "fork"
@@ -163,5 +166,5 @@ def test_a_shared_expectation_is_taken_and_one_s_own_changed_on_its_page(
         303,
         f"/families/{crlf['id']}",
     )
-    [now] = signed.get(f"/api/families/{crlf['id']}").json()["expectations"]
+    [now] = signed.get(f"/api/families/{crlf['id']}").json()["cases"][0]["expectations"]
     assert now["expectation"] == shared["head"]["digest"]

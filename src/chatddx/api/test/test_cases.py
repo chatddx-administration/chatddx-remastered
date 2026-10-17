@@ -19,14 +19,18 @@ def test_a_family_s_appendices_make_its_cases_and_carry_its_expectation(
 ) -> None:
     family = _family(signed, "crlf")
     base = f"/api/families/{family['id']}"
-    [bare] = signed.get(f"{base}/cases").json()
+
+    def cases() -> list[dict[str, Any]]:
+        return signed.get(base).json()["cases"]
+
+    [bare] = cases()
     assert (bare["case"], bare["default"], bare["appendices"]) == (
         family["case"],
         True,
         [],
     )
     [expected] = bare["expectations"]
-    assert signed.get(f"{base}/cases", headers=bob).status_code == 404
+    assert signed.get(base, headers=bob).status_code == 404
 
     got = signed.post(
         f"{base}/appendices", json={"text": "Lab:\r\nCRP 120", "name": "labs"}
@@ -45,7 +49,7 @@ def test_a_family_s_appendices_make_its_cases_and_carry_its_expectation(
         [labs["head"]["digest"]],
         [],
     )
-    listed = [c["case"] for c in signed.get(f"{base}/cases").json()]
+    listed = [c["case"] for c in cases()]
     assert listed == [family["case"], made["case"]]
 
     edits = f"/api/threads/{labs['id']}/edits"
@@ -54,7 +58,7 @@ def test_a_family_s_appendices_make_its_cases_and_carry_its_expectation(
     assert got.status_code == 201
     [(old, replacement)] = got.json()["cases"].items()
     assert old == made["case"]
-    assert replacement in [c["case"] for c in signed.get(f"{base}/cases").json()]
+    assert replacement in [c["case"] for c in cases()]
 
     threads = signed.get(
         "/api/threads", params={"kind": "expectation", "owner": "alice"}
@@ -62,12 +66,11 @@ def test_a_family_s_appendices_make_its_cases_and_carry_its_expectation(
     [mine] = [
         t for t in threads.json() if t["head"]["digest"] == expected["expectation"]
     ]
-    carries = f"/api/threads/{mine['id']}/carries"
-    got = signed.post(carries, json={"head": mine["head"]["id"], "case": replacement})
+    held = signed.get(f"/api/components/{mine['head']['digest']}").json()["body"]
+    carry = {"head": mine["head"]["id"], "component": {**held, "case": replacement}}
+    got = signed.post(f"/api/threads/{mine['id']}/edits", json=carry)
     assert got.status_code == 201
-    [carried] = [
-        c for c in signed.get(f"{base}/cases").json() if c["case"] == replacement
-    ]
+    [carried] = [c for c in cases() if c["case"] == replacement]
     assert [e["data"] for e in carried["expectations"]] == [expected["data"]]
 
 

@@ -21,8 +21,7 @@ from chatddx.ledger import Call, ToolCode, ToolRun, Turn
 from chatddx.rig import entry
 from chatddx.tools.shipped import TOOLS
 
-from . import send as sending
-from .send import Delta
+from .send import STOPPED, Delta, Halt, Stopped, send
 
 
 def _now() -> datetime:
@@ -36,7 +35,7 @@ class _Refused(Exception):
 class ToolStopped(Exception):
     def __init__(self, run: ToolRun) -> None:
         self.run: ToolRun = run
-        super().__init__(sending.STOPPED)
+        super().__init__(STOPPED)
 
 
 @dataclass(frozen=True)
@@ -73,8 +72,8 @@ class Toolbox:
                     name=call.name,
                     started_at=started,
                     finished_at=_now(),
-                    result=f"error: {sending.STOPPED}",
-                    error=sending.STOPPED,
+                    result=f"error: {STOPPED}",
+                    error=STOPPED,
                 )
             ) from None
         return ToolRun(
@@ -146,11 +145,11 @@ def converse(
     secret: str | None,
     on_delta: Callable[[Delta], None],
     on_tool: Callable[[ToolRun], None],
-    halt: sending.Halt | None = None,
+    halt: Halt | None = None,
     started_at: datetime | None = None,
 ) -> Exchange:
-    def send(request: Mapping[str, JsonValue], at: datetime | None = None) -> Call:
-        return sending.send(
+    def ask(request: Mapping[str, JsonValue], at: datetime | None = None) -> Call:
+        return send(
             url,
             request,
             execution=execution,
@@ -164,8 +163,8 @@ def converse(
         return halt is not None and halt.is_set()
 
     try:
-        first = send(body, started_at)
-    except sending.Stopped as stopped:
+        first = ask(body, started_at)
+    except Stopped as stopped:
         return Exchange(stopped.call, stopped=True)
     # The round under way is always the last of turns, replaced whole as it grows, so an
     # interrupt between two statements finds it as far as it got.
@@ -194,8 +193,8 @@ def converse(
             assert previous.response is not None
             body = next_request(body, previous.response, {r.id: r.result for r in runs})
             try:
-                previous = send(body)
-            except sending.Stopped as stopped:
+                previous = ask(body)
+            except Stopped as stopped:
                 turns[at:] = [Turn(tools=runs, call=stopped.call)]
                 return Exchange(first, tuple(turns), stopped=True)
             turns[at:] = [Turn(tools=runs, call=previous)]

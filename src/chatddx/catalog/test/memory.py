@@ -13,8 +13,10 @@ BY = 1
 ALICE, BOB, ARCHIVE = 1, 2, 3
 
 
-def compiled(registry: Registry, recipe: Recipe) -> Compilation:
-    skeleton, compilation = request.compiled(recipe, registry.get, RIG)
+def compiled(
+    registry: Registry, recipe: Recipe, into: str | None = None
+) -> Compilation:
+    skeleton, compilation = request.compiled(recipe, registry.get, RIG, into=into)
     _ = registry.add(skeleton)
     _ = registry.add(compilation)
     return compilation
@@ -121,9 +123,6 @@ class Memory:
 
     def bindings(self, families: Collection[int]) -> list[Binding]:
         return [b for b in self._bindings if b.family in families]
-
-    def families(self) -> list[int]:
-        return sorted({b.family for b in self._bindings})
 
     def bindings_in(self, source: str) -> list[Binding]:
         return [b for b in self._bindings if b.vignette.source == source]

@@ -6,7 +6,7 @@ from chatddx.factors.bundle import Registry
 from chatddx.factors.cases import Appendix, Case, Vignette
 from chatddx.factors.scoring import Expectation
 
-from .model import Behind, Binding, Subject, Survey, latest
+from .model import Behind, Binding, Subject, Survey
 from .read import Reader, about, heads_holding
 
 
@@ -19,11 +19,11 @@ class RepairPlan:
     moves: list[tuple[int, str]]
 
 
-def bindings(rows: Reader, family: int) -> list[Binding]:
+def _current(rows: Reader, family: int) -> Binding:
     found = rows.bindings([family])
     if not found:
         raise LookupError(f"no family with id {family}")
-    return found
+    return found[-1]
 
 
 def family_of(rows: Reader, case: str) -> int | None:
@@ -34,7 +34,7 @@ def family_of(rows: Reader, case: str) -> int | None:
     return matching[-1].family if matching else None
 
 
-def holder(
+def _holder(
     rows: Reader, vignette: Vignette, *, but: int | None = None
 ) -> tuple[int, bool] | None:
     for family in sorted({b.family for b in rows.bindings_sharing(vignette)}):
@@ -50,7 +50,7 @@ def check_adoptable(rows: Reader, case: str, *, by_content: bool = True) -> Vign
     if rows.kind(case) != "case":
         raise LookupError(f"{case} is not a stored case")
     vignette = resolve(rows.get, case, Case).vignette
-    held = holder(rows, vignette)
+    held = _holder(rows, vignette)
     if held is not None and (by_content or held[1]):
         other, same_id = held
         change = "new content" if same_id else "a new name"
@@ -61,7 +61,7 @@ def check_adoptable(rows: Reader, case: str, *, by_content: bool = True) -> Vign
 
 
 def survey(rows: Reader, source: str, listing: Mapping[str, Fingerprint]) -> Survey:
-    latest_bindings = latest((b.family, b) for b in rows.bindings_in(source))
+    latest_bindings = {b.family: b for b in rows.bindings_in(source)}
     current = [latest_bindings[f] for f in sorted(latest_bindings)]
     by_id = {b.vignette.id: b for b in current}
     unchanged: list[int] = []
@@ -95,15 +95,31 @@ def survey(rows: Reader, source: str, listing: Mapping[str, Fingerprint]) -> Sur
     )
 
 
-def rebind_appendix(appendix: Appendix, vignette: Vignette) -> Appendix:
+def replacement(rows: Reader, case: str) -> tuple[str, Registry]:
+    family = family_of(rows, case)
+    if family is None:
+        raise LookupError(f"{case} has no family")
+    current = _current(rows, family).vignette
+    held = resolve(rows.get, case, Case)
+    if held.vignette == current:
+        raise ValueError(f"{case} is at its family's current vignette already")
+    made, appendices = _rebind_case(held, current, rows.get)
+    registry = Registry()
+    for appendix in appendices.values():
+        _ = registry.add(appendix)
+    return registry.add(made), registry
+
+
+def _rebind_appendix(appendix: Appendix, vignette: Vignette) -> Appendix:
     return Appendix(vignette=vignette, text=appendix.text)
 
 
-def rebind_case(
+def _rebind_case(
     case: Case, vignette: Vignette, get: Resolver
 ) -> tuple[Case, dict[str, Appendix]]:
     appendices = {
-        a: rebind_appendix(resolve(get, a, Appendix), vignette) for a in case.appendices
+        a: _rebind_appendix(resolve(get, a, Appendix), vignette)
+        for a in case.appendices
     }
     rebound = tuple(appendices[a].digest for a in case.appendices)
     return Case(vignette=vignette, appendices=rebound), appendices
@@ -116,7 +132,7 @@ def plan_repair(
     id: str | None = None,
     fingerprint: Fingerprint | None = None,
 ) -> RepairPlan:
-    old = bindings(rows, family)[-1].vignette
+    old = _current(rows, family).vignette
     vignette = Vignette(
         source=old.source,
         id=old.id if id is None else id,
@@ -124,7 +140,7 @@ def plan_repair(
     )
     if (vignette.id == old.id) == (vignette.fingerprint == old.fingerprint):
         raise ValueError("a repair changes exactly one of the id or the fingerprint")
-    if (held := holder(rows, vignette, but=family)) is not None:
+    if (held := _holder(rows, vignette, but=family)) is not None:
         other, same_id = held
         taken = f"the id {vignette.id!r}" if same_id else "that content"
         raise ValueError(f"family {other} already has {taken}")
@@ -133,13 +149,13 @@ def plan_repair(
 
     def rebind(appendix: str) -> str:
         if appendix not in appendices:
-            moved = rebind_appendix(resolve(rows.get, appendix, Appendix), vignette)
+            moved = _rebind_appendix(resolve(rows.get, appendix, Appendix), vignette)
             appendices[appendix] = registry.add(moved)
         return appendices[appendix]
 
     cases: dict[str, str] = {}
     for digest, _ in rows.bound_to([old], "case"):
-        case, moved = rebind_case(resolve(rows.get, digest, Case), vignette, rows.get)
+        case, moved = _rebind_case(resolve(rows.get, digest, Case), vignette, rows.get)
         appendices |= {a: registry.add(m) for a, m in moved.items()}
         cases[digest] = registry.add(case)
     moves = [
@@ -170,14 +186,14 @@ def stale_cases(rows: Reader, refs: list[tuple[str, str]]) -> list[Behind]:
     for path, digest in refs:
         if (family := family_of(rows, digest)) is None:
             continue
-        current = bindings(rows, family)[-1]
+        current = _current(rows, family)
         case = resolve(rows.get, digest, Case)
         if (
             case.vignette == current.vignette
             or about(rows, Subject(family=family)).deleted
         ):
             continue
-        replacement, _ = rebind_case(case, current.vignette, rows.get)
+        replacement, _ = _rebind_case(case, current.vignette, rows.get)
         stale.append(
             Behind(
                 path=path,

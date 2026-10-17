@@ -3,6 +3,7 @@ from datetime import UTC, datetime
 from chatddx.factors.base import (
     Code,
     Fingerprint,
+    resolve,
 )
 from chatddx.factors.bundle import Registry
 from chatddx.factors.cases import (
@@ -14,7 +15,9 @@ from chatddx.factors.engine import (
     FileDigest,
     Hardware,
     LocalEngine,
-    ModelArtifact,
+    LocalModel,
+    RemoteEngine,
+    RemoteModel,
     Runtime,
 )
 from chatddx.factors.request import (
@@ -57,7 +60,7 @@ def fp(text: str) -> Fingerprint:
 
 def local_engine(reg: Registry) -> LocalEngine:
     model = reg.add(
-        ModelArtifact(
+        LocalModel(
             repo="google/gemma-3-12b-it",
             revision="deadbeef",
             files=(FileDigest(path="model.safetensors", sha256=SHA),),
@@ -73,6 +76,10 @@ def local_engine(reg: Registry) -> LocalEngine:
         argv=("--max-model-len", "8192"),
         env={"VLLM_BATCH_INVARIANT": "1"},
     )
+
+
+def remote_engine(reg: Registry, model: str, provider: str = "example") -> RemoteEngine:
+    return RemoteEngine(model=reg.add(RemoteModel(provider=provider, name=model)))
 
 
 def generation_recipe(
@@ -106,6 +113,7 @@ def generation_recipe(
             )
         ),
         reasoning=reg.add(Reasoning(chat_template_kwargs={"enable_thinking": False})),
+        model=local_engine(reg).model,
     )
 
 
@@ -178,4 +186,5 @@ def world(reg: Registry) -> dict[str, str]:
         "scoring": scoring,
         "judge": judge,
         "engine": engine,
+        "model": resolve(reg.get, engine, LocalEngine).model,
     }

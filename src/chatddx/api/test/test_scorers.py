@@ -4,7 +4,7 @@ from fastapi.testclient import TestClient
 from chatddx.api.test.test_variations import thread
 from chatddx.api.test.test_writes import body
 from chatddx.scorers import metrics
-from chatddx.test.world import LINES
+from chatddx.test.world import CLINICIAN, LINES
 
 SHIPPED = "chatddx.scorers.metrics:score"
 SHIPPED_AT = metrics.score.version
@@ -78,7 +78,7 @@ def test_a_scorer_that_could_never_score_is_refused(signed: TestClient) -> None:
     archives = thread(signed, "scorer", "whole", "archive")
     held = body(signed, archives)
     [view] = held["views"]
-    instructions = thread(signed, "instructions", "clinician (en)", "archive")
+    instructions = thread(signed, "instructions", CLINICIAN, "archive")
     configuration = thread(signed, "configuration", LINES)
     for at, asked, said in (
         (

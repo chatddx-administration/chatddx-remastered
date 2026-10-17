@@ -56,9 +56,8 @@ def test_sessions(conn: Connection) -> None:
     stale = people.open_session(alice.id, ttl=timedelta(microseconds=1))
     conn.commit()
     assert people.session(stale) is None
-    assert people.purge_sessions() == 1
-
     token = people.open_session(alice.id)
+    assert conn.execute("SELECT count(*) FROM identity.session").fetchone() == (1,)
     _ = people.update(alice.id, active=False)
     assert people.session(token) is None
     _ = people.update(alice.id, active=True)

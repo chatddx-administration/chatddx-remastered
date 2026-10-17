@@ -6,13 +6,24 @@ from fastapi.testclient import TestClient
 
 from chatddx.api.schemas import Parts
 from chatddx.api.test.conftest import sign_in
-from chatddx.bench import OPTIONAL, PARTS, Bench
+from chatddx.api.test.helpers import endpoint
+from chatddx.bench import Bench
 from chatddx.bench.test.helpers import another_expectation
 from chatddx.curation import load_cases
-from chatddx.factors.request import Translations
+from chatddx.factors.request import OPTIONAL_PARTS, RECIPE_PARTS, Translations
 from chatddx.store import Store
 from chatddx.store.store import Connection
-from chatddx.test.world import DATA, LINES, NATIVE, NATIVE_TOOLS, OFF, QWEN
+from chatddx.test.world import (
+    DATA,
+    GPT_OSS,
+    JUDGE,
+    LINES,
+    LINES_GUIDED,
+    NATIVE,
+    NATIVE_TOOLS,
+    OFF,
+    QWEN,
+)
 
 DIFFERENTIAL = ("answer", "differential")
 
@@ -42,11 +53,11 @@ def parts(shown: dict[str, Any]) -> dict[str, dict[str, Any]]:
 
 
 def test_a_request_names_the_recipe_s_parts(described: dict[str, Any]) -> None:
-    assert tuple(Parts.model_fields) == PARTS
+    assert tuple(Parts.model_fields) == RECIPE_PARTS
     get = described["paths"]["/api/threads/{thread}/variation"]["get"]
     assert {p["name"] for p in get["parameters"]} == {
         "thread",
-        *PARTS,
+        *RECIPE_PARTS,
         "head",
         "endpoint",
         "tag",
@@ -57,16 +68,18 @@ def test_a_request_names_the_recipe_s_parts(described: dict[str, Any]) -> None:
 @pytest.mark.slow
 def test_a_configuration_with_nothing_replaced_is_itself(signed: TestClient) -> None:
     mine = thread(signed, "configuration", LINES)
-    shown = variation(signed, mine, seed=7)
+    shown = variation(signed, mine, seed=7, endpoint=QWEN)
     assert (shown["head"], shown["skeleton"]) == (mine["head"], mine["head"]["digest"])
     assert not shown["greedy"]
 
     held = parts(shown)
     recipe = signed.get(f"/api/threads/{mine['id']}").json()["recipe"]
-    assert {p: held[p]["digest"] for p in PARTS} == {p: recipe[p] for p in PARTS}
+    assert {p: held[p]["digest"] for p in RECIPE_PARTS} == {
+        p: recipe[p] for p in RECIPE_PARTS
+    }
     assert not any(p["replaced"] for p in held.values())
     assert (held["output"]["title"], held["output"]["summary"]) == (
-        "lines (en)",
+        "lines",
         "text output",
     )
     assert held["reasoning"] == {
@@ -75,12 +88,33 @@ def test_a_configuration_with_nothing_replaced_is_itself(signed: TestClient) -> 
         "title": None,
         "summary": None,
         "replaced": False,
+        "landed": None,
+        "nearest": [],
     }
+    assert (held["sampling"]["landed"], held["sampling"]["nearest"]) == ("on", [])
 
     request = shown["request"]
-    assert (request["model"], request["seed"]) == ("‹model›", 7)
+    served = endpoint(signed, QWEN)["engine"]
+    assert (request["model"], request["seed"]) == (served, 7)
     assert "‹vignette›‹appendices›" in str(request["messages"])
-    assert shown["findings"] is None
+    assert [(f["code"], f["message"]) for f in shown["findings"]] == [
+        (
+            "translations.missing",
+            "3 cases are in sv, and left out: lines has no translations into sv",
+        )
+    ]
+    english, swedish = shown["languages"]
+    assert (english["language"], english["translated"], english["refused"]) == (
+        "en",
+        False,
+        None,
+    )
+    assert english["skeleton"] == shown["skeleton"]
+    assert (swedish["language"], len(swedish["families"]), swedish["skeleton"]) == (
+        "sv",
+        3,
+        None,
+    )
 
 
 @pytest.mark.slow
@@ -98,8 +132,18 @@ def test_a_variation_replaces_parts_by_digest_or_takes_them_out(
         OFF,
         True,
     )
-    assert "enable_thinking false" in reasoning["summary"]
+    assert (reasoning["summary"], reasoning["landed"]) == ("reasoning off", "off")
     assert shown["request"]["chat_template_kwargs"] == {"enable_thinking": False}
+
+    gpt_oss = endpoint(signed, GPT_OSS)["serves"]
+    swapped = variation(signed, mine, reasoning=off, model=gpt_oss)
+    held = parts(swapped)
+    assert (held["model"]["digest"], held["model"]["replaced"]) == (gpt_oss, True)
+    assert (held["reasoning"]["landed"], held["sampling"]["landed"]) == ("low", "low")
+    assert "always reasons" in held["reasoning"]["nearest"][0]
+    request = swapped["request"]
+    served = endpoint(signed, GPT_OSS)["engine"]
+    assert (request["model"], request["reasoning_effort"]) == (served, "low")
 
     own = parts(shown)["prompt"]["digest"]
     same = variation(signed, mine, prompt=own)
@@ -205,18 +249,20 @@ def test_the_seed_is_drawn_unless_given_and_greedy_sampling_sends_none(
 
 
 @pytest.mark.slow
-def test_a_variation_is_rendered_and_linted_for_an_endpoint(
+def test_a_variation_is_rendered_and_linted_for_the_engine_serving_its_model(
     signed: TestClient,
 ) -> None:
     web = thread(signed, "configuration", NATIVE_TOOLS)
-    engine = signed.get(f"/api/endpoints/{QWEN}").json()["engine"]
+    engine = endpoint(signed, QWEN)["engine"]
     shown = variation(signed, web, endpoint=QWEN)
     assert shown["request"]["model"] == engine
     codes = {f["code"] for f in shown["findings"]}
-    assert {"vllm.native_tools_uncallable", "language.mixed"} <= codes
+    assert {"vllm.native_tools_uncallable", "translations.missing"} <= codes
+    assert variation(signed, web, endpoint=QWEN, seed=shown["seed"]) == shown
 
     english = variation(signed, web, endpoint=QWEN, tag="targets")
-    assert "language.mixed" not in {f["code"] for f in english["findings"]}
+    assert "translations.missing" not in {f["code"] for f in english["findings"]}
+    assert [c["language"] for c in english["languages"]] == ["en"]
     tagged = signed.get("/api/families", params={"tag": "targets"}).json()
     assert {f["language"] for f in tagged} == {"en"}
     assert {r["cases"] for r in english["reach"]} == {len(tagged)}
@@ -224,6 +270,7 @@ def test_a_variation_is_rendered_and_linted_for_an_endpoint(
     nowhere = variation(signed, web, endpoint=QWEN, tag="nowhere")
     assert {r["cases"] for r in nowhere["reach"]} == {0}
     assert [f["code"] for f in nowhere["findings"]] == ["vllm.native_tools_uncallable"]
+    assert nowhere["languages"] == []
 
 
 @pytest.mark.slow
@@ -278,7 +325,7 @@ def test_a_case_with_expectations_to_choose_from_is_shown_apart_in_the_reach(
 
 
 @pytest.mark.slow
-def test_an_unsaved_variation_is_linted_in_its_recipe_s_language(
+def test_an_unsaved_variation_is_linted_in_each_language_it_runs_in(
     signed: TestClient,
 ) -> None:
     web = thread(signed, "configuration", NATIVE_TOOLS)
@@ -289,13 +336,27 @@ def test_an_unsaved_variation_is_linted_in_its_recipe_s_language(
         assert shown["skeleton"] != web["head"]["digest"]
         return {f["code"] for f in shown["findings"]}
 
-    assert "language.unknown" not in codes(tag="targets")
-    assert "language.mixed" in codes()
+    assert not {"language.unknown", "translations.missing"} & codes(tag="targets")
+    assert "translations.missing" in codes()
+
+    guided = thread(signed, "configuration", LINES_GUIDED)
+    shown = variation(signed, guided, endpoint=QWEN, reasoning=off)
+    english, swedish = shown["languages"]
+    assert (english["language"], english["skeleton"]) == ("en", shown["skeleton"])
+    assert (swedish["language"], swedish["translated"], swedish["refused"]) == (
+        "sv",
+        True,
+        None,
+    )
+    assert swedish["skeleton"] not in (None, shown["skeleton"])
+    assert not {"language.mixed", "translations.missing"} & {
+        f["code"] for f in shown["findings"]
+    }
 
 
 @pytest.mark.slow
 def test_a_judge_configuration_is_looked_at_as_a_judge(signed: TestClient) -> None:
-    query = {"kind": "configuration", "purpose": "judge", "name": "judge (en)"}
+    query = {"kind": "configuration", "purpose": "judge", "name": JUDGE}
     [judging] = signed.get("/api/threads", params={**query, "owner": "alice"}).json()
     shown = variation(signed, judging, endpoint=QWEN)
     assert shown["reach"] == [] and shown["findings"] == []
@@ -310,7 +371,7 @@ def test_a_variation_the_bench_refuses_is_unprocessable(
     off = digest(signed, "reasoning", OFF)
     store = Store(conn)
     registry = store.load([])
-    untranslated = registry.add(Translations(entries={"Hello": "Hej"}))
+    untranslated = registry.add(Translations(into={"sv": {"Hello": "Hej"}}))
     _ = store.add(registry, [untranslated])
     path = f"/api/threads/{mine['id']}/variation"
     for params, said in (
@@ -318,14 +379,22 @@ def test_a_variation_the_bench_refuses_is_unprocessable(
         (
             {"prompt": ""},
             "a configuration always has a prompt: only "
-            + f"{', '.join(OPTIONAL)} can be taken out",
+            + f"{', '.join(OPTIONAL_PARTS)} can be taken out",
         ),
-        ({"translations": untranslated}, "no translation for "),
+        ({"model": ""}, "a configuration always has a model"),
         ({"endpoint": "nowhere@fake"}, "no endpoint 'nowhere@fake' in the inventory"),
+        ({"endpoint": GPT_OSS}, f"endpoint '{GPT_OSS}' serves another model"),
     ):
         got = signed.get(path, params=params)
         assert got.status_code == 422, params
         assert got.json()["detail"].startswith(said)
+
+    swedish = signed.get(path, params={"translations": untranslated}).json()
+    assert [c["refused"] for c in swedish["languages"]] == [
+        None,
+        "no translation into sv for 'List the plausible diagnoses, one per line, most "
+        + "likely first.'",
+    ]
 
     got = signed.get(path, params={"stack": off})
     assert got.status_code == 422
@@ -483,7 +552,7 @@ def test_only_one_s_own_configuration_is_edited_and_a_seen_one_forked(
 def test_trying_forking_and_editing_need_a_session(
     client: TestClient, bench: Bench
 ) -> None:
-    mine = bench.thread("configuration", LINES)[0].thread
+    mine = bench.thread(LINES, "configuration")[0].thread
     assert client.get(f"/api/threads/{mine}/variation").status_code == 401
     for path in (f"/api/threads/{mine}/forks", f"/api/threads/{mine}/edits"):
         assert client.post(path, json={"name": "x"}).status_code == 401

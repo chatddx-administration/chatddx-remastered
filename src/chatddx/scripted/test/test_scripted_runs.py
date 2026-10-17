@@ -7,7 +7,7 @@ from chatddx.cli import main
 from chatddx.ledger import RunStarted
 from chatddx.scripted import RUNS, load, ran_before, scripted_runs
 from chatddx.scripted.test.helpers import UNFINISHED, went
-from chatddx.test.world import QWEN_MODEL as MODEL, TEST, freed
+from chatddx.test.world import LINES, NATIVE, TEST, freed
 
 HELD = {s.name: s for s in scripted_runs(TEST / RUNS)}
 
@@ -29,8 +29,8 @@ def held(bench: Bench, name: str) -> RunStarted:
         (
             "several",
             {
-                "crlf": ("errored", "HTTP 503: loading"),
-                "svenska": ("completed", UNFINISHED),
+                "crlf": ("completed", UNFINISHED),
+                "whitespace": ("errored", "HTTP 503: loading"),
             },
         ),
         ("judged", {"noted": ("completed", None)}),
@@ -46,7 +46,7 @@ def test_each_scripted_run_runs_as_its_script_answers(
     assert went(bench, started) == outcomes
     finished = bench.store.run(started.run).finished is not None
     assert finished == (not scripted.unfinished)
-    assert bool(bench.scores_of(started.run)) == (finished and scripted.scored)
+    assert bool(bench.scores_of(started)) == (finished and scripted.scored)
 
 
 @pytest.mark.parametrize("template", ["ran"], indirect=True)
@@ -54,7 +54,7 @@ def test_each_scripted_run_runs_as_its_script_answers(
 def test_a_scripted_run_s_judges_are_served_as_plain_fakes(bench: Bench) -> None:
     started = held(bench, "judged")
 
-    [judged] = [g for g in bench.scores_of(started.run) if g.name == "judged"]
+    [judged] = [g for g in bench.scores_of(started) if g.name == "judged"]
     assert judged.score is not None
     called = [c.call for i in judged.score.items for c in i.judge_calls]
     assert called and all(c.error is None for c in called)
@@ -92,8 +92,8 @@ def test_the_scripted_runs_command_runs_each_once(
     second = capsys.readouterr().out.splitlines()
 
     assert [line.split(" × ")[0] for line in first] == [
-        f"[scripted run unfinished] lines (en, {MODEL})",
-        f"[scripted run valid] native (en, {MODEL})",
+        f"[scripted run unfinished] {LINES}",
+        f"[scripted run valid] {NATIVE}",
     ]
     assert first[0].split(": ", 1)[1].startswith("1 completed, unfinished, scored by 0")
     assert first[1].split(": ", 1)[1].startswith("1 valid, scored by")

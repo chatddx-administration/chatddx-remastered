@@ -2,10 +2,7 @@ from collections.abc import Mapping
 from dataclasses import dataclass, field, replace
 
 from chatddx.catalog import Edit
-from chatddx.factors.request import RECIPE_PARTS, Recipe
-
-PARTS = RECIPE_PARTS
-OPTIONAL = tuple(p for p in PARTS if not Recipe.model_fields[p].is_required())
+from chatddx.factors.request import OPTIONAL_PARTS, RECIPE_PARTS, Recipe
 
 
 @dataclass(frozen=True)
@@ -20,7 +17,7 @@ class TriedVariation:
     @property
     def label(self) -> str:
         return self.name + "".join(
-            f"+{p}={self.parts[p][1]}" for p in PARTS if p in self.parts
+            f"+{p}={self.parts[p][1]}" for p in RECIPE_PARTS if p in self.parts
         )
 
     def held(self, part: str) -> str | None:
@@ -31,9 +28,10 @@ class TriedVariation:
     def set(self, part: str, digest: str | None, name: str) -> "TriedVariation":
         if self.recipe is None:
             raise ValueError(f"{self.name} has no recipe to set its {part} in")
-        if digest is None and part not in OPTIONAL:
+        if digest is None and part not in OPTIONAL_PARTS:
             raise ValueError(
-                f"a configuration always has a {part}: only {', '.join(OPTIONAL)} "
+                f"a configuration always has {'an' if part[0] in 'aeiou' else 'a'} "
+                + f"{part}: only {', '.join(OPTIONAL_PARTS)} "
                 + "can be taken out"
             )
         parts = {p: held for p, held in self.parts.items() if p != part}

@@ -1,17 +1,20 @@
 from dataclasses import dataclass, field
 from typing import Literal
 
-from chatddx.catalog import About, Divergence, Edit, Kept, Part
+from chatddx.catalog import About, Behind, Divergence, Edit, Part
 from chatddx.factors.base import Component, Finding
-from chatddx.factors.request import Recipe, SlotName
+from chatddx.factors.cases import Vignette
+from chatddx.factors.engine import Model
+from chatddx.factors.request import CHUNK_PARTS, Recipe, Skeleton, SlotName
 from chatddx.factors.scoring import Scorer
+from chatddx.inventory import EndpointSpec
 from chatddx.ledger import Score
-
-from .variation import PARTS, TriedVariation
+from chatddx.runner import Running
+from chatddx.store import Kept
 
 KINDS: dict[str, tuple[str, ...]] = {
     "configuration": ("skeleton",),
-    **{part: (f"chunk.{part}",) for part in PARTS},
+    **{part: (f"chunk.{part}",) for part in CHUNK_PARTS},
     "tool": ("tool",),
     "scorer": ("scorer",),
     "judge": ("judge",),
@@ -19,17 +22,24 @@ KINDS: dict[str, tuple[str, ...]] = {
     "expectation": ("expectation",),
     "appendix": ("appendix",),
     "canary_set": ("canary_set",),
-    "model": ("model",),
+    "model": ("model.local", "model.remote"),
     "engine": ("engine.local", "engine.remote"),
+    "facts": ("facts",),
 }
 
 
-def word_of(kind: str) -> str:
-    return next(w for w, held in KINDS.items() if kind in held)
+def word_of(kind: str | None) -> str:
+    return next((w for w, held in KINDS.items() if kind in held), "thread")
 
 
 WRITTEN: frozenset[str] = frozenset(
-    {*(f"chunk.{part}" for part in PARTS), "expectation", "appendix", "scorer", "judge"}
+    {
+        *(f"chunk.{part}" for part in CHUNK_PARTS),
+        "expectation",
+        "appendix",
+        "scorer",
+        "judge",
+    }
 )
 
 LABELLED: tuple[Part, ...] = ("view", "resource")
@@ -45,14 +55,49 @@ PLACEHOLDERS: dict[SlotName, str] = {
 
 
 @dataclass(frozen=True)
+class Endpoint:
+    name: str
+    spec: EndpointSpec
+    model: Model
+
+    @property
+    def engine(self) -> str:
+        return self.spec.engine
+
+
+@dataclass(frozen=True)
 class Family:
     id: int
     about: About
-    case: str
+    vignette: Vignette
+    cases: tuple[str, ...]
+
+    @property
+    def case(self) -> str:
+        return self.cases[0]
 
     @property
     def name(self) -> str:
         return self.about.name or f"family {self.id}"
+
+
+@dataclass(frozen=True)
+class Carried:
+    language: str | None
+    cases: list[str]
+    skeleton: Skeleton | None = None
+    translated: bool = False
+    refused: str | None = None
+
+
+@dataclass(frozen=True)
+class Started:
+    runs: list[tuple[Carried, Running]]
+    left_out: list[Carried]
+
+    @property
+    def first(self) -> Running:
+        return self.runs[0][1]
 
 
 @dataclass(frozen=True)
@@ -85,19 +130,21 @@ class Graded:
 
 
 @dataclass(frozen=True)
-class Saved:
-    name: str
-    digest: str
-    what: Literal["created", "a new version", "unchanged"]
-    variation: TriedVariation
-
-
-@dataclass(frozen=True)
 class Proposed:
     divergence: Divergence
     proposal: Recipe | Component
     digest: str
     compilation: str | None
+
+
+@dataclass(frozen=True)
+class Moved:
+    facts: Behind | None
+    model: Behind | None
+    about: str
+    digest: str | None
+    compilation: str | None
+    refused: str | None
 
 
 @dataclass(frozen=True)

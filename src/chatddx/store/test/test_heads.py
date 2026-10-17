@@ -3,10 +3,10 @@ import pytest
 from psycopg import errors
 
 from chatddx import settings
-from chatddx.catalog import MovedOn
+from chatddx.catalog import MovedOn, threads
 from chatddx.factors.bundle import Registry
 from chatddx.factors.request import Sampling
-from chatddx.store import Catalog, People, Store
+from chatddx.store import Catalog, People, Rows, Store
 from chatddx.store.store import Connection
 
 
@@ -19,6 +19,7 @@ def _stored(conn: Connection, *temperatures: float) -> list[str]:
 
 def test_an_edit_or_a_keep_naming_an_old_head_is_refused(conn: Connection) -> None:
     catalog = Catalog(conn)
+    rows = Rows(conn)
     alice = People(conn).add("alice", "Alice")
     cool, warm, hot = _stored(conn, 0.6, 0.7, 0.8)
     first = catalog.create(cool, alice.id)
@@ -33,7 +34,7 @@ def test_an_edit_or_a_keep_naming_an_old_head_is_refused(conn: Connection) -> No
         "unchanged",
     )
     third, kept = catalog.keep(hot, alice.id, first.thread, head=second.id)
-    assert kept == "edited" and catalog.head(first.thread) == third
+    assert kept == "edited" and threads.head(rows, first.thread) == third
 
 
 @pytest.mark.slow

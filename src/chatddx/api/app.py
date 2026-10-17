@@ -13,9 +13,8 @@ from pydantic.json_schema import models_json_schema
 from starlette.exceptions import HTTPException
 
 from chatddx.bench import Ambiguous, Conflict, MovedOn, NotFound, OverQuota
-from chatddx.facts import Facts
 from chatddx.inventory import Inventory
-from chatddx.runner.gate import Refused
+from chatddx.runner import Refused
 from chatddx.store import UnderWay
 from chatddx.worker import Worker
 
@@ -95,7 +94,7 @@ def _lifespan(
         assert isinstance(held, AppState)
         stopping = threading.Event()
         serving: threading.Thread | None = None
-        made_worker = Worker(held.conninfo, held.inventory, held.facts)
+        made_worker = Worker(held.conninfo, held.inventory)
         if worker:
             serving = threading.Thread(
                 target=made_worker.serve, args=(stopping,), name="chatddx-worker"
@@ -113,9 +112,7 @@ def _lifespan(
     return lifespan
 
 
-def app(
-    inventory: Inventory, facts: Facts, conninfo: str, worker: bool = False
-) -> FastAPI:
+def app(inventory: Inventory, conninfo: str, worker: bool = False) -> FastAPI:
     made = FastAPI(
         title="chatddx",
         version=metadata.version("chatddx"),
@@ -124,7 +121,7 @@ def app(
         redoc_url=None,
         lifespan=_lifespan(worker),
     )
-    made.state.chatddx = AppState(conninfo, inventory, facts, Listener(conninfo))
+    made.state.chatddx = AppState(conninfo, inventory, Listener(conninfo))
     for module in (people, threads, families, world, runs, scores, queue):
         made.include_router(module.router, prefix="/api")
     for error, (status, code) in STATUSES.items():

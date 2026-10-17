@@ -4,6 +4,7 @@ import threading
 import time
 from collections.abc import Iterator
 from pathlib import Path
+from typing import Any
 
 import pytest
 import uvicorn
@@ -19,9 +20,15 @@ from chatddx.portal.assets import Assets
 from chatddx.portal.test.conftest import PASSWORD
 from chatddx.store import Store
 from chatddx.store.store import Connection
-from chatddx.test.world import LINES, QWEN, faked, world_facts
+from chatddx.test.world import GPT_OSS, LINES, LINES_GUIDED, QWEN, faked
 
 pytestmark = pytest.mark.slow
+
+
+def _endpoint(page: Page, name: str) -> dict[str, Any]:
+    listed = page.request.get("/api/endpoints").json()
+    [found] = [e for e in listed if e["name"] == name]
+    return found
 
 
 @pytest.fixture
@@ -36,7 +43,6 @@ def built() -> Path:
 def served(db: str, built: Path, world: Inventory) -> FastAPI:
     return app(
         world,
-        world_facts(),
         make_conninfo(settings.database(), dbname=db),
         built,
         worker=True,
@@ -97,8 +103,26 @@ def test_a_variation_is_run_watched_halted_scored_again_and_run_again(
     with faked(world, Store(conn).get, delay=0.3):
         _ = page.goto(f"/configurations/{lines['id']}")
         expect(page.get_by_role("heading", name="Running it")).to_be_visible()
+        # Accommodating for the test World: two endpoints serve Qwen3, so the page asks which.
+        expect(page.get_by_text("Pick an endpoint to run it at.")).to_be_visible()
+        _ = page.select_option("#endpoint", QWEN)
+        expect(
+            page.get_by_text(re.compile(rf"Sends \d+ items to {QWEN}"))
+        ).to_be_visible()
+        gpt_oss = _endpoint(page, GPT_OSS)["serves"]
         with page.expect_response(re.compile(r"/variation\?")):
-            _ = page.select_option("#endpoint", QWEN)
+            _ = page.select_option("#part-model", gpt_oss)
+        expect(
+            page.get_by_text(f"Sent to {GPT_OSS}, which serves its model.")
+        ).to_be_visible()
+        qwen = _endpoint(page, QWEN)["serves"]
+        with page.expect_response(re.compile(r"/variation\?")):
+            _ = page.select_option("#part-model", qwen)
+        expect(page.get_by_text("Pick an endpoint to run it at.")).to_be_visible()
+        _ = page.select_option("#endpoint", QWEN)
+        expect(
+            page.get_by_text(re.compile(rf"Sends \d+ items to {QWEN}"))
+        ).to_be_visible()
         page.get_by_label("of the families picked").check()
         page.get_by_label("Find a family").fill("crlf")
         page.get_by_label("crlf", exact=True).check()
@@ -129,13 +153,60 @@ def test_a_variation_is_run_watched_halted_scored_again_and_run_again(
     assert errors == []
 
 
+def test_a_variation_says_where_it_runs_and_a_start_s_runs_link_each_other(
+    page: Page,
+    world: Inventory,
+    conn: Connection,
+) -> None:
+    errors: list[str] = []
+    page.on("pageerror", lambda e: errors.append(str(e)))
+
+    def configuration(name: str) -> int:
+        query: dict[str, str | float | bool] = {
+            "kind": "configuration",
+            "name": name,
+            "owner": "alice",
+        }
+        return page.request.get("/api/threads", params=query).json()[0]["id"]
+
+    _ = page.goto(f"/configurations/{configuration(LINES)}?tag=swedish")
+    expect(
+        page.get_by_text(
+            "Left out: 3 cases in sv, as lines has no translations into sv."
+        )
+    ).to_be_visible()
+
+    with faked(world, Store(conn).get):
+        _ = page.goto(f"/configurations/{configuration(LINES_GUIDED)}?tag=swedish")
+        expect(
+            page.get_by_text(
+                "A run per language: in en, 1 case; in sv, 3 cases, translated."
+            )
+        ).to_be_visible()
+        expect(page.get_by_text("Left out")).to_have_count(0)
+        _ = page.select_option("#endpoint", QWEN)
+        expect(page.get_by_text("Sends 4 items to")).to_be_visible()
+        page.get_by_role("button", name="Run it").click()
+        page.wait_for_url(re.compile(r"/runs/[0-9a-f-]{36}$"))
+        first = page.url.rsplit("/", 1)[1]
+        other = page.get_by_role("link", name=re.compile(r", in sv$"))
+        expect(other).to_be_visible()
+        other.click()
+        page.wait_for_url(re.compile(r"/runs/[0-9a-f-]{36}$"))
+        expect(page.get_by_role("link", name=f"{first[:8]}, in en")).to_be_visible()
+
+    assert errors == []
+
+
 def test_a_clinician_s_appendix_case_and_expectation_are_written_and_counted(
     page: Page,
 ) -> None:
     errors: list[str] = []
     page.on("pageerror", lambda e: errors.append(str(e)))
     crlf = page.request.get("/api/families", params={"name": "crlf"}).json()[0]
-    [expected] = page.request.get(f"/api/families/{crlf['id']}").json()["expectations"]
+    [expected] = page.request.get(f"/api/families/{crlf['id']}").json()["cases"][0][
+        "expectations"
+    ]
     query: dict[str, str | float | bool] = {"kind": "expectation", "owner": "alice"}
     mine = next(
         t
@@ -152,7 +223,9 @@ def test_a_clinician_s_appendix_case_and_expectation_are_written_and_counted(
         }
 
     held = missing()
-    assert page.request.delete(f"/api/threads/{mine['id']}").status == 204
+    deleted = {"deleted": True}
+    path = f"/api/threads/{mine['id']}"
+    assert page.request.patch(path, data=deleted).status == 200
     gone = missing()
     assert held < gone
     _ = page.goto(f"/families/{crlf['id']}")

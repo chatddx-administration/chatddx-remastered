@@ -1,46 +1,42 @@
 import os
-from collections.abc import Iterable
 
-from chatddx.factors.base import Resolver, resolve
+from chatddx.factors.base import Resolver, StructuralError, resolve
 from chatddx.factors.cases import Case
-from chatddx.factors.request import Skeleton
+from chatddx.factors.engine import served_model_name
+from chatddx.factors.request import Skeleton, Slot
+from chatddx.factors.scoring import Judge
 from chatddx.factors.trial import Trial
-from chatddx.inventory import Inventory, confirm
+from chatddx.inventory import Inventory
+
+from .wire import served
 
 
 class Refused(Exception):
     pass
 
 
-def check(
-    inventory: Inventory,
-    get: Resolver,
-    endpoint: str,
-    trial: Trial,
-    timeout: float = 10.0,
-) -> str | None:
-    tools = bool(resolve(get, trial.skeleton, Skeleton).tools)
-    return admit(
-        inventory, get, endpoint, trial.engine, trial.cases, tools, "trial", timeout
-    )
-
-
 def admit(
     inventory: Inventory,
     get: Resolver,
     endpoint: str,
-    engine: str,
-    cases: Iterable[str],
-    tools: bool,
-    whose: str,
+    trial: Trial,
+    judge: Judge | None = None,
     timeout: float = 10.0,
 ) -> str | None:
-    bar(inventory, get, endpoint, engine, cases, tools, whose)
-    key = secret(inventory, endpoint)
+    bar(inventory, get, endpoint, trial, judge)
+    engine = trial.engine if judge is None else judge.engine
+    key = _secret(inventory, endpoint)
+    url = str(inventory.endpoint(endpoint).url)
     try:
-        confirm(inventory, get, endpoint, timeout, key)
-    except (LookupError, OSError) as e:
+        expected = served_model_name(engine, get)
+        listed = served(url, secret=key, timeout=timeout)
+    except (StructuralError, OSError) as e:
         raise Refused(f"endpoint {endpoint!r} can't be confirmed: {e}") from None
+    if expected not in listed:
+        raise Refused(
+            f"endpoint {endpoint!r} can't be confirmed: it serves "
+            + f"{', '.join(listed) or 'nothing'} at {url}, not {expected}"
+        )
     return key
 
 
@@ -49,14 +45,23 @@ def bar(
     inventory: Inventory,
     get: Resolver,
     endpoint: str,
-    engine: str,
-    cases: Iterable[str],
-    tools: bool,
-    whose: str,
+    trial: Trial,
+    judge: Judge | None = None,
 ) -> None:
+    if judge is None:
+        engine, whose = trial.engine, "trial"
+        tools = bool(resolve(get, trial.skeleton, Skeleton).tools)
+    else:
+        engine, whose, tools = judge.engine, "judge", False
+        skeleton = resolve(get, judge.skeleton, Skeleton)
+        if read := sorted(_slots(skeleton) & {"vignette", "appendices"}):
+            raise Refused(
+                f"judge {judge.digest} reads the {' and '.join(read)}, which no judge "
+                + "is given"
+            )
     try:
         spec = inventory.endpoint(endpoint)
-        sources = sorted({resolve(get, c, Case).vignette.source for c in cases})
+        sources = sorted({resolve(get, c, Case).vignette.source for c in trial.cases})
         sensitive = [s for s in sources if inventory.source(s).sensitive]
     except LookupError as e:
         raise Refused(str(e)) from None
@@ -65,7 +70,7 @@ def bar(
             f"endpoint {endpoint!r} serves engine {spec.engine}, the {whose}'s is "
             + engine
         )
-    if uncleared := sorted(set(sensitive) - inventory.cleared_for(endpoint)):
+    if uncleared := sorted(set(sensitive) - set(inventory.cleared.get(endpoint, ()))):
         raise Refused(
             f"endpoint {endpoint!r} isn't cleared for source {', '.join(uncleared)}, "
             + "which is sensitive"
@@ -77,7 +82,11 @@ def bar(
         )
 
 
-def secret(inventory: Inventory, endpoint: str) -> str | None:
+def _slots(skeleton: Skeleton) -> set[str]:
+    return {s.slot for m in skeleton.messages for s in m.content if isinstance(s, Slot)}
+
+
+def _secret(inventory: Inventory, endpoint: str) -> str | None:
     credential = inventory.endpoint(endpoint).credential
     if credential is None:
         return None

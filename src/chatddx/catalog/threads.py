@@ -3,8 +3,9 @@ from collections.abc import Mapping, Sequence
 from pydantic import JsonValue
 
 from chatddx.factors.base import Component, canonical_bytes, iter_refs, resolve
+from chatddx.factors.facts import ModelFacts
 from chatddx.factors.kinds import parse_component
-from chatddx.factors.request import Compilation, Recipe
+from chatddx.factors.request import Compilation, Recipe, compile_request
 from chatddx.factors.scoring import Expectation, Scorer
 from chatddx.identity import owns
 
@@ -22,52 +23,78 @@ from .model import (
     MovedOn,
     Subject,
     Thread,
-    check_label,
 )
-from .read import Reader, abouts, heads_holding, heads_of
+from .read import Reader, abouts, heads_holding, heads_of, labels as read_labels
 
 
-def check_head(rows: Reader, thread: int, head: int) -> None:
-    current = history(rows, thread)[-1]
-    if current.id != head:
+def check_create(rows: Reader, digest: str) -> str:
+    kind = rows.kind(digest)
+    if kind is None:
+        raise LookupError(f"{digest} is not in the store")
+    if kind not in THREAD_KINDS:
+        raise ValueError(f"{kind} components have no threads")
+    return kind
+
+
+def check_edit(
+    rows: Reader,
+    thread_id: int,
+    digest: str,
+    *,
+    based_on: int | None = None,
+    head: int | None = None,
+    labels: Labels | None = None,
+) -> None:
+    found = thread(rows, thread_id)
+    if head is not None and (current := history(rows, thread_id)[-1]).id != head:
         raise MovedOn(
-            f"thread {thread} has moved on since edit {head}: its head is edit "
+            f"thread {thread_id} has moved on since edit {head}: its head is edit "
             + f"{current.id}"
         )
+    if based_on is not None:
+        _check_based_on(rows, found, based_on)
+    _check_expectation(rows, found, digest)
+    if labels:
+        _check_labels(rows, found, digest, labels)
 
 
-def check_labels(rows: Reader, thread_id: int, digest: str, labels: Labels) -> None:
-    if not labels:
-        return
-    kind = thread(rows, thread_id).kind
-    if kind != "scorer":
-        raise ValueError(f"a {kind} has no views or resources to label")
+# src/chatddx/store/migrations/0012-t2-catalog.sql repeats the language rule.
+def check_note(rows: Reader, subject: Subject, entry: Entry) -> None:
+    if entry.field == EntryField.LANGUAGE and subject.family is None:
+        raise ValueError(
+            "a language entry is for a family's vignette; "
+            + "a component's language is kept on its digest"
+        )
+    if entry.field in RUN_FIELDS:
+        _check_ran(rows, subject, entry)
+    if subject.thread is not None and (found := rows.thread(subject.thread)):
+        _check_expectation(rows, found, entry=entry)
+
+
+# src/chatddx/store/migrations/0012-t2-catalog.sql repeats this check.
+def _check_based_on(rows: Reader, thread: Thread, based_on: int) -> None:
+    origin = None if thread.forked_from is None else rows.edit(thread.forked_from)
+    if origin is None or not any(
+        e.id == based_on and e.id >= origin.id for e in rows.edits([origin.thread])
+    ):
+        raise ValueError(f"edit {based_on} is not in the origin of thread {thread.id}")
+
+
+# src/chatddx/store/migrations/0018-t2-catalog-label-edit.sql repeats the positions.
+def _check_labels(rows: Reader, thread: Thread, digest: str, labels: Labels) -> None:
+    if thread.kind != "scorer":
+        raise ValueError(f"a {thread.kind} has no views or resources to label")
     scorer = resolve(rows.get, digest, Scorer)
     for (part, position), value in labels.items():
-        check_label(scorer, part, position)
+        parts = scorer.views if part == "view" else scorer.resources
+        if not 0 <= position < len(parts):
+            raise ValueError(f"{digest} has no {part} at position {position}")
         if not value:
             raise ValueError(f"the label of {part} {position} is empty")
 
 
-def check_threadable(kind: str) -> None:
-    if kind not in THREAD_KINDS:
-        raise ValueError(f"{kind} components have no threads")
-
-
-# src/chatddx/store/migrations/0012-t2-catalog.sql repeats this check.
-def check_based_on(rows: Reader, thread: int, based_on: int) -> None:
-    t = rows.thread(thread)
-    origin = None if t is None or t.forked_from is None else rows.edit(t.forked_from)
-    if origin is None or not any(
-        e.id == based_on and e.id >= origin.id for e in rows.edits([origin.thread])
-    ):
-        raise ValueError(f"edit {based_on} is not in the origin of thread {thread}")
-
-
 # src/chatddx/store/migrations/0026-t2-catalog-run-variation.sql repeats this check.
-def check_varied(rows: Reader, subject: Subject, entry: Entry) -> None:
-    if entry.field not in RUN_FIELDS:
-        return
+def _check_ran(rows: Reader, subject: Subject, entry: Entry) -> None:
     if subject.run is None:
         raise ValueError(f"a {entry.field} entry is about a run, and what it ran")
     if entry.field == EntryField.VARIED:
@@ -75,9 +102,40 @@ def check_varied(rows: Reader, subject: Subject, entry: Entry) -> None:
         if found is None or thread(rows, found.thread).kind != "skeleton":
             raise ValueError(f"edit {entry.value} is no configuration's")
         return
+    # Runs are the ledger's, which the catalog doesn't read: the store checks this one.
+    if entry.field == EntryField.WITH:
+        return
     part, digest = (entry.value or "").split("=")
-    if digest and rows.kind(digest) != f"chunk.{part}":
-        raise ValueError(f"{digest} isn't a stored chunk of {part}")
+    model = part == "model"
+    if digest and rows.kind(digest) not in (
+        ("model.local", "model.remote") if model else (f"chunk.{part}",)
+    ):
+        what = "a model" if model else f"a chunk of {part}"
+        raise ValueError(f"{digest} isn't {what} in the store")
+
+
+def _check_expectation(
+    rows: Reader, thread: Thread, digest: str | None = None, entry: Entry | None = None
+) -> None:
+    if thread.kind != "expectation":
+        return
+    if entry is not None and entry.field not in (EntryField.OWNER, EntryField.DELETED):
+        return
+    entries = [e for _, e, _ in rows.entries([Subject(thread=thread.id)])]
+    about = About.of(entries if entry is None else [*entries, entry])
+    owner = about.owner
+    if owner is None or about.deleted:
+        return
+    expectation = resolve(rows.get, digest or head(rows, thread.id).digest, Expectation)
+    case, schema = expectation.case, expectation.expectation_schema
+    held = [
+        e.thread for e, a in expecting(rows, [case], schema)[case] if owns(owner, a)
+    ]
+    if others := sorted(t for t in held if t != thread.id):
+        raise ValueError(
+            f"person {owner} owns an expectation of case {case} under that "
+            + f"schema already, in thread {others[0]}"
+        )
 
 
 def thread(rows: Reader, id: int) -> Thread:
@@ -87,7 +145,7 @@ def thread(rows: Reader, id: int) -> Thread:
     return found
 
 
-def edit(rows: Reader, id: int) -> Edit:
+def _edit(rows: Reader, id: int) -> Edit:
     found = rows.edit(id)
     if found is None:
         raise LookupError(f"no edit with id {id}")
@@ -137,7 +195,7 @@ def picked(case: str, choices: Mapping[int, str]) -> str | None:
 
 
 def expecting(
-    rows: Reader, cases: Sequence[str], schema: str
+    rows: Reader, cases: Sequence[str], schema: str | None = None
 ) -> dict[str, list[tuple[Edit, About]]]:
     held = heads_holding(rows, rows.expectations(cases))
     known = abouts(rows, [Subject(thread=t) for t in held])
@@ -145,34 +203,9 @@ def expecting(
     found: dict[str, list[tuple[Edit, About]]] = {c: [] for c in cases}
     for t in sorted(held):
         expectation = resolve(read.__getitem__, held[t].digest, Expectation)
-        if expectation.expectation_schema == schema:
+        if schema is None or expectation.expectation_schema == schema:
             found[expectation.case].append((held[t], known[Subject(thread=t)]))
     return found
-
-
-def check_expectation(
-    rows: Reader, thread: int, digest: str | None = None, entry: Entry | None = None
-) -> None:
-    found = rows.thread(thread)
-    if found is None or found.kind != "expectation":
-        return
-    if entry is not None and entry.field not in (EntryField.OWNER, EntryField.DELETED):
-        return
-    entries = [e for _, e, _ in rows.entries([Subject(thread=thread)])]
-    about = About.of(entries if entry is None else [*entries, entry])
-    owner = about.owner
-    if owner is None or about.deleted:
-        return
-    expectation = resolve(rows.get, digest or head(rows, thread).digest, Expectation)
-    case, schema = expectation.case, expectation.expectation_schema
-    held = [
-        e.thread for e, a in expecting(rows, [case], schema)[case] if owns(owner, a)
-    ]
-    if others := sorted(t for t in held if t != thread):
-        raise ValueError(
-            f"person {owner} owns an expectation of case {case} under that "
-            + f"schema already, in thread {others[0]}"
-        )
 
 
 def forks(rows: Reader, thread: int) -> list[int]:
@@ -182,11 +215,7 @@ def forks(rows: Reader, thread: int) -> list[int]:
 
 def origin(rows: Reader, id: int) -> int | None:
     forked_from = thread(rows, id).forked_from
-    return None if forked_from is None else edit(rows, forked_from).thread
-
-
-def expectations_of(rows: Reader, case: str) -> list[int]:
-    return list(heads_holding(rows, rows.expectations([case])))
+    return None if forked_from is None else _edit(rows, forked_from).thread
 
 
 def recipe(rows: Reader, edit: Edit) -> Recipe | None:
@@ -195,8 +224,16 @@ def recipe(rows: Reader, edit: Edit) -> Recipe | None:
     return resolve(rows.get, edit.compilation, Compilation).recipe
 
 
-def holds(rows: Reader, edit: Edit, digest: str, compilation: str | None) -> bool:
+def holds(
+    rows: Reader,
+    edit: Edit,
+    digest: str,
+    compilation: str | None,
+    labels: Labels | None = None,
+) -> bool:
     if edit.digest != digest:
+        return False
+    if labels is not None and read_labels(rows, edit.id) != dict(labels):
         return False
     if compilation is None or compilation == edit.compilation:
         return True
@@ -206,8 +243,12 @@ def holds(rows: Reader, edit: Edit, digest: str, compilation: str | None) -> boo
 def behind(rows: Reader, thread: int) -> list[Behind]:
     current = head(rows, thread)
     refs = [(s.path, s.digest) for s in rows.get(current.digest).refs()]
-    if (r := recipe(rows, current)) is not None:
-        refs += [(s.path, s.digest) for s in iter_refs(r, "/recipe")]
+    made = None
+    if current.compilation is not None:
+        made = resolve(rows.get, current.compilation, Compilation)
+        refs += [(s.path, s.digest) for s in iter_refs(made.recipe, "/recipe")]
+        if made.facts is not None:
+            refs.append(("/facts", made.facts))
     refs += [
         (path + s.path, s.digest)
         for path, digest in refs
@@ -224,10 +265,22 @@ def behind(rows: Reader, thread: int) -> list[Behind]:
         (path, t, digest): Behind(path=path, digest=digest, head=found[t])
         for path, digest in refs
         for t in held.get(digest, ())
-        if found[t].digest != digest and not known[Subject(thread=t)].deleted
+        if found[t].digest != digest
+        and not known[Subject(thread=t)].deleted
+        and (path != "/facts" or made is None or _sends_else(rows, made, found[t]))
     }
     ordered = [moved[k] for k in sorted(moved)]
     return sorted([*ordered, *stale_cases(rows, refs)], key=lambda b: b.path)
+
+
+# Facts corrected where a configuration doesn't reach leave it as it is: following them
+# would write nothing (holds).
+def _sends_else(rows: Reader, made: Compilation, facts: Edit) -> bool:
+    newer = resolve(rows.get, facts.digest, ModelFacts)
+    try:
+        return compile_request(made.recipe, rows.get, newer).digest != made.skeleton
+    except ValueError:
+        return True
 
 
 def divergence(rows: Reader, id: int) -> Divergence | None:
@@ -236,7 +289,7 @@ def divergence(rows: Reader, id: int) -> Divergence | None:
         return None
     edits = history(rows, id)
     based_on = [e.based_on for e in edits if e.based_on is not None]
-    base = edit(rows, based_on[-1] if based_on else forked_from)
+    base = _edit(rows, based_on[-1] if based_on else forked_from)
     fork = edits[-1]
     by_recipe = base.compilation is not None and fork.compilation is not None
     before, after = _shape(rows, base, by_recipe), _shape(rows, fork, by_recipe)

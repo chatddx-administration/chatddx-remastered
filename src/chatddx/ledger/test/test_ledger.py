@@ -13,7 +13,7 @@ from chatddx.factors.cases import Case
 from chatddx.factors.engine import LocalEngine
 from chatddx.factors.scoring import Scorer, Scoring, View
 from chatddx.factors.test.sample import NOW, RIG, fp, world
-from chatddx.factors.trial import Execution, Trial
+from chatddx.factors.trial import Execution
 from chatddx.ledger import (
     Call,
     CanaryCall,
@@ -33,8 +33,6 @@ from chatddx.ledger import (
     Turn,
     check_run,
     check_score,
-    compare_prompt_tokens,
-    fingerprint_prompt_tokens,
     fingerprint_request,
 )
 from chatddx.ledger.test.rounds import ran, rounds
@@ -52,16 +50,12 @@ def test_run_and_score_checks(reg: Registry) -> None:
     run_id = uuid4()
 
     def call(model: str, tokens: list[JsonValue] | None = None) -> Call:
-        response, prompt_tokens = fingerprint_prompt_tokens(
-            {"model": model, "prompt_token_ids": tokens or [2, 106, 1645]}
-        )
         return Call(
             request=fp("body"),
             started_at=NOW,
             finished_at=NOW,
             status=200,
-            response=response,
-            prompt_tokens=prompt_tokens,
+            response={"model": model, "prompt_token_ids": tokens or [2, 106, 1645]},
         )
 
     vignette = resolve(reg.get, ids["case"], Case).vignette.fingerprint
@@ -77,37 +71,39 @@ def test_run_and_score_checks(reg: Registry) -> None:
     started = RunStarted(
         run=run_id, at=NOW, rig=RIG, trial=ids["trial"], canaries=ids["canaries"]
     )
-    items = (item(0, call(engine.served_model_name)), item(1, call("other")))
+    items = (item(0, call(engine.digest)), item(1, call("other")))
     canaries = tuple(
         CanaryCall(run=run_id, phase=p, canary=0, call=call("c"))
         for p in ("start", "end")
     )
-    open_run = Run(stages=(started,), items=items, canaries=canaries)
-    run = Run(stages=(started, open_run.finish(NOW)), items=items, canaries=canaries)
+    open_run = Run(started=started, items=items, canaries=canaries)
+    run = Run(
+        started=started, finished=open_run.finish(NOW), items=items, canaries=canaries
+    )
     assert [f.code for f in check_run(run, reg)] == ["attestation.model"]
-    unprobed = Run(stages=(started,), items=items, canaries=canaries[:1])
+    unprobed = Run(started=started, items=items, canaries=canaries[:1])
     assert [
         f.message
         for f in check_run(
-            unprobed.model_copy(update={"stages": (started, unprobed.finish(NOW))}),
+            unprobed.model_copy(update={"finished": unprobed.finish(NOW)}),
             reg,
         )
         if f.code == "run.incomplete"
     ] == ["1 canary calls missing"]
-    assert run.items[0].call.response == {"model": engine.served_model_name}
+    assert run.items[0].call.response == {"model": engine.digest}
     unnamed = items[0].call.model_copy(update={"response": {"choices": []}})
     silent = Run(
-        stages=(started,), items=(items[0].model_copy(update={"call": unnamed}),)
+        started=started, items=(items[0].model_copy(update={"call": unnamed}),)
     )
     assert [(f.code, f.message) for f in check_run(silent, reg)] == [
         (
             "attestation.model",
-            f"engine returned no model name, declared {engine.served_model_name!r}",
+            f"engine returned no model name, declared {engine.digest!r}",
         )
     ]
     drifted = Run(
-        stages=(started,),
-        items=(item(0, call(engine.served_model_name), fp("edited at the source")),),
+        started=started,
+        items=(item(0, call(engine.digest), fp("edited at the source")),),
     )
     assert [(f.code, f.subject) for f in check_run(drifted, reg)] == [
         ("case.drift", str(drifted.items[0].key))
@@ -117,57 +113,37 @@ def test_run_and_score_checks(reg: Registry) -> None:
     assert "ledger.seal" in [f.code for f in check_run(tampered, reg)]
 
     rerun = Run(
-        stages=(started,),
+        started=started,
         items=(
-            item(0, call(engine.served_model_name, [2, 106, 9])),
+            item(0, call(engine.digest, [2, 106, 9])),
             item(1, items[1].call.model_copy(update={"prompt_tokens": None})),
         ),
     )
-    assert [f.code for f in compare_prompt_tokens(rerun, run, reg)] == [
-        "attestation.prompt_tokens_drift"
-    ]
-    trial = resolve(reg.get, ids["trial"], Trial)
-
-    def run_of(**changes: object) -> Run:
-        other = reg.add(Trial.model_validate({**trial.model_dump(), **changes}))
-        moved = started.model_copy(update={"trial": other})
-        return Run(stages=(moved,), items=rerun.items)
-
-    reseeded = run_of(seeds=(9, 10))
-    assert [f.code for f in compare_prompt_tokens(reseeded, run, reg)] == [
-        "attestation.prompt_tokens_drift"
-    ]
-    with pytest.raises(StructuralError, match="different cleanup"):
-        _ = compare_prompt_tokens(run_of(cleanup=("strip@1",)), run, reg)
     assert "attestation.prompt_tokens" in [f.code for f in check_run(rerun, reg)]
 
     with pytest.raises(StructuralError, match="outside the trial"):
-        _ = check_run(Run(stages=(started,), items=(*items, item(2, call("m")))), reg)
+        _ = check_run(Run(started=started, items=(*items, item(2, call("m")))), reg)
     with pytest.raises(StructuralError, match="not planned"):
         bad_canary = CanaryCall(run=run_id, phase="start", canary=1, call=call("c"))
-        _ = check_run(Run(stages=(started,), canaries=(bad_canary,)), reg)
+        _ = check_run(Run(started=started, canaries=(bad_canary,)), reg)
     with pytest.raises(StructuralError, match="duplicate canary calls"):
-        _ = check_run(Run(stages=(started,), canaries=canaries[:1] * 2), reg)
+        _ = check_run(Run(started=started, canaries=canaries[:1] * 2), reg)
     with pytest.raises(ValidationError, match="different logs"):
-        _ = Run(
-            stages=(started,), items=(items[0].model_copy(update={"run": uuid4()}),)
-        )
-    with pytest.raises(ValidationError, match="do not follow"):
-        _ = Run(stages=(started, started))
+        _ = Run(started=started, items=(items[0].model_copy(update={"run": uuid4()}),))
+    with pytest.raises(ValidationError, match="instance of RunFinished"):
+        _ = Run.model_validate({"started": started, "finished": started})
 
     score_id = uuid4()
 
     def score(*score_items: ScoreItem) -> Score:
         return Score(
-            stages=(
-                ScoreStarted(
-                    score=score_id,
-                    run=run_id,
-                    at=NOW,
-                    rig=RIG,
-                    scorer_version=1,
-                    scoring=ids["scoring"],
-                ),
+            started=ScoreStarted(
+                score=score_id,
+                run=run_id,
+                at=NOW,
+                rig=RIG,
+                scorer_version=1,
+                scoring=ids["scoring"],
             ),
             items=score_items,
         )
@@ -178,9 +154,7 @@ def test_run_and_score_checks(reg: Registry) -> None:
         view=1,
         value=1.0,
         judge_calls=(
-            JudgeCall(
-                judge=ids["judge"], seed_index=0, call=call(engine.served_model_name)
-            ),
+            JudgeCall(judge=ids["judge"], seed_index=0, call=call(engine.digest)),
         ),
     )
     assert check_score(score(ok), run, reg) == []
@@ -188,7 +162,8 @@ def test_run_and_score_checks(reg: Registry) -> None:
         ("score.run_unfinished", "the run hasn't finished")
     ]
     late = Run(
-        stages=(started, open_run.finish(NOW + timedelta(seconds=1))),
+        started=started,
+        finished=open_run.finish(NOW + timedelta(seconds=1)),
         items=items,
         canaries=canaries,
     )
@@ -204,7 +179,7 @@ def test_run_and_score_checks(reg: Registry) -> None:
                             JudgeCall(
                                 judge=ids["judge"],
                                 seed_index=1,
-                                call=call(engine.served_model_name),
+                                call=call(engine.digest),
                             ),
                         )
                     }
@@ -216,7 +191,7 @@ def test_run_and_score_checks(reg: Registry) -> None:
     elsewhere = score(ok).started.model_copy(update={"scorer_version": 2})
     assert [
         (f.code, f.message)
-        for f in check_score(Score(stages=(elsewhere,), items=(ok,)), run, reg)
+        for f in check_score(Score(started=elsewhere, items=(ok,)), run, reg)
     ] == [
         (
             "score.scorer_code",
@@ -243,9 +218,7 @@ def test_run_and_score_checks(reg: Registry) -> None:
     assert check_score(score(unscored), run, reg) == []
 
     partial = score(ok)
-    finished = partial.model_copy(
-        update={"stages": (*partial.stages, partial.finish(NOW))}
-    )
+    finished = partial.model_copy(update={"finished": partial.finish(NOW)})
     assert [(f.code, f.message) for f in check_score(finished, run, reg)] == [
         ("score.incomplete", "3 items missing")
     ]
@@ -269,11 +242,11 @@ def test_seal_survives_a_storage_roundtrip() -> None:
     canaries = tuple(
         CanaryCall(run=run_id, phase=p, canary=0, call=c) for p in ("start", "end")
     )
-    run = Run(stages=(started,), items=items, canaries=canaries)
+    run = Run(started=started, items=items, canaries=canaries)
     assert started.at == NOW and started.at.utcoffset() == timedelta(0)
 
     stored = Run(
-        stages=(RunStarted.parse(started.canonical),),
+        started=RunStarted.parse(started.canonical),
         items=tuple(RunItem.parse(i.canonical) for i in reversed(items)),
         canaries=tuple(CanaryCall.parse(c.canonical) for c in reversed(canaries)),
     )
@@ -340,7 +313,7 @@ def test_execution_is_checked_against_the_calls(reg: Registry) -> None:
         started = RunStarted(
             run=run_id, at=NOW, rig=RIG, trial=ids["trial"], execution=execution
         )
-        run = Run(stages=(started,), items=items)
+        run = Run(started=started, items=items)
         return [(f.code, f.message) for f in check_run(run, reg)]
 
     sequential = Execution()
@@ -391,7 +364,7 @@ def test_canaries_bracket_the_items(reg: Registry) -> None:
             CanaryCall(run=run_id, phase="start", canary=0, call=call(*start)),
             CanaryCall(run=run_id, phase="end", canary=0, call=call(*end)),
         )
-        run = Run(stages=(started,), items=(item,), canaries=canaries)
+        run = Run(started=started, items=(item,), canaries=canaries)
         return [f.message for f in check_run(run, reg) if f.code == "canary.phase"]
 
     assert check((0, 10), (20, 30)) == []
@@ -409,7 +382,7 @@ def test_judge_calls_are_checked_against_the_score_execution(reg: Registry) -> N
     vignette = resolve(reg.get, ids["case"], Case).vignette.fingerprint
     keys = [ItemKey(case=ids["case"], replicate=r) for r in range(2)]
     run = Run(
-        stages=(RunStarted(run=run_id, at=NOW, rig=RIG, trial=ids["trial"]),),
+        started=RunStarted(run=run_id, at=NOW, rig=RIG, trial=ids["trial"]),
         items=tuple(
             RunItem(
                 run=run_id,
@@ -421,7 +394,7 @@ def test_judge_calls_are_checked_against_the_score_execution(reg: Registry) -> N
         ),
     )
 
-    run = Run(stages=(*run.stages, run.finish(NOW)), items=run.items)
+    run = run.model_copy(update={"finished": run.finish(NOW)})
 
     def judged(replicate: int, start: int, end: int, attempts: int = 1) -> ScoreItem:
         call = Call(
@@ -448,7 +421,7 @@ def test_judge_calls_are_checked_against_the_score_execution(reg: Registry) -> N
             scoring=ids["scoring"],
             execution=execution,
         )
-        score = Score(stages=(started,), items=items)
+        score = Score(started=started, items=items)
         return [f.code for f in check_score(score, run, reg)]
 
     sequential = Execution()
@@ -484,7 +457,7 @@ def test_records_refuse_what_cannot_have_happened() -> None:
     run_id, trial, canaries = uuid4(), "sha256:" + "0" * 64, "sha256:" + "1" * 64
     started = RunStarted(run=run_id, at=later, rig=RIG, trial=trial)
     with pytest.raises(ValidationError, match="finished before it started"):
-        _ = Run(stages=(started, RunFinished(run=run_id, at=NOW, seal=trial)))
+        _ = Run(started=started, finished=RunFinished(run=run_id, at=NOW, seal=trial))
 
     def probed(*phases: Literal["start", "end"]) -> RunStarted:
         return RunStarted(
@@ -518,6 +491,25 @@ def test_items_and_a_score_s_finish_are_sensitive() -> None:
     assert [r for r in records if r.sensitive] == [RunItem, ScoreItem, ScoreFinished]
 
 
+def test_a_call_keeps_only_a_fingerprint_of_the_prompt_token_ids() -> None:
+    def call(response: dict[str, JsonValue], tokens: Fingerprint | None = None) -> Call:
+        return Call(
+            request=fp("body"),
+            started_at=NOW,
+            finished_at=NOW,
+            response=response,
+            prompt_tokens=tokens,
+        )
+
+    read = call({"model": "m", "prompt_token_ids": [2, 106]})
+    assert read.response == {"model": "m"}
+    assert read.prompt_tokens == Fingerprint.of(b"[2,106]")
+    unread = call({"model": "m", "prompt_token_ids": None})
+    assert (unread.response, unread.prompt_tokens) == ({"model": "m"}, None)
+    with pytest.raises(ValidationError, match="both given"):
+        _ = call({"prompt_token_ids": [1]}, fp("tokens"))
+
+
 def test_request_fingerprint_is_over_canonical_bytes() -> None:
     a = fingerprint_request({"model": "m", "messages": [], "temperature": 0})
     b = fingerprint_request({"temperature": 0, "messages": [], "model": "m"})
@@ -541,7 +533,7 @@ def test_tool_rounds_are_checked(reg: Registry) -> None:
         recorded = started.model_copy(update={"tool_code": entries})
         return [
             (f.code, f.message)
-            for f in check_run(Run(stages=(recorded,)), reg)
+            for f in check_run(Run(started=recorded), reg)
             if f.code == "tools.code"
         ]
 
@@ -603,7 +595,7 @@ def test_tool_rounds_are_checked(reg: Registry) -> None:
         turns=(Turn(tools=ran("c0"), call=call()),),
     )
     plain_run = Run(
-        stages=(RunStarted(run=run_id, at=NOW, rig=RIG, trial=ids["trial"]),),
+        started=RunStarted(run=run_id, at=NOW, rig=RIG, trial=ids["trial"]),
         items=(plain,),
     )
     with pytest.raises(StructuralError, match="no tools"):
@@ -677,18 +669,16 @@ def test_score_views_are_checked_against_the_output_schema(reg: Registry) -> Non
     )
     unreachable = reg.add(Scoring(scorer=scorer, expectations=scoring.expectations))
     run_id, score_id = uuid4(), uuid4()
-    opened = Run(stages=(RunStarted(run=run_id, at=NOW, rig=RIG, trial=ids["trial"]),))
-    run = Run(stages=(opened.started, opened.finish(NOW)))
+    opened = Run(started=RunStarted(run=run_id, at=NOW, rig=RIG, trial=ids["trial"]))
+    run = Run(started=opened.started, finished=opened.finish(NOW))
     score = Score(
-        stages=(
-            ScoreStarted(
-                score=score_id,
-                run=run_id,
-                at=NOW,
-                rig=RIG,
-                scorer_version=1,
-                scoring=unreachable,
-            ),
+        started=ScoreStarted(
+            score=score_id,
+            run=run_id,
+            at=NOW,
+            rig=RIG,
+            scorer_version=1,
+            scoring=unreachable,
         )
     )
     assert [(f.code, f.message) for f in check_score(score, run, reg)] == [

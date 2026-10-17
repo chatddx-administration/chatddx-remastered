@@ -39,11 +39,11 @@ In remastered's terms:
 | Sign in | a form, and signing out | `People`, as `POST /api/session` does |
 | Home | swift's: a case typed, a configuration and an endpoint picked, the answer as a management plan (see "Swift") | `POST /api/families`, `POST /api/runs`, its events and items |
 | Runs | a person's runs, and those left to score with **Score again** | `Bench.runs`, `Bench.outstanding`; `GET /api/runs` |
-| A run | the trial, how it came out and why, the case it ran, the endpoint and engine, tools, tokens, the configuration as it ran, the answer by view, scores, the messages part by part (folded, linkable as `#message-N`, loaded when opened), and the requests rendered again | `Bench.run_by_id`, `Bench.described`, `Bench.scores_of`, `Bench.rendered_again`, `src/chatddx/bench/outcome.py`; `GET /api/runs/{id}` and below it |
-| Configurations | each with its versions, its recipe part by part, and its runs | `Bench.threads`, `Bench.reaching`, `Bench.scored_by`; `GET /api/threads?kind=configuration` |
+| A run | the trial, how it came out and why, the case it ran, the endpoint and engine, tools, tokens, the configuration as it ran, the answer by view, scores, the messages part by part (folded, linkable as `#message-N`, loaded when opened), and the requests rendered again | `Bench.run`, `Bench.described`, `Bench.scores_of`, `chatddx.runner.prepare.rendered_again`, `src/chatddx/runner/outcome.py`; `GET /api/runs/{id}` and below it |
+| Configurations | each with its versions, its recipe part by part, and its runs | `Bench.threads`, `Bench.runs(reaching=…, scored_by=…)`; `GET /api/threads?kind=configuration` |
 | The variation being tried | a chunk picked per part, with the skeleton's digest, the findings at an endpoint, each scorer view's reach and the request rendered, as you pick | `GET /api/threads/{id}/variation` |
-| Families | filtered by tag and name; a family's cases, appendices, and the expectation each is scored against under each schema, with those shared to take; the vignette in a place of its own | `Bench.families`, `Bench.family_by_id`, `Bench.expectation`; `GET /api/families` and below it |
-| Authoring | a form per kind people write: chunks, recipes, appendices, cases, expectations, scorers and judges; what is said of a thread; following an origin; taking expectations | the bench's writes (`docs/bench.md`, "Writes for the person") |
+| Families | filtered by tag and name; a family's cases, appendices, and the expectation each is scored against under each schema, with those shared to take; the vignette in a place of its own | `Bench.families`, `Bench.family`, `Bench.expectation`; `GET /api/families` and below it |
+| Authoring | a form per kind people write: chunks, recipes, appendices, cases, expectations, scorers and judges; what is said of a thread; following an origin, and a configuration's corrected facts; taking expectations | the bench's writes (`docs/bench.md`, "Writes for the person") |
 | Endpoints and models | each endpoint's engine, model, host and clearances; the facts of each model | `GET /api/endpoints`, `GET /api/models` |
 | Comparing runs | runs side by side over the cases they share, a column per run under each view; several variations started together from the variation's page (see "Comparing variations") | `Bench.runs`, `Bench.scores_of`, the look per variation; `GET /api/runs`, `POST /api/runs` |
 | Status | the worker at the person's jobs, with pause, resume, stop and stop now; built on the runs page | the worker (`docs/worker.md`) |
@@ -90,6 +90,11 @@ Decided:
 - **One app.** `src/chatddx/portal/`, a package beside `src/chatddx/api/`, mounted at `/` in the same FastAPI app as
   the API at `/api/` (`src/chatddx/api/app.py:app`). Its routes return HTML rendered with Jinja2 (Starlette's
   `Jinja2Templates`), and build a bench per request, as the API's routes do (`src/chatddx/api/people.py:bench`).
+- **Reads are the API's GET routes, writes the bench's.** A page calls the API's GET routes, each a plain function of
+  the bench and its parameters, so that it embeds what the API answers, as its islands' props do. A form writes
+  through the bench and the queue (`Bench.queue`, `Bench.queue_scoring`), under the API's `refused()`
+  (`src/chatddx/api/state.py`), and calls no route of the API's that writes, which would take a `Response` it throws
+  away.
 - **One session**: the API's cookie, `__Host-chatddx-session`, `Path=/`, `SameSite=Lax`, so a link into the portal
   from another site opens signed in. A sign-in page posts a form to the portal, which calls `People` as
   `POST /api/session` does.
@@ -200,8 +205,8 @@ Decided (phase 5), from the options W1 to W11:
 - **W8. Saving** says where it goes, as the variation's page does: a new version of the person's own, a new thread, or
   a fork, with their namesakes; a text's language offered from the previous version; a conflict shown with a reload
   that keeps what was typed.
-- **W9. The simple writes are plain forms**: what is said, deleting and restoring, following, taking, carrying, and a
-  fork as it is.
+- **W9. The simple writes are plain forms**: what is said, deleting and restoring, following an origin or the facts,
+  taking, carrying, and a fork as it is.
 - **W10. Every form for everyone**; what each role is offered first waits for Z1 (phase 7).
 - **W11. Tests**: the pages', vitest for the differences and the schema's form, and a browser test of a clinician's
   flow: an appendix, its case, the expectation, and the variation's reach counting it.
@@ -410,7 +415,7 @@ Phase 1:
   `impureEnvVars`, which the flake doesn't keep).
 - **The API**: a run's items carry the answer as read (`answer`: its value, why it couldn't be read or breaks its
   schema, and whether it was salvaged), and configurations are listed by what they answer (`answers`, the title of
-  their answer's JSON Schema; `Bench.answering`), described in `docs/api.md`, `docs/api-api.md`, `docs/bench.md` and
+  their answer's JSON Schema; `Bench.threads(…, answering=…)`), described in `docs/api.md`, `docs/api-api.md`, `docs/bench.md` and
   `docs/bench-api.md`.
 - **Tests**: `src/chatddx/portal/test/test_frontend.py`, and by hand on the sample World with its fake engines in
   Chromium (Playwright), signed in as alice, light and dark.
@@ -445,7 +450,7 @@ Phase 2, as takes:
 
 Phase 3, as decided (see "The variation being tried"):
 - **The API**: a look takes `head`, the edit to vary, and gives its `label` and `held_by`; a configuration's fork takes
-  `head` too; a listed thread has its `language`, looked up for many at once (`Catalog.languages_of`;
+  `head` too; a listed thread has its `language`, looked up for many at once (`language.languages_of`;
   `Bench.variation(…, head)`), described in `docs/api.md`, `docs/api-api.md`, `docs/bench.md`, `docs/bench-api.md`
   and `docs/catalog-api.md`.
 - **`GET /configurations/{id}`** takes the API's `Varying` as its query: the parts by digest, `head`, `endpoint`
@@ -476,7 +481,7 @@ Phase 4, as decided (see "Starting and watching a run"):
 - **The API**: a run takes `head`, the edit it varies (`NewRun.head`); a run is named by its variation's label as it
   starts, which `Bench.described` reads first; `POST /api/runs/{id}/again` runs a run's trial again with another seed
   (`Bench.again`), so a run of a variation nobody saved can run again without it; runs a day and items a run are
-  limited (`settings.RUNS_PER_DAY`, `ITEMS_PER_RUN`; `Catalog.runs_started`), refused as over quota; and a quiet event
+  limited (`settings.RUNS_PER_DAY`, `ITEMS_PER_RUN`; `Rows.runs_started`), refused as over quota; and a quiet event
   stream sends `: keep-alive` every 15 s (`src/chatddx/api/telling.py:KEEP_ALIVE`), described in `docs/api.md`,
   `docs/api-api.md`, `docs/bench.md`, `docs/bench-api.md`, `docs/catalog-api.md` and `docs/repl.md`.
 - **Following a run** (`frontend/src/lib/runs/`): `watch`, a run's events through `EventSource`, and `fold`, which
@@ -514,6 +519,17 @@ Phase 5, first half, as decided (see "Authoring"):
   appendix, case and expectation, and the variation's reach no longer missing the family under the view it holds
   (`test_browser.py`); vitest for the differences, the schema's form and where a save goes; and by hand on the sample
   World.
+
+Languages (agents/wip-engine-part.md, stage 2):
+- **The variation page** says, under its run line, where it runs ("A run per language: in en, 1 case; in sv, 3 cases,
+  translated.") and lists the cases left out with why, from the look's `languages` and each family's language
+  (`frontend/src/lib/variation/logic.ts:carried`); a family picked beyond the look's goes as its language's, said as
+  "if it can be" when the look didn't see it. Starting opens the first run.
+- **A run's page** says its language and links the runs started with it (`Bench.runs(started_with=…)`).
+- **The home page** asks the language a case is written in, from the configuration's own and its translations'
+  (`Thread.translated`), `en` for one with none.
+- **Tests**: a browser test of the variation page's languages and a start's two runs linking each other
+  (`test_browser.py`); vitest for `carried`.
 
 ## Below the UI
 What the portal needs below its pages that isn't built:
@@ -558,12 +574,12 @@ What the portal needs below its pages that isn't built:
   shell runs it; until then the test skips where Chromium can't start.
 - **The frontend's checks**: `pnpm check` runs by hand; nothing runs it beside `pytest`.
 - **A page to test an endpoint**: a live check of the server and the model, written down nowhere. Canaries and
-  `confirm` cover parts of it.
+  the gate's confirming (`src/chatddx/runner/gate.py:admit`) cover parts of it.
 - **Export.** The portal is to export results (`docs/chatddx.md`, glossary), and the export isn't planned
   (`docs/chatddx.md`, "On the table").
 - **Keycloak in front** skips the sign-in page (`docs/identity.md`, "Take, for when Keycloak arrives").
 - **What holds a configuration**, and reverse lookups. `docs/bench.md` ("Outstanding") leaves what holds a
-  configuration, which the old bench's `held.py` showed, to the portal; `Bench.reaching` and `Bench.scored_by` cover
+  configuration, which the old bench's `held.py` showed, to the portal; `Bench.runs(reaching=…)` and `Bench.runs(scored_by=…)` cover
   the repl's part of it. The retired sample-data plan wanted the reverse too: every configuration using a component,
   such as an output, which needs a query the catalog doesn't have. Both would show on a thread's page.
 
@@ -584,15 +600,14 @@ From "What the portal shows", not on the pages yet:
   shown.
 
 ### What the variation being tried leaves
-- **The pickers rest on names** for what a chunk is made for (`agents/wip-variants.md`); a chunk older than its
-  thread's head is offered only when the variation holds it.
+- **A chunk older than its thread's head** is offered only when the variation holds it.
 - **The part pickers are native selects**: a long list (26 reasoning chunks in the sample World) wants a searchable
   picker, perhaps bits-ui's combobox.
 - **A seed** is drawn for each look and kept while the page is open; it isn't in the address, so a reload draws
   another. A run takes the seed shown, which can be changed.
 - **The page's cost**: the server lists every part's chunks, the configurations, the endpoints, the families and the
   look itself, about 0.6 s on the sample World. Listing a configuration's language costs its skeleton's compilations
-  (`Catalog.languages_of`), one query per skeleton.
+  (`language.languages_of`), one query per skeleton.
 - **The frontend's tests** (`pnpm --dir frontend test`) run by hand, as `pnpm check` does.
 
 ### What the first half of authoring leaves

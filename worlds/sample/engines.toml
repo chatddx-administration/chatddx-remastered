@@ -1,11 +1,11 @@
-[model."qwen3-8b-awq@fake"]
+[local_model."qwen3-8b-awq@fake"]
 repo = "Qwen/Qwen3-8B-AWQ"
 revision = "fake"
 files = [
   { path = "none", sha256 = "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855" }
 ]
 
-[model."gpt-oss-20b@fake"]
+[local_model."gpt-oss-20b@fake"]
 repo = "openai/gpt-oss-20b"
 revision = "fake"
 files = [
@@ -42,8 +42,12 @@ argv = [
   "openai"
 ]
 
+[remote_model."mistral-small"]
+description = "Mistral Small 3.2, as an API serves it."
+provider = "fake"
+name = "mistralai/Mistral-Small-3.2-24B-Instruct-2506"
+
 [remote_engine."mistral-small@remote"]
 description = "Mistral Small 3.2 behind an API with a key, stood in for by the fake vLLM."
 tags = ["fake", "remote"]
-provider = "fake"
-model = "mistralai/Mistral-Small-3.2-24B-Instruct-2506"
+model = "mistral-small"

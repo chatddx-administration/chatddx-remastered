@@ -2,13 +2,14 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import type { Schemas } from "$lib/api/client";
 import {
+  carried,
   choicesOf,
-  madeFor,
   PARTS,
   type Picked,
   queryOf,
   replaced,
   tagged,
+  where,
   whereSaveGoes,
 } from "./logic";
 
@@ -24,6 +25,7 @@ function thread(id: number, name: string | null, owner: string | null, digest: s
     owner,
     tags: [],
     language: null,
+    translated: [],
     head: { id: id * 10, digest, compilation: null, based_on: null, by: owner ?? "nobody", at: "2026-10-13T12:00:00Z", labels: null },
   };
 }
@@ -63,42 +65,54 @@ describe("a variation's address", () => {
 
 describe("a part's choices", () => {
   it("are one per digest, the person's own first, others' by owner, and the other names it goes by", () => {
-    const groups = choicesOf(
+    const choices = choicesOf(
       [
-        thread(1, "high (Qwen/Qwen3-8B-AWQ)", "archive", DIGEST(1)),
-        thread(2, "high (Qwen/Qwen3-8B-AWQ)", "alice", DIGEST(1)),
-        thread(3, "on (Qwen/Qwen3-8B-AWQ)", "alice", DIGEST(1)),
+        thread(1, "high", "archive", DIGEST(1)),
+        thread(2, "high", "alice", DIGEST(1)),
+        thread(3, "thinking", "alice", DIGEST(1)),
         thread(4, "off", "bob", DIGEST(2)),
-        thread(5, "medium (openai/gpt-oss-20b)", "alice", DIGEST(3)),
+        thread(5, "medium", "alice", DIGEST(3)),
       ],
       "alice",
       [{ digest: DIGEST(9), title: "older" }, { digest: DIGEST(2), title: "ignored" }],
     );
-    expect(groups).toEqual([
-      {
-        label: "Made for any model",
-        choices: [
-          { digest: DIGEST(2), text: "bob/off" },
-          { digest: DIGEST(9), text: "older" },
-        ],
-      },
-      { label: "openai/gpt-oss-20b", choices: [{ digest: DIGEST(3), text: "medium (openai/gpt-oss-20b)" }] },
-      {
-        label: "Qwen/Qwen3-8B-AWQ",
-        choices: [
-          {
-            digest: DIGEST(1),
-            text: "high (Qwen/Qwen3-8B-AWQ) = on",
-          },
-        ],
-      },
+    expect(choices).toEqual([
+      { digest: DIGEST(2), text: "bob/off" },
+      { digest: DIGEST(1), text: "high = thinking" },
+      { digest: DIGEST(3), text: "medium" },
+      { digest: DIGEST(9), text: "older" },
     ]);
   });
+});
 
-  it("are grouped by what the name says they are made for", () => {
-    expect(madeFor("plan (en, Qwen/Qwen3-8B-AWQ)")).toBe("en, Qwen/Qwen3-8B-AWQ");
-    expect(madeFor("clinician (sv)")).toBe("sv");
-    expect(madeFor("greedy")).toBe("");
+describe("where a run goes", () => {
+  const endpoint = (name: string, serves: string): Schemas["Endpoint"] => ({
+    name,
+    engine: DIGEST(9),
+    title: null,
+    model: null,
+    serves,
+    url: "http://127.0.0.1:1/v1/",
+    host: null,
+    max_jobs: 1,
+    credential: null,
+    cleared_for: [],
+    takes_typed: false,
+    problem: null,
+  });
+  const endpoints = [endpoint("qwen@a", DIGEST(1)), endpoint("qwen@b", DIGEST(1)), endpoint("gpt@a", DIGEST(2))];
+
+  it("is the one endpoint serving the model, or the one named among several", () => {
+    expect(where(endpoints, DIGEST(2), null)).toEqual({ at: "gpt@a", among: [endpoints[2]] });
+    expect(where(endpoints, DIGEST(1), null)).toEqual({ at: null, among: endpoints.slice(0, 2) });
+    expect(where(endpoints, DIGEST(1), "qwen@b").at).toBe("qwen@b");
+    expect(where(endpoints, DIGEST(1), "gpt@a").at).toBeNull();
+    expect(where(endpoints, DIGEST(3), null)).toEqual({ at: null, among: [] });
+  });
+
+  it("is the one named for a hand-written configuration, which names no model", () => {
+    expect(where(endpoints, null, null)).toEqual({ at: null, among: endpoints });
+    expect(where(endpoints, null, "gpt@a").at).toBe("gpt@a");
   });
 });
 
@@ -117,6 +131,40 @@ describe("the cases a run is sent", () => {
     expect(tagged(families, ["a"]).map((f) => f.id)).toEqual([1, 3]);
     expect(tagged(families, ["a", "b"]).map((f) => f.id)).toEqual([1, 2, 3]);
     expect(tagged(families, []).map((f) => f.id)).toEqual([1, 2, 3, 4]);
+  });
+});
+
+describe("the languages a run is sent in", () => {
+  const family = (id: number, language: string | null): Schemas["Family"] => ({
+    id,
+    name: `f${id}`,
+    owner: "archive",
+    tags: [],
+    language,
+    case: DIGEST(id),
+  });
+  const look: Schemas["Carried"][] = [
+    { language: "en", families: [1, 4], translated: false, skeleton: DIGEST(10), refused: null },
+    { language: "sv", families: [2], translated: true, skeleton: DIGEST(11), refused: null },
+    { language: "de", families: [3], translated: false, skeleton: null, refused: "no translations into de" },
+  ];
+
+  it("are the look's, a family picked beyond it going as its language's, or unknown", () => {
+    const sent = [family(3, "de"), family(2, "sv"), family(5, "sv"), family(6, null), family(7, "fi")];
+    const said = carried(sent, look).map((c) => [c.language, c.families.map((f) => f.id), c.translated, c.known]);
+    expect(said).toEqual([
+      ["en", [6], false, true],
+      ["sv", [2, 5], true, true],
+      ["de", [3], false, true],
+      ["fi", [7], false, false],
+    ]);
+    expect(carried(sent, look)[2]?.refused).toBe("no translations into de");
+  });
+
+  it("are each family's own, unknown, when the look has none", () => {
+    expect(carried([family(1, "sv")], []).map((c) => [c.language, c.families.length, c.known])).toEqual([
+      ["sv", 1, false],
+    ]);
   });
 });
 

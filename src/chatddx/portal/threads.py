@@ -4,7 +4,8 @@ from fastapi import APIRouter, Form, HTTPException, Request, Response
 from fastapi.responses import RedirectResponse
 
 from chatddx.api import schemas, threads as api
-from chatddx.bench import KINDS, WRITTEN, Bench, word_of
+from chatddx.api.state import refused
+from chatddx.bench import KINDS, WRITTEN, Bench, NotFound, word_of
 from chatddx.factors.base import resolve
 from chatddx.factors.cases import Appendix
 from chatddx.factors.scoring import Expectation, ExpectationSchema
@@ -44,11 +45,11 @@ def library(request: Request, bench: BenchDep, kind: str = "instructions") -> Re
 
 @router.get("/threads/{thread}")
 def thread_page(request: Request, bench: BenchDep, thread: int) -> Response:
-    shown = api.detail(bench, thread)
+    shown = api.thread(bench, thread)
     if shown.kind == "skeleton":
         return RedirectResponse(f"/configurations/{thread}", 303)
     versions = api.edits(bench, thread)
-    bodies = {v.digest: bench.get(v.digest) for v in versions}
+    bodies = {v.digest: bench.store.get(v.digest) for v in versions}
     titles = {
         site.digest: bench.title(site.digest)
         for held in bodies.values()
@@ -61,7 +62,7 @@ def thread_page(request: Request, bench: BenchDep, thread: int) -> Response:
     mine = shown.owner == bench.person.login
     proposal = None
     if mine and origin is not None and not shown.deleted:
-        proposal = api.proposal(bench, thread)
+        proposal = api.follows(bench, thread).origin
     held: dict[str, Any] = {
         "word": word_of(shown.kind),
         "versions": [
@@ -93,7 +94,7 @@ def thread_page(request: Request, bench: BenchDep, thread: int) -> Response:
 def _editor(
     bench: Bench, shown: schemas.ThreadDetail, mine: bool
 ) -> dict[str, Any] | None:
-    held = bench.get(shown.head.digest)
+    held = bench.store.get(shown.head.digest)
     given: dict[str, Any] = {
         "mode": "edit" if mine else "fork",
         "thread": shown.id,
@@ -109,7 +110,9 @@ def _editor(
                 "text": held.text,
             }
         case Expectation():
-            schema = resolve(bench.get, held.expectation_schema, ExpectationSchema)
+            schema = resolve(
+                bench.store.get, held.expectation_schema, ExpectationSchema
+            )
             return {
                 **given,
                 "kind": "expectation",
@@ -137,12 +140,12 @@ def saying(
 ) -> Response:
     given: dict[str, Any] = {
         "name": name.strip() or None,
+        "description": description.strip() or None,
         "tags": _listed_words(tags),
         "collaborators": _listed_words(shared),
     }
-    if description.strip():
-        given["description"] = description.strip()
-    _ = api.say(bench, thread, schemas.Said(**given))
+    with refused(NotFound):
+        _ = bench.say(thread, **given)
     return _back(thread, None)
 
 
@@ -152,33 +155,25 @@ def _listed_words(given: str) -> list[str]:
 
 @router.post("/threads/{thread}/delete")
 def deleting(bench: BenchDep, thread: int) -> Response:
-    _ = api.delete(bench, thread)
+    with refused():
+        _ = bench.say(thread, deleted=True)
     return _back(thread, None)
 
 
 @router.post("/threads/{thread}/restore")
 def restoring(bench: BenchDep, thread: int) -> Response:
-    _ = api.say(bench, thread, schemas.Said.model_validate({"deleted": False}))
+    with refused():
+        _ = bench.say(thread, deleted=False)
     return _back(thread, None)
 
 
 @router.post("/threads/{thread}/fork")
-def forking(
-    request: Request,
-    bench: BenchDep,
-    thread: int,
-    name: Annotated[str, Form()],
-) -> Response:
+def forking(bench: BenchDep, thread: int, name: Annotated[str, Form()]) -> Response:
     if not name.strip():
         raise HTTPException(422, "a fork is named")
-    made = api.fork(
-        request,
-        Response(),
-        bench,
-        thread,
-        schemas.NewFork.model_validate({"name": name.strip()}),
-    )
-    return RedirectResponse(f"/threads/{made.id}", 303)
+    with refused():
+        made = bench.fork(thread, name.strip())
+    return RedirectResponse(f"/threads/{made.edit.thread}", 303)
 
 
 @router.post("/threads/{thread}/follow")
@@ -188,19 +183,30 @@ def following(
     head: Annotated[int, Form()],
     next: Annotated[str | None, Form()] = None,
 ) -> Response:
-    _ = api.follow(bench, thread, schemas.NewFollow(head=head))
+    with refused():
+        _ = bench.follow(thread, head)
+    return _back(thread, next)
+
+
+@router.post("/threads/{thread}/moved/follow")
+def following_moved(
+    bench: BenchDep,
+    thread: int,
+    head: Annotated[int, Form()],
+    next: Annotated[str | None, Form()] = None,
+) -> Response:
+    with refused():
+        _ = bench.follow_moved(thread, head)
     return _back(thread, next)
 
 
 @router.post("/threads/{thread}/take")
 def taking(
-    request: Request,
-    bench: BenchDep,
-    thread: int,
-    next: Annotated[str | None, Form()] = None,
+    bench: BenchDep, thread: int, next: Annotated[str | None, Form()] = None
 ) -> Response:
-    made = api.take(request, Response(), bench, thread, schemas.NewTake(replace=False))
-    return _back(made.id, next)
+    with refused():
+        made = bench.take_from(thread)
+    return _back(made, next)
 
 
 @router.post("/threads/{thread}/carry")
@@ -211,5 +217,11 @@ def carrying(
     case: Annotated[str, Form()],
     next: Annotated[str | None, Form()] = None,
 ) -> Response:
-    _ = api.carry(bench, thread, schemas.NewCarry(head=head, case=case))
+    edit, _ = bench.thread(thread, "expectation")
+    held = resolve(bench.store.get, edit.digest, Expectation)
+    carried = Expectation(
+        case=case, expectation_schema=held.expectation_schema, data=held.data
+    )
+    with refused():
+        _ = bench.edit(thread, head, carried)
     return _back(thread, next)

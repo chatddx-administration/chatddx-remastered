@@ -7,7 +7,7 @@ licence = "apache-2.0"
 [model."mistralai/Mistral-Small-3.2-24B-Instruct-2506".reasoning]
 default = "off"
 off = {}
-on = { refused = "Mistral Small 3.2 doesn't reason" }
+on = { refused = "Mistral Small 3.2 doesn't reason", nearest = "off" }
 minimal = "on"
 low = "on"
 medium = "on"

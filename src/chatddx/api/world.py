@@ -1,24 +1,28 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter
 
 from chatddx.bench import KINDS, WRITTEN, Bench, NotFound
 from chatddx.factors.kinds import BY_KIND
-from chatddx.inventory import EndpointSpec, url_of
+from chatddx.inventory import EndpointSpec
 from chatddx.scorers.scorer import NO_PARAMS
 from chatddx.scorers.shipped import SCORERS
 
 from . import schemas
 from .people import BenchDep
-from .threads import refused
+from .state import refused
+from .threads import component_of
 
 router = APIRouter(tags=["world"])
 
 
-def endpoint_of(bench: Bench, name: str, spec: EndpointSpec) -> schemas.Endpoint:
-    title = model = url = problem = None
+def _endpoint_of(bench: Bench, name: str, spec: EndpointSpec) -> schemas.Endpoint:
+    title = model = serves = problem = None
     try:
-        engine = bench.endpoint(name)
-        title, model = bench.title(engine), bench.model(engine)
-        url = url_of(bench.inventory, bench.get, name)
+        found = bench.endpoint(name)
+        title, model, serves = (
+            bench.title(found.engine),
+            found.model.name,
+            found.model.digest,
+        )
     except LookupError as e:
         problem = str(e)
     return schemas.Endpoint(
@@ -26,12 +30,13 @@ def endpoint_of(bench: Bench, name: str, spec: EndpointSpec) -> schemas.Endpoint
         engine=spec.engine,
         title=title,
         model=model,
-        url=url,
+        serves=serves,
+        url=str(spec.url),
         host=spec.host,
         max_jobs=spec.max_jobs,
         credential=spec.credential,
-        cleared_for=sorted(bench.inventory.cleared_for(name)),
-        takes_typed=bench.takes_typed(name),
+        cleared_for=sorted(bench.inventory.cleared.get(name, ())),
+        takes_typed=bench.inventory.takes_typed(name),
         problem=problem,
     )
 
@@ -39,18 +44,9 @@ def endpoint_of(bench: Bench, name: str, spec: EndpointSpec) -> schemas.Endpoint
 @router.get("/endpoints")
 def endpoints(bench: BenchDep) -> list[schemas.Endpoint]:
     return [
-        endpoint_of(bench, name, spec)
+        _endpoint_of(bench, name, spec)
         for name, spec in sorted(bench.inventory.endpoints.items())
     ]
-
-
-@router.get("/endpoints/{name}")
-def endpoint(bench: BenchDep, name: str) -> schemas.Endpoint:
-    try:
-        spec = bench.inventory.endpoint(name)
-    except LookupError as e:
-        raise NotFound(str(e)) from None
-    return endpoint_of(bench, name, spec)
 
 
 @router.get("/models")
@@ -58,11 +54,10 @@ def models(bench: BenchDep) -> list[schemas.Model]:
     serving: dict[str, list[str]] = {}
     for name in sorted(bench.inventory.endpoints):
         try:
-            model = bench.model(bench.endpoint(name))
+            model = bench.endpoint(name).model
         except LookupError:
             continue
-        if model is not None:
-            serving.setdefault(model, []).append(name)
+        serving.setdefault(model.name, []).append(name)
     known = bench.facts.models
     return [
         schemas.Model(
@@ -83,7 +78,7 @@ def component(bench: BenchDep, digest: str) -> schemas.Component:
         digest=digest,
         kind=kind,
         title=bench.title(digest),
-        body=bench.get(digest).model_dump(mode="json"),
+        body=bench.store.get(digest).model_dump(mode="json"),
     )
 
 
@@ -103,11 +98,8 @@ def kinds(_: BenchDep) -> list[schemas.Kind]:
 
 @router.post("/components/check")
 def check(bench: BenchDep, given: schemas.ComponentBody) -> schemas.Checked:
-    with refused():
-        try:
-            checked = bench.check(bench.component(given))
-        except LookupError as e:
-            raise HTTPException(422, str(e)) from None
+    with refused(LookupError):
+        checked = bench.check(component_of(given))
     return schemas.Checked(
         digest=checked.digest,
         findings=[schemas.Finding.of(f) for f in checked.findings],

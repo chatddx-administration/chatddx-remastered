@@ -24,14 +24,25 @@ from chatddx.factors.cases import (
 from chatddx.factors.engine import (
     LocalEngine,
     RemoteEngine,
+    RemoteModel,
     check_chat_template,
+    model_of,
+    served_model_name,
+)
+from chatddx.factors.facts import (
+    Intent,
+    ModelFacts,
+    ReasoningFacts,
+    Refusal,
+    SamplingFacts,
+    SamplingValues,
+    Writes,
 )
 from chatddx.factors.kinds import BY_KIND, KINDS, parse_component
 from chatddx.factors.lint import lint
 from chatddx.factors.request import (
     MANAGED_KEYS,
     OUTPUT_KEYS,
-    TRANSLATED,
     AppendixLayout,
     Compilation,
     Example,
@@ -56,8 +67,9 @@ from chatddx.factors.request import (
     Toolset,
     Translations,
     compile_request,
+    compiled,
+    landings,
     next_request,
-    render,
     texts,
 )
 from chatddx.factors.response import ToolCall, tool_calls
@@ -77,6 +89,7 @@ from chatddx.factors.test.sample import (
     generation_recipe,
     generation_skeleton,
     local_engine,
+    remote_engine,
     world,
 )
 from chatddx.factors.trial import (
@@ -165,6 +178,7 @@ def test_json_data_keeps_its_order(reg: Registry) -> None:
         },
     }
     recipe = Recipe(
+        model=local_engine(reg).model,
         prompt=reg.add(Prompt(segments=(Slot(slot="vignette"),))),
         output=reg.add(Output(contract=NativeOutput(), json_schema=schema)),
         sampling=reg.add(Sampling()),
@@ -199,7 +213,7 @@ def test_settings_carry_no_order(reg: Registry) -> None:
 def test_bytes_with_sorted_keys_keep_their_digest(reg: Registry) -> None:
     _ = world(reg)
     for digest in reg:
-        doc = json.loads(reg.raw(digest))
+        doc = json.loads(reg.get(digest).canonical)
         raw = json.dumps(
             doc, sort_keys=True, separators=(",", ":"), ensure_ascii=False
         ).encode()
@@ -210,7 +224,9 @@ def test_stored_bytes_decide_the_digest(reg: Registry) -> None:
     engine = local_engine(reg)
     raw = canonical_bytes({**json.loads(engine.canonical), "api": "chat.completions"})
     digest = sha256_digest(raw)
-    components = {d: reg.raw(d).decode() for d in reg} | {digest: raw.decode()}
+    components = {d: reg.get(d).canonical.decode() for d in reg} | {
+        digest: raw.decode()
+    }
     bundle = Bundle(generator=RIG, roots=(digest,), components=components)
     loaded, findings = bundle.load()
     assert [(f.code, f.subject) for f in findings] == [
@@ -219,7 +235,7 @@ def test_stored_bytes_decide_the_digest(reg: Registry) -> None:
     stored = loaded.get(digest)
     assert isinstance(stored, LocalEngine)
     assert stored.canonical == raw
-    assert stored.digest == stored.served_model_name == digest != engine.digest
+    assert stored.digest == digest != engine.digest
 
 
 def test_components_refuse_what_the_store_cannot_hold() -> None:
@@ -254,8 +270,17 @@ def test_greedy_drops_sampling_noise() -> None:
         contract=TextOutput(),
     )
     assert "min_p" not in skeleton.body
-    body = render(skeleton, model="m", seed=42, fills={"vignette": "x"})
+    body = skeleton.render(model="m", seed=42, fills={"vignette": "x"})
     assert "seed" not in body
+
+
+def test_a_slot_without_a_fill_is_named() -> None:
+    skeleton = Skeleton(
+        messages=(Message(role="user", content=(Slot(slot="vignette"),)),),
+        contract=TextOutput(),
+    )
+    with pytest.raises(StructuralError, match=r"no fill for slots \['vignette'\]"):
+        _ = skeleton.render(model="m", seed=None, fills={"appendices": ""})
 
 
 def test_compile_and_render(reg: Registry) -> None:
@@ -271,8 +296,7 @@ def test_compile_and_render(reg: Registry) -> None:
         "properties": {"ddx": {"type": "array"}},
     }
     appendices = skeleton.appendix_layout.join(["Troponin 80 ng/L."])
-    body = render(
-        skeleton,
+    body = skeleton.render(
         model="served",
         seed=3,
         fills={"vignette": "{{not a template}}", "appendices": appendices},
@@ -329,7 +353,13 @@ def test_outputs_show_their_schema(reg: Registry) -> None:
     output = Output(contract=NativeOutput(), json_schema=schema, guidance=guidance)
     assert Registry().add_raw(output.digest, output.canonical) == output
     native = compile_request(
-        Recipe(prompt=prompt, output=reg.add(output), sampling=sampling), reg.get
+        Recipe(
+            model=local_engine(reg).model,
+            prompt=prompt,
+            output=reg.add(output),
+            sampling=sampling,
+        ),
+        reg.get,
     )
     assert native.messages[0].content == (
         f"Answer with JSON matching:\n\n{shown}\n\nNo prose.",
@@ -338,6 +368,7 @@ def test_outputs_show_their_schema(reg: Registry) -> None:
 
     prompted = compile_request(
         Recipe(
+            model=local_engine(reg).model,
             prompt=prompt,
             output=reg.add(
                 Output(contract=TextOutput(), json_schema=schema, guidance=guidance)
@@ -384,7 +415,11 @@ def test_output_guidance_goes_where_it_is_inserted(reg: Registry) -> None:
         instructions: str | None, prompt: str, output: str
     ) -> list[tuple[Segment, ...]]:
         recipe = Recipe(
-            instructions=instructions, prompt=prompt, output=output, sampling=sampling
+            model=local_engine(reg).model,
+            instructions=instructions,
+            prompt=prompt,
+            output=output,
+            sampling=sampling,
         )
         return [m.content for m in compile_request(recipe, reg.get).messages]
 
@@ -445,6 +480,7 @@ def test_inserts_are_checked_per_chunk() -> None:
 
 def test_few_shot_developer_role_and_budgets(reg: Registry) -> None:
     recipe = Recipe(
+        model=local_engine(reg).model,
         instructions=reg.add(Instructions(role="developer", text="Be terse.")),
         few_shot=reg.add(
             FewShot(
@@ -495,13 +531,14 @@ def test_passthrough_keeps_to_engine_extras(reg: Registry) -> None:
     skeleton = compile_request(recipe, reg.get)
     assert (skeleton.body["min_tokens"], skeleton.body["ignore_eos"]) == (8, False)
 
-    meta = {"kind", "max_output_tokens", "max_tokens_key"}
+    meta = {"kind", "max_output_tokens", "max_tokens_key", "recommended"}
     assert set(Sampling.model_fields) - meta <= MANAGED_KEYS
     assert set(Reasoning.model_fields) == {
         "kind",
         "effort",
         "thinking_token_budget",
         "chat_template_kwargs",
+        "level",
     }
     reasoning = reg.add(
         Reasoning(
@@ -659,7 +696,13 @@ def test_schema_ops_inline_refs(reg: Registry) -> None:
 
     def compiled(output: Output) -> Skeleton:
         return compile_request(
-            Recipe(prompt=prompt, output=reg.add(output), sampling=sampling), reg.get
+            Recipe(
+                model=local_engine(reg).model,
+                prompt=prompt,
+                output=reg.add(output),
+                sampling=sampling,
+            ),
+            reg.get,
         )
 
     shown = (Insert(insert="schema"),)
@@ -724,6 +767,7 @@ def test_tool_contracts_carry_a_description(reg: Registry) -> None:
     described = ToolOutput(name="final_result", description="Answer by calling this.")
     skeleton = compile_request(
         Recipe(
+            model=local_engine(reg).model,
             prompt=reg.add(Prompt(segments=(Slot(slot="vignette"),))),
             output=reg.add(
                 Output(contract=described, json_schema=schema, guidance="Use the tool.")
@@ -774,6 +818,7 @@ def test_translations_apply_at_compile_time(reg: Registry) -> None:
         },
     }
     recipe = Recipe(
+        model=local_engine(reg).model,
         instructions=reg.add(
             Instructions(
                 text=(
@@ -815,6 +860,10 @@ def test_translations_apply_at_compile_time(reg: Registry) -> None:
         "appendix_layout": ("\n\nLabs:\n",),
     }
     swedish = {
+        "You are an emergency physician.": "Du är akutläkare.",
+        "Chest pain.": "Bröstsmärta.",
+        "ACS.": "AKS.",
+        "Case:\n": "Fall:\n",
         "Answer with:\n\n": "Svara med:\n\n",
         "Plan": "Vårdplan",
         "How urgent.": "Hur brådskande.",
@@ -822,20 +871,24 @@ def test_translations_apply_at_compile_time(reg: Registry) -> None:
         "The plan.": "Planen.",
         "\n\nLabs:\n": "\n\nLabb:\n",
     }
-    assert {t for p in TRANSLATED for t in texts(recipe, reg.get).get(p, ())} == set(
+    assert {t for found in texts(recipe, reg.get).values() for t in found} == set(
         swedish
     )
+    german = {text: f"[de] {text}" for text in swedish if text != "ACS."}
     translated = recipe.model_copy(
-        update={"translations": reg.add(Translations(entries=swedish))}
+        update={
+            "translations": reg.add(Translations(into={"sv": swedish, "de": german}))
+        }
     )
-    skeleton = compile_request(translated, reg.get)
+    assert compile_request(translated, reg.get) == compile_request(recipe, reg.get)
+    skeleton = compile_request(translated, reg.get, into="sv")
     system, user, assistant, prompt = skeleton.messages
     assert system.content[0] == (
-        "You are an emergency physician.\n\nSvara med:\n\n"
+        "Du är akutläkare.\n\nSvara med:\n\n"
         + json.dumps(skeleton.output_schema, indent=2, ensure_ascii=False)
     )
-    assert (user.content, assistant.content) == (("Chest pain.",), ("ACS.",))
-    assert prompt.content == ("Case:\n", Slot(slot="vignette"))
+    assert (user.content, assistant.content) == (("Bröstsmärta.",), ("AKS.",))
+    assert prompt.content == ("Fall:\n", Slot(slot="vignette"))
     assert skeleton.appendix_layout.before == "\n\nLabb:\n"
     assert skeleton.output_schema == {
         "type": "object",
@@ -857,17 +910,37 @@ def test_translations_apply_at_compile_time(reg: Registry) -> None:
         "parameters": skeleton.output_schema,
     }
 
-    partial = {k: v for k, v in swedish.items() if k not in ("Plan", "The plan.")}
-    with pytest.raises(StructuralError, match="no translation for 'Plan', 'The plan.'"):
-        _ = compile_request(
-            recipe.model_copy(
-                update={"translations": reg.add(Translations(entries=partial))}
-            ),
-            reg.get,
-        )
-    for entries in ({}, {"  ": "x"}, {"Plan": ""}):
+    with pytest.raises(StructuralError, match="no translation into de for 'ACS.'"):
+        _ = compile_request(translated, reg.get, into="de")
+    for into in ("fi", "en"):
+        with pytest.raises(StructuralError, match=f"no translations into {into}$"):
+            _ = compile_request(translated, reg.get, into=into)
+    with pytest.raises(StructuralError, match="no translations into sv"):
+        _ = compile_request(recipe, reg.get, into="sv")
+    refused: list[dict[str, dict[str, str]]] = [
+        {},
+        {"sv": {}},
+        {"sv": {"  ": "x"}},
+        {"sv": {"Plan": ""}},
+        {"Swedish": {"Plan": "Vårdplan"}},
+    ]
+    for into in refused:
         with pytest.raises(ValidationError):
-            _ = Translations(entries=entries)
+            _ = Translations.model_validate({"into": into})
+
+
+def test_a_compilation_says_the_language_it_compiled_into(reg: Registry) -> None:
+    _ = world(reg)
+    base = generation_recipe(reg)
+    needed = [t for part in texts(base, reg.get).values() for t in part]
+    swedish = Translations(into={"sv": {t: f"[sv] {t}" for t in needed}})
+    recipe = base.model_copy(update={"translations": reg.add(swedish)})
+    skeleton, compilation = compiled(recipe, reg.get, RIG, into="sv")
+    assert (compilation.into, compilation.skeleton) == ("sv", skeleton.digest)
+    assert skeleton != compile_request(recipe, reg.get)
+    assert compiled(recipe, reg.get, RIG)[1].into is None
+    elsewhere = compilation.model_copy(update={"into": "de"})
+    assert elsewhere.cross_check(reg.get) == ["the recipe has no translations into de"]
 
 
 def web_search(reg: Registry) -> str:
@@ -980,8 +1053,8 @@ def test_tool_rounds_continue_the_request(reg: Registry) -> None:
     skeleton = compile_request(
         generation_recipe(reg).model_copy(update={"toolset": tools}), reg.get
     )
-    body = render(
-        skeleton, model="m", seed=1, fills={"vignette": "Chest pain.", "appendices": ""}
+    body = skeleton.render(
+        model="m", seed=1, fills={"vignette": "Chest pain.", "appendices": ""}
     )
     called: dict[str, JsonValue] = {
         "role": "assistant",
@@ -1017,13 +1090,23 @@ def test_tool_rounds_continue_the_request(reg: Registry) -> None:
 
 def test_engine_argv_cannot_override_manifest(reg: Registry) -> None:
     engine = local_engine(reg)
-    for argv in (["--served-model-name=x"], ["--chat_template", "t.jinja"]):
+    for argv in (
+        ["--served-model-name=x"],
+        ["--chat_template", "t.jinja"],
+        ["--port=9000"],
+        ["--host", "::"],
+    ):
         with pytest.raises(ValidationError, match="may not set"):
             _ = LocalEngine.model_validate({**engine.model_dump(), "argv": argv})
     for argv in (["--config", "serve.yaml"], ["--config=serve.yaml"]):
         with pytest.raises(ValidationError, match="config"):
             _ = LocalEngine.model_validate({**engine.model_dump(), "argv": argv})
-    for argv in (["--served-model", "x"], ["--revis=r"], ["--served_model", "x"]):
+    for argv in (
+        ["--served-model", "x"],
+        ["--revis=r"],
+        ["--served_model", "x"],
+        ["--po", "9000"],
+    ):
         with pytest.raises(ValidationError, match="may not abbreviate"):
             _ = LocalEngine.model_validate({**engine.model_dump(), "argv": argv})
     for argv in (
@@ -1045,7 +1128,7 @@ def test_engine_argv_cannot_override_manifest(reg: Registry) -> None:
         '{"enable_thinking": false}',
     )
     _ = LocalEngine.model_validate({**engine.model_dump(), "argv": accepted})
-    assert engine.served_model_name == engine.digest
+    assert served_model_name(reg.add(engine), reg.get) == engine.digest
 
 
 def test_bundle_roundtrip_and_tamper(reg: Registry) -> None:
@@ -1100,7 +1183,7 @@ def test_judges_fill_their_slots_from_a_view(reg: Registry) -> None:
     fills = judge.fills(view, {"ddx": ["ACS", "PE"]}, {"ddx": ["ACS"]})
     assert fills == {"completion": "ACS\nPE", "expectation": "ACS"}
     skeleton = resolve(reg.get, judge.skeleton, Skeleton)
-    body = render(skeleton, model="m", seed=None, fills=fills)
+    body = skeleton.render(model="m", seed=None, fills=fills)
     assert body["messages"] == [{"role": "user", "content": "Grade: ACS\nPE"}]
     with pytest.raises(StructuralError, match="not this judge"):
         _ = judge.fills(View(metric="m"), {}, {})
@@ -1191,9 +1274,15 @@ def test_cleanup_ops_are_pinned() -> None:
 
 
 def test_remote_engine_identity() -> None:
-    a = RemoteEngine(provider="example", model="gemma")
-    assert a.digest != RemoteEngine(provider="example", model="gemma-2").digest
-    assert a.digest != RemoteEngine(provider="other", model="gemma").digest
+    a = RemoteModel(provider="example", name="gemma")
+    assert a.digest != RemoteModel(provider="example", name="gemma-2").digest
+    assert a.digest != RemoteModel(provider="other", name="gemma").digest
+    reg = Registry()
+    engine = reg.add(RemoteEngine(model=reg.add(a)))
+    assert served_model_name(engine, reg.get) == "gemma"
+    assert model_of(engine, reg.get) == model_of(a.digest, reg.get) == a
+    with pytest.raises(StructuralError, match="not an engine"):
+        _ = served_model_name(a.digest, reg.get)
 
 
 def test_chat_template_check(reg: Registry) -> None:
@@ -1390,7 +1479,7 @@ def test_skeleton_and_engine_compatibility(reg: Registry) -> None:
         "--reasoning-parser",
         "qwen3",
     )
-    remote = reg.add(RemoteEngine(provider="example", model="gemma"))
+    remote = reg.add(remote_engine(reg, "gemma"))
     user = Message(role="user", content=(Slot(slot="vignette"),))
     schema: dict[str, JsonValue] = {
         "type": "object",
@@ -1534,3 +1623,142 @@ def test_fingerprint_algorithms() -> None:
     )
     with pytest.raises(ValidationError, match="key_id"):
         _ = Fingerprint(key_id="k1", hex=plain.hex)
+
+
+def test_intents_are_worked_out_from_the_facts_of_the_engine_s_model() -> None:
+    reg = Registry()
+    base = generation_recipe(reg)
+    facts = ModelFacts(
+        model="google/gemma-3-12b-it",
+        reasoning=ReasoningFacts(
+            default="on",
+            off=Refusal(refused="always reasons", nearest="low"),
+            on="medium",
+            low=Writes(effort="low"),
+            medium=Writes(effort="medium"),
+            high=Refusal(refused="no high effort"),
+            budget=Refusal(refused="no budget"),
+        ),
+        sampling=SamplingFacts(
+            recommended={
+                "low": SamplingValues(temperature=1.0),
+                "medium": SamplingValues(temperature=0.8, top_p=0.9),
+            }
+        ),
+    )
+    recommended = reg.add(Sampling(recommended=True, max_output_tokens=512))
+    off = base.model_copy(
+        update={"reasoning": reg.add(Reasoning(level="off")), "sampling": recommended}
+    )
+    body = compile_request(off, reg.get, facts).body
+    assert (body["reasoning_effort"], body["temperature"]) == ("low", 1.0)
+    assert body["max_completion_tokens"] == 512
+    landed, followed = landings(off, reg.get, facts)
+    assert landed is not None and (landed.level, landed.nearest) == (
+        "low",
+        ("always reasons",),
+    )
+    assert followed == landed
+
+    unasked = base.model_copy(update={"reasoning": None, "sampling": recommended})
+    body = compile_request(unasked, reg.get, facts).body
+    assert (body["temperature"], body["top_p"], "reasoning_effort" in body) == (
+        0.8,
+        0.9,
+        False,
+    )
+    cooler = reg.add(Sampling(recommended=True, temperature=0.5))
+    body = compile_request(
+        unasked.model_copy(update={"sampling": cooler}), reg.get, facts
+    ).body
+    assert (body["temperature"], body["top_p"]) == (0.5, 0.9)
+
+    refused: list[tuple[Intent, int | None, str]] = [
+        ("high", None, "no high effort"),
+        ("low", 64, "no budget"),
+    ]
+    for level, budget, said in refused:
+        asked = reg.add(Reasoning(level=level, thinking_token_budget=budget))
+        with pytest.raises(StructuralError, match=f"gemma-3-12b-it: {said}"):
+            _ = compile_request(
+                base.model_copy(update={"reasoning": asked}), reg.get, facts
+            )
+    with pytest.raises(StructuralError, match="reasoning 'off' is worked out"):
+        _ = compile_request(off, reg.get)
+    other = facts.model_copy(update={"model": "other/model"})
+    with pytest.raises(StructuralError, match="facts about other/model"):
+        _ = compile_request(off, reg.get, other)
+    with pytest.raises(ValidationError, match="worked out from the model's facts"):
+        _ = Reasoning(level="off", effort="low")
+
+    _ = reg.add(facts)
+    skeleton, compilation = compiled(off, reg.get, RIG, facts)
+    assert (compilation.facts, compilation.skeleton) == (facts.digest, skeleton.digest)
+    assert compilation.cross_check(reg.get) == []
+    assert compiled(off, reg.get, RIG, facts)[1].model_copy(
+        update={"facts": reg.add(other)}
+    ).cross_check(reg.get) == [
+        "facts about other/model compiled a recipe for google/gemma-3-12b-it"
+    ]
+
+
+GEMMA = ModelFacts(
+    model="google/gemma-3-12b-it",
+    reasoning=ReasoningFacts(default="low", low=Writes(effort="low")),
+    sampling=SamplingFacts(recommended={"low": SamplingValues(temperature=1.0)}),
+)
+
+
+def test_a_compilation_pins_the_facts_only_where_they_work_something_out() -> None:
+    reg = Registry()
+    _ = reg.add(GEMMA)
+    literal = generation_recipe(reg)
+    asked = literal.model_copy(update={"sampling": reg.add(Sampling(recommended=True))})
+
+    assert compiled(literal, reg.get, RIG, GEMMA)[1].facts is None
+    assert compiled(asked, reg.get, RIG, GEMMA)[1].facts == GEMMA.digest
+
+
+def test_a_trial_or_judge_on_another_model_than_its_skeleton_s_is_linted() -> None:
+    reg = Registry()
+    ids = world(reg)
+    _ = reg.add(GEMMA)
+    asked = generation_recipe(reg).model_copy(
+        update={"sampling": reg.add(Sampling(recommended=True))}
+    )
+    skeleton, compilation = compiled(asked, reg.get, RIG, GEMMA)
+    _ = reg.add(skeleton)
+    gpt_oss = reg.add(remote_engine(reg, "openai/gpt-oss-20b"))
+    gemma = reg.add(remote_engine(reg, "google/gemma-3-12b-it"))
+    judging = resolve(reg.get, ids["judge"], Judge).skeleton
+
+    def found(engine: str, judged: bool = False) -> list[tuple[str, str]]:
+        held = judging if judged else skeleton.digest
+        paired = (
+            Judge(skeleton=held, engine=engine, seeds=(1,))
+            if judged
+            else Trial(skeleton=held, engine=engine, cases=(ids["case"],), seeds=(1,))
+        )
+        return [
+            (f.code, f.message)
+            for f in lint(reg, [reg.add(paired)])
+            if f.code.endswith(".engine_unmatched")
+        ]
+
+    assert found(gpt_oss) == []
+    _ = reg.add(compilation)
+    assert found(gpt_oss) == [
+        (
+            "trial.engine_unmatched",
+            "the skeleton is worked out for google/gemma-3-12b-it, and the engine "
+            + "serves openai/gpt-oss-20b",
+        )
+    ]
+    assert found(gemma) == found(ids["engine"]) == []
+    for_judge = compilation.model_copy(update={"skeleton": judging})
+    _ = reg.add(for_judge)
+    assert [code for code, _ in found(gpt_oss, judged=True)] == [
+        "judge.engine_unmatched"
+    ]
+    _ = reg.add(compilation.model_copy(update={"facts": None}))
+    assert found(gpt_oss) == []

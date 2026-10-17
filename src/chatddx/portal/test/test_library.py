@@ -123,5 +123,6 @@ def test_a_fork_follows_its_origin_once_that_moves_on(signed: TestClient) -> Non
 @pytest.mark.slow
 def test_a_thread_s_forms_from_another_site_write_nothing(signed: TestClient) -> None:
     elsewhere = {"Sec-Fetch-Site": "cross-site"}
-    for action in ("said", "delete", "restore", "fork", "follow", "take", "carry"):
+    actions = ("said", "delete", "restore", "fork", "follow", "moved/follow", "take")
+    for action in (*actions, "carry"):
         assert signed.post(f"/threads/1/{action}", headers=elsewhere).status_code == 403

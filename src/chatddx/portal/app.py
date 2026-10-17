@@ -7,7 +7,6 @@ from starlette.exceptions import HTTPException
 
 from chatddx import settings
 from chatddx.api import app as api
-from chatddx.facts import Facts
 from chatddx.inventory import Inventory
 
 from . import configurations, families, pages, runs, threads, world
@@ -16,12 +15,11 @@ from .assets import ROUTE, Assets
 
 def app(
     inventory: Inventory,
-    facts: Facts,
     conninfo: str,
     assets: Path | None = None,
     worker: bool = False,
 ) -> FastAPI:
-    made = api.app(inventory, facts, conninfo, worker)
+    made = api.app(inventory, conninfo, worker)
     made.state.assets = Assets(assets or settings.portal_assets())
     made.include_router(pages.router, include_in_schema=False)
     made.mount(

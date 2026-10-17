@@ -2,8 +2,9 @@ import pytest
 from fastapi.testclient import TestClient
 
 from chatddx.api.test.test_variations import thread
-from chatddx.api.test.test_writes import CLINICIAN, body
+from chatddx.api.test.test_writes import body
 from chatddx.bench import KINDS, WRITTEN
+from chatddx.test.world import CLINICIAN
 
 GHOST = "sha256:" + "0" * 64
 
@@ -57,7 +58,7 @@ def test_a_check_says_what_the_lints_say(signed: TestClient) -> None:
 
 @pytest.mark.slow
 def test_a_check_refuses_what_a_write_would(signed: TestClient) -> None:
-    held = body(signed, thread(signed, "reasoning", "off (Qwen/Qwen3-8B-AWQ)"))
+    held = body(signed, thread(signed, "reasoning", "off"))
     expectation = body(
         signed,
         signed.get(
@@ -68,6 +69,8 @@ def test_a_check_refuses_what_a_write_would(signed: TestClient) -> None:
         ({**held, "effort": "max"}, "effort"),
         ({**expectation, "case": GHOST}, f"not in the store: ['{GHOST}']"),
         ({"kind": "tool"}, "'tool' isn't a kind a person writes"),
+        ({"kind": "skeleton"}, "'skeleton' isn't a kind a person writes"),
+        ({**held, "v": 2}, "chunk.reasoning is at v1, not v2"),
     ):
         got = signed.post("/api/components/check", json=given)
         assert got.status_code == 422, given

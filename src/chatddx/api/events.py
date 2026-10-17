@@ -4,14 +4,23 @@ from uuid import UUID
 from pydantic import BaseModel
 
 from chatddx import bench as benches
-from chatddx.bench import Bench, ScoringEvent, outcome, usage
+from chatddx.bench import Bench, ScoringEvent
+from chatddx.catalog import titles
 from chatddx.factors.base import resolve
 from chatddx.factors.request import Skeleton
 from chatddx.factors.scoring import Scorer
 from chatddx.factors.trial import Trial
 from chatddx.ledger import CanaryCall, RunItem, RunStarted, ScoreItem, ToolRun
-from chatddx.runner.run import Event, ItemStarted, Streamed, ToolRan
-from chatddx.runner.score import JudgeAnswered, JudgeAsked
+from chatddx.runner import (
+    ItemStarted,
+    JudgeAnswered,
+    JudgeAsked,
+    RunEvent,
+    Streamed,
+    ToolRan,
+    outcome,
+    usage,
+)
 from chatddx.scorers.aggregate import mean
 
 from . import schemas
@@ -68,21 +77,22 @@ def scoring_of(
     return schemas.ScoringData(
         scorers=[
             schemas.Unscored(
-                scorer=e.digest, name=a.name or bench.catalog.title(e.thread)
+                scorer=e.digest, name=a.name or titles.title(bench.rows, e.thread)
             )
-            for e, a in bench.scorers_for(run)
+            for e, a, _ in bench.scorers(run)
             if scorers is None or e.digest in scorers
         ]
     )
 
 
 def started_of(
-    started: RunStarted, trial: Trial, skeleton: Skeleton
+    started: RunStarted, trial: Trial, skeleton: Skeleton, language: str | None
 ) -> schemas.RunStartedData:
     return schemas.RunStartedData(
         run=started.run,
         trial=trial.digest,
         skeleton=trial.skeleton,
+        language=language,
         endpoint=None if started.endpoint is None else started.endpoint.name,
         cases=list(trial.cases),
         seeds=list(trial.seeds),
@@ -116,10 +126,10 @@ def canary_of(call: CanaryCall) -> Named:
 
 def score_started_of(bench: Bench, scorer: str, score: UUID) -> Named:
     labels = bench.labels(scorer)
-    views = range(len(resolve(bench.get, scorer, Scorer).views))
+    views = range(len(resolve(bench.store.get, scorer, Scorer).views))
     return "score.started", schemas.ScoreStartedData(
         scorer=scorer,
-        name=bench.scorer_name(scorer),
+        name=bench.title(scorer),
         score=score,
         labels=[labels.get(view, f"view {view}") for view in views],
     )
@@ -137,7 +147,7 @@ def score_item_of(item: ScoreItem) -> Named:
 
 
 # What a run's events tell that its rows don't, as they happen.
-def said_of(event: Event) -> Named | None:
+def said_of(event: RunEvent) -> Named | None:
     match event:
         case ItemStarted(key=key, seed=seed):
             return item_started_of(key.case, key.replicate, seed)

@@ -14,13 +14,12 @@ from chatddx.factors.request import (
     SLOTS_BY_PURPOSE,
     Skeleton,
     SlotName,
-    render,
 )
 from chatddx.factors.response import tool_calls
 from chatddx.factors.trial import Trial
 from chatddx.fake_vllm.chat import Failure, accept, completion, instance, respond
 from chatddx.fake_vllm.served import CLOSURE, Served
-from chatddx.inventory import World, check, start_up
+from chatddx.inventory import DirectorySource, World, check, start_up
 from chatddx.scorers.answer import read
 from chatddx.scorers.patterns import Pattern
 from chatddx.test.world import DATA, SAMPLE, WORLDS, world_plan
@@ -66,7 +65,7 @@ def test_each_fake_answers_each_skeleton_or_refuses_it_as_vllm_would(
     each: tuple[World, Plan],
 ) -> None:
     world, plan = each
-    case = plan.registry.add(world.inventory.listing().cases()[0])
+    case = plan.registry.add(world.inventory.source(kind=DirectorySource).cases()[0])
     fakes: dict[str, Served] = {}
     for name, endpoint in world.inventory.endpoints.items():
         engine = plan.registry.get(endpoint.engine)
@@ -85,7 +84,7 @@ def test_each_fake_answers_each_skeleton_or_refuses_it_as_vllm_would(
             pair = f"{r.name} on {served.model}"
             trial = Trial(skeleton=r.digest, engine=engine, cases=(case,), seeds=(7,))
             codes = {f.code for f in lint(plan.registry, [plan.registry.add(trial)])}
-            request = render(skeleton, model=served.name, seed=7, fills=fills)
+            request = skeleton.render(model=served.name, seed=7, fills=fills)
             if "vllm.thinking_budget_refused" in codes or (
                 "vllm.tools_refused" in codes and served.family not in UNCONSTRAINED
             ):
@@ -152,13 +151,13 @@ def test_init_data_binds_each_world_s_endpoints_and_no_other_world_s_engines(
         engines = {
             (r.kind, r.name)
             for r in world_plan(world, data).records
-            if r.kind in ("model", "engine.local", "engine.remote")
+            if r.kind in ("model.local", "engine.local", "engine.remote")
         }
         assert {n for _, n in engines} >= set(endpoints)
         assert sorted(
             line
             for line in out
-            if line.startswith(("[archive model]", "[archive engine."))
+            if line.startswith(("[archive model.local]", "[archive engine."))
             and line.endswith("not in the data")
         ) == sorted(
             f"[archive {kind}] {n}: not in the data" for kind, n in held - engines

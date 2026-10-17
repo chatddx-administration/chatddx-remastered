@@ -1,5 +1,5 @@
 import json
-from collections.abc import Iterable, Sequence
+from collections.abc import Iterable
 from datetime import UTC, datetime
 from typing import Annotated, ClassVar, Protocol, Self, cast, override
 from uuid import UUID
@@ -69,20 +69,12 @@ class ItemKey(Frozen):
 
 class Stage(Protocol):
     @property
-    def stage(self) -> str: ...
-
-    @property
     def at(self) -> datetime: ...
 
 
-def check_log(
-    stages: Sequence[Stage], order: tuple[str, ...], ids: Iterable[UUID]
-) -> None:
-    names = [s.stage for s in stages]
-    if names != list(order[: len(names)]):
-        raise StructuralError(f"stages {names} do not follow {order}")
-    for later in stages[1:]:
-        in_order(stages[0].at, later.at)
+def check_log(started: Stage, finished: Stage | None, ids: Iterable[UUID]) -> None:
+    if finished is not None:
+        in_order(started.at, finished.at)
     if len(set(ids)) > 1:
         raise StructuralError("rows belong to different logs")
 

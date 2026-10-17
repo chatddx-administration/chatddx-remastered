@@ -26,7 +26,7 @@ It must be possible to deliver the cage together with the results, for scientifi
   sorted, so equivalent settings share a digest.
 
 - **Chunk:** a factor authored in the portal that fills one part of a recipe (not to be confused with a slot).
-- **Recipe:** the chunks a skeleton was compiled from.
+- **Recipe:** the chunks and the model a skeleton was compiled from.
 - **Skeleton:** the frozen request.
 - **Slot:** a placeholder filled at send time.
 - **Insert:** a placeholder filled at compile time: `schema` in an output chunk's guidance, filled with that
@@ -50,7 +50,8 @@ It must be possible to deliver the cage together with the results, for scientifi
 - **Execution:** how a run sends its items, and a score its judge calls: order, concurrency, timeout, retries and the
   runaway cutoff.
 - **View:** the part of an output and of an expectation that a scorer scores, and how.
-- **Compilation:** A provenance (component) that says which recipe and compiler produced a skeleton
+- **Compilation:** A provenance (component) that says which recipe, compiler and facts produced a skeleton, and the
+  language it was compiled into, none for the recipe as written
 - **Run** and **Score:** a stage log.
 - **Worker:** the process that runs the trials queued for it, outside the request that asked for them.
 - **Job:** a started run or scoring queued for the worker, at its endpoint, for its owner, scored afterwards or not.
@@ -63,9 +64,10 @@ It must be possible to deliver the cage together with the results, for scientifi
 - **Portal:** the web-interface used to configure factors, watch runs and export results.
 - **World:** factor parameters outside of the orchestrator's direct control. (the vignette source, model files, the Nix closure, the chat-template file, the remote engine)
 - **Inventory:** files written by ops that say where vignette sources, endpoints and hosts are (`docs/inventory.md`).
-- **Facts:** ops- or developer-authored knowledge about models (how each reasoning level is expressed or refused,
-  recommended sampling, output caveats, specs), typed in code, written in TOML and keyed by model name.
-  Not factors: they write and check literal chunks, and no digest depends on them.
+- **Facts:** ops- or developer-authored knowledge about models (how each reasoning level is expressed, collapsed,
+  refused or landed on its nearest, recommended sampling, output caveats, specs), typed in code, written in TOML and
+  stored by init-data as components of kind `facts`, a thread per model, corrected by a new version. Not factors:
+  they work out a reasoning level and a recommended sampling for the recipe's model when compiled.
 - **Start-up:** what the start-up script runs for one endpoint, joining an engine (what) with inventory entries (where)
   (`docs/inventory.md`, "The start-up").
 - **Rig:** the chatddx software that builds cages from factors, runs and scores inside them and records what happened.
@@ -82,7 +84,7 @@ These roles are distinct and not overlapping, a person may inhabit more than one
 - Conversely, simple and reliable scoring methods are needed to produce clean easily processed outputs, which will require strict and simple pattern matching.
 - Due to the sensitive nature of patient data passing through the orchestrator, a separate path is needed where data can be passed along revealing just enough for the orchestrator to fulfill its duty. Cases will enter the system de-identified from a predefined source.
 - Nothing can be expected of the vignettes: They may or may not include labs and imaging results, and may even lack basic details such as age or sex. The source exposes no revision identifier.
-- Portal interfaces for managing instructions, few-shots, prompts, output, sampling, reasoning, passthrough, recepies, appendices, expectations, trials, scorers, judges, scorings and starting and monitoring runs.
+- Portal interfaces for managing instructions, few-shots, prompts, output, sampling, reasoning, passthrough, translations, toolsets, recipes, appendices, expectations, trials, scorers, judges, scorings and starting and monitoring runs.
 - Engines, models, canary sets, expectation schemas and scoring code are authored by ops or developers and shipped. A
   scorer's views, free parameters and labels are written by researchers in the portal, who pick its scoring code,
   expectation schema and resources among those shipped.
@@ -105,13 +107,13 @@ saving it makes it a configuration of its own, a fork, or a new version of one o
 
 Names are optional: an unnamed configuration is shown by its title, e.g. its base and what it varies (`docs/catalog.md`, "Titles").
 Variations allow controlled experiments without the combinatorial explosion; they are a supported portal workflow, not an object in the code:
- - `src/chatddx/store/catalog.py:Catalog.behind`
+ - `src/chatddx/catalog/threads.py:behind`
  - `catalog.thread.forked_from`
 
 "Delete" in this case is a `deleted` flag in the `catalog` layer since true deletions are blocked on database level
 (see tier 2 in `docs/store.md`).
 
-`src/chatddx/store/catalog.py:Catalog.divergence` and `Catalog.proposal` (what a fork varies,
+`src/chatddx/catalog/threads.py:divergence` and `proposal` (what a fork varies,
 and re-applying it when its origin moves), and `catalog.edit.based_on`.
 
 ### On the table
@@ -128,9 +130,9 @@ and re-applying it when its origin moves), and `catalog.edit.based_on`.
     - version chains between digests belong to planned catalog pipeline.
 
 ## Target stack
-- **Local inference.** Two servers, an RTX 3070 (sm_86, 8 GB) and an RTX 5090 (sm_120, 32 GB). Both serve vLLM 0.24.0 in a NixOS container that reads a `LocalEngine`, the model files, via `ModelArtifact`, the chat-template file and raw `argv`/`env`.
+- **Local inference.** Two servers, an RTX 3070 (sm_86, 8 GB) and an RTX 5090 (sm_120, 32 GB). Both serve vLLM 0.24.0 in a NixOS container that reads a `LocalEngine`, the model files, via `LocalModel`, the chat-template file and raw `argv`/`env`.
 
-The start-up script owns `--model`, `--served-model-name` (set to the engine digest), `--chat-template`, `--tokenizer` and `--revision` (`engine.py: OWNED_FLAGS`).
+The start-up script owns `--model`, `--served-model-name` (set to the engine digest), `--chat-template`, `--tokenizer`, `--revision`, `--host` and `--port` (`engine.py: OWNED_FLAGS`).
 
 No comparison between the 3070 and the 5090; each hardware class is its own cage.
 
@@ -152,7 +154,6 @@ Canaries, prompt-token fingerprints and comparing completions show which one app
 - **Frictionless development.** A mismatch between what is declared and what is observed produces a warning, never a crash. Examples:
  - `attestation.model`: returned model ≠ declared;
  - `attestation.prompt_tokens`: prompt tokens have no fingerprint;
- - `attestation.prompt_tokens_drift`;
  - `run.incomplete`;
  - `ledger.seal`: rows changed after sealing;
  - `engine.chat_template`, `engine.chat_template_date`;
@@ -199,18 +200,22 @@ together in whatever way they deem fit. There is however an intended flow of dat
 described below.
 
 ### Before a run
-1. A Recipe is created from stored instances of each Chunk: Prompt, Output and Sampling are required, Instructions, FewShot, Reasoning and Passthrough are optional.
+1. A Recipe is created from stored instances of each Chunk: Prompt, Output and Sampling are required, Instructions,
+   FewShot, Reasoning and Passthrough are optional; and it names an engine, LocalEngine or RemoteEngine. A Reasoning
+   chunk may ask for a level, and a Sampling chunk for the sampling the model's makers recommend, rather than say what
+   is sent.
 
-2. The Recipe is compiled into a Skeleton, which is stored as a frozen factor, holding:
-  - messages: each message's content is a list of plain text pieces or Slots (`vignette`, `appendices`)
-  - body: sampling, output format and reasoning settings; greedy sampling has already dropped top_p, top_k and min_p
-  - if few shots were included in the recipe, they're baked into the skeleton as plain text
-  - appendix_layout: how appendices are joined into one piece of text
+2. The Recipe is compiled into a Skeleton against the facts about its model and into a language its translations cover.
+   The Skeleton is stored as a frozen factor, holding:
+   A Compilation notes which recipe produced which skeleton, against which facts, and into which language.
+   Two engines of one model compile a recipe to one skeleton.
 
-  A Compilation notes which recipe produced which skeleton, it is stored as a component, but isn't a factor.
+3. A Case is a vignette, named by its source, its id there and the fingerprint of its raw bytes, and a list of Appendix
+   references.
 
-3. A Case is a vignette, named by its source, its id there and the fingerprint of its raw bytes, and a list of Appendix references.
-4. A Trial names a skeleton, an engine (LocalEngine or RemoteEngine), the case inputs, the text-cleanup steps and the seeds.
+4. A Trial names a skeleton, an engine (LocalEngine or RemoteEngine), the case inputs, the text-cleanup steps and the
+   seeds. A trial of a configuration with a recipe takes the recipe's engine, and its run goes to the endpoint serving
+   it. Cases of a language its translations don't cover are left out.
 
 ### Per run
 1. The runner records a RunStarted row which holds the trial, the execution settings (Execution), the canary set, and the version of the rig code.
@@ -222,10 +227,10 @@ described below.
 3. `prepare_case(case, raw, get, layout, cleanup)` checks drift (a mismatch is the warning `case.drift`)
 4. cleans the vignette
 5. joins the appendices, and returns the fills together with the observed fingerprint for `RunItem.vignette`.
-6. Pick the model name from the engine: `engine.served_model_name`, the engine's digest for a local engine and its
-   `model` for a remote one.
+6. Pick the model name from the engine: `served_model_name(trial.engine, get)`, a local engine's digest, a remote
+   engine's model's name.
 7. Pick the seed: `trial.seeds[replicate]`.
-8. Render the request: render(skeleton, model=…, seed=…, fills={"vignette": …, "appendices": …}). This:
+8. Render the request: skeleton.render(model=…, seed=…, fills={"vignette": …, "appendices": …}). This:
   - replaces each slot with its text by plain concatenation, with no templating
   - adds model, messages and the skeleton's body;
   - adds seed only if the sampling isn't greedy;
@@ -240,7 +245,7 @@ described below.
   (`docs/factors.md`, "Tool rounds"). Each request is a call, tried again only when it didn't get through.
 
 ### After the run
-1. After each response, fingerprint_prompt_tokens(response) takes prompt_token_ids out of the response and returns their fingerprint. Once an item's last call is done, the runner stores a RunItem row with the key (case, replicate), the observed vignette fingerprint, its first Call and each tool round's. A Call holds the request's fingerprint, the timings, the attempt count, the response without its prompt token IDs, and the prompt-token fingerprint.
+1. After each response, the Call made of it takes prompt_token_ids out of the response and keeps their fingerprint. Once an item's last call is done, the runner stores a RunItem row with the key (case, replicate), the observed vignette fingerprint, its first Call and each tool round's. A Call holds the request's fingerprint, the timings, the attempt count, the response without its prompt token IDs, and the prompt-token fingerprint.
 2. At the end, Run(...).finish() produces a RunFinished row with the seal. check_run then compares what the run declared with what came back.
 
 ### Scoring records
@@ -258,7 +263,7 @@ described below.
    item's last call, before the scorer's entry point is called.
 4. Apply each view. A View points into the parsed output (output, a JSON pointer) and into the expectation (expectation), and names a metric that the scorer's code interprets, with params.
 5. If the view names a Judge:
-  - Build the judge request with render() from the judge's Skeleton (purpose "judge").
+  - Build the judge request with the judge's Skeleton's render() (purpose "judge").
     Its slots are filled with the completion and the expectation, as the view picks them;
     a judge that reads the case or the appendices is refused.
   - Send it to the judge's engine, once per seed in Judge.seeds.

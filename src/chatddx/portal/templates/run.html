@@ -27,8 +27,11 @@
 
   {% call section("The run") %}
   {% set held %}{% if configuration %}<a class="text-primary hover:underline" href="{{ configuration[0] }}">{{ configuration[1] }}</a>{% else %}{{ run.skeleton | short }}{% endif %}{% endset %}
+  {% set started_with %}{% for other, language in together %}<a class="text-primary hover:underline" href="/runs/{{ other }}">{{ (other | string)[:8] }}, in {{ language or "a language unknown" }}</a>{% if not loop.last %}; {% endif %}{% else %}—{% endfor %}{% endset %}
   {{ facts([
     ("Started", run.at | when),
+    ("Language", run.language or "—"),
+    ("Started with", started_with),
     ("Finished", run.finished_at | when),
     ("Job", job(run.job)),
     ("Configuration", held),

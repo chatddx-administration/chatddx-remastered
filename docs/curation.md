@@ -23,8 +23,9 @@ The archive is never wiped.
 A data set is a directory of authored files: a `factors.toml`, the texts in `texts-<language>.toml` files, the cases
 in `cases-<language>.toml` files, and the files they load, such as JSON schemas.
 
-A record holds text the model reads, which language it is in, and whether it is a record or a case.
-What a data set can't hold, engines and which engine judges, is its World's (docs/inventory.md, "Worlds").
+A data set says what the model reads, the language each text is written in, and the cases it is run on.
+What a data set can't hold, engines, which engine judges and which engine its configurations are made for, is its
+World's (docs/inventory.md, "Worlds").
 
 A World may carry one beside its vignettes, in `_data/`. A World is what lies outside chatddx, and a data set is
 chatddx's own authored content, so the leading `_` marks it as no part of the World: `World.load` doesn't read it.
@@ -42,63 +43,72 @@ Both kinds of file hold one table per kind of component, keyed by name, whose ke
 
 On top of the fields:
 - **References by name.** A toolset's tools, a scorer's expectation schema and a view's judge, a local engine's model
-  and a recipe's parts name records, not digests.
+  a `local_model` record, and a remote engine's model, a `remote_model` record; and a recipe's parts name records,
+  not digests.
 - **Judges.** A judge names a `recipe`, its `seeds` and its `fill`, and no engine: the World binds it to an endpoint
-  (docs/inventory.md, "Judges"), whose engine judges. It takes the recipe's variant for the model that engine serves,
-  in the recipe's language (`language` picks one when it is written in several). A judge the World binds to no
-  endpoint, or whose recipe has no variant for its model, is skipped and reported, and so is every scorer whose views
-  name it; a binding for a judge the data set doesn't have is reported too. A judge's skeleton may not have tools.
+  (docs/inventory.md, "Judges"), whose engine judges. The recipe is compiled for that engine, as written, and the
+  skeleton and its compilation are stored with the judge, without a thread of their own; a judge names no `language`.
+  A judge the World binds to no endpoint, whose endpoint serves no engine the World has, or whose recipe the facts
+  refuse on that engine, is skipped and reported, and so is every scorer whose views name it; a binding for a judge
+  the data set doesn't have is reported too. A judge's skeleton may not have tools.
 - **Files.** `json_schema_path` loads a JSON file, relative to the file that names it, in place of `json_schema`.
 - **Forks.** `fork_of` names a record of the same kind that this one is a fork of. It is loaded as a fork of
-  that record's thread, so the catalog knows what it varies (docs/catalog.md, "Forks"). It inherits no fields. Each
-  variant forks the origin's variant in its language and for its model. An origin written in one language only is
-  forked in that language, as a part is taken from it (see "Texts"), so `free-text-guided (sv, …)` forks
-  `free-text (en, …)`; an origin written in several languages, none of them the variant's, is refused. A variant
-  whose origin has none for its model, or is made per model where the variant isn't, is loaded as no fork and
-  reported. A thread's origin is set when the thread is created, so a re-run only reports a held thread whose origin
-  differs from the data's.
+  that record's thread, so the catalog knows what it varies (docs/catalog.md, "Forks"). It inherits no fields. A record
+  whose origin isn't planned, as when the origin's recipe was skipped, is loaded as no fork and reported. A thread's
+  origin is set when the thread is created, so a re-run only reports a held thread whose origin differs from the
+  data's.
 - **Code.** A tool or a scorer that names no `version` pins the version of its entry point that the running chatddx
   ships, so loading the data again after a deploy that raises a version moves it on. Its entry point must be shipped,
   at the version pinned, and a scorer's views must name metrics the code publishes, with params its schemas take.
 - **Catalog entries.** `tags` and `description` are entries on the record's thread, and a scorer view's `label` is a
   label of the edit the scorer is kept with, so a renamed view is a new edit of the same scorer. A tool's
   `description` is also a field, the one the model reads.
-- **From facts.** `from_facts` asks for a sampling or reasoning chunk per model (see "Per model").
-- **Translations by record.** A translations chunk's entries may be written in `of`, grouped by the record whose texts
-  they translate, an output, a toolset or a recipe's appendix layout, each entry a `text` and its `translation`:
-  `[[translations.sample.of."output.management-plan"]]`. Loading makes them the chunk's `entries`, and refuses a text
-  its record doesn't hold, so an entry no text uses any more is found. A text that several records hold is written
-  once, under any of them. Missing texts still fail the compilation of the recipe that needs them.
+- **Intents.** A reasoning chunk may ask for a `level` and a sampling chunk for the `recommended` sampling, worked
+  out from the facts when a recipe is compiled (docs/factors.md, "Reasoning" and "Sampling"). A `from_facts` record
+  is refused: "from_facts is gone; the facts are applied when a recipe is compiled, so ask for a reasoning `level` or
+  a `recommended` sampling".
+- **Translations by record.** A translations record's entries may be written in `of`, grouped by the record whose
+  texts they translate, any record of texts (instructions, few-shot, prompt, output, toolset) or a recipe, for its
+  appendix layout, each entry a `text` and its `translation`: `[[translations.sample.of."instructions.clinician"]]`.
+  Loading makes them the chunk's entries into the texts file's language, and refuses a record that isn't one of texts
+  ("'sampling.greedy' names no record of texts"), one the data set doesn't have ("'output.nope': no output named
+  'nope'"), one written in the file's own language ("output.plan is written in en"), a text its record doesn't hold,
+  so an entry no text uses any more is found, an entry that isn't a text and its translation, and a text translated
+  two ways. A text that several records hold is written once, under any of them. A text left untranslated doesn't
+  stop the loading (see "Texts").
 
-A name is defined once per kind, and a text's name may come back in each texts file, as the same text in another
-language. A data set's `factors.toml` holds no `model`, `local_engine` or `remote_engine` table: engines are the World's
-(see "The World").
+A name is defined once per kind: a text is written in one texts file, and only a translations record's name comes
+back in several, as one chunk (see "Texts"). A data set's `factors.toml` holds no `local_model`, `remote_model`,
+`local_engine` or `remote_engine` tables, and a recipe names no `model`: engines are the World's (see "The World"),
+and a recipe that names one is refused.
 
 ### Texts
-What the model reads is written in a language, and a texts file's name gives it: every text in `texts-sv.toml` is
-Swedish, and no record says its own language. A chunk holds text when an instruction, an example, a prompt, a
-guidance, an answer-function or tool description, or schema prose says something, so a prompt of slots alone, or an
-output without guidance or schema, holds none. A chunk that holds text is written in a texts file, and one that holds
-none in `factors.toml`, where it serves every language. Loading writes each text's language on its digest, and names
-it after it, such as `management-plan (en)`.
+What the model reads is written in a language, and a texts file's name gives it: every text record in
+`texts-sv.toml` is written in Swedish, every translations record there translates into Swedish, and no record says its
+own language. A chunk holds text when an instruction, an example, a prompt, a guidance, an answer-function or tool
+description, or schema prose says something, so a prompt of slots alone, or an output without guidance or schema,
+holds none. A chunk that holds text is written in a texts file, and one that holds none in `factors.toml`, where it
+serves every language. Loading writes each text's language on its digest, and names it plainly, such as
+`management-plan`; a translations chunk says its languages itself, and is given none.
 
-Texts come in two kinds. Instructions, few-shot and prompts are written in each language they are used in, as cases
-are. Outputs and toolsets bring text with code, guidance and schemas, and may be written in one language and
-translated into the others by a translations chunk of each (docs/factors.md, "Translations"); a native one can
-still be written in a language of its own.
+A text is written in one language and translated into the others. A text record in two texts files, or in
+`factors.toml` and a texts file, is refused: "instructions.clinician is in texts-en.toml and texts-sv.toml: a text is
+written in one language, and translated into others". A translations record is written in the texts file of the
+language it translates into, and gives its `entries` or its `of`, and no other field; one in `factors.toml` is refused.
+Translations records of one name in several texts files are one chunk, into each file's language (docs/factors.md,
+"Translations"): `description` and `fork_of` may be given in any of them, and must agree, and their tags are merged.
 
-A recipe that names a text is made in each language that has it, named after the language, such as
-`plan (en, Qwen/Qwen3-8B-AWQ)`. In a language, it takes each text written in that language. An output or a toolset
-written only in another language is taken from there, and the recipe's translations in its language stand in for it;
-a recipe without them there is skipped and reported. In the language its output and toolset are written in, it needs
-no translations and is made without them. A recipe that names no text is made once, as before.
+A recipe is made once, named plainly, such as `plan`, and names its parts by name: a part the data set doesn't have
+is refused ("recipe.plan: no output named 'plans'"). It is written in its texts' language, and runs in that language
+as written, and in each its translations carry it into, translated (docs/catalog.md, "Languages"). Loading compiles
+it into each language its translations name, and says each it can't carry it into, and why (see "Loading"); the
+recipe is made all the same.
 
-The sample is written in English, and one recipe in Swedish too. Its outputs, toolset and judge are in
-`texts-en.toml`, and every recipe is made in English. `free-text-guided`'s instructions and worked example are written
-again in `texts-sv.toml`, with translations of every text its outputs and toolset hold, schemas included, so
-`free-text-guided` is made in Swedish too, its output translated. A trial of an English recipe on the Swedish cases is
-linted as mixing languages, which is what a trial of an English request on a Swedish case is; the sample's
-translations, set in a variation, carry any of its recipes into Swedish.
+The sample is written in English, in `texts-en.toml`. Its `texts-sv.toml` holds only `translations.sample`, into
+Swedish: `free-text-guided`'s instructions and worked example, and every text the outputs and the toolset hold,
+schemas included. Only `free-text-guided` names it, so it runs on the Swedish cases translated, and the other recipes
+run on the English cases, the Swedish ones left out; the sample's translations, set in a variation, carry any of its
+recipes but the judges' into Swedish.
 
 ### Cases
 A case may have appendices, `[case.<id>.appendices]`, texts by name, each kept as a thread named by its name and told
@@ -110,27 +120,32 @@ A cases file holds `[case.<id>]` tables, keyed by the vignette's id at the sourc
 family, and `targets`, its expectation, which must fit the data set's one expectation schema. A case is in exactly one
 file, and the file's name gives its language: every case in `cases-sv.toml` is in Swedish.
 
-Splitting by language rather than tagging each case keeps a language's cases together, as they will be translated,
-scored and compared together: a case runs in the language it was written in (docs/catalog.md, "Languages"). Notes in
-the targets keep a language of their own.
+Splitting by language rather than tagging each case keeps a language's cases together, as they are sent, scored and
+compared together: a case runs in the language it was written in, under the configuration translated into it where
+that isn't the configuration's own (docs/catalog.md, "Languages"). Notes in the targets keep a language of their
+own.
 
-### Per model
-Some chunks can only be written for a model: the sampling its makers recommend, the way a reasoning level is asked
-for. A `from_facts` record is written from each model's facts (docs/facts.md, "Writing chunks") for every model an
-engine of the plan serves and the facts know, and named after it, such as `recommended (Qwen/Qwen3-8B-AWQ)`. A recipe
-that uses one is made per model too. What the facts refuse is skipped, together with the recipes that need it, and
-reported, and so are a served model the facts don't know and a known model no engine serves. Models and engines are
-planned first for this reason.
+### Facts and the engine
+Some of what a request sends can only be worked out for a model: the sampling its makers recommend, the way a
+reasoning level is asked for. The facts about each model an engine of the World serves are loaded as a thread of kind
+`facts`, named after the model, such as `Qwen/Qwen3-8B-AWQ`, and a recipe is made for that endpoint's engine's model,
+its intents compiled against its facts (docs/facts.md, "Compiling intents").
+
+A served model the facts don't know is reported, since its engines can't compile a reasoning level or a recommended
+sampling, and a recipe is skipped and reported when the facts refuse it on that engine, or when the World names no
+endpoint for configurations. Engines and facts are planned first for this reason. A researcher swaps the model at the
+bench, as any other part (docs/bench.md).
 
 ## The World
 A World is a directory (docs/inventory.md, "Worlds"). Loading reads its `inventory.toml` for the source of the cases'
-vignettes and the endpoints its judges are bound to, and takes its `engines.toml`, the models and engines its endpoints
-serve and nothing else, with the data set's factors, and its `facts.toml`, facts about models the bundled facts don't
-know, with the bundled ones. So the sample World's fake engines are loaded only with the sample World, and a World
-that serves a model of its own brings what is known about it.
+vignettes, the endpoints its judges are bound to and the endpoint whose engine its configurations are made for, and
+takes its `engines.toml`, the models and engines its endpoints serve and nothing else, with the data set's factors,
+and its `facts.toml`, facts about models the bundled facts don't know, with the bundled ones. So the sample World's
+fake engines are loaded only with the sample World, and a World that serves a model of its own brings what is known
+about it, which loading stores for the models its engines serve.
 
-The World is `--world DIR`, or by default the directory `CHATDDX_WORLD` names. The repl reads the same World, for its
-endpoints, vignettes and facts.
+The World is `--world DIR`, or by default the directory `CHATDDX_WORLD` names. The repl reads the same World for its
+endpoints and vignettes, and the facts from the store, as loading stored them.
 
 A loading ends with the inventory checked against the engines just planned, all at once: what starting or reaching
 each endpoint would refuse, and what is likely a slip (docs/inventory.md, "Checks happen when an entry is used").
@@ -141,9 +156,13 @@ loads a data set, the World's `_data/` unless `--data` names another, for the ar
 who is added when missing. It connects as the writer and does everything in one transaction. It prints a line for each
 thing it comes to.
 
-1. **Plan.** The data set and the World's engines are planned into components, without the
-   store: references resolved, per-model records written, recipes made per language and compiled, texts and entry
-   points checked. A data set that can't be planned is refused before anything is written.
+1. **Plan.** The data set and the World's engines are planned into components, without the store: references
+   resolved, the facts about each served model the facts know, recipes made once and compiled for the engine the
+   World names for configurations, and into each language their translations name, judges' recipes compiled for
+   their own engines, texts and entry points checked. A data set that can't be planned is refused before anything is
+   written. A recipe its translations can't carry into a language is made all the same, and said after the records:
+   `[untranslated] recipe asked: no translation into sv for 'You are an emergency physician.'`. Neither World's data
+   set gives one.
 2. **Records.** Each planned record becomes a thread named after it. A record the archive already has, by kind and
    name, is validated when its digest is unchanged and gets a new edit when it changed; a compiled skeleton's edit
    records its compilation. Its tags, description, view labels and language are brought in line with the data.
@@ -159,9 +178,9 @@ thing it comes to.
 6. **Giftbag.** With `--giftbag`, USER also gets a fork of every chunk, tool, skeleton and expectation thread, so
    what has moved on in the archive is proposed to them (docs/catalog.md, "What has moved on"). The forks of the
    expectation threads are also what USER is scored against: without them, the archive's shared expectations score
-   nothing for USER. Expectation schemas, scorers, models and engines stay the archive's. A fork they already have is
-   kept, and one they deleted comes back, unless they own an expectation of that case under that schema by then: a
-   person owns one at most (docs/catalog.md, "Owners"), so theirs is kept instead.
+   nothing for USER. Expectation schemas, scorers, models, engines and facts stay the archive's. A fork they already
+   have is kept, and one they deleted comes back, unless they own an expectation of that case under that schema by
+   then: a person owns one at most (docs/catalog.md, "Owners"), so theirs is kept instead.
 7. **Lints.** Every component the run came to is linted, with the catalog's languages and the facts' reasons, and
    the findings are printed, not stored. For the sample the fake models and engines say they are fake.
 8. **The World.** The inventory check's findings, and a count.
@@ -178,7 +197,7 @@ new place (docs/catalog.md, "Repairing"). Loading only reports this, since a rep
 who used those cases.
 
 `chatddx repair-data [--world DIR] [--source NAME] [--dry-run]` surveys the source, the one `--source` names or the
-World's only source that lists its vignettes, and repairs each of the archive's families it finds renamed or changed
+World's only directory source, and repairs each of the archive's families it finds renamed or changed
 there, printing what moved. A family that isn't the archive's is named and left to its owner. With `--dry-run`, it
 only lists them.
 
@@ -237,11 +256,10 @@ test_sample_world.py (src/chatddx/conftest.py, `sampled`).
 | Archive | The person who owns what a data set loads, and shares it with everyone else. |
 | Data set | A directory of authored files: factors, cases by language, and what they load. |
 | Record | A named entry of a data set's factors file, loaded as a thread. |
-| Per-model record | A record written from each served model's facts, named after the model. |
 | Text | A chunk that holds text the model reads, written in a texts file whose name gives its language. |
-| Variant | A record made for a language, a model or both, named after them: `plan (en, Qwen/Qwen3-8B-AWQ)`. |
 | Giftbag | A person's own forks of the archive's chunks, tools, skeletons and expectations. |
 | Leftover | An archive thread or family the data set no longer names. |
+| Translations | A chunk that translates a data set's texts into other languages, written in the texts file of each language it translates into. |
 
 ## Open design issues
 
@@ -262,12 +280,6 @@ Curation is the place for the rest of the store's authored content to come and g
 
 ### What a data set can't hold yet
 Trials, executions, scorings and hand-written skeletons have no tables, and a data set has one expectation schema.
-
-### Picking a variant by the case's language
-The bench picks a configuration's variant by the model the engine it runs on serves, and by language only when there
-is one (src/chatddx/catalog/variants.py). With texts in several languages, the cases a variation runs on should run the
-variant in their own language, so a run over English and Swedish cases runs each under its own. A variant is known
-only by its name today; what recording it would take is in agents/wip-variants.md.
 
 ### Smaller issues
 - **One source a run.** A data set's cases all come from the source `--source` names.
@@ -292,7 +304,7 @@ only by its name today; what recording it would take is in agents/wip-variants.m
   dissection).
 - **What only the test World reaches isn't all read.** No test reads the gate refusing `qwen3-bare@fake` for `typed`
   cases, the pair lints its records give (`vllm.*` on `qwen3-bare@fake` and `clamped`, `facts.output_refused`,
-  `facts.reasoning_unmatched`, `facts.budget_refused`, `language.unknown`), `headed`'s tool guidance,
-  `lines-guided (sv)`'s translated output and appendix layout, the passthrough, or the vignettes' quirks under the
-  cleanup steps. The lints are tested on synthetic registries, and two of the judge tests in
-  src/chatddx/scorers/test/test_scorers.py use a synthetic judge.
+  `facts.reasoning_unmatched`, `facts.budget_refused`, `language.unknown`), `headed`'s tool guidance, the texts of
+  `lines-guided` translated into sv, the passthrough, or the vignettes' quirks under the cleanup steps. The lints are
+  tested on synthetic registries, and two of the judge tests in src/chatddx/scorers/test/test_scorers.py use a
+  synthetic judge.

@@ -9,7 +9,7 @@ import pytest
 from psycopg import sql
 from pydantic import ValidationError
 
-from chatddx.catalog import Subject
+from chatddx.catalog import Subject, read
 from chatddx.conftest import connect
 from chatddx.curation import Plan
 from chatddx.factors.base import Code, Finding, Fingerprint, resolve
@@ -22,7 +22,6 @@ from chatddx.factors.request import (
     Toolset,
     compile_request,
     next_request,
-    render,
 )
 from chatddx.factors.response import tool_calls
 from chatddx.factors.trial import Canary, CanarySet, Execution, Trial
@@ -38,31 +37,30 @@ from chatddx.ledger import (
 )
 from chatddx.ledger.call import check_execution
 from chatddx.rig import rig
-from chatddx.runner import send as sending
-from chatddx.runner.gate import Refused
-from chatddx.runner.run import (
+from chatddx.runner.events import (
     CanaryEnded,
-    Event,
     ItemEnded,
     ItemStarted,
     Noted,
-    Runner,
+    RunEvent,
     Streamed,
     ToolRan,
 )
-from chatddx.runner.send import STOPPED
+from chatddx.runner.gate import Refused
+from chatddx.runner.run import Runner
+from chatddx.runner.send import STOPPED, Delta, Halt, send
 from chatddx.runner.test.tools import component
-from chatddx.store import Catalog, Store
+from chatddx.store import Rows, Store
 from chatddx.store.store import Connection
 from chatddx.test.world import (
     GPT_OSS,
-    GPT_OSS_MODEL,
     LINES,
     NATIVE_TOOLS,
     QWEN,
     TEST,
     TOOL_ANSWER,
     faked,
+    free_world,
 )
 from chatddx.tools.shipped import TOOLS, ShippedTool
 
@@ -90,10 +88,10 @@ def trial(
 
 @dataclass
 class Heard:
-    events: list[Event] = field(default_factory=list[Event])
-    then: Callable[[Event], None] | None = None
+    events: list[RunEvent] = field(default_factory=list[RunEvent])
+    then: Callable[[RunEvent], None] | None = None
 
-    def __call__(self, event: Event) -> None:
+    def __call__(self, event: RunEvent) -> None:
         self.events.append(event)
         if self.then is not None:
             self.then(event)
@@ -156,7 +154,7 @@ def test_a_run_sends_each_item_and_writes_its_log(
     streamed = [s.key for s in heard.of(Streamed)]
     assert streamed == sorted(streamed, key=started.index)
     assert set(streamed) == set(started) and not heard.of(Noted)
-    about = Catalog(conn).about(Subject(run=running.run))
+    about = read.about(Rows(conn), Subject(run=running.run))
     assert about.owner == alice.id
 
 
@@ -255,7 +253,7 @@ def test_stopping_ends_the_run_after_the_item_under_way(
 ) -> None:
     running = Runner(conn, inventory, alice).start(trial(plan), plan.registry, QWEN)
 
-    def stop(event: Event) -> None:
+    def stop(event: RunEvent) -> None:
         if isinstance(event, Streamed):
             running.stop()
 
@@ -274,7 +272,7 @@ def test_an_interrupt_mid_call_records_the_call_as_stopped(
     running = Runner(conn, inventory, alice).start(trial(plan), plan.registry, QWEN)
     deltas: list[Streamed] = []
 
-    def interrupt(event: Event) -> None:
+    def interrupt(event: RunEvent) -> None:
         if isinstance(event, Streamed):
             deltas.append(event)
             if len(deltas) == 2:
@@ -309,7 +307,7 @@ def test_nothing_is_sent_or_written_where_the_gate_refuses(
     )
     assert "serves engine" in refused(trial(plan), GPT_OSS)
     assert f"endpoint {GPT_OSS!r} can't be confirmed" in refused(
-        trial(plan, f"lines (en, {GPT_OSS_MODEL})", engine=GPT_OSS), GPT_OSS
+        trial(plan, engine=GPT_OSS), GPT_OSS
     )
     assert "tools can't be cleared yet" in refused(trial(plan, NATIVE_TOOLS), QWEN)
     assert rows(db, "run_stage") == 0
@@ -440,7 +438,7 @@ def test_stopping_a_concurrent_run_ends_it_after_the_calls_in_flight(
         trial(plan), plan.registry, QWEN, Execution(concurrency=2)
     )
 
-    def stop(event: Event) -> None:
+    def stop(event: RunEvent) -> None:
         if isinstance(event, Streamed):
             running.stop()
 
@@ -462,7 +460,7 @@ def test_an_interrupt_hangs_up_every_call_in_flight_and_records_them_as_stopped(
     )
     deltas: list[Streamed] = []
 
-    def interrupt(event: Event) -> None:
+    def interrupt(event: RunEvent) -> None:
         if isinstance(event, Streamed):
             deltas.append(event)
             if len(deltas) == 2:
@@ -504,7 +502,7 @@ def test_another_interrupt_while_calls_hang_up_leaves_them_out(
         trial(plan), plan.registry, QWEN, Execution(concurrency=2)
     )
 
-    def interrupt(event: Event) -> None:
+    def interrupt(event: RunEvent) -> None:
         if isinstance(event, Streamed | ItemEnded):
             raise KeyboardInterrupt
 
@@ -533,14 +531,15 @@ def test_a_halt_from_another_thread_hangs_up_the_calls_in_flight_and_returns(
         canaries=CANARIES,
     )
     deltas: list[Streamed] = []
+    halt = Halt()
 
-    def halt(event: Event) -> None:
+    def halting(event: RunEvent) -> None:
         if isinstance(event, Streamed):
             deltas.append(event)
             if len(deltas) == 2:
-                elsewhere(running.halt)
+                elsewhere(halt.set)
 
-    running.send(Heard(then=halt))
+    running.send(Heard(then=halting), halt)
     findings = running.finish()
     stored = Store(conn).run(running.run)
     assert [i.call.error for i in stored.items] == [STOPPED] * concurrency
@@ -559,7 +558,6 @@ def test_a_call_that_fails_on_its_thread_fails_the_send_and_keeps_the_calls_besi
     plan: Plan,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    send = sending.send
     streaming = threading.Event()
     calls: list[int] = []
 
@@ -568,7 +566,7 @@ def test_a_call_that_fails_on_its_thread_fails_the_send_and_keeps_the_calls_besi
         if len(calls) == 1:
             on_delta = kwargs["on_delta"]
 
-            def heard(delta: sending.Delta) -> None:
+            def heard(delta: Delta) -> None:
                 streaming.set()
                 on_delta(delta)
 
@@ -577,15 +575,16 @@ def test_a_call_that_fails_on_its_thread_fails_the_send_and_keeps_the_calls_besi
         assert streaming.wait(5)
         raise RuntimeError("broken")
 
-    monkeypatch.setattr(sending, "send", broken)
+    monkeypatch.setattr("chatddx.runner.rounds.send", broken)
     running = Runner(conn, inventory, alice).start(
         trial(plan), plan.registry, QWEN, Execution(concurrency=2)
     )
+    halt = Halt()
     with pytest.raises(RuntimeError, match="broken"):
-        running.send()
+        running.send(halt=halt)
     _ = running.finish()
     [item] = Store(conn).run(running.run).items
-    assert item.call.error == STOPPED
+    assert item.call.error == STOPPED and not halt.is_set()
 
 
 def insensitive(inventory: Inventory) -> Inventory:
@@ -610,6 +609,7 @@ def tooled(
     skeleton = compile_request(
         compiled.model_copy(update={"toolset": plan.registry.add(toolset)}),
         plan.registry.get,
+        plan.facts.about(compiled.model, plan.registry.get),
     )
     made = trial(plan, cases=cases, seeds=seeds).model_copy(
         update={"skeleton": plan.registry.add(skeleton)}
@@ -657,12 +657,12 @@ def test_a_round_runs_the_tools_a_response_calls_and_sends_back_their_results(
     ]
 
     case = resolve(plan.registry.get, made.cases[0], Case)
-    raw = open_world.listing("test").fetch(case.vignette.id)
+    raw = open_world.source("test", DirectorySource).fetch(case.vignette.id)
     fills = prepare_case(
         case, raw, plan.registry.get, skeleton.appendix_layout, made.cleanup
     ).fills
     engine = resolve(plan.registry.get, made.engine, LocalEngine)
-    body = render(skeleton, model=engine.served_model_name, seed=7, fills=fills)
+    body = skeleton.render(model=engine.digest, seed=7, fills=fills)
     assert item.call.request == fingerprint_request(body)
     assert item.call.response is not None
     results = {r.id: r.result for r in item.turns[0].tools}
@@ -729,7 +729,7 @@ def test_an_interrupt_after_a_tool_ran_keeps_its_round_without_a_call(
     )
     ran: list[ToolRan] = []
 
-    def interrupt(event: Event) -> None:
+    def interrupt(event: RunEvent) -> None:
         if isinstance(event, ToolRan):
             ran.append(event)
             if len(ran) == 2:
@@ -790,11 +790,13 @@ def test_a_halt_while_tools_run_keeps_the_round_and_sends_no_call(
         made, plan.registry, QWEN
     )
 
-    def halt(event: Event) -> None:
-        if isinstance(event, ToolRan):
-            elsewhere(running.halt)
+    halt = Halt()
 
-    running.send(Heard(then=halt))
+    def halting(event: RunEvent) -> None:
+        if isinstance(event, ToolRan):
+            elsewhere(halt.set)
+
+    running.send(Heard(then=halting), halt)
     findings = running.finish()
     [item] = Store(conn).run(running.run).items
     assert [[r.name for r in t.tools] for t in item.turns] == [["lookup"]]
@@ -900,7 +902,7 @@ def test_a_stopped_run_sends_no_end_canaries(
         trial(plan), plan.registry, QWEN, canaries=CANARIES
     )
 
-    def stop(event: Event) -> None:
+    def stop(event: RunEvent) -> None:
         if isinstance(event, Streamed):
             running.stop()
 
@@ -920,7 +922,6 @@ def test_an_interrupt_during_a_canary_records_it_as_stopped(
     plan: Plan,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    real = sending.send
 
     def interrupted(*args: Any, **kwargs: Any) -> Any:
         heard: list[object] = []
@@ -930,9 +931,9 @@ def test_an_interrupt_during_a_canary_records_it_as_stopped(
             if len(heard) == 2:
                 raise KeyboardInterrupt
 
-        return real(*args, **{**kwargs, "on_delta": on_delta})
+        return send(*args, **{**kwargs, "on_delta": on_delta})
 
-    monkeypatch.setattr(sending, "send", interrupted)
+    monkeypatch.setattr("chatddx.runner.run.send", interrupted)
     running = Runner(conn, inventory, alice).start(
         trial(plan), plan.registry, QWEN, canaries=CANARIES
     )
@@ -957,10 +958,11 @@ def test_a_halt_during_a_canary_records_it_as_stopped_and_sends_no_items(
     plan: Plan,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    real = sending.send
     running = Runner(conn, inventory, alice).start(
         trial(plan), plan.registry, QWEN, canaries=CANARIES
     )
+
+    halt = Halt()
 
     def halted(*args: Any, **kwargs: Any) -> Any:
         heard: list[object] = []
@@ -968,12 +970,12 @@ def test_a_halt_during_a_canary_records_it_as_stopped_and_sends_no_items(
         def on_delta(delta: object) -> None:
             heard.append(delta)
             if len(heard) == 2:
-                elsewhere(running.halt)
+                elsewhere(halt.set)
 
-        return real(*args, **{**kwargs, "on_delta": on_delta})
+        return send(*args, **{**kwargs, "on_delta": on_delta})
 
-    monkeypatch.setattr(sending, "send", halted)
-    running.send()
+    monkeypatch.setattr("chatddx.runner.run.send", halted)
+    running.send(halt=halt)
     _ = running.finish()
     stored = Store(conn).run(running.run)
     assert [(c.phase, c.canary, c.call.error) for c in stored.canaries] == [
@@ -1008,7 +1010,7 @@ def test_resuming_sends_what_an_unfinished_log_lacks_and_finishes_it(
         trial(plan), plan.registry, QWEN, Execution(concurrency=concurrency), CANARIES
     )
 
-    def stop(event: Event) -> None:
+    def stop(event: RunEvent) -> None:
         if isinstance(event, ItemEnded):
             running.stop()
 
@@ -1081,7 +1083,6 @@ def test_a_finished_run_a_moved_endpoint_or_the_gate_keep_a_run_from_resuming(
     inventory: Inventory,
     alice: Person,
     plan: Plan,
-    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     runner = Runner(conn, inventory, alice)
     finished = runner.start(trial(plan), plan.registry, QWEN)
@@ -1094,10 +1095,8 @@ def test_a_finished_run_a_moved_endpoint_or_the_gate_keep_a_run_from_resuming(
     with pytest.raises(Refused, match="isn't cleared for source test"):
         _ = Runner(conn, uncleared, alice).resume(left)
 
-    def moved(*_: object) -> str:
-        return "http://127.0.0.1:1/v1/"
-
-    monkeypatch.setattr("chatddx.runner.run.url_of", moved)
-    with pytest.raises(ValueError, match="is at http://127.0.0.1:1/v1/ now"):
-        _ = runner.resume(left)
+    moved = free_world()
+    now = f"is at {moved.endpoint(QWEN).url} now"
+    with faked(moved, plan.registry.get), pytest.raises(ValueError, match=now):
+        _ = Runner(conn, moved, alice).resume(left)
     assert rows(db, "run_item") == 0

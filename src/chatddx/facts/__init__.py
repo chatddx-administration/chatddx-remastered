@@ -1,11 +1,9 @@
-from .lint import check_pairs, lints, reasons
-from .models import (
-    BUNDLED,
+from chatddx.factors.facts import (
     INTENTS,
     ContractFact,
     Effort,
-    Facts,
     Intent,
+    Landing,
     ModelFacts,
     OutputFacts,
     ReasoningFact,
@@ -15,8 +13,10 @@ from .models import (
     SamplingFacts,
     SamplingValues,
     Writes,
-    model_name,
 )
+
+from .lint import check_pairs, lints, reasons
+from .models import BUNDLED, Facts
 
 __all__ = [
     "BUNDLED",
@@ -25,6 +25,7 @@ __all__ = [
     "Effort",
     "Facts",
     "Intent",
+    "Landing",
     "ModelFacts",
     "OutputFacts",
     "ReasoningFact",
@@ -36,6 +37,5 @@ __all__ = [
     "Writes",
     "check_pairs",
     "lints",
-    "model_name",
     "reasons",
 ]

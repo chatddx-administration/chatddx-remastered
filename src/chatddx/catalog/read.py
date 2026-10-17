@@ -15,7 +15,6 @@ from .model import (
     Part,
     Subject,
     Thread,
-    latest,
 )
 
 
@@ -46,8 +45,6 @@ class Reader(Protocol):
 
     def bindings(self, families: Collection[int]) -> list[Binding]: ...
 
-    def families(self) -> list[int]: ...
-
     def bindings_in(self, source: str) -> list[Binding]: ...
 
     def bindings_sharing(self, vignette: Vignette) -> list[Binding]: ...
@@ -64,17 +61,14 @@ class Reader(Protocol):
 
 
 def heads_of(rows: Reader, threads: Collection[int]) -> dict[int, Edit]:
-    found = latest((e.thread, e) for e in rows.edits(threads))
+    found = {e.thread: e for e in rows.edits(threads)}
     return {t: found[t] for t in sorted(found)}
-
-
-def holders(rows: Reader, digests: Collection[str]) -> dict[int, Edit]:
-    return heads_of(rows, {e.thread for e in rows.edits_holding(digests)})
 
 
 def heads_holding(rows: Reader, digests: Collection[str]) -> dict[int, Edit]:
     wanted = set(digests)
-    return {t: h for t, h in holders(rows, wanted).items() if h.digest in wanted}
+    held = heads_of(rows, {e.thread for e in rows.edits_holding(wanted)})
+    return {t: h for t, h in held.items() if h.digest in wanted}
 
 
 def abouts(rows: Reader, subjects: Collection[Subject]) -> dict[Subject, About]:

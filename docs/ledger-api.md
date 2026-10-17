@@ -12,7 +12,7 @@ Paths are relative to `src/chatddx/ledger/` unless they start with `src/` or `do
 - [Conventions](#conventions)
 - [record.py](#recordpy): `Record`, `ItemKey`, times, canonical form, seal
 - [call.py](#callpy): `Call`, fingerprints, `ToolRun`, `Turn`, execution checks
-- [run.py](#runpy): run records, `Run`, `check_run`, `compare_prompt_tokens`
+- [run.py](#runpy): run records, `Run`, `check_run`
 - [score.py](#scorepy): score records, `Score`, `check_score`
 - [Finding codes](#finding-codes)
 - [Database: schema `ledger`](#database-schema-ledger)
@@ -22,11 +22,10 @@ Paths are relative to `src/chatddx/ledger/` unless they start with `src/` or `do
 
 `chatddx.ledger` re-exports `Call`, `CanaryCall`, `Endpoint`, `ItemKey`, `JudgeCall`, `JudgeEndpoint`, `Record`,
 `Run`, `RunFinished`, `RunItem`, `RunStarted`, `Score`, `ScoreFinished`, `ScoreItem`, `ScoreStarted`, `ToolCode`,
-`ToolRun`, `Turn`, `check_run`, `check_score`, `compare_prompt_tokens`, `fingerprint_prompt_tokens` and
-`fingerprint_request`.
+`ToolRun`, `Turn`, `check_run`, `check_score` and `fingerprint_request`.
 
-Everything else (`Phase`, `PHASES`, `UtcDatetime`, the stage unions, the helpers in `record.py`
-and `call.py:check_execution`) is imported by path.
+Everything else (`Phase`, `PHASES`, `UtcDatetime`, the helpers in `record.py`, and `call.py:attest_model` and
+`call.py:check_execution`) is imported by path.
 
 | Module | Builds on |
 | --- | --- |
@@ -58,8 +57,8 @@ Only records have `v`, `canonical` and `parse`.
 
 | Exception | When |
 | --- | --- |
-| `pydantic.ValidationError` | A record or log breaks its own rules: a naive time, a call, tool run or log that finishes before it starts, stages out of order, rows of different logs, a duplicate phase or tool, `verify_at` without canaries, a tool run without `result`, a round without tools, a round without its call before an item's last round, an infinite or NaN score value. Rules written as validators raise `ValueError` or `StructuralError`, which pydantic wraps. |
-| `chatddx.factors.base.StructuralError` (a `ValueError`) | `Record.parse` of another version or of JSON that isn't an object; `check_run`, `check_score` and `compare_prompt_tokens` when the rows don't fit the components, or a component is missing or of the wrong kind (`resolve`, `Registry.get`). |
+| `pydantic.ValidationError` | A record or log breaks its own rules: a naive time, a call, tool run or log that finishes before it starts, a call given `prompt_tokens` and a response holding `prompt_token_ids`, rows of different logs, a duplicate phase or tool, `verify_at` without canaries, a tool run without `result`, a round without tools, a round without its call before an item's last round, an infinite or NaN score value. Rules written as validators raise `ValueError` or `StructuralError`, which pydantic wraps. |
+| `chatddx.factors.base.StructuralError` (a `ValueError`) | `Record.parse` of another version or of JSON that isn't an object; `check_run` and `check_score` when the rows don't fit the components, or a component is missing or of the wrong kind (`resolve`, `Registry.get`). |
 | `json.JSONDecodeError` | `Record.parse` of bytes that aren't JSON. |
 | `AssertionError` | `check_run` when the trial's engine isn't `engine.local` or `engine.remote`; a checked registry rules it out. |
 
@@ -135,7 +134,7 @@ row isn't part of it.
 | Function | Returns / raises |
 | --- | --- |
 | `in_order(started, finished) -> None` | `ValueError("finished before it started")` when `finished < started`. Equal times pass. |
-| `check_log(stages, order, ids) -> None` | `StructuralError` when the stage names aren't a prefix of `order` (`"stages [...] do not follow (...)"`) or the ids differ (`"rows belong to different logs"`); `in_order` between the first stage and each later one. |
+| `check_log(started, finished, ids) -> None` | `in_order` between the two stages when `finished` isn't `None`; `StructuralError("rows belong to different logs")` when the ids differ. |
 | `check_seal(log, subject) -> list[Finding]` | `[ledger.seal]` when the log has a finished row whose seal differs from `log.seal()`, else `[]`. |
 
 ## call.py
@@ -149,23 +148,17 @@ One exchange with an engine: an item's first request, a tool round's request, a 
 | `started_at` | `UtcDatetime` | required; with retries, the first attempt's start |
 | `finished_at` | `UtcDatetime` | required; with retries, the last attempt's end. Not before `started_at`. |
 | `status` | `int \| None` | `None`; the HTTP status, if a response came |
-| `response` | `dict[str, JsonValue] \| None` | `None`; the parsed body, meant to be stored without `prompt_token_ids` (not enforced) |
-| `prompt_tokens` | `Fingerprint \| None` | `None`; from `fingerprint_prompt_tokens` |
+| `response` | `dict[str, JsonValue] \| None` | `None`; the parsed body without its top-level `prompt_token_ids`: given a response that holds them, the call keeps the rest |
+| `prompt_tokens` | `Fingerprint \| None` | `None`; `Fingerprint.of(canonical_bytes(ids))` of the `prompt_token_ids` the response held, when they are a list. Refused when given beside them. |
 | `attempts` | `int`, ≥ 1 | `1` |
 | `error` | `str \| None` | `None` |
 
 | Property | Returns |
 | --- | --- |
 | `returned_model -> str \| None` | `response["model"]` when it is a string, else `None`. |
-| `system_fingerprint -> str \| None` | `response["system_fingerprint"]` when it is a string, else `None`. Nothing compares it. |
 
-### `fingerprint_request(body: dict[str, JsonValue], key: tuple[str, bytes] | None = None) -> Fingerprint`
-`Fingerprint.of(canonical_bytes(sorted_keys(body)), key)`: top-level keys sorted, nested key order kept. With
-`key = (key_id, secret)` the fingerprint is HMAC-SHA-256.
-
-### `fingerprint_prompt_tokens(response: dict[str, JsonValue], key: tuple[str, bytes] | None = None) -> tuple[dict[str, JsonValue], Fingerprint | None]`
-Returns the response without its top-level `prompt_token_ids`, and `Fingerprint.of(canonical_bytes(ids), key)` when
-`ids` is a list. When it is missing or not a list, the key is still dropped and the fingerprint is `None`.
+### `fingerprint_request(body: dict[str, JsonValue]) -> Fingerprint`
+`Fingerprint.of(canonical_bytes(sorted_keys(body)))`: top-level keys sorted, nested key order kept.
 
 ### `class ToolRun(Frozen)`
 One tool the runner ran for a tool call in a response.
@@ -188,6 +181,11 @@ A tool round.
 | `tools` | `tuple[ToolRun, ...]`, at least one | required |
 | `call` | `Call \| None` | `None`; the request sent with the results, or none when the run stopped before it. Only an item's last turn may lack one (`RunItem`). |
 
+### `attest_model(calls: Iterable[Call], want: str, who: str, subject: str) -> list[Finding]`
+Internal; `check_run` and `check_score` call it. Over the calls that have a response, `attestation.model` for each
+distinct model name other than `want`, in sorted order (`<who> returned model '<got>', declared '<want>'`), then one
+when some have no model name (`<who> returned no model name, declared '<want>'`); all with subject `subject`.
+
 ### `check_execution(execution: Execution, trial: Trial, calls: Sequence[Call], sent: Mapping[ItemKey, datetime]) -> list[Finding]`
 Internal; `check_run` and `check_score` call it. `calls` are the calls to count; `sent` says when each item was sent.
 
@@ -205,8 +203,6 @@ Internal; `check_run` and `check_score` call it. `calls` are the calls to count;
 | --- | --- |
 | `Phase` | `Literal["start", "end"]` |
 | `PHASES` | `("start", "end")`, in run order |
-| `RunStage` | `RunStarted \| RunFinished`, discriminated by `stage` |
-| `RUN_STAGES` | `("started", "finished")` |
 
 ### `class ToolCode(Frozen)`
 The version of a tool's entry point the runner ran it at: `tool: ToolRef`, `version: int` (from 1).
@@ -271,18 +267,16 @@ A run's log put back together from its rows.
 
 | Field | Type | Default |
 | --- | --- | --- |
-| `stages` | `tuple[RunStage, ...]`, at least one | required; `(started,)` or `(started, finished)` |
+| `started` | `RunStarted` | required |
+| `finished` | `RunFinished \| None` | `None` |
 | `items` | `tuple[RunItem, ...]` | `()` |
 | `canaries` | `tuple[CanaryCall, ...]` | `()` |
 
-Building one runs `check_log`: the stages must be `started` then optionally `finished`, the finished row not earlier
-than the started one, and every row's `run` the same (`ValidationError`). It doesn't check items or canary calls
-against anything else; `check_run` does.
+Building one runs `check_log`: the finished row not earlier than the started one, and every row's `run` the same
+(`ValidationError`). It doesn't check items or canary calls against anything else; `check_run` does.
 
 | Member | Description |
 | --- | --- |
-| `started -> RunStarted` | The first stage. |
-| `finished -> RunFinished \| None` | The finished stage, if any. |
 | `seal() -> str` | `seal_rows(started, items=items, canaries=canaries)`. |
 | `finish(at: AwareDatetime, findings: Sequence[Finding] = ()) -> RunFinished` | A finished row for this run with the current seal. It doesn't check `at` against the started row, or whether the run is finished already. |
 
@@ -306,36 +300,25 @@ Raises `StructuralError`:
 | `tool code recorded for tools the skeleton lacks: […]` | A `tool_code` entry for a tool not in `skeleton.tools`. |
 
 Returns findings, in this order:
-1. `ledger.seal`, subject the run id;
-2. `run.incomplete` when finished: one for missing items, one for missing planned canary calls;
-3. `case.drift` for each item whose `vignette` differs from its case's `vignette.fingerprint`;
+1. `ledger.seal`, subject the run id.
+2. `run.incomplete` when finished: one for missing items, one for missing planned canary calls.
+3. `case.drift` for each item whose `vignette` differs from its case's `vignette.fingerprint`.
 4. `call.failed` for each item whose last call has an `error`, subject the item key, then for each canary call with
    one, subject `<phase>/<position>`; the message is the error. Earlier calls of an item can't have one: a failed call
-   ends its rounds;
+   ends its rounds.
 5. `tools.unanswered` for each item whose last call still has tool calls other than the answer function's, or
-   `tools.stopped` when its last turn has no call (skeletons with tools only);
-6.  `tools.code` for each tool of the skeleton whose version isn't recorded or isn't the one `Tool.version` pins;
+   `tools.stopped` when its last turn has no call (skeletons with tools only).
+6.  `tools.code` for each tool of the skeleton whose version isn't recorded or isn't the one `Tool.version` pins.
 7.  `attestation.model` for each item: one per distinct wrong model name, and one when some call has a response but no
-    model name. The declared name is the engine's `served_model_name`: a local engine's digest, a remote engine's
-    `model`. Calls without a response aren't checked;
-8.  `attestation.prompt_tokens` when some items have a call, failed calls included, without `prompt_tokens`;
-9.  `execution.*` over every item call and canary call, an item counting as sent when its first call starts;
+    model name. The declared name is the engine's `served_model_name(engine, get)`.
+8.  `attestation.prompt_tokens` when some items have a call, failed calls included, without `prompt_tokens`.
+9.  `execution.*` over every item call and canary call, an item counting as sent when its first call starts.
 10. `canary.phase`: start-phase calls that finish after the first item call starts, and end-phase calls that start
     before the last item call, tool rounds included, finishes. One finding per phase. Nothing when there are no items.
 
 Canary calls get neither the model check nor the prompt-token check. Timeouts aren't checked.
 
-### `compare_prompt_tokens(a: Run, b: Run, registry: Registry) -> list[Finding]`
-Raises `StructuralError("the runs build their prompts from different <fields>")` when the two trials differ in
-`skeleton`, `engine` or `cleanup`. Otherwise returns `attestation.prompt_tokens_drift`, subject the item key, for
-each item of `a` whose first call has `prompt_tokens`, matched by key with an item of `b` whose first call has them
-too, where the two differ. Later calls aren't compared; items of `b` missing from `a` and vice versa are skipped.
-
 ## score.py
-
-### Names
-`ScoreStage` is `ScoreStarted | ScoreFinished`, discriminated by `stage`; `SCORE_STAGES` is `("started",
-"finished")`.
 
 ### `class JudgeCall(Frozen)`
 
@@ -381,11 +364,12 @@ A score's log put back together from its rows.
 
 | Field | Type | Default |
 | --- | --- | --- |
-| `stages` | `tuple[ScoreStage, ...]`, at least one | required |
+| `started` | `ScoreStarted` | required |
+| `finished` | `ScoreFinished \| None` | `None` |
 | `items` | `tuple[ScoreItem, ...]` | `()` |
 
-Validated as `Run` is, by `score`. Members `started`, `finished`, `seal()` (`seal_rows(started, items=items)`) and
-`finish(at, findings=())` behave as `Run`'s.
+Validated as `Run` is, by `score`. `seal()` (`seal_rows(started, items=items)`) and `finish(at, findings=())` behave
+as `Run`'s.
 
 ### `check_score(score: Score, run: Run, registry: Registry) -> list[Finding]`
 Compares the score with its scoring and its run. Resolves the scoring, its scorer, the scorer's judges, the run's
@@ -431,7 +415,6 @@ All are warnings. Item-key subjects are `str(ItemKey)`.
 | `tools.stopped` | `check_run` | item key | `round <r> stopped after <k> of <n> tool calls, before its call` |
 | `tools.code` | `check_run` | tool digest | `the code tool '<name>' ran with isn't recorded`, or `tool '<name>' ran at version <v> of <entry point>, not the version it pins (<v>)` |
 | `attestation.model` | `check_run`, `check_score` | item key | `engine returned model '<got>', declared '<want>'`, or `engine returned no model name, declared '<want>'`; for a judge call, `judge engine returned …` |
-| `attestation.prompt_tokens` | `check_run` | none | `<n> items have no prompt token fingerprint` |
 | `canary.phase` | `check_run` | none | `<n> start canary calls hadn't finished when the first item was sent`, `<n> end canary calls started before the last item call finished` |
 | `execution.retries` | `check_run`, `check_score` | none | `<n> calls took more than the <retries + 1> attempts allowed` |
 | `execution.order` | `check_run`, `check_score` | none | `<n> items were sent before items scheduled ahead of them` |
@@ -562,11 +545,11 @@ It doesn't
 From `docs/ledger.md`, "Open design issues", where they concern this API:
 - `Execution.timeout_s` isn't checked: a call's times span all its attempts.
 - Nothing here rebuilds a request to compare with `Call.request`; the bench rebuilds an item's first
-  (`Bench.rendered_again`), not a later round's or a judge's.
+  (`chatddx.runner.prepare.rendered_again`), not a later round's or a judge's.
+- Prompt-token fingerprints aren't compared between runs; `check_run` notes only the items without one.
 - Canary outputs aren't compared between phases or runs.
 - Canary calls get no model check, and neither canary calls nor judge calls a prompt-token check.
-- `Call.system_fingerprint` is never compared.
+- A response's `system_fingerprint` is never compared.
 - The finished row is outside the seal: its `at` and `findings` can change without `ledger.seal`.
-- `Call` accepts a response that still holds `prompt_token_ids`.
 - Records don't travel in a `Bundle`.
 - Findings have no mechanism of their own beyond the finished rows and the check functions.

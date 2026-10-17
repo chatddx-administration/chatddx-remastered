@@ -1,4 +1,4 @@
-from .catalog import Catalog
+from .catalog import Catalog, Kept, Rows
 from .migrate import TOP_TIER, migrate
 from .people import People
 from .queue import Job, Queue, UnderWay
@@ -9,8 +9,10 @@ __all__ = [
     "TOP_TIER",
     "Catalog",
     "Job",
+    "Kept",
     "People",
     "Queue",
+    "Rows",
     "Store",
     "Texts",
     "UnderWay",

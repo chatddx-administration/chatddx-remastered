@@ -2,14 +2,13 @@ from pathlib import Path
 
 import pytest
 
-from chatddx.catalog import Subject
+from chatddx.catalog import Subject, families, read
 from chatddx.cli import main
 from chatddx.curation import init, repair
-from chatddx.curation.test.cases import CASES, vignettes
+from chatddx.curation.test.cases import CASES, TEXTS, vignettes
 from chatddx.factors.bundle import Registry
 from chatddx.identity import Person
-from chatddx.inventory.test.memory import MemorySource
-from chatddx.store import Catalog, People
+from chatddx.store import Catalog, People, Rows
 from chatddx.store.store import Connection, Store
 from chatddx.test.world import DATA, copied, world_plan
 
@@ -21,34 +20,30 @@ def test_repair_moves_the_archive_s_families_to_their_vignettes_new_places(
 ) -> None:
     archive = People(conn).find("archive")
     assert archive is not None
-    catalog = Catalog(conn)
-    families: dict[str, int] = {}
+    rows = Rows(conn)
+    family_at: dict[str, int] = {}
     for c in vignettes().cases():
-        if (family := catalog.family(c.digest)) is not None:
-            families[c.vignette.id] = family
-    texts = vignettes().vignettes
-    moved = MemorySource(
-        name="test",
-        vignettes={
-            **{id: text for id, text in texts.items() if id != "noted"},
-            "noted2": texts["noted"],
-            "crlf": b"Edited at the source.",
-        },
+        if (family := families.family_of(rows, c.digest)) is not None:
+            family_at[c.vignette.id] = family
+    moved = vignettes(
+        {id: text for id, text in TEXTS.items() if id != "noted"},
+        noted2=TEXTS["noted"],
+        crlf=b"Edited at the source.",
     )
     at = "at source 'test'"
     dry = repair(conn, moved, archive, dry=True)
     assert dry == [
-        f"[repair case] crlf: changed {at}; family {families['crlf']} would move",
+        f"[repair case] crlf: changed {at}; family {family_at['crlf']} would move",
         f"[repair case] noted: renamed to noted2 {at}; family "
-        + f"{families['noted']} would move",
+        + f"{family_at['noted']} would move",
     ]
     assert repair(conn, moved, archive, dry=True) == dry
 
     assert repair(conn, moved, archive) == [
         f"[repair case] crlf: changed {at}; family "
-        + f"{families['crlf']} moved, with 1 case, 0 appendices and 0 threads",
+        + f"{family_at['crlf']} moved, with 1 case, 0 appendices and 0 threads",
         f"[repair case] noted: renamed to noted2 {at}; family "
-        + f"{families['noted']} moved, with 1 case, 0 appendices and 1 thread",
+        + f"{family_at['noted']} moved, with 1 case, 0 appendices and 1 thread",
     ]
     assert repair(conn, moved, archive) == [f"[repair] nothing to repair {at}"]
 
@@ -72,7 +67,7 @@ def test_repair_moves_the_archive_s_families_to_their_vignettes_new_places(
         )
     ]
     assert not [line for line in lines if "not in the data" in line]
-    assert catalog.about(Subject(family=families["noted"])).name == "noted2"
+    assert read.about(rows, Subject(family=family_at["noted"])).name == "noted2"
 
 
 @pytest.mark.parametrize("template", ["loaded"], indirect=True)
@@ -88,9 +83,8 @@ def test_repair_leaves_other_people_s_families_alone(
     digest = registry.add(case)
     _ = Store(conn).add(registry, [digest])
     family = Catalog(conn).adopt(digest, alice.id)
-    texts = dict(mine.vignettes)
-    texts["Mine2"] = texts.pop("Mine")
-    assert repair(conn, MemorySource(name="test", vignettes=texts), archive) == [
+    renamed = vignettes(Mine2=b"Alice's own vignette.")
+    assert repair(conn, renamed, archive) == [
         f"[repair case] Mine: renamed to Mine2 at source 'test', but family {family} "
         + "isn't the archive's"
     ]
@@ -130,8 +124,8 @@ def test_repair_data_command(
         inventory.read_text() + '[source.more]\npath = "vignettes"\n'
     )
     for argv, refusal in [
-        ([], r"2 sources list their vignettes \(more, test\), so one must be named"),
-        (["--source", "typed"], "source 'typed' is a database source"),
+        ([], r"2 directory sources \(more, test\) are in the inventory, so one must"),
+        (["--source", "typed"], "source 'typed' isn't a directory source"),
     ]:
         with pytest.raises(SystemExit, match=refusal):
             main(["repair-data", *argv])

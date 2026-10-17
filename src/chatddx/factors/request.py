@@ -18,6 +18,7 @@ from .base import (
     Component,
     Digest,
     Frozen,
+    Language,
     RefTo,
     Resolver,
     Settings,
@@ -25,6 +26,16 @@ from .base import (
     distinct,
     resolve,
     sorted_keys,
+)
+from .engine import ModelRef, model_of
+from .facts import (
+    Effort,
+    FactsRef,
+    Landing,
+    ModelFacts,
+    Refused,
+    SamplingValues,
+    Writes,
 )
 from .response import message, tool_calls
 
@@ -321,16 +332,27 @@ class Sampling(Component):
     max_tokens_key: Literal["max_completion_tokens", "max_tokens"] = (
         "max_completion_tokens"
     )
+    recommended: bool = False
 
     @model_validator(mode="before")
     @classmethod
     def _greedy(cls, data: object) -> object:
         return _canonical_sampling(data)
 
+    def over(self, values: SamplingValues) -> "Sampling":
+        own = self.model_dump(exclude={"kind", "recommended"}, exclude_none=True)
+        return Sampling.model_validate({**values.model_dump(exclude_none=True), **own})
+
     def body(self) -> dict[str, JsonValue]:
         body: dict[str, JsonValue] = self.model_dump(
             exclude_none=True,
-            exclude={"kind", "stop", "max_output_tokens", "max_tokens_key"},
+            exclude={
+                "kind",
+                "stop",
+                "max_output_tokens",
+                "max_tokens_key",
+                "recommended",
+            },
         )
         if self.stop:
             body["stop"] = list(self.stop)
@@ -344,6 +366,18 @@ class Reasoning(Component):
     effort: Literal["none", "minimal", "low", "medium", "high"] | None = None
     thinking_token_budget: int | None = Field(default=None, ge=0)
     chat_template_kwargs: Settings = Field(default_factory=dict)
+    level: Effort | None = None
+
+    @model_validator(mode="after")
+    def _level_or_settings(self) -> "Reasoning":
+        if self.level is not None and (
+            self.effort is not None or self.chat_template_kwargs
+        ):
+            raise ValueError(
+                "a reasoning level is worked out from the model's facts, so it comes "
+                + "without an effort or chat template arguments"
+            )
+        return self
 
 
 class Passthrough(Component):
@@ -390,21 +424,25 @@ class Toolset(Component):
 
 
 class Translations(Component):
+    schema_version: ClassVar[int] = 2
     kind: Literal["chunk.translations"] = "chunk.translations"
-    entries: Annotated[dict[str, str], AfterValidator(sorted_keys)] = Field(
-        min_length=1
+    into: Annotated[dict[Language, dict[str, str]], AfterValidator(sorted_keys)] = (
+        Field(min_length=1)
     )
 
-    @field_validator("entries")
+    @field_validator("into")
     @classmethod
-    def _entries(cls, entries: dict[str, str]) -> dict[str, str]:
-        if any(not text.strip() for text in entries):
-            raise ValueError("whitespace isn't translated")
-        if empty := sorted(
-            text for text, translation in entries.items() if not translation
-        ):
-            raise ValueError(f"no translation given for {empty}")
-        return entries
+    def _into(cls, into: dict[str, dict[str, str]]) -> dict[str, dict[str, str]]:
+        for language, entries in into.items():
+            if not entries:
+                raise ValueError(f"no translations into {language}")
+            if any(not text.strip() for text in entries):
+                raise ValueError("whitespace isn't translated")
+            if empty := sorted(
+                text for text, translation in entries.items() if not translation
+            ):
+                raise ValueError(f"no translation into {language} given for {empty}")
+        return {language: sorted_keys(entries) for language, entries in into.items()}
 
 
 class AppendixLayout(Frozen):
@@ -430,9 +468,10 @@ class Recipe(Frozen):
     appendix_layout: AppendixLayout = AppendixLayout()
     translations: Annotated[Digest, RefTo("chunk.translations")] | None = None
     toolset: Annotated[Digest, RefTo("chunk.toolset")] | None = None
+    model: ModelRef
 
 
-RECIPE_PARTS = (
+CHUNK_PARTS = (
     "instructions",
     "few_shot",
     "prompt",
@@ -442,6 +481,10 @@ RECIPE_PARTS = (
     "passthrough",
     "translations",
     "toolset",
+)
+RECIPE_PARTS = (*CHUNK_PARTS, "model")
+OPTIONAL_PARTS = tuple(
+    p for p in RECIPE_PARTS if not Recipe.model_fields[p].is_required()
 )
 
 
@@ -553,15 +596,58 @@ class Skeleton(Component):
             case TextOutput(json_schema=schema):
                 return schema
 
+    def render(
+        self,
+        *,
+        model: str,
+        seed: int | None,
+        fills: Mapping[SlotName, str],
+        return_token_ids: bool = True,
+    ) -> dict[str, JsonValue]:
+        slots = {
+            s.slot for m in self.messages for s in m.content if isinstance(s, Slot)
+        }
+        if missing := slots - fills.keys():
+            raise StructuralError(f"no fill for slots {sorted(missing)}")
+        messages: list[JsonValue] = []
+        for m in self.messages:
+            parts = [s if isinstance(s, str) else fills[s.slot] for s in m.content]
+            messages.append({"role": m.role, "content": "".join(parts)})
+        body: dict[str, JsonValue] = {"model": model, "messages": messages, **self.body}
+        if seed is not None and not self.greedy:
+            body["seed"] = seed
+        if return_token_ids:
+            body["return_token_ids"] = True
+        return body
+
 
 SkeletonRef = Annotated[Digest, RefTo("skeleton")]
 
 
 class Compilation(Component):
+    schema_version: ClassVar[int] = 3
     kind: Literal["compilation"] = "compilation"
     recipe: Recipe
     skeleton: SkeletonRef
     compiler: Code
+    facts: FactsRef | None = None
+    into: Language | None = None
+
+    @override
+    def cross_check(self, get: Resolver) -> list[str]:
+        found: list[str] = []
+        if self.facts is not None:
+            facts = resolve(get, self.facts, ModelFacts)
+            if (model := model_of(self.recipe.model, get).name) != facts.model:
+                found.append(f"facts about {facts.model} compiled a recipe for {model}")
+        if self.into is not None and self.into not in self._languages(get):
+            found.append(f"the recipe has no translations into {self.into}")
+        return found
+
+    def _languages(self, get: Resolver) -> set[str]:
+        if self.recipe.translations is None:
+            return set()
+        return set(resolve(get, self.recipe.translations, Translations).into)
 
 
 def _tool_name(tool: JsonValue) -> str:
@@ -619,10 +705,6 @@ _NAMED = frozenset(
     {"properties", "patternProperties", "$defs", "definitions", "dependentSchemas"}
 )
 _DATA = frozenset({"enum", "const", "default", "examples"})
-
-
-def _untranslated(text: str) -> str:
-    return text
 
 
 def _tr(text: str, tr: Translate) -> str:
@@ -759,9 +841,6 @@ def _parts(recipe: Recipe, get: Resolver, tr: Callable[[str], Translate]) -> _Pa
     )
 
 
-TRANSLATED = frozenset({"output", "appendix_layout", "toolset"})
-
-
 def texts(recipe: Recipe, get: Resolver) -> dict[str, tuple[str, ...]]:
     found: dict[str, list[str]] = {}
 
@@ -799,18 +878,67 @@ def own_texts(chunk: Component, get: Resolver) -> tuple[str, ...]:
         case Toolset():
             _ = _tr_toolset(chunk, get, tr)
         case Translations():
-            seen.extend(t for t in chunk.entries.values() if t.strip())
+            seen.extend(
+                t
+                for entries in chunk.into.values()
+                for t in entries.values()
+                if t.strip() and t not in seen
+            )
         case _:
             pass
     return tuple(seen)
 
 
-def compile_request(recipe: Recipe, get: Resolver) -> Skeleton:
-    entries = (
-        None
-        if recipe.translations is None
-        else resolve(get, recipe.translations, Translations).entries
+def landings(
+    recipe: Recipe, get: Resolver, facts: ModelFacts | None
+) -> tuple[Landing | None, Landing | None]:
+    if facts is not None and (model := model_of(recipe.model, get).name) != facts.model:
+        raise StructuralError(f"facts about {facts.model} can't compile for {model}")
+    reasoning = (
+        None if recipe.reasoning is None else resolve(get, recipe.reasoning, Reasoning)
     )
+    sampling = resolve(get, recipe.sampling, Sampling)
+    asked = None if reasoning is None else reasoning.level
+    if asked is None and not sampling.recommended:
+        return None, None
+    if facts is None:
+        what = "a recommended sampling" if asked is None else f"reasoning {asked!r}"
+        raise StructuralError(
+            f"{what} is worked out from the facts about the recipe's model, which has "
+            + "none"
+        )
+    try:
+        landed = None if asked is None else facts.reasoning.landing(asked)
+        if landed is not None and reasoning and reasoning.thinking_token_budget:
+            facts.check_budget()
+        followed = None
+        if sampling.recommended:
+            followed = landed or facts.reasoning.landing("default")
+            _ = facts.recommended(followed.level)
+    except Refused as e:
+        raise StructuralError(f"{facts.model}: {e}") from None
+    return landed, followed
+
+
+def _translations_into(recipe: Recipe, get: Resolver, into: str) -> dict[str, str]:
+    held = (
+        {}
+        if recipe.translations is None
+        else resolve(get, recipe.translations, Translations).into
+    )
+    if into not in held:
+        raise StructuralError(f"no translations into {into}")
+    return held[into]
+
+
+def compile_request(
+    recipe: Recipe,
+    get: Resolver,
+    facts: ModelFacts | None = None,
+    into: str | None = None,
+) -> Skeleton:
+    landed, followed = landings(recipe, get, facts)
+    entries = None if into is None else _translations_into(recipe, get, into)
     missing: set[str] = set()
 
     def translate(text: str) -> str:
@@ -821,12 +949,11 @@ def compile_request(recipe: Recipe, get: Resolver) -> Skeleton:
             return text
         return entries[text]
 
-    parts = _parts(
-        recipe, get, lambda part: translate if part in TRANSLATED else _untranslated
-    )
+    parts = _parts(recipe, get, lambda _: translate)
     if missing:
         raise StructuralError(
-            "no translation for " + ", ".join(repr(t) for t in sorted(missing))
+            f"no translation into {into} for "
+            + ", ".join(repr(t) for t in sorted(missing))
         )
     prompt, output = parts.prompt, parts.output
     sampling = resolve(get, recipe.sampling, Sampling)
@@ -871,15 +998,22 @@ def compile_request(recipe: Recipe, get: Resolver) -> Skeleton:
     if recipe.passthrough is not None:
         passthrough = resolve(get, recipe.passthrough, Passthrough)
         body.update(passthrough.body)
+    if facts is not None and followed is not None:
+        sampling = sampling.over(facts.recommended(followed.level))
     managed = sampling.body()
     if recipe.reasoning is not None:
         reasoning = resolve(get, recipe.reasoning, Reasoning)
-        if reasoning.effort is not None:
-            managed["reasoning_effort"] = reasoning.effort
+        asked = Writes(
+            effort=reasoning.effort,
+            chat_template_kwargs=reasoning.chat_template_kwargs,
+        )
+        writes = asked if landed is None else landed.writes
+        if writes.effort is not None:
+            managed["reasoning_effort"] = writes.effort
         if reasoning.thinking_token_budget is not None:
             managed["thinking_token_budget"] = reasoning.thinking_token_budget
-        if reasoning.chat_template_kwargs:
-            managed["chat_template_kwargs"] = reasoning.chat_template_kwargs
+        if writes.chat_template_kwargs:
+            managed["chat_template_kwargs"] = writes.chat_template_kwargs
     offered: list[JsonValue] = [
         {
             "type": "function",
@@ -935,31 +1069,22 @@ def compile_request(recipe: Recipe, get: Resolver) -> Skeleton:
 
 
 def compiled(
-    recipe: Recipe, get: Resolver, compiler: Code
+    recipe: Recipe,
+    get: Resolver,
+    compiler: Code,
+    facts: ModelFacts | None = None,
+    into: str | None = None,
 ) -> tuple[Skeleton, Compilation]:
-    skeleton = compile_request(recipe, get)
-    record = Compilation(recipe=recipe, skeleton=skeleton.digest, compiler=compiler)
+    skeleton = compile_request(recipe, get, facts, into)
+    worked_out = any(landings(recipe, get, facts))
+    record = Compilation(
+        recipe=recipe,
+        skeleton=skeleton.digest,
+        compiler=compiler,
+        facts=facts.digest if facts is not None and worked_out else None,
+        into=into,
+    )
     return skeleton, record
-
-
-def render(
-    skeleton: Skeleton,
-    *,
-    model: str,
-    seed: int | None,
-    fills: Mapping[SlotName, str],
-    return_token_ids: bool = True,
-) -> dict[str, JsonValue]:
-    messages: list[JsonValue] = []
-    for m in skeleton.messages:
-        parts = [s if isinstance(s, str) else fills[s.slot] for s in m.content]
-        messages.append({"role": m.role, "content": "".join(parts)})
-    body: dict[str, JsonValue] = {"model": model, "messages": messages, **skeleton.body}
-    if seed is not None and not skeleton.greedy:
-        body["seed"] = seed
-    if return_token_ids:
-        body["return_token_ids"] = True
-    return body
 
 
 def next_request(

@@ -4,15 +4,14 @@ from uuid import uuid4
 
 import psycopg
 import pytest
-from psycopg import sql
 from psycopg.conninfo import make_conninfo
 
 from chatddx import settings
 from chatddx.api import schemas
 from chatddx.factors.test.sample import fp
 from chatddx.ledger import Call, ItemKey, RunItem
-from chatddx.runner.run import ItemEnded
-from chatddx.store.notify import Assembler, Events, channel
+from chatddx.runner import ItemEnded
+from chatddx.store.notify import Assembler, Events, channel, listen
 from chatddx.store.store import Connection
 from chatddx.worker import publish
 from chatddx.worker.publish import Publisher
@@ -44,7 +43,7 @@ def test_deltas_go_out_together_by_item_and_kind_and_an_ended_item_s_go_unsaid(
     monkeypatch.setattr(publish, "EVERY", 60.0)
     listener, told = connected
     run = uuid4()
-    _ = listener.execute(sql.SQL("LISTEN {}").format(sql.Identifier(channel(run))))
+    listen(listener, channel(run))
     publisher = Publisher(told, run)
     begun = schemas.ItemStartedData(case=A, replicate=0, seed=7)
     publisher.put(("item.started", begun))

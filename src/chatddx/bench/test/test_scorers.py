@@ -4,8 +4,8 @@ import pytest
 from pydantic import JsonValue
 
 from chatddx.bench import Bench
-from chatddx.bench.test.helpers import ran, trial
-from chatddx.catalog import Labels
+from chatddx.bench.test.helpers import component, ran, trial, view_labels
+from chatddx.catalog import Labels, threads
 from chatddx.curation import Plan
 from chatddx.factors.base import resolve
 from chatddx.factors.scoring import Scorer
@@ -13,7 +13,7 @@ from chatddx.identity import Person
 from chatddx.scorers import metrics
 from chatddx.scorers.scorer import Metrics
 from chatddx.scorers.shipped import SCORERS
-from chatddx.store import Catalog, People
+from chatddx.store import Catalog, People, Rows
 from chatddx.store.store import Connection
 from chatddx.test.world import LINES
 
@@ -23,9 +23,9 @@ RAISED = metrics.score.version + 1
 
 # The archive's scorer of that name, with its JSON as an edge gets it.
 def _archive_s(bench: Bench, name: str) -> tuple[int, dict[str, Any]]:
-    edit, _ = bench.thread("scorer", name)
-    assert bench.login(bench.about(edit.thread).owner) == "archive"
-    return edit.thread, bench.get(edit.digest).model_dump(mode="json")
+    edit, about = bench.thread(name, "scorer")
+    assert bench.login(about.owner) == "archive"
+    return edit.thread, bench.store.get(edit.digest).model_dump(mode="json")
 
 
 def _archive(conn: Connection) -> Person:
@@ -45,22 +45,22 @@ def test_a_person_writes_a_scorer_over_shipped_code_with_its_labels(
         "expectation": "/diagnosis",
         "metric": "reciprocal_rank",
     }
-    mine = bench.component({**doc, "views": [*doc["views"], ranked]})
+    mine = component({**doc, "views": [*doc["views"], ranked]})
     assert isinstance(mine, Scorer)
 
     made = bench.new(
         mine, "ranked", labels={("view", 0): "text", ("view", 1): "ranked"}
     )
     assert (made.what, made.findings) == ("created", [])
-    assert bench.labels_of(made.edit) == {0: "text", 1: "ranked"}
+    assert view_labels(bench, made.edit) == {0: "text", 1: "ranked"}
     assert bench.labels(mine.digest) == {0: "text", 1: "ranked"}
 
-    started = bench.run_by_id(ran(conn, alice, trial(conn, plan, LINES, "crlf")))
-    assert "ranked" in {a.name for _, a in bench.scorers_for(started)}
+    started = bench.run(ran(conn, alice, trial(conn, plan, LINES, "crlf")))
+    assert "ranked" in {a.name for _, a, _ in bench.scorers(started)}
     assert mine.digest in bench.unscored(started)
 
     nowhere: JsonValue = {"expectation": "/nowhere", "metric": "mentions"}
-    odd = bench.new(bench.component({**doc, "views": [nowhere]}), "odd")
+    odd = bench.new(component({**doc, "views": [nowhere]}), "odd")
     assert [f.code for f in odd.findings] == ["view.unreachable"]
 
 
@@ -85,9 +85,9 @@ def test_a_scorer_the_running_code_could_never_score_with_is_refused(
     ]
     for changes, refused in refusals:
         with pytest.raises(ValueError, match=refused):
-            _ = bench.new(bench.component({**doc, **changes}), "refused")
+            _ = bench.new(component({**doc, **changes}), "refused")
 
-    scorer = bench.component(doc)
+    scorer = component(doc)
     mislabelled: list[tuple[Labels, str]] = [
         ({("view", 1): "x"}, "has no view at position 1"),
         ({("resource", 0): "x"}, "has no resource at position 0"),
@@ -96,10 +96,10 @@ def test_a_scorer_the_running_code_could_never_score_with_is_refused(
     for labels, refused in mislabelled:
         with pytest.raises(ValueError, match=refused):
             _ = bench.new(scorer, "refused", labels=labels)
-    sampling = bench.get(bench.thread("sampling", "greedy")[0].digest)
+    sampling = bench.store.get(bench.thread("greedy", "sampling")[0].digest)
     with pytest.raises(ValueError, match="only a scorer's views and resources have"):
         _ = bench.new(sampling, "cool", labels={("view", 0): "x"})
-    assert "refused" not in bench.names("scorer")
+    assert "refused" not in {a.name for _, a in bench.threads("scorer")}
 
 
 @pytest.mark.slow
@@ -107,57 +107,55 @@ def test_a_fork_keeps_its_origin_s_labels_and_renames_its_own_views(
     conn: Connection, alice: Person, bench: Bench, plan: Plan
 ) -> None:
     origin, doc = _archive_s(bench, "list")
-    head = Catalog(conn).head(origin)
-    theirs = bench.labels_of(head)
+    head = threads.head(Rows(conn), origin)
+    theirs = view_labels(bench, head)
     assert theirs == {0: "differential", 1: "dont-miss"}
 
-    fork = bench.fork_component(origin, "my list")
+    fork = bench.fork(origin, "my list")
     assert fork.edit.digest == head.digest
-    assert bench.labels_of(fork.edit) == theirs
-    started = bench.run_by_id(ran(conn, alice, trial(conn, plan, LINES, "crlf")))
+    assert view_labels(bench, fork.edit) == theirs
+    started = bench.run(ran(conn, alice, trial(conn, plan, LINES, "crlf")))
     unscored = set(bench.unscored(started))
 
-    scorer = bench.component(doc)
+    scorer = component(doc)
     renamed: Labels = {("view", 0): "ddx", ("view", 1): "must not miss"}
-    edited = bench.edit_component(
-        fork.edit.thread, fork.edit.id, scorer, labels=renamed
-    )
+    edited = bench.edit(fork.edit.thread, fork.edit.id, scorer, labels=renamed)
     assert (edited.what, edited.edit.digest) == ("a new version", head.digest)
-    assert bench.labels_of(edited.edit) == {0: "ddx", 1: "must not miss"}
+    assert view_labels(bench, edited.edit) == {0: "ddx", 1: "must not miss"}
     assert bench.labels(head.digest) == {0: "ddx", 1: "must not miss"}
     assert set(bench.unscored(started)) == unscored
 
     thread, at = edited.edit.thread, edited.edit.id
-    assert bench.edit_component(thread, at, scorer, labels=renamed).what == "unchanged"
-    assert bench.edit_component(thread, at, scorer).what == "unchanged"
+    assert bench.edit(thread, at, scorer, labels=renamed).what == "unchanged"
+    assert bench.edit(thread, at, scorer).what == "unchanged"
 
-    assert bench.labels_of(Catalog(conn).head(origin)) == theirs
-    archive = Bench(conn, _archive(conn), bench.inventory, bench.facts)
+    assert view_labels(bench, threads.head(Rows(conn), origin)) == theirs
+    archive = Bench(conn, _archive(conn), bench.inventory)
     assert archive.labels(head.digest) == theirs
 
-    relabelled = bench.fork_component(origin, "relabelled", labels={("view", 1): "x"})
-    assert bench.labels_of(relabelled.edit) == {1: "x"}
-    one = bench.component({**doc, "views": doc["views"][:1]})
-    changed = bench.fork_component(origin, "changed", one)
-    assert bench.labels_of(changed.edit) == {}
+    relabelled = bench.fork(origin, "relabelled", labels={("view", 1): "x"})
+    assert view_labels(bench, relabelled.edit) == {1: "x"}
+    one = component({**doc, "views": doc["views"][:1]})
+    changed = bench.fork(origin, "changed", one)
+    assert view_labels(bench, changed.edit) == {}
 
 
 def test_a_scorer_digest_is_called_what_the_person_s_threads_called_it(
     bench: Bench,
 ) -> None:
     _, doc = _archive_s(bench, "list")
-    first = bench.component({**doc, "views": doc["views"][:1]})
+    first = component({**doc, "views": doc["views"][:1]})
     made = bench.new(first, "narrow", labels={("view", 0): "first"})
-    second = bench.component({**doc, "views": doc["views"][1:]})
-    moved = bench.edit_component(made.edit.thread, made.edit.id, second)
-    assert bench.labels_of(moved.edit) == {}
+    second = component({**doc, "views": doc["views"][1:]})
+    moved = bench.edit(made.edit.thread, made.edit.id, second)
+    assert view_labels(bench, moved.edit) == {}
     assert bench.labels(first.digest) == {0: "first"}
-    unseen = bench.component({**doc, "views": doc["views"][::-1]})
+    unseen = component({**doc, "views": doc["views"][::-1]})
     assert bench.labels(unseen.digest) == {}
 
 
 def _renamed(conn: Connection, thread: int, labels: Labels) -> None:
-    head = Catalog(conn).head(thread)
+    head = threads.head(Rows(conn), thread)
     _ = Catalog(conn).keep(head.digest, _archive(conn).id, thread, labels=labels)
 
 
@@ -166,17 +164,17 @@ def test_following_an_origin_keeps_the_labels_of_the_views_it_keeps(
     conn: Connection, bench: Bench
 ) -> None:
     origin, doc = _archive_s(bench, "list")
-    as_is = bench.fork_component(origin, "as is")
-    one = bench.component({**doc, "views": doc["views"][:1]})
-    narrow = bench.fork_component(origin, "narrow", one, labels={("view", 0): "mine"})
+    as_is = bench.fork(origin, "as is")
+    one = component({**doc, "views": doc["views"][:1]})
+    narrow = bench.fork(origin, "narrow", one, labels={("view", 0): "mine"})
     _renamed(conn, origin, {("view", 0): "ddx", ("view", 1): "dont-miss"})
 
     followed = bench.follow(as_is.edit.thread, as_is.edit.id)
     assert followed.edit.digest == as_is.edit.digest
-    assert bench.labels_of(followed.edit) == {0: "ddx", 1: "dont-miss"}
+    assert view_labels(bench, followed.edit) == {0: "ddx", 1: "dont-miss"}
     kept = bench.follow(narrow.edit.thread, narrow.edit.id)
     assert kept.edit.digest == one.digest
-    assert bench.labels_of(kept.edit) == {0: "mine"}
+    assert view_labels(bench, kept.edit) == {0: "mine"}
 
 
 @pytest.mark.slow
@@ -188,9 +186,9 @@ def test_a_scorer_moves_on_to_a_raised_version_by_following_its_origin(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     origin, doc = _archive_s(bench, "whole")
-    fork = bench.fork_component(origin, "my whole")
+    fork = bench.fork(origin, "my whole")
     monkeypatch.setitem(SCORERS, SHIPPED, Metrics(RAISED, metrics.score.metrics))
-    raised = bench.component({**doc, "version": RAISED})
+    raised = component({**doc, "version": RAISED})
     registry = bench.store.load(s.digest for s in raised.refs())
     _ = bench.store.add(registry, [registry.add(raised)])
     _ = Catalog(conn).keep(
@@ -198,11 +196,11 @@ def test_a_scorer_moves_on_to_a_raised_version_by_following_its_origin(
     )
 
     made = trial(conn, plan, LINES, "crlf")
-    started = bench.run_by_id(ran(conn, alice, made))
+    started = bench.run(ran(conn, alice, made))
     [graded] = bench.score(started, [fork.edit.digest])
     assert graded.refused is not None
     assert f"metrics:score is at version {RAISED} in chatddx" in graded.refused
 
     followed = bench.follow(fork.edit.thread, fork.edit.id)
-    assert resolve(bench.get, followed.edit.digest, Scorer).version == RAISED
-    assert bench.labels_of(followed.edit) == {0: "whole"}
+    assert resolve(bench.store.get, followed.edit.digest, Scorer).version == RAISED
+    assert view_labels(bench, followed.edit) == {0: "whole"}

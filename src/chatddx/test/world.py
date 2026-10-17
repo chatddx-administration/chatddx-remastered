@@ -26,22 +26,30 @@ GPT_OSS_MODEL = "openai/gpt-oss-20b"
 MISTRAL_MODEL = "test/mistral-7b"
 MODELS = (QWEN_MODEL, GPT_OSS_MODEL, MISTRAL_MODEL)
 
+QWEN_ARTIFACT = "qwen3-8b-awq"
+GPT_OSS_ARTIFACT = "gpt-oss-20b"
+MISTRAL_ARTIFACT = "mistral-7b"
+UNKNOWN_MODEL = "unknown"
+
 QWEN = "qwen3@fake"
 QWEN_BARE = "qwen3-bare@fake"
 GPT_OSS = "gpt-oss@fake"
 MISTRAL = "mistral@fake"
 REMOTE = "unknown@remote"
 
-LINES = f"lines (en, {QWEN_MODEL})"
-NATIVE = f"native (en, {QWEN_MODEL})"
-NATIVE_TOOLS = f"native-tools (en, {QWEN_MODEL})"
-TOOL_ANSWER = "tool-answer (en)"
-OFF = f"off ({QWEN_MODEL})"
+LINES = "lines"
+NATIVE = "native"
+NATIVE_TOOLS = "native-tools"
+TOOL_ANSWER = "tool-answer"
+OFF = "off"
+LINES_GUIDED = "lines-guided"
+JUDGE = "judge"
+CLINICIAN = "clinician"
 
 # What loading the test World lints: the factors' lints, then the facts'.
 FACTOR_LINTS = [
     *(
-        f"[lint warning] model {name}: model.revision: revision 'fake' is not a "
+        f"[lint warning] model.local {name}: model.revision: revision 'fake' is not a "
         + "commit and can move"
         for name in ("qwen3-8b-awq", "gpt-oss-20b", "mistral-7b")
     ),
@@ -75,10 +83,10 @@ def free_ports(n: int) -> list[int]:
 
 
 def _freed(inventory: Inventory) -> dict[str, HttpUrl]:
-    local = [n for n, e in inventory.endpoints.items() if e.url is not None]
+    ports = free_ports(len(inventory.endpoints))
     return {
         name: HttpUrl(f"http://127.0.0.1:{port}/v1/")
-        for name, port in zip(local, free_ports(len(local)), strict=True)
+        for name, port in zip(inventory.endpoints, ports, strict=True)
     }
 
 

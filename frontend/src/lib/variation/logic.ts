@@ -10,6 +10,7 @@ export const PARTS = [
   "passthrough",
   "translations",
   "toolset",
+  "model",
 ] as const;
 
 export type Part = (typeof PARTS)[number];
@@ -42,18 +43,13 @@ export function named(thread: Schemas["Thread"], me: string): string {
   return thread.owner === me || thread.owner === null ? name : `${thread.owner}/${name}`;
 }
 
-export function madeFor(name: string): string {
-  return /\s\(([^()]+)\)$/.exec(name)?.[1] ?? "";
-}
-
 export type Choice = { digest: string; text: string };
-export type Group = { label: string; choices: Choice[] };
 
 export function choicesOf(
   threads: Schemas["Thread"][],
   me: string,
   held: { digest: string; title: string | null }[],
-): Group[] {
+): Choice[] {
   const own = [...threads].sort((a, b) => Number(b.owner === me) - Number(a.owner === me));
   const found = new Map<string, { first: string; names: string[] }>();
   for (const thread of own) {
@@ -68,23 +64,62 @@ export function choicesOf(
       found.set(digest, { first: name, names: [name] });
     }
   }
-  const groups = new Map<string, Choice[]>();
-  for (const [digest, { first, names }] of found) {
-    const label = madeFor(first);
-    const also = names.slice(1).map((n) => (label && madeFor(n) === label ? n.slice(0, -label.length - 3) : n));
-    const text = also.length ? `${first} = ${also.join(", ")}` : first;
-    groups.set(label, [...(groups.get(label) ?? []), { digest, text }]);
-  }
-  return [...groups]
-    .sort(([a], [b]) => (a === "" ? -1 : b === "" ? 1 : a.localeCompare(b)))
-    .map(([label, choices]) => ({
-      label: label || "Made for any model",
-      choices: choices.sort((a, b) => a.text.localeCompare(b.text)),
-    }));
+  return [...found]
+    .map(([digest, { first, names }]) => ({
+      digest,
+      text: names.length > 1 ? `${first} = ${names.slice(1).join(", ")}` : first,
+    }))
+    .sort((a, b) => a.text.localeCompare(b.text));
+}
+
+export type Where = { at: string | null; among: Schemas["Endpoint"][] };
+
+// src/chatddx/bench/seen.py:Seen.at picks the endpoint a run goes to.
+export function where(endpoints: Schemas["Endpoint"][], model: string | null, named: string | null): Where {
+  const among = model === null ? endpoints : endpoints.filter((e) => e.serves === model);
+  if (named !== null && among.some((e) => e.name === named)) return { at: named, among };
+  return { at: model !== null && among.length === 1 ? (among[0]?.name ?? null) : null, among };
 }
 
 export function tagged(families: Schemas["Family"][], tags: string[]): Schemas["Family"][] {
   return tags.length ? families.filter((f) => f.tags.some((t) => tags.includes(t))) : families;
+}
+
+export type Carriage = {
+  language: string | null;
+  families: Schemas["Family"][];
+  translated: boolean;
+  refused: string | null;
+  known: boolean;
+};
+
+// The look's languages are of the families it was asked about, not of those picked
+// beyond them.
+export function carried(sent: Schemas["Family"][], languages: Schemas["Carried"][]): Carriage[] {
+  const byFamily = new Map<number, Schemas["Carried"]>();
+  languages.forEach((c) => c.families.forEach((f) => byFamily.set(f, c)));
+  const byLanguage = new Map(languages.map((c) => [c.language, c]));
+  const written = languages.find((c) => !c.translated && c.refused === null);
+  const groups = new Map<string, Carriage>();
+  for (const f of sent) {
+    const c = byFamily.get(f.id) ?? byLanguage.get(f.language) ?? (f.language === null ? written : undefined);
+    const language = c === undefined ? f.language : c.language;
+    const key = `${c === undefined ? "?" : ""}${language}`;
+    const group = groups.get(key) ?? {
+      language,
+      families: [],
+      translated: c?.translated ?? false,
+      refused: c?.refused ?? null,
+      known: c !== undefined,
+    };
+    group.families.push(f);
+    groups.set(key, group);
+  }
+  const order = (g: Carriage) => {
+    const at = languages.findIndex((c) => c.language === g.language);
+    return g.known && at >= 0 ? at : languages.length;
+  };
+  return [...groups.values()].sort((a, b) => order(a) - order(b));
 }
 
 export type Saving =

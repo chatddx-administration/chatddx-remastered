@@ -3,7 +3,9 @@ from collections.abc import Iterable
 from rich.table import Table
 from rich.text import Text
 
-from chatddx.bench import Family, Graded
+from chatddx.bench import Bench, Family, Graded
+from chatddx.catalog import About, Edit, Subject, read, titles
+from chatddx.factors.scoring import Scorer
 from chatddx.ledger import RunStarted
 
 from .render import (
@@ -55,11 +57,11 @@ def score(repl: Repl, prefix: str | None = None) -> None:
             graded = held.scored(bench, started, unscored)
         _scored(repl, started, graded)
         held.said()
-    elif not bench.scorers_for(started):
+    elif not bench.scorers(started):
         repl.console.print("no scorer applies to it", style=LABEL)
     else:
         repl.console.print("scored already, as the scorings are now", style=LABEL)
-        _scored(repl, started, bench.scores_of(started.run))
+        _scored(repl, started, bench.scores_of(started))
 
 
 def _scored(repl: Repl, started: RunStarted, graded: list[Graded]) -> None:
@@ -81,9 +83,11 @@ def scorers(repl: Repl) -> None:
     for column in ("scorer", "view", "metric", "reads", "held to", "owner", "the cell"):
         table.add_column(column)
 
-    for edit, about, scorer in bench.scorers():
-        labels = bench.labels_of(edit)
-        name = about.name or bench.catalog.title(edit.thread)
+    for edit, about, scorer in sorted(bench.scorers(), key=lambda s: _named(bench, s)):
+        held = read.labels(bench.rows, edit.id).items()
+        labels = {position: label for (part, position), label in held if part == "view"}
+        owner = "" if about.owner == bench.person.id else bench.login(about.owner)
+        name = about.name or titles.title(bench.rows, edit.thread)
         for i, view in enumerate(scorer.views):
             reads = view.output or "the whole answer"
             if view.split is not None:
@@ -103,7 +107,7 @@ def scorers(repl: Repl) -> None:
                 metric,
                 reads,
                 view.expectation or "the whole expectation",
-                bench.owner(about) if i == 0 else "",
+                owner if i == 0 else "",
                 offered,
             )
 
@@ -175,4 +179,10 @@ def _some(names: dict[str, str], cases: Iterable[str]) -> str:
 
 def _owners(repl: Repl, threads: Iterable[int]) -> set[str]:
     bench = repl.bench
-    return {bench.login(bench.about(t).owner) for t in threads}
+    held = read.abouts(bench.rows, [Subject(thread=t) for t in threads])
+    return {bench.login(about.owner) for about in held.values()}
+
+
+def _named(bench: Bench, scorer: tuple[Edit, About, Scorer]) -> str:
+    edit, about, _ = scorer
+    return about.name or titles.title(bench.rows, edit.thread)

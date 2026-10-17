@@ -52,9 +52,9 @@ def test_forks_vary_their_base_and_follow_it_on_request() -> None:
 
     moved = rows.save(origin.thread, cooler)
     assert threads.proposal(rows, fork.thread) == reg.get(cooler_longer)
-    threads.check_based_on(rows, fork.thread, moved.id)
+    threads.check_edit(rows, fork.thread, cooler_longer, based_on=moved.id)
     with pytest.raises(ValueError, match="origin"):
-        threads.check_based_on(rows, fork.thread, fork.id)
+        threads.check_edit(rows, fork.thread, cooler_longer, based_on=fork.id)
     _ = rows.save(fork.thread, cooler_longer, based_on=moved.id)
     diverged = threads.divergence(rows, fork.thread)
     assert diverged is not None

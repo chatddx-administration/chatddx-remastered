@@ -11,14 +11,23 @@ from chatddx.fake_vllm.served import Served
 from chatddx.fake_vllm.server import serving
 from chatddx.inventory import Inventory, start_up
 from chatddx.ledger import Run
-from chatddx.repl.render import Tally, Transcript
+from chatddx.repl.render import Tally, Transcript, plural
 from chatddx.repl.running import WRITING
 from chatddx.repl.shell import SEEDS, Repl
 from chatddx.repl.test.helpers import Say, cells, tagged
-from chatddx.runner.run import Event, Running, Streamed
-from chatddx.runner.score import Event as ScoreEvent, Grading
+from chatddx.runner import Grading, Halt, RunEvent, Running, ScoreEvent, Streamed
 from chatddx.store import Store
-from chatddx.test.world import GPT_OSS, LINES, NATIVE, QWEN, TOOL_ANSWER
+from chatddx.test.world import (
+    CASES,
+    GPT_OSS,
+    LINES,
+    LINES_GUIDED,
+    NATIVE,
+    QWEN,
+    QWEN_ARTIFACT,
+    QWEN_BARE,
+    TOOL_ANSWER,
+)
 
 
 def test_seed_draws_a_short_seed_or_holds_one(repl: Repl, say: Say):
@@ -82,10 +91,18 @@ def test_each_run_is_recorded_as_a_run_of_its_trial(bench: Bench, say: Say):
     assert len({r.started.trial for r in ran(bench)}) == 1
 
 
-def test_run_needs_a_whole_cell(bench: Bench, say: Say):
-    written = say(f"use {LINES}", "run noted")
+def test_run_needs_a_configuration_and_an_endpoint_serving_its_model(
+    bench: Bench, world: Inventory, say: Say
+):
+    assert "the cell has no configuration" in say("run noted")
 
-    assert "the cell needs a configuration and an endpoint" in written
+    endpoints = {**world.endpoints, "twin@fake": world.endpoints[QWEN]}
+    bench.inventory = world.model_copy(update={"endpoints": endpoints})
+    written = say(f"use {LINES}", "run noted")
+    assert (
+        f"{QWEN_BARE}, {QWEN}, twin@fake serve model {QWEN_ARTIFACT}; name the one to use"
+        in written
+    )
     assert ran(bench) == []
 
 
@@ -99,7 +116,7 @@ def test_run_takes_a_seed_of_its_own(repl: Repl, bench: Bench, say: Say):
     assert repl.seed == 7
 
     [run] = ran(bench)
-    assert resolve(bench.get, run.started.trial, Trial).seeds == (42,)
+    assert resolve(bench.store.get, run.started.trial, Trial).seeds == (42,)
 
 
 @pytest.mark.usefixtures("fake")
@@ -119,7 +136,7 @@ def test_a_structured_answer_is_checked_and_its_views_read(say: Say):
 @pytest.mark.usefixtures("fake")
 @pytest.mark.slow
 def test_a_tool_contract_shows_the_call_the_answer_is_given_through(say: Say):
-    written = say(f"cell {TOOL_ANSWER} {QWEN}", "run svenska")
+    written = say(f"cell {TOOL_ANSWER} {QWEN}", "run bom")
 
     assert '[final_result] {"diagnoses": ["fake diagnoses 1"' in written
     assert "\nvalid\n" in written
@@ -127,7 +144,7 @@ def test_a_tool_contract_shows_the_call_the_answer_is_given_through(say: Say):
 
 @pytest.mark.usefixtures("fake")
 def test_run_is_refused_where_the_gate_refuses(bench: Bench, say: Say):
-    written = say(f"cell native-tools {QWEN}", "run svenska")
+    written = say(f"cell native-tools {QWEN}", "run bom")
 
     assert "refused: the configuration's tools would get content from source test" in (
         written
@@ -137,7 +154,7 @@ def test_run_is_refused_where_the_gate_refuses(bench: Bench, say: Say):
 
 
 def test_run_is_refused_an_endpoint_that_doesn_t_answer(bench: Bench, say: Say):
-    written = say(f"cell native {GPT_OSS}", "run svenska")
+    written = say(f"cell native {GPT_OSS}", "run bom")
 
     assert f"refused: endpoint '{GPT_OSS}' can't be confirmed" in written
     assert ran(bench) == []
@@ -147,7 +164,7 @@ def test_run_is_refused_an_endpoint_that_doesn_t_answer(bench: Bench, say: Say):
 def test_a_run_that_runs_away_is_cut_short_and_what_came_scored(
     world: Inventory, bench: Bench, say: Say
 ):
-    startup = start_up(world, bench.get, QWEN)
+    startup = start_up(world, bench.store.get, QWEN)
     with serving([Served.of(startup.argv[0], startup.argv[1:])], runaway=True):
         written = say(f"cell {LINES} {QWEN}", "run noted")
 
@@ -164,9 +181,9 @@ def test_a_run_that_runs_away_is_cut_short_and_what_came_scored(
 def test_a_structured_answer_cut_short_is_salvaged(
     world: Inventory, bench: Bench, say: Say
 ):
-    startup = start_up(world, bench.get, QWEN)
+    startup = start_up(world, bench.store.get, QWEN)
     with serving([Served.of(startup.argv[0], startup.argv[1:])], runaway=True):
-        written = say(f"cell {NATIVE} {QWEN}", "run svenska")
+        written = say(f"cell {NATIVE} {QWEN}", "run bom")
 
     assert "stopped: nothing but whitespace for 100 tokens" in written
     assert "salvaged: cut short, and read with its structure closed" in written
@@ -179,7 +196,7 @@ def test_a_structured_answer_cut_short_is_salvaged(
 def test_run_tag_says_each_finding_once_with_how_often_it_came(
     world: Inventory, bench: Bench, say: Say
 ):
-    startup = start_up(world, bench.get, QWEN)
+    startup = start_up(world, bench.store.get, QWEN)
     with serving([Served.of(startup.argv[0], startup.argv[1:])], runaway=True):
         written = say(f"cell {NATIVE} {QWEN}", "run tag targets")
     targets = tagged("targets")
@@ -229,7 +246,7 @@ def test_run_tag_runs_the_cell_on_each_case_tagged_a_line_to_each(
 
 
 def test_run_tag_says_what_it_can_t_run(say: Say):
-    assert "the cell needs a configuration and an endpoint" in say("run tag targets")
+    assert "the cell has no configuration" in say("run tag targets")
     assert "usage: run tag TAG..." in say(f"cell {LINES} {QWEN}", "run tag")
     assert "no case tagged nowhere for alice" in say("run tag nowhere")
 
@@ -239,10 +256,28 @@ def test_run_tag_says_what_it_can_t_run(say: Say):
 def test_run_tag_runs_the_cases_with_any_of_its_tags(bench: Bench, say: Say):
     written = say(f"cell {LINES} {QWEN}", "run tag targets nowhere swedish")
     either = tagged("targets", "swedish")
+    swedish = [name for name in either if CASES[name].language == "sv"]
+    english = len(either) - len(swedish)
 
-    assert f"{len(either)} cases tagged targets or nowhere or swedish" in written
+    assert f"{english} cases tagged targets or nowhere or swedish (seed 7)" in written
+    assert (
+        f"left out: {len(swedish)} cases in sv, as lines has no translations into sv"
+    ) in written
     [run] = ran(bench)
-    assert len(run.items) == len(either)
+    assert len(run.items) == english
+
+
+@pytest.mark.usefixtures("fake")
+@pytest.mark.slow
+def test_run_tag_over_several_languages_runs_each(bench: Bench, say: Say):
+    written = say(f"cell {LINES_GUIDED} {QWEN}", "run tag swedish")
+    swedish = [name for name in tagged("swedish") if CASES[name].language == "sv"]
+    english = len(tagged("swedish")) - len(swedish)
+
+    assert f"{plural(english, 'case')} tagged swedish, in en (seed 7)" in written
+    assert f"{len(swedish)} cases tagged swedish, in sv, translated (seed 7)" in written
+    assert "left out" not in written
+    assert sorted(len(r.items) for r in ran(bench)) == sorted([english, len(swedish)])
 
 
 def pressing(say: Say, *lines: str) -> str:
@@ -269,7 +304,7 @@ def press_at(monkeypatch: pytest.MonkeyPatch, at: int, presses: int = 1) -> None
         count(self, tokens)
         press(tokens)
 
-    def evented(self: Transcript, e: Event) -> None:
+    def evented(self: Transcript, e: RunEvent) -> None:
         event(self, e)
         if isinstance(e, Streamed):
             press(e.delta.tokens)
@@ -337,10 +372,14 @@ def test_ctrl_c_twice_while_scoring_finishes_the_score_and_leaves_the_rest(
 ):
     send = Grading.send
 
-    def pressed(self: Grading, on_event: Callable[[ScoreEvent], None] | None = None):
+    def pressed(
+        self: Grading,
+        on_event: Callable[[ScoreEvent], None] | None = None,
+        halt: Halt | None = None,
+    ):
         signal.raise_signal(signal.SIGINT)
         signal.raise_signal(signal.SIGINT)
-        send(self, on_event)
+        send(self, on_event, halt)
 
     monkeypatch.setattr(Grading, "send", pressed)
     written = pressing(say, f"cell {LINES} {QWEN}", "run noted")
@@ -355,8 +394,8 @@ def test_ctrl_c_twice_while_scoring_finishes_the_score_and_leaves_the_rest(
     [run] = ran(bench)
     [given] = store.scores_of(run.started.run)
     assert store.score(given.score).finished is not None
-    started = bench.run_by_id(run.started.run)
-    assert len(bench.unscored(started)) == len(bench.scorers_for(started))
+    started = bench.run(run.started.run)
+    assert len(bench.unscored(started)) == len(bench.scorers(started))
 
     monkeypatch.undo()
     assert "nothing to score" not in say("score")

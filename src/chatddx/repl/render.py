@@ -9,15 +9,7 @@ from rich.live import Live
 from rich.table import Table
 from rich.text import Text
 
-from chatddx.bench import (
-    Bench,
-    Graded,
-    Outcome,
-    ScoringEvent,
-    outcome as ended,
-    usage,
-    used,
-)
+from chatddx.bench import Bench, Graded, ScoringEvent
 from chatddx.catalog.titles import short
 from chatddx.factors.base import Finding, resolve
 from chatddx.factors.request import Skeleton
@@ -25,9 +17,22 @@ from chatddx.factors.response import Part, parts
 from chatddx.factors.scoring import Judge, Scorer, View
 from chatddx.factors.select import select
 from chatddx.ledger import Call, ItemKey, RunItem, ScoreItem
-from chatddx.runner.run import Event, ItemEnded, Noted, Streamed, ToolRan
-from chatddx.runner.score import NO_EXPECTATION, JudgeAnswered, JudgeAsked
-from chatddx.runner.send import STOPPED, Delta
+from chatddx.runner import (
+    NO_EXPECTATION,
+    STOPPED,
+    Delta,
+    ItemEnded,
+    JudgeAnswered,
+    JudgeAsked,
+    Noted,
+    Outcome,
+    RunEvent,
+    Streamed,
+    ToolRan,
+    outcome as ended,
+    usage,
+    used,
+)
 from chatddx.scorers.aggregate import mean, stderr
 from chatddx.scorers.answer import Answer, read
 from chatddx.scorers.scorer import NO_ANSWER, NO_TARGET
@@ -134,7 +139,7 @@ class Transcript:
         self.held: str = ""
         self.kind: str | None = None
 
-    def event(self, event: Event) -> None:
+    def event(self, event: RunEvent) -> None:
         match event:
             case Streamed(delta=Delta(kind=kind, text=text)) if kind != self.kind:
                 self.begin({"reasoning": "thinking", "content": None}.get(kind, text))
@@ -269,7 +274,7 @@ class JudgeLines:
         match event:
             case JudgeAsked(key=key, scorer=scorer, view=view, judge=judge):
                 self.close()
-                seeds = len(resolve(bench.get, judge, Judge).seeds)
+                seeds = len(resolve(bench.store.get, judge, Judge).seeds)
                 label = bench.labels(scorer).get(view, f"view {view}")
                 said = (
                     f"judging {bench.title(key.case)}: {label} by {bench.title(judge)}, "
@@ -281,7 +286,7 @@ class JudgeLines:
                 self.tally.count(delta.tokens)
             case JudgeAnswered(call=judged, verdict=verdict) if self.tally is not None:
                 assert self.asked is not None
-                scorer = resolve(bench.get, self.asked.scorer, Scorer)
+                scorer = resolve(bench.store.get, self.asked.scorer, Scorer)
                 view = scorer.views[self.asked.view]
                 said, _ = verdict_of(view, verdict)
                 word, style = (said, "") if said is not None else ("unread", REFUSED)
@@ -319,8 +324,8 @@ def show_judged(console: Console, bench: Bench, graded: list[Graded]) -> None:
         for item in g.score.items:
             view = g.scorer.views[item.view]
             for n, judged in enumerate(item.judge_calls):
-                judge = resolve(bench.get, judged.judge, Judge)
-                skeleton = resolve(bench.get, judge.skeleton, Skeleton)
+                judge = resolve(bench.store.get, judged.judge, Judge)
+                skeleton = resolve(bench.store.get, judge.skeleton, Skeleton)
                 said, why = verdict_of(view, read(skeleton, judged.call.response).value)
                 table.add_row(
                     g.label(item.view) if n == 0 else "",

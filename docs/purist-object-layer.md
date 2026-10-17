@@ -35,7 +35,7 @@ Pinned factors are all objects, which is why the two looked the same. The except
 - Canary sets and compilations are objects that aren't factors (`docs/factors.md`, "Components but not factors").
 
 ## What exists today
-- `src/chatddx/factors/base.py` and `bundle.py` define no factor kind: `Digest`, `JsonPointer`, `Sha256Hex`,
+- `src/chatddx/factors/base.py` and `bundle.py` define no factor kind: `Digest`, `Sha256Hex`,
   `Settings`, canonical form (`canonical_bytes`, `sorted_keys`, `sha256_digest`), `distinct`, `Frozen`, `Component`
   with versions, references (`RefTo`, `RefSite`, `iter_refs`) and `cross_check`, `Resolver`, `resolve`,
   `StructuralError`, `Fingerprint`, `Code`, `Finding`, `Registry` and `Bundle`. One thing in `base.py` is about

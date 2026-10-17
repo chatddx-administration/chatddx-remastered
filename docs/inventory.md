@@ -4,7 +4,8 @@ The inventory says which directory holds a source's vignettes, at which address 
 the model files and chat template an engine pins.
 
 Until clearance has a pipeline of its own, the inventory also says which endpoints may receive content from which
-sensitive sources. It also says at which endpoint each of a data set's judges judges.
+sensitive sources. It also says at which endpoint each of a data set's judges judges, and the endpoint whose engine
+its configurations are made for.
 
 Heads-up: The location the vignette sources is a factor! Everything else is not.
 
@@ -22,14 +23,15 @@ own files are the host's (see "Hosts").
 ### Includes
 An inventory can include other files, whose endpoints and hosts count as its own. Includes keep what the engine
 import writes apart from what people write, so an import can rewrite its file whole. An included file holds only
-endpoints and hosts: it can't include another file, add a source, clear an endpoint or bind a judge, so importing again
-can't either. A name is defined once, across the inventory and everything it includes.
+endpoints and hosts: it can't include another file, add a source, clear an endpoint, bind a judge or name the endpoint
+configurations are made for, so importing again can't either. A name is defined once, across the inventory and
+everything it includes.
 
 ### What loading checks
 Loading checks what the files themselves show: that each endpoint's host is defined, that the clearance table names
-endpoints and sources that exist, that each judge is bound to an endpoint that exists, and that each source is named
-by its table. Anything that needs the engines is checked when an entry is used (see "Checks happen when an entry is
-used").
+endpoints and sources that exist, that each judge is bound to an endpoint that exists, that the endpoint
+configurations are made for exists, and that each source is named by its table. Anything that needs the engines is
+checked when an entry is used (see "Checks happen when an entry is used").
 
 ### Worlds
 In chatddx, a world is technically the only the parameters beyond chatddx's control, but the directories `worlds/*` also
@@ -41,7 +43,7 @@ The directory must contain an `inventory.toml` and may contain the others, see t
 
 | File | Author | Holds |
 | --- | --- | --- |
-| `inventory.toml` | ops, by hand | sources, clearance, and which endpoint judges each judge |
+| `inventory.toml` | ops, by hand | sources, clearance, which endpoint judges each judge, and which endpoint's engine configurations are made for |
 | `endpoints.toml` | the engine import (by hand for fakes), included | endpoints and hosts |
 | `engines.toml` | the engine import (by hand for fakes) | models, local engines, remote engines |
 | `facts.toml` | whoever adds a model the bundled facts don't know | facts about models |
@@ -51,14 +53,14 @@ The directory must contain an `inventory.toml` and may contain the others, see t
 
 ```
 worlds/<name>/
-  inventory.toml   sources, clearance, judges bound to endpoints, include = ["endpoints.toml"]
+  inventory.toml   sources, clearance, judges bound to endpoints, configurations, include = ["endpoints.toml"]
   endpoints.toml   endpoints and hosts
   engines.toml     models, local engines, remote engines
   facts.toml       facts about models the bundled facts don't know
   vignettes/       a directory source's vignettes, when git may hold them
   _data/
     factors.toml       chunks without text, tools, the expectation schema, scorers, judges, recipes, canary sets
-    texts-<lang>.toml  chunks that hold text, in that language; translations grouped by record
+    texts-<lang>.toml  chunks that hold text, written in that language; translations into it, grouped by record
     cases-<lang>.toml  cases in that language, with tags, targets, appendices and the cases that send them
     schemas/           the JSON files the factors load
   _runs/           scripted runs
@@ -84,6 +86,9 @@ This repository has three, in `worlds/`:
   vignettes, and binds the sample's judges to pelle and malborg; its endpoints, hosts and engines are what the engine
   import writes from the hosts' reports. Both endpoints are cleared for the sample.
 
+Each names the endpoint its configurations are made for: `qwen3@fake` in the test World, `qwen3-8b-awq@fake` in the
+sample World, and `qwen3-8b@pelle` in Kompismoln's.
+
 src/chatddx/test/test_worlds.py fails when a World's engines change and its endpoints don't.
 
 ## Sources
@@ -102,8 +107,9 @@ database source lists nothing: its texts are read through the store, by id, so i
 a source, refuse one.
 
 The source's name is part of every case built from it, including their digests. Renaming a source makes new cases;
-moving its directory changes nothing. init-data loads the cases of a source a World names, or of its only source that
-lists its vignettes.
+``
+moving its directory changes nothing. init-data loads the cases of a source a World names, or of its only directory
+source.
 
 ## Endpoints
 An endpoint says where one engine is served: the engine, by digest; the server's address; the host that runs it, for a
@@ -111,8 +117,8 @@ local engine; how many requests it takes at once; and, when it has a secret, the
 holds it.
 
 A local engine is served under its digest (docs/factors.md, "Local engine"), so the endpoint names the very engine the
-server answers as. Changing the engine changes its digest, so the endpoint has to change with it. A local engine's
-endpoint needs an address to be reached, and a host too to be started.
+server answers as. Changing the engine changes its digest, so the endpoint has to change with it. Every endpoint has
+an address, and a local engine's needs a host too to be started.
 
 A remote engine's endpoint gives its address, as a local engine's does; the engine itself names its provider and
 model. The endpoint adds what isn't part of the engine: the address, the secret and the capacity.
@@ -130,6 +136,11 @@ configuration, and the runner refuses an execution that would send more.
 An endpoint may name a canary set, by digest, which every run at it sends, so that runs at one endpoint are probed
 alike and can be compared; and a default execution, a timeout and retries among it, which a run's request may change
 the concurrency and order of. Loading refuses a default concurrency above the capacity.
+
+A run goes to the endpoint serving its configuration's engine, and a judge's calls to the endpoint serving the judge's
+engine, unless one is named. When no endpoint serves the engine, or several do and none is named, the run or the
+scoring is refused rather than an endpoint picked; an endpoint named that serves another engine is refused too
+(docs/bench.md, "Outstanding"). A hand-written configuration has no model part, and goes to the endpoint named.
 
 ## Hosts
 A host says the address its servers listen on, and where it keeps what its engines pin. A local engine pins its model
@@ -156,6 +167,15 @@ inventory's own file, and no command writes it.
 A judge a person writes names its engine itself (docs/bench.md, "Components"), and the scoring pass finds the endpoint
 that serves a judge's engine either way (docs/runner.md, "Judges").
 
+## Configurations
+`configurations = "qwen3-8b@pelle"`, at the top of the inventory, names the endpoint whose engine's model a data set's
+configurations are made for: init-data makes each recipe once, with that engine (docs/curation.md).
+
+Which model a configuration is made for is the World's choice, and a researcher swaps the model; the engine is the
+endpoint's, and a judge keeps its engine as a trial does. A World that names none loads no configurations: each recipe is
+skipped and reported. Like a judge's binding, it is read only from the inventory's own file, and no command writes
+it.
+
 ## Starting and reaching an engine
 An endpoint is joined with the engine it serves and, for a local engine, with the host that runs it. When the
 inventory or the engine falls short of what that needs, starting or reaching the endpoint is refused with the reason.
@@ -166,16 +186,17 @@ environment, and the runtime to run vLLM from. The arguments are the model's loc
 the engine's digest as the name it is served under, the chat template's location on the host, where to listen, from
 the host's address and the endpoint's port, and then the engine's own arguments.
 
-A remote engine isn't ours to start. A start-up is refused for an endpoint without an address or a host, for a host
-that doesn't say where it keeps the model or the template, and for an engine whose own arguments say where to listen:
-the endpoint decides that, just as the start-up owns the arguments that pin the model and the template
+A remote engine isn't ours to start. A start-up is refused for an endpoint without a host, and for a host that
+doesn't say where it keeps the model or the template. An engine's own arguments can't say where to listen: the
+endpoint decides that, and the engine refuses them as it refuses the arguments that pin the model and the template
 (docs/factors.md, "Local engine").
 
 The fake vLLM can be started from a start-up (`chatddx fake-engines`), and then serves the endpoint's engine
 (docs/vllm.md, "The fake vLLM").
 
 ### Reaching an engine
-An endpoint is reached at its address.
+An endpoint is reached at its address. Before content goes to it, the runner confirms that its server lists the name
+its engine is served under (docs/runner.md); the inventory itself connects to nothing.
 
 With a World, init-data ends with the inventory check's findings and a count (see "Checks happen when an entry is
 used"). It finds that out without connecting.
@@ -222,8 +243,7 @@ The import's findings have the engine's digest as subject:
 - `endpoint.process` (warning): the server's process wasn't seen.
 - `endpoint.not_running` (warning): the server isn't running.
 - `endpoint.argv` (warning): the running server's arguments aren't its configuration's, so it may predate it.
-- `endpoint.unreachable` (warning): the server didn't answer. In the inventory's check the same code means the
-  endpoint's address can't be worked out, as `url_of` refuses it (docs/inventory-api.md, "check.py").
+- `endpoint.unreachable` (warning): the server didn't answer.
 - `endpoint.version` (warning): the server says it is another vLLM version than its package.
 - `endpoint.served_name` (warning): the server doesn't answer under the engine's digest.
 
@@ -240,23 +260,22 @@ The import's findings have the engine's digest as subject:
 | Start-up | What the start-up script runs for one endpoint: vLLM's arguments, the environment and the runtime. |
 | Include | A file whose endpoints and hosts an inventory takes as its own. |
 | Bound | A data set's judge, given the endpoint whose engine judges it. |
+| Configurations | The endpoint whose engine a data set's configurations are made for. |
 | Cleared | An endpoint's permission, for now, to receive content from a sensitive source. |
-| Confirm | Asking an endpoint's server whether it serves the endpoint's engine, before content goes out. |
 
 ## Open design issues
 These are open questions of design. Where the code falls short of this document, the API says so
 (docs/inventory-api.md, "Known gaps").
 
 ### Checks happen when an entry is used
-Loading checks only what the files show. Everything that needs the engines is checked when an endpoint is started,
-reached or confirmed, one entry at a time:
+Loading checks only what the files show. Everything that needs the engines is checked when an endpoint is started or
+confirmed, one entry at a time:
 - whether an endpoint's digest names an engine;
-- whether a local engine's endpoint has an address and a host;
-- whether the host says where the model and template are;
-- whether the engine's own arguments leave where to listen alone.
+- whether a local engine's endpoint has a host;
+- whether the host says where the model and template are.
 
 One pass checks the whole inventory against the engines and returns findings rather than raising. It finds what
-starting or reaching each endpoint would refuse, and what nothing refuses but is likely a slip: two local engines'
+starting each endpoint would refuse, and what nothing refuses but is likely a slip: two local engines'
 endpoints at one address, a remote engine's endpoint that names a host, host locations that no endpoint's engine pins,
 and a clearance for a source that isn't sensitive, which clears nothing. init-data prints its findings; the runner and
 the engine import don't run it yet, and still check one entry at a time.

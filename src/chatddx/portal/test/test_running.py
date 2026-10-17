@@ -16,14 +16,13 @@ from chatddx.portal.test.test_reading import shown
 from chatddx.portal.test.test_signing_in import signing_in
 from chatddx.store import Store
 from chatddx.store.store import Connection
-from chatddx.test.world import LINES, OFF, QWEN, faked, world_facts
+from chatddx.test.world import LINES, OFF, QWEN, faked
 
 
 @pytest.fixture
 def served(db: str, built: Path, world: Inventory) -> FastAPI:
     return app(
         world,
-        world_facts(),
         make_conninfo(settings.database(), dbname=db),
         built,
         worker=True,
@@ -44,7 +43,7 @@ def started(signed: TestClient, **more: Any) -> str:
     body = {"configuration": lines["id"], "endpoint": QWEN, "families": [crlf["id"]]}
     got = signed.post("/api/runs", json={**body, **more})
     assert got.status_code == 202, got.json()
-    return got.json()["run"]
+    return got.json()["runs"][0]["run"]
 
 
 def settled(signed: TestClient, run: str) -> dict[str, Any]:

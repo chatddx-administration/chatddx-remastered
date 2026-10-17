@@ -17,7 +17,7 @@ from fastapi import FastAPI
 
 from chatddx import settings
 from chatddx.api.app import app
-from chatddx.bench import Bench, outcome
+from chatddx.bench import Bench
 from chatddx.curation import init, load_cases, plan_factors, repair, wipe
 from chatddx.curation.write import ARCHIVE
 from chatddx.factors.base import resolve
@@ -34,14 +34,14 @@ from chatddx.importers.o11n import (
     imported,
     read,
 )
-from chatddx.inventory import Inventory, World, check
+from chatddx.inventory import DirectorySource, Inventory, World, check
 from chatddx.ledger import RunStarted
 from chatddx.portal.app import app as portal
 from chatddx.portal.assets import Assets
 from chatddx.repl.loop import HISTORY, loop
 from chatddx.repl.shell import Repl, console
 from chatddx.rig import rig
-from chatddx.runner.gate import Refused
+from chatddx.runner import Refused, outcome
 from chatddx.scripted import (
     RUNS,
     fake_at,
@@ -118,7 +118,7 @@ def _init_data(args: argparse.Namespace) -> None:
     except ValueError as e:
         raise SystemExit(f"init-data: {e}") from None
     try:
-        source = world.inventory.listing(args.source)
+        source = world.inventory.source(args.source, DirectorySource)
     except LookupError as e:
         raise SystemExit(f"init-data: {world.path}: {e}") from None
     if not set(cases) & set(source.ids()):
@@ -148,7 +148,7 @@ def _init_data(args: argparse.Namespace) -> None:
 def _repair_data(args: argparse.Namespace) -> None:
     world = _world("repair-data", args.world)
     try:
-        source = world.inventory.listing(args.source)
+        source = world.inventory.source(args.source, DirectorySource)
     except LookupError as e:
         raise SystemExit(f"repair-data: {world.path}: {e}") from None
     with psycopg.connect(settings.database()) as conn:
@@ -216,14 +216,13 @@ def _import_engine(args: argparse.Namespace) -> None:
 
 def _repl(args: argparse.Namespace) -> None:
     world = _world("repl", args.world)
-    facts = Facts.load(BUNDLED, *world.facts, *(args.facts or ()))
     with psycopg.connect(settings.database(), autocommit=True) as conn:
         person = People(conn).find(args.login)
         if person is None:
             raise SystemExit(
                 f"no person {args.login!r}: chatddx init-data {args.login} adds them"
             )
-        bench = Bench(conn, person, world.inventory, facts)
+        bench = Bench(conn, person, world.inventory)
         if loop(Repl(bench, console()), args.history):
             raise SystemExit(1)
 
@@ -232,7 +231,6 @@ def _scripted_runs(args: argparse.Namespace) -> None:
     world = _world("scripted-runs", args.world)
     try:
         held = scripted_runs(world.path / RUNS)
-        facts = Facts.load(BUNDLED, *world.facts)
     except ValueError as e:
         raise SystemExit(f"scripted-runs: {e}") from None
     if unknown := sorted(set(args.name) - {s.name for s in held}):
@@ -248,7 +246,7 @@ def _scripted_runs(args: argparse.Namespace) -> None:
             raise SystemExit(
                 f"no person {args.login!r}: chatddx init-data {args.login} adds them"
             )
-        bench = Bench(conn, person, world.inventory, facts)
+        bench = Bench(conn, person, world.inventory)
         for scripted in chosen:
             try:
                 before = None if args.again else ran_before(bench, scripted)
@@ -269,28 +267,27 @@ def _scripted_runs(args: argparse.Namespace) -> None:
 
 def _ran(bench: Bench, started: RunStarted) -> str:
     run = bench.store.run(started.run)
-    trial = resolve(bench.get, started.trial, Trial)
-    skeleton = resolve(bench.get, trial.skeleton, Skeleton)
+    trial = resolve(bench.store.get, started.trial, Trial)
+    skeleton = resolve(bench.store.get, trial.skeleton, Skeleton)
     counted = Counter(outcome(skeleton, item)[0] for item in run.items)
     went = ", ".join(f"{n} {word}" for word, n in counted.items()) or "no items"
     if run.finished is None:
         went += ", unfinished"
-    scored = len(bench.scores_of(started.run))
+    scored = len(bench.scores_of(started))
     return f"{bench.described(started)}: {went}, scored by {scored}"
 
 
 def _serve(
     command: str,
     args: argparse.Namespace,
-    made: Callable[[Inventory, Facts, str], FastAPI],
+    made: Callable[[Inventory, str], FastAPI],
 ) -> None:
     world = _world(command, args.world)
-    facts = Facts.load(BUNDLED, *world.facts, *(args.facts or ()))
     bind: str = args.bind or settings.host()
     host, _, port = bind.rpartition(":")
     if not host or not port.isdigit():
         raise SystemExit(f"{command}: bind to HOST:PORT, not {bind!r}")
-    served = made(world.inventory, facts, settings.database())
+    served = made(world.inventory, settings.database())
     uvicorn.run(served, host=host.strip("[]"), port=int(port))
 
 
@@ -308,7 +305,7 @@ def _run(args: argparse.Namespace) -> None:
         _unbuilt("run", "or --watch")
     watching = _watching() if args.watch else None
     try:
-        _serve("run", args, lambda i, f, c: portal(i, f, c, worker=True))
+        _serve("run", args, lambda i, c: portal(i, c, worker=True))
     finally:
         if watching is not None:
             watching.terminate()
@@ -339,9 +336,8 @@ def _watching() -> subprocess.Popen[bytes]:
 
 def _worker(args: argparse.Namespace) -> None:
     world = _world("worker", args.world)
-    facts = Facts.load(BUNDLED, *world.facts, *(args.facts or ()))
     logging.basicConfig(level=logging.INFO, format="%(message)s")
-    worker = Worker(settings.database(), world.inventory, facts)
+    worker = Worker(settings.database(), world.inventory)
     stopping = threading.Event()
 
     def stop(_signal: int, _frame: FrameType | None) -> None:
@@ -356,7 +352,7 @@ def _worker(args: argparse.Namespace) -> None:
 
 
 def _openapi(_: argparse.Namespace) -> None:
-    document = app(Inventory(), Facts.load(BUNDLED), "").openapi()
+    document = app(Inventory(), "").openapi()
     print(json.dumps(document, indent=2, ensure_ascii=False))
 
 
@@ -386,15 +382,8 @@ def _serving(parser: argparse.ArgumentParser, what: str) -> None:
     _ = parser.add_argument(
         "--world",
         type=Path,
-        help=f"the World directory whose endpoints, vignettes and facts {what} uses "
+        help=f"the World directory whose endpoints and vignettes {what} uses "
         + "(CHATDDX_WORLD)",
-    )
-    _ = parser.add_argument(
-        "--facts",
-        type=Path,
-        action="append",
-        help="more model facts, beside the bundled ones and the World's, as init-data "
-        + "was given",
     )
     _ = parser.add_argument(
         "--bind", help=f"where to listen, as HOST:PORT ($HOST, else {settings.host()})"
@@ -447,8 +436,8 @@ def main(argv: Sequence[str] | None = None) -> None:
     )
     _ = init.add_argument(
         "--source",
-        help="the name of the World's source that holds the cases' vignettes, needed "
-        + "when more than one source lists its vignettes",
+        help="the name of the World's directory source that holds the cases' "
+        + "vignettes, needed when it has more than one",
     )
     _ = init.add_argument(
         "--giftbag", action="store_true", help="also give the user forks of their own"
@@ -463,8 +452,7 @@ def main(argv: Sequence[str] | None = None) -> None:
         "--facts",
         type=Path,
         action="append",
-        help="more model facts to write per-model chunks from, beside the bundled "
-        + "ones and the World's",
+        help="more model facts to load, beside the bundled ones and the World's",
     )
     init.set_defaults(run=_init_data)
 
@@ -480,8 +468,8 @@ def main(argv: Sequence[str] | None = None) -> None:
     )
     _ = repair_parser.add_argument(
         "--source",
-        help="the name of the World's source to survey, needed when more than one "
-        + "source lists its vignettes",
+        help="the name of the World's directory source to survey, needed when it "
+        + "has more than one",
     )
     _ = repair_parser.add_argument(
         "--dry-run", action="store_true", help="list the repairs without making them"
@@ -542,15 +530,8 @@ def main(argv: Sequence[str] | None = None) -> None:
     _ = shell.add_argument(
         "--world",
         type=Path,
-        help="the World directory whose endpoints, vignettes and facts the shell uses "
+        help="the World directory whose endpoints and vignettes the shell uses "
         + "(CHATDDX_WORLD)",
-    )
-    _ = shell.add_argument(
-        "--facts",
-        type=Path,
-        action="append",
-        help="more model facts, beside the bundled ones and the World's, as init-data "
-        + "was given",
     )
     _ = shell.add_argument(
         "--history",
@@ -617,15 +598,8 @@ def main(argv: Sequence[str] | None = None) -> None:
     _ = worker.add_argument(
         "--world",
         type=Path,
-        help="the World directory whose endpoints, vignettes and facts the worker uses "
+        help="the World directory whose endpoints and vignettes the worker uses "
         + "(CHATDDX_WORLD)",
-    )
-    _ = worker.add_argument(
-        "--facts",
-        type=Path,
-        action="append",
-        help="more model facts, beside the bundled ones and the World's, as init-data "
-        + "was given",
     )
     worker.set_defaults(run=_worker)
 

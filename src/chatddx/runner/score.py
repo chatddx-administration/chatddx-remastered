@@ -1,4 +1,4 @@
-from collections.abc import Callable, Iterable, Mapping
+from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from uuid import UUID, uuid4
@@ -8,12 +8,12 @@ from pydantic import JsonValue
 from chatddx.catalog import Entry, EntryField, Subject
 from chatddx.factors.base import Component, Finding, Resolver, resolve
 from chatddx.factors.bundle import Registry
-from chatddx.factors.engine import LocalEngine, RemoteEngine
-from chatddx.factors.request import Skeleton, Slot, render
+from chatddx.factors.engine import served_model_name
+from chatddx.factors.request import Skeleton
 from chatddx.factors.scoring import Expectation, Judge, Scorer, Scoring
 from chatddx.factors.trial import Execution, Trial
 from chatddx.identity import Person
-from chatddx.inventory import Inventory, url_of
+from chatddx.inventory import Inventory
 from chatddx.ledger import (
     Endpoint,
     ItemKey,
@@ -34,35 +34,11 @@ from chatddx.scorers.verdicts import asked
 from chatddx.store import Catalog, Store
 from chatddx.store.store import Connection
 
-from . import gate, send as sending
-from .run import Noted, Streamed
+from .events import ItemScored, JudgeAnswered, JudgeAsked, Noted, ScoreEvent, Streamed
+from .gate import Refused, admit, bar
+from .send import Halt, Stopped, send
 
 NO_EXPECTATION: JsonValue = {"reason": "no expectation"}
-
-
-@dataclass(frozen=True)
-class ItemScored:
-    item: ScoreItem
-
-
-@dataclass(frozen=True)
-class JudgeAsked:
-    key: ItemKey
-    scorer: str
-    view: int
-    judge: str
-    seed_index: int
-
-
-@dataclass(frozen=True)
-class JudgeAnswered:
-    key: ItemKey
-    view: int
-    call: JudgeCall
-    verdict: JsonValue | None
-
-
-type Event = ItemScored | JudgeAsked | Streamed | JudgeAnswered | Noted
 
 
 @dataclass(frozen=True)
@@ -78,123 +54,81 @@ def _now() -> datetime:
     return datetime.now(UTC)
 
 
-def _ignore(_: Event) -> None:
+def _ignore(_: ScoreEvent) -> None:
     pass
 
 
-def _serving(inventory: Inventory, engine: str) -> str:
-    named = sorted(n for n, e in inventory.endpoints.items() if e.engine == engine)
-    if len(named) != 1:
-        raise gate.Refused(
-            f"{'no endpoint serves' if not named else ', '.join(named) + ' serve'} the "
-            + f"judge's engine {engine}"
-            + ("" if not named else "; name the one to judge at")
+def judge_at(inventory: Inventory, get: Resolver, trial: Trial, judge: str) -> str:
+    found = resolve(get, judge, Judge)
+    try:
+        name = inventory.serving(found.engine)
+    except LookupError as e:
+        raise Refused(str(e)) from None
+    bar(inventory, get, name, trial, found)
+    return name
+
+
+def grade(
+    conn: Connection,
+    inventory: Inventory,
+    by: Person,
+    run: UUID,
+    scoring: Scoring,
+    registry: Registry,
+    execution: Execution | None,
+) -> "Grading":
+    execution = execution or Execution()
+    store = Store(conn)
+    ran = store.run(run)
+    if ran.finished is None:
+        raise ValueError(f"run {run} hasn't finished")
+    if execution.concurrency > 1:
+        raise ValueError("judge calls are sent one at a time yet")
+    _ = registry.add(scoring)
+    scorer = resolve(registry.get, scoring.scorer, Scorer)
+    views = function(scorer)
+    held = store.load([ran.started.trial])
+
+    def get(digest: str) -> Component:
+        return held.get(digest) if digest in held else registry.get(digest)
+
+    trial = resolve(get, ran.started.trial, Trial)
+    judging: dict[str, _Judging] = {}
+    at: list[JudgeEndpoint] = []
+    for ref in scorer.judges:
+        name = judge_at(inventory, get, trial, ref)
+        judge = resolve(get, ref, Judge)
+        secret = admit(inventory, get, name, trial, judge)
+        url = str(inventory.endpoint(name).url)
+        skeleton = resolve(get, judge.skeleton, Skeleton)
+        judging[ref] = _Judging(
+            judge, skeleton, served_model_name(judge.engine, get), url, secret
         )
-    return named[0]
+        at.append(JudgeEndpoint(judge=ref, endpoint=Endpoint(name=name, url=url)))
 
-
-def judge_at(
-    inventory: Inventory | None,
-    get: Resolver,
-    ref: str,
-    cases: Iterable[str],
-    named: str | None = None,
-) -> tuple[Judge, Skeleton, str]:
-    judge = resolve(get, ref, Judge)
-    skeleton = resolve(get, judge.skeleton, Skeleton)
-    if read_case := sorted(_slots(skeleton) & {"vignette", "appendices"}):
-        raise ValueError(
-            f"judge {ref} reads the {' and '.join(read_case)}, which no judge is given"
-        )
-    if inventory is None:
-        raise ValueError("judged views need the World's inventory")
-    name = named or _serving(inventory, judge.engine)
-    gate.bar(inventory, get, name, judge.engine, cases, False, "judge")
-    return judge, skeleton, name
-
-
-class Grader:
-    def __init__(
-        self, conn: Connection, inventory: Inventory | None, by: Person
-    ) -> None:
-        if not conn.autocommit:
-            raise ValueError("the scoring pass needs a connection in autocommit mode")
-        self._conn: Connection = conn
-        self._inventory: Inventory | None = inventory
-        self._by: Person = by
-
-    def start(
-        self,
-        run: UUID,
-        scoring: Scoring,
-        registry: Registry,
-        endpoints: Mapping[str, str] | None = None,
-        execution: Execution | None = None,
-    ) -> "Grading":
-        execution = execution or Execution()
-        store = Store(self._conn)
-        ran = store.run(run)
-        if ran.finished is None:
-            raise ValueError(f"run {run} hasn't finished")
-        if execution.concurrency > 1:
-            raise ValueError("judge calls are sent one at a time yet")
-        _ = registry.add(scoring)
-        scorer = resolve(registry.get, scoring.scorer, Scorer)
-        views = function(scorer)
-        held = store.load([ran.started.trial])
-
-        def get(digest: str) -> Component:
-            return held.get(digest) if digest in held else registry.get(digest)
-
-        trial = resolve(get, ran.started.trial, Trial)
-        judging: dict[str, _Judging] = {}
-        at: list[JudgeEndpoint] = []
-        for ref in scorer.judges:
-            named = (endpoints or {}).get(ref)
-            judge, skeleton, name = judge_at(
-                self._inventory, get, ref, trial.cases, named
-            )
-            assert self._inventory is not None
-            secret = gate.admit(
-                self._inventory, get, name, judge.engine, trial.cases, False, "judge"
-            )
-            engine = get(judge.engine)
-            assert isinstance(engine, LocalEngine | RemoteEngine)
-            url = url_of(self._inventory, get, name)
-            judging[ref] = _Judging(
-                judge, skeleton, engine.served_model_name, url, secret
-            )
-            at.append(JudgeEndpoint(judge=ref, endpoint=Endpoint(name=name, url=url)))
-
-        _ = store.add(registry, [scoring.digest])
-        loaded = store.load([ran.started.trial, scoring.digest])
-        expected: dict[str, JsonValue] = {}
-        for ref in scoring.expectations:
-            expectation = resolve(loaded.get, ref, Expectation)
-            expected[expectation.case] = expectation.data
-        started = ScoreStarted(
-            score=uuid4(),
-            run=run,
-            at=_now(),
-            rig=rig(),
-            scorer_version=views.version,
-            scoring=scoring.digest,
-            execution=execution,
-            endpoints=tuple(at),
-        )
-        store.append(started)
-        Catalog(self._conn).note(
-            Subject(score=started.score),
-            Entry(field=EntryField.OWNER, person=self._by.id),
-            self._by.id,
-        )
-        return Grading(
-            store, ran, started, scorer, views, loaded, expected, judging, trial
-        )
-
-
-def _slots(skeleton: Skeleton) -> set[str]:
-    return {s.slot for m in skeleton.messages for s in m.content if isinstance(s, Slot)}
+    _ = store.add(registry, [scoring.digest])
+    loaded = store.load([ran.started.trial, scoring.digest])
+    expected: dict[str, JsonValue] = {}
+    for ref in scoring.expectations:
+        expectation = resolve(loaded.get, ref, Expectation)
+        expected[expectation.case] = expectation.data
+    started = ScoreStarted(
+        score=uuid4(),
+        run=run,
+        at=_now(),
+        rig=rig(),
+        scorer_version=views.version,
+        scoring=scoring.digest,
+        execution=execution,
+        endpoints=tuple(at),
+    )
+    store.append(started)
+    Catalog(conn).note(
+        Subject(score=started.score),
+        Entry(field=EntryField.OWNER, person=by.id),
+        by.id,
+    )
+    return Grading(store, ran, started, scorer, views, loaded, expected, judging, trial)
 
 
 class Grading:
@@ -224,7 +158,7 @@ class Grading:
         self._items: list[ScoreItem] = []
         self._findings: list[Finding] = []
         self._stopping: bool = False
-        self._halt: sending.Halt = sending.Halt()
+        self._halt: Halt = Halt()
         self._finished: bool = False
 
     @property
@@ -235,21 +169,21 @@ class Grading:
     def started(self) -> ScoreStarted:
         return self._started
 
-    def halt(self) -> None:
-        self._stopping = True
-        self._halt.set()
-
-    def send(self, on_event: Callable[[Event], None] | None = None) -> None:
-        emit: Callable[[Event], None] = on_event or _ignore
-        self._halt = sending.Halt()
-        if self._stopping:
-            self._halt.set()
+    def send(
+        self,
+        on_event: Callable[[ScoreEvent], None] | None = None,
+        halt: Halt | None = None,
+    ) -> None:
+        emit: Callable[[ScoreEvent], None] = on_event or _ignore
+        self._halt = halt or Halt()
         scored = {i.key for i in self._items}
         items = {i.key: i for i in self._ran.items}
         trial = self._trial
         schedule = self._started.execution.schedule(trial.cases, len(trial.seeds))
         for case, replicate in schedule:
             key = ItemKey(case=case, replicate=replicate)
+            if self._halt.is_set():
+                self._stopping = True
             if self._stopping or self._finished:
                 return
             if key not in items or key in scored:
@@ -263,18 +197,18 @@ class Grading:
     def finish(self) -> tuple[Score, list[Finding]]:
         if self._finished:
             raise ValueError(f"score {self.score} is finished")
-        log = Score(stages=(self._started,), items=tuple(self._items))
+        log = Score(started=self._started, items=tuple(self._items))
         finished = log.finish(_now(), self._findings)
         self._store.append(finished)
         self._finished = True
-        score = Score(stages=(self._started, finished), items=log.items)
+        score = log.model_copy(update={"finished": finished})
         return score, check_score(score, self._ran, self._loaded)
 
-    def _note(self, finding: Finding, emit: Callable[[Event], None]) -> None:
+    def _note(self, finding: Finding, emit: Callable[[ScoreEvent], None]) -> None:
         self._findings.append(finding)
         emit(Noted(finding))
 
-    def _grade(self, item: RunItem, emit: Callable[[Event], None]) -> bool:
+    def _grade(self, item: RunItem, emit: Callable[[ScoreEvent], None]) -> bool:
         last = item.calls[-1]
         answer = read(self._skeleton, last.response)
         if answer.salvaged:
@@ -344,7 +278,7 @@ class Grading:
         index: int,
         answer: JsonValue | None,
         data: JsonValue,
-        emit: Callable[[Event], None],
+        emit: Callable[[ScoreEvent], None],
     ) -> tuple[Verdicts | Scored, list[JudgeCall], bool]:
         view = self._scorer.views[index]
         assert view.judge is not None
@@ -355,11 +289,11 @@ class Grading:
         verdicts: Verdicts = []
         calls: list[JudgeCall] = []
         for n, seed in enumerate(judging.judge.seeds):
-            body = render(judging.skeleton, model=judging.model, seed=seed, fills=fills)
+            body = judging.skeleton.render(model=judging.model, seed=seed, fills=fills)
             emit(JudgeAsked(key, self._scorer_ref, index, view.judge, n))
             stopped = False
             try:
-                call = sending.send(
+                call = send(
                     judging.url,
                     body,
                     execution=self._started.execution,
@@ -367,7 +301,7 @@ class Grading:
                     on_delta=lambda delta: emit(Streamed(key, delta)),
                     halt=self._halt,
                 )
-            except sending.Stopped as e:
+            except Stopped as e:
                 call, stopped = e.call, True
             judged = JudgeCall(judge=view.judge, seed_index=n, call=call)
             calls.append(judged)
@@ -383,16 +317,3 @@ class Grading:
             if stopped:
                 return verdicts, calls, True
         return verdicts, calls, False
-
-
-def score_run(
-    conn: Connection,
-    run: UUID,
-    scoring: Scoring,
-    registry: Registry,
-    by: Person,
-    inventory: Inventory | None = None,
-) -> tuple[Score, list[Finding]]:
-    grading = Grader(conn, inventory, by).start(run, scoring, registry)
-    grading.send()
-    return grading.finish()

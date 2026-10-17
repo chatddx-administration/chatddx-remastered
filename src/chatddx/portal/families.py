@@ -5,6 +5,7 @@ from fastapi.responses import RedirectResponse
 from pydantic import JsonValue
 
 from chatddx.api import families as api, schemas, threads
+from chatddx.api.state import refused
 from chatddx.factors.base import resolve
 from chatddx.factors.cases import Appendix
 from chatddx.factors.scoring import ExpectationSchema
@@ -20,13 +21,15 @@ def families(
     bench: BenchDep,
     tag: Annotated[list[str] | None, Query()] = None,
 ) -> Response:
+    every = api.families(bench)
+    picked = set(tag or ())
     return page(
         request,
         "families.html",
         person=bench.person,
-        families=api.families(bench, tag=tag),
-        tags=api.tags(bench),
-        picked=set(tag or ()),
+        families=[f for f in every if not picked or picked & set(f.tags)],
+        tags=sorted({t for f in every for t in f.tags}),
+        picked=picked,
     )
 
 
@@ -52,13 +55,13 @@ def family(request: Request, bench: BenchDep, family: int) -> Response:
                 ]
             }
         )
-        for c in api.cases(bench, family)
+        for c in shown.cases
     ]
-    current = bench.current(shown.id)
+    current = bench.family(shown.id).vignette
     written = [
         t
         for t in threads.threads(bench, "appendix")
-        if resolve(bench.get, t.head.digest, Appendix).vignette == current
+        if resolve(bench.store.get, t.head.digest, Appendix).vignette == current
     ]
     appendices = {a for c in cases for a in c.appendices} | {
         t.head.digest for t in written
@@ -83,7 +86,7 @@ def family(request: Request, bench: BenchDep, family: int) -> Response:
             "case": c.case,
             "schema": e.expectation_schema,
             "json_schema": resolve(
-                bench.get, e.expectation_schema, ExpectationSchema
+                bench.store.get, e.expectation_schema, ExpectationSchema
             ).json_schema,
             "data": started.get(e.expectation_schema),
             "name": f"expectation for {c.title}",
@@ -109,7 +112,6 @@ def family(request: Request, bench: BenchDep, family: int) -> Response:
 
 @router.post("/families/{family}/appendices")
 def appending(
-    request: Request,
     bench: BenchDep,
     family: int,
     name: Annotated[str, Form()],
@@ -117,8 +119,11 @@ def appending(
 ) -> Response:
     if not name.strip():
         raise HTTPException(422, "an appendix is named")
-    asked = schemas.NewAppendix.model_validate({"name": name.strip(), "text": text})
-    _ = api.appendix(request, Response(), bench, family, asked)
+    if not text:
+        raise HTTPException(422, "an appendix holds a text")
+    with refused():
+        held = Appendix(vignette=bench.family(family).vignette, text=text)
+        _ = bench.new(held, name.strip())
     return RedirectResponse(f"/families/{family}#appendices", 303)
 
 
@@ -130,8 +135,8 @@ def building(
 ) -> Response:
     if not appendix:
         raise HTTPException(422, "a case is built of one appendix or more")
-    asked = schemas.NewCase.model_validate({"appendices": appendix})
-    _ = api.case(bench, family, asked)
+    with refused():
+        _ = bench.case(family, appendix)
     return RedirectResponse(f"/families/{family}#cases", 303)
 
 

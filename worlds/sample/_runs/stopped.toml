@@ -1,5 +1,5 @@
 description = "A Swedish run stopped as it streams, as a person who stops it or a client that leaves would: recorded as stopped."
-configuration = "free-text-guided (sv, Qwen/Qwen3-8B-AWQ)"
+configuration = "free-text-guided"
 endpoint = "qwen3-8b-awq@fake"
 cases = ["casesfromedn2"]
 seed = 19

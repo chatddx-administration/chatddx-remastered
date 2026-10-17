@@ -44,13 +44,13 @@ licence = "apache-2.0"
 
 [model."openai/gpt-oss-20b".reasoning]
 default = "medium"
-off = { refused = "always reasons: vLLM rejects reasoning_effort = none for harmony" }
+off = { refused = "always reasons: vLLM rejects reasoning_effort = none for harmony", nearest = "low" }
 on = "medium"
-minimal = { refused = "harmony has no minimal effort, only low, medium and high" }
+minimal = { refused = "harmony has no minimal effort, only low, medium and high", nearest = "low" }
 low = { effort = "low" }
 medium = { effort = "medium" }
 high = { effort = "high" }
-xhigh = { refused = "harmony has no xhigh effort, only low, medium and high" }
+xhigh = { refused = "harmony has no xhigh effort, only low, medium and high", nearest = "high" }
 budget = { refused = "no thinking budget is documented for harmony" }
 
 [model."openai/gpt-oss-20b".sampling.recommended]

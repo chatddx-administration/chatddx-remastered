@@ -1,6 +1,7 @@
 import hashlib
 import hmac
 import json
+import re
 import types
 import typing
 from collections.abc import Callable, Iterator, Mapping
@@ -35,7 +36,6 @@ from pydantic_core import CoreSchema
 
 Digest = Annotated[str, StringConstraints(pattern=r"^sha256:[0-9a-f]{64}$")]
 Sha256Hex = Annotated[str, StringConstraints(pattern=r"^[0-9a-f]{64}$")]
-JsonPointer = Annotated[str, StringConstraints(pattern=r"^(/([^~/]|~[01])*)*$")]
 Api = Literal["chat.completions"]
 
 
@@ -51,6 +51,18 @@ def canonical_bytes(doc: JsonValue) -> bytes:
 
 def sorted_keys[V](mapping: dict[str, V]) -> dict[str, V]:
     return dict(sorted(mapping.items()))
+
+
+LANGUAGE = re.compile(r"^[a-z]{2,3}(-[A-Za-z0-9]{1,8})*$")
+
+
+def language_tag(value: str) -> str:
+    if not LANGUAGE.match(value):
+        raise ValueError(f"{value!r} is not a language tag such as 'sv' or 'pt-BR'")
+    return value
+
+
+type Language = Annotated[str, AfterValidator(language_tag)]
 
 
 def distinct[T](values: tuple[T, ...]) -> tuple[T, ...]:

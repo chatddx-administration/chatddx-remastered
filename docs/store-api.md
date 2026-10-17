@@ -31,12 +31,12 @@ Paths are relative to `src/chatddx/store/` unless they start with `src/`, `docs/
 
 ## Package
 
-`chatddx.store` re-exports `TOP_TIER`, `Catalog`, `Job`, `People`, `Queue`, `Store`, `Texts`, `UnderWay`,
-`fetch_vignette` and `migrate`. `Connection` (in `store.py`), `Rows`, `Held`, `Status`, `STATUSES`, `ENDED`,
-`pending`, `migrations`, `Migration` and `MIGRATIONS` are imported by path.
+`chatddx.store` re-exports `TOP_TIER`, `Catalog`, `Job`, `Kept`, `People`, `Queue`, `Rows`, `Store`, `Texts`,
+`UnderWay`, `fetch_vignette` and `migrate`. `Connection` (in `store.py`), `Held`, `Status`, `STATUSES`, `ENDED`,
+`pending` and `Migration` are imported by path.
 
-Rows for the module table: `| notify.py | pydantic |`, and `| queue.py | notify.py, store.py, psycopg's errors |`;
-`store.py` builds on `notify.py` too.
+Rows for the module table: `| notify.py | psycopg, pydantic |`, and
+`| queue.py | notify.py, store.py, psycopg's errors |`;
 
 | Module | Builds on |
 | --- | --- |
@@ -52,10 +52,10 @@ The package holds chatddx's SQL. It uses psycopg 3, synchronously, and no ORM.
 
 **Connections.** `Connection` is `psycopg.Connection[TupleRow]`. Every class takes one and keeps nothing else between
 calls. A method that writes several rows does so inside `conn.transaction()`: `Store.add`, `Store.append`,
-`People.update`, `Catalog.create`, `Catalog.adopt`, `Catalog.repair`, and each migration. Other methods run single
-statements and commit nothing themselves. On an autocommit connection each statement commits as it runs. On one that
-isn't, the first statement opens a transaction that only the caller commits, and `conn.transaction()` inside it is a
-savepoint.
+`People.update`, `People.open_session`, `Catalog.create`, `Catalog.adopt`, `Catalog.repair`, `notify.tell`, and each
+migration. Other methods run single statements and commit nothing themselves. On an autocommit connection each
+statement commits as it runs. On one that isn't, the first statement opens a transaction that only the caller commits,
+and `conn.transaction()` inside it is a savepoint.
 
 **Canonical text.** Components are read back from `factor.component.canonical` and records from `payload`, never
 from `doc`; `doc`, the `jsonb` copy, is only queried (`Rows.bound_to`, `Rows.expectations`).
@@ -118,7 +118,6 @@ of each run whose rows it wrote (`notify.py:channel`) with `ROWS`, a score's run
 | `run(run: UUID) -> Run` | The started row, the finished row if any, the items and the canary calls, parsed with `Record.parse` and put together as a `Run`. `LookupError("run <id> is not in the store")` without stage rows; `StructuralError("run <id> has no started row")` for a finished row alone; `Record.parse`'s errors; `ValidationError` from `Run`. |
 | `score(score: UUID) -> Score` | As `run`, for a score's stage rows and items: `LookupError("score <id> is not in the store")`, `StructuralError("score <id> has no started row")`. |
 | `started(runs: Collection[UUID]) -> list[RunStarted]` | The started rows of those runs, newest first. Unknown ids are skipped. |
-| `runs_of(trial: str) -> list[RunStarted]` | The started rows of the runs of a trial, newest first. |
 | `finished(runs: Collection[UUID]) -> set[UUID]` | Those of the runs that have a finished row. |
 | `scores_of(run: UUID) -> list[ScoreStarted]` | The started rows of the scores of a run, newest first. |
 | `rows_of(run: UUID, after: int = 0) -> list[Written]` | The run's rows and its scores', each `(seq, record)`, the record as its table and stage give it through `Record.parse`, with `seq` past `after`, in `seq`'s order. `[]` for a run that isn't stored. |
@@ -137,10 +136,9 @@ of each run whose rows it wrote (`notify.py:channel`) with `ROWS`, a score's run
 | `update(id: int, *, name: str \| None = None, roles: Iterable[Role] \| None = None, active: bool \| None = None) -> Person` | In one transaction: sets what is given (roles deduplicated and sorted, `[]` clears them) and leaves what is `None`; with `active=False` also deletes the person's sessions. Returns the person as stored. `LookupError("no person with id <id>")`. |
 | `set_password(id: int, password: str) -> None` | Stores `hash_password(password)` (argon2id), replacing any earlier hash. `ForeignKeyViolation` for an unknown person. |
 | `authenticate(login: str, password: str) -> Person \| None` | The person when the login exists, has a credential, the password verifies and the person is active; else `None`. An unknown login is verified against a dummy hash, so it takes as long as a wrong password. A hash that `needs_rehash` is replaced with a new one. |
-| `open_session(id: int, ttl: timedelta = settings.SESSION_TTL) -> str` | A new token (`new_token`, 32 random bytes, URL-safe). Stores only `token_digest(token)` (SHA-256 hex), expiring `ttl` from now. `ForeignKeyViolation` for an unknown person; `CheckViolation` at tier 2 for a `ttl` that isn't positive. |
+| `open_session(id: int, ttl: timedelta = settings.SESSION_TTL) -> str` | A new token (`new_token`, 32 random bytes, URL-safe). In one transaction, deletes every expired session and stores only `token_digest(token)` (SHA-256 hex), expiring `ttl` from now. `ForeignKeyViolation` for an unknown person; `CheckViolation` at tier 2 for a `ttl` that isn't positive. |
 | `session(token: str) -> Person \| None` | The person whose session the token is, when it hasn't expired and the person is active. |
 | `close_session(token: str) -> None` | Deletes the session; nothing for an unknown token. |
-| `purge_sessions() -> int` | Deletes the expired sessions and returns how many. |
 
 `settings.SESSION_TTL` is 12 hours.
 
@@ -170,18 +168,13 @@ scorers it has finished, `status: Status`, `why`, `halt`, `worker`, `queued`, `c
 | Method | Returns / raises |
 | --- | --- |
 | `put(owner, run, endpoint, slots, score, scorers=None) -> Job` | Queues a job for a started run, its scorers deduplicated and sorted. `UnderWay("run <id> has something under way")` when the run has a job queued or under way; `ForeignKeyViolation` for a run that hasn't started; `CheckViolation` at tier 2 for scorers without `score`. |
-| `job(id) -> Job` | `LookupError("no job <id>")`. |
 | `open(run) -> Job \| None` | The run's job queued or under way. |
-| `last(run) -> Job \| None` | The run's latest job. |
-| `jobs(owner, limit=100) -> list[Job]` | The owner's, newest first. |
-| `halt(run) -> Job` | Asks the run's open job to halt. `LookupError("run <id> has nothing under way")`. |
-| `pause(owner, paused=True)`, `paused(owner) -> bool` | An owner's control. |
+| `pause(owner, paused=True)` | An owner's control. |
 | `enlist(worker)` | A worker, by its id. |
 | `claim(worker, max_jobs, lost) -> Job \| None` | The first job in queue order that is queued, or under way with a worker not seen for `lost`, and fits: halted, at an endpoint `max_jobs` doesn't name, or within the endpoint's free slots and of an owner who hasn't paused. Claims take turns (`pg_advisory_xact_lock`), and count the slots of the jobs under way with a live worker. |
 | `beat(worker, jobs) -> list[Held]` | Marks the worker and the jobs it still holds as seen; a `Held` is a job's id, whether it is to halt and whether its owner has paused. A job another worker took over is left out. |
 | `end(job, worker, status, why=None) -> bool` | Ends a job the worker holds. `ValueError` for a status not in `ENDED`. |
 | `requeue(job, worker, why=None) -> bool` | Puts a job the worker holds back in the queue. |
-| `waiting() -> int` | How many jobs are queued or under way. |
 | `placed(runs) -> dict[UUID, Placed]` | Each run's latest job, and `ahead`: while it is queued and its owner hasn't paused, or it is to halt, how many jobs at its endpoint are under way, or queued before it in queue order and to be taken (their owner not paused, or to halt); else `None`. Runs without a job are left out. |
 | `standing(owner, lost) -> Standing` | Whether the owner has paused, how many of their jobs are queued and under way, and how many workers were seen within `lost`. |
 | `stop(owner, now=False) -> Stopped` | The owner's queued jobs ended stopped, why `TAKEN_OUT` (`"taken out of the queue"`), their runs left as they are; with `now`, their jobs under way asked to halt. The runs taken out and those halting. It notifies as `end` does. |
@@ -191,7 +184,8 @@ In the transaction of the change, `put`, `halt`, `pause`, `end` and `requeue` no
 `put`, `end` and `requeue` the run's channel with `JOB` and the status the job is left in.
 
 ## notify.py
-What the store, the queue and the worker tell through `NOTIFY`, and how a listener reads it back.
+What the store, the queue and the worker tell through `NOTIFY`, how it is sent and listened for, and how a listener
+reads it back.
 
 | Name | Value |
 | --- | --- |
@@ -199,8 +193,8 @@ What the store, the queue and the worker tell through `NOTIFY`, and how a listen
 | `channel(run: UUID) -> str` | `run.<id>`, a run's channel. |
 | `ROWS`, `JOB` | The payloads `rows`, which `Store.append` sends, and `job <status>`, which the queue sends. |
 | `LIMIT` | 7900, the bytes a payload holds, under `NOTIFY`'s 8000. |
-| `payloads(said, ids: Iterator[int]) -> list[str]` | Events, each `(name, data)`, as JSON arrays of `[name, data]` in ASCII, as few as fit within `LIMIT`; an array that doesn't fit alone is cut in parts, each headed `~<message> <part> <parts>` and a newline, the message's number drawn from `ids`. |
-| `Assembler.message(channel, pid, payload) -> Message \| None` | A payload read back: `Rows()`, `JobChanged(status)`, or `Events(said)` once every part of a message has come from one backend, in order; `None` for a part, and for a part out of order, which drops its message. |
+| `tell(conn, run: UUID, said) -> None` | Sends events, each `(name, data)`, on the run's channel in one transaction: as JSON arrays of `[name, data]` in ASCII, as few payloads as fit within `LIMIT`; an array that doesn't fit alone is cut in parts, each headed `~<message> <part> <parts>` and a newline, the message's number one the process hasn't used. |
+| `listen(conn, *channels: str)`, `unlisten(conn, *channels: str)` | `LISTEN` and `UNLISTEN` on each channel. |
 
 ## catalog.py
 
@@ -210,7 +204,7 @@ What the store, the queue and the worker tell through `NOTIFY`, and how a listen
 
 - `get` is `Store.get`, and `compilations` is `Store.compilations`; `kind` reads `factor.component.kind`, and
   `components` reads `canonical` for many digests at once.
-- Threads, edits, entries, bindings, languages and labels are read `ORDER BY id`; `families` reads `catalog.family`.
+- Threads, edits, entries, bindings, languages and labels are read `ORDER BY id`.
 - `edit` and `edits` don't read the edit's `kind` column; entries, languages and labels are read without `by` and
   `at`.
 - `bound_to(vignettes, kind)` matches the `doc` of stored components of `kind` on each vignette's `source`, `id` and
@@ -218,23 +212,26 @@ What the store, the queue and the worker tell through `NOTIFY`, and how a listen
   gives back the caller's vignette; by digest.
 - `expectations(cases)` matches stored expectations on `doc ->> 'case'`, by digest.
 
-It also has `subjects_naming(person: int, fields: Collection[EntryField]) -> list[Subject]`: the distinct subjects
-of entries with one of `fields` naming the person, ever, as `Catalog.involving` uses it.
+It also has `families() -> list[int]`: every family's id, by id, as the bench lists families;
+`involving(person: int) -> list[Subject]`: the distinct subjects of entries whose `owner` or `collaborator` named the
+person, ever, by thread, family, run and score; and `runs_started(person: int, since: datetime) -> int`: how many
+runs' `owner` entries name the person since `since`.
 
 ### `class Catalog`
-`Catalog(conn: Connection)`. Its methods, and what each writes, are in `docs/catalog-api.md`, "The store's Catalog".
+`Catalog(conn: Connection)` writes what the catalog decides: `create`, `edit`, `keep`, `adopt`, `repair`, `note` and
+`language`, in `docs/catalog-api.md`, "The store's Catalog". Callers read the catalog through its package's functions
+over `Rows`, as `threads.head(Rows(conn), thread)`.
 
 ## migrate.py
 
 | Name | Value |
 | --- | --- |
-| `MIGRATIONS` | `Path` of `migrations/` |
 | `TOP_TIER` | `2` |
 | `class Migration` | A frozen dataclass: `name: str` (the file's stem), `tier: int`, `path: Path`. |
 
 | Function | Returns / raises |
 | --- | --- |
-| `migrations() -> list[Migration]` | Every `migrations/*.sql`, by file name. The tier is the second `-`-separated part without its `t`: `0012-t2-catalog` is tier 2. A file name with fewer than three parts, or a tier that isn't a number, raises `ValueError`. |
+| `pending(conn, tier: int = TOP_TIER) -> list[Migration]` | The `migrations/*.sql` at or below `tier`, by file name, whose names aren't in `public.migration`; all of them when the table doesn't exist. Writes nothing. A migration's tier is the second `-`-separated part of its file stem without its `t`: `0012-t2-catalog` is tier 2. A file name with fewer than three parts, or a tier that isn't a number, raises `ValueError`. |
 | `pending(conn, tier: int = TOP_TIER) -> list[Migration]` | The migrations at or below `tier` whose names aren't in `public.migration`; all of them when the table doesn't exist. Writes nothing. |
 | `migrate(conn, tier: int = TOP_TIER) -> list[str]` | Creates `public.migration` if it doesn't exist and reads `pending`, in one transaction; then applies each pending migration in its own transaction, running the file and recording `(name, tier)`. Returns the names applied, in file-name order. A failing migration raises its psycopg error; the ones before it stay applied. |
 
@@ -369,6 +366,7 @@ from what it has scored, and any change once it has ended.
 | `0023-t1-ledger-seq.sql` | 1 | `ledger.seq` to the writer | `docs/ledger-api.md` |
 | `0024-t0-worker-scored.sql` | 0 | `worker.job.scored` | here, "Database: schema `worker`" |
 | `0025-t2-worker-scored.sql` | 2 | `scored`'s CHECKs, `worker.keep_job()` again | here |
+| `0026-t2-catalog-run-variation.sql` | 2 | `varied`, `replaced` and `with` entries, on runs only, and `catalog.check_varied()` | `docs/catalog-api.md`, `docs/migrations.md`, "catalog" |
 
 How to name and list a new migration is in `docs/migrations.md`.
 

@@ -4,12 +4,13 @@ ALTER TABLE catalog.thread
         'chunk.instructions', 'chunk.few_shot', 'chunk.prompt', 'chunk.output',
         'chunk.sampling', 'chunk.reasoning', 'chunk.passthrough', 'chunk.translations',
         'chunk.toolset', 'tool', 'skeleton', 'trial', 'judge', 'scorer', 'scoring',
-        'appendix', 'expectation', 'model', 'engine.local', 'engine.remote',
+        'appendix', 'expectation', 'model.local', 'model.remote', 'engine.local', 'engine.remote',
+        'facts',
         'expectation_schema', 'canary_set'
     ));
 
--- src/chatddx/catalog/model.py: EntryField, Entry._shape and LANGUAGE, and check_entry in
--- src/chatddx/catalog/language.py.
+-- src/chatddx/catalog/model.py: EntryField and Entry._shape, src/chatddx/factors/base.py:
+-- LANGUAGE, and check_note in src/chatddx/catalog/threads.py.
 -- A check passes when it is NULL, so NULL values are ruled out explicitly.
 ALTER TABLE catalog.entry
     ADD CONSTRAINT entry_field_check CHECK (field IN (
@@ -31,7 +32,7 @@ ALTER TABLE catalog.entry
     END),
     ADD CONSTRAINT entry_language_check CHECK (field <> 'language' OR family IS NOT NULL);
 
--- src/chatddx/catalog/model.py: check_label repeats this check.
+-- src/chatddx/catalog/threads.py: check_edit repeats this check.
 CREATE FUNCTION catalog.check_label() RETURNS trigger LANGUAGE plpgsql AS $$
 DECLARE
     n integer;
@@ -48,7 +49,7 @@ $$;
 CREATE TRIGGER label_position BEFORE INSERT ON catalog.label
 FOR EACH ROW EXECUTE FUNCTION catalog.check_label();
 
--- src/chatddx/catalog/threads.py: check_based_on repeats this check.
+-- src/chatddx/catalog/threads.py: check_edit repeats this check.
 CREATE FUNCTION catalog.check_based_on() RETURNS trigger LANGUAGE plpgsql AS $$
 BEGIN
     IF NEW.based_on IS NOT NULL AND NOT EXISTS (
@@ -88,13 +89,13 @@ $$;
 CREATE TRIGGER binding_anchor BEFORE INSERT ON catalog.binding
 FOR EACH ROW EXECUTE FUNCTION catalog.check_binding();
 
--- src/chatddx/catalog/model.py: LANGUAGE and LANGUAGE_KINDS, and check_language in
--- src/chatddx/catalog/language.py.
+-- src/chatddx/factors/base.py: LANGUAGE, src/chatddx/catalog/model.py: LANGUAGE_KINDS, and
+-- check_language in src/chatddx/catalog/language.py.
 ALTER TABLE catalog.language
     ADD CONSTRAINT language_value_check CHECK (value ~ '^[a-z]{2,3}(-[A-Za-z0-9]{1,8})*$'),
     ADD CONSTRAINT language_kind_check CHECK (kind IN (
         'chunk.instructions', 'chunk.few_shot', 'chunk.prompt', 'chunk.output',
-        'chunk.toolset', 'chunk.translations', 'skeleton'
+        'chunk.toolset', 'skeleton'
     ));
 
 -- A skeleton compiled later still takes its language from its recipe; this only refuses what is

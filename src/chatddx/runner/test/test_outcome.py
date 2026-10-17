@@ -4,12 +4,12 @@ from uuid import uuid4
 
 from pydantic import JsonValue
 
-from chatddx.bench import outcome, usage
 from chatddx.curation import Plan
 from chatddx.factors.base import Fingerprint, resolve
 from chatddx.factors.request import Skeleton
 from chatddx.fake_vllm.chat import instance
 from chatddx.ledger import Call, ItemKey, RunItem, ToolRun, Turn
+from chatddx.runner.outcome import outcome, usage
 from chatddx.runner.send import STOPPED
 from chatddx.test.world import LINES, NATIVE
 

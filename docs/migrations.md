@@ -87,7 +87,7 @@ it, if any. A new schema gets its own section with all three tiers.
 - `0013-t0-catalog-binding-content.sql`: index `binding_content (source, fingerprint)` on `catalog.binding`,
   beside `binding_source (source, source_id)`, so that looking a case's family up and finding which family holds
   a vignette's place read only the bindings to its id or content
-  (`src/chatddx/store/catalog.py:Rows.bindings_sharing`, `src/chatddx/catalog/families.py:family_of`, `holder`).
+  (`src/chatddx/store/catalog.py:Rows.bindings_sharing`, `src/chatddx/catalog/families.py:family_of`, `_holder`).
 - `0017-t0-catalog-label-edit.sql`: `catalog.label` dropped and made again as `label (id, edit, kind, part, position,
   value, by, at)`: `(edit, kind)` is an edit of a `scorer` thread, `UNIQUE (edit, part, position)`, and the value not
   empty. The old rows named a scorer digest; they are dropped, since a store from before holds v1 scorers, which can't
@@ -100,13 +100,18 @@ it, if any. A new schema gets its own section with all three tiers.
 
 ### Tier 2
 - `0012-t2-catalog.sql`: repeats the rules of `chatddx.catalog` that concurrent writers could break.
-  - Thread kinds, entry fields and language kinds, mirrored by `src/chatddx/catalog/model.py` and tested against it
-    (`test/test_catalog.py`).
+  - Thread kinds, `facts` among them, entry fields and language kinds, `chunk.translations` not among them, mirrored
+    by `src/chatddx/catalog/model.py` and tested against it (`test/test_catalog.py`). `facts` was added in place
+    rather than by a new migration: a store migrated before it is dropped and migrated again, and its data sets
+    loaded again, as its compilations are v1, which can't be read any more (agents/wip-engine-part.md, "Stores
+    loaded before"). `chunk.translations` was taken out in place too, as a translations chunk names its
+    languages itself; a store migrated before it is dropped and loaded again the same way, as its compilations are v2
+    and its translations v1.
   - Entry shapes (`src/chatddx/catalog/model.py:Entry._shape`): a name can be removed (no value, `present` false),
-    language tags follow `model.py:LANGUAGE`, NULL values are ruled out explicitly (a NULL check passes), and a
-    `language` entry is only on a family (`src/chatddx/catalog/language.py:check_entry`).
-  - Label positions within the scorer's views or resources (`src/chatddx/catalog/model.py:check_label`).
-  - `based_on` is in the thread's origin, at or after `forked_from` (`src/chatddx/catalog/threads.py:check_based_on`).
+    language tags follow `src/chatddx/factors/base.py:LANGUAGE`, NULL values are ruled out explicitly (a NULL check
+    passes), and a `language` entry is only on a family (`src/chatddx/catalog/threads.py:check_note`).
+  - Label positions within the scorer's views or resources (`src/chatddx/catalog/threads.py:check_edit`).
+  - `based_on` is in the thread's origin, at or after `forked_from` (`src/chatddx/catalog/threads.py:check_edit`).
   - A new binding keeps the previous one's source, and its id or its fingerprint
     (`src/chatddx/catalog/families.py:plan_repair`).
   - Language tags and kinds on `catalog.language`, and no language for a skeleton already known to be compiled
@@ -114,9 +119,20 @@ it, if any. A new schema gets its own section with all three tiers.
   - Insert-only triggers on every table.
   - `0018-t2-catalog-label-edit.sql`: `catalog.check_label()` again, for labels on edits: a label's `by` and `at` are
     its edit's, so it is written in the edit's transaction, by its writer (`at` defaults to the transaction's `now()`),
-    and its position is within the views or resources of the edit's scorer (`src/chatddx/catalog/model.py:check_label`,
-    `src/chatddx/catalog/threads.py:check_labels`). The trigger and the insert-only triggers go back on the new table,
+    and its position is within the views or resources of the edit's scorer
+    (`src/chatddx/catalog/threads.py:check_edit`). The trigger and the insert-only triggers go back on the new table,
     dropped first where a store migrated to tier 0 has them from `0012`.
+  - `model.local` replaced `model` among the thread kinds in place: a local model's digest changes with its kind, and
+    its engines' and their endpoints' with it, so a store migrated before it is dropped and migrated again, and its
+    data sets loaded again.
+  - `0026-t2-catalog-run-variation.sql`: the entry fields `varied`, `replaced` and `with`, which only a run takes
+    (`entry_run_check`); `entry_field_check` and `entry_shape_check` dropped and made again with them, their values
+    as `src/chatddx/catalog/model.py:_VARIED`, `_REPLACED` and `_WITH` have them, the model among a `replaced`
+    entry's parts; and a constraint trigger, after the row's checks, that a `varied` entry names an edit of a
+    configuration, a `replaced` one a stored chunk of its part, or for the model a stored `model.local` or
+    `model.remote`, and a `with` one a run that has started (`catalog.check_varied()`,
+    `src/chatddx/catalog/threads.py:check_note`, which leaves `with` to the database, as the catalog doesn't read the
+    ledger). The engine and `with` were added in place, as `0012`'s `facts` was.
 
 ## source
 
@@ -130,11 +146,6 @@ it, if any. A new schema gets its own section with all three tiers.
 
 ### Tier 2
 - `0016-t2-source.sql`: triggers refusing UPDATE and TRUNCATE on `text`; DELETE is held back by the grants alone.
-- `0026-t2-catalog-run-variation.sql`: the entry fields `varied` and `replaced`, which only a run takes
-  (`entry_run_check`); `entry_field_check` and `entry_shape_check` dropped and made again with them, their values
-  as `src/chatddx/catalog/model.py:VARIED` and `REPLACED` have them; and a constraint trigger, after the row's
-  checks, that a `varied` entry names an edit of a configuration and a `replaced` one a stored chunk of its part
-  (`catalog.check_varied()`, `src/chatddx/catalog/threads.py:check_varied`).
 
 ## worker
 

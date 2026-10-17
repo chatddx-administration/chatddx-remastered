@@ -5,9 +5,9 @@ from dataclasses import dataclass, replace
 from rich.console import Console
 from rich.text import Text
 
-from chatddx.bench import KINDS, OPTIONAL, PARTS, Bench, TriedVariation
-from chatddx.catalog import made_for
+from chatddx.bench import KINDS, Bench, Endpoint, TriedVariation
 from chatddx.factors.base import Finding
+from chatddx.factors.request import OPTIONAL_PARTS, RECIPE_PARTS
 
 from .render import REFUSED, counted, finding
 
@@ -29,24 +29,21 @@ def console(record: bool = False, width: int | None = None) -> Console:
 @dataclass(frozen=True)
 class Cell:
     variation: TriedVariation | None = None
-    endpoint: str | None = None
-    engine: str | None = None
-    name: str | None = None
+    endpoint: Endpoint | None = None
 
-    def trying(self, variation: TriedVariation, name: str | None = None) -> "Cell":
-        return replace(self, variation=variation, name=name or self.name)
+    def trying(self, variation: TriedVariation) -> "Cell":
+        return replace(self, variation=variation)
 
-    def holding(self, name: str) -> "Cell":
-        return replace(self, variation=None, name=name)
+    def on(self, endpoint: Endpoint | None) -> "Cell":
+        return replace(self, endpoint=endpoint)
 
-    def on(self, endpoint: str, engine: str) -> "Cell":
-        return replace(self, endpoint=endpoint, engine=engine)
+    @property
+    def named(self) -> str | None:
+        return None if self.endpoint is None else self.endpoint.name
 
     @property
     def label(self) -> str:
-        if self.variation is None:
-            return self.name or ""
-        return self.variation.label
+        return "" if self.variation is None else self.variation.label
 
 
 class Repl:
@@ -60,10 +57,34 @@ class Repl:
 
     @property
     def prompt(self) -> str:
-        cell = self.cell
-        endpoint = f"×{cell.endpoint}" if cell.endpoint else ""
-        held = f" {cell.label}{endpoint}" if cell.label or cell.endpoint else ""
+        cell, where = self.cell, self.where()
+        endpoint = f"×{where}" if where else ""
+        held = f" {cell.label}{endpoint}" if cell.label or where else ""
         return f"{self.bench.person.login}{held} #{self.seed}> "
+
+    def where(self) -> str | None:
+        cell = self.cell
+        if cell.variation is None:
+            return cell.named
+        try:
+            return self.bench.at(cell.variation, cell.named).name
+        except (LookupError, ValueError):
+            return cell.named
+
+    @property
+    def at(self) -> Endpoint | None:
+        cell = self.cell
+        if cell.endpoint is not None or cell.variation is None:
+            return cell.endpoint
+        try:
+            return self.bench.at(cell.variation, None)
+        except (LookupError, ValueError):
+            return None
+
+    @property
+    def engine(self) -> str | None:
+        at = self.at
+        return None if at is None else at.engine
 
     def completions(self) -> dict[str, list[str]]:
         runs = self.bench.runs()[:20]
@@ -76,14 +97,21 @@ class Repl:
         if self._completions is not None:
             return self._completions
         bench = self.bench
-        names = {word: self._per_model(bench.names(word)) for word in KINDS}
-        for part in OPTIONAL:
+        names = {
+            word: sorted({a.name for _, a in bench.threads(word) if a.name})
+            for word in KINDS
+        }
+        for part in OPTIONAL_PARTS:
             names[f"set:{part}"] = [*names[part], NONE]
+        families = bench.families()
         names |= {
             "endpoint": sorted(bench.inventory.endpoints),
-            "case": [*(f.name for f in bench.families()), *bench.case_titles()],
-            "tag": bench.tags(),
-            "part": [*PARTS],
+            "case": [
+                *(f.name for f in families),
+                *sorted(bench.title(c) for f in families for c in f.cases[1:]),
+            ],
+            "tag": sorted({tag for f in families for tag in f.about.tags}),
+            "part": [*RECIPE_PARTS],
             "kind": ["tag", "case", "endpoint", *KINDS],
         }
         self._completions = names
@@ -92,34 +120,17 @@ class Repl:
     def forget(self) -> None:
         self._completions = None
 
-    def _per_model(self, names: list[str]) -> list[str]:
-        models = self.bench.facts.models
-        found: set[str] = set()
-        languages: dict[str, set[str | None]] = {}
-        for name in names:
-            made = made_for(name, models)
-            if made is None or made[2] is None:
-                found.add(name)
-            else:
-                languages.setdefault(made[0], set()).add(made[1])
-        for base, held in languages.items():
-            if len(held) == 1:
-                found.add(base)
-            else:
-                found |= {f"{base} {language}" for language in held if language}
-        return sorted(found)
-
     def say_cell(self) -> None:
         configuration = self.cell.label or "?"
-        endpoint = self.cell.endpoint or "?"
+        endpoint = self.where() or "?"
         self.console.print(Text(f"cell: {configuration} × {endpoint}"))
 
     def say_changed(self) -> None:
         self.say_cell()
         cell = self.cell
-        if cell.variation is not None and cell.engine is not None:
+        if cell.variation is not None and self.engine is not None:
             self.say_findings(
-                self.bench.findings(cell.variation, cell.engine, self.seed)
+                self.bench.findings(cell.variation, self.engine, self.seed)
             )
 
     def say_findings(self, findings: Iterable[Finding], tally: bool = False) -> None:

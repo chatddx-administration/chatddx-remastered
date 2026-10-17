@@ -34,13 +34,20 @@ def test_what_can_t_be_typed_is_refused_and_a_day_s_quota_held(
         ({"text": " "}, "a typed case holds text"),
         ({"text": "a\u0000b"}, "U+0000"),
         ({"text": TYPED, "source": "test"}, "'test' isn't a database source"),
+        ({"text": TYPED, "language": "Swedish"}, "'Swedish' is not a language tag"),
     ):
-        got = signed.post("/api/families", json=asked)
+        got = signed.post("/api/families", json={"language": "en", **asked})
         assert got.status_code == 422, (asked, got.json())
         assert said in got.json()["detail"]
 
-    monkeypatch.setattr(settings, "TYPED_PER_DAY", 1)
-    assert signed.post("/api/families", json={"text": TYPED}).status_code == 201
     got = signed.post("/api/families", json={"text": TYPED})
+    assert (got.status_code, got.json()["detail"][0]["loc"]) == (
+        422,
+        ["body", "language"],
+    )
+    monkeypatch.setattr(settings, "TYPED_PER_DAY", 1)
+    typed = {"text": TYPED, "language": "sv"}
+    assert signed.post("/api/families", json=typed).status_code == 201
+    got = signed.post("/api/families", json=typed)
     assert got.status_code == 429
     assert "alice has typed 1 cases in the last day" in got.json()["detail"]

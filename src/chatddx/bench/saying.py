@@ -1,12 +1,12 @@
 from collections.abc import Collection
 from types import EllipsisType
 
-from chatddx.catalog import About, Entry, EntryField, Subject
+from chatddx.catalog import About, Entry, EntryField, Subject, read, threads
 from chatddx.factors.scoring import Expectation
 
 from .errors import NotFound
-from .model import KINDS
-from .seen import Seen
+from .model import word_of
+from .seen import Seen, check_expecting
 
 
 def say(
@@ -20,9 +20,8 @@ def say(
     deleted: bool | None = None,
 ) -> About:
     found = seen.rows.thread(thread)
-    kind = None if found is None else found.kind
-    word = next((w for w, held in KINDS.items() if kind in held), "thread")
-    about = seen.about(thread)
+    word = word_of(None if found is None else found.kind)
+    about = read.about(seen.rows, Subject(thread=thread))
     if found is None or about.owner != seen.person.id:
         raise NotFound(f"no {word} {thread} of yours")
     changing = (name, description, tags, collaborators) != (..., None, None, None)
@@ -40,9 +39,9 @@ def say(
 
     said: list[Entry] = []
     if deleted is False and about.deleted:
-        head = seen.get(seen.catalog.head(thread).digest)
+        head = seen.store.get(threads.head(seen.rows, thread).digest)
         if isinstance(head, Expectation):
-            seen.check_expecting(head, thread, "delete that one to restore this")
+            check_expecting(seen, head, thread, "delete that one to restore this")
         said.append(Entry(field=EntryField.DELETED, present=False))
     if not isinstance(name, EllipsisType) and name != about.name:
         said.append(
@@ -67,7 +66,7 @@ def say(
     with seen.conn.transaction():
         for entry in said:
             seen.catalog.note(Subject(thread=thread), entry, seen.person.id)
-    return seen.about(thread)
+    return read.about(seen.rows, Subject(thread=thread))
 
 
 def _sharing(seen: Seen, login: str) -> int:

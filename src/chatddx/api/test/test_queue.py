@@ -13,13 +13,13 @@ from chatddx.inventory import Inventory
 from chatddx.store import Store
 from chatddx.store.queue import TAKEN_OUT
 from chatddx.store.store import Connection
-from chatddx.test.world import faked, world_facts
+from chatddx.test.world import faked
 
 
 @pytest.fixture
 def served(db: str, world: Inventory) -> FastAPI:
     conninfo = make_conninfo(settings.database(), dbname=db)
-    return app(world, world_facts(), conninfo, worker=True)
+    return app(world, conninfo, worker=True)
 
 
 def job(signed: TestClient, run: str) -> dict[str, Any]:
@@ -33,9 +33,9 @@ def job(signed: TestClient, run: str) -> dict[str, Any]:
 def test_a_paused_queue_holds_a_run_a_stop_takes_it_out_and_it_resumes(
     signed: TestClient, bob: dict[str, str]
 ) -> None:
-    paused = signed.post("/api/queue/pause").json()
+    paused = signed.patch("/api/queue", json={"paused": True}).json()
     assert (paused["paused"], paused["queued"], paused["under_way"]) == (True, 0, 0)
-    run = signed.post("/api/runs", json=asked(signed)).json()["run"]
+    run = signed.post("/api/runs", json=asked(signed)).json()["runs"][0]["run"]
     waiting = job(signed, run)
     assert (waiting["status"], waiting["ahead"], waiting["ended"]) == (
         "queued",
@@ -54,7 +54,7 @@ def test_a_paused_queue_holds_a_run_a_stop_takes_it_out_and_it_resumes(
     assert not signed.get(f"/api/runs/{run}").json()["finished"]
     assert names(followed(signed, run))[-1] == "done"
 
-    resumed = signed.post("/api/queue/resume").json()
+    resumed = signed.patch("/api/queue", json={"paused": False}).json()
     assert (resumed["paused"], resumed["queued"]) == (False, 0)
     got = signed.post(f"/api/runs/{run}/resume", json={"score": False})
     assert got.status_code == 202, got.json()
@@ -85,7 +85,7 @@ def test_stopping_now_halts_what_is_under_way(
         faked(world, Store(conn).get, delay=0.1),
         httpx2.Client(headers=bearer) as http,
     ):
-        run = signed.post("/api/runs", json=asked(signed)).json()["run"]
+        run = signed.post("/api/runs", json=asked(signed)).json()["runs"][0]["run"]
         with http.stream(
             "GET", f"{listening}/api/runs/{run}/events", timeout=30
         ) as got:

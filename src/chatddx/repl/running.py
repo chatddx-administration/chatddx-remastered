@@ -5,11 +5,19 @@ from typing import Any, Self
 from rich.console import Console
 from rich.text import Text
 
-from chatddx.bench import Bench, Graded, TriedVariation, usage
+from chatddx.bench import Bench, Carried, Graded, Started, TriedVariation
 from chatddx.catalog.titles import short
 from chatddx.ledger import RunItem, RunStarted
-from chatddx.runner.gate import Refused
-from chatddx.runner.run import Event, ItemEnded, ItemStarted, Noted, Running, Streamed
+from chatddx.runner import (
+    ItemEnded,
+    ItemStarted,
+    Noted,
+    Refused,
+    RunEvent,
+    Running,
+    Streamed,
+    usage,
+)
 
 from .render import (
     LABEL,
@@ -58,19 +66,22 @@ def run(repl: Repl, name: str, seed: str | None = None) -> None:
     variation, endpoint = whole
     bench = repl.bench
     family, case = bench.case_titled(name)
-    skeleton = bench.skeleton(variation)
-    running = _started(repl, variation, endpoint, [case], chosen)
+    started = _started(repl, variation, endpoint, [case], chosen)
 
-    if running is None:
+    if started is None:
         return
 
+    carried, running = started.runs[0]
+    skeleton = carried.skeleton
+    assert skeleton is not None
     shown = family.name if case == family.case else bench.title(case)
-    title = f"trial: {variation.label} × {endpoint} × {shown} (seed {chosen})"
+    sent = _sent_in(carried, False)
+    title = f"trial: {variation.label} × {endpoint} × {shown}{sent} (seed {chosen})"
     repl.console.print(Text(title, style="bold"))
     transcript = Transcript(repl.console)
     ended: list[RunItem] = []
 
-    def on_event(event: Event) -> None:
+    def on_event(event: RunEvent) -> None:
         transcript.event(event)
         if isinstance(event, ItemEnded):
             ended.append(event.item)
@@ -111,18 +122,55 @@ def tagged(repl: Repl, *tags: str) -> None:
         repl.error(f"no case tagged {any_of} for {bench.person.login}")
         return
 
-    skeleton = bench.skeleton(variation)
-    running = _started(repl, variation, endpoint, [f.case for f in families], repl.seed)
+    started = _started(repl, variation, endpoint, [f.case for f in families], repl.seed)
 
-    if running is None:
+    if started is None:
         return
 
     names = {f.case: f.name for f in families}
     width = max(len("case"), *(len(n) for n in names.values()))
+    stopped = False
+
+    for carried, running in started.runs:
+        tagged_as = f"tagged {any_of}{_sent_in(carried, len(started.runs) > 1)}"
+        title = f"trial: {variation.label} × {endpoint} × "
+        stopped = _tagged(
+            repl, carried, running, names, width, stopped, title, tagged_as
+        )
+
+    for left in started.left_out:
+        repl.console.print(
+            f"left out: {plural(len(left.cases), 'case')} in {left.language}, "
+            + f"as {left.refused}",
+            style=LATER,
+        )
+
+
+def _sent_in(carried: Carried, several: bool) -> str:
+    if carried.translated:
+        return f", in {carried.language}, translated"
+    if several and carried.language is not None:
+        return f", in {carried.language}"
+    return ""
+
+
+def _tagged(
+    repl: Repl,
+    carried: Carried,
+    running: Running,
+    names: dict[str, str],
+    width: int,
+    stopped: bool,
+    title: str,
+    tagged_as: str,
+) -> bool:
+    bench = repl.bench
+    skeleton = carried.skeleton
+    assert skeleton is not None
+    cases = len(carried.cases)
     repl.console.print(
         Text(
-            f"trial: {variation.label} × {endpoint} × "
-            + f"{plural(len(families), 'case')} tagged {any_of} (seed {repl.seed})",
+            f"{title}{plural(cases, 'case')} {tagged_as} (seed {repl.seed})",
             style="bold",
         )
     )
@@ -133,7 +181,7 @@ def tagged(repl: Repl, *tags: str) -> None:
 
     with _Stopping(running) as stopping:
 
-        def on_event(event: Event) -> None:
+        def on_event(event: RunEvent) -> None:
             match event:
                 case ItemStarted(key=key):
                     stopping.tally = Tally(repl.console, width, names[key.case])
@@ -151,6 +199,8 @@ def tagged(repl: Repl, *tags: str) -> None:
                 case _:
                     pass
 
+        if stopped:
+            running.stop()
         try:
             running.send(on_event)
         except KeyboardInterrupt:
@@ -158,15 +208,15 @@ def tagged(repl: Repl, *tags: str) -> None:
         finally:
             if stopping.tally is not None:
                 stopping.tally.__exit__()
+        stopped = stopped or stopping.pressed > 0
 
     with Held(repl.console, WRITING) as held:
         findings = running.finish()
         graded = held.scored(bench, running.started)
 
-    if len(ended) < len(families):
+    if len(ended) < cases:
         repl.console.print(
-            f"stopped after {len(ended)} of {plural(len(families), 'case')}",
-            style=LABEL,
+            f"stopped after {len(ended)} of {plural(cases, 'case')}", style=LABEL
         )
 
     repl.say_findings([n.finding for n in noted], tally=True)
@@ -175,6 +225,7 @@ def tagged(repl: Repl, *tags: str) -> None:
     repl.say_findings([*scored_findings(graded), *findings], tally=True)
     held.said()
     _recorded(repl, running)
+    return stopped
 
 
 def _recorded(repl: Repl, running: Running) -> None:
@@ -204,17 +255,15 @@ def _seed_of(repl: Repl, value: str) -> int | None:
 
 def _whole(repl: Repl) -> tuple[TriedVariation, str] | None:
     cell = repl.cell
-    if cell.variation is None or cell.endpoint is None:
-        repl.error(
-            "the cell needs a configuration and an endpoint: cell CONFIGURATION ENDPOINT"
-        )
+    if cell.variation is None:
+        repl.error("the cell has no configuration: use CONFIGURATION")
         return None
-    return cell.variation, cell.endpoint
+    return cell.variation, repl.bench.at(cell.variation, cell.named).name
 
 
 def _started(
     repl: Repl, variation: TriedVariation, endpoint: str, cases: list[str], seed: int
-) -> Running | None:
+) -> Started | None:
     if repl.bench.skeleton(variation).greedy:
         repl.console.print("greedy: the seed isn't sent", style=LABEL)
     try:

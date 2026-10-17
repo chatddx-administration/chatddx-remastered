@@ -1,8 +1,8 @@
-from chatddx.catalog import Subject
+from chatddx.catalog import Subject, families, read
 from chatddx.factors.base import Fingerprint
 from chatddx.identity import Person
-from chatddx.inventory import ListingSource
-from chatddx.store.catalog import Catalog
+from chatddx.inventory import DirectorySource
+from chatddx.store.catalog import Catalog, Rows
 from chatddx.store.store import Connection
 
 
@@ -11,14 +11,14 @@ def _count(n: int, one: str, many: str) -> str:
 
 
 def repair(
-    conn: Connection, source: ListingSource, archive: Person, dry: bool = False
+    conn: Connection, source: DirectorySource, archive: Person, dry: bool = False
 ) -> list[str]:
     lines: list[str] = []
     at = f"at source {source.name!r}"
     with conn.transaction():
-        catalog = Catalog(conn)
+        catalog, rows = Catalog(conn), Rows(conn)
         listing = {c.vignette.id: c.vignette.fingerprint for c in source.cases()}
-        survey = catalog.survey(source.name, listing)
+        survey = families.survey(rows, source.name, listing)
         moves: list[tuple[int, str, str | None, Fingerprint | None, str]] = [
             (family, old, new, None, f"renamed to {new}")
             for family, old, new in survey.renamed
@@ -27,7 +27,7 @@ def repair(
             (family, id, None, fingerprint, "changed")
             for family, id, fingerprint in survey.changed
         ]
-        known = catalog.abouts([Subject(family=m[0]) for m in moves])
+        known = read.abouts(rows, [Subject(family=m[0]) for m in moves])
         for family, id, new, fingerprint, what in sorted(moves, key=lambda m: m[1]):
             if known[Subject(family=family)].owner != archive.id:
                 lines.append(
@@ -44,7 +44,7 @@ def repair(
             moved = (
                 _count(len(done.cases), "case", "cases"),
                 _count(len(done.appendices), "appendix", "appendices"),
-                _count(len(done.edits), "thread", "threads"),
+                _count(len(done.moves), "thread", "threads"),
             )
             lines.append(
                 f"[repair case] {id}: {what} {at}; family {family} moved, with "
