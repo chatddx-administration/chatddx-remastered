@@ -1,15 +1,23 @@
+import tempfile
 from collections.abc import Mapping
+from pathlib import Path
 
 from chatddx.curation import DataCase
-from chatddx.inventory.test.memory import MemorySource
+from chatddx.inventory import DirectorySource
 from chatddx.test.world import CASES
 
-__all__ = ["CASES", "appended", "vignettes"]
+__all__ = ["CASES", "TEXTS", "appended", "vignettes"]
+
+TEXTS = {id: f"The vignette of {id}.".encode() for id in CASES}
+
+_AT = tempfile.TemporaryDirectory(prefix="chatddx-vignettes-")
 
 
-def vignettes(**changed: bytes) -> MemorySource:
-    texts = {id: f"The vignette of {id}.".encode() for id in CASES}
-    return MemorySource(name="test", vignettes={**texts, **changed})
+def vignettes(texts: Mapping[str, bytes] = TEXTS, **changed: bytes) -> DirectorySource:
+    path = Path(tempfile.mkdtemp(dir=_AT.name))
+    for id, text in {**texts, **changed}.items():
+        _ = (path / f"{id}.txt").write_bytes(text)
+    return DirectorySource(name="test", path=path)
 
 
 # What loading the cases lands beside each case and its expectation: the appendices, the

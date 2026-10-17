@@ -14,8 +14,8 @@ Paths are relative to `src/chatddx/inventory/` unless they start with `src/`, `d
 - [Conventions](#conventions)
 - [The file](#the-file)
 - [inventory.py](#inventorypy): `EndpointSpec`, `HostSpec`, `Inventory`
-- [sources.py](#sourcespy): `Source`, `DatabaseSource`, `ListingSource`, `DirectorySource`
-- [serving.py](#servingpy): `StartUp`, `start_up`, `url_at`, `served`, `confirm`
+- [sources.py](#sourcespy): `Source`, `DatabaseSource`, `DirectorySource`
+- [serving.py](#servingpy): `StartUp`, `start_up`
 - [world.py](#worldpy): `World`
 - [check.py](#checkpy): `check`
 - [Worlds](#worlds)
@@ -23,9 +23,8 @@ Paths are relative to `src/chatddx/inventory/` unless they start with `src/`, `d
 
 ## Package
 
-`chatddx.inventory` re-exports `LISTEN_FLAGS`, `DatabaseSource`, `DirectorySource`, `EndpointSpec`, `HostSpec`,
-`Inventory`, `ListingSource`, `Source`, `StartUp`, `World`, `check`, `confirm`, `served`, `start_up` and `url_at`.
-`test/memory.py:MemorySource` is imported by path.
+`chatddx.inventory` re-exports `DatabaseSource`, `DirectorySource`, `EndpointSpec`, `HostSpec`, `Inventory`, `Source`,
+`StartUp`, `World`, `check` and `start_up`.
 
 | Module | Builds on |
 | --- | --- |
@@ -36,7 +35,7 @@ Paths are relative to `src/chatddx/inventory/` unless they start with `src/`, `d
 | `check.py` | `inventory.py`, `serving.py`, `chatddx.factors.{base,engine}` |
 
 The package imports no chatddx package but `chatddx.factors`, no third-party package but pydantic, and holds no SQL.
-Only `served` and `confirm` connect to anything.
+Nothing in it connects: the runner's gate confirms an endpoint (`src/chatddx/runner/gate.py:admit`).
 
 ## Conventions
 
@@ -49,19 +48,17 @@ it, so an unknown key in an inventory file is a `ValidationError`.
 **Engines.** An endpoint names the engine it serves by digest. The package doesn't hold engines: `serving.py` looks
 them up through a `Resolver` (`get`), such as `Registry.get` or `Store.get`.
 
-**Checked late.** Loading checks only what the files show. Whatever needs the engines is checked when `start_up`,
-`url_at` or `confirm` is called, or for every entry at once by `check`.
+**Checked late.** Loading checks only what the files show. Whatever needs the engines is checked when `start_up` is
+called, or for every entry at once by `check`.
 
 **Errors.**
 
 | Exception | When |
 | --- | --- |
-| `LookupError` | A source, endpoint or vignette that isn't there; an id that would reach outside a directory source; an endpoint whose engine `get` doesn't know (the resolver's `StructuralError`, turned into `endpoint '<name>': <its message>`), isn't an engine, or can't be started or reached as the inventory says; a server that doesn't list the engine's served name; an engine no endpoint, or several, serve (`Inventory.serving`). |
 | `ValueError` | `Inventory.load`: a top-level key it doesn't know, a table an included file may not hold, a name defined twice. |
-| `pydantic.ValidationError` | An inventory that breaks its own rules: an unknown key, a wrong type, a source named other than its table, an endpoint naming no host, `[cleared]` naming no endpoint or source, `[judge]` binding a judge to no endpoint, `configurations` naming no endpoint. Rules written as validators raise `ValueError`, which pydantic wraps. |
+| `pydantic.ValidationError` | An inventory that breaks its own rules: an unknown key, a wrong type, a source named other than its table, an endpoint without `url`, an endpoint naming no host, `[cleared]` naming no endpoint or source, `[judge]` binding a judge to no endpoint, `configurations` naming no endpoint. Rules written as validators raise `ValueError`, which pydantic wraps. |
 | `tomllib.TOMLDecodeError` (a `ValueError`), `OSError` | `Inventory.load` of a file, or an included file, that isn't TOML or can't be read. |
-| `OSError` | `served` and `confirm` when the server can't be reached, times out or answers with an HTTP error (`urllib.error.URLError`, `HTTPError`); `DirectorySource` for a directory it can't list or a file it can't read, other than a missing one. |
-| `chatddx.factors.base.StructuralError` (a `ValueError`) | `start_up` when the engine's model artifact isn't known to `get` or isn't a model. |
+| `OSError` | `DirectorySource` for a directory it can't list or a file it can't read, other than a missing one. |
 
 ## The file
 An inventory file is TOML with the top-level keys `include`, `configurations`, `source`, `endpoint`, `host`, `cleared`
@@ -106,7 +103,7 @@ Where one engine is served.
 | Field | Type | Default |
 | --- | --- | --- |
 | `engine` | `Digest` | required; the engine served, which is also the name a local engine is served under |
-| `url` | `HttpUrl \| None` | `None`; the server's OpenAI-compatible base URL, meant to end in `/v1/` (not checked). A remote engine's endpoint may leave it out. |
+| `url` | `HttpUrl` | required; the server's OpenAI-compatible base URL, meant to end in `/v1/` (not checked) |
 | `host` | `str \| None` | `None`; the `[host]` that runs a local engine |
 | `max_jobs` | `int`, ≥ 1 | `1`; how many requests it takes at once |
 | `credential` | `str \| None` | `None`; the name of the environment variable that holds its secret |
@@ -148,12 +145,9 @@ Building one checks, each a `ValueError` wrapped in `ValidationError`:
 | Member | Returns / raises |
 | --- | --- |
 | `load(path: Path) -> Self` (classmethod) | See below. |
-| `source(name: str) -> DirectorySource \| DatabaseSource` | `LookupError("no source '<name>' in the inventory")` when there is none. |
-| `listing(name: str \| None = None) -> ListingSource` | The source `name` names, or with no name the only source that lists its vignettes. `LookupError("no source in the inventory lists its vignettes")` or `LookupError("<n> sources list their vignettes (<names>), so one must be named")` without a name; `source`'s `LookupError` for a name it doesn't know; `LookupError("source '<name>' is a database source, whose vignettes are read through the store, not listed")`. |
+| `source(name: str \| None = None, kind: type[S] = Source) -> S` | The source `name` names, or with no name the only source of `kind`. `LookupError("no source '<name>' in the inventory")`, and `LookupError("source '<name>' isn't a <kind> source")` for one of another kind; with no name, `LookupError("no <kind> source in the inventory")` or `LookupError("<n> <kind> sources (<names>) are in the inventory, so one must be named")`. `<kind> source` is `source` for `Source`. init-data and repair-data ask for a `DirectorySource`, `Bench.type_case` and `Bench.takes_typed` for a `DatabaseSource`. |
 | `endpoint(name: str) -> EndpointSpec` | `LookupError("no endpoint '<name>' in the inventory")` when there is none. |
-| `cleared_for(endpoint: str) -> frozenset[str]` | The sources `[cleared]` lists for the endpoint; empty when it lists none, also for an endpoint that doesn't exist. |
-`serving_model(model: str, model_of: Callable[[str], str | None], called: str | None = None) -> str` | the one endpoint whose engine `model_of` maps to `model`; `LookupError("no endpoint serves model <called>")` and `LookupError("<names> serve model <called>; name the one to use")`.
-| `serving(engine: str, called: str \| None = None) -> str` | The one endpoint serving `engine`, by digest. `LookupError("no endpoint serves engine <called or engine>")` when none does, `LookupError("<names, joined by ", "> serve engine <called or engine>; name the one to use")` when several do. `called` names the engine in the message. `src/chatddx/runner/score.py:judge_at` turns it into `gate.Refused`, and `src/chatddx/bench/seen.py:Seen.at` into a `ValueError`. |
+| `serving(digest: str, serves: Callable[[str], str \| None] \| None = None, called: str \| None = None) -> str` | The one endpoint serving `digest`: whose engine is `digest`, or, given `serves`, whose engine `serves` maps to `digest` (`src/chatddx/bench/seen.py:Seen.at` maps an engine to its model). `LookupError("no endpoint serves <what>")` when none does, `LookupError("<names, joined by ", "> serve <what>; name the one to use")` when several do; `<what>` is `called`, or `engine <digest>`. `src/chatddx/runner/score.py:judge_at` turns it into `gate.Refused`, and `Seen.at` into a `ValueError`. |
 
 #### `Inventory.load(path: Path) -> Self`
 1. Reads `path`. `ValueError("<path>: the inventory has only 'include', 'configurations', 'source', 'endpoint',
@@ -183,16 +177,6 @@ Where a set of vignettes comes from.
 Texts people typed, kept in the store and read through it (`src/chatddx/store/texts.py`). `kind:
 Literal["database"] = "database"`. It lists and fetches nothing itself.
 
-### `class ListingSource(Source, ABC)`
-A source that lists its vignettes and fetches them by id.
-
-| Member | Description |
-| --- | --- |
-| `ids() -> list[str]` (abstract) | Its vignettes' ids, sorted. |
-| `fetch(id: str) -> bytes` (abstract) | A vignette's raw bytes. `LookupError` when there is none. |
-| `cases() -> list[Case]` | One case per id, in `ids()` order: `Case(vignette=Vignette(source=name, id=id, fingerprint=Fingerprint.of(fetch(id))))`, without appendices. Fetches every vignette. |
-| `_missing(id) -> LookupError` | `LookupError("no case '<id>' in source '<name>'")`, for subclasses to raise. |
-
 ### `class DirectorySource(ListingSource)`
 
 | Field | Type | Default |
@@ -203,17 +187,11 @@ A source that lists its vignettes and fetches them by id.
 
 | Method | Returns / raises |
 | --- | --- |
+| `cases() -> list[Case]` | One case per id, in `ids()` order: `Case(vignette=Vignette(source=name, id=id, fingerprint=Fingerprint.of(fetch(id))))`, without appendices. Fetches every vignette. |
 | `ids()` | The names, without `suffix`, of the entries directly in `path` that are files (`Path.is_file`, which follows symlinks) and end in `suffix`, sorted. |
-| `fetch(id)` | The bytes of `path / f"{id}{suffix}"`. `LookupError("case id '<id>' points outside source '<name>'")` for an id holding `/` or `\`, or starting with `.`; `_missing(id)` when the file doesn't exist. Other `OSError`s pass through. |
-
-### `test/memory.py:MemorySource(ListingSource)`
-`vignettes: dict[str, bytes]`; `ids()` is its keys, sorted, and `fetch(id)` its value or `_missing(id)`.
+| `fetch(id)` | The bytes of `path / f"{id}{suffix}"`. `LookupError("case id '<id>' points outside source '<name>'")` for an id holding `/` or `\`, or starting with `.`; `LookupError("no case '<id>' in source '<name>'")` when the file doesn't exist. Other `OSError`s pass through. |
 
 ## serving.py
-
-### `LISTEN_FLAGS`
-`frozenset({"--host", "--port"})`: flags the endpoint decides, which an engine's `argv` may not set for `start_up`.
-`src/chatddx/importers/o11n.py` refuses them in a server's extra arguments too.
 
 ### `class StartUp(Frozen)`
 What the start-up script runs for one endpoint.
@@ -235,44 +213,13 @@ Raises `LookupError`, checking in this order:
 1. `no endpoint '<name>' in the inventory`;
 2. `endpoint '<name>': <the resolver's message>` when `get` doesn't know the engine;
 3. `endpoint '<name>' serves a <kind>, not ours to start` for anything but a local engine;
-4. `endpoint '<name>' needs a url and a host to start`;
-5. `host '<host>' doesn't say where it keeps model <digest>`;
-6. `host '<host>' doesn't say where it keeps chat template <sha256>`;
-7. `engine <digest> sets <flags> in its argv, but endpoint '<name>' decides where it listens` when `flag_names(argv)`
-   holds `--host` or `--port`, also as `--port=9000`. An abbreviation such as `--po` isn't caught.
+4. `endpoint '<name>': <the resolver's message>` when `get` doesn't hold the engine's model artifact, or it isn't a
+   local model;
+5. `endpoint '<name>' needs a host to start`;
+6. `host '<host>' doesn't say where it keeps model <digest>`;
+7. `host '<host>' doesn't say where it keeps chat template <sha256>`.
 
-Then it resolves the model artifact for its revision, which raises `StructuralError` when `get` doesn't hold it.
 Nothing connects.
-
-### `url_at(inventory: Inventory, get: Resolver, name: str) -> str`
-The URL the endpoint's engine is reached at. Raises `LookupError` for a missing endpoint or an engine `get` doesn't
-know, as `start_up`, and:
-
-| Engine | Returns | Raises |
-| --- | --- | --- |
-| remote | `str(url)` | `endpoint '<name>' serves a remote engine but has no url` |
-| local | `str(url)` | `endpoint '<name>' serves a local engine but has no url` |
-| anything else | | `endpoint '<name>' names a <kind>, not an engine` |
-
-A local engine's host isn't looked at. Nothing connects.
-
-### `served(url: str, timeout: float = 10.0, secret: str | None = None) -> list[str]`
-GETs `url` without its trailing `/`, followed by `/models`, and returns `str(entry["id"])` for each entry of the
-response's `data` (`[]` when `data` is missing or empty; `"None"` for an entry without `id`). With `secret`, the
-request carries `Authorization: Bearer <secret>`, as the runner's calls do.
-Raises `OSError` when the server can't be reached, times out or answers with an HTTP error;
-`json.JSONDecodeError` for a body that isn't JSON; `AttributeError` for JSON that isn't an object, or an entry that
-isn't.
-
-### `confirm(inventory: Inventory, get: Resolver, name: str, timeout: float = 10.0, secret: str | None = None) -> None`
-Refuses an endpoint whose server doesn't list the name its engine is served under: a local engine's digest, a remote
-engine's `model`'s name (`served_model_name(engine, get)`). In order:
-1. `LookupError` for a missing endpoint or an engine `get` doesn't know, as `start_up`;
-2. `LookupError("endpoint '<name>' names a <kind>, not an engine")`;
-3. `url_at`'s `LookupError`s;
-4. `served(url, timeout, secret)` and its errors;
-5. `LookupError("endpoint '<name>' at <url> serves <listed names, joined by ", ", or 'nothing'>, not <served
-   name>")`.
 
 ## `world.py`
 `World(path, inventory, engines=(), facts=())`, frozen; `World.load(path)` reads `path / "inventory.toml"` and
@@ -287,7 +234,6 @@ shared addresses, hosts, clearance. A finding's subject is the endpoint's or the
 | --- | --- | --- |
 | `endpoint.engine_unknown` | warning | `get` doesn't know the endpoint's engine; the resolver's message |
 | `endpoint.not_engine` | warning | the endpoint's digest names another kind of component |
-| `endpoint.unreachable` | warning | `url_at` refuses it; its message |
 | `endpoint.unstartable` | warning | a local engine's endpoint that `start_up` refuses; its message |
 | `endpoint.remote_host` | warning | a remote engine's endpoint names a host |
 | `endpoint.shared_url` | warning | a local engine's endpoint has the address of an earlier one |

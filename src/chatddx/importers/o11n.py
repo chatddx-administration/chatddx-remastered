@@ -17,10 +17,9 @@ from chatddx.factors.engine import (
     LocalModel,
     Runtime,
     check_chat_template,
-    flag_names,
 )
 from chatddx.factors.lint import lint
-from chatddx.inventory import LISTEN_FLAGS, EndpointSpec, HostSpec
+from chatddx.inventory import EndpointSpec, HostSpec
 
 # What o11n.vllm's report says about the vLLM servers on one host
 # (Kompismoln/o11n, nixos/vllm-report.py).
@@ -193,8 +192,6 @@ def imported(
             ),
         )
         argv = tuple(cast(list[str], s["extra_args"]))
-        if taken := sorted(flag_names(argv) & LISTEN_FLAGS):
-            raise ValueError(f"its extra arguments set {', '.join(taken)}")
         environment = cast(dict[str, str], s["environment"])
         engine = LocalEngine(
             hardware=Hardware.model_validate(

@@ -172,7 +172,9 @@ def test_the_sample_holds_olof_s_notes_on_three_cases_as_written() -> None:
 
 
 def test_the_sample_world_holds_the_vignettes_at_7893656() -> None:
-    source = Inventory.load(WORLDS / "sample" / "inventory.toml").listing("sample")
+    source = Inventory.load(WORLDS / "sample" / "inventory.toml").source(
+        "sample", DirectorySource
+    )
     assert source.sensitive
     assert source.ids() == sorted(load_cases(SAMPLE))
     for id in source.ids():

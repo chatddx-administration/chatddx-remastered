@@ -265,7 +265,7 @@ def test_it_refuses_what_an_engine_can_t_record() -> None:
             "no Hugging Face repo at a revision",
         ),
         ({"chat_template": {"error": "OSError: gone"}}, "no chat_template: OSError"),
-        ({"extra_args": ["--port", "1"]}, "set --port"),
+        ({"extra_args": ["--port", "1"]}, r"may not set \['--port'\]"),
         ({"extra_args": ["--served-model-name", "x"]}, "may not set"),
         ({"extra_args": ["--config", "x.yaml"]}, "may not use"),
     ]:

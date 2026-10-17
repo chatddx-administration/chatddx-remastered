@@ -119,7 +119,10 @@ def type_case(
     entries = [Entry(field=EntryField.LANGUAGE, value=language)]
     if name is not None:
         entries.append(Entry(field=EntryField.NAME, value=name))
-    into = _typed_into(seen, source)
+    try:
+        into = seen.inventory.source(source, DatabaseSource).name
+    except LookupError as e:
+        raise ValueError(str(e)) from None
     texts = Texts(seen.conn)
     since = datetime.now(UTC) - timedelta(days=1)
     if (typed := texts.typed_since(seen.person.id, since)) >= settings.TYPED_PER_DAY:
@@ -143,26 +146,10 @@ def type_case(
 
 def takes_typed(seen: Seen, endpoint: str) -> bool:
     try:
-        into = _typed_into(seen, None)
-    except ValueError:
+        into = seen.inventory.source(kind=DatabaseSource)
+    except LookupError:
         return False
-    sensitive = seen.inventory.source(into).sensitive
-    return not sensitive or into in seen.inventory.cleared_for(endpoint)
-
-
-def _typed_into(seen: Seen, source: str | None) -> str:
-    held = sorted(
-        s.name for s in seen.inventory.sources.values() if isinstance(s, DatabaseSource)
-    )
-    if source is not None and source not in held:
-        raise ValueError(f"{source!r} isn't a database source of the World's")
-    if source is None and len(held) != 1:
-        raise ValueError(
-            "the World has no database source to type cases into"
-            if not held
-            else f"name the source to type into: {', '.join(held)}"
-        )
-    return source or held[0]
+    return not into.sensitive or into.name in seen.inventory.cleared.get(endpoint, ())
 
 
 def carry(seen: Seen, thread: int, head: int, case: str) -> Written:

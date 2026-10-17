@@ -12,7 +12,7 @@ from chatddx.factors.engine import served_model_name
 from chatddx.factors.request import Skeleton
 from chatddx.factors.trial import CanarySet, Execution, Trial
 from chatddx.identity import Person
-from chatddx.inventory import Inventory, url_at
+from chatddx.inventory import Inventory
 from chatddx.ledger import (
     Call,
     CanaryCall,
@@ -174,13 +174,13 @@ class Runner:
         toolbox = rounds.load(
             resolve(registry.get, trial.skeleton, Skeleton), registry.get
         )
-        jobs = self._inventory.endpoint(endpoint).max_jobs
-        if execution.concurrency > jobs:
+        spec = self._inventory.endpoint(endpoint)
+        if execution.concurrency > spec.max_jobs:
             raise ValueError(
-                f"endpoint {endpoint!r} takes {jobs} requests at once, the execution "
-                + f"sends {execution.concurrency}"
+                f"endpoint {endpoint!r} takes {spec.max_jobs} requests at once, the "
+                + f"execution sends {execution.concurrency}"
             )
-        return secret, toolbox, url_at(self._inventory, registry.get, endpoint)
+        return secret, toolbox, str(spec.url)
 
 
 # A run the request started and the worker sends is resumed with nothing written yet.

@@ -19,7 +19,7 @@ from chatddx.factors.response import tool_calls
 from chatddx.factors.trial import Trial
 from chatddx.fake_vllm.chat import Failure, accept, completion, instance, respond
 from chatddx.fake_vllm.served import CLOSURE, Served
-from chatddx.inventory import World, check, start_up
+from chatddx.inventory import DirectorySource, World, check, start_up
 from chatddx.scorers.answer import read
 from chatddx.scorers.patterns import Pattern
 from chatddx.test.world import DATA, SAMPLE, WORLDS, world_plan
@@ -65,7 +65,7 @@ def test_each_fake_answers_each_skeleton_or_refuses_it_as_vllm_would(
     each: tuple[World, Plan],
 ) -> None:
     world, plan = each
-    case = plan.registry.add(world.inventory.listing().cases()[0])
+    case = plan.registry.add(world.inventory.source(kind=DirectorySource).cases()[0])
     fakes: dict[str, Served] = {}
     for name, endpoint in world.inventory.endpoints.items():
         engine = plan.registry.get(endpoint.engine)

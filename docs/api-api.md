@@ -308,7 +308,7 @@ variation's query parameters to them with `endpoint`, `tag` and `seed`.
 
 | Name | Does |
 | --- | --- |
-| `endpoint_of(bench, name: str, spec: EndpointSpec) -> schemas.Endpoint` | The spec as the inventory declares it, with `Bench.endpoint`, `Bench.title`, `Bench.model_of` (`model` its name and `serves` its digest), `url_at` and `Bench.takes_typed`; a `LookupError` from any of the first four is given as `problem`, its message, with what comes after it `None`: `title`, `model`, `serves` and `url` for an engine that isn't stored, `url` alone for one `url_at` can't tell. |
+| `endpoint_of(bench, name: str, spec: EndpointSpec) -> schemas.Endpoint` | The spec as the inventory declares it, its `url` among it, with `Bench.endpoint`, `Bench.title`, `Bench.model_of` (`model` its name and `serves` its digest) and `Bench.takes_typed`; a `LookupError` from any of the first three is given as `problem`, its message, with `title`, `model` and `serves` `None`. |
 
 | Route | Does |
 | --- | --- |

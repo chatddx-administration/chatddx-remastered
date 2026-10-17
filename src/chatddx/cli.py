@@ -34,7 +34,7 @@ from chatddx.importers.o11n import (
     imported,
     read,
 )
-from chatddx.inventory import Inventory, World, check
+from chatddx.inventory import DirectorySource, Inventory, World, check
 from chatddx.ledger import RunStarted
 from chatddx.portal.app import app as portal
 from chatddx.portal.assets import Assets
@@ -118,7 +118,7 @@ def _init_data(args: argparse.Namespace) -> None:
     except ValueError as e:
         raise SystemExit(f"init-data: {e}") from None
     try:
-        source = world.inventory.listing(args.source)
+        source = world.inventory.source(args.source, DirectorySource)
     except LookupError as e:
         raise SystemExit(f"init-data: {world.path}: {e}") from None
     if not set(cases) & set(source.ids()):
@@ -148,7 +148,7 @@ def _init_data(args: argparse.Namespace) -> None:
 def _repair_data(args: argparse.Namespace) -> None:
     world = _world("repair-data", args.world)
     try:
-        source = world.inventory.listing(args.source)
+        source = world.inventory.source(args.source, DirectorySource)
     except LookupError as e:
         raise SystemExit(f"repair-data: {world.path}: {e}") from None
     with psycopg.connect(settings.database()) as conn:
@@ -436,8 +436,8 @@ def main(argv: Sequence[str] | None = None) -> None:
     )
     _ = init.add_argument(
         "--source",
-        help="the name of the World's source that holds the cases' vignettes, needed "
-        + "when more than one source lists its vignettes",
+        help="the name of the World's directory source that holds the cases' "
+        + "vignettes, needed when it has more than one",
     )
     _ = init.add_argument(
         "--giftbag", action="store_true", help="also give the user forks of their own"
@@ -468,8 +468,8 @@ def main(argv: Sequence[str] | None = None) -> None:
     )
     _ = repair_parser.add_argument(
         "--source",
-        help="the name of the World's source to survey, needed when more than one "
-        + "source lists its vignettes",
+        help="the name of the World's directory source to survey, needed when it "
+        + "has more than one",
     )
     _ = repair_parser.add_argument(
         "--dry-run", action="store_true", help="list the repairs without making them"

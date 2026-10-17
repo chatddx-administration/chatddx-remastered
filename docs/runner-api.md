@@ -4,8 +4,7 @@ Reference for the `chatddx.runner` package. It was written from `src/chatddx/run
 run and a score do and why is in `docs/runner.md`; this file says what each name accepts, returns and raises. Types
 from other packages are in their API docs: factors (`Trial`, `Execution`, `Skeleton`, `Judge`, `Scoring`, `Registry`,
 `Finding`, …) in `docs/factors-api.md`, records (`Call`, `RunItem`, `ScoreItem`, `JudgeCall`, …) and the checks in
-`docs/ledger-api.md`, `Inventory`, `confirm` and `url_at` in `docs/inventory-api.md`, `Store` and `Catalog` in
-`docs/store-api.md`.
+`docs/ledger-api.md`, `Inventory` in `docs/inventory-api.md`, `Store` and `Catalog` in `docs/store-api.md`.
 
 Paths are relative to `src/chatddx/runner/` unless they start with `src/` or `docs/`.
 
@@ -29,7 +28,7 @@ Paths are relative to `src/chatddx/runner/` unless they start with `src/` or `do
 | --- | --- |
 | `wire.py` | the standard library's `urllib` |
 | `send.py` | `wire.py`, `chatddx.factors.{base,response,trial}`, `chatddx.ledger` |
-| `gate.py` | `chatddx.factors.{base,cases,request,trial}`, `chatddx.inventory` |
+| `gate.py` | `wire.py`, `chatddx.factors.{base,cases,engine,request,trial}`, `chatddx.inventory` |
 | `prepare.py` | `chatddx.factors.{base,cases,engine,request,trial}`, `chatddx.inventory`, `chatddx.ledger`, `chatddx.store` |
 | `rounds.py` | `send.py`, `chatddx.factors.{base,request,response,trial}`, `chatddx.ledger`, `chatddx.rig`, `chatddx.tools.shipped` |
 | `run.py` | `gate.py`, `prepare.py`, `rounds.py`, `send.py`, `chatddx.{catalog,factors,identity,inventory,ledger,rig,store}` |
@@ -88,6 +87,13 @@ A `POST` to `<url>/chat/completions` (a trailing slash on `url` dropped), the bo
 Sends the request and returns once the response's headers are in. `timeout` bounds connecting and each read. Raises
 `Rejected` for an HTTP error status, and `OSError` (`urllib.error.URLError`, `TimeoutError`, …) when the connection
 fails.
+
+### `served(url, *, secret=None, timeout=None) -> list[str]`
+GETs `<url>/models` (a trailing slash on `url` dropped), with `Authorization: Bearer <secret>` when `secret` is
+given, and returns `str(entry["id"])` for each entry of the response's `data` (`[]` when `data` is missing or empty;
+`"None"` for an entry without `id`). Raises `OSError` when the server can't be reached, times out or answers with an
+HTTP error (`urllib.error.URLError`, `HTTPError`); `json.JSONDecodeError` for a body that isn't JSON;
+`AttributeError` for JSON that isn't an object, or an entry that isn't.
 
 ### `class Stream`
 An open response.
@@ -168,8 +174,9 @@ The endpoint may not get the request.
 `admit` for `trial.engine`, `trial.cases`, whether the trial's skeleton has tools, and `whose` `"trial"`.
 
 ### `admit(inventory, get, endpoint, engine, cases, tools, whose, timeout=10.0) -> str | None`
-`bar`, then `secret`, then `confirm` (`docs/inventory-api.md`) with `timeout`. Returns the secret, or `None` when the
-endpoint has no credential.
+`bar`, then `secret`, then confirms the endpoint: the server at its `url` (`wire.served`, with the secret and
+`timeout`) must list the name `engine` is served under, `served_model_name(engine, get)`. Returns the secret, or
+`None` when the endpoint has no credential.
 
 ### `bar(inventory, get, endpoint, engine, cases, tools, whose) -> None`
 Refuses what holds for as long as the World is as it is. `admit` adds what may pass later. The bench uses `bar`
@@ -189,7 +196,8 @@ The value of the environment variable the endpoint's `credential` names, or `Non
 | `endpoint '<name>' isn't cleared for source <names>, which is sensitive` | `bar` |
 | `the configuration's tools would get content from source <names>, which is sensitive, and tools can't be cleared yet` | `bar` |
 | `endpoint '<name>' needs the secret in $<VARIABLE>, which isn't set` | `secret` |
-| `endpoint '<name>' can't be confirmed: <reason>`, the reason a `LookupError` or `OSError` from `confirm` | `admit` |
+| `endpoint '<name>' can't be confirmed: <reason>`, the reason `served_model_name`'s `StructuralError` or `wire.served`'s `OSError` | `admit` |
+| `endpoint '<name>' can't be confirmed: it serves <listed names, joined by ", ", or 'nothing'> at <url>, not <served name>` | `admit` |
 
 ## prepare.py
 
@@ -282,7 +290,7 @@ In order:
 3. `rounds.load`;
 4. refuses an `execution.concurrency` above the endpoint's `max_jobs`: `ValueError` `endpoint '<name>' takes <n>
    requests at once, the execution sends <m>`;
-5. `url_at`, and builds `RunStarted` with a new id, `rig()` (chatddx at its installed version, with
+5. builds `RunStarted` with a new id, `rig()` (chatddx at its installed version, with
    `CHATDDX_REVISION` as its revision when set), `execution` (default `Execution()`), the canary set, `verify_at`, the
    toolbox's `code` and `Endpoint(name, url)`; `verify_at` other than `PHASES` without a canary set
 6. stores the trial and the canary set with what they refer to (`Store.add`), appends `RunStarted`, and notes `by` as

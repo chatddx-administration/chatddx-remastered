@@ -29,7 +29,7 @@ def _stand_in(
     inventory: Inventory, get: Resolver, engine: RemoteEngine, name: str
 ) -> Served:
     spec = inventory.endpoint(name)
-    if spec.url is None or spec.url.host not in ("127.0.0.1", "localhost"):
+    if spec.url.host not in ("127.0.0.1", "localhost"):
         raise LookupError(f"endpoint {name!r} isn't on this machine")
     argv = ["--host", spec.url.host, "--port", str(spec.url.port)]
     argv += ["--enable-auto-tool-choice", "--tool-call-parser", "openai"]

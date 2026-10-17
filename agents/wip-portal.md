@@ -569,7 +569,7 @@ What the portal needs below its pages that isn't built:
   shell runs it; until then the test skips where Chromium can't start.
 - **The frontend's checks**: `pnpm check` runs by hand; nothing runs it beside `pytest`.
 - **A page to test an endpoint**: a live check of the server and the model, written down nowhere. Canaries and
-  `confirm` cover parts of it.
+  the gate's confirming (`src/chatddx/runner/gate.py:admit`) cover parts of it.
 - **Export.** The portal is to export results (`docs/chatddx.md`, glossary), and the export isn't planned
   (`docs/chatddx.md`, "On the table").
 - **Keycloak in front** skips the sign-in page (`docs/identity.md`, "Take, for when Keycloak arrives").

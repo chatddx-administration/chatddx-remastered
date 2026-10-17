@@ -490,9 +490,9 @@ A local engine is a vLLM server we run. It declares:
   CUDA.
 
 The start-up script owns the model's identity: the weights, the served name, the chat template, the tokenizer and the
-revision. Every other argument belongs in the engine, where its digest pins it, and nothing may get around that: not an
-argument that sets what the script owns, however it is spelled or shortened; not one that reads arguments from a file;
-and not one that would stop vLLM from starting.
+revision, and where the server listens, which is the endpoint's. Every other argument belongs in the engine, where its
+digest pins it, and nothing may get around that: not an argument that sets what the script owns, however it is spelled
+or shortened; not one that reads arguments from a file; and not one that would stop vLLM from starting.
 
 The served model name is the engine's digest, so every response names the exact engine it came from. Batch invariance is
 declared through the environment. Knowledge that changes between vLLM versions lives in lints, not in the engine.

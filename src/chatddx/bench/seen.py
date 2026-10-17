@@ -253,8 +253,8 @@ class Seen:
             return endpoint, self.endpoint(endpoint)
         if endpoint is None:
             try:
-                endpoint = self.inventory.serving_model(
-                    model, self._served_model, self.title(model)
+                endpoint = self.inventory.serving(
+                    model, self._served_model, f"model {self.title(model)}"
                 )
             except LookupError as e:
                 raise ValueError(str(e)) from None

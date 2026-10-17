@@ -197,7 +197,7 @@ new place (docs/catalog.md, "Repairing"). Loading only reports this, since a rep
 who used those cases.
 
 `chatddx repair-data [--world DIR] [--source NAME] [--dry-run]` surveys the source, the one `--source` names or the
-World's only source that lists its vignettes, and repairs each of the archive's families it finds renamed or changed
+World's only directory source, and repairs each of the archive's families it finds renamed or changed
 there, printing what moved. A family that isn't the archive's is named and left to its owner. With `--dry-run`, it
 only lists them.
 

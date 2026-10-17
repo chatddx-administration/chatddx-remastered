@@ -1,26 +1,13 @@
-import json
-import urllib.request
-from typing import Any, cast
-
 from chatddx.factors.base import (
-    Component,
     Digest,
     Frozen,
     Resolver,
     StructuralError,
     resolve,
 )
-from chatddx.factors.engine import (
-    LocalEngine,
-    LocalModel,
-    RemoteEngine,
-    flag_names,
-    served_model_name,
-)
+from chatddx.factors.engine import LocalEngine, LocalModel, served_model_name
 
 from .inventory import Inventory
-
-LISTEN_FLAGS = frozenset({"--host", "--port"})
 
 
 class StartUp(Frozen):
@@ -31,24 +18,20 @@ class StartUp(Frozen):
     env: dict[str, str]
 
 
-def _engine(inventory: Inventory, get: Resolver, name: str) -> Component:
-    try:
-        return get(inventory.endpoint(name).engine)
-    except StructuralError as e:
-        raise LookupError(f"endpoint {name!r}: {e}") from None
-
-
 def start_up(inventory: Inventory, get: Resolver, name: str) -> StartUp:
     endpoint = inventory.endpoint(name)
-    match _engine(inventory, get, name):
-        case LocalEngine() as engine:
-            pass
-        case other:
-            raise LookupError(
-                f"endpoint {name!r} serves a {other.kind_name}, not ours to start"
-            )
-    if endpoint.url is None or endpoint.host is None:
-        raise LookupError(f"endpoint {name!r} needs a url and a host to start")
+    try:
+        match get(endpoint.engine):
+            case LocalEngine() as engine:
+                revision = resolve(get, engine.model, LocalModel).revision
+            case other:
+                raise LookupError(
+                    f"endpoint {name!r} serves a {other.kind_name}, not ours to start"
+                )
+    except StructuralError as e:
+        raise LookupError(f"endpoint {name!r}: {e}") from None
+    if endpoint.host is None:
+        raise LookupError(f"endpoint {name!r} needs a host to start")
     host = inventory.hosts[endpoint.host]
     model = host.models.get(engine.model)
     if model is None:
@@ -61,11 +44,6 @@ def start_up(inventory: Inventory, get: Resolver, name: str) -> StartUp:
             f"host {endpoint.host!r} doesn't say where it keeps chat template "
             + engine.chat_template
         )
-    if taken := sorted(flag_names(engine.argv) & LISTEN_FLAGS):
-        raise LookupError(
-            f"engine {engine.digest} sets {', '.join(taken)} in its argv, but endpoint "
-            + f"{name!r} decides where it listens"
-        )
     return StartUp(
         endpoint=name,
         engine=engine.digest,
@@ -73,7 +51,7 @@ def start_up(inventory: Inventory, get: Resolver, name: str) -> StartUp:
         argv=(
             model,
             "--revision",
-            resolve(get, engine.model, LocalModel).revision,
+            revision,
             "--served-model-name",
             served_model_name(engine.digest, get),
             "--chat-template",
@@ -86,51 +64,3 @@ def start_up(inventory: Inventory, get: Resolver, name: str) -> StartUp:
         ),
         env=engine.env,
     )
-
-
-def url_at(inventory: Inventory, get: Resolver, name: str) -> str:
-    endpoint = inventory.endpoint(name)
-    match _engine(inventory, get, name):
-        case LocalEngine() | RemoteEngine() as engine:
-            if endpoint.url is None:
-                where = "local" if isinstance(engine, LocalEngine) else "remote"
-                raise LookupError(
-                    f"endpoint {name!r} serves a {where} engine but has no url"
-                )
-            return str(endpoint.url)
-        case other:
-            raise LookupError(
-                f"endpoint {name!r} names a {other.kind_name}, not an engine"
-            )
-
-
-def served(url: str, timeout: float = 10.0, secret: str | None = None) -> list[str]:
-    headers = {} if secret is None else {"Authorization": f"Bearer {secret}"}
-    request = urllib.request.Request(url.rstrip("/") + "/models", headers=headers)
-    with urllib.request.urlopen(request, timeout=timeout) as response:
-        listed: Any = json.loads(response.read())
-    models = cast(list[dict[str, Any]], listed.get("data") or [])
-    return [str(m.get("id")) for m in models]
-
-
-def confirm(
-    inventory: Inventory,
-    get: Resolver,
-    name: str,
-    timeout: float = 10.0,
-    secret: str | None = None,
-) -> None:
-    match _engine(inventory, get, name):
-        case LocalEngine() | RemoteEngine() as engine:
-            expected = served_model_name(engine.digest, get)
-        case other:
-            raise LookupError(
-                f"endpoint {name!r} names a {other.kind_name}, not an engine"
-            )
-    url = url_at(inventory, get, name)
-    listed = served(url, timeout, secret)
-    if expected not in listed:
-        raise LookupError(
-            f"endpoint {name!r} at {url} serves {', '.join(listed) or 'nothing'}, "
-            + f"not {expected}"
-        )

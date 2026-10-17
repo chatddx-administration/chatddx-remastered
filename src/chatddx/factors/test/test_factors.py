@@ -1090,13 +1090,23 @@ def test_tool_rounds_continue_the_request(reg: Registry) -> None:
 
 def test_engine_argv_cannot_override_manifest(reg: Registry) -> None:
     engine = local_engine(reg)
-    for argv in (["--served-model-name=x"], ["--chat_template", "t.jinja"]):
+    for argv in (
+        ["--served-model-name=x"],
+        ["--chat_template", "t.jinja"],
+        ["--port=9000"],
+        ["--host", "::"],
+    ):
         with pytest.raises(ValidationError, match="may not set"):
             _ = LocalEngine.model_validate({**engine.model_dump(), "argv": argv})
     for argv in (["--config", "serve.yaml"], ["--config=serve.yaml"]):
         with pytest.raises(ValidationError, match="config"):
             _ = LocalEngine.model_validate({**engine.model_dump(), "argv": argv})
-    for argv in (["--served-model", "x"], ["--revis=r"], ["--served_model", "x"]):
+    for argv in (
+        ["--served-model", "x"],
+        ["--revis=r"],
+        ["--served_model", "x"],
+        ["--po", "9000"],
+    ):
         with pytest.raises(ValidationError, match="may not abbreviate"):
             _ = LocalEngine.model_validate({**engine.model_dump(), "argv": argv})
     for argv in (

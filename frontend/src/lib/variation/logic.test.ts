@@ -92,7 +92,7 @@ describe("where a run goes", () => {
     title: null,
     model: null,
     serves,
-    url: null,
+    url: "http://127.0.0.1:1/v1/",
     host: null,
     max_jobs: 1,
     credential: null,

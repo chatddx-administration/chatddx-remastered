@@ -61,6 +61,7 @@ from chatddx.test.world import (
     TEST,
     TOOL_ANSWER,
     faked,
+    free_world,
 )
 from chatddx.tools.shipped import TOOLS, ShippedTool
 
@@ -656,7 +657,7 @@ def test_a_round_runs_the_tools_a_response_calls_and_sends_back_their_results(
     ]
 
     case = resolve(plan.registry.get, made.cases[0], Case)
-    raw = open_world.listing("test").fetch(case.vignette.id)
+    raw = open_world.source("test", DirectorySource).fetch(case.vignette.id)
     fills = prepare_case(
         case, raw, plan.registry.get, skeleton.appendix_layout, made.cleanup
     ).fills
@@ -1080,7 +1081,6 @@ def test_a_finished_run_a_moved_endpoint_or_the_gate_keep_a_run_from_resuming(
     inventory: Inventory,
     alice: Person,
     plan: Plan,
-    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     runner = Runner(conn, inventory, alice)
     finished = runner.start(trial(plan), plan.registry, QWEN)
@@ -1093,10 +1093,8 @@ def test_a_finished_run_a_moved_endpoint_or_the_gate_keep_a_run_from_resuming(
     with pytest.raises(Refused, match="isn't cleared for source test"):
         _ = Runner(conn, uncleared, alice).resume(left)
 
-    def moved(*_: object) -> str:
-        return "http://127.0.0.1:1/v1/"
-
-    monkeypatch.setattr("chatddx.runner.run.url_at", moved)
-    with pytest.raises(ValueError, match="is at http://127.0.0.1:1/v1/ now"):
-        _ = runner.resume(left)
+    moved = free_world()
+    now = f"is at {moved.endpoint(QWEN).url} now"
+    with faked(moved, plan.registry.get), pytest.raises(ValueError, match=now):
+        _ = Runner(conn, moved, alice).resume(left)
     assert rows(db, "run_item") == 0

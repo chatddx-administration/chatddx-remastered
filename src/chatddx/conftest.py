@@ -16,7 +16,7 @@ from chatddx.api.app import app
 from chatddx.bench import Bench
 from chatddx.curation import Plan, init, load_cases
 from chatddx.identity import identity
-from chatddx.inventory import Inventory, World
+from chatddx.inventory import DirectorySource, Inventory, World
 from chatddx.runner.test import tools as test_tools
 from chatddx.scripted import RUNS, run, scripted_runs
 from chatddx.store import People, Store, migrate
@@ -195,7 +195,7 @@ def curated(copies: Copies, migrated: str) -> Iterator[str]:
     with templated(copies, migrated) as name:
         with connect(name) as conn:
             alice = People(conn).add("alice", "Alice")
-            source = World.load(TEST).inventory.listing()
+            source = World.load(TEST).inventory.source(kind=DirectorySource)
             _ = init(conn, world_plan(), CASES, source, alice, giftbag=True)
         yield name
 
@@ -223,7 +223,7 @@ def sampled(copies: Copies, migrated: str) -> Iterator[Loaded]:
     with templated(copies, migrated) as name:
         with connect(name) as conn:
             alice = People(conn).add("alice", "Alice")
-            source = World.load(world).inventory.listing()
+            source = World.load(world).inventory.source(kind=DirectorySource)
             plan = world_plan(world, SAMPLE)
             said = init(conn, plan, load_cases(SAMPLE), source, alice, giftbag=True)
         yield Loaded(name, said)

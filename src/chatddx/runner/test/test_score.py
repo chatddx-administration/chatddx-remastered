@@ -11,7 +11,7 @@ from chatddx.factors.request import Skeleton
 from chatddx.factors.scoring import Expectation, Judge, Scorer, Scoring, View
 from chatddx.factors.trial import Execution, Trial
 from chatddx.identity import Person
-from chatddx.inventory import Inventory, url_at
+from chatddx.inventory import Inventory
 from chatddx.ledger import Endpoint, JudgeEndpoint, Score, check_score
 from chatddx.runner import send as sending
 from chatddx.runner.gate import Refused
@@ -217,7 +217,7 @@ def test_a_judged_view_is_scored_from_its_judge_s_calls(
     score, findings = grading.finish()
     assert findings == []
 
-    url = url_at(inventory, plan.registry.get, QWEN)
+    url = str(inventory.endpoint(QWEN).url)
     assert score.started.endpoints == tuple(
         JudgeEndpoint(
             judge=plan.named("judge", j).digest, endpoint=Endpoint(name=QWEN, url=url)

@@ -3234,14 +3234,7 @@
             "description": "the model its engine serves, by digest"
           },
           "url": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
+            "type": "string",
             "title": "Url"
           },
           "host": {

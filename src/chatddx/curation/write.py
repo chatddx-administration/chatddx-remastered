@@ -9,7 +9,7 @@ from chatddx.factors.cases import Appendix, Case, Vignette, clean
 from chatddx.factors.scoring import Expectation
 from chatddx.facts import lints
 from chatddx.identity import Person, owns
-from chatddx.inventory import ListingSource
+from chatddx.inventory import DirectorySource
 from chatddx.store.catalog import Catalog
 from chatddx.store.people import People
 from chatddx.store.store import Connection, Store
@@ -142,7 +142,7 @@ class _Init:
             f"[archive {r.kind}] {r.name}: held as {was}; the data forks it from {wants}"
         )
 
-    def repair_for(self, source: ListingSource, id: str) -> str | None:
+    def repair_for(self, source: DirectorySource, id: str) -> str | None:
         if self.surveyed is None:
             listing = {c.vignette.id: c.vignette.fingerprint for c in source.cases()}
             self.surveyed = self.catalog.survey(source.name, listing)
@@ -158,7 +158,9 @@ class _Init:
                 return f"changed {at} {family}"
         return None
 
-    def case(self, source: ListingSource, id: str, data: DataCase, schema: str) -> None:
+    def case(
+        self, source: DirectorySource, id: str, data: DataCase, schema: str
+    ) -> None:
         try:
             raw = source.fetch(id)
         except LookupError:
@@ -401,7 +403,7 @@ def init(
     conn: Connection,
     plan: Plan,
     cases: dict[str, DataCase],
-    source: ListingSource,
+    source: DirectorySource,
     user: Person,
     giftbag: bool = False,
 ) -> list[str]:

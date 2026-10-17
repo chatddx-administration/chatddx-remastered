@@ -64,7 +64,7 @@ to the endpoint the gate admitted. The gate refuses, in order:
 - a sensitive source of the cases the endpoint isn't cleared for (docs/inventory.md, "Clearance");
 - tools on a sensitive source, since a tool can't be cleared yet;
 - an endpoint whose credential names a secret that isn't set;
-- an endpoint the inventory can't confirm serves its engine (docs/inventory.md, "Reaching an engine").
+- an endpoint whose server doesn't list the name its engine is served under (docs/runner-api.md, "gate.py").
 
 The first three hold for as long as the World is as it is. The last two may pass later: a secret is set, a server
 comes up. The bench uses the difference (see "What applies to a run").

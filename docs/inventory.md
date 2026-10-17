@@ -107,8 +107,9 @@ database source lists nothing: its texts are read through the store, by id, so i
 a source, refuse one.
 
 The source's name is part of every case built from it, including their digests. Renaming a source makes new cases;
-moving its directory changes nothing. init-data loads the cases of a source a World names, or of its only source that
-lists its vignettes.
+``
+moving its directory changes nothing. init-data loads the cases of a source a World names, or of its only directory
+source.
 
 ## Endpoints
 An endpoint says where one engine is served: the engine, by digest; the server's address; the host that runs it, for a
@@ -116,8 +117,8 @@ local engine; how many requests it takes at once; and, when it has a secret, the
 holds it.
 
 A local engine is served under its digest (docs/factors.md, "Local engine"), so the endpoint names the very engine the
-server answers as. Changing the engine changes its digest, so the endpoint has to change with it. A local engine's
-endpoint needs an address to be reached, and a host too to be started.
+server answers as. Changing the engine changes its digest, so the endpoint has to change with it. Every endpoint has
+an address, and a local engine's needs a host too to be started.
 
 A remote engine's endpoint gives its address, as a local engine's does; the engine itself names its provider and
 model. The endpoint adds what isn't part of the engine: the address, the secret and the capacity.
@@ -185,16 +186,17 @@ environment, and the runtime to run vLLM from. The arguments are the model's loc
 the engine's digest as the name it is served under, the chat template's location on the host, where to listen, from
 the host's address and the endpoint's port, and then the engine's own arguments.
 
-A remote engine isn't ours to start. A start-up is refused for an endpoint without an address or a host, for a host
-that doesn't say where it keeps the model or the template, and for an engine whose own arguments say where to listen:
-the endpoint decides that, just as the start-up owns the arguments that pin the model and the template
+A remote engine isn't ours to start. A start-up is refused for an endpoint without a host, and for a host that
+doesn't say where it keeps the model or the template. An engine's own arguments can't say where to listen: the
+endpoint decides that, and the engine refuses them as it refuses the arguments that pin the model and the template
 (docs/factors.md, "Local engine").
 
 The fake vLLM can be started from a start-up (`chatddx fake-engines`), and then serves the endpoint's engine
 (docs/vllm.md, "The fake vLLM").
 
 ### Reaching an engine
-An endpoint is reached at its address.
+An endpoint is reached at its address. Before content goes to it, the runner confirms that its server lists the name
+its engine is served under (docs/runner.md); the inventory itself connects to nothing.
 
 With a World, init-data ends with the inventory check's findings and a count (see "Checks happen when an entry is
 used"). It finds that out without connecting.
@@ -241,8 +243,7 @@ The import's findings have the engine's digest as subject:
 - `endpoint.process` (warning): the server's process wasn't seen.
 - `endpoint.not_running` (warning): the server isn't running.
 - `endpoint.argv` (warning): the running server's arguments aren't its configuration's, so it may predate it.
-- `endpoint.unreachable` (warning): the server didn't answer. In the inventory's check the same code means the
-  endpoint's address can't be worked out, as `url_at` refuses it (docs/inventory-api.md, "check.py").
+- `endpoint.unreachable` (warning): the server didn't answer.
 - `endpoint.version` (warning): the server says it is another vLLM version than its package.
 - `endpoint.served_name` (warning): the server doesn't answer under the engine's digest.
 
@@ -261,22 +262,20 @@ The import's findings have the engine's digest as subject:
 | Bound | A data set's judge, given the endpoint whose engine judges it. |
 | Configurations | The endpoint whose engine a data set's configurations are made for. |
 | Cleared | An endpoint's permission, for now, to receive content from a sensitive source. |
-| Confirm | Asking an endpoint's server whether it serves the endpoint's engine, before content goes out. |
 
 ## Open design issues
 These are open questions of design. Where the code falls short of this document, the API says so
 (docs/inventory-api.md, "Known gaps").
 
 ### Checks happen when an entry is used
-Loading checks only what the files show. Everything that needs the engines is checked when an endpoint is started,
-reached or confirmed, one entry at a time:
+Loading checks only what the files show. Everything that needs the engines is checked when an endpoint is started or
+confirmed, one entry at a time:
 - whether an endpoint's digest names an engine;
-- whether a local engine's endpoint has an address and a host;
-- whether the host says where the model and template are;
-- whether the engine's own arguments leave where to listen alone.
+- whether a local engine's endpoint has a host;
+- whether the host says where the model and template are.
 
 One pass checks the whole inventory against the engines and returns findings rather than raising. It finds what
-starting or reaching each endpoint would refuse, and what nothing refuses but is likely a slip: two local engines'
+starting each endpoint would refuse, and what nothing refuses but is likely a slip: two local engines'
 endpoints at one address, a remote engine's endpoint that names a host, host locations that no endpoint's engine pins,
 and a clearance for a source that isn't sensitive, which clears nothing. init-data prints its findings; the runner and
 the engine import don't run it yet, and still check one entry at a time.

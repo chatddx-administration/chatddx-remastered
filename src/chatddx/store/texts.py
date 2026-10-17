@@ -2,7 +2,7 @@ from datetime import datetime
 from uuid import uuid4
 
 from chatddx.factors.cases import Vignette
-from chatddx.inventory import DatabaseSource, Inventory
+from chatddx.inventory import DirectorySource, Inventory
 
 from .store import Connection
 
@@ -37,6 +37,6 @@ class Texts:
 
 def fetch_vignette(conn: Connection, inventory: Inventory, vignette: Vignette) -> bytes:
     source = inventory.source(vignette.source)
-    if isinstance(source, DatabaseSource):
-        return Texts(conn).get(source.name, vignette.id)
-    return source.fetch(vignette.id)
+    if isinstance(source, DirectorySource):
+        return source.fetch(vignette.id)
+    return Texts(conn).get(source.name, vignette.id)

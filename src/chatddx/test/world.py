@@ -80,10 +80,10 @@ def free_ports(n: int) -> list[int]:
 
 
 def _freed(inventory: Inventory) -> dict[str, HttpUrl]:
-    local = [n for n, e in inventory.endpoints.items() if e.url is not None]
+    ports = free_ports(len(inventory.endpoints))
     return {
         name: HttpUrl(f"http://127.0.0.1:{port}/v1/")
-        for name, port in zip(local, free_ports(len(local)), strict=True)
+        for name, port in zip(inventory.endpoints, ports, strict=True)
     }
 
 

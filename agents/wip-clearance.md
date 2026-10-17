@@ -188,7 +188,7 @@ runs out of the app, in the healthcheck's order, with where else it is tracked. 
      (`src/chatddx/api/scores.py:45-47`), and a job asked to halt or at an endpoint the inventory doesn't name isn't
      counted (`src/chatddx/store/queue.py:342`), so a worker takes as many of those as are queued.
    - The quotas read a count and then insert, so a burst can overshoot them: `TYPED_PER_DAY`
-     (`src/chatddx/bench/cases.py:124-131`) and `RUNS_PER_DAY` (`src/chatddx/bench/runs.py:129-138`). Scoring again
+     (`src/chatddx/bench/cases.py:127-134`) and `RUNS_PER_DAY` (`src/chatddx/bench/runs.py:129-138`). Scoring again
      has no quota, beyond one job per run at a time.
    - So one account can exhaust Postgres' default 100 connections, and replicas multiply what each process holds
      (`agents/wip-deploy.md`, "Containers for Kubernetes").
@@ -209,7 +209,7 @@ runs out of the app, in the healthcheck's order, with where else it is tracked. 
      new one, and a job that fails in the worker leaves its text too.
    - Why a job failed is kept for good as well, since the writer can't delete from `worker.job`
      (`src/chatddx/store/migrations/0020-t1-worker.sql`), and it can quote what was sent (10).
-   - The fingerprints are unkeyed, the typed text's (`src/chatddx/bench/cases.py:133`) and a run's
+   - The fingerprints are unkeyed, the typed text's (`src/chatddx/bench/cases.py:136`) and a run's
      (`src/chatddx/runner/rounds.py:152-161`); see "Typed vignettes".
    - Untracked elsewhere: how long a typed text is kept, and how it is erased.
 5. **Headers.** There is no CSP, frame-ancestors, nosniff, Referrer-Policy or HSTS (`src/chatddx/api/app.py:app`,
@@ -224,7 +224,7 @@ runs out of the app, in the healthcheck's order, with where else it is tracked. 
    an error puts vignette text in the store.
    They are served with a run's items only, which are no-store. Not checked against real vLLM.
 7. **Digests** work as capabilities.
-   - `GET /api/components/{digest}` checks no visibility (`src/chatddx/api/world.py:77-87`), by design: appendices and
+   - `GET /api/components/{digest}` checks no visibility (`src/chatddx/api/world.py:79-89`), by design: appendices and
      expectations aren't sensitive (`docs/chatddx.md`; `docs/api.md`, "What a person sees").
    - `Seen.variation` checks only a part's kind (`src/chatddx/bench/seen.py:241-246`), so `/threads/{id}/variation`
      shows another person's unshared chunk, and `POST /runs` with `parts` runs one (`src/chatddx/api/runs.py:84-90`).
@@ -248,7 +248,7 @@ runs out of the app, in the healthcheck's order, with where else it is tracked. 
       `GET /api/runs` and `GET /api/runs/{run}` (`src/chatddx/api/runs.py:246-257`), which aren't no-store, shown on
       the portal's runs pages, and told in a run's `error` event (`src/chatddx/api/telling.py:113-115`). The worker
       logs it with its traceback (:190). A scoring's refusal carries its exception's text in `run.scored`.
-    - The gate's messages hold an `OSError` (`src/chatddx/runner/gate.py:40-43`), answered as a 422 and shown on the
+    - The gate's messages hold an `OSError` (`src/chatddx/runner/gate.py:44-48`), answered as a 422 and shown on the
       portal's error page.
     - `docs/migrations.md` ("Tier 1", `0020-t1-worker.sql`) says why a job failed can quote what it was sending;
       `docs/api.md` ("Sensitive content") says nothing outside its no-store places carries any.
@@ -258,15 +258,15 @@ runs out of the app, in the healthcheck's order, with where else it is tracked. 
     module's nginx, a body is held to nginx's default, 1 MB.
 12. **Proxies.** The engine client sends through urllib's default opener (`src/chatddx/runner/wire.py:112-116`), which
     follows `HTTP_PROXY` and `HTTPS_PROXY`, so vignette-bearing requests go through any proxy the environment names;
-    so do confirming an endpoint (`src/chatddx/inventory/serving.py:104`) and the web search tool
+    so do confirming an endpoint (`src/chatddx/runner/wire.py:served`) and the web search tool
     (`src/chatddx/tools/web_search.py:23`). The NixOS module unsets them for its services
     (`agents/wip-deploy.md`, "The NixOS module"). Take: the client opens without proxies, rather than every deployment
     keeping them out of its environment.
 
 ## When to build it
 Nothing built so far waits on it:
-- The gate reads `Inventory.cleared_for` once per endpoint it admits (`gate.bar`), for runs and judges. A database
-  grant changes that one call. The repl, the API and the portal also read `cleared_for` to show an endpoint's
+- The gate reads `Inventory.cleared` once per endpoint it admits (`gate.bar`), for runs and judges. A database
+  grant changes that one read. The repl, the API and the portal also read `cleared` to show an endpoint's
   clearances (`src/chatddx/repl/listing.py`, `src/chatddx/repl/inspecting.py`, `src/chatddx/api/world.py`).
 - A run and a scoring already record what a grant would key on (Open 1): the endpoint's name and URL
   (`RunStarted.endpoint`, `ScoreStarted.endpoints`) and, through the trial or the judge, the engine's digest. If grants

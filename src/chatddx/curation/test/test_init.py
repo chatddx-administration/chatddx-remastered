@@ -8,9 +8,8 @@ from chatddx.catalog import Entry, EntryField, Subject
 from chatddx.cli import main
 from chatddx.conftest import connect
 from chatddx.curation import init
-from chatddx.curation.test.cases import CASES, appended, vignettes
+from chatddx.curation.test.cases import CASES, TEXTS, appended, vignettes
 from chatddx.identity import Person
-from chatddx.inventory.test.memory import MemorySource
 from chatddx.store import Catalog, People
 from chatddx.store.store import Connection
 from chatddx.test.world import (
@@ -206,7 +205,7 @@ def test_init_data_updates_and_gives_forks(
         "kept"
     }
 
-    gone = MemorySource(name="test", vignettes={})
+    gone = vignettes({})
     lines = init(conn, plan, {"noted": CASES["noted"]}, gone, alice)
     assert "[archive case] noted: missing at source 'test'" in lines
 
@@ -265,14 +264,10 @@ def test_init_data_says_how_a_vignette_moved_at_its_source(
 ) -> None:
     catalog = Catalog(conn)
     families = {c.vignette.id: catalog.family(c.digest) for c in vignettes().cases()}
-    texts = vignettes().vignettes
-    moved = MemorySource(
-        name="test",
-        vignettes={
-            **{id: text for id, text in texts.items() if id != "noted"},
-            "noted2": texts["noted"],
-            "crlf": b"Edited at the source.",
-        },
+    moved = vignettes(
+        {id: text for id, text in TEXTS.items() if id != "noted"},
+        noted2=TEXTS["noted"],
+        crlf=b"Edited at the source.",
     )
     at = "at source 'test'; repair-data rebinds family"
     lines = init(conn, world_plan(), CASES, moved, alice)
@@ -316,8 +311,8 @@ def test_init_data_command(
             ["--world", str(empty)],
             f"none of the data's {len(CASES)} cases is in source 'test' of",
         ),
-        (["--world", str(two)], r"2 sources list their vignettes \(more, test\)"),
-        (["--world", str(two), "--source", "typed"], "'typed' is a database source"),
+        (["--world", str(two)], r"2 directory sources \(more, test\) are in the inv"),
+        (["--world", str(two), "--source", "typed"], "'typed' isn't a directory"),
         (["--source", "other"], "no source 'other'"),
         (["--facts", str(DATA / "factors.toml")], "facts have only 'model' tables"),
     ]:
@@ -339,7 +334,9 @@ def test_a_world_brings_its_engines_and_their_models_facts(
     world = copied(tmp_path)
     ghost = "sha256:" + "c" * 64
     with (world / "inventory.toml").open("a") as f:
-        _ = f.write(f'\n[endpoint.ghost]\nengine = "{ghost}"\n')
+        _ = f.write(
+            f'\n[endpoint.ghost]\nengine = "{ghost}"\nurl = "http://127.0.0.1:1/v1/"\n'
+        )
     main(["init-data", "alice", "--world", str(world), "--data", str(world / "_data")])
     out = capsys.readouterr().out.splitlines()
     assert any(

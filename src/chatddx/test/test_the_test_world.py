@@ -5,7 +5,7 @@ from collections import Counter
 import pytest
 
 from chatddx.curation import init, load_cases
-from chatddx.inventory import World, check
+from chatddx.inventory import DirectorySource, World, check
 from chatddx.store import People
 from chatddx.store.store import Connection
 from chatddx.test.world import DATA, LINTS, TEST, world_plan
@@ -47,7 +47,7 @@ def test_the_test_world_plans_and_loads_as_designed(conn: Connection) -> None:
 
     alice = People(conn).add("alice", "Alice")
     cases = load_cases(DATA)
-    source = world.inventory.listing()
+    source = world.inventory.source(kind=DirectorySource)
     lines = init(conn, plan, cases, source, alice, giftbag=True)
     appended = sum(
         len(c.appendices) + sum(1 + (o.targets is not None) for o in c.ordered)
@@ -82,7 +82,7 @@ def test_the_test_world_plans_and_loads_as_designed(conn: Connection) -> None:
 
 
 def test_the_test_world_s_vignettes_hold_what_their_ids_say() -> None:
-    source = World.load(TEST).inventory.listing()
+    source = World.load(TEST).inventory.source(kind=DirectorySource)
     assert source.ids() == sorted(load_cases(DATA))
     raw = {id: source.fetch(id) for id in source.ids()}
     assert raw["crlf"].count(b"\r\n") == 2 and raw["crlf"].endswith(b".\n")

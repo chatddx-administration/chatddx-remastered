@@ -19,7 +19,15 @@ from .base import (
 )
 
 OWNED_FLAGS = frozenset(
-    {"--model", "--served-model-name", "--chat-template", "--tokenizer", "--revision"}
+    {
+        "--model",
+        "--served-model-name",
+        "--chat-template",
+        "--tokenizer",
+        "--revision",
+        "--host",
+        "--port",
+    }
 )
 UNPINNED_FLAGS = frozenset({"--config"})
 

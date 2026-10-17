@@ -23,7 +23,6 @@ from chatddx.facts import (
     Refused,
     Writes,
 )
-from chatddx.inventory import url_at
 from chatddx.ledger import RunStarted
 from chatddx.store import fetch_vignette
 
@@ -87,7 +86,7 @@ def _show_cell(repl: Repl, tags: tuple[str, ...] = ()) -> None:
     endpoint = repl.where()
     if endpoint and repl.engine:
         served = bench.served(repl.engine)
-        url = url_at(bench.inventory, bench.get, endpoint)
+        url = bench.inventory.endpoint(endpoint).url
         where = f"{bench.title(repl.engine)}, served as {served} at {url}"
         table.add_row("endpoint", endpoint, where)
 
@@ -568,14 +567,16 @@ def _show_endpoint(repl: Repl, name: str | None) -> None:
         table.add_row("engine", bench.title(engine))
         model = bench.model_of(engine)
         table.add_row("model", model.name if model else "—")
-        table.add_row("url", url_at(bench.inventory, bench.get, name))
     except LookupError as e:
         table.add_row("engine", Text(str(e), style=REFUSED))
 
+    table.add_row("url", str(spec.url))
     table.add_row("host", spec.host or "—")
     table.add_row("max jobs", str(spec.max_jobs))
     table.add_row("credential", spec.credential or "—")
-    table.add_row("cleared for", " ".join(sorted(bench.inventory.cleared_for(name))))
+    table.add_row(
+        "cleared for", " ".join(sorted(bench.inventory.cleared.get(name, ())))
+    )
     repl.console.print(table)
 
     ran = bench.runs()

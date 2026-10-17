@@ -132,7 +132,7 @@ and re-applying it when its origin moves), and `catalog.edit.based_on`.
 ## Target stack
 - **Local inference.** Two servers, an RTX 3070 (sm_86, 8 GB) and an RTX 5090 (sm_120, 32 GB). Both serve vLLM 0.24.0 in a NixOS container that reads a `LocalEngine`, the model files, via `LocalModel`, the chat-template file and raw `argv`/`env`.
 
-The start-up script owns `--model`, `--served-model-name` (set to the engine digest), `--chat-template`, `--tokenizer` and `--revision` (`engine.py: OWNED_FLAGS`).
+The start-up script owns `--model`, `--served-model-name` (set to the engine digest), `--chat-template`, `--tokenizer`, `--revision`, `--host` and `--port` (`engine.py: OWNED_FLAGS`).
 
 No comparison between the 3070 and the 5090; each hardware class is its own cage.
 

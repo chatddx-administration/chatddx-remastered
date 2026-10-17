@@ -16,14 +16,14 @@ from chatddx.factors.facts import ModelFacts
 from chatddx.factors.scoring import Expectation
 from chatddx.factors.trial import Trial
 from chatddx.identity import Person
-from chatddx.inventory import World
+from chatddx.inventory import DirectorySource, World
 from chatddx.ledger import Endpoint, Run, RunStarted
 from chatddx.rig import rig
 from chatddx.store import Catalog, People, Store
 from chatddx.store.store import Connection
 from chatddx.test.world import QWEN, TEST
 
-SOURCE = World.load(TEST).inventory.listing()
+SOURCE = World.load(TEST).inventory.source(kind=DirectorySource)
 UNSERVED = "http://127.0.0.1:9/v1/"
 
 

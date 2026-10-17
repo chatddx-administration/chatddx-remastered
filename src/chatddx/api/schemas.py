@@ -477,7 +477,7 @@ class Endpoint(_Schema):
     title: str | None
     model: str | None
     serves: str | None = Field(description="the model its engine serves, by digest")
-    url: str | None
+    url: str
     host: str | None
     max_jobs: int
     credential: str | None

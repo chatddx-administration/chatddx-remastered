@@ -1,11 +1,14 @@
 import os
 from collections.abc import Iterable
 
-from chatddx.factors.base import Resolver, resolve
+from chatddx.factors.base import Resolver, StructuralError, resolve
 from chatddx.factors.cases import Case
+from chatddx.factors.engine import served_model_name
 from chatddx.factors.request import Skeleton
 from chatddx.factors.trial import Trial
-from chatddx.inventory import Inventory, confirm
+from chatddx.inventory import Inventory
+
+from . import wire
 
 
 class Refused(Exception):
@@ -37,10 +40,17 @@ def admit(
 ) -> str | None:
     bar(inventory, get, endpoint, engine, cases, tools, whose)
     key = secret(inventory, endpoint)
+    url = str(inventory.endpoint(endpoint).url)
     try:
-        confirm(inventory, get, endpoint, timeout, key)
-    except (LookupError, OSError) as e:
+        expected = served_model_name(engine, get)
+        listed = wire.served(url, secret=key, timeout=timeout)
+    except (StructuralError, OSError) as e:
         raise Refused(f"endpoint {endpoint!r} can't be confirmed: {e}") from None
+    if expected not in listed:
+        raise Refused(
+            f"endpoint {endpoint!r} can't be confirmed: it serves "
+            + f"{', '.join(listed) or 'nothing'} at {url}, not {expected}"
+        )
     return key
 
 
@@ -65,7 +75,7 @@ def bar(
             f"endpoint {endpoint!r} serves engine {spec.engine}, the {whose}'s is "
             + engine
         )
-    if uncleared := sorted(set(sensitive) - inventory.cleared_for(endpoint)):
+    if uncleared := sorted(set(sensitive) - set(inventory.cleared.get(endpoint, ()))):
         raise Refused(
             f"endpoint {endpoint!r} isn't cleared for source {', '.join(uncleared)}, "
             + "which is sensitive"

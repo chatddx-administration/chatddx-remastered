@@ -143,7 +143,7 @@ a page that shows management plans offers only the configurations that answer on
 
 ### The model
 The model is a part like any other: swapping it keeps every other pick, and what depends on the model is worked out
-from the facts about it. A run goes to the endpoint serving the model (`Seen.at`, `Inventory.serving_model`);
+from the facts about it. A run goes to the endpoint serving the model (`Seen.at`, `Inventory.serving`);
 several serving one model, as the test World's two Qwen3 endpoints do, refuse a run that names none, and a look rendered
 for none has no findings. The engine is the trial's: the endpoint's.
 

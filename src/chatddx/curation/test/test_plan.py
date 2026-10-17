@@ -2,6 +2,7 @@ import tomllib
 from pathlib import Path
 
 import pytest
+from pydantic import HttpUrl
 
 from chatddx.curation import Plan, load_cases, plan_factors
 from chatddx.factors.base import resolve
@@ -40,7 +41,8 @@ def plan(tmp_path: Path, configurations: str | None = "qwen@api", **files: str) 
         name: EndpointSpec(
             engine=RemoteEngine.model_validate(
                 {**body, "model": models[str(body["model"])]}
-            ).digest
+            ).digest,
+            url=HttpUrl("https://api.example.org/v1/"),
         )
         for name, body in declared.get("remote_engine", {}).items()
     }

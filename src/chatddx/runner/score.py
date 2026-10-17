@@ -13,7 +13,7 @@ from chatddx.factors.request import Skeleton, Slot
 from chatddx.factors.scoring import Expectation, Judge, Scorer, Scoring
 from chatddx.factors.trial import Execution, Trial
 from chatddx.identity import Person
-from chatddx.inventory import Inventory, url_at
+from chatddx.inventory import Inventory
 from chatddx.ledger import (
     Endpoint,
     ItemKey,
@@ -150,7 +150,7 @@ class Grader:
             secret = gate.admit(
                 self._inventory, get, name, judge.engine, trial.cases, False, "judge"
             )
-            url = url_at(self._inventory, get, name)
+            url = str(self._inventory.endpoint(name).url)
             judging[ref] = _Judging(
                 judge, skeleton, served_model_name(judge.engine, get), url, secret
             )

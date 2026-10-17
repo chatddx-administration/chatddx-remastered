@@ -70,7 +70,7 @@ Every level the bundled facts and the sample World's refuse has its nearest: gpt
 - **A title** names the model last and describes an intent by what it asks: `recommended sampling`, `reasoning off`.
 
 ### Several endpoints
-A run goes to the endpoint serving its model (`Inventory.serving_model`, `Seen.at`), and a judge's calls to the
+A run goes to the endpoint serving its model (`Inventory.serving`, `Seen.at`), and a judge's calls to the
 endpoint serving the judge's engine (`Inventory.serving`, `runner/score.py:judge_at`): a judge pins its engine as a
 trial does, and init-data remakes it for the World's endpoints. When none serves the model, or several do and none is
 named, the run is refused; an endpoint named that serves another model is refused before the gate is asked. A

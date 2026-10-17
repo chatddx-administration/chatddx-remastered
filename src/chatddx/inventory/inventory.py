@@ -8,7 +8,7 @@ from pydantic import Discriminator, Field, HttpUrl, Tag, model_validator
 from chatddx.factors.base import Digest, Frozen, Sha256Hex
 from chatddx.factors.trial import Execution
 
-from .sources import DatabaseSource, DirectorySource, ListingSource
+from .sources import DatabaseSource, DirectorySource, Source
 
 _TABLES = (
     "include",
@@ -23,7 +23,7 @@ _TABLES = (
 
 class EndpointSpec(Frozen):
     engine: Digest
-    url: HttpUrl | None = None
+    url: HttpUrl
     host: str | None = None
     max_jobs: int = Field(default=1, ge=1)
     credential: str | None = None
@@ -149,48 +149,47 @@ class Inventory(Frozen):
 
     # src/chatddx/runner/score.py:judge_at and src/chatddx/bench/seen.py:Seen.at both
     # refuse rather than pick when several endpoints serve one engine, or one model.
-    def serving(self, engine: str, called: str | None = None) -> str:
-        named = sorted(n for n, e in self.endpoints.items() if e.engine == engine)
-        return _one(named, f"engine {called or engine}")
-
-    def serving_model(
+    def serving(
         self,
-        model: str,
-        model_of: Callable[[str], str | None],
+        digest: str,
+        serves: Callable[[str], str | None] | None = None,
         called: str | None = None,
     ) -> str:
         named = sorted(
-            n for n, e in self.endpoints.items() if model_of(e.engine) == model
+            n
+            for n, e in self.endpoints.items()
+            if (e.engine if serves is None else serves(e.engine)) == digest
         )
-        return _one(named, f"model {called or model}")
+        what = called or f"engine {digest}"
+        match named:
+            case [one]:
+                return one
+            case []:
+                raise LookupError(f"no endpoint serves {what}")
+            case _:
+                raise LookupError(
+                    f"{', '.join(named)} serve {what}; name the one to use"
+                )
 
-    def source(self, name: str) -> AnySource:
-        source = self.sources.get(name)
-        if source is None:
-            raise LookupError(f"no source {name!r} in the inventory")
-        return source
-
-    def listing(self, name: str | None = None) -> ListingSource:
+    def source[S: Source](self, name: str | None = None, kind: type[S] = Source) -> S:
+        word = _word(kind)
         if name is None:
-            listed = sorted(
-                n for n, s in self.sources.items() if isinstance(s, ListingSource)
-            )
-            if len(listed) != 1:
+            held = sorted(n for n, s in self.sources.items() if isinstance(s, kind))
+            if len(held) != 1:
                 raise LookupError(
-                    f"{len(listed)} sources list their vignettes ({', '.join(listed)}), "
+                    f"{len(held)} {word}s ({', '.join(held)}) are in the inventory, "
                     + "so one must be named"
-                    if listed
-                    else "no source in the inventory lists its vignettes"
+                    if held
+                    else f"no {word} in the inventory"
                 )
-            name = listed[0]
-        match self.source(name):
-            case ListingSource() as source:
+            name = held[0]
+        match self.sources.get(name):
+            case None:
+                raise LookupError(f"no source {name!r} in the inventory")
+            case source if isinstance(source, kind):
                 return source
-            case other:
-                raise LookupError(
-                    f"source {name!r} is a {other.kind} source, whose vignettes are "
-                    + "read through the store, not listed"
-                )
+            case _:
+                raise LookupError(f"source {name!r} isn't a {word}")
 
     def endpoint(self, name: str) -> EndpointSpec:
         spec = self.endpoints.get(name)
@@ -198,15 +197,7 @@ class Inventory(Frozen):
             raise LookupError(f"no endpoint {name!r} in the inventory")
         return spec
 
-    def cleared_for(self, endpoint: str) -> frozenset[str]:
-        return frozenset(self.cleared.get(endpoint, ()))
 
-
-def _one(named: list[str], what: str) -> str:
-    match named:
-        case [one]:
-            return one
-        case []:
-            raise LookupError(f"no endpoint serves {what}")
-        case _:
-            raise LookupError(f"{', '.join(named)} serve {what}; name the one to use")
+def _word(kind: type[Source]) -> str:
+    field = kind.model_fields.get("kind")
+    return "source" if field is None else f"{field.default} source"

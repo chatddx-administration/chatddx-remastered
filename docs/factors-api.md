@@ -625,8 +625,8 @@ the portal's run page.
 ## engine.py
 
 ### Flags
-- `OWNED_FLAGS`: `--model`, `--served-model-name`, `--chat-template`, `--tokenizer`, `--revision`, which the start-up
-  script sets.
+- `OWNED_FLAGS`: `--model`, `--served-model-name`, `--chat-template`, `--tokenizer`, `--revision`, `--host`,
+  `--port`, which the start-up script sets.
 - `UNPINNED_FLAGS`: `--config`.
 - `flag_names(argv: tuple[str, ...]) -> frozenset[str]`: the names of the `--` arguments, cut at `=`, with `_` read
   as `-` up to the first `.`, as vLLM reads them.

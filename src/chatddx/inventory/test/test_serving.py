@@ -1,15 +1,8 @@
 import hashlib
-import json
-from collections.abc import Generator
-from contextlib import contextmanager
-from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
-from threading import Thread
-from typing import override
-from urllib.error import HTTPError
 
 import pytest
-from pydantic import HttpUrl, ValidationError
+from pydantic import ValidationError
 
 from chatddx.factors.bundle import Registry
 from chatddx.factors.engine import (
@@ -20,20 +13,14 @@ from chatddx.factors.engine import (
     Runtime,
 )
 from chatddx.factors.test.sample import remote_engine
-from chatddx.fake_vllm.served import Served
-from chatddx.fake_vllm.server import serving
 from chatddx.inventory import (
     DirectorySource,
     EndpointSpec,
     HostSpec,
     Inventory,
     check,
-    confirm,
-    served,
     start_up,
-    url_at,
 )
-from chatddx.test.world import GPT_OSS, QWEN, free_world, world_plan
 
 TEMPLATE = hashlib.sha256(b"{{ messages }}").hexdigest()
 
@@ -101,9 +88,14 @@ def test_endpoints_and_hosts_are_declared_in_the_inventory(tmp_path: Path) -> No
     with pytest.raises(LookupError, match="no endpoint 'other'"):
         _ = inventory.endpoint("other")
     _ = path.write_text(
-        '[endpoint.qwen]\nengine = "sha256:' + "c" * 64 + '"\nhost = "x"\n'
+        '[endpoint.qwen]\nengine = "sha256:'
+        + "c" * 64
+        + '"\nurl = "http://pelle.km:12009/v1/"\nhost = "x"\n'
     )
     with pytest.raises(ValidationError, match="names no host 'x'"):
+        _ = Inventory.load(path)
+    _ = path.write_text('[endpoint.qwen]\nengine = "sha256:' + "c" * 64 + '"\n')
+    with pytest.raises(ValidationError, match="url"):
         _ = Inventory.load(path)
 
 
@@ -148,11 +140,9 @@ def test_an_inventory_says_which_sources_an_endpoint_is_cleared_for(
     _ = path.write_text(
         f'include = ["imported.toml"]\n\n{sources}[cleared]\nqwen = ["sample"]\n'
     )
-    inventory = Inventory.load(path)
-    assert inventory.cleared_for("qwen") == {"sample"}
-    assert inventory.cleared_for("other") == frozenset()
+    assert Inventory.load(path).cleared == {"qwen": ("sample",)}
     _ = path.write_text(f'include = ["imported.toml"]\n\n{sources}')
-    assert Inventory.load(path).cleared_for("qwen") == frozenset()
+    assert Inventory.load(path).cleared == {}
     _ = path.write_text(f'{sources}[cleared]\nqwen = ["sample"]\n')
     with pytest.raises(ValidationError, match="cleared names no endpoint 'qwen'"):
         _ = Inventory.load(path)
@@ -208,7 +198,6 @@ def test_a_start_up_joins_the_engine_with_where_its_host_keeps_things() -> None:
         "8192",
     )
     assert startup.closure == "/nix/store/" + "v" * 32 + "-vllm"
-    assert url_at(inventory, reg.get, "qwen@pelle") == "http://pelle.km:12009/v1/"
 
 
 def test_a_start_up_is_refused_where_the_inventory_or_the_engine_falls_short() -> None:
@@ -218,23 +207,29 @@ def test_a_start_up_is_refused_where_the_inventory_or_the_engine_falls_short() -
         _ = start_up(world(engine, templates={TEMPLATE: "/t"}), reg.get, "qwen@pelle")
     with pytest.raises(LookupError, match="where it keeps chat template"):
         _ = start_up(world(engine, models={model: "/m"}), reg.get, "qwen@pelle")
-    _, listening = local(reg, "--port=9000")
-    complete = world(listening, {model: "/m"}, {TEMPLATE: "/t"})
-    with pytest.raises(LookupError, match="sets --port in its argv"):
-        _ = start_up(complete, reg.get, "qwen@pelle")
+    complete = world(engine, {model: "/m"}, {TEMPLATE: "/t"})
+    hostless = complete.endpoint("qwen@pelle").model_copy(update={"host": None})
+    with pytest.raises(LookupError, match="'qwen@pelle' needs a host to start"):
+        _ = start_up(
+            complete.model_copy(update={"endpoints": {"qwen@pelle": hostless}}),
+            reg.get,
+            "qwen@pelle",
+        )
     remote = reg.add(remote_engine(reg, "gemma"))
     with pytest.raises(LookupError, match="engine.remote, not ours to start"):
         _ = start_up(world(remote), reg.get, "qwen@pelle")
     unknown = world("sha256:" + "c" * 64, {model: "/m"}, {TEMPLATE: "/t"})
-    for f in (start_up, url_at, confirm):
-        with pytest.raises(LookupError, match="'qwen@pelle': sha256:c+ is not in the"):
-            _ = f(unknown, reg.get, "qwen@pelle")
+    with pytest.raises(LookupError, match="'qwen@pelle': sha256:c+ is not in the"):
+        _ = start_up(unknown, reg.get, "qwen@pelle")
+    alone = Registry()
+    _ = alone.add(reg.get(engine))
+    with pytest.raises(LookupError, match=f"'qwen@pelle': {model} is not in the"):
+        _ = start_up(complete, alone.get, "qwen@pelle")
 
 
 def test_a_check_finds_what_starting_or_reaching_each_endpoint_would_refuse() -> None:
     reg = Registry()
     model, engine = local(reg)
-    _, listening = local(reg, "--port=9000")
     remote = reg.add(remote_engine(reg, "gemma"))
     url = "http://pelle.km:12009/v1/"
     pelle = HostSpec(models={model: "/m", "sha256:" + "e" * 64: "/old"})
@@ -244,19 +239,14 @@ def test_a_check_finds_what_starting_or_reaching_each_endpoint_would_refuse() ->
             "endpoints": {
                 "qwen@pelle": {"engine": engine, "url": url, "host": "pelle"},
                 "again@pelle": {"engine": engine, "url": url, "host": "pelle"},
-                "nowhere@pelle": {"engine": engine, "host": "pelle"},
-                "listening@pelle": {
-                    "engine": listening,
-                    "url": "http://pelle.km:12010/v1/",
-                    "host": "pelle",
-                },
+                "nowhere": {"engine": engine, "url": "http://pelle.km:12010/v1/"},
                 "gemma": {
                     "engine": remote,
                     "url": "https://api.example.org/v1/",
                     "host": "pelle",
                 },
-                "ghost": {"engine": "sha256:" + "c" * 64},
-                "model": {"engine": model},
+                "ghost": {"engine": "sha256:" + "c" * 64, "url": url},
+                "model": {"engine": model, "url": url},
             },
             "hosts": {"pelle": pelle},
             "cleared": {"gemma": ["sample"]},
@@ -265,8 +255,7 @@ def test_a_check_finds_what_starting_or_reaching_each_endpoint_would_refuse() ->
     assert [(f.subject, f.code, f.level) for f in check(inventory, reg.get)] == [
         ("qwen@pelle", "endpoint.unstartable", "warning"),
         ("again@pelle", "endpoint.unstartable", "warning"),
-        ("nowhere@pelle", "endpoint.unreachable", "warning"),
-        ("listening@pelle", "endpoint.unstartable", "warning"),
+        ("nowhere", "endpoint.unstartable", "warning"),
         ("gemma", "endpoint.remote_host", "warning"),
         ("ghost", "endpoint.engine_unknown", "warning"),
         ("model", "endpoint.not_engine", "warning"),
@@ -288,76 +277,3 @@ def test_a_check_finds_what_starting_or_reaching_each_endpoint_would_refuse() ->
     assert messages[("ghost", "endpoint.engine_unknown")] == (
         f"sha256:{'c' * 64} is not in the registry"
     )
-
-
-def test_a_remote_engine_is_reached_at_its_endpoint_s_url() -> None:
-    reg = Registry()
-    remote = reg.add(remote_engine(reg, "gemma"))
-    at = HttpUrl("https://api.example.org/v1/")
-    alone = Inventory(
-        endpoints={"gemma": EndpointSpec(engine=remote, url=at, credential="KEY")},
-    )
-    assert url_at(alone, reg.get, "gemma") == "https://api.example.org/v1/"
-    unplaced = Inventory(endpoints={"gemma": EndpointSpec(engine=remote)})
-    with pytest.raises(LookupError, match="serves a remote engine but has no url"):
-        _ = url_at(unplaced, reg.get, "gemma")
-
-
-def test_a_fake_started_from_an_endpoint_serves_its_engine() -> None:
-    inventory = free_world()
-    plan = world_plan()
-    at = inventory.endpoint(GPT_OSS).model_copy(
-        update={"url": inventory.endpoint(QWEN).url}
-    )
-    inventory = inventory.model_copy(
-        update={"endpoints": {**inventory.endpoints, GPT_OSS: at}}
-    )
-    startup = start_up(inventory, plan.registry.get, QWEN)
-    with serving([Served.of(startup.argv[0], startup.argv[1:])]):
-        confirm(inventory, plan.registry.get, QWEN)
-        qwen = inventory.endpoint(QWEN).engine
-        gpt_oss = inventory.endpoint(GPT_OSS).engine
-        with pytest.raises(LookupError, match=f"serves {qwen}, not {gpt_oss}"):
-            confirm(inventory, plan.registry.get, GPT_OSS)
-    with pytest.raises(OSError):
-        confirm(inventory, plan.registry.get, QWEN, timeout=1.0)
-
-
-@contextmanager
-def keyed_models(secret: str, model: str) -> Generator[str]:
-    class Models(BaseHTTPRequestHandler):
-        def do_GET(self) -> None:
-            if self.headers.get("Authorization") != f"Bearer {secret}":
-                self.send_error(401)
-                return
-            body = json.dumps({"data": [{"id": model}]}).encode()
-            self.send_response(200)
-            self.send_header("Content-Length", str(len(body)))
-            self.end_headers()
-            _ = self.wfile.write(body)
-
-        @override
-        def log_message(self, format: str, *args: object) -> None:
-            pass
-
-    with ThreadingHTTPServer(("127.0.0.1", 0), Models) as server:
-        thread = Thread(target=server.serve_forever, kwargs={"poll_interval": 0.01})
-        thread.start()
-        try:
-            yield f"http://127.0.0.1:{server.server_port}/v1/"
-        finally:
-            server.shutdown()
-            thread.join()
-
-
-def test_an_endpoint_s_secret_goes_with_the_request_that_confirms_it() -> None:
-    reg = Registry()
-    with keyed_models("s3cret", "gemma") as url:
-        remote = reg.add(remote_engine(reg, "gemma"))
-        inventory = Inventory(
-            endpoints={"gemma": EndpointSpec(engine=remote, url=HttpUrl(url))}
-        )
-        assert served(url, secret="s3cret") == ["gemma"]
-        confirm(inventory, reg.get, "gemma", secret="s3cret")
-        with pytest.raises(HTTPError, match="401"):
-            confirm(inventory, reg.get, "gemma")

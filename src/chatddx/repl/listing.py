@@ -8,7 +8,6 @@ from rich.text import Text
 
 from chatddx.bench import PARTS
 from chatddx.catalog.titles import short
-from chatddx.inventory import url_at
 
 from .render import LABEL, REFUSED, plural
 from .shell import Repl
@@ -180,20 +179,20 @@ def endpoints(repl: Repl) -> None:
         table.add_column(column)
 
     for name, spec in sorted(bench.inventory.endpoints.items()):
-        cleared = " ".join(sorted(bench.inventory.cleared_for(name))) or "—"
+        cleared = " ".join(sorted(bench.inventory.cleared.get(name, ()))) or "—"
         try:
             engine = bench.endpoint(name)
         except LookupError:
             said = Text(f"{short(spec.engine)}, not in the store", style=REFUSED)
-            table.add_row(name, said, "", str(spec.url or "—"), cleared)
+            table.add_row(name, said, "", str(spec.url), cleared)
             continue
-        try:
-            url = Text(url_at(bench.inventory, bench.get, name))
-        except LookupError as e:
-            url = Text(str(e), style=REFUSED)
         model = bench.model_of(engine)
         table.add_row(
-            name, bench.title(engine), model.name if model else "—", url, cleared
+            name,
+            bench.title(engine),
+            model.name if model else "—",
+            str(spec.url),
+            cleared,
         )
 
     repl.console.print(table)

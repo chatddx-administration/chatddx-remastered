@@ -15,7 +15,7 @@
         <tr class="border-t border-border/60">
           <td class="py-2 pr-4 align-top">
             <span class="font-medium">{{ e.name }}</span>
-            <div class="text-xs text-muted-foreground">{{ e.url or "" }}{% if e.host %} on {{ e.host }}{% endif %}{% if e.credential %}, its key in {{ e.credential }}{% endif %}</div>
+            <div class="text-xs text-muted-foreground">{{ e.url }}{% if e.host %} on {{ e.host }}{% endif %}{% if e.credential %}, its key in {{ e.credential }}{% endif %}</div>
             {% if e.problem %}<div class="text-xs text-destructive">{{ e.problem }}</div>{% endif %}
           </td>
           <td class="py-2 pr-4 align-top">{{ e.title or e.engine | short }}</td>

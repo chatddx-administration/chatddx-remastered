@@ -74,7 +74,7 @@ export function choicesOf(
 
 export type Where = { at: string | null; among: Schemas["Endpoint"][] };
 
-// src/chatddx/inventory/inventory.py:Inventory.serving_model picks the endpoint a run goes to.
+// src/chatddx/bench/seen.py:Seen.at picks the endpoint a run goes to.
 export function where(endpoints: Schemas["Endpoint"][], model: string | null, named: string | null): Where {
   const among = model === null ? endpoints : endpoints.filter((e) => e.serves === model);
   if (named !== null && among.some((e) => e.name === named)) return { at: named, among };

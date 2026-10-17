@@ -757,10 +757,9 @@ Raises, before writing:
 - `ValueError("a typed case holds at most <TYPED_TEXT_LIMIT> characters, not <n>")`
 - `ValueError("a name can't be empty: none leaves the case unnamed")`
 - `language_tag`'s `ValueError`.
-- `ValueError("'<source>' isn't a database source of the World's")`
-- `ValueError("the World has no database source to type cases into")`
-- `ValueError("name the source to type into: …")`
 - `OverQuota("<login> has typed <n> cases in the last day, as many as a day takes")`
+- `ValueError` with `Inventory.source`'s message, for a source that isn't there or isn't a database source, or, with
+  none named, none or several of the World's database sources (docs/inventory-api.md, "inventory.py").
 
 ### `takes_typed(endpoint: str) -> bool`
 Whether a case typed into the World's database source can run at `endpoint`: the source isn't sensitive, or the

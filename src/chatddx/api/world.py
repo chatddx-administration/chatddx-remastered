@@ -2,7 +2,7 @@ from fastapi import APIRouter, HTTPException
 
 from chatddx.bench import KINDS, WRITTEN, Bench, NotFound
 from chatddx.factors.kinds import BY_KIND
-from chatddx.inventory import EndpointSpec, url_at
+from chatddx.inventory import EndpointSpec
 from chatddx.scorers.scorer import NO_PARAMS
 from chatddx.scorers.shipped import SCORERS
 
@@ -14,13 +14,12 @@ router = APIRouter(tags=["world"])
 
 
 def endpoint_of(bench: Bench, name: str, spec: EndpointSpec) -> schemas.Endpoint:
-    title = model = serves = url = problem = None
+    title = model = serves = problem = None
     try:
         engine = bench.endpoint(name)
         title, found = bench.title(engine), bench.model_of(engine)
         if found is not None:
             model, serves = found.name, found.digest
-        url = url_at(bench.inventory, bench.get, name)
     except LookupError as e:
         problem = str(e)
     return schemas.Endpoint(
@@ -29,11 +28,11 @@ def endpoint_of(bench: Bench, name: str, spec: EndpointSpec) -> schemas.Endpoint
         title=title,
         model=model,
         serves=serves,
-        url=url,
+        url=str(spec.url),
         host=spec.host,
         max_jobs=spec.max_jobs,
         credential=spec.credential,
-        cleared_for=sorted(bench.inventory.cleared_for(name)),
+        cleared_for=sorted(bench.inventory.cleared.get(name, ())),
         takes_typed=bench.takes_typed(name),
         problem=problem,
     )

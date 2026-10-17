@@ -38,7 +38,7 @@ def test_endpoints_say_what_they_serve_and_what_they_re_cleared_for(
         )
         assert (shown["credential"], shown["cleared_for"], shown["problem"]) == (
             spec.credential,
-            sorted(inventory.cleared_for(name)),
+            sorted(inventory.cleared.get(name, ())),
             None,
         )
 
@@ -59,7 +59,7 @@ def test_endpoints_say_what_they_serve_and_what_they_re_cleared_for(
     )
     assert remote["credential"] is not None and remote["cleared_for"] == []
     typed = {e["name"] for e in listed if e["takes_typed"]}
-    assert typed == {n for n in endpoints if "typed" in inventory.cleared_for(n)}
+    assert typed == {n for n in endpoints if "typed" in inventory.cleared.get(n, ())}
     assert QWEN in typed and REMOTE not in typed
     got = signed.get("/api/endpoints/nowhere@fake")
     assert got.status_code == 404
@@ -81,7 +81,11 @@ def test_an_endpoint_whose_engine_isn_t_stored_says_so(
         held.listener,
     )
     shown = signed.get("/api/endpoints/ghost@nowhere").json()
-    assert (shown["title"], shown["model"], shown["url"]) == (None, None, None)
+    assert (shown["title"], shown["model"], shown["url"]) == (
+        None,
+        None,
+        "http://127.0.0.1:1/v1/",
+    )
     assert "isn't in the store" in shown["problem"]
 
 
