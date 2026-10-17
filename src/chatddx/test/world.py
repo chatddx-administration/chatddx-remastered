@@ -46,7 +46,7 @@ OFF = "off"
 # What loading the test World lints: the factors' lints, then the facts'.
 FACTOR_LINTS = [
     *(
-        f"[lint warning] model {name}: model.revision: revision 'fake' is not a "
+        f"[lint warning] model.local {name}: model.revision: revision 'fake' is not a "
         + "commit and can move"
         for name in ("qwen3-8b-awq", "gpt-oss-20b", "mistral-7b")
     ),

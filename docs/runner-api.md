@@ -4,7 +4,7 @@ Reference for the `chatddx.runner` package. It was written from `src/chatddx/run
 run and a score do and why is in `docs/runner.md`; this file says what each name accepts, returns and raises. Types
 from other packages are in their API docs: factors (`Trial`, `Execution`, `Skeleton`, `Judge`, `Scoring`, `Registry`,
 `Finding`, …) in `docs/factors-api.md`, records (`Call`, `RunItem`, `ScoreItem`, `JudgeCall`, …) and the checks in
-`docs/ledger-api.md`, `Inventory`, `confirm` and `url_of` in `docs/inventory-api.md`, `Store` and `Catalog` in
+`docs/ledger-api.md`, `Inventory`, `confirm` and `url_at` in `docs/inventory-api.md`, `Store` and `Catalog` in
 `docs/store-api.md`.
 
 Paths are relative to `src/chatddx/runner/` unless they start with `src/` or `docs/`.
@@ -202,9 +202,9 @@ Prepares a trial's items. `trial` is a digest.
 
 | Member | Description |
 | --- | --- |
-| `trial: Trial`, `skeleton: Skeleton`, `engine: LocalEngine \| RemoteEngine` | Resolved once. An engine of another kind fails an assertion. |
+| `trial: Trial`, `skeleton: Skeleton` | Resolved once. |
 | `case(case: str, layout: AppendixLayout) -> Prepared` | Fetches the case's vignette (`chatddx.store.fetch_vignette`) and prepares it (`chatddx.factors.cases.prepare_case`) with the trial's cleanup. |
-| `item(key: ItemKey) -> PreparedItem` | `case` with the skeleton's appendix layout, then `render` for the engine's `served_model_name` and the replicate's seed. |
+| `item(key: ItemKey) -> PreparedItem` | `case` with the skeleton's appendix layout, then `Skeleton.render` for the trial's engine's `served_model_name` and the replicate's seed. |
 
 Raises `LookupError` (a vignette or source that can't be found, a replicate out of range) and `StructuralError`
 (a case that can't be prepared). `Running` notes either as `case.unreadable`; the bench's `rendered_again` uses
@@ -282,7 +282,7 @@ In order:
 3. `rounds.load`;
 4. refuses an `execution.concurrency` above the endpoint's `max_jobs`: `ValueError` `endpoint '<name>' takes <n>
    requests at once, the execution sends <m>`;
-5. `url_of`, and builds `RunStarted` with a new id, `rig()` (chatddx at its installed version, with
+5. `url_at`, and builds `RunStarted` with a new id, `rig()` (chatddx at its installed version, with
    `CHATDDX_REVISION` as its revision when set), `execution` (default `Execution()`), the canary set, `verify_at`, the
    toolbox's `code` and `Endpoint(name, url)`; `verify_at` other than `PHASES` without a canary set
 6. stores the trial and the canary set with what they refer to (`Store.add`), appends `RunStarted`, and notes `by` as

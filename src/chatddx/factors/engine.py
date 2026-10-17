@@ -13,6 +13,7 @@ from .base import (
     RefTo,
     Resolver,
     Sha256Hex,
+    StructuralError,
     resolve,
     sorted_keys,
 )
@@ -71,8 +72,8 @@ class FileDigest(Frozen):
     sha256: Sha256Hex
 
 
-class ModelArtifact(Component):
-    kind: Literal["model"] = "model"
+class LocalModel(Component):
+    kind: Literal["model.local"] = "model.local"
     repo: str
     revision: str
     files: tuple[FileDigest, ...] = Field(min_length=1)
@@ -85,6 +86,11 @@ class ModelArtifact(Component):
             raise ValueError("duplicate file paths")
         return tuple(sorted(files, key=lambda f: f.path))
 
+    # The name facts are keyed by, as a remote model's is.
+    @property
+    def name(self) -> str:
+        return self.repo
+
 
 class RemoteModel(Component):
     kind: Literal["model.remote"] = "model.remote"
@@ -92,9 +98,10 @@ class RemoteModel(Component):
     name: str = Field(min_length=1)
 
 
-ArtifactRef = Annotated[Digest, RefTo("model")]
+Model = LocalModel | RemoteModel
+LocalModelRef = Annotated[Digest, RefTo("model.local")]
 RemoteModelRef = Annotated[Digest, RefTo("model.remote")]
-ModelRef = Annotated[Digest, RefTo("model", "model.remote")]
+ModelRef = Annotated[Digest, RefTo("model.local", "model.remote")]
 
 
 class Hardware(Frozen):
@@ -115,7 +122,7 @@ class LocalEngine(Component):
     api: Api = "chat.completions"
     hardware: Hardware
     runtime: Runtime
-    model: ArtifactRef
+    model: LocalModelRef
     chat_template: Sha256Hex
     argv: tuple[str, ...] = ()
     env: Annotated[dict[str, str], AfterValidator(sorted_keys)] = Field(
@@ -152,17 +159,32 @@ class RemoteEngine(Component):
     model: RemoteModelRef
 
 
-Engine = LocalEngine | RemoteEngine
 EngineRef = Annotated[Digest, RefTo("engine.local", "engine.remote")]
 
 
 # A local engine is asked for by its digest, which the start-up script serves it as.
-def served_model_name(engine: Engine, get: Resolver) -> str:
-    match engine:
+def served_model_name(engine: str, get: Resolver) -> str:
+    match get(engine):
         case LocalEngine():
-            return engine.digest
+            return engine
         case RemoteEngine(model=model):
             return resolve(get, model, RemoteModel).name
+        case other:
+            raise StructuralError(f"{engine} is a {other.kind_name}, not an engine")
+
+
+def model_of(digest: str, get: Resolver) -> Model:
+    match get(digest):
+        case LocalModel() | RemoteModel() as model:
+            return model
+        case LocalEngine(model=model):
+            return resolve(get, model, LocalModel)
+        case RemoteEngine(model=model):
+            return resolve(get, model, RemoteModel)
+        case other:
+            raise StructuralError(
+                f"{digest} is a {other.kind_name}, neither a model nor an engine"
+            )
 
 
 # Templates that insert the current date make the prompt depend on when a run happens.

@@ -16,11 +16,9 @@ from .kinds import parse_component
 
 class Registry:
     def __init__(self) -> None:
-        self._raw: dict[str, bytes] = {}
         self._parsed: dict[str, Component] = {}
 
     def add(self, component: Component) -> str:
-        _ = self._raw.setdefault(component.digest, component.canonical)
         _ = self._parsed.setdefault(component.digest, component)
         return component.digest
 
@@ -29,7 +27,6 @@ class Registry:
             raise StructuralError(f"{digest} does not match its bytes")
         component = parse_component(raw)
         vars(component).update(canonical=raw, digest=digest)
-        self._raw[digest] = raw
         self._parsed[digest] = component
         return component
 
@@ -38,9 +35,6 @@ class Registry:
             return self._parsed[digest]
         except KeyError:
             raise StructuralError(f"{digest} is not in the registry") from None
-
-    def raw(self, digest: str) -> bytes:
-        return self._raw[digest]
 
     def __contains__(self, digest: object) -> bool:
         return digest in self._parsed
@@ -82,7 +76,7 @@ class Registry:
         return Bundle(
             generator=generator,
             roots=tuple(roots),
-            components={d: self._raw[d].decode() for d in digests},
+            components={d: self.get(d).canonical.decode() for d in digests},
         )
 
 

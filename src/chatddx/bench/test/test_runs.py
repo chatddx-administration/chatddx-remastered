@@ -71,7 +71,7 @@ def test_a_run_goes_to_the_endpoint_serving_its_model_unless_one_is_named(
 ):
     bench = Bench(conn, alice, world)
     named = bench.configuration(LINES)
-    gpt_oss, engine = bench.model_at(GPT_OSS), bench.endpoint(GPT_OSS)
+    gpt_oss, engine = bench.model_at(GPT_OSS).digest, bench.endpoint(GPT_OSS)
     swapped = named.set("model", gpt_oss, GPT_OSS_ARTIFACT)
     cases = [bench.family("crlf").case]
 

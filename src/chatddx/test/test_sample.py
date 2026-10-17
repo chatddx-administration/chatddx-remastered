@@ -208,7 +208,7 @@ def test_the_sample_loads_with_its_world_s_fakes(
     fakes = ("qwen3-8b-awq@fake", "gpt-oss-20b@fake")
     assert [line for line in lines if line.startswith("[lint warning]")] == [
         *(
-            f"[lint warning] model {name}: model.revision: revision 'fake' is not a "
+            f"[lint warning] model.local {name}: model.revision: revision 'fake' is not a "
             + "commit and can move"
             for name in fakes
         ),

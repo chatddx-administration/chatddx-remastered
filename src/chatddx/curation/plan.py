@@ -12,11 +12,12 @@ from chatddx.factors.base import Code, Component, StructuralError, language_tag,
 from chatddx.factors.bundle import Registry
 from chatddx.factors.engine import (
     LocalEngine,
-    ModelArtifact,
+    LocalModel,
     RemoteEngine,
     RemoteModel,
+    model_of,
 )
-from chatddx.factors.facts import ModelFacts, model_name, model_of
+from chatddx.factors.facts import ModelFacts
 from chatddx.factors.request import (
     CHUNK_PARTS,
     AppendixLayout,
@@ -45,7 +46,7 @@ from chatddx.scorers.shipped import SCORERS, problems
 from chatddx.tools.shipped import TOOLS
 
 TABLES: dict[str, type[Component]] = {
-    "model": ModelArtifact,
+    "local_model": LocalModel,
     "remote_model": RemoteModel,
     "local_engine": LocalEngine,
     "remote_engine": RemoteEngine,
@@ -64,7 +65,7 @@ TABLES: dict[str, type[Component]] = {
     "scorer": Scorer,
     "canary_set": CanarySet,
 }
-ENGINE_TABLES = ("model", "remote_model", "local_engine", "remote_engine")
+ENGINE_TABLES = ("local_model", "remote_model", "local_engine", "remote_engine")
 # Planned after recipes and judges, as a view may name a judge.
 LATE_TABLES = ("scorer",)
 PLANNED_TABLES = (*TABLES, "recipe", "judge")
@@ -75,7 +76,7 @@ SHIPPED: dict[str, Mapping[str, Versioned]] = {"tool": TOOLS, "scorer": SCORERS}
 REFERENCES: dict[str, dict[str, str]] = {
     "toolset": {"tools": "tool"},
     "scorer": {"expectation_schema": "expectation_schema"},
-    "local_engine": {"model": "model"},
+    "local_engine": {"model": "local_model"},
     "remote_engine": {"model": "remote_model"},
 }
 
@@ -464,7 +465,9 @@ def plan_factors(
         for r in plan.records
         if r.table in ("local_engine", "remote_engine")
     }
-    models = {r.digest: r for r in plan.records if r.table in ("model", "remote_model")}
+    models = {
+        r.digest: r for r in plan.records if r.table in ("local_model", "remote_model")
+    }
 
     def model_at(endpoint: str) -> Planned | None:
         if inventory is None:
@@ -472,12 +475,12 @@ def plan_factors(
         engine = engines.get(inventory.endpoint(endpoint).engine)
         if engine is None:
             return None
-        return models.get(model_of(engine.digest, plan.registry.get) or "")
+        return models.get(model_of(engine.digest, plan.registry.get).digest)
 
     served: dict[str, list[str]] = {}
     for r in engines.values():
-        if (model := model_name(r.digest, plan.registry.get)) is not None:
-            served.setdefault(model, []).append(f"{r.kind} {r.name}")
+        model = model_of(r.digest, plan.registry.get).name
+        served.setdefault(model, []).append(f"{r.kind} {r.name}")
     facts_of: dict[str, ModelFacts] = {}
     for model in sorted(served):
         if (about := facts.models.get(model)) is None:
@@ -497,7 +500,7 @@ def plan_factors(
         except ValidationError as e:
             raise ValueError(f"{what}: {e}") from None
         get = plan.registry.get
-        about = facts_of.get(model_name(model.digest, get) or "")
+        about = facts_of.get(model_of(model.digest, get).name)
         try:
             _ = landings(recipe, get, about)
         except ValueError as e:

@@ -381,7 +381,7 @@ def test_wipe_data_deletes_and_unshares_and_init_data_gives_it_back(
     argv += ["--data", str(DATA)]
     loaded = run(*argv)
     assert loaded[0] == "[person] alice: added"
-    assert loaded[1].startswith("[archive model] qwen3-8b-awq: created")
+    assert loaded[1].startswith("[archive model.local] qwen3-8b-awq: created")
     assert any(
         line.startswith("[archive chunk.prompt] case: created") for line in loaded
     )

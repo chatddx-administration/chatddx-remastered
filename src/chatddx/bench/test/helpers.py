@@ -11,7 +11,7 @@ from chatddx.catalog import Edit, Entry, EntryField, Subject
 from chatddx.curation import Plan
 from chatddx.factors.base import Finding, resolve
 from chatddx.factors.bundle import Registry
-from chatddx.factors.engine import ModelArtifact
+from chatddx.factors.engine import LocalModel
 from chatddx.factors.facts import ModelFacts
 from chatddx.factors.scoring import Expectation
 from chatddx.factors.trial import Trial
@@ -89,9 +89,9 @@ def another_expectation(bench: Bench, case: str, data: JsonValue) -> str:
 
 # As init-data writes a corrected facts file: a new version of the archive's thread.
 def move_model(bench: Bench, name: str, **changes: JsonValue) -> Edit:
-    [thread] = bench.catalog.find("model", name)
-    held = resolve(bench.get, bench.catalog.head(thread).digest, ModelArtifact)
-    newer = ModelArtifact.model_validate({**held.model_dump(mode="json"), **changes})
+    [thread] = bench.catalog.find("model.local", name)
+    held = resolve(bench.get, bench.catalog.head(thread).digest, LocalModel)
+    newer = LocalModel.model_validate({**held.model_dump(mode="json"), **changes})
     registry = Registry()
     _ = Store(bench.conn).add(registry, [registry.add(newer)])
     archive = People(bench.conn).find("archive")

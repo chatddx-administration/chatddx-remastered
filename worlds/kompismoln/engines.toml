@@ -2,7 +2,7 @@
 # The models and engines its hosts serve; import again rather than edit.
 # Where they're served: endpoints.toml.
 
-[model."qwen3-8b@pelle"]
+[local_model."qwen3-8b@pelle"]
 repo = "Qwen/Qwen3-8B-AWQ"
 revision = "4da05a8edb55c6046cce958586c33b61da07bb79"
 files = [
@@ -30,7 +30,7 @@ chat_template = "e132ae041e1217b5e1114eb9dc292484a7f478df945d72fa49ba01b88d8ec01
 argv = ["--enforce-eager", "--gpu-memory-utilization=0.95", "--max-model-len=8192", "--max-num-seqs=1", "--enable-prefix-caching", "--tool-call-parser=hermes", "--enable-auto-tool-choice"]
 env = { VLLM_USE_FLASHINFER_SAMPLER = "0" }
 
-[model."gpt-oss-20b@malborg"]
+[local_model."gpt-oss-20b@malborg"]
 repo = "openai/gpt-oss-20b"
 revision = "6cee5e81ee83917806bbde320786a8fb61efebee"
 files = [

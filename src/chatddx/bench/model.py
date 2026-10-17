@@ -20,7 +20,7 @@ KINDS: dict[str, tuple[str, ...]] = {
     "expectation": ("expectation",),
     "appendix": ("appendix",),
     "canary_set": ("canary_set",),
-    "model": ("model", "model.remote"),
+    "model": ("model.local", "model.remote"),
     "engine": ("engine.local", "engine.remote"),
     "facts": ("facts",),
 }

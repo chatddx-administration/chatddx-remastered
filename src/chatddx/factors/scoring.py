@@ -13,6 +13,7 @@ from .base import (
     Settings,
     StructuralError,
     distinct,
+    resolve,
 )
 from .cases import CaseRef
 from .engine import EngineRef
@@ -62,8 +63,7 @@ class Judge(Component):
 
     @override
     def cross_check(self, get: Resolver) -> list[str]:
-        skeleton = get(self.skeleton)
-        assert isinstance(skeleton, Skeleton)
+        skeleton = resolve(get, self.skeleton, Skeleton)
         if skeleton.purpose != "judge":
             return [f"judge uses a {skeleton.purpose} skeleton"]
         if skeleton.tools:
@@ -133,13 +133,11 @@ class Scoring(Component):
 
     @override
     def cross_check(self, get: Resolver) -> list[str]:
-        scorer = get(self.scorer)
-        assert isinstance(scorer, Scorer)
+        scorer = resolve(get, self.scorer, Scorer)
         problems: list[str] = []
         cases: set[str] = set()
         for ref in self.expectations:
-            e = get(ref)
-            assert isinstance(e, Expectation)
+            e = resolve(get, ref, Expectation)
             if e.expectation_schema != scorer.expectation_schema:
                 problems.append(f"expectation {ref} is not in the scorer's schema")
             if e.case in cases:

@@ -26,6 +26,7 @@ from chatddx.factors.engine import (
     RemoteEngine,
     RemoteModel,
     check_chat_template,
+    model_of,
     served_model_name,
 )
 from chatddx.factors.facts import (
@@ -69,7 +70,6 @@ from chatddx.factors.request import (
     compiled,
     landings,
     next_request,
-    render,
     texts,
 )
 from chatddx.factors.response import ToolCall, tool_calls
@@ -213,7 +213,7 @@ def test_settings_carry_no_order(reg: Registry) -> None:
 def test_bytes_with_sorted_keys_keep_their_digest(reg: Registry) -> None:
     _ = world(reg)
     for digest in reg:
-        doc = json.loads(reg.raw(digest))
+        doc = json.loads(reg.get(digest).canonical)
         raw = json.dumps(
             doc, sort_keys=True, separators=(",", ":"), ensure_ascii=False
         ).encode()
@@ -224,7 +224,9 @@ def test_stored_bytes_decide_the_digest(reg: Registry) -> None:
     engine = local_engine(reg)
     raw = canonical_bytes({**json.loads(engine.canonical), "api": "chat.completions"})
     digest = sha256_digest(raw)
-    components = {d: reg.raw(d).decode() for d in reg} | {digest: raw.decode()}
+    components = {d: reg.get(d).canonical.decode() for d in reg} | {
+        digest: raw.decode()
+    }
     bundle = Bundle(generator=RIG, roots=(digest,), components=components)
     loaded, findings = bundle.load()
     assert [(f.code, f.subject) for f in findings] == [
@@ -268,8 +270,17 @@ def test_greedy_drops_sampling_noise() -> None:
         contract=TextOutput(),
     )
     assert "min_p" not in skeleton.body
-    body = render(skeleton, model="m", seed=42, fills={"vignette": "x"})
+    body = skeleton.render(model="m", seed=42, fills={"vignette": "x"})
     assert "seed" not in body
+
+
+def test_a_slot_without_a_fill_is_named() -> None:
+    skeleton = Skeleton(
+        messages=(Message(role="user", content=(Slot(slot="vignette"),)),),
+        contract=TextOutput(),
+    )
+    with pytest.raises(StructuralError, match=r"no fill for slots \['vignette'\]"):
+        _ = skeleton.render(model="m", seed=None, fills={"appendices": ""})
 
 
 def test_compile_and_render(reg: Registry) -> None:
@@ -285,8 +296,7 @@ def test_compile_and_render(reg: Registry) -> None:
         "properties": {"ddx": {"type": "array"}},
     }
     appendices = skeleton.appendix_layout.join(["Troponin 80 ng/L."])
-    body = render(
-        skeleton,
+    body = skeleton.render(
         model="served",
         seed=3,
         fills={"vignette": "{{not a template}}", "appendices": appendices},
@@ -1043,8 +1053,8 @@ def test_tool_rounds_continue_the_request(reg: Registry) -> None:
     skeleton = compile_request(
         generation_recipe(reg).model_copy(update={"toolset": tools}), reg.get
     )
-    body = render(
-        skeleton, model="m", seed=1, fills={"vignette": "Chest pain.", "appendices": ""}
+    body = skeleton.render(
+        model="m", seed=1, fills={"vignette": "Chest pain.", "appendices": ""}
     )
     called: dict[str, JsonValue] = {
         "role": "assistant",
@@ -1108,7 +1118,7 @@ def test_engine_argv_cannot_override_manifest(reg: Registry) -> None:
         '{"enable_thinking": false}',
     )
     _ = LocalEngine.model_validate({**engine.model_dump(), "argv": accepted})
-    assert served_model_name(engine, reg.get) == engine.digest
+    assert served_model_name(reg.add(engine), reg.get) == engine.digest
 
 
 def test_bundle_roundtrip_and_tamper(reg: Registry) -> None:
@@ -1163,7 +1173,7 @@ def test_judges_fill_their_slots_from_a_view(reg: Registry) -> None:
     fills = judge.fills(view, {"ddx": ["ACS", "PE"]}, {"ddx": ["ACS"]})
     assert fills == {"completion": "ACS\nPE", "expectation": "ACS"}
     skeleton = resolve(reg.get, judge.skeleton, Skeleton)
-    body = render(skeleton, model="m", seed=None, fills=fills)
+    body = skeleton.render(model="m", seed=None, fills=fills)
     assert body["messages"] == [{"role": "user", "content": "Grade: ACS\nPE"}]
     with pytest.raises(StructuralError, match="not this judge"):
         _ = judge.fills(View(metric="m"), {}, {})
@@ -1258,7 +1268,11 @@ def test_remote_engine_identity() -> None:
     assert a.digest != RemoteModel(provider="example", name="gemma-2").digest
     assert a.digest != RemoteModel(provider="other", name="gemma").digest
     reg = Registry()
-    assert served_model_name(RemoteEngine(model=reg.add(a)), reg.get) == "gemma"
+    engine = reg.add(RemoteEngine(model=reg.add(a)))
+    assert served_model_name(engine, reg.get) == "gemma"
+    assert model_of(engine, reg.get) == model_of(a.digest, reg.get) == a
+    with pytest.raises(StructuralError, match="not an engine"):
+        _ = served_model_name(a.digest, reg.get)
 
 
 def test_chat_template_check(reg: Registry) -> None:

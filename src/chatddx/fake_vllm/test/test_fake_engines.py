@@ -7,7 +7,7 @@ import pytest
 
 from chatddx.cli import main
 from chatddx.curation import Plan
-from chatddx.factors.engine import RemoteEngine, served_model_name
+from chatddx.factors.engine import served_model_name
 from chatddx.fake_vllm.served import CLOSURE
 from chatddx.inventory import Inventory, World, served
 from chatddx.store import Store
@@ -114,9 +114,7 @@ def test_a_remote_engine_on_this_machine_is_stood_in_for_asking_for_its_key(
 
     asker.join()
     remote = plan.named("remote_engine", REMOTE).digest
-    engine = Store(conn).get(remote)
-    assert isinstance(engine, RemoteEngine)
-    assert heard == {REMOTE: [served_model_name(engine, Store(conn).get)]}
+    assert heard == {REMOTE: [served_model_name(remote, Store(conn).get)]}
 
 
 @pytest.mark.slow

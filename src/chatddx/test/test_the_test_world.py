@@ -20,7 +20,7 @@ SKIPPED = [
 def test_the_test_world_plans_and_loads_as_designed(conn: Connection) -> None:
     plan = world_plan()
     assert Counter(r.table for r in plan.records) == {
-        "model": 3,
+        "local_model": 3,
         "remote_model": 1,
         "local_engine": 4,
         "remote_engine": 1,

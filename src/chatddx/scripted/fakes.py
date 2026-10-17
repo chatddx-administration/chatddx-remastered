@@ -41,4 +41,4 @@ def _stand_in(
                 + "isn't set"
             )
         argv += ["--api-key", key]
-    return Served.of(served_model_name(engine, get), argv)
+    return Served.of(served_model_name(engine.digest, get), argv)

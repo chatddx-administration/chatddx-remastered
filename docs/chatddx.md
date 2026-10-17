@@ -130,7 +130,7 @@ and re-applying it when its origin moves), and `catalog.edit.based_on`.
     - version chains between digests belong to planned catalog pipeline.
 
 ## Target stack
-- **Local inference.** Two servers, an RTX 3070 (sm_86, 8 GB) and an RTX 5090 (sm_120, 32 GB). Both serve vLLM 0.24.0 in a NixOS container that reads a `LocalEngine`, the model files, via `ModelArtifact`, the chat-template file and raw `argv`/`env`.
+- **Local inference.** Two servers, an RTX 3070 (sm_86, 8 GB) and an RTX 5090 (sm_120, 32 GB). Both serve vLLM 0.24.0 in a NixOS container that reads a `LocalEngine`, the model files, via `LocalModel`, the chat-template file and raw `argv`/`env`.
 
 The start-up script owns `--model`, `--served-model-name` (set to the engine digest), `--chat-template`, `--tokenizer` and `--revision` (`engine.py: OWNED_FLAGS`).
 
@@ -228,10 +228,10 @@ described below.
 3. `prepare_case(case, raw, get, layout, cleanup)` checks drift (a mismatch is the warning `case.drift`)
 4. cleans the vignette
 5. joins the appendices, and returns the fills together with the observed fingerprint for `RunItem.vignette`.
-6. Pick the model name from the engine: `served_model_name(engine, get)`, a local engine's digest, a remote engine's
-   model's name.
+6. Pick the model name from the engine: `served_model_name(trial.engine, get)`, a local engine's digest, a remote
+   engine's model's name.
 7. Pick the seed: `trial.seeds[replicate]`.
-8. Render the request: render(skeleton, model=…, seed=…, fills={"vignette": …, "appendices": …}). This:
+8. Render the request: skeleton.render(model=…, seed=…, fills={"vignette": …, "appendices": …}). This:
   - replaces each slot with its text by plain concatenation, with no templating
   - adds model, messages and the skeleton's body;
   - adds seed only if the sampling isn't greedy;
@@ -264,7 +264,7 @@ described below.
    item's last call, before the scorer's entry point is called.
 4. Apply each view. A View points into the parsed output (output, a JSON pointer) and into the expectation (expectation), and names a metric that the scorer's code interprets, with params.
 5. If the view names a Judge:
-  - Build the judge request with render() from the judge's Skeleton (purpose "judge").
+  - Build the judge request with the judge's Skeleton's render() (purpose "judge").
     Its slots are filled with the completion and the expectation, as the view picks them;
     a judge that reads the case or the appendices is refused.
   - Send it to the judge's engine, once per seed in Judge.seeds.

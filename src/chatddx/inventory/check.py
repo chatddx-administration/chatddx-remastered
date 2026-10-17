@@ -4,7 +4,7 @@ from chatddx.factors.base import Component, Finding, Resolver, StructuralError
 from chatddx.factors.engine import LocalEngine, RemoteEngine
 
 from .inventory import Inventory
-from .serving import start_up, url_of
+from .serving import start_up, url_at
 
 
 def _engine(get: Resolver, name: str, digest: str) -> Component | Finding:
@@ -25,7 +25,7 @@ def _endpoint(
     inventory: Inventory, get: Resolver, name: str, engine: Component
 ) -> Iterable[Finding]:
     try:
-        _ = url_of(inventory, get, name)
+        _ = url_at(inventory, get, name)
     except LookupError as e:
         yield Finding(code="endpoint.unreachable", message=str(e), subject=name)
         return

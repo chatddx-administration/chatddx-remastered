@@ -13,7 +13,6 @@ from chatddx.factors.facts import (
     SamplingFacts,
     SamplingValues,
     Writes,
-    model_name,
 )
 
 from .lint import check_pairs, lints, reasons
@@ -38,6 +37,5 @@ __all__ = [
     "Writes",
     "check_pairs",
     "lints",
-    "model_name",
     "reasons",
 ]

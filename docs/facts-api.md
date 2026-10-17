@@ -24,8 +24,8 @@ Paths are relative to `src/chatddx/facts/` unless they start with `src/`, `docs/
 
 `chatddx.facts` re-exports every public name of `src/chatddx/factors/facts.py` and of its own two modules: `BUNDLED`,
 `INTENTS`, `ContractFact`, `Effort`, `Facts`, `Intent`, `Landing`, `ModelFacts`, `OutputFacts`, `ReasoningFact`,
-`ReasoningFacts`, `Refusal`, `Refused`, `SamplingFacts`, `SamplingValues`, `Writes`, `check_pairs`, `lints`,
-`model_name` and `reasons`.
+`ReasoningFacts`, `Refusal`, `Refused`, `SamplingFacts`, `SamplingValues`, `Writes`, `check_pairs`, `lints` and
+`reasons`.
 
 | Module | Builds on |
 | --- | --- |
@@ -48,7 +48,7 @@ component, kind `facts`, with a digest and a canonical form; a compilation refer
 "no" with a reason.
 
 **Levels and efforts.** A level is an `Intent`. An effort is a level or `"default"`, the level the model uses when a
-request says nothing about reasoning. `ReasoningFacts.resolve` takes an effort, as `Reasoning.level` holds one.
+request says nothing about reasoning. `ReasoningFacts.landing` takes an effort, as `Reasoning.level` holds one.
 
 ## models.py
 
@@ -67,7 +67,7 @@ and re-exported.
 
 ### `class Refused(ValueError)`
 Raised when the facts refuse an intent, or don't know enough to compile one. Its message is the refusal's reason, or
-one of the messages under `ReasoningFacts.resolve` and `ModelFacts`.
+one of the messages under `ReasoningFacts.landing` and `ModelFacts`.
 
 ### `class Refusal(Frozen)`
 `refused: str`, at least one character: why the model can't do it. `nearest: Intent | None = None`: for a level, the
@@ -95,7 +95,7 @@ How each level is expressed for a model.
 A string entry is a collapse into that level; a table with `refused` is a `Refusal`, with `nearest` when it names one;
 any other table is `Writes`.
 
-| `land(intent: Intent) -> tuple[Intent, Refusal \| Writes \| None, tuple[str, ...]]` | Follows collapses, and refusals that name a nearest, from `intent`, and returns the level it reaches, that level's entry (writes, a refusal without a nearest, or `None` when it has no entry), and the reasons of the refusals it passed on, in order. `ValueError("<a> -> <b> -> <a>: the collapses go round")` for a cycle, which validation already rules out. |
+| `landing(effort: Effort) -> Landing` | The `Landing` of `effort`: following collapses, and refusals that name a nearest, the level it lands on, its writes, and the reasons of the refusals it passed on, in order, as `nearest`. `"default"` reads `default`. `Refused("no default reasoning level is known")` for `"default"` without one; `Refused("nothing is known about reasoning '<level>'")` when it lands on nothing, naming the level it reached; `Refused(<reason>)` when it lands on a refusal. `ValueError("<a> -> <b> -> <a>: the collapses go round")` for a cycle, which validation already rules out. |
 | `resolve(effort: Effort) -> Landing` | The `Landing` of `effort`: the level it lands on, its writes, and `land`'s reasons as `nearest`. `"default"` reads `default`. `Refused("no default reasoning level is known")` for `"default"` without one; `Refused("nothing is known about reasoning '<level>'")` when it lands on nothing, naming the level it reached; `Refused(<reason>)` when it lands on a refusal. |
 
 Building one checks every collapse and every refusal's nearest, in `INTENTS` order, and then `default` the same way:
@@ -104,7 +104,7 @@ each must land on writes or a refusal. One that lands on nothing raises `ValueEr
 Both are wrapped in `ValidationError`. A `default` that lands on a refusal is accepted.
 
 ### `class Landing(Frozen)`
-Where a level lands, as `ReasoningFacts.resolve` gives it.
+Where a level lands, as `ReasoningFacts.landing` gives it.
 
 | Field | Type | Default |
 | --- | --- | --- |
@@ -143,7 +143,7 @@ What is known about one model.
 | Field | Type | Default |
 | --- | --- | --- |
 | `kind` | `Literal["facts"]` | `"facts"` |
-| `model` | `str`, at least one character | required; the model's name, `model_name`'s |
+| `model` | `str`, at least one character | required; the model's name, a local model's repository or a remote model's `name` (`chatddx.factors.engine.model_of`) |
 | `family` | `str \| None` | `None` |
 | `parameters_b` | `float \| None` | `None` |
 | `active_parameters_b` | `float \| None` | `None` |
@@ -166,14 +166,8 @@ recommended for reasoning '<level>'")` without an entry. An entry for a level th
 is never asked for. `Sampling.over` puts a chunk's own values over it (docs/factors-api.md, "Sampling").
 
 #### `reasons_by_default() -> bool | None`
-Whether the model reasons when a request says nothing: `reasoning.resolve("default")` lands on a level other than
+Whether the model reasons when a request says nothing: `reasoning.landing("default")` lands on a level other than
 `off`. `None` when that raises `Refused`: no default, or a default that lands on a refusal.
-
-### `model_name(digest: str, get: Resolver) -> str | None`
-The name facts are keyed by, for the component `get` resolves the digest `engine` to:
-- a `LocalEngine`: its model artifact's `repo`, through `resolve(get, engine.model, ModelArtifact)`;
-- a `RemoteEngine`: its `model`;
-- any other component: `None`.
 
 ### `class Facts(Frozen)`
 `models: dict[str, ModelFacts] = {}`, keyed by model name.
@@ -191,8 +185,9 @@ give `Facts()`. Raises:
 The facts given, keyed by their `model`; a later one replaces an earlier one about the same model. The bench makes its
 facts so from the stored ones (src/chatddx/bench/seen.py:Seen.facts).
 
-#### `about(engine: str, get: Resolver) -> ModelFacts | None`
-`models.get(model_name(engine, get))`, or `None` when the engine has no model name or the facts don't know it.
+#### `about(digest: str, get: Resolver) -> ModelFacts | None`
+`models.get(model_of(digest, get).name)`: the facts about the model `digest` names, or the model an engine `digest`
+serves; `None` when the facts don't know it.
 
 ## The facts file
 A TOML file of `[model."<name>"]` tables, each a `ModelFacts`, with the parts as sub-tables:

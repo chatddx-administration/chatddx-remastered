@@ -10,8 +10,8 @@ from referencing.jsonschema import UnknownDialect, specification_with
 
 from .base import Component, Finding, resolve
 from .bundle import Registry
-from .engine import LocalEngine, ModelArtifact, flag_names
-from .facts import ModelFacts, model_name
+from .engine import LocalEngine, LocalModel, flag_names, model_of
+from .facts import ModelFacts
 from .request import Compilation, NativeOutput, Output, Skeleton, ToolOutput
 from .scoring import Expectation, ExpectationSchema, Judge, Scorer
 from .select import reaches
@@ -25,7 +25,7 @@ Reasons = Callable[[str], bool | None]
 Validators = dict[str, Validator | str]
 
 
-def _model(c: ModelArtifact, _: Registry) -> Iterable[Finding]:
+def _model(c: LocalModel, _: Registry) -> Iterable[Finding]:
     if not _COMMIT.match(c.revision):
         yield Finding(
             code="model.revision",
@@ -316,14 +316,14 @@ def _made_for(c: Trial | Judge, registry: Registry) -> Iterable[Finding]:
     if not made or None in made:
         return
     models = {resolve(registry.get, f, ModelFacts).model for f in made if f}
-    serves = model_name(c.engine, registry.get)
+    serves = model_of(c.engine, registry.get).name
     if serves in models:
         return
     word = "trial" if isinstance(c, Trial) else "judge"
     yield Finding(
         code=f"{word}.engine_unmatched",
         message=f"the skeleton is worked out for {', '.join(sorted(models))}, and the "
-        + f"engine serves {serves or 'a model nothing is known of'}",
+        + f"engine serves {serves}",
         subject=c.digest,
     )
 
@@ -347,7 +347,7 @@ def lint(
     known: Validators = {}
     for d in registry if digests is None else digests:
         match registry.get(d):
-            case ModelArtifact() as c:
+            case LocalModel() as c:
                 findings.extend(_model(c, registry))
             case LocalEngine() as c:
                 findings.extend(_engine(c, registry))

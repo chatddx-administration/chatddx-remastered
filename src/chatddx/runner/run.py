@@ -12,7 +12,7 @@ from chatddx.factors.engine import served_model_name
 from chatddx.factors.request import Skeleton
 from chatddx.factors.trial import CanarySet, Execution, Trial
 from chatddx.identity import Person
-from chatddx.inventory import Inventory, url_of
+from chatddx.inventory import Inventory, url_at
 from chatddx.ledger import (
     Call,
     CanaryCall,
@@ -180,7 +180,7 @@ class Runner:
                 f"endpoint {endpoint!r} takes {jobs} requests at once, the execution "
                 + f"sends {execution.concurrency}"
             )
-        return secret, toolbox, url_of(self._inventory, registry.get, endpoint)
+        return secret, toolbox, url_at(self._inventory, registry.get, endpoint)
 
 
 # A run the request started and the worker sends is resumed with nothing written yet.
@@ -270,7 +270,7 @@ class Running:
         if started.canaries is None or phase not in started.verify_at:
             return
         canaries = resolve(self._registry.get, started.canaries, CanarySet).canaries
-        model = served_model_name(self._prepare.engine, self._registry.get)
+        model = served_model_name(self._prepare.trial.engine, self._registry.get)
         sent = {(c.phase, c.canary) for c in self._canaries}
         for index, canary in enumerate(canaries):
             if self._stopping or self._finished:

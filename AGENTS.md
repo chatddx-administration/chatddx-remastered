@@ -62,3 +62,9 @@ AGENT: <verb>
 * For placeholder usernames in docs and tests, use
   1. alice, bob, carol...
   2. semantic names (archive, guest, nobody, other, collaborator-one, admin).
+
+## Naming
+* `<x>_of(<y>)` gives y's x, what y holds, belongs to or is shown as, looked up or converted: `title_of(digest)`,
+  `model_of(engine, get)`, `run_of(…)` in the API. It gives the x itself, not a part of it: `model_of` gives the model,
+  whose `name` and `digest` the caller reads.
+* `<x>_at(<endpoint>)` gives the x at the World's endpoint of that name: `Seen.model_at`, `judge_at`, `fake_at`.

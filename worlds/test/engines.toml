@@ -1,18 +1,18 @@
-[model.qwen3-8b-awq]
+[local_model.qwen3-8b-awq]
 repo = "Qwen/Qwen3-8B-AWQ"
 revision = "fake"
 files = [
   { path = "none", sha256 = "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855" }
 ]
 
-[model.gpt-oss-20b]
+[local_model.gpt-oss-20b]
 repo = "openai/gpt-oss-20b"
 revision = "fake"
 files = [
   { path = "none", sha256 = "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855" }
 ]
 
-[model.mistral-7b]
+[local_model.mistral-7b]
 repo = "test/mistral-7b"
 revision = "fake"
 files = [

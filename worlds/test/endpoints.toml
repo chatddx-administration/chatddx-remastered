@@ -1,22 +1,22 @@
 [endpoint."qwen3@fake"]
-engine = "sha256:cc0dc8fbbc8dbb3a62d274c6ce62ee4bc9d909b05aef6263015cb46459fdc42f"
+engine = "sha256:da96724f04176f3f979fe853c7cf7e6c8a9ea865853e3453c479e98ea8ae0c90"
 url = "http://127.0.0.1:12201/v1/"
 host = "fake"
 max_jobs = 4
 
 [endpoint."qwen3-bare@fake"]
-engine = "sha256:b9b09a4a5b31d7dad7f54c338526f10bec546c0daf9838b6ce1a41ea464d0f58"
+engine = "sha256:d01761603c584e56be48e4eb041a6440b8a6231c43540f6b846ca1bafacb24d4"
 url = "http://127.0.0.1:12202/v1/"
 host = "fake"
 
 [endpoint."gpt-oss@fake"]
-engine = "sha256:fc08c407478623b2afdb709752f30ecc3333de3142a0d534bdbbb378a6d8e841"
+engine = "sha256:7033068c2419408202120bcc7ea5a33fbdbd074b6e378726ebb1856596c8e251"
 url = "http://127.0.0.1:12203/v1/"
 host = "fake"
 max_jobs = 4
 
 [endpoint."mistral@fake"]
-engine = "sha256:372a83f6024abeb4b76ffba1340e36b2b636f11deec000414e7fca69c38c71af"
+engine = "sha256:2d62e9ef7d596aaa649614887ac21ea930d7e3e9b3a46fe3523bbbc1d150eb62"
 url = "http://127.0.0.1:12204/v1/"
 host = "fake"
 max_jobs = 2
@@ -30,9 +30,9 @@ credential = "CHATDDX_TEST_REMOTE"
 bind = "127.0.0.1"
 
 [host.fake.models]
-"sha256:7781395e2ff446324a43c9d3dd81da3aa0e57ddc87a0da56e02776d3efac5e0d" = "Qwen/Qwen3-8B-AWQ"
-"sha256:355721fac51cefbde383916197f19628d37ab99694dc58eb8e21888bdafb14b5" = "openai/gpt-oss-20b"
-"sha256:d014ae42f6f759a336ab7e8122d07a3e8b710fb51a0081a4efbb090d3f64ffac" = "test/mistral-7b"
+"sha256:780333aa42e9a91994cae8bfae86cda9f3837c2252261552c344390c1c7b65a6" = "Qwen/Qwen3-8B-AWQ"
+"sha256:8644ba8ef08ed4c64c5d56e914126bbea75519309a8e6be7370cdb29fab5d685" = "openai/gpt-oss-20b"
+"sha256:4d5ddb6db7a8efb32f73c065efbe270edab574b1d931f64e9e03a1add32d3212" = "test/mistral-7b"
 
 [host.fake.templates]
 "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855" = "/dev/null"

@@ -20,7 +20,7 @@ NONE = "none"
 def variation(bench: Bench, scripted: ScriptedRun) -> TriedVariation:
     tried = bench.configuration(scripted.configuration)
     if tried.recipe is not None:
-        model = bench.model_at(scripted.endpoint)
+        model = bench.model_at(scripted.endpoint).digest
         tried = tried.set("model", model, bench.title(model))
     for part, chunk in scripted.set.items():
         digest = None if chunk == NONE else bench.chunk(part, chunk)

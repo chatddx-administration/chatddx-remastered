@@ -9,7 +9,7 @@ from chatddx.factors.base import Component, resolve
 from chatddx.factors.cases import Appendix, Case
 from chatddx.factors.engine import (
     LocalEngine,
-    ModelArtifact,
+    LocalModel,
     RemoteEngine,
     RemoteModel,
 )
@@ -191,7 +191,7 @@ def describe(component: Component, title: Title) -> str:
             return f"expectation for {title(case)}"
         case Case(vignette=vignette, appendices=appendices):
             return describe_case(f"{vignette.source}/{vignette.id}", appendices, title)
-        case ModelArtifact(repo=repo):
+        case LocalModel(repo=repo):
             return repo
         case LocalEngine(model=model, runtime=runtime, hardware=hardware):
             runs = f"{runtime.server} {runtime.version} ({hardware.gpu})"

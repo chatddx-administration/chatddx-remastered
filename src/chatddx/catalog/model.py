@@ -32,7 +32,7 @@ THREAD_KINDS = frozenset(
         "scoring",
         "appendix",
         "expectation",
-        "model",
+        "model.local",
         "model.remote",
         "engine.local",
         "engine.remote",
@@ -80,7 +80,7 @@ class EntryField(StrEnum):
 
 
 RUN_FIELDS = frozenset({EntryField.VARIED, EntryField.REPLACED, EntryField.WITH})
-MODEL_KINDS = ("model", "model.remote")
+MODEL_KINDS = ("model.local", "model.remote")
 
 
 Part = Literal["view", "resource"]

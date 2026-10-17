@@ -15,10 +15,10 @@ Paths are relative to `src/chatddx/factors/` unless they start with `src/` or `d
 - [kinds.py](#kindspy): registry of all kinds
 - [Component kinds](#component-kinds): every kind, its class, references and cross-checks
 - [cases.py](#casespy): vignettes, appendices, cases, text cleanup, `prepare_case`
-- [request.py](#requestpy): chunks, recipes, compilation, skeletons, rendering, tool rounds
+- [request.py](#requestpy): chunks, recipes, compilation, skeletons and their rendering, tool rounds
 - [response.py](#responsepy): a response's first choice, its message, reasoning, parts and tool calls
-- [facts.py](#factspy): levels, refusals, landings, `ModelFacts`, `model_name`
-- [engine.py](#enginepy): model artifacts, local and remote engines
+- [facts.py](#factspy): levels, refusals, landings, `ModelFacts`
+- [engine.py](#enginepy): local and remote models and engines, `served_model_name`, `model_of`
 - [trial.py](#trialpy): trials, seeds, canaries, execution
 - [scoring.py](#scoringpy): expectations, judges, views, scorers, scorings
 - [select.py](#selectpy): selectors, splits, reachability
@@ -46,8 +46,7 @@ one validates it. Sequences are tuples.
 | Exception | When |
 | --- | --- |
 | `pydantic.ValidationError` | A model breaks its own rules: a wrong type, a duplicate seed, an owned flag in `argv`, U+0000 in a component. Rules written as validators raise `ValueError`, which pydantic wraps. |
-| `base.py:StructuralError` (a `ValueError`) | A problem that takes other components, stored bytes or inputs to see: a missing or wrongly typed reference, a failed cross-check, a digest that doesn't match its bytes, an unknown kind or version, a recipe compiled into a language its translations don't go into, a missing translation, an intent the facts about the engine's model refuse or can't work out, a vignette that isn't UTF-8. |
-| `KeyError` | `render` with a slot fill missing (a known gap), and `Registry.raw` with an unknown digest. |
+| `base.py:StructuralError` (a `ValueError`) | A problem that takes other components to see: a wrongly typed reference, a failed cross-check, a digest that doesn't match its bytes, an unknown kind or version, a recipe compiled into a language its translations don't go into, a missing translation, an intent the facts about the recipe's model refuse or can't work out, a vignette that isn't UTF-8, a skeleton rendered without a fill for one of its slots. |
 | `TypeError` | At class definition: a `Component` subclass whose `kind` has no literal default, or a duplicate kind. |
 
 **Findings.** A `Finding` is a warning or an info about something valid but risky, or observed and not as declared.
@@ -64,7 +63,6 @@ look components up through one.
 | --- | --- |
 | `Digest` | `str` matching `^sha256:[0-9a-f]{64}$` |
 | `Sha256Hex` | `str` matching `^[0-9a-f]{64}$` |
-| `JsonPointer` | `str` matching `^(/([^~/]\|~[01])*)*$`. Defined; no field uses it. |
 | `Api` | `Literal["chat.completions"]` |
 | `Settings` | `dict[str, JsonValue]` whose top-level keys are sorted on validation; values keep their order |
 | `Resolver` | `Callable[[str], Component]` |
@@ -103,7 +101,7 @@ A subclass declares `kind: Literal["<kind>"] = "<kind>"`. The default is the kin
 - `canonical_doc()` adds `v`, the class's `schema_version`, at the top level only.
 - JSON data keeps its key order: schemas, expectation data, canary messages and values inside settings.
 - The top-level keys of settings are sorted: request bodies, `chat_template_kwargs`, `params` and `env`, and so are a
-  translations chunk's languages and each language's entries. A model artifact's files are sorted by path, and a
+  translations chunk's languages and each language's entries. A local model's files are sorted by path, and a
   trial's cases by digest.
 - pydantic writes NaN and infinity as `null` (see "Known gaps").
 
@@ -164,14 +162,13 @@ Components by digest, in memory.
 | `add(component) -> str` | Adds the component under its digest and returns it. Adding a digest that's already there keeps the first. |
 | `add_raw(digest, raw: bytes) -> Component` | Adds stored bytes. `StructuralError("… does not match its bytes")` when `raw` doesn't hash to `digest`. Then parses them (`parse_component`) and pins the component's `canonical` to `raw` and its `digest` to `digest`, so the stored bytes decide the digest even when today's code would write them differently. Replaces any entry under that digest. |
 | `get(digest) -> Component` | `StructuralError("… is not in the registry")` when missing. |
-| `raw(digest) -> bytes` | The stored bytes. `KeyError` when missing. |
 | `digest in registry`, `iter(registry)` | Membership, and the digests in the order they were added. |
 | `closure(roots: Iterable[str]) -> list[str]` | The roots and everything they reference, transitively, sorted. `StructuralError` for a missing digest. |
 | `check(digests: Iterable[str] \| None = None) -> None` | For each digest (all when `None`): every reference exists and has an allowed kind. When those hold, runs `cross_check`. Raises one `StructuralError` listing every problem, one per line, as `<digest><path>: …` or `<digest>: …`. |
 | `bundle(roots, generator: Code) -> Bundle` | Sorts and de-duplicates the roots, checks their closure, and packs the stored text of every component in it. |
 
-`cross_check` implementations assert the kinds of the references they resolve, so run them through `check`, which
-checks the kinds first.
+`cross_check` implementations resolve the references they read with `resolve`, so one run outside `check` raises
+`StructuralError` for a reference of another kind; `check` checks the kinds first and lists every problem.
 
 ### `class Bundle(Frozen)`
 A self-contained package that can be verified offline.
@@ -201,13 +198,12 @@ A self-contained package that can be verified offline.
 `BY_KIND: dict[str, type[Component]]`: kind name → class, `TypeError` at import for a kind listed twice.
 
 ## Component kinds
-> rename ModelArtifact -> LocalModel and model -> model.local
 
 | Kind | Class | References (path: kinds) | `cross_check` |
 | --- | --- | --- | --- |
-| `model` | `engine.py:ModelArtifact` | | |
+| `model.local` | `engine.py:LocalModel` | | |
 | `model.remote` | `engine.py:RemoteModel` | | |
-| `engine.local` | `engine.py:LocalEngine` | `/model`: `model` | |
+| `engine.local` | `engine.py:LocalEngine` | `/model`: `model.local` | |
 | `engine.remote` | `engine.py:RemoteEngine` | `/model`: `model.remote` | |
 | `facts` | `facts.py:ModelFacts` | | |
 | `chunk.instructions` | `request.py:Instructions` | | |
@@ -221,7 +217,7 @@ A self-contained package that can be verified offline.
 | `chunk.translations` | `request.py:Translations` | | |
 | `tool` | `request.py:Tool` | | |
 | `skeleton` | `request.py:Skeleton` | `/tools/<i>`: `tool` | the body's functions, apart from the answer function, are the referenced tools, by name and in order |
-| `compilation` | `request.py:Compilation` | `/recipe/<part>`: `chunk.<part>`; `/recipe/engine`: `engine.local`, `engine.remote`; `/skeleton`: `skeleton`; `/facts`: `facts` | its facts are about the model of its recipe's engine, and its recipe has translations into its `into` |
+| `compilation` | `request.py:Compilation` | `/recipe/<part>`: `chunk.<part>`; `/recipe/model`: `model.local`, `model.remote`; `/skeleton`: `skeleton`; `/facts`: `facts` | its facts are about its recipe's model, and its recipe has translations into its `into` |
 | `appendix` | `cases.py:Appendix` | | |
 | `case` | `cases.py:Case` | `/appendices/<i>`: `appendix` | every appendix is bound to the case's vignette |
 | `trial` | `trial.py:Trial` | `/skeleton`: `skeleton`; `/engine`: `engine.local`, `engine.remote`; `/cases/<i>`: `case` | the skeleton's purpose is `generation` |
@@ -237,11 +233,11 @@ A self-contained package that can be verified offline.
 
 A compilation's `<part>` is one of `CHUNK_PARTS` (`instructions`, `few_shot`, `prompt`, `output`, `sampling`,
 `reasoning`, `passthrough`, `translations` and `toolset`), pointing to the chunk kind of the same name;
-`/recipe/engine` points to either engine kind.
+`/recipe/model` points to either model kind.
 
-Each kind also has a reference type for fields that point to it: `AppendixRef`, `CaseRef`, `ModelRef`, `EngineRef`
-(both engine kinds), `FactsRef`, `ToolRef`, `SkeletonRef`, `TrialRef`, `CanarySetRef`, `ExpectationSchemaRef`,
-`ExpectationRef`, `JudgeRef`, `ScorerRef` and `ScoringRef`.
+Each kind also has a reference type for fields that point to it: `AppendixRef`, `CaseRef`, `LocalModelRef`,
+`RemoteModelRef`, `ModelRef` (both model kinds), `EngineRef` (both engine kinds), `FactsRef`, `ToolRef`, `SkeletonRef`,
+`TrialRef`, `CanarySetRef`, `ExpectationSchemaRef`, `ExpectationRef`, `JudgeRef`, `ScorerRef` and `ScoringRef`.
 
 ## cases.py
 
@@ -456,7 +452,7 @@ Not a component; kept only inside a `Compilation`.
 | `prompt` | ref `chunk.prompt` | required |
 | `output` | ref `chunk.output` | required |
 | `sampling` | ref `chunk.sampling` | required |
-| `model` | `ModelRef` | required; a `model` or `model.remote` component |
+| `model` | `ModelRef` | required; a `model.local` or `model.remote` component |
 | `instructions` | ref `chunk.instructions` \| `None` | `None` |
 | `few_shot` | ref `chunk.few_shot` \| `None` | `None` |
 | `reasoning` | ref `chunk.reasoning` \| `None` | `None` |
@@ -523,16 +519,13 @@ them all. Whitespace-only texts are left out, and so are parts without texts. Pa
 In schemas, member names under `properties`, `patternProperties`, `$defs`, `definitions` and `dependentSchemas` are
 kept, and nothing under `enum`, `const`, `default` or `examples` is translated.
 
-### `translations_into(recipe: Recipe, get: Resolver, into: str) -> dict[str, str]`
-The entries of the recipe's translations into `into`. `StructuralError("no translations into <into>")` when the
-recipe has no translations, or none into `into`.
-
 ### `compile_request(recipe: Recipe, get: Resolver, facts: ModelFacts | None = None, into: str | None = None) -> Skeleton`
 1. `landings(recipe, get, facts)`: where the reasoning level lands and the level a recommended sampling follows,
    raising as described there.
-2. With `into`, passes every text listed under `texts` through `translations_into(recipe, get, into)`, raising as it
-   does; without, the recipe's translations aren't read. Whitespace-only texts pass unchanged. `StructuralError("no
-   translation into <into> for …")` lists every missing text.
+2. With `into`, passes every text listed under `texts` through the recipe's translations into `into`:
+   `StructuralError("no translations into <into>")` when the recipe has no translations, or none into `into`; without,
+   the recipe's translations aren't read. Whitespace-only texts pass unchanged. `StructuralError("no translation into
+   <into> for …")` lists every missing text.
 3. `StructuralError` when the prompt's purpose isn't the recipe's.
 4. Fills the inserts: `output_guidance` with `Output.guidance_text()`, `tool_guidance` with the toolset's guidance
    (`""` when absent). `StructuralError` when a guidance is inserted in both the instructions and the prompt. A
@@ -568,19 +561,18 @@ and `into`.
 ### `landings(recipe: Recipe, get: Resolver, facts: ModelFacts | None) -> tuple[Landing | None, Landing | None]`
 Where the recipe's intents land on `facts`: the reasoning level's landing, and the landing a recommended sampling
 follows, each `None` when not asked for.
-1. `StructuralError("facts about <facts' model> can't compile for <model>")` when `facts` aren't about the model of
-   the recipe's engine (`facts.py:model_name`).
+1. `StructuralError("facts about <facts' model> can't compile for <model>")` when `facts` aren't about the recipe's
+   model (`engine.py:model_of`, its `name`).
 2. `(None, None)` when the reasoning chunk asks for no `level` and the sampling isn't `recommended`.
 3. Without facts: `StructuralError("reasoning '<level>' is worked out from the facts about the recipe's model, which
    has none")`, or `"a recommended sampling is worked out …"` when only the sampling asks.
-4. The level's `ReasoningFacts.resolve`, and `ModelFacts.check_budget()` with a `thinking_token_budget` beside it. A
-   recommended sampling follows that landing, or `resolve("default")` without one, and needs
+4. The level's `ReasoningFacts.landing`, and `ModelFacts.check_budget()` with a `thinking_token_budget` beside it. A
+   recommended sampling follows that landing, or `landing("default")` without one, and needs
    `ModelFacts.recommended` for its level. A `Refused` becomes `StructuralError("<facts' model>: <reason>")`.
 
-### `render(skeleton, *, model, seed, fills, return_token_ids=True) -> dict[str, JsonValue]`
+### `Skeleton.render(*, model, seed, fills, return_token_ids=True) -> dict[str, JsonValue]`
 | Parameter | Type |
 | --- | --- |
-| `skeleton` | `Skeleton` |
 | `model` | `str`: the engine's `served_model_name` |
 | `seed` | `int \| None` |
 | `fills` | `Mapping[SlotName, str]` |
@@ -588,9 +580,10 @@ follows, each `None` when not asked for.
 
 Returns `{"model": model, "messages": [...], **skeleton.body}`. Each message is `{"role", "content"}`, with its
 segments joined and every slot replaced by its fill. `seed` is added unless it is `None` or the skeleton is greedy,
-and `return_token_ids: true` unless turned off. A slot without a fill raises `KeyError`.
+and `return_token_ids: true` unless turned off. `StructuralError("no fill for slots [<slots>]")` when `fills` lacks a
+slot the messages hold.
 
-`stream` and `n` are never added. The runner streams on the wire and records `render`'s body.
+`stream` and `n` are never added. The runner streams on the wire and records the rendered body.
 
 ### Tool rounds
 - `ToolCall` and `tool_calls` are `response.py`'s.
@@ -638,14 +631,20 @@ the portal's run page.
 - `flag_names(argv: tuple[str, ...]) -> frozenset[str]`: the names of the `--` arguments, cut at `=`, with `_` read
   as `-` up to the first `.`, as vLLM reads them.
 
-### `class ModelArtifact(Component)`, kind `model`
+### `class LocalModel(Component)`, kind `model.local`
 | Field | Type | Default |
 | --- | --- | --- |
 | `repo` | `str` | required |
 | `revision` | `str` | required |
 | `files` | `tuple[FileDigest, ...]`, at least one, distinct paths | required; sorted by path |
 
-`FileDigest(path: str, sha256: Sha256Hex)`.
+`FileDigest(path: str, sha256: Sha256Hex)`. `name -> str`: `repo`, the name facts are keyed by, as a remote model's
+`name` is.
+
+### `class RemoteModel(Component)`, kind `model.remote`
+`provider: str` and `name: str`, neither empty.
+
+`Model = LocalModel | RemoteModel`.
 
 ### `class LocalEngine(Component)`, kind `engine.local`
 | Field | Type | Default |
@@ -653,7 +652,7 @@ the portal's run page.
 | `api` | `Api` | `"chat.completions"` |
 | `hardware` | `Hardware(gpu: str, compute_capability: tuple[int, int], vram_mib: int, driver: str)` | required |
 | `runtime` | `Runtime(server: Literal["vllm"] = "vllm", version: str, closure: str)` | required |
-| `model` | `ModelRef` | required |
+| `model` | `LocalModelRef` | required |
 | `chat_template` | `Sha256Hex` | required; the SHA-256 of the template file |
 | `argv` | `tuple[str, ...]` | `()`; the raw arguments to vLLM |
 | `env` | `dict[str, str]`, sorted | `{}` |
@@ -666,20 +665,20 @@ the portal's run page.
   taken to be that flag's value. Negative numbers such as `-1` aren't flags.
 
 ### `class RemoteEngine(Component)`, kind `engine.remote`
-`api: Api = "chat.completions"`, `provider: str` (not empty), `model: str`.
-`served_model_name -> str`: `model`.
-
-`Engine = LocalEngine | RemoteEngine`. `EngineRef` allows both kinds.
+`api: Api = "chat.completions"`, `model: RemoteModelRef`.
+`EngineRef` allows both engine kinds.
 
 ### `check_chat_template(engine: LocalEngine, template: bytes) -> list[Finding]`
 - `engine.chat_template` (warning): the template's SHA-256 isn't `engine.chat_template`.
 - `engine.chat_template_date` (warning): the template matches `strftime_now`, `date_string` or `now(`.
 
-### `served_model_name(engine: Engine, get: Resolver) -> str`
-Takes an engine and a resolver (e.g. `store.get` or `registry.get`) and returns local engine's digest, a remote engine's
-model's `name`. `RemoteEngine` has `api` and `model: RemoteModelRef` and no `provider`; `RemoteModel` (`model.remote`)
-has `provider` and `name`. `ModelRef` covers `model` and `model.remote`; `ArtifactRef` is `model` alone,
-`LocalEngine.model`'s.
+### `served_model_name(engine: str, get: Resolver) -> str`
+The model name a request to the engine `engine` carries: a local engine's digest, which the start-up script serves it
+as, or a remote engine's model's `name`. `StructuralError("<digest> is a <kind>, not an engine")` for another kind.
+
+### `model_of(digest: str, get: Resolver) -> Model`
+The model `digest` names: the model itself, or the model an engine serves. `StructuralError("<digest> is a <kind>,
+neither a model nor an engine")` for another kind.
 
 ## facts.py
 
@@ -699,8 +698,8 @@ are in `docs/facts-api.md`.
 - `Writes(effort, chat_template_kwargs)`: what a level sends as `reasoning_effort` and `chat_template_kwargs`.
 - `Landing(level: Intent, writes: Writes, nearest: tuple[str, ...] = ())`: the level landed on, what it sends, and the
   reasons of the refusals passed on to their nearest, in order.
-> ReasoningFact's `resolve` should be renamed to `landing`
 - `ReasoningFacts`, `SamplingValues`, `SamplingFacts`, `ContractFact`, `OutputFacts`: a model's facts, by part.
+  `ReasoningFacts.landing(effort: Effort) -> Landing`: where a level lands (docs/facts-api.md).
 
 ### `class ModelFacts(Component)`, kind `facts`
 `model: str`, at least one character, the name the facts are about; the specs; `reasoning`, `sampling` and `output`.
@@ -710,14 +709,6 @@ are in `docs/facts-api.md`.
 | `check_budget() -> None` | `Refused` unless `reasoning.budget` is `"thinking_token_budget"` |
 | `recommended(level: Intent) -> SamplingValues` | `sampling.recommended[level]`, or `Refused("no sampling is recommended for reasoning '<level>'")` |
 | `reasons_by_default() -> bool \| None` | whether the default lands on a level other than `off`; `None` when it raises `Refused` |
-
-### `model_name(digest: str, get: Resolver) -> str | None`
-The name of a model (`ModelArtifact.repo`, `RemoteModel.name`), or of the model the engine `digest` names references.
-
-### `model_of(engine, get) -> str | None`
-> reduce, also the _at/_of thing should go or be formalized projectwide
-
-The digest of the model an engine references.
 
 ## trial.py
 
@@ -812,6 +803,8 @@ skeleton has the `vignette` or `appendices` slot is refused by the scoring pass
 
 - `output_items(answer: JsonValue) -> list[JsonValue]`: `select(answer, output)`, then `split` when set.
 - `expectation_items(data: JsonValue) -> list[JsonValue]`: `select(data, expectation)`.
+- `offered_by(schema: JsonValue) -> bool`: whether an output with `schema` gives the view anything to pick: a view
+  of the whole answer (`""` or `$`) only an output without a schema, any other only one whose schema it `reaches`.
 
 ### `class Scorer(Component)`, kind `scorer`, v2
 | Field | Type | Default |
@@ -956,7 +949,7 @@ On any other engine (a remote engine, or another vLLM version):
 
 #### Trials and judges, with their skeletons' compilations
 The compilations of the pair's skeleton are those in the registry; the caller puts them there, with the facts they
-name (`src/chatddx/bench/seen.py:Seen.add_compilations`).
+name (`src/chatddx/bench/seen.py:Seen.add_compilations`). The model its engine serves is `engine.py:model_of`'s.
 
 | Code | Level | When |
 | --- | --- | --- |
@@ -1066,7 +1059,6 @@ accepted), or know which schema versions the code reads.
 
 ## Known gaps
 From `docs/factors.md`, "Open design issues", where they concern this API:
-- `render` raises a bare `KeyError` for a missing slot fill, not a `StructuralError` naming the slot.
 - `tool_calls` skips a malformed call, but `next_request` copies the response's `tool_calls` as they are, so the
   next request holds a call that no `tool` message answers.
 - NaN and infinity pass validation, and the canonical form writes them as `null`. The stored component reads back

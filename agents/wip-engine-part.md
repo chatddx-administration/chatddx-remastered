@@ -50,10 +50,11 @@ Every level the bundled facts and the sample World's refuse has its nearest: gpt
 `on`). A thinking budget a model refuses has no nearest, and stays refused: a budget isn't a level.
 
 ## The recipe and its compilation
-- **A model is a component for every engine.** A local engine references a `model` artifact as before; a remote
-  engine references a `model.remote` component (`RemoteModel`: provider and name) rather than naming its model, so
-  `ModelRef` covers both kinds, `model_name` reads the facts' key from either or from an engine, and
-  `served_model_name(engine, get)` is a function: a local engine's digest, a remote engine's model's name.
+- **A model is a component for every engine.** A local engine references a `model.local` component (`LocalModel`,
+  `ModelArtifact` of kind `model` before) as before; a remote engine references a `model.remote` component
+  (`RemoteModel`: provider and name) rather than naming its model, so `ModelRef` covers both kinds. Both have a
+  `name`, the facts' key; `model_of(digest, get)` gives the model a model or an engine names, and
+  `served_model_name(engine, get)` takes an engine's digest: a local engine's digest, a remote engine's model's name.
 - **The recipe names its model** (`Recipe.model`, a `ModelRef`, required), and **the compilation names its facts**
   (`Compilation.facts`), only where they work something out, so a literal configuration is never behind its facts.
   `compile_request(recipe, get, facts=None, into=None)` resolves the intents with the facts of the recipe's model,
@@ -124,14 +125,15 @@ nothing says it isn't the configuration's language.
   same. A judge's recipe is compiled for the model of the endpoint the World binds the judge to, its compilation
   stored without a thread (`Plan.compilations`), and the judge keeps that endpoint's engine. Facts are loaded as
   threads, one per model served that the facts know. A remote model is a `[remote_model.*]` record of `engines.toml`
-  (provider, name), which a `[remote_engine.*]` record names as a local engine names its `[model.*]`.
+  (provider, name), which a `[remote_engine.*]` record names as a local engine names its `[local_model.*]`.
 - **The Worlds**: the sample's and the test World's Swedish instructions and worked examples are translations of their
   English ones. In the sample only `free-text-guided` names them, and in the test World only `lines-guided`; every
   other configuration leaves Swedish cases out.
 
 ## The edges
 - **The bench**: `PARTS` holds `model`, which can't be taken out; `Seen.at(variation, endpoint)` says where a run goes,
-  `Seen.model_of(engine)` which model an engine serves and `Seen.model_at(endpoint)` which an endpoint does;
+  `Seen.model_of(engine)` which model an engine serves and `Seen.model_at(endpoint)` which an endpoint does, each the
+  model itself;
   a look says, for each intent, what it asked and where it landed (`Seen.landed`), the languages it runs in, and lints
   each language's trial, a language left out being `translations.missing`.
 - **The API**: `Parts.model`; `Endpoint.serves`, the model an endpoint's engine serves; a look's and a run's
@@ -202,7 +204,7 @@ on an endpoint serving another model swaps the model, said, as it swaps the engi
 
 ### Design
 1. **A model is a component for every engine.** A local engine already references one (`ModelArtifact`, kind `model`:
-   repo, revision, files; `engines.toml`'s `[model.*]`). A remote engine's model is a name (`RemoteEngine.model`); it
+   repo, revision, files; `engines.toml`'s `[local_model.*]`). A remote engine's model is a name (`RemoteEngine.model`); it
    gets a component of its own, kind `model.remote`, a provider and a name, which `RemoteEngine.model` references as
    `LocalEngine.model` does, so that `ModelRef` covers both and `model_name` reads a model rather than an engine. The
    facts stay keyed by the name: the artifact's `repo`, the remote model's name.

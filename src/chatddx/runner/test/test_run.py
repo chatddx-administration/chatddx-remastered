@@ -22,7 +22,6 @@ from chatddx.factors.request import (
     Toolset,
     compile_request,
     next_request,
-    render,
 )
 from chatddx.factors.response import tool_calls
 from chatddx.factors.trial import Canary, CanarySet, Execution, Trial
@@ -662,7 +661,7 @@ def test_a_round_runs_the_tools_a_response_calls_and_sends_back_their_results(
         case, raw, plan.registry.get, skeleton.appendix_layout, made.cleanup
     ).fills
     engine = resolve(plan.registry.get, made.engine, LocalEngine)
-    body = render(skeleton, model=engine.digest, seed=7, fills=fills)
+    body = skeleton.render(model=engine.digest, seed=7, fills=fills)
     assert item.call.request == fingerprint_request(body)
     assert item.call.response is not None
     results = {r.id: r.result for r in item.turns[0].tools}
@@ -1097,7 +1096,7 @@ def test_a_finished_run_a_moved_endpoint_or_the_gate_keep_a_run_from_resuming(
     def moved(*_: object) -> str:
         return "http://127.0.0.1:1/v1/"
 
-    monkeypatch.setattr("chatddx.runner.run.url_of", moved)
+    monkeypatch.setattr("chatddx.runner.run.url_at", moved)
     with pytest.raises(ValueError, match="is at http://127.0.0.1:1/v1/ now"):
         _ = runner.resume(left)
     assert rows(db, "run_item") == 0

@@ -450,7 +450,7 @@ def test_engines_are_the_world_s_and_only_engines_are(tmp_path: Path) -> None:
         _ = plan(tmp_path, factors=ENGINE)
     with pytest.raises(
         ValueError,
-        match="holds only model, remote_model, local_engine, remote_engine tables, "
+        match="holds only local_model, remote_model, local_engine, remote_engine tables, "
         + "not sampling",
     ):
         _ = plan(tmp_path, factors="", engines=ENGINE + "[sampling.greedy]\n")

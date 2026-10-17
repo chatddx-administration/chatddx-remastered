@@ -151,7 +151,7 @@ def test_a_recipe_of_the_person_s_making_is_compiled_into_a_configuration(
         output=bench.chunk("output", "lines"),
         sampling=bench.chunk("sampling", "greedy"),
         reasoning=bench.chunk("reasoning", "off"),
-        model=bench.model_at(QWEN),
+        model=bench.model_at(QWEN).digest,
     )
 
     made = bench.new(recipe, "my own")
@@ -171,7 +171,7 @@ def test_a_recipe_is_refused_what_doesn_t_compile(bench: Bench) -> None:
     prompt = bench.chunk("prompt", "case")
     output = bench.chunk("output", "lines")
     sampling = bench.chunk("sampling", "greedy")
-    model = bench.model_at(QWEN)
+    model = bench.model_at(QWEN).digest
     recipe = Recipe(prompt=prompt, output=output, sampling=sampling, model=model)
 
     with pytest.raises(ValueError, match=f"{output} isn't a stored chunk of prompt"):
@@ -181,7 +181,7 @@ def test_a_recipe_is_refused_what_doesn_t_compile(bench: Bench) -> None:
     on = recipe.model_copy(
         update={
             "reasoning": bench.chunk("reasoning", "on"),
-            "model": bench.model_at(MISTRAL),
+            "model": bench.model_at(MISTRAL).digest,
         }
     )
     with pytest.raises(ValueError, match=f"{MISTRAL_MODEL}: .*doesn't reason"):

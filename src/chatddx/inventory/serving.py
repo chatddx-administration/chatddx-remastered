@@ -12,7 +12,7 @@ from chatddx.factors.base import (
 )
 from chatddx.factors.engine import (
     LocalEngine,
-    ModelArtifact,
+    LocalModel,
     RemoteEngine,
     flag_names,
     served_model_name,
@@ -73,9 +73,9 @@ def start_up(inventory: Inventory, get: Resolver, name: str) -> StartUp:
         argv=(
             model,
             "--revision",
-            resolve(get, engine.model, ModelArtifact).revision,
+            resolve(get, engine.model, LocalModel).revision,
             "--served-model-name",
-            served_model_name(engine, get),
+            served_model_name(engine.digest, get),
             "--chat-template",
             template,
             "--host",
@@ -88,7 +88,7 @@ def start_up(inventory: Inventory, get: Resolver, name: str) -> StartUp:
     )
 
 
-def url_of(inventory: Inventory, get: Resolver, name: str) -> str:
+def url_at(inventory: Inventory, get: Resolver, name: str) -> str:
     endpoint = inventory.endpoint(name)
     match _engine(inventory, get, name):
         case LocalEngine() | RemoteEngine() as engine:
@@ -122,12 +122,12 @@ def confirm(
 ) -> None:
     match _engine(inventory, get, name):
         case LocalEngine() | RemoteEngine() as engine:
-            expected = served_model_name(engine, get)
+            expected = served_model_name(engine.digest, get)
         case other:
             raise LookupError(
                 f"endpoint {name!r} names a {other.kind_name}, not an engine"
             )
-    url = url_of(inventory, get, name)
+    url = url_at(inventory, get, name)
     listed = served(url, timeout, secret)
     if expected not in listed:
         raise LookupError(

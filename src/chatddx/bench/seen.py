@@ -17,8 +17,8 @@ from chatddx.factors.base import (
 )
 from chatddx.factors.bundle import Registry
 from chatddx.factors.cases import Case, CleanupOp, Vignette
-from chatddx.factors.engine import LocalEngine, RemoteEngine, served_model_name
-from chatddx.factors.facts import Landing, ModelFacts, model_name, model_of
+from chatddx.factors.engine import Model, model_of, served_model_name
+from chatddx.factors.facts import Landing, ModelFacts
 from chatddx.factors.request import (
     Compilation,
     Purpose,
@@ -28,7 +28,6 @@ from chatddx.factors.request import (
     compile_request,
     compiled,
     landings,
-    render,
 )
 from chatddx.factors.scoring import Expectation, Judge, Scorer, Scoring
 from chatddx.factors.trial import Trial
@@ -67,8 +66,7 @@ class Seen:
         self.rows: Rows = Rows(conn)
         self.people: People = People(conn)
         self._logins: dict[int, str] = {}
-        self._models: dict[str, str | None] = {}
-        self._serves: dict[str, str | None] = {}
+        self._serves: dict[str, Model | None] = {}
 
     def login(self, person: int | None) -> str:
         if person is None:
@@ -88,8 +86,7 @@ class Seen:
         )
 
     def facts_for(self, model: str) -> ModelFacts | None:
-        name = model_name(model, self.get)
-        return None if name is None else self.facts.models.get(name)
+        return self.facts.about(model, self.get)
 
     def owner(self, about: About) -> str:
         return "" if about.owner == self.person.id else self.login(about.owner)
@@ -191,23 +188,21 @@ class Seen:
     def title(self, digest: str | None) -> str:
         return "—" if digest is None else self.catalog.title_of(digest)
 
-    def model(self, engine: str) -> str | None:
-        if engine not in self._models:
-            registry = self.store.load([engine])
-            self._models[engine] = model_name(engine, registry.get)
-        return self._models[engine]
-
-    def model_of(self, engine: str) -> str | None:
+    def model_of(self, engine: str) -> Model | None:
         if engine not in self._serves:
             stored = self.rows.kind(engine) is not None
             self._serves[engine] = model_of(engine, self.get) if stored else None
         return self._serves[engine]
 
-    def model_at(self, name: str) -> str:
+    def model_at(self, name: str) -> Model:
         model = self.model_of(self.endpoint(name))
         if model is None:
             raise ValueError(f"endpoint {name!r} serves no model")
         return model
+
+    def _served_model(self, engine: str) -> str | None:
+        model = self.model_of(engine)
+        return None if model is None else model.digest
 
     def endpoint(self, name: str) -> str:
         engine = self.inventory.endpoint(name).engine
@@ -259,12 +254,12 @@ class Seen:
         if endpoint is None:
             try:
                 endpoint = self.inventory.serving_model(
-                    model, self.model_of, self.title(model)
+                    model, self._served_model, self.title(model)
                 )
             except LookupError as e:
                 raise ValueError(str(e)) from None
         engine = self.endpoint(endpoint)
-        if self.model_of(engine) != model:
+        if self._served_model(engine) != model:
             raise ValueError(
                 f"endpoint {endpoint!r} serves another model than {variation.label}'s, "
                 + f"{self.title(model)}"
@@ -347,17 +342,14 @@ class Seen:
         return found
 
     def served(self, engine: str) -> str:
-        found = self.get(engine)
-        if not isinstance(found, LocalEngine | RemoteEngine):
-            raise StructuralError(f"{engine} is a {found.kind_name}, not an engine")
-        return served_model_name(found, self.get)
+        return served_model_name(engine, self.get)
 
     def request(
         self, variation: TriedVariation, engine: str | None, seed: int
     ) -> dict[str, JsonValue]:
         model = "‹model›" if engine is None else self.served(engine)
-        return render(
-            self.skeleton(variation), model=model, seed=seed, fills=PLACEHOLDERS
+        return self.skeleton(variation).render(
+            model=model, seed=seed, fills=PLACEHOLDERS
         )
 
     def families(self, tags: Iterable[str] = ()) -> list[Family]:

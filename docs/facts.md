@@ -23,8 +23,8 @@ the World serves as a component of kind `facts`, a thread of the archive's named
 (docs/curation.md). Correcting a fact and loading again makes a new version of its thread.
 
 Facts are about a model, by its name: the repository a local engine's model comes from, or the model a remote engine
-names. A model's name is a `model` component's repository or a `model.remote` component's `name`; an engine's facts are
-its model's.
+names. A model's name is a `model.local` component's repository or a `model.remote` component's `name`; an engine's
+facts are its model's.
 
 The bench, and the repl, the API, the portal and the worker through it, read the facts from the store: the current
 version of every facts thread, read when they are needed, so a correction loaded meanwhile is used.

@@ -8,12 +8,12 @@ from pydantic import JsonValue
 from chatddx.catalog import Entry, EntryField, Subject
 from chatddx.factors.base import Component, Finding, Resolver, resolve
 from chatddx.factors.bundle import Registry
-from chatddx.factors.engine import LocalEngine, RemoteEngine, served_model_name
-from chatddx.factors.request import Skeleton, Slot, render
+from chatddx.factors.engine import served_model_name
+from chatddx.factors.request import Skeleton, Slot
 from chatddx.factors.scoring import Expectation, Judge, Scorer, Scoring
 from chatddx.factors.trial import Execution, Trial
 from chatddx.identity import Person
-from chatddx.inventory import Inventory, url_of
+from chatddx.inventory import Inventory, url_at
 from chatddx.ledger import (
     Endpoint,
     ItemKey,
@@ -150,11 +150,9 @@ class Grader:
             secret = gate.admit(
                 self._inventory, get, name, judge.engine, trial.cases, False, "judge"
             )
-            engine = get(judge.engine)
-            assert isinstance(engine, LocalEngine | RemoteEngine)
-            url = url_of(self._inventory, get, name)
+            url = url_at(self._inventory, get, name)
             judging[ref] = _Judging(
-                judge, skeleton, served_model_name(engine, get), url, secret
+                judge, skeleton, served_model_name(judge.engine, get), url, secret
             )
             at.append(JudgeEndpoint(judge=ref, endpoint=Endpoint(name=name, url=url)))
 
@@ -347,7 +345,7 @@ class Grading:
         verdicts: Verdicts = []
         calls: list[JudgeCall] = []
         for n, seed in enumerate(judging.judge.seeds):
-            body = render(judging.skeleton, model=judging.model, seed=seed, fills=fills)
+            body = judging.skeleton.render(model=judging.model, seed=seed, fills=fills)
             emit(JudgeAsked(key, self._scorer_ref, index, view.judge, n))
             stopped = False
             try:

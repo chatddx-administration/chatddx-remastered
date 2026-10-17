@@ -14,7 +14,7 @@ from chatddx.factors.engine import (
     FileDigest,
     Hardware,
     LocalEngine,
-    ModelArtifact,
+    LocalModel,
     Runtime,
     check_chat_template,
     flag_names,
@@ -38,7 +38,7 @@ class Imported:
     name: str
     server: str
     host: str
-    model: ModelArtifact
+    model: LocalModel
     engine: LocalEngine
     bind: str
     location: str
@@ -185,7 +185,7 @@ def imported(
                 f"its model {found.get('id')} is no Hugging Face repo at a revision"
             )
         template = cast(dict[str, Any], _section(s, "chat_template"))
-        model = ModelArtifact(
+        model = LocalModel(
             repo=found["id"],
             revision=found["revision"],
             files=tuple(
@@ -276,7 +276,7 @@ def engines_toml(imports: Iterable[Imported]) -> str:
             for f in i.model.files
         )
         tables.append(
-            f"[model.{_key(i.name)}]\n"
+            f"[local_model.{_key(i.name)}]\n"
             + f"repo = {_value(i.model.repo)}\n"
             + f"revision = {_value(i.model.revision)}\n"
             + f"files = [{files}\n]\n"

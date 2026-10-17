@@ -122,14 +122,17 @@ it, if any. A new schema gets its own section with all three tiers.
     and its position is within the views or resources of the edit's scorer (`src/chatddx/catalog/model.py:check_label`,
     `src/chatddx/catalog/threads.py:check_labels`). The trigger and the insert-only triggers go back on the new table,
     dropped first where a store migrated to tier 0 has them from `0012`.
+  - `model.local` replaced `model` among the thread kinds in place: a local model's digest changes with its kind, and
+    its engines' and their endpoints' with it, so a store migrated before it is dropped and migrated again, and its
+    data sets loaded again.
   - `0026-t2-catalog-run-variation.sql`: the entry fields `varied`, `replaced` and `with`, which only a run takes
     (`entry_run_check`); `entry_field_check` and `entry_shape_check` dropped and made again with them, their values
     as `src/chatddx/catalog/model.py:VARIED`, `REPLACED` and `WITH` have them, the model among a `replaced` entry's
     parts; and a constraint trigger, after the row's checks, that a `varied` entry names an edit of a configuration, a
-    `replaced` one a stored chunk of its part, or for the model a stored `model` or `model.remote`, and a `with` one a
-    run that has started (`catalog.check_varied()`, `src/chatddx/catalog/threads.py:check_varied`, which leaves `with`
-    to the database, as the catalog doesn't read the ledger). The engine and `with` were added in place, as `0012`'s
-    `facts` was.
+    `replaced` one a stored chunk of its part, or for the model a stored `model.local` or `model.remote`, and a `with`
+    one a run that has started (`catalog.check_varied()`, `src/chatddx/catalog/threads.py:check_varied`, which leaves
+    `with` to the database, as the catalog doesn't read the ledger). The engine and `with` were added in place, as
+    `0012`'s `facts` was.
 
 ## source
 

@@ -16,7 +16,7 @@ from chatddx.factors.base import (
 )
 from chatddx.factors.bundle import Registry
 from chatddx.factors.cases import Case
-from chatddx.factors.engine import LocalEngine, RemoteEngine, served_model_name
+from chatddx.factors.engine import served_model_name
 from chatddx.factors.request import (
     Skeleton,
     Tool,
@@ -222,9 +222,7 @@ def check_run(run: Run, registry: Registry) -> list[Finding]:
     for item in run.items:
         findings.extend(_rounds(item, skeleton, registry))
     findings.extend(_tool_code(started, skeleton, registry))
-    engine = registry.get(trial.engine)
-    assert isinstance(engine, LocalEngine | RemoteEngine)
-    want = served_model_name(engine, registry.get)
+    want = served_model_name(trial.engine, registry.get)
     for item in run.items:
         returned = {c.returned_model for c in item.calls if c.response is not None}
         for got in sorted(m for m in returned - {want} if m is not None):

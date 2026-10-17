@@ -1,7 +1,7 @@
 from chatddx.catalog import LANGUAGE_KINDS, Behind, Divergence, Labels, Part
 from chatddx.factors.base import resolve
 from chatddx.factors.bundle import Registry
-from chatddx.factors.facts import model_name
+from chatddx.factors.engine import model_of
 from chatddx.factors.request import Compilation, Recipe
 from chatddx.factors.scoring import Expectation, Scorer
 from chatddx.identity import owns, sees
@@ -110,7 +110,7 @@ def _moved(seen: Seen, thread: int) -> tuple[Moved, Registry | None] | None:
         recipe = Recipe.model_validate(
             recipe.model_dump() | {"model": model.head.digest}
         )
-    about = model_name(recipe.model, seen.get) or recipe.model
+    about = model_of(recipe.model, seen.get).name
     try:
         registry, compilation = seen.compiled(recipe)
     except ValueError as e:

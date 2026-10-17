@@ -123,7 +123,11 @@ def test_database_guards_components(conn: Connection, admin: Connection) -> None
     with pytest.raises(errors.CheckViolation):
         _ = conn.execute(
             "INSERT INTO factor.component VALUES (%s, 'trial', 1, %s, %s::jsonb)",
-            ("sha256:" + "f" * 64, reg.raw(trial).decode(), reg.raw(trial).decode()),
+            (
+                "sha256:" + "f" * 64,
+                reg.get(trial).canonical.decode(),
+                reg.get(trial).canonical.decode(),
+            ),
         )
     conn.rollback()
     with (

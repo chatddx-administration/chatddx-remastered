@@ -242,7 +242,7 @@ The import's findings have the engine's digest as subject:
 - `endpoint.not_running` (warning): the server isn't running.
 - `endpoint.argv` (warning): the running server's arguments aren't its configuration's, so it may predate it.
 - `endpoint.unreachable` (warning): the server didn't answer. In the inventory's check the same code means the
-  endpoint's address can't be worked out, as `url_of` refuses it (docs/inventory-api.md, "check.py").
+  endpoint's address can't be worked out, as `url_at` refuses it (docs/inventory-api.md, "check.py").
 - `endpoint.version` (warning): the server says it is another vLLM version than its package.
 - `endpoint.served_name` (warning): the server doesn't answer under the engine's digest.
 

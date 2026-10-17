@@ -1,11 +1,11 @@
-[model."qwen3-8b-awq@fake"]
+[local_model."qwen3-8b-awq@fake"]
 repo = "Qwen/Qwen3-8B-AWQ"
 revision = "fake"
 files = [
   { path = "none", sha256 = "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855" }
 ]
 
-[model."gpt-oss-20b@fake"]
+[local_model."gpt-oss-20b@fake"]
 repo = "openai/gpt-oss-20b"
 revision = "fake"
 files = [

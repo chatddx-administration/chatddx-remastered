@@ -132,7 +132,7 @@ command's `rest` param takes whole is followed by the next param's names once it
 | Command | Function | On the bench |
 | --- | --- | --- |
 | `configurations [NAME]` | `listing.configurations` | `threads`, `catalog.edit_languages`, `purposed`, `catalog.recipe`, `translated`, `catalog.origin`, `about`, `title` |
-| `endpoints` | `listing.endpoints` | `inventory`, `endpoint`, `model`, `url_of` |
+| `endpoints` | `listing.endpoints` | `inventory`, `endpoint`, `model`, `url_at` |
 | `cases` | `listing.cases` | `families` |
 | `use CONFIGURATION` | `choosing.use` | `configuration`, and `title` of the named endpoint's engine, set in it (`TriedVariation.set`) |
 | `on ENDPOINT` | `choosing.on` | `endpoint`, and `title` of its engine's model, set in the cell's configuration |

@@ -4,8 +4,8 @@ from pydantic import JsonValue
 
 from chatddx.factors.base import Finding, Fingerprint, Resolver, resolve
 from chatddx.factors.cases import Case, Prepared, prepare_case
-from chatddx.factors.engine import LocalEngine, RemoteEngine, served_model_name
-from chatddx.factors.request import AppendixLayout, Skeleton, render
+from chatddx.factors.engine import served_model_name
+from chatddx.factors.request import AppendixLayout, Skeleton
 from chatddx.factors.trial import Trial
 from chatddx.inventory import Inventory
 from chatddx.ledger import ItemKey
@@ -31,9 +31,6 @@ class Items:
         self._get: Resolver = get
         self.trial: Trial = resolve(get, trial, Trial)
         self.skeleton: Skeleton = resolve(get, self.trial.skeleton, Skeleton)
-        engine = get(self.trial.engine)
-        assert isinstance(engine, LocalEngine | RemoteEngine)
-        self.engine: LocalEngine | RemoteEngine = engine
 
     def case(self, case: str, layout: AppendixLayout) -> Prepared:
         found = resolve(self._get, case, Case)
@@ -43,9 +40,8 @@ class Items:
     def item(self, key: ItemKey) -> PreparedItem:
         prepared = self.case(key.case, self.skeleton.appendix_layout)
         seed = self.trial.seeds[key.replicate]
-        body = render(
-            self.skeleton,
-            model=served_model_name(self.engine, self._get),
+        body = self.skeleton.render(
+            model=served_model_name(self.trial.engine, self._get),
             seed=seed,
             fills=prepared.fills,
         )

@@ -2,8 +2,7 @@ from typing import Annotated, Literal, Self, get_args
 
 from pydantic import Field, StringConstraints, model_validator
 
-from .base import Component, Digest, Frozen, RefTo, Resolver, Settings
-from .engine import LocalEngine, ModelArtifact, RemoteEngine, RemoteModel
+from .base import Component, Digest, Frozen, RefTo, Settings
 
 Intent = Literal["off", "on", "minimal", "low", "medium", "high", "xhigh"]
 Effort = Intent | Literal["default"]
@@ -48,7 +47,7 @@ class ReasoningFacts(Frozen):
         fact: ReasoningFact | None = getattr(self, intent)
         return fact
 
-    def land(
+    def _land(
         self, intent: Intent
     ) -> tuple[Intent, Refusal | Writes | None, tuple[str, ...]]:
         path: list[Intent] = []
@@ -68,11 +67,11 @@ class ReasoningFacts(Frozen):
                 case fact:
                     return intent, fact, tuple(nearest)
 
-    def resolve(self, effort: Effort) -> Landing:
+    def landing(self, effort: Effort) -> Landing:
         intent = self.default if effort == "default" else effort
         if intent is None:
             raise Refused("no default reasoning level is known")
-        landed, fact, nearest = self.land(intent)
+        landed, fact, nearest = self._land(intent)
         match fact:
             case None:
                 raise Refused(f"nothing is known about reasoning {landed!r}")
@@ -98,7 +97,7 @@ class ReasoningFacts(Frozen):
         if self.default is not None:
             leads["default"] = self.default
         for name, target in leads.items():
-            if self.land(target)[1] is None:
+            if self._land(target)[1] is None:
                 raise ValueError(
                     f"{name!r} collapses into {target!r}, which ends in no fact"
                 )
@@ -167,31 +166,10 @@ class ModelFacts(Component):
 
     def reasons_by_default(self) -> bool | None:
         try:
-            landing = self.reasoning.resolve("default")
+            landing = self.reasoning.landing("default")
         except Refused:
             return None
         return landing.level != "off"
 
 
 FactsRef = Annotated[Digest, RefTo("facts")]
-
-
-# The name the facts are keyed by, of a model or of the model an engine serves.
-def model_name(digest: str, get: Resolver) -> str | None:
-    match get(digest):
-        case ModelArtifact(repo=repo):
-            return repo
-        case RemoteModel(name=name):
-            return name
-        case LocalEngine(model=model) | RemoteEngine(model=model):
-            return model_name(model, get)
-        case _:
-            return None
-
-
-def model_of(engine: str, get: Resolver) -> str | None:
-    match get(engine):
-        case LocalEngine(model=model) | RemoteEngine(model=model):
-            return model
-        case _:
-            return None

@@ -230,7 +230,7 @@ how many cases have the target it needs. Nothing is sent.
 alice plan×qwen3-8b-awq@fake #4479> show
 cell: plan × qwen3-8b-awq@fake
  part          chunk              is
- endpoint      qwen3-8b-awq@fake  qwen3-8b-awq@fake, served as sha256:cc0dc8fbbc8dbb3a62d274c6ce62ee4bc9d909b05aef6263015cb46459fdc42f at
+ endpoint      qwen3-8b-awq@fake  qwen3-8b-awq@fake, served as sha256:da96724f04176f3f979fe853c7cf7e6c8a9ea865853e3453c479e98ea8ae0c90 at
                                   http://127.0.0.1:12099/v1/
  instructions  —
  few_shot      —
@@ -246,7 +246,7 @@ user
 ‹vignette›‹appendices›
 body
 {
-  "model": "sha256:cc0dc8fbbc8dbb3a62d274c6ce62ee4bc9d909b05aef6263015cb46459fdc42f",
+  "model": "sha256:7033068c2419408202120bcc7ea5a33fbdbd074b6e378726ebb1856596c8e251",
   "presence_penalty": 1.5,
   "response_format": {
     "type": "json_schema",

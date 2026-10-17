@@ -4,12 +4,12 @@ from pydantic import JsonValue
 
 from chatddx.factors.base import Finding, resolve
 from chatddx.factors.bundle import Registry
+from chatddx.factors.engine import model_of
 from chatddx.factors.facts import (
     ContractFact,
     ModelFacts,
     Refusal,
     SamplingValues,
-    model_name,
 )
 from chatddx.factors.lint import Languages, Reasons, lint
 from chatddx.factors.request import Sampling, Skeleton
@@ -89,7 +89,7 @@ def _sampled_for(
 
 
 def _pair(c: Trial | Judge, registry: Registry, facts: Facts) -> Iterable[Finding]:
-    name = model_name(c.engine, registry.get)
+    name = model_of(c.engine, registry.get).name
     model = facts.about(c.engine, registry.get)
     skeleton = resolve(registry.get, c.skeleton, Skeleton)
     if model is None:

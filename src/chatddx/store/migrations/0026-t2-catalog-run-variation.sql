@@ -39,7 +39,7 @@ DECLARE
     part text := split_part(NEW.value, '=', 1);
     held text := split_part(NEW.value, '=', 2);
     kinds text[] := CASE part
-        WHEN 'model' THEN ARRAY['model', 'model.remote']
+        WHEN 'model' THEN ARRAY['model.local', 'model.remote']
         ELSE ARRAY['chunk.' || part]
     END;
 BEGIN

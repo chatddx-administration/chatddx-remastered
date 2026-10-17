@@ -345,37 +345,28 @@ The first of `threads(word)` whose head is `digest`, with `recipe` when it is gi
 #### `title(digest: str | None) -> str`
 `Catalog.title_of`, or `—` for `None`.
 
-#### `model(engine: str) -> str | None`
-> reduce or move or rename to model_name
+#### `model_of(engine: str) -> Model | None`
+The model the engine serves (`chatddx.factors.engine.model_of`), cached; `None` for an engine that isn't stored. Its
+`name` is what the facts are keyed by, its `digest` what a recipe names.
 
-Takes an engine's digest, looks up and caches the name of the model it references.
-Returns the name or `None` for an engine that references no model.
-
-The name returned is what the facts are keyed by (`chatddx.factors.facts.model_name`): a local engine's model's
-repository, or a remote engine's model's `name`.
-
-#### `model_of(engine: str) -> str | None`
-> reduce
-
-#### `model_at(name: str) -> str`
-> reduce, also the _at/_of thing should go or be formalized projectwide
-> src/chatddx/api/world.py:63
+#### `model_at(name: str) -> Model`
+The model at the World's endpoint `name`: `model_of(endpoint(name))`. Raises `endpoint`'s errors, and
+`ValueError("endpoint '<name>' serves no model")`.
 
 #### `facts: Facts` (property)
 The facts about each model, from the store: the head of every live `facts` thread, whoever owns it, through
 `Facts.of`, so that of two about one model the later edit wins. Read each time, so that a fact corrected while the
 bench lasts is used.
 
-#### `facts_for(engine: str) -> ModelFacts | None`
-The `facts` about the model the engine serves, or `None` for a model they don't know.
+#### `facts_for(digest: str) -> ModelFacts | None`
+`facts.about(digest, get)`: the facts about the model `digest` names, or the model an engine `digest` serves, or
+`None` for a model they don't know.
 
 #### `served(engine: str) -> str`
-The engine's `served_model_name`, the model a request to it carries.
+`served_model_name(engine, get)`, the model a request to the engine carries.
 - Raises `StructuralError("<digest> is a <kind>, not an engine")`.
 
 #### `endpoint(name: str) -> str`
-> unify pathways with inventory and api, it bounces around a lot
-
 The digest of the engine the World's endpoint serves.
 - Raises the inventory's `LookupError` for an unknown endpoint.
 - Raises `NotFound("endpoint '<name>' serves engine <short>, which isn't in the store: load its World with

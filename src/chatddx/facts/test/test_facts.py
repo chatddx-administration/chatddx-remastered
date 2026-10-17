@@ -4,7 +4,7 @@ import pytest
 from pydantic import JsonValue, ValidationError
 
 from chatddx.factors.bundle import Registry
-from chatddx.factors.engine import FileDigest, LocalEngine, ModelArtifact
+from chatddx.factors.engine import FileDigest, LocalEngine, LocalModel
 from chatddx.factors.lint import lint
 from chatddx.factors.request import (
     Message,
@@ -45,31 +45,31 @@ def facts() -> Facts:
 def test_reasoning_levels_land_where_the_facts_say(facts: Facts) -> None:
     qwen, gpt_oss = facts.models[QWEN], facts.models[GPT_OSS]
     thinking = Writes(chat_template_kwargs={"enable_thinking": True})
-    assert qwen.reasoning.resolve("default") == Landing(level="on", writes=thinking)
-    assert qwen.reasoning.resolve("xhigh") == Landing(level="on", writes=thinking)
-    assert qwen.reasoning.resolve("off").writes == Writes(
+    assert qwen.reasoning.landing("default") == Landing(level="on", writes=thinking)
+    assert qwen.reasoning.landing("xhigh") == Landing(level="on", writes=thinking)
+    assert qwen.reasoning.landing("off").writes == Writes(
         chat_template_kwargs={"enable_thinking": False}
     )
     qwen.check_budget()
-    assert gpt_oss.reasoning.resolve("default") == Landing(
+    assert gpt_oss.reasoning.landing("default") == Landing(
         level="medium", writes=Writes(effort="medium")
     )
-    assert gpt_oss.reasoning.resolve("on").level == "medium"
+    assert gpt_oss.reasoning.landing("on").level == "medium"
     nearest: list[tuple[Intent, Intent]] = [
         ("off", "low"),
         ("minimal", "low"),
         ("xhigh", "high"),
     ]
     for asked, landed in nearest:
-        landing = gpt_oss.reasoning.resolve(asked)
+        landing = gpt_oss.reasoning.landing(asked)
         assert (landing.level, landing.writes.effort) == (landed, landed)
         assert len(landing.nearest) == 1
-    assert "always reasons" in gpt_oss.reasoning.resolve("off").nearest[0]
+    assert "always reasons" in gpt_oss.reasoning.landing("off").nearest[0]
     with pytest.raises(Refused, match="no thinking budget"):
         gpt_oss.check_budget()
     unknown = ModelFacts(model="m")
     with pytest.raises(Refused, match="nothing is known"):
-        _ = unknown.reasoning.resolve("high")
+        _ = unknown.reasoning.landing("high")
     assert qwen.reasons_by_default() is True
     assert unknown.reasons_by_default() is None
 
@@ -80,9 +80,9 @@ def test_a_refusal_lands_on_its_nearest_only_when_it_names_one() -> None:
 
     refused = off(Refusal(refused="always reasons"))
     with pytest.raises(Refused, match="always reasons"):
-        _ = refused.resolve("off")
+        _ = refused.landing("off")
     nearest = off(Refusal(refused="always reasons", nearest="low"))
-    assert nearest.resolve("off") == Landing(
+    assert nearest.landing("off") == Landing(
         level="low", writes=Writes(effort="low"), nearest=("always reasons",)
     )
 
@@ -130,7 +130,7 @@ def test_facts_check_pairs(facts: Facts) -> None:
 
     def engine(repo: str, *argv: str) -> str:
         model = reg.add(
-            ModelArtifact(
+            LocalModel(
                 repo=repo,
                 revision="0" * 40,
                 files=(FileDigest(path="model.safetensors", sha256=SHA),),

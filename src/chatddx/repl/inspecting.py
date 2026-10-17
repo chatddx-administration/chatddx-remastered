@@ -23,7 +23,7 @@ from chatddx.facts import (
     Refused,
     Writes,
 )
-from chatddx.inventory import url_of
+from chatddx.inventory import url_at
 from chatddx.ledger import RunStarted
 from chatddx.store import fetch_vignette
 
@@ -87,7 +87,7 @@ def _show_cell(repl: Repl, tags: tuple[str, ...] = ()) -> None:
     endpoint = repl.where()
     if endpoint and repl.engine:
         served = bench.served(repl.engine)
-        url = url_of(bench.inventory, bench.get, endpoint)
+        url = url_at(bench.inventory, bench.get, endpoint)
         where = f"{bench.title(repl.engine)}, served as {served} at {url}"
         table.add_row("endpoint", endpoint, where)
 
@@ -250,7 +250,8 @@ def _in_cell(repl: Repl, word: str) -> str | None:
     elif word == "model" and variation and variation.recipe is not None:
         digest = variation.held("model")
     elif word == "model" and repl.engine:
-        digest = bench.model_of(repl.engine)
+        model = bench.model_of(repl.engine)
+        digest = None if model is None else model.digest
     elif word == "engine" and repl.engine:
         digest = repl.engine
     elif word in PARTS and variation:
@@ -565,8 +566,9 @@ def _show_endpoint(repl: Repl, name: str | None) -> None:
     try:
         engine = bench.endpoint(name)
         table.add_row("engine", bench.title(engine))
-        table.add_row("model", bench.model(engine) or "—")
-        table.add_row("url", url_of(bench.inventory, bench.get, name))
+        model = bench.model_of(engine)
+        table.add_row("model", model.name if model else "—")
+        table.add_row("url", url_at(bench.inventory, bench.get, name))
     except LookupError as e:
         table.add_row("engine", Text(str(e), style=REFUSED))
 
@@ -611,14 +613,15 @@ def reasoning(repl: Repl) -> None:
 
     for endpoint in sorted(bench.inventory.endpoints):
         try:
-            model = bench.model(bench.endpoint(endpoint))
+            model = bench.model_of(bench.endpoint(endpoint))
         except LookupError:
             continue
         if model is not None:
             marked = f"▸ {endpoint}" if endpoint == where else endpoint
-            serving.setdefault(model, []).append(marked)
+            serving.setdefault(model.name, []).append(marked)
 
-    current = None if repl.engine is None else bench.model(repl.engine)
+    serves = None if repl.engine is None else bench.model_of(repl.engine)
+    current = None if serves is None else serves.name
     asked = _asked(repl, cell.variation)
     caption = (
         "▸ the level the cell's configuration asks for, as its model's facts say"
@@ -650,7 +653,7 @@ def _asked(repl: Repl, variation: TriedVariation | None) -> Effort | None:
 
 def _level(facts: ModelFacts, effort: Effort) -> Text:
     try:
-        landed = facts.reasoning.resolve(effort)
+        landed = facts.reasoning.landing(effort)
     except Refused as e:
         return Text(f"refused: {e}", style=REFUSED)
 

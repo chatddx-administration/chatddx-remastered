@@ -27,7 +27,7 @@ from .base import (
     resolve,
     sorted_keys,
 )
-from .engine import ModelRef
+from .engine import ModelRef, model_of
 from .facts import (
     Effort,
     FactsRef,
@@ -36,7 +36,6 @@ from .facts import (
     Refused,
     SamplingValues,
     Writes,
-    model_name,
 )
 from .response import message, tool_calls
 
@@ -594,6 +593,30 @@ class Skeleton(Component):
             case TextOutput(json_schema=schema):
                 return schema
 
+    def render(
+        self,
+        *,
+        model: str,
+        seed: int | None,
+        fills: Mapping[SlotName, str],
+        return_token_ids: bool = True,
+    ) -> dict[str, JsonValue]:
+        slots = {
+            s.slot for m in self.messages for s in m.content if isinstance(s, Slot)
+        }
+        if missing := slots - fills.keys():
+            raise StructuralError(f"no fill for slots {sorted(missing)}")
+        messages: list[JsonValue] = []
+        for m in self.messages:
+            parts = [s if isinstance(s, str) else fills[s.slot] for s in m.content]
+            messages.append({"role": m.role, "content": "".join(parts)})
+        body: dict[str, JsonValue] = {"model": model, "messages": messages, **self.body}
+        if seed is not None and not self.greedy:
+            body["seed"] = seed
+        if return_token_ids:
+            body["return_token_ids"] = True
+        return body
+
 
 SkeletonRef = Annotated[Digest, RefTo("skeleton")]
 
@@ -612,7 +635,7 @@ class Compilation(Component):
         found: list[str] = []
         if self.facts is not None:
             facts = resolve(get, self.facts, ModelFacts)
-            if (model := model_name(self.recipe.model, get)) != facts.model:
+            if (model := model_of(self.recipe.model, get).name) != facts.model:
                 found.append(f"facts about {facts.model} compiled a recipe for {model}")
         if self.into is not None and self.into not in self._languages(get):
             found.append(f"the recipe has no translations into {self.into}")
@@ -866,7 +889,7 @@ def own_texts(chunk: Component, get: Resolver) -> tuple[str, ...]:
 def landings(
     recipe: Recipe, get: Resolver, facts: ModelFacts | None
 ) -> tuple[Landing | None, Landing | None]:
-    if facts is not None and (model := model_name(recipe.model, get)) != facts.model:
+    if facts is not None and (model := model_of(recipe.model, get).name) != facts.model:
         raise StructuralError(f"facts about {facts.model} can't compile for {model}")
     reasoning = (
         None if recipe.reasoning is None else resolve(get, recipe.reasoning, Reasoning)
@@ -882,19 +905,19 @@ def landings(
             + "none"
         )
     try:
-        landed = None if asked is None else facts.reasoning.resolve(asked)
+        landed = None if asked is None else facts.reasoning.landing(asked)
         if landed is not None and reasoning and reasoning.thinking_token_budget:
             facts.check_budget()
         followed = None
         if sampling.recommended:
-            followed = landed or facts.reasoning.resolve("default")
+            followed = landed or facts.reasoning.landing("default")
             _ = facts.recommended(followed.level)
     except Refused as e:
         raise StructuralError(f"{facts.model}: {e}") from None
     return landed, followed
 
 
-def translations_into(recipe: Recipe, get: Resolver, into: str) -> dict[str, str]:
+def _translations_into(recipe: Recipe, get: Resolver, into: str) -> dict[str, str]:
     held = (
         {}
         if recipe.translations is None
@@ -912,7 +935,7 @@ def compile_request(
     into: str | None = None,
 ) -> Skeleton:
     landed, followed = landings(recipe, get, facts)
-    entries = None if into is None else translations_into(recipe, get, into)
+    entries = None if into is None else _translations_into(recipe, get, into)
     missing: set[str] = set()
 
     def translate(text: str) -> str:
@@ -1059,26 +1082,6 @@ def compiled(
         into=into,
     )
     return skeleton, record
-
-
-def render(
-    skeleton: Skeleton,
-    *,
-    model: str,
-    seed: int | None,
-    fills: Mapping[SlotName, str],
-    return_token_ids: bool = True,
-) -> dict[str, JsonValue]:
-    messages: list[JsonValue] = []
-    for m in skeleton.messages:
-        parts = [s if isinstance(s, str) else fills[s.slot] for s in m.content]
-        messages.append({"role": m.role, "content": "".join(parts)})
-    body: dict[str, JsonValue] = {"model": model, "messages": messages, **skeleton.body}
-    if seed is not None and not skeleton.greedy:
-        body["seed"] = seed
-    if return_token_ids:
-        body["return_token_ids"] = True
-    return body
 
 
 def next_request(

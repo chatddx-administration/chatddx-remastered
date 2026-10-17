@@ -16,7 +16,7 @@ from chatddx.factors.engine import (
     FileDigest,
     Hardware,
     LocalEngine,
-    ModelArtifact,
+    LocalModel,
     Runtime,
 )
 from chatddx.factors.test.sample import remote_engine
@@ -31,7 +31,7 @@ from chatddx.inventory import (
     confirm,
     served,
     start_up,
-    url_of,
+    url_at,
 )
 from chatddx.test.world import GPT_OSS, QWEN, free_world, world_plan
 
@@ -40,7 +40,7 @@ TEMPLATE = hashlib.sha256(b"{{ messages }}").hexdigest()
 
 def local(reg: Registry, *argv: str) -> tuple[str, str]:
     model = reg.add(
-        ModelArtifact(
+        LocalModel(
             repo="Qwen/Qwen3-8B-AWQ",
             revision="d" * 40,
             files=(FileDigest(path="model.safetensors", sha256="a" * 64),),
@@ -208,7 +208,7 @@ def test_a_start_up_joins_the_engine_with_where_its_host_keeps_things() -> None:
         "8192",
     )
     assert startup.closure == "/nix/store/" + "v" * 32 + "-vllm"
-    assert url_of(inventory, reg.get, "qwen@pelle") == "http://pelle.km:12009/v1/"
+    assert url_at(inventory, reg.get, "qwen@pelle") == "http://pelle.km:12009/v1/"
 
 
 def test_a_start_up_is_refused_where_the_inventory_or_the_engine_falls_short() -> None:
@@ -226,7 +226,7 @@ def test_a_start_up_is_refused_where_the_inventory_or_the_engine_falls_short() -
     with pytest.raises(LookupError, match="engine.remote, not ours to start"):
         _ = start_up(world(remote), reg.get, "qwen@pelle")
     unknown = world("sha256:" + "c" * 64, {model: "/m"}, {TEMPLATE: "/t"})
-    for f in (start_up, url_of, confirm):
+    for f in (start_up, url_at, confirm):
         with pytest.raises(LookupError, match="'qwen@pelle': sha256:c+ is not in the"):
             _ = f(unknown, reg.get, "qwen@pelle")
 
@@ -297,10 +297,10 @@ def test_a_remote_engine_is_reached_at_its_endpoint_s_url() -> None:
     alone = Inventory(
         endpoints={"gemma": EndpointSpec(engine=remote, url=at, credential="KEY")},
     )
-    assert url_of(alone, reg.get, "gemma") == "https://api.example.org/v1/"
+    assert url_at(alone, reg.get, "gemma") == "https://api.example.org/v1/"
     unplaced = Inventory(endpoints={"gemma": EndpointSpec(engine=remote)})
     with pytest.raises(LookupError, match="serves a remote engine but has no url"):
-        _ = url_of(unplaced, reg.get, "gemma")
+        _ = url_at(unplaced, reg.get, "gemma")
 
 
 def test_a_fake_started_from_an_endpoint_serves_its_engine() -> None:

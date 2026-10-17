@@ -15,7 +15,7 @@ from chatddx.factors.engine import (
     FileDigest,
     Hardware,
     LocalEngine,
-    ModelArtifact,
+    LocalModel,
     RemoteEngine,
     RemoteModel,
     Runtime,
@@ -60,7 +60,7 @@ def fp(text: str) -> Fingerprint:
 
 def local_engine(reg: Registry) -> LocalEngine:
     model = reg.add(
-        ModelArtifact(
+        LocalModel(
             repo="google/gemma-3-12b-it",
             revision="deadbeef",
             files=(FileDigest(path="model.safetensors", sha256=SHA),),

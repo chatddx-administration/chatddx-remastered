@@ -184,7 +184,7 @@ def test_the_tables_it_prints_plan_the_engine_it_imported_and_start_it_as_served
         tmp_path, Facts(), rig(), World(tmp_path, Inventory(), engines=(engines,))
     )
     for i in imports:
-        assert plan.named("model", i.name).digest == i.model.digest
+        assert plan.named("local_model", i.name).digest == i.model.digest
         assert plan.named("local_engine", i.name).digest == i.engine.digest
         assert plan.named("local_engine", i.name).tags == (i.host,)
     world = tmp_path / "inventory.toml"

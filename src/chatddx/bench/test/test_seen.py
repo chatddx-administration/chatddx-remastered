@@ -313,7 +313,7 @@ def test_a_swapped_model_keeps_every_other_pick_and_works_the_rest_out(
 ) -> None:
     lines = bench.configuration(LINES)
     off = lines.set("reasoning", bench.chunk("reasoning", "off"), "off")
-    gpt_oss = off.set("model", bench.model_at(GPT_OSS), GPT_OSS_ARTIFACT)
+    gpt_oss = off.set("model", bench.model_at(GPT_OSS).digest, GPT_OSS_ARTIFACT)
 
     assert gpt_oss.label == f"{LINES}+reasoning=off+model={GPT_OSS_ARTIFACT}"
     assert gpt_oss.held("reasoning") == off.held("reasoning")
@@ -329,7 +329,7 @@ def test_a_swapped_model_keeps_every_other_pick_and_works_the_rest_out(
     assert bench.landed(lines).keys() == {"sampling"}
 
     on = lines.set("reasoning", bench.chunk("reasoning", "on"), "on")
-    mistral = on.set("model", bench.model_at(MISTRAL), MISTRAL_ARTIFACT)
+    mistral = on.set("model", bench.model_at(MISTRAL).digest, MISTRAL_ARTIFACT)
     with pytest.raises(StructuralError, match=f"{MISTRAL_MODEL}: .*doesn't reason"):
         _ = bench.skeleton(mistral)
 

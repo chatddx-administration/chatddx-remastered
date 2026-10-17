@@ -3,7 +3,7 @@
 Reference for the `chatddx.inventory` package. It was written from `src/chatddx/inventory/*` and
 `docs/inventory.md`. There are no inventory migrations, because the inventory isn't stored. What the inventory is and
 why it is shaped this way is in `docs/inventory.md`; this file says what each name accepts, returns and raises.
-Factor types it uses (`Digest`, `Sha256Hex`, `Resolver`, `LocalEngine`, `RemoteEngine`, `ModelArtifact`, `Case`,
+Factor types it uses (`Digest`, `Sha256Hex`, `Resolver`, `LocalEngine`, `RemoteEngine`, `LocalModel`, `Case`,
 `Vignette`, `Fingerprint`, …) are in `docs/factors-api.md`. `chatddx import-engine`, which writes inventory files,
 is in `docs/inventory.md`, "Importing from a host".
 
@@ -15,7 +15,7 @@ Paths are relative to `src/chatddx/inventory/` unless they start with `src/`, `d
 - [The file](#the-file)
 - [inventory.py](#inventorypy): `EndpointSpec`, `HostSpec`, `Inventory`
 - [sources.py](#sourcespy): `Source`, `DatabaseSource`, `ListingSource`, `DirectorySource`
-- [serving.py](#servingpy): `StartUp`, `start_up`, `url_of`, `served`, `confirm`
+- [serving.py](#servingpy): `StartUp`, `start_up`, `url_at`, `served`, `confirm`
 - [world.py](#worldpy): `World`
 - [check.py](#checkpy): `check`
 - [Worlds](#worlds)
@@ -24,7 +24,7 @@ Paths are relative to `src/chatddx/inventory/` unless they start with `src/`, `d
 ## Package
 
 `chatddx.inventory` re-exports `LISTEN_FLAGS`, `DatabaseSource`, `DirectorySource`, `EndpointSpec`, `HostSpec`,
-`Inventory`, `ListingSource`, `Source`, `StartUp`, `World`, `check`, `confirm`, `served`, `start_up` and `url_of`.
+`Inventory`, `ListingSource`, `Source`, `StartUp`, `World`, `check`, `confirm`, `served`, `start_up` and `url_at`.
 `test/memory.py:MemorySource` is imported by path.
 
 | Module | Builds on |
@@ -50,7 +50,7 @@ it, so an unknown key in an inventory file is a `ValidationError`.
 them up through a `Resolver` (`get`), such as `Registry.get` or `Store.get`.
 
 **Checked late.** Loading checks only what the files show. Whatever needs the engines is checked when `start_up`,
-`url_of` or `confirm` is called, or for every entry at once by `check`.
+`url_at` or `confirm` is called, or for every entry at once by `check`.
 
 **Errors.**
 
@@ -244,7 +244,7 @@ Raises `LookupError`, checking in this order:
 Then it resolves the model artifact for its revision, which raises `StructuralError` when `get` doesn't hold it.
 Nothing connects.
 
-### `url_of(inventory: Inventory, get: Resolver, name: str) -> str`
+### `url_at(inventory: Inventory, get: Resolver, name: str) -> str`
 The URL the endpoint's engine is reached at. Raises `LookupError` for a missing endpoint or an engine `get` doesn't
 know, as `start_up`, and:
 
@@ -269,7 +269,7 @@ Refuses an endpoint whose server doesn't list the name its engine is served unde
 engine's `model`'s name (`served_model_name(engine, get)`). In order:
 1. `LookupError` for a missing endpoint or an engine `get` doesn't know, as `start_up`;
 2. `LookupError("endpoint '<name>' names a <kind>, not an engine")`;
-3. `url_of`'s `LookupError`s;
+3. `url_at`'s `LookupError`s;
 4. `served(url, timeout, secret)` and its errors;
 5. `LookupError("endpoint '<name>' at <url> serves <listed names, joined by ", ", or 'nothing'>, not <served
    name>")`.
@@ -287,7 +287,7 @@ shared addresses, hosts, clearance. A finding's subject is the endpoint's or the
 | --- | --- | --- |
 | `endpoint.engine_unknown` | warning | `get` doesn't know the endpoint's engine; the resolver's message |
 | `endpoint.not_engine` | warning | the endpoint's digest names another kind of component |
-| `endpoint.unreachable` | warning | `url_of` refuses it; its message |
+| `endpoint.unreachable` | warning | `url_at` refuses it; its message |
 | `endpoint.unstartable` | warning | a local engine's endpoint that `start_up` refuses; its message |
 | `endpoint.remote_host` | warning | a remote engine's endpoint names a host |
 | `endpoint.shared_url` | warning | a local engine's endpoint has the address of an earlier one |

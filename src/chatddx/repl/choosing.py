@@ -35,7 +35,7 @@ def _served(repl: Repl, cell: Cell, variation: TriedVariation) -> TriedVariation
     model = repl.bench.model_of(cell.served)
     if model is None:
         return variation
-    return variation.set("model", model, repl.bench.title(model))
+    return variation.set("model", model.digest, repl.bench.title(model.digest))
 
 
 # The cell takes the model even where it refuses a pick, so that a set mends it.
@@ -61,12 +61,10 @@ def set_(repl: Repl, part: str, name: str) -> None:
     changed = variation.set(part, digest, name)
     _ = repl.bench.skeleton(changed)
     cell = repl.cell.trying(changed)
-    if (
-        part == "model"
-        and cell.served is not None
-        and repl.bench.model_of(cell.served) != digest
-    ):
-        cell = cell.on(None, None)
+    if part == "model" and cell.served is not None:
+        serves = repl.bench.model_of(cell.served)
+        if (None if serves is None else serves.digest) != digest:
+            cell = cell.on(None, None)
     repl.cell = cell
     repl.say_changed()
 

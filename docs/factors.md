@@ -470,21 +470,22 @@ an error for the model to read.
 An engine is where requests are sent. Researchers pick engines for recipes, as one more part, and for trials and
 judges. Every engine speaks the same API: OpenAI-compatible chat completions.
 
-### Model artifact
+### Local model
 Principal author: ops.
 
-A model artifact pins a model's weights: the repository, a revision, and the hash of every file, collected by an import
-script. It is a component of its own, so several engines can share it.
+A local model pins a model's weights: the repository, a revision, and the hash of every file, collected by an import
+script. It is a component of its own, so several engines can share it. Its name, what facts are keyed by, is its
+repository.
 
 ### Local engine
 Principal author: ops.
 
 A local engine is a vLLM server we run. It declares:
-- its hardware: GPU, compute capability, VRAM and driver;
-- its runtime: vLLM, its version and its Nix closure;
-- the model artifact it serves;
+- its hardware: GPU, compute capability, VRAM and driver.
+- its runtime: vLLM, its version and its Nix closure.
+- the local model it serves.
 - the content of its chat template, by hash; where the file lives is the inventory's business, so moving it doesn't
-  change the engine;
+  change the engine.
 - the exact arguments vLLM is started with, and its environment, minus what the host sets to find the model, the GPU and
   CUDA.
 
@@ -516,8 +517,8 @@ engine.
 Principal author: developers, for the bundled facts; whoever adds a model they don't know, for a World's
 (docs/inventory.md, "Worlds").
 
-Model facts are what is known about one model that a request doesn't say (docs/facts.md): the model's name, is a `model`
-artifact's repository or a `model.remote` component's `name`; `model_name` reads either.
+Model facts are what is known about one model that a request doesn't say (docs/facts.md), by the model's name: a
+`model.local` component's repository or a `model.remote` component's `name`.
 
 They are knowledge, not a factor: no component but a compilation refers to them, and a skeleton holds what they did.
 init-data writes them from facts files, a thread per model (docs/curation.md); correcting a fact is a new version of

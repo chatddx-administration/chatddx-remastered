@@ -48,7 +48,7 @@ class Store:
         registry.check(digests)
         with self._conn.transaction(), self._conn.cursor() as cur:
             for d in digests:
-                raw = registry.raw(d).decode()
+                raw = registry.get(d).canonical.decode()
                 doc = json.loads(raw)
                 _ = cur.execute(
                     """

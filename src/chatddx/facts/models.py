@@ -6,7 +6,8 @@ from typing import Self
 from pydantic import Field
 
 from chatddx.factors.base import Frozen, Resolver
-from chatddx.factors.facts import ModelFacts, model_name
+from chatddx.factors.engine import model_of
+from chatddx.factors.facts import ModelFacts
 
 BUNDLED = Path(__file__).with_name("models.toml")
 
@@ -32,6 +33,5 @@ class Facts(Frozen):
     def of(cls, found: Iterable[ModelFacts]) -> Self:
         return cls(models={f.model: f for f in found})
 
-    def about(self, engine: str, get: Resolver) -> ModelFacts | None:
-        name = model_name(engine, get)
-        return None if name is None else self.models.get(name)
+    def about(self, digest: str, get: Resolver) -> ModelFacts | None:
+        return self.models.get(model_of(digest, get).name)

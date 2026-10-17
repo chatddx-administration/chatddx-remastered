@@ -88,7 +88,7 @@ third-party package but pydantic. It holds no SQL: it reads through a `Reader` a
   database's to `RECIPE_PARTS`.
 - `WITH`: `^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$`, a run's id as `str(UUID)` writes it, as a
   `with` entry holds it. `0026` repeats it.
-- `MODEL_KINDS`: `("model", "model.remote")`, the kinds a `replaced` entry's engine is stored as. Not
+- `MODEL_KINDS`: `("model.local", "model.remote")`, the kinds a `replaced` entry's model is stored as. Not
   re-exported.
 - `Part`: `Literal["view", "resource"]`.
 - `Labels`: `Mapping[tuple[Part, int], str]`, what a scorer edit calls its views and resources, by part and position.
@@ -315,7 +315,7 @@ Nothing for an entry of another field than `RUN_FIELDS`. `0026` repeats it (`ent
   thread's, or none.
 - Raises `ValueError("<digest> isn't a chunk of <part> in the store")` for a `replaced` entry whose chunk isn't stored
   as that part's kind, and `ValueError("<digest> isn't an model in the store")` for a `model` one whose digest isn't
-  stored a `model` or `model.remote`.
+  stored a `model.local` or `model.remote`.
 - A `with` entry is checked no further: runs are the ledger's, which the catalog doesn't read, so `0026` alone checks
   that it names a run that has started (`catalog.check_varied()`).
 

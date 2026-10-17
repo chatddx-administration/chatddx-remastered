@@ -43,7 +43,7 @@ Both kinds of file hold one table per kind of component, keyed by name, whose ke
 
 On top of the fields:
 - **References by name.** A toolset's tools, a scorer's expectation schema and a view's judge, a local engine's model
-  a `model` record, and a remote engine's model, a `remote_model` record; and a recipe's parts name records,
+  a `local_model` record, and a remote engine's model, a `remote_model` record; and a recipe's parts name records,
   not digests.
 - **Judges.** A judge names a `recipe`, its `seeds` and its `fill`, and no engine: the World binds it to an endpoint
   (docs/inventory.md, "Judges"), whose engine judges. The recipe is compiled for that engine, as written, and the
@@ -78,7 +78,7 @@ On top of the fields:
   stop the loading (see "Texts").
 
 A name is defined once per kind: a text is written in one texts file, and only a translations record's name comes
-back in several, as one chunk (see "Texts"). A data set's `factors.toml` holds no `model`, `local_model`,
+back in several, as one chunk (see "Texts"). A data set's `factors.toml` holds no `local_model`, `remote_model`,
 `local_engine` or `remote_engine` tables, and a recipe names no `model`: engines are the World's (see "The World"),
 and a recipe that names one is refused.
 
