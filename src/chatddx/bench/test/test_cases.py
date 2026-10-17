@@ -92,7 +92,7 @@ def test_a_late_case_is_given_its_replacement(bench: Bench) -> None:
     family = bench.family("noted")
     old = resolve(bench.get, family.case, Case).vignette
     _ = catalog.repair(family.id, archive.id, fingerprint=Fingerprint.of(b"anew"))
-    current = families.bindings(rows, family.id)[-1].vignette
+    current = rows.bindings([family.id])[-1].vignette
 
     registry = Registry()
     late_labs = registry.add(Appendix(vignette=old, text="Lab: late"))

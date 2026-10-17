@@ -31,9 +31,9 @@ Paths are relative to `src/chatddx/store/` unless they start with `src/`, `docs/
 
 ## Package
 
-`chatddx.store` re-exports `TOP_TIER`, `Catalog`, `Job`, `People`, `Queue`, `Rows`, `Store`, `Texts`, `UnderWay`,
-`fetch_vignette` and `migrate`. `Connection` (in `store.py`), `Held`, `Status`, `STATUSES`, `ENDED`, `pending` and
-`Migration` are imported by path.
+`chatddx.store` re-exports `TOP_TIER`, `Catalog`, `Job`, `Kept`, `People`, `Queue`, `Rows`, `Store`, `Texts`,
+`UnderWay`, `fetch_vignette` and `migrate`. `Connection` (in `store.py`), `Held`, `Status`, `STATUSES`, `ENDED`,
+`pending` and `Migration` are imported by path.
 
 Rows for the module table: `| notify.py | psycopg, pydantic |`, and
 `| queue.py | notify.py, store.py, psycopg's errors |`;
@@ -204,7 +204,7 @@ reads it back.
 
 - `get` is `Store.get`, and `compilations` is `Store.compilations`; `kind` reads `factor.component.kind`, and
   `components` reads `canonical` for many digests at once.
-- Threads, edits, entries, bindings, languages and labels are read `ORDER BY id`; `families` reads `catalog.family`.
+- Threads, edits, entries, bindings, languages and labels are read `ORDER BY id`.
 - `edit` and `edits` don't read the edit's `kind` column; entries, languages and labels are read without `by` and
   `at`.
 - `bound_to(vignettes, kind)` matches the `doc` of stored components of `kind` on each vignette's `source`, `id` and
@@ -212,9 +212,10 @@ reads it back.
   gives back the caller's vignette; by digest.
 - `expectations(cases)` matches stored expectations on `doc ->> 'case'`, by digest.
 
-It also has `involving(person: int) -> list[Subject]`: the distinct subjects of entries whose `owner` or
-`collaborator` named the person, ever, by thread, family, run and score; and `runs_started(person: int, since:
-datetime) -> int`: how many runs' `owner` entries name the person since `since`.
+It also has `families() -> list[int]`: every family's id, by id, as the bench lists families;
+`involving(person: int) -> list[Subject]`: the distinct subjects of entries whose `owner` or `collaborator` named the
+person, ever, by thread, family, run and score; and `runs_started(person: int, since: datetime) -> int`: how many
+runs' `owner` entries name the person since `since`.
 
 ### `class Catalog`
 `Catalog(conn: Connection)` writes what the catalog decides: `create`, `edit`, `keep`, `adopt`, `repair`, `note` and

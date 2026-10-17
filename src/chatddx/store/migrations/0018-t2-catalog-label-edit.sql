@@ -1,4 +1,4 @@
--- src/chatddx/catalog/model.py: check_label repeats the position's check, and
+-- src/chatddx/catalog/threads.py: check_edit repeats the position's check, and
 -- src/chatddx/store/catalog.py:Catalog.edit writes an edit's labels with it.
 -- An edit's labels are written in its transaction, by its writer: now() is the
 -- transaction's start, so a label written later has another `at` than its edit.

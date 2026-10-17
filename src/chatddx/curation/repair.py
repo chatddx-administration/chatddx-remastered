@@ -44,7 +44,7 @@ def repair(
             moved = (
                 _count(len(done.cases), "case", "cases"),
                 _count(len(done.appendices), "appendix", "appendices"),
-                _count(len(done.edits), "thread", "threads"),
+                _count(len(done.moves), "thread", "threads"),
             )
             lines.append(
                 f"[repair case] {id}: {what} {at}; family {family} moved, with "

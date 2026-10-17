@@ -1,6 +1,6 @@
 import pytest
 
-from chatddx.catalog import Entry, EntryField, Subject, language
+from chatddx.catalog import Entry, EntryField, Subject, language, threads
 from chatddx.catalog.test.memory import Memory, compiled
 from chatddx.factors.base import resolve
 from chatddx.factors.bundle import Registry
@@ -165,6 +165,6 @@ def test_languages_are_refused_where_they_are_not_read() -> None:
         _ = language.check_language(rows, "sha256:" + "9" * 64, "sv")
 
     swedish = Entry(field=EntryField.LANGUAGE, value="sv")
-    language.check_entry(Subject(family=1), swedish)
+    threads.check_note(rows, Subject(family=1), swedish)
     with pytest.raises(ValueError, match="kept on its digest"):
-        language.check_entry(Subject(thread=1), swedish)
+        threads.check_note(rows, Subject(thread=1), swedish)

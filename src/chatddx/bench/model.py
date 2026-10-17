@@ -1,12 +1,13 @@
 from dataclasses import dataclass, field
 from typing import Literal
 
-from chatddx.catalog import About, Behind, Divergence, Edit, Kept, Part
+from chatddx.catalog import About, Behind, Divergence, Edit, Part
 from chatddx.factors.base import Component, Finding
 from chatddx.factors.request import CHUNK_PARTS, Recipe, Skeleton, SlotName
 from chatddx.factors.scoring import Scorer
 from chatddx.ledger import Score
 from chatddx.runner.run import Running
+from chatddx.store import Kept
 
 from .variation import TriedVariation
 

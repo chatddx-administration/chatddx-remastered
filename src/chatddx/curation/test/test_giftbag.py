@@ -24,9 +24,9 @@ def _own(conn: Connection, alice: Person, case: str) -> tuple[str, str]:
     archive = People(conn).find("archive")
     assert archive is not None
     [thread] = [
-        t
-        for t in threads.expectations_of(rows, case)
-        if read.about(rows, Subject(thread=t)).owner == archive.id
+        e.thread
+        for e, a in threads.expecting(rows, [case])[case]
+        if a.owner == archive.id
     ]
     held = store.get(threads.head(rows, thread).digest)
     assert isinstance(held, Expectation)

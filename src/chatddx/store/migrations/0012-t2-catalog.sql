@@ -10,7 +10,7 @@ ALTER TABLE catalog.thread
     ));
 
 -- src/chatddx/catalog/model.py: EntryField and Entry._shape, src/chatddx/factors/base.py:
--- LANGUAGE, and check_entry in src/chatddx/catalog/language.py.
+-- LANGUAGE, and check_note in src/chatddx/catalog/threads.py.
 -- A check passes when it is NULL, so NULL values are ruled out explicitly.
 ALTER TABLE catalog.entry
     ADD CONSTRAINT entry_field_check CHECK (field IN (
@@ -32,7 +32,7 @@ ALTER TABLE catalog.entry
     END),
     ADD CONSTRAINT entry_language_check CHECK (field <> 'language' OR family IS NOT NULL);
 
--- src/chatddx/catalog/model.py: check_label repeats this check.
+-- src/chatddx/catalog/threads.py: check_edit repeats this check.
 CREATE FUNCTION catalog.check_label() RETURNS trigger LANGUAGE plpgsql AS $$
 DECLARE
     n integer;
@@ -49,7 +49,7 @@ $$;
 CREATE TRIGGER label_position BEFORE INSERT ON catalog.label
 FOR EACH ROW EXECUTE FUNCTION catalog.check_label();
 
--- src/chatddx/catalog/threads.py: check_based_on repeats this check.
+-- src/chatddx/catalog/threads.py: check_edit repeats this check.
 CREATE FUNCTION catalog.check_based_on() RETURNS trigger LANGUAGE plpgsql AS $$
 BEGIN
     IF NEW.based_on IS NOT NULL AND NOT EXISTS (

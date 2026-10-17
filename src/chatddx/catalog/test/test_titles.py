@@ -1,19 +1,15 @@
 from chatddx.catalog import Entry, EntryField, Subject, titles
-from chatddx.catalog.test.memory import Memory
-from chatddx.catalog.titles import (
-    Title,
-    describe,
-    describe_change,
-    describe_recipe,
-    snippet,
-)
+from chatddx.catalog.test.memory import Memory, compiled
+from chatddx.catalog.titles import Title, describe
 from chatddx.factors.base import resolve
 from chatddx.factors.bundle import Registry
 from chatddx.factors.cases import Case
 from chatddx.factors.engine import RemoteEngine, RemoteModel
 from chatddx.factors.request import (
+    Instructions,
     Output,
     Reasoning,
+    Recipe,
     Sampling,
     Tool,
     ToolOutput,
@@ -32,13 +28,21 @@ def titler(reg: Registry) -> Title:
     return title
 
 
-def test_snippets_are_short() -> None:
-    assert snippet("You  are an\nemergency physician.") == (
-        '"You are an emergency physician."'
+def described(reg: Registry, recipe: Recipe) -> str:
+    rows = Memory(reg)
+    plan = compiled(reg, recipe)
+    return titles.title(rows, rows.start(plan.skeleton, compilation=plan.digest).thread)
+
+
+def test_texts_are_described_by_a_short_snippet() -> None:
+    reg = Registry()
+    title = titler(reg)
+    brief = reg.add(Instructions(text="You  are an\nemergency physician."))
+    assert title(brief) == '"You are an emergency physician."'
+    long = reg.add(
+        Instructions(text="You are an emergency physician on a night shift.")
     )
-    assert snippet("one two three four five six seven eight nine ten", 20) == (
-        '"one two three four…"'
-    )
+    assert title(long) == '"You are an emergency physician on a…"'
 
 
 def test_unnamed_components_are_described_by_what_they_hold() -> None:
@@ -46,7 +50,7 @@ def test_unnamed_components_are_described_by_what_they_hold() -> None:
     ids = world(reg)
     title = titler(reg)
     recipe = generation_recipe(reg)
-    assert describe_recipe(recipe, title) == (
+    assert described(reg, recipe) == (
         '"You are an emergency physician." · "Case: {vignette}{appendices}…"'
         + " · native output: ddx · temperature 0.7, top_p 0.9, max_output_tokens 1024"
         + " · enable_thinking false · google/gemma-3-12b-it"
@@ -101,28 +105,47 @@ def test_recipes_are_described_by_every_part() -> None:
     )
     tools = reg.add(Toolset(tools=(search,)))
     on = " · " + title(recipe.model)
-    english = describe_recipe(recipe, title).removesuffix(on)
+    english = described(reg, recipe).removesuffix(on)
     translated = recipe.model_copy(update={"translations": swedish})
-    assert describe_recipe(translated, title) == (
+    assert described(reg, translated) == (
         english + f" · translations into sv, {len(needed)} texts" + on
     )
     with_tools = recipe.model_copy(update={"toolset": tools})
-    assert describe_recipe(with_tools, title) == english + " · with web_search" + on
+    assert described(reg, with_tools) == english + " · with web_search" + on
 
 
-def test_changes_are_described_by_path_and_value() -> None:
+def test_forks_are_titled_by_what_they_change() -> None:
     reg = Registry()
-    title = titler(reg)
-    shown = reg.add(Sampling(temperature=0.2))
-    assert describe_change("/recipe/sampling", shown, title) == (
-        "sampling: temperature 0.2"
+    rows = Memory(reg)
+
+    def named(edit_thread: int, name: str) -> None:
+        rows.note(Subject(thread=edit_thread), Entry(field=EntryField.NAME, value=name))
+
+    recipe = generation_recipe(reg)
+    plan = compiled(reg, recipe)
+    origin = rows.start(plan.skeleton, compilation=plan.digest)
+    named(origin.thread, "plan")
+    cool = reg.add(Sampling(temperature=0.2))
+    varied = compiled(
+        reg, recipe.model_copy(update={"sampling": cool, "reasoning": None})
     )
-    assert describe_change("/recipe/reasoning", None, title) == "no reasoning"
-    assert describe_change("/max_output_tokens", 4096, title) == (
-        "max_output_tokens: 4096"
+    fork = rows.start(varied.skeleton, compilation=varied.digest, forked_from=origin.id)
+    assert titles.title(rows, fork.thread) == (
+        "plan, no reasoning, sampling: temperature 0.2"
     )
-    assert describe_change("/text", "Be brief and kind to the patient.", title) == (
-        'text: "Be brief and kind to the patient."'
+
+    brief = rows.start(reg.add(Instructions(text="Be brief.")))
+    named(brief.thread, "brief")
+    kind = reg.add(Instructions(text="Be brief and kind to the patient."))
+    kinder = rows.start(kind, forked_from=brief.id)
+    assert titles.title(rows, kinder.thread) == (
+        'brief, text: "Be brief and kind to the patient."'
+    )
+    short = rows.start(reg.add(Sampling(temperature=0.6)))
+    named(short.thread, "short")
+    longer = reg.add(Sampling(temperature=0.6, max_output_tokens=4096))
+    assert titles.title(rows, rows.start(longer, forked_from=short.id).thread) == (
+        "short, max_output_tokens: 4096"
     )
 
 

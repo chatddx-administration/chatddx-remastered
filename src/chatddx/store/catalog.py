@@ -1,21 +1,19 @@
 from collections.abc import Collection
 from datetime import datetime
-from typing import Any
+from typing import Any, Literal
 
 from chatddx.catalog import (
     Binding,
     Edit,
     Entry,
     EntryField,
-    Kept,
     Labels,
     Part,
-    Repair,
+    RepairPlan,
     Subject,
     Thread,
     families,
     language,
-    read,
     threads,
 )
 from chatddx.factors.base import Component, Fingerprint, canonical_bytes
@@ -24,6 +22,8 @@ from chatddx.factors.cases import Vignette
 from chatddx.factors.request import Compilation
 
 from .store import Connection, Store
+
+Kept = Literal["created", "edited", "unchanged"]
 
 _THREAD = "t.id, t.kind, t.forked_from, t.by, t.at"
 _EDIT = "e.id, e.thread, e.digest, e.compilation, e.based_on, e.by, e.at"
@@ -312,10 +312,7 @@ class Catalog:
         named = None if name is None else Entry(field=EntryField.NAME, value=name)
         owned = Entry(field=EntryField.OWNER, person=by if owner is None else owner)
         with self._conn.transaction():
-            kind = self._rows.kind(digest)
-            if kind is None:
-                raise LookupError(f"{digest} is not in the store")
-            threads.check_threadable(kind)
+            kind = threads.check_create(self._rows, digest)
             row = self._conn.execute(
                 """
                 INSERT INTO catalog.thread (kind, forked_from, by)
@@ -344,33 +341,40 @@ class Catalog:
     ) -> Edit:
         with self._conn.transaction():
             self._lock(thread)
-            if head is not None:
-                threads.check_head(self._rows, thread, head)
-            if based_on is not None:
-                threads.check_based_on(self._rows, thread, based_on)
-            threads.check_expectation(self._rows, thread, digest)
-            threads.check_labels(self._rows, thread, digest, labels or {})
-            row = self._conn.execute(
-                f"""
-                INSERT INTO catalog.edit AS e
-                    (thread, kind, digest, compilation, based_on, by)
-                SELECT t.id, t.kind, %s, %s, %s, %s FROM catalog.thread t
-                WHERE t.id = %s
-                RETURNING {_EDIT}
+            threads.check_edit(
+                self._rows, thread, digest, based_on=based_on, head=head, labels=labels
+            )
+            return self._insert(thread, digest, by, compilation, based_on, labels)
+
+    def _insert(
+        self,
+        thread: int,
+        digest: str,
+        by: int,
+        compilation: str | None,
+        based_on: int | None,
+        labels: Labels | None,
+    ) -> Edit:
+        row = self._conn.execute(
+            f"""
+            INSERT INTO catalog.edit AS e
+                (thread, kind, digest, compilation, based_on, by)
+            SELECT t.id, t.kind, %s, %s, %s, %s FROM catalog.thread t
+            WHERE t.id = %s
+            RETURNING {_EDIT}
+            """,
+            (digest, compilation, based_on, by, thread),
+        ).fetchone()
+        assert row is not None
+        edit = _edit(row)
+        for (part, position), value in sorted((labels or {}).items()):
+            _ = self._conn.execute(
+                """
+                INSERT INTO catalog.label (edit, part, position, value, by)
+                VALUES (%s, %s, %s, %s, %s)
                 """,
-                (digest, compilation, based_on, by, thread),
-            ).fetchone()
-            if row is None:
-                raise LookupError(f"no thread with id {thread}")
-            edit = _edit(row)
-            for (part, position), value in sorted((labels or {}).items()):
-                _ = self._conn.execute(
-                    """
-                    INSERT INTO catalog.label (edit, part, position, value, by)
-                    VALUES (%s, %s, %s, %s, %s)
-                    """,
-                    (edit.id, part, position, value, by),
-                )
+                (edit.id, part, position, value, by),
+            )
         return edit
 
     def _lock(self, thread: int) -> None:
@@ -403,14 +407,11 @@ class Catalog:
             return created, "created"
         with self._conn.transaction():
             self._lock(thread)
-            if head is not None:
-                threads.check_head(self._rows, thread, head)
+            threads.check_edit(self._rows, thread, digest, head=head, labels=labels)
             current = threads.head(self._rows, thread)
-            if threads.holds(self._rows, current, digest, compilation) and (
-                labels is None or read.labels(self._rows, current.id) == dict(labels)
-            ):
+            if threads.holds(self._rows, current, digest, compilation, labels):
                 return current, "unchanged"
-            edit = self.edit(thread, digest, by, compilation=compilation, labels=labels)
+            edit = self._insert(thread, digest, by, compilation, None, labels)
             return edit, "edited"
 
     def adopt(
@@ -425,7 +426,7 @@ class Catalog:
             ).fetchone()
             assert row is not None
             family = int(row[0])
-            _ = self._bind(family, vignette, by)
+            self._bind(family, vignette, by)
             owned = Entry(field=EntryField.OWNER, person=by if owner is None else owner)
             self.note(Subject(family=family), owned, by)
             return family
@@ -437,23 +438,19 @@ class Catalog:
         *,
         id: str | None = None,
         fingerprint: Fingerprint | None = None,
-    ) -> Repair:
+    ) -> RepairPlan:
         with self._conn.transaction():
             plan = families.plan_repair(
                 self._rows, family, id=id, fingerprint=fingerprint
             )
-            binding = self._bind(family, plan.vignette, by)
+            self._bind(family, plan.vignette, by)
             _ = Store(self._conn).add(plan.registry, list(plan.registry))
-            edits = tuple(self.edit(t, d, by) for t, d in plan.moves)
-        return Repair(
-            binding=binding, cases=plan.cases, appendices=plan.appendices, edits=edits
-        )
+            for thread, digest in plan.moves:
+                _ = self.edit(thread, digest, by)
+        return plan
 
     def note(self, subject: Subject, entry: Entry, by: int) -> None:
-        language.check_entry(subject, entry)
-        threads.check_varied(self._rows, subject, entry)
-        if subject.thread is not None:
-            threads.check_expectation(self._rows, subject.thread, entry=entry)
+        threads.check_note(self._rows, subject, entry)
         _ = self._conn.execute(
             """
             INSERT INTO catalog.entry (
@@ -489,12 +486,11 @@ class Catalog:
 
     # src/chatddx/store/migrations/0012-t2-catalog.sql keeps each
     # binding's source, and its id or fingerprint.
-    def _bind(self, family: int, vignette: Vignette, by: int) -> Binding:
-        row = self._conn.execute(
-            f"""
-            INSERT INTO catalog.binding AS b (family, source, source_id, fingerprint, by)
+    def _bind(self, family: int, vignette: Vignette, by: int) -> None:
+        _ = self._conn.execute(
+            """
+            INSERT INTO catalog.binding (family, source, source_id, fingerprint, by)
             VALUES (%s, %s, %s, %s::jsonb, %s)
-            RETURNING {_BINDING}
             """,
             (
                 family,
@@ -503,6 +499,4 @@ class Catalog:
                 _jsonb(vignette.fingerprint),
                 by,
             ),
-        ).fetchone()
-        assert row is not None
-        return _binding(row)
+        )

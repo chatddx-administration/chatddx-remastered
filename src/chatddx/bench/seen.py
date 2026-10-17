@@ -5,7 +5,7 @@ from uuid import UUID
 
 from pydantic import JsonValue
 
-from chatddx.catalog import About, Edit, Subject, latest, read, threads, titles
+from chatddx.catalog import About, Edit, Subject, read, threads, titles
 from chatddx.catalog.language import language_of, languages_of, recipe_language
 from chatddx.catalog.titles import short
 from chatddx.factors.base import (
@@ -372,7 +372,7 @@ class Seen:
         ]
 
     def _cases(self, families: list[int]) -> dict[int, str | None]:
-        current = latest((b.family, b.vignette) for b in self.rows.bindings(families))
+        current = {b.family: b.vignette for b in self.rows.bindings(families)}
         held: dict[Vignette, list[str]] = {}
         for digest, vignette in self.rows.bound_to(current.values(), "case"):
             held.setdefault(vignette, []).append(digest)
@@ -401,9 +401,9 @@ class Seen:
 
     def expectation_schemas(self, case: str) -> list[str]:
         heads = [
-            threads.head(self.rows, t).digest
-            for t in threads.expectations_of(self.rows, case)
-            if sees(self.person.id, self.about(t))
+            e.digest
+            for e, a in threads.expecting(self.rows, [case])[case]
+            if sees(self.person.id, a)
         ]
         held = (resolve(self.get, d, Expectation) for d in heads)
         return sorted({e.expectation_schema for e in held})

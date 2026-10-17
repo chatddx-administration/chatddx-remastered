@@ -133,9 +133,9 @@ def test_a_person_writes_expectations_and_hears_what_the_lints_say(
     assert bench.expectation(case, schema) == odd
 
     [archives] = [
-        t
-        for t in threads.expectations_of(rows, case)
-        if bench.login(bench.about(t).owner) == "archive"
+        e.thread
+        for e, a in threads.expecting(rows, [case])[case]
+        if bench.login(a.owner) == "archive"
     ]
     with pytest.raises(ValueError, match="has their own expectation of"):
         _ = bench.fork_component(archives, "theirs")

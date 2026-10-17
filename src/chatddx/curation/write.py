@@ -7,7 +7,6 @@ from pydantic import JsonValue
 from chatddx.catalog import (
     Entry,
     EntryField,
-    Kept,
     Labels,
     Part,
     Subject,
@@ -24,7 +23,7 @@ from chatddx.factors.scoring import Expectation
 from chatddx.facts import lints
 from chatddx.identity import Person, owns
 from chatddx.inventory import DirectorySource
-from chatddx.store.catalog import Catalog, Rows
+from chatddx.store.catalog import Catalog, Kept, Rows
 from chatddx.store.people import People
 from chatddx.store.store import Connection, Store
 
@@ -219,9 +218,9 @@ class _Init:
         )
         _ = self.store.add(registry, [expectation])
         found = [
-            t
-            for t in threads.expectations_of(self.rows, case)
-            if read.about(self.rows, Subject(thread=t)).owner == self.archive.id
+            e.thread
+            for e, a in threads.expecting(self.rows, [case])[case]
+            if a.owner == self.archive.id
         ]
         thread, verb = self.put("expectation", expectation, found, None)
         self.threads[("expectation", named)] = thread

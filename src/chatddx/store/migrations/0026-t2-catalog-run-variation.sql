@@ -1,5 +1,5 @@
--- src/chatddx/catalog/model.py: EntryField, Entry._shape, VARIED, REPLACED and WITH, and
--- check_varied in src/chatddx/catalog/threads.py.
+-- src/chatddx/catalog/model.py: EntryField, Entry._shape, _VARIED, _REPLACED and _WITH, and
+-- check_note in src/chatddx/catalog/threads.py.
 -- A check passes when it is NULL, so NULL values are ruled out explicitly.
 ALTER TABLE catalog.entry
     DROP CONSTRAINT entry_field_check,

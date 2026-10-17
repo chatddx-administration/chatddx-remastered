@@ -621,7 +621,7 @@ def test_families(conn: Connection) -> None:
     assert families.family_of(rows, ids["case"]) == family
     assert read.about(rows, Subject(family=family)).owner == alice.id
     case = resolve(reg.get, ids["case"], Case)
-    [binding] = families.bindings(rows, family)
+    [binding] = rows.bindings([family])
     assert binding.vignette == case.vignette
 
     bare = reg.add(Case(vignette=case.vignette))
@@ -660,7 +660,7 @@ def test_families(conn: Connection) -> None:
     with pytest.raises(LookupError):
         _ = catalog.adopt(ids["trial"], alice.id)
     with pytest.raises(LookupError):
-        _ = families.bindings(rows, 999)
+        _ = catalog.repair(999, alice.id, id="c9")
 
     sharing = [b.vignette for b in rows.bindings_sharing(vignette)]
     assert sharing == [vignette]
@@ -727,7 +727,8 @@ def test_renamed_vignettes_are_repaired(conn: Connection) -> None:
 
     repair = catalog.repair(family, alice.id, id="c1-renamed")
     renamed = case.vignette.model_copy(update={"id": "c1-renamed"})
-    assert repair.binding.vignette == renamed
+    [*_, binding] = rows.bindings([family])
+    assert binding.vignette == repair.vignette == renamed
     rebound = resolve(store.get, repair.cases[ids["case"]], Case)
     assert rebound.vignette == renamed
     assert rebound.appendices == (repair.appendices[appendix],)
@@ -738,7 +739,7 @@ def test_renamed_vignettes_are_repaired(conn: Connection) -> None:
         store.get, threads.head(rows, expected.thread).digest, Expectation
     )
     assert rekeyed.case == repair.cases[ids["case"]]
-    assert {e.thread for e in repair.edits} == {appended.thread, expected.thread}
+    assert {t for t, _ in repair.moves} == {appended.thread, expected.thread}
     assert families.family_of(rows, repair.cases[ids["case"]]) == families.family_of(
         rows, ids["case"]
     )
@@ -750,7 +751,7 @@ def test_renamed_vignettes_are_repaired(conn: Connection) -> None:
         (b.path, b.digest, b.binding, b.replacement)
         for b in threads.behind(rows, trial.thread)
     ] == [
-        ("/cases/0", ids["case"], repair.binding, repair.cases[ids["case"]]),
+        ("/cases/0", ids["case"], binding, repair.cases[ids["case"]]),
         ("/cases/0/appendices/0", appendix, None, None),
     ]
     assert threads.behind(rows, expected.thread) == []
@@ -802,14 +803,14 @@ def test_changed_vignettes_are_repaired(conn: Connection) -> None:
     rebound = resolve(store.get, repair.cases[ids["case"]], Case)
     assert rebound.vignette == case.vignette.model_copy(update={"fingerprint": edited})
     assert threads.head(rows, expected.thread).digest == expectation
-    assert repair.edits == ()
+    assert repair.moves == []
     [stale] = [
         b for b in threads.behind(rows, expected.thread) if b.binding is not None
     ]
     assert (stale.path, stale.digest, stale.binding, stale.replacement) == (
         "/case",
         ids["case"],
-        repair.binding,
+        rows.bindings([family])[-1],
         repair.cases[ids["case"]],
     )
 

@@ -184,7 +184,7 @@ The recipe with `parts` replaced over it, validated as a `Recipe`; `None` withou
   refuse a language with.
 - `PLACEHOLDERS: dict[SlotName, str]`: what stands in for each slot of a request rendered to be looked at:
   `‹vignette›`, `‹appendices›`, `‹completion›`, `‹expectation›`.
-- `SAVED: dict[Kept, …]`: what `Saved.what` and `Written.what` call each of the catalog's `Kept`: `created`,
+- `SAVED: dict[Kept, …]`: what `Saved.what` and `Written.what` call each of the store's `Kept`: `created`,
   `a new version` for `edited`, and `unchanged`.
 - `word_of(kind: str) -> str`: the word in `KINDS` that names `kind`, `configuration` for `skeleton`.
 
@@ -368,6 +368,8 @@ bench lasts is used.
 - Raises `StructuralError("<digest> is a <kind>, not an engine")`.
 
 #### `endpoint(name: str) -> str`
+> docs/bench-api.md:endpoint:> unify pathways with inventory and api, it bounces around a lot
+
 The digest of the engine the World's endpoint serves.
 - Raises the inventory's `LookupError` for an unknown endpoint.
 - Raises `NotFound("endpoint '<name>' serves engine <short>, which isn't in the store: load its World with
@@ -741,7 +743,7 @@ catalog.
 
 ### `replacement(case: str) -> str`
 The digest of `case`, left at an earlier vignette of its family, rebound to the current one and stored with its
-rebound appendices.
+rebound appendices: `families.replacement`'s, of a case of a family the person sees.
 - Raises `NotFound("no case <case> for <login>")`.
 - Raises `ValueError("<case> is at its family's current vignette already")`.
 
@@ -772,8 +774,6 @@ endpoint is cleared for it. False when the World has no database source, or more
 - Raises `ValueError("<case> isn't a case of the family <old case> is of")`.
 
 ### Finding cases by their titles
-For an edge that names cases as a person reads them, `FAMILY with APPENDIX, …`, as
-`chatddx.catalog.titles.describe_case` writes them (`WITH`).
 
 #### `appendices_of(family: int) -> dict[str, str]`
 The named appendices the person sees of the current vignette of `family`, each name with its head's digest.

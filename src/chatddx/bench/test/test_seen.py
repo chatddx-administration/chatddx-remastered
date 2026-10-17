@@ -210,9 +210,9 @@ def test_a_run_is_left_to_score_until_scored_under_the_scoring_built_now(
     catalog = Catalog(conn)
     rows = Rows(conn)
     [thread] = [
-        t
-        for t in threads.expectations_of(rows, made.cases[0])
-        if read.about(rows, Subject(thread=t)).owner == alice.id
+        e.thread
+        for e, a in threads.expecting(rows, [made.cases[0]])[made.cases[0]]
+        if a.owner == alice.id
     ]
     head = resolve(store.get, threads.head(rows, thread).digest, Expectation)
     registry = store.load([head.digest])
@@ -270,9 +270,9 @@ def test_a_case_is_held_to_the_expectation_scoring_picks(
     archive = People(conn).find("archive")
     assert archive is not None
     [shared] = [
-        t
-        for t in threads.expectations_of(rows, case)
-        if read.about(rows, Subject(thread=t)).owner == archive.id
+        e.thread
+        for e, a in threads.expecting(rows, [case])[case]
+        if a.owner == archive.id
     ]
     to_bob = Entry(field=EntryField.COLLABORATOR, person=bob.id)
     catalog.note(Subject(thread=shared), to_bob, archive.id)
@@ -448,9 +448,7 @@ def test_a_new_recipe_of_the_same_request_is_a_new_version(bench: Bench) -> None
 
 def _expectation_of(rows: Rows, case: str, owner: int) -> int:
     [thread] = [
-        t
-        for t in threads.expectations_of(rows, case)
-        if owns(owner, read.about(rows, Subject(thread=t)))
+        e.thread for e, a in threads.expecting(rows, [case])[case] if owns(owner, a)
     ]
     return thread
 

@@ -10,7 +10,6 @@ from pydantic import BaseModel, ConfigDict, Field, JsonValue, model_validator
 from chatddx.factors.base import Fingerprint, language_tag
 from chatddx.factors.cases import Vignette
 from chatddx.factors.request import RECIPE_PARTS
-from chatddx.factors.scoring import Scorer
 
 # src/chatddx/store/migrations/0012-t2-catalog.sql repeats these kinds.
 THREAD_KINDS = frozenset(
@@ -57,9 +56,9 @@ LANGUAGE_KINDS = frozenset(
 
 
 # src/chatddx/store/migrations/0026-t2-catalog-run-variation.sql repeats these patterns.
-VARIED = re.compile(r"^[1-9][0-9]{0,17}$")
-WITH = re.compile(r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$")
-REPLACED = re.compile(rf"^({'|'.join(RECIPE_PARTS)})=(sha256:[0-9a-f]{{64}})?$")
+_VARIED = re.compile(r"^[1-9][0-9]{0,17}$")
+_WITH = re.compile(r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$")
+_REPLACED = re.compile(rf"^({'|'.join(RECIPE_PARTS)})=(sha256:[0-9a-f]{{64}})?$")
 
 
 class MovedOn(ValueError):
@@ -80,12 +79,10 @@ class EntryField(StrEnum):
 
 
 RUN_FIELDS = frozenset({EntryField.VARIED, EntryField.REPLACED, EntryField.WITH})
-MODEL_KINDS = ("model.local", "model.remote")
 
 
 Part = Literal["view", "resource"]
 Labels = Mapping[tuple[Part, int], str]
-Kept = Literal["created", "edited", "unchanged"]
 
 
 class _Frozen(BaseModel):
@@ -154,13 +151,6 @@ class Survey(_Frozen):
     gone: tuple[int, ...] = ()
 
 
-class Repair(_Frozen):
-    binding: Binding
-    cases: dict[str, str]
-    appendices: dict[str, str]
-    edits: tuple[Edit, ...]
-
-
 class Subject(_Frozen):
     thread: int | None = None
     family: int | None = None
@@ -205,13 +195,13 @@ class Entry(_Frozen):
             raise ValueError(f"{self.field} can't be empty")
         if self.field == EntryField.LANGUAGE:
             _ = language_tag(self.value or "")
-        if self.field == EntryField.VARIED and not VARIED.match(self.value or ""):
+        if self.field == EntryField.VARIED and not _VARIED.match(self.value or ""):
             raise ValueError(f"{self.value!r} is not an edit's id")
-        if self.field == EntryField.REPLACED and not REPLACED.match(self.value or ""):
+        if self.field == EntryField.REPLACED and not _REPLACED.match(self.value or ""):
             raise ValueError(
                 f"{self.value!r} is not PART=DIGEST, or PART= for a part taken out"
             )
-        if self.field == EntryField.WITH and not WITH.match(self.value or ""):
+        if self.field == EntryField.WITH and not _WITH.match(self.value or ""):
             raise ValueError(f"{self.value!r} is not a run's id")
         return self
 
@@ -292,14 +282,3 @@ def _toggle[T](members: set[T], member: T, present: bool) -> None:
         members.add(member)
     else:
         members.discard(member)
-
-
-def latest[K, V](rows: Iterable[tuple[K, V]]) -> dict[K, V]:
-    return dict(rows)
-
-
-# src/chatddx/store/migrations/0012-t2-catalog.sql repeats this check.
-def check_label(scorer: Scorer, part: Part, position: int) -> None:
-    parts = scorer.views if part == "view" else scorer.resources
-    if not 0 <= position < len(parts):
-        raise ValueError(f"{scorer.digest} has no {part} at position {position}")

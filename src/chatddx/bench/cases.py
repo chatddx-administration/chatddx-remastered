@@ -4,7 +4,6 @@ from datetime import UTC, datetime, timedelta
 
 from chatddx import settings
 from chatddx.catalog import Entry, EntryField, Subject, families
-from chatddx.catalog.families import rebind_case
 from chatddx.factors.base import Fingerprint, resolve
 from chatddx.factors.bundle import Registry
 from chatddx.factors.cases import Appendix, Case, Vignette
@@ -18,7 +17,7 @@ from .errors import NotFound, OverQuota
 from .model import Family, Written
 from .seen import Seen
 
-# A case's title, as src/chatddx/catalog/titles.py:describe_case writes it.
+# A case's title, as src/chatddx/catalog/titles.py:_describe_case writes it.
 WITH = re.compile(r"^(?P<family>.+?) with (?P<appendices>.+)$")
 
 
@@ -84,17 +83,10 @@ def replacement(seen: Seen, case: str) -> str:
     family = families.family_of(seen.rows, case)
     if family is None:
         raise NotFound(f"no case {case} for {seen.person.login}")
-    found = seen.family_by_id(family)
-    current = seen.current(found.id)
-    held = resolve(seen.get, case, Case)
-    if held.vignette == current:
-        raise ValueError(f"{case} is at its family's current vignette already")
-    made, appendices = rebind_case(held, current, seen.get)
-    registry = Registry()
-    for appendix in appendices.values():
-        _ = registry.add(appendix)
-    _ = seen.store.add(registry, [registry.add(made)])
-    return made.digest
+    _ = seen.family_by_id(family)
+    made, registry = families.replacement(seen.rows, case)
+    _ = seen.store.add(registry, list(registry))
+    return made
 
 
 def type_case(
