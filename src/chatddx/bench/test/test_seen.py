@@ -14,8 +14,9 @@ from chatddx.bench import (
     ScorerStarted,
     ScoringEvent,
 )
+from chatddx.bench.seen import scoring
 from chatddx.bench.test.helpers import another_expectation, ran, trial
-from chatddx.catalog import Entry, EntryField, Subject, read, threads
+from chatddx.catalog import About, Edit, Entry, EntryField, Subject, read, threads
 from chatddx.curation import Plan, load_cases
 from chatddx.factors.base import StructuralError, resolve
 from chatddx.factors.bundle import Registry
@@ -51,13 +52,13 @@ def test_a_person_sees_their_own_and_shared_threads_and_families(
     archive = People(conn).find("archive")
     assert archive is not None and owners == {alice.id, archive.id}
 
-    mine, _ = bench.thread("configuration", LINES)
-    assert bench.about(mine.thread).owner == alice.id
-    theirs, _ = bench.thread("configuration", f"archive/{LINES}")
-    assert bench.about(theirs.thread).owner == archive.id
+    mine, about = bench.thread(LINES, "configuration")
+    assert about.owner == alice.id
+    theirs, about = bench.thread(f"archive/{LINES}", "configuration")
+    assert about.owner == archive.id
     assert theirs.digest == mine.digest and theirs.thread != mine.thread
     with pytest.raises(NotFound, match="no configuration 'nothing' for alice"):
-        _ = bench.thread("configuration", "nothing")
+        _ = bench.thread("nothing", "configuration")
 
     families, cases = bench.families(), load_cases(DATA)
     assert len(families) == len(cases)
@@ -82,41 +83,41 @@ def test_a_case_is_found_by_its_name_or_as_owner_slash_name(bench: Bench) -> Non
 def test_threads_cases_and_runs_are_found_by_id_among_what_the_person_sees(
     conn: Connection, alice: Person, bob: Person, bench: Bench, plan: Plan
 ) -> None:
-    mine, _ = bench.thread("configuration", LINES)
-    assert bench.thread_by_id(mine.thread) == (mine, bench.about(mine.thread))
-    assert bench.thread_by_id(mine.thread, "configuration")[0] == mine
+    mine, _ = bench.thread(LINES, "configuration")
+    assert bench.thread(mine.thread) == bench.thread(LINES, "configuration")
+    assert bench.thread(mine.thread, "configuration")[0] == mine
     with pytest.raises(NotFound, match=f"no reasoning {mine.thread} for alice"):
-        _ = bench.thread_by_id(mine.thread, "reasoning")
+        _ = bench.thread(mine.thread, "reasoning")
     with pytest.raises(NotFound, match="no thread 0 for alice"):
-        _ = bench.thread_by_id(0)
+        _ = bench.thread(0)
     bobs = Bench(conn, bob, bench.inventory)
     with pytest.raises(NotFound, match=f"no thread {mine.thread} for bob"):
-        _ = bobs.thread_by_id(mine.thread)
+        _ = bobs.thread(mine.thread)
     Catalog(conn).note(
         Subject(thread=mine.thread), Entry(field=EntryField.DELETED), alice.id
     )
     with pytest.raises(NotFound):
-        _ = bench.thread_by_id(mine.thread)
+        _ = bench.thread(mine.thread)
 
     family = bench.family("noted")
-    assert bench.family_by_id(family.id) == family
+    assert bench.family(family.id) == family
     with pytest.raises(NotFound, match=f"no case {family.id} for bob"):
-        _ = bobs.family_by_id(family.id)
+        _ = bobs.family(family.id)
     with pytest.raises(NotFound, match="no case 0 for alice"):
-        _ = bench.family_by_id(0)
+        _ = bench.family(0)
 
     made = trial(conn, plan, LINES, "crlf")
     own, theirs = ran(conn, alice, made), ran(conn, bob, made)
-    assert bench.run_by_id(own).run == own
+    assert bench.run(own).run == own
     with pytest.raises(NotFound, match=f"no run {theirs} of yours"):
-        _ = bench.run_by_id(theirs)
+        _ = bench.run(theirs)
 
 
 def test_a_variation_is_made_from_a_configuration_s_id_and_digests(
     bench: Bench,
 ) -> None:
-    named = bench.configuration(LINES)
-    off = bench.chunk("reasoning", "off")
+    named = bench.variation(LINES)
+    off = bench.thread("off", "reasoning")[0].digest
     thread = named.configuration.thread
 
     assert bench.variation(thread) == named
@@ -130,7 +131,7 @@ def test_a_variation_is_made_from_a_configuration_s_id_and_digests(
         _ = bench.variation(thread, {"stack": off})
     with pytest.raises(ValueError, match="can be taken out"):
         _ = bench.variation(thread, {"prompt": None})
-    chunk = bench.thread("reasoning", "off")[0].thread
+    chunk = bench.thread("off", "reasoning")[0].thread
     with pytest.raises(NotFound, match=f"no configuration {chunk} for alice"):
         _ = bench.variation(chunk)
 
@@ -154,11 +155,11 @@ def test_a_person_finds_their_runs_and_those_that_reach_a_digest(
     with pytest.raises(NotFound, match="no run of yours"):
         _ = bench.run("zzz")
 
-    assert [r.run for r in bench.reaching(lines.skeleton)] == [first]
+    assert [r.run for r in bench.runs(reaching=lines.skeleton)] == [first]
     output = plan.named("output", "lines").digest
-    assert [r.run for r in bench.reaching(output)] == [first]
+    assert [r.run for r in bench.runs(reaching=output)] == [first]
     [shared_case] = set(lines.cases) & set(native.cases)
-    assert [r.run for r in bench.reaching(shared_case)] == [second, first]
+    assert [r.run for r in bench.runs(reaching=shared_case)] == [second, first]
     store = Store(conn)
     started = store.started([first, second, bobs, gone])
     assert {r.run for r in started if r.trial == lines.digest} == {first, bobs}
@@ -178,7 +179,7 @@ def test_a_view_of_the_whole_answer_is_offered_by_a_text_output_only(
     assert picked.offered_by(schema) and not picked.offered_by(None)
 
     started = bench.run(str(ran(conn, alice, trial(conn, plan, NATIVE, "crlf"))))
-    assert {a.name for _, a in bench.scorers_for(started)} == {"answer", "list"}
+    assert {a.name for _, a, _ in bench.scorers(started)} == {"answer", "list"}
 
 
 @pytest.mark.slow
@@ -190,7 +191,7 @@ def test_a_run_is_left_to_score_until_scored_under_the_scoring_built_now(
     _ = ran(conn, alice, made, finished=False)
     started = bench.run(str(run))
     texts = {"lines", "whole", "judged"}
-    assert {a.name for _, a in bench.scorers_for(started)} == texts
+    assert {a.name for _, a, _ in bench.scorers(started)} == texts
 
     scorer = plan.named("scorer", "lines").digest
     others = {plan.named("scorer", name).digest for name in texts - {"lines"}}
@@ -198,14 +199,14 @@ def test_a_run_is_left_to_score_until_scored_under_the_scoring_built_now(
     assert [(r.run, set(s)) for r, s in bench.outstanding()] == [
         (run, {scorer, *others})
     ]
-    scoring = bench.scoring(started, scorer)
-    assert scoring is not None and len(scoring.expectations) == 2
+    built = scoring(bench, started, scorer)
+    assert built is not None and len(built.expectations) == 2
     store = Store(conn)
-    registry = store.load([scorer, *scoring.expectations])
-    _, findings = score_run(conn, run, scoring, registry, alice)
+    registry = store.load([scorer, *built.expectations])
+    _, findings = score_run(conn, run, built, registry, alice)
     assert findings == []
     assert set(bench.unscored(started)) == others
-    assert [s.scoring for s in store.scores_of(run)] == [scoring.digest]
+    assert [s.scoring for s in store.scores_of(run)] == [built.digest]
 
     catalog = Catalog(conn)
     rows = Rows(conn)
@@ -226,7 +227,7 @@ def test_a_run_is_left_to_score_until_scored_under_the_scoring_built_now(
     _ = store.add(registry, [edited])
     _ = catalog.edit(thread, edited, alice.id)
     assert set(bench.unscored(started)) == {scorer, *others}
-    rebuilt = bench.scoring(started, scorer)
+    rebuilt = scoring(bench, started, scorer)
     assert rebuilt is not None and edited in rebuilt.expectations
 
 
@@ -235,18 +236,18 @@ def test_only_a_finished_score_counts_against_what_is_left_to_score(
     conn: Connection, alice: Person, bench: Bench, plan: Plan
 ) -> None:
     run = ran(conn, alice, trial(conn, plan, LINES, "crlf"))
-    started = bench.run_by_id(run)
+    started = bench.run(run)
     scorer = plan.named("scorer", "lines").digest
-    scoring = bench.scoring(started, scorer)
-    assert scoring is not None
-    registry = Store(conn).load([scorer, *scoring.expectations])
+    built = scoring(bench, started, scorer)
+    assert built is not None
+    registry = Store(conn).load([scorer, *built.expectations])
 
-    grading = Grader(conn, None, alice).start(run, scoring, registry)
+    grading = Grader(conn, None, alice).start(run, built, registry)
     assert scorer in bench.unscored(started)
 
     _ = grading.finish()
     assert scorer not in bench.unscored(started)
-    assert [r.run for r in bench.scored_by(scorer)] == [run]
+    assert [r.run for r in bench.runs(scored_by=scorer)] == [run]
 
 
 def test_a_case_is_held_to_the_expectation_scoring_picks(
@@ -289,12 +290,12 @@ def test_several_expectations_to_choose_from_are_ambiguous(
     _ = another_expectation(bench, case, {"diagnosis": {"pattern": "sepsis"}})
     [schema] = bench.expectation_schemas(case)
     scorer = plan.named("scorer", "lines").digest
-    started = bench.run_by_id(ran(conn, alice, made))
+    started = bench.run(ran(conn, alice, made))
 
     with pytest.raises(Ambiguous, match="has expectations to choose from"):
         _ = bench.expectation(case, schema)
     with pytest.raises(Ambiguous, match="has expectations to choose from"):
-        _ = bench.scoring(started, scorer)
+        _ = scoring(bench, started, scorer)
 
     assert scorer in bench.unscored(started)
     assert [r.run for r, _ in bench.outstanding()] == [started.run]
@@ -304,7 +305,7 @@ def test_several_expectations_to_choose_from_are_ambiguous(
     assert Store(conn).scores_of(started.run) == []
 
     family = bench.family("crlf")
-    variation = bench.configuration(LINES)
+    variation = bench.variation(LINES)
     [held] = [
         r for r in bench.reach(variation, [family]) if r.offered and r.scorer == "whole"
     ]
@@ -314,9 +315,9 @@ def test_several_expectations_to_choose_from_are_ambiguous(
 def test_a_swapped_model_keeps_every_other_pick_and_works_the_rest_out(
     bench: Bench,
 ) -> None:
-    lines = bench.configuration(LINES)
-    off = lines.set("reasoning", bench.chunk("reasoning", "off"), "off")
-    gpt_oss = off.set("model", bench.model_at(GPT_OSS).digest, GPT_OSS_ARTIFACT)
+    lines = bench.variation(LINES)
+    off = lines.set("reasoning", bench.thread("off", "reasoning")[0].digest, "off")
+    gpt_oss = off.set("model", bench.endpoint(GPT_OSS).model.digest, GPT_OSS_ARTIFACT)
 
     assert gpt_oss.label == f"{LINES}+reasoning=off+model={GPT_OSS_ARTIFACT}"
     assert gpt_oss.held("reasoning") == off.held("reasoning")
@@ -331,8 +332,8 @@ def test_a_swapped_model_keeps_every_other_pick_and_works_the_rest_out(
     assert bench.landed(off)["reasoning"].nearest == ()
     assert bench.landed(lines).keys() == {"sampling"}
 
-    on = lines.set("reasoning", bench.chunk("reasoning", "on"), "on")
-    mistral = on.set("model", bench.model_at(MISTRAL).digest, MISTRAL_ARTIFACT)
+    on = lines.set("reasoning", bench.thread("on", "reasoning")[0].digest, "on")
+    mistral = on.set("model", bench.endpoint(MISTRAL).model.digest, MISTRAL_ARTIFACT)
     with pytest.raises(StructuralError, match=f"{MISTRAL_MODEL}: .*doesn't reason"):
         _ = bench.skeleton(mistral)
 
@@ -340,15 +341,17 @@ def test_a_swapped_model_keeps_every_other_pick_and_works_the_rest_out(
 def test_a_configuration_is_found_by_its_name(
     bench: Bench,
 ) -> None:
-    variation = bench.configuration("native")
+    variation = bench.variation("native")
     assert (variation.name, variation.label, variation.parts) == (NATIVE, NATIVE, {})
     with pytest.raises(NotFound, match="no configuration 'nope' for alice"):
-        _ = bench.configuration("nope")
+        _ = bench.variation("nope")
 
 
 def test_a_variation_compiles_to_a_skeleton_of_its_own(bench: Bench) -> None:
-    configuration = bench.configuration(LINES)
-    off = configuration.set("reasoning", bench.chunk("reasoning", "off"), "off")
+    configuration = bench.variation(LINES)
+    off = configuration.set(
+        "reasoning", bench.thread("off", "reasoning")[0].digest, "off"
+    )
 
     assert bench.skeleton(configuration).digest == configuration.configuration.digest
     assert bench.skeleton(off).digest != configuration.configuration.digest
@@ -360,8 +363,8 @@ def test_a_variation_compiles_to_a_skeleton_of_its_own(bench: Bench) -> None:
 def test_a_variation_s_request_shows_placeholders_for_what_it_is_sent_with(
     bench: Bench,
 ) -> None:
-    engine = bench.endpoint(QWEN)
-    variation = bench.configuration(LINES)
+    engine = bench.endpoint(QWEN).engine
+    variation = bench.variation(LINES)
 
     unplaced = bench.request(variation, None, 7)
     placed = bench.request(variation, engine, 7)
@@ -369,11 +372,11 @@ def test_a_variation_s_request_shows_placeholders_for_what_it_is_sent_with(
     assert "‹vignette›" in str(placed["messages"])
     assert placed["seed"] == 7
     with pytest.raises(ValueError, match="not an engine"):
-        _ = bench.served(variation.configuration.digest)
+        _ = bench.request(variation, variation.configuration.digest, 7)
 
 
 def test_several_configurations_of_one_name_are_refused_a_save(bench: Bench) -> None:
-    variation = bench.configuration(LINES)
+    variation = bench.variation(LINES)
     _ = Catalog(bench.conn).create(
         variation.configuration.digest, bench.person.id, name="twice"
     )
@@ -388,39 +391,44 @@ def test_several_configurations_of_one_name_are_refused_a_save(bench: Bench) -> 
 def test_a_fork_is_a_new_configuration_and_an_edit_a_new_version_of_one_s_own(
     bench: Bench,
 ) -> None:
-    variation = bench.configuration(LINES)
-    off = variation.set("reasoning", bench.chunk("reasoning", "off"), "off")
+    variation = bench.variation(LINES)
+    off = variation.set("reasoning", bench.thread("off", "reasoning")[0].digest, "off")
     rows = Rows(bench.conn)
 
-    forked = bench.fork(off, "terse")
-    again = bench.fork(off, "terse")
+    lines = variation.configuration.thread
+    forked = bench.fork(lines, "terse", off)
+    again = bench.fork(lines, "terse", off)
     assert (forked.what, again.what) == ("created", "created")
-    thread = forked.variation.configuration.thread
-    assert thread != again.variation.configuration.thread
+    thread = forked.edit.thread
+    assert thread != again.edit.thread
     assert threads.thread(rows, thread).forked_from == variation.configuration.id
-    assert bench.about(thread).owner == bench.person.id
-    assert forked.digest == bench.skeleton(off).digest
+    assert bench.thread(thread)[1].owner == bench.person.id
+    assert forked.edit.digest == bench.skeleton(off).digest
+    with pytest.raises(ValueError, match="isn't a variation of configuration"):
+        _ = bench.fork(thread, "elsewhere", off)
 
-    seen = forked.variation.configuration.id
-    edited = bench.edit(thread, variation, seen)
-    assert (edited.what, edited.name) == ("a new version", "terse")
-    now = edited.variation.configuration.id
-    assert bench.edit(thread, variation, now).what == "unchanged"
+    seen = forked.edit.id
+    edited = bench.edit(thread, seen, variation)
+    assert (edited.what, bench.thread(thread)[1].name) == ("a new version", "terse")
+    now = edited.edit.id
+    assert bench.edit(thread, now, variation).what == "unchanged"
     assert [e.digest for e in threads.history(rows, thread)] == [
-        forked.digest,
+        forked.edit.digest,
         variation.configuration.digest,
     ]
     with pytest.raises(MovedOn, match=f"since edit {seen}: its head is edit {now}"):
-        _ = bench.edit(thread, off, seen)
+        _ = bench.edit(thread, seen, off)
+    with pytest.raises(ValueError, match="holds skeleton components, not chunk"):
+        _ = bench.edit(thread, now, bench.store.get(off.held("reasoning") or ""))
 
-    archives = bench.thread("configuration", f"archive/{LINES}")[0].thread
+    archives = bench.thread(f"archive/{LINES}", "configuration")[0].thread
     with pytest.raises(NotFound, match=f"no configuration {archives} of yours"):
-        _ = bench.edit(archives, variation, now)
+        _ = bench.edit(archives, now, variation)
 
 
 def test_a_new_recipe_of_the_same_request_is_a_new_version(bench: Bench) -> None:
-    variation = bench.configuration("headed")
-    prompt = resolve(bench.get, variation.held("prompt") or "", Prompt)
+    variation = bench.variation("headed")
+    prompt = resolve(bench.store.get, variation.held("prompt") or "", Prompt)
     head, *rest = prompt.segments
     assert isinstance(head, str)
     split = Prompt(segments=(head[:-1], head[-1], *rest))
@@ -430,19 +438,19 @@ def test_a_new_recipe_of_the_same_request_is_a_new_version(bench: Bench) -> None
     skeleton = variation.configuration.digest
     assert bench.skeleton(resplit).digest == skeleton
 
-    forked = bench.fork(variation, "headed, split")
-    thread = forked.variation.configuration.thread
-    edited = bench.edit(thread, resplit, forked.variation.configuration.id)
+    forked = bench.fork(variation.configuration.thread, "headed, split")
+    thread = forked.edit.thread
+    edited = bench.edit(thread, forked.edit.id, resplit)
     history = threads.history(Rows(bench.conn), thread)
     assert edited.what == "a new version"
     assert [e.digest for e in history] == [skeleton, skeleton]
     assert (
         threads.recipe(bench.rows, threads.head(bench.rows, thread)) == resplit.varied
     )
-    assert bench.edit(thread, resplit, history[-1].id).what == "unchanged"
-    held = bench.holder("configuration", skeleton, resplit.varied)
+    assert bench.edit(thread, history[-1].id, resplit).what == "unchanged"
+    held = bench.holder(skeleton, resplit.varied)
     assert held is not None and held[0].thread == thread
-    held = bench.holder("configuration", skeleton, variation.varied)
+    held = bench.holder(skeleton, variation.varied)
     assert held is not None and held[0].thread != thread
 
 
@@ -543,7 +551,7 @@ def test_a_judged_scorer_applies_where_the_world_lets_its_judges_run(
     monkeypatch.delenv("CHATDDX_TEST_REMOTE", raising=False)
     run = ran(conn, alice, trial(conn, plan, LINES, "noted"))
     started = bench.run(str(run))
-    applies = {a.name for _, a in bench.scorers_for(started)}
+    applies = {a.name for _, a, _ in bench.scorers(started)}
     assert "judged" in applies and "judged-remote" not in applies
     assert plan.named("scorer", "judged-remote").digest not in bench.unscored(started)
 
@@ -551,7 +559,7 @@ def test_a_judged_scorer_applies_where_the_world_lets_its_judges_run(
         update={"cleared": bench.inventory.cleared | {REMOTE: ("test",)}}
     )
     opened = Bench(conn, alice, cleared)
-    assert "judged-remote" in {a.name for _, a in opened.scorers_for(started)}
+    assert "judged-remote" in {a.name for _, a, _ in opened.scorers(started)}
     [refused] = [g for g in opened.score(started) if g.name == "judged-remote"]
     assert refused.refused == (
         f"endpoint {REMOTE!r} needs the secret in $CHATDDX_TEST_REMOTE, which isn't set"
@@ -570,48 +578,56 @@ def test_a_run_s_scores_are_read_the_latest_every_one_or_one_by_id(
     run = ran(conn, alice, trial(conn, plan, LINES, "crlf"))
     other = ran(conn, alice, trial(conn, plan, LINES, "svenska"))
     lines = plan.named("scorer", "lines").digest
-    [first] = bench.score(bench.run_by_id(run), {lines})
-    [second] = bench.score(bench.run_by_id(run), {lines})
+    [first] = bench.score(bench.run(run), {lines})
+    [second] = bench.score(bench.run(run), {lines})
 
-    [latest] = bench.scores_of(run)
+    started = bench.run(run)
+    [latest] = bench.scores_of(started)
     assert (latest.name, scored(latest)) == ("lines", scored(second))
-    every = [scored(g) for g in bench.scores_of(run, every=True)]
+    every = [scored(g) for g in bench.scores_of(started, every=True)]
     assert every == [scored(second), scored(first)]
-    assert scored(bench.score_of(run, scored(first))) == scored(first)
-    assert bench.scorer_name(lines) == "lines"
+    assert scored(bench.score_of(started, scored(first))) == scored(first)
+    assert bench.title(lines) == "lines"
 
     with pytest.raises(NotFound, match=f"no score {scored(first)} of run {other}"):
-        _ = bench.score_of(other, scored(first))
+        _ = bench.score_of(bench.run(other), scored(first))
     theirs = Bench(conn, bob, bench.inventory)
     with pytest.raises(NotFound, match=f"no run {run} of yours"):
-        _ = theirs.score_of(run, scored(first))
+        _ = theirs.run(run)
 
 
 def test_a_configuration_is_found_by_the_title_of_its_answer_s_schema(
     bench: Bench,
 ) -> None:
-    configurations = bench.threads("configuration")
-    answering = {a.name for _, a in bench.answering(configurations, "Answer")}
+    def names(found: list[tuple[Edit, About]]) -> set[str | None]:
+        return {a.name for _, a in found}
+
+    answering = names(bench.threads("configuration", answering="Answer"))
     assert NATIVE in answering
     assert LINES not in answering and TOOL_ANSWER not in answering
-    verdicts = {a.name for _, a in bench.answering(configurations, "Verdict")}
-    judges = {a.name for _, a in bench.purposed(configurations, "judge")}
+    verdicts = names(bench.threads("configuration", answering="Verdict"))
+    judges = names(bench.threads("configuration", purpose="judge"))
     assert verdicts and verdicts <= judges
-    assert bench.answering(configurations, "nothing") == []
+    assert bench.threads("configuration", answering="nothing") == []
+    generation = bench.threads("configuration", purpose="generation")
+    assert not verdicts & names(generation)
+    with pytest.raises(ValueError, match="only a configuration has a purpose"):
+        _ = bench.threads("scorer", answering="Verdict")
 
 
 def test_a_judge_configuration_is_looked_at_as_a_judge_and_isn_t_run(
     bench: Bench,
 ) -> None:
-    configurations = bench.threads("configuration")
-    judges = {a.name for _, a in bench.purposed(configurations, "judge")}
-    generation = {a.name for _, a in bench.purposed(configurations, "generation")}
+    judges = {a.name for _, a in bench.threads("configuration", purpose="judge")}
+    generation = {
+        a.name for _, a in bench.threads("configuration", purpose="generation")
+    }
     assert "judge-graded" in judges and LINES in generation
     assert not judges & generation
 
-    variation = bench.configuration("judge-graded")
-    engine = bench.endpoint(GPT_OSS)
-    findings = bench.findings(variation, engine, 7, bench.families())
+    variation = bench.variation("judge-graded")
+    engine = bench.endpoint(GPT_OSS).engine
+    findings = bench.findings(variation, engine, 7)
     judge = Judge(skeleton=variation.configuration.digest, engine=engine, seeds=(7,))
     assert {f.code for f in findings} == {
         "facts.output_note",
@@ -639,14 +655,14 @@ def test_a_run_runs_again_on_its_trial_s_engine_or_not_at_all(
     with pytest.raises(
         Refused, match=f"serves engine {other}, the trial's is {made.engine}"
     ):
-        _ = bench.again(bench.run_by_id(run), (9,))
+        _ = bench.again(bench.run(run), (9,))
 
 
 @pytest.mark.slow
 def test_a_scoring_says_each_score_it_starts_and_a_halt_stops_the_rest(
     conn: Connection, alice: Person, bench: Bench, plan: Plan
 ) -> None:
-    started = bench.run_by_id(ran(conn, alice, trial(conn, plan, LINES, "crlf")))
+    started = bench.run(ran(conn, alice, trial(conn, plan, LINES, "crlf")))
     chosen = {plan.named("scorer", name).digest for name in ("lines", "whole")}
     said: list[ScoringEvent] = []
     graded = bench.score(started, chosen, said.append)
@@ -655,21 +671,24 @@ def test_a_scoring_says_each_score_it_starts_and_a_halt_stops_the_rest(
 
     halt = ScoreHalt()
     halt.set()
-    before = len(bench.scores_of(started.run, every=True))
+    before = len(bench.scores_of(started, every=True))
     assert {g.refused for g in bench.score(started, chosen, halt=halt)} == {"stopped"}
-    assert len(bench.scores_of(started.run, every=True)) == before
+    assert len(bench.scores_of(started, every=True)) == before
 
 
 def test_a_hand_written_configuration_on_another_model_than_its_skeleton_s_says_so(
     bench: Bench, alice: Person
 ) -> None:
-    lines = bench.configuration(LINES).configuration
+    lines = bench.variation(LINES).configuration
     _ = bench.catalog.create(lines.digest, alice.id, name="by hand")
-    variation = bench.configuration("by hand")
+    variation = bench.variation("by hand")
     assert variation.recipe is None
 
     def codes(endpoint: str) -> set[str]:
-        return {f.code for f in bench.findings(variation, bench.endpoint(endpoint), 7)}
+        return {
+            f.code
+            for f in bench.findings(variation, bench.endpoint(endpoint).engine, 7)
+        }
 
     assert "trial.engine_unmatched" in codes(GPT_OSS)
     assert "trial.engine_unmatched" not in codes(QWEN_BARE)

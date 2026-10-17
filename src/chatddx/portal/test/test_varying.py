@@ -7,8 +7,9 @@ from fastapi.testclient import TestClient
 from markupsafe import escape
 from pydantic import JsonValue
 
-from chatddx.bench import PARTS, Bench
+from chatddx.bench import Bench
 from chatddx.bench.test.helpers import correct_facts
+from chatddx.factors.request import RECIPE_PARTS
 from chatddx.identity import Person
 from chatddx.inventory import Inventory
 from chatddx.portal.test.test_reading import shown
@@ -60,9 +61,9 @@ def test_a_configuration_s_page_holds_the_variation_its_address_gives(
     assert (look["label"], look["skeleton"]) == (asked["label"], asked["skeleton"])
     assert given["base"]["reasoning"] is None
     recipe = signed.get(f"/api/threads/{mine['id']}").json()["recipe"]
-    assert given["base"] == {p: recipe[p] for p in PARTS}
-    assert set(given["choices"]) == set(PARTS)
-    assert all("language" in t for p in PARTS for t in given["choices"][p])
+    assert given["base"] == {p: recipe[p] for p in RECIPE_PARTS}
+    assert set(given["choices"]) == set(RECIPE_PARTS)
+    assert all("language" in t for p in RECIPE_PARTS for t in given["choices"][p])
     assert given["me"] == "alice" and given["configuration"]["id"] == mine["id"]
 
     assert given["endpoint"] == QWEN and look["findings"] is not None

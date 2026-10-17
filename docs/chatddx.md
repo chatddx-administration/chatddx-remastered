@@ -26,7 +26,7 @@ It must be possible to deliver the cage together with the results, for scientifi
   sorted, so equivalent settings share a digest.
 
 - **Chunk:** a factor authored in the portal that fills one part of a recipe (not to be confused with a slot).
-- **Recipe:** the chunks and the engine a skeleton was compiled from.
+- **Recipe:** the chunks and the model a skeleton was compiled from.
 - **Skeleton:** the frozen request.
 - **Slot:** a placeholder filled at send time.
 - **Insert:** a placeholder filled at compile time: `schema` in an output chunk's guidance, filled with that

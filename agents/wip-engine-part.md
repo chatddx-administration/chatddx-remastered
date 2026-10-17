@@ -91,7 +91,7 @@ which to name.
   (`no translation into sv for 'Fill in the plan.'`). `Compilation.into` says the language compiled into, none for
   the recipe as written; a skeleton's language is its compilations' `into`, else their recipe's.
 - **A translation differs by its texts only**: an unvaried configuration is translated against the facts its own
-  compilation pinned (`Seen.compiled_with`). A translated skeleton is compiled when a look or a run needs it, and its
+  compilation pinned (`seen.py:compiled_with`). A translated skeleton is compiled when a look or a run needs it, and its
   compilation is stored when a run is (`keep_compilation(seen, variation, into)`), so a translated run's skeleton has
   a language.
 
@@ -103,7 +103,7 @@ and scoring are as for one language. All of a start's runs carry the variation's
 a `with` entry naming the first (`Entry.started_with`; `0026`), and they begin in one transaction, so a run the gate
 refuses leaves none of them begun. The quota is checked for all of them first. `bench.start -> Started`: each run with
 its language, and the cases left out; every case left out is `no case can be sent`, a refusal.
-`Seen.together(first)` is a start's runs; `GET /api/runs?with=` and a run's page read it. Running again is one run,
+`Seen.runs(started_with=first)` is a start's runs; `GET /api/runs?with=` and a run's page read it. Running again is one run,
 in its run's language. Judges stay in their configuration's language: a judge reads a Swedish note against an answer
 in either language, as its instructions say.
 
@@ -131,9 +131,8 @@ nothing says it isn't the configuration's language.
   other configuration leaves Swedish cases out.
 
 ## The edges
-- **The bench**: `PARTS` holds `model`, which can't be taken out; `Seen.at(variation, endpoint)` says where a run goes,
-  `Seen.model_of(engine)` which model an engine serves and `Seen.model_at(endpoint)` which an endpoint does, each the
-  model itself;
+- **The bench**: `RECIPE_PARTS` holds `model`, which can't be taken out; `Seen.at(variation, endpoint)` says where a
+  run goes and `Seen.endpoint(name)` what an endpoint is, each an `Endpoint` holding the model its engine serves;
   a look says, for each intent, what it asked and where it landed (`Seen.landed`), the languages it runs in, and lints
   each language's trial, a language left out being `translations.missing`.
 - **The API**: `Parts.model`; `Endpoint.serves`, the model an endpoint's engine serves; a look's and a run's
@@ -172,7 +171,8 @@ and loaded again, as its compilations, translations and remote engines are of ve
 - **The review's must-fix items** that aren't this build's: names tests share spelled as literals, and four comments
   in `curation/plan.py:plan_factors`.
 - **`Seen.thread`'s `name` is undescribed.** The doc fixes that took out the `variants_for` lines in docs/bench-api.md,
-  "`thread(word, name)`", took the item's first line too, so `OWNER/NAME` is said only as a qualified name.
+  "`thread(word, name)`", took the item's first line too, so `OWNER/NAME` is said only as a qualified name. The
+  suggestion for `thread(found, word)` there says it again.
 - **The repl's `runs` doesn't show a start**: a translated run says its language, the own language's run of the same
   start says none, and nothing says the two were started together; `GET /api/runs?with=` and a run's page do.
 - **A language refused on a compiled skeleton is said to come from its recipe** (`catalog/language.py:check_language`,
@@ -356,7 +356,7 @@ Not bugs: what the solution does to the model, each with how it can be managed.
   swap in `replaced`, so this is a milder form of the edges' old disagreement, but the same shape. Manageable by saying
   it: at the repl and the home page a configuration is run *at* an endpoint, as a variation.
 - **A variation compiles against the current facts, a configuration against the facts it pinned**
-  (`Seen.compiled_with`). After a correction, `plan+prompt=x` sends another sampling than `plan`, without that being
+  (`seen.py:compiled_with`). After a correction, `plan+prompt=x` sends another sampling than `plan`, without that being
   picked, where `agents/wip-variations.md` promised a variation differs in what was replaced. Manageable: a variation
   whose engine isn't replaced compiles against the configuration's pinned facts, one whose engine is replaced against
   the new model's current ones.
@@ -396,7 +396,7 @@ Where it isn't:
   provenance is whole, but "what a configuration sends changes only by an edit", decided when configurations were
   settled, is now "or by a correction, flagged and followed", and for a variation not even that. Literal chunks keep
   the old guarantee available per configuration, which is the right escape hatch.
-- **A start isn't a subject.** Its runs are tied by a `with` entry and found by a scan (`Seen.together`); the group
+- **A start isn't a subject.** Its runs are tied by a `with` entry and found by a scan (`Seen.runs(started_with=…)`); the group
   that a run over mixed-language cases forms is known by an entry, as variants were known by a name, one level up.
   Small today, and the same shape.
 

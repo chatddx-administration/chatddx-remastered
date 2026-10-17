@@ -346,8 +346,7 @@ given, whoever owns it, deleted ones included, in thread id order. Every case gi
 
 ### `picked(case: str, choices: Mapping[int, str]) -> str | None`
 The one head digest among a case's choices, thread → head digest, or `None` for none. Threads with the same head count
-as one choice. The bench gives it the threads a person may be scored against (`docs/bench-api.md`,
-`Seen.expectation_choices`).
+as one choice. The bench gives it the threads a person may be scored against (`docs/bench-api.md`, `seen.py:choices`).
 - Raises `LookupError("case <case> has expectations to choose from, in threads <t1>, <t2>, …")`.
 
 ### `forks(rows: Reader, thread: int) -> list[int]`

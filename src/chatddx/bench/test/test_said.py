@@ -3,6 +3,7 @@ from collections.abc import Callable
 import pytest
 
 from chatddx.bench import Bench, NotFound
+from chatddx.bench.test.helpers import owned
 from chatddx.catalog import About, Subject
 from chatddx.identity import Person, sees
 from chatddx.store import Rows
@@ -10,7 +11,7 @@ from chatddx.test.world import LINES
 
 
 def _mine(bench: Bench) -> int:
-    edit, _ = bench.thread("configuration", LINES)
+    edit, _ = bench.thread(LINES, "configuration")
     return edit.thread
 
 
@@ -46,7 +47,7 @@ def test_an_owner_says_what_a_thread_is_called_and_who_it_is_shared_with(
 
 def test_only_what_the_owner_may_say_is_said(bench: Bench) -> None:
     mine = _mine(bench)
-    archives = bench.thread("configuration", f"archive/{LINES}")[0].thread
+    archives = bench.thread(f"archive/{LINES}", "configuration")[0].thread
     written = _entries(bench, mine)
     refused: list[tuple[Callable[[], About], type[Exception], str]] = [
         (lambda: bench.say(mine, name=""), ValueError, "a name can't be empty"),
@@ -81,17 +82,18 @@ def test_an_owner_deletes_and_restores_a_thread(bench: Bench) -> None:
     mine = _mine(bench)
     assert bench.say(mine, deleted=True).deleted
     assert mine not in [e.thread for e, _ in bench.threads("configuration")]
-    assert [e.thread for e, _ in bench.deleted("skeleton")] == [mine]
+    deleted = bench.threads("configuration", deleted=True)
+    assert [e.thread for e, _ in deleted] == [mine]
     with pytest.raises(NotFound, match=f"no configuration {mine} for alice"):
-        _ = bench.thread_by_id(mine, "configuration")
-    _, about = bench.thread_by_id(mine, "configuration", deleted=True)
+        _ = bench.thread(mine, "configuration")
+    _, about = bench.thread(mine, "configuration", deleted=True)
     assert about.deleted
 
     with pytest.raises(ValueError, match="is deleted: restore it to say more of it"):
         _ = bench.say(mine, name="gone")
     back = bench.say(mine, deleted=False, name="back")
     assert (back.deleted, back.name) == (False, "back")
-    assert bench.deleted("skeleton") == []
+    assert bench.threads("configuration", deleted=True) == []
 
 
 def test_a_restore_is_held_to_one_expectation_per_case_and_schema(
@@ -99,7 +101,7 @@ def test_a_restore_is_held_to_one_expectation_per_case_and_schema(
 ) -> None:
     case = bench.family("noted").case
     [schema] = bench.expectation_schemas(case)
-    [mine] = bench.expectation_choices([case], schema)[case]
+    [mine] = owned(bench, case, schema)
     [(archives, _)] = bench.shared(case, schema)
     _ = bench.say(mine, deleted=True)
     taken = bench.take_from(archives.thread)

@@ -14,11 +14,11 @@ def _moved(bench: Bench) -> int:
     found = People(bench.conn).find("archive")
     assert found is not None
     archive = Bench(bench.conn, found, bench.inventory)
-    theirs = archive.thread("configuration", LINES)[0].thread
-    greedy = bench.chunk("sampling", "greedy")
+    theirs = archive.thread(LINES, "configuration")[0].thread
+    greedy = bench.thread("greedy", "sampling")[0].digest
     moved = archive.variation(theirs, {"sampling": greedy})
     head = threads.head(bench.rows, theirs).id
-    return archive.edit(theirs, moved, head).variation.configuration.id
+    return archive.edit(theirs, head, moved).edit.id
 
 
 @pytest.mark.slow
@@ -45,7 +45,9 @@ def test_a_fork_follows_its_origin_once_it_has_moved_on(
     forked_from = signed.get(f"/api/threads/{mine['id']}").json()["forked_from"]
     assert proposed["base"]["id"] == forked_from
     assert proposed["varies"] == [] and proposed["component"] is None
-    assert proposed["recipe"]["sampling"] == bench.chunk("sampling", "greedy")
+    assert (
+        proposed["recipe"]["sampling"] == bench.thread("greedy", "sampling")[0].digest
+    )
     assert signed.get(proposal, headers=bob).status_code == 404
 
     stale = signed.post(follows, json={"head": mine["head"]["id"] - 1})

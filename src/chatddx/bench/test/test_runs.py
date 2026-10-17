@@ -2,6 +2,7 @@ import pytest
 
 from chatddx import settings
 from chatddx.bench import Bench, NotFound, OverQuota
+from chatddx.bench.test.helpers import varying
 from chatddx.catalog import Subject, read
 from chatddx.catalog.language import language_of
 from chatddx.curation import Plan
@@ -21,7 +22,7 @@ def test_a_run_keeps_its_seeds_cleanup_execution_and_canaries_and_again_too(
     conn: Connection, world: Inventory, alice: Person, plan: Plan
 ):
     bench = Bench(conn, alice, world)
-    variation = bench.configuration(LINES)
+    variation = bench.variation(LINES)
     probe = plan.named("canary_set", "probe").digest
     cleanup = ("newlines.lf@1", "strip@1")
     running = bench.start(
@@ -36,14 +37,14 @@ def test_a_run_keeps_its_seeds_cleanup_execution_and_canaries_and_again_too(
     running.send()
     _ = running.finish()
 
-    started = bench.run_by_id(running.run)
-    trial = resolve(bench.get, started.trial, Trial)
+    started = bench.run(running.run)
+    trial = resolve(bench.store.get, started.trial, Trial)
     assert (trial.seeds, trial.cleanup) == ((3, 5), cleanup)
     assert (started.execution, started.canaries) == (Execution(concurrency=2), probe)
     assert len(bench.store.run(running.run).items) == 2
 
     again = bench.again(started, (8,)).started
-    repeated = resolve(bench.get, again.trial, Trial)
+    repeated = resolve(bench.store.get, again.trial, Trial)
     assert (repeated.seeds, repeated.cleanup) == ((8,), cleanup)
     assert (again.execution, again.canaries) == (started.execution, probe)
 
@@ -53,34 +54,35 @@ def test_a_run_says_what_it_varied_and_running_again_too(
     conn: Connection, world: Inventory, alice: Person
 ):
     bench = Bench(conn, alice, world)
-    named = bench.configuration(LINES)
-    off = bench.chunk("reasoning", "off")
+    named = bench.variation(LINES)
+    off = bench.thread("off", "reasoning")[0].digest
     cases = [bench.family("crlf").case]
 
     plain = bench.start(named, QWEN, cases, (7,)).first.started
-    assert bench.ran(plain.run) == (named.configuration, {})
+    assert varying(bench, plain.run) == (named.configuration, {})
     varied = named.set("reasoning", off, "off")
     started = bench.start(varied, QWEN, cases, (7,)).first.started
     ran = (named.configuration, {"reasoning": off})
-    assert bench.ran(started.run) == ran
+    assert varying(bench, started.run) == ran
     assert read.about(bench.rows, Subject(run=started.run)).name == varied.label
-    assert bench.ran(bench.again(started, (8,)).run) == ran
+    assert varying(bench, bench.again(started, (8,)).run) == ran
 
 
 def test_a_run_goes_to_the_endpoint_serving_its_model_unless_one_is_named(
     conn: Connection, world: Inventory, alice: Person
 ):
     bench = Bench(conn, alice, world)
-    named = bench.configuration(LINES)
-    gpt_oss, engine = bench.model_at(GPT_OSS).digest, bench.endpoint(GPT_OSS)
+    named = bench.variation(LINES)
+    at = bench.endpoint(GPT_OSS)
+    gpt_oss, engine = at.model.digest, at.engine
     swapped = named.set("model", gpt_oss, GPT_OSS_ARTIFACT)
     cases = [bench.family("crlf").case]
 
-    with faked(world, bench.get, GPT_OSS):
+    with faked(world, bench.store.get, GPT_OSS):
         started = bench.start(swapped, None, cases, (7,)).first.started
     assert started.endpoint is not None and started.endpoint.name == GPT_OSS
-    assert resolve(bench.get, started.trial, Trial).engine == engine
-    assert bench.ran(started.run) == (named.configuration, {"model": gpt_oss})
+    assert resolve(bench.store.get, started.trial, Trial).engine == engine
+    assert varying(bench, started.run) == (named.configuration, {"model": gpt_oss})
     with pytest.raises(ValueError, match=f"endpoint '{QWEN}' serves another model"):
         _ = bench.start(swapped, QWEN, cases, (7,))
 
@@ -89,14 +91,15 @@ def test_a_run_goes_to_the_endpoint_serving_its_model_unless_one_is_named(
     twice = Bench(conn, alice, world.model_copy(update={"endpoints": endpoints}))
     with pytest.raises(ValueError, match=f"{GPT_OSS}, twin@fake serve model"):
         _ = twice.start(swapped, None, cases, (7,))
-    assert twice.at(swapped, "twin@fake") == ("twin@fake", engine)
+    twin = twice.at(swapped, "twin@fake")
+    assert (twin.name, twin.engine) == ("twin@fake", engine)
 
 
 def test_a_run_holds_its_cases_times_its_seeds_in_items(
     bench: Bench, monkeypatch: pytest.MonkeyPatch
 ):
     monkeypatch.setattr(settings, "ITEMS_PER_RUN", 3)
-    variation = bench.configuration(LINES)
+    variation = bench.variation(LINES)
     cases = [bench.family(name).case for name in ("crlf", "bom")]
     with pytest.raises(OverQuota, match="at most 3 items, not 4"):
         _ = bench.start(variation, QWEN, cases, (1, 2))
@@ -107,7 +110,7 @@ def test_a_person_resumes_their_own_unfinished_run(
     conn: Connection, world: Inventory, alice: Person, bob: Person
 ):
     bench = Bench(conn, alice, world)
-    variation = bench.configuration(LINES)
+    variation = bench.variation(LINES)
     cases = [bench.family(name).case for name in ("crlf", "bom")]
     running = bench.start(variation, QWEN, cases, (7,)).first
 
@@ -118,9 +121,9 @@ def test_a_person_resumes_their_own_unfinished_run(
     running.send(stop)
     others = Bench(conn, bob, world)
     with pytest.raises(NotFound, match=f"no run {running.run} of yours"):
-        _ = others.resume(running.run)
+        _ = others.resume(others.run(running.run))
 
-    resumed = bench.resume(running.run)
+    resumed = bench.resume(bench.run(running.run))
     resumed.send()
     _ = resumed.finish()
     assert len(bench.store.run(running.run).items) == 2
@@ -142,18 +145,18 @@ def test_a_run_takes_its_sources_cleanup_and_its_endpoint_s_canaries_and_executi
     )
     declared = world.model_copy(update={"sources": sources, "endpoints": endpoints})
     bench = Bench(conn, alice, declared)
-    variation = bench.configuration(LINES)
+    variation = bench.variation(LINES)
     cases = [bench.family("crlf").case]
 
     started = bench.start(variation, QWEN, cases, (7,)).first.started
-    trial = resolve(bench.get, started.trial, Trial)
+    trial = resolve(bench.store.get, started.trial, Trial)
     assert trial.cleanup == ("newlines.lf@1", "strip@1")
     assert (started.execution, started.canaries) == (execution, probe)
 
     given = bench.start(
         variation, QWEN, cases, (7,), (), Execution(), probe
     ).first.started
-    assert resolve(bench.get, given.trial, Trial).cleanup == ()
+    assert resolve(bench.store.get, given.trial, Trial).cleanup == ()
     assert given.execution == Execution()
 
 
@@ -169,7 +172,7 @@ def test_a_start_runs_each_language_its_cases_are_in_and_leaves_out_the_rest(
         bench.family(name).case for name in ("crlf", "svenska", "nfd", "bom")
     )
     cases = [crlf, svenska, nfd, bom]
-    guided = bench.configuration("lines-guided")
+    guided = bench.variation("lines-guided")
     started = bench.start(guided, QWEN, cases, (7,))
     [(english, first), (swedish, second)] = started.runs
     assert started.left_out == []
@@ -185,20 +188,21 @@ def test_a_start_runs_each_language_its_cases_are_in_and_leaves_out_the_rest(
     )
     assert english.skeleton is not None and swedish.skeleton is not None
     assert english.skeleton.digest == guided.configuration.digest
-    translated = resolve(bench.get, second.started.trial, Trial).skeleton
+    translated = resolve(bench.store.get, second.started.trial, Trial).skeleton
     assert translated == swedish.skeleton.digest != english.skeleton.digest
     assert language_of(bench.rows, translated) == "sv"
-    assert (bench.started_with(first.run), bench.started_with(second.run)) == (
+    said = [read.about(bench.rows, Subject(run=r.run)) for r in (first, second)]
+    assert (said[0].started_with, said[1].started_with) == (
         None,
         first.run,
     )
-    assert bench.ran(second.run) == bench.ran(first.run)
+    assert varying(bench, second.run) == varying(bench, first.run)
     assert bench.described(second.started) == (
         f"lines-guided × {QWEN} × 2 cases, in sv, translated (seed 7)"
     )
     assert bench.described(first.started) == f"lines-guided × {QWEN} × 2 cases (seed 7)"
 
-    lines = bench.configuration(LINES)
+    lines = bench.variation(LINES)
     plain = bench.start(lines, QWEN, cases, (7,))
     [(sent, _)] = plain.runs
     [left] = plain.left_out
@@ -238,6 +242,6 @@ def test_a_start_one_of_whose_runs_the_gate_refuses_begins_none(
 
     monkeypatch.setattr(gate, "check", check)
     with pytest.raises(Refused, match="the second is refused"):
-        _ = bench.start(bench.configuration("lines-guided"), QWEN, cases, (7,))
+        _ = bench.start(bench.variation("lines-guided"), QWEN, cases, (7,))
     assert len(calls) == 2
     assert bench.runs() == []

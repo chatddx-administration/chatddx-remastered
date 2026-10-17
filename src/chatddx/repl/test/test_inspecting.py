@@ -1,7 +1,7 @@
 import pytest
 
 from chatddx.bench import Bench
-from chatddx.bench.test.helpers import another_expectation
+from chatddx.bench.test.helpers import another_expectation, owned
 from chatddx.catalog import Entry, EntryField, Subject
 from chatddx.repl.test.helpers import Say, line_of, pattern, row, tagged, targets_of
 from chatddx.store import Catalog
@@ -169,7 +169,7 @@ def test_show_case_says_when_none_of_the_expectations_is_yours(bench: Bench, say
     case = bench.family("noted").case
     [schema] = bench.expectation_schemas(case)
     catalog, person = Catalog(bench.conn), bench.person.id
-    [mine] = bench.expectation_choices([case], schema)[case]
+    [mine] = owned(bench, case, schema)
     catalog.note(Subject(thread=mine), Entry(field=EntryField.DELETED), person)
     written = say("show case noted")
 

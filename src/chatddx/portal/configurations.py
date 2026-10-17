@@ -13,8 +13,8 @@ from chatddx.api import (
     threads as api,
     world as api_world,
 )
-from chatddx.bench import OPTIONAL, PARTS, Bench
-from chatddx.factors.request import Purpose
+from chatddx.bench import Bench
+from chatddx.factors.request import OPTIONAL_PARTS, RECIPE_PARTS, Purpose
 
 from .pages import BenchDep, page
 
@@ -61,19 +61,22 @@ def configuration(
     versions = api.edits(bench, thread)
     at = next(i for i, v in enumerate(versions) if v.id == look.head.id)
     runs = api_runs.runs(bench, reaching=look.skeleton, limit=20)
-    base = {p: None if held.recipe is None else getattr(held.recipe, p) for p in PARTS}
+    base = {
+        p: None if held.recipe is None else getattr(held.recipe, p)
+        for p in RECIPE_PARTS
+    }
     props: dict[str, Any] = {
         "configuration": shown.model_dump(mode="json"),
         "me": bench.person.login,
         "versions": [v.model_dump(mode="json") for v in versions],
         "base": base,
-        "optional": list(OPTIONAL),
+        "optional": list(OPTIONAL_PARTS),
         "look": look.model_dump(mode="json"),
         "endpoint": query.endpoint,
         "tags": query.tag,
         "choices": {
             p: [t.model_dump(mode="json") for t in _choices(bench, p, endpoints)]
-            for p in PARTS
+            for p in RECIPE_PARTS
         },
         "configurations": [t.model_dump(mode="json") for t in siblings],
         "endpoints": [e.model_dump(mode="json") for e in endpoints],

@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response
 from chatddx import bench as benches, catalog
 from chatddx.bench import Ambiguous, Bench, NotFound
 from chatddx.factors.base import Fingerprint, resolve
-from chatddx.factors.cases import Case
+from chatddx.factors.cases import Appendix, Case
 from chatddx.store import fetch_vignette
 
 from . import schemas
@@ -59,8 +59,8 @@ def families(
 
 @router.get("/families/{family}")
 def family(bench: BenchDep, family: int) -> schemas.FamilyDetail:
-    found = bench.family_by_id(family)
-    case = resolve(bench.get, found.case, Case)
+    found = bench.family(family)
+    case = resolve(bench.store.get, found.case, Case)
     return schemas.FamilyDetail(
         **family_of(bench, found).model_dump(),
         description=found.about.description,
@@ -100,12 +100,13 @@ def appendix(
     given: schemas.NewAppendix,
 ) -> schemas.MadeThread:
     with refused():
-        written = bench.new(bench.appendix(family, given.text), given.name)
+        held = Appendix(vignette=bench.family(family).vignette, text=given.text)
+        written = bench.new(held, given.name)
     return made(request, response, bench, written.edit.thread, written.findings)
 
 
 def case_of(bench: Bench, case: str, default: str) -> schemas.FamilyCase:
-    held = resolve(bench.get, case, Case)
+    held = resolve(bench.store.get, case, Case)
     return schemas.FamilyCase(
         case=case,
         title=bench.title(case),
@@ -119,13 +120,13 @@ def case_of(bench: Bench, case: str, default: str) -> schemas.FamilyCase:
 
 @router.get("/families/{family}/cases")
 def cases(bench: BenchDep, family: int) -> list[schemas.FamilyCase]:
-    found = bench.family_by_id(family)
-    return [case_of(bench, c, found.case) for c in bench.cases(family)]
+    found = bench.family(family)
+    return [case_of(bench, c, found.case) for c in found.cases]
 
 
 @router.post("/families/{family}/cases", status_code=201)
 def case(bench: BenchDep, family: int, given: schemas.NewCase) -> schemas.FamilyCase:
-    found = bench.family_by_id(family)
+    found = bench.family(family)
     try:
         with refused():
             if given.replacing is None:
@@ -141,8 +142,8 @@ def case(bench: BenchDep, family: int, given: schemas.NewCase) -> schemas.Family
 
 @router.get("/families/{family}/vignette", dependencies=[Depends(no_store)])
 def vignette(bench: BenchDep, family: int) -> schemas.Vignette:
-    found = bench.family_by_id(family)
-    held = resolve(bench.get, found.case, Case).vignette
+    found = bench.family(family)
+    held = resolve(bench.store.get, found.case, Case).vignette
     try:
         raw = fetch_vignette(bench.conn, bench.inventory, held)
     except LookupError as e:
@@ -178,4 +179,4 @@ def takes(bench: BenchDep, given: schemas.NewTakes) -> schemas.Taken:
 
 @router.get("/tags")
 def tags(bench: BenchDep) -> list[str]:
-    return bench.tags()
+    return sorted({tag for f in bench.families() for tag in f.about.tags})

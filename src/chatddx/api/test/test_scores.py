@@ -106,7 +106,7 @@ def test_the_runs_left_to_score_are_listed_with_their_scorers(
     assert all(r["unscored"] is None for r in signed.get("/api/runs").json())
 
     lines = plan.named("scorer", "lines").digest
-    _ = bench.score(bench.run_by_id(left), {lines})
+    _ = bench.score(bench.run(left), {lines})
     [after] = signed.get("/api/runs", params={"unscored": "true"}).json()
     assert {s["name"] for s in after["unscored"]} == {"whole", "judged"}
 

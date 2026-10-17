@@ -4,7 +4,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from chatddx.bench import Bench
-from chatddx.bench.test.helpers import another_expectation
+from chatddx.bench.test.helpers import another_expectation, owned
 from chatddx.catalog import Entry, EntryField, Subject
 from chatddx.curation import load_cases
 from chatddx.store import Catalog
@@ -19,8 +19,7 @@ def family(signed: TestClient, name: str = "crlf") -> dict[str, Any]:
 def dropped(signed: TestClient, bench: Bench, family: dict[str, Any]) -> dict[str, Any]:
     [held] = signed.get(f"/api/families/{family['id']}").json()["expectations"]
     catalog, person, case = Catalog(bench.conn), bench.person.id, family["case"]
-    choices = bench.expectation_choices([case], held["expectation_schema"])
-    [mine] = choices[case]
+    [mine] = owned(bench, case, held["expectation_schema"])
     catalog.note(Subject(thread=mine), Entry(field=EntryField.DELETED), person)
     return held
 

@@ -101,7 +101,7 @@ Where it is at each stage of a request (`docs/factors.md`, "Requests"), beyond t
 - **A tool round**: the model's arguments go wherever the tool's code sends them; the results are kept in the ledger.
 - **Live deltas and tool runs**: through the database's notification queue, as they come (`docs/worker.md`).
 - **Rendered again**: an item's first request rendered with its real fills, in memory, and only compared with the
-  call's fingerprint; nothing is sent (`Bench.rendered_again`).
+  call's fingerprint; nothing is sent (`chatddx.runner.prepare.rendered_again`).
 - **Not sensitive**: the chunks, the recipe, the skeleton and the trial, which names its cases by fingerprint; a
   canary's request; the look's request, rendered with placeholders.
 
@@ -226,7 +226,7 @@ runs out of the app, in the healthcheck's order, with where else it is tracked. 
 7. **Digests** work as capabilities.
    - `GET /api/components/{digest}` checks no visibility (`src/chatddx/api/world.py:79-89`), by design: appendices and
      expectations aren't sensitive (`docs/chatddx.md`; `docs/api.md`, "What a person sees").
-   - `Seen.variation` checks only a part's kind (`src/chatddx/bench/seen.py:241-246`), so `/threads/{id}/variation`
+   - `Seen.variation` checks only a part's kind (`src/chatddx/bench/seen.py:Seen.variation`), so `/threads/{id}/variation`
      shows another person's unshared chunk, and `POST /runs` with `parts` runs one (`src/chatddx/api/runs.py:84-90`).
      Untracked.
    - `/threads/{id}/proposal` returns appendix text without no-store (`src/chatddx/api/threads.py:384-403`).

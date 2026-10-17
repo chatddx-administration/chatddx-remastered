@@ -1,42 +1,29 @@
-from chatddx.catalog import threads, titles
-from chatddx.identity import owns
+from chatddx.catalog import threads
 
-from .errors import Ambiguous, NotFound
-from .model import SAVED, Saved
-from .seen import Seen
+from .errors import Ambiguous
+from .model import SAVED, Written
+from .seen import Seen, compiled, compiled_with, linted
 from .variation import TriedVariation
 
 
-def save(seen: Seen, variation: TriedVariation, name: str) -> Saved:
+def save(seen: Seen, variation: TriedVariation, name: str) -> Written:
     mine = threads.find(seen.rows, "skeleton", name, owner=seen.person.id)
     if len(mine) > 1:
         raise Ambiguous(
             f"{seen.person.login} has {len(mine)} configurations named {name!r}"
         )
     if not mine:
-        return fork(seen, variation, name)
-    return edit(seen, mine[0], variation, threads.head(seen.rows, mine[0]).id)
+        return kept(seen, variation, None, name)
+    return kept(seen, variation, mine[0], name, threads.head(seen.rows, mine[0]).id)
 
 
-def fork(seen: Seen, variation: TriedVariation, name: str) -> Saved:
-    return _kept(seen, variation, None, name)
-
-
-def edit(seen: Seen, thread: int, variation: TriedVariation, head: int) -> Saved:
-    _, about = seen.thread_by_id(thread, "configuration")
-    if not owns(seen.person.id, about):
-        raise NotFound(f"no configuration {thread} of yours")
-    name = about.name or titles.title(seen.rows, thread)
-    return _kept(seen, variation, thread, name, head)
-
-
-def _kept(
+def kept(
     seen: Seen,
     variation: TriedVariation,
     thread: int | None,
-    name: str,
+    name: str | None,
     head: int | None = None,
-) -> Saved:
+) -> Written:
     skeleton = seen.skeleton(variation)
     with seen.conn.transaction():
         compilation = (
@@ -51,9 +38,7 @@ def _kept(
             forked_from=variation.configuration.id,
             head=head,
         )
-    what = SAVED[kept]
-    recipe = threads.recipe(seen.rows, edit)
-    return Saved(name, skeleton.digest, what, TriedVariation(edit, name, recipe))
+    return Written(edit, SAVED[kept], linted(seen, skeleton.digest))
 
 
 def keep_compilation(
@@ -62,6 +47,6 @@ def keep_compilation(
     recipe = variation.varied
     if recipe is None or (into is None and not variation.parts):
         return None
-    registry, compilation = seen.compiled(recipe, seen.compiled_with(variation), into)
+    registry, compilation = compiled(seen, recipe, compiled_with(seen, variation), into)
     _ = seen.store.add(registry, [compilation.digest])
     return compilation.digest

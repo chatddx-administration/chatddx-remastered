@@ -3,13 +3,14 @@ from typing import Literal
 
 from chatddx.catalog import About, Behind, Divergence, Edit, Part
 from chatddx.factors.base import Component, Finding
+from chatddx.factors.cases import Vignette
+from chatddx.factors.engine import Model
 from chatddx.factors.request import CHUNK_PARTS, Recipe, Skeleton, SlotName
 from chatddx.factors.scoring import Scorer
+from chatddx.inventory import EndpointSpec
 from chatddx.ledger import Score
 from chatddx.runner.run import Running
 from chatddx.store import Kept
-
-from .variation import TriedVariation
 
 KINDS: dict[str, tuple[str, ...]] = {
     "configuration": ("skeleton",),
@@ -27,8 +28,8 @@ KINDS: dict[str, tuple[str, ...]] = {
 }
 
 
-def word_of(kind: str) -> str:
-    return next(w for w, held in KINDS.items() if kind in held)
+def word_of(kind: str | None) -> str:
+    return next((w for w, held in KINDS.items() if kind in held), "thread")
 
 
 WRITTEN: frozenset[str] = frozenset(
@@ -54,10 +55,26 @@ PLACEHOLDERS: dict[SlotName, str] = {
 
 
 @dataclass(frozen=True)
+class Endpoint:
+    name: str
+    spec: EndpointSpec
+    model: Model
+
+    @property
+    def engine(self) -> str:
+        return self.spec.engine
+
+
+@dataclass(frozen=True)
 class Family:
     id: int
     about: About
-    case: str
+    vignette: Vignette
+    cases: tuple[str, ...]
+
+    @property
+    def case(self) -> str:
+        return self.cases[0]
 
     @property
     def name(self) -> str:
@@ -110,14 +127,6 @@ class Graded:
 
     def label(self, view: int) -> str:
         return self.labels.get(view, f"view {view}")
-
-
-@dataclass(frozen=True)
-class Saved:
-    name: str
-    digest: str
-    what: Literal["created", "a new version", "unchanged"]
-    variation: TriedVariation
 
 
 @dataclass(frozen=True)

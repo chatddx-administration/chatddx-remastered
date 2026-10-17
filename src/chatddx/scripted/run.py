@@ -3,7 +3,6 @@ from contextlib import ExitStack, contextmanager
 
 from chatddx.bench import Bench, Carried, TriedVariation
 from chatddx.factors.base import resolve
-from chatddx.factors.scoring import Scorer
 from chatddx.factors.trial import Trial
 from chatddx.fake_vllm.script import Script
 from chatddx.fake_vllm.server import serving
@@ -18,12 +17,12 @@ NONE = "none"
 
 
 def variation(bench: Bench, scripted: ScriptedRun) -> TriedVariation:
-    tried = bench.configuration(scripted.configuration)
+    tried = bench.variation(scripted.configuration)
     if tried.recipe is not None:
-        model = bench.model_at(scripted.endpoint).digest
+        model = bench.endpoint(scripted.endpoint).model.digest
         tried = tried.set("model", model, bench.title(model))
     for part, chunk in scripted.set.items():
-        digest = None if chunk == NONE else bench.chunk(part, chunk)
+        digest = None if chunk == NONE else bench.thread(chunk, part)[0].digest
         tried = tried.set(part, digest, chunk)
     return tried
 
@@ -33,8 +32,13 @@ def ran_before(bench: Bench, scripted: ScriptedRun) -> RunStarted | None:
     cases = [bench.case_titled(name)[1] for name in scripted.cases]
     skeleton = _sent(scripted, bench.languages(tried, cases)).skeleton
     assert skeleton is not None
-    engine = bench.endpoint(scripted.endpoint)
-    _, trial = bench.trial(skeleton, engine, cases, (scripted.seed,))
+    engine = bench.endpoint(scripted.endpoint).engine
+    trial = Trial(
+        skeleton=skeleton.digest,
+        engine=engine,
+        cases=tuple(cases),
+        seeds=(scripted.seed,),
+    )
     return next((r for r in bench.runs() if r.trial == trial.digest), None)
 
 
@@ -54,7 +58,7 @@ def run(bench: Bench, scripted: ScriptedRun) -> RunStarted:
     tried = variation(bench, scripted)
     cases = [bench.case_titled(name)[1] for name in scripted.cases]
     _ = _sent(scripted, bench.languages(tried, cases))
-    fake = fake_at(bench.inventory, bench.get, scripted.endpoint)
+    fake = fake_at(bench.inventory, bench.store.get, scripted.endpoint)
     script = Script(scripted.turns) if scripted.turns else None
     with serving([fake], script=script):
         started = bench.start(tried, scripted.endpoint, cases, (scripted.seed,))
@@ -80,14 +84,14 @@ def _halting(running: Running, after: int | None) -> Callable[[Event], None]:
 
 @contextmanager
 def _judging(bench: Bench, run: RunStarted) -> Generator[None]:
-    cases = resolve(bench.get, run.trial, Trial).cases
+    cases = resolve(bench.store.get, run.trial, Trial).cases
     at = {
-        judge_at(bench.inventory, bench.get, judge, cases)[2]
-        for edit, _ in bench.scorers_for(run)
-        for judge in resolve(bench.get, edit.digest, Scorer).judges
+        judge_at(bench.inventory, bench.store.get, judge, cases)[2]
+        for _, _, scorer in bench.scorers(run)
+        for judge in scorer.judges
     }
     with ExitStack() as stack:
         for name in sorted(at):
-            fake = fake_at(bench.inventory, bench.get, name)
+            fake = fake_at(bench.inventory, bench.store.get, name)
             _ = stack.enter_context(serving([fake]))
         yield

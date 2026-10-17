@@ -545,7 +545,7 @@ It doesn't
 From `docs/ledger.md`, "Open design issues", where they concern this API:
 - `Execution.timeout_s` isn't checked: a call's times span all its attempts.
 - Nothing here rebuilds a request to compare with `Call.request`; the bench rebuilds an item's first
-  (`Bench.rendered_again`), not a later round's or a judge's.
+  (`chatddx.runner.prepare.rendered_again`), not a later round's or a judge's.
 - Prompt-token fingerprints aren't compared between runs; `check_run` notes only the items without one.
 - Canary outputs aren't compared between phases or runs.
 - Canary calls get no model check, and neither canary calls nor judge calls a prompt-token check.

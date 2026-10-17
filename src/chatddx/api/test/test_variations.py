@@ -6,10 +6,10 @@ from fastapi.testclient import TestClient
 
 from chatddx.api.schemas import Parts
 from chatddx.api.test.conftest import sign_in
-from chatddx.bench import OPTIONAL, PARTS, Bench
+from chatddx.bench import Bench
 from chatddx.bench.test.helpers import another_expectation
 from chatddx.curation import load_cases
-from chatddx.factors.request import Translations
+from chatddx.factors.request import OPTIONAL_PARTS, RECIPE_PARTS, Translations
 from chatddx.store import Store
 from chatddx.store.store import Connection
 from chatddx.test.world import DATA, GPT_OSS, LINES, NATIVE, NATIVE_TOOLS, OFF, QWEN
@@ -42,11 +42,11 @@ def parts(shown: dict[str, Any]) -> dict[str, dict[str, Any]]:
 
 
 def test_a_request_names_the_recipe_s_parts(described: dict[str, Any]) -> None:
-    assert tuple(Parts.model_fields) == PARTS
+    assert tuple(Parts.model_fields) == RECIPE_PARTS
     get = described["paths"]["/api/threads/{thread}/variation"]["get"]
     assert {p["name"] for p in get["parameters"]} == {
         "thread",
-        *PARTS,
+        *RECIPE_PARTS,
         "head",
         "endpoint",
         "tag",
@@ -63,7 +63,9 @@ def test_a_configuration_with_nothing_replaced_is_itself(signed: TestClient) -> 
 
     held = parts(shown)
     recipe = signed.get(f"/api/threads/{mine['id']}").json()["recipe"]
-    assert {p: held[p]["digest"] for p in PARTS} == {p: recipe[p] for p in PARTS}
+    assert {p: held[p]["digest"] for p in RECIPE_PARTS} == {
+        p: recipe[p] for p in RECIPE_PARTS
+    }
     assert not any(p["replaced"] for p in held.values())
     assert (held["output"]["title"], held["output"]["summary"]) == (
         "lines",
@@ -366,7 +368,7 @@ def test_a_variation_the_bench_refuses_is_unprocessable(
         (
             {"prompt": ""},
             "a configuration always has a prompt: only "
-            + f"{', '.join(OPTIONAL)} can be taken out",
+            + f"{', '.join(OPTIONAL_PARTS)} can be taken out",
         ),
         ({"model": ""}, "a configuration always has a model"),
         ({"endpoint": "nowhere@fake"}, "no endpoint 'nowhere@fake' in the inventory"),
@@ -539,7 +541,7 @@ def test_only_one_s_own_configuration_is_edited_and_a_seen_one_forked(
 def test_trying_forking_and_editing_need_a_session(
     client: TestClient, bench: Bench
 ) -> None:
-    mine = bench.thread("configuration", LINES)[0].thread
+    mine = bench.thread(LINES, "configuration")[0].thread
     assert client.get(f"/api/threads/{mine}/variation").status_code == 401
     for path in (f"/api/threads/{mine}/forks", f"/api/threads/{mine}/edits"):
         assert client.post(path, json={"name": "x"}).status_code == 401

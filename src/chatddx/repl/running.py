@@ -5,10 +5,11 @@ from typing import Any, Self
 from rich.console import Console
 from rich.text import Text
 
-from chatddx.bench import Bench, Carried, Graded, Started, TriedVariation, usage
+from chatddx.bench import Bench, Carried, Graded, Started, TriedVariation
 from chatddx.catalog.titles import short
 from chatddx.ledger import RunItem, RunStarted
 from chatddx.runner.gate import Refused
+from chatddx.runner.outcome import usage
 from chatddx.runner.run import Event, ItemEnded, ItemStarted, Noted, Running, Streamed
 
 from .render import (
@@ -250,7 +251,7 @@ def _whole(repl: Repl) -> tuple[TriedVariation, str] | None:
     if cell.variation is None:
         repl.error("the cell has no configuration: use CONFIGURATION")
         return None
-    return cell.variation, repl.bench.at(cell.variation, cell.endpoint)[0]
+    return cell.variation, repl.bench.at(cell.variation, cell.named).name
 
 
 def _started(

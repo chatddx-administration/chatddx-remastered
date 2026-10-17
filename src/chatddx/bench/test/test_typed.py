@@ -20,7 +20,7 @@ def test_a_typed_case_is_kept_with_its_case_and_family(bench: Bench) -> None:
         bench.person.id,
         "en",
     )
-    vignette = resolve(bench.get, family.case, Case).vignette
+    vignette = resolve(bench.store.get, family.case, Case).vignette
     assert vignette.source == "typed"
     assert vignette.fingerprint == Fingerprint.of(TYPED.encode())
     assert fetch_vignette(bench.conn, bench.inventory, vignette) == TYPED.encode()
@@ -62,7 +62,7 @@ def test_a_typed_case_runs_as_any_case(
 ) -> None:
     on_world = Bench(bench.conn, alice, world)
     family = on_world.type_case(TYPED, language="en")
-    variation = on_world.configuration(LINES)
+    variation = on_world.variation(LINES)
     running = on_world.start(variation, QWEN, [family.case], (7,)).first
     running.send(lambda _: None)
     assert running.finish() == []

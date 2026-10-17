@@ -32,7 +32,7 @@ def score_now(
     run: UUID,
     given: schemas.NewScoring,
 ) -> schemas.ScoringData:
-    started = bench.run_by_id(run)
+    started = bench.run(run)
     if run not in bench.store.finished([run]):
         raise HTTPException(422, f"run {run} hasn't finished")
     said = scoring_of(bench, started, given.scorers)
@@ -62,18 +62,17 @@ def scores(
         ),
     ] = False,
 ) -> list[schemas.Graded]:
-    _ = bench.run_by_id(run)
-    return [graded_of(g) for g in bench.scores_of(run, every)]
+    return [graded_of(g) for g in bench.scores_of(bench.run(run), every)]
 
 
 @router.get("/runs/{run}/scores/{score}")
 def score(bench: BenchDep, run: UUID, score: UUID) -> schemas.Graded:
-    return graded_of(bench.score_of(run, score))
+    return graded_of(bench.score_of(bench.run(run), score))
 
 
 @router.get("/runs/{run}/scores/{score}/items", dependencies=[Depends(no_store)])
 def items(bench: BenchDep, run: UUID, score: UUID) -> schemas.ScoreItems:
-    held = bench.score_of(run, score).score
+    held = bench.score_of(bench.run(run), score).score
     finished = None if held is None else held.finished
     return schemas.ScoreItems(
         items=[

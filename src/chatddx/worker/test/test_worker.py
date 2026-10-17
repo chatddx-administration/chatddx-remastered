@@ -54,7 +54,7 @@ def conninfo(db: str) -> str:
 
 # As the request starts a run, at an endpoint that answers, before it is queued.
 def start(bench: Bench) -> UUID:
-    variation = bench.configuration(LINES)
+    variation = bench.variation(LINES)
     cases = [bench.family(name).case for name in ("crlf", "bom")]
     return bench.start(variation, QWEN, cases, (7,)).first.run
 
@@ -117,8 +117,8 @@ def test_a_queued_run_is_sent_finished_and_scored_and_scored_again_when_asked(
     run = Store(conn).run(started)
     assert len(run.items) == 2
     assert run.finished is not None and run.finished.findings == ()
-    every = bench.scores_of(started, every=True)
-    assert {g.name for g in bench.scores_of(started)} >= {"lines"}
+    every = bench.scores_of(bench.run(started), every=True)
+    assert {g.name for g in bench.scores_of(bench.run(started))} >= {"lines"}
     assert [g.name for g in every].count("lines") == 2
 
 
@@ -177,7 +177,7 @@ def test_a_halt_stops_the_run_and_leaves_it_unscored(
     assert halted.status == "stopped"
     run = Store(conn).run(started)
     assert run.finished is not None and len(run.items) < 2
-    assert bench.scores_of(started) == []
+    assert bench.scores_of(bench.run(started)) == []
 
 
 @pytest.mark.usefixtures("fake")
@@ -194,7 +194,7 @@ def test_a_run_halted_while_queued_is_finished_unsent_and_unscored(
     assert halted.status == "stopped"
     run = Store(conn).run(started)
     assert run.finished is not None and run.items == ()
-    assert bench.scores_of(started) == []
+    assert bench.scores_of(bench.run(started)) == []
 
 
 @pytest.mark.slow
@@ -285,7 +285,7 @@ def test_a_stopping_worker_cuts_its_scoring_short_at_its_deadline_and_keeps_what
     conn: Connection, conninfo: str, world: Inventory, bench: Bench, alice: Person
 ) -> None:
     queue = Queue(conn)
-    variation = bench.configuration(LINES)
+    variation = bench.variation(LINES)
     with faked(world, Store(conn).get):
         running = bench.start(variation, QWEN, [bench.family("noted").case], (7,)).first
         running.send()
@@ -309,7 +309,11 @@ def test_a_stopping_worker_cuts_its_scoring_short_at_its_deadline_and_keeps_what
 
     assert done.status == "finished"
     assert sorted(names[s] for s in done.scored) == ["judged", "lines", "whole"]
-    every = [g.name for g in bench.scores_of(started, every=True)]
+    every = [g.name for g in bench.scores_of(bench.run(started), every=True)]
     assert sorted(every) == ["judged", "judged", "lines", "whole"]
-    assert {g.name for g in bench.scores_of(started)} == {"judged", "lines", "whole"}
-    assert bench.unscored(bench.run_by_id(started)) == []
+    assert {g.name for g in bench.scores_of(bench.run(started))} == {
+        "judged",
+        "lines",
+        "whole",
+    }
+    assert bench.unscored(bench.run(started)) == []

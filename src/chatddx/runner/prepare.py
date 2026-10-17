@@ -2,14 +2,20 @@ from dataclasses import dataclass
 
 from pydantic import JsonValue
 
-from chatddx.factors.base import Finding, Fingerprint, Resolver, resolve
+from chatddx.factors.base import (
+    Finding,
+    Fingerprint,
+    Resolver,
+    StructuralError,
+    resolve,
+)
 from chatddx.factors.cases import Case, Prepared, prepare_case
 from chatddx.factors.engine import served_model_name
 from chatddx.factors.request import AppendixLayout, Skeleton
 from chatddx.factors.trial import Trial
 from chatddx.inventory import Inventory
-from chatddx.ledger import ItemKey
-from chatddx.store import fetch_vignette
+from chatddx.ledger import ItemKey, Run, fingerprint_request
+from chatddx.store import Store, fetch_vignette
 from chatddx.store.store import Connection
 
 
@@ -46,3 +52,24 @@ class Items:
             fills=prepared.fills,
         )
         return PreparedItem(key, seed, prepared.fingerprint, body, prepared.findings)
+
+
+def rendered_again(
+    conn: Connection, inventory: Inventory, run: Run
+) -> dict[ItemKey, str | None]:
+    registry = Store(conn).load([run.started.trial])
+    items = Items(conn, inventory, registry.get, run.started.trial)
+    found: dict[ItemKey, str | None] = {}
+    for item in run.items:
+        try:
+            prepared = items.item(item.key)
+        except (LookupError, StructuralError) as e:
+            found[item.key] = str(e)
+            continue
+        if prepared.vignette != item.vignette:
+            found[item.key] = "the vignette at the source isn't the one sent"
+        elif fingerprint_request(prepared.body) != item.call.request:
+            found[item.key] = "the request renders otherwise now"
+        else:
+            found[item.key] = None
+    return found

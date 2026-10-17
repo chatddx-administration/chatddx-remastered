@@ -67,14 +67,13 @@ as `shell.failed` is set. Otherwise it returns 0.
 A rich console with markup off, since names, vignettes and answers hold brackets.
 
 ### `class Cell`
-Frozen: `variation: TriedVariation | None`, `endpoint: str | None`, the endpoint named, and `served: str | None`, the
-engine it serves.
+Frozen: `variation: TriedVariation | None` and `endpoint: chatddx.bench.Endpoint | None`, the endpoint named.
 
 | Name | Gives |
 | --- | --- |
 | `trying(variation)` | the cell with `variation` |
-| `on(endpoint, served)` | the cell at `endpoint`, serving `served`; `on(None, None)` drops the endpoint |
-| `model` | the variation's model part |
+| `on(endpoint)` | the cell at `endpoint`; `on(None)` drops it |
+| `named` | the endpoint's name, else `None` |
 | `label` | the variation's label, `NAME+PART=CHUNK…`, else `""` |
 
 ### `class Repl(bench: Bench, console: Console, seed: int | None = None)`
@@ -84,6 +83,8 @@ The shell's state: `bench`, `console`, `cell` (a `Cell()` to begin with), `seed`
 | Name | Does |
 | --- | --- |
 | `prompt` | `LOGIN #SEED> `, with ` LABEL×ENDPOINT` after the login as the cell fills, ENDPOINT being `where()` |
+| `at` | the `Endpoint` the cell's configuration is rendered and linted for: the one named, else the one `Bench.at` gives for the variation, `None` when it refuses |
+| `engine` | `at`'s engine, else `None` |
 | `where()` | the endpoint the cell runs at: with no configuration, the one named; else `Bench.at` of the variation and the endpoint named, the named one when it refuses, `None` for none |
 | `completions()` | the names Tab offers, by key (see `complete`): `_names()` plus `replay:run`, the latest 20 runs' id prefixes, and `score:run`, the runs left to score |
 | `forget()` | drops the kept names, so the next Tab reads them again; `save` calls it |
@@ -91,7 +92,9 @@ The shell's state: `bench`, `console`, `cell` (a `Cell()` to begin with), `seed`
 | `say_changed()` | `say_cell`, then the cell's lints (`Bench.findings` of the variation, the engine and the seed) when it holds both |
 | `say_findings(findings, tally=False)` | a line per finding, `[level] code: message`; with `tally`, each once with `(×N)` |
 | `error(message)` | prints `message` in red and sets `failed` |
-
+`_names()` keeps, per kind of `bench/model.py:KINDS`, the names of the threads the person sees (`Bench.threads`);
+`set:PART` adds `none` for an optional part (`OPTIONAL_PARTS`); and `endpoint`, `case` (family names and the titles
+of their other cases), `tag` (the families'), `part` and `kind`.
 `_names()` keeps, per kind of `bench/model.py:KINDS`, the names the person sees (`Bench.names`); `set:PART` adds
 `none` for an optional part; and `endpoint`, `case` (family names and `Bench.case_titles()`), `tag`, `part` and
 `kind`.
@@ -172,7 +175,7 @@ style. `TOKENS` is the width of a token count.
 | `Transcript(console)` | `event(event)` streams a run's events: thinking, labelled, the answer, `[name] arguments` and `[result]`, and the tokens after; `item(item)` tells a stored item again |
 | `Tally(console, width, case)` | a live line: `count(tokens)` as they stream, `stopping()`, `end(tokens, word, style, said)`; a context manager |
 | `JudgeLines(console, bench)` | `event(event)` turns the scoring pass's events into a `Tally` per judge call, ended with what the judge said; `close()` |
-| `outcome(skeleton, item)` | `(word, style, why)`, from `bench.outcome` |
+| `outcome(skeleton, item)` | `(word, style, why)`, from `chatddx.runner.outcome.outcome` |
 | `show_answer(console, skeleton, item, graded)` | the call's error, `stopped`, `unread: …`, `salvaged: …`, `valid` or `invalid: …`, then each selection of the views |
 | `show_scores(console, graded)` | one item's scores, a row per view with a target, and `no target: …` once |
 | `show_judged(console, bench, graded)` | each judge call of one item: view, judge and seed, what it said at the view's `at`, and its reason |

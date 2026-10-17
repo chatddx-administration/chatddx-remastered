@@ -1,38 +1,30 @@
-from collections.abc import Mapping
 from functools import partial
 
-from pydantic import JsonValue
-
-from chatddx.catalog import LANGUAGE_KINDS, Labels, Subject, read, threads
+from chatddx.catalog import LANGUAGE_KINDS, Labels, Subject, families, read, threads
 from chatddx.catalog.language import language_of
 from chatddx.factors.base import Component, resolve
 from chatddx.factors.cases import Appendix, Case
-from chatddx.factors.kinds import BY_KIND
-from chatddx.factors.request import Recipe
+from chatddx.factors.request import RECIPE_PARTS, Recipe
 from chatddx.factors.scoring import Expectation, Judge, Scorer
 from chatddx.facts import lints
 from chatddx.identity import owns, sees
 
+from .configurations import kept
 from .errors import NotFound
 from .model import COMPILED_LANGUAGE, KINDS, SAVED, WRITTEN, Checked, Written
-from .seen import Seen
-from .variation import PARTS
+from .seen import (
+    Seen,
+    add_compilations,
+    check_expecting,
+    check_kind,
+    check_scorer,
+    compiled,
+    linted,
+    worded,
+)
+from .variation import TriedVariation
 
 _UNLABELLED = "only a scorer's views and resources have labels"
-
-
-def component(doc: Mapping[str, JsonValue]) -> Component:
-    kind = doc.get("kind")
-    if not isinstance(kind, str) or kind not in WRITTEN:
-        raise ValueError(
-            f"{kind!r} isn't a kind a person writes: the kinds are "
-            + ", ".join(sorted(WRITTEN))
-        )
-    cls = BY_KIND[kind]
-    given = {k: v for k, v in doc.items() if k != "v"}
-    if doc.get("v", cls.schema_version) != cls.schema_version:
-        raise ValueError(f"{kind} is at v{cls.schema_version}, not v{doc['v']}")
-    return cls.model_validate(given)
 
 
 def check(seen: Seen, component: Component) -> Checked:
@@ -40,14 +32,14 @@ def check(seen: Seen, component: Component) -> Checked:
     if kind not in WRITTEN:
         raise ValueError(f"a person doesn't write {kind} components")
     if isinstance(component, Scorer):
-        seen.check_scorer(component)
+        check_scorer(component)
     if isinstance(component, Appendix):
         component = bound(seen, component)
     registry = seen.store.load(s.digest for s in component.refs())
     _ = registry.add(component)
     registry.check(registry.closure([component.digest]))
     if isinstance(component, Judge):
-        seen.add_compilations(registry, component.skeleton)
+        add_compilations(seen, registry, component.skeleton)
     findings = lints(
         registry, seen.facts, [component.digest], partial(language_of, seen.rows)
     )
@@ -65,16 +57,13 @@ def new(
         return _written(
             seen, component, None, name=name, language=language, labels=labels
         )
-    if language is not None:
-        raise ValueError(COMPILED_LANGUAGE)
-    if labels is not None:
-        raise ValueError(_UNLABELLED)
-    for part in PARTS:
+    _configured(language, labels)
+    for part in RECIPE_PARTS:
         digest = getattr(component, part)
         if digest is not None and seen.rows.kind(digest) not in KINDS[part]:
             what = "model" if part == "model" else f"chunk of {part}"
             raise ValueError(f"{digest} isn't a stored {what}")
-    registry, compilation = seen.compiled(component)
+    registry, compilation = compiled(seen, component)
     with seen.conn.transaction():
         _ = seen.store.add(registry, [compilation.digest])
         edit = seen.catalog.create(
@@ -83,20 +72,32 @@ def new(
             compilation=compilation.digest,
             name=name,
         )
-    return Written(edit, "created", seen.linted(compilation.skeleton))
+    return Written(edit, "created", linted(seen, compilation.skeleton))
 
 
-def fork_component(
+def fork(
     seen: Seen,
     thread: int,
     name: str,
-    component: Component | None = None,
+    held: Component | TriedVariation | None = None,
     language: str | None = None,
     labels: Labels | None = None,
 ) -> Written:
-    edit, _, word = seen.worded(thread)
-    held = seen.get(edit.digest) if component is None else component
-    seen.check_kind(thread, word, held)
+    edit, _, word = worded(seen, thread)
+    if held is None:
+        held = (
+            seen.variation(thread)
+            if word == "configuration"
+            else seen.store.get(edit.digest)
+        )
+    check_kind(seen, thread, word, held)
+    if isinstance(held, TriedVariation):
+        if held.configuration.thread != thread:
+            raise ValueError(
+                f"{held.label} isn't a variation of configuration {thread}"
+            )
+        _configured(language, labels)
+        return kept(seen, held, None, name)
     if labels is None and isinstance(held, Scorer) and held.digest == edit.digest:
         labels = read.labels(seen.rows, edit.id)
     return _written(
@@ -110,21 +111,29 @@ def fork_component(
     )
 
 
-def edit_component(
+def edit(
     seen: Seen,
     thread: int,
     head: int,
-    component: Component,
+    held: Component | TriedVariation,
     language: str | None = None,
     labels: Labels | None = None,
 ) -> Written:
-    _, about, word = seen.worded(thread)
+    _, about, word = worded(seen, thread)
     if not owns(seen.person.id, about):
         raise NotFound(f"no {word} {thread} of yours")
-    seen.check_kind(thread, word, component)
-    return _written(
-        seen, component, thread, language=language, head=head, labels=labels
-    )
+    check_kind(seen, thread, word, held)
+    if isinstance(held, TriedVariation):
+        _configured(language, labels)
+        return kept(seen, held, thread, None, head)
+    return _written(seen, held, thread, language=language, head=head, labels=labels)
+
+
+def _configured(language: str | None, labels: Labels | None) -> None:
+    if language is not None:
+        raise ValueError(COMPILED_LANGUAGE)
+    if labels is not None:
+        raise ValueError(_UNLABELLED)
 
 
 def _written(
@@ -146,14 +155,16 @@ def _written(
     if labels is not None and not isinstance(component, Scorer):
         raise ValueError(_UNLABELLED)
     if isinstance(component, Scorer):
-        seen.check_scorer(component)
+        check_scorer(component)
+    old = None if thread is None else threads.head(seen.rows, thread).digest
     if isinstance(component, Expectation):
-        seen.check_expecting(component, thread)
+        if old is not None:
+            _check_family(seen, resolve(seen.store.get, old, Expectation), component)
+        check_expecting(seen, component, thread)
     if isinstance(component, Appendix):
         component = bound(seen, component)
     registry = seen.store.load(s.digest for s in component.refs())
     _ = registry.add(component)
-    old = None if thread is None else threads.head(seen.rows, thread).digest
     with seen.conn.transaction():
         _ = seen.store.add(registry, [component.digest])
         if language is not None:
@@ -172,16 +183,24 @@ def _written(
             if isinstance(component, Appendix) and old and kept == "edited"
             else {}
         )
-    return Written(edit, SAVED[kept], seen.linted(component.digest), replaced)
+    return Written(edit, SAVED[kept], linted(seen, component.digest), replaced)
+
+
+def _check_family(seen: Seen, old: Expectation, new: Expectation) -> None:
+    if new.case == old.case:
+        return
+    family = families.family_of(seen.rows, old.case)
+    if family is None or families.family_of(seen.rows, new.case) != family:
+        raise ValueError(f"{new.case} isn't a case of the family {old.case} is of")
 
 
 def bound(seen: Seen, appendix: Appendix) -> Appendix:
     vignette = appendix.vignette
-    families = {b.family for b in seen.rows.bindings_sharing(vignette)}
+    held = {b.family for b in seen.rows.bindings_sharing(vignette)}
     if not any(
-        seen.current(f) == vignette
+        seen.rows.bindings([f])[-1].vignette == vignette
         and sees(seen.person.id, read.about(seen.rows, Subject(family=f)))
-        for f in families
+        for f in held
     ):
         raise ValueError(
             "an appendix is bound to the current vignette of a case you see"
@@ -193,7 +212,7 @@ def bound(seen: Seen, appendix: Appendix) -> Appendix:
 def _replaced(seen: Seen, old: str, new: Appendix) -> dict[str, str]:
     replaced: dict[str, str] = {}
     for digest in seen.store.reaching(old, "case"):
-        case = resolve(seen.get, digest, Case)
+        case = resolve(seen.store.get, digest, Case)
         if case.vignette != new.vignette:
             continue
         held = tuple(new.digest if a == old else a for a in case.appendices)

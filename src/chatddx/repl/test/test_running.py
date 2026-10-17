@@ -116,7 +116,7 @@ def test_run_takes_a_seed_of_its_own(repl: Repl, bench: Bench, say: Say):
     assert repl.seed == 7
 
     [run] = ran(bench)
-    assert resolve(bench.get, run.started.trial, Trial).seeds == (42,)
+    assert resolve(bench.store.get, run.started.trial, Trial).seeds == (42,)
 
 
 @pytest.mark.usefixtures("fake")
@@ -164,7 +164,7 @@ def test_run_is_refused_an_endpoint_that_doesn_t_answer(bench: Bench, say: Say):
 def test_a_run_that_runs_away_is_cut_short_and_what_came_scored(
     world: Inventory, bench: Bench, say: Say
 ):
-    startup = start_up(world, bench.get, QWEN)
+    startup = start_up(world, bench.store.get, QWEN)
     with serving([Served.of(startup.argv[0], startup.argv[1:])], runaway=True):
         written = say(f"cell {LINES} {QWEN}", "run noted")
 
@@ -181,7 +181,7 @@ def test_a_run_that_runs_away_is_cut_short_and_what_came_scored(
 def test_a_structured_answer_cut_short_is_salvaged(
     world: Inventory, bench: Bench, say: Say
 ):
-    startup = start_up(world, bench.get, QWEN)
+    startup = start_up(world, bench.store.get, QWEN)
     with serving([Served.of(startup.argv[0], startup.argv[1:])], runaway=True):
         written = say(f"cell {NATIVE} {QWEN}", "run bom")
 
@@ -196,7 +196,7 @@ def test_a_structured_answer_cut_short_is_salvaged(
 def test_run_tag_says_each_finding_once_with_how_often_it_came(
     world: Inventory, bench: Bench, say: Say
 ):
-    startup = start_up(world, bench.get, QWEN)
+    startup = start_up(world, bench.store.get, QWEN)
     with serving([Served.of(startup.argv[0], startup.argv[1:])], runaway=True):
         written = say(f"cell {NATIVE} {QWEN}", "run tag targets")
     targets = tagged("targets")
@@ -390,8 +390,8 @@ def test_ctrl_c_twice_while_scoring_finishes_the_score_and_leaves_the_rest(
     [run] = ran(bench)
     [given] = store.scores_of(run.started.run)
     assert store.score(given.score).finished is not None
-    started = bench.run_by_id(run.started.run)
-    assert len(bench.unscored(started)) == len(bench.scorers_for(started))
+    started = bench.run(run.started.run)
+    assert len(bench.unscored(started)) == len(bench.scorers(started))
 
     monkeypatch.undo()
     assert "nothing to score" not in say("score")

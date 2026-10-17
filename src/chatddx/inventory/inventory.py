@@ -147,8 +147,8 @@ class Inventory(Frozen):
             }
         )
 
-    # src/chatddx/runner/score.py:judge_at and src/chatddx/bench/seen.py:Seen.at both
-    # refuse rather than pick when several endpoints serve one engine, or one model.
+    # Policy: De facto refusal mechanism for
+    # src/chatddx/runner/score.py:judge_at and src/chatddx/bench/seen.py:Seen.at
     def serving(
         self,
         digest: str,
@@ -196,6 +196,13 @@ class Inventory(Frozen):
         if spec is None:
             raise LookupError(f"no endpoint {name!r} in the inventory")
         return spec
+
+    def takes_typed(self, endpoint: str) -> bool:
+        try:
+            into = self.source(kind=DatabaseSource)
+        except LookupError:
+            return False
+        return not into.sensitive or into.name in self.cleared.get(endpoint, ())
 
 
 def _word(kind: type[Source]) -> str:

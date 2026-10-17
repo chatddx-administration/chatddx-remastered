@@ -49,20 +49,18 @@ def run(request: Request, bench: BenchDep, run: UUID) -> Response:
     # Asked before the run is read: a job ends once its run's rows are written.
     under_way = Queue(bench.conn).open(run) is not None
     shown = api.detail(bench, run)
-    skeleton = resolve(bench.get, shown.skeleton, Skeleton)
+    skeleton = resolve(bench.store.get, shown.skeleton, Skeleton)
     schema = skeleton.output_schema
     left = (
-        []
-        if under_way or shown.finished_at is None
-        else bench.unscored(bench.run_by_id(run))
+        [] if under_way or shown.finished_at is None else bench.unscored(bench.run(run))
     )
     titles = {case: bench.title(case) for case in shown.cases}
     together = [
         (
             r.run,
-            language_of(bench.rows, resolve(bench.get, r.trial, Trial).skeleton),
+            language_of(bench.rows, resolve(bench.store.get, r.trial, Trial).skeleton),
         )
-        for r in bench.together(shown.started_with or run)
+        for r in bench.runs(started_with=shown.started_with or run)
         if r.run != run
     ]
     resumable = not under_way and shown.finished_at is None and shown.endpoint
@@ -80,7 +78,7 @@ def run(request: Request, bench: BenchDep, run: UUID) -> Response:
         said=_said,
         under_way=under_way,
         resumable=resumable,
-        left=[bench.scorer_name(s) for s in left],
+        left=[bench.title(s) for s in left],
         together=sorted(together, key=lambda r: str(r[1])),
         live={"run": str(run), "titles": titles},
         island="run",
@@ -119,7 +117,7 @@ def stopping(bench: BenchDep, now: Annotated[bool, Form()] = False) -> Response:
 
 @router.post("/runs/{run}/scores")
 def scoring(request: Request, bench: BenchDep, run: UUID) -> Response:
-    left = bench.unscored(bench.run_by_id(run))
+    left = bench.unscored(bench.run(run))
     asked = schemas.NewScoring(scorers=left or None)
     _ = api_scores.score_now(request, Response(), bench, run, asked)
     return RedirectResponse(f"/runs/{run}", 303)

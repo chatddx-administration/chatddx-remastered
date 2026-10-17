@@ -483,6 +483,9 @@ CHUNK_PARTS = (
     "toolset",
 )
 RECIPE_PARTS = (*CHUNK_PARTS, "model")
+OPTIONAL_PARTS = tuple(
+    p for p in RECIPE_PARTS if not Recipe.model_fields[p].is_required()
+)
 
 
 class Skeleton(Component):

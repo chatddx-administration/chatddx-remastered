@@ -7,7 +7,7 @@ from chatddx.identity import collaborates, owns
 
 from .errors import Conflict, NotFound
 from .model import Taken
-from .seen import Seen
+from .seen import Seen, choices
 
 
 def take(
@@ -41,12 +41,12 @@ def take(
 
 
 def take_from(seen: Seen, thread: int, replace: bool = False) -> int:
-    edit, about = seen.thread_by_id(thread, "expectation")
+    edit, about = seen.thread(thread, "expectation")
     if about.owner == seen.person.id:
         raise ValueError(f"expectation {thread} is yours already")
-    held = resolve(seen.get, edit.digest, Expectation)
+    held = resolve(seen.store.get, edit.digest, Expectation)
     case, schema = held.case, held.expectation_schema
-    mine = sorted(seen.expectation_choices([case], schema)[case])
+    mine = sorted(choices(seen, [case], schema)[case])
     if mine and not replace:
         raise Conflict(
             f"{seen.person.login} has their own expectation of {seen.title(case)} "

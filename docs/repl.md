@@ -93,10 +93,10 @@ Nothing here is sent anywhere.
 - **`show tag TAG...`** is the same over the cases with any of the tags, those `run tag` would run.
 - **`show KIND [NAME]`** is a component the person sees, by kind and name, or the cell's own: its fields, digests in
   them titled, its catalog entries, and a summary of the person's runs with it. Runs are found through compilations
-  for a configuration and its parts (`Bench.reaching`), through scorings for a scorer, an expectation and a schema
-  (`Bench.scored_by`); a judge counts the runs it judged and its calls, and sums up its own views only; an endpoint
-  counts the runs at it and the judge calls made at it, from the scores' judge endpoints. The kinds are `case`,
-  `endpoint`, `tag`, `configuration`, the nine chunk parts, `tool`, `scorer`, `judge`, `expectation`,
+  for a configuration and its parts (`Bench.runs(reaching=…)`), through scorings for a scorer, an expectation and a
+  schema (`Bench.runs(scored_by=…)`); a judge counts the runs it judged and its calls, and sums up its own views only;
+  an endpoint counts the runs at it and the judge calls made at it, from the scores' judge endpoints. The kinds are
+  `case`, `endpoint`, `tag`, `configuration`, the nine chunk parts, `tool`, `scorer`, `judge`, `expectation`,
   `expectation_schema`, `appendix`, `canary_set`, `model`, `engine` and `facts`, a model's stored facts by its name.
 - **A case** is shown with its source, its vignette fetched from the World's source, its tags and language, and the
   expectation the person is scored against, or one shared with them to take. Cases are named by title
@@ -104,7 +104,7 @@ Nothing here is sent anywhere.
   sends appendices (docs/catalog.md, "Titles"). Such a case shows its appendices' texts and its own expectation; a
   family's case names the family's appendices and the cases that send them.
 - **`configurations [NAME]`** lists a row per configuration name: the languages it can be sent in, its own first
-  (`catalog/language.py:edit_languages`), then those its translations cover (`Bench.translated`), as `en, sv`, or
+  (`catalog/language.py:edit_languages`), then those its translations cover, as `en, sv`, or
   `—`; each part as its chunk's title, the model last, or `differs` where configurations of one name differ; and its
   owner; a fork reads `yours, from OWNER`, and the origin it forks is left out. Judge configurations follow, in a
   table of their own. With NAME, the configurations of exactly that name, a row each with its languages, parts and
@@ -265,6 +265,6 @@ Suggested, and left for later:
   it out, as `View.offered_by` leaves whole-answer views out of structured runs.
 - **`runs` doesn't show a start.** A translated run says the language it was sent in, the run of the configuration's
   own language from the same start says none, and nothing says the two were started together; the API's
-  `GET /api/runs?with=` and a run's page in the portal do (`Bench.together`).
+  `GET /api/runs?with=` and a run's page in the portal do (`Bench.runs(started_with=…)`).
 - **The judge lines aren't aligned**, as their labels differ in length; the labels of a scoring's judge calls are known
   when it starts, so their width could be too.

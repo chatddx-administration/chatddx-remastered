@@ -48,7 +48,7 @@ def thread_page(request: Request, bench: BenchDep, thread: int) -> Response:
     if shown.kind == "skeleton":
         return RedirectResponse(f"/configurations/{thread}", 303)
     versions = api.edits(bench, thread)
-    bodies = {v.digest: bench.get(v.digest) for v in versions}
+    bodies = {v.digest: bench.store.get(v.digest) for v in versions}
     titles = {
         site.digest: bench.title(site.digest)
         for held in bodies.values()
@@ -93,7 +93,7 @@ def thread_page(request: Request, bench: BenchDep, thread: int) -> Response:
 def _editor(
     bench: Bench, shown: schemas.ThreadDetail, mine: bool
 ) -> dict[str, Any] | None:
-    held = bench.get(shown.head.digest)
+    held = bench.store.get(shown.head.digest)
     given: dict[str, Any] = {
         "mode": "edit" if mine else "fork",
         "thread": shown.id,
@@ -109,7 +109,9 @@ def _editor(
                 "text": held.text,
             }
         case Expectation():
-            schema = resolve(bench.get, held.expectation_schema, ExpectationSchema)
+            schema = resolve(
+                bench.store.get, held.expectation_schema, ExpectationSchema
+            )
             return {
                 **given,
                 "kind": "expectation",

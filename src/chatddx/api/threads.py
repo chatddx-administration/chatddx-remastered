@@ -3,11 +3,12 @@ from contextlib import contextmanager
 from typing import Annotated
 
 from fastapi import APIRouter, HTTPException, Query, Request, Response
+from pydantic import JsonValue
 
 from chatddx import catalog
 from chatddx.bench import (
     KINDS,
-    PARTS,
+    WRITTEN,
     Bench,
     Carried,
     Conflict,
@@ -15,14 +16,23 @@ from chatddx.bench import (
     OverQuota,
     Reach,
     TriedVariation,
+    Written,
     word_of,
 )
 from chatddx.catalog import read, titles
 from chatddx.catalog.language import edit_languages
 from chatddx.catalog.titles import describe
-from chatddx.factors.base import Finding, resolve
+from chatddx.factors.base import Component, Finding, resolve
 from chatddx.factors.facts import Landing
-from chatddx.factors.request import Compilation, Purpose, Recipe
+from chatddx.factors.kinds import BY_KIND
+from chatddx.factors.request import (
+    RECIPE_PARTS,
+    Compilation,
+    Purpose,
+    Recipe,
+    Translations,
+)
+from chatddx.factors.scoring import Expectation
 from chatddx.factors.trial import suggest_seeds
 
 from . import schemas
@@ -70,11 +80,18 @@ def thread_of(
         owner=login(bench, about.owner),
         tags=sorted(about.tags),
         language=languages[edit.id],
-        translated=[]
-        if edit.compilation is None
-        else bench.translated(resolve(bench.get, edit.compilation, Compilation).recipe),
+        translated=translated(bench, edit),
         head=edit_of(bench, edit, kind),
     )
+
+
+def translated(bench: Bench, edit: catalog.Edit) -> list[str]:
+    if edit.compilation is None:
+        return []
+    recipe = resolve(bench.store.get, edit.compilation, Compilation).recipe
+    if recipe.translations is None:
+        return []
+    return list(resolve(bench.store.get, recipe.translations, Translations).into)
 
 
 @router.get("/threads")
@@ -103,31 +120,26 @@ def threads(
     if answers is not None and kind != "configuration":
         raise HTTPException(422, "only a configuration answers")
     wanted = set(tag or ())
-    found = {
-        held: bench.deleted(held) if deleted else bench.visible(held)
-        for held in KINDS[kind]
-    }
     if kind == "configuration":
-        found = {
-            held: bench.purposed(heads, purpose or "generation")
-            for held, heads in found.items()
-        }
-    if answers is not None:
-        found = {held: bench.answering(heads, answers) for held, heads in found.items()}
+        purpose = purpose or "generation"
+    found = bench.threads(kind, deleted=deleted, purpose=purpose, answering=answers)
     shown = [
-        (held, edit, about)
-        for held, heads in found.items()
-        for edit, about in heads
+        (edit, about)
+        for edit, about in found
         if (name is None or about.name == name)
         and (owner is None or login(bench, about.owner) == owner)
         and (not wanted or wanted & about.tags)
     ]
-    languages = edit_languages(bench.rows, [edit for _, edit, _ in shown])
-    return [thread_of(bench, *each, languages) for each in shown]
+    languages = edit_languages(bench.rows, [edit for edit, _ in shown])
+    [single] = KINDS[kind] if len(KINDS[kind]) == 1 else [None]
+    return [
+        thread_of(bench, single or bench.rows.kind(e.digest) or "", e, a, languages)
+        for e, a in shown
+    ]
 
 
 def detail(bench: Bench, thread: int) -> schemas.ThreadDetail:
-    edit, about = bench.thread_by_id(thread, deleted=True)
+    edit, about = bench.thread(thread, deleted=True)
     found = catalog.threads.thread(bench.rows, thread)
     recipe = catalog.threads.recipe(bench.rows, edit)
     return schemas.ThreadDetail(
@@ -147,7 +159,7 @@ def thread(bench: BenchDep, thread: int) -> schemas.ThreadDetail:
 
 @router.get("/threads/{thread}/edits")
 def edits(bench: BenchDep, thread: int) -> list[schemas.Edit]:
-    _ = bench.thread_by_id(thread, deleted=True)
+    _ = bench.thread(thread, deleted=True)
     kind = catalog.threads.thread(bench.rows, thread).kind
     return [
         edit_of(bench, e, kind) for e in catalog.threads.history(bench.rows, thread)
@@ -170,11 +182,24 @@ def _engine_at(
     bench: Bench, varied: TriedVariation, endpoint: str | None
 ) -> str | None:
     try:
-        return bench.at(varied, endpoint)[1]
+        return bench.at(varied, endpoint).engine
     except (LookupError, ValueError) as e:
         if endpoint is not None:
             raise HTTPException(422, str(e)) from None
         return None
+
+
+def component_of(doc: Mapping[str, JsonValue]) -> Component:
+    kind = doc.get("kind")
+    if not isinstance(kind, str) or kind not in WRITTEN:
+        raise ValueError(
+            f"{kind!r} isn't a kind a person writes: the kinds are "
+            + ", ".join(sorted(WRITTEN))
+        )
+    cls = BY_KIND[kind]
+    if doc.get("v", cls.schema_version) != cls.schema_version:
+        raise ValueError(f"{kind} is at v{cls.schema_version}, not v{doc['v']}")
+    return cls.model_validate({k: v for k, v in doc.items() if k != "v"})
 
 
 def part_of(
@@ -185,7 +210,7 @@ def part_of(
         part=part,
         digest=held,
         title=None if held is None else bench.title(held),
-        summary=None if held is None else describe(bench.get(held), bench.title),
+        summary=None if held is None else describe(bench.store.get(held), bench.title),
         replaced=part in variation.parts,
         landed=None if landed is None else landed.level,
         nearest=[] if landed is None else list(landed.nearest),
@@ -218,22 +243,19 @@ def variation(
     families = bench.families(query.tag)
     carried: list[Carried] = []
     if families and skeleton.purpose != "judge":
-        known = {f.case: f.about.language for f in families}
         with refused():
-            carried = bench.languages(varied, list(known), known)
+            carried = bench.languages(varied, [f.case for f in families])
     findings = None
     if engine is not None:
         findings = [
             schemas.Finding.of(f)
-            for f in bench.findings(
-                varied, engine, seed, families or None, carried or None
-            )
+            for f in bench.findings(varied, engine, seed, carried or None)
         ]
     family_of = {f.case: f.id for f in families}
     parts = None
     if varied.recipe is not None:
-        parts = [part_of(bench, varied, p, landed.get(p)) for p in PARTS]
-    held = bench.holder("configuration", skeleton.digest, varied.varied)
+        parts = [part_of(bench, varied, p, landed.get(p)) for p in RECIPE_PARTS]
+    held = bench.holder(skeleton.digest, varied.varied)
     return schemas.Variation(
         head=edit_of(bench, varied.configuration, "skeleton"),
         label=varied.label,
@@ -303,7 +325,7 @@ def new(
         held = (
             Recipe.model_validate(given.recipe)
             if given.component is None
-            else bench.component(given.component)
+            else component_of(given.component)
         )
         labels = None if given.labels is None else given.labels.given()
         written = bench.new(held, given.name, given.language, labels)
@@ -321,21 +343,16 @@ def fork(
     configuration = configures(bench, thread)
     check_given(configuration, given)
     with refused():
-        if configuration:
-            varied = bench.variation(thread, given.parts.given(), given.head)
-            saved = bench.fork(varied, given.name)
-            forked = saved.variation.configuration.thread
-            findings = bench.linted(saved.digest)
-        else:
-            component = (
-                None if given.component is None else bench.component(given.component)
-            )
-            labels = None if given.labels is None else given.labels.given()
-            written = bench.fork_component(
-                thread, given.name, component, given.language, labels
-            )
-            forked, findings = written.edit.thread, written.findings
-    return made(request, response, bench, forked, findings)
+        held = (
+            bench.variation(thread, given.parts.given(), given.head)
+            if configuration
+            else None
+            if given.component is None
+            else component_of(given.component)
+        )
+        labels = None if given.labels is None else given.labels.given()
+        written = bench.fork(thread, given.name, held, given.language, labels)
+    return made(request, response, bench, written.edit.thread, written.findings)
 
 
 @router.post(
@@ -353,26 +370,23 @@ def edit(
     check_given(configuration, given)
     with refused():
         if configuration:
-            varied = bench.variation(thread, given.parts.given())
-            saved = bench.edit(thread, varied, given.head)
-            kept, what = saved.variation.configuration, saved.what
-            findings, cases = bench.linted(saved.digest), {}
+            held = bench.variation(thread, given.parts.given())
+        elif given.component is None:
+            raise ValueError("an edit holds a component")
         else:
-            if given.component is None:
-                raise ValueError("an edit holds a component")
-            component = bench.component(given.component)
-            labels = None if given.labels is None else given.labels.given()
-            written = bench.edit_component(
-                thread, given.head, component, given.language, labels
-            )
-            kept, what, findings = written.edit, written.what, written.findings
-            cases = written.cases
-    if what == "unchanged":
+            held = component_of(given.component)
+        labels = None if given.labels is None else given.labels.given()
+        written = bench.edit(thread, given.head, held, given.language, labels)
+    if written.what == "unchanged":
         response.status_code = 200
+    return made_edit(bench, written)
+
+
+def made_edit(bench: Bench, written: Written) -> schemas.MadeEdit:
     return schemas.MadeEdit(
-        **edit_of(bench, kept).model_dump(),
-        findings=[schemas.Finding.of(f) for f in findings],
-        cases=cases,
+        **edit_of(bench, written.edit).model_dump(),
+        findings=[schemas.Finding.of(f) for f in written.findings],
+        cases=written.cases,
     )
 
 
@@ -457,10 +471,7 @@ def proposal(bench: BenchDep, thread: int) -> schemas.Proposal | None:
 def follow(bench: BenchDep, thread: int, given: schemas.NewFollow) -> schemas.MadeEdit:
     with refused():
         written = bench.follow(thread, given.head, given.language)
-    return schemas.MadeEdit(
-        **edit_of(bench, written.edit).model_dump(),
-        findings=[schemas.Finding.of(f) for f in written.findings],
-    )
+    return made_edit(bench, written)
 
 
 @router.get("/threads/{thread}/moved")
@@ -498,10 +509,7 @@ def follow_moved(
 ) -> schemas.MadeEdit:
     with refused():
         written = bench.follow_moved(thread, given.head)
-    return schemas.MadeEdit(
-        **edit_of(bench, written.edit).model_dump(),
-        findings=[schemas.Finding.of(f) for f in written.findings],
-    )
+    return made_edit(bench, written)
 
 
 @router.post(
@@ -512,9 +520,14 @@ def follow_moved(
     },
 )
 def carry(bench: BenchDep, thread: int, given: schemas.NewCarry) -> schemas.MadeEdit:
+    edit, _ = bench.thread(thread)
     with refused():
-        written = bench.carry(thread, given.head, given.case)
-    return schemas.MadeEdit(
-        **edit_of(bench, written.edit).model_dump(),
-        findings=[schemas.Finding.of(f) for f in written.findings],
-    )
+        word = word_of(bench.rows.kind(edit.digest))
+        if word != "expectation":
+            raise ValueError(f"{word} {thread} isn't an expectation")
+        held = resolve(bench.store.get, edit.digest, Expectation)
+        carried = Expectation(
+            case=given.case, expectation_schema=held.expectation_schema, data=held.data
+        )
+        written = bench.edit(thread, given.head, carried)
+    return made_edit(bench, written)

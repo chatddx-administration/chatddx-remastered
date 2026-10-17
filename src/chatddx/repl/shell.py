@@ -5,8 +5,9 @@ from dataclasses import dataclass, replace
 from rich.console import Console
 from rich.text import Text
 
-from chatddx.bench import KINDS, OPTIONAL, PARTS, Bench, TriedVariation
+from chatddx.bench import KINDS, Bench, Endpoint, TriedVariation
 from chatddx.factors.base import Finding
+from chatddx.factors.request import OPTIONAL_PARTS, RECIPE_PARTS
 
 from .render import REFUSED, counted, finding
 
@@ -28,14 +29,17 @@ def console(record: bool = False, width: int | None = None) -> Console:
 @dataclass(frozen=True)
 class Cell:
     variation: TriedVariation | None = None
-    endpoint: str | None = None
-    served: str | None = None
+    endpoint: Endpoint | None = None
 
     def trying(self, variation: TriedVariation) -> "Cell":
         return replace(self, variation=variation)
 
-    def on(self, endpoint: str | None, served: str | None) -> "Cell":
-        return replace(self, endpoint=endpoint, served=served)
+    def on(self, endpoint: Endpoint | None) -> "Cell":
+        return replace(self, endpoint=endpoint)
+
+    @property
+    def named(self) -> str | None:
+        return None if self.endpoint is None else self.endpoint.name
 
     @property
     def label(self) -> str:
@@ -61,23 +65,28 @@ class Repl:
     def where(self) -> str | None:
         cell = self.cell
         if cell.variation is None:
-            return cell.endpoint
+            return cell.named
         try:
-            return self.bench.at(cell.variation, cell.endpoint)[0]
+            return self.bench.at(cell.variation, cell.named).name
         except (LookupError, ValueError):
-            return cell.endpoint
+            return cell.named
 
-    # The engine the cell's configuration is rendered and linted for: the endpoint's,
+    # The endpoint the cell's configuration is rendered and linted for: the one named,
     # else the one serving the configuration's model.
     @property
-    def engine(self) -> str | None:
+    def at(self) -> Endpoint | None:
         cell = self.cell
-        if cell.served is not None or cell.variation is None:
-            return cell.served
+        if cell.endpoint is not None or cell.variation is None:
+            return cell.endpoint
         try:
-            return self.bench.at(cell.variation, None)[1]
+            return self.bench.at(cell.variation, None)
         except (LookupError, ValueError):
             return None
+
+    @property
+    def engine(self) -> str | None:
+        at = self.at
+        return None if at is None else at.engine
 
     def completions(self) -> dict[str, list[str]]:
         runs = self.bench.runs()[:20]
@@ -90,14 +99,21 @@ class Repl:
         if self._completions is not None:
             return self._completions
         bench = self.bench
-        names = {word: bench.names(word) for word in KINDS}
-        for part in OPTIONAL:
+        names = {
+            word: sorted({a.name for _, a in bench.threads(word) if a.name})
+            for word in KINDS
+        }
+        for part in OPTIONAL_PARTS:
             names[f"set:{part}"] = [*names[part], NONE]
+        families = bench.families()
         names |= {
             "endpoint": sorted(bench.inventory.endpoints),
-            "case": [*(f.name for f in bench.families()), *bench.case_titles()],
-            "tag": bench.tags(),
-            "part": [*PARTS],
+            "case": [
+                *(f.name for f in families),
+                *sorted(bench.title(c) for f in families for c in f.cases[1:]),
+            ],
+            "tag": sorted({tag for f in families for tag in f.about.tags}),
+            "part": [*RECIPE_PARTS],
             "kind": ["tag", "case", "endpoint", *KINDS],
         }
         self._completions = names

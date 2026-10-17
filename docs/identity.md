@@ -140,9 +140,9 @@ several places or grows beyond a comparison. Candidates left where they are:
 - **The default owner**, `by if owner is None else owner` in `src/chatddx/store/catalog.py:Catalog.create` and
   `Catalog.adopt`. Take: move it when a second rule about owning on write, such as Z1's kinds a role authors, gives
   identity a reason to hold write rules.
-- **The bench's owner comparisons**: a person's own deleted threads (`Seen.thread_by_id`, `Seen.deleted`), only the
-  owner says anything of a thread, and nobody shares with themselves (`saying.py:say`), and an expectation that is
-  "yours already" (`taking.py:take_from`).
+- **The bench's owner comparisons**: a person's own deleted threads (`Seen.thread` and `Seen.threads`, with
+  `deleted`), only the owner says anything of a thread, and nobody shares with themselves (`saying.py:say`), and an
+  expectation that is "yours already" (`taking.py:take_from`).
 - **The edges' "own first"**: `src/chatddx/repl/listing.py` and `src/chatddx/portal/` list a person's own first, by
   login or id, much as `preferred` picks.
 - **`src/chatddx/catalog/threads.py:picked`** is pure, but decides among a case's expectation threads, not who: it

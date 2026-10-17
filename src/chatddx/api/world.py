@@ -8,7 +8,7 @@ from chatddx.scorers.shipped import SCORERS
 
 from . import schemas
 from .people import BenchDep
-from .threads import refused
+from .threads import component_of, refused
 
 router = APIRouter(tags=["world"])
 
@@ -16,10 +16,12 @@ router = APIRouter(tags=["world"])
 def endpoint_of(bench: Bench, name: str, spec: EndpointSpec) -> schemas.Endpoint:
     title = model = serves = problem = None
     try:
-        engine = bench.endpoint(name)
-        title, found = bench.title(engine), bench.model_of(engine)
-        if found is not None:
-            model, serves = found.name, found.digest
+        found = bench.endpoint(name)
+        title, model, serves = (
+            bench.title(found.engine),
+            found.model.name,
+            found.model.digest,
+        )
     except LookupError as e:
         problem = str(e)
     return schemas.Endpoint(
@@ -33,7 +35,7 @@ def endpoint_of(bench: Bench, name: str, spec: EndpointSpec) -> schemas.Endpoint
         max_jobs=spec.max_jobs,
         credential=spec.credential,
         cleared_for=sorted(bench.inventory.cleared.get(name, ())),
-        takes_typed=bench.takes_typed(name),
+        takes_typed=bench.inventory.takes_typed(name),
         problem=problem,
     )
 
@@ -48,10 +50,9 @@ def endpoints(bench: BenchDep) -> list[schemas.Endpoint]:
 
 @router.get("/endpoints/{name}")
 def endpoint(bench: BenchDep, name: str) -> schemas.Endpoint:
-    try:
-        spec = bench.inventory.endpoint(name)
-    except LookupError as e:
-        raise NotFound(str(e)) from None
+    spec = bench.inventory.endpoints.get(name)
+    if spec is None:
+        raise NotFound(f"no endpoint {name!r} in the inventory")
     return endpoint_of(bench, name, spec)
 
 
@@ -60,11 +61,10 @@ def models(bench: BenchDep) -> list[schemas.Model]:
     serving: dict[str, list[str]] = {}
     for name in sorted(bench.inventory.endpoints):
         try:
-            model = bench.model_of(bench.endpoint(name))
+            model = bench.endpoint(name).model
         except LookupError:
             continue
-        if model is not None:
-            serving.setdefault(model.name, []).append(name)
+        serving.setdefault(model.name, []).append(name)
     known = bench.facts.models
     return [
         schemas.Model(
@@ -85,7 +85,7 @@ def component(bench: BenchDep, digest: str) -> schemas.Component:
         digest=digest,
         kind=kind,
         title=bench.title(digest),
-        body=bench.get(digest).model_dump(mode="json"),
+        body=bench.store.get(digest).model_dump(mode="json"),
     )
 
 
@@ -107,7 +107,7 @@ def kinds(_: BenchDep) -> list[schemas.Kind]:
 def check(bench: BenchDep, given: schemas.ComponentBody) -> schemas.Checked:
     with refused():
         try:
-            checked = bench.check(bench.component(given))
+            checked = bench.check(component_of(given))
         except LookupError as e:
             raise HTTPException(422, str(e)) from None
     return schemas.Checked(

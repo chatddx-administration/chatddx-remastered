@@ -68,6 +68,8 @@ def test_a_check_refuses_what_a_write_would(signed: TestClient) -> None:
         ({**held, "effort": "max"}, "effort"),
         ({**expectation, "case": GHOST}, f"not in the store: ['{GHOST}']"),
         ({"kind": "tool"}, "'tool' isn't a kind a person writes"),
+        ({"kind": "skeleton"}, "'skeleton' isn't a kind a person writes"),
+        ({**held, "v": 2}, "chunk.reasoning is at v1, not v2"),
     ):
         got = signed.post("/api/components/check", json=given)
         assert got.status_code == 422, given

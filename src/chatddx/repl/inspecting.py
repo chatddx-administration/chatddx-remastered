@@ -7,12 +7,13 @@ from pydantic import JsonValue
 from rich.table import Table
 from rich.text import Text
 
-from chatddx.bench import KINDS, PARTS, Carried, Family, Graded, TriedVariation
+from chatddx.bench import KINDS, Carried, Family, Graded, TriedVariation
 from chatddx.catalog import About
 from chatddx.catalog.titles import describe, short
 from chatddx.factors.base import Component, resolve
 from chatddx.factors.cases import Appendix, Case
-from chatddx.factors.request import Reasoning, Sampling, Skeleton
+from chatddx.factors.engine import served_model_name
+from chatddx.factors.request import RECIPE_PARTS, Reasoning, Sampling, Skeleton
 from chatddx.factors.scoring import Expectation, Scoring
 from chatddx.facts import (
     INTENTS,
@@ -83,18 +84,17 @@ def _show_cell(repl: Repl, tags: tuple[str, ...] = ()) -> None:
     for column in ("part", "chunk", "is"):
         table.add_column(column)
 
-    endpoint = repl.where()
-    if endpoint and repl.engine:
-        served = bench.served(repl.engine)
-        url = bench.inventory.endpoint(endpoint).url
-        where = f"{bench.title(repl.engine)}, served as {served} at {url}"
-        table.add_row("endpoint", endpoint, where)
+    at = repl.at
+    if at is not None:
+        served = served_model_name(at.engine, bench.store.get)
+        where = f"{bench.title(at.engine)}, served as {served} at {at.spec.url}"
+        table.add_row("endpoint", at.name, where)
 
     if variation:
         landed = bench.landed(variation)
-        for part in PARTS:
+        for part in RECIPE_PARTS:
             held = variation.held(part)
-            component = None if held is None else bench.get(held)
+            component = None if held is None else bench.store.get(held)
             said = "" if component is None else describe(component, bench.title)
             table.add_row(
                 part, _chunk(repl, variation, part), _landed(component, said, landed)
@@ -126,14 +126,13 @@ def _show_cell(repl: Repl, tags: tuple[str, ...] = ()) -> None:
 
     carried = None
     if families and skeleton.purpose != "judge":
-        known = {f.case: f.about.language for f in families}
-        carried = bench.languages(variation, list(known), known)
+        carried = bench.languages(variation, [f.case for f in families])
         repl.console.print("languages", style="bold")
         for each in carried:
             repl.console.print(_carried(each))
 
     if repl.engine is not None:
-        findings = bench.findings(variation, repl.engine, repl.seed, families, carried)
+        findings = bench.findings(variation, repl.engine, repl.seed, carried)
         repl.console.print("lints", style="bold")
         repl.say_findings(findings)
         if not findings:
@@ -171,11 +170,13 @@ def _chunk(repl: Repl, variation: TriedVariation, part: str) -> Text:
     bench = repl.bench
     own = None if variation.recipe is None else getattr(variation.recipe, part)
 
+    titled = "—" if own is None else bench.title(own)
+
     if part not in variation.parts:
-        return Text(bench.title(own))
+        return Text(titled)
 
     text = Text(variation.parts[part][1], style="bold")
-    _ = text.append(f" (set; {variation.name} has {bench.title(own)})", style=LABEL)
+    _ = text.append(f" (set; {variation.name} has {titled})", style=LABEL)
     return text
 
 
@@ -214,8 +215,8 @@ def _show_thread(repl: Repl, word: str, name: str | None) -> None:
     bench, cell = repl.bench, repl.cell
 
     if name is not None:
-        edit, found = bench.thread(word, name)
-        _show_component(repl, word, found, edit.digest, bench.about(edit.thread))
+        edit, about = bench.thread(name, word)
+        _show_component(repl, word, name, edit.digest, about)
         return
 
     variation = cell.variation
@@ -234,13 +235,13 @@ def _show_thread(repl: Repl, word: str, name: str | None) -> None:
     if digest is None:
         return
 
-    held = bench.holder(word, digest)
+    held = bench.holder(digest)
     about = None if held is None else held[1]
     _show_component(repl, word, bench.title(digest), digest, about)
 
 
 def _in_cell(repl: Repl, word: str) -> str | None:
-    bench, cell = repl.bench, repl.cell
+    cell = repl.cell
     variation = cell.variation
     digest: str | None = None
 
@@ -248,19 +249,18 @@ def _in_cell(repl: Repl, word: str) -> str | None:
         digest = variation.configuration.digest
     elif word == "model" and variation and variation.recipe is not None:
         digest = variation.held("model")
-    elif word == "model" and repl.engine:
-        model = bench.model_of(repl.engine)
-        digest = None if model is None else model.digest
+    elif word == "model" and repl.at:
+        digest = repl.at.model.digest
     elif word == "engine" and repl.engine:
         digest = repl.engine
-    elif word in PARTS and variation:
+    elif word in RECIPE_PARTS and variation:
         digest = variation.held(word)
         if digest is None:
             repl.error(f"the cell has no {word}")
             return None
     elif word in ("engine", "model"):
         repl.error(f"the cell has no configuration or endpoint: show {word} NAME")
-    elif word in PARTS or word == "configuration":
+    elif word in RECIPE_PARTS or word == "configuration":
         repl.error(f"the cell has no configuration: show {word} NAME")
     else:
         repl.error(f"no {word} in the cell: show {word} NAME")
@@ -274,12 +274,12 @@ def _show_component(
     bench = repl.bench
     header = Text(f"{word} {name}", style="bold")
 
-    if about is not None and (owner := bench.owner(about)):
+    if about is not None and (owner := _owner(repl, about)):
         _ = header.append(f", {owner}'s")
 
     _ = header.append(f"  {short(digest)}", style=LABEL)
     repl.console.print(header)
-    table = _fields(repl, bench.get(digest))
+    table = _fields(repl, bench.store.get(digest))
 
     if about is not None:
         _about(table, about)
@@ -320,6 +320,10 @@ def _abridged(body: dict[str, JsonValue]) -> dict[str, JsonValue]:
     return shown
 
 
+def _owner(repl: Repl, about: About) -> str:
+    return "" if about.owner == repl.bench.person.id else repl.bench.login(about.owner)
+
+
 def _about(table: Table, about: About) -> None:
     if about.description:
         table.add_row("description", about.description)
@@ -336,7 +340,7 @@ def _runs(repl: Repl, word: str, digest: str) -> None:
 
     bench = repl.bench
     scored = word in SCORED
-    runs = bench.scored_by(digest) if scored else bench.reaching(digest)
+    runs = bench.runs(scored_by=digest) if scored else bench.runs(reaching=digest)
 
     if not runs:
         said = "it scored" if word == "scorer" else f"with this {word}"
@@ -345,15 +349,13 @@ def _runs(repl: Repl, word: str, digest: str) -> None:
 
     said = "it scored" if word == "scorer" else "with it"
     repl.console.print(f"{plural(len(runs), 'run')} of yours {said}", style=LABEL)
-    graded = [
-        g for run in runs for g in bench.scores_of(run.run) if g.score is not None
-    ]
+    graded = [g for run in runs for g in bench.scores_of(run) if g.score is not None]
 
     if scored:
         graded = [g for g in graded if _scored_with(repl, g, digest)]
 
     if word == "expectation":
-        case = resolve(bench.get, digest, Expectation).case
+        case = resolve(bench.store.get, digest, Expectation).case
         graded = [_of_case(g, case) for g in graded]
     elif word == "case":
         graded = [_of_case(g, digest) for g in graded]
@@ -366,8 +368,8 @@ def _judged(repl: Repl, judge: str) -> None:
     judged: list[Graded] = []
     runs = 0
 
-    for run in bench.scored_by(judge):
-        graded = [_by_judge(g, judge) for g in bench.scores_of(run.run) if g.score]
+    for run in bench.runs(scored_by=judge):
+        graded = [_by_judge(g, judge) for g in bench.scores_of(run) if g.score]
         graded = [g for g in graded if g.score and g.score.items]
         runs += bool(graded)
         judged += graded
@@ -400,7 +402,7 @@ def _by_judge(graded: Graded, judge: str) -> Graded:
 
 def _scored_with(repl: Repl, graded: Graded, digest: str) -> bool:
     assert graded.score is not None
-    scoring = resolve(repl.bench.get, graded.score.started.scoring, Scoring)
+    scoring = resolve(repl.bench.store.get, graded.score.started.scoring, Scoring)
     return digest in (
         scoring.scorer,
         *scoring.expectations,
@@ -455,11 +457,11 @@ def _show_case(repl: Repl, name: str | None) -> None:
         return
 
     family, digest = bench.case_titled(name)
-    case = resolve(bench.get, digest, Case)
+    case = resolve(bench.store.get, digest, Case)
     shown = family.name if digest == family.case else bench.title(digest)
     header = Text(f"case {shown}", style="bold")
 
-    if owner := bench.owner(family.about):
+    if owner := _owner(repl, family.about):
         _ = header.append(f", {owner}'s")
 
     _ = header.append(f"  {short(digest)}", style=LABEL)
@@ -478,7 +480,7 @@ def _show_case(repl: Repl, name: str | None) -> None:
         table.add_row("vignette", Text(str(e), style=REFUSED))
 
     for appendix in case.appendices:
-        text = resolve(bench.get, appendix, Appendix).text
+        text = resolve(bench.store.get, appendix, Appendix).text
         table.add_row(f"appendix {bench.title(appendix)}", clipped(text))
 
     if digest == family.case:
@@ -520,12 +522,18 @@ def _show_case(repl: Repl, name: str | None) -> None:
 def _sending(repl: Repl, table: Table, family: Family) -> None:
     bench = repl.bench
 
-    if appendices := bench.appendices_of(family.id):
+    appendices = [
+        about.name
+        for edit, about in bench.threads("appendix")
+        if about.name is not None
+        and resolve(bench.store.get, edit.digest, Appendix).vignette == family.vignette
+    ]
+    if appendices:
         table.add_row("appendices", ", ".join(appendices))
 
     cases = Text()
 
-    for case in bench.cases(family.id):
+    for case in family.cases:
         if case == family.case:
             continue
         _ = cases.append(("\n" if cases else "") + bench.title(case))
@@ -563,10 +571,9 @@ def _show_endpoint(repl: Repl, name: str | None) -> None:
     table.add_column()
 
     try:
-        engine = bench.endpoint(name)
-        table.add_row("engine", bench.title(engine))
-        model = bench.model_of(engine)
-        table.add_row("model", model.name if model else "—")
+        found = bench.endpoint(name)
+        table.add_row("engine", bench.title(found.engine))
+        table.add_row("model", found.model.name)
     except LookupError as e:
         table.add_row("engine", Text(str(e), style=REFUSED))
 
@@ -614,15 +621,14 @@ def reasoning(repl: Repl) -> None:
 
     for endpoint in sorted(bench.inventory.endpoints):
         try:
-            model = bench.model_of(bench.endpoint(endpoint))
+            model = bench.endpoint(endpoint).model
         except LookupError:
             continue
-        if model is not None:
-            marked = f"▸ {endpoint}" if endpoint == where else endpoint
-            serving.setdefault(model.name, []).append(marked)
+        marked = f"▸ {endpoint}" if endpoint == where else endpoint
+        serving.setdefault(model.name, []).append(marked)
 
-    serves = None if repl.engine is None else bench.model_of(repl.engine)
-    current = None if serves is None else serves.name
+    at = repl.at
+    current = None if at is None else at.model.name
     asked = _asked(repl, cell.variation)
     caption = (
         "▸ the level the cell's configuration asks for, as its model's facts say"
@@ -649,7 +655,7 @@ def _asked(repl: Repl, variation: TriedVariation | None) -> Effort | None:
     held = variation.held("reasoning")
     if held is None:
         return "default"
-    return resolve(repl.bench.get, held, Reasoning).level
+    return resolve(repl.bench.store.get, held, Reasoning).level
 
 
 def _level(facts: ModelFacts, effort: Effort) -> Text:

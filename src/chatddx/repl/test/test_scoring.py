@@ -2,6 +2,7 @@ import pytest
 from pydantic import JsonValue
 
 from chatddx.bench import Bench
+from chatddx.bench.test.helpers import owned
 from chatddx.catalog import Entry, EntryField, Subject, threads
 from chatddx.factors.base import resolve
 from chatddx.factors.scoring import Expectation
@@ -94,7 +95,7 @@ def _dropped(bench: Bench, name: str) -> tuple[str, str]:
     case = bench.family(name).case
     [schema] = bench.expectation_schemas(case)
     catalog, person = Catalog(bench.conn), bench.person.id
-    [mine] = bench.expectation_choices([case], schema)[case]
+    [mine] = owned(bench, case, schema)
     catalog.note(Subject(thread=mine), Entry(field=EntryField.DELETED), person)
     return case, schema
 

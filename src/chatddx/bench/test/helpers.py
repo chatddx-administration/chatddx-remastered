@@ -1,4 +1,4 @@
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from datetime import UTC, datetime
 from uuid import UUID, uuid4
 
@@ -7,15 +7,16 @@ from pydantic import JsonValue
 
 from chatddx import settings
 from chatddx.bench import Bench
-from chatddx.catalog import Edit, Entry, EntryField, Subject, threads
+from chatddx.catalog import Edit, Entry, EntryField, Subject, read, threads
 from chatddx.curation import Plan
-from chatddx.factors.base import Finding, resolve
+from chatddx.factors.base import Component, Finding, resolve
 from chatddx.factors.bundle import Registry
 from chatddx.factors.engine import LocalModel
 from chatddx.factors.facts import ModelFacts
+from chatddx.factors.kinds import BY_KIND
 from chatddx.factors.scoring import Expectation
 from chatddx.factors.trial import Trial
-from chatddx.identity import Person
+from chatddx.identity import Person, owns
 from chatddx.inventory import DirectorySource, World
 from chatddx.ledger import Endpoint, Run, RunStarted
 from chatddx.rig import rig
@@ -64,12 +65,34 @@ def ran(
     return started.run
 
 
+def component(doc: Mapping[str, JsonValue]) -> Component:
+    kind = doc["kind"]
+    assert isinstance(kind, str)
+    return BY_KIND[kind].model_validate({k: v for k, v in doc.items() if k != "v"})
+
+
+def owned(bench: Bench, case: str, schema: str) -> list[int]:
+    held = threads.expecting(bench.rows, [case], schema)[case]
+    return [e.thread for e, a in held if owns(bench.person.id, a)]
+
+
+def view_labels(bench: Bench, edit: Edit) -> dict[int, str]:
+    held = read.labels(bench.rows, edit.id).items()
+    return {position: label for (part, position), label in held if part == "view"}
+
+
+def varying(bench: Bench, run: UUID) -> tuple[Edit, dict[str, str | None]] | None:
+    about = read.about(bench.rows, Subject(run=run))
+    edit = None if about.varied is None else bench.rows.edit(about.varied)
+    return None if edit is None else (edit, about.replaced)
+
+
 def another_expectation(bench: Bench, case: str, data: JsonValue) -> str:
     [schema] = bench.expectation_schemas(case)
     held = bench.expectation(case, schema)
     assert held is not None
     store, catalog, person = Store(bench.conn), Catalog(bench.conn), bench.person.id
-    [mine] = bench.expectation_choices([case], schema)[case]
+    [mine] = owned(bench, case, schema)
     registry = store.load([held.digest])
     other = registry.add(
         Expectation(case=held.case, expectation_schema=schema, data=data)
@@ -90,7 +113,7 @@ def another_expectation(bench: Bench, case: str, data: JsonValue) -> str:
 # As init-data writes a corrected facts file: a new version of the archive's thread.
 def move_model(bench: Bench, name: str, **changes: JsonValue) -> Edit:
     [thread] = threads.find(bench.rows, "model.local", name)
-    held = resolve(bench.get, threads.head(bench.rows, thread).digest, LocalModel)
+    held = resolve(bench.store.get, threads.head(bench.rows, thread).digest, LocalModel)
     newer = LocalModel.model_validate({**held.model_dump(mode="json"), **changes})
     registry = Registry()
     _ = Store(bench.conn).add(registry, [registry.add(newer)])

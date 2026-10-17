@@ -6,11 +6,12 @@ from uuid import UUID
 from pydantic import BaseModel, ConfigDict, Field, JsonValue, model_validator
 
 from chatddx import catalog, settings
-from chatddx.bench import PARTS, Outcome
 from chatddx.factors import base as factors
 from chatddx.factors.cases import CleanupOp
+from chatddx.factors.request import RECIPE_PARTS
 from chatddx.factors.trial import Order
 from chatddx.identity import Person, Role
+from chatddx.runner.outcome import Outcome
 
 
 class _Schema(BaseModel):
@@ -165,7 +166,9 @@ class Parts(_Schema):
 
     def given(self) -> dict[str, str | None]:
         return {
-            p: getattr(self, p) or None for p in PARTS if p in self.model_fields_set
+            p: getattr(self, p) or None
+            for p in RECIPE_PARTS
+            if p in self.model_fields_set
         }
 
 

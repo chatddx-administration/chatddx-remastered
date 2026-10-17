@@ -146,8 +146,13 @@ Building one checks, each a `ValueError` wrapped in `ValidationError`:
 | --- | --- |
 | `load(path: Path) -> Self` (classmethod) | See below. |
 | `source(name: str \| None = None, kind: type[S] = Source) -> S` | The source `name` names, or with no name the only source of `kind`. `LookupError("no source '<name>' in the inventory")`, and `LookupError("source '<name>' isn't a <kind> source")` for one of another kind; with no name, `LookupError("no <kind> source in the inventory")` or `LookupError("<n> <kind> sources (<names>) are in the inventory, so one must be named")`. `<kind> source` is `source` for `Source`. init-data and repair-data ask for a `DirectorySource`, `Bench.type_case` and `Bench.takes_typed` for a `DatabaseSource`. |
+| `takes_typed(endpoint: str) -> bool` | Whether a case typed into the World's database source can run at `endpoint`: the source isn't sensitive, or the endpoint is cleared for it. `False` when the World has no database source, or more than one. |
 | `endpoint(name: str) -> EndpointSpec` | `LookupError("no endpoint '<name>' in the inventory")` when there is none. |
 | `serving(digest: str, serves: Callable[[str], str \| None] \| None = None, called: str \| None = None) -> str` | The one endpoint serving `digest`: whose engine is `digest`, or, given `serves`, whose engine `serves` maps to `digest` (`src/chatddx/bench/seen.py:Seen.at` maps an engine to its model). `LookupError("no endpoint serves <what>")` when none does, `LookupError("<names, joined by ", "> serve <what>; name the one to use")` when several do; `<what>` is `called`, or `engine <digest>`. `src/chatddx/runner/score.py:judge_at` turns it into `gate.Refused`, and `Seen.at` into a `ValueError`. |
+
+### `takes_typed(endpoint: str) -> bool`
+Whether a case typed into the World's database source can run at `endpoint`: the source isn't sensitive, or the
+endpoint is cleared for it. False when the World has no database source, or more than one.
 
 #### `Inventory.load(path: Path) -> Self`
 1. Reads `path`. `ValueError("<path>: the inventory has only 'include', 'configurations', 'source', 'endpoint',

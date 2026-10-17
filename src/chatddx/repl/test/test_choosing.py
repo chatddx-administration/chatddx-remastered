@@ -112,7 +112,7 @@ def test_set_model_swaps_the_model_and_leaves_an_endpoint_serving_another(
     assert repl.prompt == f"alice {LINES}+model={GPT_OSS_ARTIFACT}×{GPT_OSS} #7> "
 
     _ = say(f"on {QWEN}", f"set model {QWEN_ARTIFACT}")
-    assert repl.cell.endpoint == QWEN
+    assert repl.cell.named == QWEN
     assert repl.prompt == f"alice {LINES}×{QWEN} #7> "
 
 
@@ -190,13 +190,13 @@ def test_save_keeps_the_cell_as_a_configuration_of_one_s_own(
     assert threads.thread(rows, thread).forked_from == origin.id
     head = threads.head(rows, thread)
     assert head.compilation is not None
-    recipe = resolve(bench.get, head.compilation, Compilation).recipe
+    recipe = resolve(bench.store.get, head.compilation, Compilation).recipe
     assert recipe.reasoning is not None
-    reasoning = resolve(bench.get, recipe.reasoning, Reasoning)
+    reasoning = resolve(bench.store.get, recipe.reasoning, Reasoning)
     assert reasoning.level == "off"
-    assert resolve(bench.get, head.digest, Skeleton).body["chat_template_kwargs"] == {
-        "enable_thinking": False
-    }
+    assert resolve(bench.store.get, head.digest, Skeleton).body[
+        "chat_template_kwargs"
+    ] == {"enable_thinking": False}
 
     assert "quiet" in repl.completions()["configuration"]
     assert f"cell: quiet × {QWEN}" in say("use quiet")
@@ -231,10 +231,10 @@ def test_one_s_own_configuration_shadows_the_archive_s(
     repl: Repl, bench: Bench, say: Say
 ):
     _ = say(f"use {NATIVE}")
-    assert bench.about(tried(repl).configuration.thread).owner == bench.person.id
+    assert bench.thread(tried(repl).configuration.thread)[1].owner == bench.person.id
 
     _ = say(f"use archive/{NATIVE}")
-    assert bench.about(tried(repl).configuration.thread).owner != bench.person.id
+    assert bench.thread(tried(repl).configuration.thread)[1].owner != bench.person.id
     assert repl.prompt == f"alice archive/{NATIVE} #7> "
 
 

@@ -10,8 +10,7 @@ from chatddx import settings
 from chatddx.catalog import Entry, EntryField, Subject, read, titles
 from chatddx.factors.base import resolve
 from chatddx.factors.cases import Case, CleanupOp
-from chatddx.factors.request import Skeleton
-from chatddx.factors.scoring import Scorer
+from chatddx.factors.request import RECIPE_PARTS, Skeleton
 from chatddx.factors.trial import CanarySet, Execution, Trial
 from chatddx.ledger import RunStarted
 from chatddx.ledger.run import PHASES, Phase
@@ -23,8 +22,8 @@ from chatddx.runner.send import STOPPED
 from .configurations import keep_compilation
 from .errors import OverQuota
 from .model import Carried, Graded, Started
-from .seen import Seen
-from .variation import PARTS, TriedVariation
+from .seen import Seen, labels_of, scoring, trial
+from .variation import TriedVariation
 
 REFUSALS = (LookupError, TypeError, ValueError, NotImplementedError, Refused)
 
@@ -51,13 +50,12 @@ def start(
         raise ValueError(
             "no case can be sent: " + "; ".join(c.refused or "" for c in left_out)
         )
-    endpoint, engine = seen.at(variation, endpoint)
-    spec = seen.inventory.endpoint(endpoint)
-    canaries = canaries or spec.canaries
+    at = seen.at(variation, endpoint)
+    canaries = canaries or at.spec.canaries
     _check_quota(seen, [len(c.cases) * len(seeds) for c in sent])
     said = _varying(
         variation.configuration.id,
-        {p: variation.parts[p][0] for p in PARTS if p in variation.parts},
+        {p: variation.parts[p][0] for p in RECIPE_PARTS if p in variation.parts},
     )
     runs: list[tuple[Carried, Running]] = []
     # One transaction, so that a run the gate refuses leaves none of the start's begun.
@@ -68,8 +66,8 @@ def start(
             running = _begun(
                 seen,
                 each.skeleton,
-                endpoint,
-                engine,
+                at.name,
+                at.engine,
                 each.cases,
                 seeds,
                 variation.label,
@@ -77,10 +75,10 @@ def start(
                 cleanup=_cleanup_of(seen, each.cases)
                 if cleanup is None
                 else tuple(cleanup),
-                execution=execution or spec.execution,
+                execution=execution or at.spec.execution,
                 canaries=None
                 if canaries is None
-                else resolve(seen.get, canaries, CanarySet),
+                else resolve(seen.store.get, canaries, CanarySet),
             )
             runs.append((each, running))
             if each.translated:
@@ -108,23 +106,23 @@ def again(seen: Seen, run: RunStarted, seeds: Sequence[int]) -> Running:
         raise ValueError(
             f"run {run.run} was sent to no endpoint, so it can't run again"
         )
-    trial = resolve(seen.get, run.trial, Trial)
-    skeleton = resolve(seen.get, trial.skeleton, Skeleton)
+    ran = resolve(seen.store.get, run.trial, Trial)
+    skeleton = resolve(seen.store.get, ran.skeleton, Skeleton)
     about = read.about(seen.rows, Subject(run=run.run))
     return _begun(
         seen,
         skeleton,
         run.endpoint.name,
-        trial.engine,
-        list(trial.cases),
+        ran.engine,
+        list(ran.cases),
         seeds,
-        about.name or seen.title(trial.skeleton),
+        about.name or seen.title(ran.skeleton),
         _varying(about.varied, about.replaced),
-        cleanup=trial.cleanup,
+        cleanup=ran.cleanup,
         execution=run.execution,
         canaries=None
         if run.canaries is None
-        else resolve(seen.get, run.canaries, CanarySet),
+        else resolve(seen.store.get, run.canaries, CanarySet),
         verify_at=run.verify_at,
     )
 
@@ -135,9 +133,8 @@ def _varying(edit: int | None, replaced: Mapping[str, str | None]) -> list[Entry
     return [Entry.varied(edit), *(Entry.replaced(p, d) for p, d in replaced.items())]
 
 
-def resume(seen: Seen, run: UUID) -> Running:
-    _ = seen.run_by_id(run)
-    return Runner(seen.conn, seen.inventory, seen.person).resume(run)
+def resume(seen: Seen, run: RunStarted) -> Running:
+    return Runner(seen.conn, seen.inventory, seen.person).resume(run.run)
 
 
 def _begun(
@@ -156,9 +153,9 @@ def _begun(
     verify_at: tuple[Phase, ...] = PHASES,
 ) -> Running:
     _check_quota(seen, [len(cases) * len(seeds)])
-    registry, trial = seen.trial(skeleton, engine, cases, seeds, cleanup)
+    registry, made = trial(seen, skeleton, engine, cases, seeds, cleanup)
     runner = Runner(seen.conn, seen.inventory, seen.person)
-    running = runner.start(trial, registry, endpoint, execution, canaries, verify_at)
+    running = runner.start(made, registry, endpoint, execution, canaries, verify_at)
     with seen.conn.transaction():
         for entry in (Entry(field=EntryField.NAME, value=name), *said):
             seen.catalog.note(Subject(run=running.run), entry, seen.person.id)
@@ -231,12 +228,11 @@ def score(
 ) -> list[Graded]:
     found: list[Graded] = []
     stopped = False
-    for edit, about in seen.scorers_for(run):
+    for edit, about, scorer in seen.scorers(run):
         if scorers is not None and edit.digest not in scorers:
             continue
         name = about.name or titles.title(seen.rows, edit.thread)
-        scorer = resolve(seen.get, edit.digest, Scorer)
-        labels = seen.labels_of(edit)
+        labels = labels_of(seen, edit)
         if stopped or (halt is not None and halt.is_set()):
             stopped = True
             found.append(Graded(name, scorer, labels, refused=STOPPED))
@@ -269,9 +265,9 @@ def score(
 
 
 def _started(seen: Seen, run: RunStarted, scorer: str) -> Grading:
-    scoring = seen.scoring(run, scorer)
-    if scoring is None:
+    built = scoring(seen, run, scorer)
+    if built is None:
         raise LookupError("none of the run's cases has an expectation")
-    registry = seen.store.load([scoring.scorer, *scoring.expectations])
+    registry = seen.store.load([built.scorer, *built.expectations])
     grader = Grader(seen.conn, seen.inventory, seen.person)
-    return grader.start(run.run, scoring, registry)
+    return grader.start(run.run, built, registry)

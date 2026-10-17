@@ -54,11 +54,11 @@ def family(request: Request, bench: BenchDep, family: int) -> Response:
         )
         for c in api.cases(bench, family)
     ]
-    current = bench.current(shown.id)
+    current = bench.family(shown.id).vignette
     written = [
         t
         for t in threads.threads(bench, "appendix")
-        if resolve(bench.get, t.head.digest, Appendix).vignette == current
+        if resolve(bench.store.get, t.head.digest, Appendix).vignette == current
     ]
     appendices = {a for c in cases for a in c.appendices} | {
         t.head.digest for t in written
@@ -83,7 +83,7 @@ def family(request: Request, bench: BenchDep, family: int) -> Response:
             "case": c.case,
             "schema": e.expectation_schema,
             "json_schema": resolve(
-                bench.get, e.expectation_schema, ExpectationSchema
+                bench.store.get, e.expectation_schema, ExpectationSchema
             ).json_schema,
             "data": started.get(e.expectation_schema),
             "name": f"expectation for {c.title}",

@@ -312,8 +312,8 @@ stored.
 | `GREEDY_DROPS` | `top_p`, `top_k`, `min_p` |
 | `ToolName` | `str` matching `^[A-Za-z0-9_-]{1,64}$` |
 | `EntryPoint` | `str` matching `^[\w.]+:[\w.]+$`, as `module:attribute` |
-| `RECIPE_PARTS` | `(*CHUNK_PARTS, "engine")` |
-| `CHUNK_PARTS` | `instructions`, `few_shot`, `prompt`, `output`, `sampling`, `reasoning`, `passthrough`, `translations`, `toolset`: the parts a chunk fills |
+| `RECIPE_PARTS` | `(*CHUNK_PARTS, "model")` |
+| `OPTIONAL_PARTS` | The parts of `RECIPE_PARTS` that `Recipe` doesn't require, which a variation can take out |
 
 ### Segments and text
 
@@ -619,7 +619,7 @@ imports only `base.py`.
   that order.
 
 Its readers: `request.py:next_request`, `chatddx.scorers.answer.read`, the runner's tool rounds and the stream's
-reasoning deltas, the ledger's run check, `chatddx.bench.outcome` for the tokens streamed, the repl's transcript and
+reasoning deltas, the ledger's run check, `chatddx.runner.outcome` for the tokens streamed, the repl's transcript and
 the portal's run page.
 
 ## engine.py
@@ -949,7 +949,7 @@ On any other engine (a remote engine, or another vLLM version):
 
 #### Trials and judges, with their skeletons' compilations
 The compilations of the pair's skeleton are those in the registry; the caller puts them there, with the facts they
-name (`src/chatddx/bench/seen.py:Seen.add_compilations`). The model its engine serves is `engine.py:model_of`'s.
+name (`src/chatddx/bench/seen.py:add_compilations`). The model its engine serves is `engine.py:model_of`'s.
 
 | Code | Level | When |
 | --- | --- | --- |

@@ -17,7 +17,7 @@ from fastapi import FastAPI
 
 from chatddx import settings
 from chatddx.api.app import app
-from chatddx.bench import Bench, outcome
+from chatddx.bench import Bench
 from chatddx.curation import init, load_cases, plan_factors, repair, wipe
 from chatddx.curation.write import ARCHIVE
 from chatddx.factors.base import resolve
@@ -42,6 +42,7 @@ from chatddx.repl.loop import HISTORY, loop
 from chatddx.repl.shell import Repl, console
 from chatddx.rig import rig
 from chatddx.runner.gate import Refused
+from chatddx.runner.outcome import outcome
 from chatddx.scripted import (
     RUNS,
     fake_at,
@@ -267,13 +268,13 @@ def _scripted_runs(args: argparse.Namespace) -> None:
 
 def _ran(bench: Bench, started: RunStarted) -> str:
     run = bench.store.run(started.run)
-    trial = resolve(bench.get, started.trial, Trial)
-    skeleton = resolve(bench.get, trial.skeleton, Skeleton)
+    trial = resolve(bench.store.get, started.trial, Trial)
+    skeleton = resolve(bench.store.get, trial.skeleton, Skeleton)
     counted = Counter(outcome(skeleton, item)[0] for item in run.items)
     went = ", ".join(f"{n} {word}" for word, n in counted.items()) or "no items"
     if run.finished is None:
         went += ", unfinished"
-    scored = len(bench.scores_of(started.run))
+    scored = len(bench.scores_of(started))
     return f"{bench.described(started)}: {went}, scored by {scored}"
 
 

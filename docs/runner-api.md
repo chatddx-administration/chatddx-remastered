@@ -14,7 +14,8 @@ Paths are relative to `src/chatddx/runner/` unless they start with `src/` or `do
 - [wire.py](#wirepy): HTTP and server-sent events
 - [send.py](#sendpy): one call, `Halt`
 - [gate.py](#gatepy): refusing an endpoint
-- [prepare.py](#preparepy): an item's request
+- [prepare.py](#preparepy): an item's request, and a run's rendered again
+- [outcome.py](#outcomepy): how an item ended, and the tokens it used
 - [rounds.py](#roundspy): tools and rounds
 - [run.py](#runpy): `Runner`, `Running`, run events
 - [score.py](#scorepy): `Grader`, `Grading`, `judge_at`, `score_run`
@@ -29,6 +30,7 @@ Paths are relative to `src/chatddx/runner/` unless they start with `src/` or `do
 | `wire.py` | the standard library's `urllib` |
 | `send.py` | `wire.py`, `chatddx.factors.{base,response,trial}`, `chatddx.ledger` |
 | `gate.py` | `wire.py`, `chatddx.factors.{base,cases,engine,request,trial}`, `chatddx.inventory` |
+| `outcome.py` | `send.py`, `chatddx.factors.{request,response}`, `chatddx.ledger`, `chatddx.scorers.answer` |
 | `prepare.py` | `chatddx.factors.{base,cases,engine,request,trial}`, `chatddx.inventory`, `chatddx.ledger`, `chatddx.store` |
 | `rounds.py` | `send.py`, `chatddx.factors.{base,request,response,trial}`, `chatddx.ledger`, `chatddx.rig`, `chatddx.tools.shipped` |
 | `run.py` | `gate.py`, `prepare.py`, `rounds.py`, `send.py`, `chatddx.{catalog,factors,identity,inventory,ledger,rig,store}` |
@@ -215,8 +217,40 @@ Prepares a trial's items. `trial` is a digest.
 | `item(key: ItemKey) -> PreparedItem` | `case` with the skeleton's appendix layout, then `Skeleton.render` for the trial's engine's `served_model_name` and the replicate's seed. |
 
 Raises `LookupError` (a vignette or source that can't be found, a replicate out of range) and `StructuralError`
-(a case that can't be prepared). `Running` notes either as `case.unreadable`; the bench's `rendered_again` uses
-`Items` to show a request as it was sent.
+(a case that can't be prepared). `Running` notes either as `case.unreadable`; `rendered_again` uses `Items` to show
+a request as it was sent.
+
+### `rendered_again(conn, inventory, run: Run) -> dict[ItemKey, str | None]`
+For each item, whether its first request, rendered again from the trial and the vignette at its source, is what was
+sent: `None` when it is, else why not:
+- `the vignette at the source isn't the one sent`;
+- `the request renders otherwise now`;
+- the message of the `LookupError` or `StructuralError` that fetching or preparing the case raised.
+
+An edge asks it of a run it found among the person's.
+
+## outcome.py
+
+### `type Outcome = Literal["stopped", "errored", "unread", "completed", "invalid", "valid", "salvaged"]`
+
+### `outcome(skeleton: Skeleton, item: RunItem) -> tuple[Outcome, str | None]`
+How an item ended, by its last call read through `chatddx.scorers.answer.read`, and why, when there is something to
+say. The first that holds:
+1. `stopped`: the call's error is the runner's `STOPPED`, or the item's last turn has no call, since its tools ran and
+   the request after them was never sent.
+2. `errored`, with the call's error, or `unread`, with why the answer couldn't be read: there is no answer.
+3. `salvaged`, with what the schema refused, else the call's error: the answer was read from a structured answer cut
+   short, its structure closed.
+4. `completed`, with the call's error: the skeleton has no `output_schema`.
+5. `invalid`, with the call's error, else what the schema refused; or `valid`, with the call's error.
+
+### `usage(item: RunItem) -> tuple[int, int]`
+The prompt and completion tokens of all the item's calls, summed.
+
+### `used(call: Call) -> tuple[int, int]`
+The prompt and completion tokens of one call, from its response's `usage`; a count that isn't an `int` is 0. Without
+`usage`, as a stream cut short ends before it, the completion tokens are the `token_ids` its first choice holds, and
+the prompt tokens 0.
 
 ## rounds.py
 
@@ -412,6 +446,10 @@ codes".
 | `verdict.invalid` | `Grading.send` | item key | `view <i>, seed <n>: <problem>` |
 | `answer.salvaged` | `Grading.send` | item key | `cut short, and read with its structure closed`, with `; the call ended with: <error>` when the call has one; level `info` |
 | `run.resumed` | `Runner.resume` | none | `resumed after <n> of <m> items`, level `info`, when the log holds something; a warning with ` by <rig>, where <rig> started it` when another rig resumes it than started it |
+
+## Testing
+- `test_outcome.py`: each outcome but `salvaged`, which `src/chatddx/repl/test/test_running.py` reads, and usage.
+  Without a database.
 
 ## Known gaps
 From `docs/runner.md`, "Open design issues", where they concern this API:

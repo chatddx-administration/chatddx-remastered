@@ -3,12 +3,14 @@ from collections import Counter
 from rich.table import Table
 from rich.text import Text
 
-from chatddx.bench import Graded, usage
+from chatddx.bench import Graded
 from chatddx.catalog.titles import short
 from chatddx.factors.base import resolve
 from chatddx.factors.request import Skeleton
 from chatddx.factors.trial import Trial
 from chatddx.ledger import Run, RunItem, RunStarted
+from chatddx.runner.outcome import usage
+from chatddx.runner.prepare import rendered_again
 from chatddx.scorers.aggregate import mean
 from chatddx.scorers.shipped import unit_of
 
@@ -50,7 +52,7 @@ def runs(repl: Repl, count: str = "20") -> None:
 
     for started in found:
         run = bench.store.run(started.run)
-        graded = bench.scores_of(started.run)
+        graded = bench.scores_of(started)
         table.add_row(
             str(started.run)[:8],
             when(started),
@@ -76,7 +78,7 @@ def replay(repl: Repl, prefix: str | None = None) -> None:
     stage = "finished" if run.finished is not None else "unfinished"
     repl.console.print(f"{when(started)}, {stage}, {at}on {built}", style=LABEL)
 
-    again = bench.rendered_again(run)
+    again = rendered_again(bench.conn, bench.inventory, run)
     differ = {key: why for key, why in again.items() if why is not None}
 
     if not differ:
@@ -95,7 +97,7 @@ def replay(repl: Repl, prefix: str | None = None) -> None:
         )
 
     skeleton = _skeleton(repl, started)
-    graded = bench.scores_of(started.run)
+    graded = bench.scores_of(started)
 
     if len(run.items) == 1:
         [item] = run.items
@@ -126,8 +128,8 @@ def when(started: RunStarted) -> str:
 
 
 def _skeleton(repl: Repl, started: RunStarted) -> Skeleton:
-    trial = resolve(repl.bench.get, started.trial, Trial)
-    return resolve(repl.bench.get, trial.skeleton, Skeleton)
+    trial = resolve(repl.bench.store.get, started.trial, Trial)
+    return resolve(repl.bench.store.get, trial.skeleton, Skeleton)
 
 
 # The lines `run tag` writes, again: each item's tokens and how its call went.

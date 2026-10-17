@@ -202,10 +202,10 @@ class Worker:
     ) -> Literal["finished", "stopped", "queued"]:
         job = held.job
         bench = Bench(conn, People(conn).get(job.owner), self._inventory)
-        started = bench.run_by_id(job.run)
+        started = bench.run(job.run)
         try:
             if bench.store.run(job.run).finished is None:
-                running = bench.resume(job.run)
+                running = bench.resume(started)
                 held.sending(running)
                 running.send(publisher.run_event)
                 if held.left is not None and not held.halted:
@@ -234,7 +234,7 @@ class Worker:
         job, queue = held.job, Queue(conn)
         left = [
             e.digest
-            for e, _ in bench.scorers_for(started)
+            for e, _, _ in bench.scorers(started)
             if (job.scorers is None or e.digest in job.scorers)
             and e.digest not in job.scored
         ]

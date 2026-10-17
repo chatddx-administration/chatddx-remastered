@@ -40,6 +40,9 @@ rounds"). Each item is written as soon as its last call is done, so a run that s
 Canaries are sent one at a time, the start phase's before the first item and the end phase's after the last, whatever
 the concurrency, so they bracket the items. They are not sensitive and need no clearance.
 
+Only a request's fingerprint is kept, so whether a run's first requests would be sent the same now is told by rendering
+them again from the trial and the vignette at its source.
+
 ### Resuming
 A run that wasn't finished can resume, the items and canary calls its log holds are kept, and only what it lacks is
 sent. Resuming refuses what starting refuses, under the run's own execution, and an endpoint whose address is another

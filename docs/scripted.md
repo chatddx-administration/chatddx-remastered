@@ -15,7 +15,7 @@ the World itself doesn't read it, as with the data set in `_data/` (docs/invento
 | Key | Meaning |
 | --- | --- |
 | `description` | What the run shows. Required. |
-| `configuration` | The configuration, as the bench finds it by name (`Bench.configuration`), such as `free-text-guided`. Its engine is set to the endpoint's. Required. |
+| `configuration` | The configuration, as the bench finds it by name (`Bench.variation`), such as `free-text-guided`. Its engine is set to the endpoint's. Required. |
 | `set` | Parts to set in the variation, each part to a chunk's name, or to `none` for none. |
 | `endpoint` | The World's endpoint the run goes to. Required. |
 | `cases` | The cases, by family id, or `<id> with <appendix>[, <appendix>]` for a case that sends appendices, as init-data titles it. At least one. |

@@ -12,8 +12,12 @@ its own.
 functions in `identity` and utilize them here.
 
 ## What a bench is not
-- A facade, and nothing checks that an edge goes through it.
 - Authorization, what the bench shows is what is relevant to show a person, not who may read what.
+- A facade. Claude clarifies:
+> A way to everything an edge reads. What doesn't depend on the person, an edge reads where it is: a component and
+  a run's rows from the store, what is said of a thing from the catalog, how an item ended and whether its requests
+  render the same now from the runner (docs/runner-api.md), and an endpoint's spec and clearances from the
+  inventory.
 
 ## How the bench works
 
@@ -31,12 +35,16 @@ to read, and they need the bench's connection in autocommit mode.
   configuration, each recipe part, the model among them, tool, scorer, judge, expectation, appendix, expectation
   schema, canary set, model or facts.
 - **Families** they own or collaborate on, while they are live. A family stands for its case: the one its current
-  vignette makes alone, else the first that holds the vignette. A family without a case isn't shown.
+  vignette makes alone, else the first, by digest, that holds the vignette, and holds that vignette and its cases. A
+  family without a case isn't shown.
 - **Their own deleted threads**, listed apart and found by id, so that they can be read and restored. Nothing else
   finds them: not names, not lists, not what is run or scored against.
 - **Their own runs**, while they are live. Being a collaborator on a run shows nothing.
-- **The World's endpoints**, which are everyone's, and read from the World. The bench gives the engine an endpoint
-  serves, once that engine is in the store.
+- **The World's endpoints**, which are everyone's, and read from the World. The bench gives an endpoint with its
+  spec and the model its engine serves, once that engine is in the store (`Endpoint`), whether it is named or is the
+  one a variation runs at (`Seen.at`).
+- **What things are called**: a digest by the name of a thread they see whose head it is, their own first, else the
+  catalog's title (`Seen.title`), so a scorer they forked under a name of their own is called by it.
 
 ### Finding things by name
 A thread or a family is found by its name, matched whole first, since names may hold a slash, as the facts
@@ -49,9 +57,9 @@ A configuration's name carries no language: it is one thread, written in one lan
 
 ### Finding things by id
 By id, a thread, a family or a run is found only among what the person sees, and a thread only among the kinds its
-word names. A run is also found by the start of its id, among their own, as a person at a prompt types it; an edge
-that names things by id can take whole ids only, since a start could name another run tomorrow (docs/api.md,
-"Ids").
+word names; the same method takes a name or an id. A run is also found by the start of its id, among their own, as a
+person at a prompt types it; an edge that names things by id can take whole ids only, since a start could name
+another run tomorrow (docs/api.md, "Ids").
 
 ## What a person is scored against
 A person is scored against their own expectation of a case, under the scorer's expectation schema. One shared with
@@ -135,11 +143,11 @@ For a variation, the bench gives:
 
 A judge configuration, one whose purpose is `judge`, is looked at as the judge it would make on that engine: its lints
 are the judge's, it reads no case, and it has no reach, as no scorer reads what a judge answers. It isn't run on cases:
-starting it is refused. An edge lists configurations by purpose (`Bench.purposed`), since a judge configuration is no
-use where a run's is wanted.
+starting it is refused. An edge lists configurations by purpose (`Seen.threads(…, purpose=…)`), since a judge
+configuration is no use where a run's is wanted.
 
-An edge also lists configurations by what they answer (`Bench.answering`): the title of their answer's JSON Schema, as
-a page that shows management plans offers only the configurations that answer one.
+An edge also lists configurations by what they answer (`Seen.threads(…, answering=…)`): the title of their answer's
+JSON Schema, as a page that shows management plans offers only the configurations that answer one.
 
 ### The model
 The model is a part like any other: swapping it keeps every other pick, and what depends on the model is worked out
@@ -191,10 +199,9 @@ What every write has in common:
   writes only what changes.
 - **What was written comes back with its lints**, and no write refuses on one: an expectation whose data its schema
   refuses is written, and said so (docs/factors.md, "Lints"). A component does, whether new, forked, edited, followed
-  or carried, and so does a configuration made from a recipe or followed. A variation saved, forked or edited comes
-  back as what was saved, and an edge lints its skeleton itself (`Bench.linted`), as the API does. Taking, saying and
-  and building cases give back what they made. Refusals are the components' own rules, the store's and the catalog's,
-  and the few the bench adds, below.
+  or carried, and so does a configuration, made from a recipe, saved, forked, edited or followed. Taking, saying
+  and building cases give back what they made. Refusals are the components' own rules, the store's and the
+  catalog's, and the few the bench adds, below.
 - **Some refusals come before the write**, in the person's words, where the database or the catalog would refuse
   later in theirs: a component of another kind than the thread's, a second expectation of the person's own for a
   case and schema.
@@ -270,16 +277,16 @@ person sees.
 
 An appendix is written like any other component, but always bound to the current vignette of a family the person
 sees, and with its line endings made LF before it is digested, since browsers send CRLF: the bench does it for every
-edge. The bench builds one from a family and a text. A case is built from a family and appendices the person sees, in
-order, at its current vignette, and stored. Nothing is written in the catalog, since a case belongs to its family by
-its vignette (docs/catalog.md, "Families and repairs"), and an appendix bound to another vignette is refused by the
-case's own rule.
+edge as it writes one, which an edge builds of a family's vignette and a text. A case is built from a family and
+appendices the person sees, in order, at its current vignette, and stored. Nothing is written in the catalog, since a
+case belongs to its family by its vignette (docs/catalog.md, "Families and repairs"), and an appendix bound to another
+vignette is refused by the case's own rule.
 
 A new version of an appendix stores each case that held the old one at that vignette again, with the new one in its
 place, so the new cases are there to pick, and says which replaced which. No expectation moves with them, since an
-appendix can change the right answer (docs/factors.md, "Case"). Carrying one is a write of its own: the person's
-expectation, edited onto another case of its family with the same data, as a clinician's word that it still holds
-there.
+appendix can change the right answer (docs/factors.md, "Case"). Carrying one is an edit of the person's
+expectation onto another case of its family, with the same data, as a clinician's word that it still holds there.
+An expectation's edit keeps to its family: a case of another is refused.
 
 A case left at an earlier vignette by a repair is offered a replacement (docs/catalog.md, "What has moved on"), which
 the bench stores when asked. An appendix's edit replaces only the cases at its own vignette, since one at an earlier
@@ -363,8 +370,6 @@ ones, and a scorer pinned again by a deploy reaches the person's fork of it.
   aren't scored.
 - **A run's scores** are the latest under each scorer that scored it, each named by the thread the person sees holding
   that scorer, their own first; or every score of the run, newest first; or one by its id.
-- **Rendering again**: only a request's fingerprint is kept, so whether a run's first requests would be sent the same
-  now is told by rendering them again from the trial and the vignette at its source.
 
 ## Errors
 The bench's errors are told apart by their class, so that an edge can answer each its own way:
@@ -451,6 +456,8 @@ the person were planned in `agents/wip-authoring.md` at b6f76b8. Its takes were 
   "Judges"). It probably won't happen: a World serving one engine at two endpoints serves one model on identical
   machines, a load balancer's job. Decided: as it is, until a World does; then the scoring names an endpoint per
   judge, as a run names its own.
+- **A case's language** is its family's, read from the families the person sees, in a few queries however many
+  cases (`Seen.languages`, `Seen.findings`); a case of a family they don't see is read one at a time.
 - **The facts are read from the store each time they are asked for** (`Seen.facts`), several times a look. That is
   cheap with a facts thread per model; cache them per request if it shows.
 - **A person's runs are all read**, and paged afterwards, in the API too (`Bench.runs`), and what is left to score is
@@ -468,4 +475,4 @@ the person were planned in `agents/wip-authoring.md` at b6f76b8. Its takes were 
 - **What the old bench had and this one doesn't**: what a run left unheeded (the old `outcome.py:unheeded`;
   docs/runner.md, "Smaller issues"); the old crossing of variations, which the portal is to start as several runs
   (agents/wip-portal.md, "Comparing variations"); and what holds a configuration, the portal's
-  (agents/wip-portal.md), whose part for the repl `Bench.reaching` and `Bench.scored_by` cover.
+  (agents/wip-portal.md), whose part for the repl `Seen.runs(reaching=…)` and `Seen.runs(scored_by=…)` cover.

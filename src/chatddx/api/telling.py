@@ -49,7 +49,7 @@ type _Key = tuple[str, int]
 
 class Telling:
     def __init__(self, bench: Bench, run: UUID, after: int) -> None:
-        started = bench.run_by_id(run)
+        started = bench.run(run)
         canaries = [] if started.canaries is None else [started.canaries]
         self._bench: Bench = bench
         self._started: RunStarted = started
@@ -108,7 +108,7 @@ class Telling:
 
     def tail(self, job: Job | None) -> list[str]:
         told: list[Named] = []
-        if not self._scored and (graded := self._bench.scores_of(self.run)):
+        if not self._scored and (graded := self._bench.scores_of(self._started)):
             scores = [graded_of(g) for g in graded]
             told.append(("run.scored", schemas.RunScoredData(scores=scores)))
         if job is not None and job.status == "failed":
@@ -143,7 +143,7 @@ class Telling:
                 ]
             case ScoreStarted():
                 self._scored = False
-                scorer = resolve(self._bench.get, record.scoring, Scoring).scorer
+                scorer = resolve(self._bench.store.get, record.scoring, Scoring).scorer
                 return [score_started_of(self._bench, scorer, record.score)]
             case ScoreItem():
                 self._scored = False

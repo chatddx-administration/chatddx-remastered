@@ -4,6 +4,7 @@ from chatddx.catalog import (
     Divergence,
     Labels,
     Part,
+    Subject,
     read,
     threads,
 )
@@ -17,17 +18,24 @@ from chatddx.identity import owns, sees
 from .components import keep_language
 from .errors import NotFound
 from .model import COMPILED_LANGUAGE, LABELLED, Moved, Proposed, Written
-from .seen import Seen
+from .seen import (
+    Seen,
+    check_expecting,
+    check_scorer,
+    compiled,
+    linted,
+    worded,
+)
 
 
 def proposal(seen: Seen, thread: int) -> Proposed | None:
-    _, _, word = seen.worded(thread)
+    _, _, word = worded(seen, thread)
     found = _proposed(seen, thread, word)
     return None if found is None else found[0]
 
 
 def follow(seen: Seen, thread: int, head: int, language: str | None = None) -> Written:
-    _, about, word = seen.worded(thread)
+    _, about, word = worded(seen, thread)
     if not owns(seen.person.id, about):
         raise NotFound(f"no {word} {thread} of yours")
     found = _proposed(seen, thread, word)
@@ -40,10 +48,10 @@ def follow(seen: Seen, thread: int, head: int, language: str | None = None) -> W
     if language is not None and kind not in LANGUAGE_KINDS:
         raise ValueError(f"{kind} components have no language of their own")
     if isinstance(proposed.proposal, Expectation):
-        seen.check_expecting(proposed.proposal, thread)
+        check_expecting(seen, proposed.proposal, thread)
     labels = None
     if isinstance(proposed.proposal, Scorer):
-        seen.check_scorer(proposed.proposal)
+        check_scorer(proposed.proposal)
         labels = _followed_labels(seen, thread, proposed.divergence)
     kept = [proposed.compilation or proposed.digest]
     with seen.conn.transaction():
@@ -59,7 +67,7 @@ def follow(seen: Seen, thread: int, head: int, language: str | None = None) -> W
             head=head,
             labels=labels,
         )
-    return Written(edit, "a new version", seen.linted(proposed.digest))
+    return Written(edit, "a new version", linted(seen, proposed.digest))
 
 
 def moved(seen: Seen, thread: int) -> Moved | None:
@@ -68,7 +76,7 @@ def moved(seen: Seen, thread: int) -> Moved | None:
 
 
 def follow_moved(seen: Seen, thread: int, head: int) -> Written:
-    _, about = seen.thread_by_id(thread, "configuration")
+    _, about = seen.thread(thread, "configuration")
     if not owns(seen.person.id, about):
         raise NotFound(f"no configuration {thread} of yours")
     found = _moved(seen, thread)
@@ -91,7 +99,7 @@ def follow_moved(seen: Seen, thread: int, head: int) -> Written:
             compilation=made.compilation,
             head=head,
         )
-    return Written(edit, "a new version", seen.linted(made.digest))
+    return Written(edit, "a new version", linted(seen, made.digest))
 
 
 def _what(made: Moved) -> str:
@@ -103,7 +111,7 @@ def _what(made: Moved) -> str:
 
 
 def _moved(seen: Seen, thread: int) -> tuple[Moved, Registry | None] | None:
-    edit, _ = seen.thread_by_id(thread, "configuration")
+    edit, _ = seen.thread(thread, "configuration")
     if edit.compilation is None:
         return None
     behind: dict[str, Behind] = {}
@@ -113,14 +121,14 @@ def _moved(seen: Seen, thread: int) -> tuple[Moved, Registry | None] | None:
     if not behind:
         return None
     facts, model = behind.get("/facts"), behind.get("/recipe/model")
-    recipe = resolve(seen.get, edit.compilation, Compilation).recipe
+    recipe = resolve(seen.store.get, edit.compilation, Compilation).recipe
     if model is not None and model.head is not None:
         recipe = Recipe.model_validate(
             recipe.model_dump() | {"model": model.head.digest}
         )
-    about = model_of(recipe.model, seen.get).name
+    about = model_of(recipe.model, seen.store.get).name
     try:
-        registry, compilation = seen.compiled(recipe)
+        registry, compilation = compiled(seen, recipe)
     except ValueError as e:
         return Moved(facts, model, about, None, None, str(e)), None
     made = Moved(facts, model, about, compilation.skeleton, compilation.digest, None)
@@ -141,14 +149,15 @@ def _proposed(seen: Seen, thread: int, word: str) -> tuple[Proposed, Registry] |
     diverged = threads.divergence(seen.rows, thread)
     if diverged is None or not diverged.moved:
         return None
-    if not sees(seen.person.id, seen.about(diverged.origin_head.thread)):
+    origin = Subject(thread=diverged.origin_head.thread)
+    if not sees(seen.person.id, read.about(seen.rows, origin)):
         return None
     try:
         proposal = threads.proposal(seen.rows, thread)
         if proposal is None:
             return None
         if isinstance(proposal, Recipe):
-            registry, compilation = seen.compiled(proposal)
+            registry, compilation = compiled(seen, proposal)
             digest = compilation.skeleton
             proposed = Proposed(diverged, proposal, digest, compilation.digest)
         else:

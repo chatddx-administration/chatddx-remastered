@@ -46,7 +46,7 @@ def test_each_scripted_run_runs_as_its_script_answers(
     assert went(bench, started) == outcomes
     finished = bench.store.run(started.run).finished is not None
     assert finished == (not scripted.unfinished)
-    assert bool(bench.scores_of(started.run)) == (finished and scripted.scored)
+    assert bool(bench.scores_of(started)) == (finished and scripted.scored)
 
 
 @pytest.mark.parametrize("template", ["ran"], indirect=True)
@@ -54,7 +54,7 @@ def test_each_scripted_run_runs_as_its_script_answers(
 def test_a_scripted_run_s_judges_are_served_as_plain_fakes(bench: Bench) -> None:
     started = held(bench, "judged")
 
-    [judged] = [g for g in bench.scores_of(started.run) if g.name == "judged"]
+    [judged] = [g for g in bench.scores_of(started) if g.name == "judged"]
     assert judged.score is not None
     called = [c.call for i in judged.score.items for c in i.judge_calls]
     assert called and all(c.error is None for c in called)
