@@ -26,7 +26,8 @@ it.
    (`docs/bench.md`, "Writes for the person") and typed cases (`docs/bench.md`, "Typed cases"). What isn't is under
    "Below the UI": the worker and Z1.
 6. **Next**: phase 5's second half, 5c and 5d, once its first is looked at (see "Authoring"); and what phases 2 to
-   5 left (see "Open").
+   5 left (see "Open"). A clinician's page around one case, which would build 5d's editors and part of 5c, is planned
+   in `agents/wip-olofs-view.md`.
 
 ## What the portal shows
 The old portal's manual reads as a functional spec for its pages: `docs/portal.md` in chatddx-administration/chatddx
