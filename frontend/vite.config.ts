@@ -19,6 +19,7 @@ export default defineConfig({
         home: "src/islands/home.ts",
         run: "src/islands/run.ts",
         thread: "src/islands/thread.ts",
+        review: "src/islands/review.ts",
         variation: "src/islands/variation.ts",
       },
     },

@@ -548,6 +548,23 @@ class ScorerCode(_Schema):
     )
 
 
+class Picking(_Schema):
+    document: JsonValue = Field(
+        description="what the selectors pick from, such as an expectation's data"
+    )
+    selectors: list[str] = Field(
+        description="each a JSON Pointer, or a JSONPath query of the subset a view takes"
+    )
+
+
+class Picked(_Schema):
+    items: list[JsonValue] | None = Field(
+        description="what the selector picks, in the document's order; null when it "
+        + "doesn't read"
+    )
+    problem: str | None = Field(description="why the selector doesn't read")
+
+
 class Seeds(_Schema):
     seeds: list[int] | None = Field(
         default=None,

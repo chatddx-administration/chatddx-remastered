@@ -45,6 +45,12 @@ The modules, and what each builds on:
   `chatddx.factors.{base,facts,kinds,request,trial}`.
 - `families.py`: `schemas.py`, `people.py`, `state.py`, `threads.py`, `chatddx.bench`, `chatddx.factors.{base,cases}`,
   `chatddx.store`.
+```
+AGENT: change
+`world.py` builds on `chatddx.factors.select` too, for `picks`.
+---
+- `world.py`: `schemas.py`, `people.py`, `state.py`, `threads.py`, `chatddx.bench`, `chatddx.factors.{kinds,select}`,
+```
 - `world.py`: `schemas.py`, `people.py`, `state.py`, `threads.py`, `chatddx.bench`, `chatddx.factors.kinds`,
   `chatddx.inventory`, `chatddx.scorers.{scorer,shipped}`.
 - `events.py`: `schemas.py`, `chatddx.bench`, `chatddx.catalog`, `chatddx.factors.{base,request,scoring,trial}`,
@@ -539,6 +545,15 @@ Within `refused(LookupError)`: `Bench.check(component_of(body))`. The digest and
 Each of `chatddx.scorers.shipped.SCORERS` by entry point, its metrics by name; an entry point that publishes no schema
 for the scorer's own params gives `NO_PARAMS`, which allows none. Signed in, as every route here.
 
+```
+AGENT: insert
+The route of docs/api.md, "Picking".
+---
+#### `picks`, `POST /picks`
+`chatddx.factors.select.select` of the body's document by each of its selectors, in order: a `Picked` of what it
+picks, or of the `ValueError`'s message when the selector doesn't read. Signed in, as every route here.
+```
+
 ## runs.py
 
 ### Constants
@@ -579,6 +594,13 @@ from 1 to 200 and 20 by default; `Store.finished` and `Queue.placed` for the pag
 #### `run`, `GET /runs/{run}`
 `detail`.
 
+```
+AGENT: change
+A `case` query keeps one case's items.
+---
+#### `items`, `GET /runs/{run}/items`
+`Bench.run` (`NotFound`), then each item of `Store.run`, or of the case `case` names: …
+```
 #### `items`, `GET /runs/{run}/items`
 `Bench.run` (`NotFound`), then each item of `Store.run`: its `item_of`, the outcome's why
 (`chatddx.runner.outcome.outcome`), its vignette, call and turns dumped, and its `answer`,
@@ -602,6 +624,13 @@ data, `events.py:scoring_of` the scorers queued.
 `graded_of` each of `Bench.scores_of(Bench.run(run), every)` (`NotFound`), `every` being the query's `all`: the latest
 under each scorer by name, or every score, newest first.
 
+```
+AGENT: change
+A `case` query keeps one case's items.
+---
+#### `items`, `GET /runs/{run}/scores/{score}/items`
+`Bench.score_of(Bench.run(run), score)`, then each of its score's items, or of the case `case` names, with …
+```
 #### `items`, `GET /runs/{run}/scores/{score}/items`
 `Bench.score_of(Bench.run(run), score)`, then each of its score's items with its detail and judge calls dumped, and
 its finish's findings, none when it hasn't finished. Sensitive.
@@ -757,6 +786,11 @@ In `src/chatddx/api/test/`.
   (incl. Starlette's), the OpenAPI document and the command.
 - `test_threads.py`, `test_families.py`, `test_world.py`: the reads, configurations by purpose, taking expectations,
   and what bob doesn't see of threads and families; that every read needs a session.
+```
+AGENT: insert
+---
+- `test_world.py` also: selectors picking from a document, and one that doesn't read saying why.
+```
 - `test_writes.py`: a configuration made from a recipe, and what is refused of one; chunks and expectations written
   new, edited and forked; a judge written over a judge configuration, and one over a generation configuration
   refused; what is refused, and with which status; an expectation's findings.
@@ -787,6 +821,11 @@ In `src/chatddx/api/test/`.
   per language, listed by `with`, and the cases it leaves out; refused, among them an endpoint named that serves
   another engine, an engine taken out and a start that can send none of its cases... `joined` follows a run from
   before its job is claimed, the owner's queue paused until the stream has told its first row.
+```
+AGENT: insert
+---
+- `test_runs.py` also: a run's items and a score's read for one case.
+```
 - `test_scores.py`: a judged run's scores, the latest and every one, and one's items with their judge calls;
   the run scored again when asked, with the scoring's events after the run's rows; what bob can't read; the runs left
   to score with their scorers, and one leaving the listing once scored; a scoring refused for a run unfinished, a

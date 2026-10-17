@@ -1600,6 +1600,59 @@
         ]
       }
     },
+    "/api/picks": {
+      "post": {
+        "tags": [
+          "world"
+        ],
+        "summary": "Picks",
+        "operationId": "picks_api_picks_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Picking"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/Picked"
+                  },
+                  "type": "array",
+                  "title": "Response Picks Api Picks Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          },
+          {
+            "APIKeyCookie": []
+          }
+        ]
+      }
+    },
     "/api/runs": {
       "post": {
         "tags": [
@@ -2117,6 +2170,24 @@
               "format": "uuid",
               "title": "Run"
             }
+          },
+          {
+            "name": "case",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "only this case's items",
+              "title": "Case"
+            },
+            "description": "only this case's items"
           }
         ],
         "responses": {
@@ -2366,6 +2437,24 @@
               "format": "uuid",
               "title": "Score"
             }
+          },
+          {
+            "name": "case",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "only this case's items",
+              "title": "Case"
+            },
+            "description": "only this case's items"
           }
         ],
         "responses": {
@@ -4668,6 +4757,67 @@
           "paused"
         ],
         "title": "Paused"
+      },
+      "Picked": {
+        "properties": {
+          "items": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/JsonValue"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Items",
+            "description": "what the selector picks, in the document's order; null when it doesn't read"
+          },
+          "problem": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Problem",
+            "description": "why the selector doesn't read"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "items",
+          "problem"
+        ],
+        "title": "Picked"
+      },
+      "Picking": {
+        "properties": {
+          "document": {
+            "$ref": "#/components/schemas/JsonValue",
+            "description": "what the selectors pick from, such as an expectation's data"
+          },
+          "selectors": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Selectors",
+            "description": "each a JSON Pointer, or a JSONPath query of the subset a view takes"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "document",
+          "selectors"
+        ],
+        "title": "Picking"
       },
       "Proposal": {
         "properties": {

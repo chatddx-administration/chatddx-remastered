@@ -5,7 +5,7 @@ with or without judges, around one case at a time. Olof stands in for that clini
 simple, clear interface where everything needed to review a case fully, and everything around it, is a saccade away
 rather than a click, a scroll or another page.
 
-"Decided" means the user said so. "Take" is the agent's recommendation and still open. Nothing here is decided yet.
+"Decided" means the user said so. "Take" is the agent's recommendation and still open.
 
 ## Start with this
 1. **It can be done.** The bench and the API write everything the page needs: appendices, cases, expectations,
@@ -16,8 +16,11 @@ rather than a click, a scroll or another page.
 2. **The page gathers what is spread over today's pages.** The vignette is at `/families/{id}/vignette`; appendices,
    cases and expectations are at `/families/{id}`; an expectation's versions are at `/threads/{id}`; scorers have no
    editor; and answers and scores are at `/runs/{id}`, one run at a time.
-3. **Seven questions need a human** before building (see "The landscape", L1 to L7). Each gives the options and a take.
-4. **Steps** follow once they are answered (see "Steps").
+3. **Decided: the takes on L1 to L7** (see "The landscape"): Olof holds both roles; the island fetches what is
+   sensitive from the API's places; he runs the case himself; judges are picked and written before their texts;
+   unjudged views are tried as typed, judged ones by scoring; selectors are picked and applied on the server; and the
+   page is `/review/{family}`, beside the family's page.
+4. **Step 1 is built** (see "Built"); step 2 is next (see "Steps").
 
 ## What the clinician is here to do
 From the request, and from what the sample World waits on (`docs/curation.md`, "Outstanding"):
@@ -84,7 +87,7 @@ other pages keep.
 The address keeps what is picked, as the variation's page does: `/review/{family}?case=DIGEST&schema=DIGEST&scorer=ID`.
 
 ## The landscape
-Questions that change what is built. Each has the options and a take.
+Questions that change what is built, each with its options. Decided: the take on each.
 
 ### L1. Roles
 `docs/chatddx.md` ("Roles mentioned") names clinicians as the authors of appendices and expectations, and researchers
@@ -98,7 +101,7 @@ a researcher there, or moves scorers into the clinicians' column.
   write.
 - **(c)** Clinicians compose scorers from views a researcher set up, picking expectation parts and judges only.
 
-Take: (a). It needs no change to the primary document, and Z1 has to answer which panes a role sees anyway.
+Decided: (a). It needs no change to the primary document, and Z1 has to answer which panes a role sees anyway.
 
 ### L2. The vignette's place
 What is made from a vignette is shown "only in its own places, so that a policy for edges can gate those few"
@@ -111,7 +114,7 @@ What is made from a vignette is shown "only in its own places, so that a policy 
 - **(b)** The server draws the vignette into the page through the same handler (`api.vignette`), so a gate in the
   handler covers it, and the page becomes a fifth place in `docs/api.md`'s list.
 
-Take: (a).
+Decided: (a).
 
 ### L3. Whose answers
 A person sees only their own runs, and being a collaborator on a run shows nothing (`docs/bench.md`, "What a person
@@ -124,7 +127,7 @@ researcher's expectations (`docs/bench.md`, "What a person is scored against").
   solidified (a suggestion there), and asks whose expectations a shared run is scored against for the reader.
 - **(c)** A reviewer reads across people's runs by role, through Z1.
 
-Take: (a) now; (b) stays open.
+Decided: (a) now; (b) stays open.
 
 ### L4. How deep "with judges" goes
 - **(a)** A view picks a judge the person sees.
@@ -134,7 +137,7 @@ Take: (a) now; (b) stays open.
   configuration from a recipe. That needs 5c's text editor (a text that knows its slots and inserts) and a
   configuration made from a recipe. It is what Olof's prompt needs.
 
-Take: (a) and (b) first, then (c), limited at first to a judge's texts. Beside every judge, what it is asked: the
+Decided: (a) and (b) first, then (c), limited at first to a judge's texts. Beside every judge, what it is asked: the
 judge configuration's request with the `expectation` slot filled from the view's picks of this case's expectation,
 which isn't sensitive, and the `completion` left as a placeholder.
 
@@ -147,27 +150,27 @@ which isn't sensitive, and the `completion` left as a placeholder.
   queues and the ledger records. Judge calls sent while trying, and not recorded, would be exchanges outside the
   ledger, which is there to "record each exchange within the cage" (`docs/chatddx.md`, "Purpose").
 
-Take: (a) and (b).
+Decided: (a) and (b).
 
 ### L6. Selectors
 A view's selectors are a JSON Pointer or a fixed subset of JSONPath (`docs/factors.md`, "View"), such as
 `$.notes[?@.author == 'Olof'].comment`. No clinician should have to type that.
 - **Writing them**: (a) typed, with the picks shown live; (b) picked from the expectation schema and from the output
   schemas of the configurations the person sees ("notes by Olof → comment"), which writes the selector, with typed
-  as the way out. Take: (b).
+  as the way out. Decided: (b).
 - **What they pick, live**: (a) a route that applies them on the server, one implementation
-  (`chatddx.factors.select`, 452 lines); (b) a port to TypeScript, tested against the Python on shared cases. Take:
-  (a). Either the check (`POST /api/components/check`) gives a scorer's picks for an expectation it is given, or the
-  route of L5 (a) gives them beside the values.
+  (`chatddx.factors.select`, 452 lines); (b) a port to TypeScript, tested against the Python on shared cases.
+  Decided: (a). Built in step 1 as `POST /api/picks`: selectors and a document in, what each picks out, or why it
+  doesn't read (see "Built").
 
 ### L7. Where the page stands among the others
 - **Its place**: (a) a new page, `/review/{family}`, with Review in the nav opening the first case of the list;
   (b) the family's page becomes it; (c) a new page now, and the family's page folded into it once it has proved itself.
-  Take: (c). The family's page stays the one without scripts, and keeps 5b's browser test.
+  Decided: (c). The family's page stays the one without scripts, and keeps 5b's browser test.
 - **5c and 5d** (`agents/wip-portal.md`, "Authoring"): the scorer and judge editors are built here as components, and
   the thread's page uses the same ones for a scorer's and a judge's `/threads/{id}`. So this page builds 5d, and 5c's
-  text editor arrives with L4 (c). Take: as said, and `agents/wip-portal.md` points here for them.
-- **Its name**: the address and the page's title name no person. `/review` and "Review" are the take; the tests keep
+  text editor arrives with L4 (c). Decided: as said, and `agents/wip-portal.md` points here for them.
+- **Its name**: the address and the page's title name no person. Decided: `/review` and "Review"; the tests keep
   to alice, bob and carol (AGENTS.md, "Placeholder username").
 
 ## Smaller choices, as takes
@@ -187,8 +190,7 @@ A view's selectors are a JSON Pointer or a fixed subset of JSONPath (`docs/facto
   over to him (`docs/bench.md`, "What is said about a thread").
 
 ## Steps
-Once L1 to L7 are answered:
-1. **The page, read only**: the list of cases, the case (vignette fetched, appendices, cases), the expectation, the
+1. **The page, read only**, built (see "Built"): the list of cases, the case (vignette fetched, appendices, cases), the expectation, the
    scorers that read its schema with what each view picks from it, and the person's answers to the case with each
    view's value and detail. Needs the route that gives picks (L6).
 2. **Writing in place**: appendices, cases and expectations, with 5b's editors moved into the panes; the picks follow
@@ -205,6 +207,50 @@ where they are sensitive; vitest for the panes' logic; and a browser test of a c
 the case `noted` that `judged` ran, its note edited, a view's picks following it, a pattern view's value changing as
 the pattern is typed, a scorer saved, and its score.
 
+## Built
+Step 1, the page read only:
+- **The API**, suggested to `docs/api.md` and `docs/api-api.md` as `AGENT` blocks: `POST /api/picks`
+  (`src/chatddx/api/world.py:picks`), selectors and a document in, and out each selector's picks, by
+  `chatddx.factors.select`, or why it doesn't read; and `case` on a run's items and on a score's items, so that the
+  island reads one case's alone.
+- **`/review`** opens the first family of the list, keeping its tag; **`/review/{family}`** takes `case`, `schema`,
+  `scorer` and `tag` (`src/chatddx/portal/review.py`, `templates/review.html`). Review is first in the nav.
+  - **Cases**: the families the person sees, by tag, each marked by whether they hold an expectation of their own under
+    the schema shown, or several to choose from, and whether their runs answered it. `j` and `k` step through them,
+    keeping the schema and the scorer.
+  - **The case**: the family's language, tags, owner and page; its cases, the bare one as "the vignette alone"; the
+    vignette, fetched by the island from `GET /api/families/{id}/vignette`; and the case's appendices in order, each
+    linking its thread.
+  - **Expected**: the person's expectation under the schema, drawn from its data (an object's keys as terms, a list's
+    items boxed, `false` as "none expected", a pattern in monospace), linking its thread's page to change it; else
+    where to write one, and those shared to take.
+  - **Scored**: the scorers that read the schema, the person's own first, and by default the first that scored an
+    answer to the case. Each view's label, metric (what it measures on hover), judge, and expectation selector, and
+    what it picks from the expectation through `picks`, or that it picks nothing.
+  - **Answers in your runs**: the runs over the case (`GET /api/runs?reaching=CASE`, 50 at most), an item each, with
+    its outcome and the scorer's value under each view. Unfolded, the island fetches the item's answer, and each view's
+    detail and judge calls, for the case alone; a management plan is drawn as on a run's page, and the item is linked
+    there.
+  - **Nothing sensitive in the HTML** (L2): without scripts, the vignette and the answers are links to their pages.
+- **The layout**: four panes filling the window from 1280 px wide, each scrolling on its own; two columns from 1024
+  px, with the list of cases above and capped; one column below that.
+- **The island**: `frontend/src/islands/review.ts`, with `frontend/src/lib/review/`: `Vignette.svelte`,
+  `Answer.svelte`, and `review.ts`, the keys and each view's value and detail.
+- **Tests**: `src/chatddx/portal/test/test_reviewing.py` on `ran`; the API's `test_world.py` (picks) and
+  `test_runs.py` (one case's items); `frontend/src/lib/review/review.test.ts`; and by hand on the sample World in
+  Chromium, as a person given the archive's expectations (`chatddx init-data LOGIN --giftbag`) with its scripted runs,
+  in light, dark and narrow.
+
+### What step 1 leaves
+- **Its cost**: about 0.75 s a page on the sample World's 99 families, against 0.6 s for a family's page. The marks
+  ask `Bench.expectation` once per family, and each answer's run is read whole (`GET /api/runs/{id}`, its check
+  included) for its items and scores.
+- **A run scored by an earlier version** of the scorer shows "not scored by it": values are matched by the head's
+  digest.
+- **What a view reads of the answer**, and its reach, aren't shown: step 4.
+- **The expectation's versions** and what each changed are on its thread's page: step 2 brings them into the pane.
+- **The browser test** of the plan's "Tests" waits for step 2, which gives it something to type.
+
 ## Open
 - **Grading answers by hand.** Olof's judge is to be measured against his own grades of real answers, "with a line on
   why" (`docs/curation.md`, "Outstanding"). Nothing stores a person's grade of an item. Such a grade is sensitive,
@@ -215,5 +261,5 @@ the pattern is typed, a scorer saved, and its score.
   expectation is one person's. A scorer picks a note by its `author`, as the sample's `notes` does. Whether a
   clinician's notes stay in their own expectation, with the author as data, or the selector follows the expectation's
   owner, is open.
-- **Small screens.** Three panes need about 1280 px. Below that the scored pane goes under a tab. A tablet beside a
+- **Small screens.** The four panes need about 1280 px; below that they stack (see "Built"). A tablet beside a
   patient isn't planned for.

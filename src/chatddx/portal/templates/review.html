@@ -1,0 +1,208 @@
+{% extends "base.html" %}
+{% from "macros.html" import chip, outcome %}
+
+{% macro datum(value, key=None) %}
+{%- if value is mapping -%}
+<dl class="grid grid-cols-[max-content_minmax(0,1fr)] gap-x-3 gap-y-1.5">
+  {% for k, v in value.items() %}
+  <dt class="text-muted-foreground">{{ k | replace("_", " ") }}</dt>
+  <dd class="min-w-0 break-words">{{ datum(v, k) }}</dd>
+  {% endfor %}
+</dl>
+{%- elif value is sequence and value is not string -%}
+<ol class="space-y-2">
+  {% for v in value %}<li class="rounded-lg border border-border/60 p-2">{{ datum(v) }}</li>{% else %}<li class="text-muted-foreground">none</li>{% endfor %}
+</ol>
+{%- elif value is sameas false -%}<span class="text-muted-foreground">none expected</span>
+{%- elif value is sameas true -%}yes
+{%- elif value is none -%}<span class="text-muted-foreground">—</span>
+{%- else -%}<span class="whitespace-pre-wrap{{ ' font-mono text-xs' if key == 'pattern' else '' }}">{{ value }}</span>
+{%- endif -%}
+{% endmacro %}
+
+{% macro scored(value, unit) -%}
+{%- if value is none -%}—{%- elif unit == "@" -%}@{{ value | int }}{%- else -%}{{ "%.2f" | format(value) }}{%- endif -%}
+{%- endmacro %}
+
+{% macro pane(label, class="") %}
+<section aria-label="{{ label }}" class="glass-card min-h-0 rounded-2xl p-4 xl:overflow-y-auto {{ class }}">
+  {{ caller() }}
+</section>
+{% endmacro %}
+
+{% block title %}{{ "Review · " ~ family.name if family else "Review" }} · ChatDDX{% endblock %}
+{% block main %}
+{% if not family %}
+<div class="mx-auto max-w-3xl px-4 py-8">
+  <p class="text-muted-foreground">No case to review{% if tag %} tagged {{ tag | join(", ") }}{% endif %}.</p>
+</div>
+{% else %}
+{% set here = "/review/" ~ family.id %}
+<div class="grid gap-4 px-4 pb-4 sm:px-6 lg:grid-cols-2 xl:h-[calc(100dvh-5rem)] xl:grid-cols-[14rem_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1.15fr)]">
+
+  {% call pane("Cases", class="max-h-56 overflow-y-auto lg:col-span-2 xl:col-span-1 xl:max-h-none") %}
+  {% if tags %}
+  <nav class="mb-3 flex flex-wrap gap-1 text-xs" aria-label="Tags">
+    <a href="/review" class="rounded-full border px-2 py-0.5 {{ 'border-primary/30 bg-primary/10 text-primary' if not tag else 'border-border text-muted-foreground hover:text-foreground' }}">all</a>
+    {% for t in tags %}
+    <a href="/review?tag={{ t | urlencode }}" class="rounded-full border px-2 py-0.5 {{ 'border-primary/30 bg-primary/10 text-primary' if tag and t in tag else 'border-border text-muted-foreground hover:text-foreground' }}">{{ t }}</a>
+    {% endfor %}
+  </nav>
+  {% endif %}
+  <ol class="space-y-0.5 text-sm">
+    {% for f in listed %}
+    {% set m = marks[f.id] %}
+    <li>
+      <a href="/review/{{ f.id }}{{ query(**keep) }}"{% if f.id == family.id %} aria-current="page"{% endif %}
+         class="flex items-center gap-2 rounded-md px-2 py-1 {{ 'bg-primary/10 font-medium text-primary' if f.id == family.id else 'hover:bg-muted' }}">
+        <span aria-hidden="true" class="size-2 shrink-0 rounded-full {{ 'bg-warning' if m.choosing else ('bg-success' if m.expected else 'border border-muted-foreground') }}"></span>
+        <span class="min-w-0 flex-1 truncate">{{ f.name }}</span>
+        {% if m.answered %}<span class="text-[0.7rem] text-muted-foreground">answered</span>{% endif %}
+        <span class="sr-only">{{ "expectations to choose from" if m.choosing else ("expected" if m.expected else "nothing expected of yours") }}{{ ", answered" if m.answered else "" }}</span>
+      </a>
+    </li>
+    {% else %}
+    <li class="text-muted-foreground">None.</li>
+    {% endfor %}
+  </ol>
+  <p class="mt-4 text-xs leading-relaxed text-muted-foreground">
+    <span class="inline-block size-2 rounded-full bg-success"></span> yours expected,
+    <span class="inline-block size-2 rounded-full border border-muted-foreground"></span> not yet,
+    <span class="inline-block size-2 rounded-full bg-warning"></span> to choose from;
+    answered in your runs.<br><kbd>j</kbd> and <kbd>k</kbd> step through them.
+  </p>
+  {% endcall %}
+
+  {% call pane("The case") %}
+  <header class="mb-3">
+    <h1 class="text-xl font-bold tracking-tight">{{ family.name }}</h1>
+    <p class="mt-1 flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
+      {% if family.language %}<span>{{ family.language }}</span>{% endif %}
+      {% for t in family.tags %}{{ chip(t) }}{% endfor %}
+      {% if family.owner and family.owner != person.login %}<span>owned by {{ family.owner }}</span>{% endif %}
+      <a class="text-primary hover:underline" href="/families/{{ family.id }}">the family's page</a>
+    </p>
+  </header>
+  {% if cases | length > 1 %}
+  <nav class="mb-3 flex flex-wrap gap-1 text-xs" aria-label="Its cases">
+    {% for c in cases %}
+    <a href="{{ here }}{{ query(case=c.case, **keep) }}"{% if c.case == case.case %} aria-current="page"{% endif %}
+       class="rounded-full border px-2.5 py-0.5 {{ 'border-primary/30 bg-primary/10 text-primary' if c.case == case.case else 'border-border text-muted-foreground hover:text-foreground' }}">{{ "the vignette alone" if not c.appendices else "with " ~ (c.title.split(" with ", 1)[1] if " with " in c.title else c.appendices | length ~ " appendices") }}</a>
+    {% endfor %}
+  </nav>
+  {% endif %}
+  <div id="review-vignette" class="leading-relaxed">
+    <p class="text-sm text-muted-foreground">The vignette is shown with scripts, or on <a class="text-primary hover:underline" href="/families/{{ family.id }}/vignette">a page of its own</a>.</p>
+  </div>
+  <h2 class="mb-2 mt-5 text-xs font-medium uppercase tracking-wide text-muted-foreground">Appendices, in order</h2>
+  {% for a in appendices %}
+  <article class="mb-2 rounded-lg border-l-2 border-primary/50 bg-primary/5 px-3 py-2 text-sm">
+    <h3 class="mb-1 flex items-center justify-between gap-2 text-xs font-medium text-muted-foreground"><span>{{ a.title }}</span>{% if a.thread %}<a class="text-primary hover:underline" href="/threads/{{ a.thread }}">its page</a>{% endif %}</h3>
+    <p class="whitespace-pre-wrap">{{ a.text }}</p>
+  </article>
+  {% else %}
+  <p class="text-sm text-muted-foreground">None in this case.</p>
+  {% endfor %}
+  {% endcall %}
+
+  {% call pane("Expected") %}
+  <header class="mb-3 flex flex-wrap items-baseline justify-between gap-2">
+    <h2 class="text-base font-semibold">Expected</h2>
+    {% if visible | length > 1 %}
+    <nav class="flex flex-wrap gap-1 text-xs" aria-label="Expectation schemas">
+      {% for t in visible %}
+      <a href="{{ here }}{{ query(case=case.case, tag=keep.tag, schema=t.head.digest) }}" class="rounded-full border px-2 py-0.5 {{ 'border-primary/30 bg-primary/10 text-primary' if t.head.digest == schema else 'border-border text-muted-foreground hover:text-foreground' }}">{{ t.name or t.title }}</a>
+      {% endfor %}
+    </nav>
+    {% elif visible %}
+    <span class="text-xs text-muted-foreground">under {{ visible[0].name or visible[0].title }}</span>
+    {% endif %}
+  </header>
+  {% if not schema %}
+  <p class="text-sm text-muted-foreground">You see no expectation schema.</p>
+  {% elif expected and expected.ambiguous %}
+  <p class="text-sm text-warning">{{ expected.ambiguous }}</p>
+  {% elif expected and expected.expectation %}
+  <div class="text-sm">{{ datum(expected.data) }}</div>
+  {% if own %}
+  <p class="mt-3 text-xs text-muted-foreground">Yours, version of {{ own.head.at | when }}. <a class="text-primary hover:underline" href="/threads/{{ own.id }}#edit">Change it</a></p>
+  {% endif %}
+  {% else %}
+  <p class="text-sm text-muted-foreground">None of your own. <a class="text-primary hover:underline" href="/families/{{ family.id }}#cases">Write yours</a> on the family's page.</p>
+  {% endif %}
+  {% if expected and expected.shared and not expected.expectation %}
+  <p class="mt-3 text-sm text-muted-foreground">Shared with you to take: {% for t in expected.shared %}{{ chip((t.owner ~ "/" if t.owner else "") ~ (t.name or t.title)) }} {% endfor %}</p>
+  {% endif %}
+  {% endcall %}
+
+  {% call pane("Scored") %}
+  <header class="mb-3 flex flex-wrap items-baseline justify-between gap-2">
+    <h2 class="text-base font-semibold">Scored</h2>
+    {% if scorers | length > 1 %}
+    <nav class="flex flex-wrap gap-1 text-xs" aria-label="Scorers">
+      {% for t, _, _ in scorers %}
+      <a href="{{ here }}{{ query(case=case.case, tag=keep.tag, schema=keep.schema, scorer=t.id) }}"{% if scorer and t.id == scorer[0].id %} aria-current="page"{% endif %} class="rounded-full border px-2 py-0.5 {{ 'border-primary/30 bg-primary/10 text-primary' if scorer and t.id == scorer[0].id else 'border-border text-muted-foreground hover:text-foreground' }}">{{ (t.owner ~ "/" if t.owner and t.owner != person.login else "") ~ (t.name or t.title) }}</a>
+      {% endfor %}
+    </nav>
+    {% endif %}
+  </header>
+  {% if scorer %}
+  <p class="mb-2 text-xs text-muted-foreground"><a class="text-primary hover:underline" href="/threads/{{ scorer[0].id }}">{{ scorer[0].name or scorer[0].title }}</a>{% if scorer[0].owner and scorer[0].owner != person.login %}, {{ scorer[0].owner }}'s{% endif %}: what each view reads of the expectation.</p>
+  <ol class="space-y-2 text-sm">
+    {% for v in views %}
+    <li class="rounded-lg border border-border/60 p-2.5">
+      <div class="flex flex-wrap items-baseline gap-x-2">
+        <span class="font-medium">{{ v.label }}</span>
+        <span class="text-xs text-muted-foreground" title="{{ v.measures or '' }}">{{ v.metric | replace("_", " ") }}{% if v.judge %} · judge {{ v.judge }}{% endif %}</span>
+        <code class="ml-auto font-mono text-xs text-muted-foreground">{{ v.expectation or "the whole expectation" }}</code>
+      </div>
+      {% if v.picked is none %}
+      <p class="mt-1 text-xs text-muted-foreground">Nothing to read: no expectation of yours.</p>
+      {% elif v.picked.problem %}
+      <p class="mt-1 text-xs text-destructive">{{ v.picked.problem }}</p>
+      {% elif not v.picked["items"] %}
+      <p class="mt-1 text-xs text-warning">Reads nothing of it.</p>
+      {% else %}
+      <div class="mt-1.5 space-y-1 text-xs">{% for item in v.picked["items"] %}<div class="rounded bg-muted/60 px-2 py-1">{{ datum(item) }}</div>{% endfor %}</div>
+      {% endif %}
+    </li>
+    {% endfor %}
+  </ol>
+  {% elif schema %}
+  <p class="text-sm text-muted-foreground">No scorer you see reads this schema.</p>
+  {% endif %}
+
+  <h2 class="mb-2 mt-5 text-xs font-medium uppercase tracking-wide text-muted-foreground">Answers in your runs</h2>
+  {% set columns = "minmax(0,1fr) auto" ~ (" repeat(" ~ views | length ~ ", 3.25rem)" if scorer else "") %}
+  {% if answers %}
+  {% if scorer %}
+  <div class="grid gap-2 px-1 text-[0.7rem] uppercase tracking-wide text-muted-foreground" style="grid-template-columns: {{ columns }}">
+    <span>Run</span><span>Outcome</span>{% for v in views %}<span class="truncate text-right" title="{{ v.label }}">{{ v.label }}</span>{% endfor %}
+  </div>
+  {% endif %}
+  {% for a in answers %}
+  <details data-answer="{{ loop.index0 }}" class="border-t border-border/60">
+    <summary class="grid cursor-pointer items-center gap-2 px-1 py-2 text-sm" style="grid-template-columns: {{ columns }}">
+      <span class="min-w-0 truncate" title="{{ a.described }}">{{ a.described }}{% if a.replicate %} #{{ a.replicate }}{% endif %}</span>
+      <span>{{ outcome(a.outcome) }}</span>
+      {% if scorer %}
+      {% if a["values"] is none %}
+      <span class="text-right text-xs text-muted-foreground" style="grid-column: span {{ views | length }}">not scored by it</span>
+      {% else %}
+      {% for value, unit in a["values"] %}<span class="text-right tabular-nums">{{ scored(value, unit) }}</span>{% endfor %}
+      {% endif %}
+      {% endif %}
+    </summary>
+    <div data-answer-body class="px-1 pb-3 text-sm">
+      <a class="text-primary hover:underline" href="/runs/{{ a.run }}#item-{{ a.anchor }}">The answer on its run's page</a>
+    </div>
+  </details>
+  {% endfor %}
+  {% else %}
+  <p class="text-sm text-muted-foreground">None of your runs has answered this case.</p>
+  {% endif %}
+  {% endcall %}
+</div>
+<script type="application/json" id="review-props">{{ props | tojson }}</script>
+{% endif %}
+{% endblock %}

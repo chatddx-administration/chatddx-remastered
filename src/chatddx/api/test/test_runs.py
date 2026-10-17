@@ -677,3 +677,19 @@ def test_a_run_doesn_t_run_again_on_a_case_its_owner_no_longer_sees(
     got = signed.post(f"/api/runs/{first['id']}/again", json={})
     assert (got.status_code, got.json()["code"]) == (422, "refused")
     assert got.json()["detail"] == f"no case {crlf['case']} for alice"
+
+
+@pytest.mark.usefixtures("fake")
+@pytest.mark.slow
+def test_a_run_s_items_and_a_score_s_are_read_for_one_case(signed: TestClient) -> None:
+    both = [family(signed, name) for name in ("crlf", "bom")]
+    made, _ = sent(signed, asked(signed, families=[f["id"] for f in both]))
+    run, [score, *_] = made["id"], made["scores"]
+    for f in both:
+        case = {"case": f["case"]}
+        items = signed.get(f"/api/runs/{run}/items", params=case).json()
+        assert [i["case"] for i in items] == [f["case"]]
+        path = f"/api/runs/{run}/scores/{score['score']}/items"
+        scored = signed.get(path, params=case).json()["items"]
+        assert scored and {i["case"] for i in scored} == {f["case"]}
+    assert len(signed.get(f"/api/runs/{run}/items").json()) == 2

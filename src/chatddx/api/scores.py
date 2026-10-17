@@ -54,7 +54,12 @@ def scores(
 
 
 @router.get("/runs/{run}/scores/{score}/items", dependencies=[Depends(no_store)])
-def items(bench: BenchDep, run: UUID, score: UUID) -> schemas.ScoreItems:
+def items(
+    bench: BenchDep,
+    run: UUID,
+    score: UUID,
+    case: Annotated[str | None, Query(description="only this case's items")] = None,
+) -> schemas.ScoreItems:
     held = bench.score_of(bench.run(run), score).score
     finished = None if held is None else held.finished
     return schemas.ScoreItems(
@@ -68,6 +73,7 @@ def items(bench: BenchDep, run: UUID, score: UUID) -> schemas.ScoreItems:
                 judge_calls=[c.model_dump(mode="json") for c in i.judge_calls],
             )
             for i in (() if held is None else held.items)
+            if case is None or i.key.case == case
         ],
         findings=[]
         if finished is None
