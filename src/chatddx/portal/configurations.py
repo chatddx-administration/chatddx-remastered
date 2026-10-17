@@ -47,13 +47,12 @@ def configuration(
     endpoints = api_world.endpoints(bench)
     siblings = api.threads(bench, "configuration", purpose=purpose)
     look = api.variation(bench, thread, query)
-    shown = api.detail(bench, thread)
+    shown = api.thread(bench, thread)
     forked = None if shown.forked_from is None else bench.rows.edit(shown.forked_from)
     mine = shown.owner == bench.person.login
-    proposal = None
-    if mine and forked is not None and not shown.deleted:
-        proposal = api.proposal(bench, thread)
-    moved = None if not mine or shown.deleted else api.moved(bench, thread)
+    follows = api.follows(bench, thread) if mine and not shown.deleted else None
+    proposal = None if follows is None else follows.origin
+    moved = None if follows is None else follows.moved
     changes = [
         (v.path.removeprefix("/recipe/"), _held(bench, v.base), _held(bench, v.fork))
         for v in ([] if proposal is None else proposal.varies)
@@ -61,6 +60,7 @@ def configuration(
     versions = api.edits(bench, thread)
     at = next(i for i, v in enumerate(versions) if v.id == look.head.id)
     runs = api_runs.runs(bench, reaching=look.skeleton, limit=20)
+    families = api_families.families(bench)
     base = {
         p: None if held.recipe is None else getattr(held.recipe, p)
         for p in RECIPE_PARTS
@@ -80,8 +80,8 @@ def configuration(
         },
         "configurations": [t.model_dump(mode="json") for t in siblings],
         "endpoints": [e.model_dump(mode="json") for e in endpoints],
-        "everyTag": api_families.tags(bench),
-        "families": [f.model_dump(mode="json") for f in api_families.families(bench)],
+        "everyTag": sorted({t for f in families for t in f.tags}),
+        "families": [f.model_dump(mode="json") for f in families],
         "itemsPerRun": settings.ITEMS_PER_RUN,
         "runs": [r.model_dump(mode="json") for r in runs],
     }

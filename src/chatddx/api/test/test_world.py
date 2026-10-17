@@ -4,6 +4,7 @@ from fastapi.testclient import TestClient
 from pydantic import HttpUrl
 
 from chatddx.api.state import AppState
+from chatddx.api.test.helpers import endpoint
 from chatddx.inventory import EndpointSpec, Inventory
 from chatddx.test.world import (
     GPT_OSS,
@@ -30,7 +31,6 @@ def test_endpoints_say_what_they_serve_and_what_they_re_cleared_for(
     for shown in listed:
         name = shown["name"]
         spec = inventory.endpoint(name)
-        assert signed.get(f"/api/endpoints/{name}").json() == shown
         assert (shown["engine"], shown["host"], shown["max_jobs"]) == (
             spec.engine,
             spec.host,
@@ -61,12 +61,6 @@ def test_endpoints_say_what_they_serve_and_what_they_re_cleared_for(
     typed = {e["name"] for e in listed if e["takes_typed"]}
     assert typed == {n for n in endpoints if "typed" in inventory.cleared.get(n, ())}
     assert QWEN in typed and REMOTE not in typed
-    got = signed.get("/api/endpoints/nowhere@fake")
-    assert got.status_code == 404
-    assert got.json() == {
-        "detail": "no endpoint 'nowhere@fake' in the inventory",
-        "code": "not_found",
-    }
 
 
 def test_an_endpoint_whose_engine_isn_t_stored_says_so(
@@ -80,7 +74,7 @@ def test_an_endpoint_whose_engine_isn_t_stored_says_so(
         held.inventory.model_copy(update={"endpoints": endpoints}),
         held.listener,
     )
-    shown = signed.get("/api/endpoints/ghost@nowhere").json()
+    shown = endpoint(signed, "ghost@nowhere")
     assert (shown["title"], shown["model"], shown["url"]) == (
         None,
         None,
@@ -97,7 +91,7 @@ def test_models_are_told_by_their_facts_with_the_endpoints_serving_them(
     assert models[GPT_OSS_MODEL]["endpoints"] == [GPT_OSS]
     assert models[MISTRAL_MODEL]["endpoints"] == [MISTRAL]
     assert models[MISTRAL_MODEL]["facts"]["family"] == "mistral"
-    unknown = signed.get(f"/api/endpoints/{REMOTE}").json()["model"]
+    unknown = endpoint(signed, REMOTE)["model"]
     assert models[unknown]["endpoints"] == [REMOTE]
     assert [m for m, held in models.items() if held["facts"] is None] == [unknown]
 

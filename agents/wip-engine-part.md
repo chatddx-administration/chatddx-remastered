@@ -64,9 +64,10 @@ Every level the bundled facts and the sample World's refuse has its nearest: gpt
 - **What has moved on** looks at a configuration's head's compilation's facts too, and flags them only when compiling
   against the newer facts changes the skeleton; and at its recipe's model, flagged whenever its thread moved on, as to
   a new revision of the weights (R1). Whoever sees a configuration sees what moved on and what following keeps
-  (`Bench.moved`, `GET /api/threads/{thread}/moved`, the configuration page); its owner follows both as one edit, the
-  recipe with the model's head compiled against the current facts about it (`Bench.follow_moved`,
-  `POST /api/threads/{thread}/moved/follows`). Facts that now refuse what it asks are said, not followed.
+  (`Bench.moved`, `GET /api/threads/{thread}/follows` as `moved`, the configuration page); its owner follows both as
+  one edit, the recipe with the model's head compiled against the current facts about it (`Bench.follow_moved`,
+  `POST /api/threads/{thread}/follows` with `"follow": "moved"`). Facts that now refuse what it asks are said, not
+  followed.
 - **A title** names the model last and describes an intent by what it asks: `recommended sampling`, `reasoning off`.
 
 ### Several endpoints
@@ -139,8 +140,8 @@ nothing says it isn't the configuration's language.
   `endpoint` are optional, derived from the model; a look is rendered and linted for the endpoint's engine, or for
   none when nothing serves the model or several do unnamed; a look's `Part` says where an intent landed, and its
   `languages` where its cases go; `POST /api/runs` answers with every run it started and the cases left out; a run
-  says its `language` and the run it was `started_with`; `Thread.translated`; `GET /api/threads/{thread}/moved` and
-  `POST .../moved/follows` (`Moved`, `NewFollowMoved`).
+  says its `language` and the run it was `started_with`; `Thread.translated`; `GET /api/threads/{thread}/follows`'s
+  `moved` and `POST .../follows` with `"follow": "moved"` (`Follows`, `Moved`, `NewFollow`).
 - **The portal**: the model is a row of the parts table, its picker the models the World's endpoints serve; the
   endpoint picker shows for a hand-written configuration or a model served at several endpoints. The variation page
   says where it runs and what is left out; a configuration's page says what it was compiled for has moved on, and its

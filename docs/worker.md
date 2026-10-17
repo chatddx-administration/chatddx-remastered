@@ -2,9 +2,9 @@
 
 The worker sends and scores the runs queued for it, outside the request that asked for them, so that a run outlives
 the process that started it, and is followed and halted from any. It strings together pieces documented elsewhere:
-the queue (docs/store.md, "The Queue"), the bench and the runner that send and score a run (docs/bench.md,
-docs/runner.md), the ledger's rows a run is told by (docs/ledger.md), and the API that queues runs and tells their
-events (docs/api.md, "Runs").
+the queue (docs/store.md, "The Queue"), the bench that queues runs and scorings and, with the runner, sends and
+scores them (docs/bench.md, docs/runner.md), the ledger's rows a run is told by (docs/ledger.md), and the API, and
+the portal, that ask for runs, and tell their events (docs/api.md, "Runs").
 
 This document describes what the worker does and why. Names, signatures and settings are in docs/worker-api.md.
 

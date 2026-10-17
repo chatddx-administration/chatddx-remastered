@@ -52,7 +52,6 @@ def test_a_run_s_scores_are_read_with_their_items_and_judge_calls(
     judged = next(g for g in latest if g["name"] == "judged")
     assert judged["finished"] and judged["scoring"] and judged["at"]
     path = f"/api/runs/{run}/scores/{judged['score']}"
-    assert signed.get(path).json() == judged
 
     shown = signed.get(f"{path}/items").json()
     views = {i["view"]: i for i in shown["items"]}
@@ -86,11 +85,12 @@ def test_a_run_s_scores_are_read_with_their_items_and_judge_calls(
     again = signed.get(f"/api/runs/{run}/scores").json()
     assert len(every) == 2 * len(latest)
     assert {g["score"] for g in every[: len(latest)]} == {g["score"] for g in again}
-    assert signed.get(path).json() == judged
+    assert judged in every
 
     assert signed.get(f"/api/runs/{run}/scores", headers=bob).status_code == 404
     assert signed.get(f"{path}/items", headers=bob).status_code == 404
-    assert signed.get(f"/api/runs/{run}/scores/{uuid4()}").status_code == 404
+    gone = signed.get(f"/api/runs/{run}/scores/{uuid4()}/items")
+    assert gone.status_code == 404
 
 
 @pytest.mark.slow

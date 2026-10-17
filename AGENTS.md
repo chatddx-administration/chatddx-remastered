@@ -23,7 +23,7 @@ This document contains project-wide instructions written by humans for agents.
   says which tests to mark or unmark, and which templates a run made.
 * `pnpm --dir frontend test` runs the frontend's unit tests (vitest), each beside the module it tests.
 
-## Staging
+## Development
 A module is either wip or solidified.
 * wip (draft) modules are documented in `agents/wip-<module>.md`
 * solidified modules are documented in `docs/<module>*.md`, where documentation rule 1 applies.
@@ -44,11 +44,27 @@ AGENT: <verb>
 ```
 
 ### 2. Docs refer to the code, the code speaks for itself.
+The primary document is `docs/chatddx.md`: If a contradiction to it is discovered, stop and prompt a resolution.
+
+Final module-scoped documentation is of shapes:
+1. Authoritative spec (`docs/<module>.md`)
+2. API Reference (`docs/<module>-api.md`)
+3. A user manual (`docs/<module>-manual`)
+
+Wip module-scoped documentation is built up as a mirror of final at `agents/wip-<module>[-*].md`.
+
+Other documents that doesn't fit in this scheme may occur but can be considered against the grain.
+
 Before committing, remove all and any docstrings and comments that:
 - reference the docs
 - tell what the code does
 
-### 3. How to write a comment.
+### 3. When and how to write a comment.
+A) Every line of comment impounds a readability penalty.
+B) A future reader can be saved work by knowing about non-evident details.
+
+A comment is justified when B is considerable enough to offset A.
+
 1. Prefix with the comment's nature (e.g. Patch, Compromise, Prototype, "Accomodating for a discovered fact")
 2. Tell what's non-evident and only what the code doesn't already tell, example:
 

@@ -90,6 +90,11 @@ Decided:
 - **One app.** `src/chatddx/portal/`, a package beside `src/chatddx/api/`, mounted at `/` in the same FastAPI app as
   the API at `/api/` (`src/chatddx/api/app.py:app`). Its routes return HTML rendered with Jinja2 (Starlette's
   `Jinja2Templates`), and build a bench per request, as the API's routes do (`src/chatddx/api/people.py:bench`).
+- **Reads are the API's GET routes, writes the bench's.** A page calls the API's GET routes, each a plain function of
+  the bench and its parameters, so that it embeds what the API answers, as its islands' props do. A form writes
+  through the bench and the queue (`Bench.queue`, `Bench.queue_scoring`), under the API's `refused()`
+  (`src/chatddx/api/state.py`), and calls no route of the API's that writes, which would take a `Response` it throws
+  away.
 - **One session**: the API's cookie, `__Host-chatddx-session`, `Path=/`, `SameSite=Lax`, so a link into the portal
   from another site opens signed in. A sign-in page posts a form to the portal, which calls `People` as
   `POST /api/session` does.

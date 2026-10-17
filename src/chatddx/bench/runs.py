@@ -6,6 +6,7 @@ from uuid import UUID
 
 from chatddx import settings
 from chatddx.catalog import Entry, EntryField, Subject, read, titles
+from chatddx.catalog.families import family_of
 from chatddx.factors.base import resolve
 from chatddx.factors.cases import Case, CleanupOp
 from chatddx.factors.request import RECIPE_PARTS, Skeleton
@@ -13,9 +14,10 @@ from chatddx.factors.trial import CanarySet, Execution, Trial
 from chatddx.ledger import RunStarted
 from chatddx.ledger.run import PHASES, Phase
 from chatddx.runner import STOPPED, Grading, Halt, Refused, Runner, Running, ScoreEvent
+from chatddx.store import Job, Queue
 
 from .configurations import keep_compilation
-from .errors import OverQuota
+from .errors import NotFound, OverQuota
 from .model import Carried, Graded, Started
 from .seen import Seen, labels_of, scoring, trial
 from .variation import TriedVariation
@@ -38,6 +40,9 @@ def start(
             f"{variation.label} is a judge configuration: a judge is asked as runs are "
             + "scored, and isn't run on cases"
         )
+    seen_cases = {c for f in seen.families() for c in f.cases}
+    if missing := [c for c in cases if c not in seen_cases]:
+        raise NotFound(f"no case {missing[0]} for {seen.person.login}")
     carried = seen.languages(variation, cases)
     sent = [c for c in carried if c.skeleton is not None]
     left_out = [c for c in carried if c.skeleton is None]
@@ -102,6 +107,9 @@ def again(seen: Seen, run: RunStarted, seeds: Sequence[int]) -> Running:
             f"run {run.run} was sent to no endpoint, so it can't run again"
         )
     ran = resolve(seen.store.get, run.trial, Trial)
+    families = {f.id for f in seen.families()}
+    if missing := [c for c in ran.cases if family_of(seen.rows, c) not in families]:
+        raise NotFound(f"no case {missing[0]} for {seen.person.login}")
     skeleton = resolve(seen.store.get, ran.skeleton, Skeleton)
     about = read.about(seen.rows, Subject(run=run.run))
     return _begun(
@@ -130,6 +138,34 @@ def _varying(edit: int | None, replaced: Mapping[str, str | None]) -> list[Entry
 
 def resume(seen: Seen, run: RunStarted) -> Running:
     return Runner(seen.conn, seen.inventory, seen.person).resume(run.run)
+
+
+def queue(seen: Seen, running: Running, score: bool = True) -> Job:
+    started = running.started
+    assert started.endpoint is not None
+    return Queue(seen.conn).put(
+        seen.person.id,
+        started.run,
+        started.endpoint.name,
+        started.execution.concurrency,
+        score,
+    )
+
+
+def queue_scoring(
+    seen: Seen, run: RunStarted, scorers: Collection[str] | None = None
+) -> list[str]:
+    if run.run not in seen.store.finished([run.run]):
+        raise ValueError(f"run {run.run} hasn't finished")
+    applying = [e.digest for e, _, _ in seen.scorers(run)]
+    if missing := [s for s in scorers or () if s not in applying]:
+        raise ValueError(f"scorer {missing[0]} doesn't apply to run {run.run}")
+    chosen = [s for s in applying if scorers is None or s in scorers]
+    if not chosen:
+        raise ValueError(f"no scorer applies to run {run.run}")
+    endpoint = "" if run.endpoint is None else run.endpoint.name
+    _ = Queue(seen.conn).put(seen.person.id, run.run, endpoint, 0, True, chosen)
+    return chosen
 
 
 def _begun(

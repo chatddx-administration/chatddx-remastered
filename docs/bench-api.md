@@ -42,8 +42,8 @@ The modules, and the ones each builds on:
 - `saying.py`: `say`; on `errors.py`, `model.py` and `seen.py`.
 - `following.py`: `proposal`, `follow`, `moved`, `follow_moved`; on `components.py`, `errors.py`, `model.py` and
   `seen.py`.
-- `runs.py`: `start`, `again`, `resume`, `score`, `REFUSALS`, `ScorerStarted`, `ScoringEvent`; on
-  `configurations.py`, `errors.py`, `model.py`, `seen.py` and `variation.py`.
+- `runs.py`: `start`, `again`, `resume`, `queue`, `queue_scoring`, `score`, `REFUSALS`, `ScorerStarted`,
+  `ScoringEvent`; on `configurations.py`, `errors.py`, `model.py`, `seen.py` and `variation.py`.
 - `bench.py`: `Bench`; on `seen.py` and the writes.
 
 Outside the package, the bench builds on the store, the catalog, `chatddx.identity`, the World, the facts, the runner
@@ -532,7 +532,7 @@ The view labels the edit of a scorer thread was written with, by position.
 `@final`. The `Seen`, with each write bound as a method of the same name: `save` from `configurations.py`; `new`,
 `fork`, `edit` and `check` from `components.py`; `case`, `replacement` and `type_case` from `cases.py`; `take` and
 `take_from` from `taking.py`; `say` from `saying.py`; `proposal`, `follow`, `moved` and `follow_moved` from
-`following.py`; and `start`, `again`, `resume` and `score` from `runs.py`.
+`following.py`; and `start`, `again`, `resume`, `queue`, `queue_scoring` and `score` from `runs.py`.
 
 ## configurations.py
 A configuration's writes, `save` here and `fork` and `edit` in components.py, keep the skeleton's edit through
@@ -647,11 +647,6 @@ Raises, before writing:
 - `OverQuota("<login> has typed <n> cases in the last day, as many as a day takes")`
 - `ValueError` with `Inventory.source`'s message, for a source that isn't there or isn't a database source, or, with
   none named, none or several of the World's database sources (docs/inventory-api.md, "inventory.py").
-
-### `carry(thread: int, head: int, case: str) -> Written`
-`edit_component` of the expectation `thread` onto `case`, with the same schema and data.
-- Raises `ValueError("<word> <thread> isn't an expectation")`.
-- Raises `ValueError("<case> isn't a case of the family <old case> is of")`.
 
 ### Finding cases by their titles
 
@@ -768,6 +763,8 @@ Raises, before any run starts:
 - `OverQuota("a run holds at most <ITEMS_PER_RUN> items, not <n>")`, a language's cases times the seeds
 - `OverQuota("<login> has started <n> runs in the last day, as many as a day takes")` for one run, and
   `OverQuota("<login> has started <n> runs in the last day, and a day takes <RUNS_PER_DAY>, not <m> more")` for several
+- `NotFound("no case <case> for <login>")` for the first case that isn't one of the current cases of a family the
+  person sees.
 - `Seen.languages`' and `Seen.at`'s.
 
 As each run starts, `resolve`'s for `canaries`, the runner's and its gate's, and the runner's `ValueError` for a
@@ -779,8 +776,24 @@ runs a variation, named by the run's name, else its skeleton's title, and saying
 run, in the run's language, and is started alone: it has no `with` entry. The gate refuses an endpoint that serves
 another engine now (`Refused("endpoint '<name>' serves engine <digest>, the trial's is <digest>")`).
 
+Raises `NotFound("no case <case> for <login>")` for the first case of the trial whose family the person no longer
+sees, before anything starts.
+
 ### `resume(run: RunStarted) -> Running`
 A run of the person's own resumed by the runner (docs/runner-api.md, `Runner.resume`).
+
+### `queue(running: Running, score: bool = True) -> Job`
+`Queue.put` of the started run for the person at its endpoint, holding as many slots as its execution's
+concurrency, and scoring it once finished or not (docs/store-api.md, "queue.py"). Raises `UnderWay` while the run
+has a job queued or under way.
+
+### `queue_scoring(run: RunStarted, scorers: Collection[str] | None = None) -> list[str]`
+A job scoring the finished run under `scorers`, else every scorer that applies to it (`Seen.scorers(run)`), at its
+endpoint, `""` for none, holding no slots; the scorers' digests, in `Seen.scorers`' order.
+- Raises `ValueError("run <run> hasn't finished")`.
+- Raises `ValueError("scorer <digest> doesn't apply to run <run>")` for the first of `scorers` that doesn't.
+- Raises `ValueError("no scorer applies to run <run>")`.
+- Raises `UnderWay`, as `queue` does.
 
 ### `score(run: RunStarted, scorers: Collection[str] | None = None, on_event: Callable[[ScoringEvent], None] | None = None, halt: Halt | None = None) -> list[Graded]`
 The run scored by the scoring pass under each of `scorers_for(run)`, as `scoring` builds it now, by name.
@@ -824,7 +837,8 @@ same test World.
   the endpoint serving its model, or one named, refused for an endpoint serving another model and for a model two
   endpoints serve; its items, cases times seeds; resuming one's own; the sources' cleanup and the endpoint's canaries
   and execution; a start of a run per language, one translated and started with the first, the cases left out, a start
-  that can send none refused, and the day's quota over several runs.
+  that can send none refused, and the day's quota over several runs. A start and a run again refused a case the person
+  doesn't see, or no longer does.
 - `test_writes.py`: configurations from recipes; chunks and expectations, new, edited and forked, with their
   languages; what is refused; an expectation's lints and the one-expectation rule; judges, and a judge on another model
   than its skeleton is worked out for.

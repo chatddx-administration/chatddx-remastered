@@ -17,7 +17,9 @@ def family(signed: TestClient, name: str = "crlf") -> dict[str, Any]:
 
 
 def dropped(signed: TestClient, bench: Bench, family: dict[str, Any]) -> dict[str, Any]:
-    [held] = signed.get(f"/api/families/{family['id']}").json()["expectations"]
+    [held] = signed.get(f"/api/families/{family['id']}").json()["cases"][0][
+        "expectations"
+    ]
     catalog, person, case = Catalog(bench.conn), bench.person.id, family["case"]
     [mine] = owned(bench, case, held["expectation_schema"])
     catalog.note(Subject(thread=mine), Entry(field=EntryField.DELETED), person)
@@ -38,8 +40,7 @@ def test_cases_are_listed_with_their_tags_and_language(signed: TestClient) -> No
     }
     assert all(f["case"].startswith("sha256:") and f["tags"] for f in listed)
 
-    tags = signed.get("/api/tags").json()
-    assert tags == sorted({t for f in listed for t in f["tags"]})
+    tags = sorted({t for f in listed for t in f["tags"]})
     tagged = signed.get("/api/families", params={"tag": tags[0]}).json()
     assert tagged and all(tags[0] in f["tags"] for f in tagged)
 
@@ -51,12 +52,16 @@ def test_a_case_is_shown_with_the_expectation_it_is_scored_against(
     found = family(signed)
     shown = signed.get(f"/api/families/{found['id']}").json()
     assert {k: shown[k] for k in found} == found
-    [held] = shown["expectations"]
+    [default] = shown["cases"]
+    assert (default["case"], default["default"]) == (found["case"], True)
+    [held] = default["expectations"]
     assert held["title"] and held["expectation"].startswith("sha256:")
     assert held["data"] and held["ambiguous"] is None
 
     _ = another_expectation(bench, found["case"], {"diagnosis": {"pattern": "x"}})
-    [held] = signed.get(f"/api/families/{found['id']}").json()["expectations"]
+    [held] = signed.get(f"/api/families/{found['id']}").json()["cases"][0][
+        "expectations"
+    ]
     assert (held["expectation"], held["data"]) == (None, None)
     assert "has expectations to choose from" in held["ambiguous"]
 
@@ -81,7 +86,9 @@ def test_a_person_takes_the_expectations_shared_with_them_for_many_cases(
     assert (taken["choosing"], taken["missing"]) == ({}, [])
     shown = signed.get(f"/api/threads/{made}").json()
     assert (shown["owner"], shown["forked_from"]) == ("alice", archives["head"]["id"])
-    [held] = signed.get(f"/api/families/{crlf['id']}").json()["expectations"]
+    [held] = signed.get(f"/api/families/{crlf['id']}").json()["cases"][0][
+        "expectations"
+    ]
     assert held["expectation"] == archives["head"]["digest"]
 
     again = signed.post("/api/takes", json={**body, "owner": "archive"}).json()

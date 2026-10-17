@@ -336,6 +336,10 @@ changes, which are stored already. That is how a correction to the archive's exp
 ones, and a scorer pinned again by a deploy reaches the person's fork of it.
 
 ## Runs and scores
+- **Cases** a run is started on are the current cases of the families the person sees, and running again needs every
+  case's family still seen; another is "not found", as a family is.
+- **Queueing** puts a started run, or a scoring of a finished one under the scorers that apply to it, in the queue for
+  the worker (docs/worker.md), as the person's job; a scoring under no scorer, or of an unfinished run, is refused.
 - **Starting** runs a variation at the endpoint serving its model, or the one named (see "The model"), on some
   cases with some seeds, through the runner (docs/runner.md), under an execution: a run for each language its cases
   are sent in (see "The languages it runs in"), those sent as written first. Each run is a trial of one skeleton, so

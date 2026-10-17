@@ -13,6 +13,7 @@ from psycopg.conninfo import make_conninfo
 from chatddx import settings
 from chatddx.api import telling
 from chatddx.api.app import app
+from chatddx.api.test.helpers import endpoint
 from chatddx.api.test.test_variations import digest, thread
 from chatddx.bench.test.helpers import ran, trial
 from chatddx.catalog import Entry, EntryField, Subject
@@ -62,12 +63,12 @@ def asked(
     }
 
 
-def engine(signed: TestClient, endpoint: str) -> str:
-    return signed.get(f"/api/endpoints/{endpoint}").json()["engine"]
+def engine(signed: TestClient, name: str) -> str:
+    return endpoint(signed, name)["engine"]
 
 
-def model(signed: TestClient, endpoint: str) -> str:
-    return signed.get(f"/api/endpoints/{endpoint}").json()["serves"]
+def model(signed: TestClient, name: str) -> str:
+    return endpoint(signed, name)["serves"]
 
 
 def told(text: str) -> Told:
@@ -337,7 +338,8 @@ def test_a_run_the_request_names_wrong_is_unprocessable(signed: TestClient) -> N
     wrong: list[tuple[dict[str, Any], str]] = [
         ({"tags": ["swedish"]}, "a run takes one of families, tags or cases"),
         ({"families": None}, "a run takes one of families, tags or cases"),
-        ({"families": []}, "a run takes at least one case"),
+        ({"families": []}, "at least 1 item"),
+        ({"families": None, "cases": []}, "at least 1 item"),
         ({"families": [999]}, "no case 999 for alice"),
         ({"families": None, "tags": ["nowhere"]}, "no case tagged nowhere for alice"),
         ({"endpoint": "nowhere@fake"}, "no endpoint 'nowhere@fake' in the inventory"),
@@ -394,7 +396,7 @@ def test_no_browser_keeps_what_is_sensitive(signed: TestClient) -> None:
             f"/api/runs/{run}",
             f"/api/runs/{run}/items",
             f"/api/runs/{run}/events",
-            f"/api/runs/{run}/scores/{score['score']}",
+            f"/api/runs/{run}/scores",
             f"/api/runs/{run}/scores/{score['score']}/items",
             f"/api/families/{family(signed, 'crlf')['id']}/vignette",
         )

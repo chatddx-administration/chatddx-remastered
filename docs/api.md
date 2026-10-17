@@ -50,13 +50,13 @@ is a part, and its name carries no model either.
   whether it is deleted, and for a configuration its recipe. A configuration's language is its head's recipe's, its
   own, and it is translated into the languages its head's translations hold; any other kind into none.
 - **Families**, each with the case of its current vignette, filtered by tag or name. A family on its own adds its
-  description and collaborators, the case's appendices, and, under each expectation schema the person sees, the
-  expectation its case is scored against: their own, so a schema under which they only see shared ones has none
-  (`docs/bench.md`, "What a person is scored against"). Several to choose from don't fail the request; that
-  schema says so instead. Each schema also lists the expectation threads shared with the person they could take.
+  description and collaborators, and its cases at its current vignette, the one it stands for first, each with its
+  appendices and, under each expectation schema the person sees, the expectation it is scored against: their own,
+  so a schema under which they only see shared ones has none (`docs/bench.md`, "What a person is scored
+  against"). Several to choose from don't fail the request; that schema says so instead. Each schema also lists the
+  expectation threads shared with the person they could take.
 - **A family's vignette**, fetched from the World's source, and whether it still is the text the case was made from
   (unknown under a keyed fingerprint). It is sensitive (see "Sensitive content").
-- **Tags** on the families the person sees.
 - **Endpoints**: each one's engine and the engine's title, the model it serves, its URL and host, how many requests
   it takes at once, its credential's name, the sources it is cleared for, and whether a typed case can run there. One
   whose engine isn't stored, or whose URL can't be told, says why rather than failing the listing.
@@ -139,10 +139,9 @@ an expectation whose data its schema refuses, which is written all the same.
 ## What is said about a thread
 Its owner says what holds of a thread in one request, giving only what changes: its name, or none so that its title
 shows; its description; its tags and who it is shared with, each as the whole list, people by login; and whether it
-is deleted (`docs/bench.md`, "What is said about a thread"). Deleting is also a request of its own. What holds
-afterwards comes back. A deleted thread is restored before anything else is said of it. Another's thread is "not
-found", as "no expectation N of yours" for an expectation; a login that names nobody, an empty name or tag, and
-taking a description away are unprocessable.
+is deleted (`docs/bench.md`, "What is said about a thread"). What holds afterwards comes back. A deleted thread is
+restored before anything else is said of it. Another's thread is "not found", as "no expectation N of yours" for an
+expectation; a login that names nobody, an empty name or tag, and taking a description away are unprocessable.
 
 ## Typed cases
 A person types a case: its text, the language it is written in, and a name if they like; a case typed without a
@@ -152,19 +151,21 @@ cases"); its vignette is then read as any family's. A text is held to a length a
 day: past the day's is 429.
 
 ## Appendices and cases
-A family lists its cases at its current vignette, its default first, each with its appendices and the expectation
-it is scored against under each schema (`docs/bench.md`, "Appendices and cases"). The person writes an
-appendix for a family from its text, and builds a case from appendices they see, in order, or stores the replacement
-of a case a repair left at an earlier vignette. An appendix's new version, written as any edit, answers with each case
-it replaced. An expectation is carried onto another case of its family by an edit of its own, which names the head
-it was made on.
+A family gives its cases at its current vignette, its default first, each with its appendices and the expectation
+it is scored against under each schema (`docs/bench.md`, "Appendices and cases"). The person writes an appendix
+for a family from its text, and builds a case from appendices they see, in order, or stores the replacement of a
+case a repair left at an earlier vignette. An appendix's new version, written as any edit, answers with each case it
+replaced. An expectation is carried onto another case of its family by an edit of its own naming that case, which
+names the head it was made on.
 
-## Following an origin
+## Following
 A fork whose origin has moved on has a proposal: what following would keep, with the base, the origin's head, what
-the fork varies, and for a configuration the recipe it compiles from (`docs/bench.md`, "Following an
-origin"). Asking for it gives nothing when there is none. Following is an edit of the person's own fork, which names
-the head it was made on and comes back with what the lints say. Following a fork with nothing to follow, or whose
-changes no longer fit, is unprocessable.
+the fork varies, and for a configuration the recipe it compiles from (`docs/bench.md`, "Following an origin"). A
+configuration whose facts or model have moved on has what following them would keep, or why the facts now refuse it
+(docs/catalog.md, "What has moved on"). One request asks for both, each nothing when there is none. Following
+either is an edit of the person's own thread, which names the head it was made on and comes back with what the
+lints say; only following an origin takes a language. Following a thread with nothing to follow, or whose changes
+no longer fit, is unprocessable.
 
 ## Taking expectations
 A person is scored against their own expectations only, so they take the shared ones (`docs/bench.md`,
@@ -273,8 +274,8 @@ It cancels the calls under way, record them as stopped and the run is finished u
   taken before it, none while its owner has paused.
 - **A run** adds when it started and finished, the rig it ran on, what it noted as it went, what checking it finds
   now, each item's outcome and tokens, and its latest score under each scorer.
-- **A run's scores**: the latest under each scorer, or every one, newest first, or one by its id. A score says its
-  scoring, when it started and whether it finished, each item's value under each view, and each view's mean.
+- **A run's scores**: the latest under each scorer, or every one, newest first. A score says its scoring, when it
+  started and whether it finished, each item's value under each view, and each view's mean.
 - **A score's items**: each item's detail and judge calls, and the findings of the score. They are sensitive.
 - **A run's items**: each call as it was recorded, with its response and tool rounds, why the item ended as it did,
   and its answer as read from its last call, as the scorers read it, with why it couldn't be read or breaks its schema.
@@ -322,7 +323,7 @@ where. The code says what it is:
 | `not_allowed` | 405 | A method the path doesn't take. |
 | `ambiguous` | 409 | Several where the bench is asked for one. |
 | `conflict` | 409 | Taking an expectation the person has their own of, without saying to replace it; scoring a run with something under way, and halting one with nothing under way. |
-| `moved_on` | 409 | An edit, a follow or a carry whose head has moved on. |
+| `moved_on` | 409 | An edit or a follow whose head has moved on. |
 | `unprocessable` | 422 | A request that doesn't validate, or names a field it shouldn't; the detail lists where. |
 | `refused` | 422 | What the API, the bench or the gate refuses: the rest of 422. |
 | `over_quota` | 429 | A person who has typed as many cases, or started as many runs, as a day takes; a run of more items than one takes. |
@@ -330,9 +331,9 @@ where. The code says what it is:
 
 The OpenAPI document holds the body as the schema `Error`.
 
-An edit that changes nothing is answered 200 with the head; what is made is answered 201; a deletion and a halt 204;
-a run or a scoring started 202. What fails once it is under way is an `error` event, not a status. A take for
-many cases is answered 200, whatever it took, and a carry 201, even when the expectation is on that case already.
+An edit that changes nothing is answered 200 with the head; what is made is answered 201; signing out and a halt
+204; a run or a scoring started 202. What fails once it is under way is an `error` event, not a status. A take for
+many cases is answered 200, whatever it took.
 
 ## Not covered
 - **A vignette in a run's request.** A run takes cases; a text to run is typed first, and kept in the World's
@@ -413,7 +414,3 @@ its events (see "Where it runs" and "Its events").
   login in a header the app believes from it alone, mapped onto `person.login` (docs/identity.md, "Take, for when
   Keycloak arrives"), and Keycloak's own tokens as bearers for scripts when they come.
 - **Roles aren't checked**; Z1 shapes what each role is shown, with the portal (docs/bench.md, "Outstanding").
-
-### Writes
-- **Carrying answers 201 even when nothing changes**: an expectation carried onto the case it is of already is kept
-  `unchanged`, which an edit answers 200. Take: 200, as an edit.

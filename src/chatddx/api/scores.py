@@ -1,14 +1,12 @@
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response
-
-from chatddx.store import Queue
+from fastapi import APIRouter, Depends, Query, Request, Response
 
 from . import schemas
 from .events import graded_of, scoring_of
 from .people import BenchDep
-from .state import no_store
+from .state import no_store, refused
 
 router = APIRouter(tags=["scores"])
 
@@ -33,20 +31,10 @@ def score_now(
     given: schemas.NewScoring,
 ) -> schemas.ScoringData:
     started = bench.run(run)
-    if run not in bench.store.finished([run]):
-        raise HTTPException(422, f"run {run} hasn't finished")
-    said = scoring_of(bench, started, given.scorers)
-    applying = {s.scorer for s in said.scorers}
-    if missing := [s for s in given.scorers or () if s not in applying]:
-        raise HTTPException(422, f"scorer {missing[0]} doesn't apply to run {run}")
-    if not said.scorers:
-        raise HTTPException(422, f"no scorer applies to run {run}")
-    endpoint = "" if started.endpoint is None else started.endpoint.name
-    _ = Queue(bench.conn).put(
-        bench.person.id, run, endpoint, 0, True, [s.scorer for s in said.scorers]
-    )
+    with refused():
+        scorers = bench.queue_scoring(started, given.scorers)
     response.headers["Location"] = request.app.url_path_for("scores", run=str(run))
-    return said
+    return scoring_of(bench, started, scorers)
 
 
 @router.get("/runs/{run}/scores")
@@ -63,11 +51,6 @@ def scores(
     ] = False,
 ) -> list[schemas.Graded]:
     return [graded_of(g) for g in bench.scores_of(bench.run(run), every)]
-
-
-@router.get("/runs/{run}/scores/{score}")
-def score(bench: BenchDep, run: UUID, score: UUID) -> schemas.Graded:
-    return graded_of(bench.score_of(bench.run(run), score))
 
 
 @router.get("/runs/{run}/scores/{score}/items", dependencies=[Depends(no_store)])

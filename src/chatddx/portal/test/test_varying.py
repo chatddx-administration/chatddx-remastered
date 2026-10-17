@@ -236,7 +236,8 @@ def test_a_run_links_the_version_it_ran_else_one_holding_its_skeleton(
     assert f'href="/configurations/{ran["id"]}?head={ran["head"]["id"]}"' in page
     assert "an earlier version" in page
 
-    assert signed.delete(f"/api/threads/{ran['id']}").status_code == 204
+    deleted = signed.patch(f"/api/threads/{ran['id']}", json={"deleted": True})
+    assert deleted.status_code == 200
     archives = thread(signed, "configuration", ran["name"], "archive")
     page = shown(signed, f"/runs/{run['id']}")
     assert f'href="/configurations/{archives["id"]}"' in page

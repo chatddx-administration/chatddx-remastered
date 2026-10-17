@@ -3,7 +3,7 @@ import pytest
 from chatddx import settings
 from chatddx.bench import Bench, NotFound, OverQuota
 from chatddx.bench.test.helpers import varying
-from chatddx.catalog import Subject, read
+from chatddx.catalog import Entry, EntryField, Subject, read
 from chatddx.catalog.language import language_of
 from chatddx.curation import Plan
 from chatddx.factors.base import Resolver, resolve
@@ -13,6 +13,7 @@ from chatddx.identity import Person
 from chatddx.inventory import Inventory
 from chatddx.runner import ItemEnded, Refused, RunEvent
 from chatddx.runner.gate import admit as admitted
+from chatddx.store import Catalog
 from chatddx.store.store import Connection
 from chatddx.test.world import GPT_OSS, GPT_OSS_ARTIFACT, LINES, QWEN, faked
 
@@ -47,6 +48,28 @@ def test_a_run_keeps_its_seeds_cleanup_execution_and_canaries_and_again_too(
     repeated = resolve(bench.store.get, again.trial, Trial)
     assert (repeated.seeds, repeated.cleanup) == ((8,), cleanup)
     assert (again.execution, again.canaries) == (started.execution, probe)
+
+
+@pytest.mark.usefixtures("fake")
+def test_a_run_starts_and_runs_again_only_on_cases_its_owner_sees(
+    conn: Connection, world: Inventory, alice: Person
+):
+    bench = Bench(conn, alice, world)
+    variation = bench.variation(LINES)
+    crlf = bench.family("crlf")
+    nowhere = "sha256:" + "0" * 64
+    with pytest.raises(NotFound, match=f"no case {nowhere} for alice"):
+        _ = bench.start(variation, QWEN, [crlf.case, nowhere], (7,))
+    started = bench.start(variation, QWEN, [crlf.case], (7,)).first.started
+
+    archive = bench.people.find("archive")
+    assert archive is not None
+    unshared = Entry(field=EntryField.COLLABORATOR, person=alice.id, present=False)
+    Catalog(conn).note(Subject(family=crlf.id), unshared, archive.id)
+    with pytest.raises(NotFound, match=f"no case {crlf.case} for alice"):
+        _ = bench.again(started, (8,))
+    with pytest.raises(NotFound, match=f"no case {crlf.case} for alice"):
+        _ = bench.start(variation, QWEN, [crlf.case], (7,))
 
 
 @pytest.mark.usefixtures("fake")

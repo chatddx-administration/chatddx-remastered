@@ -292,11 +292,6 @@ class Proposal(_Schema):
     compilation: str | None
 
 
-class NewFollow(_Schema):
-    head: int = Field(description="the edit the change was made on: the head seen")
-    language: Language = None
-
-
 class Moved(_Schema):
     about: str = Field(description="the model it is compiled for, by name")
     facts: Edit | None = Field(
@@ -315,8 +310,22 @@ class Moved(_Schema):
     )
 
 
-class NewFollowMoved(_Schema):
+class Follows(_Schema):
+    origin: Proposal | None = Field(
+        description="a fork's whose origin has moved on: what following it would keep"
+    )
+    moved: Moved | None = Field(
+        description="a configuration's whose facts or model have moved on: what "
+        + "following them would keep"
+    )
+
+
+class NewFollow(_Schema):
     head: int = Field(description="the edit the change was made on: the head seen")
+    follow: Literal["origin", "moved"] = Field(
+        "origin", description="its origin, or the facts and model that moved on"
+    )
+    language: Language = None
 
 
 class MadeThread(ThreadDetail):
@@ -330,11 +339,6 @@ class MadeEdit(Edit):
         description="for an appendix: each case that held the old version, with its "
         + "replacement",
     )
-
-
-class NewCarry(_Schema):
-    head: int = Field(description="the edit the change was made on: the head seen")
-    case: str = Field(description="another case of the expectation's family")
 
 
 class Reach(_Schema):
@@ -463,8 +467,9 @@ class NewCase(_Schema):
 class FamilyDetail(Family):
     description: str | None
     collaborators: list[str]
-    appendices: list[str]
-    expectations: list[Expected]
+    cases: list[FamilyCase] = Field(
+        description="its cases at its current vignette, the one it stands for first"
+    )
 
 
 class Vignette(_Schema):
@@ -582,12 +587,16 @@ class NewRun(Seeds):
         description="where to send it: the one serving its model unless named, and "
         + "one a hand-written configuration names",
     )
-    families: list[int] | None = Field(None, description="the cases to run, by family")
+    families: list[int] | None = Field(
+        None, min_length=1, description="the cases to run, by family"
+    )
     tags: list[str] | None = Field(
         None, description="or the cases of the families with any of these"
     )
     cases: list[str] | None = Field(
-        None, description="or the cases themselves, each of a family's current ones"
+        None,
+        min_length=1,
+        description="or the cases themselves, each of a family's current ones",
     )
     cleanup: list[CleanupOp] | None = Field(
         None,
@@ -758,6 +767,10 @@ class NewResume(_Schema):
     score: bool = Field(
         default=True, description="under every scorer that applies, once it is finished"
     )
+
+
+class Paused(_Schema):
+    paused: bool
 
 
 class NewStop(_Schema):

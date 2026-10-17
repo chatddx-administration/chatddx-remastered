@@ -67,8 +67,9 @@ def test_an_owner_deletes_and_restores_a_thread(
     listed = {"kind": "configuration"}
     _ = signed.patch(path, json={"collaborators": ["bob"]})
 
-    assert signed.delete(path).status_code == 204
-    assert signed.delete(path).status_code == 204
+    for _ in range(2):
+        got = signed.patch(path, json={"deleted": True})
+        assert (got.status_code, got.json()["deleted"]) == (200, True)
     assert signed.get(path).json()["deleted"] is True
     assert signed.get(f"{path}/edits").status_code == 200
     assert signed.get(path, headers=bob).status_code == 404

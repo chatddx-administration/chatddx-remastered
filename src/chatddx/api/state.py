@@ -1,10 +1,13 @@
-from collections.abc import Iterator
+from collections.abc import Generator, Iterator
+from contextlib import contextmanager
 from dataclasses import dataclass
 
 import psycopg
-from fastapi import Request, Response
+from fastapi import HTTPException, Request, Response
 
+from chatddx.bench import Conflict, MovedOn, OverQuota
 from chatddx.inventory import Inventory
+from chatddx.store import UnderWay
 from chatddx.store.store import Connection
 
 from .listening import Listener
@@ -36,3 +39,15 @@ NO_STORE = {"Cache-Control": "no-store"}
 
 def no_store(response: Response) -> None:
     response.headers.update(NO_STORE)
+
+
+# `named`: what may be missing of what a request's body or query names, a 422 where
+# what its path names is a 404.
+@contextmanager
+def refused(*named: type[Exception]) -> Generator[None]:
+    try:
+        yield
+    except (Conflict, MovedOn, OverQuota, UnderWay):
+        raise
+    except (ValueError, *named) as e:
+        raise HTTPException(422, str(e)) from None

@@ -3,6 +3,7 @@ from typing import Any
 import pytest
 from fastapi.testclient import TestClient
 
+from chatddx.api.test.helpers import endpoint
 from chatddx.api.test.test_variations import thread
 from chatddx.test.world import LINES, QWEN
 
@@ -120,7 +121,9 @@ def test_a_write_is_refused_what_isn_t_the_person_s(
 @pytest.mark.slow
 def test_an_expectation_s_edit_says_what_the_lints_say(signed: TestClient) -> None:
     [family] = signed.get("/api/families", params={"name": "crlf"}).json()
-    [expected] = signed.get(f"/api/families/{family['id']}").json()["expectations"]
+    [expected] = signed.get(f"/api/families/{family['id']}").json()["cases"][0][
+        "expectations"
+    ]
     threads = signed.get(
         "/api/threads", params={"kind": "expectation", "owner": "alice"}
     )
@@ -152,7 +155,7 @@ def test_a_recipe_of_one_s_making_is_a_new_configuration(signed: TestClient) -> 
         "prompt": digest("prompt", "case"),
         "output": digest("output", "native"),
         "sampling": digest("sampling", "greedy"),
-        "model": signed.get(f"/api/endpoints/{QWEN}").json()["serves"],
+        "model": endpoint(signed, QWEN)["serves"],
     }
     listed = signed.get("/api/threads", params={"kind": "configuration"}).json()
     got = signed.post("/api/threads", json={"recipe": recipe, "name": "my own"})
@@ -184,7 +187,7 @@ def test_a_recipe_of_one_s_making_is_a_new_configuration(signed: TestClient) -> 
 def test_a_judge_is_written_over_a_judge_configuration(signed: TestClient) -> None:
     query = {"kind": "configuration", "purpose": "judge", "name": "judge"}
     [judging] = signed.get("/api/threads", params={**query, "owner": "alice"}).json()
-    engine = signed.get(f"/api/endpoints/{QWEN}").json()["engine"]
+    engine = endpoint(signed, QWEN)["engine"]
     judge = {
         "kind": "judge",
         "skeleton": judging["head"]["digest"],

@@ -4,6 +4,7 @@ import threading
 import time
 from collections.abc import Iterator
 from pathlib import Path
+from typing import Any
 
 import pytest
 import uvicorn
@@ -22,6 +23,12 @@ from chatddx.store.store import Connection
 from chatddx.test.world import GPT_OSS, LINES, QWEN, faked
 
 pytestmark = pytest.mark.slow
+
+
+def _endpoint(page: Page, name: str) -> dict[str, Any]:
+    listed = page.request.get("/api/endpoints").json()
+    [found] = [e for e in listed if e["name"] == name]
+    return found
 
 
 @pytest.fixture
@@ -102,13 +109,13 @@ def test_a_variation_is_run_watched_halted_scored_again_and_run_again(
         expect(
             page.get_by_text(re.compile(rf"Sends \d+ items to {QWEN}"))
         ).to_be_visible()
-        gpt_oss = page.request.get(f"/api/endpoints/{GPT_OSS}").json()["serves"]
+        gpt_oss = _endpoint(page, GPT_OSS)["serves"]
         with page.expect_response(re.compile(r"/variation\?")):
             _ = page.select_option("#part-model", gpt_oss)
         expect(
             page.get_by_text(f"Sent to {GPT_OSS}, which serves its model.")
         ).to_be_visible()
-        qwen = page.request.get(f"/api/endpoints/{QWEN}").json()["serves"]
+        qwen = _endpoint(page, QWEN)["serves"]
         with page.expect_response(re.compile(r"/variation\?")):
             _ = page.select_option("#part-model", qwen)
         expect(page.get_by_text("Pick an endpoint to run it at.")).to_be_visible()
@@ -197,7 +204,9 @@ def test_a_clinician_s_appendix_case_and_expectation_are_written_and_counted(
     errors: list[str] = []
     page.on("pageerror", lambda e: errors.append(str(e)))
     crlf = page.request.get("/api/families", params={"name": "crlf"}).json()[0]
-    [expected] = page.request.get(f"/api/families/{crlf['id']}").json()["expectations"]
+    [expected] = page.request.get(f"/api/families/{crlf['id']}").json()["cases"][0][
+        "expectations"
+    ]
     query: dict[str, str | float | bool] = {"kind": "expectation", "owner": "alice"}
     mine = next(
         t
@@ -214,7 +223,9 @@ def test_a_clinician_s_appendix_case_and_expectation_are_written_and_counted(
         }
 
     held = missing()
-    assert page.request.delete(f"/api/threads/{mine['id']}").status == 204
+    deleted = {"deleted": True}
+    path = f"/api/threads/{mine['id']}"
+    assert page.request.patch(path, data=deleted).status == 200
     gone = missing()
     assert held < gone
     _ = page.goto(f"/families/{crlf['id']}")

@@ -411,47 +411,6 @@
             }
           }
         }
-      },
-      "delete": {
-        "tags": [
-          "threads"
-        ],
-        "summary": "Delete",
-        "operationId": "delete_api_threads__thread__delete",
-        "security": [
-          {
-            "HTTPBearer": []
-          },
-          {
-            "APIKeyCookie": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "thread",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "integer",
-              "title": "Thread"
-            }
-          }
-        ],
-        "responses": {
-          "204": {
-            "description": "Successful Response"
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
       }
     },
     "/api/threads/{thread}/edits": {
@@ -893,13 +852,13 @@
         }
       }
     },
-    "/api/threads/{thread}/proposal": {
+    "/api/threads/{thread}/follows": {
       "get": {
         "tags": [
           "threads"
         ],
-        "summary": "Proposal",
-        "operationId": "proposal_api_threads__thread__proposal_get",
+        "summary": "Follows",
+        "operationId": "follows_api_threads__thread__follows_get",
         "security": [
           {
             "HTTPBearer": []
@@ -925,15 +884,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "anyOf": [
-                    {
-                      "$ref": "#/components/schemas/Proposal"
-                    },
-                    {
-                      "type": "null"
-                    }
-                  ],
-                  "title": "Response Proposal Api Threads  Thread  Proposal Get"
+                  "$ref": "#/components/schemas/Follows"
                 }
               }
             }
@@ -949,9 +900,7 @@
             }
           }
         }
-      }
-    },
-    "/api/threads/{thread}/follows": {
+      },
       "post": {
         "tags": [
           "threads"
@@ -983,190 +932,6 @@
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/NewFollow"
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/MadeEdit"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "The thread has moved on since the head the edit names"
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/threads/{thread}/moved": {
-      "get": {
-        "tags": [
-          "threads"
-        ],
-        "summary": "Moved",
-        "operationId": "moved_api_threads__thread__moved_get",
-        "security": [
-          {
-            "HTTPBearer": []
-          },
-          {
-            "APIKeyCookie": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "thread",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "integer",
-              "title": "Thread"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "anyOf": [
-                    {
-                      "$ref": "#/components/schemas/Moved"
-                    },
-                    {
-                      "type": "null"
-                    }
-                  ],
-                  "title": "Response Moved Api Threads  Thread  Moved Get"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/threads/{thread}/moved/follows": {
-      "post": {
-        "tags": [
-          "threads"
-        ],
-        "summary": "Follow Moved",
-        "operationId": "follow_moved_api_threads__thread__moved_follows_post",
-        "security": [
-          {
-            "HTTPBearer": []
-          },
-          {
-            "APIKeyCookie": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "thread",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "integer",
-              "title": "Thread"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/NewFollowMoved"
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/MadeEdit"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "The thread has moved on since the head the edit names"
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/threads/{thread}/carries": {
-      "post": {
-        "tags": [
-          "threads"
-        ],
-        "summary": "Carry",
-        "operationId": "carry_api_threads__thread__carries_post",
-        "security": [
-          {
-            "HTTPBearer": []
-          },
-          {
-            "APIKeyCookie": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "thread",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "integer",
-              "title": "Thread"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/NewCarry"
               }
             }
           }
@@ -1441,58 +1206,6 @@
       }
     },
     "/api/families/{family}/cases": {
-      "get": {
-        "tags": [
-          "families"
-        ],
-        "summary": "Cases",
-        "operationId": "cases_api_families__family__cases_get",
-        "security": [
-          {
-            "HTTPBearer": []
-          },
-          {
-            "APIKeyCookie": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "family",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "integer",
-              "title": "Family"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/FamilyCase"
-                  },
-                  "title": "Response Cases Api Families  Family  Cases Get"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      },
       "post": {
         "tags": [
           "families"
@@ -1651,39 +1364,6 @@
         ]
       }
     },
-    "/api/tags": {
-      "get": {
-        "tags": [
-          "families"
-        ],
-        "summary": "Tags",
-        "operationId": "tags_api_tags_get",
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "items": {
-                    "type": "string"
-                  },
-                  "type": "array",
-                  "title": "Response Tags Api Tags Get"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "HTTPBearer": []
-          },
-          {
-            "APIKeyCookie": []
-          }
-        ]
-      }
-    },
     "/api/endpoints": {
       "get": {
         "tags": [
@@ -1715,56 +1395,6 @@
             "APIKeyCookie": []
           }
         ]
-      }
-    },
-    "/api/endpoints/{name}": {
-      "get": {
-        "tags": [
-          "world"
-        ],
-        "summary": "Endpoint",
-        "operationId": "endpoint_api_endpoints__name__get",
-        "security": [
-          {
-            "HTTPBearer": []
-          },
-          {
-            "APIKeyCookie": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "name",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Name"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Endpoint"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
       }
     },
     "/api/models": {
@@ -2701,67 +2331,6 @@
         }
       }
     },
-    "/api/runs/{run}/scores/{score}": {
-      "get": {
-        "tags": [
-          "scores"
-        ],
-        "summary": "Score",
-        "operationId": "score_api_runs__run__scores__score__get",
-        "security": [
-          {
-            "HTTPBearer": []
-          },
-          {
-            "APIKeyCookie": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "run",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid",
-              "title": "Run"
-            }
-          },
-          {
-            "name": "score",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid",
-              "title": "Score"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Graded"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/api/runs/{run}/scores/{score}/items": {
       "get": {
         "tags": [
@@ -2850,18 +2419,26 @@
             "APIKeyCookie": []
           }
         ]
-      }
-    },
-    "/api/queue/pause": {
-      "post": {
+      },
+      "patch": {
         "tags": [
           "queue"
         ],
         "summary": "Pause",
-        "operationId": "pause_api_queue_pause_post",
+        "operationId": "pause_api_queue_patch",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Paused"
+              }
+            }
+          },
+          "required": true
+        },
         "responses": {
           "200": {
-            "description": "Paused: the person's jobs wait, and their runs under way stop after the items being sent and are queued again; a scoring under way goes on.",
+            "description": "Paused: the person's jobs wait, and their runs under way stop after the items being sent and are queued again; a scoring under way goes on. Resumed: they are taken again.",
             "content": {
               "application/json": {
                 "schema": {
@@ -2869,32 +2446,13 @@
                 }
               }
             }
-          }
-        },
-        "security": [
-          {
-            "HTTPBearer": []
           },
-          {
-            "APIKeyCookie": []
-          }
-        ]
-      }
-    },
-    "/api/queue/resume": {
-      "post": {
-        "tags": [
-          "queue"
-        ],
-        "summary": "Resume",
-        "operationId": "resume_api_queue_resume_post",
-        "responses": {
-          "200": {
-            "description": "Successful Response",
+          "422": {
+            "description": "Validation Error",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Queue"
+                  "$ref": "#/components/schemas/HTTPValidationError"
                 }
               }
             }
@@ -3519,19 +3077,13 @@
             "type": "array",
             "title": "Collaborators"
           },
-          "appendices": {
+          "cases": {
             "items": {
-              "type": "string"
+              "$ref": "#/components/schemas/FamilyCase"
             },
             "type": "array",
-            "title": "Appendices"
-          },
-          "expectations": {
-            "items": {
-              "$ref": "#/components/schemas/Expected"
-            },
-            "type": "array",
-            "title": "Expectations"
+            "title": "Cases",
+            "description": "its cases at its current vignette, the one it stands for first"
           }
         },
         "additionalProperties": false,
@@ -3545,8 +3097,7 @@
           "case",
           "description",
           "collaborators",
-          "appendices",
-          "expectations"
+          "cases"
         ],
         "title": "FamilyDetail"
       },
@@ -3589,6 +3140,39 @@
         ],
         "title": "Finding",
         "type": "object"
+      },
+      "Follows": {
+        "properties": {
+          "origin": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Proposal"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "a fork's whose origin has moved on: what following it would keep"
+          },
+          "moved": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Moved"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "a configuration's whose facts or model have moved on: what following them would keep"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "origin",
+          "moved"
+        ],
+        "title": "Follows"
       },
       "Graded": {
         "additionalProperties": false,
@@ -4414,27 +3998,6 @@
         ],
         "title": "NewAppendix"
       },
-      "NewCarry": {
-        "properties": {
-          "head": {
-            "type": "integer",
-            "title": "Head",
-            "description": "the edit the change was made on: the head seen"
-          },
-          "case": {
-            "type": "string",
-            "title": "Case",
-            "description": "another case of the expectation's family"
-          }
-        },
-        "additionalProperties": false,
-        "type": "object",
-        "required": [
-          "head",
-          "case"
-        ],
-        "title": "NewCarry"
-      },
       "NewCase": {
         "properties": {
           "appendices": {
@@ -4519,6 +4082,16 @@
             "title": "Head",
             "description": "the edit the change was made on: the head seen"
           },
+          "follow": {
+            "type": "string",
+            "enum": [
+              "origin",
+              "moved"
+            ],
+            "title": "Follow",
+            "description": "its origin, or the facts and model that moved on",
+            "default": "origin"
+          },
           "language": {
             "$ref": "#/components/schemas/Language"
           }
@@ -4529,21 +4102,6 @@
           "head"
         ],
         "title": "NewFollow"
-      },
-      "NewFollowMoved": {
-        "properties": {
-          "head": {
-            "type": "integer",
-            "title": "Head",
-            "description": "the edit the change was made on: the head seen"
-          }
-        },
-        "additionalProperties": false,
-        "type": "object",
-        "required": [
-          "head"
-        ],
-        "title": "NewFollowMoved"
       },
       "NewFork": {
         "properties": {
@@ -4685,7 +4243,8 @@
                 "items": {
                   "type": "integer"
                 },
-                "type": "array"
+                "type": "array",
+                "minItems": 1
               },
               {
                 "type": "null"
@@ -4715,7 +4274,8 @@
                 "items": {
                   "type": "string"
                 },
-                "type": "array"
+                "type": "array",
+                "minItems": 1
               },
               {
                 "type": "null"
@@ -5094,6 +4654,20 @@
         "additionalProperties": false,
         "type": "object",
         "title": "Parts"
+      },
+      "Paused": {
+        "properties": {
+          "paused": {
+            "type": "boolean",
+            "title": "Paused"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "paused"
+        ],
+        "title": "Paused"
       },
       "Proposal": {
         "properties": {

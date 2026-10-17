@@ -132,11 +132,11 @@ Moving on goes one level at a time. A chunk edit makes its skeleton threads behi
 threads behind. A fork makes nothing behind until it moves on.
 
 #### Following facts
-A configuration is behind what it was compiled for when the facts about
-its model were corrected where they change what it sends, or its model's thread moved on, as to a new revision of the
-weights. Whoever sees it sees both (`Bench.moved`, `GET /api/threads/{thread}/moved`, the configuration page); its
-owner follows them as one edit, the recipe with the model's head compiled against the current facts
-(`Bench.follow_moved`, `POST .../moved/follows`). Facts that refuse what it asks are said, not followed.
+A configuration is behind what it was compiled for when the facts about its model were corrected where they change what
+it sends, or its model's thread moved on, as to a new revision of the weights. Whoever sees it sees both
+(`Bench.moved`, `GET /api/threads/{thread}/follows` as `moved`, the configuration page); its owner follows them as one
+edit, the recipe with the model's head compiled against the current facts (`Bench.follow_moved`, `POST .../follows`
+with `"follow": "moved"`). Facts that refuse what it asks are said, not followed.
 
 ## Entries
 Names, and everything else people say about something, are *entries*. An entry is about exactly one thread, family, run

@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter
 
 from chatddx.bench import KINDS, WRITTEN, Bench, NotFound
 from chatddx.factors.kinds import BY_KIND
@@ -8,12 +8,13 @@ from chatddx.scorers.shipped import SCORERS
 
 from . import schemas
 from .people import BenchDep
-from .threads import component_of, refused
+from .state import refused
+from .threads import component_of
 
 router = APIRouter(tags=["world"])
 
 
-def endpoint_of(bench: Bench, name: str, spec: EndpointSpec) -> schemas.Endpoint:
+def _endpoint_of(bench: Bench, name: str, spec: EndpointSpec) -> schemas.Endpoint:
     title = model = serves = problem = None
     try:
         found = bench.endpoint(name)
@@ -43,17 +44,9 @@ def endpoint_of(bench: Bench, name: str, spec: EndpointSpec) -> schemas.Endpoint
 @router.get("/endpoints")
 def endpoints(bench: BenchDep) -> list[schemas.Endpoint]:
     return [
-        endpoint_of(bench, name, spec)
+        _endpoint_of(bench, name, spec)
         for name, spec in sorted(bench.inventory.endpoints.items())
     ]
-
-
-@router.get("/endpoints/{name}")
-def endpoint(bench: BenchDep, name: str) -> schemas.Endpoint:
-    spec = bench.inventory.endpoints.get(name)
-    if spec is None:
-        raise NotFound(f"no endpoint {name!r} in the inventory")
-    return endpoint_of(bench, name, spec)
 
 
 @router.get("/models")
@@ -105,11 +98,8 @@ def kinds(_: BenchDep) -> list[schemas.Kind]:
 
 @router.post("/components/check")
 def check(bench: BenchDep, given: schemas.ComponentBody) -> schemas.Checked:
-    with refused():
-        try:
-            checked = bench.check(component_of(given))
-        except LookupError as e:
-            raise HTTPException(422, str(e)) from None
+    with refused(LookupError):
+        checked = bench.check(component_of(given))
     return schemas.Checked(
         digest=checked.digest,
         findings=[schemas.Finding.of(f) for f in checked.findings],

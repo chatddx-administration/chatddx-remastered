@@ -6,6 +6,7 @@ from fastapi.testclient import TestClient
 
 from chatddx.api.schemas import Parts
 from chatddx.api.test.conftest import sign_in
+from chatddx.api.test.helpers import endpoint
 from chatddx.bench import Bench
 from chatddx.bench.test.helpers import another_expectation
 from chatddx.curation import load_cases
@@ -83,7 +84,7 @@ def test_a_configuration_with_nothing_replaced_is_itself(signed: TestClient) -> 
     assert (held["sampling"]["landed"], held["sampling"]["nearest"]) == ("on", [])
 
     request = shown["request"]
-    served = signed.get(f"/api/endpoints/{QWEN}").json()["engine"]
+    served = endpoint(signed, QWEN)["engine"]
     assert (request["model"], request["seed"]) == (served, 7)
     assert "‹vignette›‹appendices›" in str(request["messages"])
     assert [(f["code"], f["message"]) for f in shown["findings"]] == [
@@ -124,14 +125,14 @@ def test_a_variation_replaces_parts_by_digest_or_takes_them_out(
     assert (reasoning["summary"], reasoning["landed"]) == ("reasoning off", "off")
     assert shown["request"]["chat_template_kwargs"] == {"enable_thinking": False}
 
-    gpt_oss = signed.get(f"/api/endpoints/{GPT_OSS}").json()["serves"]
+    gpt_oss = endpoint(signed, GPT_OSS)["serves"]
     swapped = variation(signed, mine, reasoning=off, model=gpt_oss)
     held = parts(swapped)
     assert (held["model"]["digest"], held["model"]["replaced"]) == (gpt_oss, True)
     assert (held["reasoning"]["landed"], held["sampling"]["landed"]) == ("low", "low")
     assert "always reasons" in held["reasoning"]["nearest"][0]
     request = swapped["request"]
-    served = signed.get(f"/api/endpoints/{GPT_OSS}").json()["engine"]
+    served = endpoint(signed, GPT_OSS)["engine"]
     assert (request["model"], request["reasoning_effort"]) == (served, "low")
 
     own = parts(shown)["prompt"]["digest"]
@@ -242,7 +243,7 @@ def test_a_variation_is_rendered_and_linted_for_the_engine_serving_its_model(
     signed: TestClient,
 ) -> None:
     web = thread(signed, "configuration", NATIVE_TOOLS)
-    engine = signed.get(f"/api/endpoints/{QWEN}").json()["engine"]
+    engine = endpoint(signed, QWEN)["engine"]
     shown = variation(signed, web, endpoint=QWEN)
     assert shown["request"]["model"] == engine
     codes = {f["code"] for f in shown["findings"]}

@@ -113,7 +113,9 @@ def test_a_person_takes_one_expectation_replacing_theirs_only_when_they_say_so(
     signed: TestClient, bob: dict[str, str]
 ) -> None:
     [found] = signed.get("/api/families", params={"name": "crlf"}).json()
-    [held] = signed.get(f"/api/families/{found['id']}").json()["expectations"]
+    [held] = signed.get(f"/api/families/{found['id']}").json()["cases"][0][
+        "expectations"
+    ]
     [archives] = held["shared"]
     taking = f"/api/threads/{archives['id']}/takes"
 
@@ -126,7 +128,9 @@ def test_a_person_takes_one_expectation_replacing_theirs_only_when_they_say_so(
     made = got.json()
     assert got.headers["Location"] == f"/api/threads/{made['id']}"
     assert (made["owner"], made["forked_from"]) == ("alice", archives["head"]["id"])
-    [now] = signed.get(f"/api/families/{found['id']}").json()["expectations"]
+    [now] = signed.get(f"/api/families/{found['id']}").json()["cases"][0][
+        "expectations"
+    ]
     assert now["expectation"] == archives["head"]["digest"]
     assert now["ambiguous"] is None
 

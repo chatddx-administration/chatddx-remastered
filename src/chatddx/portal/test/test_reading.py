@@ -127,7 +127,7 @@ def test_families_are_listed_by_tag_and_read_with_their_cases_and_vignette(
     }
     [noted] = [f for f in families if f["name"] == "noted"]
     page = shown(signed, f"/families/{noted['id']}")
-    for case in signed.get(f"/api/families/{noted['id']}/cases").json():
+    for case in signed.get(f"/api/families/{noted['id']}").json()["cases"]:
         for expected in case["expectations"]:
             assert escape(expected["title"]) in page
     vignette = signed.get(f"/api/families/{noted['id']}/vignette").json()
