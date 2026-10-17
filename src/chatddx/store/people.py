@@ -114,13 +114,17 @@ class People:
 
     def open_session(self, id: int, ttl: timedelta = settings.SESSION_TTL) -> str:
         token = new_token()
-        _ = self._conn.execute(
-            """
-            INSERT INTO identity.session (token_digest, person, expires)
-            VALUES (%s, %s, now() + %s)
-            """,
-            (token_digest(token), id, ttl),
-        )
+        with self._conn.transaction():
+            _ = self._conn.execute(
+                "DELETE FROM identity.session WHERE expires <= now()"
+            )
+            _ = self._conn.execute(
+                """
+                INSERT INTO identity.session (token_digest, person, expires)
+                VALUES (%s, %s, now() + %s)
+                """,
+                (token_digest(token), id, ttl),
+            )
         return token
 
     def session(self, token: str) -> Person | None:
@@ -139,7 +143,3 @@ class People:
             "DELETE FROM identity.session WHERE token_digest = %s",
             (token_digest(token),),
         )
-
-    def purge_sessions(self) -> int:
-        cur = self._conn.execute("DELETE FROM identity.session WHERE expires <= now()")
-        return cur.rowcount

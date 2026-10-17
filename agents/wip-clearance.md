@@ -186,7 +186,7 @@ runs out of the app, in the healthcheck's order, with where else it is tracked. 
    - A worker holds one, and two more and a thread for each job it holds (`src/chatddx/worker/worker.py:178-185`). A
      run's job is held to its endpoint's `max_jobs`, but a scoring alone holds no slots
      (`src/chatddx/api/scores.py:45-47`), and a job asked to halt or at an endpoint the inventory doesn't name isn't
-     counted (`src/chatddx/store/queue.py:342`), so a worker takes as many of those as are queued.
+     counted (`src/chatddx/store/queue.py:311`), so a worker takes as many of those as are queued.
    - The quotas read a count and then insert, so a burst can overshoot them: `TYPED_PER_DAY`
      (`src/chatddx/bench/cases.py:127-134`) and `RUNS_PER_DAY` (`src/chatddx/bench/runs.py:129-138`). Scoring again
      has no quota, beyond one job per run at a time.
@@ -232,7 +232,7 @@ runs out of the app, in the healthcheck's order, with where else it is tracked. 
    - `/threads/{id}/proposal` returns appendix text without no-store (`src/chatddx/api/threads.py:384-403`).
 8. **Sessions** and people.
    - A password change leaves sessions open (`src/chatddx/store/people.py:87-94`), and so does signing in again.
-   - Nothing schedules `People.purge_sessions`, and no command runs it.
+   - Expired sessions are deleted only when a session opens (`People.open_session`).
    - `Role` is shown, never checked.
    - No command deactivates anyone, though `People` can (`src/chatddx/store/people.py:81-84`), and a deactivated
      person's queued jobs still run: the worker finds a job's owner by id, active or not

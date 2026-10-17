@@ -1,8 +1,12 @@
 import json
 from collections.abc import Iterable, Iterator
 from dataclasses import dataclass
+from itertools import count
 from uuid import UUID
 
+import psycopg
+from psycopg import sql
+from psycopg.rows import TupleRow
 from pydantic import JsonValue, TypeAdapter
 
 WORKERS = "worker"
@@ -17,6 +21,8 @@ _PART = LIMIT - 64
 type Said = list[tuple[str, JsonValue]]
 
 _SAID: TypeAdapter[Said] = TypeAdapter(Said)
+
+_MESSAGES: Iterator[int] = count()
 
 
 @dataclass(frozen=True)
@@ -45,7 +51,7 @@ def _text(value: JsonValue) -> str:
     return json.dumps(value, ensure_ascii=True, separators=(",", ":"))
 
 
-def payloads(said: Iterable[tuple[str, JsonValue]], ids: Iterator[int]) -> list[str]:
+def _payloads(said: Iterable[tuple[str, JsonValue]], ids: Iterator[int]) -> list[str]:
     packed: list[list[str]] = [[]]
     size = 2
     for name, data in said:
@@ -67,6 +73,26 @@ def payloads(said: Iterable[tuple[str, JsonValue]], ids: Iterator[int]) -> list[
         parts = [whole[at : at + _PART] for at in range(0, len(whole), _PART)]
         found.extend(f"~{message} {i} {len(parts)}\n{p}" for i, p in enumerate(parts))
     return found
+
+
+def tell(
+    conn: psycopg.Connection[TupleRow],
+    run: UUID,
+    said: Iterable[tuple[str, JsonValue]],
+) -> None:
+    with conn.transaction():
+        for payload in _payloads(said, _MESSAGES):
+            _ = conn.execute("SELECT pg_notify(%s, %s)", (channel(run), payload))
+
+
+def listen(conn: psycopg.Connection[TupleRow], *channels: str) -> None:
+    for name in channels:
+        _ = conn.execute(sql.SQL("LISTEN {}").format(sql.Identifier(name)))
+
+
+def unlisten(conn: psycopg.Connection[TupleRow], *channels: str) -> None:
+    for name in channels:
+        _ = conn.execute(sql.SQL("UNLISTEN {}").format(sql.Identifier(name)))
 
 
 class Assembler:

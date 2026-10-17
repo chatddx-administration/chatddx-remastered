@@ -10,7 +10,7 @@ from chatddx.factors.bundle import Registry
 from chatddx.factors.test.sample import NOW, RIG, world
 from chatddx.identity import Person
 from chatddx.ledger import RunStarted
-from chatddx.store import People, Queue, Store, UnderWay
+from chatddx.store import Job, People, Queue, Store, UnderWay
 from chatddx.store.queue import STATUSES, TAKEN_OUT, Held, Standing, Stopped
 from chatddx.store.store import Connection
 
@@ -41,6 +41,10 @@ def runs(conn: Connection) -> Callable[[], UUID]:
     return started
 
 
+def latest(queue: Queue, run: UUID) -> Job:
+    return queue.placed([run])[run].job
+
+
 def enlisted(queue: Queue) -> UUID:
     worker = uuid4()
     queue.enlist(worker)
@@ -58,7 +62,7 @@ def test_a_run_has_one_job_open_at_a_time(
         None,
         False,
     )
-    assert queue.open(run) == job == queue.job(job.id)
+    assert queue.open(run) == job == latest(queue, run)
     with pytest.raises(UnderWay, match=f"run {run} has something under way"):
         _ = queue.put(alice.id, run, "e", 1, False)
 
@@ -68,11 +72,9 @@ def test_a_run_has_one_job_open_at_a_time(
     assert (claimed.id, claimed.status, claimed.worker) == (job.id, "under way", worker)
     assert queue.end(job.id, worker, "finished")
     assert queue.open(run) is None
-    assert queue.job(job.id).status == "finished"
+    assert latest(queue, run).status == "finished"
     again = queue.put(alice.id, run, "e", 0, True)
-    assert [j.id for j in queue.jobs(alice.id)] == [again.id, job.id]
-    with pytest.raises(LookupError, match="no job 0"):
-        _ = queue.job(0)
+    assert latest(queue, run) == again
     with pytest.raises(ValueError, match="not queued"):
         _ = queue.end(again.id, worker, "queued")
 
@@ -92,7 +94,9 @@ def test_claims_go_in_turn_within_each_endpoint_s_max_jobs(
     assert queue.end(first.id, worker, "finished")
     taken = queue.claim(worker, max_jobs, LOST)
     assert taken is not None and taken.id == second.id
-    assert queue.waiting() == 2
+    assert queue.standing(alice.id, LOST) == Standing(
+        paused=False, queued=0, under_way=2, workers=1
+    )
 
 
 def test_a_paused_owner_s_jobs_wait_unless_halted_or_at_an_unknown_endpoint(
@@ -102,7 +106,7 @@ def test_a_paused_owner_s_jobs_wait_unless_halted_or_at_an_unknown_endpoint(
     worker = enlisted(queue)
     held = queue.put(alice.id, runs(), "e", 1, False)
     queue.pause(alice.id)
-    assert queue.paused(alice.id)
+    assert queue.standing(alice.id, LOST).paused
     assert queue.claim(worker, {"e": 1}, LOST) is None
 
     gone = queue.put(alice.id, runs(), "renamed", 1, False)
@@ -113,7 +117,7 @@ def test_a_paused_owner_s_jobs_wait_unless_halted_or_at_an_unknown_endpoint(
     assert taken is not None and taken.id == held.id
 
     queue.pause(alice.id, False)
-    assert not queue.paused(alice.id)
+    assert not queue.standing(alice.id, LOST).paused
     with pytest.raises(LookupError, match="has nothing under way"):
         _ = queue.halt(uuid4())
 
@@ -142,7 +146,7 @@ def test_a_worker_s_beat_keeps_its_jobs_and_a_lost_one_is_claimed_again(
     queue.pause(alice.id)
     assert queue.beat(here, [job.id]) == [Held(job=job.id, halt=False, paused=True)]
     assert queue.requeue(job.id, here, "paused")
-    requeued = queue.job(job.id)
+    requeued = latest(queue, job.run)
     assert (requeued.status, requeued.why, requeued.worker) == (
         "queued",
         "paused",
@@ -245,7 +249,7 @@ def test_a_stop_takes_the_owner_s_queue_out_and_stopping_now_halts_the_rest(
     _ = queue.put(bob.id, others, "e", 1, True)
 
     assert queue.stop(alice.id) == Stopped(taken_out=(waiting,), halting=())
-    stopped = queue.job(held.id)
+    stopped = latest(queue, held.run)
     assert (stopped.status, stopped.why, stopped.worker) == ("stopped", TAKEN_OUT, None)
     assert stopped.ended is not None
     under_way = queue.open(sending)
@@ -272,7 +276,7 @@ def test_a_job_keeps_the_scorers_it_has_finished_when_it_is_queued_again(
     assert queue.scored(job.id, worker, "a")
     assert not queue.scored(job.id, worker, "a")
     assert queue.requeue(job.id, worker, "its worker stopped")
-    assert queue.job(job.id).scored == ("a",)
+    assert latest(queue, run).scored == ("a",)
 
     def refused(update: LiteralString, on: int = job.id) -> None:
         with admin.transaction():
@@ -288,4 +292,4 @@ def test_a_job_keeps_the_scorers_it_has_finished_when_it_is_queued_again(
     assert queue.claim(other, {"e": 1}, LOST) is not None
     assert queue.scored(job.id, other, "b")
     assert queue.end(job.id, other, "finished")
-    assert queue.job(job.id).scored == ("a", "b")
+    assert latest(queue, run).scored == ("a", "b")

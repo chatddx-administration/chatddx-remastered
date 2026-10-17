@@ -107,13 +107,13 @@ saving it makes it a configuration of its own, a fork, or a new version of one o
 
 Names are optional: an unnamed configuration is shown by its title, e.g. its base and what it varies (`docs/catalog.md`, "Titles").
 Variations allow controlled experiments without the combinatorial explosion; they are a supported portal workflow, not an object in the code:
- - `src/chatddx/store/catalog.py:Catalog.behind`
+ - `src/chatddx/catalog/threads.py:behind`
  - `catalog.thread.forked_from`
 
 "Delete" in this case is a `deleted` flag in the `catalog` layer since true deletions are blocked on database level
 (see tier 2 in `docs/store.md`).
 
-`src/chatddx/store/catalog.py:Catalog.divergence` and `Catalog.proposal` (what a fork varies,
+`src/chatddx/catalog/threads.py:divergence` and `proposal` (what a fork varies,
 and re-applying it when its origin moves), and `catalog.edit.based_on`.
 
 ### On the table

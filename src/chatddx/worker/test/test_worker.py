@@ -7,7 +7,6 @@ from uuid import UUID
 
 import psycopg
 import pytest
-from psycopg import sql
 from psycopg.conninfo import make_conninfo
 
 from chatddx import settings
@@ -16,7 +15,7 @@ from chatddx.conftest import chosen
 from chatddx.identity import Person
 from chatddx.inventory import Inventory
 from chatddx.store import Job, People, Queue, Store
-from chatddx.store.notify import Assembler, Events, JobChanged, Rows, channel
+from chatddx.store.notify import Assembler, Events, JobChanged, Rows, channel, listen
 from chatddx.store.store import Connection
 from chatddx.test.world import LINES, QWEN, faked
 from chatddx.worker import Worker
@@ -80,9 +79,13 @@ def serving(
         assert not thread.is_alive()
 
 
+def latest(queue: Queue, job: Job) -> Job:
+    return queue.placed([job.run])[job.run].job
+
+
 def until(queue: Queue, job: Job, done: Callable[[Job], bool]) -> Job:
     deadline = time.monotonic() + 30
-    while not done(found := queue.job(job.id)):
+    while not done(found := latest(queue, job)):
         assert time.monotonic() < deadline, f"job {job.id} is still {found.status}"
         time.sleep(0.02)
     return found
@@ -130,7 +133,7 @@ def test_a_worker_wakes_to_a_queued_job_and_says_what_its_rows_don_t(
     ):
         started = start(bench)
         name = channel(started)
-        _ = listener.execute(sql.SQL("LISTEN {}").format(sql.Identifier(name)))
+        listen(listener, name)
         with serving(conninfo, world, beat=timedelta(minutes=5)):
             job = queue.put(alice.id, started, QWEN, 1, True)
             assert until(queue, job, ended).status == "finished"
@@ -226,7 +229,7 @@ def test_a_stopped_worker_queues_its_run_again_for_the_next_to_resume(
         job = queue.put(alice.id, started, QWEN, 1, False)
         with serving(conninfo, world):
             _ = until(queue, job, lambda j: j.status == "under way")
-        left = queue.job(job.id)
+        left = latest(queue, job)
         assert (left.status, left.why) == ("queued", "its worker stopped")
         with serving(conninfo, world) as second:
             done = until(queue, job, ended)
@@ -298,7 +301,7 @@ def test_a_stopping_worker_cuts_its_scoring_short_at_its_deadline_and_keeps_what
             while len(Store(conn).scores_of(started)) < 3:
                 assert time.monotonic() < deadline, "the judged scorer didn't start"
                 time.sleep(0.02)
-    left = queue.job(job.id)
+    left = latest(queue, job)
     assert (left.status, left.why, left.scored) == ("queued", LEFT, held.scored)
     assert sorted(names[s] for s in left.scored) == ["lines", "whole"]
     with faked(world, Store(conn).get), serving(conninfo, world):

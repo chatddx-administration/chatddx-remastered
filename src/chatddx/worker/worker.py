@@ -9,7 +9,6 @@ from typing import Literal
 from uuid import UUID, uuid4
 
 import psycopg
-from psycopg import sql
 
 from chatddx import settings
 from chatddx.api import schemas
@@ -19,7 +18,7 @@ from chatddx.inventory import Inventory
 from chatddx.ledger import RunStarted
 from chatddx.runner.run import Running
 from chatddx.store import Job, People, Queue
-from chatddx.store.notify import WORKERS
+from chatddx.store.notify import WORKERS, listen
 from chatddx.store.store import Connection
 
 from .publish import Publisher
@@ -97,7 +96,7 @@ class Worker:
             with self._connect() as conn:
                 queue = Queue(conn)
                 queue.enlist(self.id)
-                _ = conn.execute(sql.SQL("LISTEN {}").format(sql.Identifier(WORKERS)))
+                listen(conn, WORKERS)
                 deadline: float | None = None
                 while True:
                     leaving = stopping.is_set()

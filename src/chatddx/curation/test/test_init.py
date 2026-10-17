@@ -4,13 +4,14 @@ from pathlib import Path
 
 import pytest
 
-from chatddx.catalog import Entry, EntryField, Subject
+from chatddx.catalog import Entry, EntryField, Subject, families, read, threads, titles
+from chatddx.catalog.language import language_of
 from chatddx.cli import main
 from chatddx.conftest import connect
 from chatddx.curation import init
 from chatddx.curation.test.cases import CASES, TEXTS, appended, vignettes
 from chatddx.identity import Person
-from chatddx.store import Catalog, People
+from chatddx.store import Catalog, People, Rows
 from chatddx.store.store import Connection
 from chatddx.test.world import (
     DATA,
@@ -50,16 +51,16 @@ def test_init_data_loads_the_archive(conn: Connection) -> None:
     plan = world_plan()
     lines = init(conn, plan, CASES, vignettes(), alice)
     appendices, ordered, expected = appended(CASES)
-    threads = len(plan.records) + len(CASES) + appendices + expected
+    made = len(plan.records) + len(CASES) + appendices + expected
     assert tally(lines) == Counter(
         {
-            "archive created": threads + len(CASES) + ordered,
+            "archive created": made + len(CASES) + ordered,
             "skipped": len(plan.skipped),
             "share": 1,
             "lint": len(LINTS) + 1,
         }
     )
-    shared = threads + len(CASES)
+    shared = made + len(CASES)
     assert (
         lines[-len(LINTS) - 2]
         == f"[share] {shared} of {shared} archive threads and families with alice"
@@ -72,44 +73,44 @@ def test_init_data_loads_the_archive(conn: Connection) -> None:
         f"[lint] {len(LINTS)} findings in {components} components",
     ]
 
-    catalog = Catalog(conn)
+    rows = Rows(conn)
     archive = People(conn).find("archive")
     assert archive is not None
-    [native] = catalog.find("skeleton", NATIVE, owner=archive.id)
-    [tools] = catalog.find("skeleton", NATIVE_TOOLS)
-    diverged = catalog.divergence(tools)
+    [native] = threads.find(rows, "skeleton", NATIVE, owner=archive.id)
+    [tools] = threads.find(rows, "skeleton", NATIVE_TOOLS)
+    diverged = threads.divergence(rows, tools)
     assert diverged is not None and set(diverged.varies) == {"/recipe/toolset"}
     assert diverged.base.thread == native
-    about = catalog.about(Subject(thread=native))
+    about = read.about(rows, Subject(thread=native))
     assert (about.owner, about.tags, alice.id in about.collaborators) == (
         archive.id,
         frozenset({"structured"}),
         True,
     )
     [case] = [c for c in vignettes().cases() if c.vignette.id == "crlf"]
-    family = catalog.family(case.digest)
+    family = families.family_of(rows, case.digest)
     assert family is not None
-    assert catalog.about(Subject(family=family)).language == "en"
-    assert catalog.title_of(case.digest) == "crlf"
-    [scorer] = catalog.find("scorer", "answer", owner=archive.id)
-    assert catalog.labels(catalog.head(scorer).id) == {
+    assert read.about(rows, Subject(family=family)).language == "en"
+    assert titles.title_of(rows, case.digest) == "crlf"
+    [scorer] = threads.find(rows, "scorer", "answer", owner=archive.id)
+    assert read.labels(rows, threads.head(rows, scorer).id) == {
         ("view", 0): "differential",
         ("view", 1): "warning",
         ("view", 2): "disposition",
         ("view", 3): "dont-miss",
     }
-    [tool] = catalog.find("tool", "lookup", owner=archive.id)
-    assert catalog.about(Subject(thread=tool)).description == "Look the query up."
+    [tool] = threads.find(rows, "tool", "lookup", owner=archive.id)
+    assert read.about(rows, Subject(thread=tool)).description == "Look the query up."
     assert [line for line in lines if line.endswith(LANGUAGES)] == [
         f"[archive {r.kind}] {r.name}: created {r.digest.removeprefix('sha256:')[:6]}"
         + f", in {r.language}"
         for r in plan.records
         if r.language is not None
     ]
-    assert catalog.language_of(plan.named("toolset", "lookup").digest) == "en"
-    assert catalog.language_of(plan.named("prompt", "case").digest) is None
-    assert catalog.language_of(plan.named("recipe", "lines-guided").digest) == "en"
-    assert catalog.language_of(plan.named("translations", "guided").digest) is None
+    assert language_of(rows, plan.named("toolset", "lookup").digest) == "en"
+    assert language_of(rows, plan.named("prompt", "case").digest) is None
+    assert language_of(rows, plan.named("recipe", "lines-guided").digest) == "en"
+    assert language_of(rows, plan.named("translations", "guided").digest) is None
 
     # The rest of the cases, and their expectations, are left over.
     some = {id: CASES[id] for id in ("crlf", "svenska")}
@@ -185,13 +186,15 @@ def test_init_data_updates_and_gives_forks(
     )
     assert any(line.startswith("[giftbag tool] lookup: forked") for line in forked)
 
-    catalog = Catalog(conn)
+    rows = Rows(conn)
     archive = People(conn).find("archive")
     assert archive is not None
     output = "tool-answer"
-    [archived] = catalog.find("chunk.output", output, owner=archive.id)
-    assert len(catalog.find("chunk.output", output, owner=alice.id)) == 1
-    owners = [catalog.about(Subject(thread=t)).owner for t in catalog.forks(archived)]
+    [archived] = threads.find(rows, "chunk.output", output, owner=archive.id)
+    assert len(threads.find(rows, "chunk.output", output, owner=alice.id)) == 1
+    owners = [
+        read.about(rows, Subject(thread=t)).owner for t in threads.forks(rows, archived)
+    ]
     assert owners.count(alice.id) == 1
     again = init(
         conn,
@@ -235,9 +238,10 @@ def test_init_data_withdraws_only_the_tags_the_archive_gave(
     conn: Connection, alice: Person, tmp_path: Path
 ) -> None:
     catalog = Catalog(conn)
-    [native] = catalog.find("skeleton", NATIVE)
+    rows = Rows(conn)
+    [native] = threads.find(rows, "skeleton", NATIVE)
     [case] = [c for c in vignettes().cases() if c.vignette.id == "bom"]
-    family = catalog.family(case.digest)
+    family = families.family_of(rows, case.digest)
     assert family is not None
     for subject in (Subject(thread=native), Subject(family=family)):
         catalog.note(subject, Entry(field=EntryField.TAG, value="alice's"), alice.id)
@@ -253,8 +257,8 @@ def test_init_data_withdraws_only_the_tags_the_archive_gave(
     )
     retagged = {**CASES, "bom": replace(CASES["bom"], tags=("falls",))}
     _ = init(conn, world_plan(world, world / "_data"), retagged, vignettes(), alice)
-    assert catalog.about(Subject(thread=native)).tags == {"alice's"}
-    assert catalog.about(Subject(family=family)).tags == {"alice's", "falls"}
+    assert read.about(rows, Subject(thread=native)).tags == {"alice's"}
+    assert read.about(rows, Subject(family=family)).tags == {"alice's", "falls"}
 
 
 @pytest.mark.parametrize("template", ["loaded"], indirect=True)
@@ -262,8 +266,10 @@ def test_init_data_withdraws_only_the_tags_the_archive_gave(
 def test_init_data_says_how_a_vignette_moved_at_its_source(
     conn: Connection, alice: Person
 ) -> None:
-    catalog = Catalog(conn)
-    families = {c.vignette.id: catalog.family(c.digest) for c in vignettes().cases()}
+    rows = Rows(conn)
+    family_at = {
+        c.vignette.id: families.family_of(rows, c.digest) for c in vignettes().cases()
+    }
     moved = vignettes(
         {id: text for id, text in TEXTS.items() if id != "noted"},
         noted2=TEXTS["noted"],
@@ -272,9 +278,9 @@ def test_init_data_says_how_a_vignette_moved_at_its_source(
     at = "at source 'test'; repair-data rebinds family"
     lines = init(conn, world_plan(), CASES, moved, alice)
     assert [line for line in lines if "needs repair" in line] == [
-        f"[archive case] crlf: needs repair: changed {at} {families['crlf']}",
+        f"[archive case] crlf: needs repair: changed {at} {family_at['crlf']}",
         f"[archive case] noted: needs repair: renamed to noted2 {at} "
-        + str(families["noted"]),
+        + str(family_at["noted"]),
     ]
     assert not [line for line in lines if "not in the data" in line]
 
@@ -283,7 +289,7 @@ def test_init_data_says_how_a_vignette_moved_at_its_source(
     lines = init(conn, world_plan(), renamed, moved, alice)
     assert (
         f"[archive case] noted2: needs repair: renamed from noted {at} "
-        + str(families["noted"])
+        + str(family_at["noted"])
     ) in lines
     assert not [line for line in lines if "not in the data" in line]
 
@@ -367,7 +373,7 @@ def test_wipe_data_deletes_and_unshares_and_init_data_gives_it_back(
         main(list(argv))
         return capsys.readouterr().out.splitlines()
 
-    def rows() -> tuple[int, int]:
+    def counts() -> tuple[int, int]:
         with connect(db) as conn:
             threads = conn.execute("SELECT count(*) FROM catalog.thread").fetchone()
             entries = conn.execute("SELECT count(*) FROM catalog.entry").fetchone()
@@ -392,7 +398,7 @@ def test_wipe_data_deletes_and_unshares_and_init_data_gives_it_back(
         )
     gifts = sum(line.startswith("[giftbag ") for line in loaded)
     shares = int(next(line for line in loaded if line.startswith("[share]")).split()[1])
-    threads, entries = rows()
+    threads, entries = counts()
 
     with monkeypatch.context() as patch:
         patch.setenv("CHATDDX_WORLD", str(TEST))
@@ -406,23 +412,25 @@ def test_wipe_data_deletes_and_unshares_and_init_data_gives_it_back(
         for line in again
         if line.startswith("[archive")
     } == {"validated"}
-    assert rows() == (threads, entries)
+    assert counts() == (threads, entries)
 
     wiped = run("wipe-data", "alice")
     assert sum(int(line.split("deleted ")[1].split(",")[0]) for line in wiped) == gifts
     assert sum(int(line.split("unshared ")[1]) for line in wiped) == shares
-    assert rows() == (threads, entries + gifts + shares)
+    assert counts() == (threads, entries + gifts + shares)
     with connect(db) as conn:
-        catalog = Catalog(conn)
+        rows = Rows(conn)
         alice = People(conn).find("alice")
         assert alice is not None
-        mine = catalog.involving(alice.id)
+        mine = rows.involving(alice.id)
         assert all(
-            catalog.about(s).deleted for s in mine if catalog.about(s).owner == alice.id
+            read.about(rows, s).deleted
+            for s in mine
+            if read.about(rows, s).owner == alice.id
         )
-        assert not [s for s in mine if alice.id in catalog.about(s).collaborators]
+        assert not [s for s in mine if alice.id in read.about(rows, s).collaborators]
     assert run("wipe-data", "alice") == ["[wipe] alice: nothing to delete or unshare"]
-    assert rows() == (threads, entries + gifts + shares)
+    assert counts() == (threads, entries + gifts + shares)
 
     # Each later run writes an entry per gift and per share, and no thread.
     cost = gifts + shares
@@ -430,9 +438,9 @@ def test_wipe_data_deletes_and_unshares_and_init_data_gives_it_back(
         again = run(*argv)
         assert sum(line.endswith(": restored") for line in again) == gifts
         assert not [line for line in again if ": created" in line or "forked" in line]
-        assert rows() == (threads, entries + 2 * cycle * cost)
+        assert counts() == (threads, entries + 2 * cycle * cost)
         _ = run("wipe-data", "alice")
-        assert rows() == (threads, entries + (2 * cycle + 1) * cost)
+        assert counts() == (threads, entries + (2 * cycle + 1) * cost)
 
     with pytest.raises(SystemExit, match="'archive' holds what init-data loads"):
         main(["wipe-data", "archive"])

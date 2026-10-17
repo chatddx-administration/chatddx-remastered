@@ -5,7 +5,7 @@ from pydantic import JsonValue
 
 from chatddx.bench import Bench
 from chatddx.bench.test.helpers import ran, trial
-from chatddx.catalog import Labels
+from chatddx.catalog import Labels, threads
 from chatddx.curation import Plan
 from chatddx.factors.base import resolve
 from chatddx.factors.scoring import Scorer
@@ -13,7 +13,7 @@ from chatddx.identity import Person
 from chatddx.scorers import metrics
 from chatddx.scorers.scorer import Metrics
 from chatddx.scorers.shipped import SCORERS
-from chatddx.store import Catalog, People
+from chatddx.store import Catalog, People, Rows
 from chatddx.store.store import Connection
 from chatddx.test.world import LINES
 
@@ -107,7 +107,7 @@ def test_a_fork_keeps_its_origin_s_labels_and_renames_its_own_views(
     conn: Connection, alice: Person, bench: Bench, plan: Plan
 ) -> None:
     origin, doc = _archive_s(bench, "list")
-    head = Catalog(conn).head(origin)
+    head = threads.head(Rows(conn), origin)
     theirs = bench.labels_of(head)
     assert theirs == {0: "differential", 1: "dont-miss"}
 
@@ -131,7 +131,7 @@ def test_a_fork_keeps_its_origin_s_labels_and_renames_its_own_views(
     assert bench.edit_component(thread, at, scorer, labels=renamed).what == "unchanged"
     assert bench.edit_component(thread, at, scorer).what == "unchanged"
 
-    assert bench.labels_of(Catalog(conn).head(origin)) == theirs
+    assert bench.labels_of(threads.head(Rows(conn), origin)) == theirs
     archive = Bench(conn, _archive(conn), bench.inventory)
     assert archive.labels(head.digest) == theirs
 
@@ -157,7 +157,7 @@ def test_a_scorer_digest_is_called_what_the_person_s_threads_called_it(
 
 
 def _renamed(conn: Connection, thread: int, labels: Labels) -> None:
-    head = Catalog(conn).head(thread)
+    head = threads.head(Rows(conn), thread)
     _ = Catalog(conn).keep(head.digest, _archive(conn).id, thread, labels=labels)
 
 

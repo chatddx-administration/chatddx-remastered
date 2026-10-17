@@ -1,10 +1,8 @@
-import itertools
 from collections.abc import Iterator
 from uuid import uuid4
 
 import psycopg
 import pytest
-from psycopg import sql
 from pydantic import JsonValue
 
 from chatddx import settings
@@ -32,7 +30,8 @@ from chatddx.store.notify import (
     JobChanged,
     Rows,
     channel,
-    payloads,
+    listen,
+    tell,
 )
 from chatddx.store.store import Connection
 
@@ -52,11 +51,6 @@ def listener(db: str) -> Iterator[Connection]:
 
 def heard(conn: Connection) -> list[tuple[str, str]]:
     return [(n.channel, n.payload) for n in conn.notifies(timeout=0.2)]
-
-
-def listen(conn: Connection, *channels: str) -> None:
-    for name in channels:
-        _ = conn.execute(sql.SQL("LISTEN {}").format(sql.Identifier(name)))
 
 
 @pytest.mark.slow
@@ -140,17 +134,19 @@ def test_the_queue_wakes_workers_and_tells_a_run_s_followers_how_its_job_stands(
     assert heard(listener) == [(WORKERS, "")] * 2
     assert queue.end(job.id, worker, "stopped")
     assert heard(listener) == [(WORKERS, ""), (channel(run), "job stopped")]
-    assert queue.last(run) == queue.job(job.id)
-    assert queue.last(uuid4()) is None
 
 
-def test_events_are_packed_within_notify_s_limit_and_assembled_again() -> None:
+def test_events_are_packed_within_notify_s_limit_and_assembled_again(
+    conn: Connection, listener: Connection
+) -> None:
     small: list[tuple[str, JsonValue]] = [
         ("item.delta", {"text": "a" * 100, "at": i}) for i in range(150)
     ]
     big: list[tuple[str, JsonValue]] = [("judge.answered", {"text": "å" * 2000})]
-    ids = itertools.count()
-    packed = payloads([*small, *big, *small[:2]], ids)
+    run = uuid4()
+    listen(listener, channel(run))
+    tell(conn, run, [*small, *big, *small[:2]])
+    packed = [n.payload for n in listener.notifies(timeout=5, stop_after=6)]
     assert all(len(p.encode()) <= LIMIT for p in packed)
     assert [p[0] for p in packed] == ["[", "[", "[", "~", "~", "["]
 

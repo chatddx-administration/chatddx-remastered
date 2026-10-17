@@ -1,6 +1,6 @@
 from collections.abc import Iterable
 
-from chatddx.catalog import About, Edit, Entry, EntryField, Subject
+from chatddx.catalog import About, Edit, Entry, EntryField, Subject, threads
 from chatddx.factors.base import resolve
 from chatddx.factors.scoring import Expectation
 from chatddx.identity import collaborates, owns
@@ -19,7 +19,7 @@ def take(
     if owner is not None and by is None:
         raise NotFound(f"no person {owner!r}")
     wanted = list(dict.fromkeys(cases))
-    held = seen.catalog.expecting(wanted, schema)
+    held = threads.expecting(seen.rows, wanted, schema)
     person = seen.person.id
     found = Taken({}, {}, {}, [])
     with seen.conn.transaction():

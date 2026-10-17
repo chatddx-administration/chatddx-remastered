@@ -2,7 +2,8 @@ import pytest
 
 from chatddx import settings
 from chatddx.bench import Bench, NotFound, OverQuota
-from chatddx.catalog import Subject
+from chatddx.catalog import Subject, read
+from chatddx.catalog.language import language_of
 from chatddx.curation import Plan
 from chatddx.factors.base import Resolver, resolve
 from chatddx.factors.trial import Execution, Trial
@@ -62,7 +63,7 @@ def test_a_run_says_what_it_varied_and_running_again_too(
     started = bench.start(varied, QWEN, cases, (7,)).first.started
     ran = (named.configuration, {"reasoning": off})
     assert bench.ran(started.run) == ran
-    assert bench.catalog.about(Subject(run=started.run)).name == varied.label
+    assert read.about(bench.rows, Subject(run=started.run)).name == varied.label
     assert bench.ran(bench.again(started, (8,)).run) == ran
 
 
@@ -186,7 +187,7 @@ def test_a_start_runs_each_language_its_cases_are_in_and_leaves_out_the_rest(
     assert english.skeleton.digest == guided.configuration.digest
     translated = resolve(bench.get, second.started.trial, Trial).skeleton
     assert translated == swedish.skeleton.digest != english.skeleton.digest
-    assert bench.catalog.language_of(translated) == "sv"
+    assert language_of(bench.rows, translated) == "sv"
     assert (bench.started_with(first.run), bench.started_with(second.run)) == (
         None,
         first.run,

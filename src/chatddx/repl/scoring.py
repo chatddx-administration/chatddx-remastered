@@ -4,6 +4,7 @@ from rich.table import Table
 from rich.text import Text
 
 from chatddx.bench import Family, Graded
+from chatddx.catalog import titles
 from chatddx.ledger import RunStarted
 
 from .render import (
@@ -83,7 +84,7 @@ def scorers(repl: Repl) -> None:
 
     for edit, about, scorer in bench.scorers():
         labels = bench.labels_of(edit)
-        name = about.name or bench.catalog.title(edit.thread)
+        name = about.name or titles.title(bench.rows, edit.thread)
         for i, view in enumerate(scorer.views):
             reads = view.output or "the whole answer"
             if view.split is not None:

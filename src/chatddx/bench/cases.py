@@ -3,7 +3,7 @@ from collections.abc import Sequence
 from datetime import UTC, datetime, timedelta
 
 from chatddx import settings
-from chatddx.catalog import Entry, EntryField, Subject
+from chatddx.catalog import Entry, EntryField, Subject, families
 from chatddx.catalog.families import rebind_case
 from chatddx.factors.base import Fingerprint, resolve
 from chatddx.factors.bundle import Registry
@@ -71,7 +71,7 @@ def appendix(seen: Seen, family: int, text: str) -> Appendix:
 def case(seen: Seen, family: int, appendices: Sequence[str]) -> str:
     found = seen.family_by_id(family)
     for digest in appendices:
-        held = seen.catalog.containing(digest)
+        held = seen.rows.edits_holding([digest])
         if not any(sees(seen.person.id, seen.about(e.thread)) for e in held):
             raise NotFound(f"no appendix {digest} for {seen.person.login}")
     made = Case(vignette=seen.current(found.id), appendices=tuple(appendices))
@@ -81,7 +81,7 @@ def case(seen: Seen, family: int, appendices: Sequence[str]) -> str:
 
 
 def replacement(seen: Seen, case: str) -> str:
-    family = seen.catalog.family(case)
+    family = families.family_of(seen.rows, case)
     if family is None:
         raise NotFound(f"no case {case} for {seen.person.login}")
     found = seen.family_by_id(family)
@@ -157,8 +157,8 @@ def carry(seen: Seen, thread: int, head: int, case: str) -> Written:
     if word != "expectation":
         raise ValueError(f"{word} {thread} isn't an expectation")
     held = resolve(seen.get, edit.digest, Expectation)
-    family = seen.catalog.family(held.case)
-    if family is None or seen.catalog.family(case) != family:
+    family = families.family_of(seen.rows, held.case)
+    if family is None or families.family_of(seen.rows, case) != family:
         raise ValueError(f"{case} isn't a case of the family {held.case} is of")
     carried = Expectation(
         case=case, expectation_schema=held.expectation_schema, data=held.data

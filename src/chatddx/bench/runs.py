@@ -7,7 +7,7 @@ from typing import get_args
 from uuid import UUID
 
 from chatddx import settings
-from chatddx.catalog import Entry, EntryField, Subject
+from chatddx.catalog import Entry, EntryField, Subject, read, titles
 from chatddx.factors.base import resolve
 from chatddx.factors.cases import Case, CleanupOp
 from chatddx.factors.request import Skeleton
@@ -110,7 +110,7 @@ def again(seen: Seen, run: RunStarted, seeds: Sequence[int]) -> Running:
         )
     trial = resolve(seen.get, run.trial, Trial)
     skeleton = resolve(seen.get, trial.skeleton, Skeleton)
-    about = seen.catalog.about(Subject(run=run.run))
+    about = read.about(seen.rows, Subject(run=run.run))
     return _begun(
         seen,
         skeleton,
@@ -172,7 +172,7 @@ def _check_quota(seen: Seen, runs: Sequence[int]) -> None:
                 f"a run holds at most {settings.ITEMS_PER_RUN} items, not {items}"
             )
     since = datetime.now(UTC) - timedelta(days=1)
-    started = seen.catalog.runs_started(seen.person.id, since)
+    started = seen.rows.runs_started(seen.person.id, since)
     if started + len(runs) > settings.RUNS_PER_DAY:
         said = f"{seen.person.login} has started {started} runs in the last day"
         if len(runs) == 1:
@@ -234,7 +234,7 @@ def score(
     for edit, about in seen.scorers_for(run):
         if scorers is not None and edit.digest not in scorers:
             continue
-        name = about.name or seen.catalog.title(edit.thread)
+        name = about.name or titles.title(seen.rows, edit.thread)
         scorer = resolve(seen.get, edit.digest, Scorer)
         labels = seen.labels_of(edit)
         if stopped or (halt is not None and halt.is_set()):

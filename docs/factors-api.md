@@ -892,7 +892,7 @@ and a local ref to nothing reach nothing.
 | --- | --- |
 | `registry` | `Registry`, checked: lints resolve references through it |
 | `digests` | `Iterable[str] \| None`; every component when `None` |
-| `languages` | `Languages = Callable[[str], str \| None] \| None`: a component's language by digest, normally `Catalog.language_of` |
+| `languages` | `Languages = Callable[[str], str \| None] \| None`: a component's language by digest, normally `chatddx.catalog.language.language_of` bound to the store's `Rows` (`partial(language_of, rows)`) |
 | `reasons` | `Reasons = Callable[[str], bool \| None] \| None`: whether an engine's model reasons when a request doesn't say, by the engine's digest, normally `src/chatddx/facts/lint.py:reasons` |
 
 Lints are plain functions, run on demand. Knowledge that changes between vLLM releases lives here, so it can change

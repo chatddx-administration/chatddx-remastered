@@ -445,7 +445,7 @@ Phase 2, as takes:
 
 Phase 3, as decided (see "The variation being tried"):
 - **The API**: a look takes `head`, the edit to vary, and gives its `label` and `held_by`; a configuration's fork takes
-  `head` too; a listed thread has its `language`, looked up for many at once (`Catalog.languages_of`;
+  `head` too; a listed thread has its `language`, looked up for many at once (`language.languages_of`;
   `Bench.variation(…, head)`), described in `docs/api.md`, `docs/api-api.md`, `docs/bench.md`, `docs/bench-api.md`
   and `docs/catalog-api.md`.
 - **`GET /configurations/{id}`** takes the API's `Varying` as its query: the parts by digest, `head`, `endpoint`
@@ -476,7 +476,7 @@ Phase 4, as decided (see "Starting and watching a run"):
 - **The API**: a run takes `head`, the edit it varies (`NewRun.head`); a run is named by its variation's label as it
   starts, which `Bench.described` reads first; `POST /api/runs/{id}/again` runs a run's trial again with another seed
   (`Bench.again`), so a run of a variation nobody saved can run again without it; runs a day and items a run are
-  limited (`settings.RUNS_PER_DAY`, `ITEMS_PER_RUN`; `Catalog.runs_started`), refused as over quota; and a quiet event
+  limited (`settings.RUNS_PER_DAY`, `ITEMS_PER_RUN`; `Rows.runs_started`), refused as over quota; and a quiet event
   stream sends `: keep-alive` every 15 s (`src/chatddx/api/telling.py:KEEP_ALIVE`), described in `docs/api.md`,
   `docs/api-api.md`, `docs/bench.md`, `docs/bench-api.md`, `docs/catalog-api.md` and `docs/repl.md`.
 - **Following a run** (`frontend/src/lib/runs/`): `watch`, a run's events through `EventSource`, and `fold`, which
@@ -602,7 +602,7 @@ From "What the portal shows", not on the pages yet:
   another. A run takes the seed shown, which can be changed.
 - **The page's cost**: the server lists every part's chunks, the configurations, the endpoints, the families and the
   look itself, about 0.6 s on the sample World. Listing a configuration's language costs its skeleton's compilations
-  (`Catalog.languages_of`), one query per skeleton.
+  (`language.languages_of`), one query per skeleton.
 - **The frontend's tests** (`pnpm --dir frontend test`) run by hand, as `pnpm check` does.
 
 ### What the first half of authoring leaves

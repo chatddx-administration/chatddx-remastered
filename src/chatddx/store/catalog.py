@@ -1,12 +1,9 @@
-from collections.abc import Collection, Mapping, Sequence
+from collections.abc import Collection
 from datetime import datetime
 from typing import Any
 
 from chatddx.catalog import (
-    About,
-    Behind,
     Binding,
-    Divergence,
     Edit,
     Entry,
     EntryField,
@@ -15,18 +12,16 @@ from chatddx.catalog import (
     Part,
     Repair,
     Subject,
-    Survey,
     Thread,
     families,
     language,
     read,
     threads,
-    titles,
 )
 from chatddx.factors.base import Component, Fingerprint, canonical_bytes
 from chatddx.factors.bundle import Registry
 from chatddx.factors.cases import Vignette
-from chatddx.factors.request import Compilation, Recipe
+from chatddx.factors.request import Compilation
 
 from .store import Connection, Store
 
@@ -179,21 +174,30 @@ class Rows:
             for thread, family, run, score, field, value, person, present, by in rows
         ]
 
-    def subjects_naming(
-        self, person: int, fields: Collection[EntryField]
-    ) -> list[Subject]:
+    def involving(self, person: int) -> list[Subject]:
         rows = self._conn.execute(
             """
             SELECT DISTINCT thread, family, run, score FROM catalog.entry
-            WHERE person = %s AND field = ANY(%s)
+            WHERE person = %s AND field IN ('owner', 'collaborator')
             ORDER BY thread, family, run, score
             """,
-            (person, [str(f) for f in fields]),
+            (person,),
         ).fetchall()
         return [
             Subject(thread=thread, family=family, run=run, score=score)
             for thread, family, run, score in rows
         ]
+
+    def runs_started(self, person: int, since: datetime) -> int:
+        row = self._conn.execute(
+            """
+            SELECT count(*) FROM catalog.entry
+            WHERE run IS NOT NULL AND field = 'owner' AND person = %s AND at >= %s
+            """,
+            (person, since),
+        ).fetchone()
+        assert row is not None
+        return int(row[0])
 
     def bindings(self, families: Collection[int]) -> list[Binding]:
         rows = self._conn.execute(
@@ -401,75 +405,13 @@ class Catalog:
             self._lock(thread)
             if head is not None:
                 threads.check_head(self._rows, thread, head)
-            current = self.head(thread)
+            current = threads.head(self._rows, thread)
             if threads.holds(self._rows, current, digest, compilation) and (
-                labels is None or self.labels(current.id) == dict(labels)
+                labels is None or read.labels(self._rows, current.id) == dict(labels)
             ):
                 return current, "unchanged"
             edit = self.edit(thread, digest, by, compilation=compilation, labels=labels)
             return edit, "edited"
-
-    def thread(self, id: int) -> Thread:
-        return threads.thread(self._rows, id)
-
-    def history(self, thread: int) -> list[Edit]:
-        return threads.history(self._rows, thread)
-
-    def head(self, thread: int) -> Edit:
-        return threads.head(self._rows, thread)
-
-    def heads(self, kind: str) -> list[tuple[Edit, About]]:
-        return threads.heads(self._rows, kind)
-
-    def find(self, kind: str, name: str, *, owner: int | None = None) -> list[int]:
-        return threads.find(self._rows, kind, name, owner=owner)
-
-    def expecting(
-        self, cases: Sequence[str], schema: str
-    ) -> dict[str, list[tuple[Edit, About]]]:
-        return threads.expecting(self._rows, cases, schema)
-
-    def forks(self, thread: int) -> list[int]:
-        return threads.forks(self._rows, thread)
-
-    def origin(self, thread: int) -> int | None:
-        return threads.origin(self._rows, thread)
-
-    def expectations_of(self, case: str) -> list[int]:
-        return threads.expectations_of(self._rows, case)
-
-    def containing(self, digest: str) -> list[Edit]:
-        return self._rows.edits_holding([digest])
-
-    def behind(self, thread: int) -> list[Behind]:
-        return threads.behind(self._rows, thread)
-
-    def recipe(self, thread: int) -> Recipe | None:
-        return threads.recipe(self._rows, threads.head(self._rows, thread))
-
-    def divergence(self, thread: int) -> Divergence | None:
-        return threads.divergence(self._rows, thread)
-
-    def proposal(self, thread: int) -> Recipe | Component | None:
-        return threads.proposal(self._rows, thread)
-
-    def title(self, thread: int) -> str:
-        return titles.title(self._rows, thread)
-
-    def title_of(self, digest: str) -> str:
-        return titles.title_of(self._rows, digest)
-
-    def language_of(self, digest: str) -> str | None:
-        return language.language_of(self._rows, digest)
-
-    def languages_of(self, digests: Collection[str]) -> dict[str, str | None]:
-        return language.languages_of(self._rows, digests)
-
-    def edit_languages(self, edits: Collection[Edit]) -> dict[int, str | None]:
-        return language.edit_languages(self._rows, edits)
-
-    def recipe_language(self, recipe: Recipe) -> str | None:
-        return language.recipe_language(self._rows, recipe)
 
     def adopt(
         self, case: str, by: int, *, owner: int | None = None, by_content: bool = True
@@ -487,15 +429,6 @@ class Catalog:
             owned = Entry(field=EntryField.OWNER, person=by if owner is None else owner)
             self.note(Subject(family=family), owned, by)
             return family
-
-    def family(self, case: str) -> int | None:
-        return families.family_of(self._rows, case)
-
-    def bindings(self, family: int) -> list[Binding]:
-        return families.bindings(self._rows, family)
-
-    def survey(self, source: str, listing: Mapping[str, Fingerprint]) -> Survey:
-        return families.survey(self._rows, source, listing)
 
     def repair(
         self,
@@ -553,34 +486,6 @@ class Catalog:
             """,
             (digest, kind, value, by),
         )
-
-    def about(self, subject: Subject) -> About:
-        return read.about(self._rows, subject)
-
-    def abouts(self, subjects: Collection[Subject]) -> dict[Subject, About]:
-        return read.abouts(self._rows, subjects)
-
-    def tags_given(self, subject: Subject) -> dict[str, int]:
-        return read.tags_given(self._rows, subject)
-
-    def runs_started(self, person: int, since: datetime) -> int:
-        row = self._conn.execute(
-            """
-            SELECT count(*) FROM catalog.entry
-            WHERE run IS NOT NULL AND field = 'owner' AND person = %s AND at >= %s
-            """,
-            (person, since),
-        ).fetchone()
-        assert row is not None
-        return int(row[0])
-
-    def involving(self, person: int) -> list[Subject]:
-        return self._rows.subjects_naming(
-            person, (EntryField.OWNER, EntryField.COLLABORATOR)
-        )
-
-    def labels(self, edit: int) -> dict[tuple[Part, int], str]:
-        return dict(read.labels(self._rows, edit))
 
     # src/chatddx/store/migrations/0012-t2-catalog.sql keeps each
     # binding's source, and its id or fingerprint.

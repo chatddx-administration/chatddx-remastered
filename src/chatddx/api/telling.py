@@ -4,6 +4,7 @@ from uuid import UUID
 from fastapi.concurrency import run_in_threadpool
 
 from chatddx.bench import Bench
+from chatddx.catalog.language import language_of
 from chatddx.factors.base import resolve
 from chatddx.factors.bundle import Registry
 from chatddx.factors.request import Skeleton
@@ -120,7 +121,7 @@ class Telling:
     def _row(self, record: Record) -> list[Named]:
         match record:
             case RunStarted():
-                language = self._bench.catalog.language_of(self._trial.skeleton)
+                language = language_of(self._bench.rows, self._trial.skeleton)
                 data = started_of(record, self._trial, self._skeleton, language)
                 return [("run.started", data)]
             case CanaryCall():
@@ -186,7 +187,8 @@ async def told(
                     under_way = await run_in_threadpool(queue.open, run) is not None
             for text in await run_in_threadpool(telling.rows):
                 yield text
-            job = await run_in_threadpool(queue.last, run)
+            placed = (await run_in_threadpool(queue.placed, [run])).get(run)
+            job = None if placed is None else placed.job
             for text in await run_in_threadpool(telling.tail, job):
                 yield text
     finally:

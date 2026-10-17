@@ -31,8 +31,8 @@ Heads-up: A record whose place is taken is refused.
 
 Each is numbered as it is written, and each write notifies the run's channel,
 so that a run's rows, its scores' included, are read back in that order. A run's or a score's log is read back whole,
-and validated as it is read. Runs and scores are listed newest first: those of a trial, those of a run, or those asked
-for; and the store tells which runs have finished.
+and validated as it is read. Runs and scores are listed newest first: those of a run, or those asked for; and the
+store tells which runs have finished.
 
 ### Texts
 The texts of database sources (docs/inventory.md, "Sources") are kept as people typed them, each under a new id, and
@@ -41,11 +41,12 @@ since they are vignettes.
 
 ### People
 People, their passwords and their sessions are identity's (docs/identity.md). The store adds people and changes them,
-but never removes them; it checks passwords and keeps sessions, and disabling a person ends their sessions.
+but never removes them; it checks passwords and keeps sessions, removing those expired whenever one opens, and
+disabling a person ends their sessions.
 
 ### The catalog
 The catalog decides what its rows mean (docs/catalog.md). The store reads the rows it asks for and writes what it
-decided, all of one change at once.
+decided, all of one change at once. Whoever reads the catalog asks the catalog, over the rows the store reads.
 
 ### The Queue
 The Queue is a list of Jobs that points at their started run. Workers claims the next queued job by locking its row, so two
@@ -58,6 +59,12 @@ ending and queuing again wake the workers, and tell those following the run how 
 
 A job keeps the scorers it has finished, so that one queued again mid-scoring, as a stopping worker leaves it, scores
 what is left.
+
+### Notifications
+Writing a run's or a score's records tells the run's channel, and the queue tells the workers' and the run's how a job
+stands. What a worker says as it happens goes out on the run's channel too, as few notifications as hold it, a long
+one in parts that a listener puts together again. The store listens for those who follow, so that neither the
+worker nor the app holds SQL of its own.
 
 ## Tiers
 Integrity comes in three tiers, and a deployment applies migrations up to a chosen tier. Each schema has migrations

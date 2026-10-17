@@ -6,6 +6,7 @@ import pytest
 from jsonschema import validators
 from pydantic import JsonValue
 
+from chatddx.catalog import threads
 from chatddx.conftest import Loaded
 from chatddx.curation import Plan, load_cases
 from chatddx.curation.plan import PLANNED_TABLES
@@ -13,7 +14,7 @@ from chatddx.factors.base import Fingerprint, StructuralError, resolve
 from chatddx.factors.request import Compilation, Translations, compiled
 from chatddx.inventory import DirectorySource, Inventory, World
 from chatddx.rig import rig
-from chatddx.store import Catalog, People
+from chatddx.store import People, Rows
 from chatddx.store.store import Connection
 from chatddx.test.world import SAMPLE, WORLDS, world_plan
 
@@ -221,12 +222,12 @@ def test_the_sample_loads_with_its_world_s_fakes(
         ),
     ]
     assert not [line for line in lines if "needs repair" in line]
-    catalog = Catalog(conn)
+    rows = Rows(conn)
     archive = People(conn).find("archive")
     assert archive is not None
-    [plan_thread] = catalog.find("skeleton", "plan", owner=archive.id)
-    [shown] = catalog.find("skeleton", "plan-shown", owner=archive.id)
-    diverged = catalog.divergence(shown)
+    [plan_thread] = threads.find(rows, "skeleton", "plan", owner=archive.id)
+    [shown] = threads.find(rows, "skeleton", "plan-shown", owner=archive.id)
+    diverged = threads.divergence(rows, shown)
     assert diverged is not None and set(diverged.varies) == {"/recipe/output"}
     assert diverged.base.thread == plan_thread
 

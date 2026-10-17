@@ -100,8 +100,6 @@ in with a password can stay as the development path. How Keycloak hands the app 
 - **Nobody administers people through chatddx.** The admin role exists, but nothing asks for it, and the commands
   connect as `DB_USER`, so whoever reaches the database adds people.
 - **No command changes a person**: their name, roles, or whether they are active (`People.update`).
-- **Expired sessions are kept** until `People.purge_sessions()`, which nothing calls on a schedule. They can't be used,
-  since a session's expiry is checked when it is.
 - **What each role is shown** isn't written (see "Authorization").
 
 ## Takes on what is open
@@ -123,8 +121,8 @@ refusal.
 access adds people. No command changes a person's name, roles or whether they are active (`People.update`).
 
 ### Expired sessions and sign-ins
-Expired sessions are only removed by `People.purge_sessions()`, which nothing calls on a schedule. Sign-ins aren't
-limited; `docs/api.md`, "Outstanding", takes none until Keycloak is in front.
+Expired sessions are removed whenever a session is opened (`People.open_session`). Sign-ins aren't limited;
+`docs/api.md`, "Outstanding", takes none until Keycloak is in front.
 
 ### Take, for when Keycloak arrives
 Keycloak, or a proxy in front such as oauth2-proxy, authenticates, and the app maps its username onto `person.login`,

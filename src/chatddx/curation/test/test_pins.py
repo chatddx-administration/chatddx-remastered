@@ -1,5 +1,6 @@
 import pytest
 
+from chatddx.catalog import read, threads
 from chatddx.curation import init
 from chatddx.curation.test.cases import CASES, vignettes
 from chatddx.factors.base import resolve
@@ -8,7 +9,7 @@ from chatddx.identity import Person
 from chatddx.scorers import metrics
 from chatddx.scorers.scorer import Metrics
 from chatddx.scorers.shipped import SCORERS
-from chatddx.store import Catalog, People, Store
+from chatddx.store import People, Rows, Store
 from chatddx.store.store import Connection
 from chatddx.test.world import world_plan
 
@@ -36,13 +37,14 @@ def test_a_deploy_moves_the_archive_s_scorers_on_when_it_raises_their_version(
     raised = metrics.score.version + 1
     monkeypatch.setitem(SCORERS, SHIPPED, Metrics(raised, metrics.score.metrics))
     assert _scorers(init(conn, world_plan(), CASES, vignettes(), alice)) == {"updated"}
-    catalog, store = Catalog(conn), Store(conn)
+    store = Store(conn)
+    rows = Rows(conn)
     archive = People(conn).find("archive")
     assert archive is not None
-    [thread] = catalog.find("scorer", "list", owner=archive.id)
-    head = catalog.head(thread)
+    [thread] = threads.find(rows, "scorer", "list", owner=archive.id)
+    head = threads.head(rows, thread)
     assert resolve(store.get, head.digest, Scorer).version == raised
-    assert catalog.labels(head.id) == {
+    assert read.labels(rows, head.id) == {
         ("view", 0): "differential",
         ("view", 1): "dont-miss",
     }

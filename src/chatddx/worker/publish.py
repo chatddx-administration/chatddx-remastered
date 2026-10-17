@@ -1,7 +1,6 @@
 import logging
 import threading
 import time
-from itertools import count
 from uuid import UUID
 
 import psycopg
@@ -11,7 +10,7 @@ from chatddx.api import schemas
 from chatddx.api.events import Named, judged_of, said_of
 from chatddx.bench import ScoringEvent
 from chatddx.runner.run import Event, ItemEnded
-from chatddx.store.notify import LIMIT, channel, payloads
+from chatddx.store.notify import LIMIT, channel, tell
 from chatddx.store.store import Connection
 
 log = logging.getLogger(__name__)
@@ -25,12 +24,11 @@ type _Delta = schemas.ItemDeltaData | schemas.JudgeDeltaData
 class Publisher:
     def __init__(self, conn: Connection, run: UUID) -> None:
         self._conn: Connection = conn
-        self._channel: str = channel(run)
+        self._run: UUID = run
         self._guard: threading.Lock = threading.Lock()
         self._held: list[tuple[str, _Delta]] = []
         self._size: int = 0
         self._sent: float = time.monotonic()
-        self._ids: count[int] = count()
         self._broken: bool = False
 
     def run_event(self, event: Event) -> None:
@@ -88,14 +86,10 @@ class Publisher:
         if not told or self._broken:
             return
         try:
-            with self._conn.transaction():
-                for payload in payloads(told, self._ids):
-                    _ = self._conn.execute(
-                        "SELECT pg_notify(%s, %s)", (self._channel, payload)
-                    )
+            tell(self._conn, self._run, told)
         except psycopg.Error:
             log.exception(
-                "what %s says as it happens can't be published", self._channel
+                "what %s says as it happens can't be published", channel(self._run)
             )
             self._broken = True
 

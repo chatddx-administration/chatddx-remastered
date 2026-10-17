@@ -1,14 +1,14 @@
 import pytest
 
 from chatddx.bench import Bench
-from chatddx.catalog import Entry, EntryField, Subject
+from chatddx.catalog import Entry, EntryField, Subject, threads
 from chatddx.factors.base import resolve
 from chatddx.factors.request import Compilation, Reasoning, Skeleton
 from chatddx.identity import Person
 from chatddx.inventory import Inventory
 from chatddx.repl.shell import Repl
 from chatddx.repl.test.helpers import Say, tried
-from chatddx.store import Catalog, People
+from chatddx.store import Catalog, People, Rows
 from chatddx.store.store import Connection
 from chatddx.test.world import (
     GPT_OSS,
@@ -32,8 +32,11 @@ def bob(conn: Connection) -> Person:
 # Bob's own fork of the archive's native, as bobs-native, shared with alice when `shared`.
 def bobs(conn: Connection, bob: Person, alice: Person, shared: bool) -> None:
     catalog = Catalog(conn)
-    [archive] = [t for t in catalog.find("skeleton", NATIVE) if t != alice_s(conn)]
-    head = catalog.head(archive)
+    rows = Rows(conn)
+    [archive] = [
+        t for t in threads.find(rows, "skeleton", NATIVE) if t != alice_s(conn)
+    ]
+    head = threads.head(rows, archive)
     edit = catalog.create(
         head.digest,
         bob.id,
@@ -52,7 +55,7 @@ def bobs(conn: Connection, bob: Person, alice: Person, shared: bool) -> None:
 def alice_s(conn: Connection) -> int:
     alice = People(conn).find("alice")
     assert alice is not None
-    [thread] = Catalog(conn).find("skeleton", NATIVE, owner=alice.id)
+    [thread] = threads.find(Rows(conn), "skeleton", NATIVE, owner=alice.id)
     return thread
 
 
@@ -181,11 +184,11 @@ def test_save_keeps_the_cell_as_a_configuration_of_one_s_own(
     assert "saved as quiet: created" in written
     assert repl.prompt == f"alice quiet×{QWEN} #7> "
 
-    catalog = Catalog(conn)
-    [thread] = catalog.find("skeleton", "quiet", owner=bench.person.id)
+    rows = Rows(conn)
+    [thread] = threads.find(rows, "skeleton", "quiet", owner=bench.person.id)
     assert origin is not None
-    assert catalog.thread(thread).forked_from == origin.id
-    head = catalog.head(thread)
+    assert threads.thread(rows, thread).forked_from == origin.id
+    head = threads.head(rows, thread)
     assert head.compilation is not None
     recipe = resolve(bench.get, head.compilation, Compilation).recipe
     assert recipe.reasoning is not None
@@ -215,9 +218,9 @@ def test_saving_again_is_a_new_version_or_nothing(
     assert "saved as mine: created" in written
     assert "saved as mine: unchanged" in written
     assert "saved as mine: a new version" in written
-    catalog = Catalog(conn)
-    [thread] = catalog.find("skeleton", "mine", owner=bench.person.id)
-    assert len(catalog.history(thread)) == 2
+    rows = Rows(conn)
+    [thread] = threads.find(rows, "skeleton", "mine", owner=bench.person.id)
+    assert len(threads.history(rows, thread)) == 2
 
 
 def test_save_says_what_it_can_t_save(say: Say):

@@ -6,6 +6,8 @@ from fastapi.concurrency import run_in_threadpool
 from fastapi.responses import StreamingResponse
 
 from chatddx.bench import Bench, Family, Started, outcome
+from chatddx.catalog import families
+from chatddx.catalog.language import language_of
 from chatddx.factors.base import resolve
 from chatddx.factors.request import Skeleton
 from chatddx.factors.trial import Execution, Trial, suggest_seeds
@@ -54,7 +56,7 @@ def _cases(bench: Bench, given: schemas.NewRun) -> list[str]:
         raise HTTPException(422, "a run takes at least one case")
     seen = {f.id for f in bench.families()}
     for case in wanted:
-        family = bench.catalog.family(case)
+        family = families.family_of(bench.rows, case)
         if family not in seen or case not in bench.cases(family):
             raise HTTPException(422, f"no case {case} for {bench.person.login}")
     return wanted
@@ -108,7 +110,7 @@ def _repeated(bench: Bench, run: UUID, given: schemas.NewAgain) -> Running:
     trial = resolve(bench.get, before.trial, Trial)
     seen = {f.id for f in bench.families()}
     for case in trial.cases:
-        if bench.catalog.family(case) not in seen:
+        if families.family_of(bench.rows, case) not in seen:
             raise HTTPException(422, f"no case {case} for {bench.person.login}")
     with refused():
         return bench.again(before, _seeds(given, len(trial.seeds)))
@@ -129,7 +131,7 @@ def _queued(
         score,
     )
     response.headers["Location"] = request.app.url_path_for("run", run=str(started.run))
-    language = bench.catalog.language_of(trial.skeleton)
+    language = language_of(bench.rows, trial.skeleton)
     return started_of(started, trial, skeleton, language)
 
 
@@ -284,7 +286,7 @@ def run_of(
         at=started.at,
         trial=trial.digest,
         skeleton=trial.skeleton,
-        language=bench.catalog.language_of(trial.skeleton),
+        language=language_of(bench.rows, trial.skeleton),
         started_with=bench.started_with(started.run),
         engine=trial.engine,
         endpoint=None if started.endpoint is None else started.endpoint.name,

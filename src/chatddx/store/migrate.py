@@ -4,7 +4,7 @@ from typing import LiteralString, cast
 
 import psycopg
 
-MIGRATIONS = Path(__file__).parent / "migrations"
+_MIGRATIONS = Path(__file__).parent / "migrations"
 
 TOP_TIER = 2
 
@@ -16,9 +16,9 @@ class Migration:
     path: Path
 
 
-def migrations() -> list[Migration]:
+def _migrations() -> list[Migration]:
     found: list[Migration] = []
-    for path in sorted(MIGRATIONS.glob("*.sql")):
+    for path in sorted(_MIGRATIONS.glob("*.sql")):
         _, tier, _ = path.stem.split("-", 2)
         found.append(Migration(path.stem, int(tier.removeprefix("t")), path))
     return found
@@ -29,7 +29,7 @@ def pending(conn: psycopg.Connection, tier: int = TOP_TIER) -> list[Migration]:
     row = conn.execute("SELECT to_regclass('public.migration')").fetchone()
     if row is not None and row[0] is not None:
         applied = {n for (n,) in conn.execute("SELECT name FROM public.migration")}
-    return [m for m in migrations() if m.tier <= tier and m.name not in applied]
+    return [m for m in _migrations() if m.tier <= tier and m.name not in applied]
 
 
 def migrate(conn: psycopg.Connection, tier: int = TOP_TIER) -> list[str]:

@@ -2,13 +2,13 @@ from pathlib import Path
 
 import pytest
 
-from chatddx.catalog import Subject
+from chatddx.catalog import Subject, families, read
 from chatddx.cli import main
 from chatddx.curation import init, repair
 from chatddx.curation.test.cases import CASES, TEXTS, vignettes
 from chatddx.factors.bundle import Registry
 from chatddx.identity import Person
-from chatddx.store import Catalog, People
+from chatddx.store import Catalog, People, Rows
 from chatddx.store.store import Connection, Store
 from chatddx.test.world import DATA, copied, world_plan
 
@@ -20,11 +20,11 @@ def test_repair_moves_the_archive_s_families_to_their_vignettes_new_places(
 ) -> None:
     archive = People(conn).find("archive")
     assert archive is not None
-    catalog = Catalog(conn)
-    families: dict[str, int] = {}
+    rows = Rows(conn)
+    family_at: dict[str, int] = {}
     for c in vignettes().cases():
-        if (family := catalog.family(c.digest)) is not None:
-            families[c.vignette.id] = family
+        if (family := families.family_of(rows, c.digest)) is not None:
+            family_at[c.vignette.id] = family
     moved = vignettes(
         {id: text for id, text in TEXTS.items() if id != "noted"},
         noted2=TEXTS["noted"],
@@ -33,17 +33,17 @@ def test_repair_moves_the_archive_s_families_to_their_vignettes_new_places(
     at = "at source 'test'"
     dry = repair(conn, moved, archive, dry=True)
     assert dry == [
-        f"[repair case] crlf: changed {at}; family {families['crlf']} would move",
+        f"[repair case] crlf: changed {at}; family {family_at['crlf']} would move",
         f"[repair case] noted: renamed to noted2 {at}; family "
-        + f"{families['noted']} would move",
+        + f"{family_at['noted']} would move",
     ]
     assert repair(conn, moved, archive, dry=True) == dry
 
     assert repair(conn, moved, archive) == [
         f"[repair case] crlf: changed {at}; family "
-        + f"{families['crlf']} moved, with 1 case, 0 appendices and 0 threads",
+        + f"{family_at['crlf']} moved, with 1 case, 0 appendices and 0 threads",
         f"[repair case] noted: renamed to noted2 {at}; family "
-        + f"{families['noted']} moved, with 1 case, 0 appendices and 1 thread",
+        + f"{family_at['noted']} moved, with 1 case, 0 appendices and 1 thread",
     ]
     assert repair(conn, moved, archive) == [f"[repair] nothing to repair {at}"]
 
@@ -67,7 +67,7 @@ def test_repair_moves_the_archive_s_families_to_their_vignettes_new_places(
         )
     ]
     assert not [line for line in lines if "not in the data" in line]
-    assert catalog.about(Subject(family=families["noted"])).name == "noted2"
+    assert read.about(rows, Subject(family=family_at["noted"])).name == "noted2"
 
 
 @pytest.mark.parametrize("template", ["loaded"], indirect=True)

@@ -15,7 +15,7 @@ from chatddx.bench import (
     ScoringEvent,
 )
 from chatddx.bench.test.helpers import another_expectation, ran, trial
-from chatddx.catalog import Entry, EntryField, Subject
+from chatddx.catalog import Entry, EntryField, Subject, read, threads
 from chatddx.curation import Plan, load_cases
 from chatddx.factors.base import StructuralError, resolve
 from chatddx.factors.bundle import Registry
@@ -25,7 +25,7 @@ from chatddx.identity import Person, owns
 from chatddx.inventory import World
 from chatddx.runner.gate import Refused
 from chatddx.runner.score import Grader, score_run
-from chatddx.store import Catalog, People, Store
+from chatddx.store import Catalog, People, Rows, Store
 from chatddx.store.store import Connection
 from chatddx.test.world import (
     DATA,
@@ -142,7 +142,7 @@ def test_a_person_finds_their_runs_and_those_that_reach_a_digest(
     native = trial(conn, plan, NATIVE, "crlf")
     first = ran(conn, alice, lines)
     second = ran(conn, alice, native)
-    _ = ran(conn, bob, lines)
+    bobs = ran(conn, bob, lines)
     gone = ran(conn, alice, native)
     Catalog(conn).note(Subject(run=gone), Entry(field=EntryField.DELETED), alice.id)
 
@@ -160,7 +160,8 @@ def test_a_person_finds_their_runs_and_those_that_reach_a_digest(
     [shared_case] = set(lines.cases) & set(native.cases)
     assert [r.run for r in bench.reaching(shared_case)] == [second, first]
     store = Store(conn)
-    assert len(store.runs_of(lines.digest)) == 2
+    started = store.started([first, second, bobs, gone])
+    assert {r.run for r in started if r.trial == lines.digest} == {first, bobs}
     assert store.finished([first, second, gone]) == {first, second, gone}
 
 
@@ -207,12 +208,13 @@ def test_a_run_is_left_to_score_until_scored_under_the_scoring_built_now(
     assert [s.scoring for s in store.scores_of(run)] == [scoring.digest]
 
     catalog = Catalog(conn)
+    rows = Rows(conn)
     [thread] = [
         t
-        for t in catalog.expectations_of(made.cases[0])
-        if catalog.about(Subject(thread=t)).owner == alice.id
+        for t in threads.expectations_of(rows, made.cases[0])
+        if read.about(rows, Subject(thread=t)).owner == alice.id
     ]
-    head = resolve(store.get, catalog.head(thread).digest, Expectation)
+    head = resolve(store.get, threads.head(rows, thread).digest, Expectation)
     registry = store.load([head.digest])
     edited = registry.add(
         Expectation(
@@ -256,7 +258,7 @@ def test_a_case_is_held_to_the_expectation_scoring_picks(
 
     held = bench.expectation(case, schema)
     assert held is not None
-    expecting = Catalog(conn).expecting([case], schema)[case]
+    expecting = threads.expecting(Rows(conn), [case], schema)[case]
     assert [e.digest for e, a in expecting if owns(alice.id, a)] == [held.digest]
 
     theirs = Bench(conn, bob, bench.inventory)
@@ -264,12 +266,13 @@ def test_a_case_is_held_to_the_expectation_scoring_picks(
     assert theirs.expectation(case, schema) is None
 
     catalog = Catalog(conn)
+    rows = Rows(conn)
     archive = People(conn).find("archive")
     assert archive is not None
     [shared] = [
         t
-        for t in catalog.expectations_of(case)
-        if catalog.about(Subject(thread=t)).owner == archive.id
+        for t in threads.expectations_of(rows, case)
+        if read.about(rows, Subject(thread=t)).owner == archive.id
     ]
     to_bob = Entry(field=EntryField.COLLABORATOR, person=bob.id)
     catalog.note(Subject(thread=shared), to_bob, archive.id)
@@ -387,14 +390,14 @@ def test_a_fork_is_a_new_configuration_and_an_edit_a_new_version_of_one_s_own(
 ) -> None:
     variation = bench.configuration(LINES)
     off = variation.set("reasoning", bench.chunk("reasoning", "off"), "off")
-    catalog = Catalog(bench.conn)
+    rows = Rows(bench.conn)
 
     forked = bench.fork(off, "terse")
     again = bench.fork(off, "terse")
     assert (forked.what, again.what) == ("created", "created")
     thread = forked.variation.configuration.thread
     assert thread != again.variation.configuration.thread
-    assert catalog.thread(thread).forked_from == variation.configuration.id
+    assert threads.thread(rows, thread).forked_from == variation.configuration.id
     assert bench.about(thread).owner == bench.person.id
     assert forked.digest == bench.skeleton(off).digest
 
@@ -403,7 +406,7 @@ def test_a_fork_is_a_new_configuration_and_an_edit_a_new_version_of_one_s_own(
     assert (edited.what, edited.name) == ("a new version", "terse")
     now = edited.variation.configuration.id
     assert bench.edit(thread, variation, now).what == "unchanged"
-    assert [e.digest for e in catalog.history(thread)] == [
+    assert [e.digest for e in threads.history(rows, thread)] == [
         forked.digest,
         variation.configuration.digest,
     ]
@@ -430,10 +433,12 @@ def test_a_new_recipe_of_the_same_request_is_a_new_version(bench: Bench) -> None
     forked = bench.fork(variation, "headed, split")
     thread = forked.variation.configuration.thread
     edited = bench.edit(thread, resplit, forked.variation.configuration.id)
-    history = Catalog(bench.conn).history(thread)
+    history = threads.history(Rows(bench.conn), thread)
     assert edited.what == "a new version"
     assert [e.digest for e in history] == [skeleton, skeleton]
-    assert bench.catalog.recipe(thread) == resplit.varied
+    assert (
+        threads.recipe(bench.rows, threads.head(bench.rows, thread)) == resplit.varied
+    )
     assert bench.edit(thread, resplit, history[-1].id).what == "unchanged"
     held = bench.holder("configuration", skeleton, resplit.varied)
     assert held is not None and held[0].thread == thread
@@ -441,11 +446,11 @@ def test_a_new_recipe_of_the_same_request_is_a_new_version(bench: Bench) -> None
     assert held is not None and held[0].thread != thread
 
 
-def _expectation_of(catalog: Catalog, case: str, owner: int) -> int:
+def _expectation_of(rows: Rows, case: str, owner: int) -> int:
     [thread] = [
         t
-        for t in catalog.expectations_of(case)
-        if owns(owner, catalog.about(Subject(thread=t)))
+        for t in threads.expectations_of(rows, case)
+        if owns(owner, read.about(rows, Subject(thread=t)))
     ]
     return thread
 
@@ -455,31 +460,32 @@ def test_a_person_takes_the_expectations_shared_with_them(
     conn: Connection, alice: Person, bob: Person, bench: Bench, plan: Plan
 ) -> None:
     catalog, store = Catalog(conn), Store(conn)
+    rows = Rows(conn)
     archive = People(conn).find("archive")
     assert archive is not None
     schema = plan.named("expectation_schema", "targets").digest
     crlf, noted, svenska = (bench.family(n).case for n in ("crlf", "noted", "svenska"))
     gone = Entry(field=EntryField.DELETED)
     for case in (crlf, svenska):
-        own = _expectation_of(catalog, case, alice.id)
+        own = _expectation_of(rows, case, alice.id)
         catalog.note(Subject(thread=own), gone, alice.id)
-    kept = _expectation_of(catalog, noted, alice.id)
+    kept = _expectation_of(rows, noted, alice.id)
 
     taken = bench.take([crlf, noted, svenska, crlf], schema)
     assert (taken.kept, taken.choosing, taken.missing) == ({noted: kept}, {}, [])
     assert set(taken.taken) == {crlf, svenska}
-    origin = _expectation_of(catalog, crlf, archive.id)
-    took = catalog.thread(taken.taken[crlf])
-    assert took.forked_from == catalog.head(origin).id
-    assert catalog.about(Subject(thread=took.id)).owner == alice.id
+    origin = _expectation_of(rows, crlf, archive.id)
+    took = threads.thread(rows, taken.taken[crlf])
+    assert took.forked_from == threads.head(rows, origin).id
+    assert read.about(rows, Subject(thread=took.id)).owner == alice.id
     held = bench.expectation(crlf, schema)
-    assert held is not None and held.digest == catalog.head(origin).digest
+    assert held is not None and held.digest == threads.head(rows, origin).digest
 
     again = bench.take([crlf, noted, svenska], schema)
     assert again.taken == {} and set(again.kept) == {crlf, noted, svenska}
 
     catalog.note(Subject(thread=taken.taken[crlf]), gone, alice.id)
-    head = resolve(store.get, catalog.head(origin).digest, Expectation)
+    head = resolve(store.get, threads.head(rows, origin).digest, Expectation)
     registry = store.load([head.digest])
     theirs = registry.add(
         Expectation(case=crlf, expectation_schema=schema, data={"diagnosis": "x"})
@@ -492,7 +498,7 @@ def test_a_person_takes_the_expectations_shared_with_them(
     assert set(bench.take([crlf], schema, owner="archive").taken) == {crlf}
 
     assert bench.take([crlf], schema, owner="bob").kept == {
-        crlf: _expectation_of(catalog, crlf, alice.id)
+        crlf: _expectation_of(rows, crlf, alice.id)
     }
     with pytest.raises(NotFound, match="no person 'nobody'"):
         _ = bench.take([crlf], schema, owner="nobody")
@@ -503,13 +509,13 @@ def test_a_person_takes_the_expectations_shared_with_them(
 def test_a_person_replaces_their_own_expectation_only_when_they_say_so(
     conn: Connection, alice: Person, bench: Bench, plan: Plan
 ) -> None:
-    catalog = Catalog(conn)
+    rows = Rows(conn)
     archive = People(conn).find("archive")
     assert archive is not None
     schema = plan.named("expectation_schema", "targets").digest
     case = bench.family("noted").case
-    mine = _expectation_of(catalog, case, alice.id)
-    origin = _expectation_of(catalog, case, archive.id)
+    mine = _expectation_of(rows, case, alice.id)
+    origin = _expectation_of(rows, case, archive.id)
 
     with pytest.raises(
         Conflict, match=f"has their own .* in thread {mine}: replace it"
@@ -521,11 +527,11 @@ def test_a_person_replaces_their_own_expectation_only_when_they_say_so(
         _ = bench.take_from(bench.threads("configuration")[0][0].thread)
 
     took = bench.take_from(origin, replace=True)
-    assert catalog.about(Subject(thread=mine)).deleted
-    assert catalog.thread(took).forked_from == catalog.head(origin).id
+    assert read.about(rows, Subject(thread=mine)).deleted
+    assert threads.thread(rows, took).forked_from == threads.head(rows, origin).id
     assert bench.shared(case, schema)[0][0].thread == origin
     held = bench.expectation(case, schema)
-    assert held is not None and held.digest == catalog.head(origin).digest
+    assert held is not None and held.digest == threads.head(rows, origin).digest
 
 
 @pytest.mark.slow

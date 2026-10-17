@@ -17,6 +17,8 @@ from chatddx.bench import (
     TriedVariation,
     word_of,
 )
+from chatddx.catalog import read, titles
+from chatddx.catalog.language import edit_languages
 from chatddx.catalog.titles import describe
 from chatddx.factors.base import Finding, resolve
 from chatddx.factors.facts import Landing
@@ -35,10 +37,10 @@ def login(bench: Bench, person: int | None) -> str | None:
 
 def edit_of(bench: Bench, edit: catalog.Edit, kind: str | None = None) -> schemas.Edit:
     if kind is None:
-        kind = bench.catalog.thread(edit.thread).kind
+        kind = catalog.threads.thread(bench.rows, edit.thread).kind
     labels = None
     if kind == "scorer":
-        labels = schemas.Labels.of(bench.catalog.labels(edit.id))
+        labels = schemas.Labels.of(read.labels(bench.rows, edit.id))
     return schemas.Edit(
         id=edit.id,
         digest=edit.digest,
@@ -58,13 +60,13 @@ def thread_of(
     languages: Mapping[int, str | None] | None = None,
 ) -> schemas.Thread:
     if languages is None:
-        languages = bench.catalog.edit_languages([edit])
+        languages = edit_languages(bench.rows, [edit])
     return schemas.Thread(
         id=edit.thread,
         kind=kind,
         word=word_of(kind),
         name=about.name,
-        title=bench.catalog.title(edit.thread),
+        title=titles.title(bench.rows, edit.thread),
         owner=login(bench, about.owner),
         tags=sorted(about.tags),
         language=languages[edit.id],
@@ -120,14 +122,14 @@ def threads(
         and (owner is None or login(bench, about.owner) == owner)
         and (not wanted or wanted & about.tags)
     ]
-    languages = bench.catalog.edit_languages([edit for _, edit, _ in shown])
+    languages = edit_languages(bench.rows, [edit for _, edit, _ in shown])
     return [thread_of(bench, *each, languages) for each in shown]
 
 
 def detail(bench: Bench, thread: int) -> schemas.ThreadDetail:
     edit, about = bench.thread_by_id(thread, deleted=True)
-    found = bench.catalog.thread(thread)
-    recipe = bench.catalog.recipe(thread)
+    found = catalog.threads.thread(bench.rows, thread)
+    recipe = catalog.threads.recipe(bench.rows, edit)
     return schemas.ThreadDetail(
         **thread_of(bench, found.kind, edit, about).model_dump(),
         description=about.description,
@@ -146,8 +148,10 @@ def thread(bench: BenchDep, thread: int) -> schemas.ThreadDetail:
 @router.get("/threads/{thread}/edits")
 def edits(bench: BenchDep, thread: int) -> list[schemas.Edit]:
     _ = bench.thread_by_id(thread, deleted=True)
-    kind = bench.catalog.thread(thread).kind
-    return [edit_of(bench, e, kind) for e in bench.catalog.history(thread)]
+    kind = catalog.threads.thread(bench.rows, thread).kind
+    return [
+        edit_of(bench, e, kind) for e in catalog.threads.history(bench.rows, thread)
+    ]
 
 
 @contextmanager

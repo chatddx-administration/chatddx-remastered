@@ -3,7 +3,7 @@ from uuid import UUID
 
 import pytest
 
-from chatddx.catalog import Subject
+from chatddx.catalog import Subject, read
 from chatddx.curation import Plan, load_cases
 from chatddx.factors.base import resolve
 from chatddx.factors.cases import Case
@@ -29,7 +29,7 @@ from chatddx.runner.send import STOPPED
 from chatddx.runner.test.conftest import DELAY
 from chatddx.runner.test.test_run import rows, trial
 from chatddx.scorers import metrics
-from chatddx.store import Catalog, Store
+from chatddx.store import Rows, Store
 from chatddx.store.store import Connection
 from chatddx.test.world import DATA, LINES, NATIVE, QWEN, REMOTE, TOOL_ANSWER, faked
 
@@ -97,7 +97,7 @@ def test_a_run_is_scored_through_every_view_of_its_scorer(
     assert len(stored.items) == len(Store(conn).run(run).items) * views == 4 * views
     details = [i.detail for i in stored.items]
     assert all(isinstance(d, dict) and d.get("reason") != "no answer" for d in details)
-    about = Catalog(conn).about(Subject(score=score.started.score))
+    about = read.about(Rows(conn), Subject(score=score.started.score))
     assert about.owner == alice.id
 
 

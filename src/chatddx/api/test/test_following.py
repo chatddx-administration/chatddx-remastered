@@ -5,6 +5,7 @@ from pydantic import JsonValue
 from chatddx.api.test.test_variations import thread
 from chatddx.bench import Bench
 from chatddx.bench.test.helpers import correct_facts
+from chatddx.catalog import threads
 from chatddx.store import People
 from chatddx.test.world import LINES, QWEN_MODEL
 
@@ -16,7 +17,7 @@ def _moved(bench: Bench) -> int:
     theirs = archive.thread("configuration", LINES)[0].thread
     greedy = bench.chunk("sampling", "greedy")
     moved = archive.variation(theirs, {"sampling": greedy})
-    head = bench.catalog.head(theirs).id
+    head = threads.head(bench.rows, theirs).id
     return archive.edit(theirs, moved, head).variation.configuration.id
 
 

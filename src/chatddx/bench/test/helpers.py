@@ -7,7 +7,7 @@ from pydantic import JsonValue
 
 from chatddx import settings
 from chatddx.bench import Bench
-from chatddx.catalog import Edit, Entry, EntryField, Subject
+from chatddx.catalog import Edit, Entry, EntryField, Subject, threads
 from chatddx.curation import Plan
 from chatddx.factors.base import Finding, resolve
 from chatddx.factors.bundle import Registry
@@ -89,8 +89,8 @@ def another_expectation(bench: Bench, case: str, data: JsonValue) -> str:
 
 # As init-data writes a corrected facts file: a new version of the archive's thread.
 def move_model(bench: Bench, name: str, **changes: JsonValue) -> Edit:
-    [thread] = bench.catalog.find("model.local", name)
-    held = resolve(bench.get, bench.catalog.head(thread).digest, LocalModel)
+    [thread] = threads.find(bench.rows, "model.local", name)
+    held = resolve(bench.get, threads.head(bench.rows, thread).digest, LocalModel)
     newer = LocalModel.model_validate({**held.model_dump(mode="json"), **changes})
     registry = Registry()
     _ = Store(bench.conn).add(registry, [registry.add(newer)])
@@ -106,5 +106,5 @@ def correct_facts(bench: Bench, model: str, **changes: JsonValue) -> Edit:
     _ = Store(bench.conn).add(registry, [registry.add(newer)])
     archive = People(bench.conn).find("archive")
     assert archive is not None
-    [thread] = bench.catalog.find("facts", model)
+    [thread] = threads.find(bench.rows, "facts", model)
     return bench.catalog.edit(thread, newer.digest, archive.id)

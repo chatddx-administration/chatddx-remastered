@@ -5,7 +5,7 @@ import pytest
 from chatddx.bench import Bench, NotFound
 from chatddx.catalog import About, Subject
 from chatddx.identity import Person, sees
-from chatddx.store.catalog import Rows
+from chatddx.store import Rows
 from chatddx.test.world import LINES
 
 

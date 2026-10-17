@@ -4,7 +4,8 @@ import pytest
 from pydantic import ValidationError
 
 from chatddx.bench import Bench, MovedOn, NotFound
-from chatddx.catalog import Entry, EntryField, Subject
+from chatddx.catalog import Entry, EntryField, Subject, threads
+from chatddx.catalog.language import language_of
 from chatddx.factors.request import Recipe
 from chatddx.factors.scoring import Expectation, Judge
 from chatddx.identity import Person
@@ -27,13 +28,13 @@ def _archive_s(bench: Bench, word: str) -> tuple[int, dict[str, Any]]:
         (e, a)
         for e, a in bench.threads(word)
         if bench.login(a.owner) == "archive"
-        and (not text or bench.catalog.language_of(e.digest) is not None)
+        and (not text or language_of(bench.rows, e.digest) is not None)
     )
     return edit.thread, bench.get(edit.digest).model_dump(mode="json")
 
 
 def test_a_person_writes_a_chunk_as_a_thread_of_their_own(bench: Bench) -> None:
-    catalog = bench.catalog
+    rows = bench.rows
     _, doc = _archive_s(bench, "instructions")
     mine = bench.component({**doc, "text": "You are a careful physician."})
 
@@ -42,28 +43,31 @@ def test_a_person_writes_a_chunk_as_a_thread_of_their_own(bench: Bench) -> None:
     thread = made.edit.thread
     about = bench.about(thread)
     assert (about.name, about.owner) == ("careful", bench.person.id)
-    assert catalog.thread(thread).forked_from is None
-    assert catalog.language_of(mine.digest) == "en"
+    assert threads.thread(rows, thread).forked_from is None
+    assert language_of(rows, mine.digest) == "en"
 
     terse = bench.component({**doc, "text": "Be terse.", "v": 1})
     edited = bench.edit_component(thread, made.edit.id, terse)
     assert edited.what == "a new version"
-    assert catalog.language_of(terse.digest) is None
+    assert language_of(rows, terse.digest) is None
     assert bench.edit_component(thread, edited.edit.id, terse).what == "unchanged"
     with pytest.raises(MovedOn, match=f"since edit {made.edit.id}"):
         _ = bench.edit_component(thread, made.edit.id, mine)
-    assert [e.digest for e in catalog.history(thread)] == [mine.digest, terse.digest]
+    assert [e.digest for e in threads.history(rows, thread)] == [
+        mine.digest,
+        terse.digest,
+    ]
 
 
 def test_a_person_forks_a_chunk_they_see_as_it_is_or_changed(bench: Bench) -> None:
-    catalog = bench.catalog
+    rows = bench.rows
     origin, doc = _archive_s(bench, "instructions")
-    head = catalog.head(origin)
-    held = catalog.language_of(head.digest)
+    head = threads.head(rows, origin)
+    held = language_of(rows, head.digest)
     assert held is not None
 
     same = bench.fork_component(origin, "as is", language=held)
-    assert catalog.thread(same.edit.thread).forked_from == head.id
+    assert threads.thread(rows, same.edit.thread).forked_from == head.id
     assert same.edit.digest == head.digest
     with pytest.raises(ValueError, match=f"is in {held} already"):
         _ = bench.fork_component(origin, "relabelled", language="xx")
@@ -71,8 +75,8 @@ def test_a_person_forks_a_chunk_they_see_as_it_is_or_changed(bench: Bench) -> No
     changed = bench.component({**doc, "text": "Think it through."})
     fork = bench.fork_component(origin, "changed", changed, "sv")
     assert fork.edit.digest == changed.digest
-    assert catalog.language_of(changed.digest) == "sv"
-    assert catalog.history(origin) == [head]
+    assert language_of(rows, changed.digest) == "sv"
+    assert threads.history(rows, origin) == [head]
 
 
 def test_a_write_is_refused_what_isn_t_the_person_s_to_write(
@@ -80,7 +84,7 @@ def test_a_write_is_refused_what_isn_t_the_person_s_to_write(
 ) -> None:
     origin, doc = _archive_s(bench, "instructions")
     _, sampling = _archive_s(bench, "sampling")
-    head = bench.catalog.head(origin).id
+    head = threads.head(bench.rows, origin).id
     mine = bench.component({**doc, "text": "Mine."})
 
     with pytest.raises(NotFound, match=f"no instructions {origin} of yours"):
@@ -110,10 +114,11 @@ def test_a_person_writes_expectations_and_hears_what_the_lints_say(
     bench: Bench,
 ) -> None:
     catalog = bench.catalog
+    rows = bench.rows
     case = bench.family("noted").case
     [schema] = bench.expectation_schemas(case)
     [mine] = bench.expectation_choices([case], schema)[case]
-    head = catalog.head(mine)
+    head = threads.head(rows, mine)
     odd = Expectation(
         case=case, expectation_schema=schema, data=["not", "an", "object"]
     )
@@ -129,21 +134,25 @@ def test_a_person_writes_expectations_and_hears_what_the_lints_say(
 
     [archives] = [
         t
-        for t in catalog.expectations_of(case)
+        for t in threads.expectations_of(rows, case)
         if bench.login(bench.about(t).owner) == "archive"
     ]
     with pytest.raises(ValueError, match="has their own expectation of"):
         _ = bench.fork_component(archives, "theirs")
     catalog.note(Subject(thread=mine), Entry(field=EntryField.DELETED), bench.person.id)
     fork = bench.fork_component(archives, "theirs, mended", odd)
-    assert catalog.thread(fork.edit.thread).forked_from == catalog.head(archives).id
+    assert (
+        threads.thread(rows, fork.edit.thread).forked_from
+        == threads.head(rows, archives).id
+    )
     assert bench.expectation(case, schema) == odd
 
 
 def test_a_recipe_of_the_person_s_making_is_compiled_into_a_configuration(
     bench: Bench,
 ) -> None:
-    catalog, engine = bench.catalog, bench.endpoint(QWEN)
+    engine = bench.endpoint(QWEN)
+    rows = bench.rows
     recipe = Recipe(
         instructions=bench.chunk("instructions", "clinician"),
         few_shot=bench.chunk("few_shot", "worked-example"),
@@ -157,10 +166,10 @@ def test_a_recipe_of_the_person_s_making_is_compiled_into_a_configuration(
     made = bench.new(recipe, "my own")
     assert (made.what, made.findings) == ("created", [])
     thread = made.edit.thread
-    assert catalog.thread(thread).forked_from is None
-    assert catalog.recipe(thread) == recipe
+    assert threads.thread(rows, thread).forked_from is None
+    assert threads.recipe(rows, threads.head(rows, thread)) == recipe
     assert made.edit.compilation is not None
-    assert catalog.language_of(made.edit.digest) == "en"
+    assert language_of(rows, made.edit.digest) == "en"
     found = bench.configuration("my own")
     assert found.configuration == made.edit
     messages = bench.request(found, engine, 7)["messages"]

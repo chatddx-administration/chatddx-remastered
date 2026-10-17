@@ -1,10 +1,10 @@
 import pytest
 from psycopg import errors
 
-from chatddx.catalog import Labels
+from chatddx.catalog import Labels, read, threads
 from chatddx.factors.base import resolve
 from chatddx.factors.scoring import Scoring
-from chatddx.store import People
+from chatddx.store import People, Rows
 from chatddx.store.store import Connection
 from chatddx.store.test.test_catalog import stored_world
 
@@ -18,27 +18,32 @@ LABELS: Labels = {
 @pytest.mark.slow
 def test_a_scorer_s_labels_are_written_with_its_edit(conn: Connection) -> None:
     catalog, _, reg, ids, alice = stored_world(conn)
+    rows = Rows(conn)
     scorer = resolve(reg.get, ids["scoring"], Scoring).scorer
     first = catalog.create(scorer, alice.id, labels=LABELS)
-    assert catalog.labels(first.id) == LABELS
+    assert read.labels(rows, first.id) == LABELS
 
     renamed: Labels = {**LABELS, ("view", 1): "judge grade"}
     kept, what = catalog.keep(scorer, alice.id, first.thread, labels=renamed)
     assert (what, kept.digest) == ("edited", scorer)
-    assert (catalog.labels(first.id), catalog.labels(kept.id)) == (LABELS, renamed)
+    assert (read.labels(rows, first.id), read.labels(rows, kept.id)) == (
+        LABELS,
+        renamed,
+    )
     assert catalog.keep(scorer, alice.id, first.thread, labels=renamed) == (
         kept,
         "unchanged",
     )
     assert catalog.keep(scorer, alice.id, first.thread) == (kept, "unchanged")
     unlabelled, what = catalog.keep(scorer, alice.id, first.thread, labels={})
-    assert (what, catalog.labels(unlabelled.id)) == ("edited", {})
+    assert (what, read.labels(rows, unlabelled.id)) == ("edited", {})
 
 
 def test_labels_are_refused_where_a_scorer_has_nothing_to_label(
     conn: Connection,
 ) -> None:
     catalog, _, reg, ids, alice = stored_world(conn)
+    rows = Rows(conn)
     scorer = resolve(reg.get, ids["scoring"], Scoring).scorer
     thread = catalog.create(scorer, alice.id).thread
     with pytest.raises(ValueError, match="has no view at position 2"):
@@ -47,7 +52,7 @@ def test_labels_are_refused_where_a_scorer_has_nothing_to_label(
         _ = catalog.edit(thread, scorer, alice.id, labels={("view", 0): ""})
     with pytest.raises(ValueError, match="a trial has no views or resources"):
         _ = catalog.create(ids["trial"], alice.id, labels={("view", 0): "x"})
-    assert len(catalog.history(thread)) == 1
+    assert len(threads.history(rows, thread)) == 1
 
 
 def test_the_database_holds_labels_to_their_edit(conn: Connection) -> None:

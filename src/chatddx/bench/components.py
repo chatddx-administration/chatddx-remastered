@@ -1,8 +1,10 @@
 from collections.abc import Mapping
+from functools import partial
 
 from pydantic import JsonValue
 
-from chatddx.catalog import LANGUAGE_KINDS, Labels, Subject
+from chatddx.catalog import LANGUAGE_KINDS, Labels, Subject, read, threads
+from chatddx.catalog.language import language_of
 from chatddx.factors.base import Component, resolve
 from chatddx.factors.cases import Appendix, Case
 from chatddx.factors.kinds import BY_KIND
@@ -46,7 +48,9 @@ def check(seen: Seen, component: Component) -> Checked:
     registry.check(registry.closure([component.digest]))
     if isinstance(component, Judge):
         seen.add_compilations(registry, component.skeleton)
-    findings = lints(registry, seen.facts, [component.digest], seen.catalog.language_of)
+    findings = lints(
+        registry, seen.facts, [component.digest], partial(language_of, seen.rows)
+    )
     return Checked(component.digest, findings)
 
 
@@ -94,7 +98,7 @@ def fork_component(
     held = seen.get(edit.digest) if component is None else component
     seen.check_kind(thread, word, held)
     if labels is None and isinstance(held, Scorer) and held.digest == edit.digest:
-        labels = seen.catalog.labels(edit.id)
+        labels = read.labels(seen.rows, edit.id)
     return _written(
         seen,
         held,
@@ -149,7 +153,7 @@ def _written(
         component = bound(seen, component)
     registry = seen.store.load(s.digest for s in component.refs())
     _ = registry.add(component)
-    old = None if thread is None else seen.catalog.head(thread).digest
+    old = None if thread is None else threads.head(seen.rows, thread).digest
     with seen.conn.transaction():
         _ = seen.store.add(registry, [component.digest])
         if language is not None:
@@ -176,7 +180,7 @@ def bound(seen: Seen, appendix: Appendix) -> Appendix:
     families = {b.family for b in seen.rows.bindings_sharing(vignette)}
     if not any(
         seen.current(f) == vignette
-        and sees(seen.person.id, seen.catalog.about(Subject(family=f)))
+        and sees(seen.person.id, read.about(seen.rows, Subject(family=f)))
         for f in families
     ):
         raise ValueError(
@@ -201,7 +205,7 @@ def _replaced(seen: Seen, old: str, new: Appendix) -> dict[str, str]:
 
 
 def keep_language(seen: Seen, digest: str, language: str) -> None:
-    held = seen.catalog.language_of(digest)
+    held = language_of(seen.rows, digest)
     if held is not None and held != language:
         raise ValueError(
             f"{seen.title(digest)} is in {held} already: a text's language is the "

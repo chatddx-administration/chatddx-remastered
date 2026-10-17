@@ -2,7 +2,7 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response
 
-from chatddx import bench as benches
+from chatddx import bench as benches, catalog
 from chatddx.bench import Ambiguous, Bench, NotFound
 from chatddx.factors.base import Fingerprint, resolve
 from chatddx.factors.cases import Case
@@ -130,7 +130,7 @@ def case(bench: BenchDep, family: int, given: schemas.NewCase) -> schemas.Family
         with refused():
             if given.replacing is None:
                 made = bench.case(family, given.appendices or [])
-            elif bench.catalog.family(given.replacing) != family:
+            elif catalog.families.family_of(bench.rows, given.replacing) != family:
                 raise ValueError(f"{given.replacing} isn't a case of family {family}")
             else:
                 made = bench.replacement(given.replacing)

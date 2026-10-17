@@ -7,6 +7,8 @@ from pydantic import JsonValue
 
 from chatddx.api import queue as api_queue, runs as api, schemas, scores as api_scores
 from chatddx.bench import Bench
+from chatddx.catalog import threads
+from chatddx.catalog.language import language_of
 from chatddx.factors.base import resolve
 from chatddx.factors.request import Skeleton
 from chatddx.factors.response import parts
@@ -56,7 +58,10 @@ def run(request: Request, bench: BenchDep, run: UUID) -> Response:
     )
     titles = {case: bench.title(case) for case in shown.cases}
     together = [
-        (r.run, bench.catalog.language_of(resolve(bench.get, r.trial, Trial).skeleton))
+        (
+            r.run,
+            language_of(bench.rows, resolve(bench.get, r.trial, Trial).skeleton),
+        )
         for r in bench.together(shown.started_with or run)
         if r.run != run
     ]
@@ -135,7 +140,7 @@ def _configuration(
         tried = bench.variation(ran.configuration, ran.parts, ran.head)
     except LookupError:
         return _version(bench, skeleton)
-    latest = bench.catalog.head(ran.configuration).id
+    latest = threads.head(bench.rows, ran.configuration).id
     query = schemas.Varying.model_validate({p: d or "" for p, d in ran.parts.items()})
     given = linked(query, ran.head, latest).removesuffix("?")
     link = f"/configurations/{ran.configuration}{given}"
@@ -146,7 +151,7 @@ def _configuration(
 
 def _version(bench: Bench, skeleton: str) -> tuple[str, str] | None:
     heads = {e.thread: (e, a) for e, a in bench.threads("configuration")}
-    held = [e for e in bench.catalog.containing(skeleton) if e.thread in heads]
+    held = [e for e in bench.rows.edits_holding([skeleton]) if e.thread in heads]
     if not held:
         return None
     found = min(

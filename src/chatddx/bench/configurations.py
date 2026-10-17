@@ -1,3 +1,4 @@
+from chatddx.catalog import threads, titles
 from chatddx.identity import owns
 
 from .errors import Ambiguous, NotFound
@@ -7,14 +8,14 @@ from .variation import TriedVariation
 
 
 def save(seen: Seen, variation: TriedVariation, name: str) -> Saved:
-    mine = seen.catalog.find("skeleton", name, owner=seen.person.id)
+    mine = threads.find(seen.rows, "skeleton", name, owner=seen.person.id)
     if len(mine) > 1:
         raise Ambiguous(
             f"{seen.person.login} has {len(mine)} configurations named {name!r}"
         )
     if not mine:
         return fork(seen, variation, name)
-    return edit(seen, mine[0], variation, seen.catalog.head(mine[0]).id)
+    return edit(seen, mine[0], variation, threads.head(seen.rows, mine[0]).id)
 
 
 def fork(seen: Seen, variation: TriedVariation, name: str) -> Saved:
@@ -25,7 +26,7 @@ def edit(seen: Seen, thread: int, variation: TriedVariation, head: int) -> Saved
     _, about = seen.thread_by_id(thread, "configuration")
     if not owns(seen.person.id, about):
         raise NotFound(f"no configuration {thread} of yours")
-    name = about.name or seen.catalog.title(thread)
+    name = about.name or titles.title(seen.rows, thread)
     return _kept(seen, variation, thread, name, head)
 
 
@@ -51,7 +52,7 @@ def _kept(
             head=head,
         )
     what = SAVED[kept]
-    recipe = seen.catalog.recipe(edit.thread)
+    recipe = threads.recipe(seen.rows, edit)
     return Saved(name, skeleton.digest, what, TriedVariation(edit, name, recipe))
 
 

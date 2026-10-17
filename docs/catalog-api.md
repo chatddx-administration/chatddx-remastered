@@ -34,9 +34,10 @@ The modules, and the ones each builds on:
 - `language.py`, on `families.py`, `model.py` and `read.py`.
 - `titles.py`, on `families.py`, `model.py`, `read.py` and `threads.py`.
 
-The package imports no chatddx package but `chatddx.factors` and `chatddx.identity` (`threads.py`, for `owns`), and no
-third-party package but pydantic. It holds no SQL: it reads through a `Reader` and writes nothing, and
-`src/chatddx/store/catalog.py:Catalog` writes what it decides (see "The store's Catalog").
+The package builds on `chatddx.factors` and `chatddx.identity` (`threads.py`, for `owns`), and pydantic.
+It holds no SQL: it reads through a `Reader` and writes nothing. Callers call its functions over
+`src/chatddx/store/catalog.py:Rows`, and `src/chatddx/store/catalog.py:Catalog` writes what it decides
+(see "The store's Catalog").
 
 ## Conventions
 - **Models** derive from `model.py:_Frozen`, a pydantic model with `frozen=True, extra="forbid"`. Building one
@@ -58,7 +59,7 @@ third-party package but pydantic. It holds no SQL: it reads through a `Reader` a
   - Ranked last by `titles.title_of`.
   - Included by `threads.history`, `threads.forks`, `threads.expectations_of`, `families.family_of`,
     `families.bindings`, `families.survey`, `families.plan_repair`, `language.language_of`, the titles of cases and
-    `Catalog.containing`.
+    `Reader.edits_holding`.
 
 **Errors.**
 - `LookupError`: a thread, edit or family that doesn't exist (`no thread with id <id>`, `no edit with id <id>`, `no
@@ -605,9 +606,9 @@ else, among the threads that held the digest, live ones first, then deleted ones
 Without such a thread, what it holds, as `title`'s step 3. Raises `StructuralError` for a digest that isn't stored.
 
 ## The store's Catalog
-`src/chatddx/store/catalog.py:Catalog(conn: Connection)` is what callers use. It reads through `Rows` and calls this
-package; its writes insert the rows the package decided on. A rule the database also checks is refused by Postgres
-with a psycopg error when the Python lets it through.
+`src/chatddx/store/catalog.py:Catalog(conn: Connection)` writes what this package decides. It reads through `Rows`
+and calls this package's checks; its writes insert the rows they decided on. A rule the database also checks is
+refused by Postgres with a psycopg error when the Python lets it through.
 
 Reads, each the package function of that name, or the one given, over `Rows`:
 - `thread`, `history`, `head`, `heads`, `find`, `expecting`, `forks`, `origin`, `expectations_of`, `behind`,
@@ -666,9 +667,6 @@ The entry, about the subject. A run's or a score's has to have started.
 ### `language(digest: str, value: str, by: int) -> None`
 A `catalog.language` row for the digest.
 - Raises `language.check_language`'s.
-
-### `involving(person: int) -> list[Subject]`
-The subjects whose `owner` or `collaborator` entries ever named the person.
 
 ### `runs_started(person: int, since: datetime) -> int`
 How many runs' `owner` entries name the person since `since`.

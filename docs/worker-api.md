@@ -74,7 +74,7 @@ Says a run's events that aren't rows on its channel (`chatddx.store.notify.chann
 | `put(said: Named) -> None` | An `item.delta` or `judge.delta` is held, merged into the last held of its event, case and replicate when of the same kind; held deltas go out once `EVERY` has passed since the last went out, or they hold `LIMIT` characters. Any other event goes out at once, after what is held. |
 | `close() -> None` | What is held goes out. |
 
-What goes out is packed by `chatddx.store.notify.payloads` and sent with `pg_notify` in one transaction. A
+What goes out is sent with `chatddx.store.notify.tell`, packed into as few payloads as fit, in one transaction. A
 `psycopg.Error` is logged, and the publisher says nothing more.
 
 ## Settings

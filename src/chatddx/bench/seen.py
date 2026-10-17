@@ -5,8 +5,8 @@ from uuid import UUID
 
 from pydantic import JsonValue
 
-from chatddx.catalog import About, Edit, Subject, latest
-from chatddx.catalog.threads import picked, recipe as recipe_of
+from chatddx.catalog import About, Edit, Subject, latest, read, threads, titles
+from chatddx.catalog.language import language_of, languages_of, recipe_language
 from chatddx.catalog.titles import short
 from chatddx.factors.base import (
     Component,
@@ -47,8 +47,7 @@ from chatddx.runner.prepare import Items
 from chatddx.runner.score import judge_at
 from chatddx.runner.send import STOPPED
 from chatddx.scorers.shipped import problems
-from chatddx.store import Catalog, People, Store
-from chatddx.store.catalog import Rows
+from chatddx.store import Catalog, People, Rows, Store
 from chatddx.store.store import Connection
 
 from .errors import Ambiguous, NotFound
@@ -78,10 +77,10 @@ class Seen:
     # Read when asked, so that facts corrected while a connection lasts are used.
     @property
     def facts(self) -> Facts:
-        live = [(e, a) for e, a in self.catalog.heads("facts") if not a.deleted]
-        read = dict(self.rows.components([e.digest for e, _ in live]))
+        live = [(e, a) for e, a in threads.heads(self.rows, "facts") if not a.deleted]
+        fetched = dict(self.rows.components([e.digest for e, _ in live]))
         return Facts.of(
-            resolve(read.__getitem__, e.digest, ModelFacts)
+            resolve(fetched.__getitem__, e.digest, ModelFacts)
             for e, _ in sorted(live, key=lambda found: found[0].id)
         )
 
@@ -95,7 +94,9 @@ class Seen:
         return [found for kind in KINDS[word] for found in self.visible(kind)]
 
     def visible(self, kind: str) -> list[tuple[Edit, About]]:
-        return [(e, a) for e, a in self.catalog.heads(kind) if sees(self.person.id, a)]
+        return [
+            (e, a) for e, a in threads.heads(self.rows, kind) if sees(self.person.id, a)
+        ]
 
     def names(self, word: str) -> list[str]:
         return sorted({a.name for _, a in self.threads(word) if a.name is not None})
@@ -159,17 +160,17 @@ class Seen:
             or (word is not None and thread.kind not in KINDS[word])
         ):
             raise NotFound(f"no {word or 'thread'} {id} for {self.person.login}")
-        return self.catalog.head(id), about
+        return threads.head(self.rows, id), about
 
     def deleted(self, kind: str) -> list[tuple[Edit, About]]:
         return [
             (e, a)
-            for e, a in self.catalog.heads(kind)
+            for e, a in threads.heads(self.rows, kind)
             if a.deleted and a.owner == self.person.id
         ]
 
     def about(self, thread: int) -> About:
-        return self.catalog.about(Subject(thread=thread))
+        return read.about(self.rows, Subject(thread=thread))
 
     def holder(
         self, word: str, digest: str, recipe: Recipe | None = None
@@ -178,7 +179,7 @@ class Seen:
             ((e, a), a.owner)
             for e, a in self.threads(word)
             if e.digest == digest
-            and (recipe is None or recipe_of(self.rows, e) == recipe)
+            and (recipe is None or threads.recipe(self.rows, e) == recipe)
         ]
         return next(iter(preferred(self.person.id, held)), None)
 
@@ -186,7 +187,7 @@ class Seen:
         return self.store.get(digest)
 
     def title(self, digest: str | None) -> str:
-        return "—" if digest is None else self.catalog.title_of(digest)
+        return "—" if digest is None else titles.title_of(self.rows, digest)
 
     def model_of(self, engine: str) -> Model | None:
         if engine not in self._serves:
@@ -216,7 +217,7 @@ class Seen:
     def configuration(self, name: str) -> TriedVariation:
         edit, found = self.thread("configuration", name)
         called = found.removeprefix(f"{self.person.login}/")
-        return TriedVariation(edit, called, self.catalog.recipe(edit.thread))
+        return TriedVariation(edit, called, threads.recipe(self.rows, edit))
 
     def chunk(self, part: str, name: str) -> str:
         return self.thread(part, name)[0].digest
@@ -232,8 +233,8 @@ class Seen:
             edit = self.rows.edit(head)
             if edit is None or edit.thread != configuration:
                 raise NotFound(f"no edit {head} of configuration {configuration}")
-        name = about.name or self.catalog.title(configuration)
-        found = TriedVariation(edit, name, recipe_of(self.rows, edit))
+        name = about.name or titles.title(self.rows, configuration)
+        found = TriedVariation(edit, name, threads.recipe(self.rows, edit))
         for part, digest in (parts or {}).items():
             if part not in PARTS:
                 raise ValueError(f"no part {part!r}: the parts are {', '.join(PARTS)}")
@@ -298,8 +299,8 @@ class Seen:
     def own_language(self, variation: TriedVariation) -> str | None:
         recipe = variation.varied
         if recipe is None:
-            return self.catalog.language_of(variation.configuration.digest)
-        return self.catalog.recipe_language(recipe)
+            return language_of(self.rows, variation.configuration.digest)
+        return recipe_language(self.rows, recipe)
 
     def translated(self, recipe: Recipe | None) -> list[str]:
         if recipe is None or recipe.translations is None:
@@ -313,7 +314,7 @@ class Seen:
         known: Mapping[str, str | None] | None = None,
     ) -> list[Carried]:
         own = self.own_language(variation)
-        held = dict(known) if known is not None else self.catalog.languages_of(cases)
+        held = dict(known) if known is not None else languages_of(self.rows, cases)
         into = self.translated(variation.varied)
 
         def sent_in(language: str | None) -> str | None:
@@ -365,7 +366,7 @@ class Seen:
 
     def _families(self) -> list[tuple[int, About]]:
         ids = self.rows.families()
-        known = self.catalog.abouts([Subject(family=f) for f in ids])
+        known = read.abouts(self.rows, [Subject(family=f) for f in ids])
         return [
             (f, a) for f in ids if sees(self.person.id, a := known[Subject(family=f)])
         ]
@@ -389,7 +390,7 @@ class Seen:
         )
 
     def family_by_id(self, id: int) -> Family:
-        about = self.catalog.about(Subject(family=id))
+        about = read.about(self.rows, Subject(family=id))
         case = self._cases([id])[id] if sees(self.person.id, about) else None
         if case is None:
             raise NotFound(f"no case {id} for {self.person.login}")
@@ -400,8 +401,8 @@ class Seen:
 
     def expectation_schemas(self, case: str) -> list[str]:
         heads = [
-            self.catalog.head(t).digest
-            for t in self.catalog.expectations_of(case)
+            threads.head(self.rows, t).digest
+            for t in threads.expectations_of(self.rows, case)
             if sees(self.person.id, self.about(t))
         ]
         held = (resolve(self.get, d, Expectation) for d in heads)
@@ -412,7 +413,7 @@ class Seen:
         return None if digest is None else resolve(self.get, digest, Expectation)
 
     def shared(self, case: str, schema: str) -> list[tuple[Edit, About]]:
-        held = self.catalog.expecting([case], schema)[case]
+        held = threads.expecting(self.rows, [case], schema)[case]
         return [(e, a) for e, a in held if collaborates(self.person.id, a)]
 
     def expectation_choices(
@@ -420,13 +421,13 @@ class Seen:
     ) -> dict[str, dict[int, str]]:
         return {
             case: {e.thread: e.digest for e, a in held if owns(self.person.id, a)}
-            for case, held in self.catalog.expecting(cases, schema).items()
+            for case, held in threads.expecting(self.rows, cases, schema).items()
         }
 
     def _expectations_for(self, cases: list[str], schema: str) -> dict[str, str | None]:
         choices = self.expectation_choices(cases, schema)
         try:
-            return {case: picked(case, held) for case, held in choices.items()}
+            return {case: threads.picked(case, held) for case, held in choices.items()}
         except LookupError as e:
             raise Ambiguous(str(e)) from None
 
@@ -486,7 +487,7 @@ class Seen:
             languages = partial(
                 _language_in,
                 {**known, trial.skeleton: each.language},
-                self.catalog.language_of,
+                partial(language_of, self.rows),
             )
             for finding in lints(registry, self.facts, [trial.digest], languages):
                 if finding not in found:
@@ -508,22 +509,22 @@ class Seen:
         self, found: Iterable[tuple[Edit, About]], purpose: Purpose
     ) -> list[tuple[Edit, About]]:
         held = list(found)
-        read = dict(self.rows.components([e.digest for e, _ in held]))
+        fetched = dict(self.rows.components([e.digest for e, _ in held]))
         return [
             (e, a)
             for e, a in held
-            if resolve(read.__getitem__, e.digest, Skeleton).purpose == purpose
+            if resolve(fetched.__getitem__, e.digest, Skeleton).purpose == purpose
         ]
 
     def answering(
         self, found: Iterable[tuple[Edit, About]], title: str
     ) -> list[tuple[Edit, About]]:
         held = list(found)
-        read = dict(self.rows.components([e.digest for e, _ in held]))
+        fetched = dict(self.rows.components([e.digest for e, _ in held]))
         return [
             (e, a)
             for e, a in held
-            if _titled(resolve(read.__getitem__, e.digest, Skeleton).output_schema)
+            if _titled(resolve(fetched.__getitem__, e.digest, Skeleton).output_schema)
             == title
         ]
 
@@ -532,7 +533,9 @@ class Seen:
             (e, a, resolve(self.get, e.digest, Scorer))
             for e, a in self.threads("scorer")
         ]
-        return sorted(found, key=lambda s: s[1].name or self.catalog.title(s[0].thread))
+        return sorted(
+            found, key=lambda s: s[1].name or titles.title(self.rows, s[0].thread)
+        )
 
     def scorers_for(self, run: RunStarted) -> list[tuple[Edit, About]]:
         return [
@@ -566,15 +569,16 @@ class Seen:
         several: set[str] = set()
         for case, held in self.expectation_choices(cases, schema).items():
             try:
-                digest = picked(case, held)
+                digest = threads.picked(case, held)
             except LookupError:
                 several.add(case)
                 continue
             if digest is not None:
                 heads[case] = digest
-        read = dict(self.rows.components(list(heads.values())))
+        fetched = dict(self.rows.components(list(heads.values())))
         data = {
-            c: resolve(read.__getitem__, d, Expectation).data for c, d in heads.items()
+            c: resolve(fetched.__getitem__, d, Expectation).data
+            for c, d in heads.items()
         }
         return data, several
 
@@ -594,7 +598,7 @@ class Seen:
     def labels_of(self, edit: Edit) -> dict[int, str]:
         return {
             position: label
-            for (part, position), label in self.catalog.labels(edit.id).items()
+            for (part, position), label in read.labels(self.rows, edit.id).items()
             if part == "view"
         }
 
@@ -608,7 +612,7 @@ class Seen:
         found: list[Reach] = []
         for edit, about, scorer in self.scorers():
             labels = self.labels_of(edit)
-            name = about.name or self.catalog.title(edit.thread)
+            name = about.name or titles.title(self.rows, edit.thread)
             expected = scorer.expectation_schema
             for i, view in enumerate(scorer.views):
                 offered = view.offered_by(schema)
@@ -657,7 +661,7 @@ class Seen:
         registry = self.store.load([digest])
         if isinstance(paired := registry.get(digest), Trial | Judge):
             self.add_compilations(registry, paired.skeleton)
-        return lints(registry, self.facts, [digest], self.catalog.language_of)
+        return lints(registry, self.facts, [digest], partial(language_of, self.rows))
 
     # src/chatddx/factors/lint.py:_made_for reads them from the registry.
     def add_compilations(self, registry: Registry, skeleton: str) -> None:
@@ -690,7 +694,7 @@ class Seen:
             raise ValueError("; ".join(found))
 
     def check_kind(self, thread: int, word: str, component: Component) -> None:
-        kind = self.catalog.thread(thread).kind
+        kind = threads.thread(self.rows, thread).kind
         if kind != component.kind_name:
             raise ValueError(
                 f"{word} {thread} holds {kind} components, not {component.kind_name}"
@@ -708,8 +712,8 @@ class Seen:
             )
 
     def runs(self) -> list[RunStarted]:
-        involved = [s for s in self.catalog.involving(self.person.id) if s.run]
-        known = self.catalog.abouts(involved)
+        involved = [s for s in self.rows.involving(self.person.id) if s.run]
+        known = read.abouts(self.rows, involved)
         owned = [
             s.run
             for s in involved
@@ -732,24 +736,24 @@ class Seen:
                 raise Ambiguous(f"{len(found)} runs of yours start with {prefix!r}")
 
     def run_by_id(self, run: UUID) -> RunStarted:
-        about = self.catalog.about(Subject(run=run))
+        about = read.about(self.rows, Subject(run=run))
         found = self.store.started([run])
         if not owns(self.person.id, about) or not found:
             raise NotFound(f"no run {run} of yours")
         return found[0]
 
     def started_with(self, run: UUID) -> UUID | None:
-        return self.catalog.about(Subject(run=run)).started_with
+        return read.about(self.rows, Subject(run=run)).started_with
 
     def together(self, first: UUID) -> list[RunStarted]:
         found = self.runs()
-        known = self.catalog.abouts([Subject(run=r.run) for r in found])
+        known = read.abouts(self.rows, [Subject(run=r.run) for r in found])
         return [
             r for r in found if first in (r.run, known[Subject(run=r.run)].started_with)
         ]
 
     def ran(self, run: UUID) -> tuple[Edit, dict[str, str | None]] | None:
-        about = self.catalog.about(Subject(run=run))
+        about = read.about(self.rows, Subject(run=run))
         edit = None if about.varied is None else self.rows.edit(about.varied)
         return None if edit is None else (edit, about.replaced)
 
@@ -769,7 +773,7 @@ class Seen:
             else f"{len(trial.cases)} cases"
         )
         seeds = ", ".join(str(seed) for seed in trial.seeds)
-        name = self.catalog.about(Subject(run=run.run)).name or self.title(
+        name = read.about(self.rows, Subject(run=run.run)).name or self.title(
             trial.skeleton
         )
         into = {c.into for c in self.store.compilations(trial.skeleton)}

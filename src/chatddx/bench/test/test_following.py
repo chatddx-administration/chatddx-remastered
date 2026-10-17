@@ -3,7 +3,7 @@ from pydantic import JsonValue
 
 from chatddx.bench import Bench, MovedOn, NotFound
 from chatddx.bench.test.helpers import correct_facts, move_model
-from chatddx.catalog import Entry, EntryField, Subject
+from chatddx.catalog import Entry, EntryField, Subject, threads
 from chatddx.factors.base import resolve
 from chatddx.factors.request import Compilation, Recipe, Skeleton
 from chatddx.factors.scoring import Expectation
@@ -30,7 +30,7 @@ def _own(bench: Bench) -> int:
 def test_a_configuration_follows_its_origin_with_its_own_change_on_top(
     bench: Bench, archive: Bench
 ) -> None:
-    catalog = bench.catalog
+    rows = bench.rows
     mine = _own(bench)
     theirs = archive.thread("configuration", LINES)[0].thread
     assert bench.proposal(mine) is None
@@ -38,10 +38,10 @@ def test_a_configuration_follows_its_origin_with_its_own_change_on_top(
     off = bench.chunk("reasoning", "off")
     greedy = bench.chunk("sampling", "greedy")
     varied = bench.configuration(LINES).set("reasoning", off, "off")
-    seen = bench.edit(mine, varied, catalog.head(mine).id).variation.configuration
+    seen = bench.edit(mine, varied, threads.head(rows, mine).id).variation.configuration
     moved = archive.variation(theirs, {"sampling": greedy})
     origin = archive.edit(
-        theirs, moved, catalog.head(theirs).id
+        theirs, moved, threads.head(rows, theirs).id
     ).variation.configuration
 
     proposed = bench.proposal(mine)
@@ -52,13 +52,13 @@ def test_a_configuration_follows_its_origin_with_its_own_change_on_top(
 
     followed = bench.follow(mine, seen.id)
     assert (followed.what, followed.findings) == ("a new version", [])
-    head = catalog.head(mine)
+    head = threads.head(rows, mine)
     assert (head.digest, head.based_on, head.compilation) == (
         proposed.digest,
         origin.id,
         proposed.compilation,
     )
-    recipe = catalog.recipe(mine)
+    recipe = threads.recipe(rows, threads.head(rows, mine))
     assert recipe is not None and (recipe.sampling, recipe.reasoning) == (greedy, off)
     assert bench.proposal(mine) is None
 
@@ -68,6 +68,7 @@ def test_a_taken_expectation_follows_the_archive_s_correction(
     bench: Bench, archive: Bench
 ) -> None:
     catalog, store = bench.catalog, Store(bench.conn)
+    rows = bench.rows
     case = bench.family("noted").case
     [schema] = bench.expectation_schemas(case)
     [mine] = bench.expectation_choices([case], schema)[case]
@@ -80,9 +81,9 @@ def test_a_taken_expectation_follows_the_archive_s_correction(
 
     proposed = bench.proposal(mine)
     assert proposed is not None and proposed.proposal == corrected
-    followed = bench.follow(mine, catalog.head(mine).id)
+    followed = bench.follow(mine, threads.head(rows, mine).id)
     assert [f.code for f in followed.findings] == ["expectation.invalid"]
-    assert catalog.head(mine).based_on == origin.id
+    assert threads.head(rows, mine).based_on == origin.id
     assert bench.expectation(case, schema) == corrected
 
 
@@ -91,17 +92,18 @@ def test_only_what_has_something_to_follow_is_followed(
     bench: Bench, archive: Bench
 ) -> None:
     catalog = bench.catalog
+    rows = bench.rows
     mine = _own(bench)
     theirs = archive.thread("configuration", LINES)[0].thread
-    head = catalog.head(mine).id
+    head = threads.head(rows, mine).id
     with pytest.raises(ValueError, match=f"configuration {mine} has nothing to follow"):
         _ = bench.follow(mine, head)
     with pytest.raises(NotFound, match=f"no configuration {theirs} of yours"):
-        _ = bench.follow(theirs, catalog.head(theirs).id)
+        _ = bench.follow(theirs, threads.head(rows, theirs).id)
 
     greedy = bench.chunk("sampling", "greedy")
     moved = archive.variation(theirs, {"sampling": greedy})
-    _ = archive.edit(theirs, moved, catalog.head(theirs).id)
+    _ = archive.edit(theirs, moved, threads.head(rows, theirs).id)
     with pytest.raises(MovedOn, match=f"since edit {head - 1}"):
         _ = bench.follow(mine, head - 1)
     with pytest.raises(
@@ -114,16 +116,16 @@ def test_only_what_has_something_to_follow_is_followed(
     assert bench.proposal(mine) is None
     with pytest.raises(ValueError, match="has nothing to follow"):
         _ = bench.follow(mine, head)
-    assert catalog.head(mine).id == head
+    assert threads.head(rows, mine).id == head
 
 
 def test_a_configuration_follows_the_facts_corrected_where_they_reach_it(
     bench: Bench, archive: Bench
 ) -> None:
-    catalog = bench.catalog
+    rows = bench.rows
     mine = _own(bench)
     theirs = archive.thread("configuration", LINES)[0].thread
-    head = catalog.head(mine)
+    head = threads.head(rows, mine)
     assert bench.moved(mine) is None
 
     recommended = bench.facts.models[QWEN_MODEL].sampling.recommended
@@ -144,14 +146,17 @@ def test_a_configuration_follows_the_facts_corrected_where_they_reach_it(
     with pytest.raises(MovedOn, match=f"thread {mine} has moved on"):
         _ = bench.follow_moved(mine, head.id - 1)
     with pytest.raises(NotFound, match=f"no configuration {theirs} of yours"):
-        _ = bench.follow_moved(theirs, catalog.head(theirs).id)
+        _ = bench.follow_moved(theirs, threads.head(rows, theirs).id)
 
     followed = bench.follow_moved(mine, head.id)
     assert (followed.what, followed.edit.digest) == ("a new version", found.digest)
     assert found.compilation is not None
     assert followed.edit.compilation == found.compilation
     made = resolve(bench.get, found.compilation, Compilation)
-    assert (made.facts, made.recipe) == (moved.digest, catalog.recipe(mine))
+    assert (made.facts, made.recipe) == (
+        moved.digest,
+        threads.recipe(rows, threads.head(rows, mine)),
+    )
     body = resolve(bench.get, found.digest, Skeleton).body
     assert (body["temperature"], "top_p" in body) == (0.2, False)
     assert bench.moved(mine) is None and bench.proposal(mine) is None
@@ -175,11 +180,11 @@ def test_a_configuration_follows_the_facts_corrected_where_they_reach_it(
 def test_a_configuration_follows_its_model_to_a_new_version(
     bench: Bench, archive: Bench
 ) -> None:
-    catalog = bench.catalog
+    rows = bench.rows
     mine = _own(bench)
-    head = catalog.head(mine)
+    head = threads.head(rows, mine)
     before = resolve(bench.get, head.digest, Skeleton)
-    recipe = catalog.recipe(mine)
+    recipe = threads.recipe(rows, threads.head(rows, mine))
     assert recipe is not None
     held = recipe.model
     assert bench.at(bench.variation(mine), QWEN) == (QWEN, bench.endpoint(QWEN))
@@ -198,7 +203,7 @@ def test_a_configuration_follows_its_model_to_a_new_version(
     followed = bench.follow_moved(mine, head.id)
     assert (followed.what, followed.edit.digest) == ("a new version", head.digest)
     assert followed.edit.compilation == found.compilation
-    recipe = catalog.recipe(mine)
+    recipe = threads.recipe(rows, threads.head(rows, mine))
     assert recipe is not None and recipe.model == moved.digest
     assert resolve(bench.get, followed.edit.digest, Skeleton) == before
     assert bench.moved(mine) is None

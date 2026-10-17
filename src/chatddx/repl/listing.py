@@ -7,6 +7,8 @@ from rich.table import Table
 from rich.text import Text
 
 from chatddx.bench import PARTS
+from chatddx.catalog import threads, titles
+from chatddx.catalog.language import edit_languages
 from chatddx.catalog.titles import short
 
 from .render import LABEL, REFUSED, plural
@@ -26,12 +28,12 @@ def configurations(repl: Repl, name: str | None = None) -> None:
     bench = repl.bench
     made: list[_Made] = []
     heads = bench.threads("configuration")
-    own = bench.catalog.edit_languages([e for e, _ in heads])
+    own = edit_languages(bench.rows, [e for e, _ in heads])
 
     for edit, about in heads:
-        recipe = bench.catalog.recipe(edit.thread)
+        recipe = threads.recipe(bench.rows, edit)
         parts = None if recipe is None else [getattr(recipe, p) for p in PARTS]
-        full = about.name or bench.catalog.title(edit.thread)
+        full = about.name or titles.title(bench.rows, edit.thread)
         held = own[edit.id]
         languages = tuple([] if held is None else [held]) + tuple(
             lang for lang in bench.translated(recipe) if lang != held
@@ -75,7 +77,7 @@ def _grouped(repl: Repl, made: list[_Made]) -> None:
         origin: m.thread
         for m in made
         if m.owner == bench.person.id
-        if (origin := bench.catalog.origin(m.thread)) is not None
+        if (origin := threads.origin(bench.rows, m.thread)) is not None
     }
     title = cache(bench.title)
     rows: list[tuple[str, str, str, list[str | None] | None]] = []
@@ -83,11 +85,11 @@ def _grouped(repl: Repl, made: list[_Made]) -> None:
     for (name, owner), held in groups.items():
         if owner != bench.person.id and all(m.thread in forked for m in held):
             continue
-        threads = {m.thread for m in held}
+        ids = {m.thread for m in held}
         origins = {
             bench.login(by)
             for origin, thread in forked.items()
-            if thread in threads
+            if thread in ids
             if (by := bench.about(origin).owner) != bench.person.id
         }
         said = "yours" if owner == bench.person.id else bench.login(owner)

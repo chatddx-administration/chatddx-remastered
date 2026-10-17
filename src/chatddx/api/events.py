@@ -5,6 +5,7 @@ from pydantic import BaseModel
 
 from chatddx import bench as benches
 from chatddx.bench import Bench, ScoringEvent, outcome, usage
+from chatddx.catalog import titles
 from chatddx.factors.base import resolve
 from chatddx.factors.request import Skeleton
 from chatddx.factors.scoring import Scorer
@@ -68,7 +69,7 @@ def scoring_of(
     return schemas.ScoringData(
         scorers=[
             schemas.Unscored(
-                scorer=e.digest, name=a.name or bench.catalog.title(e.thread)
+                scorer=e.digest, name=a.name or titles.title(bench.rows, e.thread)
             )
             for e, a in bench.scorers_for(run)
             if scorers is None or e.digest in scorers

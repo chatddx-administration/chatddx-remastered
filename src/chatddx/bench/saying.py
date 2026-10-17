@@ -1,7 +1,7 @@
 from collections.abc import Collection
 from types import EllipsisType
 
-from chatddx.catalog import About, Entry, EntryField, Subject
+from chatddx.catalog import About, Entry, EntryField, Subject, threads
 from chatddx.factors.scoring import Expectation
 
 from .errors import NotFound
@@ -40,7 +40,7 @@ def say(
 
     said: list[Entry] = []
     if deleted is False and about.deleted:
-        head = seen.get(seen.catalog.head(thread).digest)
+        head = seen.get(threads.head(seen.rows, thread).digest)
         if isinstance(head, Expectation):
             seen.check_expecting(head, thread, "delete that one to restore this")
         said.append(Entry(field=EntryField.DELETED, present=False))

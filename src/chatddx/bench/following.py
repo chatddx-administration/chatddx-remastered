@@ -1,4 +1,12 @@
-from chatddx.catalog import LANGUAGE_KINDS, Behind, Divergence, Labels, Part
+from chatddx.catalog import (
+    LANGUAGE_KINDS,
+    Behind,
+    Divergence,
+    Labels,
+    Part,
+    read,
+    threads,
+)
 from chatddx.factors.base import resolve
 from chatddx.factors.bundle import Registry
 from chatddx.factors.engine import model_of
@@ -26,7 +34,7 @@ def follow(seen: Seen, thread: int, head: int, language: str | None = None) -> W
     if found is None:
         raise ValueError(f"{word} {thread} has nothing to follow")
     proposed, registry = found
-    kind = seen.catalog.thread(thread).kind
+    kind = threads.thread(seen.rows, thread).kind
     if language is not None and proposed.compilation is not None:
         raise ValueError(COMPILED_LANGUAGE)
     if language is not None and kind not in LANGUAGE_KINDS:
@@ -99,7 +107,7 @@ def _moved(seen: Seen, thread: int) -> tuple[Moved, Registry | None] | None:
     if edit.compilation is None:
         return None
     behind: dict[str, Behind] = {}
-    for b in seen.catalog.behind(thread):
+    for b in threads.behind(seen.rows, thread):
         if b.path in ("/facts", "/recipe/model") and b.head is not None:
             _ = behind.setdefault(b.path, b)
     if not behind:
@@ -120,8 +128,8 @@ def _moved(seen: Seen, thread: int) -> tuple[Moved, Registry | None] | None:
 
 
 def _followed_labels(seen: Seen, thread: int, diverged: Divergence) -> Labels:
-    fork = seen.catalog.labels(seen.catalog.head(thread).id)
-    origin = seen.catalog.labels(diverged.origin_head.id)
+    fork = read.labels(seen.rows, threads.head(seen.rows, thread).id)
+    origin = read.labels(seen.rows, diverged.origin_head.id)
     kept: dict[tuple[Part, int], str] = {}
     for part in LABELLED:
         side = fork if f"/{part}s" in diverged.varies else origin
@@ -130,13 +138,13 @@ def _followed_labels(seen: Seen, thread: int, diverged: Divergence) -> Labels:
 
 
 def _proposed(seen: Seen, thread: int, word: str) -> tuple[Proposed, Registry] | None:
-    diverged = seen.catalog.divergence(thread)
+    diverged = threads.divergence(seen.rows, thread)
     if diverged is None or not diverged.moved:
         return None
     if not sees(seen.person.id, seen.about(diverged.origin_head.thread)):
         return None
     try:
-        proposal = seen.catalog.proposal(thread)
+        proposal = threads.proposal(seen.rows, thread)
         if proposal is None:
             return None
         if isinstance(proposal, Recipe):

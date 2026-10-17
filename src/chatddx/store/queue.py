@@ -161,24 +161,9 @@ class Queue:
         assert row is not None
         return _job(row)
 
-    def job(self, id: int) -> Job:
-        row = self._conn.execute(
-            f"SELECT {_COLUMNS} FROM worker.job j WHERE j.id = %s", (id,)
-        ).fetchone()
-        if row is None:
-            raise LookupError(f"no job {id}")
-        return _job(row)
-
     def open(self, run: UUID) -> Job | None:
         row = self._conn.execute(
             f"SELECT {_COLUMNS} FROM worker.job j WHERE j.run = %s AND {_OPEN}", (run,)
-        ).fetchone()
-        return None if row is None else _job(row)
-
-    def last(self, run: UUID) -> Job | None:
-        row = self._conn.execute(
-            f"SELECT {_COLUMNS} FROM worker.job j WHERE j.run = %s ORDER BY j.id DESC",
-            (run,),
         ).fetchone()
         return None if row is None else _job(row)
 
@@ -267,16 +252,6 @@ class Queue:
             tuple(UUID(str(r)) for (r,) in halting),
         )
 
-    def jobs(self, owner: int, limit: int = 100) -> list[Job]:
-        rows = self._conn.execute(
-            f"""
-            SELECT {_COLUMNS} FROM worker.job j WHERE j.owner = %s
-            ORDER BY j.queued DESC, j.id DESC LIMIT %s
-            """,
-            (owner, limit),
-        ).fetchall()
-        return [_job(r) for r in rows]
-
     def halt(self, run: UUID) -> Job:
         with self._conn.transaction():
             row = self._conn.execute(
@@ -301,12 +276,6 @@ class Queue:
                 (owner, paused),
             )
             self._tell()
-
-    def paused(self, owner: int) -> bool:
-        row = self._conn.execute(
-            "SELECT paused FROM worker.control WHERE owner = %s", (owner,)
-        ).fetchone()
-        return row is not None and bool(row[0])
 
     def enlist(self, worker: UUID) -> None:
         _ = self._conn.execute("INSERT INTO worker.worker (id) VALUES (%s)", (worker,))
@@ -436,10 +405,3 @@ class Queue:
             _ = self._conn.execute(
                 "SELECT pg_notify(%s, %s)", (channel(run), JOB + status)
             )
-
-    def waiting(self) -> int:
-        row = self._conn.execute(
-            f"SELECT count(*) FROM worker.job j WHERE {_OPEN}"
-        ).fetchone()
-        assert row is not None
-        return int(row[0])

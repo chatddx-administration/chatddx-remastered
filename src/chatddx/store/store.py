@@ -255,18 +255,6 @@ class Store:
             )
         )
 
-    def runs_of(self, trial: str) -> list[RunStarted]:
-        return _newest(
-            RunStarted.parse(p)
-            for p in self._payloads(
-                """
-                SELECT payload FROM ledger.run_stage
-                WHERE stage = 'started' AND trial = %s
-                """,
-                trial,
-            )
-        )
-
     def finished(self, runs: Collection[UUID]) -> set[UUID]:
         rows = self._conn.execute(
             """

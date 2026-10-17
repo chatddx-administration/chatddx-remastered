@@ -1,16 +1,30 @@
 from collections import Counter
 from collections.abc import Collection, Iterable
+from functools import partial
 
 from pydantic import JsonValue
 
-from chatddx.catalog import Entry, EntryField, Kept, Labels, Part, Subject, Survey
+from chatddx.catalog import (
+    Entry,
+    EntryField,
+    Kept,
+    Labels,
+    Part,
+    Subject,
+    Survey,
+    families,
+    read,
+    threads,
+    titles,
+)
+from chatddx.catalog.language import language_of
 from chatddx.factors.base import Fingerprint, StructuralError
 from chatddx.factors.cases import Appendix, Case, Vignette, clean
 from chatddx.factors.scoring import Expectation
 from chatddx.facts import lints
 from chatddx.identity import Person, owns
 from chatddx.inventory import DirectorySource
-from chatddx.store.catalog import Catalog
+from chatddx.store.catalog import Catalog, Rows
 from chatddx.store.people import People
 from chatddx.store.store import Connection, Store
 
@@ -36,6 +50,7 @@ class _Init:
     def __init__(self, conn: Connection, plan: Plan, archive: Person) -> None:
         self.store: Store = Store(conn)
         self.catalog: Catalog = Catalog(conn)
+        self.rows: Rows = Rows(conn)
         self.plan: Plan = plan
         self.archive: Person = archive
         self.threads: dict[tuple[str, str], int] = {}
@@ -59,13 +74,13 @@ class _Init:
         language: str | None = None,
         name: str | None = None,
     ) -> None:
-        about = self.catalog.about(subject)
+        about = read.about(self.rows, subject)
         if name is not None and about.name != name:
             self.note(subject, Entry(field=EntryField.NAME, value=name))
         for tag in sorted(set(tags) - about.tags):
             self.note(subject, Entry(field=EntryField.TAG, value=tag))
         if dropped := about.tags - set(tags):
-            given = self.catalog.tags_given(subject)
+            given = read.tags_given(self.rows, subject)
             for tag in sorted(t for t in dropped if given.get(t) == self.archive.id):
                 self.note(
                     subject, Entry(field=EntryField.TAG, value=tag, present=False)
@@ -90,7 +105,7 @@ class _Init:
             raise ValueError(f"the archive has {len(found)} threads for {what}")
         forked_from = None
         if not found and fork_of is not None:
-            forked_from = self.catalog.head(fork_of).id
+            forked_from = threads.head(self.rows, fork_of).id
         edit, kept = self.catalog.keep(
             digest,
             self.archive.id,
@@ -103,7 +118,7 @@ class _Init:
         return edit.thread, VERBS[kept]
 
     def record(self, r: Planned) -> None:
-        found = self.catalog.find(r.kind, r.name, owner=self.archive.id)
+        found = threads.find(self.rows, r.kind, r.name, owner=self.archive.id)
         labels: dict[tuple[Part, int], str] = {
             ("view", i): label for i, label in enumerate(r.labels) if label is not None
         }
@@ -120,7 +135,7 @@ class _Init:
         self.land(r.digest, f"{r.kind} {r.name}")
         self.sync(Subject(thread=thread), r.tags, r.description)
         said = ""
-        if r.language is not None and self.catalog.language_of(r.digest) != r.language:
+        if r.language is not None and language_of(self.rows, r.digest) != r.language:
             self.catalog.language(r.digest, r.language, self.archive.id)
             said = f", in {r.language}"
         self.lines.append(
@@ -132,11 +147,13 @@ class _Init:
     # A thread's origin is set when it is created (put), so a re-run only reports one
     # that differs from the data's.
     def forked(self, r: Planned, thread: int) -> None:
-        held = self.catalog.origin(thread)
+        held = threads.origin(self.rows, thread)
         planned = None if r.fork_of is None else self.threads[(r.kind, r.fork_of)]
         if held == planned:
             return
-        was = "no fork" if held is None else f"a fork of {self.catalog.title(held)}"
+        was = (
+            "no fork" if held is None else f"a fork of {titles.title(self.rows, held)}"
+        )
         wants = "nothing" if r.fork_of is None else r.fork_of
         self.lines.append(
             f"[archive {r.kind}] {r.name}: held as {was}; the data forks it from {wants}"
@@ -145,7 +162,7 @@ class _Init:
     def repair_for(self, source: DirectorySource, id: str) -> str | None:
         if self.surveyed is None:
             listing = {c.vignette.id: c.vignette.fingerprint for c in source.cases()}
-            self.surveyed = self.catalog.survey(source.name, listing)
+            self.surveyed = families.survey(self.rows, source.name, listing)
         at = f"at source {source.name!r}; repair-data rebinds family"
         for family, old, new in self.surveyed.renamed:
             if id in (old, new):
@@ -179,7 +196,7 @@ class _Init:
         registry = self.plan.registry
         digest = registry.add(case)
         _ = self.store.add(registry, [digest])
-        family = self.catalog.family(digest)
+        family = families.family_of(self.rows, digest)
         verb = "validated" if family is not None else "created"
         if family is None:
             try:
@@ -203,8 +220,8 @@ class _Init:
         _ = self.store.add(registry, [expectation])
         found = [
             t
-            for t in self.catalog.expectations_of(case)
-            if self.catalog.about(Subject(thread=t)).owner == self.archive.id
+            for t in threads.expectations_of(self.rows, case)
+            if read.about(self.rows, Subject(thread=t)).owner == self.archive.id
         ]
         thread, verb = self.put("expectation", expectation, found, None)
         self.threads[("expectation", named)] = thread
@@ -226,7 +243,9 @@ class _Init:
             _ = self.store.add(registry, [digest])
             found = [
                 t
-                for t in self.catalog.find("appendix", name, owner=self.archive.id)
+                for t in threads.find(
+                    self.rows, "appendix", name, owner=self.archive.id
+                )
                 if self.binds(t, vignette)
             ]
             thread, verb = self.put("appendix", digest, found, name)
@@ -252,7 +271,7 @@ class _Init:
     # An appendix is named as its case's file names it, so two cases' may share a name;
     # each is its vignette's, by the vignette's source and id.
     def binds(self, thread: int, vignette: Vignette) -> bool:
-        held = self.store.get(self.catalog.head(thread).digest)
+        held = self.store.get(threads.head(self.rows, thread).digest)
         assert isinstance(held, Appendix)
         return (held.vignette.source, held.vignette.id) == (
             vignette.source,
@@ -267,9 +286,9 @@ class _Init:
         return True
 
     def leftovers(self, cases: Collection[str]) -> None:
-        threads = set(self.threads.values())
-        subjects = self.catalog.involving(self.archive.id)
-        known = self.catalog.abouts(subjects)
+        kept = set(self.threads.values())
+        subjects = self.rows.involving(self.archive.id)
+        known = read.abouts(self.rows, subjects)
 
         def named(family: int | None) -> bool:
             if family is None:
@@ -284,11 +303,11 @@ class _Init:
             about = known[subject]
             if not owns(self.archive.id, about):
                 continue
-            if subject.thread is not None and subject.thread not in threads:
-                kind = self.catalog.thread(subject.thread).kind
+            if subject.thread is not None and subject.thread not in kept:
+                kind = threads.thread(self.rows, subject.thread).kind
                 if kind == "expectation" and named(self.family_of(subject.thread)):
                     continue
-                name = about.name or self.catalog.title(subject.thread)
+                name = about.name or titles.title(self.rows, subject.thread)
                 lines.append(f"[archive {kind}] {name}: not in the data")
             elif subject.family is not None and not named(subject.family):
                 name = about.name or f"family {subject.family}"
@@ -296,14 +315,14 @@ class _Init:
         self.lines += sorted(lines)
 
     def family_of(self, expectation_thread: int) -> int | None:
-        head = self.catalog.head(expectation_thread)
+        head = threads.head(self.rows, expectation_thread)
         expectation = self.store.get(head.digest)
         assert isinstance(expectation, Expectation)
-        return self.catalog.family(expectation.case)
+        return families.family_of(self.rows, expectation.case)
 
     def lint(self) -> None:
         registry, facts, digests = self.plan.registry, self.plan.facts, [*self.landed]
-        findings = lints(registry, facts, digests, self.catalog.language_of)
+        findings = lints(registry, facts, digests, partial(language_of, self.rows))
         for f in findings:
             what = ", ".join(self.landed.get(f.subject or "") or [str(f.subject)])
             self.lines.append(f"[lint {f.level}] {what}: {f.code}: {f.message}")
@@ -315,7 +334,7 @@ class _Init:
     def share(self, user: Person) -> None:
         subjects = [Subject(thread=t) for t in self.threads.values()]
         subjects += [Subject(family=f) for f in self.families]
-        known = self.catalog.abouts(subjects)
+        known = read.abouts(self.rows, subjects)
         shared = 0
         for subject in subjects:
             if user.id not in known[subject].collaborators:
@@ -331,8 +350,8 @@ class _Init:
             if not _gifted(kind):
                 continue
             forks = {
-                t: self.catalog.about(Subject(thread=t))
-                for t in self.catalog.forks(thread)
+                t: read.about(self.rows, Subject(thread=t))
+                for t in threads.forks(self.rows, thread)
             }
             mine = {t: about for t, about in forks.items() if about.owner == user.id}
             if any(not about.deleted for about in mine.values()):
@@ -350,8 +369,8 @@ class _Init:
                 )
                 self.lines.append(f"[giftbag {kind}] {name}: restored")
                 continue
-            head = self.catalog.head(thread)
-            about = self.catalog.about(Subject(thread=thread))
+            head = threads.head(self.rows, thread)
+            about = read.about(self.rows, Subject(thread=thread))
             _ = self.catalog.create(
                 head.digest,
                 user.id,
@@ -362,17 +381,18 @@ class _Init:
             self.lines.append(f"[giftbag {kind}] {name}: forked {short(head.digest)}")
 
     def _expecting(self, user: Person, thread: int) -> bool:
-        head = self.store.get(self.catalog.head(thread).digest)
+        head = self.store.get(threads.head(self.rows, thread).digest)
         assert isinstance(head, Expectation)
         case, schema = head.case, head.expectation_schema
         return any(
-            owns(user.id, a) for _, a in self.catalog.expecting([case], schema)[case]
+            owns(user.id, a)
+            for _, a in threads.expecting(self.rows, [case], schema)[case]
         )
 
 
-def _what(catalog: Catalog, subject: Subject) -> str:
+def _what(rows: Rows, subject: Subject) -> str:
     if subject.thread is not None:
-        return f"thread {catalog.thread(subject.thread).kind}"
+        return f"thread {threads.thread(rows, subject.thread).kind}"
     return "family" if subject.family is not None else "run" if subject.run else "score"
 
 
@@ -380,19 +400,19 @@ def wipe(conn: Connection, user: Person) -> list[str]:
     deleted: Counter[str] = Counter()
     unshared: Counter[str] = Counter()
     with conn.transaction():
-        catalog = Catalog(conn)
-        for subject in catalog.involving(user.id):
-            about = catalog.about(subject)
+        catalog, rows = Catalog(conn), Rows(conn)
+        for subject in rows.involving(user.id):
+            about = read.about(rows, subject)
             if owns(user.id, about):
                 catalog.note(subject, Entry(field=EntryField.DELETED), user.id)
-                deleted[_what(catalog, subject)] += 1
+                deleted[_what(rows, subject)] += 1
             if user.id in about.collaborators:
                 catalog.note(
                     subject,
                     Entry(field=EntryField.COLLABORATOR, person=user.id, present=False),
                     user.id,
                 )
-                unshared[_what(catalog, subject)] += 1
+                unshared[_what(rows, subject)] += 1
     return [
         f"[wipe {what}] {user.login}: deleted {deleted[what]}, unshared {unshared[what]}"
         for what in sorted(deleted | unshared)

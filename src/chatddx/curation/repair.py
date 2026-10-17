@@ -1,8 +1,8 @@
-from chatddx.catalog import Subject
+from chatddx.catalog import Subject, families, read
 from chatddx.factors.base import Fingerprint
 from chatddx.identity import Person
 from chatddx.inventory import DirectorySource
-from chatddx.store.catalog import Catalog
+from chatddx.store.catalog import Catalog, Rows
 from chatddx.store.store import Connection
 
 
@@ -16,9 +16,9 @@ def repair(
     lines: list[str] = []
     at = f"at source {source.name!r}"
     with conn.transaction():
-        catalog = Catalog(conn)
+        catalog, rows = Catalog(conn), Rows(conn)
         listing = {c.vignette.id: c.vignette.fingerprint for c in source.cases()}
-        survey = catalog.survey(source.name, listing)
+        survey = families.survey(rows, source.name, listing)
         moves: list[tuple[int, str, str | None, Fingerprint | None, str]] = [
             (family, old, new, None, f"renamed to {new}")
             for family, old, new in survey.renamed
@@ -27,7 +27,7 @@ def repair(
             (family, id, None, fingerprint, "changed")
             for family, id, fingerprint in survey.changed
         ]
-        known = catalog.abouts([Subject(family=m[0]) for m in moves])
+        known = read.abouts(rows, [Subject(family=m[0]) for m in moves])
         for family, id, new, fingerprint, what in sorted(moves, key=lambda m: m[1]):
             if known[Subject(family=family)].owner != archive.id:
                 lines.append(

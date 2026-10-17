@@ -299,7 +299,7 @@ The person's login, or `nobody` for `None`.
 ### Threads
 
 #### `visible(kind: str) -> list[tuple[Edit, About]]`
-The heads of `Catalog.heads(kind)` the person `sees`, each with its `About`, in thread id order.
+The heads of `threads.heads(rows, kind)` the person `sees`, each with its `About`, in thread id order.
 
 #### `threads(word: str) -> list[tuple[Edit, About]]`
 `visible(kind)` for each kind `KINDS[word]` names, in that order.
@@ -324,10 +324,11 @@ The head of thread `id`, and its `About`, when the person sees it.
 Raises `NotFound("no <word or 'thread'> <id> for <login>")`.
 
 #### `deleted(kind: str) -> list[tuple[Edit, About]]`
-The heads of `Catalog.heads(kind)` that are deleted and the person's own, each with its `About`, in thread id order.
+The heads of `threads.heads(rows, kind)` that are deleted and the person's own, each with its `About`, in thread id
+order.
 
 #### `about(thread: int) -> About`
-`Catalog.about` of the thread.
+`read.about` of the thread.
 
 #### `holder(word: str, digest: str, recipe: Recipe | None = None) -> tuple[Edit, About] | None`
 The first of `threads(word)` whose head is `digest`, with `recipe` when it is given, of the person's own if any;
@@ -343,7 +344,7 @@ The first of `threads(word)` whose head is `digest`, with `recipe` when it is gi
 `Store.get`.
 
 #### `title(digest: str | None) -> str`
-`Catalog.title_of`, or `—` for `None`.
+`titles.title_of`, or `—` for `None`.
 
 #### `model_of(engine: str) -> Model | None`
 The model the engine serves (`chatddx.factors.engine.model_of`), cached; `None` for an engine that isn't stored. Its
@@ -400,16 +401,16 @@ The stored cases of `family`'s current vignette, the bare one first, then by dig
 The schemas of the expectations of `case` the person sees, shared ones included, sorted, without repeats.
 
 #### `expectation_choices(cases: Sequence[str], schema: str) -> dict[str, dict[int, str]]`
-For each case, the threads of `Catalog.expecting(cases, schema)` the person `owns`, each with its head digest; `{}` for
-none. What `expectation` and `scoring` pick from. It refuses nothing.
+For each case, the threads of `threads.expecting(rows, cases, schema)` the person `owns`, each with its head digest;
+`{}` for none. What `expectation` and `scoring` pick from. It refuses nothing.
 
 #### `expectation(case: str, schema: str) -> Expectation | None`
 The person's own expectation of `case` under `schema`: `picked` of `expectation_choices`, or `None`.
 - Raises `Ambiguous("case <case> has expectations to choose from, in threads <t1>, <t2>, …")`.
 
 #### `shared(case: str, schema: str) -> list[tuple[Edit, About]]`
-The heads of `Catalog.expecting([case], schema)` the person `collaborates` on, each with its `About`, in thread id
-order: what they could take.
+The heads of `threads.expecting(rows, [case], schema)` the person `collaborates` on, each with its `About`, in thread
+id order: what they could take.
 
 ### The variation being tried
 
@@ -470,8 +471,8 @@ The facts the variation is compiled against: those its configuration's compilati
 that a translation of it differs from it by its texts alone; else `facts_for` its engine. `None` without a recipe.
 
 #### `own_language(variation: TriedVariation) -> str | None`
-The language the variation is written in: its varied recipe's (`Catalog.recipe_language`, its texts' vote), or,
-without a recipe, its skeleton's (`Catalog.language_of`).
+The language the variation is written in: its varied recipe's (`language.recipe_language`, its texts' vote), or,
+without a recipe, its skeleton's (`language.language_of`).
 
 #### `translated(recipe: Recipe | None) -> list[str]`
 The languages the recipe's translations carry it into, sorted; `[]` without a recipe or translations.
@@ -482,7 +483,7 @@ The languages the recipe's translations carry it into, sorted; `[]` without a re
 translated, with `skeleton(variation, language)`; or left out, `refused` `<label> has no translations into <language>`
 when the translations hold none, else the compile's `StructuralError`. When `own_language` is `None`, a case of a
 language the translations don't hold goes as written too. Nothing is stored.
-- `known`: each case's language; `Catalog.languages_of` the cases, their families', when not given.
+- `known`: each case's language; `language.languages_of` the cases, their families', when not given.
 - Raises `skeleton(variation)`'s errors for the cases sent as written.
 
 #### `request(variation: TriedVariation, engine: str | None, seed: int) -> dict[str, JsonValue]`
@@ -610,8 +611,8 @@ it is given (`chatddx.factors.request.compiled`), in a registry with what it ref
 compilation names. Nothing is stored.
 
 #### `linted(digest: str) -> list[Finding]`
-`lints` of the stored component, with `Catalog.language_of` for languages; a trial or a judge with its skeleton's
-compilations (`add_compilations`).
+`lints` of the stored component, with `language.language_of` over `rows` for languages; a trial or a judge with its
+skeleton's compilations (`add_compilations`).
 
 #### `add_compilations(registry: Registry, skeleton: str) -> None`
 Adds each stored compilation of `skeleton`, and the facts it names, to `registry`, where the factors' lint reads them.

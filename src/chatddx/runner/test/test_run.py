@@ -9,7 +9,7 @@ import pytest
 from psycopg import sql
 from pydantic import ValidationError
 
-from chatddx.catalog import Subject
+from chatddx.catalog import Subject, read
 from chatddx.conftest import connect
 from chatddx.curation import Plan
 from chatddx.factors.base import Code, Finding, Fingerprint, resolve
@@ -51,7 +51,7 @@ from chatddx.runner.run import (
 )
 from chatddx.runner.send import STOPPED
 from chatddx.runner.test.tools import component
-from chatddx.store import Catalog, Store
+from chatddx.store import Rows, Store
 from chatddx.store.store import Connection
 from chatddx.test.world import (
     GPT_OSS,
@@ -155,7 +155,7 @@ def test_a_run_sends_each_item_and_writes_its_log(
     streamed = [s.key for s in heard.of(Streamed)]
     assert streamed == sorted(streamed, key=started.index)
     assert set(streamed) == set(started) and not heard.of(Noted)
-    about = Catalog(conn).about(Subject(run=running.run))
+    about = read.about(Rows(conn), Subject(run=running.run))
     assert about.owner == alice.id
 
 

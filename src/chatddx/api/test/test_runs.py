@@ -243,8 +243,9 @@ def test_a_run_is_a_job_in_the_queue_until_it_is_scored(
 ) -> None:
     made, _ = sent(signed, asked(signed, concurrency=2))
     queue, run = Queue(conn), UUID(made["id"])
-    job = queue.last(run)
-    assert job is not None and queue.open(run) is None
+    placed = queue.placed([run]).get(run)
+    assert placed is not None and queue.open(run) is None
+    job = placed.job
     assert (job.owner, job.endpoint, job.slots) == (alice.id, QWEN, 2)
     assert (job.score, job.scorers, job.status, job.halt) == (
         True,
