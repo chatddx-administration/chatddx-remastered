@@ -9,7 +9,7 @@ from chatddx.factors.request import CHUNK_PARTS, Recipe, Skeleton, SlotName
 from chatddx.factors.scoring import Scorer
 from chatddx.inventory import EndpointSpec
 from chatddx.ledger import Score
-from chatddx.runner.run import Running
+from chatddx.runner import Running
 from chatddx.store import Kept
 
 KINDS: dict[str, tuple[str, ...]] = {

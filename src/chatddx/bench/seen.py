@@ -38,9 +38,7 @@ from chatddx.identity import Person, collaborates, owns, preferred, sees
 from chatddx.inventory import Inventory
 from chatddx.ledger import ItemKey, RunStarted, ScoreStarted
 from chatddx.rig import rig
-from chatddx.runner.gate import Refused
-from chatddx.runner.score import judge_at
-from chatddx.runner.send import STOPPED
+from chatddx.runner import STOPPED, Refused, judge_at
 from chatddx.scorers.shipped import problems
 from chatddx.store import Catalog, People, Rows, Store
 from chatddx.store.store import Connection
@@ -579,7 +577,7 @@ class Seen:
             return False
         try:
             for judge in scorer.judges:
-                _ = judge_at(self.inventory, self.store.get, judge, trial.cases)
+                _ = judge_at(self.inventory, self.store.get, trial, judge)
         except (ValueError, Refused):
             return False
         return True

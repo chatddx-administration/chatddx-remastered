@@ -1,7 +1,7 @@
 import queue
 from collections.abc import Callable, Iterator, Sequence
 from concurrent.futures import Future, ThreadPoolExecutor
-from dataclasses import dataclass
+from contextlib import AbstractContextManager, nullcontext
 from datetime import UTC, datetime
 from uuid import UUID, uuid4
 
@@ -10,6 +10,7 @@ from chatddx.factors.base import Code, Finding, Fingerprint, StructuralError, re
 from chatddx.factors.bundle import Registry
 from chatddx.factors.engine import served_model_name
 from chatddx.factors.request import Skeleton
+from chatddx.factors.scoring import Scoring
 from chatddx.factors.trial import CanarySet, Execution, Trial
 from chatddx.identity import Person
 from chatddx.inventory import Inventory
@@ -29,53 +30,27 @@ from chatddx.rig import rig
 from chatddx.store import Catalog, Store
 from chatddx.store.store import Connection
 
-from . import gate, rounds, send as sending
+from .events import (
+    CanaryEnded,
+    ItemEnded,
+    ItemStarted,
+    Noted,
+    RunEvent,
+    Streamed,
+    ToolRan,
+)
+from .gate import admit
 from .prepare import Items, PreparedItem
-from .rounds import Exchange, Toolbox
-from .send import Delta
-
-
-@dataclass(frozen=True)
-class ItemStarted:
-    key: ItemKey
-    seed: int
-
-
-@dataclass(frozen=True)
-class Streamed:
-    key: ItemKey
-    delta: Delta
-
-
-@dataclass(frozen=True)
-class ToolRan:
-    key: ItemKey
-    run: ToolRun
-
-
-@dataclass(frozen=True)
-class ItemEnded:
-    item: RunItem
-
-
-@dataclass(frozen=True)
-class CanaryEnded:
-    call: CanaryCall
-
-
-@dataclass(frozen=True)
-class Noted:
-    finding: Finding
-
-
-type Event = ItemStarted | Streamed | ToolRan | ItemEnded | CanaryEnded | Noted
+from .rounds import Exchange, Toolbox, converse, load
+from .score import Grading, grade
+from .send import Delta, Halt, Stopped, send
 
 
 def _now() -> datetime:
     return datetime.now(UTC)
 
 
-def _ignore(_: Event) -> None:
+def _ignore(_: RunEvent) -> None:
     pass
 
 
@@ -167,13 +142,22 @@ class Runner:
             findings=_resumed(log, trial),
         )
 
+    def score(
+        self,
+        run: UUID,
+        scoring: Scoring,
+        registry: Registry,
+        execution: Execution | None = None,
+    ) -> Grading:
+        return grade(
+            self._conn, self._inventory, self._by, run, scoring, registry, execution
+        )
+
     def _admitted(
         self, trial: Trial, registry: Registry, endpoint: str, execution: Execution
     ) -> tuple[str | None, Toolbox | None, str]:
-        secret = gate.check(self._inventory, registry.get, endpoint, trial)
-        toolbox = rounds.load(
-            resolve(registry.get, trial.skeleton, Skeleton), registry.get
-        )
+        secret = admit(self._inventory, registry.get, endpoint, trial)
+        toolbox = load(resolve(registry.get, trial.skeleton, Skeleton), registry.get)
         spec = self._inventory.endpoint(endpoint)
         if execution.concurrency > spec.max_jobs:
             raise ValueError(
@@ -234,7 +218,7 @@ class Running:
         self._canaries: list[CanaryCall] = list(canaries)
         self._findings: list[Finding] = list(findings)
         self._stopping: bool = False
-        self._halt: sending.Halt = sending.Halt()
+        self._halt: Halt = Halt()
         self._finished: bool = False
 
     @property
@@ -248,24 +232,31 @@ class Running:
     def stop(self) -> None:
         self._stopping = True
 
-    def halt(self) -> None:
-        self._stopping = True
-        self._halt.set()
+    def send(
+        self,
+        on_event: Callable[[RunEvent], None] | None = None,
+        halt: Halt | None = None,
+    ) -> None:
+        emit: Callable[[RunEvent], None] = on_event or _ignore
+        # Its own halt, so that a worker's failure halts this run's calls and not the caller's.
+        self._halt = Halt()
+        watching: AbstractContextManager[None] = (
+            nullcontext() if halt is None else halt.watching(self._halt.set)
+        )
+        try:
+            with watching:
+                self._probe("start", emit)
+                items = self._prepared(emit)
+                if self._started.execution.concurrency == 1:
+                    self._send_serially(items, emit)
+                else:
+                    self._send_concurrently(items, emit)
+                self._probe("end", emit)
+        finally:
+            if halt is not None and halt.is_set():
+                self._stopping = True
 
-    def send(self, on_event: Callable[[Event], None] | None = None) -> None:
-        emit: Callable[[Event], None] = on_event or _ignore
-        self._halt = sending.Halt()
-        if self._stopping:
-            self._halt.set()
-        self._probe("start", emit)
-        items = self._prepared(emit)
-        if self._started.execution.concurrency == 1:
-            self._send_serially(items, emit)
-        else:
-            self._send_concurrently(items, emit)
-        self._probe("end", emit)
-
-    def _probe(self, phase: Phase, emit: Callable[[Event], None]) -> None:
+    def _probe(self, phase: Phase, emit: Callable[[RunEvent], None]) -> None:
         started = self._started
         if started.canaries is None or phase not in started.verify_at:
             return
@@ -273,19 +264,19 @@ class Running:
         model = served_model_name(self._prepare.trial.engine, self._registry.get)
         sent = {(c.phase, c.canary) for c in self._canaries}
         for index, canary in enumerate(canaries):
-            if self._stopping or self._finished:
+            if self._stopped():
                 return
             if (phase, index) in sent:
                 continue
             try:
-                call = sending.send(
+                call = send(
                     self._url,
                     canary.render(model=model),
                     execution=started.execution,
                     secret=self._secret,
                     halt=self._halt,
                 )
-            except sending.Stopped as stopped:
+            except Stopped as stopped:
                 self._stopping = True
                 self._probed(phase, index, stopped.call, emit)
                 if self._halt.is_set():
@@ -294,20 +285,20 @@ class Running:
             self._probed(phase, index, call, emit)
 
     def _probed(
-        self, phase: Phase, index: int, call: Call, emit: Callable[[Event], None]
+        self, phase: Phase, index: int, call: Call, emit: Callable[[RunEvent], None]
     ) -> None:
         record = CanaryCall(run=self.run, phase=phase, canary=index, call=call)
         self._store.append(record)
         self._canaries.append(record)
         emit(CanaryEnded(record))
 
-    def _prepared(self, emit: Callable[[Event], None]) -> Iterator[PreparedItem]:
+    def _prepared(self, emit: Callable[[RunEvent], None]) -> Iterator[PreparedItem]:
         trial = self._prepare.trial
         sent = {i.key for i in self._items}
         schedule = self._started.execution.schedule(trial.cases, len(trial.seeds))
         for case, replicate in schedule:
             key = ItemKey(case=case, replicate=replicate)
-            if self._stopping or self._finished:
+            if self._stopped():
                 return
             if key in sent:
                 continue
@@ -325,10 +316,10 @@ class Running:
             yield prepared
 
     def _send_serially(
-        self, items: Iterator[PreparedItem], emit: Callable[[Event], None]
+        self, items: Iterator[PreparedItem], emit: Callable[[RunEvent], None]
     ) -> None:
         for item in items:
-            exchange = rounds.converse(
+            exchange = converse(
                 self._url,
                 item.body,
                 self._toolbox,
@@ -346,7 +337,7 @@ class Running:
                 raise KeyboardInterrupt
 
     def _send_concurrently(
-        self, items: Iterator[PreparedItem], emit: Callable[[Event], None]
+        self, items: Iterator[PreparedItem], emit: Callable[[RunEvent], None]
     ) -> None:
         execution = self._started.execution
         results: queue.SimpleQueue[Streamed | ToolRan | Future[Exchange]] = (
@@ -357,7 +348,7 @@ class Running:
         pool = ThreadPoolExecutor(execution.concurrency, "chatddx-runner")
 
         def work(item: PreparedItem, started_at: datetime) -> Exchange:
-            return rounds.converse(
+            return converse(
                 self._url,
                 item.body,
                 self._toolbox,
@@ -405,6 +396,9 @@ class Running:
                 halt.set()
             pool.shutdown(wait=False)
 
+    def _stopped(self) -> bool:
+        return self._stopping or self._finished or self._halt.is_set()
+
     def finish(self) -> list[Finding]:
         if self._finished:
             raise ValueError(f"run {self.run} is finished")
@@ -418,7 +412,7 @@ class Running:
         self._finished = True
         return check_run(run.model_copy(update={"finished": finished}), self._registry)
 
-    def _note(self, finding: Finding, emit: Callable[[Event], None]) -> None:
+    def _note(self, finding: Finding, emit: Callable[[RunEvent], None]) -> None:
         self._findings.append(finding)
         emit(Noted(finding))
 
@@ -427,7 +421,7 @@ class Running:
         key: ItemKey,
         vignette: Fingerprint,
         exchange: Exchange,
-        emit: Callable[[Event], None],
+        emit: Callable[[RunEvent], None],
     ) -> None:
         item = RunItem(
             run=self.run,

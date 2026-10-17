@@ -10,7 +10,7 @@ from chatddx import settings
 from chatddx.api import schemas
 from chatddx.factors.test.sample import fp
 from chatddx.ledger import Call, ItemKey, RunItem
-from chatddx.runner.run import ItemEnded
+from chatddx.runner import ItemEnded
 from chatddx.store.notify import Assembler, Events, channel, listen
 from chatddx.store.store import Connection
 from chatddx.worker import publish

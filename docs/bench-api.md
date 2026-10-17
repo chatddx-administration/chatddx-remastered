@@ -6,8 +6,8 @@ is and why it is shaped this way is in docs/bench.md. The types it passes throug
 `Scorer`, `Scoring`, `Expectation`, `Finding`, `StructuralError`, `ModelFacts`, `Landing`, `Model`), docs/ledger-api.md
 (`RunStarted`, `Run`, `ItemKey`, `Score`), docs/store-api.md (`Store`, `People`, `Rows`, `Connection`),
 docs/inventory-api.md (`Inventory`, `EndpointSpec`), docs/facts-api.md (`Facts`, `lints`), docs/identity-api.md
-(`Person`, `preferred`, `sees`, `owns`, `collaborates`) and docs/runner-api.md (`Runner`, `Running`, `Grader`,
-`Grading`, `Event`, `Refused`, `judge_at`).
+(`Person`, `preferred`, `sees`, `owns`, `collaborates`) and docs/runner-api.md (`Runner`, `Running`, `Grading`,
+`Halt`, `ScoreEvent`, `Refused`, `judge_at`).
 
 Paths are relative to `src/chatddx/bench/` unless they start with `src/`, `docs/` or `agents/`.
 
@@ -26,7 +26,7 @@ Paths are relative to `src/chatddx/bench/` unless they start with `src/`, `docs/
 ## Package
 `chatddx.bench` re-exports `Ambiguous`, `Conflict`, `MovedOn`, `NotFound`, `OverQuota`, `TriedVariation`, `KINDS`,
 `WRITTEN`, `word_of`, `Bench`, `Carried`, `Checked`, `Endpoint`, `Family`, `Graded`, `Moved`, `Proposed`, `Reach`,
-`Started`, `Taken`, `Written`, `ScoreHalt`, `ScorerStarted` and `ScoringEvent`. Edges import from `chatddx.bench`,
+`Started`, `Taken`, `Written`, `ScorerStarted` and `ScoringEvent`. Edges import from `chatddx.bench`,
 never by path; tests import their helpers from `chatddx.bench.test.helpers`.
 
 The modules, and the ones each builds on:
@@ -42,7 +42,7 @@ The modules, and the ones each builds on:
 - `saying.py`: `say`; on `errors.py`, `model.py` and `seen.py`.
 - `following.py`: `proposal`, `follow`, `moved`, `follow_moved`; on `components.py`, `errors.py`, `model.py` and
   `seen.py`.
-- `runs.py`: `start`, `again`, `resume`, `score`, `REFUSALS`, `ScorerStarted`, `ScoringEvent`, `ScoreHalt`; on
+- `runs.py`: `start`, `again`, `resume`, `score`, `REFUSALS`, `ScorerStarted`, `ScoringEvent`; on
   `configurations.py`, `errors.py`, `model.py`, `seen.py` and `variation.py`.
 - `bench.py`: `Bench`; on `seen.py` and the writes.
 
@@ -412,7 +412,7 @@ whatever `carried`.
 #### `scorers(run: RunStarted | None = None) -> list[tuple[Edit, About, Scorer]]`
 `threads("scorer")`, each with its scorer.
 - `run`: only those whose scorer applies to it: the run's skeleton offers each of its views, as `reach` has it, and
-  the World lets each of its judges score the trial's cases (`chatddx.runner.score.judge_at`).
+  the World lets each of its judges score the trial's cases (`chatddx.runner.judge_at`).
 
 #### `labels(scorer: str) -> dict[int, str]`
 What a scorer digest's views are called for the person: the view labels of the head `holder(scorer)` gives, else
@@ -782,7 +782,7 @@ another engine now (`Refused("endpoint '<name>' serves engine <digest>, the tria
 ### `resume(run: RunStarted) -> Running`
 A run of the person's own resumed by the runner (docs/runner-api.md, `Runner.resume`).
 
-### `score(run: RunStarted, scorers: Collection[str] | None = None, on_event: Callable[[ScoringEvent], None] | None = None, halt: ScoreHalt | None = None) -> list[Graded]`
+### `score(run: RunStarted, scorers: Collection[str] | None = None, on_event: Callable[[ScoringEvent], None] | None = None, halt: Halt | None = None) -> list[Graded]`
 The run scored by the scoring pass under each of `scorers_for(run)`, as `scoring` builds it now, by name.
 - `scorers`: only these digests.
 - `on_event`: given a `ScorerStarted` as each scorer's score starts, then the scoring pass's events as they come
@@ -800,15 +800,8 @@ A frozen dataclass.
 - `name: str`: as `score` names it.
 - `score: UUID`
 
-### `type ScoringEvent = Event | ScorerStarted`
-`Event` is `chatddx.runner.score.Event`.
-
-### `class ScoreHalt`
-A halt for `score` that another thread sets.
-- `set() -> None`
-- `is_set() -> bool`
-- `watching(grading: Grading)`: a context manager under which `set` halts that `Grading`, at once if it was set
-  already.
+### `type ScoringEvent = ScoreEvent | ScorerStarted`
+`ScoreEvent` is `chatddx.runner.ScoreEvent`.
 
 ## Tests
 In `src/chatddx/bench/test/`. The repl's and the API's tests reach the bench too, through their own fixtures over the

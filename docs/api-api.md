@@ -35,7 +35,7 @@ The modules, and what each builds on:
 - `listening.py`: psycopg, `chatddx.store.notify`.
 - `state.py`: `listening.py`, psycopg, `chatddx.{inventory,store}`.
 - `schemas.py`: `chatddx.catalog`, `chatddx.factors.{base,cases,request,trial}`, `chatddx.identity`,
-  `chatddx.runner.outcome`, `chatddx.settings`.
+  `chatddx.runner`, `chatddx.settings`.
 - `people.py`: `schemas.py`, `state.py`, `chatddx.bench`, `chatddx.identity`, `chatddx.settings`, `chatddx.store`.
 - `threads.py`: `schemas.py`, `people.py`, `chatddx.bench`, `chatddx.catalog`,
   `chatddx.factors.{base,facts,kinds,request,scoring,trial}`.
@@ -44,10 +44,10 @@ The modules, and what each builds on:
 - `world.py`: `schemas.py`, `people.py`, `threads.py`, `chatddx.bench`, `chatddx.factors.kinds`, `chatddx.inventory`,
   `chatddx.scorers.{scorer,shipped}`.
 - `events.py`: `schemas.py`, `chatddx.bench`, `chatddx.catalog`, `chatddx.factors.{base,request,scoring,trial}`,
-  `chatddx.ledger`, `chatddx.runner.{outcome,run,score}`, `chatddx.scorers.aggregate`.
+  `chatddx.ledger`, `chatddx.runner`, `chatddx.scorers.aggregate`.
 - `queue.py`: `schemas.py`, `people.py`, `chatddx.bench`, `chatddx.settings`, `chatddx.store`.
 - `runs.py`: `schemas.py`, `events.py`, `people.py`, `state.py`, `telling.py`, `threads.py`, `chatddx.bench`,
-  `chatddx.catalog`, `chatddx.factors.{base,request,trial}`, `chatddx.ledger`, `chatddx.runner.{outcome,prepare,run}`,
+  `chatddx.catalog`, `chatddx.factors.{base,request,trial}`, `chatddx.ledger`, `chatddx.runner`,
   `chatddx.scorers.answer`, `chatddx.store`.
 - `scores.py`: `schemas.py`, `events.py`, `people.py`, `state.py`, `chatddx.store`.
 - `app.py`: every module above but `events.py` and `telling.py`, `chatddx.bench`, `chatddx.inventory`,
@@ -837,7 +837,7 @@ the skeleton's `greedy`.
 ### `score_started_of(bench, scorer, score) -> Named`
 `score.started`: the scorer, its `Bench.title`, the score, and its views' labels (`Bench.labels`, else `view <i>`).
 
-### `said_of(event: chatddx.runner.run.Event) -> Named | None`
+### `said_of(event: chatddx.runner.RunEvent) -> Named | None`
 What the worker publishes of the runner's event; `None` for the rest, which rows tell:
 - `ItemStarted`, as `item.started`: the key, and the seed.
 - `Streamed`, as `item.delta`: the key, and the delta's kind, text and tokens so far.

@@ -21,15 +21,12 @@ This document contains project-wide instructions written by humans for agents.
 * `@pytest.mark.slow` marks the slowest tests, together \~7/8 of the full run, and the tests that would have the quick
   run make a template only they use (`loaded`, `ran`, `sampled`). `pytest -p chatddx.test.budget`, run serially,
   says which tests to mark or unmark, and which templates a run made.
-* Names tests share (models, endpoints, the recipes most tests run, the cases) are spelled once, in
-  `src/chatddx/test/world.py`; helpers one package's tests share stay in its `test/helpers.py`.
-* A test matches a table's cells, not its padding, so that a longer name doesn't fail it.
 * `pnpm --dir frontend test` runs the frontend's unit tests (vitest), each beside the module it tests.
 
 ## Staging
 A module is either wip or solidified.
 * wip (draft) modules are documented in `agents/wip-<module>.md`
-* solidified modules are documented in `docs/<module>*.md`, where the chatddx rule one of documentation applies.
+* solidified modules are documented in `docs/<module>*.md`, where documentation rule 1 applies.
 
 ## Documentation rules
 
@@ -47,13 +44,13 @@ AGENT: <verb>
 ```
 
 ### 2. Docs refer to the code, the code speaks for itself.
-Before committing, remove docstrings and comments that:
+Before committing, remove all and any docstrings and comments that:
 - reference the docs
 - tell what the code does
 
-### 3. How to write comment.
-1. Prefix with the comment's nature (e.g. "Patch"/"Compromise"/"Prototype"/"Accomodating for a discovered fact")
-2. Tell what's non-evident and only what the code doesn't already tell.
+### 3. How to write a comment.
+1. Prefix with the comment's nature (e.g. Patch, Compromise, Prototype, "Accomodating for a discovered fact")
+2. Tell what's non-evident and only what the code doesn't already tell, example:
 
 ```python
 # Optimization: Reusing families' language reduces query-load.
@@ -65,7 +62,7 @@ def _languages_of(self, cases: Sequence[str]) -> dict[str, str | None]:
 ```
 
 3. Optional: Use links. If a section of code is related to another section of code elsewhere such that reading both make
-   them easier to understand, insert links between them along with the comment.
+   them easier to understand, insert links between them along with the comment. Example:
 
 ```python
 # Policy: De facto refusal mechanism for

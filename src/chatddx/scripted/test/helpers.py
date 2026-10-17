@@ -3,7 +3,7 @@ from chatddx.factors.base import resolve
 from chatddx.factors.request import Skeleton
 from chatddx.factors.trial import Trial
 from chatddx.ledger import RunStarted
-from chatddx.runner.outcome import outcome
+from chatddx.runner import outcome
 
 UNFINISHED = "Unfinished: the stream ended before [DONE]"
 

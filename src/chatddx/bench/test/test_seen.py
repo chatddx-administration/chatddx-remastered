@@ -10,7 +10,6 @@ from chatddx.bench import (
     Graded,
     MovedOn,
     NotFound,
-    ScoreHalt,
     ScorerStarted,
     ScoringEvent,
 )
@@ -24,8 +23,7 @@ from chatddx.factors.request import Prompt
 from chatddx.factors.scoring import Expectation, Judge, View
 from chatddx.identity import Person, owns
 from chatddx.inventory import World
-from chatddx.runner.gate import Refused
-from chatddx.runner.score import Grader, score_run
+from chatddx.runner import Halt, Refused, Runner
 from chatddx.store import Catalog, People, Rows, Store
 from chatddx.store.store import Connection
 from chatddx.test.world import (
@@ -203,7 +201,9 @@ def test_a_run_is_left_to_score_until_scored_under_the_scoring_built_now(
     assert built is not None and len(built.expectations) == 2
     store = Store(conn)
     registry = store.load([scorer, *built.expectations])
-    _, findings = score_run(conn, run, built, registry, alice)
+    grading = Runner(conn, bench.inventory, alice).score(run, built, registry)
+    grading.send()
+    _, findings = grading.finish()
     assert findings == []
     assert set(bench.unscored(started)) == others
     assert [s.scoring for s in store.scores_of(run)] == [built.digest]
@@ -242,7 +242,7 @@ def test_only_a_finished_score_counts_against_what_is_left_to_score(
     assert built is not None
     registry = Store(conn).load([scorer, *built.expectations])
 
-    grading = Grader(conn, None, alice).start(run, built, registry)
+    grading = Runner(conn, bench.inventory, alice).score(run, built, registry)
     assert scorer in bench.unscored(started)
 
     _ = grading.finish()
@@ -669,7 +669,7 @@ def test_a_scoring_says_each_score_it_starts_and_a_halt_stops_the_rest(
     starts = {(e.scorer, e.name, e.score) for e in said if isinstance(e, ScorerStarted)}
     assert starts == {(g.scorer.digest, g.name, scored(g)) for g in graded}
 
-    halt = ScoreHalt()
+    halt = Halt()
     halt.set()
     before = len(bench.scores_of(started, every=True))
     assert {g.refused for g in bench.score(started, chosen, halt=halt)} == {"stopped"}

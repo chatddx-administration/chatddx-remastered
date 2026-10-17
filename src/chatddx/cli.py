@@ -41,8 +41,7 @@ from chatddx.portal.assets import Assets
 from chatddx.repl.loop import HISTORY, loop
 from chatddx.repl.shell import Repl, console
 from chatddx.rig import rig
-from chatddx.runner.gate import Refused
-from chatddx.runner.outcome import outcome
+from chatddx.runner import Refused, outcome
 from chatddx.scripted import (
     RUNS,
     fake_at,

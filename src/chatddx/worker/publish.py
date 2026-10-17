@@ -9,7 +9,7 @@ from pydantic import JsonValue
 from chatddx.api import schemas
 from chatddx.api.events import Named, judged_of, said_of
 from chatddx.bench import ScoringEvent
-from chatddx.runner.run import Event, ItemEnded
+from chatddx.runner import ItemEnded, RunEvent
 from chatddx.store.notify import LIMIT, channel, tell
 from chatddx.store.store import Connection
 
@@ -31,7 +31,7 @@ class Publisher:
         self._sent: float = time.monotonic()
         self._broken: bool = False
 
-    def run_event(self, event: Event) -> None:
+    def run_event(self, event: RunEvent) -> None:
         if isinstance(event, ItemEnded):
             self._drop(event.item.key.case, event.item.key.replicate)
         elif (said := said_of(event)) is not None:

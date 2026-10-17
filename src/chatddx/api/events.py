@@ -11,9 +11,16 @@ from chatddx.factors.request import Skeleton
 from chatddx.factors.scoring import Scorer
 from chatddx.factors.trial import Trial
 from chatddx.ledger import CanaryCall, RunItem, RunStarted, ScoreItem, ToolRun
-from chatddx.runner.outcome import outcome, usage
-from chatddx.runner.run import Event, ItemStarted, Streamed, ToolRan
-from chatddx.runner.score import JudgeAnswered, JudgeAsked
+from chatddx.runner import (
+    ItemStarted,
+    JudgeAnswered,
+    JudgeAsked,
+    RunEvent,
+    Streamed,
+    ToolRan,
+    outcome,
+    usage,
+)
 from chatddx.scorers.aggregate import mean
 
 from . import schemas
@@ -140,7 +147,7 @@ def score_item_of(item: ScoreItem) -> Named:
 
 
 # What a run's events tell that its rows don't, as they happen.
-def said_of(event: Event) -> Named | None:
+def said_of(event: RunEvent) -> Named | None:
     match event:
         case ItemStarted(key=key, seed=seed):
             return item_started_of(key.case, key.replicate, seed)

@@ -85,7 +85,7 @@ The gate enforces it against the inventory's `[cleared]` table until the clearan
 ### Judges
 - A judge's engine falls under the hard block: a judge prompt always holds a completion, which is sensitive. The
   scoring pass gates each judge's endpoint as a run's (`gate.bar` in `runner/score.py:judge_at`, `gate.admit` in
-  `Grader.start`), and refuses a judge reading the vignette or appendices.
+  `Runner.score`), and the gate refuses a judge reading the vignette or appendices.
 - Judge calls record their endpoints, by judge, name and URL (`ScoreStarted.endpoints`,
   `src/chatddx/ledger/score.py:JudgeEndpoint`), as a run records its own (`RunStarted.endpoint`), so whether a judged
   scoring was cleared can be audited from the ledger as a run's can.

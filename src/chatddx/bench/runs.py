@@ -1,6 +1,4 @@
-import threading
-from collections.abc import Callable, Collection, Generator, Mapping, Sequence
-from contextlib import contextmanager, nullcontext
+from collections.abc import Callable, Collection, Mapping, Sequence
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from typing import get_args
@@ -14,10 +12,7 @@ from chatddx.factors.request import RECIPE_PARTS, Skeleton
 from chatddx.factors.trial import CanarySet, Execution, Trial
 from chatddx.ledger import RunStarted
 from chatddx.ledger.run import PHASES, Phase
-from chatddx.runner.gate import Refused
-from chatddx.runner.run import Runner, Running
-from chatddx.runner.score import Event, Grader, Grading
-from chatddx.runner.send import STOPPED
+from chatddx.runner import STOPPED, Grading, Halt, Refused, Runner, Running, ScoreEvent
 
 from .configurations import keep_compilation
 from .errors import OverQuota
@@ -186,37 +181,7 @@ class ScorerStarted:
     score: UUID
 
 
-type ScoringEvent = Event | ScorerStarted
-
-
-class ScoreHalt:
-    def __init__(self) -> None:
-        self._guard: threading.Lock = threading.Lock()
-        self._set: bool = False
-        self._grading: Grading | None = None
-
-    def set(self) -> None:
-        with self._guard:
-            self._set = True
-            grading = self._grading
-        if grading is not None:
-            grading.halt()
-
-    def is_set(self) -> bool:
-        return self._set
-
-    @contextmanager
-    def watching(self, grading: Grading) -> Generator[None]:
-        with self._guard:
-            self._grading = grading
-            halted = self._set
-        if halted:
-            grading.halt()
-        try:
-            yield
-        finally:
-            with self._guard:
-                self._grading = None
+type ScoringEvent = ScoreEvent | ScorerStarted
 
 
 def score(
@@ -224,7 +189,7 @@ def score(
     run: RunStarted,
     scorers: Collection[str] | None = None,
     on_event: Callable[[ScoringEvent], None] | None = None,
-    halt: ScoreHalt | None = None,
+    halt: Halt | None = None,
 ) -> list[Graded]:
     found: list[Graded] = []
     stopped = False
@@ -250,8 +215,7 @@ def score(
             on_event(ScorerStarted(edit.digest, name, grading.score))
         failed: str | None = None
         try:
-            with nullcontext() if halt is None else halt.watching(grading):
-                grading.send(on_event)
+            grading.send(on_event, halt)
         except KeyboardInterrupt:
             stopped = True
         except REFUSALS as e:
@@ -269,5 +233,5 @@ def _started(seen: Seen, run: RunStarted, scorer: str) -> Grading:
     if built is None:
         raise LookupError("none of the run's cases has an expectation")
     registry = seen.store.load([built.scorer, *built.expectations])
-    grader = Grader(seen.conn, seen.inventory, seen.person)
-    return grader.start(run.run, built, registry)
+    runner = Runner(seen.conn, seen.inventory, seen.person)
+    return runner.score(run.run, built, registry)

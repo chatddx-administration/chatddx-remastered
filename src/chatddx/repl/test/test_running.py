@@ -15,8 +15,7 @@ from chatddx.repl.render import Tally, Transcript, plural
 from chatddx.repl.running import WRITING
 from chatddx.repl.shell import SEEDS, Repl
 from chatddx.repl.test.helpers import Say, cells, tagged
-from chatddx.runner.run import Event, Running, Streamed
-from chatddx.runner.score import Event as ScoreEvent, Grading
+from chatddx.runner import Grading, Halt, RunEvent, Running, ScoreEvent, Streamed
 from chatddx.store import Store
 from chatddx.test.world import (
     CASES,
@@ -304,7 +303,7 @@ def press_at(monkeypatch: pytest.MonkeyPatch, at: int, presses: int = 1) -> None
         count(self, tokens)
         press(tokens)
 
-    def evented(self: Transcript, e: Event) -> None:
+    def evented(self: Transcript, e: RunEvent) -> None:
         event(self, e)
         if isinstance(e, Streamed):
             press(e.delta.tokens)
@@ -372,10 +371,14 @@ def test_ctrl_c_twice_while_scoring_finishes_the_score_and_leaves_the_rest(
 ):
     send = Grading.send
 
-    def pressed(self: Grading, on_event: Callable[[ScoreEvent], None] | None = None):
+    def pressed(
+        self: Grading,
+        on_event: Callable[[ScoreEvent], None] | None = None,
+        halt: Halt | None = None,
+    ):
         signal.raise_signal(signal.SIGINT)
         signal.raise_signal(signal.SIGINT)
-        send(self, on_event)
+        send(self, on_event, halt)
 
     monkeypatch.setattr(Grading, "send", pressed)
     written = pressing(say, f"cell {LINES} {QWEN}", "run noted")

@@ -8,9 +8,16 @@ from rich.text import Text
 from chatddx.bench import Bench, Carried, Graded, Started, TriedVariation
 from chatddx.catalog.titles import short
 from chatddx.ledger import RunItem, RunStarted
-from chatddx.runner.gate import Refused
-from chatddx.runner.outcome import usage
-from chatddx.runner.run import Event, ItemEnded, ItemStarted, Noted, Running, Streamed
+from chatddx.runner import (
+    ItemEnded,
+    ItemStarted,
+    Noted,
+    Refused,
+    RunEvent,
+    Running,
+    Streamed,
+    usage,
+)
 
 from .render import (
     LABEL,
@@ -74,7 +81,7 @@ def run(repl: Repl, name: str, seed: str | None = None) -> None:
     transcript = Transcript(repl.console)
     ended: list[RunItem] = []
 
-    def on_event(event: Event) -> None:
+    def on_event(event: RunEvent) -> None:
         transcript.event(event)
         if isinstance(event, ItemEnded):
             ended.append(event.item)
@@ -174,7 +181,7 @@ def _tagged(
 
     with _Stopping(running) as stopping:
 
-        def on_event(event: Event) -> None:
+        def on_event(event: RunEvent) -> None:
             match event:
                 case ItemStarted(key=key):
                     stopping.tally = Tally(repl.console, width, names[key.case])

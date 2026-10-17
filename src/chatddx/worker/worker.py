@@ -13,10 +13,10 @@ import psycopg
 from chatddx import settings
 from chatddx.api import schemas
 from chatddx.api.events import graded_of, scoring_of
-from chatddx.bench import Bench, Graded, ScoreHalt
+from chatddx.bench import Bench, Graded
 from chatddx.inventory import Inventory
 from chatddx.ledger import RunStarted
-from chatddx.runner.run import Running
+from chatddx.runner import Halt, Running
 from chatddx.store import Job, People, Queue
 from chatddx.store.notify import WORKERS, listen
 from chatddx.store.store import Connection
@@ -32,26 +32,25 @@ LEFT = "its worker stopped"
 @dataclass
 class _Held:
     job: Job
-    scoring: ScoreHalt = field(default_factory=ScoreHalt)
+    halting: Halt = field(default_factory=Halt)
+    scoring: Halt = field(default_factory=Halt)
     running: Running | None = None
-    halted: bool = False
     left: str | None = None
     cut: bool = False
     guard: threading.Lock = field(default_factory=threading.Lock)
 
+    @property
+    def halted(self) -> bool:
+        return self.halting.is_set()
+
     def sending(self, running: Running) -> None:
         with self.guard:
             self.running = running
-            if self.halted:
-                running.halt()
-            elif self.left is not None:
+            if self.left is not None:
                 running.stop()
 
     def halt(self) -> None:
-        with self.guard:
-            self.halted = True
-            if self.running is not None:
-                self.running.halt()
+        self.halting.set()
         self.scoring.set()
 
     def cut_short(self) -> None:
@@ -207,7 +206,7 @@ class Worker:
             if bench.store.run(job.run).finished is None:
                 running = bench.resume(started)
                 held.sending(running)
-                running.send(publisher.run_event)
+                running.send(publisher.run_event, held.halting)
                 if held.left is not None and not held.halted:
                     return "queued"
                 _ = running.finish()

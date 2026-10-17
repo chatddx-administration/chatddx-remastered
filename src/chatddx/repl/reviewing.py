@@ -9,8 +9,7 @@ from chatddx.factors.base import resolve
 from chatddx.factors.request import Skeleton
 from chatddx.factors.trial import Trial
 from chatddx.ledger import Run, RunItem, RunStarted
-from chatddx.runner.outcome import usage
-from chatddx.runner.prepare import rendered_again
+from chatddx.runner import rendered_again, usage
 from chatddx.scorers.aggregate import mean
 from chatddx.scorers.shipped import unit_of
 

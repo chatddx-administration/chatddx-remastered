@@ -5,7 +5,7 @@ import pytest
 
 from chatddx.catalog import Subject, read
 from chatddx.curation import Plan, load_cases
-from chatddx.factors.base import resolve
+from chatddx.factors.base import Finding, resolve
 from chatddx.factors.cases import Case
 from chatddx.factors.request import Skeleton
 from chatddx.factors.scoring import Expectation, Judge, Scorer, Scoring, View
@@ -13,19 +13,18 @@ from chatddx.factors.trial import Execution, Trial
 from chatddx.identity import Person
 from chatddx.inventory import Inventory
 from chatddx.ledger import Endpoint, JudgeEndpoint, Score, check_score
-from chatddx.runner import send as sending
-from chatddx.runner.gate import Refused
-from chatddx.runner.run import Noted, Runner, Streamed
-from chatddx.runner.score import (
-    NO_EXPECTATION,
-    Event,
-    Grader,
+from chatddx.runner.events import (
     ItemScored,
     JudgeAnswered,
     JudgeAsked,
-    score_run,
+    Noted,
+    ScoreEvent,
+    Streamed,
 )
-from chatddx.runner.send import STOPPED
+from chatddx.runner.gate import Refused
+from chatddx.runner.run import Runner
+from chatddx.runner.score import NO_EXPECTATION
+from chatddx.runner.send import STOPPED, Halt, send
 from chatddx.runner.test.conftest import DELAY
 from chatddx.runner.test.test_run import rows, trial
 from chatddx.scorers import metrics
@@ -63,6 +62,19 @@ def ran(
     return running.run
 
 
+def score_run(
+    conn: Connection,
+    inventory: Inventory,
+    alice: Person,
+    run: UUID,
+    scoring: Scoring,
+    plan: Plan,
+) -> tuple[Score, list[Finding]]:
+    grading = Runner(conn, inventory, alice).score(run, scoring, plan.registry)
+    grading.send()
+    return grading.finish()
+
+
 def scorer(plan: Plan, name: str) -> Scorer:
     return resolve(plan.registry.get, plan.named("scorer", name).digest, Scorer)
 
@@ -87,7 +99,7 @@ def test_a_run_is_scored_through_every_view_of_its_scorer(
         scorer=plan.named("scorer", scored_by).digest,
         expectations=expectations(plan, made),
     )
-    score, findings = score_run(conn, run, scoring, plan.registry, alice)
+    score, findings = score_run(conn, inventory, alice, run, scoring, plan)
     assert findings == []
 
     stored = Store(conn).score(score.started.score)
@@ -112,7 +124,7 @@ def test_cases_without_an_expectation_get_no_value_and_are_noted(
     scoring = Scoring(
         scorer=plan.named("scorer", "lines").digest, expectations=(first,)
     )
-    score, findings = score_run(conn, run, scoring, plan.registry, alice)
+    score, findings = score_run(conn, inventory, alice, run, scoring, plan)
     assert [(f.code, f.message) for f in findings] == [
         (
             "score.no_expectation",
@@ -137,7 +149,7 @@ def test_an_answer_that_can_t_be_read_is_noted_and_scored_without_one(
         scorer=plan.named("scorer", "answer").digest,
         expectations=expectations(plan, made),
     )
-    score, findings = score_run(conn, run, scoring, plan.registry, alice)
+    score, findings = score_run(conn, inventory, alice, run, scoring, plan)
     assert findings == []
     assert score.finished is not None
     noted = score.finished.findings
@@ -166,7 +178,9 @@ def test_scoring_is_refused_before_anything_is_written(
     def refused(by: Scorer, error: type[Exception], match: str) -> None:
         scoring = Scoring(scorer=plan.registry.add(by), expectations=found)
         with pytest.raises(error, match=match):
-            _ = score_run(conn, running.run, scoring, plan.registry, alice)
+            _ = Runner(conn, inventory, alice).score(
+                running.run, scoring, plan.registry
+            )
 
     free_text = scorer(plan, "lines")
     refused(free_text, ValueError, "hasn't finished")
@@ -211,8 +225,8 @@ def test_a_judged_view_is_scored_from_its_judge_s_calls(
     made = trial(plan, LINES, cases=("noted", "crlf"), seeds=(7,))
     run = ran(conn, inventory, alice, made, plan)
     scoring = scoring_of(plan, made, judged(plan))
-    grading = Grader(conn, inventory, alice).start(run, scoring, plan.registry)
-    heard: list[Event] = []
+    grading = Runner(conn, inventory, alice).score(run, scoring, plan.registry)
+    heard: list[ScoreEvent] = []
     grading.send(heard.append)
     score, findings = grading.finish()
     assert findings == []
@@ -271,7 +285,7 @@ def test_a_judge_call_that_names_another_model_is_noted(
     made = trial(plan, LINES, cases=("noted",), seeds=(7,))
     run = ran(conn, inventory, alice, made, plan)
     scoring = scoring_of(plan, made, judged(plan))
-    score, _ = score_run(conn, run, scoring, plan.registry, alice, inventory)
+    score, _ = score_run(conn, inventory, alice, run, scoring, plan)
     [item] = [i for i in score.items if i.view == 1]
     [judged_call] = item.judge_calls
     response = cast(dict[str, Any], judged_call.call.response) | {"model": "other"}
@@ -308,15 +322,17 @@ def test_a_judge_is_refused_before_anything_is_written(
     by_remote = scoring_of(plan, made, judged(plan, view))
 
     def refused(
-        at: Inventory | None,
-        error: type[Exception],
-        match: str,
-        scoring: Scoring = by_remote,
+        at: Inventory, error: type[Exception], match: str, scoring: Scoring = by_remote
     ) -> None:
         with pytest.raises(error, match=match):
-            _ = Grader(conn, at, alice).start(run, scoring, plan.registry)
+            _ = Runner(conn, at, alice).score(run, scoring, plan.registry)
 
-    refused(None, ValueError, "judged views need the World's inventory")
+    unserved = inventory.model_copy(
+        update={
+            "endpoints": {n: e for n, e in inventory.endpoints.items() if n != REMOTE}
+        }
+    )
+    refused(unserved, Refused, "no endpoint serves engine")
     refused(inventory, Refused, f"endpoint {REMOTE!r} isn't cleared for source test")
     cleared = inventory.model_copy(
         update={"cleared": inventory.cleared | {REMOTE: ("test",)}}
@@ -337,7 +353,7 @@ def test_a_judge_is_refused_before_anything_is_written(
     )
     refused(
         inventory,
-        ValueError,
+        Refused,
         "reads the vignette, which no judge is given",
         scoring_of(plan, made, judged(plan, view)),
     )
@@ -362,21 +378,20 @@ def test_a_halt_during_a_judge_s_calls_keeps_the_seeds_it_has(
         judge=graded,
         params={"at": "/points", "max": 2},
     )
-    grading = Grader(conn, inventory, alice).start(
-        run, scoring_of(plan, made, judged(plan, view)), plan.registry
-    )
-    send = sending.send
+    scoring = scoring_of(plan, made, judged(plan, view))
+    grading = Runner(conn, inventory, alice).score(run, scoring, plan.registry)
     sent: list[int] = []
+    halt = Halt()
 
     def halting(*args: Any, **kwargs: Any) -> Any:
         sent.append(len(sent))
         if len(sent) == 2:
-            grading.halt()
+            halt.set()
         return send(*args, **kwargs)
 
-    monkeypatch.setattr(sending, "send", halting)
-    heard: list[Event] = []
-    grading.send(heard.append)
+    monkeypatch.setattr("chatddx.runner.score.send", halting)
+    heard: list[ScoreEvent] = []
+    grading.send(heard.append, halt)
     score, findings = grading.finish()
     [item] = score.items
     assert [c.call.error for c in item.judge_calls] == [None, STOPPED]

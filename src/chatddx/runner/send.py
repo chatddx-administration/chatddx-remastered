@@ -12,7 +12,7 @@ from chatddx.factors.response import REASONING, reasoning
 from chatddx.factors.trial import Execution
 from chatddx.ledger import Call, fingerprint_request
 
-from . import wire
+from .wire import Chunk, Rejected, assemble, post
 
 STREAM: dict[str, JsonValue] = {
     "stream": True,
@@ -38,14 +38,14 @@ class Halt:
     def __init__(self) -> None:
         self._set: threading.Event = threading.Event()
         self._guard: threading.Lock = threading.Lock()
-        self._streams: set[wire.Stream] = set()
+        self._watched: set[Callable[[], None]] = set()
 
     def set(self) -> None:
         with self._guard:
             self._set.set()
-            streams = list(self._streams)
-        for stream in streams:
-            stream.interrupt()
+            watched = list(self._watched)
+        for interrupt in watched:
+            interrupt()
 
     def is_set(self) -> bool:
         return self._set.is_set()
@@ -54,24 +54,24 @@ class Halt:
         return self._set.wait(timeout)
 
     @contextmanager
-    def watching(self, stream: wire.Stream) -> Generator[None]:
+    def watching(self, interrupt: Callable[[], None]) -> Generator[None]:
         with self._guard:
-            self._streams.add(stream)
+            self._watched.add(interrupt)
             halted = self._set.is_set()
         if halted:
-            stream.interrupt()
+            interrupt()
         try:
             yield
         finally:
             with self._guard:
-                self._streams.discard(stream)
+                self._watched.discard(interrupt)
 
 
 def _now() -> datetime:
     return datetime.now(UTC)
 
 
-def _deltas(chunk: wire.Chunk) -> Iterator[tuple[Delta, int]]:
+def _deltas(chunk: Chunk) -> Iterator[tuple[Delta, int]]:
     choices = chunk.get("choices")
     for choice in choices if isinstance(choices, list) else []:
         if not isinstance(choice, dict) or choice.get("index", 0) != 0:
@@ -119,7 +119,7 @@ def send(
     request = fingerprint_request(dict(body))
     started = started_at or _now()
     attempts = 0
-    received: list[wire.Chunk] = []
+    received: list[Chunk] = []
 
     def call(
         status: int | None,
@@ -127,7 +127,7 @@ def send(
         response: dict[str, JsonValue] | None = None,
     ) -> Call:
         if response is None and received:
-            response = wire.assemble(received)
+            response = assemble(received)
         return Call(
             request=request,
             started_at=started,
@@ -142,14 +142,14 @@ def send(
         while True:
             attempts += 1
             try:
-                stream = wire.post(
+                stream = post(
                     url,
                     {**body, **STREAM},
                     secret=secret,
                     timeout=execution.timeout_s,
                 )
                 break
-            except wire.Rejected as e:
+            except Rejected as e:
                 if attempts > execution.retries or not _retryable(e.status):
                     return call(e.status, str(e), e.body)
             except OSError as e:
@@ -170,7 +170,7 @@ def send(
     tokens = blank = 0
     error: str | None = None
     watching: AbstractContextManager[None] = (
-        nullcontext() if halt is None else halt.watching(stream)
+        nullcontext() if halt is None else halt.watching(stream.interrupt)
     )
     with stream, watching:
         try:
@@ -192,7 +192,7 @@ def send(
                     break
         except KeyboardInterrupt:
             raise Stopped(call(stream.status, STOPPED)) from None
-        except (wire.Rejected, OSError, ValueError) as e:
+        except (Rejected, OSError, ValueError) as e:
             if halt is not None and halt.is_set():
                 raise Stopped(call(stream.status, STOPPED)) from None
             error = f"{type(e).__name__}: {e}"

@@ -11,7 +11,7 @@ from chatddx.factors.cases import CleanupOp
 from chatddx.factors.request import RECIPE_PARTS
 from chatddx.factors.trial import Order
 from chatddx.identity import Person, Role
-from chatddx.runner.outcome import Outcome
+from chatddx.runner import Outcome
 
 
 class _Schema(BaseModel):

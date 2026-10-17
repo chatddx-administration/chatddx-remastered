@@ -20,8 +20,8 @@ Paths are relative to `src/chatddx/worker/` unless they start with `src/` or `do
 
 | Module | Builds on |
 | --- | --- |
-| `publish.py` | psycopg, pydantic, `chatddx.api.{schemas,events}`, `chatddx.bench`, `chatddx.runner.run`, `chatddx.store.{notify,store}` |
-| `worker.py` | `publish.py`, psycopg, `chatddx.settings`, `chatddx.api.{schemas,events}`, `chatddx.bench`, `chatddx.inventory`, `chatddx.ledger`, `chatddx.runner.run`, `chatddx.store` |
+| `publish.py` | psycopg, pydantic, `chatddx.api.{schemas,events}`, `chatddx.bench`, `chatddx.runner`, `chatddx.store.{notify,store}` |
+| `worker.py` | `publish.py`, psycopg, `chatddx.settings`, `chatddx.api.{schemas,events}`, `chatddx.bench`, `chatddx.inventory`, `chatddx.ledger`, `chatddx.runner`, `chatddx.store` |
 
 The worker says a run's events as the API's models have them (`chatddx.api.events`, `chatddx.api.schemas`), which
 build on pydantic only.
@@ -46,17 +46,17 @@ mode.
 A beat (`Queue.beat`) halts a job asked to halt, leaves one whose owner has paused, why `PAUSED`, and one another
 worker took over. Each job claimed is worked on a thread named `chatddx-job-<id>`, which isn't a daemon, with two
 connections of its own, one for a `Bench` of the job's owner and one for its `Publisher`:
-- an unfinished run: `Bench.resume`, `Running.send` with `Publisher.run_event`, and `Running.finish`; or, left
-  meanwhile and not halted, the job is queued again (`Queue.requeue`) with why it was left;
+- an unfinished run: `Bench.resume`, `Running.send` with `Publisher.run_event` and the job's halt, and
+  `Running.finish`; or, left meanwhile and not halted, the job is queued again (`Queue.requeue`) with why it was left;
 - when the job scores and isn't halted: `run.scoring`, with the scorers of `Bench.scorers_for` the job names (all
   when it names none) but those it has scored; `Bench.score` of each in turn, with `Publisher.scoring_event` and the
-  job's `ScoreHalt`, and `Queue.scored` of each that finished unhalted; then `run.scored`, the scores sorted by name.
-  Cut short at the deadline and not halted, the job is queued again with why `LEFT`, and nothing says `run.scored`;
+  job's scoring halt, and `Queue.scored` of each that finished unhalted; then `run.scored`, the scores sorted by name.
 - the job ends stopped when halted, else finished (`Queue.end`). An `Exception` within ends it failed, with the
   exception's message, else its type's name, as why, and is logged.
 
-A halt reaches a run as `Running.halt`, a leave as `Running.stop`, and both reach a scoring as `ScoreHalt.set`; one that
-comes before the run is resumed is applied as it is.
+A job holds two `chatddx.runner.Halt`s, one its run is sent with and one its scorings are. A halt sets both, a leave
+reaches a run as `Running.stop`, and a deadline passed sets the scoring's; one set before the send is applied as it
+is.
 
 ## publish.py
 
@@ -69,7 +69,7 @@ Says a run's events that aren't rows on its channel (`chatddx.store.notify.chann
 
 | Member | Does |
 | --- | --- |
-| `run_event(event: chatddx.runner.run.Event) -> None` | `put` of `chatddx.api.events.said_of(event)`; on `ItemEnded`, drops the item's deltas still held. |
+| `run_event(event: chatddx.runner.RunEvent) -> None` | `put` of `chatddx.api.events.said_of(event)`; on `ItemEnded`, drops the item's deltas still held. |
 | `scoring_event(event: chatddx.bench.ScoringEvent) -> None` | `put` of `chatddx.api.events.judged_of(event)`. |
 | `put(said: Named) -> None` | An `item.delta` or `judge.delta` is held, merged into the last held of its event, case and replicate when of the same kind; held deltas go out once `EVERY` has passed since the last went out, or they hold `LIMIT` characters. Any other event goes out at once, after what is held. |
 | `close() -> None` | What is held goes out. |

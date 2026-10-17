@@ -17,10 +17,22 @@ from chatddx.factors.response import Part, parts
 from chatddx.factors.scoring import Judge, Scorer, View
 from chatddx.factors.select import select
 from chatddx.ledger import Call, ItemKey, RunItem, ScoreItem
-from chatddx.runner.outcome import Outcome, outcome as ended, usage, used
-from chatddx.runner.run import Event, ItemEnded, Noted, Streamed, ToolRan
-from chatddx.runner.score import NO_EXPECTATION, JudgeAnswered, JudgeAsked
-from chatddx.runner.send import STOPPED, Delta
+from chatddx.runner import (
+    NO_EXPECTATION,
+    STOPPED,
+    Delta,
+    ItemEnded,
+    JudgeAnswered,
+    JudgeAsked,
+    Noted,
+    Outcome,
+    RunEvent,
+    Streamed,
+    ToolRan,
+    outcome as ended,
+    usage,
+    used,
+)
 from chatddx.scorers.aggregate import mean, stderr
 from chatddx.scorers.answer import Answer, read
 from chatddx.scorers.scorer import NO_ANSWER, NO_TARGET
@@ -127,7 +139,7 @@ class Transcript:
         self.held: str = ""
         self.kind: str | None = None
 
-    def event(self, event: Event) -> None:
+    def event(self, event: RunEvent) -> None:
         match event:
             case Streamed(delta=Delta(kind=kind, text=text)) if kind != self.kind:
                 self.begin({"reasoning": "thinking", "content": None}.get(kind, text))

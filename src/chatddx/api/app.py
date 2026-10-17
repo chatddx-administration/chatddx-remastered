@@ -14,7 +14,7 @@ from starlette.exceptions import HTTPException
 
 from chatddx.bench import Ambiguous, Conflict, MovedOn, NotFound, OverQuota
 from chatddx.inventory import Inventory
-from chatddx.runner.gate import Refused
+from chatddx.runner import Refused
 from chatddx.store import UnderWay
 from chatddx.worker import Worker
 

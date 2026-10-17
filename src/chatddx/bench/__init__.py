@@ -16,7 +16,7 @@ from .model import (
     Written,
     word_of,
 )
-from .runs import ScoreHalt, ScorerStarted, ScoringEvent
+from .runs import ScorerStarted, ScoringEvent
 from .variation import TriedVariation
 
 __all__ = [
@@ -36,7 +36,6 @@ __all__ = [
     "OverQuota",
     "Proposed",
     "Reach",
-    "ScoreHalt",
     "ScorerStarted",
     "ScoringEvent",
     "Started",

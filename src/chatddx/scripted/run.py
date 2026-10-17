@@ -7,8 +7,7 @@ from chatddx.factors.trial import Trial
 from chatddx.fake_vllm.script import Script
 from chatddx.fake_vllm.server import serving
 from chatddx.ledger import RunStarted
-from chatddx.runner.run import Event, Running, Streamed
-from chatddx.runner.score import judge_at
+from chatddx.runner import Halt, RunEvent, Streamed, judge_at
 
 from .fakes import fake_at
 from .read import ScriptedRun
@@ -63,7 +62,8 @@ def run(bench: Bench, scripted: ScriptedRun) -> RunStarted:
     with serving([fake], script=script):
         started = bench.start(tried, scripted.endpoint, cases, (scripted.seed,))
         running = started.first
-        running.send(_halting(running, scripted.stop_after))
+        halt = Halt()
+        running.send(_halting(halt, scripted.stop_after), halt)
     if scripted.unfinished:
         return running.started
     _ = running.finish()
@@ -73,20 +73,20 @@ def run(bench: Bench, scripted: ScriptedRun) -> RunStarted:
     return running.started
 
 
-def _halting(running: Running, after: int | None) -> Callable[[Event], None]:
-    def heard(event: Event) -> None:
+def _halting(halt: Halt, after: int | None) -> Callable[[RunEvent], None]:
+    def heard(event: RunEvent) -> None:
         streamed = isinstance(event, Streamed) and event.delta.tokens
         if after is not None and streamed and streamed >= after:
-            running.halt()
+            halt.set()
 
     return heard
 
 
 @contextmanager
 def _judging(bench: Bench, run: RunStarted) -> Generator[None]:
-    cases = resolve(bench.store.get, run.trial, Trial).cases
+    trial = resolve(bench.store.get, run.trial, Trial)
     at = {
-        judge_at(bench.inventory, bench.store.get, judge, cases)[2]
+        judge_at(bench.inventory, bench.store.get, trial, judge)
         for _, _, scorer in bench.scorers(run)
         for judge in scorer.judges
     }

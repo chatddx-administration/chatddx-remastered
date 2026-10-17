@@ -36,12 +36,7 @@ and the modules `cases`, `engine`, `facts`, `kinds`, `request`, `response`, `sco
 The package imports no other chatddx package. It depends on pydantic, and `lint.py` also depends on `jsonschema` and
 `referencing`.
 
-## Conventions
-
-**Models.** Every model is a pydantic model derived from `base.py:Frozen`: frozen, with `extra="forbid"`. Building
-one validates it. Sequences are tuples.
-
-**Errors.**
+## Errors
 
 | Exception | When |
 | --- | --- |
