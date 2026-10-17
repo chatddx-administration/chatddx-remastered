@@ -74,9 +74,9 @@ whatever stores or exports them (see "Storage").
 
 ### Errors and findings
 As with components (docs/factors.md, "Errors and findings"), problems come in two strengths.
-- An *error* stops the work. A record or log that breaks its own rules can't be built: stages out of order, records of
-  another log, a time that finishes before it starts. Checking a run or a score stops when the records don't fit the
-  components they refer to: items the trial doesn't contain, canary calls it didn't plan, a score of another run.
+- An *error* stops the work. A record or log that breaks its own rules can't be built: records of another log, a
+  time that finishes before it starts. Checking a run or a score stops when the records don't fit the components they
+  refer to: items the trial doesn't contain, canary calls it didn't plan, a score of another run.
 - A *finding* is a warning about something observed that doesn't match what was declared. It doesn't stop the work
   (see "Findings").
 
@@ -143,9 +143,6 @@ kinds:
 
 Not everything is checked yet (see "Open design issues").
 
-Two runs whose trials build their prompts alike can also be compared, to show whether the engine read the same prompt
-for the same item both times.
-
 ## Call
 A call records one exchange with an engine: an item's first request, a tool round's, a canary's or a judge's, sent
 in one or more attempts. It holds a fingerprint of the request, when it started and finished, how many attempts it
@@ -157,10 +154,11 @@ depend on how a client spells the JSON or orders the request's settings, but it 
 properties, since that is part of what the model reads.
 
 Rendering asks the engine for the prompt's token ids: the tokens it actually read after applying its chat template.
-They encode the case's text too, so the response is stored without them and only their fingerprint is kept. Comparing
-fingerprints shows whether the engine read the same prompt, without storing the text.
+They encode the case's text too, so a call takes them out of the response it is given and keeps only their
+fingerprint. Comparing fingerprints would show whether the engine read the same prompt, without storing the text (see
+"Open design issues").
 
-Fingerprints may be keyed (docs/factors.md, "Fingerprints"), and fingerprints made with different keys never match.
+A call's fingerprints aren't keyed (docs/factors.md, "Fingerprints").
 
 The response also says what the engine claims to be: the model name it answered as, which checks compare with the
 declared one, and a system fingerprint, which nothing compares yet.
@@ -202,8 +200,7 @@ items, judges or seeds that don't exist. Everything else is a warning, of four k
 A finding (docs/factors.md, "Errors and findings") says what it is about: an item, a tool, a scorer, the run or the
 score. All of the ledger's findings are warnings. They come from
 - the runner and the scoring pass, while they run, kept in the finish record (see "Run finish" and "Score finish");
-- checking a run or a score (see "Run" and "Score"), which can be repeated at any time, so nothing stores them;
-- comparing the prompts of two runs (see "Run").
+- checking a run or a score (see "Run" and "Score"), which can be repeated at any time, so nothing stores them.
 
 The API lists every finding (docs/ledger-api.md, "Finding codes").
 
@@ -255,6 +252,8 @@ Most of the plan is compared with what happened (see "What a record holds"), but
   rebuilds none.
 
 ### Smaller issues
+- **Prompt-token drift isn't checked.** Checking a run notes the items without a prompt-token fingerprint, but
+  nothing compares the fingerprints between runs, though that is what they are kept for.
 - **Canary drift isn't checked.** Nothing compares canary outputs between phases or between runs.
 - **Only run items are fully attested.** Judge calls get the model check but no prompt check, and canary calls get
   neither.

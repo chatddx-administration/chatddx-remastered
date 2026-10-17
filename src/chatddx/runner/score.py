@@ -253,11 +253,11 @@ class Grading:
     def finish(self) -> tuple[Score, list[Finding]]:
         if self._finished:
             raise ValueError(f"score {self.score} is finished")
-        log = Score(stages=(self._started,), items=tuple(self._items))
+        log = Score(started=self._started, items=tuple(self._items))
         finished = log.finish(_now(), self._findings)
         self._store.append(finished)
         self._finished = True
-        score = Score(stages=(self._started, finished), items=log.items)
+        score = log.model_copy(update={"finished": finished})
         return score, check_score(score, self._ran, self._loaded)
 
     def _note(self, finding: Finding, emit: Callable[[Event], None]) -> None:

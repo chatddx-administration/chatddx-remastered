@@ -409,21 +409,14 @@ class Running:
         if self._finished:
             raise ValueError(f"run {self.run} is finished")
         run = Run(
-            stages=(self._started,),
+            started=self._started,
             items=tuple(self._items),
             canaries=tuple(self._canaries),
         )
         finished = run.finish(_now(), self._findings)
         self._store.append(finished)
         self._finished = True
-        return check_run(
-            Run(
-                stages=(self._started, finished),
-                items=run.items,
-                canaries=run.canaries,
-            ),
-            self._registry,
-        )
+        return check_run(run.model_copy(update={"finished": finished}), self._registry)
 
     def _note(self, finding: Finding, emit: Callable[[Event], None]) -> None:
         self._findings.append(finding)

@@ -60,7 +60,7 @@ def ran(
         Subject(run=started.run), Entry(field=EntryField.OWNER, person=by.id), by.id
     )
     if finished:
-        store.append(Run(stages=(started,)).finish(datetime.now(UTC), findings))
+        store.append(Run(started=started).finish(datetime.now(UTC), findings))
     return started.run
 
 

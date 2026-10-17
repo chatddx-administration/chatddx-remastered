@@ -175,7 +175,7 @@ def test_run_and_score_roundtrip(conn: Connection) -> None:
         CanaryCall(run=run_id, phase=p, canary=0, call=call(served))
         for p in ("start", "end")
     )
-    finished = Run(stages=(started,), items=items, canaries=canaries).finish(NOW)
+    finished = Run(started=started, items=items, canaries=canaries).finish(NOW)
     store.append(started, *reversed(items), *canaries)
     store.append(finished)
 
@@ -206,7 +206,7 @@ def test_run_and_score_roundtrip(conn: Connection) -> None:
             for i in items
         ),
     )
-    score_finished = Score(stages=(score_started,), items=score_items).finish(NOW)
+    score_finished = Score(started=score_started, items=score_items).finish(NOW)
     store.append(score_started, *score_items, score_finished)
     score = store.score(score_id)
     assert score.finished == score_finished

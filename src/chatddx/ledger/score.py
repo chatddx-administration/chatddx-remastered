@@ -1,6 +1,6 @@
 from collections.abc import Sequence
 from datetime import datetime
-from typing import Annotated, ClassVar, Literal
+from typing import ClassVar, Literal
 from uuid import UUID
 
 from pydantic import AwareDatetime, Field, JsonValue, model_validator
@@ -20,7 +20,7 @@ from chatddx.factors.scoring import (
 from chatddx.factors.select import reaches
 from chatddx.factors.trial import Execution, Trial
 
-from .call import Call, check_execution
+from .call import Call, attest_model, check_execution
 from .record import (
     ItemKey,
     Record,
@@ -65,10 +65,6 @@ class ScoreFinished(Record):
     seal: Digest
 
 
-ScoreStage = Annotated[ScoreStarted | ScoreFinished, Field(discriminator="stage")]
-SCORE_STAGES = ("started", "finished")
-
-
 class ScoreItem(Record):
     score: UUID
     key: ItemKey
@@ -79,25 +75,16 @@ class ScoreItem(Record):
 
 
 class Score(Frozen):
-    stages: tuple[ScoreStage, ...] = Field(min_length=1)
+    started: ScoreStarted
+    finished: ScoreFinished | None = None
     items: tuple[ScoreItem, ...] = ()
 
     @model_validator(mode="after")
     def _log(self) -> "Score":
-        check_log(
-            self.stages, SCORE_STAGES, [r.score for r in (*self.stages, *self.items)]
-        )
+        finished = () if self.finished is None else (self.finished,)
+        rows = (self.started, *finished, *self.items)
+        check_log(self.started, self.finished, [r.score for r in rows])
         return self
-
-    @property
-    def started(self) -> ScoreStarted:
-        stage = self.stages[0]
-        assert isinstance(stage, ScoreStarted)
-        return stage
-
-    @property
-    def finished(self) -> ScoreFinished | None:
-        return next((s for s in self.stages if isinstance(s, ScoreFinished)), None)
 
     def seal(self) -> str:
         return seal_rows(self.started, items=self.items)
@@ -139,7 +126,10 @@ def check_score(score: Score, run: Run, registry: Registry) -> list[Finding]:
         if item.key not in run_keys:
             raise StructuralError(f"score item {item.key} is not in the run")
         findings.extend(_judged(item, scorer.views[item.view].judge, judges))
-        findings.extend(_attested(item, judges, registry))
+        for judge in dict.fromkeys(jc.judge for jc in item.judge_calls):
+            want = served_model_name(judges[judge].engine, registry.get)
+            calls = (jc.call for jc in item.judge_calls if jc.judge == judge)
+            findings.extend(attest_model(calls, want, "judge engine", str(item.key)))
     if (ran := started.scorer_version) != scorer.version:
         findings.append(
             Finding(
@@ -183,33 +173,6 @@ def check_score(score: Score, run: Run, registry: Registry) -> list[Finding]:
             at = jc.call.started_at
             sent[item.key] = min(sent.get(item.key, at), at)
     return findings + check_execution(started.execution, trial, calls, sent)
-
-
-def _attested(
-    item: ScoreItem, judges: dict[str, Judge], registry: Registry
-) -> list[Finding]:
-    findings: list[Finding] = []
-    for judge in dict.fromkeys(jc.judge for jc in item.judge_calls):
-        want = served_model_name(judges[judge].engine, registry.get)
-        calls = [jc.call for jc in item.judge_calls if jc.judge == judge]
-        returned = {c.returned_model for c in calls if c.response is not None}
-        for got in sorted(m for m in returned - {want} if m is not None):
-            findings.append(
-                Finding(
-                    code="attestation.model",
-                    message=f"judge engine returned model {got!r}, declared {want!r}",
-                    subject=str(item.key),
-                )
-            )
-        if None in returned:
-            findings.append(
-                Finding(
-                    code="attestation.model",
-                    message=f"judge engine returned no model name, declared {want!r}",
-                    subject=str(item.key),
-                )
-            )
-    return findings
 
 
 def _judged(

@@ -154,7 +154,6 @@ Canaries, prompt-token fingerprints and comparing completions show which one app
 - **Frictionless development.** A mismatch between what is declared and what is observed produces a warning, never a crash. Examples:
  - `attestation.model`: returned model ≠ declared;
  - `attestation.prompt_tokens`: prompt tokens have no fingerprint;
- - `attestation.prompt_tokens_drift`;
  - `run.incomplete`;
  - `ledger.seal`: rows changed after sealing;
  - `engine.chat_template`, `engine.chat_template_date`;
@@ -246,7 +245,7 @@ described below.
   (`docs/factors.md`, "Tool rounds"). Each request is a call, tried again only when it didn't get through.
 
 ### After the run
-1. After each response, fingerprint_prompt_tokens(response) takes prompt_token_ids out of the response and returns their fingerprint. Once an item's last call is done, the runner stores a RunItem row with the key (case, replicate), the observed vignette fingerprint, its first Call and each tool round's. A Call holds the request's fingerprint, the timings, the attempt count, the response without its prompt token IDs, and the prompt-token fingerprint.
+1. After each response, the Call made of it takes prompt_token_ids out of the response and keeps their fingerprint. Once an item's last call is done, the runner stores a RunItem row with the key (case, replicate), the observed vignette fingerprint, its first Call and each tool round's. A Call holds the request's fingerprint, the timings, the attempt count, the response without its prompt token IDs, and the prompt-token fingerprint.
 2. At the end, Run(...).finish() produces a RunFinished row with the seal. check_run then compares what the run declared with what came back.
 
 ### Scoring records

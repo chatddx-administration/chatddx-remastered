@@ -20,7 +20,6 @@ from chatddx.ledger import (
     ToolRun,
     Turn,
     check_run,
-    fingerprint_prompt_tokens,
 )
 
 
@@ -56,20 +55,16 @@ class Rounds:
             for i, n in enumerate(names)
         ]
         message: dict[str, JsonValue] = {"role": "assistant", "tool_calls": calls}
-        response, prompt_tokens = fingerprint_prompt_tokens(
-            {
-                "model": model or self.served,
-                "choices": [{"message": message}],
-                "prompt_token_ids": [1],
-            }
-        )
         return Call(
             request=fp("body"),
             started_at=NOW,
             finished_at=NOW,
             status=200,
-            response=response,
-            prompt_tokens=prompt_tokens,
+            response={
+                "model": model or self.served,
+                "choices": [{"message": message}],
+                "prompt_token_ids": [1],
+            },
         )
 
     def item(self, first: Call, *turns: Turn) -> RunItem:
@@ -82,7 +77,7 @@ class Rounds:
         )
 
     def findings(self, first: Call, *turns: Turn) -> list[Finding]:
-        run = Run(stages=(self.started,), items=(self.item(first, *turns),))
+        run = Run(started=self.started, items=(self.item(first, *turns),))
         return check_run(run, self.reg)
 
     def check(self, first: Call, *turns: Turn) -> list[str]:

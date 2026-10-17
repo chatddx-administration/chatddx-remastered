@@ -80,9 +80,7 @@ def test_a_run_s_rows_its_scores_included_are_read_in_the_order_written(
         for r in (1, 0)
     ]
     canary = CanaryCall(run=run, phase="start", canary=0, call=call("m"))
-    finished = Run(stages=(started,), items=tuple(items), canaries=(canary,)).finish(
-        NOW
-    )
+    finished = Run(started=started, items=tuple(items), canaries=(canary,)).finish(NOW)
     score_started = ScoreStarted(
         score=score,
         run=run,
@@ -92,7 +90,7 @@ def test_a_run_s_rows_its_scores_included_are_read_in_the_order_written(
         scoring=ids["scoring"],
     )
     scored = ScoreItem(score=score, key=items[0].key, view=0, value=1.0)
-    score_finished = Score(stages=(score_started,), items=(scored,)).finish(NOW)
+    score_finished = Score(started=score_started, items=(scored,)).finish(NOW)
     written = [
         started,
         items[0],

@@ -185,10 +185,8 @@ class Store:
             "SELECT stage, payload FROM ledger.run_stage WHERE run = %s", "run", run
         )
         return Run(
-            stages=(
-                RunStarted.parse(started),
-                *(RunFinished.parse(p) for p in finished),
-            ),
+            started=RunStarted.parse(started),
+            finished=None if finished is None else RunFinished.parse(finished),
             items=tuple(
                 RunItem.parse(p)
                 for p in self._payloads(
@@ -210,10 +208,8 @@ class Store:
             score,
         )
         return Score(
-            stages=(
-                ScoreStarted.parse(started),
-                *(ScoreFinished.parse(p) for p in finished),
-            ),
+            started=ScoreStarted.parse(started),
+            finished=None if finished is None else ScoreFinished.parse(finished),
             items=tuple(
                 ScoreItem.parse(p)
                 for p in self._payloads(
@@ -326,13 +322,13 @@ class Store:
 
     def _stages(
         self, query: LiteralString, log: str, key: UUID
-    ) -> tuple[str, list[str]]:
+    ) -> tuple[str, str | None]:
         stages = {str(s): str(p) for s, p in self._conn.execute(query, (key,))}
         if not stages:
             raise LookupError(f"{log} {key} is not in the store")
         if "started" not in stages:
             raise StructuralError(f"{log} {key} has no started row")
-        return stages["started"], [p for s, p in stages.items() if s == "finished"]
+        return stages["started"], stages.get("finished")
 
 
 def _runs_of(cur: psycopg.Cursor[TupleRow], records: Iterable[Record]) -> set[UUID]:

@@ -1,5 +1,6 @@
-from collections.abc import Mapping, Sequence
+from collections.abc import Iterable, Mapping, Sequence
 from datetime import datetime
+from typing import cast
 
 from pydantic import Field, JsonValue, model_validator
 
@@ -25,6 +26,27 @@ class Call(Frozen):
     attempts: int = Field(default=1, ge=1)
     error: str | None = None
 
+    @model_validator(mode="before")
+    @classmethod
+    def _prompt_tokens(cls, data: object) -> object:
+        if not isinstance(data, dict):
+            return data
+        fields = cast(dict[str, object], data)
+        response = fields.get("response")
+        if not isinstance(response, dict) or "prompt_token_ids" not in response:
+            return fields
+        if fields.get("prompt_tokens") is not None:
+            raise ValueError("prompt_tokens and prompt_token_ids both given")
+        kept = cast(dict[str, JsonValue], response)
+        ids = kept["prompt_token_ids"]
+        return {
+            **fields,
+            "response": {k: v for k, v in kept.items() if k != "prompt_token_ids"},
+            "prompt_tokens": Fingerprint.of(canonical_bytes(ids))
+            if isinstance(ids, list)
+            else None,
+        }
+
     @model_validator(mode="after")
     def _times(self) -> "Call":
         in_order(self.started_at, self.finished_at)
@@ -35,26 +57,9 @@ class Call(Frozen):
         model = (self.response or {}).get("model")
         return model if isinstance(model, str) else None
 
-    @property
-    def system_fingerprint(self) -> str | None:
-        fp = (self.response or {}).get("system_fingerprint")
-        return fp if isinstance(fp, str) else None
 
-
-def fingerprint_prompt_tokens(
-    response: dict[str, JsonValue], key: tuple[str, bytes] | None = None
-) -> tuple[dict[str, JsonValue], Fingerprint | None]:
-    kept = {k: v for k, v in response.items() if k != "prompt_token_ids"}
-    ids = response.get("prompt_token_ids")
-    if not isinstance(ids, list):
-        return kept, None
-    return kept, Fingerprint.of(canonical_bytes(ids), key)
-
-
-def fingerprint_request(
-    body: dict[str, JsonValue], key: tuple[str, bytes] | None = None
-) -> Fingerprint:
-    return Fingerprint.of(canonical_bytes(sorted_keys(body)), key)
+def fingerprint_request(body: dict[str, JsonValue]) -> Fingerprint:
+    return Fingerprint.of(canonical_bytes(sorted_keys(body)))
 
 
 class ToolRun(Frozen):
@@ -74,6 +79,29 @@ class ToolRun(Frozen):
 class Turn(Frozen):
     tools: tuple[ToolRun, ...] = Field(min_length=1)
     call: Call | None = None
+
+
+def attest_model(
+    calls: Iterable[Call], want: str, who: str, subject: str
+) -> list[Finding]:
+    returned = {c.returned_model for c in calls if c.response is not None}
+    findings = [
+        Finding(
+            code="attestation.model",
+            message=f"{who} returned model {got!r}, declared {want!r}",
+            subject=subject,
+        )
+        for got in sorted(m for m in returned - {want} if m is not None)
+    ]
+    if None in returned:
+        findings.append(
+            Finding(
+                code="attestation.model",
+                message=f"{who} returned no model name, declared {want!r}",
+                subject=subject,
+            )
+        )
+    return findings
 
 
 def check_execution(

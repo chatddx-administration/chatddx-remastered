@@ -1,4 +1,4 @@
-from .call import Call, ToolRun, Turn, fingerprint_prompt_tokens, fingerprint_request
+from .call import Call, ToolRun, Turn, fingerprint_request
 from .record import ItemKey, Record
 from .run import (
     CanaryCall,
@@ -9,7 +9,6 @@ from .run import (
     RunStarted,
     ToolCode,
     check_run,
-    compare_prompt_tokens,
 )
 from .score import (
     JudgeCall,
@@ -42,7 +41,5 @@ __all__ = [
     "Turn",
     "check_run",
     "check_score",
-    "compare_prompt_tokens",
-    "fingerprint_prompt_tokens",
     "fingerprint_request",
 ]

@@ -218,7 +218,7 @@ The API lists them (docs/runner-api.md, "Finding codes").
   writes one.
 - **No World's endpoint names a canary set**, though data sets hold them; canary outputs aren't compared
   (docs/chatddx.md, "Possible design issues"), and canary calls stream without events.
-- **Fingerprints are unkeyed.** A call can take a key, but neither the runner nor the scoring pass passes one
+- **Fingerprints are unkeyed.** Neither `send` nor the ledger takes a key for a call's fingerprints
   (docs/factors.md, "Fingerprints").
 - **Judge calls go one at a time**, and every judged scoring confirms its judges' endpoints, even when no item needs a
   judge; an endpoint that hangs holds it up to the confirmation's timeout.

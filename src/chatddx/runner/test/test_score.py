@@ -279,7 +279,8 @@ def test_a_judge_call_that_names_another_model_is_noted(
         update={"call": judged_call.call.model_copy(update={"response": response})}
     )
     edited = Score(
-        stages=score.stages,
+        started=score.started,
+        finished=score.finished,
         items=tuple(
             i.model_copy(update={"judge_calls": (other,)}) if i == item else i
             for i in score.items

@@ -8,10 +8,9 @@ from typing import Literal
 
 from pydantic import JsonValue
 
-from chatddx.factors.base import Fingerprint
 from chatddx.factors.response import REASONING, reasoning
 from chatddx.factors.trial import Execution
-from chatddx.ledger import Call, fingerprint_prompt_tokens, fingerprint_request
+from chatddx.ledger import Call, fingerprint_request
 
 from . import wire
 
@@ -112,13 +111,12 @@ def send(
     execution: Execution | None = None,
     secret: str | None = None,
     on_delta: Callable[[Delta], None] | None = None,
-    key: tuple[str, bytes] | None = None,
     backoff: float = 1.0,
     halt: Halt | None = None,
     started_at: datetime | None = None,
 ) -> Call:
     execution = execution or Execution()
-    request = fingerprint_request(dict(body), key)
+    request = fingerprint_request(dict(body))
     started = started_at or _now()
     attempts = 0
     received: list[wire.Chunk] = []
@@ -128,18 +126,14 @@ def send(
         error: str | None,
         response: dict[str, JsonValue] | None = None,
     ) -> Call:
-        prompt_tokens: Fingerprint | None = None
         if response is None and received:
             response = wire.assemble(received)
-        if response is not None:
-            response, prompt_tokens = fingerprint_prompt_tokens(response, key)
         return Call(
             request=request,
             started_at=started,
             finished_at=_now(),
             status=status,
             response=response,
-            prompt_tokens=prompt_tokens,
             attempts=attempts,
             error=error,
         )

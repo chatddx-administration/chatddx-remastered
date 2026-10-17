@@ -143,11 +143,11 @@ Stops the calls that watch it, from any thread.
 | `wait(timeout: float) -> bool` | Waits up to `timeout` seconds; `True` once it is set. |
 | `watching(stream)` | A context manager that interrupts `stream` when the halt is set, or at once when it is already set. |
 
-### `send(url, body, *, execution=None, secret=None, on_delta=None, key=None, backoff=1.0, halt=None, started_at=None) -> Call`
-Sends `body` streaming and returns the call. `Call.request` is `fingerprint_request(body, key)`, taken before
-`STREAM` is added, and `Call.response` the assembled completion, its `prompt_token_ids` moved to
-`Call.prompt_tokens` (`docs/ledger-api.md`, "call.py"). `started_at` defaults to now, `execution` to `Execution()`.
-`on_delta` is called with each `Delta`.
+### `send(url, body, *, execution=None, secret=None, on_delta=None, backoff=1.0, halt=None, started_at=None) -> Call`
+Sends `body` streaming and returns the call. `Call.request` is `fingerprint_request(body)`, taken before `STREAM` is
+added, and `Call.response` the assembled completion, which the call keeps without its `prompt_token_ids`, their
+fingerprint in `Call.prompt_tokens` (`docs/ledger-api.md`, "call.py"). `started_at` defaults to now, `execution` to
+`Execution()`. `on_delta` is called with each `Delta`.
 
 A connection that fails (`OSError`), or a 429 or 5xx, is tried again after `backoff * 2 ** (n - 1)` seconds, `n`
 the attempt that failed, up to `execution.retries` times. `Call.attempts` counts the attempts.
