@@ -167,6 +167,7 @@
             shellHook = ''
               unset PYTHONPATH
               export REPO_ROOT=$(git rev-parse --show-toplevel)
+              export CHATDDX_STATE_HOME="$HOME/.local/state"
               set -a && source "$REPO_ROOT/.env" && set +a
               echo "• Flake version: ${version}"
               echo "• Nixpkgs:       ${nixpkgs.shortRev}"

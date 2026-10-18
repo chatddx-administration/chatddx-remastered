@@ -302,17 +302,12 @@ A judged view's value is the mean over the seeds whose verdicts were read.
 A finished run is scored again when asked, under every scorer that applies or some, queued as a run is: answered 202
 with the scorers it is to score by, it goes on whoever listens, and its events are the run's, after its rows.
 
-```
-AGENT: insert
-A scorer tried as it is typed, for an edge composing one beside a case's answers (agents/wip-olofs-view.md, L5).
----
 ### Trying a scorer
 A scorer as it is written, and the data of an expectation, are tried on the items of a case in some of the person's
 runs: each item's answer, read as the scoring pass reads it, is scored under each view, and each view gives its value
 and detail, with nothing stored and nothing sent. A view its judge scores isn't tried, since its judge would be sent
 the answer: it says so, with no value, and is scored once the scorer is saved and the runs scored again. A scorer the
 running code can't score with is refused as a write of it is. The values are sensitive, as a score's items are.
-```
 
 ## Sensitive content
 What is made from a vignette is shown to whoever signed in, but only in its own places, so that a policy for edges
@@ -320,11 +315,6 @@ can gate those few when clearance has one (agents/wip-clearance.md):
 - a family's vignette;
 - a run's items;
 - a score's items, with their detail and judge calls, and the score's findings;
-```
-AGENT: insert
----
-- a scorer tried on a case's items, each view's detail;
-```
 - a run's events: the deltas, the tool runs, why each item ended, and the scoring's items, judge calls and
   findings.
 

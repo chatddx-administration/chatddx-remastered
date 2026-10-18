@@ -1,4 +1,3 @@
-CHATDDX_STATE_HOME=$XDG_STATE_HOME/chatddx
 CHATDDX_PGDATA="$CHATDDX_STATE_HOME/dev-db/pgdata"
 CHATDDX_PGSOCK="$CHATDDX_STATE_HOME/dev-db/pgsock"
 osuser="$(id -un)"

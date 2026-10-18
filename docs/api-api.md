@@ -111,17 +111,9 @@ field a model doesn't name is a 422, and so is a query parameter where the query
 query parameter a route doesn't name is ignored. Components, recipes, facts, calls, tool runs and fingerprints are
 given as the JSON they dump to, not as models of their own.
 
-```
-AGENT: change
-`scores.py:tried` is a sensitive place too.
----
 **Sensitive places.** `families.py:vignette`, `runs.py:items`, `scores.py:items`, `scores.py:tried` and a run's
 stream are the only routes that give sensitive content, and each says `Cache-Control: no-store`: the first four
 through `state.py:no_store`, the stream with `state.py:NO_STORE` among its headers.
-```
-**Sensitive places.** `families.py:vignette`, `runs.py:items`, `scores.py:items` and a run's stream are the only
-routes that give sensitive content, and each says `Cache-Control: no-store`: the first three through
-`state.py:no_store`, the stream with `state.py:NO_STORE` among its headers.
 
 **Routes.** Each module's routes are given under "Routes" as `name`, `METHOD /path`, the path under `/api`: what the
 route does, and what it answers.
@@ -620,17 +612,12 @@ under each scorer by name, or every score, newest first.
 `Bench.score_of(Bench.run(run), score)`, then each of its score's items, or of the case `case` names, with
 its finish's findings, none when it hasn't finished. Sensitive.
 
-```
-AGENT: insert
-The route of docs/api.md, "Trying a scorer".
----
 #### `tried`, `POST /scorers/try`
 Within `refused()`: `threads.py:component_of` the body's scorer, and a 422 when it isn't a `Scorer`; within
 `refused(LookupError)`: `chatddx.scorers.shipped.function` of it, as the scoring pass refuses it. Then for each run,
 `Bench.run` (`NotFound`), and each of its items of the case: its answer, `chatddx.scorers.answer.read` of its last
 call's response, and under each view a `TriedView`, `chatddx.scorers.scorer.score_view` against the body's
 expectation, or, for a view that names a judge, no value, `judged` and `JUDGED` as its detail. Sensitive.
-```
 
 ## queue.py
 
@@ -819,12 +806,8 @@ In `src/chatddx/api/test/`.
   to score with their scorers, and one leaving the listing once scored; a scoring refused for a run unfinished, a
   scorer that doesn't apply and a run with a job open, and halted; a session needed.
   A run's items and a score's read for one case.
-```
-AGENT: insert
----
   A scorer tried on a case's answers as typed, its values the stored score's, a missed target 0, its judged views
   untried, nothing written, an unknown metric refused, and bob's request not finding the run.
-```
 - `test_telling.py`: a stream joined mid-item told the item started and each tool once, and nothing of it once it
   ended; the listener fanning a run's messages out to two streams, again on another loop, and a stream that falls
   behind told `Lagged`.
