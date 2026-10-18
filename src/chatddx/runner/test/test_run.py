@@ -621,6 +621,7 @@ def tooled(
 ASKED = "'fake query'"
 
 
+@pytest.mark.slow
 @pytest.mark.usefixtures("fake")
 def test_a_round_runs_the_tools_a_response_calls_and_sends_back_their_results(
     conn: Connection, inventory: Inventory, alice: Person, plan: Plan
@@ -748,7 +749,6 @@ def test_an_interrupt_after_a_tool_ran_keeps_its_round_without_a_call(
 
 
 @pytest.mark.usefixtures("fake")
-@pytest.mark.slow
 def test_an_interrupt_inside_a_tool_records_it_as_stopped(
     conn: Connection,
     inventory: Inventory,
@@ -781,7 +781,6 @@ def test_an_interrupt_inside_a_tool_records_it_as_stopped(
 
 
 @pytest.mark.usefixtures("fake")
-@pytest.mark.slow
 def test_a_halt_while_tools_run_keeps_the_round_and_sends_no_call(
     conn: Connection, inventory: Inventory, alice: Person, plan: Plan
 ) -> None:

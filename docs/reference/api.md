@@ -1558,6 +1558,44 @@ Raises:
 * `tool: ToolRun`
 * ∟`Named`
 
+```
+SIGN-OFF: ADD
+add these lines here
+---
+## TranslatedText `(_Schema)`
+`src/chatddx/api/schemas.py:TranslatedText`
+
+* `part: str`
+* `text: str`
+* `translation: str | None = Field(description="null while it has none")`
+
+## Translating `(Parts)`
+`src/chatddx/api/schemas.py:Translating`
+
+* `head: int | None = Field(…)`
+* `into: str = Field(description="the language it is translated into, such as 'sv'")`
+* `entries: dict[str, str] | None = Field(…)`
+
+## Translation `(_Schema)`
+`src/chatddx/api/schemas.py:Translation`
+
+* `label: str = Field(description="its name, and the chunks it replaces")`
+* `language: str | None = Field(…)`
+* `into: str`
+* `texts: list[TranslatedText] = Field(…)`
+* `unused: dict[str, str] = Field(…)`
+* `written: dict[str, JsonValue] = Field(description="its request as written")`
+* `request: dict[str, JsonValue] = Field(…)`
+
+## translation `@router.post("/threads/{thread}/translation")`
+`src/chatddx/api/threads.py:translation`
+
+* `bench: BenchDep`
+* `thread: int`
+* `given: schemas.Translating`
+* ∟`schemas.Translation`
+
+```
 ## Tried `(_Schema)`
 `src/chatddx/api/schemas.py:Tried`
 

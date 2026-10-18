@@ -82,7 +82,6 @@ def test_on_puts_its_endpoint_s_model_in_the_configuration_keeping_every_pick(
     assert repl.prompt == f"alice {LINES}+model={GPT_OSS_ARTIFACT}×{GPT_OSS} #7> "
 
 
-@pytest.mark.slow
 def test_a_level_the_engine_s_model_refuses_is_said_until_it_is_set_otherwise(
     repl: Repl, say: Say
 ):
@@ -238,7 +237,6 @@ def test_one_s_own_configuration_shadows_the_archive_s(
     assert repl.prompt == f"alice archive/{NATIVE} #7> "
 
 
-@pytest.mark.slow
 def test_another_s_configuration_is_found_where_it_is_shared(
     repl: Repl, conn: Connection, bob: Person, bench: Bench, say: Say
 ):

@@ -17,6 +17,7 @@ from chatddx.bench import (
     Written,
     word_of,
 )
+from chatddx.bench.model import MODEL, PLACEHOLDERS
 from chatddx.catalog import read, titles
 from chatddx.catalog.language import edit_languages
 from chatddx.catalog.titles import describe
@@ -263,6 +264,29 @@ def variation(
             for c in carried
         ],
         reach=[_reach_of(r) for r in bench.reach(varied, families)],
+    )
+
+
+@router.post("/threads/{thread}/translation")
+def translation(
+    bench: BenchDep, thread: int, given: schemas.Translating
+) -> schemas.Translation:
+    with refused():
+        varied = bench.variation(thread, given.given(), given.head)
+        translated = bench.translation(varied, given.into, given.entries)
+        written = bench.skeleton(varied)
+    return schemas.Translation(
+        label=varied.label,
+        language=translated.language,
+        into=translated.into,
+        texts=[
+            schemas.TranslatedText(part=part, text=text, translation=translation)
+            for part, found in translated.texts.items()
+            for text, translation in found
+        ],
+        unused=translated.unused,
+        written=written.render(model=MODEL, seed=None, fills=PLACEHOLDERS),
+        request=translated.skeleton.render(model=MODEL, seed=None, fills=PLACEHOLDERS),
     )
 
 

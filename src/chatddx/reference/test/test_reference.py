@@ -514,6 +514,7 @@ def test_an_unclosed_tag_is_refused() -> None:
         _ = untagged("```\nSIGN-OFF: ADD\nadd these lines here\n", TAG)
 
 
+@pytest.mark.slow
 def test_each_reference_is_as_chatddx_reference_writes_it() -> None:
     for path, text in regenerated(settings.REFERENCED).items():
         assert path.read_text() == text, "chatddx reference"

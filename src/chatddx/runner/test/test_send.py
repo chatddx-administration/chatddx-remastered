@@ -215,7 +215,6 @@ def test_only_a_call_that_got_no_answer_is_tried_again(url: str) -> None:
     assert rejected.error is not None and rejected.error.startswith("HTTP 404: ")
 
 
-@pytest.mark.slow
 def test_a_call_past_its_timeout_is_cut_short() -> None:
     with serving([SERVED], "127.0.0.1", 0, delay=0.02) as address:
         call = send(at(*address), body(), execution=Execution(timeout_s=0.1))

@@ -684,8 +684,7 @@ def _answers(
     views = range(0 if held is None else len(held[1].views))
     found: list[dict[str, Any]] = []
     for r, detail in ran:
-        skeleton = resolve(bench.store.get, r.skeleton, Skeleton)
-        schema = skeleton.output_schema
+        plan = bench.answers(resolve(bench.store.get, r.skeleton, Skeleton)) == PLAN
         graded = (
             None
             if held is None
@@ -712,7 +711,7 @@ def _answers(
                     "anchor": at,
                     "replicate": item.replicate,
                     "outcome": item.outcome,
-                    "plan": isinstance(schema, dict) and schema.get("title") == PLAN,
+                    "plan": plan,
                     "score": None
                     if graded is None or graded.score is None
                     else str(graded.score),

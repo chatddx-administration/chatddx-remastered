@@ -133,6 +133,18 @@ For a variation, the bench gives:
 - **where its intents landed**: for a reasoning level and a recommended sampling, the level the recipe's model is
   asked for, and why, when the facts land it on its nearest; read from the facts its compilation was compiled against
   when nothing is replaced;
+```
+AGENT: REPLACE
+The look's lints now say what its translations leave untranslated whatever the cases
+(src/chatddx/bench/seen.py:incomplete; agents/wip-translators-view.md, T4).
+---
+- **its lints**, as a trial on the engine of the endpoint it runs at, the one serving its model or the one named
+  (see "The model"); none when no endpoint serves its model, or several do and none is named. The pair's checks,
+  over any one case since they read none; with families, a trial for each language their cases are sent in, its
+  skeleton in that language and its cases in theirs, and a `translations.missing` warning for each language left
+  out, with why; and, whatever the families, a `translations.incomplete` warning for each other language its
+  translations go into and leave a text of it untranslated, with the texts;
+```
 - **its lints**, as a trial on the engine of the endpoint it runs at, the one serving its model or the one named
   (see "The model"); none when no endpoint serves its model, or several do and none is named. The pair's checks,
   over any one case since they read none; with families, a trial for each language their cases are sent in, its
@@ -148,6 +160,16 @@ are the judge's, it reads no case, and it has no reach, as no scorer reads what 
 starting it is refused. An edge lists configurations by purpose (`Seen.threads(…, purpose=…)`), since a judge
 configuration is no use where a run's is wanted.
 
+```
+AGENT: REPLACE
+Translating a schema translates its title, so what a translated skeleton answers is told by the title as written
+(src/chatddx/bench/seen.py:Seen.answers; agents/wip-translators-view.md, F1).
+---
+An edge also lists configurations by what they answer (`Seen.threads(…, answering=…)`): the title of their answer's
+JSON Schema, as a page that shows management plans offers only the configurations that answer one. What a skeleton
+answers is the title as written (`Seen.answers`): a translated skeleton's is its recipe's, since translating a schema
+translates its title too.
+```
 An edge also lists configurations by what they answer (`Seen.threads(…, answering=…)`): the title of their answer's
 JSON Schema, as a page that shows management plans offers only the configurations that answer one.
 
@@ -182,6 +204,18 @@ When its own language is unknown, nothing says a case isn't in it, so a case of 
 goes as written too. A translated skeleton is compiled when a look or a run needs it, and its compilation is stored as
 a run starts on it, as a varied one's is, so that the run's skeleton has a language. A judge configuration reads no
 case, and runs in none.
+
+```
+AGENT: ADD
+A paragraph closing "The languages it runs in", for src/chatddx/bench/seen.py:Seen.translation
+(agents/wip-translators-view.md, T6).
+---
+A variation is also given in a language for its translator, with nothing stored: each text it holds, part by part in
+the order compiling translates them, with its translation there or none, from its translations or from entries given
+as typed; the entries no text of it has, which a source edited since leaves behind; and its skeleton compiled into
+the language, a text without a translation as written. A hand-written configuration has no recipe to translate, and a
+configuration isn't translated into its own language.
+```
 
 ## Writes for the person
 The bench writes, in the person's name: configurations, chunks, appendices, expectations, scorers, judges, typed

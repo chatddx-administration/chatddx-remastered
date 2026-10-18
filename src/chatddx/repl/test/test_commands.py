@@ -126,7 +126,6 @@ def test_take_completes_from_and_then_each_tag_once():
     assert complete(names, "take targets ") == ["bytes"]
 
 
-@pytest.mark.slow
 def test_the_names_complete_as_the_person_sees_them(repl: Repl):
     names = repl.completions()
 

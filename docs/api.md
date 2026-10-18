@@ -107,6 +107,17 @@ or a recommended sampling that the facts about the model refuse, or that a model
 out; an endpoint named that serves another model; or a parameter the request doesn't know, so that a misspelt part is
 refused rather than ignored. A look's queries don't grow with the number of cases it is over.
 
+```
+AGENT: ADD
+A section after "Trying a variation", for POST /api/threads/{thread}/translation (agents/wip-translators-view.md, T6).
+---
+## Translating a variation
+A variation, as a look takes it, is given in a language, with the entries into that language as they are typed or
+else its translations' own: each text it holds, part by part in the order it is sent, with its translation or none;
+the entries that none of its texts has; and its request as written and as translated, a text without a translation as
+written, with placeholders for the case and the model. A hand-written configuration, and a translation into its own
+language, are refused. Nothing is stored, and nothing in it is sensitive, as no case is in it.
+```
 ## Checking a component
 A component of a kind a person writes is checked as a write would store it, and nothing is written: its rules, its
 references, which must be stored, the rules that take several components, and a scorer's code and parameters. It

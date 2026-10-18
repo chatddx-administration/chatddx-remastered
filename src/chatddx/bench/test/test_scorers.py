@@ -34,7 +34,6 @@ def _archive(conn: Connection) -> Person:
     return found
 
 
-@pytest.mark.slow
 def test_a_person_writes_a_scorer_over_shipped_code_with_its_labels(
     conn: Connection, alice: Person, bench: Bench, plan: Plan
 ) -> None:
@@ -177,7 +176,6 @@ def test_following_an_origin_keeps_the_labels_of_the_views_it_keeps(
     assert view_labels(bench, kept.edit) == {0: "mine"}
 
 
-@pytest.mark.slow
 def test_a_scorer_moves_on_to_a_raised_version_by_following_its_origin(
     conn: Connection,
     alice: Person,

@@ -27,7 +27,8 @@ it.
    "Below the UI": the worker and Z1.
 6. **Next**: phase 5's second half, 5c and 5d, once its first is looked at (see "Authoring"); and what phases 2 to
    5 left (see "Open"). A clinician's page around one case, which would build 5d's editors and part of 5c, is planned
-   in `agents/wip-olofs-view.md`.
+   in `agents/wip-olofs-view.md`; a translator's page around one configuration, which builds 5c's editor of
+   translations, in `agents/wip-translators-view.md`.
 
 ## What the portal shows
 The old portal's manual reads as a functional spec for its pages: `docs/portal.md` in chatddx-administration/chatddx
@@ -618,7 +619,7 @@ From "What the portal shows", not on the pages yet:
 ### What the first half of authoring leaves
 - **The chunk editors, a configuration from a recipe, scorers and judges**: the second half (5c, 5d). Their threads
   have pages, with what is said, versions, forks and following, but no editor; `GET /api/kinds` waits for their
-  pickers.
+  pickers. The translations' editor is `agents/wip-translators-view.md`'s (T2).
 - **An expectation's form follows its schema's keys alphabetically**: an expectation schema is stored as canonical
   JSON, which sorts them, so `targets` shows diagnosis, disposition, dont miss, notes, warning.
 - **Building a case** takes the appendices in the order listed; a case's order can't be chosen yet, and a late case

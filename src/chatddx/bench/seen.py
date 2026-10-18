@@ -12,8 +12,10 @@ from chatddx.catalog.titles import short
 from chatddx.factors.base import (
     Component,
     Finding,
+    Resolver,
     StructuralError,
     iter_refs,
+    language_tag,
     resolve,
 )
 from chatddx.factors.bundle import Registry
@@ -23,6 +25,7 @@ from chatddx.factors.facts import Landing, ModelFacts
 from chatddx.factors.request import (
     RECIPE_PARTS,
     Compilation,
+    Output,
     Purpose,
     Recipe,
     Skeleton,
@@ -30,6 +33,7 @@ from chatddx.factors.request import (
     compile_request,
     compiled as compile_recipe,
     landings,
+    texts,
 )
 from chatddx.factors.scoring import Expectation, Judge, Scorer, Scoring
 from chatddx.factors.trial import Trial
@@ -46,12 +50,14 @@ from chatddx.store.store import Connection
 from .errors import Ambiguous, NotFound
 from .model import (
     KINDS,
+    MODEL,
     PLACEHOLDERS,
     Carried,
     Endpoint,
     Family,
     Graded,
     Reach,
+    Translation,
     word_of,
 )
 from .variation import TriedVariation
@@ -367,9 +373,7 @@ class Seen:
     def request(
         self, variation: TriedVariation, engine: str | None, seed: int
     ) -> dict[str, JsonValue]:
-        model = (
-            "‹model›" if engine is None else served_model_name(engine, self.store.get)
-        )
+        model = MODEL if engine is None else served_model_name(engine, self.store.get)
         return self.skeleton(variation).render(
             model=model, seed=seed, fills=PLACEHOLDERS
         )
@@ -394,11 +398,12 @@ class Seen:
         if carried is None:
             first = next(iter(self.families()), None)
             if first is None:
-                return []
+                return incomplete(self, variation, ())
             registry, made = trial(self, skeleton, engine, [first.case], (seed,))
             if by_hand:
                 add_compilations(self, registry, skeleton.digest)
-            return lints(registry, self.facts, [made.digest])
+            found = lints(registry, self.facts, [made.digest])
+            return found + incomplete(self, variation, ())
         known = self._languages_of([c for each in carried for c in each.cases])
         found: list[Finding] = []
         for each in carried:
@@ -416,7 +421,53 @@ class Seen:
             for finding in lints(registry, self.facts, [made.digest], languages):
                 if finding not in found:
                     found.append(finding)
-        return found
+        return found + incomplete(self, variation, carried)
+
+    def translation(
+        self,
+        variation: TriedVariation,
+        into: str,
+        entries: Mapping[str, str] | None = None,
+    ) -> Translation:
+        recipe = variation.varied
+        if recipe is None:
+            raise ValueError(f"{variation.label} has no recipe to translate")
+        own = recipe_language(self.rows, recipe)
+        if language_tag(into) == own:
+            raise ValueError(f"{variation.label} is written in {into}")
+        registry = self.store.load(s.digest for s in iter_refs(recipe))
+        if entries is None:
+            entries = _entries(recipe, registry.get, into)
+        held = texts(recipe, registry.get)
+        needed = {t for found in held.values() for t in found}
+        if needed:
+            # Policy: a text without a translation is shown as written, where compiling
+            # refuses it.
+            filled = Translations(into={into: {t: entries.get(t) or t for t in needed}})
+            recipe = recipe.model_copy(update={"translations": registry.add(filled)})
+            facts = compiled_with(self, variation)
+            skeleton = compile_request(recipe, registry.get, facts, into)
+        else:
+            skeleton = self.skeleton(variation)
+        return Translation(
+            language=own,
+            into=into,
+            texts={
+                part: [(t, entries.get(t) or None) for t in found]
+                for part, found in held.items()
+            },
+            unused={t: tr for t, tr in entries.items() if t not in needed},
+            skeleton=skeleton,
+        )
+
+    # Accommodating for a discovered fact: a schema's title is translated with its
+    # other texts.
+    def answers(self, skeleton: Skeleton) -> str | None:
+        for compilation in self.store.compilations(skeleton.digest):
+            if compilation.into is not None:
+                output = resolve(self.store.get, compilation.recipe.output, Output)
+                return _titled(output.json_schema)
+        return _titled(skeleton.output_schema)
 
     def reach(self, variation: TriedVariation, families: list[Family]) -> list[Reach]:
         skeleton = self.skeleton(variation)
@@ -882,6 +933,40 @@ def left_out(carried: Carried, subject: str) -> Finding:
         message=f"{cases} in {carried.language}, and left out: {carried.refused}",
         subject=subject,
     )
+
+
+def incomplete(
+    seen: Seen, variation: TriedVariation, carried: Sequence[Carried]
+) -> list[Finding]:
+    recipe = variation.varied
+    if recipe is None or recipe.translations is None:
+        return []
+    registry = seen.store.load(s.digest for s in iter_refs(recipe))
+    needed = {t for found in texts(recipe, registry.get).values() for t in found}
+    said = {c.language for c in carried if c.refused is not None}
+    said.add(recipe_language(seen.rows, recipe))
+    found: list[Finding] = []
+    into = resolve(registry.get, recipe.translations, Translations).into
+    for language, entries in into.items():
+        if language in said or not (missing := sorted(needed - entries.keys())):
+            continue
+        count = "1 text" if len(missing) == 1 else f"{len(missing)} texts"
+        listed = ", ".join(repr(t) for t in missing)
+        found.append(
+            Finding(
+                code="translations.incomplete",
+                message=f"its translations into {language} leave {count} "
+                + f"untranslated: {listed}",
+                subject=variation.configuration.digest,
+            )
+        )
+    return found
+
+
+def _entries(recipe: Recipe, get: Resolver, into: str) -> dict[str, str]:
+    if recipe.translations is None:
+        return {}
+    return resolve(get, recipe.translations, Translations).into.get(into, {})
 
 
 def _language_in(

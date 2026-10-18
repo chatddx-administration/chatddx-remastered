@@ -189,6 +189,19 @@ class Varying(Parts):
     seed: int | None = Field(None, description="drawn when not given")
 
 
+class Translating(Parts):
+    head: int | None = Field(
+        None,
+        description="the edit it varies, by id: the configuration's head unless given",
+    )
+    into: str = Field(description="the language it is translated into, such as 'sv'")
+    entries: dict[str, str] | None = Field(
+        None,
+        description="the translations into it as typed, each text and its "
+        + "translation: its translations' own unless given",
+    )
+
+
 type ComponentBody = Annotated[
     dict[str, JsonValue],
     Field(
@@ -380,6 +393,31 @@ class Variation(_Schema):
         + "first, and those it can't be sent in"
     )
     reach: list[Reach]
+
+
+class TranslatedText(_Schema):
+    part: str
+    text: str
+    translation: str | None = Field(description="null while it has none")
+
+
+class Translation(_Schema):
+    label: str = Field(description="its name, and the chunks it replaces")
+    language: str | None = Field(
+        description="the language it is written in; null when unknown"
+    )
+    into: str
+    texts: list[TranslatedText] = Field(
+        description="the texts it holds, part by part, in the order they are sent"
+    )
+    unused: dict[str, str] = Field(
+        description="the entries into the language that none of its texts has"
+    )
+    written: dict[str, JsonValue] = Field(description="its request as written")
+    request: dict[str, JsonValue] = Field(
+        description="its request translated, a text without a translation as "
+        + "written; in both, placeholders for the case and the model"
+    )
 
 
 class Family(_Schema):

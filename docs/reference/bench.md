@@ -414,6 +414,22 @@ Raises:
 * `view: int`
 * ∟`str`
 
+```
+SIGN-OFF: ADD
+add these lines here
+---
+## incomplete
+`src/chatddx/bench/seen.py:incomplete`
+
+* `seen: Seen`
+* `variation: TriedVariation`
+* `carried: Sequence[Carried]`
+* ∟`list[Finding]`
+
+Finds:
+1. `translations.incomplete`: "its translations into {language} leave {count} untranslated: {listed}"
+
+```
 ## keep_compilation
 `src/chatddx/bench/configurations.py:keep_compilation`
 
@@ -476,6 +492,16 @@ Finds:
 * `seen: Seen`
 * `digest: str`
 * ∟`list[Finding]`
+```
+SIGN-OFF: ADD
+add these lines here
+---
+
+## MODEL
+`src/chatddx/bench/model.py:MODEL`
+
+* `MODEL = "‹model›"`
+```
 
 ## Moved `@dataclass(frozen=True)`
 `src/chatddx/bench/model.py:Moved`
@@ -586,6 +612,17 @@ Raises:
 * `conn: Connection`
 * `person: Person`
 * `inventory: Inventory`
+```
+SIGN-OFF: ADD
+add these lines here
+---
+
+## Seen.answers
+`src/chatddx/bench/seen.py:Seen.answers`
+
+* `skeleton: Skeleton`
+* ∟`str | None`
+```
 
 ## Seen.at
 `src/chatddx/bench/seen.py:Seen.at`
@@ -817,6 +854,23 @@ Raises:
 * `digest: str`
 * ∟`str`
 
+```
+SIGN-OFF: ADD
+add these lines here
+---
+## Seen.translation
+`src/chatddx/bench/seen.py:Seen.translation`
+
+* `variation: TriedVariation`
+* `into: str`
+* `entries: Mapping[str, str] | None = None`
+* ∟`Translation`
+
+Raises:
+1. `ValueError`: "{variation.label} has no recipe to translate"
+2. `ValueError`: "{variation.label} is written in {into}"
+
+```
 ## Seen.unscored
 `src/chatddx/bench/seen.py:Seen.unscored`
 
@@ -854,6 +908,20 @@ Raises:
 * `kept: dict[str, int]`
 * `choosing: dict[str, list[int]]`
 * `missing: list[str]`
+```
+SIGN-OFF: ADD
+add these lines here
+---
+
+## Translation `@dataclass(frozen=True)`
+`src/chatddx/bench/model.py:Translation`
+
+* `language: str | None`
+* `into: str`
+* `texts: dict[str, list[tuple[str, str | None]]]`
+* `unused: dict[str, str]`
+* `skeleton: Skeleton`
+```
 
 ## trial
 `src/chatddx/bench/seen.py:trial`

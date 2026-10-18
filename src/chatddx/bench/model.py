@@ -52,6 +52,7 @@ PLACEHOLDERS: dict[SlotName, str] = {
     "completion": "‹completion›",
     "expectation": "‹expectation›",
 }
+MODEL = "‹model›"
 
 
 @dataclass(frozen=True)
@@ -88,6 +89,15 @@ class Carried:
     skeleton: Skeleton | None = None
     translated: bool = False
     refused: str | None = None
+
+
+@dataclass(frozen=True)
+class Translation:
+    language: str | None
+    into: str
+    texts: dict[str, list[tuple[str, str | None]]]
+    unused: dict[str, str]
+    skeleton: Skeleton
 
 
 @dataclass(frozen=True)

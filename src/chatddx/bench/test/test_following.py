@@ -61,7 +61,6 @@ def test_a_configuration_follows_its_origin_with_its_own_change_on_top(
     assert bench.proposal(mine) is None
 
 
-@pytest.mark.slow
 def test_a_taken_expectation_follows_the_archive_s_correction(
     bench: Bench, archive: Bench
 ) -> None:
@@ -117,6 +116,7 @@ def test_only_what_has_something_to_follow_is_followed(
     assert threads.head(rows, mine).id == head
 
 
+@pytest.mark.slow
 def test_a_configuration_follows_the_facts_corrected_where_they_reach_it(
     bench: Bench, archive: Bench
 ) -> None:

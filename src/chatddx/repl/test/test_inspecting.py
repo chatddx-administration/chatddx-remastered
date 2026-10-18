@@ -80,7 +80,6 @@ def test_show_says_what_the_lints_say_of_the_pair(say: Say):
     assert "with lookup, broken" in line_of(written, "toolset")
 
 
-@pytest.mark.slow
 def test_show_leaves_the_output_s_schema_to_show_output(say: Say):
     written = say(f"cell {NATIVE} {QWEN}", "show")
 
@@ -177,7 +176,6 @@ def test_show_case_says_when_none_of_the_expectations_is_yours(bench: Bench, say
     assert "none of yours" in line_of(written, "expectation")
 
 
-@pytest.mark.slow
 def test_show_without_a_name_shows_the_cell_s(say: Say):
     written = say(f"cell {LINES} {QWEN}", "show output")
 
@@ -236,7 +234,6 @@ def test_the_reasoning_table_sets_every_level_on_every_model(say: Say):
     assert "the cell has no configuration asking for a level" in written
 
 
-@pytest.mark.slow
 def test_the_reasoning_table_marks_the_cell_s_level(say: Say):
     written = say(f"cell {LINES} {QWEN}", "reasoning")
 
@@ -249,7 +246,6 @@ def test_the_reasoning_table_marks_the_cell_s_level(say: Say):
     assert "│ ▸ default" not in written
 
 
-@pytest.mark.slow
 def test_scorers_say_whether_the_cell_s_output_offers_each_view(say: Say):
     written = say("scorers")
 
@@ -265,7 +261,6 @@ def test_scorers_say_whether_the_cell_s_output_offers_each_view(say: Say):
     assert "the whole answer, lines@1" in written
 
 
-@pytest.mark.slow
 def test_show_case_lists_a_family_s_appendices_and_the_cases_that_send_them(say: Say):
     written = say("show case whitespace")
 
