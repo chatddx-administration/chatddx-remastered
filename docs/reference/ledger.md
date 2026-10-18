@@ -10,15 +10,10 @@ Written by `chatddx reference` from `src/chatddx/ledger/`; how to read it is in 
 * `who: str`
 * `subject: str`
 * ∟`list[Finding]`
-```
-SIGN-OFF: ADD
-add these lines here
----
 
 Finds:
 1. `attestation.model`: "{who} returned model {got!r}, declared {want!r}"
 2. `attestation.model`: "{who} returned no model name, declared {want!r}"
-```
 
 ## Call `(Frozen)`
 `src/chatddx/ledger/call.py:Call`
@@ -58,16 +53,11 @@ Raises:
 * `sent: Mapping[ItemKey, datetime]`
 * ∟`list[Finding]`
 
-```
-SIGN-OFF: ADD
-add these lines here
----
 Finds:
 1. `execution.retries`: "{over} calls took more than the {allowed} attempts allowed"
 2. `execution.order`: "{early} items were sent before items scheduled ahead of them"
 3. `execution.concurrency`: "{peak} calls were in flight at once, declared {execution.concurrency}"
 
-```
 ## check_log
 `src/chatddx/ledger/record.py:check_log`
 
@@ -98,10 +88,6 @@ Raises:
 9. `StructuralError`: "{item.key}: a round runs tools for calls the response didn't make" (through `_rounds`)
 10. `StructuralError`: "tool code recorded for tools the skeleton lacks: {stray}" (through `_tool_code`)
 
-```
-SIGN-OFF: ADD
-add these lines here
----
 Finds:
 1. `run.incomplete`: "{len(missing)} {what} missing"
 2. `case.drift`: "the vignette read differs from the case's"
@@ -112,7 +98,6 @@ Finds:
 7. `attestation.prompt_tokens`: "{unfingerprinted} items have no prompt token fingerprint"
 8. `canary.phase`: message (through `_bracketed`)
 
-```
 ## check_score
 `src/chatddx/ledger/score.py:check_score`
 
@@ -130,10 +115,6 @@ Raises:
 6. `StructuralError`: "judge seed index {jc.seed_index} out of range" (through `_judged`)
 7. `StructuralError`: "{item.key}: duplicate judge calls for view {item.view}" (through `_judged`)
 
-```
-SIGN-OFF: ADD
-add these lines here
----
 Finds:
 1. `view.unreachable`: "view {i}'s output selector {view.output!r} reaches nothing in the run's output schema"
 2. `judge.incomplete`: "view {item.view}'s value rests on {called} of {declared} judge seeds" (through `_judged`)
@@ -142,21 +123,15 @@ Finds:
 5. `score.no_expectation`: "{len(uncovered)} of the run's cases have no expectation in the scoring"
 6. `score.incomplete`: "{len(missing)} items missing"
 
-```
 ## check_seal
 `src/chatddx/ledger/record.py:check_seal`
 
 * `log: Log`
 * `subject: str`
 * ∟`list[Finding]`
-```
-SIGN-OFF: ADD
-add these lines here
----
 
 Finds:
 1. `ledger.seal`: "rows changed after the log was sealed"
-```
 
 ## Endpoint `(Frozen)`
 `src/chatddx/ledger/run.py:Endpoint`

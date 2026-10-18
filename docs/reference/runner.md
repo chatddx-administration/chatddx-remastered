@@ -151,15 +151,10 @@ Raises:
 
 Raises:
 1. `KeyboardInterrupt`
-```
-SIGN-OFF: ADD
-add these lines here
----
 
 Finds:
 1. `answer.salvaged`: message (info, through `Grading._grade`)
 2. `{code}`: message (through `Grading._grade`)
-```
 
 ## Grading.started `@property`
 `src/chatddx/runner/score.py:Grading.started`
@@ -378,15 +373,10 @@ Raises:
 3. `ValueError`: "endpoint {endpoint!r} takes {spec.max_jobs} requests at once, the execution sends {execution.concurrency}" (through `Runner._admitted`)
 4. `ValueError`: "endpoint {endpoint.name!r} is at {url} now, and run {run} was sent to {endpoint.url}"
 
-```
-SIGN-OFF: ADD
-add these lines here
----
 Finds:
 1. `run.resumed`: "{said} by {_built(now)}, where {_built(log.started.rig)} started it" (through `_resumed`)
 2. `run.resumed`: said (info, through `_resumed`)
 
-```
 ## Runner.score
 `src/chatddx/runner/run.py:Runner.score`
 
@@ -449,14 +439,9 @@ Raises:
 
 Raises:
 1. `KeyboardInterrupt` (through `Running._probe`)
-```
-SIGN-OFF: ADD
-add these lines here
----
 
 Finds:
 1. `case.unreadable`: str(e) (from `(LookupError, StructuralError)`, through `Running._prepared`)
-```
 
 ## Running.started `@property`
 `src/chatddx/runner/run.py:Running.started`

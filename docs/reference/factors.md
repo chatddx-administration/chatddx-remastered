@@ -47,14 +47,9 @@ Written by `chatddx reference` from `src/chatddx/factors/`; how to read it is in
 
 Raises:
 1. `StructuralError`: "roots missing from bundle: {missing}"
-```
-SIGN-OFF: ADD
-add these lines here
----
 
 Finds:
 1. `bundle.recanonicalized`: "current code serializes this component differently"
-```
 
 ## BY_KIND
 `src/chatddx/factors/kinds.py:BY_KIND`
@@ -125,15 +120,10 @@ Raises:
 * `engine: LocalEngine`
 * `template: bytes`
 * ∟`list[Finding]`
-```
-SIGN-OFF: ADD
-add these lines here
----
 
 Finds:
 1. `engine.chat_template`: "chat template does not match the declared digest"
 2. `engine.chat_template_date`: "chat template reads the current date"
-```
 
 ## check_selector
 `src/chatddx/factors/select.py:check_selector`
@@ -578,10 +568,6 @@ Raises:
 * `reasons: Reasons | None = None`
 * ∟`list[Finding]`
 
-```
-SIGN-OFF: ADD
-add these lines here
----
 Finds:
 1. `model.revision`: "revision {c.revision!r} is not a commit and can move" (through `_model`)
 2. `engine.closure`: "closure {c.runtime.closure!r} is not a Nix store path" (through `_engine`)
@@ -603,7 +589,6 @@ Finds:
 18. `language.mixed`: "the request is {request}, but {len(other)} of {len(cases)} cases {verb} {', '.join(sorted(set(other)))}" (through `_languages`)
 19. `judge.greedy_seeds`: "the judge is greedy, so its {len(c.seeds)} seeds send the same request" (through `_judge`)
 
-```
 ## LocalEngine `(Component)`
 `src/chatddx/factors/engine.py:LocalEngine`
 
@@ -870,14 +855,9 @@ Raises:
 Raises:
 1. `StructuralError`: "the case's vignette is fingerprinted with key {expected.key_id!r}, not {given!r}"
 2. `StructuralError`: "vignette {vignette} isn't UTF-8: {e.reason} at byte {e.start}" (from `UnicodeDecodeError`)
-```
-SIGN-OFF: ADD
-add these lines here
----
 
 Finds:
 1. `case.drift`: "the vignette at the source differs from the case's"
-```
 
 ## Prepared `(Frozen)`
 `src/chatddx/factors/cases.py:Prepared`

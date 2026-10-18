@@ -14,10 +14,6 @@ Written by `chatddx reference` from `src/chatddx/facts/`; how to read it is in [
 * `facts: Facts`
 * `digests: Iterable[str] | None = None`
 * ∟`list[Finding]`
-```
-SIGN-OFF: ADD
-add these lines here
----
 
 Finds:
 1. `facts.missing`: "no facts about {name!r}, so model-level checks were skipped" (info, through `_pair`)
@@ -26,7 +22,6 @@ Finds:
 4. `facts.output_refused`: reason (through `_pair`)
 5. `facts.output_note`: note (info, through `_pair`)
 6. `facts.sampling_unmatched`: "the configuration's sampling is what the facts recommend for {', '.join(others)}, not for {name}" (through `_pair`)
-```
 
 ## Facts `(Frozen)`
 `src/chatddx/facts/models.py:Facts`

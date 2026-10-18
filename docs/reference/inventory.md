@@ -13,10 +13,6 @@ Written by `chatddx reference` from `src/chatddx/inventory/`; how to read it is 
 * `inventory: Inventory`
 * `get: Resolver`
 * ∟`list[Finding]`
-```
-SIGN-OFF: ADD
-add these lines here
----
 
 Finds:
 1. `endpoint.engine_unknown`: str(e) (from `StructuralError`, through `_engine`)
@@ -26,7 +22,6 @@ Finds:
 5. `endpoint.shared_url`: "{url} is also the address of endpoint {names[0]!r}"
 6. `host.unpinned`: "it says where it keeps {what} {key}, which none of its endpoints' engines pins" (info)
 7. `cleared.not_sensitive`: "it is cleared for source {source!r}, which isn't sensitive and needs no clearance" (info)
-```
 
 ## DatabaseSource `(Source)`
 `src/chatddx/inventory/sources.py:DatabaseSource`

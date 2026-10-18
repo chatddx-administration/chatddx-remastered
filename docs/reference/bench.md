@@ -467,14 +467,9 @@ Raises:
 * `subject: str`
 * ∟`Finding`
 
-```
-SIGN-OFF: ADD
-add these lines here
----
 Finds:
 1. `translations.missing`: "{cases} in {carried.language}, and left out: {carried.refused}"
 
-```
 ## linted
 `src/chatddx/bench/seen.py:linted`
 
