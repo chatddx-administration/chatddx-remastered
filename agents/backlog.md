@@ -1158,7 +1158,12 @@ run's start.
   transaction, would remove most of it.
 
 ### G37. Administering people
-Commands that change a person, an admin role that means something, and a new password that ends sessions.
+Commands that change a person, and a new password that ends the person's sessions.
+
+Triage: kept as is. Decided, for identity.3 and identity.7: the commands stay the operators' tool, used by whoever holds
+the database; `Role.ADMIN` means something only with an admin page in the portal, or with Keycloak (G38). Three more
+of agents/wip-clearance.md's ("Before real patient data", 8) would ride along: signing in again, a deactivated person's
+queued jobs, and `People.set_password`'s empty password.
 
 **identity.1** · From docs/identity.md:96, "Open design issues"
 
@@ -1560,6 +1565,8 @@ References to open items found during triage, for step 5:
   here now.
 - agents/wip-clearance.md, "Before real patient data", 2, cites docs/api.md, "Outstanding", "Serving", and
   docs/worker.md, "Smaller issues", for connections; agents/wip-deploy.md cites docs/worker.md, "The deployment".
+- agents/wip-clearance.md, "Before real patient data", 8, hands sessions and people to docs/identity.md, "Open design
+  issues": they are G37 now.
 - agents/wip-engine-part.md, "Outstanding", hands bench.24, bench.25 and bench.26 to docs/bench.md, "Outstanding":
   they are here now.
 
