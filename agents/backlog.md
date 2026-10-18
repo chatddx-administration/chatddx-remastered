@@ -59,7 +59,7 @@ items under it are as they were moved. An item that restates another for an API 
 36. [Performance, once measured](#g36-performance-once-measured) (5)
 37. [Administering people](#g37-administering-people) (4)
 38. [Signing in: limits, tokens and Keycloak](#g38-signing-in-limits-tokens-and-keycloak) (0, dissolved)
-39. [Z1: what each role is shown](#g39-z1-what-each-role-is-shown) (5)
+39. [Z1: what each role is shown](#g39-z1-what-each-role-is-shown) (0, dissolved)
 40. [The repl's reach](#g40-the-repls-reach) (3)
 41. [The repl's rendering](#g41-the-repls-rendering) (3)
 42. [Unknown query parameters](#g42-unknown-query-parameters) (1)
@@ -1189,34 +1189,8 @@ Triage: dissolved; all seven were dropped, as holding under `nix/module.nix` or 
 Their takes on Keycloak go to agents/wip-deploy.md in the sweep.
 
 ### G39. Z1: what each role is shown
-The map from roles to kinds, beside `sees`.
-
-**identity.5** · From docs/identity.md:103, "Open design issues"
-
-- **What each role is shown** isn't written (see "Authorization").
-
-**identity.6** · From docs/identity.md:111, "Takes on what is open", "Z1: what each role is shown"
-
-Decided: authorization goes by role first, which kinds a role sees, then by the catalog's owners and collaborators. The
-map from roles to kinds isn't written; it needs the portal's views to mean anything.
-
-Take: the map goes beside `sees` in `src/chatddx/identity/identity.py`, as data, and `sees` then takes the person's
-roles and the kind as well as the `Owned`. The kinds each role authors can go beside it, clinicians appendices,
-expectations and typed cases, researchers chunks and recipes, as a convenience for the portal's forms rather than a
-refusal.
-
-**bench.14** · From docs/bench.md:455, "Outstanding"
-
-- **Z1**: the map from roles to the kinds each role sees goes in `identity` once the portal's views give it meaning
-  (docs/identity.md, "Z1: what each role is shown"). `sees` then takes the person's roles and the kind.
-
-**api.14** · From docs/api.md:435, "Outstanding", "Signing in"
-
-- **Roles aren't checked**; Z1 shapes what each role is shown, with the portal (docs/bench.md, "Outstanding").
-
-**bench.7** · From docs/bench.md:441, "Outstanding", its takes, built and waiting for a word
-
-- ownership only, roles unchecked (docs/identity.md);
+Triage: dissolved; all five were dropped as tracked in agents/wip-portal.md (phase 7; "Below the UI", 3), which takes
+identity.6's decision and take in the sweep (see "Dropped").
 
 ### G40. The repl's reach
 The repl reaches what the bench offers: every write, a titled thread, seeds, settings and scorers.
@@ -1534,6 +1508,8 @@ References to open items found during triage, for step 5:
   for scripts, realm roles undecided).
 - agents/wip-portal.md, "Protection", and agents/wip-clearance.md, "Before real patient data", 1, cite docs/api.md and
   docs/identity.md for "no limit until Keycloak"; the NixOS module's nginx limits sign-ins now.
+- agents/wip-portal.md, "Below the UI", 3, cites docs/bench.md, "Outstanding", and docs/identity.md, "Z1: what each
+  role is shown": carry identity.6's decision and take there.
 - agents/wip-engine-part.md, "Outstanding", hands bench.24, bench.25 and bench.26 to docs/bench.md, "Outstanding":
   they are here now.
 
@@ -1759,6 +1735,36 @@ their takes in the sweep:
 Keycloak, or a proxy in front such as oauth2-proxy, authenticates, and the app maps its username onto `person.login`,
 which is why logins are lowercase like Keycloak's. Password login can stay as the development path. Roles could then
 come from Keycloak's realm roles instead of the column; not decided.
+
+G39, as tracked in agents/wip-portal.md (phase 7; "Below the UI", 3); identity.6's decision and take go there in the
+sweep:
+
+**identity.5** · From docs/identity.md:103, "Open design issues"
+
+- **What each role is shown** isn't written (see "Authorization").
+
+**identity.6** · From docs/identity.md:111, "Takes on what is open", "Z1: what each role is shown"
+
+Decided: authorization goes by role first, which kinds a role sees, then by the catalog's owners and collaborators. The
+map from roles to kinds isn't written; it needs the portal's views to mean anything.
+
+Take: the map goes beside `sees` in `src/chatddx/identity/identity.py`, as data, and `sees` then takes the person's
+roles and the kind as well as the `Owned`. The kinds each role authors can go beside it, clinicians appendices,
+expectations and typed cases, researchers chunks and recipes, as a convenience for the portal's forms rather than a
+refusal.
+
+**bench.14** · From docs/bench.md:455, "Outstanding"
+
+- **Z1**: the map from roles to the kinds each role sees goes in `identity` once the portal's views give it meaning
+  (docs/identity.md, "Z1: what each role is shown"). `sees` then takes the person's roles and the kind.
+
+**api.14** · From docs/api.md:435, "Outstanding", "Signing in"
+
+- **Roles aren't checked**; Z1 shapes what each role is shown, with the portal (docs/bench.md, "Outstanding").
+
+**bench.7** · From docs/bench.md:441, "Outstanding", its takes, built and waiting for a word
+
+- ownership only, roles unchecked (docs/identity.md);
 
 ## Context
 What the moved sections said of their items as a whole, moved with them.
