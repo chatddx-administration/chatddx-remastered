@@ -1238,6 +1238,9 @@ Triage: kept as is. repl.5 is a runner fix: the runner's `Delta` drops the strea
 ### G42. Unknown query parameters
 Routes refuse what they don't declare.
 
+Triage: kept as is. Decided: api.8's take, as one dependency for the whole app, the portal's routes included, whose
+links and forms its own code builds.
+
 **api.8** · From docs/api.md:418, "Outstanding", "Serving"
 
 - **A query parameter a route doesn't name is ignored**, unless the query is a model (`Varying`), so a misspelt filter
