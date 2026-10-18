@@ -53,7 +53,8 @@ items under it are as they were moved. An item that restates another for an API 
 31. [Garbage collection](#g31-garbage-collection) (2)
 32. [Values the canonical form can't keep](#g32-values-the-canonical-form-cant-keep) (3)
 33. [The store's read API](#g33-the-stores-read-api) (0, dissolved)
-34. [Evolving a stored database](#g34-evolving-a-stored-database) (3)
+34. [Migrations checked by content](#g34-migrations-checked-by-content) (1)
+   - G34b. [Old versions readable](#g34b-old-versions-readable) (2)
 35. [Deployment](#g35-deployment) (3)
 36. [Reads that grow with the data](#g36-reads-that-grow-with-the-data) (5)
 37. [Administering people](#g37-administering-people) (4)
@@ -1087,14 +1088,25 @@ nothing stored can hold either, so no stored digest changes.
 ### G33. The store's read API
 Triage: dissolved; all three were dropped (see "Dropped").
 
-### G34. Evolving a stored database
-Migrations checked by content, and stored rows readable after a schema-version bump.
+### G34. Migrations checked by content
+An applied migration's file is known by its content too, before a shared database.
+
+Triage: split, old versions went to G34b. Decided: each applied file's sha256 is kept beside its name, and migrating
+refuses, naming the file, when an applied file differs; a database migrated before that records its checksums on the
+first run after.
 
 **store.1** · From docs/store.md:124, "Known gaps"
 
 - Applied migrations are known by name only, so a migration file edited after a database applied it isn't noticed,
   and that database silently differs from the files. Before a shared database, applied files are frozen, or their
   checksums kept with their names.
+
+### G34b. Old versions readable
+Stored rows of an older schema version read after a bump. Due before the first bump once real data is stored, so after
+G6c.
+
+Triage: split from G34. Decided: upgrade on read; a kind keeps a reader for each of its older versions, returning the
+current shape, and the stored bytes and their digest stay as they are.
 
 **store.10** · From docs/store.md:143, "Known gaps"
 
@@ -1561,6 +1573,8 @@ References to open items found during triage, for step 5:
   agents/wip-deploy.md.
 - docs/bench.md's item on what the old bench had (bench.23) hands two of its parts to agents/wip-portal.md.
 - agents/wip-portal.md, "What the docs ask of it", cites docs/catalog.md, "Smaller issues", for what deleting hides.
+- agents/wip-clearance.md, "Before real patient data", 9, hands migrations to docs/store.md, "Known gaps": store.1 is
+  here now.
 - agents/wip-engine-part.md, "Outstanding", hands bench.24, bench.25 and bench.26 to docs/bench.md, "Outstanding":
   they are here now.
 
