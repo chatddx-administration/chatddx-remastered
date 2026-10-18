@@ -1065,7 +1065,10 @@ ledger and every person's threads, deleted ones too, since history answers quest
 - Garbage collector for true deletions of non-referenced items.
 
 ### G32. Values the canonical form can't keep
-NUL and NaN refused, or kept, where they are written.
+NUL and NaN refused where a component, a record or a typed text is built, rather than failing or changing when stored.
+
+Triage: kept as is. Decided: floats refuse NaN and infinity throughout, and strings refuse NUL, typed text included;
+nothing stored can hold either, so no stored digest changes.
 
 **store.4** · From docs/store.md:130, "Known gaps"
 
