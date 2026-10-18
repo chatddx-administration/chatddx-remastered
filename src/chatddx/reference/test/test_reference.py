@@ -309,6 +309,7 @@ def test_raises_are_in_the_order_the_code_reaches_them_helpers_included(
             """,
         },
     )
+    assert "\nRaises:\n1. `ValueError`" in found
     assert entry(found, "## done")[4:] == [
         '1. `ValueError`: "a negative number of times" (through `_checked`)',
         '2. `OverflowError`: "too many times"',
@@ -433,6 +434,7 @@ def test_a_finding_is_listed_where_the_code_makes_it(tmp_path: Path) -> None:
             """,
         },
     )
+    assert "\nFinds:\n1. `lint.started`" in found
     assert entry(found, "## lint")[4:] == [
         "Finds:",
         '1. `lint.started`: "linting"',

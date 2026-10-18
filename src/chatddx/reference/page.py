@@ -241,7 +241,6 @@ class Page:
         return [
             "",
             "Raises:",
-            "",
             *(f"{i}. {self.said(r)}" for i, r in enumerate(raised, 1)),
         ]
 
@@ -259,7 +258,6 @@ class Page:
         return [
             "",
             "Finds:",
-            "",
             *(f"{i}. {self.noted(f)}" for i, f in enumerate(found, 1)),
         ]
 

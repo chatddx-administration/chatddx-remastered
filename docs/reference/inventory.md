@@ -19,7 +19,6 @@ add these lines here
 ---
 
 Finds:
-
 1. `endpoint.engine_unknown`: str(e) (from `StructuralError`, through `_engine`)
 2. `endpoint.not_engine`: "{digest} is a {engine.kind_name}, not an engine" (through `_engine`)
 3. `endpoint.unstartable`: str(e) (from `LookupError`, through `_endpoint`)
@@ -53,7 +52,6 @@ Finds:
 * ∟`bytes`
 
 Raises:
-
 1. `LookupError`: "case id {id!r} points outside source {self.name!r}"
 2. `LookupError`: "no case {id!r} in source {self.name!r}"
 
@@ -74,7 +72,6 @@ Raises:
 * `execution: Execution = Field(default_factory=Execution)`
 
 Raises:
-
 1. `ValueError`: "the execution sends {self.execution.concurrency} requests at once, and max_jobs takes {self.max_jobs}" (through `EndpointSpec._within_max_jobs`, in a `ValidationError`)
 
 ## HostSpec `(Frozen)`
@@ -95,7 +92,6 @@ Raises:
 * `configurations: str | None = None`
 
 Raises:
-
 1. `ValueError`: "source {name!r} is named {source.name!r}" (through `Inventory._sources_named`, in a `ValidationError`)
 2. `ValueError`: "endpoint {name!r} names no host {endpoint.host!r}" (through `Inventory._hosts_exist`, in a `ValidationError`)
 3. `ValueError`: "cleared names no endpoint {name!r}" (through `Inventory._cleared_exist`, in a `ValidationError`)
@@ -110,7 +106,6 @@ Raises:
 * ∟`EndpointSpec`
 
 Raises:
-
 1. `LookupError`: "no endpoint {name!r} in the inventory"
 
 ## Inventory.load `@classmethod`
@@ -120,7 +115,6 @@ Raises:
 * ∟`Self`
 
 Raises:
-
 1. `ValueError`: "{path}: the inventory has only 'include', 'configurations', 'source', 'endpoint', 'host', 'cleared' and 'judge', not {sorted(stray)}"
 2. `ValueError`: "{included}: an included inventory has only 'endpoint' and 'host' tables, not {sorted(stray)}"
 3. `ValueError`: "{included}: {table} {twice} are in {path} too"
@@ -134,7 +128,6 @@ Raises:
 * ∟`str`
 
 Raises:
-
 1. `LookupError`: "no endpoint serves {what}"
 2. `LookupError`: "{', '.join(named)} serve {what}; name the one to use"
 
@@ -146,7 +139,6 @@ Raises:
 * ∟`S`
 
 Raises:
-
 1. `LookupError`: f"{len(held)} {word}s ({', '.join(held)}) are in the inventory, " + 'so one must be named' if held else f'no {word} in the inventory'
 2. `LookupError`: "no source {name!r} in the inventory"
 3. `LookupError`: "source {name!r} isn't a {word}"
@@ -173,7 +165,6 @@ Raises:
 * ∟`StartUp`
 
 Raises:
-
 1. `LookupError`: "endpoint {name!r} serves a {other.kind_name}, not ours to start"
 2. `LookupError`: "endpoint {name!r}: {e}" (from `StructuralError`)
 3. `LookupError`: "endpoint {name!r} needs a host to start"
@@ -204,5 +195,4 @@ Raises:
 * ∟`Self`
 
 Raises:
-
 1. `LookupError`: "{path} is no World: it holds no inventory.toml"

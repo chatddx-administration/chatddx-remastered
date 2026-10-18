@@ -67,7 +67,6 @@ Written by `chatddx reference` from `src/chatddx/identity/`; how to read it is i
 * `active: bool = True`
 
 Raises:
-
 1. `ValueError`: "invalid login {login!r}" (through `Person._login`, in a `ValidationError`)
 
 ## preferred `[T]`

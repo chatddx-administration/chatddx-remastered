@@ -116,7 +116,6 @@ Written by `chatddx reference` from `src/chatddx/api/`; how to read it is in [do
 * ∟`schemas.FamilyCase`
 
 Raises:
-
 1. `ValueError`: "{given.replacing} isn't a case of family {family}"
 
 ## check `@router.post("/components/check")`
@@ -163,7 +162,6 @@ Raises:
 * ∟`schemas.Component`
 
 Raises:
-
 1. `NotFound`: "no component {digest} in the store"
 
 ## component_of
@@ -173,7 +171,6 @@ Raises:
 * ∟`Component`
 
 Raises:
-
 1. `ValueError`: "{kind!r} isn't a kind a person writes: the kinds are {", ".join(sorted(WRITTEN))}"
 2. `ValueError`: "{kind} is at v{cls.schema_version}, not v{doc['v']}"
 
@@ -230,7 +227,6 @@ Raises:
 * ∟`schemas.MadeEdit`
 
 Raises:
-
 1. `HTTPException`: 422, "a configuration is written with parts, not a component" (through `_check_given`)
 2. `HTTPException`: 422, "only a configuration has parts" (through `_check_given`)
 3. `HTTPException`: 422, "only a configuration is forked from an edit: another kind from a component" (through `_check_given`)
@@ -370,7 +366,6 @@ Raises:
 * ∟`schemas.MadeEdit`
 
 Raises:
-
 1. `ValueError`: "following what moved on takes no language"
 
 ## Follows `(_Schema)`
@@ -397,7 +392,6 @@ Raises:
 * ∟`schemas.MadeThread`
 
 Raises:
-
 1. `HTTPException`: 422, "a configuration is written with parts, not a component" (through `_check_given`)
 2. `HTTPException`: 422, "only a configuration has parts" (through `_check_given`)
 3. `HTTPException`: 422, "only a configuration is forked from an edit: another kind from a component" (through `_check_given`)
@@ -431,7 +425,6 @@ Raises:
 * ∟`Response`
 
 Raises:
-
 1. `HTTPException`: 409, str(e) (from `LookupError`)
 
 ## Heard
@@ -554,7 +547,6 @@ Raises:
 * ∟`schemas.Asked`
 
 Raises:
-
 1. `NotFound`: "no judge {given.judge} in the store"
 
 ## JudgeAnsweredData `(_Schema)`
@@ -799,7 +791,6 @@ Raises:
 * `replacing: str | None = Field(…)`
 
 Raises:
-
 1. `ValueError`: "a case is built from appendices or replacing one, not both" (through `NewCase._one`, in a `ValidationError`)
 
 ## NewEdit `(_Schema)`
@@ -849,7 +840,6 @@ Raises:
 * `score: bool = Field(…)`
 
 Raises:
-
 1. `ValueError`: "a run takes one of families, tags or cases" (through `NewRun._cases`, in a `ValidationError`)
 
 ## NewScoring `(_Schema)`
@@ -884,7 +874,6 @@ Raises:
 * `labels: Labels | None = Field(None, description="for a scorer")`
 
 Raises:
-
 1. `ValueError`: "a new thread holds a component or a recipe, not both" (through `NewThread._one`, in a `ValidationError`)
 
 ## NewTyped `(_Schema)`
@@ -1018,7 +1007,6 @@ Raises:
 * ∟`Generator[None]`
 
 Raises:
-
 1. `HTTPException`: 422, str(e) (from `(ValueError, *named)`)
 
 ## rendered_again `@router.get("/runs/{run}/rendered-again")`
@@ -1196,7 +1184,6 @@ Raises:
 * ∟`None`
 
 Raises:
-
 1. `HTTPException`: 403, "a browser's request must come from this site's pages"
 
 ## say `@router.patch("/threads/{thread}")`
@@ -1208,7 +1195,6 @@ Raises:
 * ∟`schemas.ThreadDetail`
 
 Raises:
-
 1. `HTTPException`: 422, "a description is replaced, never taken away"
 2. `HTTPException`: 422, "no person {missing[0]!r}"
 
@@ -1312,7 +1298,6 @@ Raises:
 * `replicates: int | None = Field(…)`
 
 Raises:
-
 1. `ValueError`: "a run takes seeds or replicates, not both" (through `Seeds._seeds_or_replicates`, in a `ValidationError`)
 
 ## Session `@dataclass(frozen=True)`
@@ -1331,7 +1316,6 @@ Raises:
 * ∟`Session`
 
 Raises:
-
 1. `HTTPException` (through `_unsigned`)
 2. `HTTPException`: "the session has ended: sign in again" (through `_unsigned`)
 
@@ -1345,7 +1329,6 @@ Raises:
 * ∟`SignedIn`
 
 Raises:
-
 1. `HTTPException`: "wrong login or password" (through `_unsigned`)
 
 ## sign_out `@router.delete("/session", status_code=204)`
@@ -1392,7 +1375,6 @@ Raises:
 * ∟`schemas.StartedRuns`
 
 Raises:
-
 1. `ValueError`: "no case tagged {' or '.join(given.tags)} for {bench.person.login}" (through `_new`)
 
 ## started_of
@@ -1465,7 +1447,6 @@ Raises:
 * ∟`schemas.Taken`
 
 Raises:
-
 1. `HTTPException`: 422, "no case {missing[0]} for {bench.person.login}"
 
 ## Telling
@@ -1556,7 +1537,6 @@ Raises:
 * ∟`list[schemas.Thread]`
 
 Raises:
-
 1. `HTTPException`: 422, "no kind {kind!r}: the kinds are {', '.join(KINDS)}"
 2. `HTTPException`: 422, "only a configuration has a purpose"
 3. `HTTPException`: 422, "only a configuration answers"
@@ -1593,7 +1573,6 @@ Raises:
 * ∟`list[schemas.Tried]`
 
 Raises:
-
 1. `HTTPException`: 422, "only a scorer is tried"
 
 ## TriedView `(_Schema)`
@@ -1650,7 +1629,6 @@ Raises:
 * ∟`schemas.Variation`
 
 Raises:
-
 1. `HTTPException`: 422, str(e) (from `(LookupError, ValueError)`, through `_engine_at`)
 
 ## Varied `(_Schema)`
@@ -1684,5 +1662,4 @@ Raises:
 * ∟`schemas.Vignette`
 
 Raises:
-
 1. `NotFound`: str(e) (from `LookupError`)

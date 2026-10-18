@@ -14,7 +14,6 @@ Written by `chatddx reference` from `src/chatddx/runner/`; how to read it is in 
 * ∟`str | None`
 
 Raises:
-
 1. `Refused`: "endpoint {endpoint!r} needs the secret in ${credential}, which isn't set" (through `_secret`)
 2. `Refused`: "endpoint {endpoint!r} can't be confirmed: {e}" (from `(StructuralError, OSError)`)
 3. `Refused`: "endpoint {endpoint!r} can't be confirmed: it serves {', '.join(listed) or 'nothing'} at {url}, not {expected}"
@@ -36,7 +35,6 @@ Raises:
 * ∟`None`
 
 Raises:
-
 1. `Refused`: "judge {judge.digest} reads the {' and '.join(read)}, which no judge is given"
 2. `Refused`: str(e) (from `LookupError`)
 3. `Refused`: "endpoint {endpoint!r} serves engine {spec.engine}, the {whose}'s is {engine}"
@@ -60,7 +58,6 @@ Raises:
 * ∟`Iterator[Chunk]`
 
 Raises:
-
 1. `ValueError`: "a chunk that isn't a JSON object: {data[:200]!r}"
 2. `Rejected`: 200, chunk
 3. `Unfinished`: "the stream ended before [DONE]"
@@ -113,7 +110,6 @@ Raises:
 * ∟`"Grading"`
 
 Raises:
-
 1. `ValueError`: "run {run} hasn't finished"
 2. `ValueError`: "judge calls are sent one at a time yet"
 
@@ -139,7 +135,6 @@ Raises:
 * ∟`tuple[Score, list[Finding]]`
 
 Raises:
-
 1. `ValueError`: "score {self.score} is finished"
 
 ## Grading.score `@property`
@@ -155,7 +150,6 @@ Raises:
 * ∟`None`
 
 Raises:
-
 1. `KeyboardInterrupt`
 ```
 SIGN-OFF: ADD
@@ -163,7 +157,6 @@ add these lines here
 ---
 
 Finds:
-
 1. `answer.salvaged`: message (info, through `Grading._grade`)
 2. `{code}`: message (through `Grading._grade`)
 ```
@@ -254,7 +247,6 @@ Finds:
 * ∟`str`
 
 Raises:
-
 1. `Refused`: str(e) (from `LookupError`)
 
 ## JudgeAnswered `@dataclass(frozen=True)`
@@ -314,7 +306,6 @@ Raises:
 * ∟`Stream`
 
 Raises:
-
 1. `Rejected`: e.code, _parsed(e.read()) (from `urllib.error.HTTPError`)
 
 ## PreparedItem `@dataclass(frozen=True)`
@@ -373,7 +364,6 @@ Raises:
 * `by: Person`
 
 Raises:
-
 1. `ValueError`: "the runner needs a connection in autocommit mode"
 
 ## Runner.resume
@@ -383,7 +373,6 @@ Raises:
 * ∟`"Running"`
 
 Raises:
-
 1. `ValueError`: "run {run} is finished"
 2. `ValueError`: "run {run} was sent to no endpoint, so it can't resume"
 3. `ValueError`: "endpoint {endpoint!r} takes {spec.max_jobs} requests at once, the execution sends {execution.concurrency}" (through `Runner._admitted`)
@@ -394,7 +383,6 @@ SIGN-OFF: ADD
 add these lines here
 ---
 Finds:
-
 1. `run.resumed`: "{said} by {_built(now)}, where {_built(log.started.rig)} started it" (through `_resumed`)
 2. `run.resumed`: said (info, through `_resumed`)
 
@@ -420,7 +408,6 @@ Finds:
 * ∟`"Running"`
 
 Raises:
-
 1. `ValueError`: "endpoint {endpoint!r} takes {spec.max_jobs} requests at once, the execution sends {execution.concurrency}" (through `Runner._admitted`)
 
 ## Running
@@ -446,7 +433,6 @@ Raises:
 * ∟`list[Finding]`
 
 Raises:
-
 1. `ValueError`: "run {self.run} is finished"
 
 ## Running.run `@property`
@@ -462,7 +448,6 @@ Raises:
 * ∟`None`
 
 Raises:
-
 1. `KeyboardInterrupt` (through `Running._probe`)
 ```
 SIGN-OFF: ADD
@@ -470,7 +455,6 @@ add these lines here
 ---
 
 Finds:
-
 1. `case.unreadable`: str(e) (from `(LookupError, StructuralError)`, through `Running._prepared`)
 ```
 
@@ -504,7 +488,6 @@ Finds:
 * ∟`Call`
 
 Raises:
-
 1. `Stopped`: call(None, STOPPED)
 2. `Stopped`: call(stream.status, STOPPED)
 
@@ -606,7 +589,6 @@ Raises:
 * ∟`ToolRun`
 
 Raises:
-
 1. `ToolStopped`: ToolRun(id=call.id, name=call.name, started_at=started, finished_at=_now(), result=f'error: {STOPPED}', error=STOPPED)
 
 ## ToolRan `@dataclass(frozen=True)`

@@ -20,7 +20,6 @@ add these lines here
 ---
 
 Finds:
-
 1. `facts.missing`: "no facts about {name!r}, so model-level checks were skipped" (info, through `_pair`)
 2. `facts.reasoning_unmatched`: "the configuration's reasoning settings match none of the model's reasoning levels" (through `_pair`)
 3. `facts.budget_refused`: model.reasoning.budget.refused (through `_pair`)
@@ -48,7 +47,6 @@ Finds:
 * ∟`Self`
 
 Raises:
-
 1. `ValueError`: "{path}: facts have only 'model' tables"
 2. `ValueError`: "{name!r} has facts in more than one file"
 

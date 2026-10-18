@@ -38,7 +38,6 @@ Written by `chatddx reference` from `src/chatddx/curation/`; how to read it is i
 * ∟`list[str]`
 
 Raises:
-
 1. `ValueError`: "a data set needs exactly one expectation schema"
 
 ## LATE_TABLES
@@ -53,7 +52,6 @@ Raises:
 * ∟`dict[str, DataCase]`
 
 Raises:
-
 1. `ValueError`: "{path}: cases are kept in cases-<language>.toml files"
 2. `ValueError`: "{path}: {e}" (from `ValueError`)
 3. `ValueError`: "{path}: a cases file has only 'case' tables"
@@ -92,7 +90,6 @@ Raises:
 * ∟`Planned`
 
 Raises:
-
 1. `LookupError`: "no {table} named {name!r} in the plan"
 
 ## plan_factors
@@ -105,7 +102,6 @@ Raises:
 * ∟`Plan`
 
 Raises:
-
 1. `ValueError`: "{factors}: {', '.join(held)} tables are the World's, in its engines.toml"
 2. `ValueError`: "{path}: unknown tables {sorted(stray)}" (through `_records`)
 3. `ValueError`: "{path}: {table}.{name}: {said}" (through `_records`)

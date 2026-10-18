@@ -251,7 +251,6 @@ Written by `chatddx reference` from `src/chatddx/store/`; how to read it is in [
 * ∟`Person`
 
 Raises:
-
 1. `LookupError`: "no person with id {id}"
 
 ## People.open_session
@@ -285,7 +284,6 @@ Raises:
 * ∟`Person`
 
 Raises:
-
 1. `LookupError`: "no person with id {id}"
 
 ## Placed `@dataclass(frozen=True)`
@@ -327,7 +325,6 @@ Raises:
 * ∟`bool`
 
 Raises:
-
 1. `ValueError`: "a job ends {', '.join(ENDED)}, not {status}"
 
 ## Queue.enlist
@@ -343,7 +340,6 @@ Raises:
 * ∟`Job`
 
 Raises:
-
 1. `LookupError`: "run {run} has nothing under way"
 
 ## Queue.open
@@ -377,7 +373,6 @@ Raises:
 * ∟`Job`
 
 Raises:
-
 1. `UnderWay`: "run {run} has something under way"
 
 ## Queue.requeue
@@ -604,7 +599,6 @@ Raises:
 * ∟`None`
 
 Raises:
-
 1. `TypeError`: "no table for {type(record).__name__}"
 
 ## Store.compilations
@@ -626,7 +620,6 @@ Raises:
 * ∟`Component`
 
 Raises:
-
 1. `StructuralError`: "{digest} is not in the store"
 
 ## Store.load
@@ -636,7 +629,6 @@ Raises:
 * ∟`Registry`
 
 Raises:
-
 1. `StructuralError`: "not in the store: {missing}"
 
 ## Store.reaching
@@ -660,7 +652,6 @@ Raises:
 * ∟`Run`
 
 Raises:
-
 1. `LookupError`: "{log} {key} is not in the store" (through `Store._stages`)
 2. `StructuralError`: "{log} {key} has no started row" (through `Store._stages`)
 
@@ -671,7 +662,6 @@ Raises:
 * ∟`Score`
 
 Raises:
-
 1. `LookupError`: "{log} {key} is not in the store" (through `Store._stages`)
 2. `StructuralError`: "{log} {key} has no started row" (through `Store._stages`)
 
@@ -724,7 +714,6 @@ Raises:
 * ∟`bytes`
 
 Raises:
-
 1. `LookupError`: "no case {id!r} in source {source!r}"
 
 ## Texts.typed_since

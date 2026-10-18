@@ -46,7 +46,6 @@ Written by `chatddx reference` from `src/chatddx/factors/`; how to read it is in
 * ∟`tuple[Registry, list[Finding]]`
 
 Raises:
-
 1. `StructuralError`: "roots missing from bundle: {missing}"
 ```
 SIGN-OFF: ADD
@@ -54,7 +53,6 @@ add these lines here
 ---
 
 Finds:
-
 1. `bundle.recanonicalized`: "current code serializes this component differently"
 ```
 
@@ -76,7 +74,6 @@ Finds:
 * `seed: int | None = None`
 
 Raises:
-
 1. `ValueError`: "canary body may not set {sorted(owned)}" (through `Canary._no_runtime_keys`, in a `ValidationError`)
 
 ## Canary.render
@@ -134,7 +131,6 @@ add these lines here
 ---
 
 Finds:
-
 1. `engine.chat_template`: "chat template does not match the declared digest"
 2. `engine.chat_template_date`: "chat template reads the current date"
 ```
@@ -202,7 +198,6 @@ Finds:
 * ∟`Skeleton`
 
 Raises:
-
 1. `StructuralError`: "no translations into {into}" (through `_translations_into`)
 2. `StructuralError`: "no translation into {into} for {", ".join(repr(t) for t in sorted(missing))}"
 3. `StructuralError`: "{prompt.purpose} prompt in a {recipe.purpose} recipe"
@@ -225,7 +220,6 @@ Raises:
 * `schema_version: ClassVar[int] = 1`
 
 Raises:
-
 1. `ValueError`: "a {self.kind_name} may not hold U+0000, which can't be stored" (through `Component._storable`, in a `ValidationError`)
 
 ## Component.__pydantic_init_subclass__ `@classmethod` `@override`
@@ -235,7 +229,6 @@ Raises:
 * ∟`None`
 
 Raises:
-
 1. `TypeError`: "{cls.__name__}.kind needs a literal default"
 
 ## Component.canonical `@cached_property`
@@ -294,7 +287,6 @@ Raises:
 * ∟`tuple[T, ...]`
 
 Raises:
-
 1. `ValueError`: "duplicates are not allowed"
 
 ## Effort
@@ -329,7 +321,6 @@ Raises:
 * `whitespace_limit: int | None = Field(default=100, ge=1)`
 
 Raises:
-
 1. `ValueError`: "shuffle_seed goes with shuffled order, and only with it" (through `Execution._shuffle_seed`, in a `ValidationError`)
 
 ## Execution.schedule
@@ -415,7 +406,6 @@ Raises:
 * `hex: Sha256Hex`
 
 Raises:
-
 1. `ValueError`: "key_id goes with hmac-sha256, and only with it" (through `Fingerprint._key_id`, in a `ValidationError`)
 
 ## Fingerprint.of `@classmethod`
@@ -479,7 +469,6 @@ Raises:
 * `text: Text`
 
 Raises:
-
 1. `ValueError`: "{kind} cannot use inserts {sorted(stray)}" (through `Instructions._inserts`, in a `ValidationError`)
 2. `ValueError`: "inserts used more than once: {sorted(dupes)}" (through `Instructions._inserts`, in a `ValidationError`)
 
@@ -524,7 +513,6 @@ Raises:
 * ∟`dict[SlotName, str]`
 
 Raises:
-
 1. `StructuralError`: "the view is judged by {view.judge}, not this judge"
 
 ## JudgeRef
@@ -553,7 +541,6 @@ Raises:
 * ∟`tuple[Landing | None, Landing | None]`
 
 Raises:
-
 1. `StructuralError`: "facts about {facts.model} can't compile for {model}"
 2. `StructuralError`: "{what} is worked out from the facts about the recipe's model, which has none"
 3. `StructuralError`: "{facts.model}: {e}" (from `Refused`)
@@ -575,7 +562,6 @@ Raises:
 * ∟`str`
 
 Raises:
-
 1. `ValueError`: "{value!r} is not a language tag such as 'sv' or 'pt-BR'"
 
 ## Languages
@@ -597,7 +583,6 @@ SIGN-OFF: ADD
 add these lines here
 ---
 Finds:
-
 1. `model.revision`: "revision {c.revision!r} is not a commit and can move" (through `_model`)
 2. `engine.closure`: "closure {c.runtime.closure!r} is not a Nix store path" (through `_engine`)
 3. `view.unreachable`: "view {i}'s expectation selector {view.expectation!r} reaches nothing in the expectation schema" (through `_scorer`)
@@ -632,7 +617,6 @@ Finds:
 * `env: Annotated[dict[str, str], AfterValidator(sorted_keys)] = Field(…)`
 
 Raises:
-
 1. `ValueError`: "argv may not set {sorted(owned)}" (through `LocalEngine._no_owned_flags`, in a `ValidationError`)
 2. `ValueError`: "argv may not use {sorted(unpinned)}: its arguments belong in argv, where the digest pins them" (through `LocalEngine._no_owned_flags`, in a `ValidationError`)
 3. `ValueError`: "argv may not abbreviate flags it may not use: {listed}" (through `LocalEngine._no_owned_flags`, in a `ValidationError`)
@@ -647,7 +631,6 @@ Raises:
 * `files: tuple[FileDigest, ...] = Field(min_length=1)`
 
 Raises:
-
 1. `ValueError`: "duplicate file paths" (through `LocalModel._sorted_unique`, in a `ValidationError`)
 
 ## LocalModel.name `@property`
@@ -690,7 +673,6 @@ Raises:
 * ∟`Model`
 
 Raises:
-
 1. `StructuralError`: "{digest} is a {other.kind_name}, neither a model nor an engine"
 
 ## ModelFacts `(Component)`
@@ -714,7 +696,6 @@ Raises:
 * ∟`None`
 
 Raises:
-
 1. `Refused`: "nothing is known about a thinking budget"
 2. `Refused`: reason
 
@@ -730,7 +711,6 @@ Raises:
 * ∟`SamplingValues`
 
 Raises:
-
 1. `Refused`: "no sampling is recommended for reasoning {level!r}"
 
 ## ModelRef
@@ -757,7 +737,6 @@ Raises:
 * ∟`dict[str, JsonValue]`
 
 Raises:
-
 1. `StructuralError`: "no result for tool calls {missing}"
 
 ## OPTIONAL_PARTS
@@ -780,7 +759,6 @@ Raises:
 * `schema_ops: Annotated[tuple[SchemaOp, ...], AfterValidator(distinct)] = ()`
 
 Raises:
-
 1. `ValueError`: "an output's schema goes in json_schema, not its contract" (through `Output._schema_placement`, in a `ValidationError`)
 2. `ValueError`: "{self.contract.kind} contracts need json_schema" (through `Output._schema_placement`, in a `ValidationError`)
 3. `ValueError`: "{kind} cannot use inserts {sorted(stray)}" (through `Output._inserts`, in a `ValidationError`)
@@ -841,7 +819,6 @@ Raises:
 * ∟`Component`
 
 Raises:
-
 1. `StructuralError`: "component is not a JSON object"
 2. `StructuralError`: "unknown component kind {kind!r}"
 3. `StructuralError`: "{kind} v{v} is not readable by v{cls.schema_version}"
@@ -853,7 +830,6 @@ Raises:
 * ∟`tuple[Step, ...]`
 
 Raises:
-
 1. `ValueError`: "{text!r}: a JSON Pointer starts with /" (through `_pointer`)
 2. `ValueError`: "{text!r}: ~ must be followed by 0 or 1" (through `_pointer`)
 3. `ValueError`: "{text!r}: a selector is a JSON Pointer or a JSONPath query starting with $"
@@ -878,7 +854,6 @@ Raises:
 * `body: Settings`
 
 Raises:
-
 1. `ValueError`: "passthrough may not set {sorted(owned)}" (through `Passthrough._no_owned_keys`, in a `ValidationError`)
 
 ## prepare_case
@@ -893,7 +868,6 @@ Raises:
 * ∟`Prepared`
 
 Raises:
-
 1. `StructuralError`: "the case's vignette is fingerprinted with key {expected.key_id!r}, not {given!r}"
 2. `StructuralError`: "vignette {vignette} isn't UTF-8: {e.reason} at byte {e.start}" (from `UnicodeDecodeError`)
 ```
@@ -902,7 +876,6 @@ add these lines here
 ---
 
 Finds:
-
 1. `case.drift`: "the vignette at the source differs from the case's"
 ```
 
@@ -921,7 +894,6 @@ Finds:
 * `segments: tuple[Segment | Insert, ...] = Field(min_length=1)`
 
 Raises:
-
 1. `ValueError`: "{purpose} requests cannot use slots {sorted(stray)}" (through `Prompt._slots`, in a `ValidationError`)
 2. `ValueError`: "{purpose} requests need slots {sorted(missing)}" (through `Prompt._slots`, in a `ValidationError`)
 3. `ValueError`: "slots used more than once: {sorted(dupes)}" (through `Prompt._slots`, in a `ValidationError`)
@@ -955,7 +927,6 @@ Raises:
 * `level: Effort | None = None`
 
 Raises:
-
 1. `ValueError`: "a reasoning level is worked out from the model's facts, so it comes without an effort or chat template arguments" (through `Reasoning._level_or_settings`, in a `ValidationError`)
 
 ## reasoning
@@ -983,7 +954,6 @@ Raises:
 * `budget: Literal["thinking_token_budget"] | Refusal | None = None`
 
 Raises:
-
 1. `ValueError`: "{' -> '.join([*path, intent])}: the collapses go round" (through `ReasoningFacts._collapses_land`, in a `ValidationError`)
 2. `ValueError`: "{name!r} collapses into {target!r}, which ends in no fact" (through `ReasoningFacts._collapses_land`, in a `ValidationError`)
 
@@ -1000,7 +970,6 @@ Raises:
 * ∟`Landing`
 
 Raises:
-
 1. `Refused`: "no default reasoning level is known"
 2. `ValueError`: "{' -> '.join([*path, intent])}: the collapses go round" (through `ReasoningFacts._land`)
 3. `Refused`: "nothing is known about reasoning {landed!r}"
@@ -1099,7 +1068,6 @@ Raises:
 * ∟`Component`
 
 Raises:
-
 1. `StructuralError`: "{digest} does not match its bytes"
 
 ## Registry.bundle
@@ -1116,7 +1084,6 @@ Raises:
 * ∟`None`
 
 Raises:
-
 1. `StructuralError`: "\n".join(problems)
 
 ## Registry.closure
@@ -1132,7 +1099,6 @@ Raises:
 * ∟`Component`
 
 Raises:
-
 1. `StructuralError`: "{digest} is not in the registry"
 
 ## RemoteEngine `(Component)`
@@ -1168,7 +1134,6 @@ Raises:
 * ∟`C`
 
 Raises:
-
 1. `StructuralError`: "{digest} is a {component.kind_name}, not a {cls.__name__}"
 
 ## Resolver
@@ -1302,7 +1267,6 @@ Raises:
 * ∟`str`
 
 Raises:
-
 1. `StructuralError`: "{engine} is a {other.kind_name}, not an engine"
 
 ## Settings
@@ -1335,7 +1299,6 @@ Raises:
 * `max_rounds: int | None = Field(default=None, ge=1)`
 
 Raises:
-
 1. `ValueError`: "body may not set {sorted(owned)}" (through `Skeleton._structure`, in a `ValidationError`)
 2. `ValueError`: "{purpose} requests cannot use slots {sorted(stray)}" (through `Skeleton._structure`, in a `ValidationError`)
 3. `ValueError`: "{purpose} requests need slots {sorted(missing)}" (through `Skeleton._structure`, in a `ValidationError`)
@@ -1361,7 +1324,6 @@ Raises:
 * ∟`list[str]`
 
 Raises:
-
 1. `ValueError`: "a tool needs a function with a name, not {tool!r}" (through `_tool_names`)
 2. `ValueError`: "tools must be a list" (through `_tool_names`)
 
@@ -1386,7 +1348,6 @@ Raises:
 * ∟`dict[str, JsonValue]`
 
 Raises:
-
 1. `StructuralError`: "no fill for slots {sorted(missing)}"
 
 ## SkeletonRef
@@ -1532,7 +1493,6 @@ Raises:
 * `into: Annotated[dict[Language, dict[str, str]], AfterValidator(sorted_keys)] = Field(…)`
 
 Raises:
-
 1. `ValueError`: "no translations into {language}" (through `Translations._into`, in a `ValidationError`)
 2. `ValueError`: "whitespace isn't translated" (through `Translations._into`, in a `ValidationError`)
 3. `ValueError`: "no translation into {language} given for {empty}" (through `Translations._into`, in a `ValidationError`)

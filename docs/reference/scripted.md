@@ -11,7 +11,6 @@ Written by `chatddx reference` from `src/chatddx/scripted/`; how to read it is i
 * ∟`Served`
 
 Raises:
-
 1. `LookupError`: str(e) (from `StructuralError`)
 2. `LookupError`: "endpoint {name!r} isn't on this machine" (through `_stand_in`)
 3. `LookupError`: "endpoint {name!r} asks for the key in {spec.credential}, which isn't set" (through `_stand_in`)
@@ -25,7 +24,6 @@ Raises:
 * ∟`ScriptedRun`
 
 Raises:
-
 1. `ValueError`: "{path}: {e}" (from `(ValidationError, Refused)`)
 
 ## NONE
@@ -41,7 +39,6 @@ Raises:
 * ∟`RunStarted | None`
 
 Raises:
-
 1. `ValueError`: "{scripted.configuration}: a scripted run's cases are sent in one language, not as {said}" (through `_sent`)
 
 ## run
@@ -52,7 +49,6 @@ Raises:
 * ∟`RunStarted`
 
 Raises:
-
 1. `ValueError`: "{scripted.configuration}: a scripted run's cases are sent in one language, not as {said}" (through `_sent`)
 
 ## RUNS

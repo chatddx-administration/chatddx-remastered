@@ -24,7 +24,6 @@ Written by `chatddx reference` from `src/chatddx/bench/`; how to read it is in [
 * ∟`Running`
 
 Raises:
-
 1. `ValueError`: "run {run.run} was sent to no endpoint, so it can't run again"
 2. `NotFound`: "no case {missing[0]} for {seen.person.login}"
 3. `OverQuota`: "a run holds at most {settings.ITEMS_PER_RUN} items, not {items}" (through `_begun`)
@@ -39,7 +38,6 @@ Raises:
 * ∟`str`
 
 Raises:
-
 1. `NotFound`: "no appendix {digest} for {seen.person.login}"
 
 ## Bench.check
@@ -49,7 +47,6 @@ Raises:
 * ∟`Checked`
 
 Raises:
-
 1. `ValueError`: "a person doesn't write {kind} components"
 
 ## Bench.edit
@@ -63,7 +60,6 @@ Raises:
 * ∟`Written`
 
 Raises:
-
 1. `NotFound`: "no {word} {thread} of yours"
 2. `ValueError`: "a compiled configuration's language comes from its recipe" (through `_configured`)
 3. `ValueError`: "only a scorer's views and resources have labels" (through `_configured`)
@@ -80,7 +76,6 @@ Raises:
 * ∟`Written`
 
 Raises:
-
 1. `NotFound`: "no {word} {thread} of yours"
 2. `ValueError`: "{word} {thread}'s changes don't fit its origin's head: {e}" (from `ValueError`, through `_proposed`)
 3. `ValueError`: "{word} {thread} has nothing to follow"
@@ -95,7 +90,6 @@ Raises:
 * ∟`Written`
 
 Raises:
-
 1. `NotFound`: "no configuration {thread} of yours"
 2. `ValueError`: "configuration {thread} was compiled for nothing that has moved on"
 3. `ValueError`: "configuration {thread} can't follow {_what(made)} {made.about}: {made.refused}"
@@ -111,7 +105,6 @@ Raises:
 * ∟`Written`
 
 Raises:
-
 1. `ValueError`: "{held.label} isn't a variation of configuration {thread}"
 2. `ValueError`: "a compiled configuration's language comes from its recipe" (through `_configured`)
 3. `ValueError`: "only a scorer's views and resources have labels" (through `_configured`)
@@ -135,7 +128,6 @@ Raises:
 * ∟`Written`
 
 Raises:
-
 1. `ValueError`: "a person doesn't write {kind} components" (through `_written`)
 2. `ValueError`: "{kind} components have no language of their own" (through `_written`)
 3. `ValueError`: "only a scorer's views and resources have labels" (through `_written`)
@@ -150,7 +142,6 @@ Raises:
 * ∟`Proposed | None`
 
 Raises:
-
 1. `ValueError`: "{word} {thread}'s changes don't fit its origin's head: {e}" (from `ValueError`, through `_proposed`)
 
 ## Bench.queue
@@ -168,7 +159,6 @@ Raises:
 * ∟`list[str]`
 
 Raises:
-
 1. `ValueError`: "run {run.run} hasn't finished"
 2. `ValueError`: "scorer {missing[0]} doesn't apply to run {run.run}"
 3. `ValueError`: "no scorer applies to run {run.run}"
@@ -180,7 +170,6 @@ Raises:
 * ∟`str`
 
 Raises:
-
 1. `NotFound`: "no case {case} for {seen.person.login}"
 
 ## Bench.resume
@@ -197,7 +186,6 @@ Raises:
 * ∟`Written`
 
 Raises:
-
 1. `Ambiguous`: "{seen.person.login} has {len(mine)} configurations named {name!r}"
 
 ## Bench.say
@@ -213,7 +201,6 @@ Raises:
 * ∟`About`
 
 Raises:
-
 1. `NotFound`: "no {word} {thread} of yours"
 2. `ValueError`: "{word} {thread} is deleted: restore it to say more of it"
 3. `ValueError`: "a name can't be empty: none takes it away"
@@ -243,7 +230,6 @@ Raises:
 * ∟`Started`
 
 Raises:
-
 1. `ValueError`: "{variation.label} is a judge configuration: a judge is asked as runs are scored, and isn't run on cases"
 2. `NotFound`: "no case {missing[0]} for {seen.person.login}"
 3. `ValueError`: "no case can be sent: {"; ".join(c.refused or "" for c in left_out)}"
@@ -260,7 +246,6 @@ Raises:
 * ∟`Taken`
 
 Raises:
-
 1. `ValueError`: "{schema} isn't a stored expectation schema"
 2. `NotFound`: "no person {owner!r}"
 
@@ -272,7 +257,6 @@ Raises:
 * ∟`int`
 
 Raises:
-
 1. `ValueError`: "expectation {thread} is yours already"
 2. `Conflict`: "{seen.person.login} has their own expectation of {seen.title(case)} under {seen.title(schema)}, in thread {mine[0]}: replace it to take this one"
 
@@ -287,7 +271,6 @@ Raises:
 * ∟`Family`
 
 Raises:
-
 1. `ValueError`: "a typed case holds text"
 2. `ValueError`: "a typed case may not hold U+0000, which can't be stored"
 3. `ValueError`: "a typed case holds at most {settings.TYPED_TEXT_LIMIT} characters, not {len(text)}"
@@ -303,7 +286,6 @@ Raises:
 * ∟`Appendix`
 
 Raises:
-
 1. `ValueError`: "an appendix is bound to the current vignette of a case you see"
 
 ## Carried `@dataclass(frozen=True)`
@@ -325,7 +307,6 @@ Raises:
 * ∟`None`
 
 Raises:
-
 1. `ValueError`: "{seen.person.login} has their own expectation of {seen.title(case)} under {seen.title(schema)}, in thread {others[0]}: {then}"
 
 ## check_kind
@@ -338,7 +319,6 @@ Raises:
 * ∟`None`
 
 Raises:
-
 1. `ValueError`: "{word} {thread} holds {kind} components, not {given}"
 
 ## check_scorer
@@ -348,7 +328,6 @@ Raises:
 * ∟`None`
 
 Raises:
-
 1. `ValueError`: "; ".join(found)
 
 ## Checked `@dataclass(frozen=True)`
@@ -452,7 +431,6 @@ Raises:
 * ∟`None`
 
 Raises:
-
 1. `ValueError`: "{seen.title(digest)} is in {held} already: a text's language is the same wherever it is held"
 
 ## kept
@@ -494,7 +472,6 @@ SIGN-OFF: ADD
 add these lines here
 ---
 Finds:
-
 1. `translations.missing`: "{cases} in {carried.language}, and left out: {carried.refused}"
 
 ```
@@ -535,7 +512,6 @@ Finds:
 * ∟`dict[str, str | None]`
 
 Raises:
-
 1. `Ambiguous`: str(e) (from `LookupError`)
 
 ## PLACEHOLDERS
@@ -624,7 +600,6 @@ Raises:
 * ∟`Endpoint`
 
 Raises:
-
 1. `ValueError`: "{variation.label} names no model: name the endpoint to send it to"
 2. `ValueError`: str(e) (from `LookupError`)
 3. `ValueError`: "endpoint {endpoint!r} serves another model than {variation.label}'s, {self.title(model)}"
@@ -636,7 +611,6 @@ Raises:
 * ∟`tuple[Family, str]`
 
 Raises:
-
 1. `NotFound`: "no appendix {', '.join(missing)} of {family.name}"
 2. `NotFound`: "no case {title} for {self.person.login}"
 
@@ -653,7 +627,6 @@ Raises:
 * ∟`Endpoint`
 
 Raises:
-
 1. `NotFound`: str(e) (from `LookupError`)
 2. `NotFound`: "endpoint {name!r} serves engine {short(spec.engine)}, which isn't in the store: load its World with init-data"
 
@@ -688,7 +661,6 @@ Raises:
 * ∟`Family`
 
 Raises:
-
 1. `NotFound`: "no {word} {name!r} for {self.person.login}" (through `Seen._named`)
 2. `Ambiguous`: "{word} {name!r} names {len(several)}; name one as OWNER/NAME" (through `Seen._named`)
 3. `NotFound`: "no case {found} for {self.person.login}"
@@ -761,7 +733,6 @@ Raises:
 * ∟`RunStarted`
 
 Raises:
-
 1. `NotFound`: "no run {found} of yours"
 2. `NotFound`: "{self.person.login} has no runs"
 3. `NotFound`: "no run of yours starts with {found!r}"
@@ -784,7 +755,6 @@ Raises:
 * ∟`Graded`
 
 Raises:
-
 1. `NotFound`: "no score {score} of run {run.run}"
 
 ## Seen.scorers
@@ -815,7 +785,6 @@ Raises:
 * ∟`Skeleton`
 
 Raises:
-
 1. `StructuralError`: "{variation.label} has no translations into {into}"
 
 ## Seen.thread
@@ -828,7 +797,6 @@ Raises:
 * ∟`tuple[Edit, About]`
 
 Raises:
-
 1. `NotFound`: "no {word} {name!r} for {self.person.login}" (through `Seen._named_thread`)
 2. `Ambiguous`: "{word} {name!r} names {len(several)}; name one as OWNER/NAME" (through `Seen._named_thread`)
 3. `NotFound`: "no {what} {name!r} for {self.person.login}" (through `Seen._named_thread`)
@@ -846,7 +814,6 @@ Raises:
 * ∟`list[tuple[Edit, About]]`
 
 Raises:
-
 1. `ValueError`: "only a configuration has a purpose and an answer: {word}"
 
 ## Seen.title
@@ -870,7 +837,6 @@ Raises:
 * ∟`TriedVariation`
 
 Raises:
-
 1. `NotFound`: "no edit {head} of configuration {edit.thread}"
 2. `ValueError`: "no part {part!r}: the parts are {', '.join(RECIPE_PARTS)}"
 3. `ValueError`: "{digest} isn't a stored {what}"
@@ -933,7 +899,6 @@ Raises:
 * ∟`"TriedVariation"`
 
 Raises:
-
 1. `ValueError`: "{self.name} has no recipe to set its {part} in"
 2. `ValueError`: "a configuration always has {'an' if part[0] in 'aeiou' else 'a'} {part}: only {', '.join(OPTIONAL_PARTS)} can be taken out"
 

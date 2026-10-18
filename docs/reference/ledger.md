@@ -16,7 +16,6 @@ add these lines here
 ---
 
 Finds:
-
 1. `attestation.model`: "{who} returned model {got!r}, declared {want!r}"
 2. `attestation.model`: "{who} returned no model name, declared {want!r}"
 ```
@@ -34,7 +33,6 @@ Finds:
 * `error: str | None = None`
 
 Raises:
-
 1. `ValueError`: "prompt_tokens and prompt_token_ids both given" (through `Call._prompt_tokens`, in a `ValidationError`)
 
 ## Call.returned_model `@property`
@@ -65,7 +63,6 @@ SIGN-OFF: ADD
 add these lines here
 ---
 Finds:
-
 1. `execution.retries`: "{over} calls took more than the {allowed} attempts allowed"
 2. `execution.order`: "{early} items were sent before items scheduled ahead of them"
 3. `execution.concurrency`: "{peak} calls were in flight at once, declared {execution.concurrency}"
@@ -80,7 +77,6 @@ Finds:
 * ∟`None`
 
 Raises:
-
 1. `StructuralError`: "rows belong to different logs"
 
 ## check_run
@@ -91,7 +87,6 @@ Raises:
 * ∟`list[Finding]`
 
 Raises:
-
 1. `StructuralError`: "canary calls in a run without canaries"
 2. `StructuralError`: "canary calls not planned: {names}"
 3. `StructuralError`: "duplicate canary calls"
@@ -108,7 +103,6 @@ SIGN-OFF: ADD
 add these lines here
 ---
 Finds:
-
 1. `run.incomplete`: "{len(missing)} {what} missing"
 2. `case.drift`: "the vignette read differs from the case's"
 3. `call.failed`: error
@@ -128,7 +122,6 @@ Finds:
 * ∟`list[Finding]`
 
 Raises:
-
 1. `StructuralError`: "score does not belong to this run"
 2. `StructuralError`: "duplicate score items"
 3. `StructuralError`: "score item view {item.view} is out of range"
@@ -142,7 +135,6 @@ SIGN-OFF: ADD
 add these lines here
 ---
 Finds:
-
 1. `view.unreachable`: "view {i}'s output selector {view.output!r} reaches nothing in the run's output schema"
 2. `judge.incomplete`: "view {item.view}'s value rests on {called} of {declared} judge seeds" (through `_judged`)
 3. `score.scorer_code`: "the scorer code ran at version {ran} of {scorer.entry_point}, not the version the scorer pins ({scorer.version})"
@@ -163,7 +155,6 @@ add these lines here
 ---
 
 Finds:
-
 1. `ledger.seal`: "rows changed after the log was sealed"
 ```
 
@@ -195,7 +186,6 @@ Finds:
 * ∟`None`
 
 Raises:
-
 1. `ValueError`: "finished before it started"
 
 ## ItemKey `(Frozen)`
@@ -268,7 +258,6 @@ Raises:
 * ∟`Self`
 
 Raises:
-
 1. `StructuralError`: "{cls.__name__} is not a JSON object"
 2. `StructuralError`: "{cls.__name__} v{v} is not readable by v{cls.schema_version}"
 
@@ -312,7 +301,6 @@ Raises:
 * `turns: tuple[Turn, ...] = ()`
 
 Raises:
-
 1. `ValueError`: "only the last round may lack its call" (through `RunItem._unsent`, in a `ValidationError`)
 
 ## RunItem.calls `@property`
@@ -337,7 +325,6 @@ Raises:
 * `endpoint: Endpoint | None = None`
 
 Raises:
-
 1. `ValueError`: "verify_at goes with a canary set" (through `RunStarted._verify_at`, in a `ValidationError`)
 
 ## Score `(Frozen)`

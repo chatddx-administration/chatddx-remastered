@@ -46,7 +46,6 @@ Written by `chatddx reference` from `src/chatddx/catalog/`; how to read it is in
 * `replacement: str | None = None`
 
 Raises:
-
 1. `ValueError`: "behind either a newer head or a newer binding" (through `Behind._one`, in a `ValidationError`)
 2. `ValueError`: "a replacement case goes with a newer binding, and only with it" (through `Behind._one`, in a `ValidationError`)
 
@@ -76,7 +75,6 @@ Raises:
 * ∟`Vignette`
 
 Raises:
-
 1. `LookupError`: "{case} is not a stored case"
 2. `ValueError`: "{case} gives family {other}'s vignette {change}; rebind the family"
 
@@ -88,7 +86,6 @@ Raises:
 * ∟`str`
 
 Raises:
-
 1. `LookupError`: "{digest} is not in the store"
 2. `ValueError`: "{kind} components have no threads"
 
@@ -105,7 +102,6 @@ Raises:
 * ∟`None`
 
 Raises:
-
 1. `MovedOn`: "thread {thread_id} has moved on since edit {head}: its head is edit {current.id}"
 2. `ValueError`: "edit {based_on} is not in the origin of thread {thread.id}" (through `_check_based_on`)
 3. `ValueError`: "person {owner} owns an expectation of case {case} under that schema already, in thread {others[0]}" (through `_check_expectation`)
@@ -122,7 +118,6 @@ Raises:
 * ∟`str`
 
 Raises:
-
 1. `LookupError`: "{digest} is not in the store"
 2. `ValueError`: "{kind} components have no language of their own"
 3. `ValueError`: "{digest}: a compiled skeleton's language comes from its recipe"
@@ -136,7 +131,6 @@ Raises:
 * ∟`None`
 
 Raises:
-
 1. `ValueError`: "a language entry is for a family's vignette; a component's language is kept on its digest"
 2. `ValueError`: "a {entry.field} entry is about a run, and what it ran" (through `_check_ran`)
 3. `ValueError`: "edit {entry.value} is no configuration's" (through `_check_ran`)
@@ -165,7 +159,6 @@ Raises:
 * ∟`Divergence | None`
 
 Raises:
-
 1. `LookupError`: "no edit with id {id}" (through `_edit`)
 
 ## Divergence.moved `@property`
@@ -200,7 +193,6 @@ Raises:
 * `present: bool = True`
 
 Raises:
-
 1. `ValueError`: "wrong value or person for {self.field}" (through `Entry._shape`, in a `ValidationError`)
 2. `ValueError`: "{self.field} can't be removed, only replaced" (through `Entry._shape`, in a `ValidationError`)
 3. `ValueError`: "{self.field} can't be empty" (through `Entry._shape`, in a `ValidationError`)
@@ -309,7 +301,6 @@ Raises:
 * ∟`list[Edit]`
 
 Raises:
-
 1. `LookupError`: "no thread with id {thread}"
 
 ## holds
@@ -364,7 +355,6 @@ Raises:
 * ∟`int | None`
 
 Raises:
-
 1. `LookupError`: "no edit with id {id}" (through `_edit`)
 
 ## Part
@@ -380,7 +370,6 @@ Raises:
 * ∟`str | None`
 
 Raises:
-
 1. `LookupError`: "case {case} has expectations to choose from, in threads {", ".join(str(t) for t in sorted(choices))}"
 
 ## plan_repair
@@ -394,7 +383,6 @@ Raises:
 * ∟`RepairPlan`
 
 Raises:
-
 1. `LookupError`: "no family with id {family}" (through `_current`)
 2. `ValueError`: "a repair changes exactly one of the id or the fingerprint"
 3. `ValueError`: "family {other} already has {taken}"
@@ -549,7 +537,6 @@ Raises:
 * ∟`tuple[str, Registry]`
 
 Raises:
-
 1. `LookupError`: "{case} has no family"
 2. `LookupError`: "no family with id {family}" (through `_current`)
 3. `ValueError`: "{case} is at its family's current vignette already"
@@ -573,7 +560,6 @@ Raises:
 * ∟`list[Behind]`
 
 Raises:
-
 1. `LookupError`: "no family with id {family}" (through `_current`)
 
 ## Subject `(_Frozen)`
@@ -585,7 +571,6 @@ Raises:
 * `score: UUID | None = None`
 
 Raises:
-
 1. `ValueError`: "a subject is exactly one of a thread, a family, a run or a score" (through `Subject._one`, in a `ValidationError`)
 
 ## Survey `(_Frozen)`
@@ -629,7 +614,6 @@ Raises:
 * ∟`Thread`
 
 Raises:
-
 1. `LookupError`: "no thread with id {id}"
 
 ## THREAD_KINDS
