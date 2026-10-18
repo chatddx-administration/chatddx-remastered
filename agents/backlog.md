@@ -67,7 +67,7 @@ items under it are as they were moved. An item that restates another for an API 
    - G43b. [Exporting data sets](#g43b-exporting-data-sets) (1)
 44. [The data's stage, said in code](#g44-the-datas-stage-said-in-code) (1)
    - G44b. [Olof's work: the sample's judge](#g44b-olofs-work-the-samples-judge) (1)
-45. [Missing tests](#g45-missing-tests) (4)
+45. [Missing tests](#g45-missing-tests) (3)
 46. [The object layer and new kinds](#g46-the-object-layer-and-new-kinds) (7)
 47. [Takes waiting for a word](#g47-takes-waiting-for-a-word) (15)
 48. [Text cleanup steps](#g48-text-cleanup-steps) (1)
@@ -1324,6 +1324,9 @@ Triage: split from G44.
 ### G45. Missing tests
 Tests for what only the test World reaches, and for the scripted runs' and the runner's untested paths.
 
+Triage: kept, but for scripted.3, dropped as tracked in agents/wip-portal.md ("Comparing variations", Open: runs to
+compare in the tests), which also holds scripted.4's scripted run that sets a part.
+
 **curation.12** · From docs/curation.md:305, "Outstanding"
 
 - **What only the test World reaches isn't all read.** No test reads the gate refusing `qwen3-bare@fake` for `typed`
@@ -1332,11 +1335,6 @@ Tests for what only the test World reaches, and for the scripted runs' and the r
   `lines-guided` translated into sv, the passthrough, or the vignettes' quirks under the cleanup steps. The lints are
   tested on synthetic registries, and two of the judge tests in src/chatddx/scorers/test/test_scorers.py use a
   synthetic judge.
-
-**scripted.3** · From docs/scripted.md:113, "Open design issues", "Smaller issues"
-
-- **No two scripted runs vary a part over the same cases**, as the page to compare runs wants
-  (agents/wip-portal.md, "Comparing variations").
 
 **scripted.4** · From docs/scripted.md:115, "Open design issues", "Smaller issues"
 
@@ -1799,6 +1797,13 @@ refusal.
 **bench.7** · From docs/bench.md:441, "Outstanding", its takes, built and waiting for a word
 
 - ownership only, roles unchecked (docs/identity.md);
+
+scripted.3, from G45, as tracked in agents/wip-portal.md ("Comparing variations", Open: runs to compare in the tests):
+
+**scripted.3** · From docs/scripted.md:113, "Open design issues", "Smaller issues"
+
+- **No two scripted runs vary a part over the same cases**, as the page to compare runs wants
+  (agents/wip-portal.md, "Comparing variations").
 
 ## Context
 What the moved sections said of their items as a whole, moved with them.
