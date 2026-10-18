@@ -113,16 +113,11 @@ references, which must be stored, the rules that take several components, and a 
 gives back the digest it would have and what the lints say of it, or is refused as the write would be. An edge checks
 what a person types as they type it.
 
-```
-AGENT: insert
-What a selector picks, for an edge to show as a person types (agents/wip-olofs-view.md, L6).
----
 ## Picking
 Selectors are applied to a document the request gives: each a JSON Pointer, or a JSONPath query of the subset a view
 takes (docs/factors.md, "View"), picks what it does in the document's order, or says why it doesn't read. Nothing is
 read from the store and nothing is written, so an edge shows what a view would pick from an expectation as it is
 typed, with the same selection the scoring pass makes.
-```
 
 ## Forking and editing
 Keeping a variation is two requests, rather than one save by name as the repl's `save NAME` is, which makes a new
@@ -287,19 +282,11 @@ It cancels the calls under way, record them as stopped and the run is finished u
   now, each item's outcome and tokens, and its latest score under each scorer.
 - **A run's scores**: the latest under each scorer, or every one, newest first. A score says its scoring, when it
   started and whether it finished, each item's value under each view, and each view's mean.
-```
-AGENT: change
-A score's items and a run's items for one case, so an edge reviewing a case reads none of the others'
-(agents/wip-olofs-view.md, step 1).
----
 - **A score's items**: each item's detail and judge calls, or those of one case, and the findings of the score. They
   are sensitive.
-- **A run's items**, or those of one case: each call as it was recorded, …
-```
-- **A score's items**: each item's detail and judge calls, and the findings of the score. They are sensitive.
-- **A run's items**: each call as it was recorded, with its response and tool rounds, why the item ended as it did,
-  and its answer as read from its last call, as the scorers read it, with why it couldn't be read or breaks its schema.
-  They are sensitive.
+- **A run's items**: or those of one case: each call as it was recorded, with its response and tool rounds, why the item
+  ended as it did, and its answer as read from its last call, as the scorers read it, with why it couldn't be read or
+  breaks its schema. They are sensitive.
 - **Whether each item renders again** as it was sent: only a request's fingerprint is kept, so the request is
   rendered again from the trial and the source, and compared.
 
