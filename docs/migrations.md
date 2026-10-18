@@ -103,10 +103,9 @@ it, if any. A new schema gets its own section with all three tiers.
   - Thread kinds, `facts` among them, entry fields and language kinds, `chunk.translations` not among them, mirrored
     by `src/chatddx/catalog/model.py` and tested against it (`test/test_catalog.py`). `facts` was added in place
     rather than by a new migration: a store migrated before it is dropped and migrated again, and its data sets
-    loaded again, as its compilations are v1, which can't be read any more (agents/wip-engine-part.md, "Stores
-    loaded before"). `chunk.translations` was taken out in place too, as a translations chunk names its
-    languages itself; a store migrated before it is dropped and loaded again the same way, as its compilations are v2
-    and its translations v1.
+    loaded again, as its compilations are v1, which can't be read any more. `chunk.translations` was taken out in
+    place too, as a translations chunk names its languages itself; a store migrated before it is dropped and loaded
+    again the same way, as its compilations are v2 and its translations v1.
   - Entry shapes (`src/chatddx/catalog/model.py:Entry._shape`): a name can be removed (no value, `present` false),
     language tags follow `src/chatddx/factors/base.py:LANGUAGE`, NULL values are ruled out explicitly (a NULL check
     passes), and a `language` entry is only on a family (`src/chatddx/catalog/threads.py:check_note`).

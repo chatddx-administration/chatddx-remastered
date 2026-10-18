@@ -151,8 +151,8 @@ Open: a question for the user.
 | compilation | provenance | `catalog` | `compiled()` moves with it, while `compile_request` stays in `factors/request.py`. Every user (`catalog/{threads,titles,read}.py`, `store/{catalog,store}.py`, `curation/plan.py`, `bench/seen.py`) sits at or above the catalog. |
 
 Execution settings stay inside the start records of runs and scores (`ledger/run.py:RunStarted`,
-`ledger/score.py:ScoreStarted`) either way. "Execution settings as a component" (`docs/factors.md`, "Potential design
-improvements") is a storage choice only. The settings would be an object that the start record references by digest,
+`ledger/score.py:ScoreStarted`) either way. "Execution settings as a component" (`docs/backlog.md`) is a storage choice
+only. The settings would be an object that the start record references by digest,
 as `RunStarted.canaries` references a canary set, and they would stay outside the trial's digest. Execution stays a
 recorded factor either way.
 
@@ -209,10 +209,3 @@ To suggest when built:
 4. **The schema rename**, once only objects are left in `factor`. It depends on step 1, not on step 3.
 
 Until then, `kind` as a class keyword is optional, when the component classes are being touched anyway.
-
-## Open
-- The name, should the split happen (see "Naming").
-- `kind` as a class keyword (see "Kinds written down").
-- Whether canary sets and compilations ever move.
-- Where `refuse_change` lives.
-- Whether execution settings become an object, which this take doesn't decide.

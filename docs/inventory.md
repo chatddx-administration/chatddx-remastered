@@ -31,7 +31,7 @@ everything it includes.
 Loading checks what the files themselves show: that each endpoint's host is defined, that the clearance table names
 endpoints and sources that exist, that each judge is bound to an endpoint that exists, that the endpoint
 configurations are made for exists, and that each source is named by its table. Anything that needs the engines is
-checked when an entry is used (see "Checks happen when an entry is used").
+checked when an entry is used (docs/inventory-api.md, "check.py").
 
 ### Worlds
 In chatddx, a world is technically the only the parameters beyond chatddx's control, but the directories `worlds/*` also
@@ -137,10 +137,10 @@ An endpoint may name a canary set, by digest, which every run at it sends, so th
 alike and can be compared; and a default execution, a timeout and retries among it, which a run's request may change
 the concurrency and order of. Loading refuses a default concurrency above the capacity.
 
-A run goes to the endpoint serving its configuration's engine, and a judge's calls to the endpoint serving the judge's
-engine, unless one is named. When no endpoint serves the engine, or several do and none is named, the run or the
-scoring is refused rather than an endpoint picked; an endpoint named that serves another engine is refused too
-(docs/bench.md, "Outstanding"). A hand-written configuration has no model part, and goes to the endpoint named.
+A run goes to the endpoint serving its configuration's model, and a judge's calls to the endpoint serving the judge's
+engine, unless one is named. When no endpoint serves them, or several do and none is named, the run or the scoring is
+refused rather than an endpoint picked; an endpoint named that serves another model is refused too (docs/backlog.md,
+"Picking an endpoint for a model"). A hand-written configuration has no model part, and goes to the endpoint named.
 
 ## Hosts
 A host says the address its servers listen on, and where it keeps what its engines pin. A local engine pins its model
@@ -198,8 +198,8 @@ The fake vLLM can be started from a start-up (`chatddx fake-engines`), and then 
 An endpoint is reached at its address. Before content goes to it, the runner confirms that its server lists the name
 its engine is served under (docs/runner.md); the inventory itself connects to nothing.
 
-With a World, init-data ends with the inventory check's findings and a count (see "Checks happen when an entry is
-used"). It finds that out without connecting.
+With a World, init-data ends with the inventory check's findings and a count (docs/inventory-api.md,
+"check.py"). It finds that out without connecting.
 
 ## Importing from a host
 `chatddx import-engine REPORT… [--server NAME]… [--endpoint-host HOST] --engines PATH --endpoints PATH`. A report is
@@ -262,36 +262,3 @@ The import's findings have the engine's digest as subject:
 | Bound | A data set's judge, given the endpoint whose engine judges it. |
 | Configurations | The endpoint whose engine a data set's configurations are made for. |
 | Cleared | An endpoint's permission, for now, to receive content from a sensitive source. |
-
-## Open design issues
-These are open questions of design. Where the code falls short of this document, the API says so
-(docs/inventory-api.md, "Known gaps").
-
-### Checks happen when an entry is used
-Loading checks only what the files show. Everything that needs the engines is checked when an endpoint is started or
-confirmed, one entry at a time:
-- whether an endpoint's digest names an engine;
-- whether a local engine's endpoint has a host;
-- whether the host says where the model and template are.
-
-One pass checks the whole inventory against the engines and returns findings rather than raising. It finds what
-starting each endpoint would refuse, and what nothing refuses but is likely a slip: two local engines'
-endpoints at one address, a remote engine's endpoint that names a host, host locations that no endpoint's engine pins,
-and a clearance for a source that isn't sensitive, which clears nothing. init-data prints its findings; the runner and
-the engine import don't run it yet, and still check one entry at a time.
-
-### Hosts don't read the start-up
-o11n and the hosts' own configuration (Kompismoln/org) decide what each server runs. The rig imports what they run,
-and the start-up of an imported endpoint gives back the command line o11n runs. So the start-up is a check, and only
-the fake vLLM is started from one. For a host to start its engines from the rig's start-up, o11n would have to read
-it, and the import would then confirm what was started rather than describe it.
-
-### Smaller issues
-- **Endpoint names are only a convention.** Nothing enforces server@host. A run records the endpoint's name, and
-  clearance keys on it, so renaming an endpoint drops its clearance without warning, and its runs appear under two
-  names.
-- **The capacity holds per run.** Two runs on one endpoint can send twice as many requests between them. vLLM queues
-  what's over its limit, so nothing fails, but the batching differs from what each run's execution says.
-- **Model files aren't checked against the hub.** huggingface_hub keeps the commit's file listing from the download
-  (`<repo>/trees/<commit>.json`): the hub's SHA-256 of each LFS file and the git blob hash of the rest. The report
-  could compare every file it hashes with it, offline. The import takes the host's hashes as they are.

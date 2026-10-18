@@ -16,7 +16,6 @@ Paths are relative to `src/chatddx/ledger/` unless they start with `src/` or `do
 - [score.py](#scorepy): score records, `Score`, `check_score`
 - [Finding codes](#finding-codes)
 - [Database: schema `ledger`](#database-schema-ledger)
-- [Known gaps](#known-gaps)
 
 ## Package
 
@@ -540,16 +539,3 @@ It doesn't
 - check the kind of a referenced component: `trial`, `scoring` and `"case"` may point at any component;
 - tie a score item to a run item, or check `phase`, `canary`, `replicate` or `view` ranges;
 - check seals, times, or anything `check_run` and `check_score` check.
-
-## Known gaps
-From `docs/ledger.md`, "Open design issues", where they concern this API:
-- `Execution.timeout_s` isn't checked: a call's times span all its attempts.
-- Nothing here rebuilds a request to compare with `Call.request`; the bench rebuilds an item's first
-  (`chatddx.runner.prepare.rendered_again`), not a later round's or a judge's.
-- Prompt-token fingerprints aren't compared between runs; `check_run` notes only the items without one.
-- Canary outputs aren't compared between phases or runs.
-- Canary calls get no model check, and neither canary calls nor judge calls a prompt-token check.
-- A response's `system_fingerprint` is never compared.
-- The finished row is outside the seal: its `at` and `findings` can change without `ledger.seal`.
-- Records don't travel in a `Bundle`.
-- Findings have no mechanism of their own beyond the finished rows and the check functions.

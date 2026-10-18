@@ -41,7 +41,7 @@ record always gives the same bytes, and a seal over records is as stable as a di
 Each record type has a schema version, under the components' rule (docs/factors.md, "Versions"): adding a field with a
 backward-compatible default needs no new version; changing an existing field's meaning or default does. Records written
 under another version are refused rather than guessed at, so after a bump the store can't return the old ones
-(docs/store.md, "Known gaps").
+(docs/backlog.md, "Old versions readable").
 
 Making a required field optional needs no new version either, when every record written before reads the same: run
 items kept version 1 when a tool round's call became optional (see "Tool rounds").
@@ -53,7 +53,7 @@ Nothing finishes before it starts.
 A log's finish record holds its *seal*: a hash over its start record and every other record of the log. It doesn't
 depend on the order storage returns records in, and adding a field with a default keeps old seals valid. Checking a log
 recomputes the seal and warns when it differs: records were added, removed or changed after the log was finished. The
-finish record itself is outside the seal (see "Open design issues").
+finish record itself is outside the seal (docs/backlog.md, "Export and publication").
 
 ### Sensitive records
 The vignette and content produced from it are *sensitive*. Each record type says whether it may hold any, and a
@@ -141,7 +141,7 @@ kinds:
   read, and each vignette is unchanged at its source.
 - **Sealed**: nothing changed after the log was finished.
 
-Not everything is checked yet (see "Open design issues").
+Not everything is checked yet (docs/backlog.md, "Attestation within a run" and "Each attempt recorded").
 
 ## Call
 A call records one exchange with an engine: an item's first request, a tool round's, a canary's or a judge's, sent
@@ -155,8 +155,8 @@ properties, since that is part of what the model reads.
 
 Rendering asks the engine for the prompt's token ids: the tokens it actually read after applying its chat template.
 They encode the case's text too, so a call takes them out of the response it is given and keeps only their
-fingerprint. Comparing fingerprints would show whether the engine read the same prompt, without storing the text (see
-"Open design issues").
+fingerprint. Comparing fingerprints would show whether the engine read the same prompt, without storing the text
+(docs/backlog.md, "Drift between runs").
 
 A call's fingerprints aren't keyed (docs/factors.md, "Fingerprints").
 
@@ -235,32 +235,3 @@ for queries. Stored records are never changed or deleted.
 | Tool round | Running the tools a response called, and sending the next request. |
 | Seal | The hash over a log's records, kept in its finish record. |
 | Attestation | What the engine says about itself: the model it answered as and the prompt it read. |
-
-## Open design issues
-These are open questions of design. Where the code falls short of this document, the API says so
-(docs/ledger-api.md, "Known gaps").
-
-### Some of what happened isn't checked
-Most of the plan is compared with what happened (see "What a record holds"), but not all:
-- timeouts: a call's times span all its attempts, so an attempt that ran past the timeout can't be told from them.
-  Recording each attempt's times, status and error would tell them; a call keeps only the last refusal's body, as its
-  response;
-- the request a call sent and the request it should have been:
-  The repl's replay rebuilds each item's first request from the trial and the vignette and holds it to the call's
-  fingerprint. A later round's request, which could be rebuilt from the stored responses and tool runs, and a judge
-  request, from the scorer's reading of the answer (docs/factors.md, "Judge"), aren't rebuilt, and checking a run
-  rebuilds none.
-
-### Smaller issues
-- **Prompt-token drift isn't checked.** Checking a run notes the items without a prompt-token fingerprint, but
-  nothing compares the fingerprints between runs, though that is what they are kept for.
-- **Canary drift isn't checked.** Nothing compares canary outputs between phases or between runs.
-- **Only run items are fully attested.** Judge calls get the model check but no prompt check, and canary calls get
-  neither.
-- **The system fingerprint is kept but never compared** between calls or runs.
-- **The finish record is outside the seal.** Its time and findings could change without the seal noticing.
-- **Records aren't in bundles.** A bundle (docs/factors.md, "Registries and bundles") carries components only; how
-  records travel with the factors they reference, for example for publication, isn't specified.
-- **Findings have no mechanism of their own.** The runner and the scoring pass keep those they see in the finish record,
-  and the checks give the rest when called. They might benefit from a separate mechanism, as lints are for factors, but
-  nothing is planned or decided.

@@ -27,7 +27,6 @@ Paths are relative to `src/chatddx/store/` unless they start with `src/`, `docs/
 - [Database: schema `identity`](#database-schema-identity)
 - [Migrations](#migrations)
 - [Tests](#tests)
-- [Known gaps](#known-gaps)
 
 ## Package
 
@@ -393,17 +392,3 @@ How to name and list a new migration is in `docs/migrations.md`.
 | `chosen(request, otherwise: str) -> str` | The template a test parametrized indirectly with a template's name, as `ran`, starts from, else `otherwise`. |
 
 Tests fail, rather than skip, when Postgres can't be reached.
-
-## Known gaps
-From `docs/store.md`, "Known gaps", where they concern this API:
-- The database doesn't check that a component has all its reference rows; `Store.add` writes them together.
-- The database allows a thread without edits; `Catalog.create` writes both in one transaction.
-- `jsonb` rejects `\u0000`, so a component or record holding NUL can't be stored.
-- `doc` reorders object keys; components and records must be read from `canonical` and `payload`.
-- No async API, and on a connection that isn't in autocommit mode, writes wait for the caller's commit.
-- No per-kind read-only views.
-- A log can be written that can't be read back: a finished row is accepted without its started row, and `Store.run`
-  and `Store.score` then raise `StructuralError("<log> <id> has no started row")`.
-- `RunStarted.canaries` has no foreign key.
-- A schema-version bump strands stored rows: `get`, `load`, `run` and `score` refuse another version, and the rows
-  can't be rewritten.

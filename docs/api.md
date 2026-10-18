@@ -201,10 +201,10 @@ replaced over it, or nothing for a run started from a trial alone (docs/catalog.
 start say the same. A run also says the first run of its start (`started_with`), null for the first and for a run
 started alone, and `GET /api/runs?with=RUN` lists a start's runs, the first among them.
 
-A run's trial takes its variation's engine, and goes to the endpoint serving it, or to the endpoint the request names,
-which must serve it; a hand-written configuration names no engine, so it needs an endpoint named, and its trial takes
-that endpoint's engine. No endpoint serving the engine, or several when none is named, is refused before
-the gate is asked, as an endpoint named that serves another engine is (agents/wip-engine-part.md, "Several endpoints").
+A run goes to the endpoint serving its variation's model, or to the endpoint the request names, which must serve it,
+and its trial takes that endpoint's engine; a hand-written configuration names no model, so it needs an endpoint
+named. No endpoint serving the model, or several when none is named, is refused before the gate is asked, as an
+endpoint named that serves another model is (docs/bench.md, "The model").
 
 The gate refuses an endpoint that doesn't serve the trial's engine, isn't cleared for a sensitive source among the
 cases', or lacks its secret; tools that would get a sensitive source's content; and an endpoint that doesn't answer.
@@ -392,44 +392,3 @@ first row, by when it listens, and then lets the worker take the job.
 | Event | One step of what is under way for a run, as its events tell it. |
 | Job | What the app has under way for a run: the run, or a scoring of it, with its events. |
 | Halt | Ending what is under way for a run early: its sending, hanging up the calls under way, or its scoring. |
-
-## Outstanding
-Left for later, each with what holds and the take on it, the agent's recommendation, which waits for a word. The
-bench's are in docs/bench.md, "Outstanding".
-
-### Takes the API is built on
-Built as the takes of the plan at 100a078 had them, and not confirmed since. Decided there: who it is for, kept open;
-FastAPI and uvicorn; signing in; and sensitive content in places of its own. Decided since: where a run runs and
-its events (see "Where it runs" and "Its events").
-- **Ids**: a path takes a whole id, and a name is a filter on a list, which gives every match.
-- **The variation**: stated whole in each request, the configuration by id and its parts by digest, with nothing
-  stored by looking. A run may come to name the skeleton its look gave, and be refused when the variation compiles to
-  another by then, as an edit names its head.
-- **Scoring**: at once after a run, with an opt-out, and the runs left to score listed.
-- **Errors**: the bench's errors mapped by class, and what else a route means caught where it means it, each answered
-  with a code beside its detail (see "Errors").
-- **Keeping a variation**: a fork and an edit, two requests, rather than a save by name.
-- **Paths**: under `/api/`, with no version until there is a second.
-
-### Serving
-- **A connection per request**, about 2.6 ms each over the Unix socket, opened and closed each time; one for each
-  stream while it is open, and one per process listening for them all; and two for each job a worker holds. A pool
-  (`psycopg_pool`) for requests and streams when a measurement says so.
-- **A query parameter a route doesn't name is ignored**, unless the query is a model (`Varying`), so a misspelt filter
-  on `GET /api/runs` or `GET /api/threads` gives everything, and a part given twice in a variation's query counts the
-  last. Take: one check for every route that refuses a parameter the route doesn't declare, and a scalar given twice.
-- **A person's runs are all read**, filtered and then paged, and with `unscored`, what is left of each is worked out
-  first. Take: as is until slow, then paging by a cursor, the last run's start.
-
-### Signing in
-- **A cookie over plain HTTP** isn't kept: a `Secure`, `__Host-` cookie needs HTTPS, or `localhost`, and a bearer works
-  everywhere. Take: as is.
-- **`Origin` against `Host`.** A proxy that rewrites `Host` would fail the `Origin` check for a browser that sends no
-  `Sec-Fetch-Site`, though today's browsers all send it. Take: as is; the public origin as a setting if it bites.
-- **No limit on sign-ins, and no personal tokens.** Each sign-in costs an argon2 verification, a fraction of a second
-  of CPU, and a script running longer than a session signs in again. Personal tokens were decided for when a script
-  needs one. Take: neither, until Keycloak is in front, which limits sign-ins itself, or a script needs a token.
-- **Keycloak.** How it hands the app a login isn't decided. Take: a proxy in front, such as oauth2-proxy, passes the
-  login in a header the app believes from it alone, mapped onto `person.login` (docs/identity.md, "Take, for when
-  Keycloak arrives"), and Keycloak's own tokens as bearers for scripts when they come.
-- **Roles aren't checked**; Z1 shapes what each role is shown, with the portal (docs/bench.md, "Outstanding").

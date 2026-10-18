@@ -2,7 +2,8 @@
 
 Curation loads a data set (init-data), moves families whose vignettes moved (repair-data), and takes a person's share
 back (wipe-data). Importing, exporting and verifying the store's content are its business too, and aren't written yet
-(see "Open design issues"). It's the housekeeper for data and a natural home for the planned garbage collector.
+(docs/backlog.md, "Loading data sets" and "Exporting data sets"). It's the housekeeper for data and a natural home for
+a garbage collector (docs/backlog.md, "Garbage collection").
 
 This document describes what curation does and why. The code is `chatddx.curation` (src/chatddx/curation/) and its
 commands in src/chatddx/cli.py. Curation builds on the factors, the facts, the inventory, the catalog and the store.
@@ -148,7 +149,7 @@ The World is `--world DIR`, or by default the directory `CHATDDX_WORLD` names. T
 endpoints and vignettes, and the facts from the store, as loading stored them.
 
 A loading ends with the inventory checked against the engines just planned, all at once: what starting or reaching
-each endpoint would refuse, and what is likely a slip (docs/inventory.md, "Checks happen when an entry is used").
+each endpoint would refuse, and what is likely a slip (docs/inventory-api.md, "check.py").
 
 ## Loading
 `chatddx init-data USER [--world DIR] [--source NAME] [--giftbag] [--data DIR] [--facts PATH …]`
@@ -260,51 +261,3 @@ test_sample_world.py (src/chatddx/conftest.py, `sampled`).
 | Giftbag | A person's own forks of the archive's chunks, tools, skeletons and expectations. |
 | Leftover | An archive thread or family the data set no longer names. |
 | Translations | A chunk that translates a data set's texts into other languages, written in the texts file of each language it translates into. |
-
-## Open design issues
-
-### Garbage collection
-Nothing is ever removed from the store, and a leftover is only listed. A collection run as the admin could delete what
-nothing refers to: components no thread, family, run or other component reaches, and the catalog rows of what it
-deletes. The tiers forbid it on purpose (docs/store.md, "Tiers"), and what counts as unreferenced must include the
-ledger and every person's threads, deleted ones too, since history answers questions about the past (docs/catalog.md,
-"Deleting").
-
-### Import, export and verification
-Curation is the place for the rest of the store's authored content to come and go:
-- verifying that the store holds a data set, without writing anything, which a loading's validated lines only do
-  inside a transaction that writes;
-- exporting what the archive or a person holds back into a data set's files, so a change made in the portal can be
-  kept in git;
-- importing a data set as someone other than the archive.
-
-### What a data set can't hold yet
-Trials, executions, scorings and hand-written skeletons have no tables, and a data set has one expectation schema.
-
-### Smaller issues
-- **One source a run.** A data set's cases all come from the source `--source` names.
-- **Leftovers are listed every run.** Nothing records that a leftover is known and meant to stay.
-- **A rename isn't followed into the data.** After repair-data, loading says the old id is missing until the data set
-  names the new one.
-- **The runner and the engine import don't run the inventory check** that loading does.
-
-## Outstanding
-- **Staging data.** The sample is curated for preliminary calibration, and everything in it can be considered
-  guessed: its targets, the appendices and `dont_miss` targets made up so that every table is used, its judge,
-  drafted before Olof's, and its translations. Its notes are the exception: they are Olof's as written, and carry
-  his name into every score, so none is made up; made-up notes go in the test World, under its placeholder authors.
-  Data meant to be relied on needs its stage said in code, not in comments: whether it is guessed or vetted, by
-  whom, and where it came from, loaded with the data so that a score can say what it rests on.
-- **The sample's judge** is a draft over Olof's notes until his prompt replaces it, as an edit. His prompt settles
-  which of his comment and answer it reads, how a Swedish note is read against an English answer, whether a verdict is
-  pass or fail, a scale or one per aspect, how strict it is about extra or harmful advice, and the judge's engine and
-  seeds. It is measured by real answers from pelle and malborg on `Dutchfall11w`, `Dutchfall1w` and `casesfromedn1`,
-  graded by Olof with a line on why. Open beside it: notes on more cases, and revising the targets where his notes
-  disagree, as on `Dutchfall11w` (shock, most likely sepsis, where the targets have an aortic aneurysm or a
-  dissection).
-- **What only the test World reaches isn't all read.** No test reads the gate refusing `qwen3-bare@fake` for `typed`
-  cases, the pair lints its records give (`vllm.*` on `qwen3-bare@fake` and `clamped`, `facts.output_refused`,
-  `facts.reasoning_unmatched`, `facts.budget_refused`, `language.unknown`), `headed`'s tool guidance, the texts of
-  `lines-guided` translated into sv, the passthrough, or the vignettes' quirks under the cleanup steps. The lints are
-  tested on synthetic registries, and two of the judge tests in src/chatddx/scorers/test/test_scorers.py use a
-  synthetic judge.

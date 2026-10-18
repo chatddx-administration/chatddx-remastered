@@ -99,7 +99,7 @@ two: a second thread, an edit that moves another onto that case and schema, nami
 restore (src/chatddx/catalog/threads.py:check_expectation). The bench refuses the same before it writes, worded as the
 person reads it.
 
-The database doesn't repeat the rule (docs/catalog.md, "Concurrent writers"), so two writers at the same moment can
+The database doesn't repeat the rule (docs/backlog.md, "Concurrent writers"), so two writers at the same moment can
 still leave a person two to choose from. Then nothing picks one, and each place says so:
 - scoring refuses the run under that scorer, naming the threads;
 - what is left to score keeps the scorer, so the run stays listed until one of the two goes;
@@ -162,8 +162,8 @@ model they don't know. So a variation is refused for its model as it is looked a
 
 A run goes to the endpoint serving its variation's model. An endpoint named must serve that model, and one that
 serves another is refused before the gate would refuse it. An model no endpoint serves is refused, and so is one
-several serve, unless one of them is named (see "Outstanding"). A hand-written configuration has no model part, and
-runs at the endpoint named.
+several serve, unless one of them is named (docs/backlog.md, "Picking an endpoint for a model"). A hand-written
+configuration has no model part, and runs at the endpoint named.
 
 ### The languages it runs in
 A configuration is written in one language, its own: its recipe's texts' (docs/catalog.md, "Languages"), or a
@@ -424,63 +424,3 @@ check before the other has written.
 | Start | The runs one start makes: a run per language its cases are sent in, the later ones `with` the first. |
 | Typed case | A case whose vignette is a text the person typed, kept in a database source. |
 | Cell | The repl's word for a variation being tried together with the endpoint it runs at, named or found from its model. |
-
-## Outstanding
-Left for later. The API's are in docs/api.md, "Outstanding". The plan the bench was built from, with the options
-weighed for each decision and the survey of the old project, is `agents/wip-bench.md` at d5ebf52; the writes for
-the person were planned in `agents/wip-authoring.md` at b6f76b8. Its takes were built and still wait for a word:
-- one set of writes for every kind people author, with builders only for appendices and cases, a case built only of
-  appendices the person sees, and no write refused on a lint ("Writes for the person", "Appendices and cases");
-- a family's cases are those at its current vignette; an appendix's edit replaces only the cases at its own
-  vignette; carrying keeps to the expectation's family ("Appendices and cases");
-- a language is written only where a text has none ("Languages");
-- one write says what holds of a thread; a collaborator can't leave a share, and a thread isn't handed over ("What
-  is said about a thread");
-- only an origin the person sees is followed, always by an edit, for every kind ("Following an origin");
-- the head an edit names is checked under its thread's advisory lock (docs/catalog.md, "Concurrent writers");
-- ownership only, roles unchecked (docs/identity.md);
-- the shipped lists kept in code, versions as integers from 1, an edit keeping the head's labels only when its scorer
-  is the head's, and following taking each part's labels from the side whose part it keeps ("Scorers"); no resources
-  offered;
-- configurations listed by purpose, in the API.
-
-- **A case of no language** goes as written, linted `language.unknown`, rather than left out (agents/wip-engine-part.md,
-  "A case of no language"); so does a case of a language the translations don't cover when the configuration's own is
-  unknown.
-- **A low-level manual for the bench**, made from `agents/wip-authoring.md` at b6f76b8.
-- **Correcting a wrong language** stays curation's: the bench refuses a language that differs from the text's own.
-  What a person may correct, such as a text only their own threads hold, is open.
-- **Leaving a share**: a collaborator can't take a shared thread out of what they see; only the owner can. Whether
-  a collaborator may withdraw themselves, an entry the catalog would hold as any other, is open.
-- **Z1**: the map from roles to the kinds each role sees goes in `identity` once the portal's views give it meaning
-  (docs/identity.md, "Z1: what each role is shown"). `sees` then takes the person's roles and the kind.
-- **A model served at several endpoints** isn't picked from them: a run is refused until the endpoint is named, as
-  the test World's two Qwen3 endpoints show; the variation page offers the picker, and a look rendered for none of
-  them has no findings. A judge pins its engine as a trial does, and a judge whose engine two endpoints serve bars
-  its scorer (docs/runner.md, "Judges"), which stays unlikely: it is one engine served twice.
-- **A case's language** is its family's, read from the families the person sees, in a few queries however many
-  cases (`Seen.languages`, `Seen.findings`); a case of a family they don't see is read one at a time.
-- **The facts are read from the store each time they are asked for** (`Seen.facts`), several times a look. That is
-  cheap with a facts thread per model; cache them per request if it shows.
-- **A person's runs are all read**, and paged afterwards, in the API too (`Bench.runs`), and what is left to score is
-  worked out for each of them, about 40 ms a run under five scorers. Page in the store once that is slow.
-- **The archive's configuration saved under another name** is saved with no finding: a hand-made recipe that is a
-  shared configuration's, compiled to its skeleton, becomes a thread of the person's own, and only a look's `held_by`
-  says so (docs/api-api.md, "threads.py"). An expectation the same as one the person holds is refused.
-- **Two saves of one name at once** can both create a configuration, in the repl's `save` (`docs/catalog.md`,
-  "Concurrent writers").
-- **Taking counts shared threads, not owners**: a case with two threads shared by one owner is to choose from, and
-  naming that owner doesn't pick between them. Only two writers at once can leave an owner two (see "One expectation
-  per case and schema").
-- **The appendix layout as a part** a variation replaces, when someone wants to vary it. It is a value rather than a
-  chunk, so a part would hold one where the others hold a digest, at every edge.
-- **What the old bench had and this one doesn't**: what a run left unheeded (the old `outcome.py:unheeded`;
-  docs/runner.md, "Smaller issues"); the old crossing of variations, which the portal is to start as several runs
-  (agents/wip-portal.md, "Comparing variations"); and what holds a configuration, the portal's
-  (agents/wip-portal.md), whose part for the repl `Seen.runs(reaching=…)` and `Seen.runs(scored_by=…)` cover.
-- **A start holds a transaction open while the gate confirms its endpoint**, once per language though every run of a
-  start goes to one endpoint; a few seconds at most against an endpoint that answers. Confirming once, before the
-  transaction, would remove most of it.
-- **A look for a model several endpoints serve has no findings** until an endpoint is named, where the engine as the
-  part linted it for the recipe's engine; the repl's `show` shows no lints either.
-- **A model that moved on is followed to its head whether or not an endpoint serves it**; `at` says so afterwards.

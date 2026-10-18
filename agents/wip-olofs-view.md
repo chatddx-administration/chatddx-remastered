@@ -23,7 +23,7 @@ rather than a click, a scroll or another page.
 4. **Steps 1 to 6 are built** (see "Built"); what is left is in each step's "What step N leaves" and in "Open".
 
 ## What the clinician is here to do
-From the request, and from what the sample World waits on (`docs/curation.md`, "Outstanding"):
+From the request, and from what the sample World waits on (`docs/backlog.md`, "Olof's work"):
 - **Read the case**: the vignette, with the appendices of the case picked, in order; the family's language and tags;
   whether the vignette has drifted.
 - **Write appendices** bound to the vignette, and build cases from them; give an appendix a new version, and move
@@ -124,7 +124,7 @@ sees"). A clinician who doesn't start runs has no answers to review, and a resea
 researcher's expectations (`docs/bench.md`, "What a person is scored against").
 - **(a)** Olof runs the case himself from the page: a configuration, an endpoint and seeds, scored by his scorers
   against his expectations. This matches how his judge is to be measured: "real answers from pelle and malborg on
-  `Dutchfall11w`, `Dutchfall1w` and `casesfromedn1`" (`docs/curation.md`, "Outstanding").
+  `Dutchfall11w`, `Dutchfall1w` and `casesfromedn1`" (`docs/backlog.md`, "Olof's work").
 - **(b)** Runs can be shared: a collaborator reads a run's items and scores. That changes `docs/bench.md`, which is
   solidified (a suggestion there), and asks whose expectations a shared run is scored against for the reader.
 - **(c)** A reviewer reads across people's runs by role, through Z1.
@@ -182,7 +182,7 @@ A view's selectors are a JSON Pointer or a fixed subset of JSONPath (`docs/facto
   digest"). Where they get sorted is worth finding first: the order matters more here, where the form is read beside
   the vignette.
 - **A scorer's entry point** is picked silently while one is shipped (`chatddx.scorers.metrics:score`, version 2).
-  Resources aren't offered (`docs/bench.md`, "Outstanding").
+  Resources aren't offered (`docs/backlog.md`, "Shipped code: scorers and tools").
 - **A view's reach** is shown beside it: whether the configurations the person sees answer what it reads from the
   answer (`View.offered_by`), so a view that nothing answers says so.
 - **Labels** are written with the views and move with them (`docs/catalog.md`, "Scorer labels").
@@ -356,7 +356,7 @@ the pattern is typed, a scorer saved, and its score.
 - **A metric's params** aren't drawn: the shipped unjudged metrics take none, and the judged ones' are step 5's.
 - **A view of a list's fields that filters on anything but a required text field**, or reads deeper than two levels,
   is typed.
-- **Resources and the scorer's own params** aren't offered (`docs/bench.md`, "Outstanding").
+- **Resources and the scorer's own params** aren't offered (`docs/backlog.md`, "Shipped code: scorers and tools").
 - **The composer is closed again by reloading**: closing it while keeping what was composed isn't offered.
 
 
@@ -437,7 +437,7 @@ the pattern is typed, a scorer saved, and its score.
 
 ## Open
 - **Grading answers by hand.** Olof's judge is to be measured against his own grades of real answers, "with a line on
-  why" (`docs/curation.md`, "Outstanding"). Nothing stores a person's grade of an item. Such a grade is sensitive,
+  why" (`docs/backlog.md`, "Olof's work"). Nothing stores a person's grade of an item. Such a grade is sensitive,
   since the line can quote the answer, so it belongs with the ledger rather than the catalog, and the ledger records
   what the rig did, not what a person said. This needs a design of its own. Until then the grades live outside the
   rig.

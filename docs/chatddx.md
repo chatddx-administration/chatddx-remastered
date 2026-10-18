@@ -91,7 +91,7 @@ These roles are distinct and not overlapping, a person may inhabit more than one
 - a self-contained bundle that can be verified offline
 - scripts that can read the World to import factor parameters.
 - import scripts that fingerprint World inputs (model files, closure, chat template, vignettes) into factors.
-- a start-up that the start-up script reads (`docs/inventory.md`, "Hosts don't read the start-up")
+- a start-up that the start-up script reads (`agents/wip-deploy.md`, "The NixOS module")
 
 ### Intended evolution of configurations
 The researchers will want to iterate and continuously refine configurations according to the following workflow.
@@ -115,19 +115,6 @@ Variations allow controlled experiments without the combinatorial explosion; the
 
 `src/chatddx/catalog/threads.py:divergence` and `proposal` (what a fork varies,
 and re-applying it when its origin moves), and `catalog.edit.based_on`.
-
-### On the table
-- The result from scorers needs to be aggregated and exported. Since python is well-suited for statistical analysis,
-  processing the data into publishable results may become a requirement.
-- Garbage collector for true deletions of non-referenced items.
-
-### Work in progress
-- How scores are aggregated and exported together with the factors and the ledger for publication.
-- How sensitivity is enforced: factors and ledgers provide the means but not the enforcment itself.
-- Storage: How components and records map to Postgres, table structures are suggested for clarity but not prescribed. In general:
-    - factor and records are insert-only
-    - nothing on the rig is updated (people and the worker are outside of the rig)
-    - version chains between digests belong to planned catalog pipeline.
 
 ## Target stack
 - **Local inference.** Two servers, an RTX 3070 (sm_86, 8 GB) and an RTX 5090 (sm_120, 32 GB). Both serve vLLM 0.24.0 in a NixOS container that reads a `LocalEngine`, the model files, via `LocalModel`, the chat-template file and raw `argv`/`env`.
@@ -238,8 +225,8 @@ described below.
 9. Send the request to the engine's /v1/chat/completions.
   - The World inventory's endpoint gives the URL, for a local engine and a remote one (`docs/inventory.md`, "Endpoints").
   - Canaries are sent the same way, from their literal bodies (`Canary.render`), one at a time before the first
-    item and after the last, at the phases `verify_at` names. Nothing compares canary outputs yet (see "Possible
-    design issues").
+    item and after the last, at the phases `verify_at` names. Nothing compares canary outputs yet (`docs/backlog.md`,
+    "Drift between runs").
 10. When the skeleton offers tools and the response calls some, run them and send the next request: the last one,
   the assistant's message and the tools' results, until a response calls none or the skeleton's round limit
   (`docs/factors.md`, "Tool rounds"). Each request is a call, tried again only when it didn't get through.
@@ -285,7 +272,7 @@ described below.
  - raises if a seed index out of range or one used twice in an item;
  - warns `judge.incomplete`, `score.incomplete`, `score.run_unfinished` and `score.no_expectation`
 
-The "scored results" are just those ScoreItem rows. What aggregates them isn't named yet.
+The "scored results" are just those ScoreItem rows.
 
 ## Vignettes and anything made from them are sensitive
 The vignette and content produced from it: fills, requests, completions, tool arguments and results, judge requests and
@@ -309,15 +296,3 @@ The one hard block is clearance (see "Vignettes and anything made from them are 
 Each code is described where it's produced: `docs/factors.md`, "Lints"; `docs/ledger.md`, "Findings"; for the
 `facts.*` codes, `docs/facts.md`, "Checking pairs"; and for the engine import's, `docs/inventory.md`, "Importing from
 a host".
-
-## Possible design issues
-
-**Canary drift is not implemented:** nothing compares canary outputs between phases or runs. What counts as the
-  same canary output is undecided:
-  (a) the digest of each choice's message, as the old `compare_canaries` compared
-  output digests;
-  (b) the prompt-token fingerprint alone, which catches a changed template or tokenizer but not
-  changed weights; or
-  (c) both, with (b) under a code of its own. None needs a new field, since `CanaryCall.call`
-  holds the response and the prompt-token fingerprint.
-  A human report that the agent's take is (c)

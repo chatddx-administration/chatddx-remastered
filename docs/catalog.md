@@ -22,13 +22,13 @@ history. "Latest" means written last, in the order the database numbered the row
 which is shown, and counts the runs a person started in the last day.
 
 Deleting is a row too, which a later row can undo (see "Deleting"). True deletion is refused by the database
-(docs/store.md, "Tiers"); a garbage collector for unreferenced items is on the table (docs/chatddx.md, "On the table").
+(docs/store.md, "Tiers"); a garbage collector for unreferenced items waits (docs/backlog.md, "Garbage collection").
 
 ### Rules
 The catalog checks its rules against what is stored when it writes, and a change that takes several rows, such as a
 thread with its first version and its owner, a family with its binding, or a repair, is written all at once or not at
-all. The rules that two writers at once could break are repeated by the database at tier 2, with two exceptions (see
-"Concurrent writers").
+all. The rules that two writers at once could break are repeated by the database at tier 2, with two exceptions
+(docs/backlog.md, "Concurrent writers").
 
 ## Threads and edits
 A *thread* is a sequence of *edits* and work a handle on a component that people edit.
@@ -59,7 +59,7 @@ The catalog answers what people need to find:
 - the forks of a thread;
 - the expectation threads of a case, and of several cases under a given expectation schema, with what is said of each;
 - where a given component appears, in any thread;
-- which of several heads is picked, or that there are several to choose from (see "Concurrent writers").
+- which of several heads is picked, or that there are several to choose from (docs/backlog.md, "Concurrent writers").
 
 ## Configurations and variations
 Researchers refine their configurations by trying variations, keeping what works, and forking new configurations from
@@ -195,7 +195,7 @@ a component appears, surveys of a source, and repairs, which rebind deleted thre
 Deleting is undone by another entry. Wiping a person's data deletes what they own and withdraws them from what is shared
 with them; loading the sample data again restores a deleted fork rather than forking anew.
 
-What the portal hides is open (see "Open design issues").
+What the portal hides is open (agents/wip-portal.md, "What the docs ask of it").
 
 ### What a run ran
 The ledger records the trial a run ran (docs/ledger.md); what a person called it and what they varied are said here.
@@ -390,68 +390,3 @@ records. At tier 2 it repeats the rules above that two writers at once could bre
 | Repair | Moving a family to its vignette's new id or content, and rebinding what depends on it. |
 | Replacement | The case a stale case becomes under its family's current binding. |
 | Latest wins | Of the rows about one thing, the one written last is what holds. |
-
-## Open design issues
-These are open questions of design. Where the code falls short of this document, the API says so
-(docs/catalog-api.md, "Known gaps").
-
-### Concurrent writers
-The rules are checked against what is stored when a row is written. That holds with one writer at a time; with two,
-only what the database enforces is sure to hold. It repeats every such rule but two: that no two families are bound to
-the same vignette, by id or by content, at once, and that a person owns at most one live expectation thread per case
-and expectation schema. So two people adopting the same vignette at the same moment can create two families, and two
-writes at the same moment can leave a person several expectations to choose from, which scoring then refuses.
-
-### Smaller issues
-- **Identical vignettes.** Two vignettes with the same content under different ids in one source look like a rename:
-  adopting refuses the second, which a survey lists as new. Once the adopted id is gone, a survey reports both ids as
-  renames of the same family.
-- **Several matching families.** When bindings of several families match a case, the latest matching binding decides,
-  which needn't be the latest family's.
-- **Current bindings are compared within a source.** Surveys, adopting and repairing compare a vignette only with the
-  families of its own source, which relies on a family never changing source. The database enforces that, and nothing
-  in the catalog changes a source.
-- **A thread without versions** is possible in the database, and so is a family without bindings; the catalog writes
-  each together with its first. A deferred constraint could rule them out at tier 2.
-- **A skeleton edit may leave out its compilation** even when one exists, and nothing can require it.
-- **A language on a skeleton that is compiled later** is ignored from then on, since the skeleton's language comes from
-  its compilations.
-- **A language refused on a compiled skeleton is said to come from its recipe**, by
-  `src/chatddx/catalog/language.py:check_language`, `0012`'s `language_compiled` trigger and the bench's
-  `COMPILED_LANGUAGE`; a translated skeleton's comes from the language its compilation names.
-- **A translated skeleton's title doesn't say its language.** It has no thread, so it is titled by its compilation's
-  recipe, as the configuration's own skeleton is.
-- **What deleting hides in the portal**: everywhere, or only in pickers, while the runs that used it stay visible.
-- **Who changed an entry or a language isn't shown.** Every row records who wrote it and when, but for these only
-  what holds now is shown.
-- **Why an edit was made isn't stored.** It can be worked out by comparing consecutive versions' references.
-- **Titles take a query for every reference they visit,** are rebuilt from names that change, and aren't unique.
-- **An unnamed fork's title can pair two versions.** When the origin has no name and has moved on, the title describes
-  the origin's current head, while what the fork varies is measured from the base.
-- **Following can drop a fork's renamed view.** Labels follow the views the proposal keeps, so a fork that only
-  renamed a view, and follows an origin whose views it keeps, takes the origin's labels.
-- **A repair moves the current binding only.** Cases and appendices bound to an earlier binding of the family aren't
-  rebuilt at the new place (docs/catalog-api.md, "families.py").
-- **Not all a model reads is in the request's language.** Chat templates add English of their own (default system
-  prompts, harmony's channel instructions, tool-call scaffolding), and reasoning is often English whatever the
-  prompt. The same text also takes another number of tokens in Swedish than in English, so budgets confound a
-  comparison between languages.
-- **Languages are said, not checked.** Nothing compares a language with the text, and one can be replaced, so an
-  analysis split by language should freeze them at export, as titles. A scorer that needs the language, for stemming,
-  synonyms or an ontology, takes it from the expectation data or its resources, which are factors, not from the
-  catalog at scoring time.
-- **Judges aren't checked for language.** A judge's language could be compared with the cases its scoring grades, the
-  way lints check a trial's. An English judge grading Swedish answers may be intended, so it would be a notice rather
-  than a warning.
-- **A variation nobody saved has a long title.** It is described by its whole recipe:
-  "case · diagnoses-tool · recommended · off · qwen3-8b@pelle", where the repl called it
-  "diagnoses-tool+reasoning=off": the configuration it came from and the parts set over it. A run of one is
-  named so and says what it varied (see "What a run ran"), but its skeleton is still titled by its recipe.
-- **What a fork varies is compared by recipe.** A variation with a part replaced is compiled whole by the running code
-  and against the facts as they are stored then (docs/bench.md, "The variation being tried"), so after a change to the
-  compiler, or a corrected fact, it can send otherwise than the edit it was built on where nothing was replaced, and
-  what its fork varies doesn't say so.
-- **An edit that names its head holds with several writers without the database repeating the rule**:
-  each edit of a thread waits for the one before it to land. The head an edit names is held without the database
-  repeating it: every edit takes its thread's advisory lock (src/chatddx/store/catalog.py:Catalog._lock).
-  The writer may not update the catalog's tables, so `FOR UPDATE` isn't open to it.

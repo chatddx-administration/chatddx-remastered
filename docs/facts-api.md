@@ -17,7 +17,6 @@ Paths are relative to `src/chatddx/facts/` unless they start with `src/`, `docs/
 - [lint.py](#lintpy): `reasons`, `check_pairs`, `lints`
 - [Finding codes](#finding-codes)
 - [Bundled facts](#bundled-facts)
-- [Known gaps](#known-gaps)
 - [Beyond docs/facts.md](#beyond-docsfactsmd)
 
 ## Package
@@ -283,18 +282,3 @@ The subject is always the trial's or judge's digest.
 | `recommended` | `on`: temperature 0.6, top_p 0.95, top_k 20, presence_penalty 1.5; `off`: temperature 0.7, top_p 0.8, top_k 20, presence_penalty 1.5 | `low`, `medium`, `high`: temperature 1.0, top_p 1.0 |
 | `generation_config` | temperature 0.6, top_p 0.95, top_k 20 | empty |
 | `output` | `default = "native"`; `native`, `tool`, `text` without notes | `default = "native"`; a note on `native` (harmony renders no `response_format`); `tool`, `text` without notes |
-
-## Known gaps
-From `docs/facts.md`, "Open design issues":
-- `xhigh` can't be written: neither `Writes.effort` nor `Reasoning.effort` has the value.
-- Named and `required` tool choices are unverified for gpt-oss.
-- Some facts are about a model on a runtime, and live on the model.
-- An engine's `--default-chat-template-kwargs` and `--generation-config` change the model's defaults; only
-  `vllm.grammar_before_reasoning` accounts for the first.
-- A budget with reasoning off is compiled.
-- A `sampling.recommended` entry for a level that collapses, or lands on its nearest, is never asked for by
-  `ModelFacts.recommended`, and nothing reports it.
-- An unknown budget passes `facts.budget_refused`, while compiling one beside a level refuses it (`check_budget`).
-- Unknown reasoning fails `facts.reasoning_unmatched`: a model without writes at any level, or a skeleton using a
-  level nothing is known about, gets the warning.
-- A `default` that lands on a refusal loads, and `reasons_by_default` then says `None`.
