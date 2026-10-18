@@ -58,7 +58,7 @@ items under it are as they were moved. An item that restates another for an API 
 35. [Deployment](#g35-deployment) (0, dissolved)
 36. [Performance, once measured](#g36-performance-once-measured) (5)
 37. [Administering people](#g37-administering-people) (4)
-38. [Signing in: limits, tokens and Keycloak](#g38-signing-in-limits-tokens-and-keycloak) (7)
+38. [Signing in: limits, tokens and Keycloak](#g38-signing-in-limits-tokens-and-keycloak) (0, dissolved)
 39. [Z1: what each role is shown](#g39-z1-what-each-role-is-shown) (5)
 40. [The repl's reach](#g40-the-repls-reach) (3)
 41. [The repl's rendering](#g41-the-repls-rendering) (3)
@@ -1068,8 +1068,8 @@ ledger and every person's threads, deleted ones too, since history answers quest
 ### G32. Values the canonical form can't keep
 NUL and NaN refused where a component, a record or a typed text is built, rather than failing or changing when stored.
 
-Triage: kept as is. Decided: floats refuse NaN and infinity throughout, and strings refuse NUL, typed text included;
-nothing stored can hold either, so no stored digest changes.
+Triage: kept as is. Decided: floats refuse NaN and infinity throughout, and strings refuse NUL, as typed text already
+does (`bench/cases.py`); nothing stored can hold either, so no stored digest changes.
 
 **store.4** · From docs/store.md:130, "Known gaps"
 
@@ -1185,46 +1185,8 @@ queued jobs, and `People.set_password`'s empty password.
 access adds people. No command changes a person's name, roles or whether they are active (`People.update`).
 
 ### G38. Signing in: limits, tokens and Keycloak
-How people and scripts sign in once the app is public: Keycloak or a proxy in front, limits, tokens, cookies and
-origins.
-
-**api.10** · From docs/api.md:425, "Outstanding", "Signing in"
-
-- **A cookie over plain HTTP** isn't kept: a `Secure`, `__Host-` cookie needs HTTPS, or `localhost`, and a bearer works
-  everywhere. Take: as is.
-
-**api.11** · From docs/api.md:427, "Outstanding", "Signing in"
-
-- **`Origin` against `Host`.** A proxy that rewrites `Host` would fail the `Origin` check for a browser that sends no
-  `Sec-Fetch-Site`, though today's browsers all send it. Take: as is; the public origin as a setting if it bites.
-
-**api.12** · From docs/api.md:429, "Outstanding", "Signing in"
-
-- **No limit on sign-ins, and no personal tokens.** Each sign-in costs an argon2 verification, a fraction of a second
-  of CPU, and a script running longer than a session signs in again. Personal tokens were decided for when a script
-  needs one. Take: neither, until Keycloak is in front, which limits sign-ins itself, or a script needs a token.
-
-**api.13** · From docs/api.md:432, "Outstanding", "Signing in"
-
-- **Keycloak.** How it hands the app a login isn't decided. Take: a proxy in front, such as oauth2-proxy, passes the
-  login in a header the app believes from it alone, mapped onto `person.login` (docs/identity.md, "Take, for when
-  Keycloak arrives"), and Keycloak's own tokens as bearers for scripts when they come.
-
-**identity.2** · From docs/identity.md:98, "Open design issues"
-
-- **Sign-ins aren't limited.** Each costs an argon2 verification. The API's take is none until Keycloak is in front,
-  which limits them itself (docs/api.md, "Outstanding").
-
-**identity.8** · From docs/identity.md:124, "Takes on what is open", "Expired sessions and sign-ins"
-
-Expired sessions are removed whenever a session is opened (`People.open_session`). Sign-ins aren't limited;
-`docs/api.md`, "Outstanding", takes none until Keycloak is in front.
-
-**identity.9** · From docs/identity.md:128, "Takes on what is open", "Take, for when Keycloak arrives"
-
-Keycloak, or a proxy in front such as oauth2-proxy, authenticates, and the app maps its username onto `person.login`,
-which is why logins are lowercase like Keycloak's. Password login can stay as the development path. Roles could then
-come from Keycloak's realm roles instead of the column; not decided.
+Triage: dissolved; all seven were dropped, as holding under `nix/module.nix` or as tracked in agents/ (see "Dropped").
+Their takes on Keycloak go to agents/wip-deploy.md in the sweep.
 
 ### G39. Z1: what each role is shown
 The map from roles to kinds, beside `sees`.
@@ -1567,6 +1529,11 @@ References to open items found during triage, for step 5:
   docs/worker.md, "Smaller issues", for connections; agents/wip-deploy.md cites docs/worker.md, "The deployment".
 - agents/wip-clearance.md, "Before real patient data", 8, hands sessions and people to docs/identity.md, "Open design
   issues": they are G37 now.
+- agents/wip-deploy.md, "Identity", cites docs/api.md, "Outstanding", "Signing in", for oauth2-proxy in front: carry
+  api.13's and identity.9's takes there (a header the app believes from the proxy alone, Keycloak's tokens as bearers
+  for scripts, realm roles undecided).
+- agents/wip-portal.md, "Protection", and agents/wip-clearance.md, "Before real patient data", 1, cite docs/api.md and
+  docs/identity.md for "no limit until Keycloak"; the NixOS module's nginx limits sign-ins now.
 - agents/wip-engine-part.md, "Outstanding", hands bench.24, bench.25 and bench.26 to docs/bench.md, "Outstanding":
   they are here now.
 
@@ -1745,6 +1712,53 @@ which also counts two connections for a run's event stream, not one:
 
 - **Connections.** Each stream holds one while it is open, each app process one listening for them all, and the worker
   two for each job it holds.
+
+api.10 and api.11, from G38, as holding: the NixOS module's nginx forces HTTPS and passes `Host` on
+(`nix/module.nix`, `forceSSL`, `recommendedProxySettings`):
+
+**api.10** · From docs/api.md:425, "Outstanding", "Signing in"
+
+- **A cookie over plain HTTP** isn't kept: a `Secure`, `__Host-` cookie needs HTTPS, or `localhost`, and a bearer works
+  everywhere. Take: as is.
+
+**api.11** · From docs/api.md:427, "Outstanding", "Signing in"
+
+- **`Origin` against `Host`.** A proxy that rewrites `Host` would fail the `Origin` check for a browser that sends no
+  `Sec-Fetch-Site`, though today's browsers all send it. Take: as is; the public origin as a setting if it bites.
+
+api.12, identity.2 and identity.8, from G38, as tracked in agents/wip-clearance.md ("Before real patient data", 1);
+the NixOS module's nginx limits sign-ins per address:
+
+**api.12** · From docs/api.md:429, "Outstanding", "Signing in"
+
+- **No limit on sign-ins, and no personal tokens.** Each sign-in costs an argon2 verification, a fraction of a second
+  of CPU, and a script running longer than a session signs in again. Personal tokens were decided for when a script
+  needs one. Take: neither, until Keycloak is in front, which limits sign-ins itself, or a script needs a token.
+
+**identity.2** · From docs/identity.md:98, "Open design issues"
+
+- **Sign-ins aren't limited.** Each costs an argon2 verification. The API's take is none until Keycloak is in front,
+  which limits them itself (docs/api.md, "Outstanding").
+
+**identity.8** · From docs/identity.md:124, "Takes on what is open", "Expired sessions and sign-ins"
+
+Expired sessions are removed whenever a session is opened (`People.open_session`). Sign-ins aren't limited;
+`docs/api.md`, "Outstanding", takes none until Keycloak is in front.
+
+api.13 and identity.9, from G38, as tracked in agents/wip-deploy.md ("Identity"; "Keycloak in front"), which takes
+their takes in the sweep:
+
+**api.13** · From docs/api.md:432, "Outstanding", "Signing in"
+
+- **Keycloak.** How it hands the app a login isn't decided. Take: a proxy in front, such as oauth2-proxy, passes the
+  login in a header the app believes from it alone, mapped onto `person.login` (docs/identity.md, "Take, for when
+  Keycloak arrives"), and Keycloak's own tokens as bearers for scripts when they come.
+
+**identity.9** · From docs/identity.md:128, "Takes on what is open", "Take, for when Keycloak arrives"
+
+Keycloak, or a proxy in front such as oauth2-proxy, authenticates, and the app maps its username onto `person.login`,
+which is why logins are lowercase like Keycloak's. Password login can stay as the development path. Roles could then
+come from Keycloak's realm roles instead of the column; not decided.
 
 ## Context
 What the moved sections said of their items as a whole, moved with them.
