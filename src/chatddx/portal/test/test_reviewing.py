@@ -248,7 +248,23 @@ def test_a_scorer_is_offered_to_compose_as_it_is_stored_with_what_it_can_read(
     )
     assert held["body"] == body and held["labels"] == given["labels"]
     assert held["mode"] == ("edit" if judged["owner"] == "alice" else "fork")
-    assert set(composing["judges"]) == {v["judge"] for v in body["views"] if v["judge"]}
+    judged = {v["judge"] for v in body["views"] if v["judge"]}
+    assert judged <= set(composing["titles"])
+    judges = signed.get("/api/threads", params={"kind": "judge"}).json()
+    assert {j["digest"] for j in composing["judges"]} == {
+        j["head"]["digest"] for j in judges
+    }
+    verdict = next(j for j in composing["judges"] if j["name"] == "verdict")
+    assert verdict["output_schema"]["title"] == "Verdict" and verdict["seeds"] == [1]
+    query = {"kind": "configuration", "purpose": "judge"}
+    judging = signed.get("/api/threads", params=query).json()
+    assert {j["digest"] for j in composing["judging"]} == {
+        j["head"]["digest"] for j in judging
+    }
+    endpoints = {
+        e["name"] for e in signed.get("/api/endpoints").json() if not e["problem"]
+    }
+    assert {e["name"] for e in composing["endpoints"]} == endpoints
     blank = composing["blank"]
     assert blank["expectation_schema"] == body["expectation_schema"]
     code = signed.get("/api/scorer-code").json()[0]

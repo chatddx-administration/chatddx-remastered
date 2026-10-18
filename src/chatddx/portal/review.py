@@ -19,8 +19,8 @@ from chatddx.api.state import refused
 from chatddx.bench import Ambiguous, Bench, NotFound
 from chatddx.factors.base import resolve
 from chatddx.factors.cases import Appendix
-from chatddx.factors.request import Skeleton
-from chatddx.factors.scoring import Expectation, ExpectationSchema, Scorer
+from chatddx.factors.request import Purpose, Skeleton
+from chatddx.factors.scoring import Expectation, ExpectationSchema, Judge, Scorer
 from chatddx.factors.trial import Trial, suggest_seeds
 from chatddx.scorers.shipped import unit_of
 
@@ -498,7 +498,7 @@ def _composing(
         "views": [{"metric": unjudged[0] if unjudged else code.metrics[0].name}],
     }
     scorer = None
-    judges: dict[str, str] = {}
+    titles: dict[str, str] = {}
     if held is not None:
         thread, body, labels = held
         scorer = {
@@ -510,16 +510,64 @@ def _composing(
             "body": body.model_dump(mode="json"),
             "labels": labels,
         }
-        judges = {j: bench.title(j) for j in body.judges}
+        titles = {j: bench.title(j) for j in body.judges}
+    judges = _judges(bench)
     return {
         "scorer": scorer,
         "blank": blank,
         "metrics": [m.model_dump(mode="json") for m in code.metrics],
         "outputs": _outputs(bench),
         "judges": judges,
+        "titles": titles | {j["digest"]: j["name"] for j in judges},
+        "me": bench.person.login,
+        "judging": [
+            {
+                "digest": t.head.digest,
+                "thread": t.id,
+                "name": t.name or t.title,
+                "owner": t.owner,
+                "output_schema": resolve(
+                    bench.store.get, t.head.digest, Skeleton
+                ).output_schema,
+            }
+            for t in _configurations(bench, "judge")
+        ],
+        "endpoints": [
+            {"name": e.name, "engine": e.engine}
+            for e in api_world.endpoints(bench)
+            if e.problem is None
+        ],
         "case": case,
         "runs": [str(r.id) for r, d in ran if any(i.case == case for i in d.items)],
     }
+
+
+def _judges(bench: Bench) -> list[dict[str, Any]]:
+    login = bench.person.login
+    found: list[dict[str, Any]] = []
+    for t in sorted(
+        api.threads(bench, "judge"), key=lambda t: (t.owner != login, t.name or t.title)
+    ):
+        judge = resolve(bench.store.get, t.head.digest, Judge)
+        try:
+            at = bench.inventory.serving(judge.engine)
+        except LookupError:
+            at = None
+        found.append(
+            {
+                "digest": t.head.digest,
+                "thread": t.id,
+                "name": t.name or t.title,
+                "owner": t.owner,
+                "configuration": bench.title(judge.skeleton),
+                "endpoint": at,
+                "seeds": list(judge.seeds),
+                "output_schema": resolve(
+                    bench.store.get, judge.skeleton, Skeleton
+                ).output_schema,
+            }
+        )
+    return found
 
 
 def _outputs(bench: Bench) -> list[dict[str, Any]]:
@@ -554,9 +602,11 @@ def _ran(bench: Bench, case: str) -> list[tuple[schemas.Run, schemas.RunDetail]]
     ]
 
 
-def _configurations(bench: Bench) -> list[schemas.Thread]:
+def _configurations(
+    bench: Bench, purpose: Purpose = "generation"
+) -> list[schemas.Thread]:
     login = bench.person.login
-    found = api.threads(bench, "configuration", purpose="generation")
+    found = api.threads(bench, "configuration", purpose=purpose)
     return sorted(found, key=lambda t: (t.owner != login, t.name or t.title))
 
 

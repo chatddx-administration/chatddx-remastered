@@ -4,9 +4,13 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response
 from pydantic import JsonValue
 
+from chatddx.bench import NotFound
+from chatddx.bench.model import PLACEHOLDERS
 from chatddx.factors.base import resolve
-from chatddx.factors.request import Skeleton
-from chatddx.factors.scoring import Scorer
+from chatddx.factors.engine import served_model_name
+from chatddx.factors.request import Skeleton, SlotName
+from chatddx.factors.scoring import Judge, Scorer, fill_text
+from chatddx.factors.select import select
 from chatddx.factors.trial import Trial
 from chatddx.scorers.answer import read
 from chatddx.scorers.scorer import score_view
@@ -127,3 +131,23 @@ def tried(bench: BenchDep, given: schemas.Trying) -> list[schemas.Tried]:
                 schemas.Tried(run=run, replicate=item.key.replicate, views=views)
             )
     return found
+
+
+@router.post("/judges/asked")
+def judge_asked(bench: BenchDep, given: schemas.Asking) -> schemas.Asked:
+    if bench.rows.kind(given.judge) != "judge":
+        raise NotFound(f"no judge {given.judge} in the store")
+    judge = resolve(bench.store.get, given.judge, Judge)
+    skeleton = resolve(bench.store.get, judge.skeleton, Skeleton)
+    with refused():
+        picked = select(given.data, given.expectation)
+    fills: dict[SlotName, str] = {
+        **PLACEHOLDERS,
+        "expectation": fill_text(judge.fill, picked),
+    }
+    request = skeleton.render(
+        model=served_model_name(judge.engine, bench.store.get),
+        seed=judge.seeds[0],
+        fills=fills,
+    )
+    return schemas.Asked(request=request, picked=picked)

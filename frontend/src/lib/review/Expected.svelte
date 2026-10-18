@@ -16,12 +16,12 @@
   let open = $state(false);
   const views = $derived(reading.map((view, at) => ({ view, at, field: fieldOf(view.expectation) })));
 
-  function composed(changed: ScorerView[], labels: string[]): void {
+  function composed(changed: ScorerView[], labels: string[], titles: Record<string, string>): void {
     reading = changed.map((v, at) => ({
       label: labels[at] || `view ${at}`,
       metric: v.metric,
       measures: measured.get(v.metric) ?? null,
-      judge: v.judge ? (composing?.judges[v.judge] ?? null) : null,
+      judge: v.judge ? (titles[v.judge] ?? null) : null,
       expectation: v.expectation ?? "",
     }));
   }

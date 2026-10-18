@@ -588,6 +588,19 @@ class Tried(_Schema):
     views: list[TriedView]
 
 
+class Asking(_Schema):
+    judge: str = Field(description="a stored judge, by digest")
+    expectation: str = Field(description="what a view picks of the expectation")
+    data: JsonValue = Field(description="the expectation's data")
+
+
+class Asked(_Schema):
+    request: dict[str, JsonValue] = Field(
+        description="the judge's first request, the answer a placeholder"
+    )
+    picked: list[JsonValue] = Field(description="what the view picks of the data")
+
+
 class Seeds(_Schema):
     seeds: list[int] | None = Field(
         default=None,

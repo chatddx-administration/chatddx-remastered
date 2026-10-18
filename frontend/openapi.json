@@ -2534,6 +2534,55 @@
         ]
       }
     },
+    "/api/judges/asked": {
+      "post": {
+        "tags": [
+          "scores"
+        ],
+        "summary": "Judge Asked",
+        "operationId": "judge_asked_api_judges_asked_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Asking"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Asked"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          },
+          {
+            "APIKeyCookie": []
+          }
+        ]
+      }
+    },
     "/api/queue": {
       "get": {
         "tags": [
@@ -2694,6 +2743,59 @@
           "salvaged"
         ],
         "title": "Answer"
+      },
+      "Asked": {
+        "properties": {
+          "request": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/JsonValue"
+            },
+            "type": "object",
+            "title": "Request",
+            "description": "the judge's first request, the answer a placeholder"
+          },
+          "picked": {
+            "items": {
+              "$ref": "#/components/schemas/JsonValue"
+            },
+            "type": "array",
+            "title": "Picked",
+            "description": "what the view picks of the data"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "request",
+          "picked"
+        ],
+        "title": "Asked"
+      },
+      "Asking": {
+        "properties": {
+          "judge": {
+            "type": "string",
+            "title": "Judge",
+            "description": "a stored judge, by digest"
+          },
+          "expectation": {
+            "type": "string",
+            "title": "Expectation",
+            "description": "what a view picks of the expectation"
+          },
+          "data": {
+            "$ref": "#/components/schemas/JsonValue",
+            "description": "the expectation's data"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "judge",
+          "expectation",
+          "data"
+        ],
+        "title": "Asking"
       },
       "Carried": {
         "properties": {

@@ -81,6 +81,9 @@ if (held) {
     );
   }
 
+  // Compromise: what someone has typed or picked outweighs showing a finished run at once; it then waits for "Show it".
+  let touched = false;
+  for (const name of ["input", "change"]) document.addEventListener(name, () => (touched = true), true);
   let waiting = review.pending.length;
   for (const at of document.querySelectorAll<HTMLElement>("[data-pending]")) {
     const given = review.pending[Number(at.dataset.pending)];
@@ -92,7 +95,7 @@ if (held) {
         ...given,
         done: () => {
           waiting -= 1;
-          if (waiting === 0) setTimeout(() => location.reload(), 800);
+          if (waiting === 0 && !touched) setTimeout(() => location.reload(), 800);
         },
       },
     });

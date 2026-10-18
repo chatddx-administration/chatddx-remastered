@@ -221,3 +221,33 @@ def test_a_scorer_is_tried_on_a_case_s_answers_as_it_is_typed_and_nothing_is_wri
     refused = signed.post("/api/scorers/try", json={**body, "scorer": unknown})
     assert refused.status_code == 422 and "nothing" in refused.json()["detail"]
     assert signed.post("/api/scorers/try", json=body, headers=bob).status_code == 404
+
+
+def test_what_a_judge_is_asked_is_its_request_with_what_a_view_picks(
+    signed: TestClient,
+) -> None:
+    noted = family(signed, "noted")
+    [case] = signed.get(f"/api/families/{noted['id']}").json()["cases"]
+    [expected] = case["expectations"]
+    [verdict] = signed.get(
+        "/api/threads", params={"kind": "judge", "name": "verdict"}
+    ).json()
+    judge = verdict["head"]["digest"]
+    reads = "$.notes[?@.author == 'carol'].comment"
+    body = {"judge": judge, "expectation": reads, "data": expected["data"]}
+    got = signed.post("/api/judges/asked", json=body)
+    assert got.status_code == 200, got.json()
+    asked = got.json()
+    [comment] = [
+        n["comment"] for n in expected["data"]["notes"] if n["author"] == "carol"
+    ]
+    assert asked["picked"] == [comment]
+    said = "".join(m["content"] for m in asked["request"]["messages"])
+    assert comment in said and "‹completion›" in said
+
+    assert (
+        signed.post("/api/judges/asked", json={**body, "expectation": "$["}).status_code
+        == 422
+    )
+    elsewhere = {**body, "judge": expected["expectation"]}
+    assert signed.post("/api/judges/asked", json=elsewhere).status_code == 404

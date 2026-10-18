@@ -25,6 +25,15 @@ from chatddx.test.world import GPT_OSS, LINES, LINES_GUIDED, QWEN, faked
 pytestmark = pytest.mark.slow
 
 
+def _settled(page: Page, run: str) -> None:
+    for _ in range(1000):
+        shown = page.request.get(f"/api/runs/{run}").json()
+        if shown["finished"] and shown["job"]["status"] not in ("queued", "under way"):
+            return
+        time.sleep(0.02)
+    raise AssertionError(f"run {run} is still under way")
+
+
 def _endpoint(page: Page, name: str) -> dict[str, Any]:
     listed = page.request.get("/api/endpoints").json()
     [found] = [e for e in listed if e["name"] == name]
@@ -352,10 +361,7 @@ def test_a_scorer_is_composed_beside_the_case_and_tried_on_its_answers_as_typed(
     with faked(world, Store(conn).get):
         started = page.request.post("/api/runs", data=body).json()
         run = started["runs"][0]["run"]
-        for _ in range(500):
-            if page.request.get(f"/api/runs/{run}").json()["finished"]:
-                break
-            time.sleep(0.02)
+        _settled(page, run)
     [item] = page.request.get(
         f"/api/runs/{run}/items", params={"case": crlf["case"]}
     ).json()
@@ -395,4 +401,70 @@ def test_a_scorer_is_composed_beside_the_case_and_tried_on_its_answers_as_typed(
     edits = page.request.get(f"/api/threads/{made['id']}/edits").json()
     assert edits[-1]["labels"]["views"] == ["named"]
     expect(page.get_by_role("navigation", name="Scorers")).to_contain_text("mine")
+    assert errors == []
+
+
+def test_a_judged_view_is_composed_with_a_new_judge_and_scored_through_the_worker(
+    page: Page,
+    world: Inventory,
+    conn: Connection,
+) -> None:
+    errors: list[str] = []
+    page.on("pageerror", lambda e: errors.append(str(e)))
+    noted = page.request.get("/api/families", params={"name": "noted"}).json()[0]
+    query: dict[str, str | float | bool] = {
+        "kind": "configuration",
+        "name": LINES,
+        "owner": "alice",
+    }
+    lines = page.request.get("/api/threads", params=query).json()[0]
+    body = {"configuration": lines["id"], "endpoint": QWEN, "families": [noted["id"]]}
+    query = {"kind": "scorer", "name": LINES}
+    scorer = page.request.get("/api/threads", params=query).json()[0]
+
+    with faked(world, Store(conn).get):
+        run = page.request.post("/api/runs", data=body).json()["runs"][0]["run"]
+        _settled(page, run)
+        _ = page.goto(f"/review/{noted['id']}?scorer={scorer['id']}")
+        page.get_by_role("button", name=re.compile(rf"^Compose {LINES}")).click()
+        composer = page.get_by_role("region", name="Composing a scorer")
+        composer.get_by_role("button", name="Start a new one").click()
+        composer.get_by_label("Its label").fill("met")
+        _ = composer.get_by_label("Reads of what is expected").select_option(
+            label="notes where author is carol › comment"
+        )
+        _ = composer.get_by_role("combobox", name="Compared by").select_option(
+            "verdict"
+        )
+        judge = composer.get_by_role("combobox", name="Judge")
+        _ = judge.select_option("new")
+        written = page.get_by_role("form", name="A new judge")
+        written.get_by_label("Name").fill("strict")
+        _ = written.get_by_label("Asked at").select_option(QWEN)
+        written.get_by_label("Seeds, a call each").fill("1, 2")
+        written.get_by_role("button", name="Save the judge").click()
+        expect(written).to_have_count(0)
+        expect(judge.locator("option:checked")).to_contain_text("strict")
+        expect(composer.get_by_role("combobox", name="Its verdict at")).to_have_value(
+            "/meets"
+        )
+        composer.get_by_text("What its judge is asked").click()
+        asked = composer.get_by_role("list", name="What its judge is asked")
+        expect(asked).to_contain_text("Chock, troligen septisk.")
+        expect(asked).to_contain_text("‹completion›")
+        expect(composer.get_by_label("Tried on your answers")).to_contain_text("judged")
+        composer.get_by_label("Name").fill("noted-judged")
+        composer.get_by_role("button", name="Save").click()
+        page.wait_for_url(lambda url: not url.endswith(f"scorer={scorer['id']}"))
+
+        record = page.locator('details[data-drawer="record"]')
+        if record.get_attribute("open") is None:
+            record.locator("summary").first.click()
+        record.get_by_role("button", name="Score again").click()
+        expect(page.locator("[data-pending]")).to_have_count(0, timeout=30_000)
+    expect(record).not_to_contain_text("to score")
+    query = {"kind": "judge", "name": "strict"}
+    [strict] = page.request.get("/api/threads", params=query).json()
+    held = page.request.get(f"/api/components/{strict['head']['digest']}").json()
+    assert held["body"]["seeds"] == [1, 2]
     assert errors == []

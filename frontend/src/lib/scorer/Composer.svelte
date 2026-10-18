@@ -1,6 +1,7 @@
 <script lang="ts" module>
   import type { Schemas } from "$lib/api/client";
   import type { Schema } from "$lib/schema/form";
+  import type { JudgeChoice, Judging, Serving } from "./JudgeForm.svelte";
 
   export type ScorerView = {
     output?: string;
@@ -32,7 +33,11 @@
     blank: ScorerBody;
     metrics: Schemas["Metric"][];
     outputs: { title: string | null; json_schema: Schema | null; by: string[] }[];
-    judges: Record<string, string>;
+    judges: JudgeChoice[];
+    titles: Record<string, string>;
+    judging: Judging[];
+    endpoints: Serving[];
+    me: string;
     case: string;
     runs: string[];
   };
@@ -45,6 +50,9 @@
   import Saving from "$lib/editors/Saving.svelte";
   import { type Checked, checked, type Component } from "$lib/editors/writing";
   import { said, valued, withScorer } from "$lib/review/review";
+  import JudgeAsked from "./JudgeAsked.svelte";
+  import JudgeForm from "./JudgeForm.svelte";
+  import { startingParams, verdictAt } from "./judging";
   import { type Choice, choices } from "./selectors";
   import SelectorPicker from "./SelectorPicker.svelte";
 
@@ -59,12 +67,17 @@
     schema: Schema;
     data: unknown;
     back: string;
-    changed: (views: ScorerView[], labels: string[]) => void;
+    changed: (views: ScorerView[], labels: string[], titles: Record<string, string>) => void;
   } = $props();
   const given = untrack(() => composing);
   const start = given.scorer;
   const metrics = new Map(given.metrics.map((m) => [m.name, m]));
   const unjudged = given.metrics.filter((m) => !m.judged);
+  const named: Record<string, string> = { at: "Its verdict at", max: "Out of" };
+
+  let judges = $state<JudgeChoice[]>([...given.judges]);
+  let writing = $state<number | null>(null);
+  const titles = $derived({ ...given.titles, ...Object.fromEntries(judges.map((j) => [j.digest, j.name])) });
 
   let mode = $state<"edit" | "fork" | "new">(start ? start.mode : "new");
   let body = $state<ScorerBody>(structuredClone(start?.body ?? given.blank));
@@ -125,6 +138,38 @@
     labels.splice(at, 1);
   }
 
+  function judgeOf(view: ScorerView): JudgeChoice | undefined {
+    return judges.find((j) => j.digest === view.judge);
+  }
+
+  function metricked(view: ScorerView, name: string): void {
+    const metric = metrics.get(name);
+    view.metric = name;
+    if (!metric?.judged) {
+      view.judge = null;
+      view.params = {};
+      return;
+    }
+    judged(view, judgeOf(view) ?? judges[0]);
+  }
+
+  function judged(view: ScorerView, judge: JudgeChoice | undefined): void {
+    view.judge = judge?.digest ?? null;
+    const params = metrics.get(view.metric)?.params ?? {};
+    view.params = startingParams(params, judge?.output_schema ?? null);
+  }
+
+  function takes(view: ScorerView, param: string): boolean {
+    const properties = metrics.get(view.metric)?.params?.properties;
+    return typeof properties === "object" && properties !== null && param in properties;
+  }
+
+  function points(view: ScorerView): [string, Schema][] {
+    const params = metrics.get(view.metric)?.params?.properties;
+    if (typeof params !== "object" || params === null) return [];
+    return Object.entries(params as Record<string, Schema>).filter(([name]) => name !== "at");
+  }
+
   function values(at: number): { shown: string; title: string }[] {
     const unit = metrics.get(body.views[at]?.metric ?? "")?.unit ?? "";
     return (tried ?? []).map((t) => {
@@ -136,7 +181,7 @@
   }
 
   $effect(() => {
-    changed($state.snapshot(body.views) as ScorerView[], $state.snapshot(labels));
+    changed($state.snapshot(body.views) as ScorerView[], $state.snapshot(labels), titles);
   });
 
   $effect(() => {
@@ -185,7 +230,8 @@
   {#if given.runs.length}
     <p class="mb-2 text-muted-foreground">
       Each view is tried on your {given.runs.length === 1 ? "run" : `${given.runs.length} runs`} of this case as you
-      change it or what you expect; nothing is kept until you save.
+      change it or what you expect; nothing is kept until you save. A judged view is scored by its judge once the
+      scorer is saved and the runs are scored again, in the record.
     </p>
   {:else}
     <p class="mb-2 text-muted-foreground">Run the case to try the views on its answers.</p>
@@ -193,7 +239,8 @@
 
   <ol class="space-y-2">
     {#each body.views as view, at (at)}
-      {@const judged = view.judge ? (given.judges[view.judge] ?? "its judge") : null}
+      {@const metric = metrics.get(view.metric)}
+      {@const judge = judgeOf(view)}
       <li class="space-y-2 rounded-lg border border-border/60 bg-background/60 p-2.5">
         <div class="flex items-center gap-2">
           <input
@@ -225,24 +272,67 @@
           </div>
         </div>
         <div class="flex flex-wrap items-center gap-x-3 gap-y-1.5">
-          {#if judged}
-            <span class="text-muted-foreground">{view.metric.replaceAll("_", " ")}, judged by {judged}, kept as it is</span>
-          {:else}
+          <span class="flex items-center gap-2">
+            <span class="text-muted-foreground" aria-hidden="true">Compared by</span>
+            <select
+              aria-label="Compared by"
+              class="h-8 rounded-md border border-input bg-transparent px-2"
+              title={metric?.measures ?? ""}
+              value={view.metric}
+              onchange={(e) => metricked(view, e.currentTarget.value)}
+            >
+              {#each given.metrics as m (m.name)}
+                <option value={m.name} title={m.measures}>{m.name.replaceAll("_", " ")}{m.judged ? ", by a judge" : ""}</option>
+              {/each}
+            </select>
+          </span>
+          {#if metric?.judged}
             <span class="flex items-center gap-2">
-              <span class="text-muted-foreground" aria-hidden="true">Compared by</span>
+              <span class="text-muted-foreground" aria-hidden="true">Judge</span>
               <select
-                aria-label="Compared by"
-                class="h-8 rounded-md border border-input bg-transparent px-2"
-                title={metrics.get(view.metric)?.measures ?? ""}
-                value={view.metric}
+                aria-label="Judge"
+                class="h-8 max-w-56 rounded-md border border-input bg-transparent px-2"
+                value={writing === at ? "new" : (view.judge ?? "")}
                 onchange={(e) => {
-                  view.metric = e.currentTarget.value;
-                  view.params = {};
+                  const picked = e.currentTarget.value;
+                  if (picked === "new") writing = at;
+                  else {
+                    writing = null;
+                    judged(view, judges.find((j) => j.digest === picked));
+                  }
                 }}
               >
-                {#each unjudged as m (m.name)}<option value={m.name} title={m.measures}>{m.name.replaceAll("_", " ")}</option>{/each}
+                {#if !judge && view.judge}<option value={view.judge}>{titles[view.judge] ?? "its judge"}</option>{/if}
+                {#each judges as j (j.thread)}
+                  <option value={j.digest}>{(j.owner && j.owner !== given.me ? `${j.owner}/` : "") + j.name}: {j.configuration}{j.endpoint ? ` at ${j.endpoint}` : ""}, {j.seeds.length === 1 ? "1 seed" : `${j.seeds.length} seeds`}</option>
+                {/each}
+                <option value="new">a new judge…</option>
               </select>
             </span>
+          {/if}
+          {#if metric?.judged && judge}
+            {#if takes(view, "at")}
+              <span class="min-w-48">
+                <SelectorPicker
+                  choices={verdictAt(judge.output_schema).map((p) => ({ label: p.slice(1).replaceAll("/", " › ").replaceAll("_", " "), selector: p }))}
+                  value={typeof view.params?.at === "string" ? view.params.at : ""}
+                  set={(v) => (view.params = { ...view.params, at: v })}
+                  label={named.at ?? "at"}
+                />
+              </span>
+            {/if}
+            {#each points(view) as [name, param] (name)}
+              <label class="flex items-center gap-2">
+                <span class="text-muted-foreground">{named[name] ?? name.replaceAll("_", " ")}</span>
+                <input
+                  type="number"
+                  step={param.type === "integer" ? 1 : "any"}
+                  class="h-8 w-20 rounded-md border border-input bg-transparent px-2"
+                  value={typeof view.params?.[name] === "number" ? view.params[name] : ""}
+                  oninput={(e) => (view.params = { ...view.params, [name]: Number(e.currentTarget.value) })}
+                />
+              </label>
+            {/each}
           {/if}
           {#if tried}
             <span class="flex flex-wrap items-baseline gap-1" aria-label="Tried on your answers">
@@ -253,6 +343,22 @@
             </span>
           {/if}
         </div>
+        {#if writing === at}
+          <JudgeForm
+            me={given.me}
+            judging={given.judging}
+            endpoints={given.endpoints}
+            made={(j) => {
+              judges.push(j);
+              writing = null;
+              judged(view, j);
+            }}
+            left={() => (writing = null)}
+          />
+        {/if}
+        {#if metric?.judged && view.judge}
+          <JudgeAsked judge={view.judge} expectation={view.expectation ?? ""} {data} />
+        {/if}
       </li>
     {/each}
   </ol>

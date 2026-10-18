@@ -20,7 +20,7 @@ rather than a click, a scroll or another page.
    sensitive from the API's places; he runs the case himself; judges are picked and written before their texts;
    unjudged views are tried as typed, judged ones by scoring; selectors are picked and applied on the server; and the
    page is `/review/{family}`, beside the family's page.
-4. **Steps 1 to 4 are built** (see "Built"); step 5 is next (see "Steps").
+4. **Steps 1 to 5 are built** (see "Built"); step 6 is next (see "Steps").
 
 ## What the clinician is here to do
 From the request, and from what the sample World waits on (`docs/curation.md`, "Outstanding"):
@@ -200,7 +200,7 @@ A view's selectors are a JSON Pointer or a fixed subset of JSONPath (`docs/facto
 3. **Running the case** from the page (L3 a), and **Score again** on its runs, built (see "Built").
 4. **Composing a scorer without judges**, built (see "Built"): the views' form, selectors picked (L6), values tried as typed (L5 a),
    saving with labels.
-5. **With judges**: picking one, writing one (L4 a, b), what it is asked, and judged views scored through the worker
+5. **With judges**, built (see "Built"): picking one, writing one (L4 a, b), what it is asked, and judged views scored through the worker
    (L5 b).
 6. **The judge's texts** (L4 c), with 5c's text editor.
 
@@ -358,6 +358,41 @@ the pattern is typed, a scorer saved, and its score.
   is typed.
 - **Resources and the scorer's own params** aren't offered (`docs/bench.md`, "Outstanding").
 - **The composer is closed again by reloading**: closing it while keeping what was composed isn't offered.
+
+
+### Step 5: with judges
+- **The API**, suggested to `docs/api.md` and `docs/api-api.md` as `AGENT` blocks: `POST /api/judges/asked`
+  (`src/chatddx/api/scores.py:judge_asked`), a stored judge's first request rendered as the scoring pass renders it,
+  its `expectation` slot filled by what a view picks of the expectation as typed, the answer and the case's slots as
+  placeholders (`chatddx.bench.model.PLACEHOLDERS`). Nothing is sent or stored, and nothing in it is sensitive.
+- **A judged view** (`frontend/src/lib/scorer/Composer.svelte`): the metrics that read a judge's verdicts are offered
+  beside the others, "by a judge". Picking one picks a judge, the person's own first, each said by its judge
+  configuration, where it is asked and its seeds, and starts its params from the judge's output schema
+  (`frontend/src/lib/scorer/judging.ts:startingParams`): its verdict at the first field that isn't text, and the
+  most points at that field's maximum. The verdict's field is picked from the judge's output schema (`verdictAt`),
+  other params are typed.
+- **A new judge** (`frontend/src/lib/scorer/JudgeForm.svelte`), from **a new judge…** in a view's judge picker: a
+  name, a judge configuration the person sees, the endpoint it is asked at (its engine is the judge's), and its
+  seeds (`seedsOf`), checked as typed and saved as a judge of the person's own (`POST /api/threads`), then picked
+  for the view. A judge's texts are step 6.
+- **What its judge is asked** (`frontend/src/lib/scorer/JudgeAsked.svelte`), folded under a judged view: the judge's
+  messages, the expectation filled as the view picks it and following what is typed, the answer as `‹completion›`.
+- **Scored through the worker** (L5 b): a judged view isn't tried; saving the scorer leaves the case's runs to score
+  by it, and **Score again** in the record queues them, the judges' calls recorded in the ledger as every scoring's
+  are.
+- **A finished run doesn't reload over work**: the record reloads into what its runs came to only while nothing has
+  been typed or picked on the page since it loaded; else each run says **Show it**.
+- **Judges and judge configurations are told apart by thread**, since a fork shares its origin's digest.
+- **Tests**: `test_scores.py` (the API's), what a judge is asked, and what is refused; `test_reviewing.py`, the
+  judges, judge configurations and endpoints the composer is given; vitest for `seedsOf` and `startingParams`; and
+  `test_browser.py`, a judged view composed of carol's comment, a new judge written for it and picked, its verdict
+  at `/meets`, what it is asked, the scorer saved and its runs scored again through the worker.
+
+#### What step 5 leaves
+- **A judge is written new**: changing or forking one is on its thread's page, which has no editor yet.
+- **The endpoint a new judge is asked at** is the first listed, not one serving its configuration's model; a judge
+  whose engine no endpoint serves bars its scorer (`docs/runner.md`, "Judges").
+- **A judged view's values come only from scoring**: one judge call per seed per answer, recorded, through the worker.
 
 ## Open
 - **Grading answers by hand.** Olof's judge is to be measured against his own grades of real answers, "with a line on

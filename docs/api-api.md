@@ -619,6 +619,17 @@ Within `refused()`: `threads.py:component_of` the body's scorer, and a 422 when 
 call's response, and under each view a `TriedView`, `chatddx.scorers.scorer.score_view` against the body's
 expectation, or, for a view that names a judge, no value, `judged` and `JUDGED` as its detail. Sensitive.
 
+```
+AGENT: insert
+The route of docs/api.md, "What a judge is asked".
+---
+#### `judge_asked`, `POST /judges/asked`
+`Rows.kind`; `NotFound("no judge <digest> in the store")` when it isn't a judge. Its skeleton rendered
+(`Skeleton.render`) for its engine's served model and its first seed, filled with `chatddx.bench.model.PLACEHOLDERS`
+and, as `expectation`, `chatddx.factors.scoring.fill_text` of what `chatddx.factors.select.select` picks of the body's
+data by its selector (`refused()`, a selector that doesn't read a 422). The request and what was picked.
+```
+
 ## queue.py
 
 ### Routes
@@ -808,6 +819,12 @@ In `src/chatddx/api/test/`.
   A run's items and a score's read for one case.
   A scorer tried on a case's answers as typed, its values the stored score's, a missed target 0, its judged views
   untried, nothing written, an unknown metric refused, and bob's request not finding the run.
+```
+AGENT: insert
+---
+  What a judge is asked: its request with carol's comment and the answer's placeholder; a selector that doesn't read,
+  and a digest that isn't a judge's, refused.
+```
 - `test_telling.py`: a stream joined mid-item told the item started and each tool once, and nothing of it once it
   ended; the listener fanning a run's messages out to two streams, again on another loop, and a stream that falls
   behind told `Lagged`.
