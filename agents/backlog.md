@@ -34,7 +34,8 @@ items under it are as they were moved. An item that restates another for an API 
 15. [Hosts read the start-up](#g15-hosts-read-the-start-up) (0, dropped)
 16. [Inventory checked everywhere](#g16-inventory-checked-everywhere) (3)
 17. [Facts: the checks](#g17-facts-the-checks) (10)
-18. [Facts: what they can say](#g18-facts-what-they-can-say) (8)
+18. [Facts as an engine changes them](#g18-facts-as-an-engine-changes-them) (4)
+   - G18b. [Facts waiting on a model or a run](#g18b-facts-waiting-on-a-model-or-a-run) (4)
 19. [Stopping: halts, deadlines and time limits](#g19-stopping-halts-deadlines-and-time-limits) (7)
 20. [Endpoint capacity](#g20-endpoint-capacity) (6)
 21. [Worker: streams and claims](#g21-worker-streams-and-claims) (5)
@@ -583,27 +584,11 @@ Triage: kept as is.
 
 - A `default` that lands on a refusal loads, and `reasons_by_default` then says `None`.
 
-### G18. Facts: what they can say
-Facts that can say more than the model alone: an `xhigh` effort, a runtime, an engine's command-line defaults, and
-harmony's tool choices once verified.
+### G18. Facts as an engine changes them
+Facts about a model on a runtime, and the defaults an engine's command line sets over the model's own. facts.4 can be
+done now; facts.3 waits for a second runtime.
 
-**facts.1** · From docs/facts.md:145, "Open design issues"
-
-- **xhigh can't be written.** It's a level, but no reasoning effort says it, so a model can only collapse or refuse
-  it. Adding the effort is additive, if a model that supports it shows up.
-
-**facts-api.1** · From docs/facts-api.md:289, "Known gaps"
-
-- `xhigh` can't be written: neither `Writes.effort` nor `Reasoning.effort` has the value.
-
-**facts.2** · From docs/facts.md:147, "Open design issues"
-
-- **Tool choice on harmony.** Named and required tool choices are unverified for gpt-oss. vLLM 0.24's gpt-oss tool
-  parser accepts both, so the JSON-array grammar applies; whether harmony's output survives it isn't known.
-
-**facts-api.2** · From docs/facts-api.md:290, "Known gaps"
-
-- Named and `required` tool choices are unverified for gpt-oss.
+Triage: split, the facts waiting on a model or a run went to G18b.
 
 **facts.3** · From docs/facts.md:149, "Open design issues"
 
@@ -625,6 +610,30 @@ harmony's tool choices once verified.
 
 - An engine's `--default-chat-template-kwargs` and `--generation-config` change the model's defaults; only
   `vllm.grammar_before_reasoning` accounts for the first.
+
+### G18b. Facts waiting on a model or a run
+Small edits to the facts, each waiting on something outside the code: `xhigh` on a model that supports it, and
+harmony's tool choices on a run at `gpt-oss-20b@malborg`.
+
+Triage: split from G18.
+
+**facts.1** · From docs/facts.md:145, "Open design issues"
+
+- **xhigh can't be written.** It's a level, but no reasoning effort says it, so a model can only collapse or refuse
+  it. Adding the effort is additive, if a model that supports it shows up.
+
+**facts-api.1** · From docs/facts-api.md:289, "Known gaps"
+
+- `xhigh` can't be written: neither `Writes.effort` nor `Reasoning.effort` has the value.
+
+**facts.2** · From docs/facts.md:147, "Open design issues"
+
+- **Tool choice on harmony.** Named and required tool choices are unverified for gpt-oss. vLLM 0.24's gpt-oss tool
+  parser accepts both, so the JSON-array grammar applies; whether harmony's output survives it isn't known.
+
+**facts-api.2** · From docs/facts-api.md:290, "Known gaps"
+
+- Named and `required` tool choices are unverified for gpt-oss.
 
 ### G19. Stopping: halts, deadlines and time limits
 Everything under way can be ended in time: a call waiting for headers, a running tool, a stopping worker's sending, and
