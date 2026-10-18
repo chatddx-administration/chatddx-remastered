@@ -759,6 +759,10 @@ the model alone, `facts.*`, and says the engine's wait for an endpoint to be nam
 ### G23. Concurrent writers
 The rules hold with two writers at once: adopting a vignette, taking an expectation and saving a name.
 
+Triage: kept as is. Decided: the advisory locks edits take extend to adopting, on the vignette's source and content;
+to taking an expectation, on the owner, the case and the schema; and to creating a named thread, on the owner, the
+kind and the name. catalog.22 and bench.6 are then confirmed as the mechanism.
+
 **catalog.1** · From docs/catalog.md:399, "Open design issues", "Concurrent writers"
 
 The rules are checked against what is stored when a row is written. That holds with one writer at a time; with two,
