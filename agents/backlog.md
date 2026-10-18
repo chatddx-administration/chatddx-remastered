@@ -358,7 +358,8 @@ Triage: split from G8.
 ### G9. Unheeded reasoning
 A finding for reasoning a parser missed, and the repl's word on it.
 
-Note: bench.23 also lists the old crossing of variations and what holds a configuration, both the portal's.
+Triage: kept as is. Only bench.23's unheeded reasoning counts here: its crossing of variations and what holds a
+configuration are agents/wip-portal.md's ("Comparing variations", "What holds a configuration"), dropped by G5's rule.
 
 **repl.4** · From docs/repl.md:254, "Open design issues", "Smaller issues"
 
