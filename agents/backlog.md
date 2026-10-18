@@ -32,7 +32,7 @@ items under it are as they were moved. An item that restates another for an API 
 13. [What reaches vLLM: argv and passthrough](#g13-what-reaches-vllm-argv-and-passthrough) (2)
 14. [Engine identity: hardware and model files](#g14-engine-identity-hardware-and-model-files) (3)
 15. [Hosts read the start-up](#g15-hosts-read-the-start-up) (0, dropped)
-16. [Inventory checked everywhere](#g16-inventory-checked-everywhere) (5)
+16. [Inventory checked everywhere](#g16-inventory-checked-everywhere) (3)
 17. [Facts: the checks](#g17-facts-the-checks) (10)
 18. [Facts: what they can say](#g18-facts-what-they-can-say) (8)
 19. [Stopping: halts, deadlines and time limits](#g19-stopping-halts-deadlines-and-time-limits) (7)
@@ -503,7 +503,10 @@ Triage: dropped, as tracked in agents/wip-deploy.md ("The NixOS module", Open: w
 inference host's vLLM from an endpoint's start-up); see "Dropped".
 
 ### G16. Inventory checked everywhere
-The runner and the engine import run the inventory check, and endpoint names are held to a form.
+The runner, when it starts, and the engine import, before it writes, run the inventory check and pass on its findings,
+as init-data does.
+
+Triage: kept, but for endpoint names, dropped as tracked in agents/wip-clearance.md (Open 1, "What a grant keys on").
 
 **inventory.1** · From docs/inventory.md:271, "Open design issues", "Checks happen when an entry is used"
 
@@ -526,16 +529,6 @@ the engine import don't run it yet, and still check one entry at a time.
 **curation.9** · From docs/curation.md:289, "Open design issues", "Smaller issues"
 
 - **The runner and the engine import don't run the inventory check** that loading does.
-
-**inventory.3** · From docs/inventory.md:290, "Open design issues", "Smaller issues"
-
-- **Endpoint names are only a convention.** Nothing enforces server@host. A run records the endpoint's name, and
-  clearance keys on it, so renaming an endpoint drops its clearance without warning, and its runs appear under two
-  names.
-
-**inventory-api.3** · From docs/inventory-api.md:268, "Known gaps"
-
-- Endpoint names are only a convention, and renaming one drops its clearance.
 
 ### G17. Facts: the checks
 Checking pairs and loading facts warn where they now stay silent or warn wrongly.
@@ -1606,6 +1599,18 @@ it, and the import would then confirm what was started rather than describe it.
 **inventory-api.2** · From docs/inventory-api.md:267, "Known gaps"
 
 - Hosts don't start engines from the start-up; only the fake vLLM is started from one.
+
+inventory.3 and inventory-api.3, from G16, as tracked in agents/wip-clearance.md (Open 1, "What a grant keys on"):
+
+**inventory.3** · From docs/inventory.md:290, "Open design issues", "Smaller issues"
+
+- **Endpoint names are only a convention.** Nothing enforces server@host. A run records the endpoint's name, and
+  clearance keys on it, so renaming an endpoint drops its clearance without warning, and its runs appear under two
+  names.
+
+**inventory-api.3** · From docs/inventory-api.md:268, "Known gaps"
+
+- Endpoint names are only a convention, and renaming one drops its clearance.
 
 ## Context
 What the moved sections said of their items as a whole, moved with them.
