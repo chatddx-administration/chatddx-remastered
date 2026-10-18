@@ -3,9 +3,10 @@
 Every open item found outside `agents/` at 2982900, moved here verbatim. Each `From` names the document, the line
 at 2982900 and the section it was moved from. Ids are for grouping and triage only.
 
-Swept: docs/ and README.md. Left where they are: `healthchecks/`, dated reports whose open findings
-"address healthcheck 08ae453" carried into docs/ and agents/; docs/api.md, "Not covered", what the API leaves
-to others by design; the takes in the body of docs/purist-object-layer.md, which its "Open" lists.
+Swept: docs/ and README.md; docs/chatddx.md's "On the table" and "Work in progress" were found late, during triage. Left
+where they are: `healthchecks/`, dated reports whose open findings "address healthcheck 08ae453" carried into docs/ and
+agents/; docs/api.md, "Not covered", what the API leaves to others by design; the takes in the body of
+docs/purist-object-layer.md, which its "Open" lists; docs/vllm.md, "Not emulated", which the fake's "Extending" works from.
 
 Grouped by whether they'd fit in one PR, as parts of the same larger fix. Each group says the fix in a line; the
 items under it are as they were moved. An item that restates another for an API follows it.
@@ -18,7 +19,7 @@ items under it are as they were moved. An item that restates another for an API 
    - G3b. [Each attempt recorded](#g3b-each-attempt-recorded) (2)
 4. [The finish record: seal and findings](#g4-the-finish-record-seal-and-findings) (0, dissolved)
 5. [Keyed fingerprints](#g5-keyed-fingerprints) (0, dropped)
-6. [Research output: replicates, aggregation and export](#g6-research-output-replicates-aggregation-and-export) (9)
+6. [Research output: replicates, aggregation and export](#g6-research-output-replicates-aggregation-and-export) (11)
 7. [Scoring: coverage, order and judges](#g7-scoring-coverage-order-and-judges) (5)
 8. [Views: what they read and split](#g8-views-what-they-read-and-split) (3)
 9. [Unheeded reasoning](#g9-unheeded-reasoning) (3)
@@ -43,7 +44,7 @@ items under it are as they were moved. An item that restates another for an API 
 28. [Edit history: who, when and why](#g28-edit-history-who-when-and-why) (4)
 29. [Labels across edits and following](#g29-labels-across-edits-and-following) (3)
 30. [Languages and translations](#g30-languages-and-translations) (5)
-31. [Deleting, leftovers and garbage collection](#g31-deleting-leftovers-and-garbage-collection) (3)
+31. [Deleting, leftovers and garbage collection](#g31-deleting-leftovers-and-garbage-collection) (4)
 32. [Values the canonical form can't keep](#g32-values-the-canonical-form-cant-keep) (3)
 33. [The store's read API](#g33-the-stores-read-api) (6)
 34. [Evolving a stored database](#g34-evolving-a-stored-database) (3)
@@ -269,6 +270,17 @@ Added in triage, from G4:
 **ledger-api.7** · From docs/ledger-api.md:553, "Known gaps"
 
 - The finished row is outside the seal: its `at` and `findings` can change without `ledger.seal`.
+
+Added in triage, found late in docs/chatddx.md:
+
+**chatddx.3** · From docs/chatddx.md:120, "Requirements", "On the table"
+
+- The result from scorers needs to be aggregated and exported. Since python is well-suited for statistical analysis,
+  processing the data into publishable results may become a requirement.
+
+**chatddx.5** · From docs/chatddx.md:125, "Requirements", "Work in progress"
+
+- How scores are aggregated and exported together with the factors and the ledger for publication.
 
 ### G7. Scoring: coverage, order and judges
 A scoring says what it lacks, has an order-free digest, and calls its judges concurrently and only when needed.
@@ -1022,6 +1034,12 @@ deletes. The tiers forbid it on purpose (docs/store.md, "Tiers"), and what count
 ledger and every person's threads, deleted ones too, since history answers questions about the past (docs/catalog.md,
 "Deleting").
 
+Added in triage, found late in docs/chatddx.md:
+
+**chatddx.4** · From docs/chatddx.md:122, "Requirements", "On the table"
+
+- Garbage collector for true deletions of non-referenced items.
+
 ### G32. Values the canonical form can't keep
 NUL and NaN refused, or kept, where they are written.
 
@@ -1528,6 +1546,22 @@ G5, as tracked in agents/wip-clearance.md. runner-api.4 was stale besides: "drop
 **runner-api.4** · From docs/runner-api.md:332, "Known gaps"
 
 - `send.send` takes a `key`, but nothing in the package passes one.
+
+G6, found late, as tracked in agents/wip-clearance.md:
+
+**chatddx.6** · From docs/chatddx.md:126, "Requirements", "Work in progress"
+
+- How sensitivity is enforced: factors and ledgers provide the means but not the enforcment itself.
+
+## To triage
+Found late, and not yet placed in a group.
+
+**chatddx.7** · From docs/chatddx.md:127, "Requirements", "Work in progress"
+
+- Storage: How components and records map to Postgres, table structures are suggested for clarity but not prescribed. In general:
+    - factor and records are insert-only
+    - nothing on the rig is updated (people and the worker are outside of the rig)
+    - version chains between digests belong to planned catalog pipeline.
 
 ## Context
 What the moved sections said of their items as a whole, moved with them.

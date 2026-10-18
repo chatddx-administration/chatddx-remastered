@@ -116,19 +116,6 @@ Variations allow controlled experiments without the combinatorial explosion; the
 `src/chatddx/catalog/threads.py:divergence` and `proposal` (what a fork varies,
 and re-applying it when its origin moves), and `catalog.edit.based_on`.
 
-### On the table
-- The result from scorers needs to be aggregated and exported. Since python is well-suited for statistical analysis,
-  processing the data into publishable results may become a requirement.
-- Garbage collector for true deletions of non-referenced items.
-
-### Work in progress
-- How scores are aggregated and exported together with the factors and the ledger for publication.
-- How sensitivity is enforced: factors and ledgers provide the means but not the enforcment itself.
-- Storage: How components and records map to Postgres, table structures are suggested for clarity but not prescribed. In general:
-    - factor and records are insert-only
-    - nothing on the rig is updated (people and the worker are outside of the rig)
-    - version chains between digests belong to planned catalog pipeline.
-
 ## Target stack
 - **Local inference.** Two servers, an RTX 3070 (sm_86, 8 GB) and an RTX 5090 (sm_120, 32 GB). Both serve vLLM 0.24.0 in a NixOS container that reads a `LocalEngine`, the model files, via `LocalModel`, the chat-template file and raw `argv`/`env`.
 
