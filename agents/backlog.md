@@ -68,7 +68,9 @@ items under it are as they were moved. An item that restates another for an API 
 44. [The data's stage, said in code](#g44-the-datas-stage-said-in-code) (1)
    - G44b. [Olof's work: the sample's judge](#g44b-olofs-work-the-samples-judge) (1)
 45. [Missing tests](#g45-missing-tests) (3)
-46. [The object layer and new kinds](#g46-the-object-layer-and-new-kinds) (7)
+46. [The object layer, if the split happens](#g46-the-object-layer-if-the-split-happens) (4)
+   - G46b. [Execution settings as a component](#g46b-execution-settings-as-a-component) (2)
+   - G46c. [Chat templates as components](#g46c-chat-templates-as-components) (1)
 47. [Takes waiting for a word](#g47-takes-waiting-for-a-word) (15)
 48. [Text cleanup steps](#g48-text-cleanup-steps) (1)
 49. [The archive's configuration under another name](#g49-the-archives-configuration-under-another-name) (1)
@@ -1344,8 +1346,11 @@ compare in the tests), which also holds scripted.4's scripted run that sets a pa
 
 - `send` again after a worker's exception isn't tested.
 
-### G46. The object layer and new kinds
-Whether execution settings and chat templates become kinds, and with them the object layer's open questions.
+### G46. The object layer, if the split happens
+The questions docs/purist-object-layer.md leaves open. It waits for that document's trigger, the day an object kind has
+to import something above `factors`; purist-object-layer.2 can ride along whenever the component classes are touched.
+
+Triage: split, execution settings went to G46b and chat templates to G46c.
 
 **purist-object-layer.1** · From docs/purist-object-layer.md:214, "Open"
 
@@ -1363,9 +1368,11 @@ Whether execution settings and chat templates become kinds, and with them the ob
 
 - Where `refuse_change` lives.
 
-**purist-object-layer.5** · From docs/purist-object-layer.md:218, "Open"
+### G46b. Execution settings as a component
+Execution settings named and picked, as a kind the start record references by digest, outside the trial's digest. Due
+when the portal offers them for picking (agents/wip-portal.md, "What the docs ask of it"; C3).
 
-- Whether execution settings become an object, which this take doesn't decide.
+Triage: split from G46.
 
 **factors.16** · From docs/factors.md:763, "Potential design improvements", "Execution settings as a component"
 
@@ -1378,6 +1385,16 @@ Making them a component of a new kind, which the start record references by dige
 thread and a foreign key like the pinned factors. They would still stay out of the trial's digest, so this changes how
 execution settings are stored, not what a trial means. The cost is a new kind (with the catalog's thread kinds and their
 migration) and a change to the run record.
+
+**purist-object-layer.5** · From docs/purist-object-layer.md:218, "Open"
+
+- Whether execution settings become an object, which this take doesn't decide.
+
+### G46c. Chat templates as components
+A chat template held in the bundle, as a kind the engine references by digest. It waits for a need: a bundle read
+offline, or the date check run off the host.
+
+Triage: split from G46.
 
 **factors.17** · From docs/factors.md:774, "Potential design improvements", "Chat templates as components"
 
