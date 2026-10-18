@@ -1,3 +1,4 @@
+import json
 from typing import Annotated, Any
 from urllib.parse import urlencode
 from uuid import UUID
@@ -123,6 +124,7 @@ def review(
                 }
                 for v in views
             ],
+            "composing": _composing(bench, held, under, ran, picked.case),
         },
         "appendices": [
             None if a["editor"] is None else {k: a[k] for k in ("editor", "digest")}
@@ -474,6 +476,66 @@ def _means(answers: list[dict[str, Any]], held: Held | None) -> list[dict[str, A
             }
         )
     return found
+
+
+def _composing(
+    bench: Bench,
+    held: Held | None,
+    schema: str | None,
+    ran: list[tuple[schemas.Run, schemas.RunDetail]],
+    case: str,
+) -> dict[str, Any] | None:
+    shipped = api_world.scorer_code(bench)
+    if schema is None or not shipped:
+        return None
+    [code, *_] = shipped
+    unjudged = [m.name for m in code.metrics if not m.judged]
+    blank = {
+        "kind": "scorer",
+        "entry_point": code.entry_point,
+        "version": code.version,
+        "expectation_schema": schema,
+        "views": [{"metric": unjudged[0] if unjudged else code.metrics[0].name}],
+    }
+    scorer = None
+    judges: dict[str, str] = {}
+    if held is not None:
+        thread, body, labels = held
+        scorer = {
+            "thread": thread.id,
+            "head": thread.head.id,
+            "digest": thread.head.digest,
+            "name": thread.name or thread.title,
+            "mode": "edit" if thread.owner == bench.person.login else "fork",
+            "body": body.model_dump(mode="json"),
+            "labels": labels,
+        }
+        judges = {j: bench.title(j) for j in body.judges}
+    return {
+        "scorer": scorer,
+        "blank": blank,
+        "metrics": [m.model_dump(mode="json") for m in code.metrics],
+        "outputs": _outputs(bench),
+        "judges": judges,
+        "case": case,
+        "runs": [str(r.id) for r, d in ran if any(i.case == case for i in d.items)],
+    }
+
+
+def _outputs(bench: Bench) -> list[dict[str, Any]]:
+    found: dict[str, dict[str, Any]] = {}
+    for t in api.threads(bench, "configuration", purpose="generation"):
+        schema = resolve(bench.store.get, t.head.digest, Skeleton).output_schema
+        held = found.setdefault(
+            json.dumps(schema, sort_keys=True),
+            {
+                "title": schema.get("title") if isinstance(schema, dict) else None,
+                "json_schema": schema,
+                "by": [],
+            },
+        )
+        held["by"].append(t.name or t.title)
+    return list(found.values())
 
 
 def _scorer(scorers: list[Held], picked: int | None, scored: set[str]) -> Held | None:

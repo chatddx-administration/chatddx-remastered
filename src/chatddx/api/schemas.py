@@ -565,6 +565,29 @@ class Picked(_Schema):
     problem: str | None = Field(description="why the selector doesn't read")
 
 
+class Trying(_Schema):
+    scorer: ComponentBody = Field(description="a scorer, as it is written")
+    expectation: JsonValue = Field(description="what it is scored against, its data")
+    case: str = Field(description="the case whose items are tried")
+    runs: list[UUID] = Field(
+        min_length=1, max_length=50, description="the runs whose items are tried"
+    )
+
+
+class TriedView(_Schema):
+    value: float | None
+    detail: JsonValue
+    judged: bool = Field(
+        description="a view its judge scores, which isn't tried: its value is null"
+    )
+
+
+class Tried(_Schema):
+    run: UUID
+    replicate: int
+    views: list[TriedView]
+
+
 class Seeds(_Schema):
     seeds: list[int] | None = Field(
         default=None,

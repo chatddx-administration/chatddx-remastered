@@ -23,12 +23,20 @@ export type Saved =
   | { to: string; thread: number; cases: Record<string, string> }
   | { problem: string; moved: number | null };
 
-export async function saved(editing: Editing, name: string, component: Component): Promise<Saved> {
+export type Labelled = (string | null)[];
+
+export async function saved(
+  editing: Editing,
+  name: string,
+  component: Component,
+  views?: Labelled,
+): Promise<Saved> {
   const thread = editing.thread ?? 0;
+  const labels = views ? { labels: { views } } : {};
   if (editing.mode === "edit") {
     const got = await api.POST("/api/threads/{thread}/edits", {
       params: { path: { thread } },
-      body: { head: editing.head ?? 0, component },
+      body: { head: editing.head ?? 0, component, ...labels },
     });
     if (got.data) return { to: `/threads/${thread}`, thread, cases: got.data.cases ?? {} };
     if (got.response.status === 409) {
@@ -39,10 +47,10 @@ export async function saved(editing: Editing, name: string, component: Component
   }
   const got =
     editing.mode === "new"
-      ? await api.POST("/api/threads", { body: { component, name: name.trim() } })
+      ? await api.POST("/api/threads", { body: { component, name: name.trim(), ...labels } })
       : await api.POST("/api/threads/{thread}/forks", {
           params: { path: { thread } },
-          body: { name: name.trim(), component },
+          body: { name: name.trim(), component, ...labels },
         });
   return got.data
     ? { to: `/threads/${got.data.id}`, thread: got.data.id, cases: {} }

@@ -2481,6 +2481,59 @@
         }
       }
     },
+    "/api/scorers/try": {
+      "post": {
+        "tags": [
+          "scores"
+        ],
+        "summary": "Tried",
+        "operationId": "tried_api_scorers_try_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Trying"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/Tried"
+                  },
+                  "type": "array",
+                  "title": "Response Tried Api Scorers Try Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          },
+          {
+            "APIKeyCookie": []
+          }
+        ]
+      }
+    },
     "/api/queue": {
       "get": {
         "tags": [
@@ -6129,6 +6182,102 @@
           "deleted"
         ],
         "title": "ThreadDetail"
+      },
+      "Tried": {
+        "properties": {
+          "run": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Run"
+          },
+          "replicate": {
+            "type": "integer",
+            "title": "Replicate"
+          },
+          "views": {
+            "items": {
+              "$ref": "#/components/schemas/TriedView"
+            },
+            "type": "array",
+            "title": "Views"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "run",
+          "replicate",
+          "views"
+        ],
+        "title": "Tried"
+      },
+      "TriedView": {
+        "properties": {
+          "value": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Value"
+          },
+          "detail": {
+            "$ref": "#/components/schemas/JsonValue"
+          },
+          "judged": {
+            "type": "boolean",
+            "title": "Judged",
+            "description": "a view its judge scores, which isn't tried: its value is null"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "value",
+          "detail",
+          "judged"
+        ],
+        "title": "TriedView"
+      },
+      "Trying": {
+        "properties": {
+          "scorer": {
+            "$ref": "#/components/schemas/ComponentBody",
+            "description": "a scorer, as it is written"
+          },
+          "expectation": {
+            "$ref": "#/components/schemas/JsonValue",
+            "description": "what it is scored against, its data"
+          },
+          "case": {
+            "type": "string",
+            "title": "Case",
+            "description": "the case whose items are tried"
+          },
+          "runs": {
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "type": "array",
+            "maxItems": 50,
+            "minItems": 1,
+            "title": "Runs",
+            "description": "the runs whose items are tried"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "scorer",
+          "expectation",
+          "case",
+          "runs"
+        ],
+        "title": "Trying"
       },
       "Unscored": {
         "additionalProperties": false,

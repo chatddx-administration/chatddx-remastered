@@ -2,6 +2,7 @@ import type { Schemas } from "$lib/api/client";
 import type { AppendixEditing } from "$lib/editors/AppendixEditor.svelte";
 import type { ExpectationEditing } from "$lib/editors/ExpectationEditor.svelte";
 import type { Progress } from "$lib/runs/progress";
+import type { Composing } from "$lib/scorer/Composer.svelte";
 
 export type Shown = { run: string; score: string | null; replicate: number; plan: boolean; anchor: number };
 
@@ -26,6 +27,7 @@ export type Expecting = {
   digest: string | null;
   history: Version[];
   views: Read[];
+  composing: Composing | null;
 };
 
 export type Key = Pick<KeyboardEvent, "key" | "altKey" | "ctrlKey" | "metaKey" | "target">;
@@ -125,4 +127,10 @@ export function doing(progress: Progress): string {
   const what = now?.kind === "reasoning" ? "thinking" : now?.kind ? "writing" : null;
   const sending = now && what ? `, ${what}: ${now.tokens} tokens` : "";
   return `${ended} of ${progress.items.length} ended${sending}`;
+}
+
+export function withScorer(back: string, thread: number): string {
+  const url = new URL(back, "https://review.invalid");
+  url.searchParams.set("scorer", String(thread));
+  return url.pathname + url.search;
 }

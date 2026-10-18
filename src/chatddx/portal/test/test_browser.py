@@ -332,3 +332,67 @@ def test_a_case_is_run_from_its_review_and_its_answer_read_in_the_record(
     said = item["answer"]["value"].strip().splitlines()[0]
     expect(record.locator("[data-answer-body]")).to_contain_text(said)
     assert errors == []
+
+
+def test_a_scorer_is_composed_beside_the_case_and_tried_on_its_answers_as_typed(
+    page: Page,
+    world: Inventory,
+    conn: Connection,
+) -> None:
+    errors: list[str] = []
+    page.on("pageerror", lambda e: errors.append(str(e)))
+    crlf = page.request.get("/api/families", params={"name": "crlf"}).json()[0]
+    query: dict[str, str | float | bool] = {
+        "kind": "configuration",
+        "name": LINES,
+        "owner": "alice",
+    }
+    lines = page.request.get("/api/threads", params=query).json()[0]
+    body = {"configuration": lines["id"], "endpoint": QWEN, "families": [crlf["id"]]}
+    with faked(world, Store(conn).get):
+        started = page.request.post("/api/runs", data=body).json()
+        run = started["runs"][0]["run"]
+        for _ in range(500):
+            if page.request.get(f"/api/runs/{run}").json()["finished"]:
+                break
+            time.sleep(0.02)
+    [item] = page.request.get(
+        f"/api/runs/{run}/items", params={"case": crlf["case"]}
+    ).json()
+    first = item["answer"]["value"].strip().splitlines()[0]
+    word = re.findall(r"[A-Za-z]{3,}", first)[0].lower()
+    query = {"kind": "scorer", "name": LINES}
+    scorer = page.request.get("/api/threads", params=query).json()[0]
+
+    _ = page.goto(f"/review/{crlf['id']}?scorer={scorer['id']}")
+    page.get_by_role("button", name=re.compile(rf"^Compose {LINES}")).click()
+    composer = page.get_by_role("region", name="Composing a scorer")
+    differential = composer.locator("li").nth(1)
+    expect(differential.get_by_label("Its label")).to_have_value("differential")
+    page.get_by_label("pattern").first.fill(word)
+    expect(differential.get_by_label("Tried on your answers")).to_contain_text("1.00")
+    page.get_by_label("pattern").first.fill("nothing & like & it")
+    expect(differential.get_by_label("Tried on your answers")).to_contain_text("0.00")
+
+    composer.get_by_role("button", name="Start a new one").click()
+    composer.get_by_label("Its label").fill("named")
+    _ = composer.get_by_label("Reads of what is expected").select_option(
+        label="diagnosis"
+    )
+    composer.get_by_label("line by line, as a list").check()
+    _ = composer.get_by_label("Compared by").select_option("mentions")
+    page.get_by_label("pattern").first.fill(word)
+    expect(composer.get_by_label("Tried on your answers")).to_contain_text("1.00")
+    expect(page.get_by_role("list", name="What reads diagnosis")).to_contain_text(
+        "named"
+    )
+    composer.get_by_label("Name").fill("mine")
+    composer.get_by_role("button", name="Save").click()
+    page.wait_for_url(lambda url: not url.endswith(f"scorer={scorer['id']}"))
+    mine = page.request.get("/api/threads", params={"kind": "scorer", "name": "mine"})
+    [made] = mine.json()
+    assert page.url.endswith(f"scorer={made['id']}")
+    edits = page.request.get(f"/api/threads/{made['id']}/edits").json()
+    assert edits[-1]["labels"]["views"] == ["named"]
+    expect(page.get_by_role("navigation", name="Scorers")).to_contain_text("mine")
+    assert errors == []

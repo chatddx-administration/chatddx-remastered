@@ -3,12 +3,28 @@
   import { api, type Schemas, why } from "$lib/api/client";
   import ExpectationEditor from "$lib/editors/ExpectationEditor.svelte";
   import type { ExpectationEditing } from "$lib/editors/ExpectationEditor.svelte";
+  import Composer, { type ScorerView } from "$lib/scorer/Composer.svelte";
   import Changed from "$lib/thread/Changed.svelte";
   import { type Expecting, fieldOf, type Read, shortly } from "./review";
 
   let { expected, editor, back }: { expected: Expecting; editor: ExpectationEditing; back: string } = $props();
   const given = untrack(() => expected);
-  const views = given.views.map((view, at) => ({ view, at, field: fieldOf(view.expectation) }));
+  const composing = given.composing;
+  const measured = new Map((composing?.metrics ?? []).map((m) => [m.name, m.measures]));
+
+  let reading = $state<Read[]>(given.views);
+  let open = $state(false);
+  const views = $derived(reading.map((view, at) => ({ view, at, field: fieldOf(view.expectation) })));
+
+  function composed(changed: ScorerView[], labels: string[]): void {
+    reading = changed.map((v, at) => ({
+      label: labels[at] || `view ${at}`,
+      metric: v.metric,
+      measures: measured.get(v.metric) ?? null,
+      judge: v.judge ? (composing?.judges[v.judge] ?? null) : null,
+      expectation: v.expectation ?? "",
+    }));
+  }
 
   let data = $state<unknown>(untrack(() => editor.data));
   let picks = $state<Schemas["Picked"][] | null>(null);
@@ -26,11 +42,12 @@
 
   $effect(() => {
     const document = JSON.parse(JSON.stringify(data ?? null)) as unknown;
-    if (views.length === 0) return;
+    const selectors = views.map((v) => v.view.expectation);
+    if (selectors.length === 0) return;
     const sent = ++asked;
     const timer = setTimeout(async () => {
       const got = await api.POST("/api/picks", {
-        body: { document: document as never, selectors: views.map((v) => v.view.expectation) },
+        body: { document: document as never, selectors },
       });
       if (sent !== asked) return;
       if (got.data) {
@@ -73,6 +90,18 @@
     </ul>
   {/if}
 {/snippet}
+
+{#if composing}
+  {#if open}
+    <Composer {composing} schema={editor.json_schema} {data} {back} changed={composed} />
+  {:else}
+    <div class="mb-3 flex flex-wrap gap-2 text-xs">
+      <button type="button" class="rounded-md border border-border px-2.5 py-1 font-medium hover:bg-muted" onclick={() => (open = true)}>
+        {composing.scorer ? (composing.scorer.mode === "edit" ? `Compose ${composing.scorer.name}` : `Compose ${composing.scorer.name} as yours`) : "Compose a scorer"}
+      </button>
+    </div>
+  {/if}
+{/if}
 
 <ExpectationEditor {editor} digest={given.digest} opened={true} quiet changed={(d) => (data = d)} {beside} to={() => back} />
 

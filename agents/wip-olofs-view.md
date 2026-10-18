@@ -20,7 +20,7 @@ rather than a click, a scroll or another page.
    sensitive from the API's places; he runs the case himself; judges are picked and written before their texts;
    unjudged views are tried as typed, judged ones by scoring; selectors are picked and applied on the server; and the
    page is `/review/{family}`, beside the family's page.
-4. **Steps 1 to 3 are built** (see "Built"); step 4 is next (see "Steps").
+4. **Steps 1 to 4 are built** (see "Built"); step 5 is next (see "Steps").
 
 ## What the clinician is here to do
 From the request, and from what the sample World waits on (`docs/curation.md`, "Outstanding"):
@@ -198,7 +198,7 @@ A view's selectors are a JSON Pointer or a fixed subset of JSONPath (`docs/facto
 2. **Writing in place**, built (see "Built"): appendices, cases and expectations, with 5b's editors moved into the
    panes; the picks follow the form as it is typed.
 3. **Running the case** from the page (L3 a), and **Score again** on its runs, built (see "Built").
-4. **Composing a scorer without judges**: the views' form, selectors picked (L6), values tried as typed (L5 a),
+4. **Composing a scorer without judges**, built (see "Built"): the views' form, selectors picked (L6), values tried as typed (L5 a),
    saving with labels.
 5. **With judges**: picking one, writing one (L4 a, b), what it is asked, and judged views scored through the worker
    (L5 b).
@@ -320,6 +320,44 @@ the pattern is typed, a scorer saved, and its score.
 - **The cost of the record grows with the runs**: each run listed is read whole, and what is left to score is worked
   out for each (`Bench.unscored`, about 40 ms a run), 50 runs at most.
 - **A scoring that fails** shows as the run no longer under way and still left to score; why is on the run's page.
+
+
+### Step 4: composing a scorer without judges
+- **The API**, suggested to `docs/api.md` and `docs/api-api.md` as `AGENT` blocks: `POST /api/scorers/try`
+  (`src/chatddx/api/scores.py:tried`), a scorer as written and an expectation's data tried on a case's items in some of
+  the person's runs: each item's answer as the scoring pass reads it, and each view's value and detail by
+  `chatddx.scorers.scorer.score_view`, with nothing stored. A judged view isn't tried, since its judge would be sent
+  the answer (L5 b): it says so. A scorer the running code can't score with is refused. Sensitive, `no-store`.
+- **The composer** (`frontend/src/lib/scorer/Composer.svelte`), opened in the Expected column by **Compose …**: the
+  scorer picked, edited when it is the person's own and forked as theirs when it isn't, or a new one from the shipped
+  code and the schema shown (**Start a new one**). Each view is a row: its label; what it reads of what is expected
+  and of the answer, each a picker (`frontend/src/lib/scorer/SelectorPicker.svelte`) with **typed…** for anything
+  else; line by line; the metric, by what it measures; moved up or down with its label, or left out. A judged view
+  keeps its metric and judge as they are (step 5). The views as composed are what the fields' annotations show, so
+  a view's picks follow both the expectation and the view as each is typed.
+- **Selectors picked** (L6 b, `frontend/src/lib/scorer/selectors.ts:choices`): from the expectation schema, the whole
+  expectation, each field, what a target holds, each item of a list and its fields, and the items of a list whose
+  required text field has a value written, as `notes where author is Olof › comment`
+  (`$.notes[?@.author == 'Olof'].comment`); from the output schemas of the configurations the person sees, the
+  whole answer and each field, by the schema's title. A dotted path and its JSON Pointer find the same choice
+  (`chosen`).
+- **Tried as typed** (L5 a): a moment after each change to the scorer or the expectation, every view's value on each
+  of the case's answers in the person's runs, its detail on hover; the lints and refusals as a component check gives
+  them.
+- **Saving** says where the save goes, as every editor does, with the labels (`writing.ts:saved` takes them,
+  `Saving` passes them), and comes back to the review with the scorer saved picked (`review.ts:withScorer`). An edit
+  that changes only a label is a new edit, as the catalog keeps it (`docs/catalog.md`, "Scorer labels").
+- **Tests**: `test_scores.py` (the API's), a scorer tried: the stored score's values, a missed target, judged views
+  untried, nothing written, an unknown metric refused, bob not finding the run; `test_reviewing.py`, the composer's
+  props; vitest for `choices`, `chosen` and `withScorer`; and `test_browser.py`, a run's answer tried as the
+  expectation's pattern is typed, 1.00 then 0.00, and a new scorer composed, tried, saved with its label and picked.
+
+#### What step 4 leaves
+- **A metric's params** aren't drawn: the shipped unjudged metrics take none, and the judged ones' are step 5's.
+- **A view of a list's fields that filters on anything but a required text field**, or reads deeper than two levels,
+  is typed.
+- **Resources and the scorer's own params** aren't offered (`docs/bench.md`, "Outstanding").
+- **The composer is closed again by reloading**: closing it while keeping what was composed isn't offered.
 
 ## Open
 - **Grading answers by hand.** Olof's judge is to be measured against his own grades of real answers, "with a line on

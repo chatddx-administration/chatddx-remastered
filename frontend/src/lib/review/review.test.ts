@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { begun } from "$lib/runs/progress";
-import { doing, fieldOf, replaced, said, shortly, stepped, valued, viewed } from "./review";
+import { doing, fieldOf, replaced, said, shortly, stepped, valued, viewed, withScorer } from "./review";
 
 const STEPS = { previous: "/review/1", next: "/review/3" };
 
@@ -108,5 +108,12 @@ describe("doing", () => {
     expect(doing(progress)).toBe("scoring: 2 scored, judges answered 3 of 4");
     progress.done = { halted: false } as never;
     expect(doing(progress)).toBe("done");
+  });
+});
+
+describe("withScorer", () => {
+  it("shows the scorer saved, keeping what else is picked", () => {
+    expect(withScorer("/review/3?case=c&scorer=1", 9)).toBe("/review/3?case=c&scorer=9");
+    expect(withScorer("/review/3", 9)).toBe("/review/3?scorer=9");
   });
 });

@@ -228,3 +228,36 @@ def test_the_record_says_each_view_s_mean_over_the_answers(signed: TestClient) -
     for label in props(page)["labels"]:
         assert f"<dt>{escape(label)}</dt>" in page
     assert "mean of 1" in page
+
+
+@pytest.mark.slow
+def test_a_scorer_is_offered_to_compose_as_it_is_stored_with_what_it_can_read(
+    signed: TestClient,
+) -> None:
+    noted = family(signed, "noted")
+    scorers = signed.get("/api/threads", params={"kind": "scorer"}).json()
+    judged = next(t for t in scorers if t["name"] == "judged")
+    given = props(shown(signed, f"/review/{noted['id']}?scorer={judged['id']}"))
+    composing = given["expected"]["composing"]
+    held = composing["scorer"]
+    body = signed.get(f"/api/components/{judged['head']['digest']}").json()["body"]
+    assert (held["thread"], held["head"], held["digest"]) == (
+        judged["id"],
+        judged["head"]["id"],
+        judged["head"]["digest"],
+    )
+    assert held["body"] == body and held["labels"] == given["labels"]
+    assert held["mode"] == ("edit" if judged["owner"] == "alice" else "fork")
+    assert set(composing["judges"]) == {v["judge"] for v in body["views"] if v["judge"]}
+    blank = composing["blank"]
+    assert blank["expectation_schema"] == body["expectation_schema"]
+    code = signed.get("/api/scorer-code").json()[0]
+    assert (blank["entry_point"], blank["version"]) == (
+        code["entry_point"],
+        code["version"],
+    )
+    assert composing["metrics"] == code["metrics"]
+    runs = signed.get("/api/runs", params={"reaching": noted["case"]}).json()
+    assert composing["runs"] == [r["id"] for r in runs]
+    assert composing["case"] == noted["case"]
+    assert None in {o["title"] for o in composing["outputs"]}

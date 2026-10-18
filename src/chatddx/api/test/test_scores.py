@@ -178,3 +178,46 @@ def test_a_run_is_scored_when_asked_and_what_can_t_be_is_refused(
     assert 1 <= names(said).count("judge.asked") < 5
     [scored] = [d for _, n, d in said if n == "run.scored"]
     assert {g["name"] for g in scored["scores"]} == {"lines", "whole", "judged"}
+
+
+@pytest.mark.usefixtures("fake")
+@pytest.mark.slow
+def test_a_scorer_is_tried_on_a_case_s_answers_as_it_is_typed_and_nothing_is_written(
+    signed: TestClient, bob: dict[str, str]
+) -> None:
+    noted = family(signed, "noted")
+    made, _ = sent(signed, asked(signed, families=[noted["id"]]))
+    run = made["id"]
+    [case] = signed.get(f"/api/families/{noted['id']}").json()["cases"]
+    [expected] = case["expectations"]
+    judged = next(g for g in made["scores"] if g["name"] == "judged")
+    scorer = signed.get(f"/api/components/{judged['scorer']}").json()["body"]
+    body = {
+        "scorer": scorer,
+        "expectation": expected["data"],
+        "case": noted["case"],
+        "runs": [run],
+    }
+    got = signed.post("/api/scorers/try", json=body)
+    assert got.status_code == 200, got.json()
+    assert got.headers["cache-control"] == "no-store"
+    [tried] = got.json()
+    assert (tried["run"], tried["replicate"]) == (run, 0)
+    stored = {i["view"]: i["value"] for i in judged["items"]}
+    views = scorer["views"]
+    for at, (view, said) in enumerate(zip(views, tried["views"], strict=True)):
+        assert said["judged"] == (view.get("judge") is not None)
+        assert said["value"] == (None if said["judged"] else stored[at])
+
+    missed = {**expected["data"], "diagnosis": {"pattern": "nothing & like & it"}}
+    again = signed.post("/api/scorers/try", json={**body, "expectation": missed})
+    [unjudged, *_] = [v for v in again.json()[0]["views"] if not v["judged"]]
+    assert unjudged["value"] == 0.0
+    assert len(
+        signed.get(f"/api/runs/{run}/scores", params={"all": True}).json()
+    ) == len(made["scores"])
+
+    unknown = {**scorer, "views": [{**views[0], "metric": "nothing"}]}
+    refused = signed.post("/api/scorers/try", json={**body, "scorer": unknown})
+    assert refused.status_code == 422 and "nothing" in refused.json()["detail"]
+    assert signed.post("/api/scorers/try", json=body, headers=bob).status_code == 404
