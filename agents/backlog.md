@@ -16,9 +16,9 @@ items under it are as they were moved. An item that restates another for an API 
 2. [Drift between runs](#g2-drift-between-runs) (8)
 3. [Attestation within a run](#g3-attestation-within-a-run) (6)
    - G3b. [Each attempt recorded](#g3b-each-attempt-recorded) (2)
-4. [The finish record: seal and findings](#g4-the-finish-record-seal-and-findings) (4)
+4. [The finish record: seal and findings](#g4-the-finish-record-seal-and-findings) (0, dissolved)
 5. [Keyed fingerprints](#g5-keyed-fingerprints) (2)
-6. [Research output: replicates, aggregation and export](#g6-research-output-replicates-aggregation-and-export) (7)
+6. [Research output: replicates, aggregation and export](#g6-research-output-replicates-aggregation-and-export) (9)
 7. [Scoring: coverage, order and judges](#g7-scoring-coverage-order-and-judges) (5)
 8. [Views: what they read and split](#g8-views-what-they-read-and-split) (3)
 9. [Unheeded reasoning](#g9-unheeded-reasoning) (3)
@@ -202,25 +202,8 @@ Triage: split from G3.
 - `Execution.timeout_s` isn't checked: a call's times span all its attempts.
 
 ### G4. The finish record: seal and findings
-What the finish record holds, and how findings are kept, decided together.
-
-**ledger.7** · From docs/ledger.md:261, "Open design issues", "Smaller issues"
-
-- **The finish record is outside the seal.** Its time and findings could change without the seal noticing.
-
-**ledger-api.7** · From docs/ledger-api.md:553, "Known gaps"
-
-- The finished row is outside the seal: its `at` and `findings` can change without `ledger.seal`.
-
-**ledger.9** · From docs/ledger.md:264, "Open design issues", "Smaller issues"
-
-- **Findings have no mechanism of their own.** The runner and the scoring pass keep those they see in the finish record,
-  and the checks give the rest when called. They might benefit from a separate mechanism, as lints are for factors, but
-  nothing is planned or decided.
-
-**ledger-api.9** · From docs/ledger-api.md:555, "Known gaps"
-
-- Findings have no mechanism of their own beyond the finished rows and the check functions.
+Triage: dissolved. The database refuses changes to a finish row (`0006-t2-ledger.sql`), so the seal matters once records
+leave the store: ledger.7 and ledger-api.7 went to G6. ledger.9 and ledger-api.9 were dropped (see "Dropped").
 
 ### G5. Keyed fingerprints
 A key reaches `send` and the ledger.
@@ -236,7 +219,7 @@ A key reaches `send` and the ledger.
 
 ### G6. Research output: replicates, aggregation and export
 What a replicate is, what may be pooled, what aggregates scores, and how records leave the store with what an analysis
-needs frozen.
+needs frozen, under a seal that covers the whole log.
 
 **factors.1** · From docs/factors.md:712, "Open design issues", "Runs of the same trial aren't interchangeable"
 
@@ -284,6 +267,16 @@ What aggregates them isn't named yet.
 **ledger-api.8** · From docs/ledger-api.md:554, "Known gaps"
 
 - Records don't travel in a `Bundle`.
+
+Added in triage, from G4:
+
+**ledger.7** · From docs/ledger.md:261, "Open design issues", "Smaller issues"
+
+- **The finish record is outside the seal.** Its time and findings could change without the seal noticing.
+
+**ledger-api.7** · From docs/ledger-api.md:553, "Known gaps"
+
+- The finished row is outside the seal: its `at` and `findings` can change without `ledger.seal`.
 
 ### G7. Scoring: coverage, order and judges
 A scoring says what it lacks, has an order-free digest, and calls its judges concurrently and only when needed.
@@ -1517,6 +1510,21 @@ The manual, from `agents/wip-authoring.md` at b6f76b8.
 **bench.11** · From docs/bench.md:450, "Outstanding"
 
 - **A low-level manual for the bench**, made from `agents/wip-authoring.md` at b6f76b8.
+
+## Dropped
+Dropped in triage, with why.
+
+G4, as naming no failure and no plan; to be raised again if a mechanism for findings is wanted:
+
+**ledger.9** · From docs/ledger.md:264, "Open design issues", "Smaller issues"
+
+- **Findings have no mechanism of their own.** The runner and the scoring pass keep those they see in the finish record,
+  and the checks give the rest when called. They might benefit from a separate mechanism, as lints are for factors, but
+  nothing is planned or decided.
+
+**ledger-api.9** · From docs/ledger-api.md:555, "Known gaps"
+
+- Findings have no mechanism of their own beyond the finished rows and the check functions.
 
 ## Context
 What the moved sections said of their items as a whole, moved with them.
