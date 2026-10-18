@@ -19,7 +19,9 @@ items under it are as they were moved. An item that restates another for an API 
    - G3b. [Each attempt recorded](#g3b-each-attempt-recorded) (2)
 4. [The finish record: seal and findings](#g4-the-finish-record-seal-and-findings) (0, dissolved)
 5. [Keyed fingerprints](#g5-keyed-fingerprints) (0, dropped)
-6. [Research output: replicates, aggregation and export](#g6-research-output-replicates-aggregation-and-export) (11)
+6. [Aggregation](#g6-aggregation) (4)
+   - G6b. [Export and publication](#g6b-export-and-publication) (6)
+   - G6c. [Greedy seeds or a replicate count](#g6c-greedy-seeds-or-a-replicate-count) (1)
 7. [Scoring: coverage, order and judges](#g7-scoring-coverage-order-and-judges) (5)
 8. [Views: what they read and split](#g8-views-what-they-read-and-split) (3)
 9. [Unheeded reasoning](#g9-unheeded-reasoning) (3)
@@ -210,9 +212,11 @@ leave the store: ledger.7 and ledger-api.7 went to G6. ledger.9 and ledger-api.9
 Triage: dropped, as tracked in agents/wip-clearance.md ("Typed vignettes", and "Before real patient data", 4); see
 "Dropped". From here on, an item a wip plan in agents/ tracks is dropped here.
 
-### G6. Research output: replicates, aggregation and export
-What a replicate is, what may be pooled, what aggregates scores, and how records leave the store with what an analysis
-needs frozen, under a seal that covers the whole log.
+### G6. Aggregation
+What may be pooled and what aggregates scores: runs grouped by their recorded factors, with the evidence of the observed
+ones checked, before anything pools them.
+
+Triage: split, export went to G6b and greedy seeds to G6c.
 
 **factors.1** · From docs/factors.md:712, "Open design issues", "Runs of the same trial aren't interchangeable"
 
@@ -225,18 +229,14 @@ Nothing aggregates scores today, but anything that compares or pools runs by the
 conditions without noticing. It needs to group by the recorded factors as well, and to check the evidence of the
 observed ones (prompt-token fingerprints, returned models, canaries) before pooling.
 
-**factors.2** · From docs/factors.md:722, "Open design issues", "Greedy sampling and seeds"
-
-No seed is sent with greedy sampling, but a trial's seeds still count toward its digest, so two otherwise identical
-greedy trials differ only in digest. Likewise, the seeds of a greedy judge all send the same request.
-
-Keeping the seeds is deliberate. On an engine that isn't batch invariant, greedy replicates still measure
-nondeterminism, and the seeds are what name the replicates. The alternative, a replicate count for greedy trials,
-changes the shape of a trial, so it is cheapest decided before trials are stored for real.
-
 **chatddx.2** · From docs/chatddx.md:288, inline, in "Intended dataflow"
 
 What aggregates them isn't named yet.
+
+**chatddx.3** · From docs/chatddx.md:120, "Requirements", "On the table"
+
+- The result from scorers needs to be aggregated and exported. Since python is well-suited for statistical analysis,
+  processing the data into publishable results may become a requirement.
 
 **catalog.17** · From docs/catalog.md:435, "Open design issues", "Smaller issues"
 
@@ -245,12 +245,11 @@ What aggregates them isn't named yet.
   prompt. The same text also takes another number of tokens in Swedish than in English, so budgets confound a
   comparison between languages.
 
-**catalog.18** · From docs/catalog.md:439, "Open design issues", "Smaller issues"
+### G6b. Export and publication
+How records leave the store with the factors they reference, under a seal that covers the whole log, and with what an
+analysis needs frozen, such as languages.
 
-- **Languages are said, not checked.** Nothing compares a language with the text, and one can be replaced, so an
-  analysis split by language should freeze them at export, as titles. A scorer that needs the language, for stemming,
-  synonyms or an ontology, takes it from the expectation data or its resources, which are factors, not from the
-  catalog at scoring time.
+Triage: split from G6. ledger.7 and ledger-api.7 came from G4, chatddx.5 from docs/chatddx.md, found late.
 
 **ledger.8** · From docs/ledger.md:262, "Open design issues", "Smaller issues"
 
@@ -261,8 +260,6 @@ What aggregates them isn't named yet.
 
 - Records don't travel in a `Bundle`.
 
-Added in triage, from G4:
-
 **ledger.7** · From docs/ledger.md:261, "Open design issues", "Smaller issues"
 
 - **The finish record is outside the seal.** Its time and findings could change without the seal noticing.
@@ -271,16 +268,30 @@ Added in triage, from G4:
 
 - The finished row is outside the seal: its `at` and `findings` can change without `ledger.seal`.
 
-Added in triage, found late in docs/chatddx.md:
+**catalog.18** · From docs/catalog.md:439, "Open design issues", "Smaller issues"
 
-**chatddx.3** · From docs/chatddx.md:120, "Requirements", "On the table"
-
-- The result from scorers needs to be aggregated and exported. Since python is well-suited for statistical analysis,
-  processing the data into publishable results may become a requirement.
+- **Languages are said, not checked.** Nothing compares a language with the text, and one can be replaced, so an
+  analysis split by language should freeze them at export, as titles. A scorer that needs the language, for stemming,
+  synonyms or an ontology, takes it from the expectation data or its resources, which are factors, not from the
+  catalog at scoring time.
 
 **chatddx.5** · From docs/chatddx.md:125, "Requirements", "Work in progress"
 
 - How scores are aggregated and exported together with the factors and the ledger for publication.
+
+### G6c. Greedy seeds or a replicate count
+What names a greedy trial's replicates; it changes the shape of a trial, so it goes before trials are stored for real.
+
+Triage: split from G6.
+
+**factors.2** · From docs/factors.md:722, "Open design issues", "Greedy sampling and seeds"
+
+No seed is sent with greedy sampling, but a trial's seeds still count toward its digest, so two otherwise identical
+greedy trials differ only in digest. Likewise, the seeds of a greedy judge all send the same request.
+
+Keeping the seeds is deliberate. On an engine that isn't batch invariant, greedy replicates still measure
+nondeterminism, and the seeds are what name the replicates. The alternative, a replicate count for greedy trials,
+changes the shape of a trial, so it is cheapest decided before trials are stored for real.
 
 ### G7. Scoring: coverage, order and judges
 A scoring says what it lacks, has an order-free digest, and calls its judges concurrently and only when needed.
@@ -1547,14 +1558,14 @@ G5, as tracked in agents/wip-clearance.md. runner-api.4 was stale besides: "drop
 
 - `send.send` takes a `key`, but nothing in the package passes one.
 
-G6, found late, as tracked in agents/wip-clearance.md:
+chatddx.6, found late, as tracked in agents/wip-clearance.md:
 
 **chatddx.6** · From docs/chatddx.md:126, "Requirements", "Work in progress"
 
 - How sensitivity is enforced: factors and ledgers provide the means but not the enforcment itself.
 
-## To triage
-Found late, and not yet placed in a group.
+chatddx.7, found late, as stale: the store is built (docs/store.md), insert-only, and the catalog keeps the version
+chains:
 
 **chatddx.7** · From docs/chatddx.md:127, "Requirements", "Work in progress"
 
