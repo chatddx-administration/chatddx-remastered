@@ -480,6 +480,9 @@ A passthrough refuses a fixed list of options and lets everything else through. 
 ### G14. Engine identity: hardware and model files
 An engine described well enough to tell apart, and its files checked against the hub.
 
+Triage: kept as is. The hardware waits for the first server on several GPUs, which the import refuses until then
+(`importers/o11n.py`); the hub check likely starts in o11n's report (Kompismoln/o11n, `nixos/vllm-report.py`).
+
 **factors.14** · From docs/factors.md:755, "Open design issues", "Smaller issues"
 
 - **Hardware has no GPU count,** so engines that split a model across GPUs can't be told apart by their hardware. Nor
