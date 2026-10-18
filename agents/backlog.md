@@ -733,7 +733,12 @@ Triage: kept, but for the queue's items, which went to G20.
   database that holds the ledger's completions already.
 
 ### G22. Picking an endpoint for a model
-A model served at several endpoints is picked from them, linted, and followed only where served.
+A look for a model several endpoints serve is linted, a model that moved on is followed only where served, and a judge
+whose engine two endpoints serve doesn't bar its scorer.
+
+Triage: kept as is. bench.15's refusal is decided (agents/wip-engine-part.md, "What building it found": "the decided
+refusal stands"); what is open of it is its judge. Decided, for bench.25: a look for no endpoint gives the findings of
+the model alone, `facts.*`, and says the engine's wait for an endpoint to be named.
 
 **bench.15** · From docs/bench.md:457, "Outstanding"
 
@@ -1549,6 +1554,16 @@ The manual, from `agents/wip-authoring.md` at b6f76b8.
 **bench.11** · From docs/bench.md:450, "Outstanding"
 
 - **A low-level manual for the bench**, made from `agents/wip-authoring.md` at b6f76b8.
+
+## For the sweep
+References to open items found during triage, for step 5:
+- agents/wip-portal.md ("Comparing variations", Open; "Export") and docs/catalog.md ("How the catalog works") cite
+  docs/chatddx.md, "On the table", which moved here.
+- docs/chatddx.md, "Requirements", cites docs/inventory.md, "Hosts don't read the start-up", which G15 dropped for
+  agents/wip-deploy.md.
+- docs/bench.md's item on what the old bench had (bench.23) hands two of its parts to agents/wip-portal.md.
+- agents/wip-engine-part.md, "Outstanding", hands bench.24, bench.25 and bench.26 to docs/bench.md, "Outstanding":
+  they are here now.
 
 ## Dropped
 Dropped in triage, with why.
