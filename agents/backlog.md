@@ -21,8 +21,8 @@ items under it are as they were moved. An item that restates another for an API 
 5. [Keyed fingerprints](#g5-keyed-fingerprints) (0, dropped)
 6. [Aggregation](#g6-aggregation) (4)
    - G6b. [Export and publication](#g6b-export-and-publication) (6)
-   - G6c. [Greedy seeds or a replicate count](#g6c-greedy-seeds-or-a-replicate-count) (1)
-7. [Scoring: coverage, order and judges](#g7-scoring-coverage-order-and-judges) (5)
+   - G6c. [Digests to settle before real data](#g6c-digests-to-settle-before-real-data) (3)
+7. [Scoring: coverage and judges](#g7-scoring-coverage-and-judges) (3)
 8. [Views: what they read and split](#g8-views-what-they-read-and-split) (3)
 9. [Unheeded reasoning](#g9-unheeded-reasoning) (3)
 10. [Shipped code: scorers and tools](#g10-shipped-code-scorers-and-tools) (4)
@@ -279,10 +279,11 @@ Triage: split from G6. ledger.7 and ledger-api.7 came from G4, chatddx.5 from do
 
 - How scores are aggregated and exported together with the factors and the ledger for publication.
 
-### G6c. Greedy seeds or a replicate count
-What names a greedy trial's replicates; it changes the shape of a trial, so it goes before trials are stored for real.
+### G6c. Digests to settle before real data
+What names a greedy trial's replicates, and a scoring whose digest doesn't depend on the order of its expectations: both
+change what is stored, so they go before trials and scorings are stored for real, in one bump.
 
-Triage: split from G6.
+Triage: split from G6; factors.12 and factors-api.4 came from G7.
 
 **factors.2** · From docs/factors.md:722, "Open design issues", "Greedy sampling and seeds"
 
@@ -293,13 +294,6 @@ Keeping the seeds is deliberate. On an engine that isn't batch invariant, greedy
 nondeterminism, and the seeds are what name the replicates. The alternative, a replicate count for greedy trials,
 changes the shape of a trial, so it is cheapest decided before trials are stored for real.
 
-### G7. Scoring: coverage, order and judges
-A scoring says what it lacks, has an order-free digest, and calls its judges concurrently and only when needed.
-
-**factors.9** · From docs/factors.md:744, "Open design issues", "Smaller issues"
-
-- **A scoring doesn't say which cases it lacks.** Only checking a score warns, once a run is scored under it.
-
 **factors.12** · From docs/factors.md:750, "Open design issues", "Smaller issues"
 
 - **A scoring's digest depends on the order of its expectations.** Its expectations aren't put in a fixed order as a
@@ -309,6 +303,15 @@ A scoring says what it lacks, has an order-free digest, and calls its judges con
 **factors-api.4** · From docs/factors-api.md:1063, "Known gaps"
 
 - `Scoring.expectations` isn't sorted, so its order changes the digest.
+
+### G7. Scoring: coverage and judges
+A scoring says what it lacks before it is run, and calls its judges concurrently and only when needed.
+
+Triage: kept, but for the scoring's digest, which went to G6c.
+
+**factors.9** · From docs/factors.md:744, "Open design issues", "Smaller issues"
+
+- **A scoring doesn't say which cases it lacks.** Only checking a score warns, once a run is scored under it.
 
 **runner.7** · From docs/runner.md:226, "Open design issues", "Smaller issues"
 
