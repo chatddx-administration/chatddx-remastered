@@ -383,6 +383,10 @@ the pattern is typed, a scorer saved, and its score.
 - **A finished run doesn't reload over work**: the record reloads into what its runs came to only while nothing has
   been typed or picked on the page since it loaded; else each run says **Show it**.
 - **Judges and judge configurations are told apart by thread**, since a fork shares its origin's digest.
+- **No page to scroll**: the panes and the drawers are each a containing block, so a hidden label of the list
+  (`sr-only`) is placed within what scrolls rather than below the page, which it lengthened while a drawer was open.
+- **A refusal's page leads back** to the page its request came from, when that is within the site
+  (`src/chatddx/portal/pages.py:_back`, by `Referer`), and to nothing else: the link home is gone.
 - **Tests**: `test_scores.py` (the API's), what a judge is asked, and what is refused; `test_reviewing.py`, the
   judges, judge configurations and endpoints the composer is given; vitest for `seedsOf` and `startingParams`; and
   `test_browser.py`, a judged view composed of carol's comment, a new judge written for it and picked, its verdict

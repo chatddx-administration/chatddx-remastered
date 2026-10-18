@@ -25,7 +25,7 @@
 {%- endmacro %}
 
 {% macro pane(label) %}
-<section aria-label="{{ label }}" class="glass-card min-h-0 rounded-2xl p-4 xl:overflow-y-auto">
+<section aria-label="{{ label }}" class="glass-card relative min-h-0 rounded-2xl p-4 xl:overflow-y-auto">
   {{ caller() }}
 </section>
 {% endmacro %}
@@ -38,7 +38,7 @@
 
 {% set rail = "flex cursor-pointer list-none items-center gap-3 px-3 py-3 text-sm [&::-webkit-details-marker]:hidden xl:flex-col xl:group-open:flex-row" %}
 {% set upright = "font-medium xl:[writing-mode:vertical-rl] xl:group-open:[writing-mode:horizontal-tb]" %}
-{% set opened = "px-3 pb-3 xl:max-h-[calc(100dvh-9rem)] xl:overflow-y-auto" %}
+{% set opened = "relative px-3 pb-3 xl:max-h-[calc(100dvh-9rem)] xl:overflow-y-auto" %}
 {% set link = "text-primary hover:underline" %}
 {% set button = "inline-flex h-8 items-center rounded-md border border-border bg-card px-3 text-sm font-medium hover:bg-muted" %}
 {% set field = "rounded-md border border-input bg-transparent px-2.5" %}

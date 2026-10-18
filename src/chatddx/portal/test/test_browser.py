@@ -273,6 +273,11 @@ def test_a_clinician_reviews_a_case_and_its_views_read_what_is_typed(
     _ = page.goto(f"/review/{noted['id']}?scorer={judged['id']}")
     first = vignette["text"].strip().splitlines()[0]
     expect(page.locator("#review-vignette")).to_contain_text(first)
+    page.set_viewport_size({"width": 1440, "height": 900})
+    for drawer in page.locator("details[data-drawer]").all():
+        drawer.locator("summary").first.click()
+    expect(page.locator("details[data-drawer][open]")).to_have_count(2)
+    assert page.evaluate("document.documentElement.scrollHeight") == 900
     notes = page.get_by_role("list", name="What reads notes")
     expect(notes).to_contain_text("Chock, troligen septisk.")
     page.get_by_label("comment").first.fill("Septisk chock: odla, ge antibiotika.")

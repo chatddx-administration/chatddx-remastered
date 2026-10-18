@@ -277,3 +277,22 @@ def test_a_scorer_is_offered_to_compose_as_it_is_stored_with_what_it_can_read(
     assert composing["runs"] == [r["id"] for r in runs]
     assert composing["case"] == noted["case"]
     assert None in {o["title"] for o in composing["outputs"]}
+
+
+@pytest.mark.slow
+def test_a_refusal_s_page_leads_back_where_the_form_was_and_nowhere_else(
+    signed: TestClient,
+) -> None:
+    crlf = family(signed, "crlf")
+    back = f"/review/{crlf['id']}?tag=targets"
+    form = {"configuration": "0", "case": "sha256:" + "0" * 64}
+    here = {"Referer": f"https://testserver{back}"}
+    got = signed.post(f"/review/{crlf['id']}/runs", data=form, headers=here)
+    assert got.status_code == 422
+    assert f'href="{escape(back)}"' in got.text and "Back to where you were" in got.text
+    elsewhere = {"Referer": f"https://elsewhere.example{back}"}
+    got = signed.post(f"/review/{crlf['id']}/runs", data=form, headers=elsewhere)
+    assert got.status_code == 422 and "Back to where you were" not in got.text
+    gone = signed.get("/review/0")
+    assert gone.status_code == 404 and "Back to where you were" not in gone.text
+    assert ">Home</a>" not in gone.text
