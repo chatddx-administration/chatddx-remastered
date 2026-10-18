@@ -48,7 +48,8 @@ items under it are as they were moved. An item that restates another for an API 
 27. [Titles](#g27-titles) (6)
 28. [Edit history: who, when and why](#g28-edit-history-who-when-and-why) (4)
 29. [Following keeps a fork's renamed view](#g29-following-keeps-a-forks-renamed-view) (1)
-30. [Languages and translations](#g30-languages-and-translations) (8)
+30. [Languages](#g30-languages) (5)
+   - G30b. [Translating JSON few-shot answers](#g30b-translating-json-few-shot-answers) (1)
 31. [Deleting, leftovers and garbage collection](#g31-deleting-leftovers-and-garbage-collection) (4)
 32. [Values the canonical form can't keep](#g32-values-the-canonical-form-cant-keep) (3)
 33. [The store's read API](#g33-the-stores-read-api) (6)
@@ -65,7 +66,7 @@ items under it are as they were moved. An item that restates another for an API 
 44. [The sample's data](#g44-the-samples-data) (2)
 45. [Missing tests](#g45-missing-tests) (4)
 46. [The object layer and new kinds](#g46-the-object-layer-and-new-kinds) (7)
-47. [Takes waiting for a word](#g47-takes-waiting-for-a-word) (13)
+47. [Takes waiting for a word](#g47-takes-waiting-for-a-word) (15)
 48. [Text cleanup steps](#g48-text-cleanup-steps) (1)
 49. [The archive's configuration under another name](#g49-the-archives-configuration-under-another-name) (1)
 50. [The appendix layout as a part](#g50-the-appendix-layout-as-a-part) (1)
@@ -999,36 +1000,12 @@ Triage: kept, but for catalog-api.12, dropped as decided, and bench.8, which wen
 - **Following can drop a fork's renamed view.** Labels follow the views the proposal keeps, so a fork that only
   renamed a view, and follows an origin whose views it keeps, takes the origin's labels.
 
-### G30. Languages and translations
-Who may correct a language, a case of none, judges checked for one, and translating JSON examples.
+### G30. Languages
+Where a compiled skeleton's language comes from, said and kept, judges checked for one, and what a person may correct.
 
-**bench.3** · From docs/bench.md:436, "Outstanding", its takes, built and waiting for a word
-
-- a language is written only where a text has none ("Languages");
-
-**bench.10** · From docs/bench.md:447, "Outstanding"
-
-- **A case of no language** goes as written, linted `language.unknown`, rather than left out (agents/wip-engine-part.md,
-  "A case of no language"); so does a case of a language the translations don't cover when the configuration's own is
-  unknown.
-
-**bench.12** · From docs/bench.md:451, "Outstanding"
-
-- **Correcting a wrong language** stays curation's: the bench refuses a language that differs from the text's own.
-  What a person may correct, such as a text only their own threads hold, is open.
-
-**catalog.19** · From docs/catalog.md:443, "Open design issues", "Smaller issues"
-
-- **Judges aren't checked for language.** A judge's language could be compared with the cases its scoring grades, the
-  way lints check a trial's. An English judge grading Swedish answers may be intended, so it would be a notice rather
-  than a warning.
-
-**factors.4** · From docs/factors.md:732, "Open design issues", "Smaller issues"
-
-- **Few-shot answers in JSON are translated whole.** An example is one text, so an assistant example that is a JSON
-  answer is translated as one entry, by hand, keeping its property names and allowed values as they are.
-
-Added in triage, from G25:
+Triage: kept, but for bench.3 and bench.10, which went to G47, and factors.4, which went to G30b; catalog.7,
+catalog-api.7 and catalog.8 came from G25. Decided, for bench.12: a person may correct the language of a text only
+their own threads hold; anything else stays curation's.
 
 **catalog.7** · From docs/catalog.md:417, "Open design issues", "Smaller issues"
 
@@ -1044,6 +1021,27 @@ Added in triage, from G25:
 - **A language refused on a compiled skeleton is said to come from its recipe**, by
   `src/chatddx/catalog/language.py:check_language`, `0012`'s `language_compiled` trigger and the bench's
   `COMPILED_LANGUAGE`; a translated skeleton's comes from the language its compilation names.
+
+**catalog.19** · From docs/catalog.md:443, "Open design issues", "Smaller issues"
+
+- **Judges aren't checked for language.** A judge's language could be compared with the cases its scoring grades, the
+  way lints check a trial's. An English judge grading Swedish answers may be intended, so it would be a notice rather
+  than a warning.
+
+**bench.12** · From docs/bench.md:451, "Outstanding"
+
+- **Correcting a wrong language** stays curation's: the bench refuses a language that differs from the text's own.
+  What a person may correct, such as a text only their own threads hold, is open.
+
+### G30b. Translating JSON few-shot answers
+A few-shot answer in JSON translated by its texts, rather than whole and by hand.
+
+Triage: split from G30.
+
+**factors.4** · From docs/factors.md:732, "Open design issues", "Smaller issues"
+
+- **Few-shot answers in JSON are translated whole.** An example is one text, so an assistant example that is a JSON
+  answer is translated as one entry, by hand, keeping its property names and allowed values as they are.
 
 ### G31. Deleting, leftovers and garbage collection
 What deleting hides, leftovers known to stay, and a collector for what nothing refers to.
@@ -1533,6 +1531,18 @@ Added in triage, from G29:
 - the shipped lists kept in code, versions as integers from 1, an edit keeping the head's labels only when its scorer
   is the head's, and following taking each part's labels from the side whose part it keeps ("Scorers"); no resources
   offered;
+
+Added in triage, from G30:
+
+**bench.3** · From docs/bench.md:436, "Outstanding", its takes, built and waiting for a word
+
+- a language is written only where a text has none ("Languages");
+
+**bench.10** · From docs/bench.md:447, "Outstanding"
+
+- **A case of no language** goes as written, linted `language.unknown`, rather than left out (agents/wip-engine-part.md,
+  "A case of no language"); so does a case of a language the translations don't cover when the configuration's own is
+  unknown.
 
 ### G48. Text cleanup steps
 More cleanup steps, if vignettes need them.
