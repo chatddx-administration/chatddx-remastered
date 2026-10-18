@@ -68,6 +68,8 @@ items under it are as they were moved. An item that restates another for an API 
 Worlds' endpoints name a canary set and runs send it: scripted runs answer canaries, canary calls stream events, judge
 engines are probed, and a run's canary set is tied to the run in the database.
 
+Triage: kept as is.
+
 **runner.5** · From docs/runner.md:222, "Open design issues", "Smaller issues"
 
 - **No World's endpoint names a canary set**, though data sets hold them; canary outputs aren't compared
