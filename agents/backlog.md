@@ -878,7 +878,8 @@ Triage: split: a run naming its look's skeleton went to G25b, a compiled skeleto
 A run that sends what was looked at, or is refused.
 
 Triage: split from G25. Decided: a run may name the skeleton's digest, as an edit names its head, and is refused when
-the variation compiles to another by then. api.2 is also one of the API's takes waiting for a word (G47).
+the variation compiles to another by then. api.2's take, a variation stated whole in each request, was confirmed;
+what is left of it is the run naming its look's skeleton.
 
 **catalog.21** · From docs/catalog.md:450, "Open design issues", "Smaller issues"
 
@@ -1422,6 +1423,10 @@ bench.13 overturns. Decided: a collaborator may withdraw themselves.
 
 ### G48. Text cleanup steps
 More cleanup steps, if vignettes need them.
+
+Triage: kept as is; it waits for a vignette that needs a step. 29 of the Worlds' 110 vignette files hold spaces before
+a newline, and none a non-breaking space, a zero-width character or a Unicode line break; Kompismoln's source is to be
+checked when it is at hand.
 
 **factors.13** · From docs/factors.md:753, "Open design issues", "Smaller issues"
 
