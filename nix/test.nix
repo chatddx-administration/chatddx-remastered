@@ -10,17 +10,31 @@ let
 in
 pkgs.testers.runNixOSTest {
   name = "chatddx";
-  node.specialArgs.inputs.chatddx = self;
 
   nodes.machine = {
     imports = [ self.nixosModules.default ];
     virtualisation.memorySize = 2048;
-    services.postgresql.package = pkgs.postgresql_16;
+    services.postgresql.package = pkgs.postgresql_17;
+    # Accommodating for emulation: initdb alone can take longer than the unit's 120 s by TCG, and then the
+    # chatddx services, failed on the dependency, aren't started again.
+    systemd.services.postgresql.serviceConfig.TimeoutSec = pkgs.lib.mkForce 600;
     networking.hosts."127.0.0.1" = [ host ];
     security.pki.certificateFiles = [ "${cert}/cert.pem" ];
 
+    # The admin as an org declares it: a user of its own, with a home, that the World is in.
+    users.users.chatddx-test = {
+      isSystemUser = true;
+      group = "chatddx-test";
+      home = "/var/lib/chatddx-test";
+      homeMode = "0750";
+      createHome = true;
+    };
+    users.groups.chatddx-test.members = [ "chatddx_writer" ];
+
     services.chatddx = {
       enable = true;
+      admin = "chatddx-test";
+      listen = "[::1]:8000";
       world = "/var/lib/chatddx-test/sample";
       environmentFile = "/var/lib/chatddx-test/secrets";
       workers = 2;
@@ -37,7 +51,11 @@ pkgs.testers.runNixOSTest {
     };
 
     systemd.tmpfiles.settings.chatddx-test = {
-      "/var/lib/chatddx-test".d.mode = "0755";
+      "/var/lib/chatddx-test".d = {
+        mode = "0750";
+        user = "chatddx-test";
+        group = "chatddx-test";
+      };
       "/var/lib/chatddx-test/sample".C.argument = "${self}/worlds/sample";
       "/var/lib/chatddx-test/secrets".f = {
         mode = "0400";
@@ -68,7 +86,12 @@ pkgs.testers.runNixOSTest {
     machine.wait_for_unit("chatddx-portal.service")
     machine.wait_for_unit("chatddx-worker-2.service")
     machine.wait_for_unit("nginx.service")
-    machine.wait_for_open_port(8000)
+    machine.wait_for_open_port(8000, "::1")
+
+    with subtest("the admin is the host's own user, and the World is reached through its group"):
+        assert machine.succeed("systemctl show -P User chatddx-migrate").strip() == "chatddx-test"
+        machine.succeed("runuser -u chatddx_writer -- cat /var/lib/chatddx-test/sample/inventory.toml")
+        machine.fail("runuser -u nobody -- cat /var/lib/chatddx-test/sample/inventory.toml")
 
     with subtest("the operator's command runs as the writer, with the services' World"):
         machine.succeed("chatddx init-data alice --giftbag")
@@ -81,7 +104,7 @@ pkgs.testers.runNixOSTest {
         token = call("POST", "/api/session", {"login": "alice", "password": "${password}"})["token"]
         name = "plan"
         [configuration] = call("GET", "/api/threads?kind=configuration&owner=alice&name=" + name.replace(" ", "%20"), token=token)
-        family = call("POST", "/api/families", {"text": "A woman of 79 fell at home."}, token)
+        family = call("POST", "/api/families", {"text": "A woman of 79 fell at home.", "language": "en"}, token)
         body = {"configuration": configuration["id"], "endpoint": "qwen3-8b-awq@fake", "families": [family["id"]], "score": True}
         run = call("POST", "/api/runs", body, token)["runs"][0]["run"]
 

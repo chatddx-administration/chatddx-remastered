@@ -18,7 +18,7 @@ containers for a Kubernetes cluster. The NixOS module is built; the containers a
 ## What holds now
 - **The flake** (`flake.nix`) has `packages.default`, the Python environment with `chatddx` on its PATH, and
   `packages.frontend`, the portal's build, which a deployment points `CHATDDX_PORTAL_ASSETS` at
-  (`agents/wip-portal.md`, "Open"); `nixosModules.default`, and its test in `checks` (see "The NixOS module"). It
+  (`agents/wip-portal.md`, "Open"); `nixosModules.default`, and its tests in `checks` (see "The NixOS module"). It
   has no image, and nothing builds it but a person: there is no CI.
 - **What serves**, by command (`src/chatddx/cli.py`):
 
@@ -98,24 +98,28 @@ Take: "the HTTP server" of `docs/worker.md` ("The deployment") is the proxy in f
 the API are one app on one origin.
 
 ## The NixOS module
-Built: `nix/module.nix`, the flake's `nixosModules.default`, as `services.chatddx`. Decided: it takes `inputs` among
-the system's `specialArgs`, with this flake as `inputs.chatddx`. `nix/test.nix`, the flake's `checks.<system>.module`,
-boots it in a VM.
-- **Options**: `package` and `frontend`, the flake's; `revision`, the flake's, as `CHATDDX_REVISION`; `world`;
-  `facts`; `listen`; `workers`; `environmentFile`; `database` (`createLocally`, `host`, `name`, `tier`); and `nginx`
-  (`enable`, `hostName`, `signInRate`).
+Built: `nix/module.nix`, the flake's `nixosModules.default`, as `services.chatddx`. Decided: the module closes over
+this flake (`lib.modules.importApply`), whose packages and revision are its defaults, so that it needs no
+`specialArgs`, and a system that has the flake under another name (Kompismoln's `chatddx-dev`) gets that flake's.
+`nix/test.nix`, the flake's `checks.<system>.module`, boots it in a VM.
+- **Options**: `package` and `frontend`, the flake's; `revision`, the flake's, as `CHATDDX_REVISION`; `admin`;
+  `world`; `facts`; `listen`; `workers`; `environmentFile`; `database` (`createLocally`, `host`, `name`, `tier`); and
+  `nginx` (`enable`, `hostName`, `signInRate`).
 - **Services**, under `chatddx.target` (see "Services and commands"):
   - `chatddx-migrate`, a oneshot as the admin, after `postgresql.target`. The others require it, so a switch that
     changes it restarts them after it;
   - `chatddx-portal`, `chatddx portal` as the writer;
   - `chatddx-worker-1` and on, `chatddx worker` as the writer, with `TimeoutStopSec` at 90 s, above
     `WORKER_DEADLINE`.
-- **Users**: the system users `chatddx` and `chatddx_writer`, named as the roles, so that NixOS' default
-  `local all all peer` needs no map.
+- **Users**: the system users `admin`, `chatddx` unless the host names another, and `chatddx_writer`, named as the
+  roles, so that NixOS' default `local all all peer` needs no map. The module declares the admin a system user in a
+  group of its name, which merges with the host's own declaration of the same user, with its id and home (Kompismoln's
+  principal, see "On Kompismoln").
 - **The database**, with `createLocally`, the default: `services.postgresql`, the database owned by the admin
-  (`ensureDBOwnership`, so it is named `chatddx`), the admin with `createrole` for tier 1's reader, and the writer.
+  (`ensureDBOwnership`, so it is named as the admin), the admin with `createrole` for tier 1's reader, and the writer.
   Without `createdb`, which only the tests use. The module leaves PostgreSQL's version to the host, whose cluster is
-  tied to its own, and warns when it isn't 16.
+  tied to its own, and warns when it is neither 16 nor 17. Decided: 17 is accepted, as Kompismoln's hosts serve it
+  (o11n's `nixos/postgresql.nix`).
 - **The operator's `chatddx`**, on the system's PATH: the services' environment, and the secrets when it can read
   them; run as root, it runs as the writer, or as the admin for `migrate`.
 - **Secrets**: `environmentFile`, read by systemd for the portal and the workers. A path in the store is refused
@@ -132,17 +136,43 @@ boots it in a VM.
 - **Hardening**: every service sandboxed (`ProtectSystem=strict`, `ProtectHome`, `PrivateTmp`, `PrivateDevices`, no
   capabilities, `@system-service` system calls, `UMask=0077` and the like), and `http_proxy`, `https_proxy` and
   `all_proxy`, in either case, unset for them even when the host sets them for every service.
-- **The test**: the sample World copied out of the store, and its secret in a file. Through the operator's command,
-  init-data and a password; then the fake engines. Through nginx, with a certificate made for the test: a typed case
-  run by the portal, sent and scored by a worker; the headers; a 429 among sign-ins sent at once. Last, a worker that
-  doesn't see a proxy set for every service. It passes, run by emulation in a cloud session as
-  `agents/nixos-test-procedure.md` says.
+- **The test**: PostgreSQL 17; the admin a user of the test's own, `chatddx-test`, with a home (0750), as an org
+  declares it; the sample World copied out of the store into that home, reached through the admin's group, which the
+  writer is in; the portal on `[::1]:8000`; and the World's secret in a file. That the migrations run as the admin,
+  and that the writer reads the World and `nobody` doesn't; through the operator's command, init-data and a password;
+  then the fake engines. Through nginx, with a certificate made for the test: a typed case run by the portal, sent and
+  scored by a worker; the headers; a 429 among sign-ins sent at once. Last, a worker that doesn't see a proxy set for
+  every service. It passed by emulation in a cloud session before the admin option; decided since, a cloud session
+  doesn't run it, the person does, on a host with KVM (`agents/nixos-test-procedure.md`, "Who runs what").
+- **The evaluation**: `nix/module-eval.nix`, the flake's `checks.<system>.module-eval`, evaluates the module without
+  building or booting: the default and an org's admin, workers, a database elsewhere, ordering, the sandbox's settings,
+  PostgreSQL's versions, the database's name, and paths in the store refused. A cloud session runs it, `pytest` against
+  PostgreSQL 17 and the host flow (`agents/nixos-test-procedure.md`).
 - Open:
   - static files from nginx rather than the app, left with caching the build (`agents/wip-portal.md`, "Open");
   - a `script-src` and `/api/docs` (`agents/wip-clearance.md`, "Before real patient data", Headers);
   - a timer that purges expired sessions, once there is a command for it;
   - whether the module also serves an inference host's vLLM from an endpoint's start-up, as `fake-engines` serves a
     fake from it, or that stays with the hosts' own NixOS containers (`docs/chatddx.md`, "Target stack").
+
+## On Kompismoln
+Decided: chatddx-dev first, on stationary, from this repository's `main`, with the World `worlds/kompismoln`; the old
+chatddx stays on helsinki meanwhile.
+- **Where it is**: Kompismoln's org (`Kompismoln/org`), in `apps/chatddx-remastered.nix`, the app file of
+  `[app.chatddx-dev]` in its `org.toml`, which o11n's app-scheduler role imports on the app's hosts. It adapts the
+  org's app to `services.chatddx`; o11n has nothing of chatddx's.
+- **What the org gives**: the app's principal, `chatddx-dev`, a system user with an id, a home in
+  `/var/lib/chatddx-dev` that stationary keeps across its ephemeral root, and a loopback address of its own
+  (`bindAddress`). Decided: the principal is the admin (`admin`, and the database of its name). The writer is in its
+  group (`principal.members`), to read the World in its home.
+- **What the app file adds**: `listen` on the principal's address; nginx for the app's endpoint; o11n's
+  `nixos/nginx.nix` (ACME, the firewall) and `nixos/postgresql.nix` (PostgreSQL 17, its directory kept across the
+  ephemeral root, a daily dump into the home); and `chatddx-worlds`, a oneshot before `chatddx-migrate` that copies the
+  repository's `worlds/` into the home, since `worlds/kompismoln` refers to the sample's vignettes and `_data`.
+- **One chatddx to a database server**: the migrations name the writer's and the reader's roles, which are the
+  server's, not the database's. chatddx and chatddx-dev are on different hosts.
+- Open: helsinki's chatddx, once chatddx-dev has replaced it: the app file becomes `apps/chatddx.nix`, the org's
+  `chatddx` input this repository, and o11n's `nixos/django.nix` is left with no user.
 
 ## Containers for Kubernetes
 - **The image**: Take: built by Nix (`dockerTools.streamLayeredImage`) from `packages.default` and
@@ -177,4 +207,5 @@ boots it in a VM.
 - Keycloak in front (`docs/identity.md`, "Keycloak"; `agents/wip-portal.md`, "Open"): which target runs it, and how it
   hands the app a login.
 - CI: what builds the image and the module's test, and runs `pytest` and the frontend's checks, before a deployment
-  takes a revision.
+  takes a revision. The VM test needs KVM: a self-hosted runner on one of Kompismoln's hosts is among the options in
+  o11n's `agents/wip-self-hosted-kvm.md`.

@@ -1,18 +1,17 @@
+{ self }:
 {
   config,
   lib,
   pkgs,
-  inputs,
   ...
 }:
 let
   cfg = config.services.chatddx;
-  flake = inputs.chatddx;
   system = pkgs.stdenv.hostPlatform.system;
   inherit (lib) mkOption types;
 
   # Peer authentication on the socket maps each system user to the role of its name.
-  admin = "chatddx";
+  inherit (cfg) admin;
   writer = "chatddx_writer";
 
   environment = {
@@ -132,23 +131,33 @@ in
 
     package = mkOption {
       type = types.package;
-      default = flake.packages.${system}.default;
-      defaultText = lib.literalExpression "inputs.chatddx.packages.\${system}.default";
+      default = self.packages.${system}.default;
+      defaultText = lib.literalMD "this flake's `packages.\${system}.default`";
       description = "The Python environment with `chatddx` on its PATH.";
     };
 
     frontend = mkOption {
       type = types.package;
-      default = flake.packages.${system}.frontend;
-      defaultText = lib.literalExpression "inputs.chatddx.packages.\${system}.frontend";
+      default = self.packages.${system}.frontend;
+      defaultText = lib.literalMD "this flake's `packages.\${system}.frontend`";
       description = "The portal's build, served at `/static/` (`CHATDDX_PORTAL_ASSETS`).";
     };
 
     revision = mkOption {
       type = types.nullOr types.str;
-      default = flake.rev or flake.dirtyRev or null;
-      defaultText = lib.literalExpression "inputs.chatddx.rev or inputs.chatddx.dirtyRev or null";
+      default = self.rev or self.dirtyRev or null;
+      defaultText = lib.literalMD "this flake's `rev`, else its `dirtyRev`, else `null`";
       description = "The code's revision, recorded with every run (`CHATDDX_REVISION`).";
+    };
+
+    admin = mkOption {
+      type = types.str;
+      default = "chatddx";
+      description = ''
+        The admin, a system user and the database role of its name (`DB_ADMIN`), which owns the database and runs the
+        migrations. The module declares it a system user in a group of its name, which merges with a declaration of the
+        same user elsewhere, with its own id and home.
+      '';
     };
 
     world = mkOption {
@@ -157,7 +166,8 @@ in
       description = ''
         The World directory (`CHATDDX_WORLD`): its inventory, its facts and its directory sources' vignettes, which
         are sensitive unless declared otherwise. It is kept out of the Nix store, which every user of the host can
-        read, and should be readable by `${writer}` alone. It can't be under /home, which the services can't see.
+        read, and should be readable by no user but `${writer}` and the admin. It can't be under /home, which the
+        services can't see.
       '';
     };
 
@@ -209,7 +219,8 @@ in
 
       name = mkOption {
         type = types.str;
-        default = "chatddx";
+        default = admin;
+        defaultText = lib.literalExpression "config.services.chatddx.admin";
         description = "The database (`DB_NAME`).";
       };
 
@@ -249,16 +260,20 @@ in
         assertions = [
           {
             assertion = cfg.database.createLocally -> cfg.database.name == admin;
-            message = "services.chatddx.database.name must be ${admin} when createLocally, the admin owning it";
+            message = "services.chatddx.database.name must be the admin's, ${admin}, when createLocally, the admin owning it";
           }
         ];
 
         warnings =
           lib.optional
             (
-              cfg.database.createLocally && lib.versions.major config.services.postgresql.package.version != "16"
+              cfg.database.createLocally
+              && !lib.elem (lib.versions.major config.services.postgresql.package.version) [
+                "16"
+                "17"
+              ]
             )
-            "services.chatddx: chatddx is developed and tested on PostgreSQL 16, and this host serves another";
+            "services.chatddx: chatddx is developed and tested on PostgreSQL 16 and 17, and this host serves another";
 
         users.users.${admin} = {
           isSystemUser = true;

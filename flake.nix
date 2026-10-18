@@ -117,13 +117,17 @@
         frontend = frontend system;
       });
 
-      # Takes `inputs`, with this flake as `inputs.chatddx`, among the system's specialArgs.
-      nixosModules.default = ./nix/module.nix;
+      nixosModules.default = lib.modules.importApply ./nix/module.nix { inherit self; };
 
       checks = lib.genAttrs [ "x86_64-linux" "aarch64-linux" ] (system: {
         module = import ./nix/test.nix {
           pkgs = nixpkgs.legacyPackages.${system};
           inherit self;
+        };
+        module-eval = import ./nix/module-eval.nix {
+          pkgs = nixpkgs.legacyPackages.${system};
+          inherit self;
+          inherit (lib) nixosSystem;
         };
       });
 
