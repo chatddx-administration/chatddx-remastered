@@ -1436,6 +1436,9 @@ checked when it is at hand.
 ### G49. The archive's configuration under another name
 A finding when a hand-made recipe is a shared configuration's.
 
+Triage: kept as is. Decided: the save goes through with an info finding naming the thread that already holds the
+skeleton, since no write is refused on a lint (bench.1, confirmed).
+
 **bench.19** · From docs/bench.md:467, "Outstanding"
 
 - **The archive's configuration saved under another name** is saved with no finding: a hand-made recipe that is a
