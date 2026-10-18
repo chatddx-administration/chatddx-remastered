@@ -75,7 +75,7 @@ items under it are as they were moved. An item that restates another for an API 
 48. [Text cleanup steps](#g48-text-cleanup-steps) (1)
 49. [The archive's configuration under another name](#g49-the-archives-configuration-under-another-name) (1)
 50. [The appendix layout as a part](#g50-the-appendix-layout-as-a-part) (1)
-51. [A low-level manual for the bench](#g51-a-low-level-manual-for-the-bench) (1)
+51. [A low-level manual for the bench](#g51-a-low-level-manual-for-the-bench) (0, dropped)
 
 ### G1. Canary sets in use
 Worlds' endpoints name a canary set and runs send it: scripted runs answer canaries, canary calls stream events, judge
@@ -1457,11 +1457,7 @@ its own, so the part holds a digest like the others and no edge needs a special 
   chunk, so a part would hold one where the others hold a digest, at every edge.
 
 ### G51. A low-level manual for the bench
-The manual, from `agents/wip-authoring.md` at b6f76b8.
-
-**bench.11** · From docs/bench.md:450, "Outstanding"
-
-- **A low-level manual for the bench**, made from `agents/wip-authoring.md` at b6f76b8.
+Triage: dropped; the edges have their docs, and a script on the bench reads docs/bench-api.md (see "Dropped").
 
 ## Confirmed
 Takes confirmed in triage, now decisions; bench.4's "a collaborator can't leave a share" is overturned by G47:
@@ -1832,6 +1828,13 @@ scripted.3, from G45, as tracked in agents/wip-portal.md ("Comparing variations"
 
 - **No two scripted runs vary a part over the same cases**, as the page to compare runs wants
   (agents/wip-portal.md, "Comparing variations").
+
+G51, as having no reader the docs don't serve: the edges have their own, and a script on the bench reads
+docs/bench-api.md; it can come back when someone writes against the bench directly:
+
+**bench.11** · From docs/bench.md:450, "Outstanding"
+
+- **A low-level manual for the bench**, made from `agents/wip-authoring.md` at b6f76b8.
 
 ## Context
 What the moved sections said of their items as a whole, moved with them.
