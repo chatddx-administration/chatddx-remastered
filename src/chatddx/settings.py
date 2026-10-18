@@ -23,6 +23,8 @@ TYPED_PER_DAY = 50
 RUNS_PER_DAY = 100
 ITEMS_PER_RUN = 1000
 
+REFERENCED = ("bench", "identity")
+
 WORKER_BEAT = timedelta(seconds=1)
 WORKER_LOST = timedelta(seconds=10)
 # Within the stop timeout of the service that runs the worker.

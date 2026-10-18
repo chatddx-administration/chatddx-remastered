@@ -6,6 +6,12 @@ Heads-up: This the internal api, not confused with the HTTP interface itself, wh
 at `/api/docs` and not repeated here. Both are called "api", hence the awkward doc name `docs/api-api.md`.
 
 The types it passes through are from:
+```
+AGENT: replace
+docs/bench-api.md is dropped for docs/reference/bench.md, which `chatddx reference` writes from the code.
+---
+- `bench` (docs/reference/bench.md)
+```
 - `bench` (docs/bench-api.md)
 - `runner` (docs/runner-api.md)
 - `catalog` (docs/catalog-api.md)

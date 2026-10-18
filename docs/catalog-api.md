@@ -50,6 +50,12 @@ It holds no SQL: it reads through a `Reader` and writes nothing. Callers call it
   takes the last row for a key as the one that holds, through `model.py:latest` and `About.of`, or by taking `[-1]`.
 - **The person asking.** No function takes the person asking. Who sees, owns and collaborates on what are
   `chatddx.identity`'s rules, which the bench applies to what `threads.heads` and `threads.expecting` give
+```
+AGENT: replace
+docs/bench-api.md is dropped for docs/reference/bench.md, which `chatddx reference` writes from the code.
+---
+  (`docs/reference/bench.md`, `Seen`). An owner is taken only as a key, by `threads.find`, and as the subject of the
+```
   (`docs/bench-api.md`, `Seen`). An owner is taken only as a key, by `threads.find`, and as the subject of the
   one-expectation rule, in `threads.check_edit` and `threads.check_note`.
 - **Deleted subjects.** A subject is deleted when its `About.deleted` is true.
@@ -345,6 +351,12 @@ given, whoever owns it, deleted ones included, in thread id order. Every case gi
 
 ### `picked(case: str, choices: Mapping[int, str]) -> str | None`
 The one head digest among a case's choices, thread → head digest, or `None` for none. Threads with the same head count
+```
+AGENT: replace
+docs/bench-api.md is dropped for docs/reference/bench.md, which `chatddx reference` writes from the code.
+---
+as one choice. The bench gives it the threads a person may be scored against (`docs/reference/bench.md`, `choices`).
+```
 as one choice. The bench gives it the threads a person may be scored against (`docs/bench-api.md`, `seen.py:choices`).
 - Raises `LookupError("case <case> has expectations to choose from, in threads <t1>, <t2>, …")`.
 

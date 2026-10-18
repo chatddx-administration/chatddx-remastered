@@ -3,6 +3,13 @@
 The bench is what one person sees and does, whatever the edge they reach it through: the threads, families and runs
 they see, the World's endpoints, the variation they are trying, and what is written in their name. Its edges are the
 repl (docs/repl.md), the API (docs/api.md) and the portal (agents/wip-portal.md). This document
+```
+AGENT: replace
+docs/bench-api.md is dropped for docs/reference/bench.md, which `chatddx reference` writes from the code.
+---
+describes what the bench does and why it is shaped like it is. Names, signatures and errors are in
+docs/reference/bench.md.
+```
 describes what the bench does and why it is shaped like it is. Names, signatures and errors are in docs/bench-api.md.
 
 The bench builds on the store, the catalog, the World, the facts, the runner and the scoring pass, and holds no SQL of

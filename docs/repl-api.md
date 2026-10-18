@@ -3,6 +3,12 @@
 Reference for the `chatddx.repl` package. It was written from `src/chatddx/repl/*` and `docs/repl.md`. What the shell
 does and why is in `docs/repl.md`, and how to use it in the manual (docs/repl-manual.md); this file says what
 the package holds, what each command calls, and how its tests are set up. The bench it calls on is in
+```
+AGENT: replace
+docs/bench-api.md is dropped for docs/reference/bench.md, which `chatddx reference` writes from the code.
+---
+`src/chatddx/bench/` (docs/reference/bench.md).
+```
 `src/chatddx/bench/` (docs/bench-api.md).
 
 Paths are relative to `src/chatddx/repl/` unless they start with `src/`, `docs/` or `agents/`.

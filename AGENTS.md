@@ -13,6 +13,14 @@ This document contains project-wide instructions written by humans for agents.
 ## Typechecking
 * Errors and warnings that indicate issues beyond the scope of the current task should remain, never hide them.
 * `pnpm --dir frontend check` typechecks the frontend, and `pnpm --dir frontend build` builds it. After a change to
+```
+AGENT: replace
+Agents run `chatddx reference` before a commit, as they do `chatddx openapi`.
+---
+  the API, `chatddx openapi > frontend/openapi.json`.
+* Before committing, `chatddx reference` brings `docs/reference/` up to date with the code: it tags what changed for
+  a human to apply, and `--check` fails while a reference is behind.
+```
   the API, `chatddx openapi > frontend/openapi.json`.
 
 ## Testing
@@ -42,6 +50,14 @@ Steps 5-8, docs *move*: backlog -> plan -> wip -> doc, and is never explained in
 ## Documentation rules
 
 ### 1. Humans write, agents suggest.
+```
+AGENT: replace
+The generated reference has one writer, and a human signs off on each change by applying its tag.
+---
+In all docs except `agents/*`, agents are only allowed to insert suggestions.
+`docs/reference/*` is written by `chatddx reference` alone: it inserts a tag, `REFERENCE: ADD`, `REPLACE` or `REMOVE`
+in the template below, above each change in the code's public names, and a human applies it.
+```
 In all docs except `agents/*`, agents are only allowed to insert suggestions.
 
 A suggestion is inserted as a fenced code-block immediately above the subject to change.
@@ -59,6 +75,13 @@ The primary document is `docs/chatddx.md`: If a contradiction to it is discovere
 
 Final module-scoped documentation is of shapes:
 1. Authoritative spec (`docs/<module>.md`)
+```
+AGENT: replace
+The reference is written from the code (src/chatddx/reference/) for the packages in `settings.REFERENCED`,
+and replaces `docs/<module>-api.md`; identity and bench are the pilot.
+---
+2. API Reference (`docs/reference/<module>.md`), written by `chatddx reference`
+```
 2. API Reference (`docs/<module>-api.md`)
 3. A user manual (`docs/<module>-manual`)
 
@@ -66,6 +89,16 @@ Wip module-scoped documentation is built up as a mirror of final at `agents/wip-
 
 Other documents that doesn't fit in this scheme may occur but can be considered against the grain.
 
+```
+AGENT: replace
+The 3 lines below. A docstring is how a solidified package says more than its signatures and errors.
+---
+Before committing, remove all and any docstrings and comments that:
+- reference the docs
+- tell what the code does
+
+The exception is a docstring on a public name in a package of `settings.REFERENCED`: its reference includes it.
+```
 Before committing, remove all and any docstrings and comments that:
 - reference the docs
 - tell what the code does
