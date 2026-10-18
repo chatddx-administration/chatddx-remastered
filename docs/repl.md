@@ -209,7 +209,7 @@ its scoring as it would be built now: the scorer, and the person's own expectati
   seeds), how it went (the one item's outcome, or a count of each; `unfinished` without a finish record), and per
   scorer the latest score's view means, as `plan 1/1/1/—`.
 - **`replay [RUN]`** shows the latest run, or the one an id prefix names: when, whether it finished, the address it
-  ran at, and on which chatddx. The request isn't stored (docs/ledger.md, "Some of what happened isn't checked"), so
+  ran at, and on which chatddx. The request isn't stored (docs/ledger.md, "Call"), so
   each item's first request is rendered again from the trial and the source and held to its fingerprint, saying when
   the vignette at the source isn't the one sent or the request renders otherwise now. A run of one item is told again
   as it streamed, from the stored responses and tool runs, then its outcome, scores and judges; a run of several

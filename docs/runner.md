@@ -156,7 +156,7 @@ Finishing writes the finish record with those findings and returns what checking
 A judged view's metric reads the verdicts of the view's judge, one per seed (docs/factors.md, "Judge"):
 - **Where its calls go.** A judge names an engine; its calls go to the one endpoint serving that engine, and through
   the gate as a run's do, for the run's cases, since a judge reads a completion. Several serving it is refused rather
-  than picked from, as for a run (docs/bench.md, "Outstanding").
+  than picked from, as for a run (docs/backlog.md, "Picking an endpoint for a model").
 - **What it reads.** The completion and the expectation, as the view picks them. A judge whose skeleton reads the
   vignette or the appendices is refused: no vignette goes to a judge.
 - **When it isn't asked.** When the answer can't be read, the view picks nothing from it, or the judge reads the
@@ -200,8 +200,8 @@ The API lists them (docs/runner-api.md, "Finding codes").
 - **`max_jobs` across runs**, and a lost run resumed: `docs/worker.md`, "Claiming".
 - **Canary sets are each endpoint's**, in the inventory (docs/inventory.md, "Endpoints"); no World's endpoint names
   one yet, though data sets hold them.
-- **The gate's refusal of `qwen3-bare@fake` for `typed` cases isn't read by a test** (docs/curation.md,
-  "Outstanding"); the judge `remote`'s tests read `unknown@remote`'s. The gate's tests edit the inventory instead
+- **The gate's refusal of `qwen3-bare@fake` for `typed` cases isn't read by a test** (docs/backlog.md,
+  "Missing tests"); the judge `remote`'s tests read `unknown@remote`'s. The gate's tests edit the inventory instead
   (`runner/test/test_run.py`).
 - **The real engines are cleared for the sample** (decided: `agents/wip-clearance.md`, "Vetted endpoints").
   `worlds/kompismoln/inventory.toml` clears `qwen3-8b@pelle` and `gpt-oss-20b@malborg` for `sample`.

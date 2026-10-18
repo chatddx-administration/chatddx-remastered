@@ -27,7 +27,6 @@ Paths are relative to `src/chatddx/store/` unless they start with `src/`, `docs/
 - [Database: schema `identity`](#database-schema-identity)
 - [Migrations](#migrations)
 - [Tests](#tests)
-- [Known gaps](#known-gaps)
 
 ## Package
 

@@ -19,7 +19,6 @@ Paths are relative to `src/chatddx/inventory/` unless they start with `src/`, `d
 - [world.py](#worldpy): `World`
 - [check.py](#checkpy): `check`
 - [Worlds](#worlds)
-- [Known gaps](#known-gaps)
 
 ## Package
 

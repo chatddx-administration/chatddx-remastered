@@ -30,6 +30,14 @@ This document contains project-wide instructions written by humans for agents.
 A module is either wip or solidified.
 * wip (draft) modules are documented in `agents/wip-<module>.md`
 * solidified modules are documented in `docs/<module>*.md`, where documentation rule 1 applies.
+```
+AGENT: add
+Open items now live in one place, grouped by the PR they'd fit in; without a rule, they'd grow back as each doc's
+"Open design issues", "Outstanding" and "Known gaps".
+---
+* open items of solidified modules are kept in `docs/backlog.md`, in the section of the fix they belong to; a wip
+  plan keeps its own.
+```
 
 ## Documentation rules
 

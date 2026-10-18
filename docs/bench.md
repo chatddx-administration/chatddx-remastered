@@ -99,7 +99,7 @@ two: a second thread, an edit that moves another onto that case and schema, nami
 restore (src/chatddx/catalog/threads.py:check_expectation). The bench refuses the same before it writes, worded as the
 person reads it.
 
-The database doesn't repeat the rule (docs/catalog.md, "Concurrent writers"), so two writers at the same moment can
+The database doesn't repeat the rule (docs/backlog.md, "Concurrent writers"), so two writers at the same moment can
 still leave a person two to choose from. Then nothing picks one, and each place says so:
 - scoring refuses the run under that scorer, naming the threads;
 - what is left to score keeps the scorer, so the run stays listed until one of the two goes;
@@ -162,7 +162,7 @@ model they don't know. So a variation is refused for its model as it is looked a
 
 A run goes to the endpoint serving its variation's model. An endpoint named must serve that model, and one that
 serves another is refused before the gate would refuse it. An model no endpoint serves is refused, and so is one
-several serve, unless one of them is named (see "Outstanding"). A hand-written configuration has no model part, and
+several serve, unless one of them is named (docs/backlog.md, "Picking an endpoint for a model"). A hand-written configuration has no model part, and
 runs at the endpoint named.
 
 ### The languages it runs in

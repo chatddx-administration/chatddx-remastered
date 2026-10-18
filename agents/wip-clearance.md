@@ -44,7 +44,7 @@ applies to a run").
 Every source, a directory or a database, is sensitive unless declared otherwise (`docs/inventory-api.md`, `Source`).
 The gate enforces it against the inventory's `[cleared]` table until the clearance pipeline replaces the table. A
 `[cleared]` entry for a source that isn't sensitive clears nothing and is said so (`cleared.not_sensitive`,
-`docs/inventory.md`, "Checks happen when an entry is used").
+`docs/inventory-api.md`, "check.py").
 
 ### Completions derived from vignettes
 - Sensitive records are run items, score items and a score's finish (`docs/ledger.md`, "Sensitive records";
@@ -136,7 +136,7 @@ Where it is at each stage of a request (`docs/factors.md`, "Requests"), beyond t
    An endpoint has a name and binds one engine digest to a URL (`src/chatddx/inventory/inventory.py:EndpointSpec`),
    a remote engine's URL too. So a grant can key on the endpoint's name with the digest and URL it holds, as the old
    `EndpointBinding` did. Today `[cleared]` keys on the name alone, so renaming an endpoint drops its clearance
-   (`docs/inventory.md`, "Smaller issues").
+   without warning, and its runs appear under two names.
 2. **Where vetting is declared.** Decided for now (`docs/inventory.md`, "Clearance"): in the inventory, as
    `[cleared]`. For the long term: the inventory keeps all location facts in one place, while a database grant
    (through the portal, logged) gives an audit trail and fits the append-only store.
@@ -172,17 +172,15 @@ runs out of the app, in the healthcheck's order, with where else it is tracked. 
      every page and hold about 2.5 GiB (the healthcheck's arithmetic, not measured).
    - Every request opens a Postgres connection before its token is checked (`src/chatddx/api/people.py:55-70`,
      `src/chatddx/portal/pages.py:68-78`), and a portal error page opens a second (`src/chatddx/portal/pages.py:100`).
-   - Tracked: `docs/api.md` ("Outstanding", "Signing in") and `docs/identity.md` ("Open design issues") take no limit
-     until Keycloak is in front, while `agents/wip-portal.md` ("Protection") puts the portal on the public web before
-     Keycloak, with its limit open. The connection before the token is untracked.
+   - Untracked elsewhere: the app's own limit, and the connection before the token. `agents/wip-portal.md`
+     ("Protection") puts the portal on the public web before Keycloak.
    - The NixOS module's nginx limits sign-ins per address (`agents/wip-deploy.md`, "The NixOS module"); the app and
      the Kubernetes target don't.
 2. **Connections** are unbounded.
    - There is no pool: each request opens its own (`src/chatddx/api/state.py:21-33`).
    - A run's event stream holds two for as long as it is open, the request's and its own
      (`src/chatddx/api/runs.py:215-229`, `src/chatddx/api/telling.py:166`), and each app one more for its listener
-     (`src/chatddx/api/listening.py:114`). `docs/api.md` ("Outstanding", "Serving") and `docs/worker.md` ("Smaller
-     issues") count one per stream.
+     (`src/chatddx/api/listening.py:114`).
    - A worker holds one, and two more and a thread for each job it holds (`src/chatddx/worker/worker.py:178-185`). A
      run's job is held to its endpoint's `max_jobs`, but a scoring alone holds no slots
      (`src/chatddx/api/scores.py:45-47`), and a job asked to halt or at an endpoint the inventory doesn't name isn't
@@ -194,7 +192,7 @@ runs out of the app, in the healthcheck's order, with where else it is tracked. 
      (`agents/wip-deploy.md`, "Containers for Kubernetes").
 3. **Shutdown.** The worker resolved most of it: nothing in the app grows with each run, a stopping worker queues
    what it holds again, and a killed one's jobs are claimed again once lost (`docs/worker.md`, "Stopping"). Left:
-   - a stopping worker's sending has no deadline (`docs/worker.md`, "Smaller issues");
+   - a stopping worker's sending has no deadline (`docs/backlog.md`, "Stopping: halts, deadlines and time limits");
    - past its deadline, a stopping worker waits with a timeout of 0 (`src/chatddx/worker/worker.py:144-147`), so it
      beats the queue, a transaction each time, as fast as it can until its last run stops;
    - uvicorn waits for open responses before the app's lifespan ends, and a run's event stream ends only when its job
@@ -239,10 +237,10 @@ runs out of the app, in the healthcheck's order, with where else it is tracked. 
      person's queued jobs still run: the worker finds a job's owner by id, active or not
      (`src/chatddx/worker/worker.py:208`).
    - `chatddx person password` refuses an empty password; `People.set_password` doesn't.
-   - Tracked in `docs/identity.md` ("Open design issues"), but for signing in again, the deactivated person's jobs and
+   - Tracked in `docs/backlog.md` ("Administering people"), but for signing in again, the deactivated person's jobs and
      the empty password.
 9. **Migrations** are known by name only (`src/chatddx/store/migrate.py:27-32`). Applied files were edited in place
-   before 08ae453, and none has been since. Tracked: `docs/store.md` ("Known gaps") freezes them, or keeps their
+   before 08ae453, and none has been since. Tracked: `docs/backlog.md` ("Migrations checked by content") keeps their
    checksums, before a shared database.
 10. **Error text** goes to clients.
     - Any exception in a job becomes the job's `why` (`src/chatddx/worker/worker.py:189-191`), served by

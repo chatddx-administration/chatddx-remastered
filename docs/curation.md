@@ -2,7 +2,8 @@
 
 Curation loads a data set (init-data), moves families whose vignettes moved (repair-data), and takes a person's share
 back (wipe-data). Importing, exporting and verifying the store's content are its business too, and aren't written yet
-(see "Open design issues"). It's the housekeeper for data and a natural home for the planned garbage collector.
+(docs/backlog.md, "Loading data sets" and "Exporting data sets"). It's the housekeeper for data and a natural home for
+a garbage collector (docs/backlog.md, "Garbage collection").
 
 This document describes what curation does and why. The code is `chatddx.curation` (src/chatddx/curation/) and its
 commands in src/chatddx/cli.py. Curation builds on the factors, the facts, the inventory, the catalog and the store.
@@ -148,7 +149,7 @@ The World is `--world DIR`, or by default the directory `CHATDDX_WORLD` names. T
 endpoints and vignettes, and the facts from the store, as loading stored them.
 
 A loading ends with the inventory checked against the engines just planned, all at once: what starting or reaching
-each endpoint would refuse, and what is likely a slip (docs/inventory.md, "Checks happen when an entry is used").
+each endpoint would refuse, and what is likely a slip (docs/inventory-api.md, "check.py").
 
 ## Loading
 `chatddx init-data USER [--world DIR] [--source NAME] [--giftbag] [--data DIR] [--facts PATH …]`

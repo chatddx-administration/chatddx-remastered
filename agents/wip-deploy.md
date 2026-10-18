@@ -51,11 +51,13 @@ containers for a Kubernetes cluster. The NixOS module is built; the containers a
 - **Where it is to run**, in two places that don't agree yet:
   - `docs/chatddx.md` ("Target stack"): the orchestrator "Runs in Kubernetes, writes the start-ups and hosts the
     portal", and each inference server serves vLLM in a NixOS container;
-  - `docs/worker.md` ("The deployment"): decided, "the HTTP server, the API and the worker as separate systemd
-    services on NixOS", with the module's stop timeout above the worker's deadline. What the HTTP server is stays
-    open there: the portal's pages served apart from the API, or a proxy in front of both.
+  - the worker's: decided, the HTTP server, the API and the worker as separate systemd services on NixOS, with the
+    module's stop timeout above the worker's deadline, which is the worker's own (`docs/worker.md`, "Stopping"). What
+    the HTTP server is was left open: the portal's pages served apart from the API, or a proxy in front of both.
 - **Identity**: "The deployment is to sit behind Keycloak" (`docs/identity.md`, "Keycloak"), which isn't decided
-  further. `docs/api.md` ("Outstanding", "Signing in") takes a proxy such as oauth2-proxy in front.
+  further. Take: a proxy in front, such as oauth2-proxy, passes the login in a header the app believes from it alone,
+  mapped onto `person.login`, and Keycloak's own tokens are bearers for scripts when they come. Whether roles then come
+  from Keycloak's realm roles instead of the column isn't decided.
 
 ## What a deployment runs
 - **The app**: one Python process (uvicorn), the portal's pages at `/`, rendered on the server with Jinja2, and the API
@@ -94,7 +96,7 @@ app without a worker (`src/chatddx/cli.py:_portal`), as `chatddx api` serves the
 | each worker | `chatddx worker` |
 | the migrations, before the others start | `chatddx migrate` |
 
-Take: "the HTTP server" of `docs/worker.md` ("The deployment") is the proxy in front of the app, since the portal and
+Take: "the HTTP server" of the worker's decision is the proxy in front of the app, since the portal and
 the API are one app on one origin.
 
 ## The NixOS module

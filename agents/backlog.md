@@ -8,9 +8,9 @@ where they are: `healthchecks/`, dated reports whose open findings "address heal
 agents/; docs/api.md, "Not covered", what the API leaves to others by design; the takes in the body of
 docs/purist-object-layer.md, which its "Open" lists; docs/vllm.md, "Not emulated", which the fake's "Extending" works from.
 
-Grouped by whether they'd fit in one PR, triaged group by group, and moved to docs/backlog.md, by readiness. What
-is left here is the triage's record: the takes it confirmed, what it found for the sweep, what it dropped and why, and
-the moved sections' context.
+Grouped by whether they'd fit in one PR, triaged group by group, and moved to docs/backlog.md, by readiness; the
+references to them were swept. What is left here is the triage's record: the takes it confirmed, what it dropped and
+why, and the moved sections' context.
 
 ## Confirmed
 Takes confirmed in triage, now decisions; bench.4's "a collaborator can't leave a share" is overturned by
@@ -95,33 +95,6 @@ several places or grows beyond a comparison. Candidates left where they are:
   login or id, much as `preferred` picks.
 - **`src/chatddx/catalog/threads.py:picked`** is pure, but decides among a case's expectation threads, not who: it
   stays with the catalog.
-
-## For the sweep
-References to open items found during triage, for step 5:
-- agents/wip-portal.md ("Comparing variations", Open; "Export") and docs/catalog.md ("How the catalog works") cite
-  docs/chatddx.md, "On the table", which moved here.
-- docs/chatddx.md, "Requirements", cites docs/inventory.md, "Hosts don't read the start-up", which G15 dropped for
-  agents/wip-deploy.md.
-- docs/bench.md's item on what the old bench had (bench.23) hands two of its parts to agents/wip-portal.md.
-- agents/wip-portal.md, "What the docs ask of it", cites docs/catalog.md, "Smaller issues", for what deleting hides;
-  docs/curation.md, "Import, export and verification", for an export (G43b); and docs/factors.md, "Execution settings
-  as a component" (G46).
-- agents/wip-clearance.md, "Before real patient data", 9, hands migrations to docs/store.md, "Known gaps": store.1 is
-  here now.
-- agents/wip-clearance.md, "Before real patient data", 2, cites docs/api.md, "Outstanding", "Serving", and
-  docs/worker.md, "Smaller issues", for connections; agents/wip-deploy.md cites docs/worker.md, "The deployment".
-- agents/wip-clearance.md, "Before real patient data", 8, hands sessions and people to docs/identity.md, "Open design
-  issues": they are G37 now.
-- agents/wip-deploy.md, "Identity", cites docs/api.md, "Outstanding", "Signing in", for oauth2-proxy in front: carry
-  api.13's and identity.9's takes there (a header the app believes from the proxy alone, Keycloak's tokens as bearers
-  for scripts, realm roles undecided).
-- agents/wip-portal.md, "Protection", and agents/wip-clearance.md, "Before real patient data", 1, cite docs/api.md and
-  docs/identity.md for "no limit until Keycloak"; the NixOS module's nginx limits sign-ins now.
-- agents/wip-portal.md, "Below the UI", 3, cites docs/bench.md, "Outstanding", and docs/identity.md, "Z1: what each
-  role is shown": carry identity.6's decision and take there.
-- agents/wip-olofs-view.md cites docs/curation.md, "Outstanding", for what the sample World waits on: G44b.
-- agents/wip-engine-part.md, "Outstanding", hands bench.24, bench.25 and bench.26 to docs/bench.md, "Outstanding":
-  they are here now.
 
 ## Dropped
 Dropped in triage, with why.

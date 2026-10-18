@@ -23,7 +23,6 @@ Paths are relative to `src/chatddx/runner/` unless they start with `src/` or `do
 - [run.py](#runpy): `Runner`, `Running`
 - [score.py](#scorepy): `Grading`, `judge_at`
 - [Finding codes](#finding-codes)
-- [Known gaps](#known-gaps)
 
 ## Package
 `chatddx.runner` re-exports `Runner`, `Running`, `Grading`, `Halt`, `Refused` and `judge_at`; the events,

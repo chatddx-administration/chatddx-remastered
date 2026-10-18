@@ -38,7 +38,7 @@ Being a factor and being a component are separate questions. A factor is held in
    findings and canaries reveal them (docs/ledger.md, "Findings").
 
 A trial's outputs therefore depend on the trial's pinned factors and on its run's recorded and observed factors. Two
-runs of the same trial are interchangeable only when those agree too (see "Open design issues").
+runs of the same trial are interchangeable only when those agree too (docs/backlog.md, "Aggregation").
 
 ### Not factors
 - Records of what happened (runs, scores, calls): [docs/ledger.md]. They hold the recorded factors and the evidence of the
@@ -90,7 +90,7 @@ follows its kind's rules, and gets its own digest.
 Each component type has a schema version. Adding a field with a backward-compatible default needs no new version;
 changing an existing field's meaning or default does. Bytes written under another version are refused rather than
 guessed at, so after a bump the store can't return components of the old version, nor load a closure that holds one
-(docs/store.md, "Known gaps").
+(docs/backlog.md, "Old versions readable").
 
 ### Kinds
 Every component has a kind that says what it is. Together, the kinds pin everything a run sends and everything a score
@@ -433,7 +433,7 @@ language it names.
 Principal author: none; normally produced by the compiler.
 
 A skeleton is the frozen request that trials and judges reference. It is the only component normally produced by code
-rather than people, though nothing prevents writing one by hand (see "Open design issues").
+rather than people, though nothing prevents writing one by hand (docs/backlog.md, "Compilations checked").
 
 It is fully pre-rendered: the whole request except what is filled in at send time. It holds a purpose, the messages with
 their slots (few-shot examples already baked in), every other request option, the output contract and the appendix
@@ -545,7 +545,7 @@ order (see "Execution"). Seeds keep their order, as each seed's position names a
 #### Seeds are explicit
 Seeds are chosen in advance, not drawn when a run starts. A helper can propose distinct random seeds, which users are
 free to change. Each seed defines one replicate, identified by its position. With greedy sampling no seed is sent, but
-the seeds still count toward the trial's digest (see "Greedy sampling and seeds").
+the seeds still count toward the trial's digest (docs/backlog.md, "Digests to settle before real data").
 
 ### Execution
 When a run issues its requests, or a score its judge requests, its execution settings say:
@@ -563,7 +563,7 @@ without affecting the trial's or the scoring's digest, so running a trial or a s
 rerun of the same one.
 
 This suits batch-invariant engines, but the settings change outputs on engines that aren't batch invariant, where they
-affect how requests are batched and so the arithmetic (see "Runs of the same trial aren't interchangeable"). Timeout and
+affect how requests are batched and so the arithmetic (docs/backlog.md, "Aggregation"). Timeout and
 retries also decide whether a request gets an answer at all.
 
 A run's calls, and a score's judge calls, show whether the settings were followed: checks warn when a call took more

@@ -91,7 +91,7 @@ These roles are distinct and not overlapping, a person may inhabit more than one
 - a self-contained bundle that can be verified offline
 - scripts that can read the World to import factor parameters.
 - import scripts that fingerprint World inputs (model files, closure, chat template, vignettes) into factors.
-- a start-up that the start-up script reads (`docs/inventory.md`, "Hosts don't read the start-up")
+- a start-up that the start-up script reads (`agents/wip-deploy.md`, "The NixOS module")
 
 ### Intended evolution of configurations
 The researchers will want to iterate and continuously refine configurations according to the following workflow.
@@ -225,8 +225,8 @@ described below.
 9. Send the request to the engine's /v1/chat/completions.
   - The World inventory's endpoint gives the URL, for a local engine and a remote one (`docs/inventory.md`, "Endpoints").
   - Canaries are sent the same way, from their literal bodies (`Canary.render`), one at a time before the first
-    item and after the last, at the phases `verify_at` names. Nothing compares canary outputs yet (see "Possible
-    design issues").
+    item and after the last, at the phases `verify_at` names. Nothing compares canary outputs yet (`docs/backlog.md`,
+    "Drift between runs").
 10. When the skeleton offers tools and the response calls some, run them and send the next request: the last one,
   the assistant's message and the tools' results, until a response calls none or the skeleton's round limit
   (`docs/factors.md`, "Tool rounds"). Each request is a call, tried again only when it didn't get through.

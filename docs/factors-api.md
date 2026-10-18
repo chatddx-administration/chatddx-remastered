@@ -25,7 +25,6 @@ Paths are relative to `src/chatddx/factors/` unless they start with `src/` or `d
 - [lint.py](#lintpy): `lint` and its findings
 - [Finding codes](#finding-codes)
 - [Database: schema `factor`](#database-schema-factor)
-- [Known gaps](#known-gaps)
 
 ## Package
 
@@ -98,7 +97,7 @@ A subclass declares `kind: Literal["<kind>"] = "<kind>"`. The default is the kin
 - The top-level keys of settings are sorted: request bodies, `chat_template_kwargs`, `params` and `env`, and so are a
   translations chunk's languages and each language's entries. A local model's files are sorted by path, and a
   trial's cases by digest.
-- pydantic writes NaN and infinity as `null` (see "Known gaps").
+- pydantic writes NaN and infinity as `null` (docs/backlog.md, "Values the canonical form can't keep").
 
 ### Helpers
 

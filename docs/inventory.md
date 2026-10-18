@@ -31,7 +31,7 @@ everything it includes.
 Loading checks what the files themselves show: that each endpoint's host is defined, that the clearance table names
 endpoints and sources that exist, that each judge is bound to an endpoint that exists, that the endpoint
 configurations are made for exists, and that each source is named by its table. Anything that needs the engines is
-checked when an entry is used (see "Checks happen when an entry is used").
+checked when an entry is used (docs/inventory-api.md, "check.py").
 
 ### Worlds
 In chatddx, a world is technically the only the parameters beyond chatddx's control, but the directories `worlds/*` also
@@ -140,7 +140,7 @@ the concurrency and order of. Loading refuses a default concurrency above the ca
 A run goes to the endpoint serving its configuration's engine, and a judge's calls to the endpoint serving the judge's
 engine, unless one is named. When no endpoint serves the engine, or several do and none is named, the run or the
 scoring is refused rather than an endpoint picked; an endpoint named that serves another engine is refused too
-(docs/bench.md, "Outstanding"). A hand-written configuration has no model part, and goes to the endpoint named.
+(docs/backlog.md, "Picking an endpoint for a model"). A hand-written configuration has no model part, and goes to the endpoint named.
 
 ## Hosts
 A host says the address its servers listen on, and where it keeps what its engines pin. A local engine pins its model
@@ -198,8 +198,8 @@ The fake vLLM can be started from a start-up (`chatddx fake-engines`), and then 
 An endpoint is reached at its address. Before content goes to it, the runner confirms that its server lists the name
 its engine is served under (docs/runner.md); the inventory itself connects to nothing.
 
-With a World, init-data ends with the inventory check's findings and a count (see "Checks happen when an entry is
-used"). It finds that out without connecting.
+With a World, init-data ends with the inventory check's findings and a count (docs/inventory-api.md,
+"check.py"). It finds that out without connecting.
 
 ## Importing from a host
 `chatddx import-engine REPORT… [--server NAME]… [--endpoint-host HOST] --engines PATH --endpoints PATH`. A report is

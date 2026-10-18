@@ -28,7 +28,7 @@ administering people. A person may hold several. Roles live in code and are stor
 database holds the names to the code's list.
 
 Nothing checks a role yet: a person writes on what they own, whatever their roles (docs/bench.md, "Writes for the
-person"), and nothing asks for admin (see "Open design issues").
+person"), and nothing asks for admin (docs/backlog.md, "Administering people").
 
 ## Authentication
 The app signs people in itself, with passwords and sessions in the database; there is no identity provider yet.
@@ -56,7 +56,7 @@ expectation per case and schema, or one it is asked to find threads by. The benc
 gives, and to what is in the store and the World (docs/bench.md, "What a person sees").
 
 What each role is shown, a map from roles to the kinds each sees, goes beside `sees` once the portal's views give it
-meaning (see "Z1: what each role is shown").
+meaning (agents/wip-portal.md, "Below the UI").
 
 ## Managing people
 People are managed by command, connecting as `DB_USER`:
@@ -68,8 +68,8 @@ A person without a password can't sign in to the API, but can be acted as from t
 
 ## Keycloak
 The deployment is to sit behind Keycloak. Logins follow its lowercase usernames so that people carry over, and signing
-in with a password can stay as the development path. How Keycloak hands the app a login isn't decided (docs/api.md,
-"Outstanding", "Signing in"), nor whether roles then come from its realm roles instead of the person.
+in with a password can stay as the development path. How Keycloak hands the app a login isn't decided (agents/wip-deploy.md,
+"What holds now", Identity), nor whether roles then come from its realm roles instead of the person.
 
 ## Tests
 - src/chatddx/identity/test/test_identity.py: who owns, collaborates on and sees what, nothing deleted, and their own

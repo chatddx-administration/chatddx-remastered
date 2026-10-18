@@ -16,7 +16,6 @@ Paths are relative to `src/chatddx/ledger/` unless they start with `src/` or `do
 - [score.py](#scorepy): score records, `Score`, `check_score`
 - [Finding codes](#finding-codes)
 - [Database: schema `ledger`](#database-schema-ledger)
-- [Known gaps](#known-gaps)
 
 ## Package
 

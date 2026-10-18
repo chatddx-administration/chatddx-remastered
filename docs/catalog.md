@@ -22,12 +22,12 @@ history. "Latest" means written last, in the order the database numbered the row
 which is shown, and counts the runs a person started in the last day.
 
 Deleting is a row too, which a later row can undo (see "Deleting"). True deletion is refused by the database
-(docs/store.md, "Tiers"); a garbage collector for unreferenced items is on the table (docs/chatddx.md, "On the table").
+(docs/store.md, "Tiers"); a garbage collector for unreferenced items waits (docs/backlog.md, "Garbage collection").
 
 ### Rules
 The catalog checks its rules against what is stored when it writes, and a change that takes several rows, such as a
 thread with its first version and its owner, a family with its binding, or a repair, is written all at once or not at
-all. The rules that two writers at once could break are repeated by the database at tier 2, with two exceptions (see
+all. The rules that two writers at once could break are repeated by the database at tier 2, with two exceptions (docs/backlog.md,
 "Concurrent writers").
 
 ## Threads and edits
@@ -59,7 +59,7 @@ The catalog answers what people need to find:
 - the forks of a thread;
 - the expectation threads of a case, and of several cases under a given expectation schema, with what is said of each;
 - where a given component appears, in any thread;
-- which of several heads is picked, or that there are several to choose from (see "Concurrent writers").
+- which of several heads is picked, or that there are several to choose from (docs/backlog.md, "Concurrent writers").
 
 ## Configurations and variations
 Researchers refine their configurations by trying variations, keeping what works, and forking new configurations from
@@ -195,7 +195,7 @@ a component appears, surveys of a source, and repairs, which rebind deleted thre
 Deleting is undone by another entry. Wiping a person's data deletes what they own and withdraws them from what is shared
 with them; loading the sample data again restores a deleted fork rather than forking anew.
 
-What the portal hides is open (see "Open design issues").
+What the portal hides is open (agents/wip-portal.md, "What the docs ask of it").
 
 ### What a run ran
 The ledger records the trial a run ran (docs/ledger.md); what a person called it and what they varied are said here.

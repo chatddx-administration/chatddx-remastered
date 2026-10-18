@@ -19,7 +19,6 @@ Paths are relative to `src/chatddx/catalog/` unless they start with `src/` or `d
 - [titles.py](#titlespy): descriptions and titles
 - [The store's Catalog](#the-stores-catalog)
 - [Database: schema `catalog`](#database-schema-catalog)
-- [Known gaps](#known-gaps)
 
 ## Package
 `chatddx.catalog` re-exports `LANGUAGE_KINDS`, `THREAD_KINDS`, `About`, `Behind`, `Binding`, `Divergence`, `Edit`,

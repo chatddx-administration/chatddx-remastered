@@ -67,11 +67,11 @@ Ways of showing things the pages keep:
   (`docs/catalog.md`, "Languages"; `docs/bench.md`, "Languages").
 - A case left at an earlier vignette by a repair offered its replacement, which the bench stores when asked
   (`docs/catalog.md`, "What has moved on"; `docs/bench.md`, "Appendices and cases").
-- What deleting hides: everywhere, or only in pickers (`docs/catalog.md`, "Deleting" and "Smaller issues").
+- What deleting hides: everywhere, or only in pickers (`docs/catalog.md`, "Deleting").
 - Pickers of the right kind for each reference, from the kinds each reference takes in the components' JSON Schemas
   (`x-kind`, from `GET /api/kinds`: `docs/api.md`, "What a person sees"; built, see W7), and execution settings to
-  pick, if they become a component (`docs/factors.md`, "Execution settings as a component").
-- A change made in the portal kept in git through an export (`docs/curation.md`, "Import, export and verification").
+  pick, if they become a component (`docs/backlog.md`, "Execution settings as a component").
+- A change made in the portal kept in git through an export (`docs/backlog.md`, "Exporting data sets").
 - Clearance granted in the database, through the portal and logged, as a long-term option
   (`agents/wip-clearance.md`, "Open", 2).
 
@@ -244,11 +244,11 @@ Open:
 - **How many runs** a confirmation starts before it warns, with `settings.RUNS_PER_DAY` runs a day.
 - **Several started together**: each is a job in the worker's queue, holding its run's concurrency in slots at its
   endpoint, so runs on one endpoint take turns within its `max_jobs`; the repl's runs and judge calls aren't counted
-  (`docs/worker.md`, "Smaller issues").
+  (`docs/backlog.md`, "Claims: slots, turns and a lost endpoint").
 - **Runs to compare in the tests**: none of the test World's scripted runs sets a part, and no two are over the
   same cases (`docs/scripted.md`, "The runs").
 - **A study kept for publication**: a selection of runs frozen with the scorings it is scored by, designed with the
-  export (`docs/chatddx.md`, "On the table"). It is what would bring a kept grouping back.
+  export (`docs/backlog.md`, "Export and publication"). It is what would bring a kept grouping back.
 
 ## Swift
 Decided:
@@ -344,9 +344,8 @@ The demo is on the public web, but the portal has no guest: every request needs 
 in"), and people are added by command (`chatddx person add`). So:
 - a person's typed texts are held to a quota and a text to a size, with a NUL refused (built);
 - a person's runs are held to a quota a day, and a run to its items, by the bench (built in phase 4, R8);
-- signing in isn't limited: `docs/api.md` ("Outstanding", "Signing in") and `docs/identity.md` ("Open design
-  issues") take none until Keycloak is in front, which limits it itself. The demo on the public web before Keycloak
-  then needs a limit of its own, or a proxy's in front, which is open;
+- signing in is limited per address by the NixOS module's nginx (`agents/wip-deploy.md`, "The NixOS module"); the
+  app itself and the Kubernetes target don't limit it (`agents/wip-clearance.md`, "Before real patient data", 1);
 - a flood's real cost is the inference and the ledger rows each run adds, not the text, so the quota is on runs as
   much as on texts.
 
@@ -539,8 +538,12 @@ What the portal needs below its pages that isn't built:
    Built through its step 3: the API's runs, scorings and halts go through its queue, with the API as it was.
 2. **The worker's controls and status** (`docs/worker.md`, "A person's queue"), built: the runs page's queue, each
    run's job, and Resume on an unfinished run's page.
-3. **Z1**, the map from roles to kinds, which waits for the portal's views (`docs/bench.md`, "Outstanding";
-   `docs/identity.md`, "Z1: what each role is shown").
+3. **Z1**, the map from roles to kinds, which waits for the portal's views. Decided: authorization goes by role first,
+   which kinds a role sees, then by the catalog's owners and collaborators (`docs/identity.md`, "Authorization").
+   Take: the map goes beside `sees` in `src/chatddx/identity/identity.py`, as data, and `sees` then takes the person's
+   roles and the kind as well as the `Owned`. The kinds each role authors can go beside it, clinicians appendices,
+   expectations and typed cases, researchers chunks and recipes, as a convenience for the portal's forms rather than
+   a refusal.
 
 ## Phases
 0. **Before the first page**, built (see "Built"): `chatddx run`, `chatddx.portal` mounted beside the API, signing
@@ -578,9 +581,9 @@ What the portal needs below its pages that isn't built:
 - **A page to test an endpoint**: a live check of the server and the model, written down nowhere. Canaries and
   the gate's confirming (`src/chatddx/runner/gate.py:admit`) cover parts of it.
 - **Export.** The portal is to export results (`docs/chatddx.md`, glossary), and the export isn't planned
-  (`docs/chatddx.md`, "On the table").
-- **Keycloak in front** skips the sign-in page (`docs/identity.md`, "Take, for when Keycloak arrives").
-- **What holds a configuration**, and reverse lookups. `docs/bench.md` ("Outstanding") leaves what holds a
+  (`docs/backlog.md`, "Export and publication").
+- **Keycloak in front** skips the sign-in page (`agents/wip-deploy.md`, "What holds now", Identity).
+- **What holds a configuration**, and reverse lookups. `docs/backlog.md` ("Unheeded reasoning") leaves what holds a
   configuration, which the old bench's `held.py` showed, to the portal; `Bench.runs(reaching=…)` and `Bench.runs(scored_by=…)` cover
   the repl's part of it. The retired sample-data plan wanted the reverse too: every configuration using a component,
   such as an output, which needs a query the catalog doesn't have. Both would show on a thread's page.

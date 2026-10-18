@@ -171,15 +171,13 @@ What this file still holds that the docs don't, and where each item goes; the re
 "Review" and "The model as the part" sections are the history of how it got there.
 - **The repl manual's transcripts** (docs/repl-manual.md) were recorded with the engine as the part: `+engine=`
   and `set engine` stand where `+model=` and `set model` are now. They want recording again on the sample World.
-- **Three items for docs/bench.md, "Outstanding"**, suggested there: a start holding a transaction open while the
-  gate confirms its endpoint once per language; a look for a model several endpoints serve having no findings until
-  one is named; a model that moved on followed to its head whether or not an endpoint serves it.
-- **docs/bench.md's item on an engine served at several endpoints** says it probably won't happen; for a model it
-  does, as the test World's two Qwen3 endpoints show, and the suggestion above it restates it.
 
-Settled, with its home: the repl's `runs` not showing a start (docs/repl.md, "Outstanding"); a language refused on a
-compiled skeleton said to come from its recipe, and a translated skeleton's title (docs/catalog.md); `Seen.facts` read
-on every access (docs/bench.md, "Outstanding"); the variation page knowing the languages of the families its look is
+Settled, with its home: the repl's `runs` not showing a start (docs/backlog.md, "The repl's rendering"); a language
+refused on a compiled skeleton said to come from its recipe, and a translated skeleton's title (docs/backlog.md,
+"Languages" and "Titles"); `Seen.facts` read on every access, a start holding a transaction open while the gate
+confirms its endpoint, a look for a model several endpoints serve having no findings until one is named, and a model
+that moved on followed to its head whether or not an endpoint serves it (docs/backlog.md, "Performance, once measured"
+and "Picking an endpoint for a model"); the variation page knowing the languages of the families its look is
 over (agents/wip-portal.md); `thread(found, word)` describing `OWNER/NAME` (docs/bench-api.md); the names tests share,
 in `src/chatddx/test/world.py`, and the comments in `curation/plan.py:plan_factors`.
 
@@ -336,7 +334,7 @@ edges. "Take" is the reviewer's.
 - A case tagged `en-GB` on an `en` configuration is left out as untranslatable (`Seen.languages` compares tags
   whole); before, it ran with `language.mixed`.
 - A start's runs all go to one endpoint, and the gate confirms it once per language inside the transaction
-  ("Outstanding"); confirming it once, before the transaction, removes most of what the transaction holds open.
+  (docs/backlog.md, "Performance, once measured"); confirming it once, before the transaction, removes most of what the transaction holds open.
 
 ### Consequences of the design
 Not bugs: what the solution does to the model, each with how it can be managed.
