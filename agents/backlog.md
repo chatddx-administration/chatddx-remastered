@@ -37,7 +37,7 @@ items under it are as they were moved. An item that restates another for an API 
 18. [Facts as an engine changes them](#g18-facts-as-an-engine-changes-them) (4)
    - G18b. [Facts waiting on a model or a run](#g18b-facts-waiting-on-a-model-or-a-run) (4)
 19. [Stopping: halts, deadlines and time limits](#g19-stopping-halts-deadlines-and-time-limits) (7)
-20. [Endpoint capacity](#g20-endpoint-capacity) (6)
+20. [Slots for the repl and judges, and turns per owner](#g20-slots-for-the-repl-and-judges-and-turns-per-owner) (3)
 21. [Worker: streams and claims](#g21-worker-streams-and-claims) (5)
 22. [Picking an endpoint for a model](#g22-picking-an-endpoint-for-a-model) (3)
 23. [Concurrent writers](#g23-concurrent-writers) (6)
@@ -677,24 +677,11 @@ rest.
 - **A halted run is finished**, so a run stopped with the second press can't be resumed; leaving it unfinished would
   record its calls under way as stopped, and its items wouldn't be sent again.
 
-### G20. Endpoint capacity
-Everything sent to an endpoint counts against its `max_jobs`, fairly between owners.
+### G20. Slots for the repl and judges, and turns per owner
+The repl's runs and the worker's judge calls hold slots at their endpoints, and claims take turns per owner at each
+endpoint once people wait on each other. It waits for endpoints that are shared and busy.
 
-Note: inventory.4, inventory-api.4 and runner.10 predate the worker, whose claims keep its jobs within an endpoint's
-`max_jobs` (docs/worker.md, "Claiming"); what is left may be the repl's runs and judge calls (worker.1, worker.4).
-
-**inventory.4** · From docs/inventory.md:293, "Open design issues", "Smaller issues"
-
-- **The capacity holds per run.** Two runs on one endpoint can send twice as many requests between them. vLLM queues
-  what's over its limit, so nothing fails, but the batching differs from what each run's execution says.
-
-**inventory-api.4** · From docs/inventory-api.md:269, "Known gaps"
-
-- `max_jobs` holds per run, not per endpoint.
-
-**runner.10** · From docs/runner.md:230, "Open design issues", "Smaller issues"
-
-- **`max_jobs` across runs** belongs to the worker, and so does asking for a lost run to resume.
+Triage: kept, but for inventory.4, inventory-api.4 and runner.10, dropped as stale.
 
 **worker.1** · From docs/worker.md:109, "Open design issues", "The repl beside the worker"
 
@@ -1626,6 +1613,22 @@ inventory.3 and inventory-api.3, from G16, as tracked in agents/wip-clearance.md
 **inventory-api.3** · From docs/inventory-api.md:268, "Known gaps"
 
 - Endpoint names are only a convention, and renaming one drops its clearance.
+
+inventory.4, inventory-api.4 and runner.10, from G20, as stale: the worker's claims hold a job's slots within its
+endpoint's `max_jobs` across workers, and resume a lost run (docs/worker.md, "Claiming"):
+
+**inventory.4** · From docs/inventory.md:293, "Open design issues", "Smaller issues"
+
+- **The capacity holds per run.** Two runs on one endpoint can send twice as many requests between them. vLLM queues
+  what's over its limit, so nothing fails, but the batching differs from what each run's execution says.
+
+**inventory-api.4** · From docs/inventory-api.md:269, "Known gaps"
+
+- `max_jobs` holds per run, not per endpoint.
+
+**runner.10** · From docs/runner.md:230, "Open design issues", "Smaller issues"
+
+- **`max_jobs` across runs** belongs to the worker, and so does asking for a lost run to resume.
 
 ## Context
 What the moved sections said of their items as a whole, moved with them.
