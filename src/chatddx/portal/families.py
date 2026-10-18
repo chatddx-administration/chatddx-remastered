@@ -6,6 +6,7 @@ from pydantic import JsonValue
 
 from chatddx.api import families as api, schemas, threads
 from chatddx.api.state import refused
+from chatddx.bench import Bench
 from chatddx.factors.base import resolve
 from chatddx.factors.cases import Appendix
 from chatddx.factors.scoring import ExpectationSchema
@@ -57,12 +58,7 @@ def family(request: Request, bench: BenchDep, family: int) -> Response:
         )
         for c in shown.cases
     ]
-    current = bench.family(shown.id).vignette
-    written = [
-        t
-        for t in threads.threads(bench, "appendix")
-        if resolve(bench.store.get, t.head.digest, Appendix).vignette == current
-    ]
+    written = written_for(bench, shown.id)
     appendices = {a for c in cases for a in c.appendices} | {
         t.head.digest for t in written
     }
@@ -110,13 +106,16 @@ def family(request: Request, bench: BenchDep, family: int) -> Response:
     )
 
 
-@router.post("/families/{family}/appendices")
-def appending(
-    bench: BenchDep,
-    family: int,
-    name: Annotated[str, Form()],
-    text: Annotated[str, Form()],
-) -> Response:
+def written_for(bench: Bench, family: int) -> list[schemas.Thread]:
+    current = bench.family(family).vignette
+    return [
+        t
+        for t in threads.threads(bench, "appendix")
+        if resolve(bench.store.get, t.head.digest, Appendix).vignette == current
+    ]
+
+
+def appended(bench: Bench, family: int, name: str, text: str) -> None:
     if not name.strip():
         raise HTTPException(422, "an appendix is named")
     if not text:
@@ -124,6 +123,24 @@ def appending(
     with refused():
         held = Appendix(vignette=bench.family(family).vignette, text=text)
         _ = bench.new(held, name.strip())
+
+
+def built(bench: Bench, family: int, appendices: list[str] | None) -> str:
+    if not appendices:
+        raise HTTPException(422, "a case is built of one appendix or more")
+    with refused():
+        made = bench.case(family, appendices)
+    return made
+
+
+@router.post("/families/{family}/appendices")
+def appending(
+    bench: BenchDep,
+    family: int,
+    name: Annotated[str, Form()],
+    text: Annotated[str, Form()],
+) -> Response:
+    appended(bench, family, name, text)
     return RedirectResponse(f"/families/{family}#appendices", 303)
 
 
@@ -133,10 +150,7 @@ def building(
     family: int,
     appendix: Annotated[list[str] | None, Form()] = None,
 ) -> Response:
-    if not appendix:
-        raise HTTPException(422, "a case is built of one appendix or more")
-    with refused():
-        _ = bench.case(family, appendix)
+    _ = built(bench, family, appendix)
     return RedirectResponse(f"/families/{family}#cases", 303)
 
 

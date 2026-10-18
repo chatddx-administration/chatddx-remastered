@@ -3,7 +3,7 @@ from collections.abc import Awaitable, Callable
 from datetime import datetime
 from pathlib import Path
 from typing import Annotated, Any
-from urllib.parse import urlencode
+from urllib.parse import urlencode, urlsplit
 
 from fastapi import APIRouter, Depends, Form, Request, Response
 from fastapi.responses import JSONResponse, RedirectResponse
@@ -89,6 +89,15 @@ def page_bench(request: Request, conn: ConnDep, person: PersonDep) -> Bench:
 type BenchDep = Annotated[Bench, Depends(page_bench)]
 
 
+def _back(request: Request) -> str | None:
+    referer = urlsplit(request.headers.get("referer", ""))
+    if not referer.path or referer.netloc != request.url.netloc:
+        return None
+    back = within(referer.path + (f"?{referer.query}" if referer.query else ""))
+    here = request.url.path + (f"?{request.url.query}" if request.url.query else "")
+    return None if request.method == "GET" and back == here else back
+
+
 def paged(
     answer: Callable[[Request, Any], Response | Awaitable[Response]],
 ) -> Callable[[Request, Exception], Response]:
@@ -100,7 +109,14 @@ def paged(
         with state(request).connect() as conn:
             person = _person(request, conn)
         error = json.loads(bytes(said.body))
-        return page(request, "error.html", said.status_code, error=error, person=person)
+        return page(
+            request,
+            "error.html",
+            said.status_code,
+            error=error,
+            person=person,
+            back=_back(request),
+        )
 
     return handle
 

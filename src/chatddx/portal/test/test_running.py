@@ -1,3 +1,4 @@
+import json
 import time
 from pathlib import Path
 from typing import Any
@@ -16,7 +17,7 @@ from chatddx.portal.test.test_reading import shown
 from chatddx.portal.test.test_signing_in import signing_in
 from chatddx.store import Store
 from chatddx.store.store import Connection
-from chatddx.test.world import LINES, OFF, QWEN, faked
+from chatddx.test.world import GPT_OSS, LINES, OFF, QWEN, faked
 
 
 @pytest.fixture
@@ -188,3 +189,119 @@ def test_a_form_from_another_site_starts_nothing(signed: TestClient) -> None:
         assert got.status_code == 403
     for action in ("pause", "resume", "stop"):
         assert signed.post(f"/queue/{action}", headers=elsewhere).status_code == 403
+
+
+def _review_props(page: str) -> dict[str, Any]:
+    held = page.split('<script type="application/json" id="review-props">', 1)[1]
+    return json.loads(held.split("</script>", 1)[0])
+
+
+@pytest.mark.slow
+def test_a_case_is_run_from_its_review_and_followed_there(
+    signed: TestClient, world: Inventory, conn: Connection
+) -> None:
+    query = {"kind": "configuration", "name": LINES, "owner": "alice"}
+    [lines] = signed.get("/api/threads", params=query).json()
+    [crlf] = signed.get("/api/families", params={"name": "crlf"}).json()
+    back = f"/review/{crlf['id']}"
+    form = {
+        "configuration": str(lines["id"]),
+        "case": crlf["case"],
+        "endpoint": QWEN,
+        "replicates": "2",
+        "score": "true",
+        "back": back,
+    }
+    with faked(world, Store(conn).get, delay=0.2):
+        got = signed.post(f"/review/{crlf['id']}/runs", data=form)
+        assert (got.status_code, got.headers["location"]) == (303, f"{back}#record")
+        [run] = signed.get("/api/runs", params={"reaching": crlf["case"]}).json()
+        page = shown(signed, back)
+        assert 'data-pending="0"' in page and "1 under way" in page
+        assert _review_props(page)["pending"] == [
+            {"run": run["id"], "described": run["described"]}
+        ]
+        _ = settled(signed, run["id"])
+    page = shown(signed, back)
+    given = _review_props(page)
+    assert given["pending"] == [] and 'data-pending="0"' not in page
+    assert [(a["run"], a["replicate"]) for a in given["answers"]] == [
+        (run["id"], 0),
+        (run["id"], 1),
+    ]
+
+    elsewhere = {"Sec-Fetch-Site": "cross-site"}
+    for action in ("runs", "scores"):
+        refused = signed.post(f"/review/{crlf['id']}/{action}", headers=elsewhere)
+        assert refused.status_code == 403
+    form["case"] = "sha256:" + "0" * 64
+    assert signed.post(f"/review/{crlf['id']}/runs", data=form).status_code == 422
+
+
+@pytest.mark.usefixtures("fake")
+@pytest.mark.slow
+def test_a_case_s_runs_are_scored_again_from_its_review_once_expected_otherwise(
+    signed: TestClient,
+) -> None:
+    run = started(signed)
+    _ = settled(signed, run)
+    [crlf] = signed.get("/api/families", params={"name": "crlf"}).json()
+    query = {"kind": "scorer", "name": LINES}
+    [scorer] = signed.get("/api/threads", params=query).json()
+    back = f"/review/{crlf['id']}?scorer={scorer['id']}"
+    page = shown(signed, back)
+    assert f'action="/review/{crlf["id"]}/scores"' not in page
+
+    [case] = signed.get(f"/api/families/{crlf['id']}").json()["cases"]
+    [expected] = case["expectations"]
+    query = {"kind": "expectation", "owner": "alice"}
+    mine = next(
+        t
+        for t in signed.get("/api/threads", params=query).json()
+        if t["head"]["digest"] == expected["expectation"]
+    )
+    data = {**expected["data"], "diagnosis": {"pattern": "subdural"}}
+    component = {
+        "kind": "expectation",
+        "case": crlf["case"],
+        "expectation_schema": expected["expectation_schema"],
+        "data": data,
+    }
+    edit = {"head": mine["head"]["id"], "component": component}
+    assert signed.post(f"/api/threads/{mine['id']}/edits", json=edit).status_code == 201
+
+    page = shown(signed, back)
+    assert f'action="/review/{crlf["id"]}/scores"' in page
+    assert f'name="run" value="{run}"' in page and "1 to score" in page
+    got = signed.post(f"/review/{crlf['id']}/scores", data={"run": run, "back": back})
+    assert (got.status_code, got.headers["location"]) == (303, f"{back}#record")
+    for _ in range(500):
+        page = shown(signed, back)
+        if "to score" not in page and 'data-pending="0"' not in page:
+            break
+        time.sleep(0.02)
+    assert f'action="/review/{crlf["id"]}/scores"' not in page
+
+
+@pytest.mark.slow
+def test_a_case_run_from_its_review_at_another_model_s_endpoint_runs_with_that_model(
+    signed: TestClient, world: Inventory, conn: Connection
+) -> None:
+    query = {"kind": "configuration", "name": LINES, "owner": "alice"}
+    [lines] = signed.get("/api/threads", params=query).json()
+    [crlf] = signed.get("/api/families", params={"name": "crlf"}).json()
+    [gpt_oss] = [e for e in signed.get("/api/endpoints").json() if e["name"] == GPT_OSS]
+    form = {
+        "configuration": str(lines["id"]),
+        "case": crlf["case"],
+        "endpoint": GPT_OSS,
+        "back": f"/review/{crlf['id']}",
+    }
+    with faked(world, Store(conn).get, endpoint=GPT_OSS):
+        got = signed.post(f"/review/{crlf['id']}/runs", data=form)
+        assert got.status_code == 303, got.text
+        [run] = signed.get("/api/runs", params={"reaching": crlf["case"]}).json()
+        _ = settled(signed, run["id"])
+    assert run["endpoint"] == GPT_OSS
+    assert run["ran"]["parts"] == {"model": gpt_oss["serves"]}
+    assert run["described"].startswith(f"{LINES}+model=")

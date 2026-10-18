@@ -331,7 +331,11 @@ def run(bench: BenchDep, run: UUID) -> schemas.RunDetail:
 
 
 @router.get("/runs/{run}/items", dependencies=[Depends(no_store)])
-def items(bench: BenchDep, run: UUID) -> list[schemas.ItemDetail]:
+def items(
+    bench: BenchDep,
+    run: UUID,
+    case: Annotated[str | None, Query(description="only this case's items")] = None,
+) -> list[schemas.ItemDetail]:
     started = bench.run(run)
     trial = resolve(bench.store.get, started.trial, Trial)
     skeleton = resolve(bench.store.get, trial.skeleton, Skeleton)
@@ -345,6 +349,7 @@ def items(bench: BenchDep, run: UUID) -> list[schemas.ItemDetail]:
             answer=schemas.Answer(**read(skeleton, item.calls[-1].response)._asdict()),
         )
         for item in bench.store.run(run).items
+        if case is None or item.key.case == case
     ]
 
 

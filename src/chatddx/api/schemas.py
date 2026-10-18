@@ -548,6 +548,59 @@ class ScorerCode(_Schema):
     )
 
 
+class Picking(_Schema):
+    document: JsonValue = Field(
+        description="what the selectors pick from, such as an expectation's data"
+    )
+    selectors: list[str] = Field(
+        description="each a JSON Pointer, or a JSONPath query of the subset a view takes"
+    )
+
+
+class Picked(_Schema):
+    items: list[JsonValue] | None = Field(
+        description="what the selector picks, in the document's order; null when it "
+        + "doesn't read"
+    )
+    problem: str | None = Field(description="why the selector doesn't read")
+
+
+class Trying(_Schema):
+    scorer: ComponentBody = Field(description="a scorer, as it is written")
+    expectation: JsonValue = Field(description="what it is scored against, its data")
+    case: str = Field(description="the case whose items are tried")
+    runs: list[UUID] = Field(
+        min_length=1, max_length=50, description="the runs whose items are tried"
+    )
+
+
+class TriedView(_Schema):
+    value: float | None
+    detail: JsonValue
+    judged: bool = Field(
+        description="a view its judge scores, which isn't tried: its value is null"
+    )
+
+
+class Tried(_Schema):
+    run: UUID
+    replicate: int
+    views: list[TriedView]
+
+
+class Asking(_Schema):
+    judge: str = Field(description="a stored judge, by digest")
+    expectation: str = Field(description="what a view picks of the expectation")
+    data: JsonValue = Field(description="the expectation's data")
+
+
+class Asked(_Schema):
+    request: dict[str, JsonValue] = Field(
+        description="the judge's first request, the answer a placeholder"
+    )
+    picked: list[JsonValue] = Field(description="what the view picks of the data")
+
+
 class Seeds(_Schema):
     seeds: list[int] | None = Field(
         default=None,

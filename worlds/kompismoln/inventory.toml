@@ -5,9 +5,12 @@ configurations = "qwen3-8b@pelle"
 path = "../sample/vignettes"
 sensitive = true
 
+[source.typed]
+kind = "database"
+
 [cleared]
-"qwen3-8b@pelle" = ["sample"]
-"gpt-oss-20b@malborg" = ["sample"]
+"qwen3-8b@pelle" = ["sample", "typed"]
+"gpt-oss-20b@malborg" = ["sample", "typed"]
 
 [judge]
 verdict = "qwen3-8b@pelle"

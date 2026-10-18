@@ -1,5 +1,5 @@
-CHATDDX_PGDATA="$REPO_ROOT/dev-db/pgdata"
-CHATDDX_PGSOCK="$REPO_ROOT/dev-db/pgsock"
+CHATDDX_PGDATA="$CHATDDX_STATE_HOME/dev-db/pgdata"
+CHATDDX_PGSOCK="$CHATDDX_STATE_HOME/dev-db/pgsock"
 osuser="$(id -un)"
 
 usage() {

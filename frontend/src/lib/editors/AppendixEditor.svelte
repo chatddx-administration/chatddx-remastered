@@ -17,9 +17,17 @@
   import { Textarea } from "$lib/components/ui/textarea";
   import Findings from "./Findings.svelte";
   import Saving from "./Saving.svelte";
-  import { type Checked, checked, type Component } from "./writing";
+  import { type Checked, checked, type Component, type Saved } from "./writing";
 
-  let { editor, digest = null }: { editor: AppendixEditing; digest?: string | null } = $props();
+  let {
+    editor,
+    digest = null,
+    to,
+  }: {
+    editor: AppendixEditing;
+    digest?: string | null;
+    to?: (saved: Extract<Saved, { to: string }>) => string;
+  } = $props();
   const given = untrack(() => editor);
 
   let text = $state(given.text);
@@ -49,6 +57,7 @@
     {component}
     unchanged={found !== null && "digest" in found && found.digest === digest}
     blocked={found !== null && "problem" in found}
+    {to}
     after={(n) => `The ${n === 1 ? "case" : `${n} cases`} that held it ${n === 1 ? "has a new one" : "have new ones"} with this version; carry your expectations over where they still hold.`}
   />
 </div>

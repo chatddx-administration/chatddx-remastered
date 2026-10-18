@@ -178,3 +178,76 @@ def test_a_run_is_scored_when_asked_and_what_can_t_be_is_refused(
     assert 1 <= names(said).count("judge.asked") < 5
     [scored] = [d for _, n, d in said if n == "run.scored"]
     assert {g["name"] for g in scored["scores"]} == {"lines", "whole", "judged"}
+
+
+@pytest.mark.usefixtures("fake")
+@pytest.mark.slow
+def test_a_scorer_is_tried_on_a_case_s_answers_as_it_is_typed_and_nothing_is_written(
+    signed: TestClient, bob: dict[str, str]
+) -> None:
+    noted = family(signed, "noted")
+    made, _ = sent(signed, asked(signed, families=[noted["id"]]))
+    run = made["id"]
+    [case] = signed.get(f"/api/families/{noted['id']}").json()["cases"]
+    [expected] = case["expectations"]
+    judged = next(g for g in made["scores"] if g["name"] == "judged")
+    scorer = signed.get(f"/api/components/{judged['scorer']}").json()["body"]
+    body = {
+        "scorer": scorer,
+        "expectation": expected["data"],
+        "case": noted["case"],
+        "runs": [run],
+    }
+    got = signed.post("/api/scorers/try", json=body)
+    assert got.status_code == 200, got.json()
+    assert got.headers["cache-control"] == "no-store"
+    [tried] = got.json()
+    assert (tried["run"], tried["replicate"]) == (run, 0)
+    stored = {i["view"]: i["value"] for i in judged["items"]}
+    views = scorer["views"]
+    for at, (view, said) in enumerate(zip(views, tried["views"], strict=True)):
+        assert said["judged"] == (view.get("judge") is not None)
+        assert said["value"] == (None if said["judged"] else stored[at])
+
+    missed = {**expected["data"], "diagnosis": {"pattern": "nothing & like & it"}}
+    again = signed.post("/api/scorers/try", json={**body, "expectation": missed})
+    [unjudged, *_] = [v for v in again.json()[0]["views"] if not v["judged"]]
+    assert unjudged["value"] == 0.0
+    assert len(
+        signed.get(f"/api/runs/{run}/scores", params={"all": True}).json()
+    ) == len(made["scores"])
+
+    unknown = {**scorer, "views": [{**views[0], "metric": "nothing"}]}
+    refused = signed.post("/api/scorers/try", json={**body, "scorer": unknown})
+    assert refused.status_code == 422 and "nothing" in refused.json()["detail"]
+    assert signed.post("/api/scorers/try", json=body, headers=bob).status_code == 404
+
+
+def test_what_a_judge_is_asked_is_its_request_with_what_a_view_picks(
+    signed: TestClient,
+) -> None:
+    noted = family(signed, "noted")
+    [case] = signed.get(f"/api/families/{noted['id']}").json()["cases"]
+    [expected] = case["expectations"]
+    [verdict] = signed.get(
+        "/api/threads", params={"kind": "judge", "name": "verdict"}
+    ).json()
+    judge = verdict["head"]["digest"]
+    reads = "$.notes[?@.author == 'carol'].comment"
+    body = {"judge": judge, "expectation": reads, "data": expected["data"]}
+    got = signed.post("/api/judges/asked", json=body)
+    assert got.status_code == 200, got.json()
+    asked = got.json()
+    [comment] = [
+        n["comment"] for n in expected["data"]["notes"] if n["author"] == "carol"
+    ]
+    assert asked["picked"] == [comment]
+    said = "".join(m["content"] for m in asked["request"]["messages"])
+    assert comment in said and "‹completion›" in said
+
+    assert (
+        signed.post("/api/judges/asked", json={**body, "expectation": "$["}).status_code
+        == 422
+    )
+    elsewhere = {**body, "judge": expected["expectation"]}
+    assert signed.post("/api/judges/asked", json=elsewhere).status_code == 404

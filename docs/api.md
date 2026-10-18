@@ -113,6 +113,12 @@ references, which must be stored, the rules that take several components, and a 
 gives back the digest it would have and what the lints say of it, or is refused as the write would be. An edge checks
 what a person types as they type it.
 
+## Picking
+Selectors are applied to a document the request gives: each a JSON Pointer, or a JSONPath query of the subset a view
+takes (docs/factors.md, "View"), picks what it does in the document's order, or says why it doesn't read. Nothing is
+read from the store and nothing is written, so an edge shows what a view would pick from an expectation as it is
+typed, with the same selection the scoring pass makes.
+
 ## Forking and editing
 Keeping a variation is two requests, rather than one save by name as the repl's `save NAME` is, which makes a new
 version of the person's configuration of that name if there is one, and a new configuration otherwise:
@@ -276,10 +282,11 @@ It cancels the calls under way, record them as stopped and the run is finished u
   now, each item's outcome and tokens, and its latest score under each scorer.
 - **A run's scores**: the latest under each scorer, or every one, newest first. A score says its scoring, when it
   started and whether it finished, each item's value under each view, and each view's mean.
-- **A score's items**: each item's detail and judge calls, and the findings of the score. They are sensitive.
-- **A run's items**: each call as it was recorded, with its response and tool rounds, why the item ended as it did,
-  and its answer as read from its last call, as the scorers read it, with why it couldn't be read or breaks its schema.
-  They are sensitive.
+- **A score's items**: each item's detail and judge calls, or those of one case, and the findings of the score. They
+  are sensitive.
+- **A run's items**: or those of one case: each call as it was recorded, with its response and tool rounds, why the item
+  ended as it did, and its answer as read from its last call, as the scorers read it, with why it couldn't be read or
+  breaks its schema. They are sensitive.
 - **Whether each item renders again** as it was sent: only a request's fingerprint is kept, so the request is
   rendered again from the trial and the source, and compared.
 
@@ -294,6 +301,18 @@ A judged view's value is the mean over the seeds whose verdicts were read.
 
 A finished run is scored again when asked, under every scorer that applies or some, queued as a run is: answered 202
 with the scorers it is to score by, it goes on whoever listens, and its events are the run's, after its rows.
+
+### Trying a scorer
+A scorer as it is written, and the data of an expectation, are tried on the items of a case in some of the person's
+runs: each item's answer, read as the scoring pass reads it, is scored under each view, and each view gives its value
+and detail, with nothing stored and nothing sent. A view its judge scores isn't tried, since its judge would be sent
+the answer: it says so, with no value, and is scored once the scorer is saved and the runs scored again. A scorer the
+running code can't score with is refused as a write of it is. The values are sensitive, as a score's items are.
+
+### What a judge is asked
+A stored judge's first request, as the scoring pass renders it, with the expectation slot filled by what a view picks
+of an expectation's data the request gives, the answer as a placeholder, and the case's slots as placeholders too,
+which the scoring pass refuses a judge for reading. Nothing is sent and nothing stored, and nothing in it is sensitive.
 
 ## Sensitive content
 What is made from a vignette is shown to whoever signed in, but only in its own places, so that a policy for edges

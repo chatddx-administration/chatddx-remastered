@@ -63,10 +63,9 @@ Before committing, remove all and any docstrings and comments that:
 - tell what the code does
 
 ### 3. When and how to write a comment.
-A) Every line of comment imposes a readability penalty.
-B) A future reader can be saved work by knowing about non-evident details.
-
-A comment is justified when B is considerable enough to offset A.
+- A) Every line of comment imposes a readability tax.
+- B) A future reader can be saved work by knowing about non-evident details.
+- When B is considerable enough to offset A, a comment is justified.
 
 1. Prefix with the comment's nature (e.g. Patch, Compromise, Prototype, "Accommodating for a discovered fact")
 2. Tell what's non-evident and only what the code doesn't already tell, example:

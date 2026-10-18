@@ -1,4 +1,5 @@
 <script lang="ts">
+  import type { Snippet } from "svelte";
   import SchemaField from "./SchemaField.svelte";
   import { blank, deref, type Schema, widget } from "./form";
 
@@ -8,11 +9,22 @@
     value,
     set,
     label = "",
-  }: { schema: Schema; root: Schema; value: unknown; set: (v: unknown) => void; label?: string } = $props();
+    beside,
+    quiet = false,
+  }: {
+    schema: Schema;
+    root: Schema;
+    value: unknown;
+    set: (v: unknown) => void;
+    label?: string;
+    beside?: Snippet<[string]>;
+    quiet?: boolean;
+  } = $props();
 
   const shape = $derived(widget(schema, root));
   const about = $derived(deref(schema, root));
-  const said = $derived(typeof about.description === "string" ? about.description : "");
+  const described = $derived(typeof about.description === "string" ? about.description : "");
+  const said = $derived(quiet ? "" : described);
   const named = $derived(label.replaceAll("_", " "));
   let typed = $state<string | null>(null);
   let broken = $state<string | null>(null);
@@ -43,8 +55,8 @@
 </script>
 
 {#if shape.is === "object"}
-  <fieldset class="space-y-3 rounded-lg border border-border/60 p-3">
-    {#if named}<legend class="px-1 text-sm font-medium">{named}</legend>{/if}
+  <fieldset class={quiet && !named ? "space-y-3" : "space-y-3 rounded-lg border border-border/60 p-3"}>
+    {#if named}<legend class="px-1 text-sm font-medium" title={quiet ? described : undefined}>{named}</legend>{/if}
     {#if said}<p class="text-xs text-muted-foreground">{said}</p>{/if}
     {#each shape.properties as p (p.name)}
       {#if p.required || p.name in fields()}
@@ -56,6 +68,7 @@
               value={fields()[p.name]}
               set={(v) => set({ ...fields(), [p.name]: v })}
               label={p.name}
+              {quiet}
             />
           </div>
           {#if !p.required}
@@ -67,6 +80,7 @@
             >
           {/if}
         </div>
+        {@render beside?.(p.name)}
       {:else}
         <button
           type="button"
@@ -84,16 +98,16 @@
         checked={value === false}
         onchange={(e) => set(e.currentTarget.checked ? false : blank(shape.schema, root))}
       />
-      <span><span class="font-medium">{named}</span>: none expected</span>
+      <span><span class="font-medium" title={quiet ? described : undefined}>{named}</span>: none expected</span>
     </label>
     {#if said}<p class="text-xs text-muted-foreground">{said}</p>{/if}
     {#if value !== false}
-      <SchemaField schema={shape.schema} {root} {value} {set} label={named} />
+      <SchemaField schema={shape.schema} {root} {value} {set} label={named} {quiet} />
     {/if}
   </div>
 {:else if shape.is === "list"}
   <div class="space-y-2">
-    <p class="text-sm font-medium">{named}</p>
+    <p class="text-sm font-medium" title={quiet ? described : undefined}>{named}</p>
     {#if said}<p class="text-xs text-muted-foreground">{said}</p>{/if}
     {#each items() as item, i (i)}
       <div class="flex items-start gap-2">
@@ -104,6 +118,7 @@
             value={item}
             set={(v) => set(items().map((x, j) => (j === i ? v : x)))}
             label="{named} {i + 1}"
+            {quiet}
           />
         </div>
         <button
@@ -122,11 +137,11 @@
   </div>
 {:else}
   <label class="grid gap-1 text-sm">
-    {#if named}<span class="font-medium">{named}</span>{/if}
+    {#if named}<span class="font-medium" title={quiet ? described : undefined}>{named}</span>{/if}
     {#if shape.is === "text" && shape.long}
       <textarea
         rows="2"
-        class="rounded-md border border-input bg-transparent px-2.5 py-1.5"
+        class="rounded-md border border-input bg-transparent px-2.5 py-1.5 {quiet ? '[field-sizing:content]' : ''}"
         value={typeof value === "string" ? value : ""}
         oninput={(e) => set(e.currentTarget.value)}
       ></textarea>

@@ -19,6 +19,13 @@ from chatddx.test.world import (
 )
 
 GHOST = "sha256:" + "0" * 64
+NOTED = {
+    "diagnosis": {"pattern": "sepsis | septic & shock"},
+    "notes": [
+        {"author": "carol", "language": "sv", "comment": "Chock."},
+        {"author": "dave", "language": "sv", "comment": "Uteslut UVI."},
+    ],
+}
 
 
 @pytest.mark.slow
@@ -113,3 +120,28 @@ def test_a_component_is_shown_by_its_digest(signed: TestClient) -> None:
         404,
         {"detail": f"no component {GHOST} in the store", "code": "not_found"},
     )
+
+
+def test_selectors_pick_from_a_document_or_say_why_they_don_t_read(
+    signed: TestClient,
+) -> None:
+    selectors = [
+        "/diagnosis",
+        "$.notes[?@.author == 'carol'].comment",
+        "$.notes[*].author",
+        "/warning",
+        "",
+        "$.notes[",
+    ]
+    got = signed.post("/api/picks", json={"document": NOTED, "selectors": selectors})
+    assert got.status_code == 200
+    *read, broken = got.json()
+    assert [p["items"] for p in read] == [
+        [NOTED["diagnosis"]],
+        ["Chock."],
+        ["carol", "dave"],
+        [],
+        [NOTED],
+    ]
+    assert all(p["problem"] is None for p in read)
+    assert broken["items"] is None and broken["problem"]

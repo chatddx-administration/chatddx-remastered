@@ -23,6 +23,6 @@
     {% for e in error.detail %}<li>{{ e.loc | join(".") }}: {{ e.msg }}</li>{% endfor %}
   </ul>
   {% endif %}
-  <a href="/" class="text-primary hover:underline">Home</a>
+  {% if back %}<a href="{{ back }}" class="text-primary hover:underline">Back to where you were</a>{% endif %}
 </div>
 {% endblock %}

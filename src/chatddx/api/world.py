@@ -1,7 +1,9 @@
 from fastapi import APIRouter
+from pydantic import JsonValue
 
 from chatddx.bench import KINDS, WRITTEN, Bench, NotFound
 from chatddx.factors.kinds import BY_KIND
+from chatddx.factors.select import select
 from chatddx.inventory import EndpointSpec
 from chatddx.scorers.scorer import NO_PARAMS
 from chatddx.scorers.shipped import SCORERS
@@ -126,3 +128,15 @@ def scorer_code(_: BenchDep) -> list[schemas.ScorerCode]:
         )
         for entry_point, code in sorted(SCORERS.items())
     ]
+
+
+@router.post("/picks")
+def picks(_: BenchDep, given: schemas.Picking) -> list[schemas.Picked]:
+    return [_picked(given.document, s) for s in given.selectors]
+
+
+def _picked(document: JsonValue, selector: str) -> schemas.Picked:
+    try:
+        return schemas.Picked(items=select(document, selector), problem=None)
+    except ValueError as e:
+        return schemas.Picked(items=None, problem=str(e))

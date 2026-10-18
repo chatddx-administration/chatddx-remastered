@@ -26,7 +26,8 @@ it.
    (`docs/bench.md`, "Writes for the person") and typed cases (`docs/bench.md`, "Typed cases"). What isn't is under
    "Below the UI": the worker and Z1.
 6. **Next**: phase 5's second half, 5c and 5d, once its first is looked at (see "Authoring"); and what phases 2 to
-   5 left (see "Open").
+   5 left (see "Open"). A clinician's page around one case, which would build 5d's editors and part of 5c, is planned
+   in `agents/wip-olofs-view.md`.
 
 ## What the portal shows
 The old portal's manual reads as a functional spec for its pages: `docs/portal.md` in chatddx-administration/chatddx
@@ -443,7 +444,8 @@ Phase 2, as takes:
 - **Pages for errors**: a refusal on a page, and a page that isn't there, is answered with a page of the same status,
   titled by its code (`src/chatddx/portal/pages.py:paged`, `templates/error.html`); under `/api/` it is JSON as before.
 - **The pieces the pages share** are macros (`templates/macros.html`), and the nav links Runs, Configurations,
-  Families and Endpoints, and Library since phase 5. An island's imported chunks are preloaded (`src/chatddx/portal/assets.py:Island`).
+  Families and Endpoints, Library since phase 5, and Review (`agents/wip-olofs-view.md`). An island's imported
+  chunks are preloaded (`src/chatddx/portal/assets.py:Island`).
 - **Tests**: `src/chatddx/portal/test/test_reading.py`, on `ran` (`src/chatddx/conftest.py`), `curated` with alice's
   scripted runs each run once (`docs/scripted.md`). By hand on the sample World in Chromium,
   every page, with the plan drawn.

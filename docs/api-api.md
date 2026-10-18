@@ -1,11 +1,18 @@
 # API package
 
-Reference for the `chatddx.api` package. It was written from `src/chatddx/api/*` and docs/api.md. What the API is and
-why it is shaped this way is in docs/api.md. The HTTP interface itself, its paths, parameters, bodies and statuses,
-is the OpenAPI document the app serves at `/api/openapi.json`, with pages at `/api/docs`, and isn't repeated here;
-this file says how the package builds it: what each name does, accepts, returns and raises. The types it passes
-through are the bench's (docs/bench-api.md), the runner's (docs/runner-api.md), and those in
-docs/catalog-api.md, docs/ledger-api.md, docs/store-api.md, docs/inventory-api.md and docs/facts-api.md.
+Reference for the `chatddx.api` module.
+
+Heads-up: This the internal api, not confused with the HTTP interface itself, which is described by an OpenAPI document
+at `/api/docs` and not repeated here. Both are called "api", hence the awkward doc name `docs/api-api.md`.
+
+The types it passes through are from:
+- `bench` (docs/bench-api.md)
+- `runner` (docs/runner-api.md)
+- `catalog` (docs/catalog-api.md)
+- `ledger` (docs/ledger-api.md)
+- `store` (docs/store-api.md)
+- `inventory` (docs/inventory-api.md)
+- `and facts` (docs/facts-api.md).
 
 Paths are relative to `src/chatddx/api/` unless they start with `src/`, `docs/` or `agents/`.
 
@@ -45,7 +52,7 @@ The modules, and what each builds on:
   `chatddx.factors.{base,facts,kinds,request,trial}`.
 - `families.py`: `schemas.py`, `people.py`, `state.py`, `threads.py`, `chatddx.bench`, `chatddx.factors.{base,cases}`,
   `chatddx.store`.
-- `world.py`: `schemas.py`, `people.py`, `state.py`, `threads.py`, `chatddx.bench`, `chatddx.factors.kinds`,
+- `world.py`: `schemas.py`, `people.py`, `state.py`, `threads.py`, `chatddx.bench`, `chatddx.factors.{kinds,select}`,
   `chatddx.inventory`, `chatddx.scorers.{scorer,shipped}`.
 - `events.py`: `schemas.py`, `chatddx.bench`, `chatddx.catalog`, `chatddx.factors.{base,request,scoring,trial}`,
   `chatddx.ledger`, `chatddx.runner`, `chatddx.scorers.aggregate`.
@@ -104,9 +111,9 @@ field a model doesn't name is a 422, and so is a query parameter where the query
 query parameter a route doesn't name is ignored. Components, recipes, facts, calls, tool runs and fingerprints are
 given as the JSON they dump to, not as models of their own.
 
-**Sensitive places.** `families.py:vignette`, `runs.py:items`, `scores.py:items` and a run's stream are the only
-routes that give sensitive content, and each says `Cache-Control: no-store`: the first three through
-`state.py:no_store`, the stream with `state.py:NO_STORE` among its headers.
+**Sensitive places.** `families.py:vignette`, `runs.py:items`, `scores.py:items`, `scores.py:tried` and a run's
+stream are the only routes that give sensitive content, and each says `Cache-Control: no-store`: the first four
+through `state.py:no_store`, the stream with `state.py:NO_STORE` among its headers.
 
 **Routes.** Each module's routes are given under "Routes" as `name`, `METHOD /path`, the path under `/api`: what the
 route does, and what it answers.
@@ -135,11 +142,6 @@ when `worker`, and as it ends stops the worker, waiting for it, then the listene
 The routers of `people.py`, `threads.py`, `families.py`, `world.py`, `runs.py` and `scores.py` are mounted under
 `/api`; the handlers of `STATUSES` are added, one of `HTTPException` by `CODES`, and one of `RequestValidationError`,
 answered 422 with FastAPI's list of where as the detail and `unprocessable`; and `openapi` is `_with_models`.
-
-### `_with_models(made: FastAPI) -> Callable[[], dict[str, Any]]`
-FastAPI's own `openapi`, with the model of each event in `schemas.py:EVENTS`, and `schemas.py:Error`, added to
-`components.schemas`, as pydantic's `models_json_schema` gives them in serialization mode, with references as
-`#/components/schemas/{model}`. They are added on every call, to the document FastAPI keeps.
 
 ## state.py
 
@@ -539,6 +541,10 @@ Within `refused(LookupError)`: `Bench.check(component_of(body))`. The digest and
 Each of `chatddx.scorers.shipped.SCORERS` by entry point, its metrics by name; an entry point that publishes no schema
 for the scorer's own params gives `NO_PARAMS`, which allows none. Signed in, as every route here.
 
+#### `picks`, `POST /picks`
+`chatddx.factors.select.select` of the body's document by each of its selectors, in order: a `Picked` of what it
+picks, or of the `ValueError`'s message when the selector doesn't read. Signed in, as every route here.
+
 ## runs.py
 
 ### Constants
@@ -580,7 +586,7 @@ from 1 to 200 and 20 by default; `Store.finished` and `Queue.placed` for the pag
 `detail`.
 
 #### `items`, `GET /runs/{run}/items`
-`Bench.run` (`NotFound`), then each item of `Store.run`: its `item_of`, the outcome's why
+`Bench.run` (`NotFound`), then each item of `Store.run`, or of the case `case` names:
 (`chatddx.runner.outcome.outcome`), its vignette, call and turns dumped, and its `answer`,
 `chatddx.scorers.answer.read` of its last call's response. Sensitive.
 
@@ -603,8 +609,21 @@ data, `events.py:scoring_of` the scorers queued.
 under each scorer by name, or every score, newest first.
 
 #### `items`, `GET /runs/{run}/scores/{score}/items`
-`Bench.score_of(Bench.run(run), score)`, then each of its score's items with its detail and judge calls dumped, and
+`Bench.score_of(Bench.run(run), score)`, then each of its score's items, or of the case `case` names, with
 its finish's findings, none when it hasn't finished. Sensitive.
+
+#### `tried`, `POST /scorers/try`
+Within `refused()`: `threads.py:component_of` the body's scorer, and a 422 when it isn't a `Scorer`; within
+`refused(LookupError)`: `chatddx.scorers.shipped.function` of it, as the scoring pass refuses it. Then for each run,
+`Bench.run` (`NotFound`), and each of its items of the case: its answer, `chatddx.scorers.answer.read` of its last
+call's response, and under each view a `TriedView`, `chatddx.scorers.scorer.score_view` against the body's
+expectation, or, for a view that names a judge, no value, `judged` and `JUDGED` as its detail. Sensitive.
+
+#### `judge_asked`, `POST /judges/asked`
+`Rows.kind`; `NotFound("no judge <digest> in the store")` when it isn't a judge. Its skeleton rendered
+(`Skeleton.render`) for its engine's served model and its first seed, filled with `chatddx.bench.model.PLACEHOLDERS`
+and, as `expectation`, `chatddx.factors.scoring.fill_text` of what `chatddx.factors.select.select` picks of the body's
+data by its selector (`refused()`, a selector that doesn't read a 422). The request and what was picked.
 
 ## queue.py
 
@@ -760,6 +779,7 @@ In `src/chatddx/api/test/`.
 - `test_writes.py`: a configuration made from a recipe, and what is refused of one; chunks and expectations written
   new, edited and forked; a judge written over a judge configuration, and one over a generation configuration
   refused; what is refused, and with which status; an expectation's findings.
+  Selectors picking from a document, and one that doesn't read saying why.
 - `test_kinds.py`: the kinds with their JSON Schemas and what their references take; a component checked as a write
   would store it, with nothing written, the lints said, and what a write would refuse refused.
 - `test_cases.py`: a family's cases, an appendix written for it, a case built of it and replaced by the appendix's
@@ -791,6 +811,11 @@ In `src/chatddx/api/test/`.
   the run scored again when asked, with the scoring's events after the run's rows; what bob can't read; the runs left
   to score with their scorers, and one leaving the listing once scored; a scoring refused for a run unfinished, a
   scorer that doesn't apply and a run with a job open, and halted; a session needed.
+  A run's items and a score's read for one case.
+  A scorer tried on a case's answers as typed, its values the stored score's, a missed target 0, its judged views
+  untried, nothing written, an unknown metric refused, and bob's request not finding the run.
+  What a judge is asked: its request with carol's comment and the answer's placeholder; a selector that doesn't read,
+  and a digest that isn't a judge's, refused.
 - `test_telling.py`: a stream joined mid-item told the item started and each tool once, and nothing of it once it
   ended; the listener fanning a run's messages out to two streams, again on another loop, and a stream that falls
   behind told `Lagged`.
