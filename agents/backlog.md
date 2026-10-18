@@ -1448,6 +1448,9 @@ skeleton, since no write is refused on a lint (bench.1, confirmed).
 ### G50. The appendix layout as a part
 A part a variation can replace, when someone wants to vary it.
 
+Triage: kept as is; it waits for someone who wants to vary the layout. Decided: the layout then becomes a chunk kind of
+its own, so the part holds a digest like the others and no edge needs a special case.
+
 **bench.22** · From docs/bench.md:475, "Outstanding"
 
 - **The appendix layout as a part** a variation replaces, when someone wants to vary it. It is a value rather than a
