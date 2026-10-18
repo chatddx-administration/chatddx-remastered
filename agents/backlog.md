@@ -929,7 +929,11 @@ which went to G47.
   names the new one.
 
 ### G27. Titles
-Titles that are cheap, stable, unique, short, and say a translated skeleton's language.
+Titles that take fewer queries, pair no versions, are short for a variation, and say a translated skeleton's language.
+
+Triage: kept as is. Of catalog.13, the query count is the work; that titles change and aren't unique is by design, and
+freezing them is G6b's. Decided, for catalog.20: a skeleton compiled from a variation of a configuration is titled by
+the variation's label, as its run is.
 
 **catalog.9** · From docs/catalog.md:422, "Open design issues", "Smaller issues"
 
