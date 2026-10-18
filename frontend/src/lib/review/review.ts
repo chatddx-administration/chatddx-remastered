@@ -1,6 +1,7 @@
 import type { Schemas } from "$lib/api/client";
 import type { AppendixEditing } from "$lib/editors/AppendixEditor.svelte";
 import type { ExpectationEditing } from "$lib/editors/ExpectationEditor.svelte";
+import type { Progress } from "$lib/runs/progress";
 
 export type Shown = { run: string; score: string | null; replicate: number; plan: boolean; anchor: number };
 
@@ -13,6 +14,7 @@ export type Review = {
   expected: Expecting;
   appendices: ({ editor: AppendixEditing; digest: string } | null)[];
   back: string;
+  pending: { run: string; described: string }[];
   previous: string | null;
   next: string | null;
 };
@@ -106,4 +108,21 @@ export function replaced(back: string, current: string, cases: Record<string, st
   const url = new URL(back, "https://review.invalid");
   url.searchParams.set("case", now);
   return url.pathname + url.search;
+}
+
+export function doing(progress: Progress): string {
+  if (progress.done) return progress.done.halted ? "halted" : "done";
+  const scoring = progress.scorings.filter((s) => s.score !== null);
+  if (scoring.length) {
+    const scored = scoring.reduce((n, s) => n + s.scored, 0);
+    const asked = scoring.reduce((n, s) => n + s.asked, 0);
+    const answered = scoring.reduce((n, s) => n + s.answered, 0);
+    return `scoring: ${scored} scored${asked ? `, judges answered ${answered} of ${asked}` : ""}`;
+  }
+  if (!progress.items.length) return "queued";
+  const ended = progress.items.filter((i) => i.phase === "ended").length;
+  const now = progress.items.find((i) => i.phase === "sending");
+  const what = now?.kind === "reasoning" ? "thinking" : now?.kind ? "writing" : null;
+  const sending = now && what ? `, ${what}: ${now.tokens} tokens` : "";
+  return `${ended} of ${progress.items.length} ended${sending}`;
 }

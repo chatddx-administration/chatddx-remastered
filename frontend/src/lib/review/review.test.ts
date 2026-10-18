@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { fieldOf, replaced, said, shortly, stepped, valued, viewed } from "./review";
+import { begun } from "$lib/runs/progress";
+import { doing, fieldOf, replaced, said, shortly, stepped, valued, viewed } from "./review";
 
 const STEPS = { previous: "/review/1", next: "/review/3" };
 
@@ -85,5 +86,27 @@ describe("replaced", () => {
     expect(replaced(back, "old", { old: "new" })).toBe("/review/3?case=new&tag=swedish");
     expect(replaced("/review/3", "old", { old: "new" })).toBe("/review/3?case=new");
     expect(replaced(back, "old", { other: "new" })).toBe(back);
+  });
+});
+
+describe("doing", () => {
+  const item = { case: "c", replicate: 0, tools: 0, outcome: null, why: null, sent: 0, received: 0 };
+  const text = { reasoning: "", content: "", tool_call: "" };
+
+  it("says how far a run under way has come, in a line", () => {
+    const progress = begun();
+    expect(doing(progress)).toBe("queued");
+    progress.items.push({ ...item, phase: "sending", kind: "content", tokens: 12, text });
+    expect(doing(progress)).toBe("0 of 1 ended, writing: 12 tokens");
+    progress.items[0] = { ...item, phase: "ended", kind: "content", tokens: 30, text };
+    expect(doing(progress)).toBe("1 of 1 ended");
+  });
+
+  it("says its scoring, and when it is done", () => {
+    const progress = begun();
+    progress.scorings.push({ scorer: "s", name: "judged", score: "x", views: 3, scored: 2, asked: 4, answered: 3 });
+    expect(doing(progress)).toBe("scoring: 2 scored, judges answered 3 of 4");
+    progress.done = { halted: false } as never;
+    expect(doing(progress)).toBe("done");
   });
 });

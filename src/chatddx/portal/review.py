@@ -1,10 +1,12 @@
 from typing import Annotated, Any
 from urllib.parse import urlencode
+from uuid import UUID
 
 from fastapi import APIRouter, Form, HTTPException, Query, Request, Response
 from fastapi.responses import RedirectResponse
 from pydantic import JsonValue
 
+from chatddx import settings
 from chatddx.api import (
     families as api_families,
     runs as api_runs,
@@ -12,12 +14,13 @@ from chatddx.api import (
     threads as api,
     world as api_world,
 )
-from chatddx.bench import Ambiguous, Bench
+from chatddx.api.state import refused
+from chatddx.bench import Ambiguous, Bench, NotFound
 from chatddx.factors.base import resolve
 from chatddx.factors.cases import Appendix
 from chatddx.factors.request import Skeleton
 from chatddx.factors.scoring import Expectation, ExpectationSchema, Scorer
-from chatddx.factors.trial import Trial
+from chatddx.factors.trial import Trial, suggest_seeds
 from chatddx.scorers.shipped import unit_of
 
 from .families import appended, built, written_for
@@ -25,6 +28,7 @@ from .pages import BenchDep, page, within
 from .runs import PLAN
 
 ANSWERS = 50
+OPEN = ("queued", "under way")
 
 router = APIRouter()
 
@@ -79,7 +83,13 @@ def review(
     listed = _listed(every, tag)
     keep = {"tag": tag, "schema": schema, "scorer": scorer}
     at = next((i for i, f in enumerate(listed) if f.id == family), None)
-    answers = _answers(bench, ran, picked.case, held)
+    left = _left(bench, ran, held)
+    answers = _answers(bench, ran, picked.case, held, left)
+    pending = [
+        {"run": str(r.id), "described": r.described}
+        for r, _ in ran
+        if r.job is not None and r.job.status in OPEN
+    ]
     own = _own(bench, expected)
     appendices = _appendices(bench, picked.appendices)
     views = [] if held is None else _views(bench, held, expected)
@@ -119,6 +129,7 @@ def review(
             for a in appendices
         ],
         "back": back,
+        "pending": pending,
         "previous": previous,
         "next": following,
     }
@@ -146,6 +157,11 @@ def review(
         views=views,
         answers=answers,
         means=_means(answers, held),
+        pending=pending,
+        left=left,
+        configurations=_configurations(bench),
+        endpoints=[e.name for e in api_world.endpoints(bench)],
+        most=settings.ITEMS_PER_RUN,
         at=None if at is None else at + 1,
         previous=previous,
         following=following,
@@ -180,6 +196,44 @@ def building_in_review(
     made = built(bench, family, appendix)
     given = _query(case=made, tag=tag, schema=under, scorer=scorer)
     return RedirectResponse(f"/review/{family}{given}", 303)
+
+
+@router.post("/review/{family}/runs")
+def running_in_review(
+    bench: BenchDep,
+    family: int,
+    configuration: Annotated[int, Form()],
+    case: Annotated[str, Form()],
+    endpoint: Annotated[str, Form()] = "",
+    replicates: Annotated[int, Form(ge=1, le=settings.ITEMS_PER_RUN)] = 1,
+    score: Annotated[bool, Form()] = False,
+    back: Annotated[str | None, Form()] = None,
+) -> Response:
+    if case not in bench.family(family).cases:
+        raise HTTPException(422, f"no case {case} of family {family}")
+    with refused(NotFound):
+        variation = bench.variation(configuration, {}, None)
+        started = bench.start(
+            variation, endpoint or None, [case], suggest_seeds(replicates)
+        )
+    for _, running in started.runs:
+        _ = bench.queue(running, score)
+    return RedirectResponse(within(back or f"/review/{family}") + "#record", 303)
+
+
+@router.post("/review/{family}/scores")
+def scoring_in_review(
+    bench: BenchDep,
+    family: int,
+    run: Annotated[list[UUID], Form()],
+    back: Annotated[str | None, Form()] = None,
+) -> Response:
+    _ = bench.family(family)
+    for found in run:
+        started = bench.run(found)
+        with refused():
+            _ = bench.queue_scoring(started, bench.unscored(started) or None)
+    return RedirectResponse(within(back or f"/review/{family}") + "#record", 303)
 
 
 type Given = str | int | list[str] | None
@@ -434,11 +488,32 @@ def _ran(bench: Bench, case: str) -> list[tuple[schemas.Run, schemas.RunDetail]]
     ]
 
 
+def _configurations(bench: Bench) -> list[schemas.Thread]:
+    login = bench.person.login
+    found = api.threads(bench, "configuration", purpose="generation")
+    return sorted(found, key=lambda t: (t.owner != login, t.name or t.title))
+
+
+def _left(
+    bench: Bench, ran: list[tuple[schemas.Run, schemas.RunDetail]], held: Held | None
+) -> set[str]:
+    if held is None:
+        return set()
+    return {
+        str(r.id)
+        for r, _ in ran
+        if r.finished
+        and (r.job is None or r.job.status not in OPEN)
+        and held[0].head.digest in bench.unscored(bench.run(r.id))
+    }
+
+
 def _answers(
     bench: Bench,
     ran: list[tuple[schemas.Run, schemas.RunDetail]],
     case: str,
     held: Held | None,
+    left: set[str],
 ) -> list[dict[str, Any]]:
     views = range(0 if held is None else len(held[1].views))
     found: list[dict[str, Any]] = []
@@ -475,6 +550,7 @@ def _answers(
                     "score": None
                     if graded is None or graded.score is None
                     else str(graded.score),
+                    "left": str(r.id) in left,
                     "values": None
                     if graded is None or held is None
                     else [

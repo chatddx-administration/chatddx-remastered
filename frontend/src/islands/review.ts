@@ -2,6 +2,7 @@ import { mount } from "svelte";
 import AppendixEditor from "$lib/editors/AppendixEditor.svelte";
 import Answer from "$lib/review/Answer.svelte";
 import Expected from "$lib/review/Expected.svelte";
+import Pending from "$lib/review/Pending.svelte";
 import { replaced, type Review, stepped } from "$lib/review/review";
 import Vignette from "$lib/review/Vignette.svelte";
 
@@ -37,6 +38,8 @@ if (held) {
   const review = JSON.parse(held.textContent ?? "null") as Review;
 
   for (const drawer of document.querySelectorAll<HTMLDetailsElement>("details[data-drawer]")) remembered(drawer);
+  const record = document.querySelector<HTMLDetailsElement>('details[data-drawer="record"]');
+  if (record && location.hash === "#record") record.open = true;
 
   const vignette = document.getElementById("review-vignette");
   if (vignette) {
@@ -73,6 +76,23 @@ if (held) {
         props: { answer, case: review.case, labels: review.labels, units: review.units },
       }),
     );
+  }
+
+  let waiting = review.pending.length;
+  for (const at of document.querySelectorAll<HTMLElement>("[data-pending]")) {
+    const given = review.pending[Number(at.dataset.pending)];
+    if (!given) continue;
+    at.replaceChildren();
+    mount(Pending, {
+      target: at,
+      props: {
+        ...given,
+        done: () => {
+          waiting -= 1;
+          if (waiting === 0) setTimeout(() => location.reload(), 800);
+        },
+      },
+    });
   }
 
   document.addEventListener("keydown", (pressed) => {

@@ -20,7 +20,7 @@ rather than a click, a scroll or another page.
    sensitive from the API's places; he runs the case himself; judges are picked and written before their texts;
    unjudged views are tried as typed, judged ones by scoring; selectors are picked and applied on the server; and the
    page is `/review/{family}`, beside the family's page.
-4. **Steps 1 and 2 are built** (see "Built"); step 3 is next (see "Steps").
+4. **Steps 1 to 3 are built** (see "Built"); step 4 is next (see "Steps").
 
 ## What the clinician is here to do
 From the request, and from what the sample World waits on (`docs/curation.md`, "Outstanding"):
@@ -197,7 +197,7 @@ A view's selectors are a JSON Pointer or a fixed subset of JSONPath (`docs/facto
    case with each view's value and detail. Needs the route that gives picks (L6).
 2. **Writing in place**, built (see "Built"): appendices, cases and expectations, with 5b's editors moved into the
    panes; the picks follow the form as it is typed.
-3. **Running the case** from the page (L3 a), and **Score again** on its runs.
+3. **Running the case** from the page (L3 a), and **Score again** on its runs, built (see "Built").
 4. **Composing a scorer without judges**: the views' form, selectors picked (L6), values tried as typed (L5 a),
    saving with labels.
 5. **With judges**: picking one, writing one (L4 a, b), what it is asked, and judged views scored through the worker
@@ -285,6 +285,37 @@ the pattern is typed, a scorer saved, and its score.
 - **The record and the marks are the server's**, drawn as the page loads: a save reloads the page, so the views'
   values in the record follow only once the runs are scored again (step 3).
 - **Answers only from the person's own runs**, as decided (L3): running the case from the page is step 3.
+
+### Step 3: running the case, and scoring it again
+- **Run this case**, folded at the top of the record (open when there is nothing to read): a configuration of purpose
+  generation the person sees, their own first; an endpoint, or the one serving its model; replicates; and whether to
+  score it once it has finished. `POST /review/{family}/runs` starts the case picked, held to be a current case of the
+  family, as `POST /api/runs` starts one (`Bench.variation`, `Bench.start`, `Bench.queue` under `refused`), a run per
+  language its translations carry it into, and leads back to the review with the record open (`#record`).
+- **Runs under way**: a run of the case with a job queued or under way is listed at the top of the record, and the
+  island follows its events (`frontend/src/lib/review/Pending.svelte`, `review.ts:doing`): queued, how many items have
+  ended and what the one being sent is doing, then its scoring and the judges' calls. Once every run listed is done,
+  the page reloads into what they came to. The rail says how many are under way.
+- **Left to score**: a finished run the scorer picked hasn't scored against the expectations as they are now
+  (`Bench.unscored`), after an expectation's edit or because it never did. Its values are shown in italics, as what
+  it scored before, the rail says how many, and **Score again** queues each of them (`POST /review/{family}/scores`,
+  `Bench.queue_scoring` by the scorers it is left to), and leads back to the record, which follows the scorings as it
+  follows runs.
+- **The record's rows** say when each run started, since runs of one configuration read alike.
+- **Tests**: `test_running.py`, the case run from its review and followed there, refused from another site and for a
+  case of another family, and scored again once its expectation is edited; `test_browser.py`, the case run from the
+  record, followed and its answer read once the page reloads; vitest for `doing`. By hand on the sample World with
+  its fake engines and a worker (`chatddx fake-engines`, `chatddx run`): Dutchfall11w run on free-text, its diagnosis
+  target changed to sepsis, and the two runs scored again, the judged answer rising from 0.50 to 1.00.
+
+#### What step 3 leaves
+- **Several runs started together**: one configuration a start; comparing configurations on the case is the portal's
+  phase 6 (`agents/wip-portal.md`, "Comparing variations").
+- **A run refused** (several endpoints serve the model, a language the translations don't cover, over quota) is
+  answered with the error page, not beside the form.
+- **The cost of the record grows with the runs**: each run listed is read whole, and what is left to score is worked
+  out for each (`Bench.unscored`, about 40 ms a run), 50 runs at most.
+- **A scoring that fails** shows as the run no longer under way and still left to score; why is on the run's page.
 
 ## Open
 - **Grading answers by hand.** Olof's judge is to be measured against his own grades of real answers, "with a line on

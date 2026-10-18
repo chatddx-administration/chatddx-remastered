@@ -234,10 +234,46 @@
 
   {% call drawer("record", "Record") %}
   <summary class="{{ rail }}">
-    <span class="{{ upright }}">Record <span class="font-normal text-muted-foreground">{{ answers | length }} answer{{ "" if answers | length == 1 else "s" }}</span></span>
+    <span class="{{ upright }}">Record <span class="font-normal text-muted-foreground">{{ answers | length }} answer{{ "" if answers | length == 1 else "s" }}{% if pending %} · {{ pending | length }} under way{% endif %}{% if left %} · {{ left | length }} to score{% endif %}</span></span>
   </summary>
-  <div class="{{ opened }} xl:w-[26rem]">
+  <div id="record" class="{{ opened }} xl:w-[26rem]">
     <p class="mb-3 text-xs text-muted-foreground">What your runs answered to this case{% if scorer %}, and how {{ scorer[0].name or scorer[0].title }} scored it{% endif %}: a record, to read.</p>
+
+    <details class="mb-3 rounded-lg border border-dashed border-border p-3 text-sm"{% if not answers and not pending %} open{% endif %}>
+      <summary class="cursor-pointer font-medium">Run this case</summary>
+      <form method="post" action="{{ here }}/runs" class="mt-3 grid gap-2">
+        <input type="hidden" name="case" value="{{ case.case }}"><input type="hidden" name="back" value="{{ back }}">
+        <label class="grid gap-1"><span class="text-muted-foreground">Configuration</span>
+          <select name="configuration" class="h-9 {{ field }}">
+            {% for t in configurations %}<option value="{{ t.id }}">{{ (t.owner ~ "/" if t.owner and t.owner != person.login else "") ~ (t.name or t.title) }}</option>{% endfor %}
+          </select></label>
+        <label class="grid gap-1"><span class="text-muted-foreground">Endpoint</span>
+          <select name="endpoint" class="h-9 {{ field }}">
+            <option value="">where its model is served</option>
+            {% for e in endpoints %}<option value="{{ e }}">{{ e }}</option>{% endfor %}
+          </select></label>
+        <label class="flex items-center gap-2"><span class="text-muted-foreground">Replicates</span>
+          <input type="number" name="replicates" value="1" min="1" max="{{ most }}" class="h-9 w-20 {{ field }}"></label>
+        <label class="flex items-center gap-2"><input type="checkbox" name="score" value="true" checked> Score it once it has finished</label>
+        <div><button class="{{ button }}">Run it</button></div>
+      </form>
+    </details>
+
+    {% for p in pending %}
+    <div data-pending="{{ loop.index0 }}" class="mb-2 rounded-lg bg-primary/5 px-3 py-2 text-sm">
+      <a class="{{ link }}" href="/runs/{{ p.run }}">{{ p.described }}</a> <span class="text-muted-foreground">is under way; reload to see it once it is done.</span>
+    </div>
+    {% endfor %}
+
+    {% if left and scorer %}
+    <form method="post" action="{{ here }}/scores" class="mb-3 flex flex-wrap items-center gap-2 rounded-lg bg-warning/10 px-3 py-2 text-sm">
+      {% for r in left %}<input type="hidden" name="run" value="{{ r }}">{% endfor %}
+      <input type="hidden" name="back" value="{{ back }}">
+      <span class="min-w-0 flex-1">{{ left | length }} run{{ "" if left | length == 1 else "s" }} left to score by {{ scorer[0].name or scorer[0].title }} against what you expect now.</span>
+      <button class="{{ button }}">Score again</button>
+    </form>
+    {% endif %}
+
     {% set columns = "minmax(0,1fr) auto" ~ (" repeat(" ~ views | length ~ ", 3.25rem)" if scorer else "") %}
     {% if means and answers %}
     <dl class="mb-4 grid grid-cols-[minmax(0,1fr)_auto_auto] gap-x-3 gap-y-1 rounded-lg bg-muted/40 p-2.5 text-xs">
@@ -255,13 +291,13 @@
     {% for a in answers %}
     <details data-answer="{{ loop.index0 }}" class="border-t border-border/60">
       <summary class="grid cursor-pointer items-center gap-2 px-1 py-2 text-sm" style="grid-template-columns: {{ columns }}">
-        <span class="min-w-0 truncate" title="{{ a.described }}">{{ a.described }}{% if a.replicate %} #{{ a.replicate }}{% endif %}</span>
+        <span class="min-w-0" title="{{ a.described }}"><span class="block truncate">{{ a.described }}{% if a.replicate %} #{{ a.replicate }}{% endif %}</span><span class="block text-xs text-muted-foreground">{{ a.at | when }}</span></span>
         <span>{{ outcome(a.outcome) }}</span>
         {% if scorer %}
         {% if a["values"] is none %}
-        <span class="text-right text-xs text-muted-foreground" style="grid-column: span {{ views | length }}">not scored by it</span>
+        <span class="text-right text-xs text-muted-foreground" style="grid-column: span {{ views | length }}">{{ "left to score" if a.left else "not scored by it" }}</span>
         {% else %}
-        {% for value, unit in a["values"] %}<span class="text-right tabular-nums">{{ scored(value, unit) }}</span>{% endfor %}
+        {% for value, unit in a["values"] %}<span class="text-right tabular-nums{{ ' italic text-muted-foreground' if a.left else '' }}"{% if a.left %} title="scored against what was expected before"{% endif %}>{{ scored(value, unit) }}</span>{% endfor %}
         {% endif %}
         {% endif %}
       </summary>
@@ -270,7 +306,7 @@
       </div>
     </details>
     {% endfor %}
-    {% else %}
+    {% elif not pending %}
     <p class="text-sm text-muted-foreground">None of your runs has answered this case.</p>
     {% endif %}
   </div>

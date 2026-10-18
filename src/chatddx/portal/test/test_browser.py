@@ -291,3 +291,43 @@ def test_a_clinician_reviews_a_case_and_its_views_read_what_is_typed(
     page.locator("body").press("j")
     page.wait_for_url(lambda url: f"/review/{noted['id']}" not in url)
     assert errors == []
+
+
+def test_a_case_is_run_from_its_review_and_its_answer_read_in_the_record(
+    page: Page,
+    world: Inventory,
+    conn: Connection,
+) -> None:
+    errors: list[str] = []
+    page.on("pageerror", lambda e: errors.append(str(e)))
+    crlf = page.request.get("/api/families", params={"name": "crlf"}).json()[0]
+    query: dict[str, str | float | bool] = {
+        "kind": "configuration",
+        "name": LINES,
+        "owner": "alice",
+    }
+    lines = page.request.get("/api/threads", params=query).json()[0]
+
+    with faked(world, Store(conn).get, delay=0.05):
+        _ = page.goto(f"/review/{crlf['id']}")
+        record = page.locator('details[data-drawer="record"]')
+        expect(record).to_contain_text("Record")
+        record.locator("summary").first.click()
+        _ = page.get_by_label("Configuration").select_option(str(lines["id"]))
+        _ = page.get_by_label("Endpoint").select_option(QWEN)
+        page.get_by_role("button", name="Run it").click()
+        page.wait_for_url(re.compile(r"#record$"))
+        expect(record).to_have_attribute("open", "")
+        pending = record.locator("[data-pending]")
+        expect(pending).to_contain_text(re.compile(r"queued|ended|scoring|done"))
+        answer = record.locator("details[data-answer] summary")
+        expect(answer).to_have_count(1, timeout=30_000)
+    expect(page.locator("[data-pending]")).to_have_count(0)
+    answer.click()
+    [run] = page.request.get("/api/runs", params={"reaching": crlf["case"]}).json()
+    [item] = page.request.get(
+        f"/api/runs/{run['id']}/items", params={"case": crlf["case"]}
+    ).json()
+    said = item["answer"]["value"].strip().splitlines()[0]
+    expect(record.locator("[data-answer-body]")).to_contain_text(said)
+    assert errors == []
