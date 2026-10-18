@@ -410,6 +410,8 @@ nothing runs today.
 Tool rounds that can be shown and are consistent: a malformed call, the answer tool beside another, and a source a
 scripted run can send tools on.
 
+Triage: kept as is.
+
 **factors-api.1** · From docs/factors-api.md:1057, "Known gaps"
 
 - `tool_calls` skips a malformed call, but `next_request` copies the response's `tool_calls` as they are, so the
