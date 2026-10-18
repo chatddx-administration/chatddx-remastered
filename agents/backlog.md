@@ -639,6 +639,10 @@ Triage: split from G18.
 Everything under way can be ended in time: a call waiting for headers, a running tool, a stopping worker's sending, and
 a halted run that could resume.
 
+Triage: kept as is. Decided: at the deadline, and on a second press, the worker halts the calls under way and leaves
+the run unfinished; the items under way are recorded stopped, an outcome like any other, and the next claim resumes the
+rest.
+
 **runner.1** · From docs/runner.md:212, "Open design issues", "What a stop leaves out"
 
 - **A call still waiting for its engine to answer at all**, under an execution with no timeout, waits on after a halt;
