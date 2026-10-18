@@ -17,7 +17,7 @@ items under it are as they were moved. An item that restates another for an API 
 3. [Attestation within a run](#g3-attestation-within-a-run) (6)
    - G3b. [Each attempt recorded](#g3b-each-attempt-recorded) (2)
 4. [The finish record: seal and findings](#g4-the-finish-record-seal-and-findings) (0, dissolved)
-5. [Keyed fingerprints](#g5-keyed-fingerprints) (2)
+5. [Keyed fingerprints](#g5-keyed-fingerprints) (0, dropped)
 6. [Research output: replicates, aggregation and export](#g6-research-output-replicates-aggregation-and-export) (9)
 7. [Scoring: coverage, order and judges](#g7-scoring-coverage-order-and-judges) (5)
 8. [Views: what they read and split](#g8-views-what-they-read-and-split) (3)
@@ -206,16 +206,8 @@ Triage: dissolved. The database refuses changes to a finish row (`0006-t2-ledger
 leave the store: ledger.7 and ledger-api.7 went to G6. ledger.9 and ledger-api.9 were dropped (see "Dropped").
 
 ### G5. Keyed fingerprints
-A key reaches `send` and the ledger.
-
-**runner.6** · From docs/runner.md:224, "Open design issues", "Smaller issues"
-
-- **Fingerprints are unkeyed.** Neither `send` nor the ledger takes a key for a call's fingerprints
-  (docs/factors.md, "Fingerprints").
-
-**runner-api.4** · From docs/runner-api.md:332, "Known gaps"
-
-- `send.send` takes a `key`, but nothing in the package passes one.
+Triage: dropped, as tracked in agents/wip-clearance.md ("Typed vignettes", and "Before real patient data", 4); see
+"Dropped". From here on, an item a wip plan in agents/ tracks is dropped here.
 
 ### G6. Research output: replicates, aggregation and export
 What a replicate is, what may be pooled, what aggregates scores, and how records leave the store with what an analysis
@@ -1525,6 +1517,17 @@ G4, as naming no failure and no plan; to be raised again if a mechanism for find
 **ledger-api.9** · From docs/ledger-api.md:555, "Known gaps"
 
 - Findings have no mechanism of their own beyond the finished rows and the check functions.
+
+G5, as tracked in agents/wip-clearance.md. runner-api.4 was stale besides: "drop variants" took `key` off `send`:
+
+**runner.6** · From docs/runner.md:224, "Open design issues", "Smaller issues"
+
+- **Fingerprints are unkeyed.** Neither `send` nor the ledger takes a key for a call's fingerprints
+  (docs/factors.md, "Fingerprints").
+
+**runner-api.4** · From docs/runner-api.md:332, "Known gaps"
+
+- `send.send` takes a `key`, but nothing in the package passes one.
 
 ## Context
 What the moved sections said of their items as a whole, moved with them.
