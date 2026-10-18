@@ -42,12 +42,13 @@ items under it are as they were moved. An item that restates another for an API 
 22. [Picking an endpoint for a model](#g22-picking-an-endpoint-for-a-model) (3)
 23. [Concurrent writers](#g23-concurrent-writers) (6)
 24. [The database repeats the rules](#g24-the-database-repeats-the-rules) (8)
-25. [Recipes, skeletons and compilations agree](#g25-recipes-skeletons-and-compilations-agree) (9)
+25. [Compilations checked](#g25-compilations-checked) (4)
+   - G25b. [A run names the skeleton its look gave](#g25b-a-run-names-the-skeleton-its-look-gave) (2)
 26. [Vignette identity: renames, repairs and rebinding](#g26-vignette-identity-renames-repairs-and-rebinding) (11)
 27. [Titles](#g27-titles) (6)
 28. [Edit history: who, when and why](#g28-edit-history-who-when-and-why) (4)
 29. [Labels across edits and following](#g29-labels-across-edits-and-following) (3)
-30. [Languages and translations](#g30-languages-and-translations) (5)
+30. [Languages and translations](#g30-languages-and-translations) (8)
 31. [Deleting, leftovers and garbage collection](#g31-deleting-leftovers-and-garbage-collection) (4)
 32. [Values the canonical form can't keep](#g32-values-the-canonical-form-cant-keep) (3)
 33. [The store's read API](#g33-the-stores-read-api) (6)
@@ -842,11 +843,11 @@ components, since the triggers would repeat each kind's reference paths in SQL.
 - A log can be written that can't be read back: a finished row is accepted without its started row, and `Store.run`
   and `Store.score` then raise `StructuralError("<log> <id> has no started row")`.
 
-### G25. Recipes, skeletons and compilations agree
-A compilation is checked against its recipe, a skeleton's provenance is asked for, and a run can name the skeleton its
-look gave.
+### G25. Compilations checked
+A skeleton's provenance asked for, a compilation checked against its recipe, and an edit that keeps a skeleton's
+compilation when one exists.
 
-Note: api.2 is also one of the API's takes waiting for a word (G47).
+Triage: split: a run naming its look's skeleton went to G25b, a compiled skeleton's language to G30.
 
 **factors-api.8** · From docs/factors-api.md:1068, "Known gaps"
 
@@ -867,20 +868,11 @@ Note: api.2 is also one of the API's takes waiting for a word (G47).
 
 - A skeleton edit may leave out its compilation.
 
-**catalog.7** · From docs/catalog.md:417, "Open design issues", "Smaller issues"
+### G25b. A run names the skeleton its look gave
+A run that sends what was looked at, or is refused.
 
-- **A language on a skeleton that is compiled later** is ignored from then on, since the skeleton's language comes from
-  its compilations.
-
-**catalog-api.7** · From docs/catalog-api.md:743, "Known gaps"
-
-- A language on a skeleton that is compiled later is ignored from then on.
-
-**catalog.8** · From docs/catalog.md:419, "Open design issues", "Smaller issues"
-
-- **A language refused on a compiled skeleton is said to come from its recipe**, by
-  `src/chatddx/catalog/language.py:check_language`, `0012`'s `language_compiled` trigger and the bench's
-  `COMPILED_LANGUAGE`; a translated skeleton's comes from the language its compilation names.
+Triage: split from G25. Decided: a run may name the skeleton's digest, as an edit names its head, and is refused when
+the variation compiles to another by then. api.2 is also one of the API's takes waiting for a word (G47).
 
 **catalog.21** · From docs/catalog.md:450, "Open design issues", "Smaller issues"
 
@@ -1055,6 +1047,23 @@ Who may correct a language, a case of none, judges checked for one, and translat
 
 - **Few-shot answers in JSON are translated whole.** An example is one text, so an assistant example that is a JSON
   answer is translated as one entry, by hand, keeping its property names and allowed values as they are.
+
+Added in triage, from G25:
+
+**catalog.7** · From docs/catalog.md:417, "Open design issues", "Smaller issues"
+
+- **A language on a skeleton that is compiled later** is ignored from then on, since the skeleton's language comes from
+  its compilations.
+
+**catalog-api.7** · From docs/catalog-api.md:743, "Known gaps"
+
+- A language on a skeleton that is compiled later is ignored from then on.
+
+**catalog.8** · From docs/catalog.md:419, "Open design issues", "Smaller issues"
+
+- **A language refused on a compiled skeleton is said to come from its recipe**, by
+  `src/chatddx/catalog/language.py:check_language`, `0012`'s `language_compiled` trigger and the bench's
+  `COMPILED_LANGUAGE`; a translated skeleton's comes from the language its compilation names.
 
 ### G31. Deleting, leftovers and garbage collection
 What deleting hides, leftovers known to stay, and a collector for what nothing refers to.
