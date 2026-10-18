@@ -1193,7 +1193,12 @@ Triage: dissolved; all five were dropped as tracked in agents/wip-portal.md (pha
 identity.6's decision and take in the sweep (see "Dropped").
 
 ### G40. The repl's reach
-The repl reaches what the bench offers: every write, a titled thread, seeds, settings and scorers.
+The repl reaches what a calibration session needs: several seeds, a scorer picked and a run scored again, the endpoint a
+judge is called at, and an unnamed thread by its id.
+
+Triage: kept as is. Decided: the repl doesn't reach every write, which the API and the portal do; repl.1 is so by
+design. Execution settings and the canary set follow the bench, which takes them from the endpoint, so they come with
+G1.
 
 **repl.1** · From docs/repl.md:248, "Open design issues", "What the repl doesn't reach"
 
