@@ -71,7 +71,7 @@ items under it are as they were moved. An item that restates another for an API 
 46. [The object layer, if the split happens](#g46-the-object-layer-if-the-split-happens) (4)
    - G46b. [Execution settings as a component](#g46b-execution-settings-as-a-component) (2)
    - G46c. [Chat templates as components](#g46c-chat-templates-as-components) (1)
-47. [Takes waiting for a word](#g47-takes-waiting-for-a-word) (15)
+47. [A collaborator leaves a share](#g47-a-collaborator-leaves-a-share) (1)
 48. [Text cleanup steps](#g48-text-cleanup-steps) (1)
 49. [The archive's configuration under another name](#g49-the-archives-configuration-under-another-name) (1)
 50. [The appendix layout as a part](#g50-the-appendix-layout-as-a-part) (1)
@@ -1409,99 +1409,16 @@ linted, not only on a host. Engines sharing a template would share the component
 input to authored factor, and cost a new kind (with the catalog's thread kinds and their migration) and a change to the
 template check.
 
-### G47. Takes waiting for a word
-Built takes to confirm or overturn; a decision each, in the docs, rather than code.
+### G47. A collaborator leaves a share
+A collaborator may take a shared thread out of what they see, as an entry the catalog holds like any other.
 
-**api.1** · From docs/api.md:404, "Outstanding", "Takes the API is built on"
-
-- **Ids**: a path takes a whole id, and a name is a filter on a list, which gives every match.
-
-**api.3** · From docs/api.md:408, "Outstanding", "Takes the API is built on"
-
-- **Scoring**: at once after a run, with an opt-out, and the runs left to score listed.
-
-**api.4** · From docs/api.md:409, "Outstanding", "Takes the API is built on"
-
-- **Errors**: the bench's errors mapped by class, and what else a route means caught where it means it, each answered
-  with a code beside its detail (see "Errors").
-
-**api.5** · From docs/api.md:411, "Outstanding", "Takes the API is built on"
-
-- **Keeping a variation**: a fork and an edit, two requests, rather than a save by name.
-
-**api.6** · From docs/api.md:412, "Outstanding", "Takes the API is built on"
-
-- **Paths**: under `/api/`, with no version until there is a second.
-
-**bench.1** · From docs/bench.md:432, "Outstanding", its takes, built and waiting for a word
-
-- one set of writes for every kind people author, with builders only for appendices and cases, a case built only of
-  appendices the person sees, and no write refused on a lint ("Writes for the person", "Appendices and cases");
-
-**bench.4** · From docs/bench.md:437, "Outstanding", its takes, built and waiting for a word
-
-- one write says what holds of a thread; a collaborator can't leave a share, and a thread isn't handed over ("What
-  is said about a thread");
+Triage: the takes were confirmed (see "Confirmed"), all but bench.4's "a collaborator can't leave a share", which
+bench.13 overturns. Decided: a collaborator may withdraw themselves.
 
 **bench.13** · From docs/bench.md:453, "Outstanding"
 
 - **Leaving a share**: a collaborator can't take a shared thread out of what they see; only the owner can. Whether
   a collaborator may withdraw themselves, an entry the catalog would hold as any other, is open.
-
-**bench.5** · From docs/bench.md:439, "Outstanding", its takes, built and waiting for a word
-
-- only an origin the person sees is followed, always by an edit, for every kind ("Following an origin");
-
-**bench.9** · From docs/bench.md:445, "Outstanding", its takes, built and waiting for a word
-
-- configurations listed by purpose, in the API.
-
-**identity.10** · From docs/identity.md:133, "Takes on what is open", "What could move to identity"
-
-Rules that are pure functions of a person go to `identity`, and the bench applies them (`docs/bench.md`). Moving the
-catalog's `About.shows` and `About.owned_by` gave `owns`, `collaborates` and `sees`; making the catalog take no person
-moved the filtering of threads, families and expectations to the bench, over those rules.
-
-Moving one-line comparisons one at a time doesn't pay: replacing `about.owner == person` with a call of the same
-length adds a name and an import per site (tried on the bench, and reverted). Take: move a rule when it is shared by
-several places or grows beyond a comparison. Candidates left where they are:
-- **The default owner**, `by if owner is None else owner` in `src/chatddx/store/catalog.py:Catalog.create` and
-  `Catalog.adopt`. Take: move it when a second rule about owning on write, such as Z1's kinds a role authors, gives
-  identity a reason to hold write rules.
-- **The bench's owner comparisons**: a person's own deleted threads (`Seen.thread` and `Seen.threads`, with
-  `deleted`), only the owner says anything of a thread, and nobody shares with themselves (`saying.py:say`), and an
-  expectation that is "yours already" (`taking.py:take_from`).
-- **The edges' "own first"**: `src/chatddx/repl/listing.py` and `src/chatddx/portal/` list a person's own first, by
-  login or id, much as `preferred` picks.
-- **`src/chatddx/catalog/threads.py:picked`** is pure, but decides among a case's expectation threads, not who: it
-  stays with the catalog.
-
-Added in triage, from G26:
-
-**bench.2** · From docs/bench.md:434, "Outstanding", its takes, built and waiting for a word
-
-- a family's cases are those at its current vignette; an appendix's edit replaces only the cases at its own
-  vignette; carrying keeps to the expectation's family ("Appendices and cases");
-
-Added in triage, from G29:
-
-**bench.8** · From docs/bench.md:442, "Outstanding", its takes, built and waiting for a word
-
-- the shipped lists kept in code, versions as integers from 1, an edit keeping the head's labels only when its scorer
-  is the head's, and following taking each part's labels from the side whose part it keeps ("Scorers"); no resources
-  offered;
-
-Added in triage, from G30:
-
-**bench.3** · From docs/bench.md:436, "Outstanding", its takes, built and waiting for a word
-
-- a language is written only where a text has none ("Languages");
-
-**bench.10** · From docs/bench.md:447, "Outstanding"
-
-- **A case of no language** goes as written, linted `language.unknown`, rather than left out (agents/wip-engine-part.md,
-  "A case of no language"); so does a case of a language the translations don't cover when the configuration's own is
-  unknown.
 
 ### G48. Text cleanup steps
 More cleanup steps, if vignettes need them.
@@ -1534,6 +1451,89 @@ The manual, from `agents/wip-authoring.md` at b6f76b8.
 **bench.11** · From docs/bench.md:450, "Outstanding"
 
 - **A low-level manual for the bench**, made from `agents/wip-authoring.md` at b6f76b8.
+
+## Confirmed
+Takes confirmed in triage, now decisions; bench.4's "a collaborator can't leave a share" is overturned by G47:
+
+**api.1** · From docs/api.md:404, "Outstanding", "Takes the API is built on"
+
+- **Ids**: a path takes a whole id, and a name is a filter on a list, which gives every match.
+
+**api.3** · From docs/api.md:408, "Outstanding", "Takes the API is built on"
+
+- **Scoring**: at once after a run, with an opt-out, and the runs left to score listed.
+
+**api.4** · From docs/api.md:409, "Outstanding", "Takes the API is built on"
+
+- **Errors**: the bench's errors mapped by class, and what else a route means caught where it means it, each answered
+  with a code beside its detail (see "Errors").
+
+**api.5** · From docs/api.md:411, "Outstanding", "Takes the API is built on"
+
+- **Keeping a variation**: a fork and an edit, two requests, rather than a save by name.
+
+**api.6** · From docs/api.md:412, "Outstanding", "Takes the API is built on"
+
+- **Paths**: under `/api/`, with no version until there is a second.
+
+**bench.1** · From docs/bench.md:432, "Outstanding", its takes, built and waiting for a word
+
+- one set of writes for every kind people author, with builders only for appendices and cases, a case built only of
+  appendices the person sees, and no write refused on a lint ("Writes for the person", "Appendices and cases");
+
+**bench.2** · From docs/bench.md:434, "Outstanding", its takes, built and waiting for a word
+
+- a family's cases are those at its current vignette; an appendix's edit replaces only the cases at its own
+  vignette; carrying keeps to the expectation's family ("Appendices and cases");
+
+**bench.3** · From docs/bench.md:436, "Outstanding", its takes, built and waiting for a word
+
+- a language is written only where a text has none ("Languages");
+
+**bench.4** · From docs/bench.md:437, "Outstanding", its takes, built and waiting for a word
+
+- one write says what holds of a thread; a collaborator can't leave a share, and a thread isn't handed over ("What
+  is said about a thread");
+
+**bench.5** · From docs/bench.md:439, "Outstanding", its takes, built and waiting for a word
+
+- only an origin the person sees is followed, always by an edit, for every kind ("Following an origin");
+
+**bench.8** · From docs/bench.md:442, "Outstanding", its takes, built and waiting for a word
+
+- the shipped lists kept in code, versions as integers from 1, an edit keeping the head's labels only when its scorer
+  is the head's, and following taking each part's labels from the side whose part it keeps ("Scorers"); no resources
+  offered;
+
+**bench.9** · From docs/bench.md:445, "Outstanding", its takes, built and waiting for a word
+
+- configurations listed by purpose, in the API.
+
+**bench.10** · From docs/bench.md:447, "Outstanding"
+
+- **A case of no language** goes as written, linted `language.unknown`, rather than left out (agents/wip-engine-part.md,
+  "A case of no language"); so does a case of a language the translations don't cover when the configuration's own is
+  unknown.
+
+**identity.10** · From docs/identity.md:133, "Takes on what is open", "What could move to identity"
+
+Rules that are pure functions of a person go to `identity`, and the bench applies them (`docs/bench.md`). Moving the
+catalog's `About.shows` and `About.owned_by` gave `owns`, `collaborates` and `sees`; making the catalog take no person
+moved the filtering of threads, families and expectations to the bench, over those rules.
+
+Moving one-line comparisons one at a time doesn't pay: replacing `about.owner == person` with a call of the same
+length adds a name and an import per site (tried on the bench, and reverted). Take: move a rule when it is shared by
+several places or grows beyond a comparison. Candidates left where they are:
+- **The default owner**, `by if owner is None else owner` in `src/chatddx/store/catalog.py:Catalog.create` and
+  `Catalog.adopt`. Take: move it when a second rule about owning on write, such as Z1's kinds a role authors, gives
+  identity a reason to hold write rules.
+- **The bench's owner comparisons**: a person's own deleted threads (`Seen.thread` and `Seen.threads`, with
+  `deleted`), only the owner says anything of a thread, and nobody shares with themselves (`saying.py:say`), and an
+  expectation that is "yours already" (`taking.py:take_from`).
+- **The edges' "own first"**: `src/chatddx/repl/listing.py` and `src/chatddx/portal/` list a person's own first, by
+  login or id, much as `preferred` picks.
+- **`src/chatddx/catalog/threads.py:picked`** is pure, but decides among a case's expectation threads, not who: it
+  stays with the catalog.
 
 ## For the sweep
 References to open items found during triage, for step 5:
