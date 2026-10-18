@@ -17,7 +17,7 @@ from chatddx.portal.test.test_reading import shown
 from chatddx.portal.test.test_signing_in import signing_in
 from chatddx.store import Store
 from chatddx.store.store import Connection
-from chatddx.test.world import LINES, OFF, QWEN, faked
+from chatddx.test.world import GPT_OSS, LINES, OFF, QWEN, faked
 
 
 @pytest.fixture
@@ -281,3 +281,27 @@ def test_a_case_s_runs_are_scored_again_from_its_review_once_expected_otherwise(
             break
         time.sleep(0.02)
     assert f'action="/review/{crlf["id"]}/scores"' not in page
+
+
+@pytest.mark.slow
+def test_a_case_run_from_its_review_at_another_model_s_endpoint_runs_with_that_model(
+    signed: TestClient, world: Inventory, conn: Connection
+) -> None:
+    query = {"kind": "configuration", "name": LINES, "owner": "alice"}
+    [lines] = signed.get("/api/threads", params=query).json()
+    [crlf] = signed.get("/api/families", params={"name": "crlf"}).json()
+    [gpt_oss] = [e for e in signed.get("/api/endpoints").json() if e["name"] == GPT_OSS]
+    form = {
+        "configuration": str(lines["id"]),
+        "case": crlf["case"],
+        "endpoint": GPT_OSS,
+        "back": f"/review/{crlf['id']}",
+    }
+    with faked(world, Store(conn).get, endpoint=GPT_OSS):
+        got = signed.post(f"/review/{crlf['id']}/runs", data=form)
+        assert got.status_code == 303, got.text
+        [run] = signed.get("/api/runs", params={"reaching": crlf["case"]}).json()
+        _ = settled(signed, run["id"])
+    assert run["endpoint"] == GPT_OSS
+    assert run["ran"]["parts"] == {"model": gpt_oss["serves"]}
+    assert run["described"].startswith(f"{LINES}+model=")

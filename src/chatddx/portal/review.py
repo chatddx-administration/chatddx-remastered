@@ -213,6 +213,10 @@ def running_in_review(
         raise HTTPException(422, f"no case {case} of family {family}")
     with refused(NotFound):
         variation = bench.variation(configuration, {}, None)
+        if endpoint and variation.recipe is not None:
+            serves = bench.endpoint(endpoint).model.digest
+            if variation.held("model") != serves:
+                variation = bench.variation(configuration, {"model": serves}, None)
         started = bench.start(
             variation, endpoint or None, [case], suggest_seeds(replicates)
         )

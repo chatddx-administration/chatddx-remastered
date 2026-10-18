@@ -316,8 +316,9 @@ def test_a_case_is_run_from_its_review_and_its_answer_read_in_the_record(
         _ = page.get_by_label("Configuration").select_option(str(lines["id"]))
         _ = page.get_by_label("Endpoint").select_option(QWEN)
         page.get_by_role("button", name="Run it").click()
-        page.wait_for_url(re.compile(r"#record$"))
         expect(record).to_have_attribute("open", "")
+        page.wait_for_url(re.compile(rf"/review/{crlf['id']}$"))
+        assert page.evaluate("window.scrollY") == 0
         pending = record.locator("[data-pending]")
         expect(pending).to_contain_text(re.compile(r"queued|ended|scoring|done"))
         answer = record.locator("details[data-answer] summary")

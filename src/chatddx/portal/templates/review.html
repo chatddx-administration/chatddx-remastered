@@ -236,7 +236,7 @@
   <summary class="{{ rail }}">
     <span class="{{ upright }}">Record <span class="font-normal text-muted-foreground">{{ answers | length }} answer{{ "" if answers | length == 1 else "s" }}{% if pending %} · {{ pending | length }} under way{% endif %}{% if left %} · {{ left | length }} to score{% endif %}</span></span>
   </summary>
-  <div id="record" class="{{ opened }} xl:w-[26rem]">
+  <div class="{{ opened }} xl:w-[26rem]">
     <p class="mb-3 text-xs text-muted-foreground">What your runs answered to this case{% if scorer %}, and how {{ scorer[0].name or scorer[0].title }} scored it{% endif %}: a record, to read.</p>
 
     <details class="mb-3 rounded-lg border border-dashed border-border p-3 text-sm"{% if not answers and not pending %} open{% endif %}>
@@ -251,7 +251,8 @@
           <select name="endpoint" class="h-9 {{ field }}">
             <option value="">where its model is served</option>
             {% for e in endpoints %}<option value="{{ e }}">{{ e }}</option>{% endfor %}
-          </select></label>
+          </select>
+          <span class="text-xs text-muted-foreground">One serving another model runs it with that model in place of its own.</span></label>
         <label class="flex items-center gap-2"><span class="text-muted-foreground">Replicates</span>
           <input type="number" name="replicates" value="1" min="1" max="{{ most }}" class="h-9 w-20 {{ field }}"></label>
         <label class="flex items-center gap-2"><input type="checkbox" name="score" value="true" checked> Score it once it has finished</label>

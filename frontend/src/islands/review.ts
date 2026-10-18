@@ -39,7 +39,10 @@ if (held) {
 
   for (const drawer of document.querySelectorAll<HTMLDetailsElement>("details[data-drawer]")) remembered(drawer);
   const record = document.querySelector<HTMLDetailsElement>('details[data-drawer="record"]');
-  if (record && location.hash === "#record") record.open = true;
+  if (record && location.hash === "#record") {
+    record.open = true;
+    history.replaceState(history.state, "", location.pathname + location.search);
+  }
 
   const vignette = document.getElementById("review-vignette");
   if (vignette) {

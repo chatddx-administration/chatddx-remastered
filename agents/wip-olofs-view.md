@@ -302,6 +302,10 @@ the pattern is typed, a scorer saved, and its score.
   `Bench.queue_scoring` by the scorers it is left to), and leads back to the record, which follows the scorings as it
   follows runs.
 - **The record's rows** say when each run started, since runs of one configuration read alike.
+- **An endpoint serving another model** runs the configuration with that model in its place, as the variation's page
+  does (`diagnoses+model=gpt-oss-20b@malborg`), rather than being refused for serving another model.
+- **No jump**: the record is opened by `#record` without an element of that id, so the page doesn't scroll to it, and
+  the island drops the hash, so the reload after a run doesn't either.
 - **Tests**: `test_running.py`, the case run from its review and followed there, refused from another site and for a
   case of another family, and scored again once its expectation is edited; `test_browser.py`, the case run from the
   record, followed and its answer read once the page reloads; vitest for `doing`. By hand on the sample World with
