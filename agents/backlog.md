@@ -1216,6 +1216,9 @@ G1.
 ### G41. The repl's rendering
 What the repl prints: tool calls apart, a start, and aligned judge lines.
 
+Triage: kept as is. repl.5 is a runner fix: the runner's `Delta` drops the streamed tool call's `index`
+(`runner/send.py`), and carrying it fixes the API's `item.delta` and the portal's live view too.
+
 **repl.5** · From docs/repl.md:256, "Open design issues", "Smaller issues"
 
 - **Two tool calls in one response run together** on one line as they stream, as a call's first delta is taken as its
