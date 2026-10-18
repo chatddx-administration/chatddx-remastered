@@ -63,7 +63,8 @@ items under it are as they were moved. An item that restates another for an API 
 40. [The repl's reach](#g40-the-repls-reach) (3)
 41. [The repl's rendering](#g41-the-repls-rendering) (3)
 42. [Unknown query parameters](#g42-unknown-query-parameters) (1)
-43. [Curation's round trip](#g43-curations-round-trip) (6)
+43. [Loading data sets](#g43-loading-data-sets) (5)
+   - G43b. [Exporting data sets](#g43b-exporting-data-sets) (1)
 44. [The sample's data](#g44-the-samples-data) (2)
 45. [Missing tests](#g45-missing-tests) (4)
 46. [The object layer and new kinds](#g46-the-object-layer-and-new-kinds) (7)
@@ -1247,19 +1248,17 @@ links and forms its own code builds.
   on `GET /api/runs` or `GET /api/threads` gives everything, and a part given twice in a variation's query counts the
   last. Take: one check for every route that refuses a parameter the route doesn't declare, and a scalar given twice.
 
-### G43. Curation's round trip
-Data sets that go both ways: verified, exported, imported as anyone, from several sources, holding what has no table
-yet.
+### G43. Loading data sets
+Loading that can only verify, loads as anyone, from several sources, holding what has no table yet, and knows the
+leftovers meant to stay.
+
+Triage: split, exporting went to G43b; curation.7 came from G31. Decided, for curation.7: a data set lists the
+leftovers it keeps, and loading reports only new ones.
 
 **curation.2** · From docs/curation.md:275, "Open design issues", "Import, export and verification"
 
 - verifying that the store holds a data set, without writing anything, which a loading's validated lines only do
   inside a transaction that writes;
-
-**curation.3** · From docs/curation.md:277, "Open design issues", "Import, export and verification"
-
-- exporting what the archive or a person holds back into a data set's files, so a change made in the portal can be
-  kept in git;
 
 **curation.4** · From docs/curation.md:279, "Open design issues", "Import, export and verification"
 
@@ -1273,11 +1272,20 @@ Trials, executions, scorings and hand-written skeletons have no tables, and a da
 
 - **One source a run.** A data set's cases all come from the source `--source` names.
 
-Added in triage, from G31:
-
 **curation.7** · From docs/curation.md:286, "Open design issues", "Smaller issues"
 
 - **Leftovers are listed every run.** Nothing records that a leftover is known and meant to stay.
+
+### G43b. Exporting data sets
+What the archive or a person holds written back into a data set's files, so a change made in the portal can be kept in
+git (agents/wip-portal.md, "What the docs ask of it").
+
+Triage: split from G43.
+
+**curation.3** · From docs/curation.md:277, "Open design issues", "Import, export and verification"
+
+- exporting what the archive or a person holds back into a data set's files, so a change made in the portal can be
+  kept in git;
 
 ### G44. The sample's data
 The sample's stage said in code, and Olof's judge.
@@ -1507,7 +1515,9 @@ References to open items found during triage, for step 5:
 - docs/chatddx.md, "Requirements", cites docs/inventory.md, "Hosts don't read the start-up", which G15 dropped for
   agents/wip-deploy.md.
 - docs/bench.md's item on what the old bench had (bench.23) hands two of its parts to agents/wip-portal.md.
-- agents/wip-portal.md, "What the docs ask of it", cites docs/catalog.md, "Smaller issues", for what deleting hides.
+- agents/wip-portal.md, "What the docs ask of it", cites docs/catalog.md, "Smaller issues", for what deleting hides;
+  docs/curation.md, "Import, export and verification", for an export (G43b); and docs/factors.md, "Execution settings
+  as a component" (G46).
 - agents/wip-clearance.md, "Before real patient data", 9, hands migrations to docs/store.md, "Known gaps": store.1 is
   here now.
 - agents/wip-clearance.md, "Before real patient data", 2, cites docs/api.md, "Outstanding", "Serving", and
