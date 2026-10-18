@@ -52,6 +52,7 @@
   import { said, valued, withScorer } from "$lib/review/review";
   import JudgeAsked from "./JudgeAsked.svelte";
   import JudgeForm from "./JudgeForm.svelte";
+  import JudgeTexts from "./JudgeTexts.svelte";
   import { startingParams, verdictAt } from "./judging";
   import { type Choice, choices } from "./selectors";
   import SelectorPicker from "./SelectorPicker.svelte";
@@ -77,6 +78,7 @@
 
   let judges = $state<JudgeChoice[]>([...given.judges]);
   let writing = $state<number | null>(null);
+  let rewriting = $state<number | null>(null);
   const titles = $derived({ ...given.titles, ...Object.fromEntries(judges.map((j) => [j.digest, j.name])) });
 
   let mode = $state<"edit" | "fork" | "new">(start ? start.mode : "new");
@@ -357,7 +359,32 @@
           />
         {/if}
         {#if metric?.judged && view.judge}
-          <JudgeAsked judge={view.judge} expectation={view.expectation ?? ""} {data} />
+          {#if rewriting === at && judge?.texts && judge.body && judge.head !== undefined}
+            <JudgeTexts
+              judge={{ ...judge, texts: judge.texts, body: judge.body, head: judge.head }}
+              expectation={view.expectation ?? ""}
+              {data}
+              me={given.me}
+              made={(j) => {
+                const known = judges.findIndex((k) => k.thread === j.thread);
+                if (known === -1) judges.push(j);
+                else judges[known] = j;
+                const was = view.judge;
+                for (const v of body.views) if (v.judge === was) v.judge = j.digest;
+                rewriting = null;
+              }}
+              left={() => (rewriting = null)}
+            />
+          {:else}
+            <JudgeAsked judge={view.judge} expectation={view.expectation ?? ""} {data} />
+            {#if judge?.texts}
+              <button
+                type="button"
+                class="rounded-md border border-border px-2.5 py-0.5 hover:bg-muted"
+                onclick={() => (rewriting = at)}>Change what it is asked</button
+              >
+            {/if}
+          {/if}
         {/if}
       </li>
     {/each}

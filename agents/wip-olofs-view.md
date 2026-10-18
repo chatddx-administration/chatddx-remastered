@@ -20,7 +20,7 @@ rather than a click, a scroll or another page.
    sensitive from the API's places; he runs the case himself; judges are picked and written before their texts;
    unjudged views are tried as typed, judged ones by scoring; selectors are picked and applied on the server; and the
    page is `/review/{family}`, beside the family's page.
-4. **Steps 1 to 5 are built** (see "Built"); step 6 is next (see "Steps").
+4. **Steps 1 to 6 are built** (see "Built"); what is left is in each step's "What step N leaves" and in "Open".
 
 ## What the clinician is here to do
 From the request, and from what the sample World waits on (`docs/curation.md`, "Outstanding"):
@@ -202,7 +202,7 @@ A view's selectors are a JSON Pointer or a fixed subset of JSONPath (`docs/facto
    saving with labels.
 5. **With judges**, built (see "Built"): picking one, writing one (L4 a, b), what it is asked, and judged views scored through the worker
    (L5 b).
-6. **The judge's texts** (L4 c), with 5c's text editor.
+6. **The judge's texts** (L4 c), with 5c's text editor, built (see "Built").
 
 Tests, as the portal's: the pages by `TestClient` on `ran`; the new routes in the API's tests, with `no-store` pinned
 where they are sensitive; vitest for the panes' logic; and a browser test of a clinician's flow on the test World:
@@ -397,6 +397,43 @@ the pattern is typed, a scorer saved, and its score.
 - **The endpoint a new judge is asked at** is the first listed, not one serving its configuration's model; a judge
   whose engine no endpoint serves bars its scorer (`docs/runner.md`, "Judges").
 - **A judged view's values come only from scoring**: one judge call per seed per answer, recorded, through the worker.
+
+### Step 6: the judge's texts
+- **What a judge comes with** (`src/chatddx/portal/review.py:_texts`): each judge the composer is given carries its
+  head, its body and its texts: the judge configuration whose head is its skeleton (the person's own first), the
+  recipe that configuration reads, and the recipe's instructions, prompt and output, each with the thread whose head
+  it is, whether that thread is the person's, and its language. A judge whose skeleton no configuration in sight
+  heads, as a World's judge compiled for its engine, reads the recipe its compilation recorded; it has no
+  configuration then, and saving makes one.
+- **The text editor** (`frontend/src/lib/scorer/TextSegments.svelte`, `texts.ts`), a start on 5c's: a text and its
+  slots and inserts, each slot or insert a chip between text boxes, left out by its ×, and one the part allows and
+  doesn't hold put back by its + at the end. What is stored is the canonical form: neighbouring texts merged, empty
+  ones dropped, and a plain string where an instruction or guidance holds no insert (`textOf`).
+- **Change what it is asked**, under a judged view (`frontend/src/lib/scorer/JudgeTexts.svelte`): its instructions,
+  what it is told to answer (the output's guidance) and its prompt, side by side with the messages they would make,
+  the guidance placed as `src/chatddx/factors/request.py:compile_request` places it (`texts.ts:asked`), the
+  expectation as the view picks it of what is typed and the answer as `‹completion›`. Each changed part is checked
+  as typed (`POST /api/components/check`), and a refused one bars saving.
+- **Saving** (`frontend/src/lib/scorer/rewriting.ts:rewritten`) writes, in order: each changed text, as a version
+  where its thread is the person's, else as a fork of their own (a new thread where none holds it), in its language;
+  the judge configuration of those texts, as a version of the person's own, a fork, or, for a judge without one, a
+  new configuration from the recipe, named "‹judge›'s request"; and the judge asked through it, a version or a fork
+  under its name. The new judge is picked in each of the scorer's views that asked the old one, and the scorer is
+  saved as before.
+- **Tests**: `test_reviewing.py`, a judge's texts as the composer is given them; vitest for the segments, their
+  canonical form, `text@1`, and where guidance lands (`texts.test.ts`); and `test_browser.py`, verdict's guidance
+  rewritten under `judged`, the messages following it, saved, what it is asked, and the scorer saved with both its
+  verdict views asking alice's own judge through her own judge configuration.
+
+#### What step 6 leaves
+- **Saving is several writes, not one**: if one is refused partway, the versions written before it stay, the
+  person's own and unused.
+- **A version of the person's own text or configuration moves that thread's head**: what holds the earlier version
+  keeps it, by digest, and a configuration of theirs holding it is left behind its parts, as the catalog proposes.
+- **Only the texts**: the recipe's other parts (sampling, reasoning, few-shot messages, a toolset) and the judge's
+  endpoint and seeds aren't changed here, and the messages shown leave out few-shot messages and tool guidance.
+- **The text kinds of 5c** stop at a judge's: an appendix's or a generation's instructions and prompts are still
+  written on their threads' pages.
 
 ## Open
 - **Grading answers by hand.** Olof's judge is to be measured against his own grades of real answers, "with a line on

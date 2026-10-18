@@ -473,3 +473,55 @@ def test_a_judged_view_is_composed_with_a_new_judge_and_scored_through_the_worke
     held = page.request.get(f"/api/components/{strict['head']['digest']}").json()
     assert held["body"]["seeds"] == [1, 2]
     assert errors == []
+
+
+def test_what_a_judge_is_asked_is_rewritten_and_asked_through_a_judge_of_one_s_own(
+    page: Page,
+) -> None:
+    errors: list[str] = []
+    page.on("pageerror", lambda e: errors.append(str(e)))
+    noted = page.request.get("/api/families", params={"name": "noted"}).json()[0]
+    query: dict[str, str | float | bool] = {"kind": "scorer", "name": "judged"}
+    judged = page.request.get("/api/threads", params=query).json()[0]
+    was = page.request.get(f"/api/components/{judged['head']['digest']}").json()
+
+    _ = page.goto(f"/review/{noted['id']}?scorer={judged['id']}")
+    page.get_by_role("button", name=re.compile(r"^Compose judged")).click()
+    composer = page.get_by_role("region", name="Composing a scorer")
+    composer.get_by_role("button", name="Change what it is asked").first.click()
+    panel = composer.get_by_role(
+        "region", name="What its judge is asked, as you write it"
+    )
+    told = panel.get_by_label("What it is told to answer, text 1")
+    expect(told).to_have_value(
+        "Say whether the answer meets what was expected, and why."
+    )
+    told.fill("Say whether the answer meets carol's note, and why.")
+    preview = panel.get_by_role("list", name="As it would read")
+    expect(preview).to_contain_text("meets carol's note")
+    expect(preview).to_contain_text("Chock, troligen septisk.")
+    panel.get_by_role("button", name="Save what it is asked").click()
+    expect(panel).to_have_count(0)
+    composer.get_by_text("What its judge is asked").first.click()
+    asked = composer.get_by_role("list", name="What its judge is asked").first
+    expect(asked).to_contain_text("meets carol's note")
+    composer.get_by_label("Name").fill("judged-anew")
+    composer.get_by_role("button", name="Save").click()
+    page.wait_for_url(lambda url: not url.endswith(f"scorer={judged['id']}"))
+
+    query = {"kind": "judge", "name": "verdict", "owner": "alice"}
+    [verdict] = page.request.get("/api/threads", params=query).json()
+    held = page.request.get(f"/api/components/{verdict['head']['digest']}").json()
+    query = {"kind": "configuration", "purpose": "judge", "owner": "alice"}
+    judging = page.request.get("/api/threads", params=query).json()
+    [asking] = [t for t in judging if t["name"] == "judge"]
+    assert held["body"]["skeleton"] == asking["head"]["digest"]
+    query = {"kind": "scorer", "name": "judged-anew"}
+    [made] = page.request.get("/api/threads", params=query).json()
+    now = page.request.get(f"/api/components/{made['head']['digest']}").json()
+    old = {v["judge"] for v in was["body"]["views"] if v["metric"] == "verdict"}
+    assert len(old) == 1 and old.isdisjoint(v["judge"] for v in now["body"]["views"])
+    assert [v["judge"] for v in now["body"]["views"] if v["metric"] == "verdict"] == [
+        verdict["head"]["digest"]
+    ] * 2
+    assert errors == []

@@ -17,6 +17,7 @@ from chatddx.api import (
 )
 from chatddx.api.state import refused
 from chatddx.bench import Ambiguous, Bench, NotFound
+from chatddx.catalog import threads as catalog_threads
 from chatddx.factors.base import resolve
 from chatddx.factors.cases import Appendix
 from chatddx.factors.request import Purpose, Skeleton
@@ -557,6 +558,9 @@ def _judges(bench: Bench) -> list[dict[str, Any]]:
             {
                 "digest": t.head.digest,
                 "thread": t.id,
+                "head": t.head.id,
+                "body": judge.model_dump(mode="json"),
+                "texts": _texts(bench, judge),
                 "name": t.name or t.title,
                 "owner": t.owner,
                 "configuration": bench.title(judge.skeleton),
@@ -568,6 +572,52 @@ def _judges(bench: Bench) -> list[dict[str, Any]]:
             }
         )
     return found
+
+
+def _texts(bench: Bench, judge: Judge) -> dict[str, Any] | None:
+    held = bench.holder(judge.skeleton)
+    recipe = None if held is None else catalog_threads.recipe(bench.rows, held[0])
+    if recipe is None:
+        made = bench.store.compilations(judge.skeleton)
+        recipe = made[0].recipe if made else None
+    if recipe is None:
+        return None
+    return {
+        "configuration": None
+        if held is None
+        else {
+            "thread": held[0].thread,
+            "head": held[0].id,
+            "mine": held[1].owner == bench.person.id,
+            "name": held[1].name or bench.title(held[0].digest),
+        },
+        "recipe": recipe.model_dump(mode="json"),
+        "parts": {
+            part: None if digest is None else _chunk(bench, digest)
+            for part in ("instructions", "prompt", "output")
+            for digest in [getattr(recipe, part)]
+        },
+    }
+
+
+def _chunk(bench: Bench, digest: str) -> dict[str, Any]:
+    held = bench.holder(digest)
+    given: dict[str, Any] = {
+        "digest": digest,
+        "body": bench.store.get(digest).model_dump(mode="json"),
+        "name": bench.title(digest),
+    }
+    if held is None:
+        return {**given, "thread": None}
+    edit, about = held
+    return {
+        **given,
+        "thread": edit.thread,
+        "head": edit.id,
+        "mine": about.owner == bench.person.id,
+        "name": about.name or given["name"],
+        "language": api.thread(bench, edit.thread).language,
+    }
 
 
 def _outputs(bench: Bench) -> list[dict[str, Any]]:

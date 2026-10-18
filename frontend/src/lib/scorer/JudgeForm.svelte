@@ -1,5 +1,6 @@
 <script lang="ts" module>
   import type { Schema } from "$lib/schema/form";
+  import type { Texts } from "./rewriting";
 
   export type Judging = {
     digest: string;
@@ -18,6 +19,9 @@
     endpoint: string | null;
     seeds: number[];
     output_schema: Schema | null;
+    head?: number;
+    body?: Record<string, unknown>;
+    texts?: Texts | null;
   };
 </script>
 
