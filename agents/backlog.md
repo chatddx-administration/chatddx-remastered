@@ -65,7 +65,8 @@ items under it are as they were moved. An item that restates another for an API 
 42. [Unknown query parameters](#g42-unknown-query-parameters) (1)
 43. [Loading data sets](#g43-loading-data-sets) (5)
    - G43b. [Exporting data sets](#g43b-exporting-data-sets) (1)
-44. [The sample's data](#g44-the-samples-data) (2)
+44. [The data's stage, said in code](#g44-the-datas-stage-said-in-code) (1)
+   - G44b. [Olof's work: the sample's judge](#g44b-olofs-work-the-samples-judge) (1)
 45. [Missing tests](#g45-missing-tests) (4)
 46. [The object layer and new kinds](#g46-the-object-layer-and-new-kinds) (7)
 47. [Takes waiting for a word](#g47-takes-waiting-for-a-word) (15)
@@ -1287,8 +1288,12 @@ Triage: split from G43.
 - exporting what the archive or a person holds back into a data set's files, so a change made in the portal can be
   kept in git;
 
-### G44. The sample's data
-The sample's stage said in code, and Olof's judge.
+### G44. The data's stage, said in code
+Whether data is guessed or vetted, by whom and from where, loaded with it, so that a score can say what it rests on.
+
+Triage: split, Olof's work went to G44b. Decided: the stage is a catalog entry on what a data set loads; entries change
+no digest, a stage moves from guessed to vetted without a new version, and a score reads the entries on its
+expectations and its judge.
 
 **curation.10** · From docs/curation.md:292, "Outstanding"
 
@@ -1298,6 +1303,13 @@ The sample's stage said in code, and Olof's judge.
   his name into every score, so none is made up; made-up notes go in the test World, under its placeholder authors.
   Data meant to be relied on needs its stage said in code, not in comments: whether it is guessed or vetted, by
   whom, and where it came from, loaded with the data so that a score can say what it rests on.
+
+### G44b. Olof's work: the sample's judge
+Olof's work, not a PR: his prompt replaces the sample's draft judge, measured by his grades of real answers, and his
+notes revise the targets. agents/wip-olofs-view.md builds the page he writes it on, and holds grading by hand as an
+open design.
+
+Triage: split from G44.
 
 **curation.11** · From docs/curation.md:298, "Outstanding"
 
@@ -1531,6 +1543,7 @@ References to open items found during triage, for step 5:
   docs/identity.md for "no limit until Keycloak"; the NixOS module's nginx limits sign-ins now.
 - agents/wip-portal.md, "Below the UI", 3, cites docs/bench.md, "Outstanding", and docs/identity.md, "Z1: what each
   role is shown": carry identity.6's decision and take there.
+- agents/wip-olofs-view.md cites docs/curation.md, "Outstanding", for what the sample World waits on: G44b.
 - agents/wip-engine-part.md, "Outstanding", hands bench.24, bench.25 and bench.26 to docs/bench.md, "Outstanding":
   they are here now.
 
