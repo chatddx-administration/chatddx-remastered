@@ -52,7 +52,7 @@ items under it are as they were moved. An item that restates another for an API 
    - G30b. [Translating JSON few-shot answers](#g30b-translating-json-few-shot-answers) (1)
 31. [Garbage collection](#g31-garbage-collection) (2)
 32. [Values the canonical form can't keep](#g32-values-the-canonical-form-cant-keep) (3)
-33. [The store's read API](#g33-the-stores-read-api) (6)
+33. [The store's read API](#g33-the-stores-read-api) (0, dissolved)
 34. [Evolving a stored database](#g34-evolving-a-stored-database) (3)
 35. [Deployment](#g35-deployment) (3)
 36. [Reads that grow with the data](#g36-reads-that-grow-with-the-data) (5)
@@ -1085,35 +1085,7 @@ nothing stored can hold either, so no stored digest changes.
   carries the NaN.
 
 ### G33. The store's read API
-What a future ORM reads: per-kind read-only views, the reordered copy, and an async API.
-
-**store.5** · From docs/store.md:131, "Known gaps"
-
-- The copy of each component and record kept for queries reorders object keys, so a schema's property order survives
-  only in the stored text. Components and records are read from the stored text, and a future ORM or view must not
-  rebuild them from the copy.
-
-**store-api.4** · From docs/store-api.md:402, "Known gaps"
-
-- `doc` reorders object keys; components and records must be read from `canonical` and `payload`.
-
-**store.7** · From docs/store.md:137, "Known gaps"
-
-- Read-only views per kind of component, for a future ORM, aren't written.
-
-**store-api.6** · From docs/store-api.md:404, "Known gaps"
-
-- No per-kind read-only views.
-
-**store.6** · From docs/store.md:134, "Known gaps"
-
-- No async API. The runner is synchronous, and wants each row to land as it is written. On a connection that doesn't
-  commit each statement by itself, a write outside a transaction opens one that only the caller commits, and the
-  store's own transactions become savepoints inside it.
-
-**store-api.5** · From docs/store-api.md:403, "Known gaps"
-
-- No async API, and on a connection that isn't in autocommit mode, writes wait for the caller's commit.
+Triage: dissolved; all three were dropped (see "Dropped").
 
 ### G34. Evolving a stored database
 Migrations checked by content, and stored rows readable after a schema-version bump.
@@ -1706,6 +1678,43 @@ catalog.10, from G31, as tracked in agents/wip-portal.md ("What the docs ask of 
 **catalog.10** · From docs/catalog.md:424, "Open design issues", "Smaller issues"
 
 - **What deleting hides in the portal**: everywhere, or only in pickers, while the runs that used it stay visible.
+
+store.5 and store-api.4, from G33, as stated: docs/store-api.md, "Conventions", "Canonical text", reads components
+and records from their canonical text, never from `doc`:
+
+**store.5** · From docs/store.md:131, "Known gaps"
+
+- The copy of each component and record kept for queries reorders object keys, so a schema's property order survives
+  only in the stored text. Components and records are read from the stored text, and a future ORM or view must not
+  rebuild them from the copy.
+
+**store-api.4** · From docs/store-api.md:402, "Known gaps"
+
+- `doc` reorders object keys; components and records must be read from `canonical` and `payload`.
+
+store.7 and store-api.6, from G33, as unplanned: the store is plain SQL with no ORM by design, and views come with
+what reads the store from outside, such as G6b's export:
+
+**store.7** · From docs/store.md:137, "Known gaps"
+
+- Read-only views per kind of component, for a future ORM, aren't written.
+
+**store-api.6** · From docs/store-api.md:404, "Known gaps"
+
+- No per-kind read-only views.
+
+store.6 and store-api.5, from G33, as a design choice: the runner wants each row to land as it is written; threads and
+connections are G35's and agents/wip-clearance.md's ("Before real patient data", 1 and 2):
+
+**store.6** · From docs/store.md:134, "Known gaps"
+
+- No async API. The runner is synchronous, and wants each row to land as it is written. On a connection that doesn't
+  commit each statement by itself, a write outside a transaction opens one that only the caller commits, and the
+  store's own transactions become savepoints inside it.
+
+**store-api.5** · From docs/store-api.md:403, "Known gaps"
+
+- No async API, and on a connection that isn't in autocommit mode, writes wait for the caller's commit.
 
 ## Context
 What the moved sections said of their items as a whole, moved with them.
