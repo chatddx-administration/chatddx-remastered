@@ -14,8 +14,8 @@ This document contains project-wide instructions written by humans for agents.
 * Errors and warnings that indicate issues beyond the scope of the current task should remain, never hide them.
 * `pnpm --dir frontend check` typechecks the frontend, and `pnpm --dir frontend build` builds it. After a change to
   the API, `chatddx openapi > frontend/openapi.json`.
-* Before committing, `chatddx reference` brings `docs/reference/` up to date with the code: it tags what changed for
-  a human to apply, and `--check` fails while a reference is behind.
+* Before committing, `chatddx reference` tags API surface changes for a human to sign-off on Solidified modules,
+  and `--check` fails while a reference is behind.
 
 ## Testing
 * Baseline is `pytest` which runs every test and takes \~110 s; `pytest -m 'not slow'` is the quick run, \~22s.
@@ -37,23 +37,19 @@ This document contains project-wide instructions written by humans for agents.
 5. Itemized - Referred to as an item in `docs/backlog.md`
 6. Planned - Referred to as a plan in `agents/plan-<thing>.md`
 7. Drafted - Exists as a moving target in code and `agents/wip-<thing>.md`
-8. Solidified - Documented in `docs/<thing>.md` and less volatile as a consequence of doc's rule 1.
+8. Solidified - Dependable and documented in `docs/<thing>.md` and `docs/reference/<thing>.md`
+9. Cemented - TBD
+10. Protected - TBD
 
-Steps 5-8, docs *move*: backlog -> plan -> wip -> doc, and is never explained in more than one doc at the time.
+Steps above 5: docs *move*: backlog -> plan -> wip -> doc, and is never explained in more than one doc at the time.
+Steps above 8: guarded by rule 1 and `chatddx reference`
 
 ## Documentation rules
 
 ### 1. Humans write, agents suggest.
 In all docs except `agents/*`, agents are only allowed to insert suggestions.
-```
-AGENT: replace
-The 2 lines below. The tag's phrase is `settings.REFERENCE_TAG`, `SIGN-OFF` today, as `REFERENCE` is also SQL's.
----
 `docs/reference/*` is written by `chatddx reference` alone: it inserts a tag, `<settings.REFERENCE_TAG>: ADD`,
 `REPLACE` or `REMOVE` in the template below, above each change in the code's public names, and a human applies it.
-```
-`docs/reference/*` is written by `chatddx reference` alone: it inserts a tag, `REFERENCE: ADD`, `REPLACE` or `REMOVE`
-in the template below, above each change in the code's public names, and a human applies it.
 
 A suggestion is inserted as a fenced code-block immediately above the subject to change.
 The backticks are part of the template, use 4 backticks as envelope if the suggestion contains a code-block.
@@ -68,20 +64,15 @@ AGENT: <verb>
 ### 2. Docs refer to the code, the code speaks for itself.
 The primary document is `docs/chatddx.md`: If a contradiction to it is discovered, stop and prompt a resolution.
 
-Final module-scoped documentation is of shapes:
-1. Authoritative spec (`docs/<module>.md`)
-2. API Reference (`docs/reference/<module>.md`), written by `chatddx reference`
-3. A user manual (`docs/<module>-manual`)
-
-Wip module-scoped documentation is built up as a mirror of final at `agents/wip-<module>[-*].md`.
+Module  documentation is of shapes is in `docs/<module>.md` and their API reference in `docs/reference/<module>.md`.
 
 Other documents that doesn't fit in this scheme may occur but can be considered against the grain.
 
-Before committing, remove all and any docstrings and comments that:
+Before committing, remove all comments that:
 - reference the docs
 - tell what the code does
 
-The exception is a docstring on a public name in a package of `settings.REFERENCED`: its reference includes it.
+Docstrings are allowed on a public name in a package of `settings.REFERENCED`.
 
 ### 3. When and how to write a comment.
 - A) Every line of comment imposes a readability tax.
