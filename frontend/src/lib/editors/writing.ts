@@ -20,7 +20,7 @@ export async function checked(component: Component): Promise<Checked> {
 }
 
 export type Saved =
-  | { to: string; cases: number }
+  | { to: string; thread: number; cases: Record<string, string> }
   | { problem: string; moved: number | null };
 
 export async function saved(editing: Editing, name: string, component: Component): Promise<Saved> {
@@ -30,7 +30,7 @@ export async function saved(editing: Editing, name: string, component: Component
       params: { path: { thread } },
       body: { head: editing.head ?? 0, component },
     });
-    if (got.data) return { to: `/threads/${thread}`, cases: Object.keys(got.data.cases ?? {}).length };
+    if (got.data) return { to: `/threads/${thread}`, thread, cases: got.data.cases ?? {} };
     if (got.response.status === 409) {
       const now = await api.GET("/api/threads/{thread}", { params: { path: { thread } } });
       return { problem: why(got.error), moved: now.data?.head.id ?? null };
@@ -44,5 +44,7 @@ export async function saved(editing: Editing, name: string, component: Component
           params: { path: { thread } },
           body: { name: name.trim(), component },
         });
-  return got.data ? { to: `/threads/${got.data.id}`, cases: 0 } : { problem: why(got.error), moved: null };
+  return got.data
+    ? { to: `/threads/${got.data.id}`, thread: got.data.id, cases: {} }
+    : { problem: why(got.error), moved: null };
 }

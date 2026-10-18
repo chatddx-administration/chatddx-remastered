@@ -1,4 +1,6 @@
 import type { Schemas } from "$lib/api/client";
+import type { AppendixEditing } from "$lib/editors/AppendixEditor.svelte";
+import type { ExpectationEditing } from "$lib/editors/ExpectationEditor.svelte";
 
 export type Shown = { run: string; score: string | null; replicate: number; plan: boolean; anchor: number };
 
@@ -8,8 +10,20 @@ export type Review = {
   labels: string[];
   units: string[];
   answers: Shown[];
+  expected: Expecting;
+  appendices: ({ editor: AppendixEditing; digest: string } | null)[];
+  back: string;
   previous: string | null;
   next: string | null;
+};
+
+export type Read = { label: string; metric: string; measures: string | null; judge: string | null; expectation: string };
+export type Version = { at: string; by: string; digest: string; data: unknown };
+export type Expecting = {
+  editor: ExpectationEditing | null;
+  digest: string | null;
+  history: Version[];
+  views: Read[];
 };
 
 export type Key = Pick<KeyboardEvent, "key" | "altKey" | "ctrlKey" | "metaKey" | "target">;
@@ -54,4 +68,42 @@ export function said(detail: unknown): [string, string][] {
 
 function text(value: unknown): string {
   return typeof value === "string" ? value : JSON.stringify(value);
+}
+
+// Presentation only: it places a view beside the field it reads; what it picks is POST /api/picks's to say.
+export function fieldOf(selector: string): string | null {
+  if (selector.startsWith("/")) {
+    const [first = ""] = selector.slice(1).split("/");
+    return first.replaceAll("~1", "/").replaceAll("~0", "~");
+  }
+  const found = /^\$(?:\.([A-Za-z_][\w-]*)|\[\s*(['"])(.*?)\2\s*\])/.exec(selector);
+  return found ? (found[1] ?? found[3] ?? null) : null;
+}
+
+export function shortly(items: unknown[], room = 90): string {
+  return items.map((item) => clipped(texted(item), room)).join(" · ");
+}
+
+function texted(item: unknown): string {
+  if (typeof item === "string") return item;
+  if (Array.isArray(item)) return item.map(texted).join("; ");
+  if (item !== null && typeof item === "object") {
+    return Object.entries(item)
+      .map(([key, value]) => `${key.replaceAll("_", " ")}: ${texted(value)}`)
+      .join(", ");
+  }
+  return JSON.stringify(item);
+}
+
+function clipped(text: string, room: number): string {
+  const flat = text.replace(/\s+/g, " ").trim();
+  return flat.length > room ? `${flat.slice(0, room - 1).trimEnd()}…` : flat;
+}
+
+export function replaced(back: string, current: string, cases: Record<string, string>): string {
+  const now = cases[current];
+  if (!now) return back;
+  const url = new URL(back, "https://review.invalid");
+  url.searchParams.set("case", now);
+  return url.pathname + url.search;
 }

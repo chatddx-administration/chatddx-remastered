@@ -3,7 +3,7 @@
   import LoaderCircleIcon from "@lucide/svelte/icons/loader-circle";
   import { Button } from "$lib/components/ui/button";
   import { Input } from "$lib/components/ui/input";
-  import { type Component, type Editing, said, saved } from "./writing";
+  import { type Component, type Editing, type Saved, said, saved } from "./writing";
 
   let {
     editing,
@@ -11,12 +11,14 @@
     unchanged,
     blocked,
     after,
+    to,
   }: {
     editing: Editing;
     component: () => Component;
     unchanged: boolean;
     blocked: boolean;
     after?: (cases: number) => string;
+    to?: (saved: Extract<Saved, { to: string }>) => string;
   } = $props();
 
   let name = $state(untrack(() => editing.name));
@@ -34,10 +36,12 @@
     const got = await saved({ ...editing, head }, name, component());
     busy = false;
     if ("to" in got) {
-      if (got.cases && after) {
-        note = after(got.cases);
-        setTimeout(() => location.assign(got.to), 2500);
-      } else location.assign(got.to);
+      const where = to ? to(got) : got.to;
+      const cases = Object.keys(got.cases).length;
+      if (cases && after) {
+        note = after(cases);
+        setTimeout(() => location.assign(where), 2500);
+      } else location.assign(where);
       return;
     }
     problem = got.problem;

@@ -1,8 +1,9 @@
 from typing import Annotated, Any
 from urllib.parse import urlencode
 
-from fastapi import APIRouter, HTTPException, Query, Request, Response
+from fastapi import APIRouter, Form, HTTPException, Query, Request, Response
 from fastapi.responses import RedirectResponse
+from pydantic import JsonValue
 
 from chatddx.api import (
     families as api_families,
@@ -15,11 +16,12 @@ from chatddx.bench import Ambiguous, Bench
 from chatddx.factors.base import resolve
 from chatddx.factors.cases import Appendix
 from chatddx.factors.request import Skeleton
-from chatddx.factors.scoring import Scorer
+from chatddx.factors.scoring import Expectation, ExpectationSchema, Scorer
 from chatddx.factors.trial import Trial
 from chatddx.scorers.shipped import unit_of
 
-from .pages import BenchDep, page
+from .families import appended, built, written_for
+from .pages import BenchDep, page, within
 from .runs import PLAN
 
 ANSWERS = 50
@@ -78,6 +80,17 @@ def review(
     keep = {"tag": tag, "schema": schema, "scorer": scorer}
     at = next((i for i, f in enumerate(listed) if f.id == family), None)
     answers = _answers(bench, ran, picked.case, held)
+    own = _own(bench, expected)
+    appendices = _appendices(bench, picked.appendices)
+    views = [] if held is None else _views(bench, held, expected)
+    query = request.url.query
+    back = request.url.path + (f"?{query}" if query else "")
+    previous = None if not at else f"/review/{listed[at - 1].id}{_query(**keep)}"
+    following = (
+        None
+        if at is None or at + 1 == len(listed)
+        else f"/review/{listed[at + 1].id}{_query(**keep)}"
+    )
     props: dict[str, Any] = {
         "family": family,
         "case": picked.case,
@@ -89,10 +102,25 @@ def review(
             {k: a[k] for k in ("run", "score", "replicate", "plan", "anchor")}
             for a in answers
         ],
-        "previous": None if not at else f"/review/{listed[at - 1].id}{_query(**keep)}",
-        "next": None
-        if at is None or at + 1 == len(listed)
-        else f"/review/{listed[at + 1].id}{_query(**keep)}",
+        "expected": {
+            "editor": _editing(bench, shown, picked, under, expected, own),
+            "digest": None if expected is None else expected.expectation,
+            "history": [] if own is None else _history(bench, own),
+            "views": [
+                {
+                    k: v[k]
+                    for k in ("label", "metric", "measures", "judge", "expectation")
+                }
+                for v in views
+            ],
+        },
+        "appendices": [
+            None if a["editor"] is None else {k: a[k] for k in ("editor", "digest")}
+            for a in appendices
+        ],
+        "back": back,
+        "previous": previous,
+        "next": following,
     }
     return page(
         request,
@@ -106,19 +134,52 @@ def review(
         keep=keep,
         case=picked,
         cases=shown.cases,
-        appendices=_appendices(bench, picked.appendices),
+        appendices=appendices,
+        written=written_for(bench, family),
         visible=visible,
         schema=under,
         expected=expected,
-        own=_own(bench, expected),
+        own=own,
+        carried=_carried(bench, shown, picked, under, expected),
         scorers=scorers,
         scorer=held,
-        views=[] if held is None else _views(bench, held, expected),
+        views=views,
         answers=answers,
+        means=_means(answers, held),
+        at=None if at is None else at + 1,
+        previous=previous,
+        following=following,
+        back=back,
         props=props,
         query=_query,
         island="review",
     )
+
+
+@router.post("/review/{family}/appendices")
+def appending_in_review(
+    bench: BenchDep,
+    family: int,
+    name: Annotated[str, Form()],
+    text: Annotated[str, Form()],
+    back: Annotated[str | None, Form()] = None,
+) -> Response:
+    appended(bench, family, name, text)
+    return RedirectResponse(within(back or f"/review/{family}"), 303)
+
+
+@router.post("/review/{family}/cases")
+def building_in_review(
+    bench: BenchDep,
+    family: int,
+    appendix: Annotated[list[str] | None, Form()] = None,
+    tag: Annotated[list[str] | None, Form()] = None,
+    under: Annotated[str | None, Form(alias="schema")] = None,
+    scorer: Annotated[int | None, Form()] = None,
+) -> Response:
+    made = built(bench, family, appendix)
+    given = _query(case=made, tag=tag, schema=under, scorer=scorer)
+    return RedirectResponse(f"/review/{family}{given}", 303)
 
 
 type Given = str | int | list[str] | None
@@ -161,15 +222,34 @@ def _marks(
 
 
 def _appendices(bench: Bench, digests: list[str]) -> list[dict[str, Any]]:
-    threads = {t.head.digest: t.id for t in api.threads(bench, "appendix")}
-    return [
-        {
-            "title": bench.title(d),
-            "text": resolve(bench.store.get, d, Appendix).text,
-            "thread": threads.get(d),
-        }
-        for d in digests
-    ]
+    threads = {t.head.digest: t for t in api.threads(bench, "appendix")}
+    found: list[dict[str, Any]] = []
+    for d in digests:
+        held = resolve(bench.store.get, d, Appendix)
+        t = threads.get(d)
+        editor = (
+            None
+            if t is None
+            else {
+                "kind": "appendix",
+                "mode": "edit" if t.owner == bench.person.login else "fork",
+                "thread": t.id,
+                "head": t.head.id,
+                "name": t.name or t.title,
+                "vignette": held.vignette.model_dump(mode="json"),
+                "text": held.text,
+            }
+        )
+        found.append(
+            {
+                "title": bench.title(d),
+                "text": held.text,
+                "thread": None if t is None else t.id,
+                "editor": editor,
+                "digest": d,
+            }
+        )
+    return found
 
 
 def _own(bench: Bench, expected: schemas.Expected | None) -> schemas.Thread | None:
@@ -177,6 +257,90 @@ def _own(bench: Bench, expected: schemas.Expected | None) -> schemas.Thread | No
         return None
     mine = api.threads(bench, "expectation", owner=bench.person.login)
     return next((t for t in mine if t.head.digest == expected.expectation), None)
+
+
+def _editing(
+    bench: Bench,
+    shown: schemas.FamilyDetail,
+    picked: schemas.FamilyCase,
+    schema: str | None,
+    expected: schemas.Expected | None,
+    own: schemas.Thread | None,
+) -> dict[str, Any] | None:
+    if schema is None or (expected is not None and expected.ambiguous):
+        return None
+    given: dict[str, Any] = {
+        "kind": "expectation",
+        "case": picked.case,
+        "schema": schema,
+        "json_schema": resolve(bench.store.get, schema, ExpectationSchema).json_schema,
+    }
+    if own is not None and expected is not None:
+        return {
+            **given,
+            "mode": "edit",
+            "thread": own.id,
+            "head": own.head.id,
+            "name": own.name or own.title,
+            "data": expected.data,
+        }
+    return {
+        **given,
+        "mode": "new",
+        "name": f"expectation for {picked.title}",
+        "data": _started(shown, picked, schema),
+    }
+
+
+def _started(
+    shown: schemas.FamilyDetail, picked: schemas.FamilyCase, schema: str
+) -> JsonValue:
+    if picked.default:
+        return None
+    return next(
+        (
+            e.data
+            for c in shown.cases
+            if c.default
+            for e in c.expectations
+            if e.expectation_schema == schema and e.expectation is not None
+        ),
+        None,
+    )
+
+
+def _history(bench: Bench, own: schemas.Thread) -> list[dict[str, Any]]:
+    return [
+        {
+            "at": e.at.isoformat(),
+            "by": e.by,
+            "digest": e.digest,
+            "data": resolve(bench.store.get, e.digest, Expectation).data,
+        }
+        for e in api.edits(bench, own.id)
+    ]
+
+
+def _carried(
+    bench: Bench,
+    shown: schemas.FamilyDetail,
+    picked: schemas.FamilyCase,
+    schema: str | None,
+    expected: schemas.Expected | None,
+) -> list[tuple[str, schemas.Thread]]:
+    if schema is None or (
+        expected is not None and (expected.expectation or expected.ambiguous)
+    ):
+        return []
+    mine = api.threads(bench, "expectation", owner=bench.person.login)
+    own = {t.head.digest: t for t in mine}
+    return [
+        (c.title, own[e.expectation])
+        for c in shown.cases
+        if c.case != picked.case and not c.default
+        for e in c.expectations
+        if e.expectation_schema == schema and e.expectation in own
+    ]
 
 
 type Held = tuple[schemas.Thread, Scorer, list[str]]
@@ -229,6 +393,29 @@ def _views(
         }
         for i, v in enumerate(scorer.views)
     ]
+
+
+def _means(answers: list[dict[str, Any]], held: Held | None) -> list[dict[str, Any]]:
+    if held is None:
+        return []
+    found: list[dict[str, Any]] = []
+    for i, label in enumerate(held[2]):
+        given = [
+            value
+            for a in answers
+            if a["values"] is not None
+            for value in [a["values"][i][0]]
+            if value is not None
+        ]
+        found.append(
+            {
+                "label": label,
+                "mean": sum(given) / len(given) if given else None,
+                "of": len(given),
+                "unit": unit_of(held[1], i),
+            }
+        )
+    return found
 
 
 def _scorer(scorers: list[Held], picked: int | None, scored: set[str]) -> Held | None:

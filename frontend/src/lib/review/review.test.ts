@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { said, stepped, valued, viewed } from "./review";
+import { fieldOf, replaced, said, shortly, stepped, valued, viewed } from "./review";
 
 const STEPS = { previous: "/review/1", next: "/review/3" };
 
@@ -51,5 +51,39 @@ describe("said", () => {
     expect(said({ reason: "no answer" })).toEqual([["reason", "no answer"]]);
     expect(said("plain")).toEqual([["", "plain"]]);
     expect(said(null)).toEqual([]);
+  });
+});
+
+describe("fieldOf", () => {
+  it("names the top-level field a selector starts in", () => {
+    expect(fieldOf("/diagnosis")).toBe("diagnosis");
+    expect(fieldOf("/dont_miss/pattern")).toBe("dont_miss");
+    expect(fieldOf("/a~1b")).toBe("a/b");
+    expect(fieldOf("$.notes[?@.author == 'carol'].comment")).toBe("notes");
+    expect(fieldOf("$['dont miss']")).toBe("dont miss");
+  });
+
+  it("names none for the whole expectation or a field it can't tell", () => {
+    expect(fieldOf("")).toBeNull();
+    expect(fieldOf("$[*]")).toBeNull();
+    expect(fieldOf("$..pattern")).toBeNull();
+  });
+});
+
+describe("shortly", () => {
+  it("says what was picked in a line, cut short", () => {
+    expect(shortly([{ pattern: "sepsis | septic & shock" }])).toBe("pattern: sepsis | septic & shock");
+    expect(shortly(["Chock,\n troligen  septisk.", "Uteslut UVI."])).toBe("Chock, troligen septisk. · Uteslut UVI.");
+    expect(shortly(["a".repeat(100)], 10)).toBe(`${"a".repeat(9)}…`);
+    expect(shortly([false])).toBe("false");
+  });
+});
+
+describe("replaced", () => {
+  it("follows the case shown to the one that replaced it", () => {
+    const back = "/review/3?case=old&tag=swedish";
+    expect(replaced(back, "old", { old: "new" })).toBe("/review/3?case=new&tag=swedish");
+    expect(replaced("/review/3", "old", { old: "new" })).toBe("/review/3?case=new");
+    expect(replaced(back, "old", { other: "new" })).toBe(back);
   });
 });

@@ -146,3 +146,85 @@ def test_what_review_can_t_find_is_not_found(signed: TestClient) -> None:
         assert got.status_code == 404, query
         assert got.headers["content-type"].startswith("text/html")
     assert signed.get("/review/0").status_code == 404
+
+
+@pytest.mark.slow
+def test_the_expectation_is_edited_in_place_with_its_versions_and_what_reads_it(
+    signed: TestClient,
+) -> None:
+    noted = family(signed, "noted")
+    scorers = signed.get("/api/threads", params={"kind": "scorer"}).json()
+    judged = next(t for t in scorers if t["name"] == "judged")
+    given = props(shown(signed, f"/review/{noted['id']}?scorer={judged['id']}"))
+    expected = given["expected"]
+    editor = expected["editor"]
+    [case] = signed.get(f"/api/families/{noted['id']}").json()["cases"]
+    [held] = case["expectations"]
+    assert (editor["mode"], editor["case"], editor["data"]) == (
+        "edit",
+        noted["case"],
+        held["data"],
+    )
+    assert expected["digest"] == held["expectation"]
+    assert expected["history"][-1]["digest"] == held["expectation"]
+    body = signed.get(f"/api/components/{judged['head']['digest']}").json()["body"]
+    assert [v["expectation"] for v in expected["views"]] == [
+        v["expectation"] for v in body["views"]
+    ]
+    assert given["back"] == f"/review/{noted['id']}?scorer={judged['id']}"
+
+
+@pytest.mark.slow
+def test_an_appendix_is_written_and_a_case_built_of_it_without_leaving_review(
+    signed: TestClient,
+) -> None:
+    crlf = family(signed, "crlf")
+    back = f"/review/{crlf['id']}?tag=targets"
+    got = signed.post(
+        f"/review/{crlf['id']}/appendices",
+        data={"name": "ultrasound", "text": "Gallstones on ultrasound.", "back": back},
+    )
+    assert (got.status_code, got.headers["location"]) == (303, back)
+    query = {"kind": "appendix", "owner": "alice", "name": "ultrasound"}
+    [made] = signed.get("/api/threads", params=query).json()
+    page = shown(signed, back)
+    assert f'name="appendix" value="{made["head"]["digest"]}"' in page
+
+    got = signed.post(
+        f"/review/{crlf['id']}/cases",
+        data={"appendix": made["head"]["digest"], "tag": "targets"},
+    )
+    cases = signed.get(f"/api/families/{crlf['id']}").json()["cases"]
+    [built] = [c for c in cases if c["appendices"] == [made["head"]["digest"]]]
+    assert (got.status_code, got.headers["location"]) == (
+        303,
+        f"/review/{crlf['id']}?{urlencode({'case': built['case'], 'tag': 'targets'})}",
+    )
+    page = shown(signed, got.headers["location"])
+    assert "Gallstones on ultrasound." in page
+    given = props(page)
+    [appendix] = given["appendices"]
+    assert appendix["digest"] == made["head"]["digest"]
+    assert (appendix["editor"]["mode"], appendix["editor"]["thread"]) == (
+        "edit",
+        made["id"],
+    )
+    [default] = [c for c in cases if c["default"]]
+    editor = given["expected"]["editor"]
+    assert (editor["mode"], editor["case"]) == ("new", built["case"])
+    assert editor["data"] == default["expectations"][0]["data"]
+
+    refused = signed.post(f"/review/{crlf['id']}/cases", data={"back": back})
+    assert refused.status_code == 422
+
+
+@pytest.mark.slow
+def test_the_record_says_each_view_s_mean_over_the_answers(signed: TestClient) -> None:
+    noted = family(signed, "noted")
+    scorers = signed.get("/api/threads", params={"kind": "scorer"}).json()
+    judged = next(t for t in scorers if t["name"] == "judged")
+    page = shown(signed, f"/review/{noted['id']}?scorer={judged['id']}")
+    assert 'data-drawer="record"' in page and 'data-drawer="cases"' in page
+    for label in props(page)["labels"]:
+        assert f"<dt>{escape(label)}</dt>" in page
+    assert "mean of 1" in page

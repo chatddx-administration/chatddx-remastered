@@ -20,7 +20,7 @@ rather than a click, a scroll or another page.
    sensitive from the API's places; he runs the case himself; judges are picked and written before their texts;
    unjudged views are tried as typed, judged ones by scoring; selectors are picked and applied on the server; and the
    page is `/review/{family}`, beside the family's page.
-4. **Step 1 is built** (see "Built"); step 2 is next (see "Steps").
+4. **Steps 1 and 2 are built** (see "Built"); step 3 is next (see "Steps").
 
 ## What the clinician is here to do
 From the request, and from what the sample World waits on (`docs/curation.md`, "Outstanding"):
@@ -58,31 +58,33 @@ The test World has what the page needs to be tested on: `judged` and `appendix` 
 (`docs/scripted.md`), notes by placeholder authors (carol, dave), and the `verdict`, `graded` and `remote` judges.
 
 ## The page
-A sketch, at a wide screen. Each pane scrolls on its own, and the page fills the window rather than the 5xl column the
-other pages keep.
+A sketch, at a wide screen. The page fills the window rather than the 5xl column the other pages keep, and each pane
+scrolls on its own. Decided, from the user's first look at step 1: two columns are the main actors, the case and what
+is expected of it with what reads it; the list of cases and the record of answers are drawers at the sides, folded to
+a rail.
 
 ```
-┌ cases ────┬ the case ──────────────────┬ expected ─────────────────┬ scored ───────────────────────┐
-│ tag ▾     │ Dutchfall11w · sv · tags   │ under Targets ▾  v2 of 3 ◀▶│ notes (yours) ▾               │
-│ ▸ Dutch11 │ [vignette alone][+ ultras.]│ diagnosis  text / pattern │ comment · verdict · judge …   │
-│   Dutch1  │                            │ warning    …              │   picks: "Chock, trolig …"    │
-│   edn1    │ the vignette …             │ dont miss  …              │ answer  · verdict · …         │
-│   …       │                            │ notes                     │ graded  · points / 2 · …      │
-│           │ ── appendices, in order ── │   Olof · sv · comment …   │ ── answers to this case ──    │
-│ ● expected│ ultrasound: …       [edit] │ [Save] a new version      │ plan × qwen3 · 0.5 · 1 · 2/2  │
-│ ○ none    │ + write one                │                           │ ▸ the answer, folded          │
-└───────────┴────────────────────────────┴───────────────────────────┴───────────────────────────────┘
+┌▲┬ the case ─────────────────────┬ expected ─────────────── under Targets ┬R┐
+│C│ Dutchfall11w · en · tags      │ Read by  [diagnoses] [free-text] [notes]│e│
+│a│ [vignette alone] [+ ultrasound]│ diagnosis   pattern  aaa | (abdominal… │c│
+│s│                               │  │ text · first mention  reads pattern… │o│
+│e│ the vignette …                │  │ differential · reciprocal rank  …    │r│
+│s│                               │ disposition pattern  surg* | operat* … │d│
+│ │ ── appendices, in order ──    │ notes       Olof · sv · comment …      │ │
+│2│ ultrasound: …    Change it    │  │ comment · verdict · judge  reads …   │1│
+│▼│ ▸ Add to it                   │ [Save] a new version   ▸ versions      │ │
+└─┴───────────────────────────────┴────────────────────────────────────────┴─┘
 ```
 
-- **Cases**: the families the person sees, filtered by tag, each marked by what the person holds for it under the
-  schema shown: an expectation of their own or none, notes, answers, scored. Keys step through it.
-- **The case**: the vignette, then the case's appendices in order, shown as additions to it; a switch between the
-  family's cases; writing an appendix, a new version of one, and building a case.
-- **Expected**: the expectation for the case picked under the schema picked, in the 5b editor; its versions with what
-  each changed; those shared to take; moving the person's own onto a replacing case.
-- **Scored**: the scorers reading that schema, the person's own first. Each view is shown with what it picks from the
-  expectation as typed, so a note or a target shows what each view will read from it. Below, the answers to the case:
-  each run's answer folded, with each view's value, its detail, and the judges' verdicts.
+- **Cases**, a drawer at the left: the families the person sees, by tag, each marked by what the person holds for it
+  under the schema shown. Folded, its rail steps to the case before and after; so do `j` and `k`.
+- **The case**: the vignette, then the case's appendices in order, as additions to it, each changed in place; a switch
+  between the family's cases; and, folded, writing an appendix and building a case.
+- **Expected**: the expectation for the case picked under the schema picked, in the 5b editor, with each view of the
+  scorer picked under the field it reads, and what it picks as it is typed; its versions with what each changed;
+  those shared to take; moving the person's own onto a replacing case.
+- **Record**, a drawer at the right: the answers to the case in the person's runs, each view's value and its mean,
+  each answer folded with its detail and the judges' calls. A record to read, not a place to write.
 
 The address keeps what is picked, as the variation's page does: `/review/{family}?case=DIGEST&schema=DIGEST&scorer=ID`.
 
@@ -190,11 +192,11 @@ A view's selectors are a JSON Pointer or a fixed subset of JSONPath (`docs/facto
   over to him (`docs/bench.md`, "What is said about a thread").
 
 ## Steps
-1. **The page, read only**, built (see "Built"): the list of cases, the case (vignette fetched, appendices, cases), the expectation, the
-   scorers that read its schema with what each view picks from it, and the person's answers to the case with each
-   view's value and detail. Needs the route that gives picks (L6).
-2. **Writing in place**: appendices, cases and expectations, with 5b's editors moved into the panes; the picks follow
-   the form as it is typed.
+1. **The page, read only**, built (see "Built"): the list of cases, the case (vignette fetched, appendices, cases),
+   the expectation, the scorers that read its schema with what each view picks from it, and the person's answers to the
+   case with each view's value and detail. Needs the route that gives picks (L6).
+2. **Writing in place**, built (see "Built"): appendices, cases and expectations, with 5b's editors moved into the
+   panes; the picks follow the form as it is typed.
 3. **Running the case** from the page (L3 a), and **Score again** on its runs.
 4. **Composing a scorer without judges**: the views' form, selectors picked (L6), values tried as typed (L5 a),
    saving with labels.
@@ -208,7 +210,7 @@ the case `noted` that `judged` ran, its note edited, a view's picks following it
 the pattern is typed, a scorer saved, and its score.
 
 ## Built
-Step 1, the page read only:
+### Step 1: the page, read only
 - **The API**, suggested to `docs/api.md` and `docs/api-api.md` as `AGENT` blocks: `POST /api/picks`
   (`src/chatddx/api/world.py:picks`), selectors and a document in, and out each selector's picks, by
   `chatddx.factors.select`, or why it doesn't read; and `case` on a run's items and on a score's items, so that the
@@ -233,7 +235,7 @@ Step 1, the page read only:
     there.
   - **Nothing sensitive in the HTML** (L2): without scripts, the vignette and the answers are links to their pages.
 - **The layout**: four panes filling the window from 1280 px wide, each scrolling on its own; two columns from 1024
-  px, with the list of cases above and capped; one column below that.
+  px, with the list of cases above and capped; one column below that. Step 2 replaced it (see "The page").
 - **The island**: `frontend/src/islands/review.ts`, with `frontend/src/lib/review/`: `Vignette.svelte`,
   `Answer.svelte`, and `review.ts`, the keys and each view's value and detail.
 - **Tests**: `src/chatddx/portal/test/test_reviewing.py` on `ran`; the API's `test_world.py` (picks) and
@@ -241,15 +243,48 @@ Step 1, the page read only:
   Chromium, as a person given the archive's expectations (`chatddx init-data LOGIN --giftbag`) with its scripted runs,
   in light, dark and narrow.
 
-### What step 1 leaves
+#### What step 1 leaves
 - **Its cost**: about 0.75 s a page on the sample World's 99 families, against 0.6 s for a family's page. The marks
   ask `Bench.expectation` once per family, and each answer's run is read whole (`GET /api/runs/{id}`, its check
   included) for its items and scores.
 - **A run scored by an earlier version** of the scorer shows "not scored by it": values are matched by the head's
   digest.
 - **What a view reads of the answer**, and its reach, aren't shown: step 4.
-- **The expectation's versions** and what each changed are on its thread's page: step 2 brings them into the pane.
-- **The browser test** of the plan's "Tests" waits for step 2, which gives it something to type.
+
+### Step 2: writing in place, and the layout of "The page"
+- **Two columns and two drawers** (`templates/review.html`): the drawers are `details` elements, folded to a rail
+  from 1280 px wide and to a bar below that, which the island opens as the person last left them (`localStorage`,
+  per viewer, `review.cases` and `review.record`). The record adds each view's mean over the answers listed.
+- **The expectation, edited in place** (`frontend/src/lib/review/Expected.svelte`): the 5b editor, open, its own
+  versions folded below it with what each changed (`frontend/src/lib/thread/Changed.svelte`), saving back to the
+  review; a case without one of the person's starts from the family's case's, as on the family's page. Each view of
+  the scorer picked is shown under the top-level field its expectation selector starts in
+  (`frontend/src/lib/review/review.ts:fieldOf`), with what it picks of the form as typed, by `POST /api/picks` a
+  moment after each change; a view of the whole expectation, or of a field not written, is listed after the form.
+- **The schema's form, quiet** (`frontend/src/lib/schema/SchemaField.svelte`, `quiet`): descriptions on hover rather
+  than under every field, the outer box gone, and long texts growing with what they hold. `beside` renders a snippet
+  under each top-level field; `ExpectationEditor` takes `opened`, `changed`, `beside`, `quiet` and `to`, and
+  `AppendixEditor` and `Saving` take `to`, where a save goes instead of the thread's page.
+- **An appendix changed in place**: its editor, unfolded under it, saves a new version and returns to the case that
+  replaced the one shown (`review.ts:replaced`).
+- **Writing an appendix and building a case** without leaving the page: `POST /review/{family}/appendices` and
+  `POST /review/{family}/cases` (`src/chatddx/portal/review.py`), which share their checks with the family's page's
+  (`src/chatddx/portal/families.py`: `written_for`, `appended`, `built`) and lead back, the second to the case built.
+- **Taking and carrying** as on the family's page, plain forms leading back to the review.
+- **Tests**: `test_reviewing.py`, the editor's props, writing and building in place, and the record's means;
+  vitest for `fieldOf`, `shortly` and `replaced`; and the browser test of the plan's "Tests"
+  (`test_browser.py::test_a_clinician_reviews_a_case_and_its_views_read_what_is_typed`): a note and a pattern typed
+  and read by their views, saved as a version, an appendix written, a case built of it starting from the family's
+  case's expectation, and `j`.
+
+#### What step 2 leaves
+- **The fields' order** is still the schema's keys sorted (see "Smaller choices"); in the review it is read beside the
+  vignette, so diagnosis, disposition, dont miss, notes, warning reads worse than the data's own order.
+- **A view of a long list** is shown under the whole list: the notes' views come after every note, far from the
+  comment they read once the notes are long.
+- **The record and the marks are the server's**, drawn as the page loads: a save reloads the page, so the views'
+  values in the record follow only once the runs are scored again (step 3).
+- **Answers only from the person's own runs**, as decided (L3): running the case from the page is step 3.
 
 ## Open
 - **Grading answers by hand.** Olof's judge is to be measured against his own grades of real answers, "with a line on
@@ -261,5 +296,5 @@ Step 1, the page read only:
   expectation is one person's. A scorer picks a note by its `author`, as the sample's `notes` does. Whether a
   clinician's notes stay in their own expectation, with the author as data, or the selector follows the expectation's
   owner, is open.
-- **Small screens.** The four panes need about 1280 px; below that they stack (see "Built"). A tablet beside a
-  patient isn't planned for.
+- **Small screens.** The two columns and their rails need about 1280 px; below that the panes stack, the drawers as
+  bars (see "Built"). A tablet beside a patient isn't planned for.

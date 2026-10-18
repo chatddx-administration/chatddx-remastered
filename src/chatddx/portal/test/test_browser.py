@@ -249,3 +249,45 @@ def test_a_clinician_s_appendix_case_and_expectation_are_written_and_counted(
     written_now = missing()
     assert held <= written_now < gone
     assert errors == []
+
+
+def test_a_clinician_reviews_a_case_and_its_views_read_what_is_typed(
+    page: Page,
+) -> None:
+    errors: list[str] = []
+    page.on("pageerror", lambda e: errors.append(str(e)))
+    noted = page.request.get("/api/families", params={"name": "noted"}).json()[0]
+    query: dict[str, str | float | bool] = {"kind": "scorer", "name": "judged"}
+    judged = page.request.get("/api/threads", params=query).json()[0]
+    vignette = page.request.get(f"/api/families/{noted['id']}/vignette").json()
+
+    _ = page.goto(f"/review/{noted['id']}?scorer={judged['id']}")
+    first = vignette["text"].strip().splitlines()[0]
+    expect(page.locator("#review-vignette")).to_contain_text(first)
+    notes = page.get_by_role("list", name="What reads notes")
+    expect(notes).to_contain_text("Chock, troligen septisk.")
+    page.get_by_label("comment").first.fill("Septisk chock: odla, ge antibiotika.")
+    expect(notes).to_contain_text("Septisk chock: odla, ge antibiotika.")
+    diagnosis = page.get_by_role("list", name="What reads diagnosis")
+    page.get_by_label("pattern").first.fill("septic & shock")
+    expect(diagnosis).to_contain_text("pattern: septic & shock")
+    expect(page.get_by_text("Saves a new version of it.")).to_be_visible()
+    page.get_by_role("button", name="Save").click()
+    expect(page.get_by_text(re.compile(r"^Version 2 of 2, "))).to_be_visible()
+    expect(page.get_by_label("pattern").first).to_have_value("septic & shock")
+
+    page.get_by_text("Add to it: an appendix, or a case of several").click()
+    page.get_by_label("Name").fill("ultrasound")
+    page.get_by_label("Text, as it is added to the vignette").fill("Free fluid.")
+    page.get_by_role("button", name="Write the appendix").click()
+    page.get_by_text("Add to it: an appendix, or a case of several").click()
+    page.get_by_label("ultrasound").check()
+    page.get_by_role("button", name="Build the case").click()
+    page.wait_for_url(re.compile(r"[?&]case=sha256"))
+    expect(page.get_by_text("Free fluid.")).to_be_visible()
+    expect(page.get_by_text("a new thread of your own")).to_be_visible()
+    expect(page.get_by_label("pattern").first).to_have_value("septic & shock")
+
+    page.locator("body").press("j")
+    page.wait_for_url(lambda url: f"/review/{noted['id']}" not in url)
+    assert errors == []
