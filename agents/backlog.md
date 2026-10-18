@@ -381,6 +381,9 @@ configuration are agents/wip-portal.md's ("Comparing variations", "What holds a 
 The interface between components and the code they pin: tools versioned as scorers are, resources a scorer can be given,
 and how shipped code is found.
 
+Triage: kept as is. It waits for a trigger: a second calling convention for tools, a first kind of resource, or code
+from another distribution.
+
 **runner.3** · From docs/runner.md:218, "Open design issues", "Smaller issues"
 
 - **The tool interface isn't versioned**, unlike the scorer's: keyword arguments in, text out.
