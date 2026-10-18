@@ -50,7 +50,7 @@ items under it are as they were moved. An item that restates another for an API 
 29. [Following keeps a fork's renamed view](#g29-following-keeps-a-forks-renamed-view) (1)
 30. [Languages](#g30-languages) (5)
    - G30b. [Translating JSON few-shot answers](#g30b-translating-json-few-shot-answers) (1)
-31. [Deleting, leftovers and garbage collection](#g31-deleting-leftovers-and-garbage-collection) (4)
+31. [Garbage collection](#g31-garbage-collection) (2)
 32. [Values the canonical form can't keep](#g32-values-the-canonical-form-cant-keep) (3)
 33. [The store's read API](#g33-the-stores-read-api) (6)
 34. [Evolving a stored database](#g34-evolving-a-stored-database) (3)
@@ -62,7 +62,7 @@ items under it are as they were moved. An item that restates another for an API 
 40. [The repl's reach](#g40-the-repls-reach) (3)
 41. [The repl's rendering](#g41-the-repls-rendering) (3)
 42. [Unknown query parameters](#g42-unknown-query-parameters) (1)
-43. [Curation's round trip](#g43-curations-round-trip) (5)
+43. [Curation's round trip](#g43-curations-round-trip) (6)
 44. [The sample's data](#g44-the-samples-data) (2)
 45. [Missing tests](#g45-missing-tests) (4)
 46. [The object layer and new kinds](#g46-the-object-layer-and-new-kinds) (7)
@@ -1043,16 +1043,14 @@ Triage: split from G30.
 - **Few-shot answers in JSON are translated whole.** An example is one text, so an assistant example that is a JSON
   answer is translated as one entry, by hand, keeping its property names and allowed values as they are.
 
-### G31. Deleting, leftovers and garbage collection
-What deleting hides, leftovers known to stay, and a collector for what nothing refers to.
+### G31. Garbage collection
+A collection, run as the admin, of what nothing refers to, the ledger and every person's threads, deleted ones too,
+counted as references.
 
-**catalog.10** · From docs/catalog.md:424, "Open design issues", "Smaller issues"
-
-- **What deleting hides in the portal**: everywhere, or only in pickers, while the runs that used it stay visible.
-
-**curation.7** · From docs/curation.md:286, "Open design issues", "Smaller issues"
-
-- **Leftovers are listed every run.** Nothing records that a leftover is known and meant to stay.
+Triage: kept, but for catalog.10, dropped as tracked in agents/wip-portal.md ("What the docs ask of it"), and
+curation.7, which went to G43. Decided: it waits until storage cost or an erasure calls for it; until then the store
+keeps everything, as its tiers mean it to. Erasing a typed text is agents/wip-clearance.md's ("Before real patient
+data", 4).
 
 **curation.1** · From docs/curation.md:267, "Open design issues", "Garbage collection"
 
@@ -1061,8 +1059,6 @@ nothing refers to: components no thread, family, run or other component reaches,
 deletes. The tiers forbid it on purpose (docs/store.md, "Tiers"), and what counts as unreferenced must include the
 ledger and every person's threads, deleted ones too, since history answers questions about the past (docs/catalog.md,
 "Deleting").
-
-Added in triage, found late in docs/chatddx.md:
 
 **chatddx.4** · From docs/chatddx.md:122, "Requirements", "On the table"
 
@@ -1355,6 +1351,12 @@ Trials, executions, scorings and hand-written skeletons have no tables, and a da
 
 - **One source a run.** A data set's cases all come from the source `--source` names.
 
+Added in triage, from G31:
+
+**curation.7** · From docs/curation.md:286, "Open design issues", "Smaller issues"
+
+- **Leftovers are listed every run.** Nothing records that a leftover is known and meant to stay.
+
 ### G44. The sample's data
 The sample's stage said in code, and Olof's judge.
 
@@ -1583,6 +1585,7 @@ References to open items found during triage, for step 5:
 - docs/chatddx.md, "Requirements", cites docs/inventory.md, "Hosts don't read the start-up", which G15 dropped for
   agents/wip-deploy.md.
 - docs/bench.md's item on what the old bench had (bench.23) hands two of its parts to agents/wip-portal.md.
+- agents/wip-portal.md, "What the docs ask of it", cites docs/catalog.md, "Smaller issues", for what deleting hides.
 - agents/wip-engine-part.md, "Outstanding", hands bench.24, bench.25 and bench.26 to docs/bench.md, "Outstanding":
   they are here now.
 
@@ -1694,6 +1697,12 @@ scorer, since a position only means something within one scorer (docs/catalog.md
 **catalog-api.12** · From docs/catalog-api.md:749, "Known gaps"
 
 - Scorer labels aren't carried to the next edit of a scorer thread.
+
+catalog.10, from G31, as tracked in agents/wip-portal.md ("What the docs ask of it"):
+
+**catalog.10** · From docs/catalog.md:424, "Open design issues", "Smaller issues"
+
+- **What deleting hides in the portal**: everywhere, or only in pickers, while the runs that used it stay visible.
 
 ## Context
 What the moved sections said of their items as a whole, moved with them.
