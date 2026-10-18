@@ -56,7 +56,7 @@ items under it are as they were moved. An item that restates another for an API 
 34. [Migrations checked by content](#g34-migrations-checked-by-content) (1)
    - G34b. [Old versions readable](#g34b-old-versions-readable) (2)
 35. [Deployment](#g35-deployment) (0, dissolved)
-36. [Reads that grow with the data](#g36-reads-that-grow-with-the-data) (5)
+36. [Performance, once measured](#g36-performance-once-measured) (5)
 37. [Administering people](#g37-administering-people) (4)
 38. [Signing in: limits, tokens and Keycloak](#g38-signing-in-limits-tokens-and-keycloak) (7)
 39. [Z1: what each role is shown](#g39-z1-what-each-role-is-shown) (5)
@@ -1124,8 +1124,12 @@ current shape, and the stored bytes and their digest stay as they are.
 ### G35. Deployment
 Triage: dissolved; all three were dropped as tracked in agents/ (see "Dropped").
 
-### G36. Reads that grow with the data
-Paging in the store, and reads that don't repeat per item, once they are slow.
+### G36. Performance, once measured
+Paging in the store, and reads that don't repeat, once a measurement says they are slow; bench.24, a network wait
+inside a transaction, can go now.
+
+Triage: kept as is. Decided, for api.9 and bench.18: as is until slow, then paging in the store by a cursor, the last
+run's start.
 
 **api.9** · From docs/api.md:421, "Outstanding", "Serving"
 
