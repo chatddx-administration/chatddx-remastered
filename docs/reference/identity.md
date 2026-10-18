@@ -1,26 +1,6 @@
 # `chatddx.identity`
 
-Written by `chatddx reference` from `src/chatddx/identity/`: each public name, sorted, with its parameters or fields,
-```
-REFERENCE: REPLACE
-replace the line below with these
----
-`∟` its return type, what it raises and what it finds.
-```
-`∟` its return type, and what it raises.
-
-- `*`: the parameters after it are keyword-only; `/`: those before it are positional-only. A function a
-  class binds as an attribute is its method: its first parameter, the instance, is left out.
-- Raises: the function's own `raise` statements and its private helpers' (through `<helper>`), in the order
-  the code reaches them, each once. What the public functions it calls raise is in their own entries.
-- A message is quoted, with the values of the code that raises it as `{expr}`; an argument that isn't text is
-  as written, and from `<exception>` when it is the exception caught.
-```
-REFERENCE: ADD
-add these lines here
----
-- Finds: each `Finding` it makes, as `code`: message, followed as Raises are; a warning unless it says info.
-```
+Written by `chatddx reference` from `src/chatddx/identity/`; how to read it is in [docs/reference/README.md](README.md).
 
 ## collaborates
 `src/chatddx/identity/identity.py:collaborates`

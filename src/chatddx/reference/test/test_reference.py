@@ -7,6 +7,8 @@ import pytest
 from chatddx import settings
 from chatddx.reference import Code, Trace, page, regenerated, tagged, untagged
 
+TAG = "SIGN-OFF"
+
 
 def written(tmp_path: Path, files: dict[str, str]) -> str:
     for name, source in files.items():
@@ -32,7 +34,7 @@ def applied(text: str) -> str:
     kept: list[str] = []
     i = 0
     while i < len(lines):
-        if lines[i].startswith("```") and lines[i + 1].startswith("REFERENCE: "):
+        if lines[i].startswith("```") and lines[i + 1].startswith(f"{TAG}: "):
             end = lines.index(lines[i], i + 2)
             found = re.search(r"the (\d+) lines below|the line below", lines[i + 2])
             below = 0 if found is None else int(found.group(1) or 1)
@@ -440,67 +442,74 @@ def test_a_finding_is_listed_where_the_code_makes_it(tmp_path: Path) -> None:
 
 
 def test_a_first_reference_is_written_whole() -> None:
-    assert tagged(None, "# a\n\nb\n") == "# a\n\nb\n"
+    assert tagged(None, "# a\n\n## b\n", TAG) == "# a\n\n## b\n"
 
 
 def test_what_changed_is_tagged_above_the_lines_it_changes() -> None:
-    assert tagged("a\nb\nc\nd\n", "a\nB\nc\ne\n") == dedent(
+    assert tagged("## e\na\nb\nc\n", "## e\nA\nb\nd\n", TAG) == dedent(
         """\
+        ## e
+        ```
+        SIGN-OFF: REPLACE
+        replace the line below with these
+        ---
+        A
+        ```
         a
-        ```
-        REFERENCE: REPLACE
-        replace the line below with these
-        ---
-        B
-        ```
         b
-        c
         ```
-        REFERENCE: REPLACE
+        SIGN-OFF: REPLACE
         replace the line below with these
         ---
-        e
-        ```
         d
+        ```
+        c
         """
     )
-    assert tagged("a\nb\nc\n", "a\nc\nd\n") == dedent(
+    assert tagged("## e\na\nb\n", "## e\nb\nc\n", TAG) == dedent(
         """\
-        a
+        ## e
         ```
-        REFERENCE: REMOVE
+        SIGN-OFF: REMOVE
         remove the line below
         ```
+        a
         b
-        c
         ```
-        REFERENCE: ADD
+        SIGN-OFF: ADD
         add these lines here
         ---
-        d
+        c
         ```
         """
+    )
+
+
+def test_what_comes_before_the_first_entry_is_written_as_it_is_and_not_tagged() -> None:
+    old = "# a\n\nread it so\n\n## e\nb\n"
+    assert tagged(old, "# a\n\nread it otherwise\n\n## e\nb\n", TAG) == (
+        "# a\n\nread it otherwise\n\n## e\nb\n"
     )
 
 
 def test_tagging_again_gives_the_same_tags_and_applying_them_none() -> None:
-    old, new = "a\nb\nc\nd\ne\n", "a\nx\ny\nc\ne\nf\n"
-    once = tagged(old, new)
-    assert tagged(once, new) == once
-    assert untagged(once) == old.splitlines()
+    old, new = "## e\na\nb\nc\nd\ne\n", "## e\na\nx\ny\nc\ne\nf\n"
+    once = tagged(old, new, TAG)
+    assert tagged(once, new, TAG) == once
+    assert untagged(once, TAG) == old.splitlines()
     assert applied(once) == new
-    assert tagged(applied(once), new) == new
+    assert tagged(applied(once), new, TAG) == new
 
 
 def test_a_tag_holding_a_fence_is_fenced_with_more_backticks() -> None:
-    found = tagged("a\n", "a\n```\nb\n```\n")
+    found = tagged("## e\n", "## e\n```\nb\n```\n", TAG)
     assert found.splitlines()[1] == "````"
-    assert applied(found) == "a\n```\nb\n```\n"
+    assert applied(found) == "## e\n```\nb\n```\n"
 
 
 def test_an_unclosed_tag_is_refused() -> None:
-    with pytest.raises(ValueError, match="line 1: a REFERENCE tag isn't closed"):
-        _ = untagged("```\nREFERENCE: ADD\nadd these lines here\n")
+    with pytest.raises(ValueError, match="line 1: a SIGN-OFF tag isn't closed"):
+        _ = untagged("```\nSIGN-OFF: ADD\nadd these lines here\n", TAG)
 
 
 def test_each_reference_is_as_chatddx_reference_writes_it() -> None:

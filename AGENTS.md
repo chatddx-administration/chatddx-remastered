@@ -45,6 +45,13 @@ Steps 5-8, docs *move*: backlog -> plan -> wip -> doc, and is never explained in
 
 ### 1. Humans write, agents suggest.
 In all docs except `agents/*`, agents are only allowed to insert suggestions.
+```
+AGENT: replace
+The 2 lines below. The tag's phrase is `settings.REFERENCE_TAG`, `SIGN-OFF` today, as `REFERENCE` is also SQL's.
+---
+`docs/reference/*` is written by `chatddx reference` alone: it inserts a tag, `<settings.REFERENCE_TAG>: ADD`,
+`REPLACE` or `REMOVE` in the template below, above each change in the code's public names, and a human applies it.
+```
 `docs/reference/*` is written by `chatddx reference` alone: it inserts a tag, `REFERENCE: ADD`, `REPLACE` or `REMOVE`
 in the template below, above each change in the code's public names, and a human applies it.
 

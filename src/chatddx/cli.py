@@ -371,7 +371,7 @@ def _reference(args: argparse.Namespace) -> None:
             path.parent.mkdir(parents=True, exist_ok=True)
             _ = path.write_text(text)
         print(
-            f"{path.relative_to(settings.PROJECT_ROOT)}: {reference.pending(text)} tags pending"
+            f"{path.relative_to(settings.PROJECT_ROOT)}: {reference.pending(text, settings.REFERENCE_TAG)} tags pending"
         )
 
 

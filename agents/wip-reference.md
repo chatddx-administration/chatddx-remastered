@@ -23,13 +23,18 @@ dropped; their tables of finding codes are the references' Finds.
   `src/chatddx/reference/test/test_reference.py:test_each_reference_is_as_chatddx_reference_writes_it`.
 - A reference that doesn't exist yet is written whole, and signed off as a whole in review.
 - After that, a change in the code is tagged above the lines it changes, in the template of AGENTS.md, rule 1, with
-  `REFERENCE: ADD`, `REPLACE` or `REMOVE`. A human applies a tag by hand, which is their sign-off: the tag goes, and so
-  do the lines it replaces or removes. Tags left unapplied are worked out anew on the next run from what is applied, so
-  they neither pile up nor go stale, and a line edited by hand is tagged back to what the code says.
+  `SIGN-OFF: ADD`, `REPLACE` or `REMOVE`; the phrase is `settings.REFERENCE_TAG`, since `REFERENCE` is also SQL's, and
+  is changed only while no tag is pending. A human applies a tag by hand, which is their sign-off: the tag goes, and
+  so do the lines it replaces or removes. Tags left unapplied are worked out anew on the next run from what is
+  applied, so they neither pile up nor go stale, and a line edited by hand is tagged back to what the code says.
+- Only the entries are tagged. What comes before the first, the title and a line saying how to read it, is the
+  generator's own and written as it is, and so is `docs/reference/README.md`, the legend
+  (`src/chatddx/reference/page.py:LEGEND`): they change with the generator, in its commits, and aren't signed off.
 
 ## What a reference holds
-Its header says how to read it: what `∟`, `*`, `/`, "through" and a quoted message mean, that a bound method leaves
-out its instance, and that a public callee's raises are in its own entry.
+Its header points to the legend, `docs/reference/README.md`, which says how to read it: what `∟`, `*`, `/`, "through"
+and a quoted message mean, that a bound method leaves out its instance, that a public callee's raises are in its own
+entry, and what a pending tag is.
 
 One entry for each name defined at the top of the package's modules, tests left out, that doesn't start with `_`, and
 one for each public method, property and `__init__` of its classes, as `Class.name`, all sorted alphabetically whatever
@@ -89,7 +94,7 @@ them.
 
 ## Read by an agent
 An agent given only `docs/reference/bench.md` and `identity.md` answered ten questions on parameters, messages, order,
-bases and bound methods right, finding entries with `grep -n '^## '`. It had to work out the notation, so the header
+bases and bound methods right, finding entries with `grep -n '^## '`. It had to work out the notation, so the legend
 says it now. What it found wanting and is left as is:
 - An exception from another package has no entry in the package's reference (`StructuralError`): grepping
   `docs/reference/` finds it.
