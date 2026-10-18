@@ -458,6 +458,11 @@ the fake. Take, for factors.11: the engine says whether it takes token ids, so t
 ### G13. What reaches vLLM: argv and passthrough
 What an engine's command line and a passthrough may hold, checked against what vLLM takes.
 
+Triage: kept as is, built on pinned lists of vLLM 0.24's `serve` flags, each with whether it takes a value, and its
+request keys (docs/vllm.md, item 12). The flag list also lets the fake drop the first entry of docs/vllm.md, "Not
+emulated". Decided, for factors.20: the refusals stay, and a key vLLM 0.24 doesn't take gets a warning lint, on local
+engines only.
+
 **factors-api.6** · From docs/factors-api.md:1065, "Known gaps"
 
 - `argv` is checked without vLLM's list of flags: a bare argument after a flag that takes no value passes, and lints
