@@ -14,7 +14,8 @@ items under it are as they were moved. An item that restates another for an API 
 
 1. [Canary sets in use](#g1-canary-sets-in-use) (6)
 2. [Drift between runs](#g2-drift-between-runs) (8)
-3. [Attestation within a run](#g3-attestation-within-a-run) (8)
+3. [Attestation within a run](#g3-attestation-within-a-run) (6)
+   - G3b. [Each attempt recorded](#g3b-each-attempt-recorded) (2)
 4. [The finish record: seal and findings](#g4-the-finish-record-seal-and-findings) (4)
 5. [Keyed fingerprints](#g5-keyed-fingerprints) (2)
 6. [Research output: replicates, aggregation and export](#g6-research-output-replicates-aggregation-and-export) (7)
@@ -147,18 +148,10 @@ those of the same trial digest at the same endpoint, and drift is a finding, not
 - A response's `system_fingerprint` is never compared.
 
 ### G3. Attestation within a run
-Checking a run or a score holds every call to what it should have been: each attempt's times against the timeout, every
-round's and judge's request rebuilt, and the prompt and model checks for judge and canary calls.
+Checking a run or a score holds every call to what it should have been: every round's and judge's request rebuilt, in
+`runner/prepare.py` since it needs the vignette, and the prompt and model checks for judge and canary calls.
 
-**ledger.1** · From docs/ledger.md:245, "Open design issues", "Some of what happened isn't checked"
-
-- timeouts: a call's times span all its attempts, so an attempt that ran past the timeout can't be told from them.
-  Recording each attempt's times, status and error would tell them; a call keeps only the last refusal's body, as its
-  response;
-
-**ledger-api.1** · From docs/ledger-api.md:546, "Known gaps"
-
-- `Execution.timeout_s` isn't checked: a call's times span all its attempts.
+Triage: split, each attempt's record went to G3b.
 
 **ledger.2** · From docs/ledger.md:248, "Open design issues", "Some of what happened isn't checked"
 
@@ -191,6 +184,22 @@ round's and judge's request rebuilt, and the prompt and model checks for judge a
 
 - **Judge calls aren't fully attested.** Their returned model is checked against the judge engine's, but their
   prompt-token fingerprint isn't, as the request would have to be rebuilt from the answer as the scorer read it.
+
+### G3b. Each attempt recorded
+A call records each attempt's times, status and error, so that a timeout can be checked; a change to `Call`, cheapest
+before real runs are stored.
+
+Triage: split from G3.
+
+**ledger.1** · From docs/ledger.md:245, "Open design issues", "Some of what happened isn't checked"
+
+- timeouts: a call's times span all its attempts, so an attempt that ran past the timeout can't be told from them.
+  Recording each attempt's times, status and error would tell them; a call keeps only the last refusal's body, as its
+  response;
+
+**ledger-api.1** · From docs/ledger-api.md:546, "Known gaps"
+
+- `Execution.timeout_s` isn't checked: a call's times span all its attempts.
 
 ### G4. The finish record: seal and findings
 What the finish record holds, and how findings are kept, decided together.
