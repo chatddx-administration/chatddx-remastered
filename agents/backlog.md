@@ -533,6 +533,8 @@ the engine import don't run it yet, and still check one entry at a time.
 ### G17. Facts: the checks
 Checking pairs and loading facts warn where they now stay silent or warn wrongly.
 
+Triage: kept as is.
+
 **facts.5** · From docs/facts.md:157, "Open design issues", "Smaller issues"
 
 - **A budget with reasoning off is compiled.** Qwen3's off with a budget turns thinking off and sets a thinking
