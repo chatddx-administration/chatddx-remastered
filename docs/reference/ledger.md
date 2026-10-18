@@ -1,6 +1,12 @@
 # `chatddx.ledger`
 
 Written by `chatddx reference` from `src/chatddx/ledger/`: each public name, sorted, with its parameters or fields,
+```
+REFERENCE: REPLACE
+replace the line below with these
+---
+`∟` its return type, what it raises and what it finds.
+```
 `∟` its return type, and what it raises.
 
 - `*`: the parameters after it are keyword-only; `/`: those before it are positional-only. A function a
@@ -9,6 +15,12 @@ Written by `chatddx reference` from `src/chatddx/ledger/`: each public name, sor
   the code reaches them, each once. What the public functions it calls raise is in their own entries.
 - A message is quoted, with the values of the code that raises it as `{expr}`; an argument that isn't text is
   as written, and from `<exception>` when it is the exception caught.
+```
+REFERENCE: ADD
+add these lines here
+---
+- Finds: each `Finding` it makes, as `code`: message, followed as Raises are; a warning unless it says info.
+```
 
 ## attest_model
 `src/chatddx/ledger/call.py:attest_model`
@@ -18,6 +30,16 @@ Written by `chatddx reference` from `src/chatddx/ledger/`: each public name, sor
 * `who: str`
 * `subject: str`
 * ∟`list[Finding]`
+```
+REFERENCE: ADD
+add these lines here
+---
+
+Finds:
+
+1. `attestation.model`: "{who} returned model {got!r}, declared {want!r}"
+2. `attestation.model`: "{who} returned no model name, declared {want!r}"
+```
 
 ## Call `(Frozen)`
 `src/chatddx/ledger/call.py:Call`
@@ -58,6 +80,17 @@ Raises:
 * `sent: Mapping[ItemKey, datetime]`
 * ∟`list[Finding]`
 
+```
+REFERENCE: ADD
+add these lines here
+---
+Finds:
+
+1. `execution.retries`: "{over} calls took more than the {allowed} attempts allowed"
+2. `execution.order`: "{early} items were sent before items scheduled ahead of them"
+3. `execution.concurrency`: "{peak} calls were in flight at once, declared {execution.concurrency}"
+
+```
 ## check_log
 `src/chatddx/ledger/record.py:check_log`
 
@@ -90,6 +123,22 @@ Raises:
 9. `StructuralError`: "{item.key}: a round runs tools for calls the response didn't make" (through `_rounds`)
 10. `StructuralError`: "tool code recorded for tools the skeleton lacks: {stray}" (through `_tool_code`)
 
+```
+REFERENCE: ADD
+add these lines here
+---
+Finds:
+
+1. `run.incomplete`: "{len(missing)} {what} missing"
+2. `case.drift`: "the vignette read differs from the case's"
+3. `call.failed`: error
+4. `tools.stopped`: "round {len(item.turns)} stopped after {len(item.turns[-1].tools)} of {len(asked)} tool calls, before its call" (through `_rounds`)
+5. `tools.unanswered`: "the last response still calls {', '.join(left)} after {len(item.turns)} of {skeleton.max_rounds} rounds" (through `_rounds`)
+6. `tools.code`: message (through `_tool_code`)
+7. `attestation.prompt_tokens`: "{unfingerprinted} items have no prompt token fingerprint"
+8. `canary.phase`: message (through `_bracketed`)
+
+```
 ## check_score
 `src/chatddx/ledger/score.py:check_score`
 
@@ -108,12 +157,35 @@ Raises:
 6. `StructuralError`: "judge seed index {jc.seed_index} out of range" (through `_judged`)
 7. `StructuralError`: "{item.key}: duplicate judge calls for view {item.view}" (through `_judged`)
 
+```
+REFERENCE: ADD
+add these lines here
+---
+Finds:
+
+1. `view.unreachable`: "view {i}'s output selector {view.output!r} reaches nothing in the run's output schema"
+2. `judge.incomplete`: "view {item.view}'s value rests on {called} of {declared} judge seeds" (through `_judged`)
+3. `score.scorer_code`: "the scorer code ran at version {ran} of {scorer.entry_point}, not the version the scorer pins ({scorer.version})"
+4. `score.run_unfinished`: "the run hasn't finished" if ended is None else 'the score started before the run finished'
+5. `score.no_expectation`: "{len(uncovered)} of the run's cases have no expectation in the scoring"
+6. `score.incomplete`: "{len(missing)} items missing"
+
+```
 ## check_seal
 `src/chatddx/ledger/record.py:check_seal`
 
 * `log: Log`
 * `subject: str`
 * ∟`list[Finding]`
+```
+REFERENCE: ADD
+add these lines here
+---
+
+Finds:
+
+1. `ledger.seal`: "rows changed after the log was sealed"
+```
 
 ## Endpoint `(Frozen)`
 `src/chatddx/ledger/run.py:Endpoint`

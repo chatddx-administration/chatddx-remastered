@@ -1,6 +1,12 @@
 # `chatddx.runner`
 
 Written by `chatddx reference` from `src/chatddx/runner/`: each public name, sorted, with its parameters or fields,
+```
+REFERENCE: REPLACE
+replace the line below with these
+---
+`∟` its return type, what it raises and what it finds.
+```
 `∟` its return type, and what it raises.
 
 - `*`: the parameters after it are keyword-only; `/`: those before it are positional-only. A function a
@@ -9,6 +15,12 @@ Written by `chatddx reference` from `src/chatddx/runner/`: each public name, sor
   the code reaches them, each once. What the public functions it calls raise is in their own entries.
 - A message is quoted, with the values of the code that raises it as `{expr}`; an argument that isn't text is
   as written, and from `<exception>` when it is the exception caught.
+```
+REFERENCE: ADD
+add these lines here
+---
+- Finds: each `Finding` it makes, as `code`: message, followed as Raises are; a warning unless it says info.
+```
 
 ## admit
 `src/chatddx/runner/gate.py:admit`
@@ -165,6 +177,16 @@ Raises:
 Raises:
 
 1. `KeyboardInterrupt`
+```
+REFERENCE: ADD
+add these lines here
+---
+
+Finds:
+
+1. `answer.salvaged`: message (info, through `Grading._grade`)
+2. `{code}`: message (through `Grading._grade`)
+```
 
 ## Grading.started `@property`
 `src/chatddx/runner/score.py:Grading.started`
@@ -387,6 +409,16 @@ Raises:
 3. `ValueError`: "endpoint {endpoint!r} takes {spec.max_jobs} requests at once, the execution sends {execution.concurrency}" (through `Runner._admitted`)
 4. `ValueError`: "endpoint {endpoint.name!r} is at {url} now, and run {run} was sent to {endpoint.url}"
 
+```
+REFERENCE: ADD
+add these lines here
+---
+Finds:
+
+1. `run.resumed`: "{said} by {_built(now)}, where {_built(log.started.rig)} started it" (through `_resumed`)
+2. `run.resumed`: said (info, through `_resumed`)
+
+```
 ## Runner.score
 `src/chatddx/runner/run.py:Runner.score`
 
@@ -452,6 +484,15 @@ Raises:
 Raises:
 
 1. `KeyboardInterrupt` (through `Running._probe`)
+```
+REFERENCE: ADD
+add these lines here
+---
+
+Finds:
+
+1. `case.unreadable`: str(e) (from `(LookupError, StructuralError)`, through `Running._prepared`)
+```
 
 ## Running.started `@property`
 `src/chatddx/runner/run.py:Running.started`

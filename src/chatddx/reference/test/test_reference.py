@@ -5,7 +5,7 @@ from textwrap import dedent
 import pytest
 
 from chatddx import settings
-from chatddx.reference import Code, Raises, page, regenerated, tagged, untagged
+from chatddx.reference import Code, Trace, page, regenerated, tagged, untagged
 
 
 def written(tmp_path: Path, files: dict[str, str]) -> str:
@@ -14,7 +14,7 @@ def written(tmp_path: Path, files: dict[str, str]) -> str:
         path.parent.mkdir(parents=True, exist_ok=True)
         _ = path.write_text(dedent(source))
     code = Code(tmp_path / "src", "proj")
-    return page(code, Raises(code), "proj.alpha", tmp_path)
+    return page(code, Trace(code, "proj.base.Finding"), "proj.alpha", tmp_path)
 
 
 def entry(page: str, heading: str) -> list[str]:
@@ -393,6 +393,49 @@ def test_a_validator_s_raise_is_said_of_its_class_in_a_validation_error(
         "Raises:",
         '1. `ValueError`: "a login can\'t be empty" '
         + "(through `Person._login`, in a `ValidationError`)",
+    ]
+
+
+def test_a_finding_is_listed_where_the_code_makes_it(tmp_path: Path) -> None:
+    found = written(
+        tmp_path,
+        {
+            "proj/base.py": """
+                from dataclasses import dataclass
+
+
+                @dataclass(frozen=True)
+                class Finding:
+                    code: str
+                    message: str
+                    level: str = "warning"
+            """,
+            "proj/alpha/linting.py": """
+                from proj.base import Finding
+
+
+                def _pair(n: int) -> list[Finding]:
+                    if n % 2:
+                        return [Finding(code="pair.odd", message=f"{n} is odd", level="info")]
+                    return []
+
+
+                def lint(n: int, code: str) -> list[Finding]:
+                    found = [Finding(code="lint.started", message="linting")]
+                    found += _pair(n)
+                    try:
+                        _ = int(code)
+                    except ValueError as e:
+                        found.append(Finding(code=code, message=str(e)))
+                    return found
+            """,
+        },
+    )
+    assert entry(found, "## lint")[4:] == [
+        "Finds:",
+        '1. `lint.started`: "linting"',
+        '2. `pair.odd`: "{n} is odd" (info, through `_pair`)',
+        "3. `{code}`: str(e) (from `ValueError`)",
     ]
 
 

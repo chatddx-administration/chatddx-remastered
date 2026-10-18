@@ -1,9 +1,10 @@
 # Reference
 
 `chatddx reference` writes `docs/reference/<package>.md` for each package in `settings.REFERENCED` from the code
-(`src/chatddx/reference/`): each public name's signature and what it raises. `settings.REFERENCED` holds the
-solidified packages, those with a `docs/<package>.md`, and the reference replaces their `docs/<package>-api.md`; what
-those held that isn't Python (schemas, finding codes, commands, file formats, conventions, tests) is dropped.
+(`src/chatddx/reference/`): each public name's signature, what it raises and what it finds.
+`settings.REFERENCED` holds the solidified packages, those with a `docs/<package>.md`, and the reference replaces their
+`docs/<package>-api.md`. What those held that isn't Python (schemas, commands, file formats, conventions, tests) is
+dropped; their tables of finding codes are the references' Finds.
 
 ## Where it stands among the common ways
 - Reading the code: griffe (`src/chatddx/reference/code.py:Code`), the static loader behind mkdocstrings and
@@ -27,8 +28,8 @@ those held that isn't Python (schemas, finding codes, commands, file formats, co
   they neither pile up nor go stale, and a line edited by hand is tagged back to what the code says.
 
 ## What a reference holds
-Its header says how to read it: what `∟`, `*`, `/`, "through" and a quoted message mean, that a bound method leaves out
-its instance, and that a public callee's raises are in its own entry.
+Its header says how to read it: what `∟`, `*`, `/`, "through" and a quoted message mean, that a bound method leaves
+out its instance, and that a public callee's raises are in its own entry.
 
 One entry for each name defined at the top of the package's modules, tests left out, that doesn't start with `_`, and
 one for each public method, property and `__init__` of its classes, as `Class.name`, all sorted alphabetically whatever
@@ -61,8 +62,8 @@ Raises:
 
 ## What it says is raised
 - The function's own `raise` statements, and those of the private helpers it calls, `(through <helper>)`, the one it
-  calls, however deep the raise is: `_helper(…)`, and `self._helper(…)`, `cls._helper(…)` or `x._helper(…)` for a
-  parameter `x` annotated with a class of the project.
+  calls, however deep the raise is: `_helper(…)`, and `self._helper(…)`, `cls._helper(…)` or `x._helper(…)` for
+  a parameter `x` annotated with a class of the project.
 - In the order the code reaches them, a helper's at the call; each raise once, where it is first reached.
 - The arguments as the code writes them: text quoted, an f-string's values as `{expr}` and a string constant's text in
   its place; anything else as written, `HTTPException`: 422, "only a configuration answers". A raise in an `except`
@@ -71,6 +72,13 @@ Raises:
   `_unsigned`).
 - An exception caught around a raise or a call isn't said, unless the handler raises it again.
 - A class says what its validators raise, in a `ValidationError`, and what `__post_init__` raises.
+
+## What it says is found
+"Finds:" follows "Raises:", and is walked the same way (`src/chatddx/reference/trace.py:Trace`): each
+`chatddx.factors.base.Finding` the function makes and its private helpers make, in the order the code reaches them,
+each once, as `code`: message, with the message's arguments as a raise's. A computed code or level is `{expr}`; the
+level is said when it isn't a warning, `(info, through `_pair`)`. It replaces the tables of finding codes the API docs
+kept: every code the solidified packages make is in one reference or another.
 
 Not said:
 - What a public function or class it calls raises: its own entry says.
@@ -86,11 +94,3 @@ says it now. What it found wanting and is left as is:
 - An exception from another package has no entry in the package's reference (`StructuralError`): grepping
   `docs/reference/` finds it.
 - A message's values are the raising code's own names (`{word}`, `{name}` in a helper).
-- Findings, which are returned and not raised, aren't listed anywhere since the tables of finding codes went.
-
-## Open
-- The suggestions in `docs/` where they refer to a `docs/<package>-api.md`.
-- A list of what each function finds, as `Finding(…)`, the way what it raises is listed, to replace the tables of
-  finding codes.
-- The suggestions in AGENTS.md: the reference's place among the docs, its one writer, the step before a commit, and
-  docstrings in the packages of `settings.REFERENCED`.

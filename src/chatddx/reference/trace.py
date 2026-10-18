@@ -22,11 +22,33 @@ class Raised:
     origin: str | None = None
 
 
+@dataclass(frozen=True)
+class Found:
+    code: str
+    message: str | None
+    level: str | None = None
+    through: str | None = None
+    origin: str | None = None
+
+
+@dataclass(frozen=True)
+class Traced:
+    raised: tuple[Raised, ...]
+    found: tuple[Found, ...]
+
+
 def _first(raised: list[Raised]) -> tuple[Raised, ...]:
-    found: dict[tuple[str, str | None, bool], Raised] = {}
+    kept: dict[tuple[str, str | None, bool], Raised] = {}
     for r in raised:
-        _ = found.setdefault((r.exception, r.message, r.validated), r)
-    return tuple(found.values())
+        _ = kept.setdefault((r.exception, r.message, r.validated), r)
+    return tuple(kept.values())
+
+
+def _once(found: list[Found]) -> tuple[Found, ...]:
+    kept: dict[tuple[str, str | None, str | None], Found] = {}
+    for f in found:
+        _ = kept.setdefault((f.code, f.message, f.level), f)
+    return tuple(kept.values())
 
 
 def _reraises(handler: ast.ExceptHandler) -> bool:
@@ -44,20 +66,20 @@ def _reraises(handler: ast.ExceptHandler) -> bool:
     return False
 
 
-class Raises:
-    def __init__(self, code: Code) -> None:
+class Trace:
+    def __init__(self, code: Code, finding: str) -> None:
         self.code: Code = code
-        self._of: dict[tuple[str, str | None], tuple[Raised, ...]] = {}
+        self.finding: str = finding
+        self._of: dict[tuple[str, str | None], Traced] = {}
 
-    def of(
-        self, function: griffe.Object, cls: griffe.Class | None
-    ) -> tuple[Raised, ...]:
+    def of(self, function: griffe.Object, cls: griffe.Class | None) -> Traced:
         key = (function.path, None if cls is None else cls.path)
         if key not in self._of:
-            self._of[key] = ()
+            self._of[key] = Traced((), ())
             node = self.code.node(function)
             assert not isinstance(node, ast.ClassDef)
-            self._of[key] = _first(_Walker(self, function, node, cls).found)
+            walked = _Walker(self, function, node, cls)
+            self._of[key] = Traced(_first(walked.raised), _once(walked.found))
         return self._of[key]
 
     def constructing(self, cls: griffe.Class) -> tuple[Raised, ...]:
@@ -69,7 +91,7 @@ class Raises:
             validated = decorated(node, VALIDATORS)
             if validated or name == "__post_init__":
                 through = f"{cls.name}.{name}"
-                for r in self.of(member, cls):
+                for r in self.of(member, cls).raised:
                     kind = VALIDATION if validated else r.kind
                     found.append(
                         replace(r, kind=kind, through=through, validated=validated)
@@ -83,16 +105,17 @@ class Raises:
 class _Walker:
     def __init__(
         self,
-        raises: Raises,
+        trace: Trace,
         function: griffe.Object,
         node: Def,
         cls: griffe.Class | None,
     ) -> None:
-        self.raises: Raises = raises
-        self.code: Code = raises.code
+        self.trace: Trace = trace
+        self.code: Code = trace.code
         self.function: griffe.Object = function
         self.module: griffe.Module = function.module
-        self.found: list[Raised] = []
+        self.raised: list[Raised] = []
+        self.found: list[Found] = []
         self.handlers: dict[str, str] = {}
         self.receivers: dict[str, griffe.Class] = {}
         args = [*node.args.posonlyargs, *node.args.args, *node.args.kwonlyargs]
@@ -120,7 +143,7 @@ class _Walker:
         for child in ast.iter_child_nodes(node):
             self.visit(child, caught)
         if isinstance(node, ast.Raise):
-            self.raised(node, caught)
+            self.raising(node, caught)
         elif isinstance(node, ast.Call):
             self.called(node, caught)
 
@@ -147,7 +170,7 @@ class _Walker:
         for statement in [*node.orelse, *node.finalbody]:
             self.visit(statement, caught)
 
-    def raised(self, node: ast.Raise, caught: tuple[str, ...]) -> None:
+    def raising(self, node: ast.Raise, caught: tuple[str, ...]) -> None:
         if node.exc is None:
             return
         target = node.exc.func if isinstance(node.exc, ast.Call) else node.exc
@@ -159,21 +182,49 @@ class _Walker:
                 return
             exception, through = factory.returns.name, factory.name
             kind = self.code.named(factory.returns)
-        if kind is None or self.raises.caught(kind, caught):
+        if kind is None or self.trace.caught(kind, caught):
             return
         said = self.said(node.exc) if isinstance(node.exc, ast.Call) else None
-        names = {n.id for n in ast.walk(node.exc) if isinstance(n, ast.Name)}
-        origin = next((t for n, t in self.handlers.items() if n in names), None)
-        self.found.append(Raised(exception, said, kind, through, origin=origin))
+        origin = self.origin(node.exc)
+        self.raised.append(Raised(exception, said, kind, through, origin=origin))
 
     def called(self, node: ast.Call, caught: tuple[str, ...]) -> None:
+        if self.code.lookup(self.module, node.func) == self.trace.finding:
+            self.finding(node)
+            return
         helper = self.helper(node.func)
         if helper is None:
             return
         function, cls, through = helper
-        for r in self.raises.of(function, cls):
-            if not self.raises.caught(r.kind, caught):
-                self.found.append(replace(r, through=through))
+        traced = self.trace.of(function, cls)
+        for r in traced.raised:
+            if not self.trace.caught(r.kind, caught):
+                self.raised.append(replace(r, through=through))
+        self.found += [replace(f, through=through) for f in traced.found]
+
+    def finding(self, node: ast.Call) -> None:
+        said = {k.arg: k.value for k in node.keywords if k.arg is not None}
+        if "code" not in said:
+            return
+        code = self.text(said["code"])
+        level = None if "level" not in said else self.text(said["level"])
+        if "level" in said and level is None:
+            level = f"{{{self.code.segment(self.function, said['level'])}}}"
+        message = None if "message" not in said else self.argument(said["message"])
+        self.found.append(
+            Found(
+                code
+                if code is not None
+                else f"{{{self.code.segment(self.function, said['code'])}}}",
+                message,
+                None if level == "warning" else level,
+                origin=self.origin(node),
+            )
+        )
+
+    def origin(self, node: ast.expr) -> str | None:
+        names = {n.id for n in ast.walk(node) if isinstance(n, ast.Name)}
+        return next((t for n, t in self.handlers.items() if n in names), None)
 
     def helper(
         self, func: ast.expr

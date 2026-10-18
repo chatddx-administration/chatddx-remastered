@@ -5,14 +5,14 @@ from pathlib import Path
 import griffe
 
 from .code import Code, Def, Node, decorated, private
-from .raises import VALIDATORS, Raised, Raises
+from .trace import VALIDATORS, Found, Raised, Trace
 
 
 def _legend(directory: Path) -> list[str]:
     return [
         f"Written by `chatddx reference` from `{directory}/`: each public name, sorted, with its "
         + "parameters or fields,",
-        "`∟` its return type, and what it raises.",
+        "`∟` its return type, what it raises and what it finds.",
         "",
         "- `*`: the parameters after it are keyword-only; `/`: those before it are "
         + "positional-only. A function a",
@@ -25,6 +25,8 @@ def _legend(directory: Path) -> list[str]:
         "- A message is quoted, with the values of the code that raises it as `{expr}`; an "
         + "argument that isn't text is",
         "  as written, and from `<exception>` when it is the exception caught.",
+        "- Finds: each `Finding` it makes, as `code`: message, followed as Raises are; a "
+        + "warning unless it says info.",
     ]
 
 
@@ -46,16 +48,21 @@ def _head(value: str | griffe.Expr) -> str:
     return "…"
 
 
+def _noted(name: str, message: str | None, notes: list[str]) -> str:
+    written = _code(name) + ("" if message is None else f": {message}")
+    return written + (f" ({', '.join(notes)})" if notes else "")
+
+
 def _code(text: str) -> str:
     return f"`` {text} ``" if "`" in text else f"`{text}`"
 
 
 class Page:
-    def __init__(self, code: Code, raises: Raises, package: str, repo: Path) -> None:
+    def __init__(self, code: Code, trace: Trace, package: str, repo: Path) -> None:
         found = code.get(package)
         assert isinstance(found, griffe.Module)
         self.code: Code = code
-        self.raises: Raises = raises
+        self.trace: Trace = trace
         self.package: griffe.Module = found
         self.repo: Path = repo
         self.bound: dict[str, tuple[griffe.Class, str]] = {}
@@ -184,7 +191,8 @@ class Page:
             bullets.append(f"* ∟{_code(self.code.segment(function, node.returns))}")
         if bullets:
             lines += ["", *bullets]
-        return lines + self.listed(self.raises.of(function, cls))
+        traced = self.trace.of(function, cls)
+        return lines + self.listed(traced.raised) + self.finds(traced.found)
 
     def parameters(self, function: griffe.Object, node: Def, drop: int) -> list[str]:
         args = node.args
@@ -231,13 +239,30 @@ class Page:
         ]
 
     def said(self, r: Raised) -> str:
-        written = _code(r.exception) + ("" if r.message is None else f": {r.message}")
         notes = [] if r.origin is None else [f"from {_code(r.origin)}"]
         if r.through is not None:
             notes.append(f"through {_code(r.through)}")
         if r.validated:
             notes.append("in a `ValidationError`")
-        return written + (f" ({', '.join(notes)})" if notes else "")
+        return _noted(r.exception, r.message, notes)
+
+    def finds(self, found: tuple[Found, ...]) -> list[str]:
+        if not found:
+            return []
+        return [
+            "",
+            "Finds:",
+            "",
+            *(f"{i}. {self.noted(f)}" for i, f in enumerate(found, 1)),
+        ]
+
+    def noted(self, f: Found) -> str:
+        notes = [] if f.level is None else [f.level]
+        if f.origin is not None:
+            notes.append(f"from {_code(f.origin)}")
+        if f.through is not None:
+            notes.append(f"through {_code(f.through)}")
+        return _noted(f.code, f.message, notes)
 
     def cls(self, cls: griffe.Class, prefix: str) -> list[tuple[str, list[str]]]:
         node = self.code.node(cls)
@@ -287,9 +312,9 @@ class Page:
                 )
         if fields:
             lines += ["", *fields]
-        lines += self.listed(self.raises.constructing(cls))
+        lines += self.listed(self.trace.constructing(cls))
         return [(cls.name, lines), *((d.removeprefix(prefix), e) for d, e in entries)]
 
 
-def page(code: Code, raises: Raises, package: str, repo: Path) -> str:
-    return Page(code, raises, package, repo).render()
+def page(code: Code, trace: Trace, package: str, repo: Path) -> str:
+    return Page(code, trace, package, repo).render()

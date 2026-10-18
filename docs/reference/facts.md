@@ -1,6 +1,12 @@
 # `chatddx.facts`
 
 Written by `chatddx reference` from `src/chatddx/facts/`: each public name, sorted, with its parameters or fields,
+```
+REFERENCE: REPLACE
+replace the line below with these
+---
+`∟` its return type, what it raises and what it finds.
+```
 `∟` its return type, and what it raises.
 
 - `*`: the parameters after it are keyword-only; `/`: those before it are positional-only. A function a
@@ -9,6 +15,12 @@ Written by `chatddx reference` from `src/chatddx/facts/`: each public name, sort
   the code reaches them, each once. What the public functions it calls raise is in their own entries.
 - A message is quoted, with the values of the code that raises it as `{expr}`; an argument that isn't text is
   as written, and from `<exception>` when it is the exception caught.
+```
+REFERENCE: ADD
+add these lines here
+---
+- Finds: each `Finding` it makes, as `code`: message, followed as Raises are; a warning unless it says info.
+```
 
 ## BUNDLED
 `src/chatddx/facts/models.py:BUNDLED`
@@ -22,6 +34,20 @@ Written by `chatddx reference` from `src/chatddx/facts/`: each public name, sort
 * `facts: Facts`
 * `digests: Iterable[str] | None = None`
 * ∟`list[Finding]`
+```
+REFERENCE: ADD
+add these lines here
+---
+
+Finds:
+
+1. `facts.missing`: "no facts about {name!r}, so model-level checks were skipped" (info, through `_pair`)
+2. `facts.reasoning_unmatched`: "the configuration's reasoning settings match none of the model's reasoning levels" (through `_pair`)
+3. `facts.budget_refused`: model.reasoning.budget.refused (through `_pair`)
+4. `facts.output_refused`: reason (through `_pair`)
+5. `facts.output_note`: note (info, through `_pair`)
+6. `facts.sampling_unmatched`: "the configuration's sampling is what the facts recommend for {', '.join(others)}, not for {name}" (through `_pair`)
+```
 
 ## Facts `(Frozen)`
 `src/chatddx/facts/models.py:Facts`

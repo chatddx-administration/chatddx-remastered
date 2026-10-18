@@ -1,6 +1,12 @@
 # `chatddx.factors`
 
 Written by `chatddx reference` from `src/chatddx/factors/`: each public name, sorted, with its parameters or fields,
+```
+REFERENCE: REPLACE
+replace the line below with these
+---
+`∟` its return type, what it raises and what it finds.
+```
 `∟` its return type, and what it raises.
 
 - `*`: the parameters after it are keyword-only; `/`: those before it are positional-only. A function a
@@ -9,6 +15,12 @@ Written by `chatddx reference` from `src/chatddx/factors/`: each public name, so
   the code reaches them, each once. What the public functions it calls raise is in their own entries.
 - A message is quoted, with the values of the code that raises it as `{expr}`; an argument that isn't text is
   as written, and from `<exception>` when it is the exception caught.
+```
+REFERENCE: ADD
+add these lines here
+---
+- Finds: each `Finding` it makes, as `code`: message, followed as Raises are; a warning unless it says info.
+```
 
 ## Api
 `src/chatddx/factors/base.py:Api`
@@ -56,6 +68,15 @@ Written by `chatddx reference` from `src/chatddx/factors/`: each public name, so
 Raises:
 
 1. `StructuralError`: "roots missing from bundle: {missing}"
+```
+REFERENCE: ADD
+add these lines here
+---
+
+Finds:
+
+1. `bundle.recanonicalized`: "current code serializes this component differently"
+```
 
 ## BY_KIND
 `src/chatddx/factors/kinds.py:BY_KIND`
@@ -127,6 +148,16 @@ Raises:
 * `engine: LocalEngine`
 * `template: bytes`
 * ∟`list[Finding]`
+```
+REFERENCE: ADD
+add these lines here
+---
+
+Finds:
+
+1. `engine.chat_template`: "chat template does not match the declared digest"
+2. `engine.chat_template_date`: "chat template reads the current date"
+```
 
 ## check_selector
 `src/chatddx/factors/select.py:check_selector`
@@ -581,6 +612,33 @@ Raises:
 * `reasons: Reasons | None = None`
 * ∟`list[Finding]`
 
+```
+REFERENCE: ADD
+add these lines here
+---
+Finds:
+
+1. `model.revision`: "revision {c.revision!r} is not a commit and can move" (through `_model`)
+2. `engine.closure`: "closure {c.runtime.closure!r} is not a Nix store path" (through `_engine`)
+3. `view.unreachable`: "view {i}'s expectation selector {view.expectation!r} reaches nothing in the expectation schema" (through `_scorer`)
+4. `output.schema_invalid`: message (through `_output`)
+5. `expectation_schema.invalid`: message (through `_expectation_schema`)
+6. `expectation.unchecked`: "a $ref in the schema can't be resolved: {e.ref}" (from `Unresolvable`, through `_expectation`)
+7. `expectation.invalid`: "{_where(error)}: {error.message}{more}" (through `_expectation`)
+8. `schema.ref_unverified`: "the schema has $ref, which this engine isn't known to resolve; inline_refs@1 removes them" (through `_pair`)
+9. `schema.ref_unverified`: "the parameters of tool {name!r} have $ref, which this engine isn't known to resolve" (through `_pair`)
+10. `vllm.temperature_clamped`: "vLLM 0.24 raises temperature {t} to 0.01" (through `_pair`)
+11. `vllm.thinking_budget_refused`: "vLLM 0.24 refuses thinking_token_budget without --reasoning-parser or --reasoning-config" (through `_pair`)
+12. `vllm.tools_refused`: "vLLM 0.24 refuses tool_choice {_choice(skeleton.body.get('tool_choice'))} without --enable-auto-tool-choice and --tool-call-parser; for harmony and Mistral models it goes out unconstrained instead" (through `_pair`)
+13. `vllm.native_tools_uncallable`: "with tool_choice auto, vLLM 0.24 constrains the whole answer to response_format, so no tool can be called" (through `_pair`)
+14. `vllm.grammar_before_reasoning`: "without --reasoning-parser, vLLM 0.24 constrains the answer from its first token, so a model can't reason first" ({"warning" if reasons else "info"}, through `_pair`)
+15. `{word}.engine_unmatched`: "the skeleton is worked out for {', '.join(sorted(models))}, and the engine serves {serves}" (through `_made_for`)
+16. `language.unknown`: "the request's language is unknown" (info, through `_languages`)
+17. `language.unknown`: "the language of {unknown} of {len(cases)} cases is unknown" (info, through `_languages`)
+18. `language.mixed`: "the request is {request}, but {len(other)} of {len(cases)} cases {verb} {', '.join(sorted(set(other)))}" (through `_languages`)
+19. `judge.greedy_seeds`: "the judge is greedy, so its {len(c.seeds)} seeds send the same request" (through `_judge`)
+
+```
 ## LocalEngine `(Component)`
 `src/chatddx/factors/engine.py:LocalEngine`
 
@@ -858,6 +916,15 @@ Raises:
 
 1. `StructuralError`: "the case's vignette is fingerprinted with key {expected.key_id!r}, not {given!r}"
 2. `StructuralError`: "vignette {vignette} isn't UTF-8: {e.reason} at byte {e.start}" (from `UnicodeDecodeError`)
+```
+REFERENCE: ADD
+add these lines here
+---
+
+Finds:
+
+1. `case.drift`: "the vignette at the source differs from the case's"
+```
 
 ## Prepared `(Frozen)`
 `src/chatddx/factors/cases.py:Prepared`

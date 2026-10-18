@@ -1,6 +1,12 @@
 # `chatddx.inventory`
 
 Written by `chatddx reference` from `src/chatddx/inventory/`: each public name, sorted, with its parameters or fields,
+```
+REFERENCE: REPLACE
+replace the line below with these
+---
+`∟` its return type, what it raises and what it finds.
+```
 `∟` its return type, and what it raises.
 
 - `*`: the parameters after it are keyword-only; `/`: those before it are positional-only. A function a
@@ -9,6 +15,12 @@ Written by `chatddx reference` from `src/chatddx/inventory/`: each public name, 
   the code reaches them, each once. What the public functions it calls raise is in their own entries.
 - A message is quoted, with the values of the code that raises it as `{expr}`; an argument that isn't text is
   as written, and from `<exception>` when it is the exception caught.
+```
+REFERENCE: ADD
+add these lines here
+---
+- Finds: each `Finding` it makes, as `code`: message, followed as Raises are; a warning unless it says info.
+```
 
 ## AnySource
 `src/chatddx/inventory/inventory.py:AnySource`
@@ -21,6 +33,21 @@ Written by `chatddx reference` from `src/chatddx/inventory/`: each public name, 
 * `inventory: Inventory`
 * `get: Resolver`
 * ∟`list[Finding]`
+```
+REFERENCE: ADD
+add these lines here
+---
+
+Finds:
+
+1. `endpoint.engine_unknown`: str(e) (from `StructuralError`, through `_engine`)
+2. `endpoint.not_engine`: "{digest} is a {engine.kind_name}, not an engine" (through `_engine`)
+3. `endpoint.unstartable`: str(e) (from `LookupError`, through `_endpoint`)
+4. `endpoint.remote_host`: "it serves a remote engine, which no host of ours runs, but names host {host!r}" (through `_endpoint`)
+5. `endpoint.shared_url`: "{url} is also the address of endpoint {names[0]!r}"
+6. `host.unpinned`: "it says where it keeps {what} {key}, which none of its endpoints' engines pins" (info)
+7. `cleared.not_sensitive`: "it is cleared for source {source!r}, which isn't sensitive and needs no clearance" (info)
+```
 
 ## DatabaseSource `(Source)`
 `src/chatddx/inventory/sources.py:DatabaseSource`
