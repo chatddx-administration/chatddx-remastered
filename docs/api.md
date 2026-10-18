@@ -309,15 +309,10 @@ and detail, with nothing stored and nothing sent. A view its judge scores isn't 
 the answer: it says so, with no value, and is scored once the scorer is saved and the runs scored again. A scorer the
 running code can't score with is refused as a write of it is. The values are sensitive, as a score's items are.
 
-```
-AGENT: insert
-What a judge is asked, for an edge composing a judged view (agents/wip-olofs-view.md, L4).
----
 ### What a judge is asked
 A stored judge's first request, as the scoring pass renders it, with the expectation slot filled by what a view picks
 of an expectation's data the request gives, the answer as a placeholder, and the case's slots as placeholders too,
 which the scoring pass refuses a judge for reading. Nothing is sent and nothing stored, and nothing in it is sensitive.
-```
 
 ## Sensitive content
 What is made from a vignette is shown to whoever signed in, but only in its own places, so that a policy for edges
