@@ -15,7 +15,7 @@ import psycopg
 import uvicorn
 from fastapi import FastAPI
 
-from chatddx import reference, settings
+from chatddx import settings
 from chatddx.api.app import app
 from chatddx.bench import Bench
 from chatddx.curation import init, load_cases, plan_factors, repair, wipe
@@ -357,6 +357,10 @@ def _openapi(_: argparse.Namespace) -> None:
 
 
 def _reference(args: argparse.Namespace) -> None:
+    # Compromise: griffe, which chatddx.reference reads the code with, is a development
+    # dependency, which a deployed chatddx goes without.
+    from chatddx import reference
+
     held = reference.regenerated(args.package or settings.REFERENCED)
     stale = {p: t for p, t in held.items() if not p.exists() or p.read_text() != t}
     if args.check and stale:

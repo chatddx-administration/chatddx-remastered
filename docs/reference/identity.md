@@ -1,57 +1,107 @@
 # `chatddx.identity`
 
-Written by `chatddx reference` from `src/chatddx/identity/`: each public name's signature and what it raises.
+Written by `chatddx reference` from `src/chatddx/identity/`: each public name's signature and what it raises, in the order the code raises it.
 
-## `collaborates(person: int, owned: Owned) -> bool`
+## collaborates
 `src/chatddx/identity/identity.py:collaborates`
 
-## `hash_password(password: str) -> str`
+* `person: int`
+* `owned: Owned`
+* ∟`bool`
+
+## hash_password
 `src/chatddx/identity/identity.py:hash_password`
 
-## `LOGIN = re.compile(r"^[a-z0-9][a-z0-9._@-]*$")`
+* `password: str`
+* ∟`str`
+
+## LOGIN
 `src/chatddx/identity/identity.py:LOGIN`
 
-## `needs_rehash(hash: str) -> bool`
+* `LOGIN = re.compile(r"^[a-z0-9][a-z0-9._@-]*$")`
+
+## needs_rehash
 `src/chatddx/identity/identity.py:needs_rehash`
 
-## `new_token() -> str`
+* `hash: str`
+* ∟`bool`
+
+## new_token
 `src/chatddx/identity/identity.py:new_token`
 
-## `class Owned(Protocol)`
-`src/chatddx/identity/identity.py:Owned`
-- `owner: int | None`, a property
-- `collaborators: Collection[int]`, a property
-- `deleted: bool`, a property
+* ∟`str`
 
-## `owns(person: int, owned: Owned) -> bool`
+## Owned `(Protocol)`
+`src/chatddx/identity/identity.py:Owned`
+
+## Owned.collaborators `@property`
+`src/chatddx/identity/identity.py:Owned.collaborators`
+
+* ∟`Collection[int]`
+
+## Owned.deleted `@property`
+`src/chatddx/identity/identity.py:Owned.deleted`
+
+* ∟`bool`
+
+## Owned.owner `@property`
+`src/chatddx/identity/identity.py:Owned.owner`
+
+* ∟`int | None`
+
+## owns
 `src/chatddx/identity/identity.py:owns`
 
-## `class Person(BaseModel)`
-`src/chatddx/identity/identity.py:Person`
-- `model_config: ClassVar[ConfigDict] = ConfigDict(frozen=True, extra="forbid")`
-- `id: int`
-- `login: str`
-- `name: str`
-- `roles: frozenset[Role] = frozenset()`
-- `active: bool = True`
-- raises `ValueError("invalid login <login!r>")` in a `ValidationError`
+* `person: int`
+* `owned: Owned`
+* ∟`bool`
 
-## `preferred[T](person: int, seen: Iterable[tuple[T, int | None]]) -> list[T]`
+## Person `(BaseModel)`
+`src/chatddx/identity/identity.py:Person`
+
+* `model_config: ClassVar[ConfigDict] = ConfigDict(frozen=True, extra="forbid")`
+* `id: int`
+* `login: str`
+* `name: str`
+* `roles: frozenset[Role] = frozenset()`
+* `active: bool = True`
+
+Raises:
+
+1. `ValueError`: invalid login {login!r} (through `Person._login`, in a `ValidationError`)
+
+## preferred `[T]`
 `src/chatddx/identity/identity.py:preferred`
 
-## `class Role(StrEnum)`
-`src/chatddx/identity/identity.py:Role`
-- `ADMIN = "admin"`
-- `CLINICIAN = "clinician"`
-- `DEVELOPER = "developer"`
-- `OPS = "ops"`
-- `RESEARCHER = "researcher"`
+* `person: int`
+* `seen: Iterable[tuple[T, int | None]]`
+* ∟`list[T]`
 
-## `sees(person: int, owned: Owned) -> bool`
+## Role `(StrEnum)`
+`src/chatddx/identity/identity.py:Role`
+
+* `ADMIN = "admin"`
+* `CLINICIAN = "clinician"`
+* `DEVELOPER = "developer"`
+* `OPS = "ops"`
+* `RESEARCHER = "researcher"`
+
+## sees
 `src/chatddx/identity/identity.py:sees`
 
-## `token_digest(token: str) -> str`
+* `person: int`
+* `owned: Owned`
+* ∟`bool`
+
+## token_digest
 `src/chatddx/identity/identity.py:token_digest`
 
-## `verify_password(hash: str | None, password: str) -> bool`
+* `token: str`
+* ∟`str`
+
+## verify_password
 `src/chatddx/identity/identity.py:verify_password`
+
+* `hash: str | None`
+* `password: str`
+* ∟`bool`

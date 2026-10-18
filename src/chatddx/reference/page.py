@@ -1,317 +1,243 @@
 import ast
-import inspect
-from collections.abc import Collection
+from pathlib import Path
 
-from .index import VALIDATORS, Class, Def, Function, Index, Module, decorated
-from .raises import Raised, Raises, private
+import griffe
 
-PROPERTIES = frozenset({"property", "cached_property"})
+from .code import Code, Def, Node, decorated, private
+from .raises import VALIDATORS, Raised, Raises
 
 
-def code(text: str) -> str:
+def _code(text: str) -> str:
     return f"`` {text} ``" if "`" in text else f"`{text}`"
 
 
 class Page:
-    def __init__(self, index: Index, raises: Raises, package: str) -> None:
-        self.index: Index = index
+    def __init__(self, code: Code, raises: Raises, package: str, repo: Path) -> None:
+        found = code.get(package)
+        assert isinstance(found, griffe.Module)
+        self.code: Code = code
         self.raises: Raises = raises
-        self.package: str = package
-        self.bound: dict[str, str] = {}
-        for q, c in index.classes.items():
-            if self.ours(c.module):
-                for attr, function in index.bound(q).items():
-                    self.bound[function] = f"{c.name}.{attr}"
+        self.package: griffe.Module = found
+        self.repo: Path = repo
+        self.bound: dict[str, tuple[griffe.Class, str]] = {}
+        for module in self.modules(found):
+            for cls in module.classes.values():
+                for name, function in self.binds(cls).items():
+                    self.bound[function.path] = (cls, name)
 
-    def ours(self, module: Module) -> bool:
-        inside = module.name == self.package or module.name.startswith(
-            f"{self.package}."
-        )
-        return inside and not private(module.name)
+    def modules(self, module: griffe.Module) -> list[griffe.Module]:
+        found = [module]
+        for name, sub in module.modules.items():
+            if name != "test" and not private(name):
+                found += self.modules(sub)
+        return found
 
-    def name(self, q: str) -> str:
-        if q in self.bound:
-            return self.bound[q]
-        owner = self.index.owner(q)
-        if owner is None:
-            return q.removeprefix("builtins.")
-        local = q.removeprefix(f"{owner}.")
-        if owner == self.package or owner.startswith(f"{self.package}."):
-            return local
-        project = self.package.split(".")[0]
-        package = ".".join(owner.split(".")[:2])
-        exported = self.index.modules.get(package)
-        top = local.split(".")[0]
-        if (
-            exported is not None
-            and top in exported.imports
-            and self.index.canonical(exported.imports[top]) == f"{owner}.{top}"
-        ):
-            owner = package
-        return f"{owner}.{local}".removeprefix(f"{project}.")
+    def binds(self, cls: griffe.Class) -> dict[str, griffe.Function]:
+        found: dict[str, griffe.Function] = {}
+        for name, member in cls.members.items():
+            if isinstance(member, griffe.Attribute) and isinstance(
+                member.value, griffe.ExprName
+            ):
+                held = cls.module.members.get(member.value.name)
+                target = held.final_target if isinstance(held, griffe.Alias) else held
+                if isinstance(target, griffe.Function):
+                    found[name] = target
+        return found
 
     def render(self) -> str:
         entries: list[tuple[str, list[str]]] = []
-        for module in self.index.modules.values():
-            if not self.ours(module):
-                continue
-            for node in module.tree.body:
-                entries += self.entry(module, node)
+        for module in self.modules(self.package):
+            for name, member in module.members.items():
+                if (
+                    isinstance(member, griffe.Alias)
+                    or private(name)
+                    or name == "__all__"
+                ):
+                    continue
+                entries += self.entry(member)
         entries.sort(key=lambda e: (e[0].casefold(), e[0]))
-        root = self.index.root.name
-        directory = f"{root}/{self.package.replace('.', '/')}/"
+        directory = self.code.src.relative_to(self.repo).joinpath(
+            *self.package.path.split(".")
+        )
         lines = [
-            f"# {code(self.package)}",
+            f"# `{self.package.path}`",
             "",
-            f"Written by `chatddx reference` from `{directory}`: each public name's signature and what it "
-            + "raises.",
+            f"Written by `chatddx reference` from `{directory}/`: each public name's signature "
+            + "and what it raises, in the order the code raises it.",
         ]
         for _, written in entries:
             lines += ["", *written]
         return "\n".join(lines) + "\n"
 
-    def entry(self, module: Module, node: ast.stmt) -> list[tuple[str, list[str]]]:
-        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
-            q = f"{module.name}.{node.name}"
-            if private(node.name) or q in self.bound:
+    def entry(self, member: griffe.Object) -> list[tuple[str, list[str]]]:
+        if isinstance(member, griffe.Function):
+            if member.path in self.bound:
                 return []
-            heading = self.signature(module, node, node.name, drop=0)
-            return [
-                (node.name, [f"## {code(heading)}", self.path(q), *self.about(q, node)])
-            ]
-        if isinstance(node, ast.ClassDef):
-            return (
-                []
-                if private(node.name)
-                else [(node.name, self.cls(f"{module.name}.{node.name}"))]
-            )
-        if isinstance(node, ast.TypeAlias):
-            name = node.name.id
-            q = f"{module.name}.{name}"
-            return (
-                []
-                if private(name)
-                else [(name, [f"## {code(module.segment(node))}", self.path(q)])]
-            )
-        if isinstance(node, (ast.Assign, ast.AnnAssign)):
-            targets = node.targets if isinstance(node, ast.Assign) else [node.target]
-            names = [t.id for t in targets if isinstance(t, ast.Name)]
-            if len(names) != 1 or private(names[0]) or names[0] == "__all__":
-                return []
-            q = f"{module.name}.{names[0]}"
+            return [(member.name, self.function(member, member.name, None, drop=0))]
+        if isinstance(member, griffe.Class):
+            return self.cls(member)
+        if isinstance(member, (griffe.Attribute, griffe.TypeAlias)):
             return [
                 (
-                    names[0],
-                    [f"## {code(self.constant(module, node, names[0]))}", self.path(q)],
+                    member.name,
+                    [*self.heading(member.name, member), *self.written(member)],
                 )
             ]
         return []
 
-    def path(self, q: str) -> str:
-        owner = self.index.owner(q)
-        assert owner is not None
-        module = self.index.modules[owner]
-        root = self.index.root.parent
-        return code(f"{module.path.relative_to(root)}:{q.removeprefix(f'{owner}.')}")
-
-    def constant(
-        self, module: Module, node: ast.Assign | ast.AnnAssign, name: str
-    ) -> str:
-        written = name
-        if isinstance(node, ast.AnnAssign):
-            written += f": {module.segment(node.annotation)}"
-        if node.value is not None:
-            value = ast.get_source_segment(module.source, node.value)
-            if value is not None and "\n" not in value:
-                written += f" = {value}"
-        return written
-
-    def signature(self, module: Module, node: Def, name: str, drop: int) -> str:
-        decorators = [f"@{module.segment(d)} " for d in node.decorator_list]
-        params = (
-            f"[{', '.join(module.segment(t) for t in node.type_params)}]"
-            if node.type_params
-            else ""
+    def heading(
+        self, name: str, obj: griffe.Object, node: Node | None = None
+    ) -> list[str]:
+        marks = (
+            []
+            if node is None
+            else [f"`@{self.code.segment(obj, d)}`" for d in node.decorator_list]
         )
-        returns = (
-            f" -> {module.segment(node.returns)}"
-            if node.returns and node.name != "__init__"
-            else ""
-        )
-        kind = "async " if isinstance(node, ast.AsyncFunctionDef) else ""
-        return f"{''.join(decorators)}{kind}{name}{params}({self.arguments(module, node.args, drop)}){returns}"
+        if node is not None and node.type_params:
+            marks.append(
+                _code(
+                    f"[{', '.join(self.code.segment(obj, t) for t in node.type_params)}]"
+                )
+            )
+        if isinstance(node, ast.ClassDef) and node.bases:
+            marks.append(
+                _code(f"({', '.join(self.code.segment(obj, b) for b in node.bases)})")
+            )
+        assert isinstance(obj.filepath, Path)
+        local = obj.path.removeprefix(f"{obj.module.path}.")
+        return [
+            " ".join([f"## {name}", *marks]),
+            _code(f"{obj.filepath.relative_to(self.repo)}:{local}"),
+        ]
 
-    def arguments(self, module: Module, args: ast.arguments, drop: int) -> str:
-        def one(arg: ast.arg, default: ast.expr | None) -> str:
-            written = arg.arg
+    def written(self, obj: griffe.Object) -> list[str]:
+        lines = self.code.lines(obj)
+        if len(lines) == 1:
+            return ["", f"* {_code(lines[0].strip())}"]
+        return ["", f"* {_code(self.annotated(obj))}"]
+
+    def annotated(self, obj: griffe.Object) -> str:
+        if isinstance(obj, griffe.Attribute) and obj.annotation is not None:
+            return f"{obj.name}: {obj.annotation}"
+        return obj.name
+
+    def function(
+        self, function: griffe.Object, name: str, cls: griffe.Class | None, drop: int
+    ) -> list[str]:
+        node = self.code.node(function)
+        assert not isinstance(node, ast.ClassDef)
+        lines = self.heading(name, function, node)
+        if docstring := ast.get_docstring(node):
+            lines += ["", *docstring.splitlines()]
+        bullets = self.parameters(function, node, drop)
+        if node.returns is not None and node.name != "__init__":
+            bullets.append(f"* ∟{_code(self.code.segment(function, node.returns))}")
+        if bullets:
+            lines += ["", *bullets]
+        return lines + self.listed(self.raises.of(function, cls))
+
+    def parameters(self, function: griffe.Object, node: Def, drop: int) -> list[str]:
+        args = node.args
+
+        def one(arg: ast.arg, default: ast.expr | None, mark: str = "") -> str:
+            written = mark + arg.arg
             if arg.annotation is not None:
-                written += f": {module.segment(arg.annotation)}"
-                if default is not None:
-                    written += f" = {module.segment(default)}"
-            elif default is not None:
-                written += f"={module.segment(default)}"
-            return written
+                written += f": {self.code.segment(function, arg.annotation)}"
+            if default is not None:
+                spaced = " = " if arg.annotation is not None else "="
+                written += spaced + self.code.segment(function, default)
+            return f"* {_code(written)}"
 
         positional = [*args.posonlyargs, *args.args]
         defaults: list[ast.expr | None] = [None] * (
             len(positional) - len(args.defaults)
         )
         defaults += args.defaults
-        written: list[str] = []
+        bullets: list[str] = []
         for i, (arg, default) in enumerate(zip(positional, defaults, strict=True)):
             if i >= drop:
-                written.append(one(arg, default))
+                bullets.append(one(arg, default))
             if args.posonlyargs and i == len(args.posonlyargs) - 1 and i >= drop:
-                written.append("/")
+                bullets.append("* `/`")
         if args.vararg is not None:
-            written.append("*" + one(args.vararg, None))
+            bullets.append(one(args.vararg, None, "*"))
         elif args.kwonlyargs:
-            written.append("*")
-        written += [
+            bullets.append("* `*`")
+        bullets += [
             one(a, d) for a, d in zip(args.kwonlyargs, args.kw_defaults, strict=True)
         ]
         if args.kwarg is not None:
-            written.append("**" + one(args.kwarg, None))
-        return ", ".join(written)
+            bullets.append(one(args.kwarg, None, "**"))
+        return bullets
 
-    def about(self, q: str, node: Def) -> list[str]:
-        return [*self.docstring(node), *self.raised_by(q)]
-
-    def docstring(self, node: Def | ast.ClassDef) -> list[str]:
-        docstring = ast.get_docstring(node)
-        return inspect.cleandoc(docstring).splitlines() if docstring else []
-
-    def raised_by(self, q: str, skip: Collection[str] = ()) -> list[str]:
-        lines: list[str] = []
-        shown = self.raises.shown(q)
-        lines += [f"- raises {self.raised(r)}" for r in shown.raised]
-        via = sorted({self.name(v) for v in shown.via if v not in skip})
-        if via:
-            listed = ", ".join(code(v) for v in via)
-            lines.append(
-                f"- raises what {listed} {'raises' if len(via) == 1 else 'raise'}"
-            )
-        return lines
-
-    def raised(self, r: Raised) -> str:
-        written = self.name(r.exception) + ("" if r.said is None else f"({r.said})")
-        return (
-            f"{code(written)} in a `ValidationError`" if r.validated else code(written)
-        )
-
-    def cls(self, q: str) -> list[str]:
-        c: Class = self.index.classes[q]
-        module, node = c.module, c.node
-        decorators = "".join(f"@{module.segment(d)} " for d in node.decorator_list)
-        bases = [module.segment(b) for b in node.bases]
-        bases += [f"{k.arg}={module.segment(k.value)}" for k in node.keywords]
-        params = (
-            f"[{', '.join(module.segment(t) for t in node.type_params)}]"
-            if node.type_params
-            else ""
-        )
-        heading = f"{decorators}class {node.name}{params}" + (
-            f"({', '.join(bases)})" if bases else ""
-        )
-        init = self.index.member(q, "__init__")
-        lines = [
-            f"## {code(heading)}",
-            self.path(q),
-            *self.docstring(node),
-            *self.fields(q),
-        ]
-        lines += self.raised_by(q, skip=(init,) if init else ())
-        members: list[tuple[str, list[str]]] = []
-        for sub in node.body:
-            if isinstance(sub, (ast.FunctionDef, ast.AsyncFunctionDef)):
-                member = self.method(q, sub)
-                if member is not None:
-                    members.append(member)
-        for attr, function in self.index.bound(q).items():
-            if not private(attr):
-                members.append((attr, self.bound_method(q, attr, function)))
-        members.sort(key=lambda m: (m[0] != "__init__", m[0].casefold(), m[0]))
-        for _, written in members:
-            lines += ["", *written]
-        return lines
-
-    def fields(self, q: str) -> list[str]:
-        c = self.index.classes[q]
-        module = c.module
-        lines: list[str] = []
-        for sub in c.node.body:
-            if isinstance(sub, ast.AnnAssign) and isinstance(sub.target, ast.Name):
-                if not private(sub.target.id):
-                    lines.append(f"- {code(self.constant(module, sub, sub.target.id))}")
-            elif (
-                isinstance(sub, ast.Assign)
-                and len(sub.targets) == 1
-                and isinstance(sub.targets[0], ast.Name)
-            ):
-                name = sub.targets[0].id
-                if not private(name) and name not in self.index.bound(q):
-                    lines.append(f"- {code(self.constant(module, sub, name))}")
-            elif isinstance(sub, (ast.FunctionDef, ast.AsyncFunctionDef)) and decorated(
-                sub, PROPERTIES
-            ):
-                if private(sub.name):
-                    continue
-                returns = f": {module.segment(sub.returns)}" if sub.returns else ""
-                kind = (
-                    "a cached property"
-                    if decorated(sub, frozenset({"cached_property"}))
-                    else "a property"
-                )
-                lines.append(f"- {code(sub.name + returns)}, {kind}")
-                lines += [f"  {line}" for line in self.about(f"{q}.{sub.name}", sub)]
-            elif (
-                isinstance(sub, (ast.FunctionDef, ast.AsyncFunctionDef))
-                and sub.name == "__init__"
-            ):
-                for st in ast.walk(sub):
-                    if (
-                        isinstance(st, ast.AnnAssign)
-                        and isinstance(st.target, ast.Attribute)
-                        and isinstance(st.target.value, ast.Name)
-                        and st.target.value.id == "self"
-                        and not private(st.target.attr)
-                    ):
-                        lines.append(
-                            f"- {code(f'{st.target.attr}: {module.segment(st.annotation)}')}"
-                        )
-        return lines
-
-    def method(self, q: str, node: Def) -> tuple[str, list[str]] | None:
-        if decorated(node, PROPERTIES | VALIDATORS):
-            return None
-        c = self.index.classes[q]
-        if node.name == "__init__":
-            heading = self.signature(c.module, node, c.name, drop=1)
-            return node.name, [
-                f"### {code(heading)}",
-                *self.about(f"{q}.__init__", node),
-            ]
-        if private(node.name) or node.name == "__post_init__":
-            return None
-        static = decorated(node, frozenset({"staticmethod"}))
-        heading = self.signature(
-            c.module, node, f"{c.name}.{node.name}", drop=0 if static else 1
-        )
-        return node.name, [
-            f"### {code(heading)}",
-            *self.about(f"{q}.{node.name}", node),
-        ]
-
-    def bound_method(self, q: str, attr: str, function: str) -> list[str]:
-        f: Function = self.index.functions[function]
-        name = f"{self.index.classes[q].name}.{attr}"
-        heading = self.signature(f.module, f.node, name, drop=1)
+    def listed(self, raised: tuple[Raised, ...]) -> list[str]:
+        if not raised:
+            return []
         return [
-            f"### {code(heading)}",
-            self.path(function),
-            *self.about(function, f.node),
+            "",
+            "Raises:",
+            "",
+            *(f"{i}. {self.said(r)}" for i, r in enumerate(raised, 1)),
         ]
 
+    def said(self, r: Raised) -> str:
+        written = _code(r.exception) + ("" if r.message is None else f": {r.message}")
+        notes = [] if r.through is None else [f"through {_code(r.through)}"]
+        if r.validated:
+            notes.append("in a `ValidationError`")
+        return written + (f" ({', '.join(notes)})" if notes else "")
 
-def page(index: Index, raises: Raises, package: str) -> str:
-    return Page(index, raises, package).render()
+    def cls(self, cls: griffe.Class) -> list[tuple[str, list[str]]]:
+        node = self.code.node(cls)
+        lines = self.heading(cls.name, cls, node)
+        if docstring := ast.get_docstring(node):
+            lines += ["", *docstring.splitlines()]
+        binds = self.binds(cls)
+        methods = [
+            (r.lineno, r.endlineno or r.lineno)
+            for r in cls.members.values()
+            if isinstance(r, griffe.Function) and r.lineno
+        ]
+        fields: list[str] = []
+        entries: list[tuple[str, list[str]]] = []
+        for name, member in cls.members.items():
+            if isinstance(member, griffe.Alias) or (
+                private(name) and name not in binds
+            ):
+                continue
+            display = f"{cls.name}.{name}"
+            if name in binds:
+                entries.append(
+                    (display, self.function(binds[name], display, cls, drop=1))
+                )
+            elif isinstance(member, griffe.Attribute) and "property" in member.labels:
+                entries.append((display, self.function(member, display, cls, drop=1)))
+            elif isinstance(member, griffe.Attribute) and member.lineno:
+                within = any(a <= member.lineno <= b for a, b in methods)
+                text = (
+                    self.code.lines(member)[0].strip()
+                    if member.lineno == member.endlineno
+                    else ""
+                )
+                if within or not text:
+                    text = self.annotated(member)
+                fields.append(f"* {_code(text)}")
+            elif isinstance(member, griffe.Function) and member.lineno:
+                held = self.code.node(member)
+                if decorated(held, VALIDATORS) or name == "__post_init__":
+                    continue
+                static = decorated(held, frozenset({"staticmethod"}))
+                entries.append(
+                    (
+                        display,
+                        self.function(member, display, cls, drop=0 if static else 1),
+                    )
+                )
+        if fields:
+            lines += ["", *fields]
+        lines += self.listed(self.raises.constructing(cls))
+        return [(cls.name, lines), *entries]
+
+
+def page(code: Code, raises: Raises, package: str, repo: Path) -> str:
+    return Page(code, raises, package, repo).render()

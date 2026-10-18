@@ -4,6 +4,17 @@
 (`src/chatddx/reference/`): each public name's signature and what it raises. It replaces `docs/<package>-api.md`,
 identity and bench first.
 
+## Where it stands among the common ways
+- Reading the code: griffe (`src/chatddx/reference/code.py:Code`), the static loader behind mkdocstrings and
+  `griffe check`, gives the names, what they are, their members, imports and line ranges. Their text, as the code
+  spells it, is taken from the AST, since griffe respells it (`Literal['current']` for `Literal["current"]`).
+- Rendering: its own, for the format below. griffe2md, the common renderer, writes about 490 lines for identity and
+  says nothing of what is raised.
+- What is raised: what pydoclint and ruff's DOC501 check a docstring's "Raises" against, a function's own `raise`
+  statements, and with them its private helpers'.
+- The workflow: Microsoft's API Extractor commits its API report the same way, and fails a build while it is behind.
+- griffe is in the `docs` dependency group: a deployed chatddx goes without it.
+
 ## The workflow
 - Before a commit, an agent runs `chatddx reference`, as it does `chatddx openapi`. `--check` writes nothing and fails
   while a reference is behind the code, and so does
@@ -15,31 +26,46 @@ identity and bench first.
   they neither pile up nor go stale, and a line edited by hand is tagged back to what the code says.
 
 ## What a reference holds
-- The names defined at the top of the package's modules, tests left out, that don't start with `_`, sorted
-  alphabetically whatever their case. `__all__` isn't read: 9 of 20 packages have none.
-- A function's signature as the code writes it, decorators included. A function a class binds as an attribute, as
-  `Bench` binds the writes, is written once, as the class's method, without its first parameter.
-- A class's decorators and bases, its fields (annotated or assigned in its body, and annotated on `self` in
-  `__init__`), its properties, its constructor (`__init__`, as `Name(…)`) and its public methods, alphabetically.
-- A constant's annotation, and its value when the code writes it on one line.
+One entry for each name defined at the top of the package's modules, tests left out, that doesn't start with `_`, and
+one for each public method, property and `__init__` of its classes, as `Class.name`, all sorted alphabetically whatever
+their case, so that a class's members follow it:
+
+````
+## Seen.family
+`src/chatddx/bench/seen.py:Seen.family`
+
+* `found: int | str`
+* ∟`Family`
+
+Raises:
+
+1. `NotFound`: no {word} {name!r} for {self.person.login} (through `Seen._named`)
+2. `Ambiguous`: {word} {name!r} names {len(several)}; name one as OWNER/NAME (through `Seen._named`)
+3. `NotFound`: no case {found} for {self.person.login}
+````
+
+- The heading holds the decorators, type parameters and bases, as written.
+- A function's parameters, with `/` and `*` where the code has them, and `∟` its return type. `self` and `cls` are
+  left out, and so is the first parameter of a function a class binds as an attribute, as `Bench` binds the writes,
+  which is written once, as the class's method.
+- A class's fields: annotated or assigned in its body, as written when on one line, and annotated on `self` in
+  `__init__`. A constant as written when on one line, else its annotation.
 - A docstring, as written. None of identity's or bench's names has one.
 
 ## What it says is raised
-- Each `raise` with its message: an f-string's values as `<expr>`, a string constant's text in its place.
-- What a private callee raises, as the caller's own; a public callee by name, in one line: "raises what `X`, `Y`
-  raise". A name in another package is written as that package exports it, `store.Catalog.adopt`.
-- Calls are followed through what the code annotates: parameters, fields, `self.x: T` in `__init__`, properties' and
-  functions' return types, and locals assigned from these.
-- An exception caught around a call or a raise isn't said, unless the handler raises it again.
+- The function's own `raise` statements, and those of the private helpers it calls, `(through <helper>)`, the one it
+  calls, however deep the raise is: `_helper(…)`, and `self._helper(…)`, `cls._helper(…)` or `x._helper(…)` for a
+  parameter `x` annotated with a class of the project.
+- In the order the code reaches them, a helper's at the call; each raise once, where it is first reached.
+- The message as the code writes it, an f-string's values as `{expr}`, a string constant's text in its place.
+- An exception caught around a raise or a call isn't said, unless the handler raises it again.
 - A class says what its validators raise, in a `ValidationError`, and what `__post_init__` raises.
 
-Not seen:
+Not said:
+- What a public function or class it calls raises: its own entry says.
 - What is raised without a `raise`: a `KeyError` from a subscript, pydantic's own validation, a library's errors.
-- Calls through an unannotated value, a Protocol (whose stubs raise nothing), a callback, `super()` or a lookup such
-  as `KINDS[word]`.
-- Whether a caller's arguments rule a callee's raise out: a callee is named whenever any of its raises can escape.
 
-What isn't seen is said with an explicit `raise`, or with a docstring if AGENTS.md takes the exception suggested for
+What isn't said is said with an explicit `raise`, or with a docstring if AGENTS.md takes the exception suggested for
 them.
 
 ## Open
