@@ -241,30 +241,3 @@ is read once, and again after a `save`.
 | Salvaged | A structured answer cut short, read with its structure closed. |
 | Left to score | A scorer that applies to a run with no whole score under its scoring as built now. |
 | No target | A view a case's expectation gives nothing to hold an answer to. |
-
-## Open design issues
-
-### What the repl doesn't reach
-- It reaches four of the bench's writes (`save`, `start`, `score`, `take`); the API reaches them all.
-- A thread with a title and no name can't be named.
-- A run takes one seed, and no execution settings, canary set or text cleanup; `score` can't pick a scorer, score a
-  run again, or name the endpoint a judge is called at, so a judge whose engine two endpoints serve bars its scorer.
-
-### Smaller issues
-- **No word on reasoning that wasn't heeded**, and no `[thinking in content]`: the runner can't tell reasoning a parser
-  missed (docs/runner.md, "Smaller issues").
-- **Two tool calls in one response run together** on one line as they stream, as a call's first delta is taken as its
-  name and the deltas don't say where the next begins; `replay` splits them.
-- **Only an item's first request is rendered again**; a later round's could be rebuilt from the stored responses and
-  tool runs.
-
-## Outstanding
-Suggested, and left for later:
-- **`diagnoses` applies to a plan**, since a plan's `$.diagnoses[*]` reaches its schema, but the items are objects, so
-  its differential lists them as JSON and scores their text. A reach that knew the type of what a view picks would leave
-  it out, as `View.offered_by` leaves whole-answer views out of structured runs.
-- **`runs` doesn't show a start.** A translated run says the language it was sent in, the run of the configuration's
-  own language from the same start says none, and nothing says the two were started together; the API's
-  `GET /api/runs?with=` and a run's page in the portal do (`Bench.runs(started_with=…)`).
-- **The judge lines aren't aligned**, as their labels differ in length; the labels of a scoring's judge calls are known
-  when it starts, so their width could be too.

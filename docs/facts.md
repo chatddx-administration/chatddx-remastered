@@ -137,31 +137,3 @@ chatddx ships facts about the two models of the sample:
 | Recommended sampling | The sampling a model's makers recommend for a level. |
 | Nearest | The level a refused level lands on instead, when its refusal names one. |
 | Intent | A reasoning level or the recommended sampling, asked for in a chunk and worked out from the facts when a recipe is compiled. |
-
-## Open design issues
-These are open questions of design. Where the code falls short of this document, the API says so
-(docs/facts-api.md, "Known gaps").
-
-- **xhigh can't be written.** It's a level, but no reasoning effort says it, so a model can only collapse or refuse
-  it. Adding the effort is additive, if a model that supports it shows up.
-- **Tool choice on harmony.** Named and required tool choices are unverified for gpt-oss. vLLM 0.24's gpt-oss tool
-  parser accepts both, so the JSON-array grammar applies; whether harmony's output survives it isn't known.
-- **A model or a model on a runtime.** Some facts are really about a model on a runtime, such as harmony ignoring the
-  response format. They live on the model for now; facts keyed by runtime can be added when a second runtime
-  appears.
-- **Defaults from the command line.** An engine's own default chat template arguments and generation config change
-  the model's defaults. Facts describe the model's own defaults, and only the grammar-before-reasoning lint accounts
-  for the change.
-
-### Smaller issues
-- **A budget with reasoning off is compiled.** Qwen3's off with a budget turns thinking off and sets a thinking
-  budget.
-- **Unread recommendations.** A recommendation for a level that collapses, or lands on its nearest, is never
-  compiled, and nothing reports it. Checking pairs still counts it as the model's.
-- **An unknown budget passes the check.** A budget sent to a model whose budget is unknown isn't warned about, while
-  compiling one beside a level is refused.
-- **Unknown reasoning fails the check.** A skeleton's reasoning settings are compared only with the ways of asking the
-  facts know, so a model whose reasoning is unknown, or a skeleton using a level nothing is known about, gets the
-  warning, though a missing part otherwise means "unknown".
-- **A refused default is accepted.** A default that lands on a refusal loads, and whether the model reasons by default
-  is then unknown.

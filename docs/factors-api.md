@@ -1051,18 +1051,3 @@ It checks that each digest matches its bytes, that `doc`, `kind` and `v` agree w
 have an allowed kind and match the document, and that nothing changes. It doesn't validate a component's fields, run
 cross-checks, require today's canonical form (bytes that `Bundle.load` would report as recanonicalized are
 accepted), or know which schema versions the code reads.
-
-## Known gaps
-From `docs/factors.md`, "Open design issues", where they concern this API:
-- `tool_calls` skips a malformed call, but `next_request` copies the response's `tool_calls` as they are, so the
-  next request holds a call that no `tool` message answers.
-- NaN and infinity pass validation, and the canonical form writes them as `null`. The stored component reads back
-  with the field unset, under the same digest, and `Bundle.load` reports `bundle.recanonicalized`. The request still
-  carries the NaN.
-- `Scorer.resources` are meant to be digests but are typed as plain strings.
-- `Scoring.expectations` isn't sorted, so its order changes the digest.
-- `render` sends `return_token_ids` to every engine by default; a remote engine that isn't vLLM may refuse it.
-- `argv` is checked without vLLM's list of flags: a bare argument after a flag that takes no value passes, and lints
-  don't expand abbreviated flags.
-- `Hardware` has no GPU count.
-- Nothing checks that a compilation's recipe compiles to its skeleton.

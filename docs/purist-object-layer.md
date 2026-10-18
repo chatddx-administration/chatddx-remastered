@@ -209,10 +209,3 @@ To suggest when built:
 4. **The schema rename**, once only objects are left in `factor`. It depends on step 1, not on step 3.
 
 Until then, `kind` as a class keyword is optional, when the component classes are being touched anyway.
-
-## Open
-- The name, should the split happen (see "Naming").
-- `kind` as a class keyword (see "Kinds written down").
-- Whether canary sets and compilations ever move.
-- Where `refuse_change` lives.
-- Whether execution settings become an object, which this take doesn't decide.

@@ -285,7 +285,7 @@ described below.
  - raises if a seed index out of range or one used twice in an item;
  - warns `judge.incomplete`, `score.incomplete`, `score.run_unfinished` and `score.no_expectation`
 
-The "scored results" are just those ScoreItem rows. What aggregates them isn't named yet.
+The "scored results" are just those ScoreItem rows.
 
 ## Vignettes and anything made from them are sensitive
 The vignette and content produced from it: fills, requests, completions, tool arguments and results, judge requests and
@@ -309,15 +309,3 @@ The one hard block is clearance (see "Vignettes and anything made from them are 
 Each code is described where it's produced: `docs/factors.md`, "Lints"; `docs/ledger.md`, "Findings"; for the
 `facts.*` codes, `docs/facts.md`, "Checking pairs"; and for the engine import's, `docs/inventory.md`, "Importing from
 a host".
-
-## Possible design issues
-
-**Canary drift is not implemented:** nothing compares canary outputs between phases or runs. What counts as the
-  same canary output is undecided:
-  (a) the digest of each choice's message, as the old `compare_canaries` compared
-  output digests;
-  (b) the prompt-token fingerprint alone, which catches a changed template or tokenizer but not
-  changed weights; or
-  (c) both, with (b) under a code of its own. None needs a new field, since `CanaryCall.call`
-  holds the response and the prompt-token fingerprint.
-  A human report that the agent's take is (c)

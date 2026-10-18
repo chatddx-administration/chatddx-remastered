@@ -98,18 +98,3 @@ src/chatddx/scripted/test/.
 | Scripted run | A run made to be looked at, written as a file in a World's `_runs/` and answered by the fake from its script. |
 | Script | The turns the fake answers with, one per attempt. |
 | Stand-in | The fake vLLM serving a remote engine's model on this machine, at the remote endpoint's address. |
-
-## Open design issues
-
-### No scripted run has tool rounds
-The gate refuses tools on a sensitive source (docs/runner.md, "The gate"), and both Worlds' sources are sensitive, as
-a real one is, so no scripted run can send a tool round on their cases. The old chatddx's sample runs `broken` and
-`rich` searched the web. A take: a made-up source that isn't sensitive, once calibration wants a tool round to show,
-with the web patched in the process that runs the tools (`urllib.request.urlopen`, src/chatddx/tools/web_search.py).
-
-### Smaller issues
-- **No scripted run sends a canary set**: the Worlds' endpoints name none (docs/inventory.md, "Endpoints"), and a
-  scripted run's turns would have to answer its canaries too.
-- **No two scripted runs vary a part over the same cases**, as the page to compare runs wants
-  (agents/wip-portal.md, "Comparing variations").
-- **`set` and `--again` have no test**, and no scripted run sets a part.

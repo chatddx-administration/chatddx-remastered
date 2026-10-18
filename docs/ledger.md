@@ -235,32 +235,3 @@ for queries. Stored records are never changed or deleted.
 | Tool round | Running the tools a response called, and sending the next request. |
 | Seal | The hash over a log's records, kept in its finish record. |
 | Attestation | What the engine says about itself: the model it answered as and the prompt it read. |
-
-## Open design issues
-These are open questions of design. Where the code falls short of this document, the API says so
-(docs/ledger-api.md, "Known gaps").
-
-### Some of what happened isn't checked
-Most of the plan is compared with what happened (see "What a record holds"), but not all:
-- timeouts: a call's times span all its attempts, so an attempt that ran past the timeout can't be told from them.
-  Recording each attempt's times, status and error would tell them; a call keeps only the last refusal's body, as its
-  response;
-- the request a call sent and the request it should have been:
-  The repl's replay rebuilds each item's first request from the trial and the vignette and holds it to the call's
-  fingerprint. A later round's request, which could be rebuilt from the stored responses and tool runs, and a judge
-  request, from the scorer's reading of the answer (docs/factors.md, "Judge"), aren't rebuilt, and checking a run
-  rebuilds none.
-
-### Smaller issues
-- **Prompt-token drift isn't checked.** Checking a run notes the items without a prompt-token fingerprint, but
-  nothing compares the fingerprints between runs, though that is what they are kept for.
-- **Canary drift isn't checked.** Nothing compares canary outputs between phases or between runs.
-- **Only run items are fully attested.** Judge calls get the model check but no prompt check, and canary calls get
-  neither.
-- **The system fingerprint is kept but never compared** between calls or runs.
-- **The finish record is outside the seal.** Its time and findings could change without the seal noticing.
-- **Records aren't in bundles.** A bundle (docs/factors.md, "Registries and bundles") carries components only; how
-  records travel with the factors they reference, for example for publication, isn't specified.
-- **Findings have no mechanism of their own.** The runner and the scoring pass keep those they see in the finish record,
-  and the checks give the rest when called. They might benefit from a separate mechanism, as lints are for factors, but
-  nothing is planned or decided.

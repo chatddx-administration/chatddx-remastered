@@ -323,13 +323,3 @@ codes".
 ## Testing
 - `test_outcome.py`: each outcome but `salvaged`, which `src/chatddx/repl/test/test_running.py` reads, and usage.
   Without a database.
-
-## Known gaps
-From `docs/runner.md`, "Open design issues", where they concern this API:
-- A halt can't end a call waiting for its response's headers.
-- `Toolbox.run` has no time limit.
-- Canary calls emit no `Streamed`.
-- `send.send` takes a `key`, but nothing in the package passes one.
-- `Runner.score` refuses judge calls above concurrency 1, and confirms every judge's endpoint, even when no item
-  needs a judge.
-- `send` again after a worker's exception isn't tested.

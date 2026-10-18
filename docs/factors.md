@@ -206,8 +206,7 @@ only its fingerprint; a typed vignette is kept as its database source's text, ap
 different case. Expectations are keyed by the case, which lets appendices change the correct answer.
 
 When a vignette changes at its source, or is renamed there, it needs a new case, new appendices bound to the new
-vignette, and new expectations; the catalog tells a renamed vignette from a changed one. Whether a person or an
-automatic step rebinds them is open; the catalog has the tools for it (docs/catalog.md).
+vignette, and new expectations; the catalog tells a renamed vignette from a changed one.
 
 Text cleanup is not part of the case. The trial chooses it (see "Trial").
 
@@ -703,103 +702,3 @@ Checks against the model facts belong to the facts (docs/facts.md). Other findin
 them: drift when preparing a case, a chat template that doesn't match its hash or reads the date, and a component that a
 bundle holds in a form today's code wouldn't write. The API lists every finding (docs/factors-api.md, "Finding
 codes").
-
-## Open design issues
-These are open questions of design. Where the code falls short of this document, the API says so (docs/factors-api.md,
-"Known gaps").
-
-### Runs of the same trial aren't interchangeable
-A trial's digest covers its pinned factors only. Its outputs also depend on its run's recorded and observed factors:
-execution settings on an engine that isn't batch invariant, a remote engine that changed between runs, a tool that
-answered differently. Seeds within a run are replicates; runs of the same trial are a second source of variation, and it
-has no name yet.
-
-Nothing aggregates scores today, but anything that compares or pools runs by the trial's digest alone would mix
-conditions without noticing. It needs to group by the recorded factors as well, and to check the evidence of the
-observed ones (prompt-token fingerprints, returned models, canaries) before pooling.
-
-### Greedy sampling and seeds
-No seed is sent with greedy sampling, but a trial's seeds still count toward its digest, so two otherwise identical
-greedy trials differ only in digest. Likewise, the seeds of a greedy judge all send the same request.
-
-Keeping the seeds is deliberate. On an engine that isn't batch invariant, greedy replicates still measure
-nondeterminism, and the seeds are what name the replicates. The alternative, a replicate count for greedy trials,
-changes the shape of a trial, so it is cheapest decided before trials are stored for real.
-
-### Smaller issues
-- **One split.** A free-text answer is broken into items only as the lines of a list (`lines@1`), so a scorer can't
-  read one written otherwise, as prose or with items on one line.
-- **Few-shot answers in JSON are translated whole.** An example is one text, so an assistant example that is a JSON
-  answer is translated as one entry, by hand, keeping its property names and allowed values as they are.
-- **Resources can't be picked yet.** A scorer's resources are plain strings, no kind of component holds one, and the
-  scoring code isn't given them. None are offered until a kind of resource exists, with its pins and code that reads
-  it.
-- **Canary drift isn't checked.** Nothing compares canary outputs between phases or between runs yet.
-- **Judge engines are never probed.** Canary probes run on the run's engine only. Probing judge engines would put
-  canaries in a score's start record, as in a run's; added with defaults, they keep every stored digest.
-- **Skeleton provenance.** Should a skeleton be accepted only with a compilation? Hand-written ones, such as judge
-  prompts, are possible today. Decided: keep hand-written skeletons, configurations without a recipe that nothing
-  varies, which only the store writes. Provenance is whether a compilation names the skeleton, a question a lint can
-  ask once the catalog or ledger is queried for it.
-- **A scoring doesn't say which cases it lacks.** Only checking a score warns, once a run is scored under it.
-- **Judge calls aren't fully attested.** Their returned model is checked against the judge engine's, but their
-  prompt-token fingerprint isn't, as the request would have to be rebuilt from the answer as the scorer read it.
-- **Every engine is asked for the prompt's token ids.** A remote engine that isn't vLLM may refuse the unknown option.
-  Either the engine says whether it takes it, which changes the engine's digest, or the runner decides per call, which
-  leaves the run without prompt-token fingerprints.
-- **A scoring's digest depends on the order of its expectations.** Its expectations aren't put in a fixed order as a
-  trial's cases are, so the same expectations in another order make another scoring. The person reads build them in the
-  trial's case order.
-- **Four cleanup steps exist.** Vignettes may also need non-breaking spaces turned into spaces, zero-width characters
-  removed, Unicode line breaks turned into newlines, or trailing whitespace stripped.
-- **Hardware has no GPU count,** so engines that split a model across GPUs can't be told apart by their hardware. Nor
-  does it say the CPU, the RAM, the GPU's uuid, the machine's id or where it is.
-- **Tool parameters whose root isn't an object.** OpenAI's API is reported to refuse function parameters whose root
-  isn't `type: object`. Unverified; a candidate lint for tools on a remote engine.
-
-## Potential design improvements
-
-### Execution settings as a component
-Today execution settings are a value inside each run's start record: recorded, sealed with the run's log, and compared
-by value. They have no digest, so the catalog can't name a set of settings (for example "sequential" or "8-way"), the
-portal can't offer them for picking, and finding the runs that used the same settings means comparing values across run
-records.
-
-Making them a component of a new kind, which the start record references by digest, would give them a name, a catalog
-thread and a foreign key like the pinned factors. They would still stay out of the trial's digest, so this changes how
-execution settings are stored, not what a trial means. The cost is a new kind (with the catalog's thread kinds and their
-migration) and a change to the run record.
-
-### Chat templates as components
-Today a local engine pins its chat template by the file's hash, like the model files: a world input, fetched from
-wherever the inventory says it is. A bundle therefore holds the template's hash but not the template, and only a host
-with the file in hand can read it.
-
-Making the template a component of a new kind, holding the template's text, that the engine references by digest, would
-put it inside the bundle: it is small and not sensitive, so a bundle could rebuild the engine's prompt formatting
-offline. Lints could read it too, so the check for templates that read the current date would run when factors are
-linted, not only on a host. Engines sharing a template would share the component. It would move the template from world
-input to authored factor, and cost a new kind (with the catalog's thread kinds and their migration) and a change to the
-template check.
-
-### Splitting expectations
-If expectations written as free text turn up, a view could split them too. Two ways:
-- a separate split for the expectation side, next to the output's. It is additive: with none as its default, every
-  existing digest stays the same, and each side gets the split it needs.
-- one split for both sides. That changes the meaning of an existing field, so the scorer's schema version would have to
-  go up, and the two sides rarely need the same split.
-
-### Finding code through packaging entry points
-Today chatddx keeps the list of the code it ships in its code: `src/chatddx/scorers/shipped.py` and
-`src/chatddx/tools/shipped.py`, by the entry point a component names. Packaging metadata changes only when the package
-is installed again, and tests add tools of their own to the list for as long as they run
-(src/chatddx/runner/test/tools.py:shipped). Packaging entry points would fit code from other distributions, which
-nothing runs today.
-
-### Passthrough: an allow list, or lints
-A passthrough refuses a fixed list of options and lets everything else through. Two other ways:
-- an allow list: a passthrough may set only known engine extras. Nothing unknown gets through, but every new option
-  needs a code change, and remote engines accept other options than vLLM, so the list would depend on the engine.
-- lints instead of refusals: risky options would give a finding, in the spirit of "warnings, not crashes". But a
-  passthrough already refuses what the rig and the output contract set, and options that put case text in the stored
-  response are closer to the clearance block than to a warning.

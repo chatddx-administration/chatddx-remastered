@@ -262,36 +262,3 @@ The import's findings have the engine's digest as subject:
 | Bound | A data set's judge, given the endpoint whose engine judges it. |
 | Configurations | The endpoint whose engine a data set's configurations are made for. |
 | Cleared | An endpoint's permission, for now, to receive content from a sensitive source. |
-
-## Open design issues
-These are open questions of design. Where the code falls short of this document, the API says so
-(docs/inventory-api.md, "Known gaps").
-
-### Checks happen when an entry is used
-Loading checks only what the files show. Everything that needs the engines is checked when an endpoint is started or
-confirmed, one entry at a time:
-- whether an endpoint's digest names an engine;
-- whether a local engine's endpoint has a host;
-- whether the host says where the model and template are.
-
-One pass checks the whole inventory against the engines and returns findings rather than raising. It finds what
-starting each endpoint would refuse, and what nothing refuses but is likely a slip: two local engines'
-endpoints at one address, a remote engine's endpoint that names a host, host locations that no endpoint's engine pins,
-and a clearance for a source that isn't sensitive, which clears nothing. init-data prints its findings; the runner and
-the engine import don't run it yet, and still check one entry at a time.
-
-### Hosts don't read the start-up
-o11n and the hosts' own configuration (Kompismoln/org) decide what each server runs. The rig imports what they run,
-and the start-up of an imported endpoint gives back the command line o11n runs. So the start-up is a check, and only
-the fake vLLM is started from one. For a host to start its engines from the rig's start-up, o11n would have to read
-it, and the import would then confirm what was started rather than describe it.
-
-### Smaller issues
-- **Endpoint names are only a convention.** Nothing enforces server@host. A run records the endpoint's name, and
-  clearance keys on it, so renaming an endpoint drops its clearance without warning, and its runs appear under two
-  names.
-- **The capacity holds per run.** Two runs on one endpoint can send twice as many requests between them. vLLM queues
-  what's over its limit, so nothing fails, but the batching differs from what each run's execution says.
-- **Model files aren't checked against the hub.** huggingface_hub keeps the commit's file listing from the download
-  (`<repo>/trees/<commit>.json`): the hub's SHA-256 of each LFS file and the git blob hash of the rest. The report
-  could compare every file it hashes with it, offline. The import takes the host's hashes as they are.

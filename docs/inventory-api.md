@@ -260,10 +260,3 @@ endpoints serve. `worlds/` holds three:
 
 `src/chatddx/test/test_worlds.py:test_each_endpoint_serves_the_engine_planned_under_its_name` asserts the check finds
 nothing in each World in the repository against its plan.
-
-## Known gaps
-From `docs/inventory.md`, "Open design issues":
-- The runner and the engine import don't run `check`: they check an entry when they use it.
-- Hosts don't start engines from the start-up; only the fake vLLM is started from one.
-- Endpoint names are only a convention, and renaming one drops its clearance.
-- `max_jobs` holds per run, not per endpoint.
