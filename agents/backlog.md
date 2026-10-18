@@ -968,6 +968,9 @@ the variation's label, as its run is.
 ### G28. Edit history: who, when and why
 Show who changed an entry, a label or a language and when, and keep why an edit was made.
 
+Triage: kept as is. Decided, for catalog.12: an edit may carry an optional note, stored with the edit as a commit
+message is; what changed stays derived from the references.
+
 **catalog.11** · From docs/catalog.md:425, "Open design issues", "Smaller issues"
 
 - **Who changed an entry or a language isn't shown.** Every row records who wrote it and when, but for these only
