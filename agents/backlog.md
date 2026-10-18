@@ -23,7 +23,8 @@ items under it are as they were moved. An item that restates another for an API 
    - G6b. [Export and publication](#g6b-export-and-publication) (6)
    - G6c. [Digests to settle before real data](#g6c-digests-to-settle-before-real-data) (3)
 7. [Scoring: coverage and judges](#g7-scoring-coverage-and-judges) (3)
-8. [Views: what they read and split](#g8-views-what-they-read-and-split) (3)
+8. [Splits beyond `lines@1`](#g8-splits-beyond-lines1) (2)
+   - G8b. [A view's reach knows the type it picks](#g8b-a-views-reach-knows-the-type-it-picks) (1)
 9. [Unheeded reasoning](#g9-unheeded-reasoning) (3)
 10. [Shipped code: scorers and tools](#g10-shipped-code-scorers-and-tools) (4)
 11. [Tool rounds](#g11-tool-rounds) (3)
@@ -323,8 +324,11 @@ Triage: kept, but for the scoring's digest, which went to G6c.
 - `Runner.score` refuses judge calls above concurrency 1, and confirms every judge's endpoint, even when no item
   needs a judge.
 
-### G8. Views: what they read and split
-Views that know the type of what they pick, and splits beyond `lines@1`, for answers and expectations.
+### G8. Splits beyond `lines@1`
+Splits for answers written otherwise than as a list's lines, and for expectations written as free text, once either
+turns up.
+
+Triage: split, a view's reach went to G8b.
 
 **factors.3** · From docs/factors.md:730, "Open design issues", "Smaller issues"
 
@@ -338,6 +342,12 @@ If expectations written as free text turn up, a view could split them too. Two w
   existing digest stays the same, and each side gets the split it needs.
 - one split for both sides. That changes the meaning of an existing field, so the scorer's schema version would have to
   go up, and the two sides rarely need the same split.
+
+### G8b. A view's reach knows the type it picks
+A view whose selector reaches objects where it reads text isn't offered: the sample's `diagnoses` scorer reads
+`$.diagnoses[*]`, which in `management_plan_v1` are objects, and scores their JSON on every edge.
+
+Triage: split from G8.
 
 **repl.7** · From docs/repl.md:263, "Outstanding"
 
