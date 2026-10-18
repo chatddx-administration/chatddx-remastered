@@ -102,6 +102,9 @@ Triage: kept as is.
 One check that compares runs: canary outputs (once (a), (b) or (c) is decided), prompt-token fingerprints and system
 fingerprints.
 
+Triage: kept as is. Decided: chatddx.1's (c), both, with (b) under a code of its own. Decided: the runs compared are
+those of the same trial digest at the same endpoint, and drift is a finding, not a refusal.
+
 **chatddx.1** · From docs/chatddx.md:315, "Possible design issues"
 
 **Canary drift is not implemented:** nothing compares canary outputs between phases or runs. What counts as the
