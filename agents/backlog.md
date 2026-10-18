@@ -55,7 +55,7 @@ items under it are as they were moved. An item that restates another for an API 
 33. [The store's read API](#g33-the-stores-read-api) (0, dissolved)
 34. [Migrations checked by content](#g34-migrations-checked-by-content) (1)
    - G34b. [Old versions readable](#g34b-old-versions-readable) (2)
-35. [Deployment](#g35-deployment) (3)
+35. [Deployment](#g35-deployment) (0, dissolved)
 36. [Reads that grow with the data](#g36-reads-that-grow-with-the-data) (5)
 37. [Administering people](#g37-administering-people) (4)
 38. [Signing in: limits, tokens and Keycloak](#g38-signing-in-limits-tokens-and-keycloak) (7)
@@ -1122,28 +1122,7 @@ current shape, and the stored bytes and their digest stay as they are.
   can't be rewritten.
 
 ### G35. Deployment
-What the HTTP server is, and the connections it holds.
-
-Note: worker.3 predates `nix/module.nix`; agents/wip-deploy.md now holds the deployment, with a take on what the HTTP
-server is.
-
-**worker.3** · From docs/worker.md:118, "Open design issues", "The deployment"
-
-Decided: the HTTP server, the API and the worker as separate systemd services on NixOS. The flake has no NixOS module
-yet, and its stop timeout is to exceed the worker's deadline. What the HTTP server is stays open: the portal's pages
-served apart from the API, or a proxy in front of both; the portal is one app with the API (agents/wip-portal.md, "P3b,
-concretely"), and its `__Host-` cookie wants one host for both.
-
-**api.7** · From docs/api.md:415, "Outstanding", "Serving"
-
-- **A connection per request**, about 2.6 ms each over the Unix socket, opened and closed each time; one for each
-  stream while it is open, and one per process listening for them all; and two for each job a worker holds. A pool
-  (`psycopg_pool`) for requests and streams when a measurement says so.
-
-**worker.7** · From docs/worker.md:132, "Open design issues", "Smaller issues"
-
-- **Connections.** Each stream holds one while it is open, each app process one listening for them all, and the worker
-  two for each job it holds.
+Triage: dissolved; all three were dropped as tracked in agents/ (see "Dropped").
 
 ### G36. Reads that grow with the data
 Paging in the store, and reads that don't repeat per item, once they are slow.
@@ -1575,6 +1554,8 @@ References to open items found during triage, for step 5:
 - agents/wip-portal.md, "What the docs ask of it", cites docs/catalog.md, "Smaller issues", for what deleting hides.
 - agents/wip-clearance.md, "Before real patient data", 9, hands migrations to docs/store.md, "Known gaps": store.1 is
   here now.
+- agents/wip-clearance.md, "Before real patient data", 2, cites docs/api.md, "Outstanding", "Serving", and
+  docs/worker.md, "Smaller issues", for connections; agents/wip-deploy.md cites docs/worker.md, "The deployment".
 - agents/wip-engine-part.md, "Outstanding", hands bench.24, bench.25 and bench.26 to docs/bench.md, "Outstanding":
   they are here now.
 
@@ -1729,6 +1710,30 @@ connections are G35's and agents/wip-clearance.md's ("Before real patient data",
 **store-api.5** · From docs/store-api.md:403, "Known gaps"
 
 - No async API, and on a connection that isn't in autocommit mode, writes wait for the caller's commit.
+
+worker.3, from G35, as tracked in agents/wip-deploy.md, which takes the HTTP server to be the proxy in front of the
+app; it was stale besides, as `nix/module.nix` is built:
+
+**worker.3** · From docs/worker.md:118, "Open design issues", "The deployment"
+
+Decided: the HTTP server, the API and the worker as separate systemd services on NixOS. The flake has no NixOS module
+yet, and its stop timeout is to exceed the worker's deadline. What the HTTP server is stays open: the portal's pages
+served apart from the API, or a proxy in front of both; the portal is one app with the API (agents/wip-portal.md, "P3b,
+concretely"), and its `__Host-` cookie wants one host for both.
+
+api.7 and worker.7, from G35, as tracked in agents/wip-clearance.md ("Before real patient data", 2, Connections),
+which also counts two connections for a run's event stream, not one:
+
+**api.7** · From docs/api.md:415, "Outstanding", "Serving"
+
+- **A connection per request**, about 2.6 ms each over the Unix socket, opened and closed each time; one for each
+  stream while it is open, and one per process listening for them all; and two for each job a worker holds. A pool
+  (`psycopg_pool`) for requests and streams when a measurement says so.
+
+**worker.7** · From docs/worker.md:132, "Open design issues", "Smaller issues"
+
+- **Connections.** Each stream holds one while it is open, each app process one listening for them all, and the worker
+  two for each job it holds.
 
 ## Context
 What the moved sections said of their items as a whole, moved with them.
