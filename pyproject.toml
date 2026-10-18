@@ -22,10 +22,12 @@ chatddx = "chatddx.cli:main"
 
 [dependency-groups]
 dev = [
+  { include-group = "docs" },
   { include-group = "lint" },
   { include-group = "test" },
   { include-group = "typing" },
 ]
+docs = ["griffelib>=2.3.2"]
 lint = ["ruff>=0.16.9"]
 test = [
   "httpx2>=2.13.1",

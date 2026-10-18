@@ -5,9 +5,9 @@ what chatddx does is done as a person, and `identity` is its declarative layer: 
 with no store access (src/chatddx/identity/), which the bench, the operational layer, applies to what is in the store
 and the World, and the catalog to the owners it records or is asked about.
 
-This document describes what identity holds and why. Names, signatures and errors are in docs/identity-api.md. People,
-their passwords and their sessions are kept by the store (docs/store.md, "People"; `People` and "Database: schema
-`identity`" in docs/store-api.md), and their migrations are in docs/migrations.md.
+This document describes what identity holds and why. Names, signatures and errors are in docs/reference/identity.md.
+People, their passwords and their sessions are kept by the store (docs/store.md, "People"; `People` in
+docs/reference/store.md), and the `identity` schema and its migrations are in docs/migrations.md.
 
 ## People
 A person has an id, a login, a name, roles, and whether they are active. The id is what the rest of the store refers

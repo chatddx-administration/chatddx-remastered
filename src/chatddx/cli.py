@@ -356,6 +356,25 @@ def _openapi(_: argparse.Namespace) -> None:
     print(json.dumps(document, indent=2, ensure_ascii=False))
 
 
+def _reference(args: argparse.Namespace) -> None:
+    # Compromise: griffe, which chatddx.reference reads the code with, is a development
+    # dependency, which a deployed chatddx goes without.
+    from chatddx import reference
+
+    held = reference.regenerated(args.package or settings.REFERENCED)
+    stale = {p: t for p, t in held.items() if not p.exists() or p.read_text() != t}
+    if args.check and stale:
+        named = ", ".join(str(p.relative_to(settings.PROJECT_ROOT)) for p in stale)
+        raise SystemExit(f"reference: {named} behind the code: run chatddx reference")
+    for path, text in held.items():
+        if not args.check and path in stale:
+            path.parent.mkdir(parents=True, exist_ok=True)
+            _ = path.write_text(text)
+        print(
+            f"{path.relative_to(settings.PROJECT_ROOT)}: {reference.pending(text, settings.REFERENCE_TAG)} tags pending"
+        )
+
+
 def _fake_vllm(args: argparse.Namespace) -> None:
     try:
         script = None if args.script is None else Script.load(args.script)
@@ -608,6 +627,23 @@ def main(argv: Sequence[str] | None = None) -> None:
         help="print the API's OpenAPI document, as frontend/openapi.json keeps it",
     )
     openapi.set_defaults(run=_openapi)
+
+    referenced = commands.add_parser(
+        "reference",
+        help="write docs/reference/<package>.md from the code, tagging what changed for "
+        + "review: ADD, REPLACE or REMOVE",
+    )
+    _ = referenced.add_argument(
+        "--check",
+        action="store_true",
+        help="write nothing, and fail when a reference is behind the code",
+    )
+    _ = referenced.add_argument(
+        "package",
+        nargs="*",
+        help="the packages, such as bench (settings.REFERENCED)",
+    )
+    referenced.set_defaults(run=_reference)
 
     fake = commands.add_parser(
         "fake-vllm",

@@ -6,8 +6,8 @@ elsewhere: the factors that render a request and prepare a case (docs/factors.md
 (docs/ledger.md), the store and the catalog (docs/store.md, docs/catalog.md), and the World inventory that says where
 an engine is reached and whether it may receive a case (docs/inventory.md).
 
-This document describes what a run and a score do and why. Names, signatures, refusals and messages are in the API,
-docs/runner-api.md.
+This document describes what a run and a score do and why. Names, signatures, refusals and their messages are in
+docs/reference/runner.md.
 
 The bench calls the runner for the repl and the API: it starts a run of a variation for each language its cases are
 sent in, and scores a finished run under every scorer that applies to it.
@@ -68,7 +68,7 @@ to the endpoint the gate admitted. The gate refuses, in order:
 - a sensitive source of the cases the endpoint isn't cleared for (docs/inventory.md, "Clearance");
 - tools on a sensitive source, since a tool can't be cleared yet;
 - an endpoint whose credential names a secret that isn't set;
-- an endpoint whose server doesn't list the name its engine is served under (docs/runner-api.md, "gate.py").
+- an endpoint whose server doesn't list the name its engine is served under (src/chatddx/runner/gate.py).
 
 The first four hold for as long as the World is as it is. The last two may pass later: a secret is set, a server
 comes up. The bench uses the difference (see "What applies to a run").
@@ -180,7 +180,8 @@ keeps it outstanding, and scoring says why.
 The runner and the scoring pass note what they see while they work, in the finish record (docs/ledger.md,
 "Findings"): a case that can't be read, a run that resumed, an answer or a verdict that can't be read, and one that
 breaks its schema. Drift of a vignette is noted as preparing a case notes it (docs/factors.md, "Preparing a case").
-The API lists them (docs/runner-api.md, "Finding codes").
+
+Each is made where it is found, as `Finding(…)` in `src/chatddx/runner/`.
 
 ## Terms
 

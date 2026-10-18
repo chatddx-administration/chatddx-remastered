@@ -11,8 +11,8 @@ stored: a skeleton still means exactly what it sends, and a configuration compil
 where the new ones change what it sends (docs/catalog.md, "What has moved on"), until it follows them
 (docs/bench.md, "Following its facts").
 
-This document describes what facts hold, what they are for and why. Classes, fields, rules and finding codes are in the
-API, docs/facts-api.md. A model's facts are a kind of component (docs/factors.md, "Model facts"), so the factors
+This document describes what facts hold, what they are for and why. Classes, fields and errors are in
+docs/reference/facts.md. A model's facts are a kind of component (docs/factors.md, "Model facts"), so the factors
 compile against them; reading facts files and checking pairs build on the factors and nothing else.
 
 ## Where facts come from

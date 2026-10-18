@@ -23,6 +23,25 @@ TYPED_PER_DAY = 50
 RUNS_PER_DAY = 100
 ITEMS_PER_RUN = 1000
 
+# Compromise: a tag pending in a reference under another phrase is read as text.
+REFERENCE_TAG = "SIGN-OFF"
+REFERENCED = (
+    "api",
+    "bench",
+    "catalog",
+    "curation",
+    "factors",
+    "facts",
+    "identity",
+    "inventory",
+    "ledger",
+    "repl",
+    "runner",
+    "scripted",
+    "store",
+    "worker",
+)
+
 WORKER_BEAT = timedelta(seconds=1)
 WORKER_LOST = timedelta(seconds=10)
 # Within the stop timeout of the service that runs the worker.

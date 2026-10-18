@@ -358,7 +358,7 @@ scripted.3, from G45, as tracked in agents/wip-portal.md ("Comparing variations"
   (agents/wip-portal.md, "Comparing variations").
 
 G51, as having no reader the docs don't serve: the edges have their own, and a script on the bench reads
-docs/bench-api.md; it can come back when someone writes against the bench directly:
+docs/reference/bench.md; it can come back when someone writes against the bench directly:
 
 **bench.11** · From docs/bench.md:450, "Outstanding"
 

@@ -48,10 +48,10 @@ Pinned factors are all objects, which is why the two looked the same. The except
   - and the api, bench, catalog, curation, facts, portal, repl, scripted and store packages, and `cli.py`.
 - What docs/ says about these dependencies:
   - "Factors depend on nothing else in chatddx" (`docs/factors.md`, introduction).
-  - The ledger imports no chatddx package but `chatddx.factors` (`docs/ledger-api.md`), and the kinds as well as the
+  - The ledger imports no chatddx package but `chatddx.factors` (`src/chatddx/ledger/`), and the kinds as well as the
     base: a run start holds a trial, a skeleton's tools and a canary set, a score start a scoring and its judges.
-  - The catalog imports no chatddx package but `chatddx.factors` and `chatddx.identity` (`docs/catalog-api.md`).
-  - The inventory's check and serving read engines, and its sources build cases (`docs/inventory-api.md`).
+  - The catalog imports no chatddx package but `chatddx.factors` and `chatddx.identity` (`src/chatddx/catalog/`).
+  - The inventory's check and serving read engines, and its sources build cases (`src/chatddx/inventory/`).
 - All 24 kinds are defined in `factors` and listed in `factors/kinds.py:KINDS`, which is all `parse_component`
   reads. A typed case's text is no component: it is kept in the `source` schema.
 
@@ -74,9 +74,8 @@ reasons:
 
 ## Kinds written down
 Decided, built:
-- `src/chatddx/factors/kinds.py:KINDS` lists every kind in the order of `docs/factors-api.md`'s "Component kinds"
-  table. `BY_KIND` maps each kind name to its class and refuses a kind listed twice. `parse_component` moved there
-  from `base.py`, and reads only the kinds `KINDS` lists.
+- `src/chatddx/factors/kinds.py:KINDS` lists every kind. `BY_KIND` maps each kind name to its class and refuses a
+  kind listed twice. `parse_component` moved there from `base.py`, and reads only the kinds `KINDS` lists.
 - `Component` no longer registers its subclasses (`base.py:Component.__pydantic_init_subclass__`). It only refuses a
   `kind` without a literal default.
 - `src/chatddx/factors/test/test_factors.py:test_every_kind_defined_is_written_down` checks that every component class
@@ -84,7 +83,7 @@ Decided, built:
   bytes are read back. A kind defined only in a test is no longer read back, and no longer needs undoing.
 - `src/chatddx/store/test/test_catalog.py:test_kinds_and_fields_match_the_database` compares `THREAD_KINDS` with
   `BY_KIND`.
-- Described in `docs/factors-api.md`, "kinds.py".
+- Described in `docs/reference/factors.md`.
 
 Why the tag stays: the class is visible in Python, but not in the stored bytes. `kind` does three jobs:
 1. **Reading bytes back.** Stored JSON and bundles have to say what they are, as git's object header and OCI's media
@@ -191,12 +190,10 @@ To suggest when built:
 - **New pages**: `docs/objects.md` and `docs/objects-api.md`. They take over the general sections of
   `docs/factors.md` under "How components work" ("Canonical form and digest", "Versions", "References and checks",
   "Errors and findings", "Registries and bundles", "Fingerprints", "Code", "Storage"), and the part of "Kinds" that
-  isn't about what each kind means to the research. They also take the `base.py`, `bundle.py` and `kinds.py` sections
-  and "Database: schema `factor`" from `docs/factors-api.md`.
+  isn't about what each kind means to the research.
 - **`docs/factors.md`, "What a factor is"**: pinned factors are held as objects (`docs/objects.md`). The paragraphs
   on canary sets and compilations move to `docs/ledger.md` and `docs/catalog.md` if those kinds move.
-- **Dependency statements**: `docs/factors.md` ("depend on nothing else in chatddx"), `docs/ledger-api.md` and
-  `docs/catalog-api.md` name `chatddx.objects`.
+- **Dependency statements**: `docs/factors.md` ("depend on nothing else in chatddx") names `chatddx.objects`.
 - **Glossary and migrations**: `docs/chatddx.md`'s "Digest", "Kind", "Bundle" and "Canonical form" refer to objects,
   and `docs/migrations.md`'s "factor" section follows the schema.
 

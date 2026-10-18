@@ -439,7 +439,7 @@ or was renamed in a data set.
   which needn't be the latest family's.
 - When bindings of several families match a case, `family_of` takes the family of the latest matching binding.
 - **A repair moves the current binding only.** Cases and appendices bound to an earlier binding of the family aren't
-  rebuilt at the new place (docs/catalog-api.md, "families.py").
+  rebuilt at the new place (src/chatddx/catalog/families.py).
 - A case stored at a vignette's old place after a repair gets a replacement from `behind` that nothing has stored.
 - **A rename isn't followed into the data.** After repair-data, loading says the old id is missing until the data set
   names the new one.
@@ -652,7 +652,7 @@ is refused on a lint (docs/bench.md, "Writes for the person").
 
 - **The archive's configuration saved under another name** is saved with no finding: a hand-made recipe that is a
   shared configuration's, compiled to its skeleton, becomes a thread of the person's own, and only a look's `held_by`
-  says so (docs/api-api.md, "threads.py"). An expectation the same as one the person holds is refused.
+  says so (src/chatddx/api/threads.py). An expectation the same as one the person holds is refused.
 
 ## Waiting
 

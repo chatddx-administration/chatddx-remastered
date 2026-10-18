@@ -8,41 +8,52 @@ This document contains project-wide instructions written by humans for agents.
   - pg_hba.conf: local all all peer map=chatddx
   - Setup database and roles with `src/chatddx/store/setup.sql`
 * Base the fake vLLM on 0.24.0, extend/amend continuously as new facts are discovered, questions arise or sample data is needed.
+* `pnpm --dir frontend build` builds frontend.
 * `chatddx.settings` is the project-wide source of truth.
 
 ## Typechecking
 * Errors and warnings that indicate issues beyond the scope of the current task should remain, never hide them.
-* `pnpm --dir frontend check` typechecks the frontend, and `pnpm --dir frontend build` builds it. After a change to
-  the API, `chatddx openapi > frontend/openapi.json`.
+* `pnpm --dir frontend check` typechecks frontend
 
 ## Testing
-* Baseline is `pytest` which runs every test and takes \~110 s; `pytest -m 'not slow'` is the quick run, \~22s.
-  `-n 4` (pytest-xdist) runs the baseline in \~70s; the quick run gains nothing from it.
-* `@pytest.mark.slow` marks the slowest tests, together \~7/8 of the full run, and the tests that would have the quick
-  run make a template only they use (`loaded`, `ran`, `sampled`). `pytest -p chatddx.test.budget`, run serially,
-  says which tests to mark or unmark, and which templates a run made.
+* Baseline is `pytest` which runs every test and takes ~110s; `pytest -m 'not slow'` is the quick run, ~22s.
+  `-n 4` (pytest-xdist) runs the baseline in ~70s; the quick run gains nothing from it.
 * Names tests share (models, endpoints, the recipes most tests run, the cases) are spelled once, in
-  `src/chatddx/test/world.py`; helpers one package's tests share stay in its `test/helpers.py`.
+  `src/chatddx/test/world.py`; shared helpers stay in `test/helpers.py`.
 * A test matches a table's cells, not its padding, so that a longer name doesn't fail it.
-* `pnpm --dir frontend test` runs the frontend's unit tests (vitest), each beside the module it tests.
+* `pnpm --dir frontend test` tests frontend
+
+## Committing
+Before commit:
+* Remove all docstrings and comments that don't pass doc rule 2 and 3 respectively.
+* run `pytest -p chatddx.test.budget` without `-n 4`, instead of `pytest`, and mark/unmark slow tests accordingly.
+* Typecheck and test frontend as normal.
+* After a change to the API, run:
+  - `chatddx openapi > frontend/openapi.json`
+  - `chatddx reference`
 
 ## Development stages
 
 1. Felt - Not mentioned anywhere but still present somehow
-2. Implied - Shown to be specified indirectly when looking for it
+2. Implied - Seen only when looking for it
 3. Mentioned - Expressed as a concrete need
 4. Named - `<thing>` now refers to it and can be grepped
 5. Itemized - Referred to as an item in `docs/backlog.md`
 6. Planned - Referred to as a plan in `agents/plan-<thing>.md`
 7. Drafted - Exists as a moving target in code and `agents/wip-<thing>.md`
-8. Solidified - Documented in `docs/<thing>.md` and less volatile as a consequence of doc's rule 1.
+8. Solidified - Dependable and documented in `docs/<thing>.md` and `docs/reference/<thing>.md`
+9. Cemented - TBD
+10. Protected - TBD
 
-Steps 5-8, docs *move*: backlog -> plan -> wip -> doc, and is never explained in more than one doc at the time.
+- Step 5 and above: docs *move*: backlog -> plan -> wip -> doc, and is never explained in more than one doc at a time.
+- Step 8 and above: guarded by rule 1 and `chatddx reference`
 
 ## Documentation rules
 
 ### 1. Humans write, agents suggest.
 In all docs except `agents/*`, agents are only allowed to insert suggestions.
+`docs/reference/*` is written by `chatddx reference` alone: it inserts a tag, `<settings.REFERENCE_TAG>: ADD`,
+`REPLACE` or `REMOVE` in the template below, above each change in the code's public names, and a human applies it.
 
 A suggestion is inserted as a fenced code-block immediately above the subject to change.
 The backticks are part of the template, use 4 backticks as envelope if the suggestion contains a code-block.
@@ -55,20 +66,15 @@ AGENT: <verb>
 ```
 
 ### 2. Docs refer to the code, the code speaks for itself.
-The primary document is `docs/chatddx.md`: If a contradiction to it is discovered, stop and prompt a resolution.
+The primary document is `docs/chatddx.md`: If a contradiction to it is discovered, stop,
+describe the landscape and provide options.
 
-Final module-scoped documentation is of shapes:
-1. Authoritative spec (`docs/<module>.md`)
-2. API Reference (`docs/<module>-api.md`)
-3. A user manual (`docs/<module>-manual`)
+- The module scoped documentation is in `docs/<module>.md`.
+- The doc may refer to code `concepts` or direct file reference `src/chatddx/file.py:Class.prop`.
+- References from code to docs are never allowed.
 
-Wip module-scoped documentation is built up as a mirror of final at `agents/wip-<module>[-*].md`.
-
-Other documents that doesn't fit in this scheme may occur but can be considered against the grain.
-
-Before committing, remove all and any docstrings and comments that:
-- reference the docs
-- tell what the code does
+Docstrings in solidified modules' public members are allowed if they follow rule-3, in which case they'll be
+reported by `chatddx reference` for sign-off. All other doctrings are forbidden.
 
 ### 3. When and how to write a comment.
 - A) Every line of comment imposes a readability tax.
