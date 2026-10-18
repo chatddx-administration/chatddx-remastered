@@ -433,6 +433,9 @@ with the web patched in the process that runs the tools (`urllib.request.urlopen
 ### G12. Engines that aren't vLLM
 Stop assuming vLLM: ask for token ids only where an engine takes them, and lint what OpenAI's API refuses.
 
+Triage: kept as is. It waits for the first real remote endpoint that isn't vLLM; every remote engine in the Worlds is
+the fake. Take, for factors.11: the engine says whether it takes token ids, so the choice is a factor a trial shows.
+
 **factors.11** · From docs/factors.md:747, "Open design issues", "Smaller issues"
 
 - **Every engine is asked for the prompt's token ids.** A remote engine that isn't vLLM may refuse the unknown option.
