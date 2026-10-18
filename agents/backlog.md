@@ -31,7 +31,7 @@ items under it are as they were moved. An item that restates another for an API 
 12. [Engines that aren't vLLM](#g12-engines-that-arent-vllm) (4)
 13. [What reaches vLLM: argv and passthrough](#g13-what-reaches-vllm-argv-and-passthrough) (2)
 14. [Engine identity: hardware and model files](#g14-engine-identity-hardware-and-model-files) (3)
-15. [Hosts read the start-up](#g15-hosts-read-the-start-up) (2)
+15. [Hosts read the start-up](#g15-hosts-read-the-start-up) (0, dropped)
 16. [Inventory checked everywhere](#g16-inventory-checked-everywhere) (5)
 17. [Facts: the checks](#g17-facts-the-checks) (10)
 18. [Facts: what they can say](#g18-facts-what-they-can-say) (8)
@@ -499,18 +499,8 @@ Triage: kept as is. The hardware waits for the first server on several GPUs, whi
   could compare every file it hashes with it, offline. The import takes the host's hashes as they are.
 
 ### G15. Hosts read the start-up
-o11n starts engines from the rig's start-up, and the import confirms them.
-
-**inventory.2** · From docs/inventory.md:284, "Open design issues", "Hosts don't read the start-up"
-
-o11n and the hosts' own configuration (Kompismoln/org) decide what each server runs. The rig imports what they run,
-and the start-up of an imported endpoint gives back the command line o11n runs. So the start-up is a check, and only
-the fake vLLM is started from one. For a host to start its engines from the rig's start-up, o11n would have to read
-it, and the import would then confirm what was started rather than describe it.
-
-**inventory-api.2** · From docs/inventory-api.md:267, "Known gaps"
-
-- Hosts don't start engines from the start-up; only the fake vLLM is started from one.
+Triage: dropped, as tracked in agents/wip-deploy.md ("The NixOS module", Open: whether the module serves an
+inference host's vLLM from an endpoint's start-up); see "Dropped".
 
 ### G16. Inventory checked everywhere
 The runner and the engine import run the inventory check, and endpoint names are held to a form.
@@ -1603,6 +1593,19 @@ chains:
     - factor and records are insert-only
     - nothing on the rig is updated (people and the worker are outside of the rig)
     - version chains between digests belong to planned catalog pipeline.
+
+G15, as tracked in agents/wip-deploy.md ("The NixOS module", Open):
+
+**inventory.2** · From docs/inventory.md:284, "Open design issues", "Hosts don't read the start-up"
+
+o11n and the hosts' own configuration (Kompismoln/org) decide what each server runs. The rig imports what they run,
+and the start-up of an imported endpoint gives back the command line o11n runs. So the start-up is a check, and only
+the fake vLLM is started from one. For a host to start its engines from the rig's start-up, o11n would have to read
+it, and the import would then confirm what was started rather than describe it.
+
+**inventory-api.2** · From docs/inventory-api.md:267, "Known gaps"
+
+- Hosts don't start engines from the start-up; only the fake vLLM is started from one.
 
 ## Context
 What the moved sections said of their items as a whole, moved with them.
