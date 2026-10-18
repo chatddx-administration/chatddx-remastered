@@ -10,13 +10,7 @@ we learn.
 
 Factors are the building blocks of the chatddx rig: an environment that can be rebuilt exactly, and shown to be the
 same, for scientific rigor. This document describes what each factor is for and how factors combine. Names, fields,
-```
-AGENT: replace
-docs/factors-api.md is dropped for docs/reference/factors.md, which `chatddx reference` writes from the code.
----
 and errors are in docs/reference/factors.md.
-```
-rules and errors are in the API, docs/factors-api.md.
 
 Factors depend on nothing else in chatddx; the model facts, the catalog, the ledger and the store build on them.
 Principal authors are the roles in docs/identity.md.
@@ -706,12 +700,4 @@ They look at:
 
 Checks against the model facts belong to the facts (docs/facts.md). Other findings come from the steps that observe
 them: drift when preparing a case, a chat template that doesn't match its hash or reads the date, and a component that a
-```
-AGENT: replace
-The 2 lines below. docs/factors-api.md is dropped for docs/reference/factors.md, which `chatddx reference` writes from the code.
-It drops the table of finding codes with it: a finding is made where it is found.
----
 bundle holds in a form today's code wouldn't write. Each finding is made where it is found, as `Finding(…)`.
-```
-bundle holds in a form today's code wouldn't write. The API lists every finding (docs/factors-api.md, "Finding
-codes").

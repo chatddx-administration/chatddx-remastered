@@ -40,13 +40,7 @@ The test World carries the tests' data set (worlds/test/_data/).
 ### Factors
 
 Both kinds of file hold one table per kind of component, keyed by name, whose keys are the component's fields
-```
-AGENT: replace
-docs/factors-api.md is dropped for docs/reference/factors.md, which `chatddx reference` writes from the code.
----
 (docs/reference/factors.md).
-```
-(docs/factors-api.md).
 
 On top of the fields:
 - **References by name.** A toolset's tools, a scorer's expectation schema and a view's judge, a local engine's model
@@ -155,14 +149,7 @@ The World is `--world DIR`, or by default the directory `CHATDDX_WORLD` names. T
 endpoints and vignettes, and the facts from the store, as loading stored them.
 
 A loading ends with the inventory checked against the engines just planned, all at once: what starting or reaching
-```
-AGENT: replace
-docs/inventory-api.md is dropped for docs/reference/inventory.md, which `chatddx reference` writes from the code.
-It has no section for each module: the module is named instead.
----
 each endpoint would refuse, and what is likely a slip (src/chatddx/inventory/check.py).
-```
-each endpoint would refuse, and what is likely a slip (docs/inventory-api.md, "check.py").
 
 ## Loading
 `chatddx init-data USER [--world DIR] [--source NAME] [--giftbag] [--data DIR] [--facts PATH …]`

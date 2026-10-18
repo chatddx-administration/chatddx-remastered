@@ -3,14 +3,9 @@
 The bench is what one person sees and does, whatever the edge they reach it through: the threads, families and runs
 they see, the World's endpoints, the variation they are trying, and what is written in their name. Its edges are the
 repl (docs/repl.md), the API (docs/api.md) and the portal (agents/wip-portal.md). This document
-```
-AGENT: replace
-docs/bench-api.md is dropped for docs/reference/bench.md, which `chatddx reference` writes from the code.
----
+
 describes what the bench does and why it is shaped like it is. Names, signatures and errors are in
-docs/reference/bench.md.
-```
-describes what the bench does and why it is shaped like it is. Names, signatures and errors are in docs/bench-api.md.
+`docs/reference/bench.md`.
 
 The bench builds on the store, the catalog, the World, the facts, the runner and the scoring pass, and holds no SQL of
 its own.
@@ -23,13 +18,7 @@ functions in `identity` and utilize them here.
 - A facade. Claude clarifies:
 > A way to everything an edge reads. What doesn't depend on the person, an edge reads where it is: a component and
   a run's rows from the store, what is said of a thing from the catalog, how an item ended and whether its requests
-```
-AGENT: replace
-docs/runner-api.md is dropped for docs/reference/runner.md, which `chatddx reference` writes from the code.
----
   render the same now from the runner (docs/reference/runner.md), and an endpoint's spec and clearances from the
-```
-  render the same now from the runner (docs/runner-api.md), and an endpoint's spec and clearances from the
   inventory.
 
 ## How the bench works

@@ -48,31 +48,10 @@ Pinned factors are all objects, which is why the two looked the same. The except
   - and the api, bench, catalog, curation, facts, portal, repl, scripted and store packages, and `cli.py`.
 - What docs/ says about these dependencies:
   - "Factors depend on nothing else in chatddx" (`docs/factors.md`, introduction).
-```
-AGENT: replace
-docs/ledger-api.md is dropped for docs/reference/ledger.md, which `chatddx reference` writes from the code.
-The dependency the API stated is in the package's imports.
----
   - The ledger imports no chatddx package but `chatddx.factors` (`src/chatddx/ledger/`), and the kinds as well as the
-```
-  - The ledger imports no chatddx package but `chatddx.factors` (`docs/ledger-api.md`), and the kinds as well as the
     base: a run start holds a trial, a skeleton's tools and a canary set, a score start a scoring and its judges.
-```
-AGENT: replace
-docs/catalog-api.md is dropped for docs/reference/catalog.md, which `chatddx reference` writes from the code.
-The dependency the API stated is in the package's imports.
----
   - The catalog imports no chatddx package but `chatddx.factors` and `chatddx.identity` (`src/chatddx/catalog/`).
-```
-  - The catalog imports no chatddx package but `chatddx.factors` and `chatddx.identity` (`docs/catalog-api.md`).
-```
-AGENT: replace
-docs/inventory-api.md is dropped for docs/reference/inventory.md, which `chatddx reference` writes from the code.
-The dependency the API stated is in the package's imports.
----
   - The inventory's check and serving read engines, and its sources build cases (`src/chatddx/inventory/`).
-```
-  - The inventory's check and serving read engines, and its sources build cases (`docs/inventory-api.md`).
 - All 24 kinds are defined in `factors` and listed in `factors/kinds.py:KINDS`, which is all `parse_component`
   reads. A typed case's text is no component: it is kept in the `source` schema.
 
@@ -95,17 +74,8 @@ reasons:
 
 ## Kinds written down
 Decided, built:
-```
-AGENT: replace
-The 2 lines below. docs/factors-api.md is dropped for docs/reference/factors.md, which `chatddx reference` writes from the code.
-Its "Component kinds" table is dropped with it.
----
 - `src/chatddx/factors/kinds.py:KINDS` lists every kind. `BY_KIND` maps each kind name to its class and refuses a
-  kind listed twice. `parse_component` moved there
-```
-- `src/chatddx/factors/kinds.py:KINDS` lists every kind in the order of `docs/factors-api.md`'s "Component kinds"
-  table. `BY_KIND` maps each kind name to its class and refuses a kind listed twice. `parse_component` moved there
-  from `base.py`, and reads only the kinds `KINDS` lists.
+  kind listed twice. `parse_component` moved there from `base.py`, and reads only the kinds `KINDS` lists.
 - `Component` no longer registers its subclasses (`base.py:Component.__pydantic_init_subclass__`). It only refuses a
   `kind` without a literal default.
 - `src/chatddx/factors/test/test_factors.py:test_every_kind_defined_is_written_down` checks that every component class
@@ -113,13 +83,7 @@ Its "Component kinds" table is dropped with it.
   bytes are read back. A kind defined only in a test is no longer read back, and no longer needs undoing.
 - `src/chatddx/store/test/test_catalog.py:test_kinds_and_fields_match_the_database` compares `THREAD_KINDS` with
   `BY_KIND`.
-```
-AGENT: replace
-docs/factors-api.md is dropped for docs/reference/factors.md, which `chatddx reference` writes from the code.
----
 - Described in `docs/reference/factors.md`.
-```
-- Described in `docs/factors-api.md`, "kinds.py".
 
 Why the tag stays: the class is visible in Python, but not in the stored bytes. `kind` does three jobs:
 1. **Reading bytes back.** Stored JSON and bundles have to say what they are, as git's object header and OCI's media
@@ -226,25 +190,10 @@ To suggest when built:
 - **New pages**: `docs/objects.md` and `docs/objects-api.md`. They take over the general sections of
   `docs/factors.md` under "How components work" ("Canonical form and digest", "Versions", "References and checks",
   "Errors and findings", "Registries and bundles", "Fingerprints", "Code", "Storage"), and the part of "Kinds" that
-```
-AGENT: replace
-The 2 lines below. docs/factors-api.md is dropped for docs/reference/factors.md, which `chatddx reference` writes from the code.
-A package's reference is written from its code, so there is nothing of it to move.
----
   isn't about what each kind means to the research.
-```
-  isn't about what each kind means to the research. They also take the `base.py`, `bundle.py` and `kinds.py` sections
-  and "Database: schema `factor`" from `docs/factors-api.md`.
 - **`docs/factors.md`, "What a factor is"**: pinned factors are held as objects (`docs/objects.md`). The paragraphs
   on canary sets and compilations move to `docs/ledger.md` and `docs/catalog.md` if those kinds move.
-```
-AGENT: replace
-The 2 lines below. docs/ledger-api.md and docs/catalog-api.md are dropped, and the dependencies they stated are the packages' imports.
----
 - **Dependency statements**: `docs/factors.md` ("depend on nothing else in chatddx") names `chatddx.objects`.
-```
-- **Dependency statements**: `docs/factors.md` ("depend on nothing else in chatddx"), `docs/ledger-api.md` and
-  `docs/catalog-api.md` name `chatddx.objects`.
 - **Glossary and migrations**: `docs/chatddx.md`'s "Digest", "Kind", "Bundle" and "Canonical form" refer to objects,
   and `docs/migrations.md`'s "factor" section follows the schema.
 
