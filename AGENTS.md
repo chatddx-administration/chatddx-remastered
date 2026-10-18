@@ -5,7 +5,7 @@ This document contains project-wide instructions written by humans for agents.
 * `set -a; . ./.env-container; set +a`.
 * `store` uses PostgreSQL 16:
   - pg_ident.conf: chatddx <os-user> chatddx / chatddx <os-user> chatddx_writer
-  - pg_hba.conf:   local all all peer map=chatddx
+  - pg_hba.conf: local all all peer map=chatddx
   - Setup database and roles with `src/chatddx/store/setup.sql`
 * Base the fake vLLM on 0.24.0, extend/amend continuously as new facts are discovered, questions arise or sample data is needed.
 * `chatddx.settings` is the project-wide source of truth.
@@ -26,18 +26,18 @@ This document contains project-wide instructions written by humans for agents.
 * A test matches a table's cells, not its padding, so that a longer name doesn't fail it.
 * `pnpm --dir frontend test` runs the frontend's unit tests (vitest), each beside the module it tests.
 
-## Development
-A module is either wip or solidified.
-* wip (draft) modules are documented in `agents/wip-<module>.md`
-* solidified modules are documented in `docs/<module>*.md`, where documentation rule 1 applies.
-```
-AGENT: add
-Open items now live in one place, grouped by the PR they'd fit in; without a rule, they'd grow back as each doc's
-"Open design issues", "Outstanding" and "Known gaps".
----
-* open items of solidified modules are kept in `docs/backlog.md`, in the section of the fix they belong to; a wip
-  plan keeps its own.
-```
+## Development stages
+
+1. Felt - Not mentioned anywhere but still present somehow
+2. Implied - Shown to be specified indirectly when looking for it
+3. Mentioned - Expressed as a concrete need
+4. Named - `<thing>` now refers to it and can be grepped
+5. Itemized - Referred to as an item in `docs/backlog.md`
+6. Planned - Referred to as a plan in `agents/plan-<thing>.md`
+7. Drafted - Exists as a moving target in code and `agents/wip-<thing>.md`
+8. Solidified - Documented in `docs/<thing>.md` and less volatile as a consequence of doc's rule 1.
+
+Steps 5-8, docs *move*: backlog -> plan -> wip -> doc, and is never explained in more than one doc at the time.
 
 ## Documentation rules
 

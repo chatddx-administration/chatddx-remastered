@@ -42,7 +42,6 @@ in agents/ tracks is that plan's, not this document's.
   - [Administering people](#administering-people)
   - [The repl's reach](#the-repls-reach)
   - [The repl's rendering](#the-repls-rendering)
-  - [The repl manual's transcripts](#the-repl-manuals-transcripts)
   - [Unknown query parameters](#unknown-query-parameters)
   - [Loading data sets](#loading-data-sets)
   - [Exporting data sets](#exporting-data-sets)
@@ -578,12 +577,6 @@ carrying it fixes the API's `item.delta` and the portal's live view too.
   when it starts, so their width could be too.
 - `repl/shell.py:Repl.prompt` reads the store on every render, to derive the endpoint, where the prompt read nothing
   before; a connection dropped surfaces at the prompt, outside `handle`'s catch.
-
-### The repl manual's transcripts
-The repl manual's transcripts recorded again on the sample World, now that the model is the part.
-
-- **The repl manual's transcripts** (docs/repl-manual.md) were recorded with the engine as the part: `+engine=`
-  and `set engine` stand where `+model=` and `set model` are now. They want recording again on the sample World.
 
 ### Unknown query parameters
 Routes refuse what they don't declare.
