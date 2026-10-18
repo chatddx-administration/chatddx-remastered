@@ -802,6 +802,9 @@ writes at the same moment can leave a person several expectations to choose from
 Deferred constraints and foreign keys for what the code writes together: a component's reference rows, a thread's first
 version, a family's first binding, a log's start record.
 
+Triage: kept as is. Decided, for store.2 and store-api.1: left as they are until something other than `Store.add` writes
+components, since the triggers would repeat each kind's reference paths in SQL.
+
 **catalog.5** · From docs/catalog.md:414, "Open design issues", "Smaller issues"
 
 - **A thread without versions** is possible in the database, and so is a family without bindings; the catalog writes
