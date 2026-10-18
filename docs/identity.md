@@ -68,8 +68,9 @@ A person without a password can't sign in to the API, but can be acted as from t
 
 ## Keycloak
 The deployment is to sit behind Keycloak. Logins follow its lowercase usernames so that people carry over, and signing
-in with a password can stay as the development path. How Keycloak hands the app a login isn't decided (agents/wip-deploy.md,
-"What holds now", Identity), nor whether roles then come from its realm roles instead of the person.
+in with a password can stay as the development path. How Keycloak hands the app a login isn't decided
+(agents/wip-deploy.md, "What holds now", Identity), nor whether roles then come from its realm roles instead of the
+person.
 
 ## Tests
 - src/chatddx/identity/test/test_identity.py: who owns, collaborates on and sees what, nothing deleted, and their own

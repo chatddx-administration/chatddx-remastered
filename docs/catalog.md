@@ -27,8 +27,8 @@ Deleting is a row too, which a later row can undo (see "Deleting"). True deletio
 ### Rules
 The catalog checks its rules against what is stored when it writes, and a change that takes several rows, such as a
 thread with its first version and its owner, a family with its binding, or a repair, is written all at once or not at
-all. The rules that two writers at once could break are repeated by the database at tier 2, with two exceptions (docs/backlog.md,
-"Concurrent writers").
+all. The rules that two writers at once could break are repeated by the database at tier 2, with two exceptions
+(docs/backlog.md, "Concurrent writers").
 
 ## Threads and edits
 A *thread* is a sequence of *edits* and work a handle on a component that people edit.

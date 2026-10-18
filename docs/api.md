@@ -201,10 +201,20 @@ replaced over it, or nothing for a run started from a trial alone (docs/catalog.
 start say the same. A run also says the first run of its start (`started_with`), null for the first and for a run
 started alone, and `GET /api/runs?with=RUN` lists a start's runs, the first among them.
 
+```
+AGENT: replace
+The model is the part now: a run goes to the endpoint serving its variation's model, and its trial takes that
+endpoint's engine (docs/bench.md, "The model").
+---
+A run goes to the endpoint serving its variation's model, or to the endpoint the request names, which must serve it,
+and its trial takes that endpoint's engine; a hand-written configuration names no model, so it needs an endpoint
+named. No endpoint serving the model, or several when none is named, is refused before the gate is asked, as an
+endpoint named that serves another model is (docs/bench.md, "The model").
+```
 A run's trial takes its variation's engine, and goes to the endpoint serving it, or to the endpoint the request names,
 which must serve it; a hand-written configuration names no engine, so it needs an endpoint named, and its trial takes
 that endpoint's engine. No endpoint serving the engine, or several when none is named, is refused before
-the gate is asked, as an endpoint named that serves another engine is (agents/wip-engine-part.md, "Several endpoints").
+the gate is asked, as an endpoint named that serves another engine is (docs/bench.md, "The model").
 
 The gate refuses an endpoint that doesn't serve the trial's engine, isn't cleared for a sensitive source among the
 cases', or lacks its secret; tools that would get a sensitive source's content; and an endpoint that doesn't answer.

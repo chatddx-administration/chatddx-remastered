@@ -137,10 +137,21 @@ An endpoint may name a canary set, by digest, which every run at it sends, so th
 alike and can be compared; and a default execution, a timeout and retries among it, which a run's request may change
 the concurrency and order of. Loading refuses a default concurrency above the capacity.
 
+```
+AGENT: replace
+The model is the part now, so a run goes to the endpoint serving its configuration's model; a judge still pins its
+engine (docs/bench.md, "The model"; docs/runner.md, "Judges").
+---
+A run goes to the endpoint serving its configuration's model, and a judge's calls to the endpoint serving the judge's
+engine, unless one is named. When no endpoint serves them, or several do and none is named, the run or the scoring is
+refused rather than an endpoint picked; an endpoint named that serves another model is refused too (docs/backlog.md,
+"Picking an endpoint for a model"). A hand-written configuration has no model part, and goes to the endpoint named.
+```
 A run goes to the endpoint serving its configuration's engine, and a judge's calls to the endpoint serving the judge's
 engine, unless one is named. When no endpoint serves the engine, or several do and none is named, the run or the
 scoring is refused rather than an endpoint picked; an endpoint named that serves another engine is refused too
-(docs/backlog.md, "Picking an endpoint for a model"). A hand-written configuration has no model part, and goes to the endpoint named.
+(docs/backlog.md, "Picking an endpoint for a model"). A hand-written configuration has no model part, and goes to the
+endpoint named.
 
 ## Hosts
 A host says the address its servers listen on, and where it keeps what its engines pin. A local engine pins its model

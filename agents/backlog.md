@@ -6,7 +6,8 @@ at 2982900 and the section it was moved from. Ids are for grouping and triage on
 Swept: docs/ and README.md; docs/chatddx.md's "On the table" and "Work in progress" were found late, during triage. Left
 where they are: `healthchecks/`, dated reports whose open findings "address healthcheck 08ae453" carried into docs/ and
 agents/; docs/api.md, "Not covered", what the API leaves to others by design; the takes in the body of
-docs/purist-object-layer.md, which its "Open" lists; docs/vllm.md, "Not emulated", which the fake's "Extending" works from.
+docs/purist-object-layer.md, which its "Open" lists; docs/vllm.md, "Not emulated", which the fake's "Extending" works
+from.
 
 Grouped by whether they'd fit in one PR, triaged group by group, and moved to docs/backlog.md, by readiness; the
 references to them were swept. What is left here is the triage's record: the takes it confirmed, what it dropped and

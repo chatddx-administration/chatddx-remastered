@@ -162,8 +162,8 @@ model they don't know. So a variation is refused for its model as it is looked a
 
 A run goes to the endpoint serving its variation's model. An endpoint named must serve that model, and one that
 serves another is refused before the gate would refuse it. An model no endpoint serves is refused, and so is one
-several serve, unless one of them is named (docs/backlog.md, "Picking an endpoint for a model"). A hand-written configuration has no model part, and
-runs at the endpoint named.
+several serve, unless one of them is named (docs/backlog.md, "Picking an endpoint for a model"). A hand-written
+configuration has no model part, and runs at the endpoint named.
 
 ### The languages it runs in
 A configuration is written in one language, its own: its recipe's texts' (docs/catalog.md, "Languages"), or a

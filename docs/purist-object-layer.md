@@ -151,7 +151,8 @@ Open: a question for the user.
 | compilation | provenance | `catalog` | `compiled()` moves with it, while `compile_request` stays in `factors/request.py`. Every user (`catalog/{threads,titles,read}.py`, `store/{catalog,store}.py`, `curation/plan.py`, `bench/seen.py`) sits at or above the catalog. |
 
 Execution settings stay inside the start records of runs and scores (`ledger/run.py:RunStarted`,
-`ledger/score.py:ScoreStarted`) either way. "Execution settings as a component" (`docs/backlog.md`) is a storage choice only. The settings would be an object that the start record references by digest,
+`ledger/score.py:ScoreStarted`) either way. "Execution settings as a component" (`docs/backlog.md`) is a storage choice
+only. The settings would be an object that the start record references by digest,
 as `RunStarted.canaries` references a canary set, and they would stay outside the trial's digest. Execution stays a
 recorded factor either way.
 

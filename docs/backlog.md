@@ -42,6 +42,7 @@ in agents/ tracks is that plan's, not this document's.
   - [Administering people](#administering-people)
   - [The repl's reach](#the-repls-reach)
   - [The repl's rendering](#the-repls-rendering)
+  - [The repl manual's transcripts](#the-repl-manuals-transcripts)
   - [Unknown query parameters](#unknown-query-parameters)
   - [Loading data sets](#loading-data-sets)
   - [Exporting data sets](#exporting-data-sets)
@@ -337,7 +338,7 @@ A stream that can't miss a row or an event, and a notification queue that a list
 ### Picking an endpoint for a model
 A look for a model several endpoints serve is linted, a model that moved on is followed only where it is served, and a
 judge whose engine two endpoints serve doesn't bar its scorer. That a run is refused until its endpoint is named is
-decided (agents/wip-engine-part.md, "What building it found").
+decided: a preference among the endpoints, such as the World's `configurations` endpoint, would pick silently.
 
 Decided: a look for no endpoint gives the findings of the model alone, `facts.*`, and says that the engine's wait for an
 endpoint to be named.
@@ -408,7 +409,8 @@ compilation when one exists.
 - A skeleton edit may leave out its compilation.
 
 ### A run names the skeleton its look gave
-A run sends what was looked at, or is refused.
+A run sends what was looked at, or is refused, and a variation is compiled against facts that say what its edit was
+built on.
 
 Decided: a run may name the digest of the skeleton its look gave, as an edit names its head, and is refused when the
 variation compiles to another by then.
@@ -420,6 +422,10 @@ variation compiles to another by then.
 - **The variation**: stated whole in each request, the configuration by id and its parts by digest, with nothing
   stored by looking. A run may come to name the skeleton its look gave, and be refused when the variation compiles to
   another by then, as an edit names its head.
+- **A variation compiles against the current facts, a configuration against the facts it pinned**
+  (`seen.py:compiled_with`). After a correction, `plan+prompt=x` sends another sampling than `plan`, without that being
+  picked. Manageable: a variation whose model isn't replaced compiles against the configuration's pinned facts, one
+  whose model is replaced against the new model's current ones.
 
 ### Vignette identity: renames, repairs and rebinding
 What follows a vignette that exists twice in a source, matches several families, was bound before the current binding,
@@ -478,8 +484,8 @@ Following an origin keeps the label of a view the fork renamed, though its score
   renamed a view, and follows an origin whose views it keeps, takes the origin's labels.
 
 ### Languages
-Where a compiled skeleton's language comes from, said and kept; judges checked for one, as a notice; and what a person
-may correct.
+Where a compiled skeleton's language comes from, said and kept; judges checked for one, as a notice; what a person may
+correct; a case of a regional tag of its configuration's language; and translations an edit detached.
 
 Decided: a person may correct the language of a text only their own threads hold; anything else stays curation's.
 
@@ -493,6 +499,11 @@ Decided: a person may correct the language of a text only their own threads hold
   way lints check a trial's. An English judge grading Swedish answers may be intended, so it would be a notice rather
   than a warning.
 - **Correcting a wrong language** stays curation's: the bench refuses a language that differs from the text's own.
+- A case tagged `en-GB` on an `en` configuration is left out as untranslatable (`Seen.languages` compares tags
+  whole); before, it ran with `language.mixed`.
+- **Translations are keyed by their source text, for every text now.** Editing an instruction detaches its
+  translations, and the next start leaves those cases out, said in the look and in the answer. Manageable as is; a
+  lint on a configuration whose translations no longer cover a text of its own would close it.
 
 ### Translating JSON few-shot answers
 A few-shot answer in JSON translated by its texts, rather than whole and by hand.
@@ -521,6 +532,8 @@ file differs; a database migrated before that records its checksums on its first
 - Applied migrations are known by name only, so a migration file edited after a database applied it isn't noticed,
   and that database silently differs from the files. Before a shared database, applied files are frozen, or their
   checksums kept with their names.
+- **Migrations edited in place and stores reloaded** (O2) is open while no store holds data worth keeping. The
+  deploy (`agents/wip-deploy.md`) closes it.
 
 ### Administering people
 A command that changes a person, and a new password that ends the person's sessions. Three of agents/wip-clearance.md's
@@ -551,7 +564,8 @@ follow the bench, which takes them from the endpoint ("Canary sets in use").
   run again, or name the endpoint a judge is called at, so a judge whose engine two endpoints serve bars its scorer.
 
 ### The repl's rendering
-What the repl prints: tool calls apart, which runs were started together, and aligned judge lines. Tool calls apart is a
+What the repl prints: tool calls apart, which runs were started together, aligned judge lines, and a prompt that
+survives a dropped connection. Tool calls apart is a
 runner fix: the runner's `Delta` drops the streamed tool call's `index` (`src/chatddx/runner/send.py:Delta`), and
 carrying it fixes the API's `item.delta` and the portal's live view too.
 
@@ -562,6 +576,14 @@ carrying it fixes the API's `item.delta` and the portal's live view too.
   `GET /api/runs?with=` and a run's page in the portal do (`Bench.runs(started_with=…)`).
 - **The judge lines aren't aligned**, as their labels differ in length; the labels of a scoring's judge calls are known
   when it starts, so their width could be too.
+- `repl/shell.py:Repl.prompt` reads the store on every render, to derive the endpoint, where the prompt read nothing
+  before; a connection dropped surfaces at the prompt, outside `handle`'s catch.
+
+### The repl manual's transcripts
+The repl manual's transcripts recorded again on the sample World, now that the model is the part.
+
+- **The repl manual's transcripts** (docs/repl-manual.md) were recorded with the engine as the part: `+engine=`
+  and `set engine` stand where `+model=` and `set model` are now. They want recording again on the sample World.
 
 ### Unknown query parameters
 Routes refuse what they don't declare.
@@ -575,7 +597,7 @@ refuses a parameter a route doesn't declare and a scalar given twice.
 
 ### Loading data sets
 Loading that can only verify, loads as someone other than the archive, from several sources, holds what has no table
-yet, and knows the leftovers meant to stay.
+yet, knows the leftovers meant to stay, and says why it skips a recipe.
 
 Decided: a data set lists the leftovers it keeps, and loading reports only new ones.
 
@@ -585,6 +607,9 @@ Decided: a data set lists the leftovers it keeps, and loading reports only new o
 - Trials, executions, scorings and hand-written skeletons have no tables, and a data set has one expectation schema.
 - **One source a run.** A data set's cases all come from the source `--source` names.
 - **Leftovers are listed every run.** Nothing records that a leftover is known and meant to stay.
+- `curation/plan.py:plan_factors`: when the configurations endpoint's engine has no engine file in the data set,
+  every recipe is skipped as "the World names no endpoint configurations are made for"; it names one, whose engine
+  the data set doesn't hold.
 
 ### Exporting data sets
 What the archive or a person holds, written back into a data set's files, so that a change made in the portal can be
@@ -764,6 +789,10 @@ Decided: a person's runs are read whole until that is slow, then paged in the st
 - **A start holds a transaction open while the gate confirms its endpoint**, once per language though every run of a
   start goes to one endpoint; a few seconds at most against an endpoint that answers. Confirming once, before the
   transaction, would remove most of it.
+- `api/threads.py:thread_of` reads a compilation per configuration listed, for `translated`.
+- **A start isn't a subject.** Its runs are tied by a `with` entry and found by a scan (`Seen.runs(started_with=…)`);
+  the group that a run over mixed-language cases forms is known by an entry, as variants were known by a name, one level
+  up. Small today, and the same shape.
 
 ### The object layer, if the split happens
 The questions docs/purist-object-layer.md leaves open. Waits for that document's trigger, the day an object kind has to
