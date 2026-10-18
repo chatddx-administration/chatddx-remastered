@@ -44,7 +44,7 @@ items under it are as they were moved. An item that restates another for an API 
 24. [The database repeats the rules](#g24-the-database-repeats-the-rules) (8)
 25. [Compilations checked](#g25-compilations-checked) (4)
    - G25b. [A run names the skeleton its look gave](#g25b-a-run-names-the-skeleton-its-look-gave) (2)
-26. [Vignette identity: renames, repairs and rebinding](#g26-vignette-identity-renames-repairs-and-rebinding) (11)
+26. [Vignette identity: renames, repairs and rebinding](#g26-vignette-identity-renames-repairs-and-rebinding) (7)
 27. [Titles](#g27-titles) (6)
 28. [Edit history: who, when and why](#g28-edit-history-who-when-and-why) (4)
 29. [Labels across edits and following](#g29-labels-across-edits-and-following) (3)
@@ -65,7 +65,7 @@ items under it are as they were moved. An item that restates another for an API 
 44. [The sample's data](#g44-the-samples-data) (2)
 45. [Missing tests](#g45-missing-tests) (4)
 46. [The object layer and new kinds](#g46-the-object-layer-and-new-kinds) (7)
-47. [Takes waiting for a word](#g47-takes-waiting-for-a-word) (11)
+47. [Takes waiting for a word](#g47-takes-waiting-for-a-word) (12)
 48. [Text cleanup steps](#g48-text-cleanup-steps) (1)
 49. [The archive's configuration under another name](#g49-the-archives-configuration-under-another-name) (1)
 50. [The appendix layout as a part](#g50-the-appendix-layout-as-a-part) (1)
@@ -888,8 +888,11 @@ the variation compiles to another by then. api.2 is also one of the API's takes 
   another by then, as an edit names its head.
 
 ### G26. Vignette identity: renames, repairs and rebinding
-What follows a vignette that changes, is renamed, or exists twice: families, bindings, repairs and the data sets that
-name them.
+What follows a vignette that exists twice in a source, matches several families, was bound before the current binding,
+or was renamed in a data set.
+
+Triage: kept, but for catalog.4 and catalog-api.4, dropped as holding, factors.21, dropped as answered, and bench.2,
+which went to G47.
 
 **catalog.2** · From docs/catalog.md:406, "Open design issues", "Smaller issues"
 
@@ -911,16 +914,6 @@ name them.
 
 - When bindings of several families match a case, `family_of` takes the family of the latest matching binding.
 
-**catalog.4** · From docs/catalog.md:411, "Open design issues", "Smaller issues"
-
-- **Current bindings are compared within a source.** Surveys, adopting and repairing compare a vignette only with the
-  families of its own source, which relies on a family never changing source. The database enforces that, and nothing
-  in the catalog changes a source.
-
-**catalog-api.4** · From docs/catalog-api.md:740, "Known gaps"
-
-- Current bindings are read per source, which relies on a family never changing source; tier 2 holds that.
-
 **catalog.16** · From docs/catalog.md:433, "Open design issues", "Smaller issues"
 
 - **A repair moves the current binding only.** Cases and appendices bound to an earlier binding of the family aren't
@@ -934,15 +927,6 @@ name them.
 
 - **A rename isn't followed into the data.** After repair-data, loading says the old id is missing until the data set
   names the new one.
-
-**factors.21** · From docs/factors.md:209, inline, in "Cases"
-
-Whether a person or an automatic step rebinds them is open; the catalog has the tools for it (docs/catalog.md).
-
-**bench.2** · From docs/bench.md:434, "Outstanding", its takes, built and waiting for a word
-
-- a family's cases are those at its current vignette; an appendix's edit replaces only the cases at its own
-  vignette; carrying keeps to the expectation's family ("Appendices and cases");
 
 ### G27. Titles
 Titles that are cheap, stable, unique, short, and say a translated skeleton's language.
@@ -1539,6 +1523,13 @@ several places or grows beyond a comparison. Candidates left where they are:
 - **`src/chatddx/catalog/threads.py:picked`** is pure, but decides among a case's expectation threads, not who: it
   stays with the catalog.
 
+Added in triage, from G26:
+
+**bench.2** · From docs/bench.md:434, "Outstanding", its takes, built and waiting for a word
+
+- a family's cases are those at its current vignette; an appendix's edit replaces only the cases at its own
+  vignette; carrying keeps to the expectation's family ("Appendices and cases");
+
 ### G48. Text cleanup steps
 More cleanup steps, if vignettes need them.
 
@@ -1663,6 +1654,25 @@ endpoint's `max_jobs` across workers, and resume a lost run (docs/worker.md, "Cl
 **runner.10** · From docs/runner.md:230, "Open design issues", "Smaller issues"
 
 - **`max_jobs` across runs** belongs to the worker, and so does asking for a lost run to resume.
+
+catalog.4 and catalog-api.4, from G26, as holding: the database keeps a family to its source, and nothing changes one:
+
+**catalog.4** · From docs/catalog.md:411, "Open design issues", "Smaller issues"
+
+- **Current bindings are compared within a source.** Surveys, adopting and repairing compare a vignette only with the
+  families of its own source, which relies on a family never changing source. The database enforces that, and nothing
+  in the catalog changes a source.
+
+**catalog-api.4** · From docs/catalog-api.md:740, "Known gaps"
+
+- Current bindings are read per source, which relies on a family never changing source; tier 2 holds that.
+
+factors.21, from G26, as answered: a repair rebinds (docs/catalog.md, "Repairing"), and a clinician confirms a case's
+replacement after a content change, which the bench stores when asked (docs/bench.md, "Appendices and cases"):
+
+**factors.21** · From docs/factors.md:209, inline, in "Cases"
+
+Whether a person or an automatic step rebinds them is open; the catalog has the tools for it (docs/catalog.md).
 
 ## Context
 What the moved sections said of their items as a whole, moved with them.
