@@ -47,7 +47,7 @@ items under it are as they were moved. An item that restates another for an API 
 26. [Vignette identity: renames, repairs and rebinding](#g26-vignette-identity-renames-repairs-and-rebinding) (7)
 27. [Titles](#g27-titles) (6)
 28. [Edit history: who, when and why](#g28-edit-history-who-when-and-why) (4)
-29. [Labels across edits and following](#g29-labels-across-edits-and-following) (3)
+29. [Following keeps a fork's renamed view](#g29-following-keeps-a-forks-renamed-view) (1)
 30. [Languages and translations](#g30-languages-and-translations) (8)
 31. [Deleting, leftovers and garbage collection](#g31-deleting-leftovers-and-garbage-collection) (4)
 32. [Values the canonical form can't keep](#g32-values-the-canonical-form-cant-keep) (3)
@@ -65,7 +65,7 @@ items under it are as they were moved. An item that restates another for an API 
 44. [The sample's data](#g44-the-samples-data) (2)
 45. [Missing tests](#g45-missing-tests) (4)
 46. [The object layer and new kinds](#g46-the-object-layer-and-new-kinds) (7)
-47. [Takes waiting for a word](#g47-takes-waiting-for-a-word) (12)
+47. [Takes waiting for a word](#g47-takes-waiting-for-a-word) (13)
 48. [Text cleanup steps](#g48-text-cleanup-steps) (1)
 49. [The archive's configuration under another name](#g49-the-archives-configuration-under-another-name) (1)
 50. [The appendix layout as a part](#g50-the-appendix-layout-as-a-part) (1)
@@ -989,26 +989,15 @@ message is; what changed stays derived from the references.
 
 - Why an edit was made isn't stored.
 
-### G29. Labels across edits and following
-Scorer labels that survive an edit and a renamed view.
+### G29. Following keeps a fork's renamed view
+Following an origin keeps the label of a view the fork renamed, though its scorer is the origin's.
 
-Note: catalog-api.12 may be overtaken: docs/catalog.md, "Scorer labels", keeps the head's labels when an edit's scorer
-is the head's.
+Triage: kept, but for catalog-api.12, dropped as decided, and bench.8, which went to G47.
 
 **catalog.15** · From docs/catalog.md:431, "Open design issues", "Smaller issues"
 
 - **Following can drop a fork's renamed view.** Labels follow the views the proposal keeps, so a fork that only
   renamed a view, and follows an origin whose views it keeps, takes the origin's labels.
-
-**catalog-api.12** · From docs/catalog-api.md:749, "Known gaps"
-
-- Scorer labels aren't carried to the next edit of a scorer thread.
-
-**bench.8** · From docs/bench.md:442, "Outstanding", its takes, built and waiting for a word
-
-- the shipped lists kept in code, versions as integers from 1, an edit keeping the head's labels only when its scorer
-  is the head's, and following taking each part's labels from the side whose part it keeps ("Scorers"); no resources
-  offered;
 
 ### G30. Languages and translations
 Who may correct a language, a case of none, judges checked for one, and translating JSON examples.
@@ -1537,6 +1526,14 @@ Added in triage, from G26:
 - a family's cases are those at its current vignette; an appendix's edit replaces only the cases at its own
   vignette; carrying keeps to the expectation's family ("Appendices and cases");
 
+Added in triage, from G29:
+
+**bench.8** · From docs/bench.md:442, "Outstanding", its takes, built and waiting for a word
+
+- the shipped lists kept in code, versions as integers from 1, an edit keeping the head's labels only when its scorer
+  is the head's, and following taking each part's labels from the side whose part it keeps ("Scorers"); no resources
+  offered;
+
 ### G48. Text cleanup steps
 More cleanup steps, if vignettes need them.
 
@@ -1680,6 +1677,13 @@ replacement after a content change, which the bench stores when asked (docs/benc
 **factors.21** · From docs/factors.md:209, inline, in "Cases"
 
 Whether a person or an automatic step rebinds them is open; the catalog has the tools for it (docs/catalog.md).
+
+catalog-api.12, from G29, as decided: a scorer edited without labels keeps the head's only when it is the head's
+scorer, since a position only means something within one scorer (docs/catalog.md, "Scorer labels"):
+
+**catalog-api.12** · From docs/catalog-api.md:749, "Known gaps"
+
+- Scorer labels aren't carried to the next edit of a scorer thread.
 
 ## Context
 What the moved sections said of their items as a whole, moved with them.
